@@ -1,0 +1,3 @@
+[submodule "3rdParty/symengine"]
+	path = 3rdParty/symengine
+	url = https://github.com/symengine/symengine
