@@ -37,7 +37,7 @@ static long long (*_PAPI_get_real_nsec)(void) = nullptr;
 
 void Instrumentation_PAPI::load_papi_symbols() {
     const char* papi_lib = getenv("DAISY_PAPI_PATH");
-    if (papi_lib == NULL) papi_lib = "libpapi-dev.so";
+    if (papi_lib == NULL) papi_lib = "libpapi.so";
 
     void* handle = dlopen(papi_lib, RTLD_LAZY);
     if (!handle) {
@@ -70,8 +70,21 @@ Instrumentation_PAPI::Instrumentation_PAPI() {
 
     load_papi_symbols();
 
-    int retval = _PAPI_library_init(0x00000005);  // PAPI_VER_CURRENT
-    if (retval != 0x00000005) {
+    char* ver_str = getenv("__DAISY_PAPI_VERSION");
+    if (ver_str == NULL) {
+        fprintf(stderr, "Environment variable __DAISY_PAPI_VERSION is not set.\n");
+        exit(1);
+    }
+    
+    char* endptr;
+    int ver = (int)strtol(ver_str, &endptr, 0);
+    if (*endptr != '\0') {
+        fprintf(stderr, "Invalid PAPI version: %s\n", ver_str);
+        exit(1);
+    }
+    
+    int retval = _PAPI_library_init(ver);  // PAPI_VER_CURRENT
+    if (retval != ver) {
         fprintf(stderr, "Error initializing PAPI! %s\n", _PAPI_strerror(retval));
         exit(1);
     }
