@@ -1,56 +1,108 @@
 #include "daisy_instrumentation.h"
 
-#include <papi.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/select.h>
-
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <dlfcn.h>
 
 Instrumentation_PAPI instrumentation;
 
-void __daisy_instrument_init() { instrumentation = Instrumentation_PAPI(); }
+extern "C" void __daisy_instrument_init() {
+    instrumentation = Instrumentation_PAPI();
+}
 
-void __daisy_instrument_finalize() {}
+extern "C" void __daisy_instrument_finalize() {}
 
-void __daisy_instrument_enter() { instrumentation.__daisy_instrument_enter(); }
+extern "C" void __daisy_instrument_enter() {
+    instrumentation.__daisy_instrument_enter();
+}
 
-void __daisy_instrument_exit(const char* region_name, const char* file_name, long line_begin,
-                             long line_end, long column_begin, long column_end) {
+extern "C" void __daisy_instrument_exit(const char* region_name, const char* file_name,
+                                        long line_begin, long line_end, long column_begin,
+                                        long column_end) {
     instrumentation.__daisy_instrument_exit(region_name, file_name, line_begin, line_end,
                                             column_begin, column_end);
 }
 
+// Function pointers for PAPI functions
+static int (*_PAPI_library_init)(int) = nullptr;
+static int (*_PAPI_create_eventset)(int*) = nullptr;
+static int (*_PAPI_add_named_event)(int, const char*) = nullptr;
+static int (*_PAPI_start)(int) = nullptr;
+static int (*_PAPI_stop)(int, long long*) = nullptr;
+static int (*_PAPI_reset)(int) = nullptr;
+static const char* (*_PAPI_strerror)(int) = nullptr;
+static long long (*_PAPI_get_real_nsec)(void) = nullptr;
+
+void Instrumentation_PAPI::load_papi_symbols() {
+    const char* papi_lib = getenv("DAISY_PAPI_PATH");
+    if (papi_lib == NULL) papi_lib = "libpapi.so";
+
+    void* handle = dlopen(papi_lib, RTLD_LAZY);
+    if (!handle) {
+        fprintf(stderr, "Could not load %s: %s\n", papi_lib, dlerror());
+        return;
+    }
+
+    _PAPI_library_init = (int (*)(int))dlsym(handle, "PAPI_library_init");
+    _PAPI_create_eventset = (int (*)(int*))dlsym(handle, "PAPI_create_eventset");
+    _PAPI_add_named_event = (int (*)(int, const char*))dlsym(handle, "PAPI_add_named_event");
+    _PAPI_start = (int (*)(int))dlsym(handle, "PAPI_start");
+    _PAPI_stop = (int (*)(int, long long*))dlsym(handle, "PAPI_stop");
+    _PAPI_reset = (int (*)(int))dlsym(handle, "PAPI_reset");
+    _PAPI_strerror = (const char* (*)(int))dlsym(handle, "PAPI_strerror");
+    _PAPI_get_real_nsec = (long long (*)(void))dlsym(handle, "PAPI_get_real_nsec");
+
+    if (!_PAPI_library_init || !_PAPI_create_eventset || !_PAPI_add_named_event ||
+        !_PAPI_start || !_PAPI_stop || !_PAPI_reset || !_PAPI_strerror || !_PAPI_get_real_nsec) {
+        fprintf(stderr, "Failed to load one or more PAPI symbols. Please install papi.\n");
+        dlclose(handle);
+        exit(1);
+    }
+}
+
 Instrumentation_PAPI::Instrumentation_PAPI() {
     output_file = getenv("__DAISY_INSTRUMENTATION_FILE");
-    if (output_file == NULL) {
+    if (output_file == nullptr) {
         return;
     }
 
-    int retval;
-    retval = PAPI_library_init(PAPI_VER_CURRENT);
-    if (retval != PAPI_VER_CURRENT) {
-        fprintf(stderr, "Error initializing PAPI! %s\n", PAPI_strerror(retval));
+    load_papi_symbols();
+
+    char* ver_str = getenv("__DAISY_PAPI_VERSION");
+    if (ver_str == NULL) {
+        fprintf(stderr, "Environment variable __DAISY_PAPI_VERSION is not set.\n");
+        exit(1);
+    }
+    
+    char* endptr;
+    int ver = (int)strtol(ver_str, &endptr, 0);
+    if (*endptr != '\0') {
+        fprintf(stderr, "Invalid PAPI version: %s\n", ver_str);
+        exit(1);
+    }
+    
+    int retval = _PAPI_library_init(ver);  // PAPI_VER_CURRENT
+    if (retval != ver) {
+        fprintf(stderr, "Error initializing PAPI! %s\n", _PAPI_strerror(retval));
         exit(1);
     }
 
-    retval = PAPI_create_eventset(&eventset);
-    if (retval != PAPI_OK) {
-        fprintf(stderr, "Error creating eventset! %s\n", PAPI_strerror(retval));
+    retval = _PAPI_create_eventset(&eventset);
+    if (retval != 0) {
+        fprintf(stderr, "Error creating eventset! %s\n", _PAPI_strerror(retval));
         exit(1);
     }
 
-    runtime = false;
     event_name = getenv("__DAISY_INSTRUMENTATION_EVENTS");
-    if (event_name == NULL) {
-        return;
-    } else if (strcmp(event_name, "DURATION_TIME") == 0) {
+    if (event_name == nullptr) return;
+
+    if (strcmp(event_name, "DURATION_TIME") == 0) {
         runtime = true;
     } else {
-        retval = PAPI_add_named_event(eventset, event_name);
-        if (retval != PAPI_OK) {
+        retval = _PAPI_add_named_event(eventset, event_name);
+        if (retval != 0) {
             fprintf(stderr, "Error converting event name to code: %s\n", event_name);
             exit(1);
         }
@@ -58,49 +110,43 @@ Instrumentation_PAPI::Instrumentation_PAPI() {
 }
 
 void Instrumentation_PAPI::__daisy_instrument_enter() {
-    if (output_file == NULL || event_name == NULL) {
-        return;
-    }
+    if (output_file == nullptr || event_name == nullptr) return;
 
     if (runtime) {
-        runtime_start = PAPI_get_real_nsec();
+        runtime_start = _PAPI_get_real_nsec();
         return;
     }
 
-    int retval;
-    PAPI_reset(eventset);
-    retval = PAPI_start(eventset);
-    if (retval != PAPI_OK) {
-        fprintf(stderr, "Error starting PAPI: %s\n", PAPI_strerror(retval));
+    _PAPI_reset(eventset);
+    int retval = _PAPI_start(eventset);
+    if (retval != 0) {
+        fprintf(stderr, "Error starting PAPI: %s\n", _PAPI_strerror(retval));
     }
 }
 
 void Instrumentation_PAPI::__daisy_instrument_exit(const char* region_name, const char* file_name,
                                                    long line_begin, long line_end,
                                                    long column_begin, long column_end) {
-    if (output_file == NULL || event_name == NULL) {
-        return;
-    }
+    if (output_file == nullptr || event_name == nullptr) return;
 
     long long count;
     if (runtime) {
-        count = PAPI_get_real_nsec() - runtime_start;
+        count = _PAPI_get_real_nsec() - runtime_start;
     } else {
-        int retval;
-        retval = PAPI_stop(eventset, &count);
-        if (retval != PAPI_OK) {
-            fprintf(stderr, "Error stopping PAPI:  %s\n", PAPI_strerror(retval));
+        int retval = _PAPI_stop(eventset, &count);
+        if (retval != 0) {
+            fprintf(stderr, "Error stopping PAPI:  %s\n", _PAPI_strerror(retval));
             return;
         }
     }
 
-    // concatentate the string to file and create file if it does not exist
     FILE* f = fopen(output_file, "a");
-    if (f == NULL) {
+    if (f == nullptr) {
         fprintf(stderr, "Error opening file %s\n", output_file);
         f = fopen(output_file, "w");
     }
 
     fprintf(f, "%s,%s,%ld,%ld,%ld,%ld,%s,%lld,%ld\n", region_name, file_name, line_begin, line_end,
             column_begin, column_end, event_name, count, std::time(nullptr));
+    fclose(f);
 }

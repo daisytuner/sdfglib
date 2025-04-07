@@ -4,7 +4,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Original Library
 add_library(daisy_rtl STATIC
     src/daisy_instrumentation.cpp
 )
@@ -12,6 +11,10 @@ add_library(daisy_rtl STATIC
 target_include_directories(daisy_rtl PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+
+# Don't link against PAPI!
+# Just link against the dynamic linker
+target_link_libraries(daisy_rtl PRIVATE dl)
 
 set_target_properties(daisy_rtl PROPERTIES
     VERSION ${PROJECT_VERSION}

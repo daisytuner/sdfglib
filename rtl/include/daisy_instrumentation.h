@@ -1,10 +1,6 @@
 #ifndef __DAISY_INSTRUMENTATION__
 #define __DAISY_INSTRUMENTATION__
 
-#include <string>
-
-#include "papi.h"
-
 extern "C" void __daisy_instrument_init();
 
 extern "C" void __daisy_instrument_finalize();
@@ -17,12 +13,14 @@ extern "C" void __daisy_instrument_exit(const char* region_name, const char* fil
 
 class Instrumentation_PAPI {
    private:
-    int eventset = PAPI_NULL;
-    char* event_name;
-    char* output_file;
+    int eventset = -1;
+    char* event_name = nullptr;
+    char* output_file = nullptr;
 
     bool runtime = false;
-    long long runtime_start;
+    long long runtime_start = 0;
+
+    void load_papi_symbols();
 
    public:
     Instrumentation_PAPI();
