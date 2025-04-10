@@ -100,6 +100,7 @@ void CCodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#include <math.h>" << std::endl;
     this->includes_stream_ << "#include <stdbool.h>" << std::endl;
     this->includes_stream_ << "#include <stdlib.h>" << std::endl;
+    if (instrumented_) this->includes_stream_ << "#include <daisy_rtl.h>" << std::endl;
 
     this->includes_stream_ << "#define __daisy_min(a,b) ((a)<(b)?(a):(b))" << std::endl;
     this->includes_stream_ << "#define __daisy_max(a,b) ((a)>(b)?(a):(b))" << std::endl;
