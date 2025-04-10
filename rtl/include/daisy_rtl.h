@@ -1,5 +1,5 @@
-#ifndef __DAISY_INSTRUMENTATION__
-#define __DAISY_INSTRUMENTATION__
+#ifndef __DAISY_RTL__
+#define __DAISY_RTL__
 
 extern "C" void __daisy_instrument_init();
 
@@ -31,4 +31,4 @@ class Instrumentation_PAPI {
                                  long line_end, long column_begin, long column_end);
 };
 
-#endif  // __DAISY_INSTRUMENTATION__
+#endif  // __DAISY_RTL__

@@ -1,22 +1,19 @@
-#include "daisy_instrumentation.h"
+#include "daisy_rtl.h"
+
+#include <dlfcn.h>
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <dlfcn.h>
 
 Instrumentation_PAPI instrumentation;
 
-extern "C" void __daisy_instrument_init() {
-    instrumentation = Instrumentation_PAPI();
-}
+extern "C" void __daisy_instrument_init() { instrumentation = Instrumentation_PAPI(); }
 
 extern "C" void __daisy_instrument_finalize() {}
 
-extern "C" void __daisy_instrument_enter() {
-    instrumentation.__daisy_instrument_enter();
-}
+extern "C" void __daisy_instrument_enter() { instrumentation.__daisy_instrument_enter(); }
 
 extern "C" void __daisy_instrument_exit(const char* region_name, const char* file_name,
                                         long line_begin, long line_end, long column_begin,
@@ -54,8 +51,8 @@ void Instrumentation_PAPI::load_papi_symbols() {
     _PAPI_strerror = (const char* (*)(int))dlsym(handle, "PAPI_strerror");
     _PAPI_get_real_nsec = (long long (*)(void))dlsym(handle, "PAPI_get_real_nsec");
 
-    if (!_PAPI_library_init || !_PAPI_create_eventset || !_PAPI_add_named_event ||
-        !_PAPI_start || !_PAPI_stop || !_PAPI_reset || !_PAPI_strerror || !_PAPI_get_real_nsec) {
+    if (!_PAPI_library_init || !_PAPI_create_eventset || !_PAPI_add_named_event || !_PAPI_start ||
+        !_PAPI_stop || !_PAPI_reset || !_PAPI_strerror || !_PAPI_get_real_nsec) {
         fprintf(stderr, "Failed to load one or more PAPI symbols. Please install papi.\n");
         dlclose(handle);
         exit(1);
@@ -75,14 +72,14 @@ Instrumentation_PAPI::Instrumentation_PAPI() {
         fprintf(stderr, "Environment variable __DAISY_PAPI_VERSION is not set.\n");
         exit(1);
     }
-    
+
     char* endptr;
     int ver = (int)strtol(ver_str, &endptr, 0);
     if (*endptr != '\0') {
         fprintf(stderr, "Invalid PAPI version: %s\n", ver_str);
         exit(1);
     }
-    
+
     int retval = _PAPI_library_init(ver);  // PAPI_VER_CURRENT
     if (retval != ver) {
         fprintf(stderr, "Error initializing PAPI! %s\n", _PAPI_strerror(retval));
