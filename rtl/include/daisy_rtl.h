@@ -1,15 +1,7 @@
 #ifndef __DAISY_RTL__
 #define __DAISY_RTL__
 
-extern "C" void __daisy_instrument_init();
-
-extern "C" void __daisy_instrument_finalize();
-
-extern "C" void __daisy_instrument_enter();
-
-extern "C" void __daisy_instrument_exit(const char* region_name, const char* file_name,
-                                        long line_begin, long line_end, long column_begin,
-                                        long column_end);
+#include "daisy_rtl_api.h"
 
 class Instrumentation_PAPI {
    private:

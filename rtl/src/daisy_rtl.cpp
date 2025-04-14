@@ -9,18 +9,22 @@
 
 Instrumentation_PAPI instrumentation;
 
-extern "C" void __daisy_instrument_init() { instrumentation = Instrumentation_PAPI(); }
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-extern "C" void __daisy_instrument_finalize() {}
-
-extern "C" void __daisy_instrument_enter() { instrumentation.__daisy_instrument_enter(); }
-
-extern "C" void __daisy_instrument_exit(const char* region_name, const char* file_name,
-                                        long line_begin, long line_end, long column_begin,
-                                        long column_end) {
+void __daisy_instrument_init() { instrumentation = Instrumentation_PAPI(); }
+void __daisy_instrument_finalize() {}
+void __daisy_instrument_enter() { instrumentation.__daisy_instrument_enter(); }
+void __daisy_instrument_exit(const char* region_name, const char* file_name, long line_begin,
+                             long line_end, long column_begin, long column_end) {
     instrumentation.__daisy_instrument_exit(region_name, file_name, line_begin, line_end,
                                             column_begin, column_end);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 // Function pointers for PAPI functions
 static int (*_PAPI_library_init)(int) = nullptr;
