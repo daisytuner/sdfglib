@@ -1,11 +1,11 @@
-#include "daisy_rtl.h"
-
 #include <dlfcn.h>
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+
+#include "daisy_rtl_internal.h"
 
 Instrumentation_PAPI instrumentation;
 

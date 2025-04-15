@@ -20,7 +20,7 @@ target_link_libraries(daisy_rtl PRIVATE dl)
 set_target_properties(daisy_rtl PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
-    PUBLIC_HEADER "include/daisy_rtl_api.h" # Set this to the main public header
+    PUBLIC_HEADER "include/daisy_rtl.h" # Set this to the main public header
 )
 
 install(TARGETS daisy_rtl
