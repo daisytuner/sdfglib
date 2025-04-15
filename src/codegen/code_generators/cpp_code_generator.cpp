@@ -88,7 +88,7 @@ bool CPPCodeGenerator::as_source(const std::filesystem::path& header_path,
 
 void CPPCodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#include <cmath>" << std::endl;
-    if (instrumented_) this->includes_stream_ << "#include <daisy_rtl.h>" << std::endl;
+    if (instrumented_) this->includes_stream_ << "#include <daisy_rtl_api.h>" << std::endl;
     this->includes_stream_ << "#define __daisy_min(a,b) ((a)<(b)?(a):(b))" << std::endl;
     this->includes_stream_ << "#define __daisy_max(a,b) ((a)>(b)?(a):(b))" << std::endl;
     this->includes_stream_ << "#define __daisy_fma(a,b,c) a * b + c" << std::endl;
@@ -179,6 +179,8 @@ void CPPCodeGenerator::dispatch_schedule() {
         this->main_stream_ << ";" << std::endl;
     }
 
+    this->main_stream_ << "__daisy_instrument_enter();" << std::endl;
+
     for (size_t i = 0; i < schedule_.size(); i++) {
         if (i == 0) {
             this->main_stream_ << "if (" << language_extension_.expression(schedule_.condition(i))
@@ -186,7 +188,7 @@ void CPPCodeGenerator::dispatch_schedule() {
 
             auto& function_i = schedule_.schedule(i).builder().subject();
             auto dispatcher = create_dispatcher(language_extension_, schedule_.schedule(i),
-                                                function_i.root(), this->instrumented_);
+                                                function_i.root(), false);
             dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_stream_);
 
             this->main_stream_ << "}\n";
@@ -196,12 +198,21 @@ void CPPCodeGenerator::dispatch_schedule() {
 
             auto& function_i = schedule_.schedule(i).builder().subject();
             auto dispatcher = create_dispatcher(language_extension_, schedule_.schedule(i),
-                                                function_i.root(), this->instrumented_);
+                                                function_i.root(), false);
             dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_stream_);
 
             this->main_stream_ << "}\n";
         }
     }
+
+    auto& sdfg_0 = schedule_.schedule(0).sdfg();
+    this->main_stream_ << "__daisy_instrument_exit(";
+    this->main_stream_ << "\"" << sdfg_0.name() << "\", ";
+    this->main_stream_ << "\"" << sdfg_0.debug_info().filename() << "\", ";
+    this->main_stream_ << sdfg_0.debug_info().start_line() << ", ";
+    this->main_stream_ << sdfg_0.debug_info().end_line() << ", ";
+    this->main_stream_ << sdfg_0.debug_info().start_column() << ", ";
+    this->main_stream_ << sdfg_0.debug_info().end_column() << ");" << std::endl;
 };
 
 }  // namespace codegen
