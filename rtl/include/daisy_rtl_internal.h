@@ -3,11 +3,14 @@
 
 #include "daisy_rtl.h"
 
+#include <vector>
+#include <string>
+
 class Instrumentation_PAPI {
    private:
     int eventset = -1;
-    char* event_name = nullptr;
     char* output_file = nullptr;
+    std::vector<std::string> event_names;
 
     bool runtime = false;
     long long runtime_start = 0;
