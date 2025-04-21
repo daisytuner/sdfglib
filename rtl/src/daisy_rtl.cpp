@@ -36,6 +36,15 @@ static int (*_PAPI_reset)(int) = nullptr;
 static const char* (*_PAPI_strerror)(int) = nullptr;
 static long long (*_PAPI_get_real_nsec)(void) = nullptr;
 
+void split(std::vector<std::string>& result, std::string s, std::string del = " ") {
+    int start, end = -1 * del.size();
+    do {
+        start = end + del.size();
+        end = s.find(del, start);
+        result.push_back(s.substr(start, end - start));
+    } while (end != -1);
+};
+
 void Instrumentation_PAPI::load_papi_symbols() {
     const char* papi_lib = getenv("DAISY_PAPI_PATH");
     if (papi_lib == NULL) papi_lib = "libpapi.so";
@@ -96,22 +105,33 @@ Instrumentation_PAPI::Instrumentation_PAPI() {
         exit(1);
     }
 
-    event_name = getenv("__DAISY_INSTRUMENTATION_EVENTS");
-    if (event_name == nullptr) return;
+    char* events = getenv("__DAISY_INSTRUMENTATION_EVENTS");
+    if (events == nullptr) return;
 
-    if (strcmp(event_name, "DURATION_TIME") == 0) {
+    if (strcmp(events, "DURATION_TIME") == 0) {
         runtime = true;
+        event_names.push_back("DURATION_TIME");
     } else {
-        retval = _PAPI_add_named_event(eventset, event_name);
-        if (retval != 0) {
-            fprintf(stderr, "Error converting event name to code: %s\n", event_name);
-            exit(1);
+        // Split the events string by commas and store in event_names
+        split(event_names, events, ",");
+
+        for (const auto& event_name : event_names) {
+            if (event_name == "DURATION_TIME") {
+                fprintf(stderr, "Cannot use DURATION_TIME in list of events\n");
+                exit(1);
+            }
+
+            retval = _PAPI_add_named_event(eventset, event_name.c_str());
+            if (retval != 0) {
+                fprintf(stderr, "Error converting event name to code: %s\n", event_name.c_str());
+                exit(1);
+            }
         }
     }
 }
 
 void Instrumentation_PAPI::__daisy_instrument_enter() {
-    if (output_file == nullptr || event_name == nullptr) return;
+    if (output_file == nullptr || event_names.empty()) return;
 
     if (runtime) {
         runtime_start = _PAPI_get_real_nsec();
@@ -128,13 +148,13 @@ void Instrumentation_PAPI::__daisy_instrument_enter() {
 void Instrumentation_PAPI::__daisy_instrument_exit(const char* region_name, const char* file_name,
                                                    long line_begin, long line_end,
                                                    long column_begin, long column_end) {
-    if (output_file == nullptr || event_name == nullptr) return;
+    if (output_file == nullptr || event_names.empty()) return;
 
-    long long count;
+    long long count[event_names.size()];
     if (runtime) {
-        count = _PAPI_get_real_nsec() - runtime_start;
+        count[0] = _PAPI_get_real_nsec() - runtime_start;
     } else {
-        int retval = _PAPI_stop(eventset, &count);
+        int retval = _PAPI_stop(eventset, count);
         if (retval != 0) {
             fprintf(stderr, "Error stopping PAPI:  %s\n", _PAPI_strerror(retval));
             return;
@@ -147,7 +167,10 @@ void Instrumentation_PAPI::__daisy_instrument_exit(const char* region_name, cons
         f = fopen(output_file, "w");
     }
 
-    fprintf(f, "%s,%s,%ld,%ld,%ld,%ld,%s,%lld,%ld\n", region_name, file_name, line_begin, line_end,
-            column_begin, column_end, event_name, count, std::time(nullptr));
+    for (size_t i = 0; i < event_names.size(); ++i) {
+        fprintf(f, "%s,%s,%ld,%ld,%ld,%ld,%s,%lld,%ld\n", region_name, file_name, line_begin, line_end,
+            column_begin, column_end, event_names.at(i).c_str(), count[i], std::time(nullptr));
+    }
+
     fclose(f);
 }
