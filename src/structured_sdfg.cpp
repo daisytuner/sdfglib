@@ -1,10 +1,14 @@
 #include "sdfg/structured_sdfg.h"
 
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/data_flow/access_node.h"
+#include "sdfg/data_flow/tasklet.h"
 #include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
 #include "sdfg/element.h"
+#include "sdfg/serializer/json_serializer.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/for.h"
+#include "sdfg/structured_control_flow/sequence.h"
 
 namespace sdfg {
 
@@ -127,5 +131,15 @@ const DebugInfo StructuredSDFG::debug_info() const {
     }
     return info;
 };
+
+void StructuredSDFG::to_json(const std::string& file_name) {
+    JSONSerializer serializer(file_name, *this);
+    serializer.serialize();
+}
+
+void StructuredSDFG::from_json(const std::string& file_name) {
+    JSONSerializer serializer(file_name, *this);
+    serializer.deserialize();
+}
 
 }  // namespace sdfg
