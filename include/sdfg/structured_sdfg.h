@@ -50,10 +50,6 @@ class StructuredSDFG : public Function {
     std::unique_ptr<StructuredSDFG> clone() const;
 
     long long num_nodes() const;
-
-    void to_json(const std::string& file_name);
-
-    void from_json(const std::string& file_name);
 };
 
 }  // namespace sdfg

@@ -13,6 +13,9 @@
 #include "sdfg/structured_control_flow/while.h"
 #include "sdfg/structured_sdfg.h"
 
+namespace sdfg {
+namespace serializer {
+
 /*
  * * JSONSerializer class
  * * Serialization logic
@@ -21,32 +24,32 @@
 void JSONSerializer::serialize() {
     nlohmann::json j;
 
-    j["name"] = sdfg_.name();
+    j["name"] = sdfg_->name();
 
     j["structures"] = nlohmann::json::array();
-    for (const auto& structure : sdfg_.structures()) {
+    for (const auto& structure : sdfg_->structures()) {
         nlohmann::json structure_json;
         structure_definition_to_json(structure_json, structure);
         j["structures"].push_back(structure_json);
     }
     j["containers"] = nlohmann::json::array();
-    for (const auto& container : sdfg_.containers()) {
+    for (const auto& container : sdfg_->containers()) {
         nlohmann::json container_type_json;
-        type_to_json(container_type_json, sdfg_.type(container));
+        type_to_json(container_type_json, sdfg_->type(container));
         j[container].push_back(container_type_json);
     }
     j["arguments"] = nlohmann::json::array();
-    for (const auto& arg : sdfg_.arguments()) {
+    for (const auto& arg : sdfg_->arguments()) {
         j["arguments"].push_back(arg);
     }
     j["externals"] = nlohmann::json::array();
-    for (const auto& ext : sdfg_.externals()) {
+    for (const auto& ext : sdfg_->externals()) {
         j["externals"].push_back(ext);
     }
 
     // dump the root node
     nlohmann::json root_json;
-    sequence_to_json(root_json, sdfg_.root());
+    sequence_to_json(root_json, sdfg_->root());
     j["root"] = root_json;
 
     // dump to file
@@ -72,15 +75,25 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j,
             node_json["code"] = code_node->code();
             node_json["inputs"] = nlohmann::json::array();
             for (auto& input : code_node->inputs()) {
-                node_json["inputs"].push_back(input.first);
+                nlohmann::json input_json;
+                nlohmann::json type_json;
+                type_to_json(type_json, input.second);
+                input_json["type"] = type_json;
+                input_json["name"] = input.first;
+                node_json["inputs"].push_back(input_json);
             }
             node_json["outputs"] = nlohmann::json::array();
             for (auto& output : code_node->outputs()) {
-                node_json["outputs"].push_back(output.first);
+                nlohmann::json output_json;
+                nlohmann::json type_json;
+                type_to_json(type_json, output.second);
+                output_json["type"] = type_json;
+                output_json["name"] = output.first;
+                node_json["outputs"].push_back(output_json);
             }
             node_json["conditional"] = code_node->is_conditional();
             if (code_node->is_conditional()) {
-                node_json["condition"] = code_node->condition()->dumps();
+                node_json["condition"] = code_node->condition()->__str__();
             }
         } else if (auto lib_node = dynamic_cast<const sdfg::data_flow::LibraryNode*>(&node)) {
             node_json["type"] = "library_node";
@@ -88,15 +101,25 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j,
             node_json["side_effect"] = lib_node->has_side_effect();
             node_json["inputs"] = nlohmann::json::array();
             for (auto& input : lib_node->inputs()) {
-                node_json["inputs"].push_back(input.first);
+                nlohmann::json input_json;
+                nlohmann::json type_json;
+                type_to_json(type_json, input.second);
+                input_json["type"] = type_json;
+                input_json["name"] = input.first;
+                node_json["inputs"].push_back(input_json);
             }
             node_json["outputs"] = nlohmann::json::array();
             for (auto& output : lib_node->outputs()) {
-                node_json["outputs"].push_back(output.first);
+                nlohmann::json output_json;
+                nlohmann::json type_json;
+                type_to_json(type_json, output.second);
+                output_json["type"] = type_json;
+                output_json["name"] = output.first;
+                node_json["outputs"].push_back(output_json);
             }
         } else if (auto code_node = dynamic_cast<const sdfg::data_flow::AccessNode*>(&node)) {
             node_json["type"] = "access_node";
-            node_json["name"] = code_node->name();
+            node_json["container"] = code_node->data();
         } else {
             throw std::runtime_error("Unknown node type");
         }
@@ -115,7 +138,7 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j,
         // add subset
         edge_json["subset"] = nlohmann::json::array();
         for (auto& subset : edge.subset()) {
-            edge_json["subset"].push_back(subset->dumps());
+            edge_json["subset"].push_back(subset->__str__());
         }
 
         j["edges"].push_back(edge_json);
@@ -133,10 +156,10 @@ void JSONSerializer::block_to_json(nlohmann::json& j,
 void JSONSerializer::for_node_to_json(nlohmann::json& j,
                                       const sdfg::structured_control_flow::For& for_node) {
     j["type"] = "for";
-    j["indvar"] = for_node.indvar()->dumps();
-    j["init"] = for_node.init()->dumps();
-    j["condition"] = for_node.condition()->dumps();
-    j["update"] = for_node.update()->dumps();
+    j["indvar"] = for_node.indvar()->__str__();
+    j["init"] = for_node.init()->__str__();
+    j["condition"] = for_node.condition()->__str__();
+    j["update"] = for_node.update()->__str__();
 
     nlohmann::json body_json;
     sequence_to_json(body_json, for_node.root());
@@ -149,7 +172,7 @@ void JSONSerializer::if_else_to_json(nlohmann::json& j,
     j["branches"] = nlohmann::json::array();
     for (int i = 0; i < if_else_node.size(); i++) {
         nlohmann::json branch_json;
-        branch_json["condition"] = if_else_node.at(i).second->dumps();
+        branch_json["condition"] = if_else_node.at(i).second->__str__();
         nlohmann::json body_json;
         sequence_to_json(body_json, if_else_node.at(i).first);
         branch_json["children"] = body_json;
@@ -182,19 +205,19 @@ void JSONSerializer::kernel_to_json(nlohmann::json& j,
     j["inputs"] = nlohmann::json::array();
     j["suffix"] = kernel_node.suffix();
 
-    j["blockDim_x"] = kernel_node.blockDim_x()->dumps();
-    j["blockDim_y"] = kernel_node.blockDim_y()->dumps();
-    j["blockDim_z"] = kernel_node.blockDim_z()->dumps();
-    j["gridDim_x"] = kernel_node.gridDim_x()->dumps();
-    j["gridDim_y"] = kernel_node.gridDim_y()->dumps();
-    j["gridDim_z"] = kernel_node.gridDim_z()->dumps();
+    j["blockDim_x"] = kernel_node.blockDim_x()->__str__();
+    j["blockDim_y"] = kernel_node.blockDim_y()->__str__();
+    j["blockDim_z"] = kernel_node.blockDim_z()->__str__();
+    j["gridDim_x"] = kernel_node.gridDim_x()->__str__();
+    j["gridDim_y"] = kernel_node.gridDim_y()->__str__();
+    j["gridDim_z"] = kernel_node.gridDim_z()->__str__();
 
-    j["threadIdx_x"] = kernel_node.threadIdx_x()->dumps();
-    j["threadIdx_y"] = kernel_node.threadIdx_y()->dumps();
-    j["threadIdx_z"] = kernel_node.threadIdx_z()->dumps();
-    j["blockIdx_x"] = kernel_node.blockIdx_x()->dumps();
-    j["blockIdx_y"] = kernel_node.blockIdx_y()->dumps();
-    j["blockIdx_z"] = kernel_node.blockIdx_z()->dumps();
+    j["threadIdx_x"] = kernel_node.threadIdx_x()->__str__();
+    j["threadIdx_y"] = kernel_node.threadIdx_y()->__str__();
+    j["threadIdx_z"] = kernel_node.threadIdx_z()->__str__();
+    j["blockIdx_x"] = kernel_node.blockIdx_x()->__str__();
+    j["blockIdx_y"] = kernel_node.blockIdx_y()->__str__();
+    j["blockIdx_z"] = kernel_node.blockIdx_z()->__str__();
 }
 
 void JSONSerializer::return_node_to_json(nlohmann::json& j,
@@ -241,8 +264,8 @@ void JSONSerializer::sequence_to_json(nlohmann::json& j,
         transition_json["assignments"] = nlohmann::json::array();
         for (const auto& assignment : transition.assignments()) {
             nlohmann::json assignment_json;
-            assignment_json["symbol"] = assignment.first->dumps();
-            assignment_json["expression"] = assignment.second->dumps();
+            assignment_json["symbol"] = assignment.first->__str__();
+            assignment_json["expression"] = assignment.second->__str__();
             transition_json["assignments"].push_back(assignment_json);
         }
         j["children"].push_back(child_json);
@@ -261,7 +284,7 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const sdfg::types::IType& t
         nlohmann::json element_type_json;
         type_to_json(element_type_json, array_type->element_type());
         j["element_type"] = element_type_json;
-        j["num_elements"] = array_type->num_elements()->dumps();
+        j["num_elements"] = array_type->num_elements()->__str__();
         j["address_space"] = array_type->address_space();
         j["initializer"] = array_type->initializer();
         j["device_location"] = array_type->device_location();
@@ -299,7 +322,7 @@ void JSONSerializer::structure_definition_to_json(
  * * Deserialization logic
  */
 
-void JSONSerializer::deserialize() {
+std::unique_ptr<sdfg::StructuredSDFG> JSONSerializer::deserialize() {
     std::ifstream file(filename_);
     if (file.is_open()) {
         nlohmann::json j;
@@ -315,7 +338,12 @@ void JSONSerializer::deserialize() {
         // TODO: implement the deserialization logic for structures, containers, arguments,
         // externals, and root
 
+        return builder.move();
+
     } else {
         throw std::runtime_error("Could not open file " + filename_);
     }
 }
+
+}  // namespace serializer
+}  // namespace sdfg

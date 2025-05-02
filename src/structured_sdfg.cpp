@@ -132,14 +132,4 @@ const DebugInfo StructuredSDFG::debug_info() const {
     return info;
 };
 
-void StructuredSDFG::to_json(const std::string& file_name) {
-    JSONSerializer serializer(file_name, *this);
-    serializer.serialize();
-}
-
-void StructuredSDFG::from_json(const std::string& file_name) {
-    JSONSerializer serializer(file_name, *this);
-    serializer.deserialize();
-}
-
 }  // namespace sdfg

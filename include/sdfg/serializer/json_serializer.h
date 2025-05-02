@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "nlohmann/json.hpp"
@@ -10,22 +11,24 @@
 #include "sdfg/structured_sdfg.h"
 #include "sdfg/types/type.h"
 
+namespace sdfg {
+namespace serializer {
+
 class JSONSerializer {
    private:
     std::string filename_;
     nlohmann::json json_data_;
 
-    sdfg::StructuredSDFG& sdfg_;
+    std::unique_ptr<sdfg::StructuredSDFG>& sdfg_;
 
    public:
-    JSONSerializer(const std::string& filename, sdfg::StructuredSDFG& sdfg)
+    JSONSerializer(const std::string& filename, std::unique_ptr<sdfg::StructuredSDFG>& sdfg)
         : filename_(filename), sdfg_(sdfg) {}
 
     void serialize();
 
-    void deserialize();
+    std::unique_ptr<sdfg::StructuredSDFG> deserialize();
 
-   private:
     void structure_definition_to_json(nlohmann::json& j,
                                       const sdfg::types::StructureDefinition& definition);
     void type_to_json(nlohmann::json& j, const sdfg::types::IType& type);
@@ -78,3 +81,6 @@ class JSONSerializer {
     void json_to_transition(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
                             sdfg::structured_control_flow::Sequence& parent);
 };
+
+}  // namespace serializer
+}  // namespace sdfg
