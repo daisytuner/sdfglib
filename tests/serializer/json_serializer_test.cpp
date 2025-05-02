@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/element.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
@@ -214,8 +215,6 @@ TEST(JSONSerializerTest, DataflowToJSON) {
                    edge["source_connector"] == "_out" && edge["target_connector"] == "void";
         });
 
-    std::cout << j.dump(2) << std::endl;
-
     EXPECT_NE(edge_to_tasklet, j["edges"].end());
     EXPECT_NE(edge_to_tasklet2, j["edges"].end());
     EXPECT_NE(edge_from_tasklet, j["edges"].end());
@@ -265,6 +264,229 @@ TEST(JSONSerializerTest, ForNodeToJSON) {
     // Check if the JSON contains the expected keys
     EXPECT_TRUE(j.contains("type"));
     EXPECT_EQ(j["type"], "for");
+
+    EXPECT_TRUE(j.contains("indvar"));
+    EXPECT_EQ(j["indvar"], "i");
+    EXPECT_TRUE(j.contains("condition"));
+    EXPECT_EQ(j["condition"], "i < 10");
+    EXPECT_TRUE(j.contains("init"));
+    EXPECT_EQ(j["init"], "0");
+    EXPECT_TRUE(j.contains("update"));
+    EXPECT_TRUE(j["update"] == "i + 1" || j["update"] == "1 + i");
+    EXPECT_TRUE(j.contains("children"));
+    EXPECT_EQ(j["children"]["type"], "sequence");
+    EXPECT_EQ(j["children"]["children"].size(), 1);
+    EXPECT_EQ(j["children"]["children"][0]["type"], "block");
+}
+
+TEST(JSONSerializerTest, IfElseToJSON) {
+    // Create a sample IfElse node
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
+    auto& root = builder.subject().root();
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("i", sym_desc);
+
+    auto& if_else = builder.add_if_else(root);
+    auto& true_case = builder.add_case(if_else, symbolic::__true__());
+    auto& false_case = builder.add_case(if_else, symbolic::__false__());
+    auto& true_block = builder.add_block(true_case);
+    auto& false_block = builder.add_block(false_case);
+
+    // Create a JSONSerializer object
+    std::string filename = "test_sdfg.json";
+    auto sdfg = builder.move();
+    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+
+    // Serialize the IfElse node to JSON
+    nlohmann::json j;
+    serializer.if_else_to_json(j, if_else);
+
+    // Check if the JSON contains the expected keys
+    EXPECT_TRUE(j.contains("type"));
+    EXPECT_EQ(j["type"], "if_else");
+
+    EXPECT_TRUE(j.contains("branches"));
+    EXPECT_EQ(j["branches"].size(), 2);
+    EXPECT_EQ(j["branches"][0]["condition"], "True");
+    EXPECT_EQ(j["branches"][1]["condition"], "False");
+    EXPECT_TRUE(j["branches"][0].contains("children"));
+    EXPECT_EQ(j["branches"][0]["children"]["type"], "sequence");
+    EXPECT_EQ(j["branches"][0]["children"]["children"].size(), 1);
+    EXPECT_EQ(j["branches"][0]["children"]["children"][0]["type"], "block");
+    EXPECT_TRUE(j["branches"][1].contains("children"));
+    EXPECT_EQ(j["branches"][1]["children"]["type"], "sequence");
+    EXPECT_EQ(j["branches"][1]["children"]["children"].size(), 1);
+    EXPECT_EQ(j["branches"][1]["children"]["children"][0]["type"], "block");
+}
+
+TEST(JSONSerializerTest, WhileToJSON_break) {
+    // Create a sample While node
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
+    auto& root = builder.subject().root();
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("i", sym_desc);
+
+    auto& scope = builder.add_while(root);
+    auto& body = builder.add_block(scope.root());
+    auto& break_state = builder.add_break(scope.root(), scope);
+
+    // Create a JSONSerializer object
+    std::string filename = "test_sdfg.json";
+    auto sdfg = builder.move();
+    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+
+    // Serialize the While node to JSON
+    nlohmann::json j;
+    serializer.while_node_to_json(j, scope);
+
+    // Check if the JSON contains the expected keys
+    EXPECT_TRUE(j.contains("type"));
+    EXPECT_EQ(j["type"], "while");
+
+    EXPECT_TRUE(j.contains("children"));
+    EXPECT_EQ(j["children"]["type"], "sequence");
+    EXPECT_EQ(j["children"]["children"].size(), 2);
+    EXPECT_EQ(j["children"]["children"][0]["type"], "block");
+    EXPECT_EQ(j["children"]["children"][1]["type"], "break");
+    EXPECT_EQ(j["children"]["children"][1]["target"], scope.element_id());
+}
+
+TEST(JSONSerializerTest, WhileToJSON_continue) {
+    // Create a sample While node
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
+    auto& root = builder.subject().root();
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("i", sym_desc);
+
+    auto& scope = builder.add_while(root);
+    auto& body = builder.add_block(scope.root());
+    auto& continue_state = builder.add_continue(scope.root(), scope);
+
+    // Create a JSONSerializer object
+    std::string filename = "test_sdfg.json";
+    auto sdfg = builder.move();
+    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+
+    // Serialize the While node to JSON
+    nlohmann::json j;
+    serializer.while_node_to_json(j, scope);
+
+    // Check if the JSON contains the expected keys
+    EXPECT_TRUE(j.contains("type"));
+    EXPECT_EQ(j["type"], "while");
+
+    EXPECT_TRUE(j.contains("children"));
+    EXPECT_EQ(j["children"]["type"], "sequence");
+    EXPECT_EQ(j["children"]["children"].size(), 2);
+    EXPECT_EQ(j["children"]["children"][0]["type"], "block");
+    EXPECT_EQ(j["children"]["children"][1]["type"], "continue");
+    EXPECT_EQ(j["children"]["children"][1]["target"], scope.element_id());
+}
+
+TEST(JSONSerializerTest, KernelToJSON) {
+    // Create a sample Kernel node
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
+    auto& root = builder.subject().root();
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("i", sym_desc);
+
+    auto& kernel = builder.add_kernel(root, "suffix");
+    auto& body = builder.add_block(kernel.root());
+
+    // Create a JSONSerializer object
+    std::string filename = "test_sdfg.json";
+    auto sdfg = builder.move();
+    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+
+    // Serialize the Kernel node to JSON
+    nlohmann::json j;
+    serializer.kernel_to_json(j, kernel);
+
+    // Check if the JSON contains the expected keys
+    EXPECT_TRUE(j.contains("type"));
+    EXPECT_EQ(j["type"], "kernel");
+    EXPECT_TRUE(j.contains("suffix"));
+    EXPECT_EQ(j["suffix"], "suffix");
+
+    EXPECT_TRUE(j.contains("children"));
+    EXPECT_EQ(j["children"]["type"], "sequence");
+    EXPECT_EQ(j["children"]["children"].size(), 1);
+    EXPECT_EQ(j["children"]["children"][0]["type"], "block");
+
+    EXPECT_TRUE(j.contains("blockDim_x"));
+    EXPECT_EQ(j["blockDim_x"], "__daisy_blockDim_x_suffix");
+    EXPECT_TRUE(j.contains("blockDim_y"));
+    EXPECT_EQ(j["blockDim_y"], "__daisy_blockDim_y_suffix");
+    EXPECT_TRUE(j.contains("blockDim_z"));
+    EXPECT_EQ(j["blockDim_z"], "__daisy_blockDim_z_suffix");
+    EXPECT_TRUE(j.contains("gridDim_x"));
+    EXPECT_EQ(j["gridDim_x"], "__daisy_gridDim_x_suffix");
+    EXPECT_TRUE(j.contains("gridDim_y"));
+    EXPECT_EQ(j["gridDim_y"], "__daisy_gridDim_y_suffix");
+    EXPECT_TRUE(j.contains("gridDim_z"));
+    EXPECT_EQ(j["gridDim_z"], "__daisy_gridDim_z_suffix");
+    EXPECT_TRUE(j.contains("threadIdx_x"));
+    EXPECT_EQ(j["threadIdx_x"], "__daisy_threadIdx_x_suffix");
+    EXPECT_TRUE(j.contains("threadIdx_y"));
+    EXPECT_EQ(j["threadIdx_y"], "__daisy_threadIdx_y_suffix");
+    EXPECT_TRUE(j.contains("threadIdx_z"));
+    EXPECT_EQ(j["threadIdx_z"], "__daisy_threadIdx_z_suffix");
+    EXPECT_TRUE(j.contains("blockIdx_x"));
+    EXPECT_EQ(j["blockIdx_x"], "__daisy_blockIdx_x_suffix");
+    EXPECT_TRUE(j.contains("blockIdx_y"));
+    EXPECT_EQ(j["blockIdx_y"], "__daisy_blockIdx_y_suffix");
+    EXPECT_TRUE(j.contains("blockIdx_z"));
+    EXPECT_EQ(j["blockIdx_z"], "__daisy_blockIdx_z_suffix");
+}
+
+TEST(JSONSerializerTest, ReturnToJSON) {
+    // Create a sample Return node
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
+    auto& root = builder.subject().root();
+
+    auto& scope = builder.add_return(root);
+
+    // Create a JSONSerializer object
+    std::string filename = "test_sdfg.json";
+    auto sdfg = builder.move();
+    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+
+    // Serialize the Return node to JSON
+    nlohmann::json j;
+    serializer.return_node_to_json(j, scope);
+
+    // Check if the JSON contains the expected keys
+    EXPECT_TRUE(j.contains("type"));
+    EXPECT_EQ(j["type"], "return");
+}
+
+TEST(JSONSerializerTest, SequenceToJSON) {
+    // Create a sample Sequence node
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
+    auto& root = builder.subject().root();
+
+    auto& scope = builder.add_sequence(root);
+    auto& block1 = builder.add_block(scope);
+    auto& block2 = builder.add_block(scope);
+
+    // Create a JSONSerializer object
+    std::string filename = "test_sdfg.json";
+    auto sdfg = builder.move();
+    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+
+    // Serialize the Sequence node to JSON
+    nlohmann::json j;
+    serializer.sequence_to_json(j, scope);
+
+    // Check if the JSON contains the expected keys
+    EXPECT_TRUE(j.contains("type"));
+    EXPECT_EQ(j["type"], "sequence");
+    EXPECT_TRUE(j.contains("children"));
+    EXPECT_EQ(j["children"].size(), 2);
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize) {

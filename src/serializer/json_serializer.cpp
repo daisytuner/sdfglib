@@ -187,22 +187,24 @@ void JSONSerializer::while_node_to_json(nlohmann::json& j,
     nlohmann::json body_json;
     sequence_to_json(body_json, while_node.root());
     j["children"] = body_json;
+    j["element_id"] = while_node.element_id();
 }
 
 void JSONSerializer::break_node_to_json(nlohmann::json& j,
                                         const sdfg::structured_control_flow::Break& break_node) {
     j["type"] = "break";
+    j["target"] = break_node.loop().element_id();
 }
 void JSONSerializer::continue_node_to_json(
     nlohmann::json& j, const sdfg::structured_control_flow::Continue& continue_node) {
     j["type"] = "continue";
+    j["target"] = continue_node.loop().element_id();
 }
 
 void JSONSerializer::kernel_to_json(nlohmann::json& j,
                                     const sdfg::structured_control_flow::Kernel& kernel_node) {
     j["type"] = "kernel";
     j["name"] = kernel_node.name();
-    j["inputs"] = nlohmann::json::array();
     j["suffix"] = kernel_node.suffix();
 
     j["blockDim_x"] = kernel_node.blockDim_x()->__str__();
@@ -218,10 +220,15 @@ void JSONSerializer::kernel_to_json(nlohmann::json& j,
     j["blockIdx_x"] = kernel_node.blockIdx_x()->__str__();
     j["blockIdx_y"] = kernel_node.blockIdx_y()->__str__();
     j["blockIdx_z"] = kernel_node.blockIdx_z()->__str__();
+
+    nlohmann::json body_json;
+    sequence_to_json(body_json, kernel_node.root());
+    j["children"] = body_json;
 }
 
 void JSONSerializer::return_node_to_json(nlohmann::json& j,
                                          const sdfg::structured_control_flow::Return& return_node) {
+    j["type"] = "return";
 }
 
 void JSONSerializer::sequence_to_json(nlohmann::json& j,
@@ -254,6 +261,12 @@ void JSONSerializer::sequence_to_json(nlohmann::json& j,
         } else if (auto return_node =
                        dynamic_cast<const sdfg::structured_control_flow::Return*>(&child)) {
             return_node_to_json(child_json, *return_node);
+        } else if (auto break_node =
+                       dynamic_cast<const sdfg::structured_control_flow::Break*>(&child)) {
+            break_node_to_json(child_json, *break_node);
+        } else if (auto continue_node =
+                       dynamic_cast<const sdfg::structured_control_flow::Continue*>(&child)) {
+            continue_node_to_json(child_json, *continue_node);
         } else {
             throw std::runtime_error("Unknown child type");
         }
