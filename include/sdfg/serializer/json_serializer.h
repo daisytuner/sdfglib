@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <nlohmann/json_fwd.hpp>
 #include <string>
 
 #include "nlohmann/json.hpp"
@@ -25,7 +26,7 @@ class JSONSerializer {
     JSONSerializer(const std::string& filename, std::unique_ptr<sdfg::StructuredSDFG>& sdfg)
         : filename_(filename), sdfg_(sdfg) {}
 
-    void serialize();
+    nlohmann::json serialize();
 
     std::unique_ptr<sdfg::StructuredSDFG> deserialize();
 
@@ -53,8 +54,8 @@ class JSONSerializer {
     void transition_to_json(nlohmann::json& j,
                             const sdfg::structured_control_flow::Transition& transition);
 
-    void json_to_structure_definitions(const nlohmann::json& j,
-                                       sdfg::builder::StructuredSDFGBuilder& builder);
+    void json_to_structure_definition(const nlohmann::json& j,
+                                      sdfg::builder::StructuredSDFGBuilder& builder);
     void json_to_containers(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder);
     void json_to_dataflow(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
                           sdfg::structured_control_flow::Block& parent);
@@ -80,6 +81,8 @@ class JSONSerializer {
                              sdfg::structured_control_flow::Sequence& parent);
     void json_to_transition(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
                             sdfg::structured_control_flow::Sequence& parent);
+    std::unique_ptr<sdfg::types::IType> json_to_type(const nlohmann::json& j);
+    std::vector<std::pair<std::string, types::Scalar>> json_to_arguments(const nlohmann::json& j);
 };
 
 }  // namespace serializer
