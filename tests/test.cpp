@@ -47,6 +47,7 @@
 #include "replace/symbol_replace_test.cpp"
 #include "schedule_test.cpp"
 #include "sdfg_test.cpp"
+#include "serializer/json_serializer_test.cpp"
 #include "structured_sdfg_test.cpp"
 #include "symbolic/analysis_test.cpp"
 #include "symbolic/assumptions_test.cpp"
