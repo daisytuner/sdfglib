@@ -29,7 +29,7 @@ TEST(JSONSerializerTest, DatatypeToJSON_Scalar) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the data type to JSON
     serializer.type_to_json(j, scalar_type);
@@ -57,7 +57,7 @@ TEST(JSONSerializerTest, DatatypeToJSON_Pointer) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the data type to JSON
     serializer.type_to_json(j, pointer_type);
@@ -86,7 +86,7 @@ TEST(JSONSerializerTest, DatatypeToJSON_Structure) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the data type to JSON
     serializer.type_to_json(j, structure_type);
@@ -114,7 +114,7 @@ TEST(JSONSerializerTest, DatatypeToJSON_Array) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the data type to JSON
     serializer.type_to_json(j, array_type);
@@ -164,7 +164,7 @@ TEST(JSONSerializerTest, DataflowToJSON) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the Block to JSON
     nlohmann::json j;
@@ -232,7 +232,7 @@ TEST(JSONSerializerTest, BlockToJSON) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the Block to JSON
     nlohmann::json j;
@@ -259,7 +259,7 @@ TEST(JSONSerializerTest, ForNodeToJSON) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the For node to JSON
     nlohmann::json j;
@@ -300,7 +300,7 @@ TEST(JSONSerializerTest, IfElseToJSON) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the IfElse node to JSON
     nlohmann::json j;
@@ -339,7 +339,7 @@ TEST(JSONSerializerTest, WhileToJSON_break) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the While node to JSON
     nlohmann::json j;
@@ -372,7 +372,7 @@ TEST(JSONSerializerTest, WhileToJSON_continue) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the While node to JSON
     nlohmann::json j;
@@ -404,7 +404,7 @@ TEST(JSONSerializerTest, KernelToJSON) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the Kernel node to JSON
     nlohmann::json j;
@@ -432,7 +432,7 @@ TEST(JSONSerializerTest, ReturnToJSON) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the Return node to JSON
     nlohmann::json j;
@@ -458,7 +458,7 @@ TEST(JSONSerializerTest, SequenceToJSON) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the Sequence node to JSON
     nlohmann::json j;
@@ -502,7 +502,7 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Scalar) {
     std::string filename = "test_sdfg.json";
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the data type to JSON
     serializer.type_to_json(j, scalar_type);
@@ -531,7 +531,7 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Pointer) {
     std::string filename = "test_sdfg.json";
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the data type to JSON
     serializer.type_to_json(j, pointer_type);
@@ -571,7 +571,7 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Structure) {
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
     auto sdfg = builder.move();
 
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
     // Serialize the data type to JSON
     serializer.type_to_json(j, structure_type);
     // Deserialize the JSON back into a Structure data type
@@ -599,7 +599,7 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Array) {
     std::string filename = "test_sdfg.json";
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the data type to JSON
     serializer.type_to_json(j, array_type);
@@ -642,7 +642,7 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_StructureDefinition) {
     std::string filename = "test_sdfg.json";
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the StructureDefinition to JSON
     serializer.structure_definition_to_json(j, structure_definition);
@@ -702,10 +702,10 @@ TEST(JSONSerializerTest, SerializeDeserialize_Containers) {
     builder.add_container("N", base_desc, false, true);
 
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the ContainerType to JSON
-    j = serializer.serialize();
+    j = serializer.serialize(sdfg);
 
     // define sdfg builder for deserialization
     sdfg::builder::StructuredSDFGBuilder builder_deserialize("test_sdfg");
@@ -804,7 +804,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
     nlohmann::json j;
     // Serialize the DataflowGraph to JSON
     auto& block_new = dynamic_cast<sdfg::structured_control_flow::Block&>(sdfg->root().at(0).first);
@@ -940,7 +940,7 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
     nlohmann::json j;
     // Serialize the DataflowGraph to JSON
     auto& block_new = dynamic_cast<sdfg::structured_control_flow::Block&>(sdfg->root().at(0).first);
@@ -1077,7 +1077,7 @@ TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
     nlohmann::json j;
     // Serialize the DataflowGraph to JSON
     auto& block_new = dynamic_cast<sdfg::structured_control_flow::Block&>(sdfg->root().at(0).first);
@@ -1219,12 +1219,12 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
     nlohmann::json j;
     // Serialize the DataflowGraph to JSON
     auto& block_new = dynamic_cast<sdfg::structured_control_flow::Block&>(sdfg->root().at(0).first);
 
-    j = serializer.serialize();
+    j = serializer.serialize(sdfg);
 
     // Deserialize the JSON back into a DataflowGraph object
     auto des_sdfg = serializer.deserialize(j);
@@ -1352,7 +1352,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_forloop) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
     nlohmann::json j;
 
     // Serialize the DataflowGraph to JSON
@@ -1405,7 +1405,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_ifelse) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the IfElse node to JSON
     nlohmann::json j;
@@ -1459,7 +1459,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_sequence) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the Sequence node to JSON
     nlohmann::json j;
@@ -1502,7 +1502,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_while) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the Sequence node to JSON
     nlohmann::json j;
@@ -1543,7 +1543,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_while_break) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the Sequence node to JSON
     nlohmann::json j;
@@ -1587,7 +1587,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_while_continue) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the Sequence node to JSON
     nlohmann::json j;
@@ -1626,7 +1626,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_kernel) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the Sequence node to JSON
     nlohmann::json j;
@@ -1677,7 +1677,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_return) {
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the Sequence node to JSON
     nlohmann::json j;
@@ -1705,10 +1705,10 @@ TEST(JSONSerializerTest, SerializeDeserialize) {
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
-    sdfg::serializer::JSONSerializer serializer(filename, sdfg);
+    sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the SDFG to JSON
-    auto j = serializer.serialize();
+    auto j = serializer.serialize(sdfg);
 
     // Deserialize the JSON back into a StructuredSDFG object
     auto sdfg_new = serializer.deserialize(j);

@@ -19,18 +19,12 @@ namespace serializer {
 
 class JSONSerializer {
    private:
-    std::string filename_;
-    nlohmann::json json_data_;
-
-    std::unique_ptr<sdfg::StructuredSDFG>& sdfg_;
-
     std::unordered_map<long, sdfg::structured_control_flow::While&> while_map_;
 
    public:
-    JSONSerializer(const std::string& filename, std::unique_ptr<sdfg::StructuredSDFG>& sdfg)
-        : filename_(filename), sdfg_(sdfg) {}
+    JSONSerializer() {}
 
-    nlohmann::json serialize();
+    nlohmann::json serialize(std::unique_ptr<sdfg::StructuredSDFG>& sdfg);
 
     std::unique_ptr<sdfg::StructuredSDFG> deserialize(nlohmann::json& j);
 
