@@ -9,6 +9,7 @@
 
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/library_node.h"
+#include "sdfg/element.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
@@ -17,10 +18,14 @@
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
 #include "sdfg/structured_sdfg.h"
+#include "sdfg/symbolic/symbolic.h"
 #include "sdfg/types/scalar.h"
 #include "sdfg/types/type.h"
 #include "symengine/expression.h"
+#include "symengine/logic.h"
 #include "symengine/printers.h"
+#include "symengine/symbol.h"
+#include "symengine/symengine_rcp.h"
 
 namespace sdfg {
 namespace serializer {
@@ -162,8 +167,8 @@ void JSONSerializer::block_to_json(nlohmann::json& j,
     j["dataflow"] = dataflow_json;
 }
 
-void JSONSerializer::for_node_to_json(nlohmann::json& j,
-                                      const sdfg::structured_control_flow::For& for_node) {
+void JSONSerializer::for_to_json(nlohmann::json& j,
+                                 const sdfg::structured_control_flow::For& for_node) {
     j["type"] = "for";
     j["indvar"] = for_node.indvar()->__str__();
     j["init"] = for_node.init()->__str__();
@@ -213,22 +218,7 @@ void JSONSerializer::continue_node_to_json(
 void JSONSerializer::kernel_to_json(nlohmann::json& j,
                                     const sdfg::structured_control_flow::Kernel& kernel_node) {
     j["type"] = "kernel";
-    j["name"] = kernel_node.name();
     j["suffix"] = kernel_node.suffix();
-
-    j["blockDim_x"] = kernel_node.blockDim_x()->__str__();
-    j["blockDim_y"] = kernel_node.blockDim_y()->__str__();
-    j["blockDim_z"] = kernel_node.blockDim_z()->__str__();
-    j["gridDim_x"] = kernel_node.gridDim_x()->__str__();
-    j["gridDim_y"] = kernel_node.gridDim_y()->__str__();
-    j["gridDim_z"] = kernel_node.gridDim_z()->__str__();
-
-    j["threadIdx_x"] = kernel_node.threadIdx_x()->__str__();
-    j["threadIdx_y"] = kernel_node.threadIdx_y()->__str__();
-    j["threadIdx_z"] = kernel_node.threadIdx_z()->__str__();
-    j["blockIdx_x"] = kernel_node.blockIdx_x()->__str__();
-    j["blockIdx_y"] = kernel_node.blockIdx_y()->__str__();
-    j["blockIdx_z"] = kernel_node.blockIdx_z()->__str__();
 
     nlohmann::json body_json;
     sequence_to_json(body_json, kernel_node.root());
@@ -244,6 +234,7 @@ void JSONSerializer::sequence_to_json(nlohmann::json& j,
                                       const sdfg::structured_control_flow::Sequence& sequence) {
     j["type"] = "sequence";
     j["children"] = nlohmann::json::array();
+    j["transitions"] = nlohmann::json::array();
 
     for (size_t i = 0; i < sequence.size(); i++) {
         nlohmann::json child_json;
@@ -254,7 +245,7 @@ void JSONSerializer::sequence_to_json(nlohmann::json& j,
             block_to_json(child_json, *block);
         } else if (auto for_node =
                        dynamic_cast<const sdfg::structured_control_flow::For*>(&child)) {
-            for_node_to_json(child_json, *for_node);
+            for_to_json(child_json, *for_node);
         } else if (auto sequence_node =
                        dynamic_cast<const sdfg::structured_control_flow::Sequence*>(&child)) {
             sequence_to_json(child_json, *sequence_node);
@@ -280,6 +271,8 @@ void JSONSerializer::sequence_to_json(nlohmann::json& j,
             throw std::runtime_error("Unknown child type");
         }
 
+        j["children"].push_back(child_json);
+
         // Add transition information
         nlohmann::json transition_json;
         transition_json["type"] = "transition";
@@ -290,7 +283,8 @@ void JSONSerializer::sequence_to_json(nlohmann::json& j,
             assignment_json["expression"] = assignment.second->__str__();
             transition_json["assignments"].push_back(assignment_json);
         }
-        j["children"].push_back(child_json);
+
+        j["transitions"].push_back(transition_json);
     }
 }
 
@@ -344,27 +338,30 @@ void JSONSerializer::structure_definition_to_json(
  * * Deserialization logic
  */
 
-std::unique_ptr<sdfg::StructuredSDFG> JSONSerializer::deserialize() {
-    std::ifstream file(filename_);
-    if (file.is_open()) {
-        nlohmann::json j;
-        file >> j;
-        file.close();
+std::unique_ptr<sdfg::StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
+    assert(j.contains("name"));
+    assert(j["name"].is_string());
 
-        // Deserialize the JSON data into the StructuredSDFG object
-        // This part is not implemented in this example
-        // You would need to implement the logic to convert the JSON data back into the
-        // StructuredSDFG object
-        assert(j.contains("name"));
-        sdfg::builder::StructuredSDFGBuilder builder(j["name"]);
-        // TODO: implement the deserialization logic for structures, containers, arguments,
-        // externals, and root
+    builder::StructuredSDFGBuilder builder(j["name"]);
 
-        return builder.move();
-
-    } else {
-        throw std::runtime_error("Could not open file " + filename_);
+    // deserialize structures
+    assert(j.contains("structures"));
+    assert(j["structures"].is_array());
+    for (const auto& structure : j["structures"]) {
+        assert(structure.contains("name"));
+        assert(structure["name"].is_string());
+        json_to_structure_definition(structure, builder);
     }
+
+    // deserialize containers
+    json_to_containers(j, builder);
+
+    // deserialize root node
+    assert(j.contains("root"));
+    auto& root = builder.subject().root();
+    json_to_sequence(j["root"], builder, root);
+
+    return builder.move();
 }
 
 void JSONSerializer::json_to_structure_definition(const nlohmann::json& j,
@@ -496,43 +493,226 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
 }
 
 void JSONSerializer::json_to_sequence(const nlohmann::json& j,
-                                      sdfg::builder::StructuredSDFGBuilder& builder) {}
+                                      sdfg::builder::StructuredSDFGBuilder& builder,
+                                      sdfg::structured_control_flow::Sequence& sequence) {
+    assert(j.contains("type"));
+    assert(j["type"].is_string());
+    assert(j.contains("children"));
+    assert(j["children"].is_array());
+    assert(j.contains("transitions"));
+    assert(j["transitions"].is_array());
+    assert(j["transitions"].size() == j["children"].size());
+    std::string type = j["type"];
+    if (type == "sequence") {
+        for (size_t i = 0; i < j["children"].size(); i++) {
+            auto& child = j["children"][i];
+            auto& transition = j["transitions"][i];
+            assert(child.contains("type"));
+            assert(child["type"].is_string());
 
-void JSONSerializer::json_to_block(const nlohmann::json& j,
-                                   sdfg::builder::StructuredSDFGBuilder& builder,
-                                   sdfg::structured_control_flow::Sequence& parent) {}
+            assert(transition.contains("type"));
+            assert(transition["type"].is_string());
+            assert(transition.contains("assignments"));
+            assert(transition["assignments"].is_array());
+            symbolic::Assignments assignments;
+            for (const auto& assignment : transition["assignments"]) {
+                assert(assignment.contains("symbol"));
+                assert(assignment["symbol"].is_string());
+                assert(assignment.contains("expression"));
+                assert(assignment["expression"].is_string());
+                assignments.insert({SymEngine::symbol(assignment["symbol"]),
+                                    SymEngine::Expression(assignment["expression"])});
+            }
+
+            if (child["type"] == "block") {
+                json_to_block_node(child, builder, sequence, assignments);
+            } else if (child["type"] == "for") {
+                json_to_for_node(child, builder, sequence, assignments);
+            } else if (child["type"] == "if_else") {
+                json_to_if_else_node(child, builder, sequence);
+            } else if (child["type"] == "while") {
+                json_to_while_node(child, builder, sequence, assignments);
+            } else if (child["type"] == "break") {
+                json_to_break_node(child, builder, sequence);
+            } else if (child["type"] == "continue") {
+                json_to_continue_node(child, builder, sequence);
+            } else if (child["type"] == "kernel") {
+                json_to_kernel_node(child, builder, sequence);
+            } else if (child["type"] == "return") {
+                json_to_return_node(child, builder, sequence, assignments);
+            } else {
+                throw std::runtime_error("Unknown child type");
+            }
+        }
+    } else {
+        throw std::runtime_error("expected sequence type");
+    }
+}
+
+void JSONSerializer::json_to_block_node(const nlohmann::json& j,
+                                        sdfg::builder::StructuredSDFGBuilder& builder,
+                                        sdfg::structured_control_flow::Sequence& parent,
+                                        symbolic::Assignments& assignments) {
+    assert(j.contains("type"));
+    assert(j["type"].is_string());
+    assert(j.contains("dataflow"));
+    assert(j["dataflow"].is_object());
+    auto& block = builder.add_block(parent, assignments);
+    assert(j["dataflow"].contains("type"));
+    assert(j["dataflow"]["type"].is_string());
+    std::string type = j["dataflow"]["type"];
+    if (type == "dataflow") {
+        json_to_dataflow(j["dataflow"], builder, block);
+    } else {
+        throw std::runtime_error("Unknown dataflow type");
+    }
+}
 
 void JSONSerializer::json_to_for_node(const nlohmann::json& j,
                                       sdfg::builder::StructuredSDFGBuilder& builder,
-                                      sdfg::structured_control_flow::Sequence& parent) {}
+                                      sdfg::structured_control_flow::Sequence& parent,
+                                      symbolic::Assignments& assignments) {
+    assert(j.contains("type"));
+    assert(j["type"].is_string());
+    assert(j.contains("indvar"));
+    assert(j["indvar"].is_string());
+    assert(j.contains("init"));
+    assert(j["init"].is_string());
+    assert(j.contains("condition"));
+    assert(j["condition"].is_string());
+    assert(j.contains("update"));
+    assert(j["update"].is_string());
+    assert(j.contains("children"));
+    assert(j["children"].is_object());
+
+    symbolic::Symbol indvar = SymEngine::symbol(j["indvar"]);
+    symbolic::Expression init = SymEngine::Expression(j["init"]);
+    symbolic::Expression condition_exp = SymEngine::Expression((j["condition"]));
+    symbolic::Condition condition =
+        SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(condition_exp);
+    symbolic::Expression update = SymEngine::Expression(j["update"]);
+    auto& for_node = builder.add_for(parent, indvar, condition, init, update, assignments);
+
+    assert(j["children"].contains("type"));
+    assert(j["children"]["type"].is_string());
+    std::string type = j["children"]["type"];
+    if (type == "sequence") {
+        json_to_sequence(j["children"], builder, for_node.root());
+    } else {
+        throw std::runtime_error("Unknown child type");
+    }
+}
 
 void JSONSerializer::json_to_if_else_node(const nlohmann::json& j,
                                           sdfg::builder::StructuredSDFGBuilder& builder,
-                                          sdfg::structured_control_flow::Sequence& parent) {}
+                                          sdfg::structured_control_flow::Sequence& parent) {
+    assert(j.contains("type"));
+    assert(j["type"].is_string());
+    assert(j["type"] == "if_else");
+    assert(j.contains("branches"));
+    assert(j["branches"].is_array());
+    auto& if_else_node = builder.add_if_else(parent);
+    for (const auto& branch : j["branches"]) {
+        assert(branch.contains("condition"));
+        assert(branch["condition"].is_string());
+        assert(branch.contains("children"));
+        assert(branch["children"].is_object());
+        symbolic::Expression condition_exp = SymEngine::Expression(branch["condition"]);
+        symbolic::Condition condition =
+            SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(condition_exp);
+        auto& true_case = builder.add_case(if_else_node, condition);
+        assert(branch["children"].contains("type"));
+        assert(branch["children"]["type"].is_string());
+        std::string type = branch["children"]["type"];
+        if (type == "sequence") {
+            json_to_sequence(branch["children"], builder, true_case);
+        } else {
+            throw std::runtime_error("Unknown child type");
+        }
+    }
+}
 
 void JSONSerializer::json_to_while_node(const nlohmann::json& j,
                                         sdfg::builder::StructuredSDFGBuilder& builder,
-                                        sdfg::structured_control_flow::Sequence& parent) {}
+                                        sdfg::structured_control_flow::Sequence& parent,
+                                        symbolic::Assignments& assignments) {
+    assert(j.contains("type"));
+    assert(j["type"].is_string());
+    assert(j["type"] == "while");
+    assert(j.contains("children"));
+    assert(j["children"].is_object());
+    assert(j.contains("element_id"));
+    assert(j["element_id"].is_number_integer());
+    auto& while_node = builder.add_while(parent, assignments);
+
+    while_map_.insert({j["element_id"], while_node});
+
+    assert(j["children"].contains("type"));
+    assert(j["children"]["type"].is_string());
+    std::string type = j["children"]["type"];
+    if (type == "sequence") {
+        json_to_sequence(j["children"], builder, while_node.root());
+    } else {
+        throw std::runtime_error("Unknown child type");
+    }
+}
 
 void JSONSerializer::json_to_break_node(const nlohmann::json& j,
                                         sdfg::builder::StructuredSDFGBuilder& builder,
-                                        sdfg::structured_control_flow::Sequence& parent) {}
+                                        sdfg::structured_control_flow::Sequence& parent) {
+    assert(j.contains("type"));
+    assert(j["type"].is_string());
+    assert(j["type"] == "break");
+    assert(j.contains("target"));
+    assert(j["target"].is_number_integer());
+    assert(while_map_.contains(j["target"]));
+    auto& break_node = builder.add_break(parent, while_map_.at(j["target"]));
+}
 
 void JSONSerializer::json_to_continue_node(const nlohmann::json& j,
                                            sdfg::builder::StructuredSDFGBuilder& builder,
-                                           sdfg::structured_control_flow::Sequence& parent) {}
+                                           sdfg::structured_control_flow::Sequence& parent) {
+    assert(j.contains("type"));
+    assert(j["type"].is_string());
+    assert(j["type"] == "continue");
+    assert(j.contains("target"));
+    assert(j["target"].is_number_integer());
+    assert(while_map_.contains(j["target"]));
+    auto& continue_node = builder.add_continue(parent, while_map_.at(j["target"]));
+}
 
 void JSONSerializer::json_to_kernel_node(const nlohmann::json& j,
                                          sdfg::builder::StructuredSDFGBuilder& builder,
-                                         sdfg::structured_control_flow::Sequence& parent) {}
+                                         sdfg::structured_control_flow::Sequence& parent) {
+    assert(j.contains("type"));
+    assert(j["type"].is_string());
+    assert(j["type"] == "kernel");
+    assert(j.contains("suffix"));
+    assert(j["suffix"].is_string());
+    assert(j.contains("children"));
+    assert(j["children"].is_object());
+    auto& kernel_node = builder.add_kernel(parent, j["suffix"]);
+
+    assert(j["children"].contains("type"));
+    assert(j["children"]["type"].is_string());
+    std::string type = j["children"]["type"];
+    if (type == "sequence") {
+        json_to_sequence(j["children"], builder, kernel_node.root());
+    } else {
+        throw std::runtime_error("Unknown child type");
+    }
+}
 
 void JSONSerializer::json_to_return_node(const nlohmann::json& j,
                                          sdfg::builder::StructuredSDFGBuilder& builder,
-                                         sdfg::structured_control_flow::Sequence& parent) {}
+                                         sdfg::structured_control_flow::Sequence& parent,
+                                         sdfg::symbolic::Assignments& assignments) {
+    assert(j.contains("type"));
+    assert(j["type"].is_string());
+    assert(j["type"] == "return");
 
-void JSONSerializer::json_to_transition(const nlohmann::json& j,
-                                        sdfg::builder::StructuredSDFGBuilder& builder,
-                                        sdfg::structured_control_flow::Sequence& parent) {}
+    auto& return_node = builder.add_return(parent, assignments);
+}
 
 std::unique_ptr<sdfg::types::IType> JSONSerializer::json_to_type(const nlohmann::json& j) {
     if (j.contains("type")) {
