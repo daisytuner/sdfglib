@@ -133,6 +133,8 @@ target_include_directories(sdfglib PUBLIC
     include
     ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/symengine
     ${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine
+    ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/symengine/symengine/utilities/cereal/include
+    ${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine/symengine/utilities/cereal/include
 )
 
 # Add coverage flags if enabled
