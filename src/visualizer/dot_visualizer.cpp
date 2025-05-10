@@ -260,7 +260,10 @@ void DotVisualizer::visualize() {
         this->stream_ << "subgraph cluster_" << sdfg.name() << " {" << std::endl;
         this->stream_.setIndent(8);
         this->stream_ << "node [style=filled,fillcolor=white];" << std::endl
-                      << "style=filled;color=lightblue;" << std::endl;
+                      << "style=filled;color=lightblue;label=\"";
+        std::string condition = this->expression(this->schedule_.condition(i)->__str__());
+        if (condition != "True") this->stream_ << condition;
+        this->stream_ << "\";" << std::endl;
         this->visualizeNode(this->schedule_.schedule(i), function.root());
         this->stream_.setIndent(4);
         this->stream_ << "}" << std::endl;

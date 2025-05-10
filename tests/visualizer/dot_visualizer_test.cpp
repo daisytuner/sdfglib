@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -10,8 +9,6 @@
 #include "fixtures/polybench.h"
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/codegen/code_generators/c_code_generator.h"
-#include "sdfg/codegen/code_generators/cuda_code_generator.h"
 #include "sdfg/conditional_schedule.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/passes/structured_control_flow/block_fusion.h"
@@ -72,13 +69,44 @@ TEST(DotVisualizerTest, transpose) {
     auto sdfg2 = builder.move();
     ConditionalSchedule schedule(sdfg2);
 
-    codegen::CCodeGenerator cgen(schedule, false);
-    EXPECT_TRUE(cgen.generate());
-    std::cout << cgen.main().str() << std::endl << std::endl;
-
     visualizer::DotVisualizer dot(schedule);
     dot.visualize();
-    std::cout << dot.getStream().str() << std::endl;
+    EXPECT_EQ(dot.getStream().str(), R"-(digraph transpose {
+    graph [compound=true];
+    subgraph cluster_transpose {
+        node [style=filled,fillcolor=white];
+        style=filled;color=lightblue;label="";
+        /* BEGIN: Sequence */
+        /* BEGIN: For */
+        subgraph cluster___node_1 {
+            style=filled;shape=box;fillcolor=white;color=black;label="for: i = 0:(M-1)";
+            __node_1 [shape=point,style=invis,label=""];
+            /* BEGIN: Sequence */
+            /* BEGIN: For */
+            subgraph cluster___node_4 {
+                style=filled;shape=box;fillcolor=white;color=black;label="for: j = 0:(N-1):2";
+                __node_4 [shape=point,style=invis,label=""];
+                /* BEGIN: Sequence */
+                /* BEGIN: Block */
+                subgraph cluster___node_7 {
+                    style=filled;shape=box;fillcolor=white;color=black;label="";
+                    __element_9 [penwidth=3.0,label="A"];
+                    __element_11 [shape=octagon,label="_out = _in"];
+                    __element_9 -> __element_11 [label="   _in = A[i][j]   "];
+                    __element_11 -> __element_10 [label="   B[j][i] = _out   "];
+                    __element_10 [penwidth=3.0,label="B"];
+                }
+                /* END: Block */
+                /* END: Sequence */
+            }
+            /* END: For */
+            /* END: Sequence */
+        }
+        /* END: For */
+        /* END: Sequence */
+    }
+}
+)-");
 }
 
 TEST(DotVisualizerTest, syrk) {
@@ -87,20 +115,85 @@ TEST(DotVisualizerTest, syrk) {
 
     visualizer::DotVisualizer dot(schedule);
     dot.visualize();
-    std::cout << dot.getStream().str() << std::endl;
-
-    auto sdfg2 = syrk();
-    builder::StructuredSDFGBuilder builder_opt(sdfg2);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::BlockFusionPass fusion_pass;
-    fusion_pass.run(builder_opt, analysis_manager);
-
-    auto sdfg3 = builder_opt.move();
-    ConditionalSchedule schedule2(sdfg3);
-
-    visualizer::DotVisualizer dot2(schedule2);
-    dot2.visualize();
-    std::cout << dot2.getStream().str() << std::endl;
+    EXPECT_EQ(dot.getStream().str(), R"-(digraph sdfg_1 {
+    graph [compound=true];
+    subgraph cluster_sdfg_1 {
+        node [style=filled,fillcolor=white];
+        style=filled;color=lightblue;label="";
+        /* BEGIN: Sequence */
+        /* BEGIN: For */
+        subgraph cluster___node_1 {
+            style=filled;shape=box;fillcolor=white;color=black;label="for: i = 0:(N-1)";
+            __node_1 [shape=point,style=invis,label=""];
+            /* BEGIN: Sequence */
+            /* BEGIN: For */
+            subgraph cluster___node_4 {
+                style=filled;shape=box;fillcolor=white;color=black;label="for: j_1 = 0:i";
+                __node_4 [shape=point,style=invis,label=""];
+                /* BEGIN: Sequence */
+                /* BEGIN: Block */
+                subgraph cluster___node_7 {
+                    style=filled;shape=box;fillcolor=white;color=black;label="";
+                    __element_11 [penwidth=3.0,label="beta"];
+                    __element_9 [penwidth=3.0,label="C"];
+                    __element_12 [shape=octagon,label="_out = _in1 * _in2"];
+                    __element_9 -> __element_12 [label="   _in1 = C[i][j_1]   "];
+                    __element_11 -> __element_12 [label="   _in2 = beta   "];
+                    __element_12 -> __element_10 [label="   C[i][j_1] = _out   "];
+                    __element_10 [penwidth=3.0,label="C"];
+                }
+                /* END: Block */
+                /* END: Sequence */
+            }
+            /* END: For */
+            /* BEGIN: For */
+            subgraph cluster___node_16 {
+                style=filled;shape=box;fillcolor=white;color=black;label="for: k = 0:(M-1)";
+                __node_16 [shape=point,style=invis,label=""];
+                /* BEGIN: Sequence */
+                /* BEGIN: For */
+                subgraph cluster___node_19 {
+                    style=filled;shape=box;fillcolor=white;color=black;label="for: j_2 = 0:i";
+                    __node_19 [shape=point,style=invis,label=""];
+                    /* BEGIN: Sequence */
+                    /* BEGIN: Block */
+                    subgraph cluster___node_22 {
+                        style=filled;shape=box;fillcolor=white;color=black;label="";
+                        __element_24 [penwidth=3.0,label="A"];
+                        __element_26 [shape=octagon,label="_out = _in1 * _in2"];
+                        __element_24 -> __element_26 [label="   _in1 = A[j_2][k]   "];
+                        __element_24 -> __element_26 [label="   _in2 = A[i][k]   "];
+                        __element_26 -> __element_25 [label="   tmp = _out   "];
+                        __element_25 [penwidth=3.0,style="dashed,filled",label="tmp"];
+                    }
+                    /* END: Block */
+                    /* BEGIN: Block */
+                    subgraph cluster___node_30 {
+                        style=filled;shape=box;fillcolor=white;color=black;label="";
+                        __element_34 [penwidth=3.0,style="dashed,filled",label="tmp"];
+                        __element_32 [penwidth=3.0,label="C"];
+                        __element_35 [shape=octagon,label="_out = _in1 + _in2"];
+                        __element_32 -> __element_35 [label="   _in1 = C[i][j_2]   "];
+                        __element_34 -> __element_35 [label="   _in2 = tmp   "];
+                        __element_35 -> __element_33 [label="   C[i][j_2] = _out   "];
+                        __element_33 [penwidth=3.0,label="C"];
+                    }
+                    /* END: Block */
+                    __element_26 -> __element_35 [ltail="cluster___node_22",lhead="cluster___node_30",minlen=3];
+                    /* END: Sequence */
+                }
+                /* END: For */
+                /* END: Sequence */
+            }
+            /* END: For */
+            __node_4 -> __node_16 [ltail="cluster___node_4",lhead="cluster___node_16",minlen=3];
+            /* END: Sequence */
+        }
+        /* END: For */
+        /* END: Sequence */
+    }
+}
+)-");
 }
 
 TEST(DotVisualizerTest, block_fusion_chain) {
@@ -144,7 +237,30 @@ TEST(DotVisualizerTest, block_fusion_chain) {
 
     visualizer::DotVisualizer dot(schedule);
     dot.visualize();
-    std::cout << dot.getStream().str() << std::endl;
+    EXPECT_EQ(dot.getStream().str(), R"-(digraph sdfg_1 {
+    graph [compound=true];
+    subgraph cluster_sdfg_1 {
+        node [style=filled,fillcolor=white];
+        style=filled;color=lightblue;label="";
+        /* BEGIN: Sequence */
+        /* BEGIN: Block */
+        subgraph cluster___node_1 {
+            style=filled;shape=box;fillcolor=white;color=black;label="";
+            __element_3 [penwidth=3.0,style="dashed,filled",label="A"];
+            __element_5 [shape=octagon,label="_out = 2 * _in + 1"];
+            __element_3 -> __element_5 [label="   _in = A[0]   "];
+            __element_5 -> __element_4 [label="   A[0] = _out   "];
+            __element_4 [penwidth=3.0,style="dashed,filled",label="A"];
+            __element_1 [shape=octagon,label="_out = 2 * _in + 1"];
+            __element_4 -> __element_1 [label="   _in = A[0]   "];
+            __element_1 -> __element_2 [label="   A[0] = _out   "];
+            __element_2 [penwidth=3.0,style="dashed,filled",label="A"];
+        }
+        /* END: Block */
+        /* END: Sequence */
+    }
+}
+)-");
 }
 
 TEST(DotVisualizerTest, kernel_test_tiled) {
@@ -242,13 +358,74 @@ TEST(DotVisualizerTest, kernel_test_tiled) {
     auto sdfgp = builder.move();
     ConditionalSchedule schedule(sdfgp);
 
-    codegen::CUDACodeGenerator cgen(schedule, false);
-    EXPECT_TRUE(cgen.generate());
-    std::cout << cgen.main().str() << std::endl << std::endl;
-
     visualizer::DotVisualizer dot(schedule);
     dot.visualize();
-    std::cout << dot.getStream().str() << std::endl;
+    EXPECT_EQ(dot.getStream().str(), R"-(digraph sdfg_test {
+    graph [compound=true];
+    subgraph cluster_sdfg_test {
+        node [style=filled,fillcolor=white];
+        style=filled;color=lightblue;label="";
+        /* BEGIN: Sequence */
+        /* BEGIN: Kernel */
+        /* BEGIN: Sequence */
+        /* BEGIN: For */
+        subgraph cluster___node_5 {
+            style=filled;shape=box;fillcolor=white;color=black;label="for: i = 0:(N-1):8";
+            __node_5 [shape=point,style=invis,label=""];
+            /* BEGIN: Sequence */
+            /* BEGIN: For */
+            subgraph cluster___node_8 {
+                style=filled;shape=box;fillcolor=white;color=black;label="for: i_shared = i; And(i_shared < max(0, N), i_shared < 8 + i); i_shared = 1 + i_shared";
+                __node_8 [shape=point,style=invis,label=""];
+                /* BEGIN: Sequence */
+                /* BEGIN: Block */
+                subgraph cluster___node_11 {
+                    style=filled;shape=box;fillcolor=white;color=black;label="";
+                    __element_13 [penwidth=3.0,label="B"];
+                    __element_15 [shape=octagon,label="_out = _in"];
+                    __element_13 -> __element_15 [label="   _in = B[threadIdx.x + 512*i_shared + blockIdx.x*blockDim.x]   "];
+                    __element_15 -> __element_14 [label="   B_shared[threadIdx.x][-i + i_shared] = _out   "];
+                    __element_14 [penwidth=3.0,style="dashed,filled",label="B_shared"];
+                }
+                /* END: Block */
+                /* END: Sequence */
+            }
+            /* END: For */
+            /* BEGIN: Block */
+            subgraph cluster___node_18 {
+                style=filled;shape=box;fillcolor=white;color=black;label="";
+                __element_20 [shape=doubleoctagon,label="Local Barrier"];
+            }
+            /* END: Block */
+            __node_8 -> __element_20 [ltail="cluster___node_8",lhead="cluster___node_18",minlen=3];
+            /* BEGIN: For */
+            subgraph cluster___node_21 {
+                style=filled;shape=box;fillcolor=white;color=black;label="for: i_access = i; And(i_access < max(0, N), i_access < 8 + i); i_access = 1 + i_access";
+                __node_21 [shape=point,style=invis,label=""];
+                /* BEGIN: Sequence */
+                /* BEGIN: Block */
+                subgraph cluster___node_24 {
+                    style=filled;shape=box;fillcolor=white;color=black;label="";
+                    __element_26 [penwidth=3.0,style="dashed,filled",label="B_shared"];
+                    __element_28 [shape=octagon,label="_out = _in"];
+                    __element_26 -> __element_28 [label="   _in = B_shared[threadIdx.x][-i + i_access]   "];
+                    __element_28 -> __element_27 [label="   A[threadIdx.x + 512*i_access + blockIdx.x*blockDim.x] = _out   "];
+                    __element_27 [penwidth=3.0,label="A"];
+                }
+                /* END: Block */
+                /* END: Sequence */
+            }
+            /* END: For */
+            __element_20 -> __node_21 [ltail="cluster___node_18",lhead="cluster___node_21",minlen=3];
+            /* END: Sequence */
+        }
+        /* END: For */
+        /* END: Sequence */
+        /* END: Kernel */
+        /* END: Sequence */
+    }
+}
+)-");
 }
 
 TEST(DotVisualizerTest, test_if_else) {
@@ -286,13 +463,54 @@ TEST(DotVisualizerTest, test_if_else) {
     auto sdfg = builder.move();
     ConditionalSchedule schedule(sdfg);
 
-    codegen::CCodeGenerator cgen(schedule, false);
-    EXPECT_TRUE(cgen.generate());
-    std::cout << cgen.main().str() << std::endl << std::endl;
-
     visualizer::DotVisualizer dot(schedule);
     dot.visualize();
-    std::cout << dot.getStream().str() << std::endl;
+    EXPECT_EQ(dot.getStream().str(), R"-(digraph sdfg_1 {
+    graph [compound=true];
+    subgraph cluster_sdfg_1 {
+        node [style=filled,fillcolor=white];
+        style=filled;color=lightblue;label="";
+        /* BEGIN: Sequence */
+        /* BEGIN: IfElse */
+        subgraph cluster___node_1 {
+            style=filled;shape=box;fillcolor=white;color=black;label="if:";
+            __node_1 [shape=point,style=invis,label=""];
+            subgraph cluster___node_10 {
+                style=filled;shape=box;fillcolor=white;color=black;label="A <= 0";
+                /* BEGIN: Sequence */
+                /* BEGIN: Block */
+                subgraph cluster___node_5 {
+                    style=filled;shape=box;fillcolor=white;color=black;label="";
+                    __element_7 [penwidth=3.0,style="dashed,filled",label="A"];
+                    __element_9 [shape=octagon,label="_out = _in"];
+                    __element_7 -> __element_9 [label="   _in = A   "];
+                    __element_9 -> __element_8 [label="   B = _out   "];
+                    __element_8 [penwidth=3.0,style="dashed,filled",label="B"];
+                }
+                /* END: Block */
+                /* END: Sequence */
+            }
+            subgraph cluster___node_11 {
+                style=filled;shape=box;fillcolor=white;color=black;label="0 < A";
+                /* BEGIN: Sequence */
+                /* BEGIN: Block */
+                subgraph cluster___node_12 {
+                    style=filled;shape=box;fillcolor=white;color=black;label="";
+                    __element_14 [penwidth=3.0,style="dashed,filled",label="B"];
+                    __element_16 [shape=octagon,label="_out = _in"];
+                    __element_14 -> __element_16 [label="   _in = B   "];
+                    __element_16 -> __element_15 [label="   A = _out   "];
+                    __element_15 [penwidth=3.0,style="dashed,filled",label="A"];
+                }
+                /* END: Block */
+                /* END: Sequence */
+            }
+        }
+        /* END: IfElse */
+        /* END: Sequence */
+    }
+}
+)-");
 }
 
 TEST(DotVisualizerTest, test_while) {
@@ -319,11 +537,60 @@ TEST(DotVisualizerTest, test_while) {
     auto sdfg = builder.move();
     ConditionalSchedule schedule(sdfg);
 
-    codegen::CCodeGenerator cgen(schedule, false);
-    EXPECT_TRUE(cgen.generate());
-    std::cout << cgen.main().str() << std::endl << std::endl;
-
     visualizer::DotVisualizer dot(schedule);
     dot.visualize();
-    std::cout << dot.getStream().str() << std::endl;
+    EXPECT_EQ(dot.getStream().str(), R"-(digraph sdfg {
+    graph [compound=true];
+    subgraph cluster_sdfg {
+        node [style=filled,fillcolor=white];
+        style=filled;color=lightblue;label="";
+        /* BEGIN: Sequence */
+        /* BEGIN: While */
+        subgraph cluster___node_1 {
+            style=filled;shape=box;fillcolor=white;color=black;label="while:";
+            __node_1 [shape=point,style=invis,label=""];
+            /* BEGIN: Sequence */
+            /* BEGIN: IfElse */
+            subgraph cluster___node_4 {
+                style=filled;shape=box;fillcolor=white;color=black;label="if:";
+                __node_4 [shape=point,style=invis,label=""];
+                subgraph cluster___node_40 {
+                    style=filled;shape=box;fillcolor=white;color=black;label="i < 10";
+                    /* BEGIN: Sequence */
+                    /* BEGIN: Block */
+                    subgraph cluster___node_7 {
+                        style=filled;shape=box;fillcolor=white;color=black;label="";
+                        __node_7 [shape=point,style=invis,label=""];
+                    }
+                    /* END: Block */
+                    /* BEGIN: Continue */
+                    __node_9 [shape=cds,label=" continue  "];
+                    /* END: Continue */
+                    __node_7 -> __node_9 [ltail="cluster___node_7",minlen=3];
+                    /* END: Sequence */
+                }
+                subgraph cluster___node_41 {
+                    style=filled;shape=box;fillcolor=white;color=black;label="10 <= i";
+                    /* BEGIN: Sequence */
+                    /* BEGIN: Block */
+                    subgraph cluster___node_12 {
+                        style=filled;shape=box;fillcolor=white;color=black;label="";
+                        __node_12 [shape=point,style=invis,label=""];
+                    }
+                    /* END: Block */
+                    /* BEING: Break */
+                    __node_14 [shape=cds,label=" break  "];
+                    /* END: Break */
+                    __node_12 -> __node_14 [ltail="cluster___node_12",minlen=3];
+                    /* END: Sequence */
+                }
+            }
+            /* END: IfElse */
+            /* END: Sequence */
+        }
+        /* END: While */
+        /* END: Sequence */
+    }
+}
+)-");
 }
