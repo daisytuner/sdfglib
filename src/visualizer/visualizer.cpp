@@ -382,57 +382,39 @@ std::string Visualizer::expression(const std::string expr) {
 
 void Visualizer::visualizeNode(Schedule& schedule, structured_control_flow::ControlFlowNode& node) {
     if (auto block = dynamic_cast<structured_control_flow::Block*>(&node)) {
-        this->stream_ << "/* BEGIN: Block */" << std::endl;
         this->visualizeBlock(schedule, *block);
-        this->stream_ << "/* END: Block */" << std::endl;
         return;
     }
     if (auto sequence = dynamic_cast<structured_control_flow::Sequence*>(&node)) {
-        this->stream_ << "/* BEGIN: Sequence */" << std::endl;
         this->visualizeSequence(schedule, *sequence);
-        this->stream_ << "/* END: Sequence */" << std::endl;
         return;
     }
     if (auto if_else = dynamic_cast<structured_control_flow::IfElse*>(&node)) {
-        this->stream_ << "/* BEGIN: IfElse */" << std::endl;
         this->visualizeIfElse(schedule, *if_else);
-        this->stream_ << "/* END: IfElse */" << std::endl;
         return;
     }
     if (auto while_loop = dynamic_cast<structured_control_flow::While*>(&node)) {
-        this->stream_ << "/* BEGIN: While */" << std::endl;
         this->visualizeWhile(schedule, *while_loop);
-        this->stream_ << "/* END: While */" << std::endl;
         return;
     }
     if (auto loop = dynamic_cast<structured_control_flow::For*>(&node)) {
-        this->stream_ << "/* BEGIN: For */" << std::endl;
         this->visualizeFor(schedule, *loop);
-        this->stream_ << "/* END: For */" << std::endl;
         return;
     }
     if (auto return_node = dynamic_cast<structured_control_flow::Return*>(&node)) {
-        this->stream_ << "/* BEGIN: Return */" << std::endl;
         this->visualizeReturn(schedule, *return_node);
-        this->stream_ << "/* END: Return */" << std::endl;
         return;
     }
     if (auto break_node = dynamic_cast<structured_control_flow::Break*>(&node)) {
-        this->stream_ << "/* BEING: Break */" << std::endl;
         this->visualizeBreak(schedule, *break_node);
-        this->stream_ << "/* END: Break */" << std::endl;
         return;
     }
     if (auto continue_node = dynamic_cast<structured_control_flow::Continue*>(&node)) {
-        this->stream_ << "/* BEGIN: Continue */" << std::endl;
         this->visualizeContinue(schedule, *continue_node);
-        this->stream_ << "/* END: Continue */" << std::endl;
         return;
     }
     if (auto kernel_node = dynamic_cast<structured_control_flow::Kernel*>(&node)) {
-        this->stream_ << "/* BEGIN: Kernel */" << std::endl;
         this->visualizeKernel(schedule, *kernel_node);
-        this->stream_ << "/* END: Kernel */" << std::endl;
         return;
     }
     throw std::runtime_error("Unsupported control flow node");

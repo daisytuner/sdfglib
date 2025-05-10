@@ -76,18 +76,12 @@ TEST(DotVisualizerTest, transpose) {
     subgraph cluster_transpose {
         node [style=filled,fillcolor=white];
         style=filled;color=lightblue;label="";
-        /* BEGIN: Sequence */
-        /* BEGIN: For */
         subgraph cluster___node_1 {
             style=filled;shape=box;fillcolor=white;color=black;label="for: i = 0:(M-1)";
             __node_1 [shape=point,style=invis,label=""];
-            /* BEGIN: Sequence */
-            /* BEGIN: For */
             subgraph cluster___node_4 {
                 style=filled;shape=box;fillcolor=white;color=black;label="for: j = 0:(N-1):2";
                 __node_4 [shape=point,style=invis,label=""];
-                /* BEGIN: Sequence */
-                /* BEGIN: Block */
                 subgraph cluster___node_7 {
                     style=filled;shape=box;fillcolor=white;color=black;label="";
                     __element_9 [penwidth=3.0,label="A"];
@@ -96,14 +90,8 @@ TEST(DotVisualizerTest, transpose) {
                     __element_11 -> __element_10 [label="   B[j][i] = _out   "];
                     __element_10 [penwidth=3.0,label="B"];
                 }
-                /* END: Block */
-                /* END: Sequence */
             }
-            /* END: For */
-            /* END: Sequence */
         }
-        /* END: For */
-        /* END: Sequence */
     }
 }
 )-");
@@ -120,18 +108,12 @@ TEST(DotVisualizerTest, syrk) {
     subgraph cluster_sdfg_1 {
         node [style=filled,fillcolor=white];
         style=filled;color=lightblue;label="";
-        /* BEGIN: Sequence */
-        /* BEGIN: For */
         subgraph cluster___node_1 {
             style=filled;shape=box;fillcolor=white;color=black;label="for: i = 0:(N-1)";
             __node_1 [shape=point,style=invis,label=""];
-            /* BEGIN: Sequence */
-            /* BEGIN: For */
             subgraph cluster___node_4 {
                 style=filled;shape=box;fillcolor=white;color=black;label="for: j_1 = 0:i";
                 __node_4 [shape=point,style=invis,label=""];
-                /* BEGIN: Sequence */
-                /* BEGIN: Block */
                 subgraph cluster___node_7 {
                     style=filled;shape=box;fillcolor=white;color=black;label="";
                     __element_11 [penwidth=3.0,label="beta"];
@@ -142,21 +124,13 @@ TEST(DotVisualizerTest, syrk) {
                     __element_12 -> __element_10 [label="   C[i][j_1] = _out   "];
                     __element_10 [penwidth=3.0,label="C"];
                 }
-                /* END: Block */
-                /* END: Sequence */
             }
-            /* END: For */
-            /* BEGIN: For */
             subgraph cluster___node_16 {
                 style=filled;shape=box;fillcolor=white;color=black;label="for: k = 0:(M-1)";
                 __node_16 [shape=point,style=invis,label=""];
-                /* BEGIN: Sequence */
-                /* BEGIN: For */
                 subgraph cluster___node_19 {
                     style=filled;shape=box;fillcolor=white;color=black;label="for: j_2 = 0:i";
                     __node_19 [shape=point,style=invis,label=""];
-                    /* BEGIN: Sequence */
-                    /* BEGIN: Block */
                     subgraph cluster___node_22 {
                         style=filled;shape=box;fillcolor=white;color=black;label="";
                         __element_24 [penwidth=3.0,label="A"];
@@ -166,8 +140,6 @@ TEST(DotVisualizerTest, syrk) {
                         __element_26 -> __element_25 [label="   tmp = _out   "];
                         __element_25 [penwidth=3.0,style="dashed,filled",label="tmp"];
                     }
-                    /* END: Block */
-                    /* BEGIN: Block */
                     subgraph cluster___node_30 {
                         style=filled;shape=box;fillcolor=white;color=black;label="";
                         __element_34 [penwidth=3.0,style="dashed,filled",label="tmp"];
@@ -178,19 +150,11 @@ TEST(DotVisualizerTest, syrk) {
                         __element_35 -> __element_33 [label="   C[i][j_2] = _out   "];
                         __element_33 [penwidth=3.0,label="C"];
                     }
-                    /* END: Block */
                     __element_26 -> __element_35 [ltail="cluster___node_22",lhead="cluster___node_30",minlen=3];
-                    /* END: Sequence */
                 }
-                /* END: For */
-                /* END: Sequence */
             }
-            /* END: For */
             __node_4 -> __node_16 [ltail="cluster___node_4",lhead="cluster___node_16",minlen=3];
-            /* END: Sequence */
         }
-        /* END: For */
-        /* END: Sequence */
     }
 }
 )-");
@@ -242,8 +206,6 @@ TEST(DotVisualizerTest, block_fusion_chain) {
     subgraph cluster_sdfg_1 {
         node [style=filled,fillcolor=white];
         style=filled;color=lightblue;label="";
-        /* BEGIN: Sequence */
-        /* BEGIN: Block */
         subgraph cluster___node_1 {
             style=filled;shape=box;fillcolor=white;color=black;label="";
             __element_3 [penwidth=3.0,style="dashed,filled",label="A"];
@@ -256,8 +218,6 @@ TEST(DotVisualizerTest, block_fusion_chain) {
             __element_1 -> __element_2 [label="   A[0] = _out   "];
             __element_2 [penwidth=3.0,style="dashed,filled",label="A"];
         }
-        /* END: Block */
-        /* END: Sequence */
     }
 }
 )-");
@@ -365,20 +325,12 @@ TEST(DotVisualizerTest, kernel_test_tiled) {
     subgraph cluster_sdfg_test {
         node [style=filled,fillcolor=white];
         style=filled;color=lightblue;label="";
-        /* BEGIN: Sequence */
-        /* BEGIN: Kernel */
-        /* BEGIN: Sequence */
-        /* BEGIN: For */
         subgraph cluster___node_5 {
             style=filled;shape=box;fillcolor=white;color=black;label="for: i = 0:(N-1):8";
             __node_5 [shape=point,style=invis,label=""];
-            /* BEGIN: Sequence */
-            /* BEGIN: For */
             subgraph cluster___node_8 {
                 style=filled;shape=box;fillcolor=white;color=black;label="for: i_shared = i; And(i_shared < max(0, N), i_shared < 8 + i); i_shared = 1 + i_shared";
                 __node_8 [shape=point,style=invis,label=""];
-                /* BEGIN: Sequence */
-                /* BEGIN: Block */
                 subgraph cluster___node_11 {
                     style=filled;shape=box;fillcolor=white;color=black;label="";
                     __element_13 [penwidth=3.0,label="B"];
@@ -387,23 +339,15 @@ TEST(DotVisualizerTest, kernel_test_tiled) {
                     __element_15 -> __element_14 [label="   B_shared[threadIdx.x][-i + i_shared] = _out   "];
                     __element_14 [penwidth=3.0,style="dashed,filled",label="B_shared"];
                 }
-                /* END: Block */
-                /* END: Sequence */
             }
-            /* END: For */
-            /* BEGIN: Block */
             subgraph cluster___node_18 {
                 style=filled;shape=box;fillcolor=white;color=black;label="";
                 __element_20 [shape=doubleoctagon,label="Local Barrier"];
             }
-            /* END: Block */
             __node_8 -> __element_20 [ltail="cluster___node_8",lhead="cluster___node_18",minlen=3];
-            /* BEGIN: For */
             subgraph cluster___node_21 {
                 style=filled;shape=box;fillcolor=white;color=black;label="for: i_access = i; And(i_access < max(0, N), i_access < 8 + i); i_access = 1 + i_access";
                 __node_21 [shape=point,style=invis,label=""];
-                /* BEGIN: Sequence */
-                /* BEGIN: Block */
                 subgraph cluster___node_24 {
                     style=filled;shape=box;fillcolor=white;color=black;label="";
                     __element_26 [penwidth=3.0,style="dashed,filled",label="B_shared"];
@@ -412,17 +356,9 @@ TEST(DotVisualizerTest, kernel_test_tiled) {
                     __element_28 -> __element_27 [label="   A[threadIdx.x + 512*i_access + blockIdx.x*blockDim.x] = _out   "];
                     __element_27 [penwidth=3.0,label="A"];
                 }
-                /* END: Block */
-                /* END: Sequence */
             }
-            /* END: For */
             __element_20 -> __node_21 [ltail="cluster___node_18",lhead="cluster___node_21",minlen=3];
-            /* END: Sequence */
         }
-        /* END: For */
-        /* END: Sequence */
-        /* END: Kernel */
-        /* END: Sequence */
     }
 }
 )-");
@@ -470,15 +406,11 @@ TEST(DotVisualizerTest, test_if_else) {
     subgraph cluster_sdfg_1 {
         node [style=filled,fillcolor=white];
         style=filled;color=lightblue;label="";
-        /* BEGIN: Sequence */
-        /* BEGIN: IfElse */
         subgraph cluster___node_1 {
             style=filled;shape=box;fillcolor=white;color=black;label="if:";
             __node_1 [shape=point,style=invis,label=""];
             subgraph cluster___node_10 {
                 style=filled;shape=box;fillcolor=white;color=black;label="A <= 0";
-                /* BEGIN: Sequence */
-                /* BEGIN: Block */
                 subgraph cluster___node_5 {
                     style=filled;shape=box;fillcolor=white;color=black;label="";
                     __element_7 [penwidth=3.0,style="dashed,filled",label="A"];
@@ -487,13 +419,9 @@ TEST(DotVisualizerTest, test_if_else) {
                     __element_9 -> __element_8 [label="   B = _out   "];
                     __element_8 [penwidth=3.0,style="dashed,filled",label="B"];
                 }
-                /* END: Block */
-                /* END: Sequence */
             }
             subgraph cluster___node_11 {
                 style=filled;shape=box;fillcolor=white;color=black;label="0 < A";
-                /* BEGIN: Sequence */
-                /* BEGIN: Block */
                 subgraph cluster___node_12 {
                     style=filled;shape=box;fillcolor=white;color=black;label="";
                     __element_14 [penwidth=3.0,style="dashed,filled",label="B"];
@@ -502,12 +430,8 @@ TEST(DotVisualizerTest, test_if_else) {
                     __element_16 -> __element_15 [label="   A = _out   "];
                     __element_15 [penwidth=3.0,style="dashed,filled",label="A"];
                 }
-                /* END: Block */
-                /* END: Sequence */
             }
         }
-        /* END: IfElse */
-        /* END: Sequence */
     }
 }
 )-");
@@ -544,52 +468,32 @@ TEST(DotVisualizerTest, test_while) {
     subgraph cluster_sdfg {
         node [style=filled,fillcolor=white];
         style=filled;color=lightblue;label="";
-        /* BEGIN: Sequence */
-        /* BEGIN: While */
         subgraph cluster___node_1 {
             style=filled;shape=box;fillcolor=white;color=black;label="while:";
             __node_1 [shape=point,style=invis,label=""];
-            /* BEGIN: Sequence */
-            /* BEGIN: IfElse */
             subgraph cluster___node_4 {
                 style=filled;shape=box;fillcolor=white;color=black;label="if:";
                 __node_4 [shape=point,style=invis,label=""];
                 subgraph cluster___node_40 {
                     style=filled;shape=box;fillcolor=white;color=black;label="i < 10";
-                    /* BEGIN: Sequence */
-                    /* BEGIN: Block */
                     subgraph cluster___node_7 {
                         style=filled;shape=box;fillcolor=white;color=black;label="";
                         __node_7 [shape=point,style=invis,label=""];
                     }
-                    /* END: Block */
-                    /* BEGIN: Continue */
                     __node_9 [shape=cds,label=" continue  "];
-                    /* END: Continue */
                     __node_7 -> __node_9 [ltail="cluster___node_7",minlen=3];
-                    /* END: Sequence */
                 }
                 subgraph cluster___node_41 {
                     style=filled;shape=box;fillcolor=white;color=black;label="10 <= i";
-                    /* BEGIN: Sequence */
-                    /* BEGIN: Block */
                     subgraph cluster___node_12 {
                         style=filled;shape=box;fillcolor=white;color=black;label="";
                         __node_12 [shape=point,style=invis,label=""];
                     }
-                    /* END: Block */
-                    /* BEING: Break */
                     __node_14 [shape=cds,label=" break  "];
-                    /* END: Break */
                     __node_12 -> __node_14 [ltail="cluster___node_12",minlen=3];
-                    /* END: Sequence */
                 }
             }
-            /* END: IfElse */
-            /* END: Sequence */
         }
-        /* END: While */
-        /* END: Sequence */
     }
 }
 )-");
