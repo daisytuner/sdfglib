@@ -116,7 +116,7 @@ void DotVisualizer::visualizeIfElse(Schedule& schedule, structured_control_flow:
         this->stream_.setIndent(this->stream_.indent() + 4);
         this->stream_ << "style=filled;shape=box;fillcolor=white;color=black;label=\""
                       << this->expression(if_else.at(i).second->__str__()) << "\";" << std::endl;
-        this->visualizeNode(schedule, if_else.at(i).first);
+        this->visualizeSequence(schedule, if_else.at(i).first);
         this->stream_.setIndent(this->stream_.indent() - 4);
         this->stream_ << "}" << std::endl;
     }
@@ -132,7 +132,7 @@ void DotVisualizer::visualizeWhile(Schedule& schedule, structured_control_flow::
     this->stream_ << "style=filled;shape=box;fillcolor=white;color=black;label=\"while:\";"
                   << std::endl
                   << while_loop.name() << " [shape=point,style=invis,label=\"\"];" << std::endl;
-    this->visualizeNode(schedule, while_loop.root());
+    this->visualizeSequence(schedule, while_loop.root());
     this->stream_.setIndent(this->stream_.indent() - 4);
     this->stream_ << "}" << std::endl;
     this->last_comp_name_ = while_loop.name();
@@ -149,7 +149,7 @@ void DotVisualizer::visualizeFor(Schedule& schedule, structured_control_flow::Fo
     if (loop_schedule == LoopSchedule::MULTICORE) this->stream_ << " (parallelized)";
     this->stream_ << "\";" << std::endl
                   << loop.name() << " [shape=point,style=invis,label=\"\"];" << std::endl;
-    this->visualizeNode(schedule, loop.root());
+    this->visualizeSequence(schedule, loop.root());
     this->stream_.setIndent(this->stream_.indent() - 4);
     this->stream_ << "}" << std::endl;
     this->last_comp_name_ = loop.name();
@@ -244,7 +244,7 @@ void DotVisualizer::visualizeKernel(Schedule& schedule,
         this->replacements_.push_back(
             {kernel_node.threadIdx_z()->get_name(), kernel_node.threadIdx_z_init()->__str__()});
 
-    this->visualizeNode(schedule, kernel_node.root());
+    this->visualizeSequence(schedule, kernel_node.root());
 
     this->replacements_.resize(replacements_size_before);
 }
@@ -264,7 +264,7 @@ void DotVisualizer::visualize() {
         std::string condition = this->expression(this->schedule_.condition(i)->__str__());
         if (condition != "True") this->stream_ << condition;
         this->stream_ << "\";" << std::endl;
-        this->visualizeNode(this->schedule_.schedule(i), function.root());
+        this->visualizeSequence(this->schedule_.schedule(i), function.root());
         this->stream_.setIndent(4);
         this->stream_ << "}" << std::endl;
     }
