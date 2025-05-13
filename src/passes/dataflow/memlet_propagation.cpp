@@ -308,13 +308,13 @@ bool BackwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder
             continue;
         }
         auto& uses_between = users.all_uses_between(*write, *read);
-        bool assigning_data_is_written = false;
+        bool race_condition = false;
         for (auto& user : uses_between) {
             // Unsafe pointer operations
             if (user->use() == analysis::Use::MOVE) {
                 // Viewed container is not constant
                 if (user->container() == assigning_data) {
-                    assigning_data_is_written = true;
+                    race_condition = true;
                     break;
                 }
 
@@ -325,17 +325,22 @@ bool BackwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder
                 auto& view_node = dynamic_cast<data_flow::AccessNode&>(move_edge.src());
                 if (move_edge.dst_conn() == "void" ||
                     symbolic::is_pointer(symbolic::symbol(view_node.data()))) {
-                    assigning_data_is_written = true;
+                    race_condition = true;
                     break;
                 }
             } else if (user->use() == analysis::Use::WRITE) {
                 if (risky_symbols.find(user->container()) != risky_symbols.end()) {
-                    assigning_data_is_written = true;
+                    race_condition = true;
+                    break;
+                }
+            } else if (user->use() == analysis::Use::READ) {
+                if (user->container() == assigning_data) {
+                    race_condition = true;
                     break;
                 }
             }
         }
-        if (assigning_data_is_written) {
+        if (race_condition) {
             continue;
         }
 
