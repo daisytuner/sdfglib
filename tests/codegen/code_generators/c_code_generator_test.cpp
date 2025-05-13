@@ -37,7 +37,7 @@ TEST(CCodeGeneratorTest, Dispatch_Includes) {
 TEST(CCodeGeneratorTest, DispatchStructures_Basic) {
     builder::StructuredSDFGBuilder builder("sdfg_a");
 
-    auto& struct_def_A = builder.add_structure("MyStructA");
+    auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
 
     auto sdfg = builder.move();
@@ -59,10 +59,10 @@ char member_0;
 TEST(CCodeGeneratorTest, DispatchStructures_Nested) {
     builder::StructuredSDFGBuilder builder("sdfg_a");
 
-    auto& struct_def_A = builder.add_structure("MyStructA");
+    auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
 
-    auto& struct_def_B = builder.add_structure("MyStructB");
+    auto& struct_def_B = builder.add_structure("MyStructB", false);
     struct_def_B.add_member(types::Structure("MyStructA"));
 
     auto sdfg = builder.move();

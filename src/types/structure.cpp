@@ -35,10 +35,11 @@ DeviceLocation Structure::device_location() const { return this->device_location
 
 std::string Structure::initializer() const { return this->initializer_; };
 
-StructureDefinition::StructureDefinition(const std::string& name) : name_(name), members_(){};
+StructureDefinition::StructureDefinition(const std::string& name, bool is_packed)
+    : name_(name), is_packed_(is_packed), members_(){};
 
 std::unique_ptr<StructureDefinition> StructureDefinition::clone() const {
-    auto def = std::make_unique<StructureDefinition>(this->name_);
+    auto def = std::make_unique<StructureDefinition>(this->name_, this->is_packed_);
     for (unsigned i = 0; i < this->num_members(); i++) {
         def->add_member(this->member_type(symbolic::integer(i)));
     }
@@ -46,6 +47,8 @@ std::unique_ptr<StructureDefinition> StructureDefinition::clone() const {
 };
 
 const std::string& StructureDefinition::name() const { return this->name_; };
+
+bool StructureDefinition::is_packed() const { return this->is_packed_; };
 
 size_t StructureDefinition::num_members() const { return this->members_.size(); };
 

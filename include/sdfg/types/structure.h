@@ -41,14 +41,17 @@ class Structure : public IType {
 class StructureDefinition {
    private:
     std::string name_;
+    bool is_packed_;
     std::vector<std::unique_ptr<IType>> members_;
 
    public:
-    StructureDefinition(const std::string& name);
+    StructureDefinition(const std::string& name, bool is_packed);
 
     std::unique_ptr<StructureDefinition> clone() const;
 
     const std::string& name() const;
+
+    bool is_packed() const;
 
     size_t num_members() const;
 
