@@ -32,7 +32,7 @@ TEST(NodeDispatcherTest, BeginNode_Declaration) {
 
     EXPECT_EQ(globals_stream.str(), "");
     EXPECT_EQ(library_stream.str(), "");
-    EXPECT_EQ(main_stream.str(), "{\n    int *b;\n}\n");
+    EXPECT_EQ(main_stream.str(), "{\n    int (*b);\n}\n");
 }
 
 TEST(NodeDispatcherTest, BeginNode_Allocation) {
@@ -61,5 +61,5 @@ TEST(NodeDispatcherTest, BeginNode_Allocation) {
     EXPECT_EQ(globals_stream.str(), "");
     EXPECT_EQ(library_stream.str(), "");
     EXPECT_EQ(main_stream.str(),
-              "{\n    int *b = (int *) malloc(1 * sizeof(int ));\n    free(b);\n}\n");
+              "{\n    int (*b) = (int (*)) malloc(1 * sizeof(int ));\n    free(b);\n}\n");
 }
