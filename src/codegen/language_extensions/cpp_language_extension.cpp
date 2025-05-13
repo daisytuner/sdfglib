@@ -397,6 +397,12 @@ std::string CPPLanguageExtension::declaration(const std::string& name, const typ
                 val << ", ";
             }
         }
+        if (function_type->is_var_arg()) {
+            if (function_type->num_params() > 0) {
+                val << ", ";
+            }
+            val << "...";
+        }
         val << ")";
     } else {
         throw std::runtime_error("Unknown declaration type");
