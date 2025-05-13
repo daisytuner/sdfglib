@@ -111,7 +111,7 @@ void DotVisualizer::visualizeIfElse(Schedule& schedule, structured_control_flow:
                   << std::endl
                   << if_else.name() << " [shape=point,style=invis,label=\"\"];" << std::endl;
     for (size_t i = 0; i < if_else.size(); ++i) {
-        this->stream_ << "subgraph cluster_" << if_else.name() << std::to_string(i) << " {"
+        this->stream_ << "subgraph cluster_" << if_else.name() << "_" << std::to_string(i) << " {"
                       << std::endl;
         this->stream_.setIndent(this->stream_.indent() + 4);
         this->stream_ << "style=filled;shape=box;fillcolor=white;color=black;label=\""
