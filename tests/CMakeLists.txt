@@ -71,6 +71,7 @@ set(TEST_FILES
     transformations/out_local_storage_test.cpp
     transformations/vectorization_test.cpp
     types/array_test.cpp
+    types/function_test.cpp
     types/pointer_test.cpp
     types/primitive_type_test.cpp
     types/scalar_test.cpp

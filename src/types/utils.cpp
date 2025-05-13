@@ -3,7 +3,7 @@
 namespace sdfg {
 namespace types {
 
-const types::IType& infer_type(const Function& function, const types::IType& type,
+const types::IType& infer_type(const sdfg::Function& function, const types::IType& type,
                                const data_flow::Subset& subset) {
     if (subset.empty()) {
         return type;
