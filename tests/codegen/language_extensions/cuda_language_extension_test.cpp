@@ -204,7 +204,7 @@ TEST(CUDALanguageExtensionTest, SubsetToCpp_Struct) {
     builder::SDFGBuilder builder("sdfg");
     auto& sdfg = builder.subject();
 
-    auto& struct_def = builder.add_structure("MyStruct");
+    auto& struct_def = builder.add_structure("MyStruct", false);
     struct_def.add_member(types::Scalar(types::PrimitiveType::Int32));
     struct_def.add_member(types::Scalar(types::PrimitiveType::Float));
 

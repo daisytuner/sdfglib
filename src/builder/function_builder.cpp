@@ -46,9 +46,9 @@ void FunctionBuilder::change_type(const std::string& name, const types::IType& t
     function.containers_[name] = type.clone();
 };
 
-types::StructureDefinition& FunctionBuilder::add_structure(const std::string& name) const {
+types::StructureDefinition& FunctionBuilder::add_structure(const std::string& name, bool is_packed) const {
     auto res = this->function().structures_.insert(
-        {name, std::make_unique<types::StructureDefinition>(name)});
+        {name, std::make_unique<types::StructureDefinition>(name, is_packed)});
     assert(res.second);
 
     return *(*res.first).second;

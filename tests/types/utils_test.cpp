@@ -66,7 +66,7 @@ TEST(TypeInferenceTest, PointeeType) {
 TEST(TypeInferenceTest, StructureMember) {
     builder::SDFGBuilder builder("test");
 
-    auto& sd = builder.add_structure("test");
+    auto& sd = builder.add_structure("test", false);
 
     types::Scalar scalar_type1(types::PrimitiveType::Int32);
     sd.add_member(scalar_type1);

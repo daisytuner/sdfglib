@@ -26,7 +26,7 @@ class FunctionBuilder {
 
     void change_type(const std::string& name, const types::IType& type) const;
 
-    types::StructureDefinition& add_structure(const std::string& name) const;
+    types::StructureDefinition& add_structure(const std::string& name, bool is_packed) const;
 
     void make_array(const std::string& name, const symbolic::Expression& size) const;
 

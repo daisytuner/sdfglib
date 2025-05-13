@@ -77,7 +77,7 @@ TEST(AllocationInferenceTest, Structure) {
     types::Pointer desc(base_desc);
     builder.add_container("A", desc, true);
 
-    auto& S_def = builder.add_structure("S");
+    auto& S_def = builder.add_structure("S", false);
     S_def.add_member(base_desc);
 
     types::Structure desc_struct("S");

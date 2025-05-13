@@ -33,8 +33,9 @@ TEST(StructureTest, Clone) {
 }
 
 TEST(StructureTest, StructureDefinition) {
-    types::StructureDefinition s("test");
+    types::StructureDefinition s("test", false);
     EXPECT_EQ(s.name(), "test");
+    EXPECT_FALSE(s.is_packed());
 
     s.add_member(types::Scalar(types::PrimitiveType::Int32));
     s.add_member(types::Scalar(types::PrimitiveType::Int64));
@@ -49,7 +50,7 @@ TEST(StructureTest, StructureDefinition) {
 }
 
 TEST(StructureTest, StructureDefinition_Clone) {
-    types::StructureDefinition s("test");
+    types::StructureDefinition s("test", true);
     s.add_member(types::Scalar(types::PrimitiveType::Int32));
     s.add_member(types::Scalar(types::PrimitiveType::Int64));
 
@@ -57,6 +58,8 @@ TEST(StructureTest, StructureDefinition_Clone) {
     auto s2_ = s2.get();
 
     EXPECT_EQ(s.name(), s2_->name());
+    EXPECT_EQ(s.is_packed(), s2_->is_packed());
+    EXPECT_TRUE(s.is_packed());
     EXPECT_EQ(s.num_members(), s2_->num_members());
 
     auto& member_1 = s.member_type(symbolic::integer(0));
