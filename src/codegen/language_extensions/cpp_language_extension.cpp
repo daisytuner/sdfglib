@@ -618,26 +618,46 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::Unequality& x) {
 void CPPSymbolicPrinter::bvisit(const SymEngine::Min& x) {
     std::ostringstream s;
     auto container = x.get_args();
-    assert(container.size() == 2);
-    s << "__daisy_min(";
-    s << apply(*container.begin());
-    for (auto it = ++(container.begin()); it != container.end(); ++it) {
-        s << ", " << apply(*it);
+    if (container.size() == 1) {
+        s << apply(*container.begin());
+    } else {
+        s << "__daisy_min(";
+        s << apply(*container.begin());
+
+        // Recursively apply __daisy_min to the arguments
+        SymEngine::vec_basic subargs;
+        for (auto it = ++(container.begin()); it != container.end(); ++it) {
+            subargs.push_back(*it);
+        }
+        auto submin = SymEngine::min(subargs);
+        s << ", " << apply(submin);
+
+        s << ")";
     }
-    s << ")";
+    
     str_ = s.str();
 };
 
 void CPPSymbolicPrinter::bvisit(const SymEngine::Max& x) {
     std::ostringstream s;
     auto container = x.get_args();
-    assert(container.size() == 2);
-    s << "__daisy_max(";
-    s << apply(*container.begin());
-    for (auto it = ++(container.begin()); it != container.end(); ++it) {
-        s << ", " << apply(*it);
+    if (container.size() == 1) {
+        s << apply(*container.begin());
+    } else {
+        s << "__daisy_max(";
+        s << apply(*container.begin());
+
+        // Recursively apply __daisy_max to the arguments
+        SymEngine::vec_basic subargs;
+        for (auto it = ++(container.begin()); it != container.end(); ++it) {
+            subargs.push_back(*it);
+        }
+        auto submax = SymEngine::max(subargs);
+        s << ", " << apply(submax);
+
+        s << ")";
     }
-    s << ")";
+    
     str_ = s.str();
 };
 
