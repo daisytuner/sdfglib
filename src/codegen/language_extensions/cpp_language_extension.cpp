@@ -635,13 +635,19 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::Max& x) {
     str_ = s.str();
 };
 
-void CPPSymbolicPrinter::bvisit(const SymEngine::Pow& x) {
-    if (SymEngine::eq(*x.get_exp(), *SymEngine::integer(2))) {
-        str_ = apply(x.get_base()) + " * " + apply(x.get_base());
-        str_ = parenthesize(str_);
-        return;
+void CPPSymbolicPrinter::_print_pow(std::ostringstream &o, const SymEngine::RCP<const SymEngine::Basic> &a,
+                                  const SymEngine::RCP<const SymEngine::Basic> &b) {
+    if (SymEngine::eq(*a, *SymEngine::E)) {
+        o << "exp(" << apply(b) << ")";
+    } else if (SymEngine::eq(*b, *SymEngine::rational(1, 2))) {
+        o << "sqrt(" << apply(a) << ")";
+    } else if (SymEngine::eq(*b, *SymEngine::rational(1, 3))) {
+        o << "cbrt(" << apply(a) << ")";
+    } else if (SymEngine::eq(*b, *SymEngine::integer(2))) {
+        o << apply(a) + " * " + apply(a);
+    } else {
+        o << "pow(" << apply(a) << ", " << apply(b) << ")";
     }
-    str_ = "pow(" + apply(x.get_base()) + ", " + apply(x.get_exp()) + ")";
 };
 
 }  // namespace codegen
