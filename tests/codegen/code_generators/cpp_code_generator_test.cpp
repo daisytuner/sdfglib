@@ -36,7 +36,7 @@ TEST(CPPCodeGeneratorTest, Dispatch_Includes) {
 TEST(CPPCodeGeneratorTest, DispatchStructures_Basic) {
     builder::StructuredSDFGBuilder builder("sdfg_a");
 
-    auto& struct_def_A = builder.add_structure("MyStructA");
+    auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
 
     auto sdfg = builder.move();
@@ -55,13 +55,36 @@ char member_0;
 )");
 }
 
+TEST(CPPCodeGeneratorTest, DispatchStructures_Packed) {
+    builder::StructuredSDFGBuilder builder("sdfg_a");
+
+    auto& struct_def_A = builder.add_structure("MyStructA", true);
+    struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
+
+    auto sdfg = builder.move();
+
+    ConditionalSchedule schedule(sdfg);
+
+    codegen::CPPCodeGenerator generator(schedule, false);
+    EXPECT_TRUE(generator.generate());
+
+    auto result = generator.classes().str();
+    EXPECT_EQ(result, R"(struct MyStructA;
+struct __attribute__((packed)) MyStructA
+{
+char member_0;
+};
+)");
+}
+
+
 TEST(CPPCodeGeneratorTest, DispatchStructures_Nested) {
     builder::StructuredSDFGBuilder builder("sdfg_a");
 
-    auto& struct_def_A = builder.add_structure("MyStructA");
+    auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
 
-    auto& struct_def_B = builder.add_structure("MyStructB");
+    auto& struct_def_B = builder.add_structure("MyStructB", false);
     struct_def_B.add_member(types::Structure("MyStructA"));
 
     auto sdfg = builder.move();

@@ -13,7 +13,7 @@ TEST(ScheduleTest, NodeAllocations) {
     builder.add_container("M", desc, false, true);
     builder.add_container("i", desc);
 
-    builder.add_structure("struct_1");
+    builder.add_structure("struct_1", false);
     types::Structure desc_struct("struct_1");
     builder.add_container("S", desc_struct);
 
@@ -39,7 +39,7 @@ TEST(ScheduleTest, Allocations) {
     builder.add_container("M", desc, false, true);
     builder.add_container("i", desc);
 
-    builder.add_structure("struct_1");
+    builder.add_structure("struct_1", false);
     types::Structure desc_struct("struct_1");
     builder.add_container("S", desc_struct);
 

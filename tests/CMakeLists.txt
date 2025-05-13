@@ -26,8 +26,6 @@ set(TEST_FILES
     codegen/dispatchers/if_else_dispatcher_test.cpp
     codegen/dispatchers/node_dispatcher_factory_test.cpp
     codegen/dispatchers/node_dispatcher_test.cpp
-    codegen/dispatchers/schedules/highway_dispatcher_test.cpp
-    codegen/dispatchers/schedules/openmp_dispatcher_test.cpp
     codegen/dispatchers/sequence_dispatcher_test.cpp
     codegen/dispatchers/while_dispatcher_test.cpp
     codegen/language_extensions/c_language_extension_test.cpp
@@ -71,6 +69,7 @@ set(TEST_FILES
     transformations/out_local_storage_test.cpp
     transformations/vectorization_test.cpp
     types/array_test.cpp
+    types/function_test.cpp
     types/pointer_test.cpp
     types/primitive_type_test.cpp
     types/scalar_test.cpp

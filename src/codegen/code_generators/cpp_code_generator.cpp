@@ -137,7 +137,11 @@ void CPPCodeGenerator::dispatch_structures() {
     for (auto& structure_index : order) {
         std::string structure = names.at(structure_index);
         auto& definition = function.structure(structure);
-        this->classes_stream_ << "struct " << structure << std::endl;
+        this->classes_stream_ << "struct ";
+        if (definition.is_packed()) {
+            this->classes_stream_ << "__attribute__((packed)) ";
+        }
+        this->classes_stream_ << structure << std::endl;
         this->classes_stream_ << "{\n";
 
         for (size_t i = 0; i < definition.num_members(); i++) {
