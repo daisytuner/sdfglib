@@ -31,22 +31,31 @@ class StructuredSDFGBuilder : public FunctionBuilder {
     std::unordered_set<const control_flow::State*> determine_loop_nodes(
         const SDFG& sdfg, const control_flow::State& start, const control_flow::State& end) const;
 
+    const control_flow::State* find_end_of_if_else(
+        const SDFG& sdfg, const State* current, std::vector<const InterstateEdge*>& out_edges,
+        const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
+    );
+
     void traverse(const SDFG& sdfg);
 
     void traverse_with_loop_detection(
         const SDFG& sdfg,
         Sequence& scope,
         const State* current,
-        std::unordered_set<const InterstateEdge*>& continues,
-        std::unordered_set<const InterstateEdge*>& breaks
+        const State* end,
+        const std::unordered_set<const InterstateEdge*>& continues,
+        const std::unordered_set<const InterstateEdge*>& breaks,
+        const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
     );
 
     void traverse_without_loop_detection(
         const SDFG& sdfg,
         Sequence& scope,
         const State* current,
-        std::unordered_set<const InterstateEdge*>& continues,
-        std::unordered_set<const InterstateEdge*>& breaks
+        const State* end,
+        const std::unordered_set<const InterstateEdge*>& continues,
+        const std::unordered_set<const InterstateEdge*>& breaks,
+        const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
     );
 
    protected:
