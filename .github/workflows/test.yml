@@ -49,7 +49,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -G Ninja -DSDFGLIB_ENABLE_COVERAGE=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF ..
+          cmake -G Ninja -DSDFGLIB_ENABLE_COVERAGE=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF -DWITH_SYMENGINE_RCP=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
           ninja -j$(nproc)
 
       - name: Unit tests
