@@ -131,8 +131,20 @@ void StructuredSDFGBuilder::traverse_with_loop_detection(
             exit_edges.insert(edge);
         }
 
+        // Collect debug information (could be removed when this is computed dynamically)
+        DebugInfo dbg_info = current->debug_info();
+        for (auto& edge : in_edges) {
+            dbg_info = DebugInfo::merge(dbg_info, edge.debug_info());
+        }
+        for (auto node : body) {
+            dbg_info = DebugInfo::merge(dbg_info, node->debug_info());
+        }
+        for (auto edge : exit_edges) {
+            dbg_info = DebugInfo::merge(dbg_info, edge->debug_info());
+        }
+
         // 3. Add while loop
-        While& loop = this->add_while(scope, {}, current->debug_info());
+        While& loop = this->add_while(scope, {}, dbg_info);
         this->traverse_without_loop_detection(sdfg, loop.root(), current, exit_state, continues,
                                               exit_edges, pdom_tree);
 
