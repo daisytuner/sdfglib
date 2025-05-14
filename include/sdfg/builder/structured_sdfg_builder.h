@@ -31,14 +31,32 @@ class StructuredSDFGBuilder : public FunctionBuilder {
     std::unordered_set<const control_flow::State*> determine_loop_nodes(
         const SDFG& sdfg, const control_flow::State& start, const control_flow::State& end) const;
 
+    const control_flow::State* find_end_of_if_else(
+        const SDFG& sdfg, const State* current, std::vector<const InterstateEdge*>& out_edges,
+        const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
+    );
+
     void traverse(const SDFG& sdfg);
 
-    void traverse(const SDFG& sdfg, std::unordered_map<const State*, const State*>& pdom_tree,
-                  std::list<const InterstateEdge*>& back_edges, Sequence& scope, const State* begin,
-                  const State* end,
-                  std::unordered_map<const InterstateEdge*, const While*>& active_continues,
-                  std::unordered_map<const InterstateEdge*, const While*>& active_breaks,
-                  bool skip_loop_detection);
+    void traverse_with_loop_detection(
+        const SDFG& sdfg,
+        Sequence& scope,
+        const State* current,
+        const State* end,
+        const std::unordered_set<const InterstateEdge*>& continues,
+        const std::unordered_set<const InterstateEdge*>& breaks,
+        const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
+    );
+
+    void traverse_without_loop_detection(
+        const SDFG& sdfg,
+        Sequence& scope,
+        const State* current,
+        const State* end,
+        const std::unordered_set<const InterstateEdge*>& continues,
+        const std::unordered_set<const InterstateEdge*>& breaks,
+        const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
+    );
 
    protected:
     Function& function() const override;
@@ -138,17 +156,17 @@ class StructuredSDFGBuilder : public FunctionBuilder {
         const symbolic::Expression& threadIdx_y_init = symbolic::symbol("threadIdx.y"),
         const symbolic::Expression& threadIdx_z_init = symbolic::symbol("threadIdx.z"));
 
-    Continue& add_continue(Sequence& parent, const While& loop,
+    Continue& add_continue(Sequence& parent,
                            const DebugInfo& debug_info = DebugInfo());
 
-    Continue& add_continue(Sequence& parent, const While& loop,
+    Continue& add_continue(Sequence& parent,
                            const sdfg::symbolic::Assignments& assignments,
                            const DebugInfo& debug_info = DebugInfo());
 
-    Break& add_break(Sequence& parent, const While& loop,
+    Break& add_break(Sequence& parent,
                      const DebugInfo& debug_info = DebugInfo());
 
-    Break& add_break(Sequence& parent, const While& loop,
+    Break& add_break(Sequence& parent,
                      const sdfg::symbolic::Assignments& assignments,
                      const DebugInfo& debug_info = DebugInfo());
 

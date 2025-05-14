@@ -204,7 +204,7 @@ TEST(StructuredSDFGDeepCopy, Break) {
     auto& root_source = sdfg_source.root();
 
     auto& loop = builder_source.add_while(root_source);
-    auto& break_node = builder_source.add_break(loop.root(), loop);
+    auto& break_node = builder_source.add_break(loop.root());
 
     builder::StructuredSDFGBuilder builder_target("sdfg_target");
     auto& sdfg_target = builder_target.subject();
@@ -235,7 +235,7 @@ TEST(StructuredSDFGDeepCopy, Continue) {
     auto& root_source = sdfg_source.root();
 
     auto& loop = builder_source.add_while(root_source);
-    auto& continue_node = builder_source.add_continue(loop.root(), loop);
+    auto& continue_node = builder_source.add_continue(loop.root());
 
     builder::StructuredSDFGBuilder builder_target("sdfg_target");
     auto& sdfg_target = builder_target.subject();

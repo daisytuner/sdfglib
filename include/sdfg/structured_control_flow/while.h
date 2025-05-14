@@ -38,12 +38,10 @@ class Break : public ControlFlowNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
    private:
-    const While& loop_;
 
-    Break(size_t element_id, const DebugInfo& debug_info, const While& loop);
+    Break(size_t element_id, const DebugInfo& debug_info);
 
    public:
-    const While& loop() const;
 
     void replace(const symbolic::Expression& old_expression,
                  const symbolic::Expression& new_expression) override;
@@ -53,12 +51,10 @@ class Continue : public ControlFlowNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
    private:
-    const While& loop_;
 
-    Continue(size_t element_id, const DebugInfo& debug_info, const While& loop);
+    Continue(size_t element_id, const DebugInfo& debug_info);
 
    public:
-    const While& loop() const;
 
     void replace(const symbolic::Expression& old_expression,
                  const symbolic::Expression& new_expression) override;

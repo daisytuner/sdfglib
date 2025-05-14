@@ -311,10 +311,10 @@ TEST(DeadDataEliminationTest, WriteAfterWrite_ContinueBreak_NoReads) {
     auto& if_else = builder.add_if_else(body);
     auto& case1 = builder.add_case(if_else, symbolic::Lt(sym, symbolic::integer(10)));
     auto& block1 = builder.add_block(case1, {{sym, symbolic::integer(10)}});
-    auto& cont1 = builder.add_continue(case1, loop);
+    auto& cont1 = builder.add_continue(case1);
     auto& case2 = builder.add_case(if_else, symbolic::Ge(sym, symbolic::integer(10)));
     auto& block2 = builder.add_block(case2, {{sym, symbolic::integer(0)}});
-    auto& break1 = builder.add_break(case2, loop);
+    auto& break1 = builder.add_break(case2);
 
     auto sdfg = builder.move();
 
@@ -363,10 +363,10 @@ TEST(DeadDataEliminationTest, WriteAfterWrite_ContinueBreak_Read) {
     auto& if_else = builder.add_if_else(body);
     auto& case1 = builder.add_case(if_else, symbolic::Lt(sym, symbolic::integer(10)));
     auto& block1 = builder.add_block(case1, {{sym, symbolic::integer(10)}});
-    auto& cont1 = builder.add_continue(case1, loop);
+    auto& cont1 = builder.add_continue(case1);
     auto& case2 = builder.add_case(if_else, symbolic::Ge(sym, symbolic::integer(10)));
     auto& block2 = builder.add_block(case2, {{sym, symbolic::integer(0)}});
-    auto& break1 = builder.add_break(case2, loop);
+    auto& break1 = builder.add_break(case2);
 
     auto& after2 = builder.add_block(root, {{symN, sym}});
 
@@ -420,10 +420,10 @@ TEST(DeadDataEliminationTest, WriteAfterWrite_ContinueBreak_OpenRead) {
     auto& if_else = builder.add_if_else(body);
     auto& case1 = builder.add_case(if_else, symbolic::Lt(sym, symbolic::integer(10)));
     auto& block1 = builder.add_block(case1, {{sym, symbolic::integer(10)}});
-    auto& cont1 = builder.add_continue(case1, loop);
+    auto& cont1 = builder.add_continue(case1);
     auto& case2 = builder.add_case(if_else, symbolic::Ge(sym, symbolic::integer(10)));
     auto& block2 = builder.add_block(case2, {{sym, symbolic::integer(0)}});
-    auto& break1 = builder.add_break(case2, loop);
+    auto& break1 = builder.add_break(case2);
 
     auto sdfg = builder.move();
 
