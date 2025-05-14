@@ -16,6 +16,10 @@ class WhileDispatcher : public NodeDispatcher {
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                        PrettyPrinter& library_stream) override;
+
+    void begin_instrumentation(PrettyPrinter& stream) override;
+
+    void end_instrumentation(PrettyPrinter& stream) override;
 };
 
 class BreakDispatcher : public NodeDispatcher {

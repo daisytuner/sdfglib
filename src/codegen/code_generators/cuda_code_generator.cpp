@@ -204,7 +204,7 @@ void CUDACodeGenerator::dispatch_schedule() {
 
             auto& function_i = schedule_.schedule(i).builder().subject();
             auto dispatcher = create_dispatcher(language_extension_, schedule_.schedule(i),
-                                                function_i.root(), this->instrumented_);
+                                                function_i.root(), false);
             dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_stream_);
 
             this->main_stream_ << "}\n";
@@ -214,7 +214,7 @@ void CUDACodeGenerator::dispatch_schedule() {
 
             auto& function_i = schedule_.schedule(i).builder().subject();
             auto dispatcher = create_dispatcher(language_extension_, schedule_.schedule(i),
-                                                function_i.root(), this->instrumented_);
+                                                function_i.root(), false);
             dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_stream_);
 
             this->main_stream_ << "}\n";
