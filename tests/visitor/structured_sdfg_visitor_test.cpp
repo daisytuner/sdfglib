@@ -24,8 +24,8 @@ TEST(StructuredSDFGVisitorTest, None) {
     auto& block = builder.add_block(sequence);
     auto& if_else = builder.add_if_else(sequence);
     auto& loop = builder.add_while(sequence);
-    auto& cont = builder.add_continue(loop.root(), loop);
-    auto& br = builder.add_break(sequence, loop);
+    auto& cont = builder.add_continue(loop.root());
+    auto& br = builder.add_break(sequence);
     auto& for_l = builder.add_for(
         sequence, symbolic::symbol("i"), symbolic::Le(symbolic::symbol("i"), symbolic::integer(0)),
         symbolic::integer(1), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)));
@@ -476,7 +476,7 @@ TEST(StructuredSDFGVisitorTest, Continue) {
     auto& root = builder.subject().root();
 
     auto& loop = builder.add_while(root);
-    auto& continue_ = builder.add_continue(loop.root(), loop);
+    auto& continue_ = builder.add_continue(loop.root());
 
     ContinueVisitor visitor(builder, analysis_manager);
     EXPECT_TRUE(visitor.visit());
@@ -541,7 +541,7 @@ TEST(StructuredSDFGVisitorTest, Break) {
     auto& root = builder.subject().root();
 
     auto& loop = builder.add_while(root);
-    auto& break_ = builder.add_break(loop.root(), loop);
+    auto& break_ = builder.add_break(loop.root());
 
     BreakVisitor visitor(builder, analysis_manager);
     EXPECT_TRUE(visitor.visit());

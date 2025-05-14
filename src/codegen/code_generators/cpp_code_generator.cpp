@@ -60,7 +60,17 @@ bool CPPCodeGenerator::as_source(const std::filesystem::path& header_path,
     ofs_source << this->globals_stream_.str() << std::endl;
     ofs_source << this->function_definition() << std::endl;
     ofs_source << "{" << std::endl;
+
+    if (instrumented_) {
+        ofs_source << "__daisy_instrument_init();" << std::endl;
+    }
+
     ofs_source << this->main_stream_.str() << std::endl;
+    
+    if (instrumented_) {
+        ofs_source << "__daisy_instrument_finalize();" << std::endl;
+    }
+    
     ofs_source << "}" << std::endl;
     ofs_source.close();
 

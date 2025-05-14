@@ -38,22 +38,12 @@ void StructuredSDFGDeepCopy::append(structured_control_flow::Sequence& root,
             this->node_mapping[loop_stmt] = &new_scope;
             this->append(new_scope.root(), loop_stmt->root());
         } else if (auto cont_stmt = dynamic_cast<structured_control_flow::Continue*>(&node)) {
-            auto loop = &cont_stmt->loop();
-            if (this->node_mapping.find(loop) != this->node_mapping.end()) {
-                loop =
-                    dynamic_cast<const structured_control_flow::While*>(this->node_mapping[loop]);
-            }
-            auto& new_cont = this->builder_.add_continue(root, *loop, trans.assignments(),
-                                                         cont_stmt->debug_info());
+            auto& new_cont =
+                this->builder_.add_continue(root, trans.assignments(), cont_stmt->debug_info());
             this->node_mapping[cont_stmt] = &new_cont;
         } else if (auto br_stmt = dynamic_cast<structured_control_flow::Break*>(&node)) {
-            auto loop = &br_stmt->loop();
-            if (this->node_mapping.find(loop) != this->node_mapping.end()) {
-                loop =
-                    dynamic_cast<const structured_control_flow::While*>(this->node_mapping[loop]);
-            }
             auto& new_br =
-                this->builder_.add_break(root, *loop, trans.assignments(), br_stmt->debug_info());
+                this->builder_.add_break(root, trans.assignments(), br_stmt->debug_info());
             this->node_mapping[br_stmt] = &new_br;
         } else if (auto ret_stmt = dynamic_cast<structured_control_flow::Return*>(&node)) {
             auto& new_ret =
@@ -113,18 +103,10 @@ void StructuredSDFGDeepCopy::insert(structured_control_flow::Sequence& root,
         this->node_mapping[for_stmt] = &new_scope;
         this->append(new_scope.root(), for_stmt->root());
     } else if (auto cont_stmt = dynamic_cast<structured_control_flow::Continue*>(&source)) {
-        auto loop = &cont_stmt->loop();
-        if (this->node_mapping.find(loop) != this->node_mapping.end()) {
-            loop = dynamic_cast<const structured_control_flow::While*>(this->node_mapping[loop]);
-        }
-        auto& new_cont = this->builder_.add_continue(root, *loop, cont_stmt->debug_info());
+        auto& new_cont = this->builder_.add_continue(root, cont_stmt->debug_info());
         this->node_mapping[cont_stmt] = &new_cont;
     } else if (auto br_stmt = dynamic_cast<structured_control_flow::Break*>(&source)) {
-        auto loop = &br_stmt->loop();
-        if (this->node_mapping.find(loop) != this->node_mapping.end()) {
-            loop = dynamic_cast<const structured_control_flow::While*>(this->node_mapping[loop]);
-        }
-        auto& new_br = this->builder_.add_break(root, *loop, br_stmt->debug_info());
+        auto& new_br = this->builder_.add_break(root, br_stmt->debug_info());
         this->node_mapping[br_stmt] = &new_br;
     } else if (auto ret_stmt = dynamic_cast<structured_control_flow::Return*>(&source)) {
         auto& new_ret = this->builder_.add_return(root, {}, ret_stmt->debug_info());

@@ -38,7 +38,7 @@ TEST(BreakDispatcherTest, DispatchNode) {
     auto& root = sdfg.root();
 
     auto& loop = builder.add_while(root);
-    auto& break_node = builder.add_break(loop.root(), loop);
+    auto& break_node = builder.add_break(loop.root());
 
     auto final_sdfg = builder.move();
 
@@ -64,7 +64,7 @@ TEST(ContinueDispatcherTest, DispatchNode) {
     auto& root = sdfg.root();
 
     auto& loop = builder.add_while(root);
-    auto& continue_node = builder.add_continue(loop.root(), loop);
+    auto& continue_node = builder.add_continue(loop.root());
 
     auto final_sdfg = builder.move();
 
