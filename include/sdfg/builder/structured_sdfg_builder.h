@@ -33,12 +33,21 @@ class StructuredSDFGBuilder : public FunctionBuilder {
 
     void traverse(const SDFG& sdfg);
 
-    void traverse(const SDFG& sdfg, std::unordered_map<const State*, const State*>& pdom_tree,
-                  std::list<const InterstateEdge*>& back_edges, Sequence& scope, const State* begin,
-                  const State* end,
-                  std::unordered_map<const InterstateEdge*, const While*>& active_continues,
-                  std::unordered_map<const InterstateEdge*, const While*>& active_breaks,
-                  bool skip_loop_detection);
+    void traverse_with_loop_detection(
+        const SDFG& sdfg,
+        Sequence& scope,
+        const State* current,
+        std::unordered_set<const InterstateEdge*>& continues,
+        std::unordered_set<const InterstateEdge*>& breaks
+    );
+
+    void traverse_without_loop_detection(
+        const SDFG& sdfg,
+        Sequence& scope,
+        const State* current,
+        std::unordered_set<const InterstateEdge*>& continues,
+        std::unordered_set<const InterstateEdge*>& breaks
+    );
 
    protected:
     Function& function() const override;
@@ -138,17 +147,17 @@ class StructuredSDFGBuilder : public FunctionBuilder {
         const symbolic::Expression& threadIdx_y_init = symbolic::symbol("threadIdx.y"),
         const symbolic::Expression& threadIdx_z_init = symbolic::symbol("threadIdx.z"));
 
-    Continue& add_continue(Sequence& parent, const While& loop,
+    Continue& add_continue(Sequence& parent,
                            const DebugInfo& debug_info = DebugInfo());
 
-    Continue& add_continue(Sequence& parent, const While& loop,
+    Continue& add_continue(Sequence& parent,
                            const sdfg::symbolic::Assignments& assignments,
                            const DebugInfo& debug_info = DebugInfo());
 
-    Break& add_break(Sequence& parent, const While& loop,
+    Break& add_break(Sequence& parent,
                      const DebugInfo& debug_info = DebugInfo());
 
-    Break& add_break(Sequence& parent, const While& loop,
+    Break& add_break(Sequence& parent,
                      const sdfg::symbolic::Assignments& assignments,
                      const DebugInfo& debug_info = DebugInfo());
 

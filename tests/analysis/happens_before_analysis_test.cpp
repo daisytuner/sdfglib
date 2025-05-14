@@ -1555,10 +1555,10 @@ TEST(HappensBeforeAnalysisTest, propagate_open_read_out_of_while) {
     auto& outer_cont_break = builder.add_if_else(outer_body);
     auto& outer_cont_case =
         builder.add_case(outer_cont_break, symbolic::Lt(sym, symbolic::integer(10)));
-    auto& outer_cont = builder.add_continue(outer_cont_case, outer_loop);
+    auto& outer_cont = builder.add_continue(outer_cont_case);
     auto& outer_break_case =
         builder.add_case(outer_cont_break, symbolic::Ge(sym, symbolic::integer(10)));
-    auto& outer_break = builder.add_break(outer_break_case, outer_loop);
+    auto& outer_break = builder.add_break(outer_break_case);
 
     auto sdfg = builder.move();
 

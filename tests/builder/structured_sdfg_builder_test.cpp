@@ -164,7 +164,7 @@ TEST(StructuredSDFGBuilderTest, addWhile) {
     auto& root = builder.subject().root();
     auto& scope = builder.add_while(root);
     auto& body = builder.add_block(scope.root());
-    auto& break_state = builder.add_break(scope.root(), scope);
+    auto& break_state = builder.add_break(scope.root());
 
     auto sdfg = builder.move();
 
