@@ -501,25 +501,17 @@ TEST(SDFG2StructuredSDFGTest, While) {
     {
         auto if_case = dynamic_cast<const structured_control_flow::IfElse&>(child3.first).at(0);
         EXPECT_TRUE(symbolic::eq(if_case.second, cond_expr->logical_not()));
-        EXPECT_EQ(if_case.first.size(), 2);
+        EXPECT_EQ(if_case.first.size(), 1);
 
         auto if_case_child1 = if_case.first.at(0);
         EXPECT_TRUE(dynamic_cast<const structured_control_flow::Block*>(&if_case_child1.first));
         EXPECT_EQ(if_case_child1.second.size(), 0);
 
-        auto if_case_child2 = if_case.first.at(1);
-        EXPECT_TRUE(dynamic_cast<const structured_control_flow::Block*>(&if_case_child2.first));
-        EXPECT_EQ(if_case_child2.second.size(), 0);
-
         auto else_case = dynamic_cast<const structured_control_flow::IfElse&>(child3.first).at(1);
         EXPECT_TRUE(symbolic::eq(else_case.second, cond_expr));
-        EXPECT_EQ(else_case.first.size(), 2);
+        EXPECT_EQ(else_case.first.size(), 1);
 
-        auto else_case_child1 = else_case.first.at(0);
-        EXPECT_TRUE(dynamic_cast<const structured_control_flow::Block*>(&else_case_child1.first));
-        EXPECT_EQ(else_case_child1.second.size(), 0);
-
-        auto else_case_child2 = else_case.first.at(1);
+        auto else_case_child2 = else_case.first.at(0);
         EXPECT_TRUE(dynamic_cast<const structured_control_flow::While*>(&else_case_child2.first));
         EXPECT_EQ(else_case_child2.second.size(), 0);
     }
