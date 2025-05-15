@@ -1,10 +1,6 @@
 #include "sdfg/serializer/json_serializer.h"
 
-#include <symengine/serialize-cereal.h>
-
 #include <cassert>
-#include <cereal/archives/binary.hpp>
-#include <iostream>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -24,74 +20,13 @@
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/types/scalar.h"
 #include "sdfg/types/type.h"
+#include "symengine/expression.h"
+#include "symengine/logic.h"
 #include "symengine/symbol.h"
 #include "symengine/symengine_rcp.h"
 
 namespace sdfg {
 namespace serializer {
-
-template <typename T>
-std::string JSONSerializer::dumps(T obj) {
-    std::ostringstream oss(std::ios::binary);
-    cereal::BinaryOutputArchive{oss}(obj);
-
-    std::string binary_data = oss.str();
-    std::ostringstream hex_oss;
-
-    // Set up hex formatting
-    hex_oss << std::hex << std::uppercase << std::setfill('0');
-
-    // Prepend the "0x" prefix
-    hex_oss << "0x";
-
-    // Convert each byte to its hexadecimal representation
-    for (unsigned char byte : binary_data) {
-        hex_oss << std::setw(2) << static_cast<int>(byte);
-    }
-
-    return hex_oss.str();
-}
-
-template <typename T>
-T JSONSerializer::loads(const std::string& hex_str) {
-    // Check for and remove the "0x" prefix if present
-    std::string clean_hex_str = hex_str;
-    if (clean_hex_str.substr(0, 2) == "0x" || clean_hex_str.substr(0, 2) == "0X") {
-        clean_hex_str = clean_hex_str.substr(2);
-    }
-
-    // Ensure the remaining string has an even number of characters
-    if (clean_hex_str.length() % 2 != 0) {
-        throw std::runtime_error(
-            "Hex string must have an even number of characters after the optional '0x' prefix.");
-    }
-
-    std::string binary_data;
-    binary_data.reserve(clean_hex_str.length() / 2);
-
-    // Convert hex string back to binary data
-    for (size_t i = 0; i < clean_hex_str.length(); i += 2) {
-        std::string byte_hex_str = clean_hex_str.substr(i, 2);
-        try {
-            int byte_val = std::stoi(byte_hex_str, nullptr, 16);
-            binary_data.push_back(static_cast<unsigned char>(byte_val));
-        } catch (const std::invalid_argument& ia) {
-            throw std::runtime_error("Invalid hexadecimal character in string.");
-        } catch (const std::out_of_range& oor) {
-            throw std::runtime_error("Hexadecimal value out of byte range.");
-        }
-    }
-
-    // Create an istringstream from the binary data in binary mode
-    std::istringstream iss(binary_data, std::ios::binary);
-    cereal::BinaryInputArchive archive(iss);
-
-    // Deserialize the object
-    T obj;
-    archive(obj);
-
-    return obj;
-}
 
 /*
  * * JSONSerializer class
@@ -215,7 +150,7 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
         // add subset
         edge_json["subset"] = nlohmann::json::array();
         for (auto& subset : edge.subset()) {
-            edge_json["subset"].push_back(dumps(subset));
+            edge_json["subset"].push_back(subset->__str__());
         }
 
         j["edges"].push_back(edge_json);
@@ -232,9 +167,9 @@ void JSONSerializer::block_to_json(nlohmann::json& j, const structured_control_f
 void JSONSerializer::for_to_json(nlohmann::json& j, const structured_control_flow::For& for_node) {
     j["type"] = "for";
     j["indvar"] = for_node.indvar()->__str__();
-    j["init"] = dumps(for_node.init());
-    j["condition"] = dumps(for_node.condition());
-    j["update"] = dumps(for_node.update());
+    j["init"] = for_node.init()->__str__();
+    j["condition"] = for_node.condition()->__str__();
+    j["update"] = for_node.update()->__str__();
 
     nlohmann::json body_json;
     sequence_to_json(body_json, for_node.root());
@@ -247,7 +182,7 @@ void JSONSerializer::if_else_to_json(nlohmann::json& j,
     j["branches"] = nlohmann::json::array();
     for (int i = 0; i < if_else_node.size(); i++) {
         nlohmann::json branch_json;
-        branch_json["condition"] = dumps(if_else_node.at(i).second);
+        branch_json["condition"] = if_else_node.at(i).second->__str__();
         nlohmann::json body_json;
         sequence_to_json(body_json, if_else_node.at(i).first);
         branch_json["children"] = body_json;
@@ -335,7 +270,7 @@ void JSONSerializer::sequence_to_json(nlohmann::json& j,
         for (const auto& assignment : transition.assignments()) {
             nlohmann::json assignment_json;
             assignment_json["symbol"] = assignment.first->__str__();
-            assignment_json["expression"] = dumps(assignment.second);
+            assignment_json["expression"] = assignment.second->__str__();
             transition_json["assignments"].push_back(assignment_json);
         }
 
@@ -355,7 +290,7 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
         nlohmann::json element_type_json;
         type_to_json(element_type_json, array_type->element_type());
         j["element_type"] = element_type_json;
-        j["num_elements"] = dumps(array_type->num_elements());
+        j["num_elements"] = array_type->num_elements()->__str__();
         j["address_space"] = array_type->address_space();
         j["initializer"] = array_type->initializer();
         j["device_location"] = array_type->device_location();
@@ -544,7 +479,8 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
         std::vector<symbolic::Expression> subset;
         for (const auto& subset_str : edge["subset"]) {
             assert(subset_str.is_string());
-            subset.push_back(loads<symbolic::Expression>(subset_str));
+            SymEngine::Expression subset_expr(subset_str);
+            subset.push_back(subset_expr);
         }
         builder.add_memlet(parent, source, edge["source_connector"], target,
                            edge["target_connector"], subset);
@@ -579,8 +515,8 @@ void JSONSerializer::json_to_sequence(const nlohmann::json& j,
                 assert(assignment["symbol"].is_string());
                 assert(assignment.contains("expression"));
                 assert(assignment["expression"].is_string());
-                assignments.insert({symbolic::symbol(assignment["symbol"]),
-                                    loads<symbolic::Expression>(assignment["expression"])});
+                SymEngine::Expression expr(assignment["expression"]);
+                assignments.insert({symbolic::symbol(assignment["symbol"]), expr});
             }
 
             if (child["type"] == "block") {
@@ -645,9 +581,13 @@ void JSONSerializer::json_to_for_node(const nlohmann::json& j,
     assert(j["children"].is_object());
 
     symbolic::Symbol indvar = symbolic::symbol(j["indvar"]);
-    symbolic::Expression init = loads<symbolic::Expression>(j["init"]);
-    symbolic::Condition condition = loads<symbolic::Condition>((j["condition"]));
-    symbolic::Expression update = loads<symbolic::Expression>(j["update"]);
+    SymEngine::Expression init(j["init"]);
+    SymEngine::Expression condition_expr(j["condition"]);
+    assert(!SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic())
+                .is_null());
+    symbolic::Condition condition =
+        SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic());
+    SymEngine::Expression update(j["update"]);
     auto& for_node = builder.add_for(parent, indvar, condition, init, update, assignments);
 
     assert(j["children"].contains("type"));
@@ -674,7 +614,11 @@ void JSONSerializer::json_to_if_else_node(const nlohmann::json& j,
         assert(branch["condition"].is_string());
         assert(branch.contains("children"));
         assert(branch["children"].is_object());
-        symbolic::Condition condition = loads<symbolic::Condition>(branch["condition"]);
+        SymEngine::Expression condition_expr(branch["condition"]);
+        assert(!SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic())
+                    .is_null());
+        symbolic::Condition condition =
+            SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic());
         auto& true_case = builder.add_case(if_else_node, condition);
         assert(branch["children"].contains("type"));
         assert(branch["children"]["type"].is_string());
@@ -781,7 +725,7 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             assert(j.contains("num_elements"));
             std::string num_elements_str = j["num_elements"];
             // Convert num_elements_str to symbolic::Expression
-            symbolic::Expression num_elements = loads<symbolic::Expression>(num_elements_str);
+            SymEngine::Expression num_elements(num_elements_str);
             assert(j.contains("address_space"));
             uint address_space = j["address_space"];
             assert(j.contains("initializer"));

@@ -25,12 +25,6 @@ class JSONSerializer {
 
     std::unique_ptr<sdfg::StructuredSDFG> deserialize(nlohmann::json& j);
 
-    template <typename T>
-    std::string dumps(T obj);
-
-    template <typename T>
-    T loads(const std::string& hex_str);
-
     void structure_definition_to_json(nlohmann::json& j,
                                       const sdfg::types::StructureDefinition& definition);
     void type_to_json(nlohmann::json& j, const sdfg::types::IType& type);
