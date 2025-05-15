@@ -2,7 +2,6 @@
 
 #include <string>
 
-#include "sdfg/codegen/language_extensions/c_language_extension.h"
 #include "sdfg/schedule.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
@@ -20,8 +19,6 @@ class DotVisualizer : public Visualizer {
    private:
     std::string last_comp_name_;
     std::string last_comp_name_cluster_;
-
-    codegen::CLanguageExtension le_;
 
     virtual void visualizeBlock(Schedule& schedule, structured_control_flow::Block& block) override;
     virtual void visualizeSequence(Schedule& schedule,

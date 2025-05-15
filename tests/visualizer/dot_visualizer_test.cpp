@@ -9,8 +9,10 @@
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/codegen/utils.h"
 #include "sdfg/conditional_schedule.h"
+#include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/types/array.h"
 #include "sdfg/types/pointer.h"
 #include "sdfg/types/scalar.h"
 #include "sdfg/types/type.h"
@@ -627,10 +629,10 @@ TEST(DotVisualizerTest, test_while) {
     auto& if_else = builder.add_if_else(body);
     auto& case1 = builder.add_case(if_else, symbolic::Lt(sym, symbolic::integer(10)));
     auto& block1 = builder.add_block(case1, {{sym, symbolic::integer(10)}});
-    auto& cont1 = builder.add_continue(case1, loop);
+    auto& cont1 = builder.add_continue(case1);
     auto& case2 = builder.add_case(if_else, symbolic::Ge(sym, symbolic::integer(10)));
     auto& block2 = builder.add_block(case2, {{sym, symbolic::integer(0)}});
-    auto& break1 = builder.add_break(case2, loop);
+    auto& break1 = builder.add_break(case2);
 
     auto sdfg = builder.move();
     ConditionalSchedule schedule(sdfg);
@@ -690,4 +692,359 @@ TEST(DotVisualizerTest, test_while) {
     visualizer::DotVisualizer dot(schedule);
     dot.visualize();
     EXPECT_EQ(dot.getStream().str(), exp.str());
+}
+
+TEST(DotVisualizerTest, test_return) {
+    builder::StructuredSDFGBuilder builder("test_return");
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    types::Scalar sym_desc(types::PrimitiveType::Int64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+
+    types::Scalar base_desc(types::PrimitiveType::Double);
+    types::Array desc(base_desc, symbolic::symbol("N"));
+    builder.add_container("A", desc, true);
+
+    auto& block1 = builder.add_block(root);
+    auto& output1 = builder.add_access(block1, "i");
+    auto& tasklet1 = builder.add_tasklet(block1, data_flow::TaskletCode::assign, {"_out", sym_desc},
+                                         {{"0", sym_desc}});
+    builder.add_memlet(block1, tasklet1, "_out", output1, "void", {});
+
+    auto& loop = builder.add_while(root);
+    auto& body = loop.root();
+
+    auto& if_else = builder.add_if_else(body);
+    auto& case1 =
+        builder.add_case(if_else, symbolic::Ge(symbolic::symbol("i"), symbolic::symbol("N")));
+    auto& case2 =
+        builder.add_case(if_else, symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")));
+
+    auto& return_node = builder.add_return(case1);
+
+    auto& block2 = builder.add_block(case2);
+    auto& input2 = builder.add_access(block2, "A");
+    auto& output2 = builder.add_access(block2, "A");
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::mul, {"_out", base_desc},
+                                         {{"_in", base_desc}, {"2.0", base_desc}});
+    builder.add_memlet(block2, input2, "void", tasklet2, "_in", {symbolic::symbol("i")});
+    builder.add_memlet(block2, tasklet2, "_out", output2, "void", {symbolic::symbol("i")});
+
+    auto& block3 = builder.add_block(case2);
+    auto& input3 = builder.add_access(block3, "i");
+    auto& output3 = builder.add_access(block3, "i");
+    auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::add, {"_out", sym_desc},
+                                         {{"_in", sym_desc}, {"1", sym_desc}});
+    builder.add_memlet(block3, input3, "void", tasklet3, "_in", {});
+    builder.add_memlet(block3, tasklet3, "_out", output3, "void", {});
+
+    auto sdfg2 = builder.move();
+    ConditionalSchedule schedule(sdfg2);
+
+    codegen::PrettyPrinter exp;
+    exp << "digraph " << schedule.name() << " {" << std::endl;
+    exp.setIndent(4);
+    exp << "graph [compound=true];" << std::endl
+        << "subgraph cluster_" << sdfg.name() << " {" << std::endl;
+    exp.setIndent(8);
+    exp << "node [style=filled,fillcolor=white];" << std::endl
+        << "style=filled;color=lightblue;label=\"\";" << std::endl
+        << "subgraph cluster_" << block1.name() << " {" << std::endl;
+    exp.setIndent(12);
+    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
+        << tasklet1.name() << " [shape=octagon,label=\"_out = 0\"];" << std::endl
+        << tasklet1.name() << " -> " << output1.name() << " [label=\"   i = _out   \"];"
+        << std::endl
+        << output1.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"i\"];" << std::endl;
+    exp.setIndent(8);
+    exp << "}" << std::endl << "subgraph cluster_" << loop.name() << " {" << std::endl;
+    exp.setIndent(12);
+    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"while:\";" << std::endl
+        << loop.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
+        << "subgraph cluster_" << if_else.name() << " {" << std::endl;
+    exp.setIndent(16);
+    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"if:\";" << std::endl
+        << if_else.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
+        << "subgraph cluster_" << if_else.name() << "_0 {" << std::endl;
+    exp.setIndent(20);
+    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"N <= i\";" << std::endl
+        << return_node.name() << " [shape=cds,label=\" return  \"];" << std::endl;
+    exp.setIndent(16);
+    exp << "}" << std::endl << "subgraph cluster_" << if_else.name() << "_1 {" << std::endl;
+    exp.setIndent(20);
+    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"i < N\";" << std::endl
+        << "subgraph cluster_" << block2.name() << " {" << std::endl;
+    exp.setIndent(24);
+    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
+        << input2.name() << " [penwidth=3.0,label=\"A\"];" << std::endl
+        << tasklet2.name() << " [shape=octagon,label=\"_out = _in * 2.0\"];" << std::endl
+        << input2.name() << " -> " << tasklet2.name() << " [label=\"   _in = A[i]   \"];"
+        << std::endl
+        << tasklet2.name() << " -> " << output2.name() << " [label=\"   A[i] = _out   \"];"
+        << std::endl
+        << output2.name() << " [penwidth=3.0,label=\"A\"];" << std::endl;
+    exp.setIndent(20);
+    exp << "}" << std::endl << "subgraph cluster_" << block3.name() << " {" << std::endl;
+    exp.setIndent(24);
+    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
+        << input3.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"i\"];" << std::endl
+        << tasklet3.name() << " [shape=octagon,label=\"_out = _in + 1\"];" << std::endl
+        << input3.name() << " -> " << tasklet3.name() << " [label=\"   _in = i   \"];" << std::endl
+        << tasklet3.name() << " -> " << output3.name() << " [label=\"   i = _out   \"];"
+        << std::endl
+        << output3.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"i\"];" << std::endl;
+    exp.setIndent(20);
+    exp << "}" << std::endl
+        << tasklet2.name() << " -> " << tasklet3.name() << " [ltail=\"cluster_" << block2.name()
+        << "\",lhead=\"cluster_" << block3.name() << "\",minlen=3];" << std::endl;
+    exp.setIndent(16);
+    exp << "}" << std::endl;
+    exp.setIndent(12);
+    exp << "}" << std::endl;
+    exp.setIndent(8);
+    exp << "}" << std::endl
+        << tasklet1.name() << " -> " << loop.name() << " [ltail=\"cluster_" << block1.name()
+        << "\",lhead=\"cluster_" << loop.name() << "\",minlen=3];" << std::endl;
+    exp.setIndent(4);
+    exp << "}" << std::endl;
+    exp.setIndent(0);
+    exp << "}" << std::endl;
+
+    visualizer::DotVisualizer dot(schedule);
+    dot.visualize();
+    EXPECT_EQ(dot.getStream().str(), exp.str());
+}
+
+TEST(DotVisualizerTest, test_handleTasklet) {
+    const std::vector<std::pair<const data_flow::TaskletCode, const std::string>> codes = {
+        {data_flow::TaskletCode::assign, "="},
+        {data_flow::TaskletCode::neg, "-"},
+        {data_flow::TaskletCode::add, "+"},
+        {data_flow::TaskletCode::sub, "-"},
+        {data_flow::TaskletCode::mul, "*"},
+        {data_flow::TaskletCode::div, "/"},
+        {data_flow::TaskletCode::fma, "fma"},
+        {data_flow::TaskletCode::mod, "%"},
+        {data_flow::TaskletCode::max, "max"},
+        {data_flow::TaskletCode::min, "min"},
+        {data_flow::TaskletCode::minnum, "minnum"},
+        {data_flow::TaskletCode::maxnum, "maxnum"},
+        {data_flow::TaskletCode::minimum, "minimum"},
+        {data_flow::TaskletCode::maximum, "maximum"},
+        {data_flow::TaskletCode::trunc, "trunc"},
+        {data_flow::TaskletCode::logical_and, "&&"},
+        {data_flow::TaskletCode::logical_or, "||"},
+        {data_flow::TaskletCode::bitwise_and, "&"},
+        {data_flow::TaskletCode::bitwise_or, "|"},
+        {data_flow::TaskletCode::bitwise_xor, "^"},
+        {data_flow::TaskletCode::bitwise_not, "~"},
+        {data_flow::TaskletCode::shift_left, "<<"},
+        {data_flow::TaskletCode::shift_right, ">>"},
+        {data_flow::TaskletCode::olt, "<"},
+        {data_flow::TaskletCode::ole, "<="},
+        {data_flow::TaskletCode::oeq, "=="},
+        {data_flow::TaskletCode::one, "!="},
+        {data_flow::TaskletCode::oge, ">="},
+        {data_flow::TaskletCode::ogt, ">"},
+        {data_flow::TaskletCode::ord, "=="},
+        {data_flow::TaskletCode::ult, "<"},
+        {data_flow::TaskletCode::ule, "<="},
+        {data_flow::TaskletCode::ueq, "=="},
+        {data_flow::TaskletCode::une, "!="},
+        {data_flow::TaskletCode::uge, ">="},
+        {data_flow::TaskletCode::ugt, ">"},
+        {data_flow::TaskletCode::uno, "!="},
+        {data_flow::TaskletCode::abs, "abs"},
+        {data_flow::TaskletCode::acos, "acos"},
+        {data_flow::TaskletCode::acosf, "acosf"},
+        {data_flow::TaskletCode::acosl, "acosl"},
+        {data_flow::TaskletCode::acosh, "acosh"},
+        {data_flow::TaskletCode::acoshf, "acoshf"},
+        {data_flow::TaskletCode::acoshl, "acoshl"},
+        {data_flow::TaskletCode::asin, "asin"},
+        {data_flow::TaskletCode::asinf, "asinf"},
+        {data_flow::TaskletCode::asinl, "asinl"},
+        {data_flow::TaskletCode::asinh, "asinh"},
+        {data_flow::TaskletCode::asinhf, "asinhf"},
+        {data_flow::TaskletCode::asinhl, "asinhl"},
+        {data_flow::TaskletCode::atan, "atan"},
+        {data_flow::TaskletCode::atanf, "atanf"},
+        {data_flow::TaskletCode::atanl, "atanl"},
+        {data_flow::TaskletCode::atan2, "atan2"},
+        {data_flow::TaskletCode::atan2f, "atan2f"},
+        {data_flow::TaskletCode::atan2l, "atan2l"},
+        {data_flow::TaskletCode::atanh, "atanh"},
+        {data_flow::TaskletCode::atanhf, "atanhf"},
+        {data_flow::TaskletCode::atanhl, "atanhl"},
+        {data_flow::TaskletCode::cabs, "cabs"},
+        {data_flow::TaskletCode::cabsf, "cabsf"},
+        {data_flow::TaskletCode::cabsl, "cabsl"},
+        {data_flow::TaskletCode::ceil, "ceil"},
+        {data_flow::TaskletCode::ceilf, "ceilf"},
+        {data_flow::TaskletCode::ceill, "ceill"},
+        {data_flow::TaskletCode::copysign, "copysign"},
+        {data_flow::TaskletCode::copysignf, "copysignf"},
+        {data_flow::TaskletCode::copysignl, "copysignl"},
+        {data_flow::TaskletCode::cos, "cos"},
+        {data_flow::TaskletCode::cosf, "cosf"},
+        {data_flow::TaskletCode::cosl, "cosl"},
+        {data_flow::TaskletCode::cosh, "cosh"},
+        {data_flow::TaskletCode::coshf, "coshf"},
+        {data_flow::TaskletCode::coshl, "coshl"},
+        {data_flow::TaskletCode::cbrt, "cbrt"},
+        {data_flow::TaskletCode::cbrtf, "cbrtf"},
+        {data_flow::TaskletCode::cbrtl, "cbrtl"},
+        {data_flow::TaskletCode::exp10, "exp10"},
+        {data_flow::TaskletCode::exp10f, "exp10f"},
+        {data_flow::TaskletCode::exp10l, "exp10l"},
+        {data_flow::TaskletCode::exp2, "exp2"},
+        {data_flow::TaskletCode::exp2f, "exp2f"},
+        {data_flow::TaskletCode::exp2l, "exp2l"},
+        {data_flow::TaskletCode::exp, "exp"},
+        {data_flow::TaskletCode::expf, "expf"},
+        {data_flow::TaskletCode::expl, "expl"},
+        {data_flow::TaskletCode::expm1, "expm1"},
+        {data_flow::TaskletCode::expm1f, "expm1f"},
+        {data_flow::TaskletCode::expm1l, "expm1l"},
+        {data_flow::TaskletCode::fabs, "fabs"},
+        {data_flow::TaskletCode::fabsf, "fabsf"},
+        {data_flow::TaskletCode::fabsl, "fabsl"},
+        {data_flow::TaskletCode::floor, "floor"},
+        {data_flow::TaskletCode::floorf, "floorf"},
+        {data_flow::TaskletCode::floorl, "floorl"},
+        {data_flow::TaskletCode::fls, "fls"},
+        {data_flow::TaskletCode::flsl, "flsl"},
+        {data_flow::TaskletCode::fmax, "fmax"},
+        {data_flow::TaskletCode::fmaxf, "fmaxf"},
+        {data_flow::TaskletCode::fmaxl, "fmaxl"},
+        {data_flow::TaskletCode::fmin, "fmin"},
+        {data_flow::TaskletCode::fminf, "fminf"},
+        {data_flow::TaskletCode::fminl, "fminl"},
+        {data_flow::TaskletCode::fmod, "fmod"},
+        {data_flow::TaskletCode::fmodf, "fmodf"},
+        {data_flow::TaskletCode::fmodl, "fmodl"},
+        {data_flow::TaskletCode::frexp, "frexp"},
+        {data_flow::TaskletCode::frexpf, "frexpf"},
+        {data_flow::TaskletCode::frexpl, "frexpl"},
+        {data_flow::TaskletCode::labs, "labs"},
+        {data_flow::TaskletCode::ldexp, "ldexp"},
+        {data_flow::TaskletCode::ldexpf, "ldexpf"},
+        {data_flow::TaskletCode::ldexpl, "ldexpl"},
+        {data_flow::TaskletCode::log10, "log10"},
+        {data_flow::TaskletCode::log10f, "log10f"},
+        {data_flow::TaskletCode::log10l, "log10l"},
+        {data_flow::TaskletCode::log2, "log2"},
+        {data_flow::TaskletCode::log2f, "log2f"},
+        {data_flow::TaskletCode::log2l, "log2l"},
+        {data_flow::TaskletCode::log, "log"},
+        {data_flow::TaskletCode::logf, "logf"},
+        {data_flow::TaskletCode::logl, "logl"},
+        {data_flow::TaskletCode::logb, "logb"},
+        {data_flow::TaskletCode::logbf, "logbf"},
+        {data_flow::TaskletCode::logbl, "logbl"},
+        {data_flow::TaskletCode::log1p, "log1p"},
+        {data_flow::TaskletCode::log1pf, "log1pf"},
+        {data_flow::TaskletCode::log1pl, "log1pl"},
+        {data_flow::TaskletCode::modf, "modf"},
+        {data_flow::TaskletCode::modff, "modff"},
+        {data_flow::TaskletCode::modfl, "modfl"},
+        {data_flow::TaskletCode::nearbyint, "nearbyint"},
+        {data_flow::TaskletCode::nearbyintf, "nearbyintf"},
+        {data_flow::TaskletCode::nearbyintl, "nearbyintl"},
+        {data_flow::TaskletCode::pow, "pow"},
+        {data_flow::TaskletCode::powf, "powf"},
+        {data_flow::TaskletCode::powl, "powl"},
+        {data_flow::TaskletCode::rint, "rint"},
+        {data_flow::TaskletCode::rintf, "rintf"},
+        {data_flow::TaskletCode::rintl, "rintl"},
+        {data_flow::TaskletCode::round, "round"},
+        {data_flow::TaskletCode::roundf, "roundf"},
+        {data_flow::TaskletCode::roundl, "roundl"},
+        {data_flow::TaskletCode::roundeven, "roundeven"},
+        {data_flow::TaskletCode::roundevenf, "roundevenf"},
+        {data_flow::TaskletCode::roundevenl, "roundevenl"},
+        {data_flow::TaskletCode::sin, "sin"},
+        {data_flow::TaskletCode::sinf, "sinf"},
+        {data_flow::TaskletCode::sinl, "sinl"},
+        {data_flow::TaskletCode::sinh, "sinh"},
+        {data_flow::TaskletCode::sinhf, "sinhf"},
+        {data_flow::TaskletCode::sinhl, "sinhl"},
+        {data_flow::TaskletCode::sqrt, "sqrt"},
+        {data_flow::TaskletCode::sqrtf, "sqrtf"},
+        {data_flow::TaskletCode::sqrtl, "sqrtl"},
+        {data_flow::TaskletCode::rsqrt, "rsqrt"},
+        {data_flow::TaskletCode::rsqrtf, "rsqrtf"},
+        {data_flow::TaskletCode::rsqrtl, "rsqrtl"},
+        {data_flow::TaskletCode::tan, "tan"},
+        {data_flow::TaskletCode::tanf, "tanf"},
+        {data_flow::TaskletCode::tanl, "tanl"},
+        {data_flow::TaskletCode::tanh, "tanh"},
+        {data_flow::TaskletCode::tanhf, "tanhf"},
+        {data_flow::TaskletCode::tanhl, "tanhl"}};
+    for (const std::pair<const data_flow::TaskletCode, const std::string> code : codes) {
+        const size_t arity = data_flow::arity(code.first);
+        builder::StructuredSDFGBuilder builder("test");
+
+        auto& sdfg = builder.subject();
+        auto& root = sdfg.root();
+
+        types::Scalar desc{types::PrimitiveType::Int32};
+        builder.add_container("x", desc);
+
+        auto& block = builder.add_block(root);
+        auto& output = builder.add_access(block, "x");
+        std::vector<std::pair<std::string, sdfg::types::Scalar>> inputs;
+        for (size_t i = 0; i < arity; ++i) inputs.push_back({std::to_string(i), desc});
+        auto& tasklet = builder.add_tasklet(block, code.first, {"_out", desc}, inputs);
+        builder.add_memlet(block, tasklet, "_out", output, "void", {});
+
+        auto sdfg2 = builder.move();
+        ConditionalSchedule schedule(sdfg2);
+
+        codegen::PrettyPrinter exp;
+        exp << "digraph " << schedule.name() << " {" << std::endl;
+        exp.setIndent(4);
+        exp << "graph [compound=true];" << std::endl
+            << "subgraph cluster_" << sdfg.name() << " {" << std::endl;
+        exp.setIndent(8);
+        exp << "node [style=filled,fillcolor=white];" << std::endl
+            << "style=filled;color=lightblue;label=\"\";" << std::endl
+            << "subgraph cluster_" << block.name() << " {" << std::endl;
+        exp.setIndent(12);
+        exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
+            << tasklet.name() << " [shape=octagon,label=\"";
+        if (code.first == data_flow::TaskletCode::assign) {
+            exp << "_out = 0";
+        } else if (code.first == data_flow::TaskletCode::fma) {
+            exp << "_out = 0 * 1 + 2";
+        } else if (data_flow::is_infix(code.first) && arity == 1) {
+            exp << "_out = " << code.second << " 0";
+        } else if (data_flow::is_infix(code.first) && arity == 2) {
+            exp << "_out = 0 " << code.second << " 1";
+        } else {
+            exp << "_out = " << code.second << "(";
+            for (size_t i = 0; i < arity; ++i) {
+                if (i > 0) exp << ", ";
+                exp << std::to_string(i);
+            }
+            exp << ")";
+        }
+        exp << "\"];" << std::endl
+            << tasklet.name() << " -> " << output.name() << " [label=\"   x = _out   \"];"
+            << std::endl
+            << output.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"x\"];" << std::endl;
+        exp.setIndent(8);
+        exp << "}" << std::endl;
+        exp.setIndent(4);
+        exp << "}" << std::endl;
+        exp.setIndent(0);
+        exp << "}" << std::endl;
+
+        visualizer::DotVisualizer dot(schedule);
+        dot.visualize();
+        EXPECT_EQ(dot.getStream().str(), exp.str());
+    }
 }

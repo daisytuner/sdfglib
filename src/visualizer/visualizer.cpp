@@ -442,7 +442,7 @@ void Visualizer::visualizeTasklet(data_flow::Tasklet const& tasklet) {
     } else if (data_flow::is_infix(tasklet.code())) {
         switch (data_flow::arity(tasklet.code())) {
             case 1:
-                this->stream_ << op + arguments.at(0);
+                this->stream_ << op << " " << arguments.at(0);
                 break;
             case 2:
                 this->stream_ << arguments.at(0) << " " << op << " " << arguments.at(1);
