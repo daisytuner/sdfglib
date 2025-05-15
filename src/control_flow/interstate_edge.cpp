@@ -12,7 +12,7 @@ InterstateEdge::InterstateEdge(size_t element_id, const DebugInfo& debug_info,
       src_(src),
       dst_(dst),
       condition_(condition),
-      assignments_(assignments){
+      assignments_(assignments) {
 
       };
 

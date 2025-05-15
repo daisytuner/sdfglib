@@ -4,19 +4,18 @@ namespace sdfg {
 namespace analysis {
 
 Analysis::Analysis(StructuredSDFG& sdfg)
-    : sdfg_(sdfg){
+    : sdfg_(sdfg) {
 
       };
 
 AnalysisManager::AnalysisManager(StructuredSDFG& sdfg)
-    : sdfg_(sdfg){
+    : sdfg_(sdfg) {
 
       };
 
 AnalysisManager::AnalysisManager(StructuredSDFG& sdfg,
                                  const symbolic::Assumptions& additional_assumptions)
-    : sdfg_(sdfg),
-      additional_assumptions_(additional_assumptions){
+    : sdfg_(sdfg), additional_assumptions_(additional_assumptions) {
 
       };
 

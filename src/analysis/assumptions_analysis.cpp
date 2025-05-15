@@ -195,7 +195,7 @@ void AssumptionsAnalysis::run(analysis::AnalysisManager& analysis_manager) {
 };
 
 AssumptionsAnalysis::AssumptionsAnalysis(StructuredSDFG& sdfg)
-    : Analysis(sdfg){
+    : Analysis(sdfg) {
 
       };
 

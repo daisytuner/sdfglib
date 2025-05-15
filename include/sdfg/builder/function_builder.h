@@ -17,6 +17,8 @@ class FunctionBuilder {
    public:
     FunctionBuilder();
 
+    virtual ~FunctionBuilder() = default;
+
     /***** Section: Containers *****/
 
     const types::IType& add_container(const std::string& name, const types::IType& type,

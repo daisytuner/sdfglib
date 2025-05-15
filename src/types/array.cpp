@@ -11,7 +11,7 @@ Array::Array(const IType& element_type, const symbolic::Expression& num_elements
       num_elements_(num_elements),
       device_location_(device_location),
       address_space_(address_space),
-      initializer_(initializer){};
+      initializer_(initializer) {};
 
 PrimitiveType Array::primitive_type() const { return this->element_type_->primitive_type(); };
 

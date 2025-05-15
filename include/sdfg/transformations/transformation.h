@@ -8,6 +8,8 @@ namespace transformations {
 
 class Transformation {
    public:
+    virtual ~Transformation() = default;
+
     virtual std::string name() = 0;
 
     virtual bool can_be_applied(Schedule& schedule);

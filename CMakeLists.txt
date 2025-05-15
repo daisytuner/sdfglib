@@ -10,6 +10,26 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(SDFGLIB_ENABLE_SANITIZER
+       "Enable Address/Memory/Undefined/Leak/Thread sanitizers" OFF)
+
+set(SDFGLIB_SANITIZER
+    "address"
+    CACHE STRING
+    "List of sanitizers to enable; supported: \
+     address, memory, undefined, leak, thread")
+
+if(SDFGLIB_ENABLE_SANITIZER)
+  message(STATUS "Enabling sanitizer: ${SDFGLIB_SANITIZER}")
+  set(_SAN_COMPILE_OPTS
+    -fno-omit-frame-pointer
+    -fsanitize=${SDFGLIB_SANITIZER}
+  )
+  set(_SAN_LINK_OPTS
+    -fsanitize=${SDFGLIB_SANITIZER}
+  )
+endif()
+
 # NLohmann json
 find_package(nlohmann_json REQUIRED)
 
@@ -138,10 +158,15 @@ target_include_directories(sdfglib PUBLIC
     ${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine/symengine/utilities/cereal/include
 )
 
+if(SDFGLIB_ENABLE_SANITIZER)
+  target_compile_options(sdfglib PUBLIC ${_SAN_COMPILE_OPTS})
+  target_link_options   (sdfglib PUBLIC ${_SAN_LINK_OPTS})
+endif()
+
 # Add coverage flags if enabled
 if(SDFGLIB_ENABLE_COVERAGE)
-    target_compile_options(sdfglib PRIVATE -g -O0 --coverage)
-    target_link_options(sdfglib PRIVATE --coverage)
+    target_compile_options(sdfglib PUBLIC --coverage)
+    target_link_options(sdfglib PUBLIC --coverage)
 endif()
 
 target_link_libraries(sdfglib PUBLIC nlohmann_json::nlohmann_json ${Boost_LIBRARIES} PkgConfig::ISL symengine)

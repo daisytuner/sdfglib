@@ -955,7 +955,7 @@ void DataParallelismAnalysis::run(analysis::AnalysisManager& analysis_manager) {
 };
 
 DataParallelismAnalysis::DataParallelismAnalysis(StructuredSDFG& sdfg)
-    : Analysis(sdfg){
+    : Analysis(sdfg) {
 
       };
 

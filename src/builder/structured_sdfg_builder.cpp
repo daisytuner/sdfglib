@@ -244,10 +244,10 @@ Function& StructuredSDFGBuilder::function() const {
 };
 
 StructuredSDFGBuilder::StructuredSDFGBuilder(std::unique_ptr<StructuredSDFG>& sdfg)
-    : FunctionBuilder(), structured_sdfg_(std::move(sdfg)){};
+    : FunctionBuilder(), structured_sdfg_(std::move(sdfg)) {};
 
 StructuredSDFGBuilder::StructuredSDFGBuilder(const std::string& name)
-    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name)){};
+    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name)) {};
 
 StructuredSDFGBuilder::StructuredSDFGBuilder(const SDFG& sdfg)
     : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(sdfg.name())) {

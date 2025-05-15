@@ -8,7 +8,7 @@ Structure::Structure(const std::string& name, DeviceLocation device_location, ui
     : name_(name),
       device_location_(device_location),
       address_space_(address_space),
-      initializer_(initializer){};
+      initializer_(initializer) {};
 
 PrimitiveType Structure::primitive_type() const { return PrimitiveType::Void; };
 
@@ -36,7 +36,7 @@ DeviceLocation Structure::device_location() const { return this->device_location
 std::string Structure::initializer() const { return this->initializer_; };
 
 StructureDefinition::StructureDefinition(const std::string& name, bool is_packed)
-    : name_(name), is_packed_(is_packed), members_(){};
+    : name_(name), is_packed_(is_packed), members_() {};
 
 std::unique_ptr<StructureDefinition> StructureDefinition::clone() const {
     auto def = std::make_unique<StructureDefinition>(this->name_, this->is_packed_);
