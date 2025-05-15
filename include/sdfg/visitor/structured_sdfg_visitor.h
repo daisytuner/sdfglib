@@ -18,6 +18,8 @@ class StructuredSDFGVisitor {
     StructuredSDFGVisitor(builder::StructuredSDFGBuilder& builder,
                           analysis::AnalysisManager& analysis_manager);
 
+    virtual ~StructuredSDFGVisitor() = default;
+
     bool visit();
 
     virtual bool accept(structured_control_flow::Sequence& parent,

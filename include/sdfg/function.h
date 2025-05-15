@@ -57,6 +57,8 @@ class Function {
    public:
     Function(const Function& function) = delete;
 
+    virtual ~Function() = default;
+
     /***** Section: Definition *****/
 
     std::string name() const;

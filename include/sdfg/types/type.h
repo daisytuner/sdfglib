@@ -205,6 +205,8 @@ constexpr PrimitiveType as_unsigned(PrimitiveType e) noexcept {
 
 class IType {
    public:
+    virtual ~IType() = default;
+
     virtual PrimitiveType primitive_type() const = 0;
 
     virtual DeviceLocation device_location() const = 0;

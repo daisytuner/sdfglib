@@ -1,7 +1,3 @@
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "" FORCE)
-endif (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -83,8 +79,7 @@ set(TEST_FILES
 add_executable(sdfglib_test ${TEST_FILES})
 target_include_directories(sdfglib_test PRIVATE ./)
 target_link_libraries(sdfglib_test gtest_main sdfglib)
-target_compile_options(sdfglib_test PRIVATE -g -O0 --coverage)
-target_link_options(sdfglib_test PRIVATE --coverage)
+
 add_test(NAME sdfglib_test_test COMMAND sdfglib_test)
 
 include(GoogleTest)

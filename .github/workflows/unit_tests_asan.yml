@@ -1,4 +1,4 @@
-name: Test
+name: Unit Tests (Address Sanitizer)
 
 on:
   push:
@@ -45,18 +45,11 @@ jobs:
       - name: Linting
         run: clang-format-14 --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
 
-      - name: Build
+      - name: Build and test
         run: |
           mkdir build
           cd build
-          cmake -G Ninja -DSDFGLIB_ENABLE_COVERAGE=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF -DWITH_SYMENGINE_RCP=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DSDFGLIB_ENABLE_SANITIZER=address -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
           ninja -j$(nproc)
 
-      - name: Unit tests
-        run: |
-          cd build
           ./tests/sdfglib_test
-          gcovr --filter ../include/ --filter ../src/ --coveralls coveralls.json -r ../
-
-      - name: Coveralls
-        uses: coverallsapp/github-action@v2
