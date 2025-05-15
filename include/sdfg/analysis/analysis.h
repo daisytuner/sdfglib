@@ -19,6 +19,8 @@ class Analysis {
    public:
     Analysis(StructuredSDFG& sdfg);
 
+    virtual ~Analysis() = default;
+
     Analysis(const Analysis& a) = delete;
     Analysis& operator=(const Analysis&) = delete;
 };

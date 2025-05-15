@@ -7,9 +7,7 @@ namespace data_flow {
 
 DataFlowNode::DataFlowNode(size_t element_id, const DebugInfo& debug_info,
                            const graph::Vertex& vertex, DataFlowGraph& parent)
-    : Element(element_id, debug_info),
-      vertex_(vertex),
-      parent_(&parent){
+    : Element(element_id, debug_info), vertex_(vertex), parent_(&parent) {
 
       };
 

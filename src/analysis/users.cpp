@@ -20,24 +20,17 @@ namespace sdfg {
 namespace analysis {
 
 User::User(graph::Vertex vertex, const std::string& container, Element* element, Use use)
-    : vertex_(vertex),
-      container_(container),
-      element_(element),
-      use_(use){
+    : vertex_(vertex), container_(container), element_(element), use_(use) {
 
       };
 
 User::User(graph::Vertex vertex, const std::string& container, Element* element,
            data_flow::DataFlowGraph* parent, Use use)
-    : vertex_(vertex),
-      container_(container),
-      element_(element),
-      parent_(parent),
-      use_(use){
+    : vertex_(vertex), container_(container), element_(element), parent_(parent), use_(use) {
 
       };
 
-User::~User(){
+User::~User() {
 
 };
 
@@ -80,7 +73,7 @@ ForUser::ForUser(graph::Vertex vertex, const std::string& container, Element* el
     : User(vertex, container, element, use),
       is_init_(is_init),
       is_condition_(is_condition),
-      is_update_(is_update){
+      is_update_(is_update) {
 
       };
 
@@ -478,14 +471,12 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
 };
 
 Users::Users(StructuredSDFG& sdfg)
-    : Analysis(sdfg),
-      node_(sdfg.root()){
+    : Analysis(sdfg), node_(sdfg.root()) {
 
       };
 
 Users::Users(StructuredSDFG& sdfg, structured_control_flow::ControlFlowNode& node)
-    : Analysis(sdfg),
-      node_(node){
+    : Analysis(sdfg), node_(node) {
 
       };
 

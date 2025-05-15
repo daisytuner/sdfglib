@@ -6,14 +6,13 @@ namespace sdfg {
 namespace structured_control_flow {
 
 Block::Block(size_t element_id, const DebugInfo& debug_info)
-    : ControlFlowNode(element_id, debug_info),
-      dataflow_(new data_flow::DataFlowGraph(*this)){
+    : ControlFlowNode(element_id, debug_info), dataflow_(new data_flow::DataFlowGraph(*this)) {
 
       };
 
 Block::Block(size_t element_id, const DebugInfo& debug_info,
              const data_flow::DataFlowGraph& dataflow)
-    : ControlFlowNode(element_id, debug_info), dataflow_(dataflow.clone(*this)){};
+    : ControlFlowNode(element_id, debug_info), dataflow_(dataflow.clone(*this)) {};
 
 const data_flow::DataFlowGraph& Block::dataflow() const { return *this->dataflow_; };
 

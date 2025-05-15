@@ -12,6 +12,8 @@ namespace passes {
 
 class Pass {
    public:
+    virtual ~Pass() = default;
+
     virtual std::string name() = 0;
 
     bool run(builder::SDFGBuilder& builder);

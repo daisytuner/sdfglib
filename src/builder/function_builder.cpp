@@ -3,7 +3,7 @@
 namespace sdfg {
 namespace builder {
 
-FunctionBuilder::FunctionBuilder() : element_counter_(1){};
+FunctionBuilder::FunctionBuilder() : element_counter_(1) {};
 
 const types::IType& FunctionBuilder::add_container(const std::string& name,
                                                    const types::IType& type, bool is_argument,

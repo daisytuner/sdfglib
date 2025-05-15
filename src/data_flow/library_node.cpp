@@ -12,7 +12,7 @@ LibraryNode::LibraryNode(size_t element_id, const DebugInfo& debug_info,
                          const LibraryNodeType& call, const bool side_effect)
     : CodeNode(element_id, debug_info, vertex, parent, outputs, inputs),
       call_(call),
-      side_effect_(side_effect){
+      side_effect_(side_effect) {
 
       };
 
@@ -28,7 +28,7 @@ std::unique_ptr<DataFlowNode> LibraryNode::clone(const graph::Vertex& vertex,
 };
 
 void LibraryNode::replace(const symbolic::Expression& old_expression,
-                          const symbolic::Expression& new_expression){};
+                          const symbolic::Expression& new_expression) {};
 
 }  // namespace data_flow
 }  // namespace sdfg

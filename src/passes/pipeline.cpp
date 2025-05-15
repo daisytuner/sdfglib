@@ -4,8 +4,7 @@ namespace sdfg {
 namespace passes {
 
 Pipeline::Pipeline(const std::string& name)
-    : Pass(),
-      name_(name){
+    : Pass(), name_(name) {
 
       };
 

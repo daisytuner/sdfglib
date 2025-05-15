@@ -6,8 +6,7 @@ namespace transformations {
 LoopInterchange::LoopInterchange(structured_control_flow::Sequence& parent,
                                  structured_control_flow::For& outer_loop,
                                  structured_control_flow::For& inner_loop)
-    : outer_loop_(outer_loop),
-      inner_loop_(inner_loop){
+    : outer_loop_(outer_loop), inner_loop_(inner_loop) {
 
       };
 

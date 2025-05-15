@@ -7,9 +7,7 @@ CodeNode::CodeNode(size_t element_id, const DebugInfo& debug_info, const graph::
                    DataFlowGraph& parent,
                    const std::vector<std::pair<std::string, sdfg::types::Scalar>>& outputs,
                    const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs)
-    : DataFlowNode(element_id, debug_info, vertex, parent),
-      outputs_(outputs),
-      inputs_(inputs){
+    : DataFlowNode(element_id, debug_info, vertex, parent), outputs_(outputs), inputs_(inputs) {
 
       };
 

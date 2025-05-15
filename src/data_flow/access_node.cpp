@@ -5,8 +5,7 @@ namespace data_flow {
 
 AccessNode::AccessNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex& vertex,
                        DataFlowGraph& parent, const std::string& data)
-    : DataFlowNode(element_id, debug_info, vertex, parent),
-      data_(data){
+    : DataFlowNode(element_id, debug_info, vertex, parent), data_(data) {
 
       };
 

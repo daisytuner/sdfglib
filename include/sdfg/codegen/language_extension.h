@@ -18,6 +18,8 @@ namespace codegen {
 
 class LanguageExtension {
    public:
+    virtual ~LanguageExtension() = default;
+
     virtual std::string primitive_type(const types::PrimitiveType prim_type) = 0;
 
     virtual std::string declaration(const std::string& name, const types::IType& type,
