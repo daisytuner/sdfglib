@@ -272,7 +272,7 @@ TEST(JSONSerializerTest, ForNodeToJSON) {
     EXPECT_TRUE(j.contains("indvar"));
     EXPECT_EQ(j["indvar"], "i");
     EXPECT_TRUE(j.contains("condition"));
-    EXPECT_EQ(j["condition"], "i < 10");
+    EXPECT_EQ(j["condition"], "(i < 10)");
     EXPECT_TRUE(j.contains("init"));
     EXPECT_EQ(j["init"], "0");
     EXPECT_TRUE(j.contains("update"));
@@ -1715,23 +1715,15 @@ TEST(JSONSerializerTest, SerializeDeserialize_Arguments) {
     std::string filename = "test_sdfg.json";
     sdfg::serializer::JSONSerializer serializer;
 
-    std::cout << "ping" << std::endl;
-
     // Serialize the SDFG to JSON
     auto j = serializer.serialize(sdfg);
-
-    std::cout << "ping2" << std::endl;
 
     // Deserialize the JSON back into a StructuredSDFG object
     auto sdfg_new = serializer.deserialize(j);
 
-    std::cout << "ping3" << std::endl;
-
     // Check if the deserialized SDFG matches the original SDFG
     EXPECT_EQ(sdfg_new->name(), "test_sdfg");
     EXPECT_EQ(sdfg_new->containers().size(), 3);
-
-    std::cout << "ping4" << std::endl;
 
     EXPECT_EQ(sdfg_new->arguments().size(), 2);
     EXPECT_EQ(sdfg_new->arguments().at(0), "A");

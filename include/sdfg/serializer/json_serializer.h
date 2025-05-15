@@ -12,6 +12,7 @@
 #include "sdfg/structured_control_flow/while.h"
 #include "sdfg/structured_sdfg.h"
 #include "sdfg/types/type.h"
+#include "symengine/logic.h"
 #include "symengine/printers/codegen.h"
 
 namespace sdfg {
@@ -93,6 +94,9 @@ class JSONSymbolicPrinter
     // Logical expressions
     void bvisit(const SymEngine::Equality& x);
     void bvisit(const SymEngine::Unequality& x);
+
+    void bvisit(const SymEngine::LessThan& x);
+    void bvisit(const SymEngine::StrictLessThan& x);
 };
 
 }  // namespace serializer

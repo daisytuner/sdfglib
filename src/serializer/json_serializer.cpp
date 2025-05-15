@@ -799,5 +799,15 @@ void JSONSymbolicPrinter::bvisit(const SymEngine::Unequality& x) {
     str_ = parenthesize(str_);
 };
 
+void JSONSymbolicPrinter::bvisit(const SymEngine::LessThan& x) {
+    str_ = apply(x.get_args()[0]) + " <= " + apply(x.get_args()[1]);
+    str_ = parenthesize(str_);
+};
+
+void JSONSymbolicPrinter::bvisit(const SymEngine::StrictLessThan& x) {
+    str_ = apply(x.get_args()[0]) + " < " + apply(x.get_args()[1]);
+    str_ = parenthesize(str_);
+};
+
 }  // namespace serializer
 }  // namespace sdfg
