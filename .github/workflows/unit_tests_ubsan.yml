@@ -35,21 +35,21 @@ jobs:
           sudo apt-get install -y libpapi-dev papi-tools
 
           sudo wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-14 main"
-          sudo add-apt-repository "deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-14 main"
+          sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main"
+          sudo add-apt-repository "deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main"
           sudo apt-get update
-          sudo apt-get install -y clang-format-14
+          sudo apt-get install -y clang-format-19 clang-19 clang++-19
 
           pip install gcovr pytest
 
       - name: Linting
-        run: clang-format-14 --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
+        run: clang-format-19 --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
 
       - name: Build and test
         run: |
           mkdir build
           cd build
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DSDFGLIB_ENABLE_SANITIZER=undefined -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
+          cmake -G Ninja -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Debug -DSDFGLIB_ENABLE_SANITIZER=ON -DSDFGLIB_SANITIZER=undefined -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
           ninja -j$(nproc)
 
           ./tests/sdfglib_test
