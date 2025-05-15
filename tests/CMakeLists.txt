@@ -10,8 +10,78 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+set(TEST_FILES
+    analysis/assumptions_analysis_test.cpp
+    analysis/data_parallelism_analysis_test.cpp
+    analysis/happens_before_analysis_test.cpp
+    analysis/users_test.cpp
+    builder/function_builder_test.cpp
+    builder/sdfg_builder_test.cpp
+    builder/structured_sdfg_builder_test.cpp
+    codegen/code_generators/c_code_generator_test.cpp
+    codegen/code_generators/cpp_code_generator_test.cpp
+    codegen/code_generators/cuda_code_generator_test.cpp
+    codegen/dispatchers/block_dispatcher_test.cpp
+    codegen/dispatchers/for_dispatcher_test.cpp
+    codegen/dispatchers/if_else_dispatcher_test.cpp
+    codegen/dispatchers/node_dispatcher_factory_test.cpp
+    codegen/dispatchers/node_dispatcher_test.cpp
+    codegen/dispatchers/sequence_dispatcher_test.cpp
+    codegen/dispatchers/while_dispatcher_test.cpp
+    codegen/language_extensions/c_language_extension_test.cpp
+    codegen/language_extensions/cpp_language_extension_test.cpp
+    codegen/language_extensions/cuda_language_extension_test.cpp
+    codegen/utils_test.cpp
+    conditional_schedule_test.cpp
+    data_flow/data_flow_graph_test.cpp
+    deepcopy/structured_sdfg_deep_copy_test.cpp
+    element_test.cpp
+    graph/graph_algorithms_test.cpp
+    helpers/helpers_test.cpp
+    passes/dataflow/dead_data_elimination_test.cpp
+    passes/dataflow/redundant_array_elimination_test.cpp
+    passes/dataflow/trivial_array_elimination_test.cpp
+    passes/dataflow/view_propagation_test.cpp
+    passes/normalization/conditional_loop_fissioning_test.cpp
+    passes/normalization/conditional_tasklet_propagation_test.cpp
+    passes/normalization/loop_slicing_test.cpp
+    passes/normalization/transition_to_tasklet_conversion_test.cpp
+    passes/pipeline_test.cpp
+    passes/schedule/allocation_inference_test.cpp
+    passes/schedule/perfect_loop_distribution_test.cpp
+    passes/schedule/stride_minimization_test.cpp
+    passes/structured_control_flow/block_fusion_test.cpp
+    passes/symbolic/symbol_promotion_test.cpp
+    passes/symbolic/symbol_propagation_test.cpp
+    replace/symbol_replace_test.cpp
+    schedule_test.cpp
+    sdfg_test.cpp
+    serializer/json_serializer_test.cpp
+    structured_sdfg_test.cpp
+    symbolic/analysis_test.cpp
+    symbolic/assumptions_test.cpp
+    symbolic/symbolic_test.cpp
+    transformations/kernel_local_storage_test.cpp
+    transformations/loop_interchange_test.cpp
+    transformations/loop_slicing_test.cpp
+    transformations/loop_tiling_test.cpp
+    transformations/loop_to_kernel_dim_test.cpp
+    transformations/loop_unroll_test.cpp
+    transformations/out_local_storage_test.cpp
+    transformations/vectorization_test.cpp
+    types/array_test.cpp
+    types/function_test.cpp
+    types/pointer_test.cpp
+    types/primitive_type_test.cpp
+    types/scalar_test.cpp
+    types/structure_test.cpp
+    types/utils_test.cpp
+    visitor/structured_sdfg_visitor_test.cpp
+    test.cpp
+)
+
 # Now simply link against gtest or gtest_main as needed. Eg
-add_executable(sdfglib_test test.cpp)
+add_executable(sdfglib_test ${TEST_FILES})
 target_include_directories(sdfglib_test PRIVATE ./)
 target_link_libraries(sdfglib_test gtest_main sdfglib)
 target_compile_options(sdfglib_test PRIVATE -g -O0 --coverage)

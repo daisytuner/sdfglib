@@ -18,6 +18,7 @@
 #include "sdfg/symbolic/assumptions.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/types/array.h"
+#include "sdfg/types/function.h"
 #include "sdfg/types/pointer.h"
 #include "sdfg/types/scalar.h"
 #include "sdfg/types/structure.h"

@@ -24,9 +24,6 @@
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/types/scalar.h"
 #include "sdfg/types/type.h"
-#include "symengine/expression.h"
-#include "symengine/logic.h"
-#include "symengine/printers.h"
 #include "symengine/symbol.h"
 #include "symengine/symengine_rcp.h"
 
@@ -107,7 +104,8 @@ nlohmann::json JSONSerializer::serialize(std::unique_ptr<sdfg::StructuredSDFG>& 
     j["name"] = sdfg->name();
 
     j["structures"] = nlohmann::json::array();
-    for (const auto& structure : sdfg->structures()) {
+    for (const auto& structure_name : sdfg->structures()) {
+        const auto& structure = sdfg->structure(structure_name);
         nlohmann::json structure_json;
         structure_definition_to_json(structure_json, structure);
         j["structures"].push_back(structure_json);
@@ -264,18 +262,15 @@ void JSONSerializer::while_node_to_json(nlohmann::json& j,
     nlohmann::json body_json;
     sequence_to_json(body_json, while_node.root());
     j["children"] = body_json;
-    j["element_id"] = while_node.element_id();
 }
 
 void JSONSerializer::break_node_to_json(nlohmann::json& j,
                                         const structured_control_flow::Break& break_node) {
     j["type"] = "break";
-    j["target"] = break_node.loop().element_id();
 }
 void JSONSerializer::continue_node_to_json(nlohmann::json& j,
                                            const structured_control_flow::Continue& continue_node) {
     j["type"] = "continue";
-    j["target"] = continue_node.loop().element_id();
 }
 
 void JSONSerializer::kernel_to_json(nlohmann::json& j,
@@ -392,6 +387,7 @@ void JSONSerializer::structure_definition_to_json(nlohmann::json& j,
         type_to_json(member_json, definition.member_type(symbolic::integer(i)));
         j["members"].push_back(member_json);
     }
+    j["is_packed"] = definition.is_packed();
 }
 
 /*
@@ -430,7 +426,10 @@ void JSONSerializer::json_to_structure_definition(const nlohmann::json& j,
     assert(j["name"].is_string());
     assert(j.contains("members"));
     assert(j["members"].is_array());
-    auto& definition = builder.add_structure(j["name"]);
+    assert(j.contains("is_packed"));
+    assert(j["is_packed"].is_boolean());
+    auto is_packed = j["is_packed"];
+    auto& definition = builder.add_structure(j["name"], is_packed);
     for (const auto& member : j["members"]) {
         nlohmann::json member_json;
         auto member_type = json_to_type(member);
@@ -697,11 +696,8 @@ void JSONSerializer::json_to_while_node(const nlohmann::json& j,
     assert(j["type"] == "while");
     assert(j.contains("children"));
     assert(j["children"].is_object());
-    assert(j.contains("element_id"));
-    assert(j["element_id"].is_number_integer());
-    auto& while_node = builder.add_while(parent, assignments);
 
-    while_map_.insert({j["element_id"], while_node});
+    auto& while_node = builder.add_while(parent, assignments);
 
     assert(j["children"].contains("type"));
     assert(j["children"]["type"].is_string());
@@ -719,10 +715,7 @@ void JSONSerializer::json_to_break_node(const nlohmann::json& j,
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "break");
-    assert(j.contains("target"));
-    assert(j["target"].is_number_integer());
-    assert(while_map_.contains(j["target"]));
-    auto& break_node = builder.add_break(parent, while_map_.at(j["target"]));
+    auto& break_node = builder.add_break(parent);
 }
 
 void JSONSerializer::json_to_continue_node(const nlohmann::json& j,
@@ -731,10 +724,7 @@ void JSONSerializer::json_to_continue_node(const nlohmann::json& j,
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "continue");
-    assert(j.contains("target"));
-    assert(j["target"].is_number_integer());
-    assert(while_map_.contains(j["target"]));
-    auto& continue_node = builder.add_continue(parent, while_map_.at(j["target"]));
+    auto& continue_node = builder.add_continue(parent);
 }
 
 void JSONSerializer::json_to_kernel_node(const nlohmann::json& j,

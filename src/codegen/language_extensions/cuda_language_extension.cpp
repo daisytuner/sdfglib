@@ -392,11 +392,7 @@ std::string CUDALanguageExtension::declaration(const std::string& name, const ty
                            element_type);
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         auto& pointee_type = pointer_type->pointee_type();
-        if (auto pointer_type_array = dynamic_cast<const types::Array*>(&pointee_type)) {
-            val << declaration("(*" + name + ")", *pointer_type_array);
-        } else {
-            val << declaration("*" + name, pointee_type);
-        }
+        val << declaration("(*" + name + ")", pointee_type);
     } else if (auto ref_type = dynamic_cast<const Reference*>(&type)) {
         val << declaration("&" + name, ref_type->reference_type());
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
@@ -408,6 +404,24 @@ std::string CUDALanguageExtension::declaration(const std::string& name, const ty
         val << structure_type->name();
         val << " ";
         val << name;
+    } else if (auto function_type = dynamic_cast<const types::Function*>(&type)) {
+        val << declaration("", function_type->return_type());
+        val << " ";
+        val << name;
+        val << "(";
+        for (size_t i = 0; i < function_type->num_params(); ++i) {
+            val << declaration("", function_type->param_type(symbolic::integer(i)));
+            if (i < function_type->num_params() - 1) {
+                val << ", ";
+            }
+        }
+        if (function_type->is_var_arg()) {
+            if (function_type->num_params() > 0) {
+                val << ", ";
+            }
+            val << "...";
+        }
+        val << ")";
     } else {
         throw std::runtime_error("Unknown declaration type");
     }

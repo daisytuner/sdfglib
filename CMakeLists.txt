@@ -113,6 +113,7 @@ set(SOURCE_FILES
     src/transformations/utils.cpp
     src/transformations/vectorization.cpp
     src/types/array.cpp
+    src/types/function.cpp
     src/types/pointer.cpp
     src/types/scalar.cpp
     src/types/structure.cpp

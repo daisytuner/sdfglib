@@ -18,9 +18,6 @@ namespace sdfg {
 namespace serializer {
 
 class JSONSerializer {
-   private:
-    std::unordered_map<long, sdfg::structured_control_flow::While&> while_map_;
-
    public:
     JSONSerializer() {}
 

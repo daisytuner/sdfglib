@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include <iostream>
 #include <nlohmann/json.hpp>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
@@ -334,7 +333,7 @@ TEST(JSONSerializerTest, WhileToJSON_break) {
 
     auto& scope = builder.add_while(root);
     auto& body = builder.add_block(scope.root());
-    auto& break_state = builder.add_break(scope.root(), scope);
+    auto& break_state = builder.add_break(scope.root());
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
@@ -354,7 +353,6 @@ TEST(JSONSerializerTest, WhileToJSON_break) {
     EXPECT_EQ(j["children"]["children"].size(), 2);
     EXPECT_EQ(j["children"]["children"][0]["type"], "block");
     EXPECT_EQ(j["children"]["children"][1]["type"], "break");
-    EXPECT_EQ(j["children"]["children"][1]["target"], scope.element_id());
 }
 
 TEST(JSONSerializerTest, WhileToJSON_continue) {
@@ -367,7 +365,7 @@ TEST(JSONSerializerTest, WhileToJSON_continue) {
 
     auto& scope = builder.add_while(root);
     auto& body = builder.add_block(scope.root());
-    auto& continue_state = builder.add_continue(scope.root(), scope);
+    auto& continue_state = builder.add_continue(scope.root());
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
@@ -387,7 +385,6 @@ TEST(JSONSerializerTest, WhileToJSON_continue) {
     EXPECT_EQ(j["children"]["children"].size(), 2);
     EXPECT_EQ(j["children"]["children"][0]["type"], "block");
     EXPECT_EQ(j["children"]["children"][1]["type"], "continue");
-    EXPECT_EQ(j["children"]["children"][1]["target"], scope.element_id());
 }
 
 TEST(JSONSerializerTest, KernelToJSON) {
@@ -633,7 +630,7 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_StructureDefinition) {
     // Create a sample StructureDefinition object
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Array array_type(base_desc, {symbolic::symbol("N")});
-    types::StructureDefinition structure_definition("MyStruct");
+    types::StructureDefinition structure_definition("MyStruct", true);
     structure_definition.add_member(base_desc);
     structure_definition.add_member(array_type);
     nlohmann::json j;
@@ -661,6 +658,7 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_StructureDefinition) {
     // Check if the deserialized StructureDefinition matches the original StructureDefinition
     EXPECT_EQ(deserialized_structure_definition->name(), structure_definition.name());
     EXPECT_EQ(deserialized_structure_definition->num_members(), structure_definition.num_members());
+    EXPECT_EQ(deserialized_structure_definition->is_packed(), structure_definition.is_packed());
 
     auto& des_member_0 = deserialized_structure_definition->member_type(symbolic::integer(0));
     auto& member_0 = structure_definition.member_type(symbolic::integer(0));
@@ -1538,7 +1536,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_while_break) {
 
     auto& scope = builder.add_sequence(root);
     auto& while1 = builder.add_while(scope);
-    auto& break1 = builder.add_break(while1.root(), while1);
+    auto& break1 = builder.add_break(while1.root());
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
@@ -1570,7 +1568,6 @@ TEST(JSONSerializerTest, SerializeDeserialize_while_break) {
     EXPECT_EQ(des_while.root().size(), 1);
     auto& des_break =
         dynamic_cast<sdfg::structured_control_flow::Break&>(des_while.root().at(0).first);
-    EXPECT_EQ(des_break.loop().element_id(), des_while.element_id());
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize_while_continue) {
@@ -1582,7 +1579,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_while_continue) {
 
     auto& scope = builder.add_sequence(root);
     auto& while1 = builder.add_while(scope);
-    auto& continue1 = builder.add_continue(while1.root(), while1);
+    auto& continue1 = builder.add_continue(while1.root());
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
@@ -1613,7 +1610,6 @@ TEST(JSONSerializerTest, SerializeDeserialize_while_continue) {
     EXPECT_EQ(des_while.root().size(), 1);
     auto& des_continue =
         dynamic_cast<sdfg::structured_control_flow::Continue&>(des_while.root().at(0).first);
-    EXPECT_EQ(des_continue.loop().element_id(), des_while.element_id());
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize_kernel) {

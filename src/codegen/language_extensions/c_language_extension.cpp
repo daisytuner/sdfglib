@@ -379,17 +379,31 @@ std::string CLanguageExtension::declaration(const std::string& name, const types
                            element_type);
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         auto& pointee_type = pointer_type->pointee_type();
-        if (auto pointer_type_array = dynamic_cast<const types::Array*>(&pointee_type)) {
-            val << declaration("(*" + name + ")", *pointer_type_array);
-        } else {
-            val << declaration("*" + name, pointee_type);
-        }
+         val << declaration("(*" + name + ")", pointee_type);
     } else if (auto ref_type = dynamic_cast<const Reference*>(&type)) {
         val << declaration("&" + name, ref_type->reference_type());
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
         val << structure_type->name();
         val << " ";
         val << name;
+    } else if (auto function_type = dynamic_cast<const types::Function*>(&type)) {
+        val << declaration("", function_type->return_type());
+        val << " ";
+        val << name;
+        val << "(";
+        for (size_t i = 0; i < function_type->num_params(); ++i) {
+            val << declaration("", function_type->param_type(symbolic::integer(i)));
+            if (i < function_type->num_params() - 1) {
+                val << ", ";
+            }
+        }
+        if (function_type->is_var_arg()) {
+            if (function_type->num_params() > 0) {
+                val << ", ";
+            }
+            val << "...";
+        }
+        val << ")";
     } else {
         throw std::runtime_error("Unknown declaration type");
     }
@@ -605,36 +619,62 @@ void CSymbolicPrinter::bvisit(const SymEngine::Unequality& x) {
 void CSymbolicPrinter::bvisit(const SymEngine::Min& x) {
     std::ostringstream s;
     auto container = x.get_args();
-    assert(container.size() == 2);
-    s << "__daisy_min(";
-    s << apply(*container.begin());
-    for (auto it = ++(container.begin()); it != container.end(); ++it) {
-        s << ", " << apply(*it);
+    if (container.size() == 1) {
+        s << apply(*container.begin());
+    } else {
+        s << "__daisy_min(";
+        s << apply(*container.begin());
+
+        // Recursively apply __daisy_min to the arguments
+        SymEngine::vec_basic subargs;
+        for (auto it = ++(container.begin()); it != container.end(); ++it) {
+            subargs.push_back(*it);
+        }
+        auto submin = SymEngine::min(subargs);
+        s << ", " << apply(submin);
+
+        s << ")";
     }
-    s << ")";
+    
     str_ = s.str();
 };
 
 void CSymbolicPrinter::bvisit(const SymEngine::Max& x) {
     std::ostringstream s;
     auto container = x.get_args();
-    assert(container.size() == 2);
-    s << "__daisy_max(";
-    s << apply(*container.begin());
-    for (auto it = ++(container.begin()); it != container.end(); ++it) {
-        s << ", " << apply(*it);
+    if (container.size() == 1) {
+        s << apply(*container.begin());
+    } else {
+        s << "__daisy_max(";
+        s << apply(*container.begin());
+
+        // Recursively apply __daisy_max to the arguments
+        SymEngine::vec_basic subargs;
+        for (auto it = ++(container.begin()); it != container.end(); ++it) {
+            subargs.push_back(*it);
+        }
+        auto submax = SymEngine::max(subargs);
+        s << ", " << apply(submax);
+
+        s << ")";
     }
-    s << ")";
+    
     str_ = s.str();
 };
 
-void CSymbolicPrinter::bvisit(const SymEngine::Pow& x) {
-    if (SymEngine::eq(*x.get_exp(), *SymEngine::integer(2))) {
-        str_ = apply(x.get_base()) + " * " + apply(x.get_base());
-        str_ = parenthesize(str_);
-        return;
+void CSymbolicPrinter::_print_pow(std::ostringstream &o, const SymEngine::RCP<const SymEngine::Basic> &a,
+                                  const SymEngine::RCP<const SymEngine::Basic> &b) {
+    if (SymEngine::eq(*a, *SymEngine::E)) {
+        o << "exp(" << apply(b) << ")";
+    } else if (SymEngine::eq(*b, *SymEngine::rational(1, 2))) {
+        o << "sqrt(" << apply(a) << ")";
+    } else if (SymEngine::eq(*b, *SymEngine::rational(1, 3))) {
+        o << "cbrt(" << apply(a) << ")";
+    } else if (SymEngine::eq(*b, *SymEngine::integer(2))) {
+        o << apply(a) + " * " + apply(a);
+    } else {
+        o << "pow(" << apply(a) << ", " << apply(b) << ")";
     }
-    str_ = "pow(" + apply(x.get_base()) + ", " + apply(x.get_exp()) + ")";
 };
 
 }  // namespace codegen

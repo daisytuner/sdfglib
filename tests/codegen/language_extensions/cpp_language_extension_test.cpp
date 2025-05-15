@@ -88,7 +88,7 @@ TEST(CPPLanguageExtensionTest, Declaration_Pointer) {
     codegen::CPPLanguageExtension generator;
     auto result =
         generator.declaration("var", types::Pointer(types::Scalar(types::PrimitiveType::Int32)));
-    EXPECT_EQ(result, "int *var");
+    EXPECT_EQ(result, "int (*var)");
 }
 
 TEST(CPPLanguageExtensionTest, Declaration_Array) {
@@ -136,7 +136,7 @@ TEST(CPPLanguageExtensionTest, Allocation_Pointer) {
     codegen::CPPLanguageExtension generator;
     auto result =
         generator.allocation("var", types::Pointer(types::Scalar(types::PrimitiveType::Float)));
-    EXPECT_EQ(result, "float *var = (float *) new float ");
+    EXPECT_EQ(result, "float (*var) = (float (*)) new float ");
 }
 
 TEST(CPPLanguageExtensionTest, Allocation_Struct) {
@@ -175,7 +175,7 @@ TEST(CPPLanguageExtensionTest, Typecast) {
     codegen::CPPLanguageExtension generator;
     auto result =
         generator.type_cast("var", types::Pointer(types::Scalar(types::PrimitiveType::Float)));
-    EXPECT_EQ(result, "reinterpret_cast<float *>(var)");
+    EXPECT_EQ(result, "reinterpret_cast<float (*)>(var)");
 }
 
 TEST(CPPLanguageExtensionTest, SubsetToCpp_Scalar) {
@@ -203,7 +203,7 @@ TEST(CPPLanguageExtensionTest, SubsetToCpp_Struct) {
     builder::SDFGBuilder builder("sdfg");
     auto& sdfg = builder.subject();
 
-    auto& struct_def = builder.add_structure("MyStruct");
+    auto& struct_def = builder.add_structure("MyStruct", false);
     struct_def.add_member(types::Scalar(types::PrimitiveType::Int32));
     struct_def.add_member(types::Scalar(types::PrimitiveType::Float));
 

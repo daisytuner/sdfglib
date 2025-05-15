@@ -60,7 +60,17 @@ bool CPPCodeGenerator::as_source(const std::filesystem::path& header_path,
     ofs_source << this->globals_stream_.str() << std::endl;
     ofs_source << this->function_definition() << std::endl;
     ofs_source << "{" << std::endl;
+
+    if (instrumented_) {
+        ofs_source << "__daisy_instrument_init();" << std::endl;
+    }
+
     ofs_source << this->main_stream_.str() << std::endl;
+    
+    if (instrumented_) {
+        ofs_source << "__daisy_instrument_finalize();" << std::endl;
+    }
+    
     ofs_source << "}" << std::endl;
     ofs_source.close();
 
@@ -137,7 +147,11 @@ void CPPCodeGenerator::dispatch_structures() {
     for (auto& structure_index : order) {
         std::string structure = names.at(structure_index);
         auto& definition = function.structure(structure);
-        this->classes_stream_ << "struct " << structure << std::endl;
+        this->classes_stream_ << "struct ";
+        if (definition.is_packed()) {
+            this->classes_stream_ << "__attribute__((packed)) ";
+        }
+        this->classes_stream_ << structure << std::endl;
         this->classes_stream_ << "{\n";
 
         for (size_t i = 0; i < definition.num_members(); i++) {

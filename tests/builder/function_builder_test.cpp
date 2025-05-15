@@ -93,7 +93,7 @@ TEST(FunctionBuilderTest, RemoveExternal) {
 TEST(FunctionBuilderTest, AddStructure) {
     builder::SDFGBuilder builder("sdfg_1");
 
-    auto& structure = builder.add_structure("struct_1");
+    auto& structure = builder.add_structure("struct_1", false);
 
     auto sdfg = builder.move();
 
