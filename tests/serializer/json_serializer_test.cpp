@@ -716,7 +716,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_Containers) {
     auto des_sdfg = builder_deserialize.move();
 
     EXPECT_EQ(sdfg->containers().size(), 4);
-    EXPECT_EQ(des_sdfg->containers().size(), 4);
+    EXPECT_EQ(des_sdfg->containers().size(), 2);
     bool foundA = false;
     bool foundC = false;
     bool foundD = false;
@@ -734,30 +734,17 @@ TEST(JSONSerializerTest, SerializeDeserialize_Containers) {
         }
     }
 
-    EXPECT_TRUE(foundA);
-    EXPECT_TRUE(foundC);
+    EXPECT_FALSE(foundA);
+    EXPECT_FALSE(foundC);
     EXPECT_TRUE(foundD);
     EXPECT_TRUE(foundN);
 
-    auto& des_container_A = des_sdfg->type("A");
-    auto& des_container_C = des_sdfg->type("C");
     auto& des_container_D = des_sdfg->type("D");
     auto& des_container_N = des_sdfg->type("N");
-    EXPECT_TRUE(dynamic_cast<const types::Pointer*>(&des_container_A) != nullptr);
-    auto& des_container_A_ptr = dynamic_cast<const types::Pointer&>(des_container_A);
-    EXPECT_TRUE(dynamic_cast<const types::Scalar*>(&des_container_C) != nullptr);
-    auto& des_container_C_ptr = dynamic_cast<const types::Scalar&>(des_container_C);
     EXPECT_TRUE(dynamic_cast<const types::Scalar*>(&des_container_D) != nullptr);
     auto& des_container_D_ptr = dynamic_cast<const types::Scalar&>(des_container_D);
     EXPECT_TRUE(dynamic_cast<const types::Scalar*>(&des_container_N) != nullptr);
     auto& des_container_N_ptr = dynamic_cast<const types::Scalar&>(des_container_N);
-    EXPECT_EQ(des_container_A_ptr.address_space(), pointer_type.address_space());
-    EXPECT_EQ(des_container_A_ptr.initializer(), pointer_type.initializer());
-    EXPECT_EQ(des_container_A_ptr.device_location(), pointer_type.device_location());
-    EXPECT_EQ(des_container_C_ptr.primitive_type(), base_desc.primitive_type());
-    EXPECT_EQ(des_container_C_ptr.address_space(), base_desc.address_space());
-    EXPECT_EQ(des_container_C_ptr.initializer(), base_desc.initializer());
-    EXPECT_EQ(des_container_C_ptr.device_location(), base_desc.device_location());
     EXPECT_EQ(des_container_D_ptr.primitive_type(), base_desc.primitive_type());
     EXPECT_EQ(des_container_D_ptr.address_space(), base_desc.address_space());
     EXPECT_EQ(des_container_D_ptr.initializer(), base_desc.initializer());
@@ -767,13 +754,9 @@ TEST(JSONSerializerTest, SerializeDeserialize_Containers) {
     EXPECT_EQ(des_container_N_ptr.initializer(), base_desc.initializer());
     EXPECT_EQ(des_container_N_ptr.device_location(), base_desc.device_location());
 
-    EXPECT_EQ(sdfg->is_external("A"), des_sdfg->is_external("A"));
-    EXPECT_EQ(sdfg->is_external("C"), des_sdfg->is_external("C"));
     EXPECT_EQ(sdfg->is_external("D"), des_sdfg->is_external("D"));
     EXPECT_EQ(sdfg->is_external("N"), des_sdfg->is_external("N"));
 
-    EXPECT_EQ(sdfg->is_argument("A"), des_sdfg->is_argument("A"));
-    EXPECT_EQ(sdfg->is_argument("C"), des_sdfg->is_argument("C"));
     EXPECT_EQ(sdfg->is_argument("D"), des_sdfg->is_argument("D"));
     EXPECT_EQ(sdfg->is_argument("N"), des_sdfg->is_argument("N"));
 }
@@ -1713,4 +1696,46 @@ TEST(JSONSerializerTest, SerializeDeserialize) {
 
     // Check if the deserialized SDFG matches the original SDFG
     EXPECT_EQ(sdfg_new->name(), "test_sdfg");
+}
+
+TEST(JSONSerializerTest, SerializeDeserialize_Arguments) {
+    // Create a sample StructuredSDFG object
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
+
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+
+    builder.add_container("A", base_desc, true);
+    builder.add_container("C", base_desc, false);
+    builder.add_container("B", base_desc, true);
+
+    auto sdfg = builder.move();
+
+    // Create a JSONSerializer object
+    std::string filename = "test_sdfg.json";
+    sdfg::serializer::JSONSerializer serializer;
+
+    std::cout << "ping" << std::endl;
+
+    // Serialize the SDFG to JSON
+    auto j = serializer.serialize(sdfg);
+
+    std::cout << "ping2" << std::endl;
+
+    // Deserialize the JSON back into a StructuredSDFG object
+    auto sdfg_new = serializer.deserialize(j);
+
+    std::cout << "ping3" << std::endl;
+
+    // Check if the deserialized SDFG matches the original SDFG
+    EXPECT_EQ(sdfg_new->name(), "test_sdfg");
+    EXPECT_EQ(sdfg_new->containers().size(), 3);
+
+    std::cout << "ping4" << std::endl;
+
+    EXPECT_EQ(sdfg_new->arguments().size(), 2);
+    EXPECT_EQ(sdfg_new->arguments().at(0), "A");
+    EXPECT_EQ(sdfg_new->arguments().at(1), "B");
+
+    EXPECT_EQ(sdfg_new->root().size(), 0);
 }

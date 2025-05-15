@@ -47,13 +47,11 @@ nlohmann::json JSONSerializer::serialize(std::unique_ptr<sdfg::StructuredSDFG>& 
     }
     j["containers"] = nlohmann::json::array();
     for (const auto& container : sdfg->containers()) {
+        if (sdfg->is_argument(container)) {
+            continue;
+        }
         nlohmann::json container_json;
         container_json["name"] = container;
-        if (sdfg->is_argument(container)) {
-            container_json["argument"] = true;
-        } else {
-            container_json["argument"] = false;
-        }
 
         if (sdfg->is_external(container)) {
             container_json["external"] = true;
@@ -65,6 +63,16 @@ nlohmann::json JSONSerializer::serialize(std::unique_ptr<sdfg::StructuredSDFG>& 
         type_to_json(container_type_json, sdfg->type(container));
         container_json["type"] = container_type_json;
         j["containers"].push_back(container_json);
+    }
+
+    j["arguments"] = nlohmann::json::array();
+    for (const auto& argument : sdfg->arguments()) {
+        nlohmann::json argument_json;
+        argument_json["name"] = argument;
+        nlohmann::json argument_type_json;
+        type_to_json(argument_type_json, sdfg->type(argument));
+        argument_json["type"] = argument_type_json;
+        j["arguments"].push_back(argument_json);
     }
 
     // dump the root node
@@ -344,6 +352,19 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
         json_to_structure_definition(structure, builder);
     }
 
+    // deserialize arguments
+    assert(j.contains("arguments"));
+    assert(j["arguments"].is_array());
+    for (const auto& argument : j["arguments"]) {
+        assert(argument.contains("name"));
+        assert(argument["name"].is_string());
+        assert(argument.contains("type"));
+        assert(argument["type"].is_object());
+        std::string name = argument["name"];
+        auto type = json_to_type(argument["type"]);
+        builder.add_container(name, *type, true, false);
+    }
+
     // deserialize containers
     json_to_containers(j, builder);
 
@@ -381,15 +402,12 @@ void JSONSerializer::json_to_containers(const nlohmann::json& j,
         assert(container["name"].is_string());
         assert(container.contains("external"));
         assert(container["external"].is_boolean());
-        assert(container.contains("argument"));
-        assert(container["argument"].is_boolean());
         assert(container.contains("type"));
         assert(container["type"].is_object());
         std::string name = container["name"];
         bool external = container["external"];
-        bool argument = container["argument"];
         auto container_type = json_to_type(container["type"]);
-        builder.add_container(name, *container_type, argument, external);
+        builder.add_container(name, *container_type, false, external);
     }
 }
 

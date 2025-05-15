@@ -3,7 +3,6 @@
 #include <memory>
 #include <nlohmann/json_fwd.hpp>
 #include <string>
-#include <unordered_map>
 
 #include "nlohmann/json.hpp"
 #include "sdfg/builder/structured_sdfg_builder.h"
