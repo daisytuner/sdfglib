@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include <iostream>
 #include <nlohmann/json.hpp>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
@@ -15,6 +14,7 @@
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/types/function.h"
 #include "sdfg/types/pointer.h"
 #include "sdfg/types/scalar.h"
 #include "sdfg/types/type.h"
@@ -135,6 +135,42 @@ TEST(JSONSerializerTest, DatatypeToJSON_Array) {
     EXPECT_EQ(j["initializer"], array_type.initializer());
     EXPECT_TRUE(j.contains("device_location"));
     EXPECT_EQ(j["device_location"], array_type.device_location());
+}
+
+TEST(JSONSerializerTest, DatatypeToJSON_Function) {
+    // Create a sample data type
+    types::Scalar scalar_type(types::PrimitiveType::Int32);
+    types::Function function_type(scalar_type, true);
+    function_type.add_param(scalar_type);
+    nlohmann::json j;
+
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
+    // Create a JSONSerializer object
+    std::string filename = "test_sdfg.json";
+    auto sdfg = builder.move();
+    sdfg::serializer::JSONSerializer serializer;
+
+    // Serialize the data type to JSON
+    serializer.type_to_json(j, function_type);
+
+    // Check if the JSON contains the expected keys
+    EXPECT_TRUE(j.contains("type"));
+    EXPECT_EQ(j["type"], "function");
+    EXPECT_TRUE(j.contains("return_type"));
+    EXPECT_EQ(j["return_type"]["type"], "scalar");
+    EXPECT_EQ(j["return_type"]["primitive_type"], scalar_type.primitive_type());
+    EXPECT_TRUE(j.contains("argument_types"));
+    EXPECT_EQ(j["argument_types"].size(), 1);
+    EXPECT_EQ(j["argument_types"][0]["type"], "scalar");
+    EXPECT_EQ(j["argument_types"][0]["primitive_type"], scalar_type.primitive_type());
+    EXPECT_TRUE(j.contains("is_var_arg"));
+    EXPECT_EQ(j["is_var_arg"], function_type.is_var_arg());
+    EXPECT_TRUE(j.contains("address_space"));
+    EXPECT_EQ(j["address_space"], scalar_type.address_space());
+    EXPECT_TRUE(j.contains("initializer"));
+    EXPECT_EQ(j["initializer"], scalar_type.initializer());
+    EXPECT_TRUE(j.contains("device_location"));
+    EXPECT_EQ(j["device_location"], scalar_type.device_location());
 }
 
 TEST(JSONSerializerTest, DataflowToJSON) {
@@ -626,6 +662,45 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Array) {
     EXPECT_EQ(deserialized_base_desc->address_space(), base_desc.address_space());
     EXPECT_EQ(deserialized_base_desc->initializer(), base_desc.initializer());
     EXPECT_EQ(deserialized_base_desc->device_location(), base_desc.device_location());
+}
+
+TEST(JSONSerializerTest, SerializeDeserializeDataType_Function) {
+    // Create a sample Scalar data type
+    types::Scalar scalar_type(types::PrimitiveType::Int32, types::DeviceLocation::x86, 0,
+                              "initializer");
+    types::Function function_type(scalar_type, false);
+    function_type.add_param(scalar_type);
+    function_type.add_param(scalar_type);
+    nlohmann::json j;
+
+    // Create a JSONSerializer object
+    std::string filename = "test_sdfg.json";
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
+    auto sdfg = builder.move();
+    sdfg::serializer::JSONSerializer serializer;
+
+    // Serialize the data type to JSON
+    serializer.type_to_json(j, function_type);
+
+    // Deserialize the JSON back into a Scalar data type
+    auto deserialized_function_type = serializer.json_to_type(j);
+    EXPECT_TRUE(deserialized_function_type != nullptr);
+    EXPECT_TRUE(dynamic_cast<types::Function*>(deserialized_function_type.get()) != nullptr);
+    auto function_ptr = dynamic_cast<types::Function*>(deserialized_function_type.get());
+    EXPECT_TRUE(function_ptr != nullptr);
+
+    // Check if the deserialized data type matches the original data type
+    EXPECT_EQ(function_ptr->primitive_type(), function_type.primitive_type());
+    EXPECT_EQ(function_ptr->address_space(), function_type.address_space());
+    EXPECT_EQ(function_ptr->initializer(), function_type.initializer());
+    EXPECT_EQ(function_ptr->device_location(), function_type.device_location());
+    EXPECT_EQ(function_ptr->is_var_arg(), function_type.is_var_arg());
+    EXPECT_EQ(function_ptr->num_params(), function_type.num_params());
+    EXPECT_EQ(function_ptr->num_params(), 2);
+    EXPECT_EQ(function_ptr->param_type(symbolic::integer(0)).primitive_type(),
+              scalar_type.primitive_type());
+    EXPECT_EQ(function_ptr->param_type(symbolic::integer(1)).primitive_type(),
+              scalar_type.primitive_type());
 }
 
 TEST(JSONSerializerTest, SerializeDeserializeDataType_StructureDefinition) {

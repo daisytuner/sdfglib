@@ -4,7 +4,6 @@
 #include <nlohmann/json_fwd.hpp>
 #include <string>
 
-#include "nlohmann/json.hpp"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
@@ -97,6 +96,10 @@ class JSONSymbolicPrinter
 
     void bvisit(const SymEngine::LessThan& x);
     void bvisit(const SymEngine::StrictLessThan& x);
+
+    // Min and Max
+    void bvisit(const SymEngine::Min& x);
+    void bvisit(const SymEngine::Max& x);
 };
 
 }  // namespace serializer

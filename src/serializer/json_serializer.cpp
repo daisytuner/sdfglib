@@ -18,11 +18,11 @@
 #include "sdfg/structured_control_flow/while.h"
 #include "sdfg/structured_sdfg.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/types/function.h"
 #include "sdfg/types/scalar.h"
 #include "sdfg/types/type.h"
 #include "symengine/expression.h"
 #include "symengine/logic.h"
-#include "symengine/symbol.h"
 #include "symengine/symengine_rcp.h"
 
 namespace sdfg {
@@ -316,6 +316,21 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
         j["address_space"] = structure_type->address_space();
         j["initializer"] = structure_type->initializer();
         j["device_location"] = structure_type->device_location();
+    } else if (auto function_type = dynamic_cast<const types::Function*>(&type)) {
+        j["type"] = "function";
+        nlohmann::json return_type_json;
+        type_to_json(return_type_json, function_type->return_type());
+        j["return_type"] = return_type_json;
+        j["argument_types"] = nlohmann::json::array();
+        for (size_t i = 0; i < function_type->num_params(); i++) {
+            nlohmann::json param_json;
+            type_to_json(param_json, function_type->param_type(symbolic::integer(i)));
+            j["argument_types"].push_back(param_json);
+        }
+        j["is_var_arg"] = function_type->is_var_arg();
+        j["address_space"] = function_type->address_space();
+        j["initializer"] = function_type->initializer();
+        j["device_location"] = function_type->device_location();
     } else {
         throw std::runtime_error("Unknown type");
     }
@@ -776,6 +791,30 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             types::DeviceLocation device_location = j["device_location"];
             return std::make_unique<types::Structure>(name, device_location, address_space,
                                                       initializer);
+        } else if (j["type"] == "function") {
+            // Deserialize function type
+            assert(j.contains("return_type"));
+            std::unique_ptr<types::IType> return_type = json_to_type(j["return_type"]);
+            assert(j.contains("argument_types"));
+            std::vector<std::unique_ptr<types::IType>> argument_types;
+            for (const auto& arg : j["argument_types"]) {
+                argument_types.push_back(json_to_type(arg));
+            }
+            assert(j.contains("is_var_arg"));
+            bool is_var_arg = j["is_var_arg"];
+            assert(j.contains("address_space"));
+            uint address_space = j["address_space"];
+            assert(j.contains("initializer"));
+            std::string initializer = j["initializer"];
+            assert(j.contains("device_location"));
+            types::DeviceLocation device_location = j["device_location"];
+            auto function = std::make_unique<types::Function>(
+                *return_type, is_var_arg, device_location, address_space, initializer);
+            for (const auto& arg : argument_types) {
+                function->add_param(*arg);
+            }
+            return function->clone();
+
         } else {
             throw std::runtime_error("Unknown type");
         }
@@ -807,6 +846,52 @@ void JSONSymbolicPrinter::bvisit(const SymEngine::LessThan& x) {
 void JSONSymbolicPrinter::bvisit(const SymEngine::StrictLessThan& x) {
     str_ = apply(x.get_args()[0]) + " < " + apply(x.get_args()[1]);
     str_ = parenthesize(str_);
+};
+
+void JSONSymbolicPrinter::bvisit(const SymEngine::Min& x) {
+    std::ostringstream s;
+    auto container = x.get_args();
+    if (container.size() == 1) {
+        s << apply(*container.begin());
+    } else {
+        s << "min(";
+        s << apply(*container.begin());
+
+        // Recursively apply __daisy_min to the arguments
+        SymEngine::vec_basic subargs;
+        for (auto it = ++(container.begin()); it != container.end(); ++it) {
+            subargs.push_back(*it);
+        }
+        auto submin = SymEngine::min(subargs);
+        s << ", " << apply(submin);
+
+        s << ")";
+    }
+
+    str_ = s.str();
+};
+
+void JSONSymbolicPrinter::bvisit(const SymEngine::Max& x) {
+    std::ostringstream s;
+    auto container = x.get_args();
+    if (container.size() == 1) {
+        s << apply(*container.begin());
+    } else {
+        s << "max(";
+        s << apply(*container.begin());
+
+        // Recursively apply __daisy_max to the arguments
+        SymEngine::vec_basic subargs;
+        for (auto it = ++(container.begin()); it != container.end(); ++it) {
+            subargs.push_back(*it);
+        }
+        auto submax = SymEngine::max(subargs);
+        s << ", " << apply(submax);
+
+        s << ")";
+    }
+
+    str_ = s.str();
 };
 
 }  // namespace serializer
