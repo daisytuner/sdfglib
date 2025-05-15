@@ -44,6 +44,8 @@ class NodeDispatcher {
     NodeDispatcher(LanguageExtension& language_extension, Schedule& schedule,
                    structured_control_flow::ControlFlowNode& node, bool instrumented);
 
+    virtual ~NodeDispatcher() = default;
+
     virtual void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                                PrettyPrinter& library_stream) = 0;
 

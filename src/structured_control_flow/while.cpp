@@ -18,22 +18,22 @@ void While::replace(const symbolic::Expression& old_expression,
 };
 
 Break::Break(size_t element_id, const DebugInfo& debug_info)
-    : ControlFlowNode(element_id, debug_info){
+    : ControlFlowNode(element_id, debug_info) {
 
       };
 
 void Break::replace(const symbolic::Expression& old_expression,
-                    const symbolic::Expression& new_expression){
+                    const symbolic::Expression& new_expression) {
 
 };
 
 Continue::Continue(size_t element_id, const DebugInfo& debug_info)
-    : ControlFlowNode(element_id, debug_info){
+    : ControlFlowNode(element_id, debug_info) {
 
       };
 
 void Continue::replace(const symbolic::Expression& old_expression,
-                       const symbolic::Expression& new_expression){
+                       const symbolic::Expression& new_expression) {
 
 };
 

@@ -10,8 +10,7 @@ namespace transformations {
 
 LoopUnroll::LoopUnroll(structured_control_flow::Sequence& parent,
                        structured_control_flow::For& loop)
-    : parent_(parent),
-      loop_(loop){
+    : parent_(parent), loop_(loop) {
 
       };
 

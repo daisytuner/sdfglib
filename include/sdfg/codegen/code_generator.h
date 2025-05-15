@@ -43,6 +43,8 @@ class CodeGenerator {
     CodeGenerator(ConditionalSchedule& schedule, bool instrumented)
         : schedule_(schedule), instrumented_(instrumented){};
 
+    virtual ~CodeGenerator() = default;
+
     /**
      * @brief Generate the code
      *

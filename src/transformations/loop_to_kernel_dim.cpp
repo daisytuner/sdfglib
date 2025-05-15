@@ -20,7 +20,7 @@ namespace transformations {
 
 LoopToKernelDim::LoopToKernelDim(structured_control_flow::Sequence& parent,
                                  structured_control_flow::For& loop)
-    : parent_(parent), loop_(loop){};
+    : parent_(parent), loop_(loop) {};
 
 std::string LoopToKernelDim::name() { return "LoopToKernelDim"; };
 

@@ -8,21 +8,17 @@ namespace symbolic {
 Assumption::Assumption()
     : symbol_(symbolic::symbol("")),
       lower_bound_(symbolic::infty(-1)),
-      upper_bound_(symbolic::infty(1)){
+      upper_bound_(symbolic::infty(1)) {
 
       };
 
 Assumption::Assumption(const Symbol& symbol)
-    : symbol_(symbol),
-      lower_bound_(symbolic::infty(-1)),
-      upper_bound_(symbolic::infty(1)){
+    : symbol_(symbol), lower_bound_(symbolic::infty(-1)), upper_bound_(symbolic::infty(1)) {
 
       };
 
 Assumption::Assumption(const Assumption& a)
-    : symbol_(a.symbol_),
-      lower_bound_(a.lower_bound_),
-      upper_bound_(a.upper_bound_){
+    : symbol_(a.symbol_), lower_bound_(a.lower_bound_), upper_bound_(a.upper_bound_) {
 
       };
 

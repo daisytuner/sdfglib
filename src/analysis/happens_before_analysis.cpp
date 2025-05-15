@@ -17,15 +17,13 @@ namespace sdfg {
 namespace analysis {
 
 HappensBeforeAnalysis::HappensBeforeAnalysis(StructuredSDFG& sdfg)
-    : Analysis(sdfg),
-      node_(sdfg.root()){
+    : Analysis(sdfg), node_(sdfg.root()) {
 
       };
 
 HappensBeforeAnalysis::HappensBeforeAnalysis(StructuredSDFG& sdfg,
                                              structured_control_flow::Sequence& node)
-    : Analysis(sdfg),
-      node_(node){
+    : Analysis(sdfg), node_(node) {
 
       };
 

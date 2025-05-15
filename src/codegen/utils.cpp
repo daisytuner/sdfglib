@@ -5,8 +5,7 @@ namespace codegen {
 
 // Constructor
 PrettyPrinter::PrettyPrinter(int indent, bool frozen)
-    : indentSize(indent),
-      frozen_(frozen){
+    : indentSize(indent), frozen_(frozen) {
 
       };
 
@@ -46,7 +45,7 @@ void PrettyPrinter::applyIndent() {
 };
 
 Reference::Reference(const types::IType& reference_)
-    : reference_(reference_.clone()){
+    : reference_(reference_.clone()) {
 
       };
 

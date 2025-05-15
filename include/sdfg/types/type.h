@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #include <type_traits>
+#include <string_view>
 
 #include "sdfg/symbolic/symbolic.h"
 
@@ -62,7 +63,7 @@ constexpr const char* primitive_type_to_string(PrimitiveType e) noexcept {
     assert(false);
 };
 
-constexpr PrimitiveType primitive_type_from_string(const char* e) noexcept {
+constexpr PrimitiveType primitive_type_from_string(std::string_view e) noexcept {
     if (e == "Void") {
         return PrimitiveType::Void;
     } else if (e == "Bool") {
@@ -205,6 +206,8 @@ constexpr PrimitiveType as_unsigned(PrimitiveType e) noexcept {
 
 class IType {
    public:
+    virtual ~IType() = default;
+
     virtual PrimitiveType primitive_type() const = 0;
 
     virtual DeviceLocation device_location() const = 0;

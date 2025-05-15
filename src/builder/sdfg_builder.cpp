@@ -6,14 +6,12 @@ namespace builder {
 Function& SDFGBuilder::function() const { return static_cast<Function&>(*this->sdfg_); };
 
 SDFGBuilder::SDFGBuilder(std::unique_ptr<SDFG>& sdfg)
-    : FunctionBuilder(),
-      sdfg_(std::move(sdfg)){
+    : FunctionBuilder(), sdfg_(std::move(sdfg)) {
 
       };
 
 SDFGBuilder::SDFGBuilder(const std::string& name)
-    : FunctionBuilder(),
-      sdfg_(new SDFG(name)){
+    : FunctionBuilder(), sdfg_(new SDFG(name)) {
 
       };
 
