@@ -129,7 +129,7 @@ void StructuredSDFGDeepCopy::insert(structured_control_flow::Sequence& root,
 StructuredSDFGDeepCopy::StructuredSDFGDeepCopy(builder::StructuredSDFGBuilder& builder,
                                                structured_control_flow::Sequence& root,
                                                structured_control_flow::ControlFlowNode& source)
-    : builder_(builder), root_(root), source_(source){};
+    : builder_(builder), root_(root), source_(source) {};
 
 std::unordered_map<const structured_control_flow::ControlFlowNode*,
                    const structured_control_flow::ControlFlowNode*>

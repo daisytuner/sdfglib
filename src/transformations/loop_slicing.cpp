@@ -9,8 +9,7 @@ enum class LoopSlicingType { Init, Bound, Split_Lt, Split_Le };
 
 LoopSlicing::LoopSlicing(structured_control_flow::Sequence& parent,
                          structured_control_flow::For& loop)
-    : parent_(parent),
-      loop_(loop){
+    : parent_(parent), loop_(loop) {
 
       };
 

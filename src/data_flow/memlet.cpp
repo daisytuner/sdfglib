@@ -15,7 +15,7 @@ Memlet::Memlet(size_t element_id, const DebugInfo& debug_info, const graph::Edge
       src_conn_(src_conn),
       dst_(dst),
       dst_conn_(dst_conn),
-      subset_(subset){
+      subset_(subset) {
 
       };
 

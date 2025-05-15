@@ -4,14 +4,13 @@ namespace sdfg {
 namespace structured_control_flow {
 
 Transition::Transition(size_t element_id, const DebugInfo& debug_info)
-    : Element(element_id, debug_info){
+    : Element(element_id, debug_info) {
 
       };
 
 Transition::Transition(size_t element_id, const DebugInfo& debug_info,
                        const symbolic::Assignments& assignments)
-    : Element(element_id, debug_info),
-      assignments_(assignments){
+    : Element(element_id, debug_info), assignments_(assignments) {
 
       };
 
@@ -24,12 +23,12 @@ bool Transition::empty() const { return this->assignments_.empty(); };
 size_t Transition::size() const { return this->assignments_.size(); };
 
 void Transition::replace(const symbolic::Expression& old_expression,
-                         const symbolic::Expression& new_expression){
+                         const symbolic::Expression& new_expression) {
 
 };
 
 Sequence::Sequence(size_t element_id, const DebugInfo& debug_info)
-    : ControlFlowNode(element_id, debug_info){
+    : ControlFlowNode(element_id, debug_info) {
 
       };
 

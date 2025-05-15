@@ -8,7 +8,7 @@ Scalar::Scalar(PrimitiveType primitive_type, DeviceLocation device_location, uin
     : primitive_type_(primitive_type),
       device_location_(device_location),
       address_space_(address_space),
-      initializer_(initializer){};
+      initializer_(initializer) {};
 
 PrimitiveType Scalar::primitive_type() const { return this->primitive_type_; };
 

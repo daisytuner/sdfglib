@@ -90,7 +90,7 @@ bool Vectorization::tasklet_supported(data_flow::TaskletCode c) {
 
 Vectorization::Vectorization(structured_control_flow::Sequence& parent,
                              structured_control_flow::For& loop)
-    : loop_(loop){
+    : loop_(loop) {
 
       };
 

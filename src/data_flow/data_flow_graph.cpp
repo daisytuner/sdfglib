@@ -4,7 +4,7 @@ namespace sdfg {
 namespace data_flow {
 
 DataFlowGraph::DataFlowGraph(Element& parent)
-    : parent_(&parent){
+    : parent_(&parent) {
 
       };
 

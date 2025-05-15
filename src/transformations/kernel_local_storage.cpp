@@ -27,7 +27,7 @@ KernelLocalStorage::KernelLocalStorage(structured_control_flow::Sequence& parent
                                        structured_control_flow::For& outer_loop,
                                        structured_control_flow::For& inner_loop,
                                        std::string container)
-    : parent_(parent), outer_loop_(outer_loop), inner_loop_(inner_loop), container_(container){};
+    : parent_(parent), outer_loop_(outer_loop), inner_loop_(inner_loop), container_(container) {};
 
 std::string KernelLocalStorage::name() { return "KernelLocalStorage"; };
 

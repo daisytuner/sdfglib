@@ -12,7 +12,7 @@ Tasklet::Tasklet(size_t element_id, const DebugInfo& debug_info, const graph::Ve
                  const symbolic::Condition& condition)
     : CodeNode(element_id, debug_info, vertex, parent, {output}, inputs),
       code_(code),
-      condition_(condition){};
+      condition_(condition) {};
 
 const TaskletCode Tasklet::code() const { return this->code_; };
 

@@ -8,7 +8,7 @@ Pointer::Pointer(const IType& pointee_type, DeviceLocation device_location, uint
     : pointee_type_(pointee_type.clone()),
       device_location_(device_location),
       address_space_(address_space),
-      initializer_(initializer){};
+      initializer_(initializer) {};
 
 std::unique_ptr<IType> Pointer::clone() const {
     return std::make_unique<Pointer>(*this->pointee_type_, this->device_location_,
