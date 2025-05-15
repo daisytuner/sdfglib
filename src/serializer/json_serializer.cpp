@@ -158,7 +158,7 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
         // add subset
         edge_json["subset"] = nlohmann::json::array();
         for (auto& subset : edge.subset()) {
-            edge_json["subset"].push_back(subset->__str__());
+            edge_json["subset"].push_back(expression(subset));
         }
 
         j["edges"].push_back(edge_json);
@@ -174,10 +174,10 @@ void JSONSerializer::block_to_json(nlohmann::json& j, const structured_control_f
 
 void JSONSerializer::for_to_json(nlohmann::json& j, const structured_control_flow::For& for_node) {
     j["type"] = "for";
-    j["indvar"] = for_node.indvar()->__str__();
-    j["init"] = for_node.init()->__str__();
-    j["condition"] = for_node.condition()->__str__();
-    j["update"] = for_node.update()->__str__();
+    j["indvar"] = expression(for_node.indvar());
+    j["init"] = expression(for_node.init());
+    j["condition"] = expression(for_node.condition());
+    j["update"] = expression(for_node.update());
 
     nlohmann::json body_json;
     sequence_to_json(body_json, for_node.root());
@@ -190,7 +190,7 @@ void JSONSerializer::if_else_to_json(nlohmann::json& j,
     j["branches"] = nlohmann::json::array();
     for (int i = 0; i < if_else_node.size(); i++) {
         nlohmann::json branch_json;
-        branch_json["condition"] = if_else_node.at(i).second->__str__();
+        branch_json["condition"] = expression(if_else_node.at(i).second);
         nlohmann::json body_json;
         sequence_to_json(body_json, if_else_node.at(i).first);
         branch_json["children"] = body_json;
@@ -277,8 +277,8 @@ void JSONSerializer::sequence_to_json(nlohmann::json& j,
         transition_json["assignments"] = nlohmann::json::array();
         for (const auto& assignment : transition.assignments()) {
             nlohmann::json assignment_json;
-            assignment_json["symbol"] = assignment.first->__str__();
-            assignment_json["expression"] = assignment.second->__str__();
+            assignment_json["symbol"] = expression(assignment.first);
+            assignment_json["expression"] = expression(assignment.second);
             transition_json["assignments"].push_back(assignment_json);
         }
 
@@ -298,7 +298,7 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
         nlohmann::json element_type_json;
         type_to_json(element_type_json, array_type->element_type());
         j["element_type"] = element_type_json;
-        j["num_elements"] = array_type->num_elements()->__str__();
+        j["num_elements"] = expression(array_type->num_elements());
         j["address_space"] = array_type->address_space();
         j["initializer"] = array_type->initializer();
         j["device_location"] = array_type->device_location();
@@ -783,6 +783,21 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
         throw std::runtime_error("Type not found");
     }
 }
+
+std::string JSONSerializer::expression(const symbolic::Expression& expr) {
+    JSONSymbolicPrinter printer;
+    return printer.apply(expr);
+};
+
+void JSONSymbolicPrinter::bvisit(const SymEngine::Equality& x) {
+    str_ = apply(x.get_args()[0]) + " == " + apply(x.get_args()[1]);
+    str_ = parenthesize(str_);
+};
+
+void JSONSymbolicPrinter::bvisit(const SymEngine::Unequality& x) {
+    str_ = apply(x.get_args()[0]) + " != " + apply(x.get_args()[1]);
+    str_ = parenthesize(str_);
+};
 
 }  // namespace serializer
 }  // namespace sdfg
