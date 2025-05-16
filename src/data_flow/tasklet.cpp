@@ -5,7 +5,7 @@
 namespace sdfg {
 namespace data_flow {
 
-Tasklet::Tasklet(size_t element_id, const DebugInfo& debug_info, const graph::Vertex& vertex,
+Tasklet::Tasklet(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
                  DataFlowGraph& parent, const TaskletCode code,
                  const std::pair<std::string, sdfg::types::Scalar>& output,
                  const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
@@ -22,7 +22,7 @@ symbolic::Condition& Tasklet::condition() { return this->condition_; };
 
 bool Tasklet::is_conditional() const { return !symbolic::is_true(this->condition_); };
 
-std::unique_ptr<DataFlowNode> Tasklet::clone(const graph::Vertex& vertex,
+std::unique_ptr<DataFlowNode> Tasklet::clone(const graph::Vertex vertex,
                                              DataFlowGraph& parent) const {
     return std::unique_ptr<Tasklet>(new Tasklet(this->element_id_, this->debug_info_, vertex,
                                                 parent, this->code_, this->outputs_.at(0),

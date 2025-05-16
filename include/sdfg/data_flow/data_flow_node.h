@@ -30,7 +30,7 @@ class DataFlowNode : public Element {
     DataFlowGraph* parent_;
 
    protected:
-    DataFlowNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex& vertex,
+    DataFlowNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
                  DataFlowGraph& parent);
 
    public:
@@ -44,7 +44,7 @@ class DataFlowNode : public Element {
 
     DataFlowGraph& get_parent();
 
-    virtual std::unique_ptr<DataFlowNode> clone(const graph::Vertex& vertex,
+    virtual std::unique_ptr<DataFlowNode> clone(const graph::Vertex vertex,
                                                 DataFlowGraph& parent) const = 0;
 };
 }  // namespace data_flow

@@ -6,7 +6,7 @@ namespace sdfg {
 namespace data_flow {
 
 LibraryNode::LibraryNode(size_t element_id, const DebugInfo& debug_info,
-                         const graph::Vertex& vertex, DataFlowGraph& parent,
+                         const graph::Vertex vertex, DataFlowGraph& parent,
                          const std::vector<std::pair<std::string, sdfg::types::Scalar>>& outputs,
                          const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
                          const LibraryNodeType& call, const bool side_effect)
@@ -20,7 +20,7 @@ const LibraryNodeType& LibraryNode::call() const { return this->call_; };
 
 const bool LibraryNode::has_side_effect() const { return this->side_effect_; };
 
-std::unique_ptr<DataFlowNode> LibraryNode::clone(const graph::Vertex& vertex,
+std::unique_ptr<DataFlowNode> LibraryNode::clone(const graph::Vertex vertex,
                                                  DataFlowGraph& parent) const {
     return std::unique_ptr<LibraryNode>(
         new LibraryNode(this->element_id_, this->debug_info_, vertex, parent, this->outputs_,
