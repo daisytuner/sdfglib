@@ -109,6 +109,7 @@ set(SOURCE_FILES
     src/passes/structured_control_flow/loop_dependent_symbol_elimination.cpp
     src/passes/structured_control_flow/sequence_fusion.cpp
     src/passes/structured_control_flow/while_to_for_conversion.cpp
+    src/serializer/json_serializer.cpp
     src/structured_control_flow/block.cpp
     src/structured_control_flow/control_flow_node.cpp
     src/structured_control_flow/for.cpp
@@ -155,6 +156,8 @@ target_include_directories(sdfglib PUBLIC
     include
     ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/symengine
     ${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine
+    ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/symengine/symengine/utilities/cereal/include
+    ${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine/symengine/utilities/cereal/include
 )
 
 if(SDFGLIB_ENABLE_SANITIZER)
