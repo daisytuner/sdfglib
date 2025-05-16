@@ -36,14 +36,15 @@ class DataFlowGraph {
     Element* parent_;
 
    public:
-    DataFlowGraph(Element& parent);
+    DataFlowGraph() = default;
+    ~DataFlowGraph() = default;
 
     DataFlowGraph(const DataFlowGraph& graph) = delete;
     DataFlowGraph& operator=(const DataFlowGraph&) = delete;
 
-    const Element& get_parent() const;
+    const Element* get_parent() const;
 
-    Element& get_parent();
+    Element* get_parent();
 
     auto nodes() const {
         return std::views::values(this->nodes_) |
@@ -172,7 +173,7 @@ class DataFlowGraph {
 
     /***** Section: Serialization *****/
 
-    std::unique_ptr<DataFlowGraph> clone(Element& parent) const;
+    std::unique_ptr<DataFlowGraph> clone() const;
 };
 
 }  // namespace data_flow

@@ -53,7 +53,7 @@ bool DeadReferenceElimination::run_pass(builder::StructuredSDFGBuilder& builder,
             auto access_node = dynamic_cast<data_flow::AccessNode*>(move->element());
             auto& graph = dynamic_cast<data_flow::DataFlowGraph&>(access_node->get_parent());
             auto& edge = *graph.in_edges(*access_node).begin();
-            auto& block = dynamic_cast<structured_control_flow::Block&>(graph.get_parent());
+            auto& block = dynamic_cast<structured_control_flow::Block&>(*graph.get_parent());
             builder.clear_node(block, *access_node);
             applied = true;
         }

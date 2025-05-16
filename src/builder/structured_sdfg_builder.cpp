@@ -357,8 +357,10 @@ Block& StructuredSDFGBuilder::add_block(Sequence& parent,
     parent.transitions_.push_back(std::unique_ptr<Transition>(
         new Transition(this->element_counter_, debug_info, assignments)));
     this->element_counter_++;
+    auto& new_block = dynamic_cast<structured_control_flow::Block&>(*parent.children_.back().get());
+    (*new_block.dataflow_).parent_ = &new_block;
 
-    return static_cast<Block&>(*parent.children_.back().get());
+    return new_block;
 };
 
 Block& StructuredSDFGBuilder::add_block(Sequence& parent,
@@ -371,8 +373,10 @@ Block& StructuredSDFGBuilder::add_block(Sequence& parent,
     parent.transitions_.push_back(std::unique_ptr<Transition>(
         new Transition(this->element_counter_, debug_info, assignments)));
     this->element_counter_++;
+    auto& new_block = dynamic_cast<structured_control_flow::Block&>(*parent.children_.back().get());
+    (*new_block.dataflow_).parent_ = &new_block;
 
-    return static_cast<Block&>(*parent.children_.back().get());
+    return new_block;
 };
 
 std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_before(
@@ -396,6 +400,7 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_before(
     this->element_counter_++;
     auto new_entry = parent.at(index);
     auto& new_block = dynamic_cast<structured_control_flow::Block&>(new_entry.first);
+    (*new_block.dataflow_).parent_ = &new_block;
 
     return {new_block, new_entry.second};
 };
@@ -423,6 +428,7 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_before(
     this->element_counter_++;
     auto new_entry = parent.at(index);
     auto& new_block = dynamic_cast<structured_control_flow::Block&>(new_entry.first);
+    (*new_block.dataflow_).parent_ = &new_block;
 
     return {new_block, new_entry.second};
 };
@@ -449,6 +455,7 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_after(Sequence& 
     this->element_counter_++;
     auto new_entry = parent.at(index + 1);
     auto& new_block = dynamic_cast<structured_control_flow::Block&>(new_entry.first);
+    (*new_block.dataflow_).parent_ = &new_block;
 
     return {new_block, new_entry.second};
 };
@@ -475,6 +482,7 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_after(
     this->element_counter_++;
     auto new_entry = parent.at(index + 1);
     auto& new_block = dynamic_cast<structured_control_flow::Block&>(new_entry.first);
+    (*new_block.dataflow_).parent_ = &new_block;
 
     return {new_block, new_entry.second};
 };
