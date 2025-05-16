@@ -5,9 +5,9 @@ namespace codegen {
 
 NodeDispatcher::NodeDispatcher(LanguageExtension& language_extension, Schedule& schedule,
                                structured_control_flow::ControlFlowNode& node, bool instrumented)
-    : language_extension_(language_extension),
+    : node_(node),
+      language_extension_(language_extension),
       schedule_(schedule),
-      node_(node),
       instrumented_(instrumented){};
 
 bool NodeDispatcher::begin_node(PrettyPrinter& stream) {

@@ -247,6 +247,7 @@ std::unique_ptr<DataFlowGraph> DataFlowGraph::clone() const {
     for (auto& entry : this->nodes_) {
         auto vertex = boost::add_vertex(new_graph->graph_);
         auto res = new_graph->nodes_.insert({vertex, entry.second->clone(vertex, *new_graph)});
+        assert(res.second);
         node_mapping.insert({entry.first, vertex});
     }
 
@@ -259,9 +260,10 @@ std::unique_ptr<DataFlowGraph> DataFlowGraph::clone() const {
         auto res = new_graph->edges_.insert(
             {edge.first, entry.second->clone(edge.first, *new_graph, *new_graph->nodes_[src],
                                              *new_graph->nodes_[dst])});
+        assert(res.second);
     }
 
-    return std::move(new_graph);
+    return new_graph;
 };
 
 }  // namespace data_flow

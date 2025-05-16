@@ -38,8 +38,7 @@ bool RedundantArrayElimination::run_pass(builder::StructuredSDFGBuilder& builder
             continue;
         }
         std::unique_ptr<types::IType> type = sdfg.type(name).clone();
-        if (auto atype = dynamic_cast<const types::Array*>(type.get())) {
-        } else {
+        if (dynamic_cast<const types::Array*>(type.get()) == nullptr) {
             continue;
         }
 

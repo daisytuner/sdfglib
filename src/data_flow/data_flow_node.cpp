@@ -11,7 +11,7 @@ DataFlowNode::DataFlowNode(size_t element_id, const DebugInfo& debug_info,
 
       };
 
-const graph::Vertex DataFlowNode::vertex() const { return this->vertex_; };
+graph::Vertex DataFlowNode::vertex() const { return this->vertex_; };
 
 const DataFlowGraph& DataFlowNode::get_parent() const { return *this->parent_; };
 

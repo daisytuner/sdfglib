@@ -152,13 +152,18 @@ set(SOURCE_FILES
 add_library(sdfglib
     ${SOURCE_FILES}
 )
-target_include_directories(sdfglib PUBLIC
-    include
-    ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/symengine
-    ${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine
-    ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/symengine/symengine/utilities/cereal/include
-    ${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine/symengine/utilities/cereal/include
+target_include_directories(sdfglib
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+target_include_directories(sdfglib
+    SYSTEM PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/symengine
+        ${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine
+        ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/symengine/symengine/utilities/cereal/include
+        ${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine/symengine/utilities/cereal/include
+)
+target_compile_options(sdfglib PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -Wno-unused-private-field -Wno-switch)
 
 if(SDFGLIB_ENABLE_SANITIZER)
   target_compile_options(sdfglib PUBLIC ${_SAN_COMPILE_OPTS})

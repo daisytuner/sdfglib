@@ -560,7 +560,7 @@ class Tasklet : public CodeNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
    private:
-    const TaskletCode code_;
+    TaskletCode code_;
     symbolic::Condition condition_;
 
     Tasklet(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
@@ -573,7 +573,7 @@ class Tasklet : public CodeNode {
     Tasklet(const Tasklet& data_node) = delete;
     Tasklet& operator=(const Tasklet&) = delete;
 
-    const TaskletCode code() const;
+    TaskletCode code() const;
 
     const symbolic::Condition& condition() const;
 

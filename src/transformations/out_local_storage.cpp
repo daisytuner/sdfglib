@@ -22,10 +22,7 @@ std::string OutLocalStorage::name() { return "OutLocalStorage"; };
 
 bool OutLocalStorage::can_be_applied(Schedule& schedule) {
     auto& analysis_manager = schedule.analysis_manager();
-    auto& builder = schedule.builder();
 
-    auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
     auto& body = this->loop_.root();
     this->requires_array_ = false;
 
@@ -45,12 +42,12 @@ bool OutLocalStorage::can_be_applied(Schedule& schedule) {
             if (first_access->subsets().size() != access->subsets().size()) {
                 return false;
             }
-            for (int i = 0; i < first_access->subsets().size(); i++) {
+            for (size_t i = 0; i < first_access->subsets().size(); i++) {
                 auto subset = access->subsets().at(i);
                 if (first_subset.size() != subset.size()) {
                     return false;
                 }
-                for (int j = 0; j < first_subset.size(); j++) {
+                for (size_t j = 0; j < first_subset.size(); j++) {
                     if (!symbolic::eq(first_subset.at(j), subset.at(j))) {
                         return false;
                     }
@@ -132,7 +129,6 @@ void OutLocalStorage::apply_array(Schedule& schedule) {
     auto& analysis_manager = schedule.analysis_manager();
     auto& builder = schedule.builder();
     auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
     auto& users = analysis_manager.get<analysis::Users>();
     auto& parent = builder.parent(loop_);
     auto replacement_name = "__daisy_out_local_storage_" + this->container_;
@@ -164,8 +160,7 @@ void OutLocalStorage::apply_array(Schedule& schedule) {
     auto& init_memlet_in =
         builder.add_memlet(init_block, init_access_read, "void", init_tasklet, "_in", first_subset);
     init_memlet_in.replace(loop_.indvar(), indvar);
-    auto& init_memlet_out =
-        builder.add_memlet(init_block, init_tasklet, "_out", init_access_write, "void", {indvar});
+    builder.add_memlet(init_block, init_tasklet, "_out", init_access_write, "void", {indvar});
 
     auto& reset_loop = builder.add_for_after(parent, loop_, indvar, condition, init, update).first;
     auto& reset_body = reset_loop.root();
@@ -174,13 +169,11 @@ void OutLocalStorage::apply_array(Schedule& schedule) {
     auto& reset_access_write = builder.add_access(reset_block, this->container_);
     auto& reset_tasklet = builder.add_tasklet(reset_block, data_flow::TaskletCode::assign,
                                               {"_out", scalar_type}, {{"_in", scalar_type}});
-    auto& reset_memlet_in =
-        builder.add_memlet(reset_block, reset_access_read, "void", reset_tasklet, "_in", {indvar});
+    builder.add_memlet(reset_block, reset_access_read, "void", reset_tasklet, "_in", {indvar});
     auto& reset_memlet_out = builder.add_memlet(reset_block, reset_tasklet, "_out",
                                                 reset_access_write, "void", first_subset);
     reset_memlet_out.replace(loop_.indvar(), indvar);
 
-    auto container_users = body_users.uses(this->container_);
     for (auto user : body_users.uses(this->container_)) {
         auto element = user->element();
         if (auto memlet = dynamic_cast<data_flow::Memlet*>(element)) {
@@ -196,7 +189,6 @@ void OutLocalStorage::apply_scalar(Schedule& schedule) {
     auto& analysis_manager = schedule.analysis_manager();
     auto& builder = schedule.builder();
     auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
     auto& users = analysis_manager.get<analysis::Users>();
     auto& parent = builder.parent(loop_);
     auto replacement_name = "__daisy_out_local_storage_" + this->container_;
@@ -213,20 +205,17 @@ void OutLocalStorage::apply_scalar(Schedule& schedule) {
     auto& init_access_write = builder.add_access(init_block, replacement_name);
     auto& init_tasklet = builder.add_tasklet(init_block, data_flow::TaskletCode::assign,
                                              {"_out", scalar_type}, {{"_in", scalar_type}});
-    auto& init_memlet_in =
-        builder.add_memlet(init_block, init_access_read, "void", init_tasklet, "_in", first_subset);
-    auto& init_memlet_out =
-        builder.add_memlet(init_block, init_tasklet, "_out", init_access_write, "void", {});
+    builder.add_memlet(init_block, init_access_read, "void", init_tasklet, "_in", first_subset);
+    builder.add_memlet(init_block, init_tasklet, "_out", init_access_write, "void", {});
 
     auto& reset_block = builder.add_block_after(parent, loop_).first;
     auto& reset_access_read = builder.add_access(reset_block, replacement_name);
     auto& reset_access_write = builder.add_access(reset_block, this->container_);
     auto& reset_tasklet = builder.add_tasklet(reset_block, data_flow::TaskletCode::assign,
                                               {"_out", scalar_type}, {{"_in", scalar_type}});
-    auto& reset_memlet_in =
-        builder.add_memlet(reset_block, reset_access_read, "void", reset_tasklet, "_in", {});
-    auto& reset_memlet_out = builder.add_memlet(reset_block, reset_tasklet, "_out",
-                                                reset_access_write, "void", first_subset);
+    builder.add_memlet(reset_block, reset_access_read, "void", reset_tasklet, "_in", {});
+    builder.add_memlet(reset_block, reset_tasklet, "_out", reset_access_write, "void",
+                       first_subset);
 
     this->loop_.replace(symbolic::symbol(this->container_), symbolic::symbol(replacement_name));
 };

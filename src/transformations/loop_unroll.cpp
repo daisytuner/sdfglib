@@ -35,7 +35,7 @@ bool LoopUnroll::can_be_applied(Schedule& schedule) {
     auto& body = loop_.root();
     analysis::UsersView body_users(users, body);
     for (auto user : body_users.uses(loop_.indvar()->get_name())) {
-        if (auto AccessNode = dynamic_cast<data_flow::AccessNode*>(user->element())) {
+        if (dynamic_cast<data_flow::AccessNode*>(user->element())) {
             return false;
         }
     }
@@ -45,7 +45,6 @@ bool LoopUnroll::can_be_applied(Schedule& schedule) {
 
 void LoopUnroll::apply(Schedule& schedule) {
     auto& builder = schedule.builder();
-    auto& sdfg = builder.subject();
     auto& analysis_manager = schedule.analysis_manager();
     auto iteration_count = get_iteration_count(this->loop_);
 

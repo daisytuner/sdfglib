@@ -503,7 +503,7 @@ void Visualizer::visualizeLibraryNode(const data_flow::LibraryNodeType libnode_t
 void Visualizer::visualizeSubset(Function const& function, types::IType const& type,
                                  data_flow::Subset const& sub) {
     if (sub.empty()) return;
-    if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
+    if (dynamic_cast<const types::Scalar*>(&type)) {
         return;
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
         this->stream_ << "[" << this->expression(sub.at(0)->__str__()) << "]";

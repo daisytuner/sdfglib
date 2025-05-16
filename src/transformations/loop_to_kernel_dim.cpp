@@ -53,7 +53,7 @@ bool LoopToKernelDim::can_be_applied(Schedule& schedule) {
     auto& users = analysis_manager.get<analysis::Users>();
     analysis::UsersView body_users(users, loop_.root());
     for (auto user : body_users.reads(loop_.indvar()->get_name())) {
-        if (auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element())) {
+        if (dynamic_cast<data_flow::AccessNode*>(user->element())) {
             return false;
         }
     }
@@ -128,7 +128,6 @@ bool LoopToKernelDim::can_be_applied(Schedule& schedule) {
     auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
     auto& data_dependencies = analysis.get(this->loop_);
     for (auto& dep : data_dependencies) {
-        auto& container = dep.first;
         auto& dep_type = dep.second;
         if (dep_type < analysis::Parallelism::PARALLEL) {
             return false;
@@ -153,7 +152,6 @@ void LoopToKernelDim::apply(Schedule& schedule) {
 
     bool x_dim_available = false;
     bool y_dim_available = false;
-    bool z_dim_available = false;
     auto& users = analysis_manager.get<analysis::Users>();
     analysis::UsersView body_users(users, loop_.root());
 
@@ -167,15 +165,9 @@ void LoopToKernelDim::apply(Schedule& schedule) {
             y_dim_available = true;
         }
     }
-    if (!symbolic::eq(z_dim_size, symbolic::integer(1))) {
-        if (body_users.reads(kernel->threadIdx_z()->get_name()).empty()) {
-            z_dim_available = true;
-        }
-    }
 
     bool x_match = false;
     bool y_match = false;
-    bool z_match = false;
     symbolic::Integer iteration_count = get_iteration_count(loop_);
     if (x_dim_available) {
         auto cond = symbolic::Ge(x_dim_size, iteration_count);
@@ -187,12 +179,6 @@ void LoopToKernelDim::apply(Schedule& schedule) {
         auto cond = symbolic::Ge(y_dim_size, iteration_count);
         if (symbolic::is_true(cond)) {
             y_match = true;
-        }
-    }
-    if (z_dim_available) {
-        auto cond = symbolic::Ge(z_dim_size, iteration_count);
-        if (symbolic::is_true(cond)) {
-            z_match = true;
         }
     }
 

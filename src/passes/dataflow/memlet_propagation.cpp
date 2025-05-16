@@ -301,7 +301,6 @@ bool BackwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder
         // Criterion: Written to by access node
         auto& write_access_node = static_cast<data_flow::AccessNode&>(*write->element());
         auto& write_graph = *write->parent();
-        auto& write_block = static_cast<structured_control_flow::Block&>(*write_graph.get_parent());
 
         // Criterion: Data races
         if (!users.dominates(*write, *read) || !users.post_dominates(*read, *write)) {

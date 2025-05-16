@@ -67,8 +67,6 @@ std::pair<bool, std::vector<std::string>> StrideMinimization::can_be_applied(
     if (nested_loops.size() < 2) {
         return {false, {}};
     }
-    auto& builder = schedule.builder();
-    auto& sdfg = builder.subject();
 
     size_t while_loops = 0;
     std::vector<std::string> permutation;
@@ -167,7 +165,7 @@ std::pair<bool, std::vector<std::string>> StrideMinimization::can_be_applied(
 
         // Init scores per dimension
         std::vector<std::map<size_t, size_t>> scores;
-        for (auto& var : current) {
+        for (size_t i = 0; i < current.size(); i++) {
             scores.push_back({});
         }
 

@@ -13,10 +13,10 @@ bool PerfectLoopDistribution::can_be_applied(Schedule& schedule,
     bool has_subloop = false;
     for (size_t i = 0; i < loop.root().size(); i++) {
         // skip blocks
-        if (auto block = dynamic_cast<structured_control_flow::Block*>(&loop.root().at(i).first)) {
+        if (dynamic_cast<structured_control_flow::Block*>(&loop.root().at(i).first)) {
             continue;
         }
-        if (auto subloop = dynamic_cast<structured_control_flow::For*>(&loop.root().at(i).first)) {
+        if (dynamic_cast<structured_control_flow::For*>(&loop.root().at(i).first)) {
             has_subloop = true;
             break;
         }

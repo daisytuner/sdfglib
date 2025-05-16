@@ -294,7 +294,7 @@ void HappensBeforeAnalysis::visit_if_else(
     std::unordered_map<User*, std::unordered_set<User*>>& open_reads_after_writes,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_reads_after_write) {
     // Read Conditions
-    for (int i = 0; i < if_else.size(); i++) {
+    for (size_t i = 0; i < if_else.size(); i++) {
         auto child = if_else.at(i).second;
         for (auto atom : symbolic::atoms(child)) {
             auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
@@ -318,7 +318,7 @@ void HappensBeforeAnalysis::visit_if_else(
         open_reads_after_writes_branches(if_else.size());
     std::vector<std::unordered_map<User*, std::unordered_set<User*>>>
         closed_reads_after_writes_branches(if_else.size());
-    for (int i = 0; i < if_else.size(); i++) {
+    for (size_t i = 0; i < if_else.size(); i++) {
         auto& child = if_else.at(i).first;
         visit_sequence(users, child, open_reads_branches.at(i),
                        open_reads_after_writes_branches.at(i),
@@ -326,7 +326,7 @@ void HappensBeforeAnalysis::visit_if_else(
     }
 
     // merge partial open reads
-    for (int i = 0; i < if_else.size(); i++) {
+    for (size_t i = 0; i < if_else.size(); i++) {
         for (auto& entry : open_reads_branches.at(i)) {
             bool found = false;
             for (auto& entry2 : open_reads_after_writes) {
@@ -367,7 +367,7 @@ void HappensBeforeAnalysis::visit_if_else(
             candidates.insert(entry.first->container());
         }
 
-        for (int i = 1; i < if_else.size(); i++) {
+        for (size_t i = 1; i < if_else.size(); i++) {
             for (auto& entry : open_reads_after_writes_branches.at(i)) {
                 if (candidates.find(entry.first->container()) != candidates.end()) {
                     candidates_tmp.insert(entry.first->container());
@@ -466,7 +466,7 @@ void HappensBeforeAnalysis::visit_sequence(
     std::unordered_set<User*>& open_reads,
     std::unordered_map<User*, std::unordered_set<User*>>& open_reads_after_writes,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_reads_after_write) {
-    for (int i = 0; i < sequence.size(); i++) {
+    for (size_t i = 0; i < sequence.size(); i++) {
         auto child = sequence.at(i);
         if (auto block = dynamic_cast<structured_control_flow::Block*>(&child.first)) {
             visit_block(users, *block, open_reads, open_reads_after_writes,

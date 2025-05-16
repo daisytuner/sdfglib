@@ -418,7 +418,7 @@ std::string CLanguageExtension::declaration(const std::string& name, const types
 std::string CLanguageExtension::allocation(const std::string& name, const types::IType& type) {
     std::stringstream val;
 
-    if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
+    if (dynamic_cast<const types::Scalar*>(&type)) {
         val << declaration(name, type);
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
         val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
@@ -435,7 +435,7 @@ std::string CLanguageExtension::allocation(const std::string& name, const types:
         val << " * sizeof(";
         val << declaration("", pointer_type->pointee_type());
         val << "))";
-    } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
+    } else if (dynamic_cast<const types::Structure*>(&type)) {
         val << declaration(name, type);
     } else {
         throw std::runtime_error("Unknown allocation type");
@@ -447,13 +447,13 @@ std::string CLanguageExtension::allocation(const std::string& name, const types:
 std::string CLanguageExtension::deallocation(const std::string& name, const types::IType& type) {
     std::stringstream val;
 
-    if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
+    if (dynamic_cast<const types::Scalar*>(&type)) {
         // Do nothing
-    } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
+    } else if (dynamic_cast<const types::Array*>(&type)) {
         // Do nothing
-    } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
+    } else if (dynamic_cast<const types::Pointer*>(&type)) {
         val << "free(" << name << ")";
-    } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
+    } else if (dynamic_cast<const types::Structure*>(&type)) {
         // Do nothing
     } else {
         throw std::runtime_error("Unknown deallocation type");
@@ -479,7 +479,7 @@ std::string CLanguageExtension::subset(const Function& function, const types::IT
         return "";
     }
 
-    if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
+    if (dynamic_cast<const types::Scalar*>(&type)) {
         return "";
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
         std::string subset_str = "[" + this->expression(sub.at(0)) + "]";

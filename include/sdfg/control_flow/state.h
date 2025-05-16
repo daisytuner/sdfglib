@@ -33,7 +33,7 @@ class State : public Element {
     State(const State& state) = delete;
     State& operator=(const State&) = delete;
 
-    const graph::Vertex vertex() const;
+    graph::Vertex vertex() const;
 
     const data_flow::DataFlowGraph& dataflow() const;
 

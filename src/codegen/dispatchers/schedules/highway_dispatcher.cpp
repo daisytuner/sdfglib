@@ -712,7 +712,6 @@ std::string HighwayDispatcher::function_name(const structured_control_flow::Cont
 
 std::vector<std::string> HighwayDispatcher::function_arguments(
     Schedule& schedule, structured_control_flow::ControlFlowNode& node) {
-    auto& sdfg = schedule.sdfg();
 
     // Local variables
     auto allocations = schedule.allocations(&node);

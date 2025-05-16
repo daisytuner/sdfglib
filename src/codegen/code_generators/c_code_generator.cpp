@@ -161,7 +161,7 @@ void CCodeGenerator::dispatch_structures() {
         for (size_t i = 0; i < definition.num_members(); i++) {
             auto& member_type = definition.member_type(symbolic::integer(i));
             if (auto pointer_type = dynamic_cast<const sdfg::types::Pointer*>(&member_type)) {
-                if (auto struct_type = dynamic_cast<const sdfg::types::Structure*>(
+                if (dynamic_cast<const sdfg::types::Structure*>(
                         &pointer_type->pointee_type())) {
                     this->classes_stream_ << "struct ";
                 }

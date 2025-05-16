@@ -481,7 +481,7 @@ std::string CUDALanguageExtension::subset(const Function& function, const types:
         return "";
     }
 
-    if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
+    if (dynamic_cast<const types::Scalar*>(&type)) {
         return "";
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
         std::string subset_str = "[" + this->expression(sub.at(0)) + "]";

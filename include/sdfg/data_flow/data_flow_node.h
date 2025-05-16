@@ -38,7 +38,7 @@ class DataFlowNode : public Element {
     DataFlowNode(const DataFlowNode& data_node) = delete;
     DataFlowNode& operator=(const DataFlowNode&) = delete;
 
-    const graph::Vertex vertex() const;
+    graph::Vertex vertex() const;
 
     const DataFlowGraph& get_parent() const;
 

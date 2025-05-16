@@ -14,7 +14,7 @@ Tasklet::Tasklet(size_t element_id, const DebugInfo& debug_info, const graph::Ve
       code_(code),
       condition_(condition) {};
 
-const TaskletCode Tasklet::code() const { return this->code_; };
+TaskletCode Tasklet::code() const { return this->code_; };
 
 const symbolic::Condition& Tasklet::condition() const { return this->condition_; };
 

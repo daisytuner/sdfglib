@@ -138,13 +138,11 @@ bool WhileToForConversion::can_be_applied(builder::StructuredSDFGBuilder& builde
     while (!queue.empty()) {
         auto current = queue.front();
         queue.pop_front();
-        if (auto break_stmt = dynamic_cast<const structured_control_flow::Break*>(current)) {
+        if (dynamic_cast<const structured_control_flow::Break*>(current)) {
             return false;
-        } else if (auto continue_stmt =
-                       dynamic_cast<const structured_control_flow::Continue*>(current)) {
+        } else if (dynamic_cast<const structured_control_flow::Continue*>(current)) {
             return false;
-        } else if (auto return_stmt =
-                       dynamic_cast<const structured_control_flow::Return*>(current)) {
+        } else if (dynamic_cast<const structured_control_flow::Return*>(current)) {
             return false;
         }
 
@@ -177,26 +175,14 @@ void WhileToForConversion::apply(builder::StructuredSDFGBuilder& builder,
     auto last_element = body.at(body.size() - 1);
     auto if_else_stmt = dynamic_cast<structured_control_flow::IfElse*>(&last_element.first);
 
-    bool first_is_continue = false;
-    bool first_is_break = false;
-    auto& first_branch = if_else_stmt->at(0).first;
     auto& first_condition = if_else_stmt->at(0).second;
-    if (dynamic_cast<structured_control_flow::Break*>(&first_branch.at(0).first)) {
-        first_is_break = true;
-    } else if (dynamic_cast<structured_control_flow::Continue*>(&first_branch.at(0).first)) {
-        first_is_continue = true;
-    }
 
-    bool second_is_continue = false;
     bool second_is_break = false;
     auto& second_branch = if_else_stmt->at(1).first;
     auto& second_condition = if_else_stmt->at(1).second;
     if (dynamic_cast<structured_control_flow::Break*>(&second_branch.at(0).first)) {
         second_is_break = true;
-    } else if (dynamic_cast<structured_control_flow::Continue*>(&second_branch.at(0).first)) {
-        second_is_continue = true;
     }
-
     auto& all_users = analysis_manager.get<analysis::Users>();
     analysis::UsersView body_users(all_users, body);
     analysis::User* write_to_indvar = nullptr;

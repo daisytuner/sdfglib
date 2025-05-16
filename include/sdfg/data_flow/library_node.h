@@ -54,7 +54,7 @@ class LibraryNode : public CodeNode {
     void replace(const symbolic::Expression& old_expression,
                  const symbolic::Expression& new_expression) override;
 
-    const bool has_side_effect() const;
+    bool has_side_effect() const;
 };
 
 }  // namespace data_flow

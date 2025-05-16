@@ -94,8 +94,6 @@ void StructuredSDFGBuilder::traverse_with_loop_detection(
     }
 
     auto in_edges = sdfg.in_edges(*current);
-    auto out_edges = sdfg.out_edges(*current);
-    auto out_degree = sdfg.out_degree(*current);
 
     // Loop detection
     std::unordered_set<const InterstateEdge*> loop_edges;
@@ -165,7 +163,6 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
         return;
     }
 
-    auto in_edges = sdfg.in_edges(*current);
     auto out_edges = sdfg.out_edges(*current);
     auto out_degree = sdfg.out_degree(*current);
 
@@ -217,8 +214,7 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
 
             auto& branch = this->add_case(if_else, out_edge->condition(), out_edge->debug_info());
             if (!out_edge->assignments().empty()) {
-                auto& body =
-                    this->add_block(branch, out_edge->assignments(), out_edge->debug_info());
+                this->add_block(branch, out_edge->assignments(), out_edge->debug_info());
             }
             if (continues.find(out_edge) != continues.end()) {
                 this->add_continue(branch, out_edge->debug_info());
@@ -878,7 +874,6 @@ void StructuredSDFGBuilder::remove_node(structured_control_flow::Block& block,
 void StructuredSDFGBuilder::clear_node(structured_control_flow::Block& block,
                                        const data_flow::Tasklet& node) {
     auto& graph = block.dataflow();
-    auto vertex = node.vertex();
 
     std::unordered_set<const data_flow::DataFlowNode*> to_delete = {&node};
 
@@ -923,7 +918,6 @@ void StructuredSDFGBuilder::clear_node(structured_control_flow::Block& block,
 void StructuredSDFGBuilder::clear_node(structured_control_flow::Block& block,
                                        const data_flow::AccessNode& node) {
     auto& graph = block.dataflow();
-    auto vertex = node.vertex();
     assert(graph.out_degree(node) == 0);
 
     std::list<const data_flow::Memlet*> tmp;

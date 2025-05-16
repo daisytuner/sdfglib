@@ -50,7 +50,7 @@ class Schedule {
 
     analysis::AnalysisManager& analysis_manager();
 
-    const LoopSchedule loop_schedule(const structured_control_flow::ControlFlowNode* loop) const;
+    LoopSchedule loop_schedule(const structured_control_flow::ControlFlowNode* loop) const;
 
     void loop_schedule(const structured_control_flow::ControlFlowNode* loop,
                        const LoopSchedule schedule);

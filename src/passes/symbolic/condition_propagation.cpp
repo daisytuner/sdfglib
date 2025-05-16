@@ -108,7 +108,6 @@ bool ForwardConditionPropagation::run_pass(builder::StructuredSDFGBuilder& build
     bool applied = false;
 
     auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
     std::list<structured_control_flow::ControlFlowNode*> queue = {&sdfg.root()};
     while (!queue.empty()) {
         auto curr = queue.front();
@@ -149,8 +148,6 @@ bool BackwardConditionPropagation::eliminate_condition(builder::StructuredSDFGBu
                                                        structured_control_flow::IfElse& match,
                                                        structured_control_flow::For& loop,
                                                        const symbolic::Condition& condition) {
-    auto& sdfg = builder.subject();
-
     auto loop_indvar = loop.indvar();
     auto loop_init = loop.init();
     auto loop_condition = loop.condition();

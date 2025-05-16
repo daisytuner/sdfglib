@@ -62,7 +62,7 @@ const StructuredSDFG& Schedule::sdfg() const { return this->builder_.subject(); 
 
 analysis::AnalysisManager& Schedule::analysis_manager() { return this->analysis_manager_; };
 
-const LoopSchedule Schedule::loop_schedule(
+LoopSchedule Schedule::loop_schedule(
     const structured_control_flow::ControlFlowNode* loop) const {
     if (this->loop_schedules_.find(loop) == this->loop_schedules_.end()) {
         return LoopSchedule::SEQUENTIAL;
