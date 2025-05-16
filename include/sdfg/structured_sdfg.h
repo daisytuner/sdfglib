@@ -49,7 +49,7 @@ class StructuredSDFG : public Function {
 
     std::unique_ptr<StructuredSDFG> clone() const;
 
-    long long num_nodes() const;
+    size_t num_nodes() const;
 };
 
 }  // namespace sdfg

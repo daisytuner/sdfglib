@@ -13,11 +13,7 @@ LoopInterchange::LoopInterchange(structured_control_flow::Sequence& parent,
 std::string LoopInterchange::name() { return "LoopInterchange"; };
 
 bool LoopInterchange::can_be_applied(Schedule& schedule) {
-    auto& builder = schedule.builder();
-    auto& sdfg = builder.subject();
-
     auto& outer_indvar = this->outer_loop_.indvar();
-    auto& inner_indvar = this->inner_loop_.indvar();
 
     // Criterion: Inner loop must not depend on outer loop
     auto& inner_loop_init = this->inner_loop_.init();
@@ -47,7 +43,6 @@ bool LoopInterchange::can_be_applied(Schedule& schedule) {
     if (outer_dependencies.size() > 0) {
         bool is_map = true;
         for (auto& dep : outer_dependencies) {
-            auto& container = dep.first;
             auto& dep_type = dep.second;
             if (dep_type < analysis::Parallelism::PARALLEL) {
                 is_map = false;
@@ -62,7 +57,6 @@ bool LoopInterchange::can_be_applied(Schedule& schedule) {
     if (inner_dependencies.size() > 0) {
         bool is_map = true;
         for (auto& dep : inner_dependencies) {
-            auto& container = dep.first;
             auto& dep_type = dep.second;
             if (dep_type < analysis::Parallelism::PARALLEL) {
                 is_map = false;

@@ -159,7 +159,7 @@ Assumption Assumption::create(const symbolic::Symbol& symbol, const types::IType
                 throw std::runtime_error("Unsupported type");
             }
         };
-        return std::move(assum);
+        return assum;
     } else {
         throw std::runtime_error("Unsupported type");
     }

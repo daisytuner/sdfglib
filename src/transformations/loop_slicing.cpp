@@ -125,7 +125,6 @@ void LoopSlicing::apply(builder::StructuredSDFGBuilder& builder,
     }
     assert(if_else != nullptr);
 
-    bool slice_lower = false;
     auto branch_1 = if_else->at(0);
     auto condition_1 = branch_1.second;
     auto bound = analysis::DataParallelismAnalysis::bound(loop_);

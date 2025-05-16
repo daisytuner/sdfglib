@@ -52,8 +52,8 @@ std::unique_ptr<StructuredSDFG> StructuredSDFG::clone() const {
     return builder.move();
 };
 
-long long StructuredSDFG::num_nodes() const {
-    long long count = 0;
+size_t StructuredSDFG::num_nodes() const {
+    size_t count = 0;
     std::set<const ControlFlowNode*> to_visit = {&this->root()};
     while (!to_visit.empty()) {
         auto current = *to_visit.begin();
@@ -65,7 +65,7 @@ long long StructuredSDFG::num_nodes() const {
             to_visit.insert(&for_node->root());
         } else if (auto condition_node =
                        dynamic_cast<const structured_control_flow::IfElse*>(current)) {
-            for (int i = 0; i < condition_node->size(); i++) {
+            for (size_t i = 0; i < condition_node->size(); i++) {
                 to_visit.insert(&condition_node->at(i).first);
             }
         } else if (auto while_node = dynamic_cast<const structured_control_flow::While*>(current)) {
@@ -78,8 +78,8 @@ long long StructuredSDFG::num_nodes() const {
         } else if (auto kernel_node =
                        dynamic_cast<const structured_control_flow::Kernel*>(current)) {
             to_visit.insert(&kernel_node->root());
-        } else if (auto return_node =
-                       dynamic_cast<const structured_control_flow::Return*>(current)) {
+        } else if (dynamic_cast<const structured_control_flow::Return*>(current)) {
+            continue;
         }
     }
     return count;
@@ -107,7 +107,7 @@ const DebugInfo StructuredSDFG::debug_info() const {
         } else if (auto condition_node =
                        dynamic_cast<const structured_control_flow::IfElse*>(current)) {
             info = DebugInfo::merge(info, condition_node->debug_info());
-            for (int i = 0; i < condition_node->size(); i++) {
+            for (size_t i = 0; i < condition_node->size(); i++) {
                 to_visit.insert(&condition_node->at(i).first);
             }
         } else if (auto while_node = dynamic_cast<const structured_control_flow::While*>(current)) {

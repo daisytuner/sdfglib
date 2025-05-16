@@ -14,7 +14,6 @@ Kernel::Kernel(size_t element_id, const DebugInfo& debug_info, std::string suffi
                symbolic::Expression blockIdx_z_init, symbolic::Expression threadIdx_x_init,
                symbolic::Expression threadIdx_y_init, symbolic::Expression threadIdx_z_init)
     : ControlFlowNode(element_id, debug_info),
-      suffix_(suffix),
       gridDim_x_init_(gridDim_x_init),
       gridDim_y_init_(gridDim_y_init),
       gridDim_z_init_(gridDim_z_init),
@@ -26,7 +25,8 @@ Kernel::Kernel(size_t element_id, const DebugInfo& debug_info, std::string suffi
       blockIdx_z_init_(blockIdx_z_init),
       threadIdx_x_init_(threadIdx_x_init),
       threadIdx_y_init_(threadIdx_y_init),
-      threadIdx_z_init_(threadIdx_z_init) {
+      threadIdx_z_init_(threadIdx_z_init),
+      suffix_(suffix) {
     this->root_ = std::unique_ptr<Sequence>(new Sequence(++element_id, debug_info));
 
     this->gridDim_x_ = symbolic::symbol("__daisy_gridDim_x_" + suffix);

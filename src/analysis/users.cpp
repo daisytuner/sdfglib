@@ -20,13 +20,13 @@ namespace sdfg {
 namespace analysis {
 
 User::User(graph::Vertex vertex, const std::string& container, Element* element, Use use)
-    : vertex_(vertex), container_(container), element_(element), use_(use) {
+    : vertex_(vertex), container_(container), use_(use), element_(element) {
 
       };
 
 User::User(graph::Vertex vertex, const std::string& container, Element* element,
            data_flow::DataFlowGraph* parent, Use use)
-    : vertex_(vertex), container_(container), element_(element), parent_(parent), use_(use) {
+    : vertex_(vertex), container_(container), use_(use), element_(element), parent_(parent) {
 
       };
 
@@ -130,7 +130,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
                                                           &dataflow, use));
 
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
-                        auto e = boost::add_edge(last, v, this->graph_);
+                        boost::add_edge(last, v, this->graph_);
                     } else {
                         first = v;
                     }
@@ -150,7 +150,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
                                                           &dataflow, use));
 
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
-                        auto e = boost::add_edge(last, v, this->graph_);
+                        boost::add_edge(last, v, this->graph_);
                     } else {
                         first = v;
                     }
@@ -166,7 +166,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
                     this->add_user(
                         std::make_unique<User>(v, sym->get_name(), tasklet, &dataflow, Use::READ));
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
-                        auto e = boost::add_edge(last, v, this->graph_);
+                        boost::add_edge(last, v, this->graph_);
                     } else {
                         first = v;
                     }
@@ -189,7 +189,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
                     this->add_user(
                         std::make_unique<User>(v, sym->get_name(), &oedge, &dataflow, Use::READ));
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
-                        auto e = boost::add_edge(last, v, this->graph_);
+                        boost::add_edge(last, v, this->graph_);
                     } else {
                         first = v;
                     }
@@ -436,15 +436,15 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
     } else if (auto br_stmt = dynamic_cast<structured_control_flow::Break*>(&node)) {
         // Approximated by general back edge in loop scope
         auto v = boost::add_vertex(this->graph_);
-        this->users_.insert({v, std::make_unique<User>(v, "", cont_stmt, Use::NOP)});
-        this->entries_.insert({cont_stmt, this->users_.at(v).get()});
-        this->exits_.insert({cont_stmt, this->users_.at(v).get()});
+        this->users_.insert({v, std::make_unique<User>(v, "", br_stmt, Use::NOP)});
+        this->entries_.insert({br_stmt, this->users_.at(v).get()});
+        this->exits_.insert({br_stmt, this->users_.at(v).get()});
         return {v, v};
     } else if (auto ret_stmt = dynamic_cast<structured_control_flow::Return*>(&node)) {
         auto v = boost::add_vertex(this->graph_);
-        this->users_.insert({v, std::make_unique<User>(v, "", cont_stmt, Use::NOP)});
-        this->entries_.insert({cont_stmt, this->users_.at(v).get()});
-        this->exits_.insert({cont_stmt, this->users_.at(v).get()});
+        this->users_.insert({v, std::make_unique<User>(v, "", ret_stmt, Use::NOP)});
+        this->entries_.insert({ret_stmt, this->users_.at(v).get()});
+        this->exits_.insert({ret_stmt, this->users_.at(v).get()});
         return {v, boost::graph_traits<graph::Graph>::null_vertex()};
     } else if (auto kern_stmt = dynamic_cast<structured_control_flow::Kernel*>(&node)) {
         // NOP

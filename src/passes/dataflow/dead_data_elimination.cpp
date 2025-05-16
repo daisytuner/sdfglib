@@ -54,7 +54,7 @@ bool DeadDataElimination::run_pass(builder::StructuredSDFGBuilder& builder,
                 if (tasklet.is_conditional()) {
                     continue;
                 }
-                auto& block = dynamic_cast<structured_control_flow::Block&>(graph->get_parent());
+                auto& block = dynamic_cast<structured_control_flow::Block&>(*graph->get_parent());
                 builder.clear_node(block, *access_node);
             }
             applied = true;

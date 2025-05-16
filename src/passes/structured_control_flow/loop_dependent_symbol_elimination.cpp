@@ -10,7 +10,6 @@ bool LoopDependentSymbolElimination::eliminate_symbols(
         return false;
     }
 
-    auto& sdfg = builder.subject();
     bool applied = false;
 
     auto indvar = loop.indvar();

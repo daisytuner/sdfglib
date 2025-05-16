@@ -6,12 +6,12 @@ namespace sdfg {
 namespace data_flow {
 
 DataFlowNode::DataFlowNode(size_t element_id, const DebugInfo& debug_info,
-                           const graph::Vertex& vertex, DataFlowGraph& parent)
+                           const graph::Vertex vertex, DataFlowGraph& parent)
     : Element(element_id, debug_info), vertex_(vertex), parent_(&parent) {
 
       };
 
-const graph::Vertex DataFlowNode::vertex() const { return this->vertex_; };
+graph::Vertex DataFlowNode::vertex() const { return this->vertex_; };
 
 const DataFlowGraph& DataFlowNode::get_parent() const { return *this->parent_; };
 

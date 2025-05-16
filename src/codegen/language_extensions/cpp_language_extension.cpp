@@ -441,18 +441,18 @@ std::string CPPLanguageExtension::allocation(const std::string& name, const type
 std::string CPPLanguageExtension::deallocation(const std::string& name, const types::IType& type) {
     std::stringstream val;
 
-    if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
+    if (dynamic_cast<const types::Scalar*>(&type)) {
         // Do nothing
-    } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
+    } else if (dynamic_cast<const types::Array*>(&type)) {
         // Do nothing
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
-        if (auto array_type = dynamic_cast<const types::Array*>(&pointer_type->pointee_type())) {
+        if (dynamic_cast<const types::Array*>(&pointer_type->pointee_type())) {
             val << "delete[] ";
         } else {
             val << "delete ";
         }
         val << name;
-    } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
+    } else if (dynamic_cast<const types::Structure*>(&type)) {
         // Do nothing
     } else {
         throw std::runtime_error("Unknown deallocation type");
@@ -479,7 +479,7 @@ std::string CPPLanguageExtension::subset(const Function& function, const types::
         return "";
     }
 
-    if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
+    if (dynamic_cast<const types::Scalar*>(&type)) {
         return "";
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
         std::string subset_str = "[" + this->expression(sub.at(0)) + "]";

@@ -26,14 +26,14 @@ class State : public Element {
     const graph::Vertex vertex_;
     std::unique_ptr<data_flow::DataFlowGraph> dataflow_;
 
-    State(size_t element_id, const DebugInfo& debug_info, const graph::Vertex& vertex);
+    State(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex);
 
    public:
     // Remark: Exclusive resource
     State(const State& state) = delete;
     State& operator=(const State&) = delete;
 
-    const graph::Vertex vertex() const;
+    graph::Vertex vertex() const;
 
     const data_flow::DataFlowGraph& dataflow() const;
 

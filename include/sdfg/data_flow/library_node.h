@@ -34,7 +34,7 @@ class LibraryNode : public CodeNode {
     LibraryNodeType call_;
     bool side_effect_;
 
-    LibraryNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex& vertex,
+    LibraryNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
                 DataFlowGraph& parent,
                 const std::vector<std::pair<std::string, sdfg::types::Scalar>>& outputs,
                 const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
@@ -48,13 +48,13 @@ class LibraryNode : public CodeNode {
 
     const LibraryNodeType& call() const;
 
-    virtual std::unique_ptr<DataFlowNode> clone(const graph::Vertex& vertex,
+    virtual std::unique_ptr<DataFlowNode> clone(const graph::Vertex vertex,
                                                 DataFlowGraph& parent) const override;
 
     void replace(const symbolic::Expression& old_expression,
                  const symbolic::Expression& new_expression) override;
 
-    const bool has_side_effect() const;
+    bool has_side_effect() const;
 };
 
 }  // namespace data_flow

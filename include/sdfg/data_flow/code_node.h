@@ -21,7 +21,7 @@ class CodeNode : public DataFlowNode {
     std::vector<std::pair<std::string, sdfg::types::Scalar>> outputs_;
     std::vector<std::pair<std::string, sdfg::types::Scalar>> inputs_;
 
-    CodeNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex& vertex,
+    CodeNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
              DataFlowGraph& parent,
              const std::vector<std::pair<std::string, sdfg::types::Scalar>>& outputs,
              const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs);
@@ -44,7 +44,7 @@ class CodeNode : public DataFlowNode {
 
     bool needs_connector(size_t index) const;
 
-    virtual std::unique_ptr<DataFlowNode> clone(const graph::Vertex& vertex,
+    virtual std::unique_ptr<DataFlowNode> clone(const graph::Vertex vertex,
                                                 DataFlowGraph& parent) const = 0;
 };
 }  // namespace data_flow

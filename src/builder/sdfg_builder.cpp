@@ -28,6 +28,7 @@ control_flow::State& SDFGBuilder::add_state(bool is_start_state, const DebugInfo
                      new control_flow::State(this->element_counter_, debug_info, vertex))});
     this->element_counter_++;
     assert(res.second);
+    (*res.first).second->dataflow_->parent_ = (*res.first).second.get();
 
     if (is_start_state) {
         this->sdfg_->start_state_ = (*res.first).second.get();

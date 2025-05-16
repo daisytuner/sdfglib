@@ -188,7 +188,7 @@ void JSONSerializer::if_else_to_json(nlohmann::json& j,
                                      const structured_control_flow::IfElse& if_else_node) {
     j["type"] = "if_else";
     j["branches"] = nlohmann::json::array();
-    for (int i = 0; i < if_else_node.size(); i++) {
+    for (size_t i = 0; i < if_else_node.size(); i++) {
         nlohmann::json branch_json;
         branch_json["condition"] = expression(if_else_node.at(i).second);
         nlohmann::json body_json;
@@ -692,7 +692,7 @@ void JSONSerializer::json_to_break_node(const nlohmann::json& j,
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "break");
-    auto& break_node = builder.add_break(parent);
+    builder.add_break(parent);
 }
 
 void JSONSerializer::json_to_continue_node(const nlohmann::json& j,
@@ -701,7 +701,7 @@ void JSONSerializer::json_to_continue_node(const nlohmann::json& j,
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "continue");
-    auto& continue_node = builder.add_continue(parent);
+    builder.add_continue(parent);
 }
 
 void JSONSerializer::json_to_kernel_node(const nlohmann::json& j,
@@ -734,7 +734,7 @@ void JSONSerializer::json_to_return_node(const nlohmann::json& j,
     assert(j["type"].is_string());
     assert(j["type"] == "return");
 
-    auto& return_node = builder.add_return(parent, assignments);
+    builder.add_return(parent, assignments);
 }
 
 std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json& j) {

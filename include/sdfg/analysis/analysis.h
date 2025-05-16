@@ -54,7 +54,7 @@ class AnalysisManager {
         cache_[type]->additional_assumptions_ = this->additional_assumptions_;
         cache_[type]->run(*this);
         return *static_cast<T*>(cache_[type].get());
-    };
+    }
 
     template <class T>
     void invalidate() {
@@ -62,7 +62,7 @@ class AnalysisManager {
         if (cache_.find(type) != cache_.end()) {
             cache_.erase(type);
         }
-    };
+    }
 
     void invalidate_all();
 };

@@ -45,7 +45,7 @@ bool ForwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
         }
         auto& access_node = static_cast<data_flow::AccessNode&>(*write->element());
         auto& graph = *write->parent();
-        auto& block = static_cast<structured_control_flow::Block&>(graph.get_parent());
+        auto& block = static_cast<structured_control_flow::Block&>(*graph.get_parent());
 
         // Criterion: Access node is connected to an assignment tasklet
         const data_flow::Tasklet* tasklet = nullptr;
@@ -250,7 +250,7 @@ bool BackwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder
 
         auto& read_access_node = static_cast<data_flow::AccessNode&>(*read->element());
         auto& read_graph = *read->parent();
-        auto& read_block = static_cast<structured_control_flow::Block&>(read_graph.get_parent());
+        auto& read_block = static_cast<structured_control_flow::Block&>(*read_graph.get_parent());
 
         // Criterion: Access node is connected to an assignment tasklet
         const data_flow::Tasklet* tasklet = nullptr;
@@ -301,7 +301,6 @@ bool BackwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder
         // Criterion: Written to by access node
         auto& write_access_node = static_cast<data_flow::AccessNode&>(*write->element());
         auto& write_graph = *write->parent();
-        auto& write_block = static_cast<structured_control_flow::Block&>(write_graph.get_parent());
 
         // Criterion: Data races
         if (!users.dominates(*write, *read) || !users.post_dominates(*read, *write)) {

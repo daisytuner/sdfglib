@@ -5,8 +5,6 @@ namespace passes {
 
 bool LoopBoundNormalization::apply(builder::StructuredSDFGBuilder& builder,
                                    structured_control_flow::For& loop) {
-    bool applied = false;
-
     auto indvar = loop.indvar();
     auto condition = loop.condition();
     auto update = loop.update();

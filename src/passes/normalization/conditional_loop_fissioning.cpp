@@ -62,7 +62,6 @@ bool ConditionalLoopFissioning::can_be_applied(structured_control_flow::Sequence
 
 void ConditionalLoopFissioning::apply(structured_control_flow::Sequence& parent,
                                       structured_control_flow::For& loop) {
-    auto& sdfg = builder_.subject();
     auto& body = loop.root();
     auto& node = body.at(0).first;
     auto if_else_stmt = dynamic_cast<structured_control_flow::IfElse*>(&node);

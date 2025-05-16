@@ -3,14 +3,9 @@
 namespace sdfg {
 namespace data_flow {
 
-DataFlowGraph::DataFlowGraph(Element& parent)
-    : parent_(&parent) {
+const Element* DataFlowGraph::get_parent() const { return this->parent_; };
 
-      };
-
-const Element& DataFlowGraph::get_parent() const { return *this->parent_; };
-
-Element& DataFlowGraph::get_parent() { return *this->parent_; };
+Element* DataFlowGraph::get_parent() { return this->parent_; };
 
 size_t DataFlowGraph::in_degree(const data_flow::DataFlowNode& node) const {
     return boost::in_degree(node.vertex(), this->graph_);
@@ -245,13 +240,14 @@ DataFlowGraph::weakly_connected_components() const {
 
 /***** Section: Serialization *****/
 
-std::unique_ptr<DataFlowGraph> DataFlowGraph::clone(Element& parent) const {
-    auto new_graph = std::make_unique<DataFlowGraph>(parent);
+std::unique_ptr<DataFlowGraph> DataFlowGraph::clone() const {
+    auto new_graph = std::make_unique<DataFlowGraph>();
 
     std::unordered_map<graph::Vertex, graph::Vertex> node_mapping;
     for (auto& entry : this->nodes_) {
         auto vertex = boost::add_vertex(new_graph->graph_);
         auto res = new_graph->nodes_.insert({vertex, entry.second->clone(vertex, *new_graph)});
+        assert(res.second);
         node_mapping.insert({entry.first, vertex});
     }
 
@@ -264,9 +260,10 @@ std::unique_ptr<DataFlowGraph> DataFlowGraph::clone(Element& parent) const {
         auto res = new_graph->edges_.insert(
             {edge.first, entry.second->clone(edge.first, *new_graph, *new_graph->nodes_[src],
                                              *new_graph->nodes_[dst])});
+        assert(res.second);
     }
 
-    return std::move(new_graph);
+    return new_graph;
 };
 
 }  // namespace data_flow

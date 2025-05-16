@@ -33,13 +33,10 @@ std::string KernelLocalStorage::name() { return "KernelLocalStorage"; };
 
 bool KernelLocalStorage::reads_container(std::string container, const Sequence& sequence,
                                          analysis::UsersView& body_users) {
-    for (auto& user : body_users.reads(container)) {
-        auto& subsets = user->subsets();
-        for (auto& subset : subsets) {
-            return true;
-        }
+    if (body_users.reads(container).size() == 1) {
+        return true;
     }
-    return true;
+    return false;
 }
 
 bool KernelLocalStorage::uses_inner_indvar(const structured_control_flow::Kernel* kernel,
@@ -214,7 +211,6 @@ void KernelLocalStorage::apply(Schedule& schedule) {
     auto& analysis_manager = schedule.analysis_manager();
     auto& builder = schedule.builder();
     auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
     auto& users = analysis_manager.get<analysis::Users>();
 
     auto& inner_body = this->inner_loop_.root();

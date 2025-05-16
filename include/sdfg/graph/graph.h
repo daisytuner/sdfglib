@@ -37,7 +37,7 @@ struct DFSVisitor : boost::default_dfs_visitor {
     std::list<Edge>& back_edges_;
 
     DFSVisitor(std::list<Edge>& back_edges, std::list<Vertex>& nodes)
-        : back_edges_(back_edges), nodes_(nodes){};
+        : nodes_(nodes), back_edges_(back_edges){};
 
     void discover_vertex(Vertex v, const Graph& g) { nodes_.push_back(v); };
 

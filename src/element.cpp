@@ -3,22 +3,23 @@
 namespace sdfg {
 
 DebugInfo::DebugInfo()
-    : has_(false),
+    : filename_(),
       start_line_(0),
       start_column_(0),
       end_line_(0),
-      end_column_(0){
+      end_column_(0),
+      has_(false) {
 
       };
 
 DebugInfo::DebugInfo(std::string filename, size_t start_line, size_t start_column, size_t end_line,
                      size_t end_column)
-    : has_(true),
-      filename_(filename),
+    : filename_(filename),
       start_line_(start_line),
       start_column_(start_column),
       end_line_(end_line),
-      end_column_(end_column){
+      end_column_(end_column),
+      has_(true) {
 
       };
 
