@@ -30,8 +30,8 @@ class DataFlowGraph {
    private:
     // Remark: Exclusive resource
     graph::Graph graph_;
-    std::map<graph::Vertex, std::unique_ptr<data_flow::DataFlowNode>> nodes_;
-    std::map<graph::Edge, std::unique_ptr<data_flow::Memlet>> edges_;
+    std::unordered_map<graph::Vertex, std::unique_ptr<data_flow::DataFlowNode>, boost::hash<graph::Vertex>> nodes_;
+    std::unordered_map<graph::Edge, std::unique_ptr<data_flow::Memlet>, boost::hash<graph::Edge>> edges_;
 
     Element* parent_;
 
