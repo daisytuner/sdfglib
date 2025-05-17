@@ -81,7 +81,7 @@ class Users : public Analysis {
 
     // Graph representation
     graph::Graph graph_;
-    std::map<graph::Vertex, std::unique_ptr<User>> users_;
+    std::unordered_map<graph::Vertex, std::unique_ptr<User>, boost::hash<graph::Vertex>> users_;
 
     std::unordered_map<structured_control_flow::ControlFlowNode*, User*> entries_;
     std::unordered_map<structured_control_flow::ControlFlowNode*, User*> exits_;

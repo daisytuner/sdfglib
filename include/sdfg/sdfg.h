@@ -44,8 +44,12 @@ class SDFG : public Function {
    private:
     // Control-Flow Graph
     graph::Graph graph_;
-    std::map<graph::Vertex, std::unique_ptr<control_flow::State>> states_;
-    std::map<graph::Edge, std::unique_ptr<control_flow::InterstateEdge>> edges_;
+    std::unordered_map<graph::Vertex, std::unique_ptr<control_flow::State>,
+                       boost::hash<graph::Vertex>>
+        states_;
+    std::unordered_map<graph::Edge, std::unique_ptr<control_flow::InterstateEdge>,
+                       boost::hash<graph::Edge>>
+        edges_;
 
     const control_flow::State* start_state_;
 
