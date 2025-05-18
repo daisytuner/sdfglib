@@ -42,16 +42,16 @@ control_flow::State& SDFGBuilder::add_state_before(const control_flow::State& st
                                                    const DebugInfo& debug_info) {
     auto& new_state = this->add_state(false, debug_info);
 
-    // Redirect control-flow
-    std::list<graph::Edge> descriptors_to_remove;
-    for (auto& edge : this->sdfg_->in_edges(state)) {
-        this->add_edge(edge.src(), new_state, edge.condition());
+    std::vector<const control_flow::InterstateEdge*> to_redirect;
+    for (auto& e : this->sdfg_->in_edges(state))
+        to_redirect.push_back(&e);
 
-        auto desc = edge.edge();
-        descriptors_to_remove.push_back(desc);
+    // Redirect control-flow
+    for (auto edge : to_redirect) {
+        this->add_edge(edge->src(), new_state, edge->condition());
+
+        auto desc = edge->edge();
         this->sdfg_->edges_.erase(desc);
-    }
-    for (auto desc : descriptors_to_remove) {
         boost::remove_edge(desc, this->sdfg_->graph_);
     }
     this->add_edge(new_state, state);
@@ -68,16 +68,16 @@ control_flow::State& SDFGBuilder::add_state_after(const control_flow::State& sta
                                                   const DebugInfo& debug_info) {
     auto& new_state = this->add_state(false, debug_info);
 
-    // Redirect control-flow
-    std::list<graph::Edge> descriptors_to_remove;
-    for (auto& edge : this->sdfg_->out_edges(state)) {
-        this->add_edge(new_state, edge.dst(), edge.condition());
+    std::vector<const control_flow::InterstateEdge*> to_redirect;
+    for (auto& e : this->sdfg_->out_edges(state))
+        to_redirect.push_back(&e);
 
-        auto desc = edge.edge();
-        descriptors_to_remove.push_back(desc);
+    // Redirect control-flow
+    for (auto& edge : to_redirect) {
+        this->add_edge(new_state, edge->dst(), edge->condition());
+
+        auto desc = edge->edge();
         this->sdfg_->edges_.erase(desc);
-    }
-    for (auto desc : descriptors_to_remove) {
         boost::remove_edge(desc, this->sdfg_->graph_);
     }
     if (connect_states) {
@@ -126,10 +126,11 @@ control_flow::InterstateEdge& SDFGBuilder::add_edge(const control_flow::State& s
 };
 
 void SDFGBuilder::remove_edge(const control_flow::InterstateEdge& edge) {
-    size_t erased = this->sdfg_->edges_.erase(edge.edge());
+    auto desc = edge.edge();
+    size_t erased = this->sdfg_->edges_.erase(desc);
     assert(erased == 1);
 
-    boost::remove_edge(edge.src().vertex_, edge.dst().vertex_, this->sdfg_->graph_);
+    boost::remove_edge(desc, this->sdfg_->graph_);
 };
 
 std::tuple<control_flow::State&, control_flow::State&, control_flow::State&> SDFGBuilder::add_loop(
