@@ -181,7 +181,7 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
         if (out_degree == 1) {
             auto& oedge = *out_edges.begin();
             assert(oedge.is_unconditional() &&
-                "Degenerated structured control flow: Non-deterministic transition");
+                   "Degenerated structured control flow: Non-deterministic transition");
             this->add_block(scope, curr->dataflow(), oedge.assignments(), curr->debug_info());
 
             if (continues.find(&oedge) != continues.end()) {
@@ -200,7 +200,7 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
                     queue.push_back(&oedge.dst());
                 } else {
                     this->traverse_with_loop_detection(sdfg, scope, &oedge.dst(), end, continues,
-                                                      breaks, pdom_tree);
+                                                       breaks, pdom_tree);
                 }
             }
             continue;
@@ -227,7 +227,8 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
             for (size_t i = 0; i < out_degree; i++) {
                 auto& out_edge = out_edges_vec[i];
 
-                auto& branch = this->add_case(if_else, out_edge->condition(), out_edge->debug_info());
+                auto& branch =
+                    this->add_case(if_else, out_edge->condition(), out_edge->debug_info());
                 if (!out_edge->assignments().empty()) {
                     this->add_block(branch, out_edge->assignments(), out_edge->debug_info());
                 }
@@ -237,7 +238,7 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
                     this->add_break(branch, out_edge->debug_info());
                 } else {
                     this->traverse_with_loop_detection(sdfg, branch, &out_edge->dst(), local_end,
-                                                    continues, breaks, pdom_tree);
+                                                       continues, breaks, pdom_tree);
                 }
             }
 
@@ -253,7 +254,7 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
                     queue.push_back(local_end);
                 } else {
                     this->traverse_with_loop_detection(sdfg, scope, local_end, end, continues,
-                                                      breaks, pdom_tree);
+                                                       breaks, pdom_tree);
                 }
             }
             continue;

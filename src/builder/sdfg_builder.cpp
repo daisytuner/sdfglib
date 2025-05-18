@@ -43,8 +43,7 @@ control_flow::State& SDFGBuilder::add_state_before(const control_flow::State& st
     auto& new_state = this->add_state(false, debug_info);
 
     std::vector<const control_flow::InterstateEdge*> to_redirect;
-    for (auto& e : this->sdfg_->in_edges(state))
-        to_redirect.push_back(&e);
+    for (auto& e : this->sdfg_->in_edges(state)) to_redirect.push_back(&e);
 
     // Redirect control-flow
     for (auto edge : to_redirect) {
@@ -69,8 +68,7 @@ control_flow::State& SDFGBuilder::add_state_after(const control_flow::State& sta
     auto& new_state = this->add_state(false, debug_info);
 
     std::vector<const control_flow::InterstateEdge*> to_redirect;
-    for (auto& e : this->sdfg_->out_edges(state))
-        to_redirect.push_back(&e);
+    for (auto& e : this->sdfg_->out_edges(state)) to_redirect.push_back(&e);
 
     // Redirect control-flow
     for (auto& edge : to_redirect) {
