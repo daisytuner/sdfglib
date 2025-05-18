@@ -159,79 +159,105 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
     const std::unordered_set<const InterstateEdge*>& continues,
     const std::unordered_set<const InterstateEdge*>& breaks,
     const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree) {
-    if (current == end) {
-        return;
-    }
-
-    auto out_edges = sdfg.out_edges(*current);
-    auto out_degree = sdfg.out_degree(*current);
-
-    // Case 1: Sink node
-    if (out_degree == 0) {
-        this->add_block(scope, current->dataflow(), {}, current->debug_info());
-        this->add_return(scope, {}, current->debug_info());
-        return;
-    }
-
-    // Case 2: Transition
-    if (out_degree == 1) {
-        auto& oedge = *out_edges.begin();
-        assert(oedge.is_unconditional() &&
-               "Degenerated structured control flow: Non-deterministic transition");
-        this->add_block(scope, current->dataflow(), oedge.assignments(), current->debug_info());
-
-        if (continues.find(&oedge) != continues.end()) {
-            this->add_continue(scope, oedge.debug_info());
-        } else if (breaks.find(&oedge) != breaks.end()) {
-            this->add_break(scope, oedge.debug_info());
-        } else {
-            this->traverse_with_loop_detection(sdfg, scope, &oedge.dst(), end, continues, breaks,
-                                               pdom_tree);
-        }
-        return;
-    }
-
-    // Case 3: Branches
-    if (out_degree > 1) {
-        this->add_block(scope, current->dataflow(), {}, current->debug_info());
-
-        std::vector<const InterstateEdge*> out_edges_vec;
-        for (auto& edge : out_edges) {
-            out_edges_vec.push_back(&edge);
+    std::list<const State*> queue = {current};
+    while (!queue.empty()) {
+        auto curr = queue.front();
+        queue.pop_front();
+        if (curr == end) {
+            continue;
         }
 
-        // Best-effort approach: Find end of if-else
-        // If not found, the branches may repeat paths yielding a large SDFG
-        const control_flow::State* local_end =
-            this->find_end_of_if_else(sdfg, current, out_edges_vec, pdom_tree);
-        if (local_end == nullptr) {
-            local_end = end;
+        auto out_edges = sdfg.out_edges(*curr);
+        auto out_degree = sdfg.out_degree(*curr);
+
+        // Case 1: Sink node
+        if (out_degree == 0) {
+            this->add_block(scope, curr->dataflow(), {}, curr->debug_info());
+            this->add_return(scope, {}, curr->debug_info());
+            continue;
         }
 
-        auto& if_else = this->add_if_else(scope, current->debug_info());
-        for (size_t i = 0; i < out_degree; i++) {
-            auto& out_edge = out_edges_vec[i];
+        // Case 2: Transition
+        if (out_degree == 1) {
+            auto& oedge = *out_edges.begin();
+            assert(oedge.is_unconditional() &&
+                "Degenerated structured control flow: Non-deterministic transition");
+            this->add_block(scope, curr->dataflow(), oedge.assignments(), curr->debug_info());
 
-            auto& branch = this->add_case(if_else, out_edge->condition(), out_edge->debug_info());
-            if (!out_edge->assignments().empty()) {
-                this->add_block(branch, out_edge->assignments(), out_edge->debug_info());
-            }
-            if (continues.find(out_edge) != continues.end()) {
-                this->add_continue(branch, out_edge->debug_info());
-            } else if (breaks.find(out_edge) != breaks.end()) {
-                this->add_break(branch, out_edge->debug_info());
+            if (continues.find(&oedge) != continues.end()) {
+                this->add_continue(scope, oedge.debug_info());
+            } else if (breaks.find(&oedge) != breaks.end()) {
+                this->add_break(scope, oedge.debug_info());
             } else {
-                this->traverse_with_loop_detection(sdfg, branch, &out_edge->dst(), local_end,
-                                                   continues, breaks, pdom_tree);
+                bool starts_loop = false;
+                for (auto& iedge : sdfg.in_edges(oedge.dst())) {
+                    if (continues.find(&iedge) != continues.end()) {
+                        starts_loop = true;
+                        break;
+                    }
+                }
+                if (!starts_loop) {
+                    queue.push_back(&oedge.dst());
+                } else {
+                    this->traverse_with_loop_detection(sdfg, scope, &oedge.dst(), end, continues,
+                                                      breaks, pdom_tree);
+                }
             }
+            continue;
         }
 
-        if (local_end != end) {
-            this->traverse_with_loop_detection(sdfg, scope, local_end, end, continues, breaks,
-                                               pdom_tree);
-        }
+        // Case 3: Branches
+        if (out_degree > 1) {
+            this->add_block(scope, curr->dataflow(), {}, curr->debug_info());
 
-        return;
+            std::vector<const InterstateEdge*> out_edges_vec;
+            for (auto& edge : out_edges) {
+                out_edges_vec.push_back(&edge);
+            }
+
+            // Best-effort approach: Find end of if-else
+            // If not found, the branches may repeat paths yielding a large SDFG
+            const control_flow::State* local_end =
+                this->find_end_of_if_else(sdfg, curr, out_edges_vec, pdom_tree);
+            if (local_end == nullptr) {
+                local_end = end;
+            }
+
+            auto& if_else = this->add_if_else(scope, curr->debug_info());
+            for (size_t i = 0; i < out_degree; i++) {
+                auto& out_edge = out_edges_vec[i];
+
+                auto& branch = this->add_case(if_else, out_edge->condition(), out_edge->debug_info());
+                if (!out_edge->assignments().empty()) {
+                    this->add_block(branch, out_edge->assignments(), out_edge->debug_info());
+                }
+                if (continues.find(out_edge) != continues.end()) {
+                    this->add_continue(branch, out_edge->debug_info());
+                } else if (breaks.find(out_edge) != breaks.end()) {
+                    this->add_break(branch, out_edge->debug_info());
+                } else {
+                    this->traverse_with_loop_detection(sdfg, branch, &out_edge->dst(), local_end,
+                                                    continues, breaks, pdom_tree);
+                }
+            }
+
+            if (local_end != end) {
+                bool starts_loop = false;
+                for (auto& iedge : sdfg.in_edges(*local_end)) {
+                    if (continues.find(&iedge) != continues.end()) {
+                        starts_loop = true;
+                        break;
+                    }
+                }
+                if (!starts_loop) {
+                    queue.push_back(local_end);
+                } else {
+                    this->traverse_with_loop_detection(sdfg, scope, local_end, end, continues,
+                                                      breaks, pdom_tree);
+                }
+            }
+            continue;
+        }
     }
 }
 
