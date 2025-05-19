@@ -78,7 +78,11 @@ TEST(FunctionBuilderTest, RemoveArgument) {
 
     auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), true);
 
-    EXPECT_DEATH(builder.remove_container("i"), "");
+    try {
+        builder.remove_container("i");
+    } catch (const std::invalid_argument& e) {
+        EXPECT_EQ(e.what(), std::string("Container is not transient"));
+    }
 }
 
 TEST(FunctionBuilderTest, RemoveExternal) {
@@ -87,7 +91,11 @@ TEST(FunctionBuilderTest, RemoveExternal) {
     auto& container =
         builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), false, true);
 
-    EXPECT_DEATH(builder.remove_container("i"), "");
+    try {
+        builder.remove_container("i");
+    } catch (const std::invalid_argument& e) {
+        EXPECT_EQ(e.what(), std::string("Container is not transient"));
+    }
 }
 
 TEST(FunctionBuilderTest, AddStructure) {
@@ -120,7 +128,11 @@ TEST(FunctionBuilderTest, MakeArrayArgument) {
 
     auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), true);
 
-    EXPECT_DEATH(builder.make_array("i", symbolic::integer(10)), "");
+    try {
+        builder.make_array("i", symbolic::integer(10));
+    } catch (const std::invalid_argument& e) {
+        EXPECT_EQ(e.what(), std::string("Container is not transient"));
+    }
 }
 
 TEST(FunctionBuilderTest, FindNewName) {

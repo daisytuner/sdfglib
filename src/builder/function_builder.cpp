@@ -8,7 +8,9 @@ FunctionBuilder::FunctionBuilder() : element_counter_(1) {};
 const types::IType& FunctionBuilder::add_container(const std::string& name,
                                                    const types::IType& type, bool is_argument,
                                                    bool is_external) const {
-    assert(!is_argument || !is_external);
+    if (is_argument && is_external) {
+        throw std::invalid_argument("Container cannot be both an argument and an external");
+    }
 
     auto res = this->function().containers_.insert({name, type.clone()});
     assert(res.second);
@@ -29,7 +31,9 @@ const types::IType& FunctionBuilder::add_container(const std::string& name,
 
 void FunctionBuilder::remove_container(const std::string& name) const {
     auto& function = this->function();
-    assert(function.is_transient(name));
+    if (!function.is_transient(name)) {
+        throw std::invalid_argument("Container is not transient");
+    }
 
     auto& type = function.containers_[name];
     if (type->is_symbol() && dynamic_cast<const types::Scalar*>(type.get())) {
@@ -41,7 +45,9 @@ void FunctionBuilder::remove_container(const std::string& name) const {
 
 void FunctionBuilder::change_type(const std::string& name, const types::IType& type) const {
     auto& function = this->function();
-    assert(function.is_transient(name));
+    if (!function.is_transient(name)) {
+        throw std::invalid_argument("Container is not transient");
+    }
 
     function.containers_[name] = type.clone();
 };
@@ -57,7 +63,9 @@ types::StructureDefinition& FunctionBuilder::add_structure(const std::string& na
 
 void FunctionBuilder::make_array(const std::string& name, const symbolic::Expression& size) const {
     auto& function = this->function();
-    assert(function.is_transient(name));
+    if (!function.is_transient(name)) {
+        throw std::invalid_argument("Container is not transient");
+    }
 
     auto& old_type = function.containers_[name];
 
