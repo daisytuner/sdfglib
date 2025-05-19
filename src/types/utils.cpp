@@ -25,7 +25,7 @@ const types::IType& infer_type(const sdfg::Function& function, const types::ITyp
         return infer_type(function, definition.member_type(member), element_subset);
     }
 
-    assert(false);
+    throw std::invalid_argument("Invalid type");
 };
 
 std::unique_ptr<types::IType> recombine_array_type(const types::IType& type, uint depth,

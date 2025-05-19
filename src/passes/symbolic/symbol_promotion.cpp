@@ -15,7 +15,7 @@ symbolic::Expression SymbolPromotion::as_symbol(const data_flow::DataFlowGraph& 
                 return symbolic::symbol(src.data());
             }
         }
-        assert(false);
+        throw std::invalid_argument("Invalid input connector");
     } else {
         int64_t value = std::stoll(op);
         return symbolic::integer(value);

@@ -331,7 +331,7 @@ constexpr const char* code_to_string(data_flow::TaskletCode c) {
         case data_flow::TaskletCode::tanhl:
             return "tanhl";
     };
-    assert(false);
+    throw std::invalid_argument("Invalid tasklet code");
 };
 
 std::string CLanguageExtension::primitive_type(const types::PrimitiveType prim_type) {
@@ -509,9 +509,9 @@ std::string CLanguageExtension::subset(const Function& function, const types::IT
         } else {
             return subset_str;
         }
-    } else {
-        assert(false);
     }
+
+    throw std::invalid_argument("Invalid subset type");
 };
 
 std::string CLanguageExtension::expression(const symbolic::Expression& expr) {

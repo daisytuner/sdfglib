@@ -33,7 +33,7 @@ enum PrimitiveType {
 
 enum DeviceLocation { x86, nvptx };
 
-constexpr const char* primitive_type_to_string(PrimitiveType e) noexcept {
+constexpr const char* primitive_type_to_string(PrimitiveType e) {
     switch (e) {
         case PrimitiveType::Void:
             return "Void";
@@ -60,10 +60,10 @@ constexpr const char* primitive_type_to_string(PrimitiveType e) noexcept {
         case PrimitiveType::Double:
             return "Double";
     }
-    assert(false);
+    throw std::invalid_argument("Invalid primitive type");
 };
 
-constexpr PrimitiveType primitive_type_from_string(std::string_view e) noexcept {
+constexpr PrimitiveType primitive_type_from_string(std::string_view e) {
     if (e == "Void") {
         return PrimitiveType::Void;
     } else if (e == "Bool") {
@@ -89,10 +89,10 @@ constexpr PrimitiveType primitive_type_from_string(std::string_view e) noexcept 
     } else if (e == "Double") {
         return PrimitiveType::Double;
     }
-    assert(false);
+    throw std::invalid_argument("Invalid primitive type");
 };
 
-constexpr size_t bit_width(PrimitiveType e) noexcept {
+constexpr size_t bit_width(PrimitiveType e) {
     switch (e) {
         case PrimitiveType::Void:
             return 0;
@@ -119,7 +119,7 @@ constexpr size_t bit_width(PrimitiveType e) noexcept {
         case PrimitiveType::Double:
             return 64;
     }
-    assert(false);
+    throw std::invalid_argument("Invalid primitive type");
 };
 
 constexpr bool is_floating_point(PrimitiveType e) noexcept {

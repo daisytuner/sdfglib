@@ -246,8 +246,7 @@ std::unique_ptr<DataFlowGraph> DataFlowGraph::clone() const {
     std::unordered_map<graph::Vertex, graph::Vertex> node_mapping;
     for (auto& entry : this->nodes_) {
         auto vertex = boost::add_vertex(new_graph->graph_);
-        auto res = new_graph->nodes_.insert({vertex, entry.second->clone(vertex, *new_graph)});
-        assert(res.second);
+        new_graph->nodes_.insert({vertex, entry.second->clone(vertex, *new_graph)});
         node_mapping.insert({entry.first, vertex});
     }
 
@@ -257,10 +256,9 @@ std::unique_ptr<DataFlowGraph> DataFlowGraph::clone() const {
 
         auto edge = boost::add_edge(src, dst, new_graph->graph_);
 
-        auto res = new_graph->edges_.insert(
+        new_graph->edges_.insert(
             {edge.first, entry.second->clone(edge.first, *new_graph, *new_graph->nodes_[src],
                                              *new_graph->nodes_[dst])});
-        assert(res.second);
     }
 
     return new_graph;
