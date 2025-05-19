@@ -509,7 +509,7 @@ void HappensBeforeAnalysis::visit_sequence(
                     }
                 }
                 if (!found) {
-                    assert(open_reads.insert(current_user).second);
+                    open_reads.insert(current_user);
                 }
             }
         }

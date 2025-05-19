@@ -125,8 +125,7 @@ control_flow::InterstateEdge& SDFGBuilder::add_edge(const control_flow::State& s
 
 void SDFGBuilder::remove_edge(const control_flow::InterstateEdge& edge) {
     auto desc = edge.edge();
-    size_t erased = this->sdfg_->edges_.erase(desc);
-    assert(erased == 1);
+    this->sdfg_->edges_.erase(desc);
 
     boost::remove_edge(desc, this->sdfg_->graph_);
 };

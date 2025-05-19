@@ -467,7 +467,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
         return {s, t};
     }
 
-    assert(false);
+    throw std::invalid_argument("Invalid control flow node type");
 };
 
 Users::Users(StructuredSDFG& sdfg)
@@ -1274,7 +1274,9 @@ void Users::add_user(std::unique_ptr<User> user) {
     auto* target_structure = &users_by_sdfg_;
     if (auto for_user = dynamic_cast<ForUser*>(user_ptr)) {
         auto for_loop = dynamic_cast<structured_control_flow::For*>(user_ptr->element());
-        assert(for_loop != nullptr);
+        if (for_loop == nullptr) {
+            throw std::invalid_argument("Invalid user type");
+        }
         if (for_user->is_init()) {
             target_structure = &users_by_sdfg_loop_init_;
         } else if (for_user->is_condition()) {
@@ -1282,7 +1284,7 @@ void Users::add_user(std::unique_ptr<User> user) {
         } else if (for_user->is_update()) {
             target_structure = &users_by_sdfg_loop_update_;
         } else {
-            assert(false);
+            throw std::invalid_argument("Invalid user type");
         }
     }
 
@@ -1293,10 +1295,9 @@ void Users::add_user(std::unique_ptr<User> user) {
         (*target_structure)[user_ptr->container()].end()) {
         target_structure->at(user_ptr->container()).insert({user_ptr->element(), {}});
     }
-    auto res = target_structure->at(user_ptr->container())
-                   .at(user_ptr->element())
-                   .insert({user_ptr->use(), user_ptr});
-    assert(res.second);
+    target_structure->at(user_ptr->container())
+        .at(user_ptr->element())
+        .insert({user_ptr->use(), user_ptr});
 }
 
 }  // namespace analysis
