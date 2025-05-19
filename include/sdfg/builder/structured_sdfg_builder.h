@@ -24,6 +24,13 @@ using namespace sdfg::structured_control_flow;
 namespace sdfg {
 namespace builder {
 
+class UnstructuredControlFlowException : public std::exception {
+   public:
+    const char* what() const noexcept override {
+        return "Unstructured control flow detected";
+    }
+};
+
 class StructuredSDFGBuilder : public FunctionBuilder {
    private:
     std::unique_ptr<StructuredSDFG> structured_sdfg_;
@@ -45,7 +52,8 @@ class StructuredSDFGBuilder : public FunctionBuilder {
         const State* end,
         const std::unordered_set<const InterstateEdge*>& continues,
         const std::unordered_set<const InterstateEdge*>& breaks,
-        const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
+        const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree,
+        std::unordered_set<const control_flow::State*>& visited
     );
 
     void traverse_without_loop_detection(
@@ -55,7 +63,8 @@ class StructuredSDFGBuilder : public FunctionBuilder {
         const State* end,
         const std::unordered_set<const InterstateEdge*>& continues,
         const std::unordered_set<const InterstateEdge*>& breaks,
-        const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
+        const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree,
+        std::unordered_set<const control_flow::State*>& visited
     );
 
    protected:
