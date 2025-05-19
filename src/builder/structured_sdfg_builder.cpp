@@ -80,15 +80,17 @@ void StructuredSDFGBuilder::traverse(const SDFG& sdfg) {
         continues.insert(edge);
     }
 
+    std::unordered_set<const control_flow::State*> visited;
     this->traverse_with_loop_detection(sdfg, root, start_state, nullptr, continues, breaks,
-                                       pdom_tree);
+                                       pdom_tree, visited);
 };
 
 void StructuredSDFGBuilder::traverse_with_loop_detection(
     const SDFG& sdfg, Sequence& scope, const State* current, const State* end,
     const std::unordered_set<const InterstateEdge*>& continues,
     const std::unordered_set<const InterstateEdge*>& breaks,
-    const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree) {
+    const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree,
+    std::unordered_set<const control_flow::State*>& visited) {
     if (current == end) {
         return;
     }
@@ -143,14 +145,16 @@ void StructuredSDFGBuilder::traverse_with_loop_detection(
 
         // 3. Add while loop
         While& loop = this->add_while(scope, {}, dbg_info);
+
+        std::unordered_set<const control_flow::State*> loop_visited(visited);
         this->traverse_without_loop_detection(sdfg, loop.root(), current, exit_state, continues,
-                                              exit_edges, pdom_tree);
+                                              exit_edges, pdom_tree, loop_visited);
 
         this->traverse_with_loop_detection(sdfg, scope, exit_state, end, continues, breaks,
-                                           pdom_tree);
+                                           pdom_tree, visited);
     } else {
         this->traverse_without_loop_detection(sdfg, scope, current, end, continues, breaks,
-                                              pdom_tree);
+                                              pdom_tree, visited);
     }
 };
 
@@ -158,7 +162,8 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
     const SDFG& sdfg, Sequence& scope, const State* current, const State* end,
     const std::unordered_set<const InterstateEdge*>& continues,
     const std::unordered_set<const InterstateEdge*>& breaks,
-    const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree) {
+    const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree,
+    std::unordered_set<const control_flow::State*>& visited) {
     std::list<const State*> queue = {current};
     while (!queue.empty()) {
         auto curr = queue.front();
@@ -166,6 +171,11 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
         if (curr == end) {
             continue;
         }
+
+        if (visited.find(curr) != visited.end()) {
+            throw UnstructuredControlFlowException();
+        }
+        visited.insert(curr);
 
         auto out_edges = sdfg.out_edges(*curr);
         auto out_degree = sdfg.out_degree(*curr);
@@ -200,7 +210,7 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
                     queue.push_back(&oedge.dst());
                 } else {
                     this->traverse_with_loop_detection(sdfg, scope, &oedge.dst(), end, continues,
-                                                       breaks, pdom_tree);
+                                                       breaks, pdom_tree, visited);
                 }
             }
             continue;
@@ -237,8 +247,10 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
                 } else if (breaks.find(out_edge) != breaks.end()) {
                     this->add_break(branch, out_edge->debug_info());
                 } else {
+                    std::unordered_set<const control_flow::State*> branch_visited(visited);
                     this->traverse_with_loop_detection(sdfg, branch, &out_edge->dst(), local_end,
-                                                       continues, breaks, pdom_tree);
+                                                       continues, breaks, pdom_tree,
+                                                       branch_visited);
                 }
             }
 
@@ -254,7 +266,7 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
                     queue.push_back(local_end);
                 } else {
                     this->traverse_with_loop_detection(sdfg, scope, local_end, end, continues,
-                                                       breaks, pdom_tree);
+                                                       breaks, pdom_tree, visited);
                 }
             }
             continue;
