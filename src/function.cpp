@@ -18,13 +18,17 @@ bool Function::exists(const std::string& name) const {
 
 const types::IType& Function::type(const std::string& name) const {
     auto entry = this->containers_.find(name);
-    assert((entry != this->containers_.end()) && "Container does not exist in SDFG");
+    if (entry == this->containers_.end()) {
+        throw InvalidSDFGException("Container does not exist in SDFG");
+    }
     return *entry->second;
 };
 
 const types::StructureDefinition& Function::structure(const std::string& name) const {
     auto entry = this->structures_.find(name);
-    assert((entry != this->structures_.end()) && "Structure does not exist in SDFG");
+    if (entry == this->structures_.end()) {
+        throw InvalidSDFGException("Structure does not exist in SDFG");
+    }
     return *entry->second;
 };
 
@@ -57,13 +61,17 @@ bool Function::has_assumption(const symbolic::Symbol& symbol) const {
 
 const symbolic::Assumption& Function::assumption(const symbolic::Symbol& symbol) const {
     auto entry = this->assumptions_.find(symbol);
-    assert((entry != this->assumptions_.end()) && "Assumptions do not exist in SDFG");
+    if (entry == this->assumptions_.end()) {
+        throw InvalidSDFGException("Assumption does not exist in SDFG");
+    }
     return entry->second;
 };
 
 symbolic::Assumption& Function::assumption(const symbolic::Symbol& symbol) {
     auto entry = this->assumptions_.find(symbol);
-    assert((entry != this->assumptions_.end()) && "Assumptions do not exist in SDFG");
+    if (entry == this->assumptions_.end()) {
+        throw InvalidSDFGException("Assumption does not exist in SDFG");
+    }
     return entry->second;
 };
 

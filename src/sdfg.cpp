@@ -44,13 +44,16 @@ bool SDFG::is_adjacent(const control_flow::State& src, const control_flow::State
 const control_flow::InterstateEdge& SDFG::edge(const control_flow::State& src,
                                                const control_flow::State& dst) const {
     auto e = boost::edge(src.vertex(), dst.vertex(), this->graph_);
-    assert(e.second);
+    if (!e.second) {
+        throw InvalidSDFGException("Edge does not exist");
+    }
     return *this->edges_.at(e.first);
 };
 
 const control_flow::State& SDFG::start_state() const {
-    assert(this->start_state_ != nullptr && "Start state not set");
-
+    if (this->start_state_ == nullptr) {
+        throw InvalidSDFGException("Start state not set");
+    }
     return *this->start_state_;
 };
 
