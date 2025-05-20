@@ -38,14 +38,8 @@ set(TEST_FILES
     passes/dataflow/redundant_array_elimination_test.cpp
     passes/dataflow/trivial_array_elimination_test.cpp
     passes/dataflow/view_propagation_test.cpp
-    passes/normalization/conditional_loop_fissioning_test.cpp
-    passes/normalization/conditional_tasklet_propagation_test.cpp
-    passes/normalization/loop_slicing_test.cpp
-    passes/normalization/transition_to_tasklet_conversion_test.cpp
     passes/pipeline_test.cpp
     passes/schedule/allocation_inference_test.cpp
-    passes/schedule/perfect_loop_distribution_test.cpp
-    passes/schedule/stride_minimization_test.cpp
     passes/structured_control_flow/block_fusion_test.cpp
     passes/symbolic/symbol_promotion_test.cpp
     passes/symbolic/symbol_propagation_test.cpp

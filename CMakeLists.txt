@@ -92,12 +92,6 @@ set(SOURCE_FILES
     src/passes/dataflow/redundant_array_elimination.cpp
     src/passes/dataflow/trivial_array_elimination.cpp
     src/passes/dataflow/view_propagation.cpp
-    src/passes/normalization/conditional_loop_fissioning.cpp
-    src/passes/normalization/conditional_tasklet_propagation.cpp
-    src/passes/normalization/transition_to_tasklet_conversion.cpp
-    src/passes/normalization/loop_slicing.cpp
-    src/passes/schedule/perfect_loop_distribution.cpp
-    src/passes/schedule/stride_minimization.cpp
     src/passes/schedule/allocation_inference.cpp
     src/passes/symbolic/symbol_propagation.cpp
     src/passes/symbolic/symbol_promotion.cpp
