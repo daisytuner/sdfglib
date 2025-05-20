@@ -41,6 +41,9 @@ inline std::unique_ptr<NodeDispatcher> create_dispatcher(
     } else if (auto kernel_node = dynamic_cast<structured_control_flow::Kernel*>(&node)) {
         return std::make_unique<KernelDispatcher>(language_extension, schedule, *kernel_node,
                                                   instrumented);
+    } else if (auto map_node = dynamic_cast<structured_control_flow::Map*>(&node)) {
+        return std::make_unique<MapDispatcher>(language_extension, schedule, *map_node,
+                                               instrumented);
     } else {
         throw std::runtime_error("Unsupported control flow node");
     }

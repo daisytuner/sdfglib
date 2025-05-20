@@ -461,6 +461,14 @@ void HappensBeforeAnalysis::visit_kernel(
                    closed_reads_after_write);
 }
 
+void HappensBeforeAnalysis::visit_map(
+    analysis::Users& users, structured_control_flow::Map& map,
+    std::unordered_set<User*>& open_reads,
+    std::unordered_map<User*, std::unordered_set<User*>>& open_reads_after_writes,
+    std::unordered_map<User*, std::unordered_set<User*>>& closed_reads_after_write) {
+    // TODO: Implement visit_map @Adrian
+}
+
 void HappensBeforeAnalysis::visit_sequence(
     analysis::Users& users, structured_control_flow::Sequence& sequence,
     std::unordered_set<User*>& open_reads,
@@ -490,6 +498,10 @@ void HappensBeforeAnalysis::visit_sequence(
         } else if (auto sequence = dynamic_cast<structured_control_flow::Sequence*>(&child.first)) {
             visit_sequence(users, *sequence, open_reads, open_reads_after_writes,
                            closed_reads_after_write);
+        } else if (auto map = dynamic_cast<structured_control_flow::Map*>(&child.first)) {
+            visit_map(users, *map, open_reads, open_reads_after_writes, closed_reads_after_write);
+        } else {
+            throw std::runtime_error("Unknown node type in sequence");
         }
 
         // handle transitions read

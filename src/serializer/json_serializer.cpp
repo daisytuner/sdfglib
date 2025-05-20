@@ -226,6 +226,10 @@ void JSONSerializer::kernel_to_json(nlohmann::json& j,
     j["children"] = body_json;
 }
 
+void JSONSerializer::map_to_json(nlohmann::json& j, const structured_control_flow::Map& map_node) {
+    // TODO: Implement map_to_json @Adrian
+}
+
 void JSONSerializer::return_node_to_json(nlohmann::json& j,
                                          const structured_control_flow::Return& return_node) {
     j["type"] = "return";
@@ -265,6 +269,8 @@ void JSONSerializer::sequence_to_json(nlohmann::json& j,
         } else if (auto continue_node =
                        dynamic_cast<const structured_control_flow::Continue*>(&child)) {
             continue_node_to_json(child_json, *continue_node);
+        } else if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(&child)) {
+            map_to_json(child_json, *map_node);
         } else {
             throw std::runtime_error("Unknown child type");
         }
@@ -724,6 +730,13 @@ void JSONSerializer::json_to_kernel_node(const nlohmann::json& j,
     } else {
         throw std::runtime_error("Unknown child type");
     }
+}
+
+void JSONSerializer::json_to_map_node(const nlohmann::json& j,
+                                      builder::StructuredSDFGBuilder& builder,
+                                      structured_control_flow::Sequence& parent,
+                                      symbolic::Assignments& assignments) {
+    // TODO: Implement map_to_json @Adrian
 }
 
 void JSONSerializer::json_to_return_node(const nlohmann::json& j,

@@ -66,6 +66,8 @@ void StructuredSDFGDeepCopy::append(structured_control_flow::Sequence& root,
                 kern_stmt->threadIdx_z_init());
             this->node_mapping[kern_stmt] = &new_scope;
             this->append(new_scope.root(), kern_stmt->root());
+        } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&node)) {
+            // TODO: Implement map deep copy @Adrian
         } else {
             throw std::runtime_error("Deep copy not implemented");
         }
@@ -121,6 +123,8 @@ void StructuredSDFGDeepCopy::insert(structured_control_flow::Sequence& root,
             kern_stmt->threadIdx_y_init(), kern_stmt->threadIdx_z_init());
         this->node_mapping[kern_stmt] = &new_scope;
         this->append(new_scope.root(), kern_stmt->root());
+    } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&source)) {
+        // TODO: Implement map deep copy @Adrian
     } else {
         throw std::runtime_error("Deep copy not implemented");
     }

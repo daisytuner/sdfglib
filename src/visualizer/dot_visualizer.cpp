@@ -249,6 +249,10 @@ void DotVisualizer::visualizeKernel(Schedule& schedule,
     this->replacements_.resize(replacements_size_before);
 }
 
+void DotVisualizer::visualizeMap(Schedule& schedule, structured_control_flow::Map& map_node) {
+    // TODO: Implement map visualization @Adrian
+}
+
 void DotVisualizer::visualize() {
     this->stream_.clear();
     this->stream_ << "digraph " << this->schedule_.name() << " {" << std::endl;

@@ -2,6 +2,8 @@
 
 #include "sdfg/codegen/language_extensions/cpp_language_extension.h"
 #include "sdfg/data_flow/library_node.h"
+#include "sdfg/structured_control_flow/map.h"
+#include "sdfg/structured_control_flow/sequence.h"
 
 using namespace sdfg::control_flow;
 using namespace sdfg::structured_control_flow;
@@ -723,6 +725,13 @@ Return& StructuredSDFGBuilder::add_return(Sequence& parent,
         new Transition(this->element_counter_, debug_info, assignments)));
     this->element_counter_++;
     return static_cast<Return&>(*parent.children_.back().get());
+};
+
+Map& StructuredSDFGBuilder::add_map(Sequence& parent, const symbolic::Symbol& indvar,
+                                    const symbolic::Expression& num_iterations,
+                                    const sdfg::symbolic::Assignments& assignments,
+                                    const DebugInfo& debug_info) {
+    // TODO: implement @Adrian
 };
 
 For& StructuredSDFGBuilder::convert_while(Sequence& parent, While& loop,

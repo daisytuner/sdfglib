@@ -5,7 +5,6 @@
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
 #include "sdfg/element.h"
-#include "sdfg/serializer/json_serializer.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/sequence.h"
@@ -80,6 +79,8 @@ size_t StructuredSDFG::num_nodes() const {
             to_visit.insert(&kernel_node->root());
         } else if (dynamic_cast<const structured_control_flow::Return*>(current)) {
             continue;
+        } else if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(current)) {
+            to_visit.insert(&map_node->root());
         }
     }
     return count;
@@ -127,6 +128,9 @@ const DebugInfo StructuredSDFG::debug_info() const {
         } else if (auto return_node =
                        dynamic_cast<const structured_control_flow::Return*>(current)) {
             info = DebugInfo::merge(info, return_node->debug_info());
+        } else if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(current)) {
+            info = DebugInfo::merge(info, map_node->debug_info());
+            to_visit.insert(&map_node->root());
         }
     }
     return info;

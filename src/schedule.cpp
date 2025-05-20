@@ -34,21 +34,21 @@ void Schedule::loop_tree(
             this->loop_tree(for_stmt->root(), for_stmt, tree);
         } else if (auto kern_stmt = dynamic_cast<structured_control_flow::Kernel*>(current)) {
             queue.push_back(&kern_stmt->root());
+        } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(current)) {
+            queue.push_back(&map_stmt->root());
         }
     }
 };
 
 Schedule::Schedule(std::unique_ptr<StructuredSDFG>& sdfg)
-    : assumptions_(),
-      builder_(sdfg),
-      analysis_manager_(builder_.subject(), assumptions_){
+    : assumptions_(), builder_(sdfg), analysis_manager_(builder_.subject(), assumptions_) {
 
       };
 
 Schedule::Schedule(std::unique_ptr<StructuredSDFG>& sdfg, const symbolic::Assumptions& assumptions)
     : assumptions_(assumptions),
       builder_(sdfg),
-      analysis_manager_(builder_.subject(), assumptions_){
+      analysis_manager_(builder_.subject(), assumptions_) {
 
       };
 
@@ -62,8 +62,7 @@ const StructuredSDFG& Schedule::sdfg() const { return this->builder_.subject(); 
 
 analysis::AnalysisManager& Schedule::analysis_manager() { return this->analysis_manager_; };
 
-LoopSchedule Schedule::loop_schedule(
-    const structured_control_flow::ControlFlowNode* loop) const {
+LoopSchedule Schedule::loop_schedule(const structured_control_flow::ControlFlowNode* loop) const {
     if (this->loop_schedules_.find(loop) == this->loop_schedules_.end()) {
         return LoopSchedule::SEQUENTIAL;
     }

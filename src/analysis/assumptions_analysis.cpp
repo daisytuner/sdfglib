@@ -40,6 +40,9 @@ void AssumptionsAnalysis::traverse(structured_control_flow::Sequence& root) {
         } else if (auto kern_stmt = dynamic_cast<const structured_control_flow::Kernel*>(current)) {
             this->visit_kernel(kern_stmt);
             queue.push_back(&kern_stmt->root());
+        } else if (auto map_stmt = dynamic_cast<const structured_control_flow::Map*>(current)) {
+            this->visit_map(map_stmt);
+            queue.push_back(&map_stmt->root());
         }
     }
 };
@@ -117,6 +120,10 @@ void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop) {
         }
     }
 };
+
+void AssumptionsAnalysis::visit_map(const structured_control_flow::Map* map) {
+    // TODO: Implement map assumptions @Adrian
+}
 
 void AssumptionsAnalysis::visit_kernel(const structured_control_flow::Kernel* kernel) {
     auto& body = kernel->root();

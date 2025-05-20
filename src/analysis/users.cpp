@@ -12,6 +12,7 @@
 #include "sdfg/element.h"
 #include "sdfg/graph/graph.h"
 #include "sdfg/structured_control_flow/for.h"
+#include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_sdfg.h"
 #include "sdfg/symbolic/symbolic.h"
@@ -465,6 +466,8 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
         this->exits_.insert({kern_stmt, this->users_.at(t).get()});
 
         return {s, t};
+    } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&node)) {
+        // TODO: Handle map @Adrian
     }
 
     throw std::invalid_argument("Invalid control flow node type");
