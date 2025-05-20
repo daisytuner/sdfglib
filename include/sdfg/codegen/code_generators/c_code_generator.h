@@ -20,7 +20,8 @@ class CCodeGenerator : public CodeGenerator {
     void dispatch_schedule();
 
    public:
-    CCodeGenerator(ConditionalSchedule& schedule, bool instrumented);
+    CCodeGenerator(ConditionalSchedule& schedule);
+    CCodeGenerator(ConditionalSchedule& schedule, InstrumentationStrategy instrumentation_strategy);
 
     bool generate() override;
 

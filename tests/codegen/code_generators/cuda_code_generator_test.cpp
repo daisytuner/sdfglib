@@ -13,7 +13,7 @@ TEST(CUDACodeGeneratorTest, FunctionDefintion) {
 
     ConditionalSchedule schedule(sdfg);
 
-    codegen::CUDACodeGenerator generator(schedule, false);
+    codegen::CUDACodeGenerator generator(schedule);
     auto result = generator.function_definition();
     EXPECT_EQ(result, "extern \"C\" __global__ void sdfg_a()");
 }
@@ -24,7 +24,7 @@ TEST(CUDACodeGeneratorTest, Dispatch_Includes) {
 
     ConditionalSchedule schedule(sdfg);
 
-    codegen::CUDACodeGenerator generator(schedule, false);
+    codegen::CUDACodeGenerator generator(schedule);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.includes().str();
@@ -44,7 +44,7 @@ TEST(CUDACodeGeneratorTest, DispatchStructures_Basic) {
 
     ConditionalSchedule schedule(sdfg);
 
-    codegen::CUDACodeGenerator generator(schedule, false);
+    codegen::CUDACodeGenerator generator(schedule);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -69,7 +69,7 @@ TEST(CUDACodeGeneratorTest, DispatchStructures_Nested) {
 
     ConditionalSchedule schedule(sdfg);
 
-    codegen::CUDACodeGenerator generator(schedule, false);
+    codegen::CUDACodeGenerator generator(schedule);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -95,7 +95,7 @@ TEST(CUDACodeGeneratorTest, DispatchGlobals) {
 
     ConditionalSchedule schedule(sdfg);
 
-    codegen::CUDACodeGenerator generator(schedule, false);
+    codegen::CUDACodeGenerator generator(schedule);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.globals().str();

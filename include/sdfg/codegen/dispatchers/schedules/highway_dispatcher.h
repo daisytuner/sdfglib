@@ -49,7 +49,7 @@ class HighwayDispatcher : public NodeDispatcher {
 
    public:
     HighwayDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                      structured_control_flow::For& node, bool instrumented);
+                      structured_control_flow::For& node, Instrumentation& instrumentation);
 
     void dispatch(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                   PrettyPrinter& library_stream) override;

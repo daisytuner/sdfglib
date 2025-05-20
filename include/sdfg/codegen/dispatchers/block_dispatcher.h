@@ -33,7 +33,7 @@ class BlockDispatcher : public NodeDispatcher {
 
    public:
     BlockDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                    structured_control_flow::Block& node, bool instrumented);
+                    structured_control_flow::Block& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                        PrettyPrinter& library_stream) override;

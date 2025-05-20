@@ -13,7 +13,7 @@ TEST(CCodeGeneratorTest, FunctionDefintion) {
 
     ConditionalSchedule schedule(sdfg);
 
-    codegen::CCodeGenerator generator(schedule, false);
+    codegen::CCodeGenerator generator(schedule);
     auto result = generator.function_definition();
     EXPECT_EQ(result, "extern void sdfg_a()");
 }
@@ -24,7 +24,7 @@ TEST(CCodeGeneratorTest, Dispatch_Includes) {
 
     ConditionalSchedule schedule(sdfg);
 
-    codegen::CCodeGenerator generator(schedule, false);
+    codegen::CCodeGenerator generator(schedule);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.includes().str();
@@ -44,7 +44,7 @@ TEST(CCodeGeneratorTest, DispatchStructures_Basic) {
 
     ConditionalSchedule schedule(sdfg);
 
-    codegen::CCodeGenerator generator(schedule, false);
+    codegen::CCodeGenerator generator(schedule);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -69,7 +69,7 @@ TEST(CCodeGeneratorTest, DispatchStructures_Nested) {
 
     ConditionalSchedule schedule(sdfg);
 
-    codegen::CCodeGenerator generator(schedule, false);
+    codegen::CCodeGenerator generator(schedule);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -95,7 +95,7 @@ TEST(CCodeGeneratorTest, DispatchGlobals) {
 
     ConditionalSchedule schedule(sdfg);
 
-    codegen::CCodeGenerator generator(schedule, false);
+    codegen::CCodeGenerator generator(schedule);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.globals().str();

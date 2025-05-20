@@ -20,8 +20,9 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Block) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
     auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), block, false);
+        codegen::create_dispatcher(language_extension, schedule.schedule(0), block, instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::BlockDispatcher*>(dispatcher.get()));
 }
 
@@ -37,8 +38,9 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Sequence) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
     auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), sequence, false);
+        codegen::create_dispatcher(language_extension, schedule.schedule(0), sequence, instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::SequenceDispatcher*>(dispatcher.get()));
 }
 
@@ -54,8 +56,9 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_IfElse) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
     auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), if_else, false);
+        codegen::create_dispatcher(language_extension, schedule.schedule(0), if_else, instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::IfElseDispatcher*>(dispatcher.get()));
 }
 
@@ -71,8 +74,9 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_While) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
     auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), while_loop, false);
+        codegen::create_dispatcher(language_extension, schedule.schedule(0), while_loop, instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::WhileDispatcher*>(dispatcher.get()));
 }
 
@@ -92,8 +96,9 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_For) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
     auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), loop, false);
+        codegen::create_dispatcher(language_extension, schedule.schedule(0), loop, instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::ForDispatcher*>(dispatcher.get()));
 }
 
@@ -109,8 +114,9 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Return) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
     auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), return_node, false);
+        codegen::create_dispatcher(language_extension, schedule.schedule(0), return_node, instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::ReturnDispatcher*>(dispatcher.get()));
 }
 
@@ -127,8 +133,9 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Break) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
     auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), break_node, false);
+        codegen::create_dispatcher(language_extension, schedule.schedule(0), break_node, instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::BreakDispatcher*>(dispatcher.get()));
 }
 
@@ -145,8 +152,9 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Continue) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
     auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), continue_node, false);
+        codegen::create_dispatcher(language_extension, schedule.schedule(0), continue_node, instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::ContinueDispatcher*>(dispatcher.get()));
 }
 
@@ -162,7 +170,8 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Kernel) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
     auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), kernel_node, false);
+        codegen::create_dispatcher(language_extension, schedule.schedule(0), kernel_node, instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::KernelDispatcher*>(dispatcher.get()));
 }

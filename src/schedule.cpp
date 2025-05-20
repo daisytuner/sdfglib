@@ -5,39 +5,6 @@
 
 namespace sdfg {
 
-void Schedule::loop_tree(
-    structured_control_flow::ControlFlowNode& root,
-    structured_control_flow::ControlFlowNode* parent,
-    std::unordered_map<structured_control_flow::ControlFlowNode*,
-                       structured_control_flow::ControlFlowNode*>& tree) const {
-    std::list<structured_control_flow::ControlFlowNode*> queue = {&root};
-    while (!queue.empty()) {
-        auto current = queue.front();
-        queue.pop_front();
-        if (auto for_loop = dynamic_cast<structured_control_flow::For*>(current)) {
-            tree[for_loop] = parent;
-        } else if (auto while_loop = dynamic_cast<structured_control_flow::While*>(current)) {
-            tree[while_loop] = parent;
-        }
-
-        if (auto sequence_stmt = dynamic_cast<structured_control_flow::Sequence*>(current)) {
-            for (size_t i = 0; i < sequence_stmt->size(); i++) {
-                queue.push_back(&sequence_stmt->at(i).first);
-            }
-        } else if (auto if_else_stmt = dynamic_cast<structured_control_flow::IfElse*>(current)) {
-            for (size_t i = 0; i < if_else_stmt->size(); i++) {
-                queue.push_back(&if_else_stmt->at(i).first);
-            }
-        } else if (auto while_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
-            this->loop_tree(while_stmt->root(), while_stmt, tree);
-        } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(current)) {
-            this->loop_tree(for_stmt->root(), for_stmt, tree);
-        } else if (auto kern_stmt = dynamic_cast<structured_control_flow::Kernel*>(current)) {
-            queue.push_back(&kern_stmt->root());
-        }
-    }
-};
-
 Schedule::Schedule(std::unique_ptr<StructuredSDFG>& sdfg)
     : assumptions_(),
       builder_(sdfg),
@@ -80,16 +47,6 @@ void Schedule::loop_schedule(const structured_control_flow::ControlFlowNode* loo
         return;
     }
     this->loop_schedules_.insert_or_assign(loop, schedule);
-};
-
-std::unordered_map<structured_control_flow::ControlFlowNode*,
-                   structured_control_flow::ControlFlowNode*>
-Schedule::loop_tree() const {
-    std::unordered_map<structured_control_flow::ControlFlowNode*,
-                       structured_control_flow::ControlFlowNode*>
-        loop_tree_;
-    this->loop_tree(this->builder_.subject().root(), nullptr, loop_tree_);
-    return loop_tree_;
 };
 
 /***** Allocation Management *****/

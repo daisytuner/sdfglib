@@ -20,7 +20,8 @@ TEST(WhileDispatcherTest, DispatchNode) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::WhileDispatcher dispatcher(language_extension, schedule.schedule(0), loop, false);
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
+    codegen::WhileDispatcher dispatcher(language_extension, schedule.schedule(0), loop, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -45,8 +46,9 @@ TEST(BreakDispatcherTest, DispatchNode) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
     codegen::BreakDispatcher dispatcher(language_extension, schedule.schedule(0), break_node,
-                                        false);
+                                        instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -71,8 +73,9 @@ TEST(ContinueDispatcherTest, DispatchNode) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
     codegen::ContinueDispatcher dispatcher(language_extension, schedule.schedule(0), continue_node,
-                                           false);
+                                           instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -96,8 +99,9 @@ TEST(ReturnDispatcherTest, DispatchNode) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
     codegen::ReturnDispatcher dispatcher(language_extension, schedule.schedule(0), return_node,
-                                         false);
+                                         instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
