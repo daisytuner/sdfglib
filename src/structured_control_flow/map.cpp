@@ -9,7 +9,6 @@ Map::Map(size_t element_id, const DebugInfo& debug_info, symbolic::Symbol indvar
          symbolic::Expression num_iterations)
     : ControlFlowNode(element_id, debug_info), indvar_(indvar), num_iterations_(num_iterations) {
     this->root_ = std::unique_ptr<Sequence>(new Sequence(++element_id, debug_info));
-    this->run_parallel_ = false;
 };
 
 const symbolic::Symbol& Map::indvar() const { return this->indvar_; };
@@ -21,10 +20,6 @@ const symbolic::Expression& Map::num_iterations() const { return this->num_itera
 symbolic::Expression& Map::num_iterations() { return this->num_iterations_; };
 
 Sequence& Map::root() const { return *this->root_; };
-
-bool Map::run_parallel() const { return this->run_parallel_; }
-
-void Map::run_parallel(bool run_parallel) { this->run_parallel_ = run_parallel; }
 
 void Map::replace(const symbolic::Expression& old_expression,
                   const symbolic::Expression& new_expression) {
