@@ -67,7 +67,11 @@ void StructuredSDFGDeepCopy::append(structured_control_flow::Sequence& root,
             this->node_mapping[kern_stmt] = &new_scope;
             this->append(new_scope.root(), kern_stmt->root());
         } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&node)) {
-            // TODO: Implement map deep copy @Adrian
+            auto& new_scope =
+                this->builder_.add_map(root, map_stmt->indvar(), map_stmt->num_iterations(),
+                                       trans.assignments(), map_stmt->debug_info());
+            this->node_mapping[map_stmt] = &new_scope;
+            this->append(new_scope.root(), map_stmt->root());
         } else {
             throw std::runtime_error("Deep copy not implemented");
         }
@@ -124,7 +128,10 @@ void StructuredSDFGDeepCopy::insert(structured_control_flow::Sequence& root,
         this->node_mapping[kern_stmt] = &new_scope;
         this->append(new_scope.root(), kern_stmt->root());
     } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&source)) {
-        // TODO: Implement map deep copy @Adrian
+        auto& new_scope = this->builder_.add_map(
+            root, map_stmt->indvar(), map_stmt->num_iterations(), {}, map_stmt->debug_info());
+        this->node_mapping[map_stmt] = &new_scope;
+        this->append(new_scope.root(), map_stmt->root());
     } else {
         throw std::runtime_error("Deep copy not implemented");
     }

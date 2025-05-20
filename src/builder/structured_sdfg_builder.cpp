@@ -731,7 +731,14 @@ Map& StructuredSDFGBuilder::add_map(Sequence& parent, const symbolic::Symbol& in
                                     const symbolic::Expression& num_iterations,
                                     const sdfg::symbolic::Assignments& assignments,
                                     const DebugInfo& debug_info) {
-    // TODO: implement @Adrian
+    parent.children_.push_back(
+        std::unique_ptr<Map>(new Map(this->element_counter_, debug_info, indvar, num_iterations)));
+    this->element_counter_ = this->element_counter_ + 2;
+    parent.transitions_.push_back(std::unique_ptr<Transition>(
+        new Transition(this->element_counter_, debug_info, assignments)));
+    this->element_counter_++;
+
+    return static_cast<Map&>(*parent.children_.back().get());
 };
 
 For& StructuredSDFGBuilder::convert_while(Sequence& parent, While& loop,

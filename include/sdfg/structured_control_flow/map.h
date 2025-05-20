@@ -21,6 +21,8 @@ class Map : public ControlFlowNode {
     symbolic::Symbol indvar_;
     symbolic::Expression num_iterations_;
 
+    bool run_parallel_;
+
     std::unique_ptr<Sequence> root_;
 
     Map(size_t element_id, const DebugInfo& debug_info, symbolic::Symbol indvar,
@@ -37,6 +39,9 @@ class Map : public ControlFlowNode {
     const symbolic::Expression& num_iterations() const;
 
     symbolic::Expression& num_iterations();
+
+    bool run_parallel() const;
+    void run_parallel(bool run_parallel);
 
     Sequence& root() const;
 
