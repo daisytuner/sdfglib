@@ -467,7 +467,30 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
 
         return {s, t};
     } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&node)) {
-        // TODO: Handle map @Adrian
+        // NOP
+        auto s = boost::add_vertex(this->graph_);
+        this->users_.insert({s, std::make_unique<User>(s, "", map_stmt, Use::NOP)});
+        auto last = s;
+        this->entries_.insert({map_stmt, this->users_.at(s).get()});
+
+        // Indvar
+        auto v = boost::add_vertex(this->graph_);
+        this->add_user(std::make_unique<ForUser>(v, map_stmt->indvar()->get_name(), map_stmt,
+                                                 Use::WRITE, true, false, false));
+        boost::add_edge(last, v, this->graph_);
+        last = v;
+
+        // Root
+        auto subgraph = this->traverse(map_stmt->root());
+        boost::add_edge(last, subgraph.first, this->graph_);
+
+        // NOP
+        auto t = boost::add_vertex(this->graph_);
+        this->users_.insert({s, std::make_unique<User>(t, "", map_stmt, Use::NOP)});
+        last = t;
+        this->entries_.insert({map_stmt, this->users_.at(t).get()});
+        boost::add_edge(subgraph.second, last, this->graph_);
+        this->exits_.insert({map_stmt, this->users_.at(t).get()});
     }
 
     throw std::invalid_argument("Invalid control flow node type");

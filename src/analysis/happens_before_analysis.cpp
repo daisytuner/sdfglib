@@ -466,7 +466,47 @@ void HappensBeforeAnalysis::visit_map(
     std::unordered_set<User*>& open_reads,
     std::unordered_map<User*, std::unordered_set<User*>>& open_reads_after_writes,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_reads_after_write) {
-    // TODO: Implement visit_map @Adrian
+    // write Init
+    auto current_user = users.get_user(map.indvar()->get_name(), &map, Use::WRITE, true);
+
+    open_reads_after_writes.insert({current_user, {}});
+
+    std::unordered_map<User*, std::unordered_set<User*>> open_reads_after_writes_map;
+    std::unordered_map<User*, std::unordered_set<User*>> closed_reads_after_writes_map;
+    std::unordered_set<User*> open_reads_map;
+
+    visit_sequence(users, map.root(), open_reads_map, open_reads_after_writes_map,
+                   closed_reads_after_writes_map);
+
+    for (auto& entry : closed_reads_after_writes_map) {
+        closed_reads_after_write.insert(entry);
+    }
+
+    // Handle open reads of for
+    for (auto open_read : open_reads_map) {
+        // Add recursive
+        for (auto& user : open_reads_after_writes_map) {
+            if (user.first->container() == open_read->container()) {
+                user.second.insert(open_read);
+            }
+        }
+
+        bool found = false;
+        for (auto& entry : open_reads_after_writes) {
+            if (entry.first->container() == open_read->container()) {
+                entry.second.insert(open_read);
+                found = true;
+            }
+        }
+        if (!found) {
+            open_reads.insert(open_read);
+        }
+    }
+
+    // Merge open reads_after_writes
+    for (auto& entry : open_reads_after_writes_map) {
+        open_reads_after_writes.insert(entry);
+    }
 }
 
 void HappensBeforeAnalysis::visit_sequence(
