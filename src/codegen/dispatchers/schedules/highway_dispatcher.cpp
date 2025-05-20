@@ -932,8 +932,8 @@ std::string HighwayDispatcher::tasklet_to_simd_instruction(data_flow::TaskletCod
 };
 
 HighwayDispatcher::HighwayDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                                     structured_control_flow::For& node, bool instrumented)
-    : NodeDispatcher(language_extension, schedule, node, instrumented),
+                                     structured_control_flow::For& node, Instrumentation& instrumentation)
+    : NodeDispatcher(language_extension, schedule, node, instrumentation),
       node_(node),
       indvar_(node.indvar()) {
     auto& body = node_.root();
@@ -1203,7 +1203,7 @@ void HighwayDispatcher::dispatch_node(PrettyPrinter& main_stream, PrettyPrinter&
     main_stream.setIndent(main_stream.indent() + 4);
 
     PrettyPrinter dummy_stream(0, true);
-    SequenceDispatcher dispatcher(language_extension_, schedule_, node_.root(), false);
+    SequenceDispatcher dispatcher(language_extension_, schedule_, node_.root(), instrumentation_);
     dispatcher.dispatch(main_stream, dummy_stream, dummy_stream);
 
     main_stream.setIndent(main_stream.indent() - 4);

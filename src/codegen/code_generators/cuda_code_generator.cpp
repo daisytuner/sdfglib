@@ -2,6 +2,9 @@
 
 #include "sdfg/codegen/dispatchers/node_dispatcher_factory.h"
 
+#include "sdfg/codegen/instrumentation/instrumentation.h"
+#include "sdfg/codegen/instrumentation/outermost_loops_instrumentation.h"
+
 namespace sdfg {
 namespace codegen {
 
@@ -198,27 +201,28 @@ void CUDACodeGenerator::dispatch_schedule() {
     }
 
     for (size_t i = 0; i < schedule_.size(); i++) {
-        if (i == 0) {
-            this->main_stream_ << "if (" << language_extension_.expression(schedule_.condition(i))
+        auto& schedule = schedule_.schedule(i);
+        auto condition = schedule_.condition(i);
+        
+        // Add instrumentation
+        auto instrumentation = std::make_unique<Instrumentation>(schedule);
+        if (instrumented_) {
+            instrumentation = std::make_unique<OutermostLoopsInstrumentation>(schedule);
+        }
+
+        if (i > 0) {
+            this->main_stream_ << "else ";
+        }
+
+        this->main_stream_ << "if (" << language_extension_.expression(condition)
                                << ") {\n";
 
-            auto& function_i = schedule_.schedule(i).builder().subject();
-            auto dispatcher = create_dispatcher(language_extension_, schedule_.schedule(i),
-                                                function_i.root(), false);
-            dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_stream_);
+        auto& function_i = schedule.builder().subject();
+        auto dispatcher = create_dispatcher(language_extension_, schedule,
+                                            function_i.root(), *instrumentation);
+        dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_stream_);
 
-            this->main_stream_ << "}\n";
-        } else {
-            this->main_stream_ << "else if ("
-                               << language_extension_.expression(schedule_.condition(i)) << ") {\n";
-
-            auto& function_i = schedule_.schedule(i).builder().subject();
-            auto dispatcher = create_dispatcher(language_extension_, schedule_.schedule(i),
-                                                function_i.root(), false);
-            dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_stream_);
-
-            this->main_stream_ << "}\n";
-        }
+        this->main_stream_ << "}\n";
     }
 };
 

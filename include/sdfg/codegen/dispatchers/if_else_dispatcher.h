@@ -11,7 +11,7 @@ class IfElseDispatcher : public NodeDispatcher {
 
    public:
     IfElseDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                     structured_control_flow::IfElse& node, bool instrumented);
+                     structured_control_flow::IfElse& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                        PrettyPrinter& library_stream) override;

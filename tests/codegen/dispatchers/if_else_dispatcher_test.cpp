@@ -22,7 +22,8 @@ TEST(IfElseDispatcherTest, DispatchNode_Trivial) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::IfElseDispatcher dispatcher(language_extension, schedule.schedule(0), if_else, false);
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
+    codegen::IfElseDispatcher dispatcher(language_extension, schedule.schedule(0), if_else, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -52,7 +53,8 @@ TEST(IfElseDispatcherTest, DispatchNode) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::IfElseDispatcher dispatcher(language_extension, schedule.schedule(0), if_else, false);
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
+    codegen::IfElseDispatcher dispatcher(language_extension, schedule.schedule(0), if_else, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

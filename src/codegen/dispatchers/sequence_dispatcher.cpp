@@ -6,8 +6,8 @@ namespace sdfg {
 namespace codegen {
 
 SequenceDispatcher::SequenceDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                                       structured_control_flow::Sequence& node, bool instrumented)
-    : NodeDispatcher(language_extension, schedule, node, instrumented),
+                                       structured_control_flow::Sequence& node, Instrumentation& instrumentation)
+    : NodeDispatcher(language_extension, schedule, node, instrumentation),
       node_(node){
 
       };
@@ -20,7 +20,7 @@ void SequenceDispatcher::dispatch_node(PrettyPrinter& main_stream, PrettyPrinter
         // Node
         main_stream.setIndent(main_stream.indent() + 4);
         auto dispatcher =
-            create_dispatcher(language_extension_, schedule_, child.first, instrumented_);
+            create_dispatcher(language_extension_, schedule_, child.first, instrumentation_);
         dispatcher->dispatch(main_stream, globals_stream, library_stream);
         main_stream.setIndent(main_stream.indent() - 4);
 

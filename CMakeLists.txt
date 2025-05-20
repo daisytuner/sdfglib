@@ -72,6 +72,7 @@ set(SOURCE_FILES
     src/codegen/dispatchers/kernel_dispatcher.cpp
     src/codegen/dispatchers/schedules/highway_dispatcher.cpp
     src/codegen/dispatchers/schedules/openmp_dispatcher.cpp
+    src/codegen/instrumentation/outermost_loops_instrumentation.cpp
     src/control_flow/interstate_edge.cpp
     src/control_flow/state.cpp
     src/data_flow/access_node.cpp
