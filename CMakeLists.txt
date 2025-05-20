@@ -51,6 +51,7 @@ set(SOURCE_FILES
     src/analysis/assumptions_analysis.cpp
     src/analysis/data_parallelism_analysis.cpp
     src/analysis/happens_before_analysis.cpp
+    src/analysis/loop_tree_analysis.cpp
     src/analysis/users.cpp
     src/builder/function_builder.cpp
     src/builder/sdfg_builder.cpp
