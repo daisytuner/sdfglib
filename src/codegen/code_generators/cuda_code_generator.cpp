@@ -8,8 +8,13 @@
 namespace sdfg {
 namespace codegen {
 
-CUDACodeGenerator::CUDACodeGenerator(ConditionalSchedule& schedule, bool instrumented)
-    : CodeGenerator(schedule, instrumented){
+CUDACodeGenerator::CUDACodeGenerator(ConditionalSchedule& schedule)
+    : CodeGenerator(schedule, InstrumentationStrategy::NONE){
+
+      };
+
+CUDACodeGenerator::CUDACodeGenerator(ConditionalSchedule& schedule, InstrumentationStrategy instrumentation_strategy)
+    : CodeGenerator(schedule, instrumentation_strategy){
 
       };
 
@@ -85,7 +90,7 @@ void CUDACodeGenerator::dispatch_includes() {
                            << "__DAISY_NVVM__" << std::endl;
     this->includes_stream_ << "#include "
                            << "\"daisyrtl.h\"" << std::endl;
-    if (instrumented_) this->includes_stream_ << "#include <daisy_rtl.h>" << std::endl;
+    if (instrumentation_strategy_ != InstrumentationStrategy::NONE) this->includes_stream_ << "#include <daisy_rtl.h>" << std::endl;
 
     this->includes_stream_ << "#define __daisy_min(a,b) ((a)<(b)?(a):(b))" << std::endl;
     this->includes_stream_ << "#define __daisy_max(a,b) ((a)>(b)?(a):(b))" << std::endl;
@@ -205,10 +210,7 @@ void CUDACodeGenerator::dispatch_schedule() {
         auto condition = schedule_.condition(i);
         
         // Add instrumentation
-        auto instrumentation = std::make_unique<Instrumentation>(schedule);
-        if (instrumented_) {
-            instrumentation = std::make_unique<OutermostLoopsInstrumentation>(schedule);
-        }
+        auto instrumentation = create_instrumentation(instrumentation_strategy_, schedule);
 
         if (i > 0) {
             this->main_stream_ << "else ";

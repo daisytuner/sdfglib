@@ -8,8 +8,13 @@
 namespace sdfg {
 namespace codegen {
 
-CCodeGenerator::CCodeGenerator(ConditionalSchedule& schedule, bool instrumented)
-    : CodeGenerator(schedule, instrumented){
+CCodeGenerator::CCodeGenerator(ConditionalSchedule& schedule)
+    : CodeGenerator(schedule, InstrumentationStrategy::NONE){
+
+      };
+
+CCodeGenerator::CCodeGenerator(ConditionalSchedule& schedule, InstrumentationStrategy instrumentation_strategy)
+    : CodeGenerator(schedule, instrumentation_strategy){
 
       };
 
@@ -64,13 +69,13 @@ bool CCodeGenerator::as_source(const std::filesystem::path& header_path,
     ofs_source << this->function_definition() << std::endl;
     ofs_source << "{" << std::endl;
 
-    if (instrumented_) {
+    if (instrumentation_strategy_ != InstrumentationStrategy::NONE) {
         ofs_source << "__daisy_instrument_init();" << std::endl;
     }
 
     ofs_source << this->main_stream_.str() << std::endl;
 
-    if (instrumented_) {
+    if (instrumentation_strategy_ != InstrumentationStrategy::NONE) {
         ofs_source << "__daisy_instrument_finalize();" << std::endl;
     }
 
@@ -103,7 +108,7 @@ void CCodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#include <math.h>" << std::endl;
     this->includes_stream_ << "#include <stdbool.h>" << std::endl;
     this->includes_stream_ << "#include <stdlib.h>" << std::endl;
-    if (instrumented_) this->includes_stream_ << "#include <daisy_rtl.h>" << std::endl;
+    if (this->instrumentation_strategy_ != InstrumentationStrategy::NONE) this->includes_stream_ << "#include <daisy_rtl.h>" << std::endl;
 
     this->includes_stream_ << "#define __daisy_min(a,b) ((a)<(b)?(a):(b))" << std::endl;
     this->includes_stream_ << "#define __daisy_max(a,b) ((a)>(b)?(a):(b))" << std::endl;
@@ -208,10 +213,7 @@ void CCodeGenerator::dispatch_schedule() {
         auto condition = schedule_.condition(i);
         
         // Add instrumentation
-        auto instrumentation = std::make_unique<Instrumentation>(schedule);
-        if (instrumented_) {
-            instrumentation = std::make_unique<OutermostLoopsInstrumentation>(schedule);
-        }
+        auto instrumentation = create_instrumentation(instrumentation_strategy_, schedule);
 
         if (i > 0) {
             this->main_stream_ << "else ";
