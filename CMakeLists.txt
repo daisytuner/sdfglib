@@ -109,6 +109,7 @@ set(SOURCE_FILES
     src/structured_control_flow/for.cpp
     src/structured_control_flow/if_else.cpp
     src/structured_control_flow/kernel.cpp
+    src/structured_control_flow/map.cpp
     src/structured_control_flow/return.cpp
     src/structured_control_flow/sequence.cpp
     src/structured_control_flow/while.cpp
