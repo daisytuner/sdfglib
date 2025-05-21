@@ -540,8 +540,6 @@ void HappensBeforeAnalysis::visit_sequence(
                            closed_reads_after_write);
         } else if (auto map = dynamic_cast<structured_control_flow::Map*>(&child.first)) {
             visit_map(users, *map, open_reads, open_reads_after_writes, closed_reads_after_write);
-        } else {
-            throw std::runtime_error("Unknown node type in sequence");
         }
 
         // handle transitions read
