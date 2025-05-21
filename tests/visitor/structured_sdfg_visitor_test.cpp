@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/types/array.h"
 
 using namespace sdfg;
 
@@ -147,6 +146,10 @@ class BlockVisitor : public visitor::StructuredSDFGVisitor {
                 structured_control_flow::Kernel& node) override {
         return false;
     };
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Map& node) override {
+        return false;
+    };
 };
 
 TEST(StructuredSDFGVisitorTest, Block) {
@@ -209,6 +212,10 @@ class SequenceVisitor : public visitor::StructuredSDFGVisitor {
 
     bool accept(structured_control_flow::Sequence& parent,
                 structured_control_flow::Kernel& node) override {
+        return false;
+    };
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Map& node) override {
         return false;
     };
 };
@@ -275,6 +282,10 @@ class IfElseVisitor : public visitor::StructuredSDFGVisitor {
                 structured_control_flow::Kernel& node) override {
         return false;
     };
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Map& node) override {
+        return false;
+    };
 };
 
 TEST(StructuredSDFGVisitorTest, IfElse) {
@@ -337,6 +348,10 @@ class WhileVisitor : public visitor::StructuredSDFGVisitor {
 
     bool accept(structured_control_flow::Sequence& parent,
                 structured_control_flow::Kernel& node) override {
+        return false;
+    };
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Map& node) override {
         return false;
     };
 };
@@ -403,6 +418,10 @@ class ReturnVisitor : public visitor::StructuredSDFGVisitor {
                 structured_control_flow::Kernel& node) override {
         return false;
     };
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Map& node) override {
+        return false;
+    };
 };
 
 TEST(StructuredSDFGVisitorTest, Return) {
@@ -465,6 +484,10 @@ class ContinueVisitor : public visitor::StructuredSDFGVisitor {
 
     bool accept(structured_control_flow::Sequence& parent,
                 structured_control_flow::Kernel& node) override {
+        return false;
+    };
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Map& node) override {
         return false;
     };
 };
@@ -532,6 +555,10 @@ class BreakVisitor : public visitor::StructuredSDFGVisitor {
                 structured_control_flow::Kernel& node) override {
         return false;
     };
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Map& node) override {
+        return false;
+    };
 };
 
 TEST(StructuredSDFGVisitorTest, Break) {
@@ -594,6 +621,10 @@ class ForVisitor : public visitor::StructuredSDFGVisitor {
 
     bool accept(structured_control_flow::Sequence& parent,
                 structured_control_flow::Kernel& node) override {
+        return false;
+    };
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Map& node) override {
         return false;
     };
 };
@@ -662,6 +693,11 @@ class KernelVisitor : public visitor::StructuredSDFGVisitor {
                 structured_control_flow::Kernel& node) override {
         return true;
     };
+
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Map& node) override {
+        return false;
+    };
 };
 
 TEST(StructuredSDFGVisitorTest, Kernel) {
@@ -673,5 +709,73 @@ TEST(StructuredSDFGVisitorTest, Kernel) {
     auto& kernel = builder.add_kernel(root, "__daisy_");
 
     KernelVisitor visitor(builder, analysis_manager);
+    EXPECT_TRUE(visitor.visit());
+}
+
+class MapVisitor : public visitor::StructuredSDFGVisitor {
+   public:
+    MapVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
+        : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
+
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Block& node) override {
+        return false;
+    };
+
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Sequence& node) override {
+        return false;
+    };
+
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::IfElse& node) override {
+        return false;
+    };
+
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::While& node) override {
+        return false;
+    };
+
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Return& node) override {
+        return false;
+    };
+
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Continue& node) override {
+        return false;
+    };
+
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Break& node) override {
+        return false;
+    };
+
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::For& node) override {
+        return false;
+    };
+
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Kernel& node) override {
+        return false;
+    };
+
+    bool accept(structured_control_flow::Sequence& parent,
+                structured_control_flow::Map& node) override {
+        return true;
+    };
+};
+
+TEST(StructuredSDFGVisitorTest, Map) {
+    builder::StructuredSDFGBuilder builder("sdfg_1");
+    analysis::AnalysisManager analysis_manager(builder.subject());
+
+    auto& root = builder.subject().root();
+
+    auto& kernel = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10));
+
+    MapVisitor visitor(builder, analysis_manager);
     EXPECT_TRUE(visitor.visit());
 }
