@@ -4,6 +4,7 @@
 #include "sdfg/codegen/dispatchers/for_dispatcher.h"
 #include "sdfg/codegen/dispatchers/if_else_dispatcher.h"
 #include "sdfg/codegen/dispatchers/kernel_dispatcher.h"
+#include "sdfg/codegen/dispatchers/map_dispatcher.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher.h"
 #include "sdfg/codegen/dispatchers/sequence_dispatcher.h"
 #include "sdfg/codegen/dispatchers/while_dispatcher.h"
