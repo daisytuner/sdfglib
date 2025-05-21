@@ -28,11 +28,6 @@ class Schedule {
     std::unordered_map<std::string, const structured_control_flow::ControlFlowNode*>
         allocation_lifetimes_;
 
-    void loop_tree(structured_control_flow::ControlFlowNode& root,
-                   structured_control_flow::ControlFlowNode* parent,
-                   std::unordered_map<structured_control_flow::ControlFlowNode*,
-                                      structured_control_flow::ControlFlowNode*>& tree) const;
-
    public:
     Schedule(std::unique_ptr<StructuredSDFG>& sdfg);
     Schedule(std::unique_ptr<StructuredSDFG>& sdfg, const symbolic::Assumptions& assumptions);
@@ -54,10 +49,6 @@ class Schedule {
 
     void loop_schedule(const structured_control_flow::ControlFlowNode* loop,
                        const LoopSchedule schedule);
-
-    std::unordered_map<structured_control_flow::ControlFlowNode*,
-                       structured_control_flow::ControlFlowNode*>
-    loop_tree() const;
 
     /***** Allocation Management *****/
 

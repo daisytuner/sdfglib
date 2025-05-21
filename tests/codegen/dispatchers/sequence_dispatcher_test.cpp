@@ -18,7 +18,8 @@ TEST(SequenceDispatcherTest, DispatchNode_Empty) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::SequenceDispatcher dispatcher(language_extension, schedule.schedule(0), root, false);
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
+    codegen::SequenceDispatcher dispatcher(language_extension, schedule.schedule(0), root, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -44,7 +45,8 @@ TEST(SequenceDispatcherTest, DispatchNode_Transition) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::SequenceDispatcher dispatcher(language_extension, schedule.schedule(0), root, false);
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
+    codegen::SequenceDispatcher dispatcher(language_extension, schedule.schedule(0), root, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -72,7 +74,8 @@ TEST(SequenceDispatcherTest, DispatchNode_MultipleBlocks) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::SequenceDispatcher dispatcher(language_extension, schedule.schedule(0), root, false);
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
+    codegen::SequenceDispatcher dispatcher(language_extension, schedule.schedule(0), root, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

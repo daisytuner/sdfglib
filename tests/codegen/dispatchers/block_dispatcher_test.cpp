@@ -22,7 +22,8 @@ TEST(BlockDispatcherTest, DispatchNode) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::BlockDispatcher dispatcher(language_extension, schedule.schedule(0), block, false);
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
+    codegen::BlockDispatcher dispatcher(language_extension, schedule.schedule(0), block, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -63,7 +64,8 @@ TEST(BlockDispatcherTest, DispatchNode_withDataflow) {
     ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::BlockDispatcher dispatcher(language_extension, schedule.schedule(0), block, false);
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
+    codegen::BlockDispatcher dispatcher(language_extension, schedule.schedule(0), block, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

@@ -20,7 +20,8 @@ class CUDACodeGenerator : public CodeGenerator {
     void dispatch_schedule();
 
    public:
-    CUDACodeGenerator(ConditionalSchedule& schedule, bool instrumented);
+    CUDACodeGenerator(ConditionalSchedule& schedule);
+    CUDACodeGenerator(ConditionalSchedule& schedule, InstrumentationStrategy instrumentation_strategy);
 
     bool generate() override;
 

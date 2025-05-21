@@ -11,7 +11,7 @@ class SequenceDispatcher : public NodeDispatcher {
 
    public:
     SequenceDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                       structured_control_flow::Sequence& node, bool instrumented);
+                       structured_control_flow::Sequence& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                        PrettyPrinter& library_stream) override;

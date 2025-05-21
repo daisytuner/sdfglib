@@ -15,7 +15,7 @@ class StructuredSDFGBuilder;
 
 namespace data_flow {
 
-enum class LibraryNodeType {
+enum LibraryNodeType {
     LocalBarrier,
     /* GlobalBarrier,
     InterNodeSend,

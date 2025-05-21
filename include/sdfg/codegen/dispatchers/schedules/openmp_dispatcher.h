@@ -12,7 +12,7 @@ class OpenMPDispatcher : public NodeDispatcher {
 
    public:
     OpenMPDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                     structured_control_flow::For& node, bool instrumented);
+                     structured_control_flow::For& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                        PrettyPrinter& library_stream) override;

@@ -2,11 +2,19 @@
 
 #include "sdfg/codegen/dispatchers/node_dispatcher_factory.h"
 
+#include "sdfg/codegen/instrumentation/instrumentation.h"
+#include "sdfg/codegen/instrumentation/outermost_loops_instrumentation.h"
+
 namespace sdfg {
 namespace codegen {
 
-CCodeGenerator::CCodeGenerator(ConditionalSchedule& schedule, bool instrumented)
-    : CodeGenerator(schedule, instrumented){
+CCodeGenerator::CCodeGenerator(ConditionalSchedule& schedule)
+    : CodeGenerator(schedule, InstrumentationStrategy::NONE){
+
+      };
+
+CCodeGenerator::CCodeGenerator(ConditionalSchedule& schedule, InstrumentationStrategy instrumentation_strategy)
+    : CodeGenerator(schedule, instrumentation_strategy){
 
       };
 
@@ -61,13 +69,13 @@ bool CCodeGenerator::as_source(const std::filesystem::path& header_path,
     ofs_source << this->function_definition() << std::endl;
     ofs_source << "{" << std::endl;
 
-    if (instrumented_) {
+    if (instrumentation_strategy_ != InstrumentationStrategy::NONE) {
         ofs_source << "__daisy_instrument_init();" << std::endl;
     }
 
     ofs_source << this->main_stream_.str() << std::endl;
 
-    if (instrumented_) {
+    if (instrumentation_strategy_ != InstrumentationStrategy::NONE) {
         ofs_source << "__daisy_instrument_finalize();" << std::endl;
     }
 
@@ -100,7 +108,7 @@ void CCodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#include <math.h>" << std::endl;
     this->includes_stream_ << "#include <stdbool.h>" << std::endl;
     this->includes_stream_ << "#include <stdlib.h>" << std::endl;
-    if (instrumented_) this->includes_stream_ << "#include <daisy_rtl.h>" << std::endl;
+    if (this->instrumentation_strategy_ != InstrumentationStrategy::NONE) this->includes_stream_ << "#include <daisy_rtl.h>" << std::endl;
 
     this->includes_stream_ << "#define __daisy_min(a,b) ((a)<(b)?(a):(b))" << std::endl;
     this->includes_stream_ << "#define __daisy_max(a,b) ((a)>(b)?(a):(b))" << std::endl;
@@ -201,27 +209,25 @@ void CCodeGenerator::dispatch_schedule() {
     }
 
     for (size_t i = 0; i < schedule_.size(); i++) {
-        if (i == 0) {
-            this->main_stream_ << "if (" << language_extension_.expression(schedule_.condition(i))
+        auto& schedule = schedule_.schedule(i);
+        auto condition = schedule_.condition(i);
+        
+        // Add instrumentation
+        auto instrumentation = create_instrumentation(instrumentation_strategy_, schedule);
+
+        if (i > 0) {
+            this->main_stream_ << "else ";
+        }
+
+        this->main_stream_ << "if (" << language_extension_.expression(condition)
                                << ") {\n";
 
-            auto& function_i = schedule_.schedule(i).builder().subject();
-            auto dispatcher = create_dispatcher(language_extension_, schedule_.schedule(i),
-                                                function_i.root(), this->instrumented_);
-            dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_stream_);
+        auto& function_i = schedule.builder().subject();
+        auto dispatcher = create_dispatcher(language_extension_, schedule,
+                                            function_i.root(), *instrumentation);
+        dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_stream_);
 
-            this->main_stream_ << "}\n";
-        } else {
-            this->main_stream_ << "else if ("
-                               << language_extension_.expression(schedule_.condition(i)) << ") {\n";
-
-            auto& function_i = schedule_.schedule(i).builder().subject();
-            auto dispatcher = create_dispatcher(language_extension_, schedule_.schedule(i),
-                                                function_i.root(), this->instrumented_);
-            dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_stream_);
-
-            this->main_stream_ << "}\n";
-        }
+        this->main_stream_ << "}\n";
     }
 };
 

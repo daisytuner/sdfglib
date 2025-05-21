@@ -4,11 +4,11 @@ namespace sdfg {
 namespace codegen {
 
 NodeDispatcher::NodeDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                               structured_control_flow::ControlFlowNode& node, bool instrumented)
+                               structured_control_flow::ControlFlowNode& node, Instrumentation& instrumentation)
     : node_(node),
       language_extension_(language_extension),
       schedule_(schedule),
-      instrumented_(instrumented){};
+      instrumentation_(instrumentation){};
 
 bool NodeDispatcher::begin_node(PrettyPrinter& stream) {
     auto& sdfg = schedule_.sdfg();
@@ -72,26 +72,18 @@ void NodeDispatcher::end_node(PrettyPrinter& stream, bool applied) {
     }
 };
 
-void NodeDispatcher::begin_instrumentation(PrettyPrinter& stream){
-
-};
-
-void NodeDispatcher::end_instrumentation(PrettyPrinter& stream){
-
-};
-
 void NodeDispatcher::dispatch(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                               PrettyPrinter& library_stream) {
     bool applied = begin_node(main_stream);
 
-    if (instrumented_) {
-        this->begin_instrumentation(main_stream);
+    if (this->instrumentation_.should_instrument(node_)) {
+        this->instrumentation_.begin_instrumentation(node_, main_stream);
     }
 
     dispatch_node(main_stream, globals_stream, library_stream);
 
-    if (instrumented_) {
-        this->end_instrumentation(main_stream);
+    if (this->instrumentation_.should_instrument(node_)) {
+        this->instrumentation_.end_instrumentation(node_, main_stream);
     }
 
     end_node(main_stream, applied);

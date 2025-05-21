@@ -181,8 +181,8 @@ void DataFlowDispatcher::dispatch(PrettyPrinter& stream) {
 };
 
 BlockDispatcher::BlockDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                                 structured_control_flow::Block& node, bool instrumented)
-    : NodeDispatcher(language_extension, schedule, node, instrumented),
+                                 structured_control_flow::Block& node, Instrumentation& instrumentation)
+    : NodeDispatcher(language_extension, schedule, node, instrumentation),
       node_(node){
 
       };

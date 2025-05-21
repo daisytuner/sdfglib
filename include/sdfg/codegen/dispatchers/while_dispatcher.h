@@ -12,14 +12,11 @@ class WhileDispatcher : public NodeDispatcher {
 
    public:
     WhileDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                    structured_control_flow::While& node, bool instrumented);
+                    structured_control_flow::While& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                        PrettyPrinter& library_stream) override;
 
-    void begin_instrumentation(PrettyPrinter& stream) override;
-
-    void end_instrumentation(PrettyPrinter& stream) override;
 };
 
 class BreakDispatcher : public NodeDispatcher {
@@ -28,7 +25,7 @@ class BreakDispatcher : public NodeDispatcher {
 
    public:
     BreakDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                    structured_control_flow::Break& node, bool instrumented);
+                    structured_control_flow::Break& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                        PrettyPrinter& library_stream) override;
@@ -40,7 +37,7 @@ class ContinueDispatcher : public NodeDispatcher {
 
    public:
     ContinueDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                       structured_control_flow::Continue& node, bool instrumented);
+                       structured_control_flow::Continue& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                        PrettyPrinter& library_stream) override;
@@ -52,7 +49,7 @@ class ReturnDispatcher : public NodeDispatcher {
 
    public:
     ReturnDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                     structured_control_flow::Return& node, bool instrumented);
+                     structured_control_flow::Return& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                        PrettyPrinter& library_stream) override;

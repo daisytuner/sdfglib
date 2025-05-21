@@ -23,7 +23,8 @@ TEST(NodeDispatcherTest, BeginNode_Declaration) {
     schedule.schedule(0).allocation_type("b", AllocationType::DECLARE);
 
     codegen::CLanguageExtension language_extension;
-    codegen::BlockDispatcher dispatcher(language_extension, schedule.schedule(0), block, false);
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
+    codegen::BlockDispatcher dispatcher(language_extension, schedule.schedule(0), block, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -51,7 +52,8 @@ TEST(NodeDispatcherTest, BeginNode_Allocation) {
     schedule.schedule(0).allocation_type("b", AllocationType::ALLOCATE);
 
     codegen::CLanguageExtension language_extension;
-    codegen::BlockDispatcher dispatcher(language_extension, schedule.schedule(0), block, false);
+    codegen::Instrumentation instrumentation(schedule.schedule(0));
+    codegen::BlockDispatcher dispatcher(language_extension, schedule.schedule(0), block, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

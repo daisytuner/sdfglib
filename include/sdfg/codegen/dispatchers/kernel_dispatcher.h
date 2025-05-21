@@ -13,7 +13,7 @@ class KernelDispatcher : public NodeDispatcher {
 
    public:
     KernelDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                     structured_control_flow::Kernel& node, bool instrumented);
+                     structured_control_flow::Kernel& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                        PrettyPrinter& library_stream) override;

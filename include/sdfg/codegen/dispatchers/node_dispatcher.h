@@ -18,7 +18,7 @@
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
 #include "sdfg/types/utils.h"
-
+#include "sdfg/codegen/instrumentation/instrumentation.h"
 namespace sdfg {
 namespace codegen {
 
@@ -30,19 +30,16 @@ class NodeDispatcher {
     LanguageExtension& language_extension_;
 
     Schedule& schedule_;
-    bool instrumented_;
+
+    Instrumentation& instrumentation_;
 
     virtual bool begin_node(PrettyPrinter& stream);
 
     virtual void end_node(PrettyPrinter& stream, bool has_declaration);
 
-    virtual void begin_instrumentation(PrettyPrinter& stream);
-
-    virtual void end_instrumentation(PrettyPrinter& stream);
-
    public:
     NodeDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                   structured_control_flow::ControlFlowNode& node, bool instrumented);
+                   structured_control_flow::ControlFlowNode& node, Instrumentation& instrumentation);
 
     virtual ~NodeDispatcher() = default;
 

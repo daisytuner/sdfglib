@@ -4,8 +4,8 @@ namespace sdfg {
 namespace codegen {
 
 OpenMPDispatcher::OpenMPDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                                   structured_control_flow::For& node, bool instrumented)
-    : NodeDispatcher(language_extension, schedule, node, instrumented),
+                                   structured_control_flow::For& node, Instrumentation& instrumentation)
+    : NodeDispatcher(language_extension, schedule, node, instrumentation),
       node_(node){
 
       };
@@ -30,7 +30,7 @@ void OpenMPDispatcher::dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& 
     main_stream << "{" << std::endl;
 
     main_stream.setIndent(main_stream.indent() + 4);
-    SequenceDispatcher dispatcher(language_extension_, schedule_, node_.root(), false);
+    SequenceDispatcher dispatcher(language_extension_, schedule_, node_.root(), instrumentation_);
     dispatcher.dispatch(main_stream, globals_stream, library_stream);
     main_stream.setIndent(main_stream.indent() - 4);
 
