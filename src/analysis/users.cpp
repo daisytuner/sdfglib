@@ -1,7 +1,6 @@
 #include "sdfg/analysis/users.h"
 
 #include <cassert>
-#include <iostream>
 #include <list>
 #include <memory>
 #include <string>

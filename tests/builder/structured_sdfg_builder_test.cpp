@@ -195,6 +195,27 @@ TEST(StructuredSDFGBuilderTest, addFor) {
     EXPECT_EQ(scope.root().size(), 1);
 }
 
+TEST(StructuredSDFGBuilderTest, addMap) {
+    builder::StructuredSDFGBuilder builder("sdfg_1");
+
+    auto& root = builder.subject().root();
+    auto& scope = builder.add_map(root, symbolic::symbol("i"),
+                                  symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)));
+    auto& body = builder.add_block(scope.root());
+
+    auto sdfg = builder.move();
+
+    EXPECT_EQ(sdfg->name(), "sdfg_1");
+    EXPECT_EQ(sdfg->root().size(), 1);
+
+    auto map = dynamic_cast<structured_control_flow::Map*>(&sdfg->root().at(0).first);
+    EXPECT_TRUE(map);
+
+    auto child = sdfg->root().at(0);
+    EXPECT_EQ(&child.first, &scope);
+    EXPECT_EQ(scope.root().size(), 1);
+}
+
 TEST(StructuredSDFGBuilderTest, addForBefore) {
     builder::StructuredSDFGBuilder builder("sdfg_1");
 
