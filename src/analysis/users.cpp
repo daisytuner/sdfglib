@@ -1,6 +1,7 @@
 #include "sdfg/analysis/users.h"
 
 #include <cassert>
+#include <iostream>
 #include <list>
 #include <memory>
 #include <string>
@@ -475,8 +476,8 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
 
         // Indvar
         auto v = boost::add_vertex(this->graph_);
-        this->add_user(std::make_unique<ForUser>(v, map_stmt->indvar()->get_name(), map_stmt,
-                                                 Use::WRITE, true, false, false));
+        this->add_user(
+            std::make_unique<User>(v, map_stmt->indvar()->get_name(), map_stmt, Use::WRITE));
         boost::add_edge(last, v, this->graph_);
         last = v;
 
@@ -486,11 +487,12 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
 
         // NOP
         auto t = boost::add_vertex(this->graph_);
-        this->users_.insert({s, std::make_unique<User>(t, "", map_stmt, Use::NOP)});
+        this->users_.insert({t, std::make_unique<User>(t, "", map_stmt, Use::NOP)});
         last = t;
-        this->entries_.insert({map_stmt, this->users_.at(t).get()});
         boost::add_edge(subgraph.second, last, this->graph_);
         this->exits_.insert({map_stmt, this->users_.at(t).get()});
+
+        return {s, t};
     }
 
     throw std::invalid_argument("Invalid control flow node type");

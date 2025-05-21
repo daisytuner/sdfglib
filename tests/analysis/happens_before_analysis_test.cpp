@@ -433,6 +433,73 @@ TEST(HappensBeforeAnalysisTest, visit_for) {
     EXPECT_EQ(both_i, 2);
 }
 
+TEST(HappensBeforeAnalysisTest, visit_map) {
+    builder::StructuredSDFGBuilder builder("sdfg_1");
+
+    builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
+
+    auto& root = builder.subject().root();
+
+    auto& map = builder.add_map(root, symbolic::symbol("i"),
+                                symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)));
+
+    auto& block = builder.add_block(map.root());
+    auto& input_node = builder.add_access(block, "i");
+    auto& output_node = builder.add_access(block, "B");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
+                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+
+    auto sdfg = builder.move();
+
+    std::cout << "Map: " << map.name() << std::endl;
+
+    // Run analysis
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& users = analysis_manager.get<analysis::Users>();
+
+    std::cout << "Map: " << map.name() << std::endl;
+
+    std::unordered_set<analysis::User*> open_reads;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
+        open_reads_after_writes;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
+        closed_reads_after_write;
+
+    analysis.visit_map(users, map, open_reads, open_reads_after_writes, closed_reads_after_write);
+
+    // Check result
+    EXPECT_EQ(open_reads.size(), 0);
+    EXPECT_EQ(open_reads_after_writes.size(), 2);
+    EXPECT_EQ(closed_reads_after_write.size(), 0);
+
+    bool foundB = false;
+    bool foundi = false;
+
+    for (auto entry : open_reads_after_writes) {
+        if (entry.first->container() == "B") {
+            foundB = true;
+            EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
+            EXPECT_EQ(entry.first->container(), "B");
+            EXPECT_EQ(entry.first->element(), &output_node);
+            EXPECT_EQ(entry.second.size(), 0);
+        } else if (entry.first->container() == "i") {
+            foundi = true;
+            EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
+            EXPECT_EQ(entry.first->container(), "i");
+            EXPECT_EQ(entry.first->element(), &map);
+            EXPECT_EQ(entry.second.size(), 1);
+        }
+    }
+
+    EXPECT_TRUE(foundB);
+    EXPECT_TRUE(foundi);
+}
+
 TEST(HappensBeforeAnalysisTest, visit_while) {
     builder::StructuredSDFGBuilder builder("sdfg_1");
 

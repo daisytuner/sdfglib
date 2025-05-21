@@ -467,7 +467,7 @@ void HappensBeforeAnalysis::visit_map(
     std::unordered_map<User*, std::unordered_set<User*>>& open_reads_after_writes,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_reads_after_write) {
     // write Init
-    auto current_user = users.get_user(map.indvar()->get_name(), &map, Use::WRITE, true);
+    auto current_user = users.get_user(map.indvar()->get_name(), &map, Use::WRITE);
 
     open_reads_after_writes.insert({current_user, {}});
 
