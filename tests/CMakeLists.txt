@@ -20,6 +20,7 @@ set(TEST_FILES
     codegen/dispatchers/block_dispatcher_test.cpp
     codegen/dispatchers/for_dispatcher_test.cpp
     codegen/dispatchers/if_else_dispatcher_test.cpp
+    codegen/dispatchers/map_dispatcher_test.cpp
     codegen/dispatchers/node_dispatcher_factory_test.cpp
     codegen/dispatchers/node_dispatcher_test.cpp
     codegen/dispatchers/sequence_dispatcher_test.cpp

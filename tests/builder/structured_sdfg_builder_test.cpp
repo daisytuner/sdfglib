@@ -199,8 +199,7 @@ TEST(StructuredSDFGBuilderTest, addMap) {
     builder::StructuredSDFGBuilder builder("sdfg_1");
 
     auto& root = builder.subject().root();
-    auto& scope = builder.add_map(root, symbolic::symbol("i"),
-                                  symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)));
+    auto& scope = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10));
     auto& body = builder.add_block(scope.root());
 
     auto sdfg = builder.move();
