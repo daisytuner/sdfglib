@@ -119,6 +119,7 @@ set(SOURCE_FILES
     src/symbolic/analysis.cpp
     src/symbolic/assumptions.cpp
     src/symbolic/symbolic.cpp
+    src/transformations/for2map.cpp
     src/transformations/kernel_local_storage.cpp
     src/transformations/loop_distribute.cpp
     src/transformations/loop_interchange.cpp
