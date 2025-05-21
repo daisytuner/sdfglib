@@ -9,9 +9,15 @@ namespace symbolic {
 enum Sign { POSITIVE, NEGATIVE, NONE };
 
 typedef SymEngine::RCP<const SymEngine::UExprPoly> Polynomial;
+typedef SymEngine::RCP<const SymEngine::MExprPoly> MultiPolynomial;
 typedef std::pair<Expression, Expression> Affine;
+typedef std::unordered_map<Symbol, int, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq> AffineCoefficients;
 
 Polynomial polynomial(const Expression& expr, const Symbol& symbol);
+
+MultiPolynomial multi_polynomial(const Expression& expr, SymbolicVector& symbols);
+
+AffineCoefficients affine_coefficients(MultiPolynomial& poly, SymbolicVector& symbols);
 
 Affine affine(const Expression& expr, const Symbol& symbol);
 

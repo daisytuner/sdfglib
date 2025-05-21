@@ -29,6 +29,7 @@ typedef SymEngine::RCP<const SymEngine::Boolean> Condition;
 // Datastructures
 typedef std::unordered_map<Symbol, Expression, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq>
     Assignments;
+typedef std::vector<SymEngine::RCP<const SymEngine::Symbol>> SymbolicVector;
 typedef std::set<SymEngine::RCP<const SymEngine::Basic>, SymEngine::RCPBasicKeyLess> SymbolicSet;
 typedef std::unordered_map<Expression, Expression, SymEngine::RCPBasicHash,
                            SymEngine::RCPBasicKeyEq>
