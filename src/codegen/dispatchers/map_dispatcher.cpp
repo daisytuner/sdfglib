@@ -6,8 +6,8 @@ namespace sdfg {
 namespace codegen {
 
 MapDispatcher::MapDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                             structured_control_flow::Map& node, bool instrumented)
-    : NodeDispatcher(language_extension, schedule, node, instrumented), node_(node) {
+                             structured_control_flow::Map& node, Instrumentation& instrumentation)
+    : NodeDispatcher(language_extension, schedule, node, instrumentation), node_(node) {
 
       };
 
@@ -34,7 +34,7 @@ void MapDispatcher::dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& glo
     main_stream << "{" << std::endl;
 
     main_stream.setIndent(main_stream.indent() + 4);
-    SequenceDispatcher dispatcher(language_extension_, schedule_, node_.root(), instrumented_);
+    SequenceDispatcher dispatcher(language_extension_, schedule_, node_.root(), instrumentation_);
     dispatcher.dispatch(main_stream, globals_stream, library_stream);
     main_stream.setIndent(main_stream.indent() - 4);
 

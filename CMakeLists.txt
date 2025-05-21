@@ -68,6 +68,7 @@ set(SOURCE_FILES
     src/codegen/dispatchers/if_else_dispatcher.cpp
     src/codegen/dispatchers/sequence_dispatcher.cpp
     src/codegen/dispatchers/for_dispatcher.cpp
+    src/codegen/dispatchers/map_dispatcher.cpp
     src/codegen/dispatchers/while_dispatcher.cpp
     src/codegen/dispatchers/kernel_dispatcher.cpp
     src/codegen/dispatchers/schedules/highway_dispatcher.cpp
