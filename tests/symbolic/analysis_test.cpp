@@ -460,3 +460,38 @@ TEST(AnalysisTest, lower_bound_analysis) {
                      symbolic::add(symbolic::mul(symbolic::integer(3), symbolic::integer(2)),
                                    symbolic::integer(5))));
 }
+
+TEST(AnalysisTest, affine_coefficients_affine) {
+    auto x = symbolic::symbol("x");
+    auto y = symbolic::symbol("y");
+    auto m = symbolic::integer(2);
+    auto n = symbolic::integer(3);
+
+    symbolic::SymbolicVector vars = {x, y};
+
+    auto expr = symbolic::add(symbolic::add(symbolic::mul(m, x), symbolic::mul(n, y)),
+                              symbolic::integer(1));
+    auto poly = symbolic::multi_polynomial(expr, vars);
+
+    auto coeffs = symbolic::affine_coefficients(poly, vars);
+    EXPECT_EQ(coeffs.size(), 3);
+    EXPECT_EQ(coeffs[x], 2);
+    EXPECT_EQ(coeffs[y], 3);
+    EXPECT_EQ(coeffs[symbolic::symbol("__daisy_constant__")], 1);
+}
+
+TEST(AnalysisTest, affine_coefficients_non_affine) {
+    auto x = symbolic::symbol("x");
+    auto y = symbolic::symbol("y");
+    auto m = symbolic::symbol("m");
+    auto n = symbolic::symbol("n");
+
+    symbolic::SymbolicVector vars = {x, y};
+
+    auto expr = symbolic::add(symbolic::add(symbolic::mul(m, x), symbolic::mul(n, y)),
+                              symbolic::integer(1));
+    auto poly = symbolic::multi_polynomial(expr, vars);
+
+    auto coeffs = symbolic::affine_coefficients(poly, vars);
+    EXPECT_EQ(coeffs.size(), 0);
+}

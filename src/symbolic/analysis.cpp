@@ -16,6 +16,55 @@ Polynomial polynomial(const Expression& expr, const Symbol& symbol) {
     }
 };
 
+MultiPolynomial multi_polynomial(const Expression& expr, SymbolicVector& symbols) {
+    try {
+        SymbolicSet gens;
+        for (auto& symbol : symbols) {
+            gens.insert(symbol);
+        }
+        return SymEngine::from_basic<SymEngine::MExprPoly>(expr, gens);
+    } catch (SymEngine::SymEngineException& e) {
+        return SymEngine::null;
+    }
+};
+
+AffineCoefficients affine_coefficients(MultiPolynomial& poly, SymbolicVector& symbols) {
+    AffineCoefficients coefficients;
+    for (auto& symbol : symbols) {
+        coefficients[symbol] = 0;
+    }
+    coefficients[symbolic::symbol("__daisy_constant__")] = 0;
+
+    auto& D = poly->get_poly().get_dict();
+    for (auto& [exponents, coeff] : D) {
+        // Check if coeff is an integer
+        if (!SymEngine::is_a<SymEngine::Integer>(coeff)) {
+            return {};
+        }
+        auto coeff_value =
+            SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(coeff.get_basic())->as_int();
+
+        // Check if sum of exponents is <= 1
+        symbolic::Symbol hot_symbol = symbolic::symbol("__daisy_constant__");
+        unsigned total_deg = 0;
+        for (size_t i = 0; i < exponents.size(); i++) {
+            auto& e = exponents[i];
+            if (e > 0) {
+                hot_symbol = symbols[i];
+            }
+            total_deg += e;
+        }
+        if (total_deg > 1) {
+            return {};
+        }
+
+        // Add coefficient to corresponding symbol
+        coefficients[hot_symbol] = coefficients[hot_symbol] + coeff_value;
+    }
+
+    return coefficients;
+}
+
 Affine affine(const Expression& expr, const Symbol& symbol) {
     auto poly = symbolic::polynomial(expr, symbol);
     if (poly == SymEngine::null || poly->get_degree() > 1) {
