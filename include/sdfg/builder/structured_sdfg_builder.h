@@ -1,6 +1,5 @@
 #pragma once
 
-#include <list>
 #include <memory>
 #include <utility>
 
@@ -177,6 +176,8 @@ class StructuredSDFGBuilder : public FunctionBuilder {
     For& convert_while(Sequence& parent, While& loop, const symbolic::Symbol& indvar,
                        const symbolic::Condition& condition, const symbolic::Expression& init,
                        const symbolic::Expression& update);
+
+    Map& convert_for(Sequence& parent, For& loop, const symbolic::Expression& num_iterations);
 
     void clear_sequence(Sequence& parent);
 

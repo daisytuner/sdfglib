@@ -768,6 +768,30 @@ For& StructuredSDFGBuilder::convert_while(Sequence& parent, While& loop,
     return for_loop;
 };
 
+Map& StructuredSDFGBuilder::convert_for(Sequence& parent, For& loop,
+                                        const symbolic::Expression& num_iterations) {
+    // Insert for loop
+    size_t index = 0;
+    for (auto& entry : parent.children_) {
+        if (entry.get() == &loop) {
+            break;
+        }
+        index++;
+    }
+    auto iter = parent.children_.begin() + index;
+    auto& new_iter = *parent.children_.insert(
+        iter + 1, std::unique_ptr<Map>(new Map(this->element_counter_, loop.debug_info(),
+                                               loop.indvar(), num_iterations)));
+    this->element_counter_ = this->element_counter_ + 2;
+    auto& map = dynamic_cast<Map&>(*new_iter);
+    this->insert_children(map.root(), loop.root(), 0);
+
+    // Remove for loop
+    parent.children_.erase(parent.children_.begin() + index);
+
+    return map;
+};
+
 void StructuredSDFGBuilder::clear_sequence(Sequence& parent) {
     parent.children_.clear();
     parent.transitions_.clear();

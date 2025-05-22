@@ -102,6 +102,7 @@ set(SOURCE_FILES
     src/passes/structured_control_flow/block_fusion.cpp
     src/passes/structured_control_flow/common_assignment_elimination.cpp
     src/passes/structured_control_flow/dead_cfg_elimination.cpp
+    src/passes/structured_control_flow/for2map.cpp
     src/passes/structured_control_flow/loop_bound_normalization.cpp
     src/passes/structured_control_flow/loop_dependent_symbol_elimination.cpp
     src/passes/structured_control_flow/sequence_fusion.cpp
@@ -119,7 +120,6 @@ set(SOURCE_FILES
     src/symbolic/analysis.cpp
     src/symbolic/assumptions.cpp
     src/symbolic/symbolic.cpp
-    src/transformations/for2map.cpp
     src/transformations/kernel_local_storage.cpp
     src/transformations/loop_distribute.cpp
     src/transformations/loop_interchange.cpp
