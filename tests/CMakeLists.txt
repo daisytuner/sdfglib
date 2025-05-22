@@ -42,6 +42,7 @@ set(TEST_FILES
     passes/pipeline_test.cpp
     passes/schedule/allocation_inference_test.cpp
     passes/structured_control_flow/block_fusion_test.cpp
+    passes/structured_control_flow/for2map_test.cpp
     passes/symbolic/symbol_promotion_test.cpp
     passes/symbolic/symbol_propagation_test.cpp
     replace/symbol_replace_test.cpp

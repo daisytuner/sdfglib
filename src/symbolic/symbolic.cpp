@@ -270,15 +270,15 @@ Condition rearrange_simple_condition(const Condition& inequality, const Symbol& 
 
     // Check if the inequality is a StrictLessThan
     if (SymEngine::is_a<SymEngine::StrictLessThan>(*inequality)) {
-        auto lt_expr = SymEngine::rcp_dynamic_cast<SymEngine::StrictLessThan>(inequality);
+        auto lt_expr = SymEngine::rcp_dynamic_cast<const SymEngine::StrictLessThan>(inequality);
         lhs = lt_expr->get_arg1();
         rhs = lt_expr->get_arg2();
     } else if (SymEngine::is_a<SymEngine::LessThan>(*inequality)) {
-        auto lt_expr = SymEngine::rcp_dynamic_cast<SymEngine::LessThan>(inequality);
+        auto lt_expr = SymEngine::rcp_dynamic_cast<const SymEngine::LessThan>(inequality);
         lhs = lt_expr->get_arg1();
         rhs = lt_expr->get_arg2();
     } else if (SymEngine::is_a<SymEngine::Equality>(*inequality)) {
-        auto gt_expr = SymEngine::rcp_dynamic_cast<SymEngine::Equality>(inequality);
+        auto gt_expr = SymEngine::rcp_dynamic_cast<const SymEngine::Equality>(inequality);
         lhs = gt_expr->get_arg1();
         rhs = gt_expr->get_arg2();
     } else {

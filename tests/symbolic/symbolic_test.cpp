@@ -179,3 +179,16 @@ TEST(SymbolicTest, simplify) {
     eq2 = simplified->__str__() == "Or(x <= x1, x1 <= x2)";
     EXPECT_TRUE(eq || eq2);
 }
+
+TEST(SymbolicTest, rearrange_simple_condition) {
+    auto x = symbolic::symbol("x");
+    auto y = symbolic::symbol("y");
+
+    auto cond = symbolic::Le(symbolic::add(x, symbolic::integer(3)), y);
+    auto rearranged = symbolic::rearrange_simple_condition(cond, x);
+    EXPECT_EQ(rearranged->__str__(), "x <= y - 3");
+
+    cond = symbolic::Le(y, x);
+    rearranged = symbolic::rearrange_simple_condition(cond, x);
+    EXPECT_EQ(rearranged->__str__(), "y <= x");
+}

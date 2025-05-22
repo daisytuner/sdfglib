@@ -52,11 +52,11 @@ symbolic::Expression For2Map::num_iterations(const structured_control_flow::For&
     symbolic::Expression lhs;
     symbolic::Expression rhs;
     if (SymEngine::is_a<SymEngine::LessThan>(*condition)) {
-        auto condition_LE = SymEngine::rcp_dynamic_cast<SymEngine::LessThan>(condition);
+        auto condition_LE = SymEngine::rcp_dynamic_cast<const SymEngine::LessThan>(condition);
         lhs = condition_LE->get_arg1();
         rhs = condition_LE->get_arg2();
     } else if (SymEngine::is_a<SymEngine::StrictLessThan>(*condition)) {
-        auto condition_LT = SymEngine::rcp_dynamic_cast<SymEngine::StrictLessThan>(condition);
+        auto condition_LT = SymEngine::rcp_dynamic_cast<const SymEngine::StrictLessThan>(condition);
         lhs = condition_LT->get_arg1();
         rhs = condition_LT->get_arg2();
         is_strict = true;
