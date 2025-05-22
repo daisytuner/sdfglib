@@ -306,6 +306,10 @@ StructuredSDFGBuilder::StructuredSDFGBuilder(const SDFG& sdfg)
         this->structured_sdfg_->assumptions_.insert({entry.first, entry.second});
     }
 
+    for (auto& entry : sdfg.metadata_) {
+        this->structured_sdfg_->metadata_[entry.first] = entry.second;
+    }
+
     this->traverse(sdfg);
 };
 
