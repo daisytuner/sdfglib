@@ -41,6 +41,8 @@ class Schedule {
 
     builder::StructuredSDFGBuilder& builder();
 
+    StructuredSDFG& sdfg();
+
     const StructuredSDFG& sdfg() const;
 
     analysis::AnalysisManager& analysis_manager();
