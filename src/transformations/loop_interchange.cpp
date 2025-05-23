@@ -1,11 +1,14 @@
 #include "sdfg/transformations/loop_interchange.h"
 
+#include "sdfg/analysis/data_parallelism_analysis.h"
+#include "sdfg/structured_control_flow/structured_loop.h"
+
 namespace sdfg {
 namespace transformations {
 
 LoopInterchange::LoopInterchange(structured_control_flow::Sequence& parent,
-                                 structured_control_flow::For& outer_loop,
-                                 structured_control_flow::For& inner_loop)
+                                 structured_control_flow::StructuredLoop& outer_loop,
+                                 structured_control_flow::StructuredLoop& inner_loop)
     : outer_loop_(outer_loop), inner_loop_(inner_loop) {
 
       };
@@ -72,6 +75,24 @@ bool LoopInterchange::can_be_applied(Schedule& schedule) {
 };
 
 void LoopInterchange::apply(Schedule& schedule) {
+    auto& builder = schedule.builder();
+
+    auto new_outer_loop = builder.add_for_after(
+        builder.parent(outer_loop_), this->outer_loop_, this->outer_loop_.indvar(),
+        this->outer_loop_.condition(), this->outer_loop_.init(), this->outer_loop_.update());
+    auto new_inner_loop = builder.add_for_after(
+        builder.parent(inner_loop_), this->inner_loop_, this->inner_loop_.indvar(),
+        this->inner_loop_.condition(), this->inner_loop_.init(), this->inner_loop_.update());
+    auto& outer_body = this->outer_loop_.root();
+    auto& inner_body = this->inner_loop_.root();
+
+    for (int i = 0; i < inner_body.size(); i++) {
+    }
+
+    // TODO: new loop generation
+
+    // TODO: remove code after
+
     // Swap loop definitions
     auto outer_indvar = this->outer_loop_.indvar();
     auto outer_init = this->outer_loop_.init();

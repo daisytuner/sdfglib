@@ -1,10 +1,13 @@
 #include "sdfg/transformations/loop_distribute.h"
 
+#include "sdfg/analysis/data_parallelism_analysis.h"
+#include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
+
 namespace sdfg {
 namespace transformations {
 
 LoopDistribute::LoopDistribute(structured_control_flow::Sequence& parent,
-                               structured_control_flow::For& loop)
+                               structured_control_flow::StructuredLoop& loop)
     : parent_(parent), loop_(loop) {
 
       };

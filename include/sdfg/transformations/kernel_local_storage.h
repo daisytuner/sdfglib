@@ -10,14 +10,14 @@ namespace transformations {
 
 class KernelLocalStorage : public Transformation {
     structured_control_flow::Sequence& parent_;
-    structured_control_flow::For& outer_loop_;
-    structured_control_flow::For& inner_loop_;
+    structured_control_flow::StructuredLoop& outer_loop_;
+    structured_control_flow::StructuredLoop& inner_loop_;
     std::string container_;
 
    public:
     KernelLocalStorage(structured_control_flow::Sequence& parent,
-                       structured_control_flow::For& outer_loop,
-                       structured_control_flow::For& inner_loop, std::string container);
+                       structured_control_flow::StructuredLoop& outer_loop,
+                       structured_control_flow::StructuredLoop& inner_loop, std::string container);
 
     virtual std::string name() override;
 
