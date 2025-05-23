@@ -1,6 +1,9 @@
 #include "sdfg/analysis/data_parallelism_analysis.h"
 
+#include "sdfg/analysis/assumptions_analysis.h"
+#include "sdfg/analysis/users.h"
 #include "sdfg/codegen/language_extensions/cpp_language_extension.h"
+#include "sdfg/structured_control_flow/structured_loop.h"
 
 namespace sdfg {
 namespace analysis {
@@ -688,7 +691,7 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
 };
 
 void DataParallelismAnalysis::classify(analysis::AnalysisManager& analysis_manager,
-                                       const structured_control_flow::For* loop) {
+                                       const structured_control_flow::StructuredLoop* loop) {
     // Strictly monotonic update
     auto& indvar = loop->indvar();
     auto& update = loop->update();
@@ -939,14 +942,13 @@ void DataParallelismAnalysis::run(analysis::AnalysisManager& analysis_manager) {
             }
         } else if (auto while_stmt = dynamic_cast<const structured_control_flow::While*>(current)) {
             queue.push_back(&while_stmt->root());
-        } else if (auto for_stmt = dynamic_cast<const structured_control_flow::For*>(current)) {
-            this->loops_.insert(for_stmt);
-            queue.push_back(&for_stmt->root());
+        } else if (auto sloop_stmt =
+                       dynamic_cast<const structured_control_flow::StructuredLoop*>(current)) {
+            this->loops_.insert(sloop_stmt);
+            queue.push_back(&sloop_stmt->root());
         } else if (auto kern_stmt = dynamic_cast<const structured_control_flow::Kernel*>(current)) {
             // this->loops_.insert(kern_stmt);
             queue.push_back(&kern_stmt->root());
-        } else if (auto map_stmt = dynamic_cast<const structured_control_flow::Map*>(current)) {
-            queue.push_back(&map_stmt->root());
         }
     }
 
@@ -962,19 +964,21 @@ DataParallelismAnalysis::DataParallelismAnalysis(StructuredSDFG& sdfg)
       };
 
 const DataParallelismAnalysisResult& DataParallelismAnalysis::get(
-    const structured_control_flow::For& loop) const {
+    const structured_control_flow::StructuredLoop& loop) const {
     return this->results_.at(&loop);
 };
 
-bool DataParallelismAnalysis::is_contiguous(const structured_control_flow::For& loop) {
+bool DataParallelismAnalysis::is_contiguous(const structured_control_flow::StructuredLoop& loop) {
     return symbolic::contiguity(loop.update(), loop.indvar());
 };
 
-bool DataParallelismAnalysis::is_strictly_monotonic(const structured_control_flow::For& loop) {
+bool DataParallelismAnalysis::is_strictly_monotonic(
+    const structured_control_flow::StructuredLoop& loop) {
     return symbolic::strict_monotonicity(loop.update(), loop.indvar()) == symbolic::Sign::POSITIVE;
 };
 
-symbolic::Expression DataParallelismAnalysis::bound(const structured_control_flow::For& loop) {
+symbolic::Expression DataParallelismAnalysis::bound(
+    const structured_control_flow::StructuredLoop& loop) {
     auto& indvar = loop.indvar();
     auto& condition = loop.condition();
     auto args = condition->get_args();

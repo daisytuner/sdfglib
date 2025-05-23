@@ -8,6 +8,7 @@
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/sequence.h"
+#include "sdfg/structured_control_flow/structured_loop.h"
 
 namespace sdfg {
 
@@ -64,8 +65,9 @@ size_t StructuredSDFG::num_nodes() const {
         // if instance of block, add children to to_visit
         if (auto block = dynamic_cast<const structured_control_flow::Block*>(current)) {
             count += block->dataflow().nodes().size();
-        } else if (auto for_node = dynamic_cast<const structured_control_flow::For*>(current)) {
-            to_visit.insert(&for_node->root());
+        } else if (auto sloop_node =
+                       dynamic_cast<const structured_control_flow::StructuredLoop*>(current)) {
+            to_visit.insert(&sloop_node->root());
         } else if (auto condition_node =
                        dynamic_cast<const structured_control_flow::IfElse*>(current)) {
             for (size_t i = 0; i < condition_node->size(); i++) {
@@ -83,8 +85,6 @@ size_t StructuredSDFG::num_nodes() const {
             to_visit.insert(&kernel_node->root());
         } else if (dynamic_cast<const structured_control_flow::Return*>(current)) {
             continue;
-        } else if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(current)) {
-            to_visit.insert(&map_node->root());
         }
     }
     return count;
@@ -106,9 +106,10 @@ const DebugInfo StructuredSDFG::debug_info() const {
             for (auto& edge : block->dataflow().edges()) {
                 info = DebugInfo::merge(info, edge.debug_info());
             }
-        } else if (auto for_node = dynamic_cast<const structured_control_flow::For*>(current)) {
-            info = DebugInfo::merge(info, for_node->debug_info());
-            to_visit.insert(&for_node->root());
+        } else if (auto sloop_node =
+                       dynamic_cast<const structured_control_flow::StructuredLoop*>(current)) {
+            info = DebugInfo::merge(info, sloop_node->debug_info());
+            to_visit.insert(&sloop_node->root());
         } else if (auto condition_node =
                        dynamic_cast<const structured_control_flow::IfElse*>(current)) {
             info = DebugInfo::merge(info, condition_node->debug_info());
@@ -132,9 +133,6 @@ const DebugInfo StructuredSDFG::debug_info() const {
         } else if (auto return_node =
                        dynamic_cast<const structured_control_flow::Return*>(current)) {
             info = DebugInfo::merge(info, return_node->debug_info());
-        } else if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(current)) {
-            info = DebugInfo::merge(info, map_node->debug_info());
-            to_visit.insert(&map_node->root());
         }
     }
     return info;

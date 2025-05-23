@@ -1,11 +1,15 @@
 #include "sdfg/passes/structured_control_flow/loop_dependent_symbol_elimination.h"
 
+#include "sdfg/analysis/data_parallelism_analysis.h"
+#include "sdfg/structured_control_flow/structured_loop.h"
+
 namespace sdfg {
 namespace passes {
 
 bool LoopDependentSymbolElimination::eliminate_symbols(
     builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::For& loop, structured_control_flow::Transition& transition) {
+    structured_control_flow::StructuredLoop& loop,
+    structured_control_flow::Transition& transition) {
     if (loop.root().size() == 0) {
         return false;
     }
@@ -126,12 +130,11 @@ bool LoopDependentSymbolElimination::run_pass(builder::StructuredSDFGBuilder& bu
             }
         } else if (auto loop_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
             queue.push_back(&loop_stmt->root());
-        } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(current)) {
-            queue.push_back(&for_stmt->root());
+        } else if (auto sloop_stmt =
+                       dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
+            queue.push_back(&sloop_stmt->root());
         } else if (auto kern_stmt = dynamic_cast<const structured_control_flow::Kernel*>(current)) {
             queue.push_back(&kern_stmt->root());
-        } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(current)) {
-            queue.push_back(&map_stmt->root());
         }
     }
 
