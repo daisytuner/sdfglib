@@ -81,6 +81,14 @@ bool StructuredSDFGVisitor::visit(structured_control_flow::Sequence& parent) {
             if (this->visit(kern_stmt->root())) {
                 return true;
             }
+        } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(current)) {
+            if (this->accept(parent, *map_stmt)) {
+                return true;
+            }
+
+            if (this->visit(map_stmt->root())) {
+                return true;
+            }
         }
     }
 
@@ -129,6 +137,11 @@ bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent,
 
 bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent,
                                    structured_control_flow::Kernel& node) {
+    return false;
+};
+
+bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent,
+                                   structured_control_flow::Map& node) {
     return false;
 };
 

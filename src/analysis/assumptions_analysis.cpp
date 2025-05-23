@@ -40,6 +40,9 @@ void AssumptionsAnalysis::traverse(structured_control_flow::Sequence& root) {
         } else if (auto kern_stmt = dynamic_cast<const structured_control_flow::Kernel*>(current)) {
             this->visit_kernel(kern_stmt);
             queue.push_back(&kern_stmt->root());
+        } else if (auto map_stmt = dynamic_cast<const structured_control_flow::Map*>(current)) {
+            this->visit_map(map_stmt);
+            queue.push_back(&map_stmt->root());
         }
     }
 };
@@ -117,6 +120,26 @@ void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop) {
         }
     }
 };
+
+void AssumptionsAnalysis::visit_map(const structured_control_flow::Map* map) {
+    auto& body = map->root();
+    if (this->assumptions_.find(&body) == this->assumptions_.end()) {
+        this->assumptions_.insert({&body, symbolic::Assumptions()});
+    }
+
+    auto& body_assumptions = this->assumptions_[&body];
+    auto indvar = map->indvar();
+    this->iterators_.push_back(indvar->get_name());
+    auto sym = indvar;
+    auto num_iterations = map->num_iterations();
+
+    if (body_assumptions.find(sym) == body_assumptions.end()) {
+        body_assumptions.insert({sym, symbolic::Assumption(sym)});
+    }
+
+    body_assumptions[sym].lower_bound(symbolic::zero());
+    body_assumptions[sym].upper_bound(num_iterations);
+}
 
 void AssumptionsAnalysis::visit_kernel(const structured_control_flow::Kernel* kernel) {
     auto& body = kernel->root();

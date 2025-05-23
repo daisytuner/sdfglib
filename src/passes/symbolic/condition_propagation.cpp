@@ -6,7 +6,7 @@ namespace sdfg {
 namespace passes {
 
 ForwardConditionPropagation::ForwardConditionPropagation()
-    : Pass(){
+    : Pass() {
 
       };
 
@@ -97,6 +97,8 @@ bool ForwardConditionPropagation::propagate_condition(builder::StructuredSDFGBui
             queue.push_back(&for_stmt->root());
         } else if (auto kernel_stmt = dynamic_cast<structured_control_flow::Kernel*>(curr)) {
             queue.push_back(&kernel_stmt->root());
+        } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(curr)) {
+            queue.push_back(&map_stmt->root());
         }
     }
 
@@ -137,6 +139,8 @@ bool ForwardConditionPropagation::run_pass(builder::StructuredSDFGBuilder& build
             queue.push_back(&for_stmt->root());
         } else if (auto kernel_stmt = dynamic_cast<structured_control_flow::Kernel*>(curr)) {
             queue.push_back(&kernel_stmt->root());
+        } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(curr)) {
+            queue.push_back(&map_stmt->root());
         }
     }
 
@@ -168,7 +172,7 @@ bool BackwardConditionPropagation::eliminate_condition(builder::StructuredSDFGBu
 };
 
 BackwardConditionPropagation::BackwardConditionPropagation()
-    : Pass(){
+    : Pass() {
 
       };
 
@@ -230,6 +234,8 @@ bool BackwardConditionPropagation::run_pass(builder::StructuredSDFGBuilder& buil
             queue.push_back(&for_stmt->root());
         } else if (auto kern_stmt = dynamic_cast<const structured_control_flow::Kernel*>(current)) {
             queue.push_back(&kern_stmt->root());
+        } else if (auto map_stmt = dynamic_cast<const structured_control_flow::Map*>(current)) {
+            queue.push_back(&map_stmt->root());
         }
     }
 

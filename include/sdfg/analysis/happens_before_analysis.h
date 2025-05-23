@@ -8,6 +8,7 @@
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
 #include "sdfg/structured_control_flow/kernel.h"
+#include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/return.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
@@ -72,6 +73,11 @@ class HappensBeforeAnalysis : public Analysis {
         std::unordered_set<User*>& open_reads,
         std::unordered_map<User*, std::unordered_set<User*>>& open_reads_after_writes,
         std::unordered_map<User*, std::unordered_set<User*>>& closed_reads_after_write);
+
+    void visit_map(analysis::Users& users, structured_control_flow::Map& map,
+                   std::unordered_set<User*>& open_reads,
+                   std::unordered_map<User*, std::unordered_set<User*>>& open_reads_after_writes,
+                   std::unordered_map<User*, std::unordered_set<User*>>& closed_reads_after_write);
 
     /****** Public API ******/
 

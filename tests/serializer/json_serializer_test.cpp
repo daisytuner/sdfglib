@@ -527,6 +527,37 @@ TEST(JSONSerializerTest, SequenceToJSON) {
     // EXPECT_TRUE(j["transitions"][1]["assignments"][0]["expression"], "0");
 }
 
+TEST(JSONSerializerTest, MapToJSON) {
+    // Create a sample Map node
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
+    auto& root = builder.subject().root();
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+
+    auto& map = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10));
+    auto& body = builder.add_block(map.root());
+
+    // Create a JSONSerializer object
+    std::string filename = "test_sdfg.json";
+    auto sdfg = builder.move();
+    sdfg::serializer::JSONSerializer serializer;
+
+    // Serialize the Map node to JSON
+    nlohmann::json j;
+    serializer.map_to_json(j, map);
+
+    // Check if the JSON contains the expected keys
+    EXPECT_TRUE(j.contains("type"));
+    EXPECT_EQ(j["type"], "map");
+    EXPECT_TRUE(j.contains("indvar"));
+    EXPECT_EQ(j["indvar"], "i");
+    EXPECT_TRUE(j.contains("num_iterations"));
+    EXPECT_EQ(j["num_iterations"], "10");
+    EXPECT_TRUE(j.contains("children"));
+    EXPECT_EQ(j["children"]["type"], "sequence");
+    EXPECT_EQ(j["children"]["children"].size(), 1);
+}
+
 TEST(JSONSerializerTest, SerializeDeserializeDataType_Scalar) {
     // Create a sample Scalar data type
     types::Scalar scalar_type(types::PrimitiveType::Int32, types::DeviceLocation::x86, 0,
@@ -1722,6 +1753,41 @@ TEST(JSONSerializerTest, SerializeDeserialize_kernel) {
                     &des_kernel.root().at(0).first) != nullptr);
     auto& des_block_new =
         dynamic_cast<sdfg::structured_control_flow::Block&>(des_kernel.root().at(0).first);
+}
+
+TEST(JSONSerializerTest, SerializeDeserialize_Map) {
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
+    auto& root = builder.subject().root();
+
+    auto& map = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10));
+
+    // Create a JSONSerializer object
+    std::string filename = "test_sdfg.json";
+    auto sdfg = builder.move();
+    sdfg::serializer::JSONSerializer serializer;
+
+    // Serialize the Sequence node to JSON
+    nlohmann::json j;
+    serializer.map_to_json(j, map);
+
+    // Deserialize the JSON back into a Sequence node
+    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg");
+
+    symbolic::Assignments assignments;
+
+    serializer.json_to_map_node(j, des_builder, des_builder.subject().root(), assignments);
+    auto des_sdfg = des_builder.move();
+    EXPECT_EQ(des_sdfg->name(), sdfg->name());
+    EXPECT_EQ(des_sdfg->containers().size(), 0);
+    EXPECT_EQ(des_sdfg->root().size(), 1);
+
+    EXPECT_TRUE(dynamic_cast<sdfg::structured_control_flow::Map*>(&des_sdfg->root().at(0).first) !=
+                nullptr);
+    auto& des_map = dynamic_cast<sdfg::structured_control_flow::Map&>(des_sdfg->root().at(0).first);
+    EXPECT_TRUE(symbolic::eq(des_map.indvar(), symbolic::symbol("i")));
+    EXPECT_TRUE(symbolic::eq(des_map.num_iterations(), symbolic::integer(10)));
+
+    EXPECT_EQ(des_map.root().size(), 0);
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize_return) {

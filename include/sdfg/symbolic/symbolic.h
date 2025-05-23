@@ -109,6 +109,12 @@ Expression exp(const Expression& expr);
 
 Expression sqrt(const Expression& expr);
 
+/***** Rounding Expressions *****/
+
+Expression floor(const Expression& expr);
+
+Expression ceil(const Expression& expr);
+
 /***** Comparisions *****/
 
 Condition Eq(const Expression& lhs, const Expression& rhs);
@@ -142,6 +148,8 @@ Condition subs(const Condition& expr, const Expression& old_expr, const Expressi
 Condition simplify(const Condition& expr);
 
 Expression simplify(const Expression& expr);
+
+Condition rearrange_simple_condition(const Condition& inequality, const Symbol& target_symbol);
 
 }  // namespace symbolic
 }  // namespace sdfg

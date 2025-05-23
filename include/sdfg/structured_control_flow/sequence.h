@@ -19,6 +19,7 @@ namespace structured_control_flow {
 class While;
 class For;
 class Kernel;
+class Map;
 
 class Transition : public Element {
     friend class sdfg::builder::StructuredSDFGBuilder;
@@ -55,6 +56,7 @@ class Sequence : public ControlFlowNode {
     friend class sdfg::structured_control_flow::While;
     friend class sdfg::structured_control_flow::For;
     friend class sdfg::structured_control_flow::Kernel;
+    friend class sdfg::structured_control_flow::Map;
 
    private:
     std::vector<std::unique_ptr<ControlFlowNode>> children_;

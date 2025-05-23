@@ -417,6 +417,10 @@ void Visualizer::visualizeNode(Schedule& schedule, structured_control_flow::Cont
         this->visualizeKernel(schedule, *kernel_node);
         return;
     }
+    if (auto map_node = dynamic_cast<structured_control_flow::Map*>(&node)) {
+        this->visualizeMap(schedule, *map_node);
+        return;
+    }
     throw std::runtime_error("Unsupported control flow node");
 }
 

@@ -20,6 +20,7 @@ set(TEST_FILES
     codegen/dispatchers/block_dispatcher_test.cpp
     codegen/dispatchers/for_dispatcher_test.cpp
     codegen/dispatchers/if_else_dispatcher_test.cpp
+    codegen/dispatchers/map_dispatcher_test.cpp
     codegen/dispatchers/node_dispatcher_factory_test.cpp
     codegen/dispatchers/node_dispatcher_test.cpp
     codegen/dispatchers/sequence_dispatcher_test.cpp
@@ -41,6 +42,7 @@ set(TEST_FILES
     passes/pipeline_test.cpp
     passes/schedule/allocation_inference_test.cpp
     passes/structured_control_flow/block_fusion_test.cpp
+    passes/structured_control_flow/for2map_test.cpp
     passes/symbolic/symbol_promotion_test.cpp
     passes/symbolic/symbol_propagation_test.cpp
     replace/symbol_replace_test.cpp

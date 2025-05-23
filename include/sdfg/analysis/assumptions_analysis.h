@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "sdfg/analysis/analysis.h"
+#include "sdfg/structured_control_flow/map.h"
 #include "sdfg/symbolic/analysis.h"
 #include "sdfg/symbolic/assumptions.h"
 #include "sdfg/symbolic/symbolic.h"
@@ -31,6 +32,8 @@ class AssumptionsAnalysis : public Analysis {
     void visit_for(structured_control_flow::For* for_loop);
 
     void visit_kernel(const structured_control_flow::Kernel* kernel);
+
+    void visit_map(const structured_control_flow::Map* map);
 
    protected:
     void run(analysis::AnalysisManager& analysis_manager) override;

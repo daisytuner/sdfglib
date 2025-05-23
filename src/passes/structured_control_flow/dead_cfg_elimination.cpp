@@ -20,7 +20,7 @@ bool DeadCFGElimination::is_dead(const structured_control_flow::ControlFlowNode&
 };
 
 DeadCFGElimination::DeadCFGElimination()
-    : Pass(){
+    : Pass() {
 
       };
 
@@ -132,6 +132,9 @@ bool DeadCFGElimination::run_pass(builder::StructuredSDFGBuilder& builder,
             queue.push_back(&root);
         } else if (auto kernel_stmt = dynamic_cast<structured_control_flow::Kernel*>(curr)) {
             auto& root = kernel_stmt->root();
+            queue.push_back(&root);
+        } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(curr)) {
+            auto& root = map_stmt->root();
             queue.push_back(&root);
         }
     }
