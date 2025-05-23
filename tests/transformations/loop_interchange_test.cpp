@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "sdfg/schedule.h"
+#include "sdfg/structured_control_flow/for.h"
 
 using namespace sdfg;
 
@@ -92,10 +93,35 @@ TEST(LoopInterchangeTest, Map_2D_Tiled) {
     EXPECT_TRUE(transformation.can_be_applied(*schedule));
     transformation.apply(*schedule);
 
-    EXPECT_EQ(loop1.indvar()->get_name(), "i");
-    EXPECT_EQ(loop1_tile.indvar()->get_name(), "j");
-    EXPECT_EQ(loop2.indvar()->get_name(), "i_tile");
-    EXPECT_EQ(loop2_tile.indvar()->get_name(), "j_tile");
+    auto& new_sdfg = schedule->sdfg();
+
+    EXPECT_EQ(new_sdfg.root().size(), 1);
+
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_sdfg.root().at(0).first) !=
+                nullptr);
+    auto new_loop1 = dynamic_cast<structured_control_flow::For*>(&new_sdfg.root().at(0).first);
+    EXPECT_EQ(new_loop1->indvar()->get_name(), "i");
+    EXPECT_EQ(new_loop1->root().size(), 1);
+
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_loop1->root().at(0).first) !=
+                nullptr);
+    auto new_loop1_tile =
+        dynamic_cast<structured_control_flow::For*>(&new_loop1->root().at(0).first);
+    EXPECT_EQ(new_loop1_tile->indvar()->get_name(), "j");
+    EXPECT_EQ(new_loop1_tile->root().size(), 1);
+
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_loop1_tile->root().at(0).first) !=
+                nullptr);
+    auto new_loop2 =
+        dynamic_cast<structured_control_flow::For*>(&new_loop1_tile->root().at(0).first);
+    EXPECT_EQ(new_loop2->indvar()->get_name(), "i_tile");
+    EXPECT_EQ(new_loop2->root().size(), 1);
+
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_loop2->root().at(0).first) !=
+                nullptr);
+    auto new_loop2_tile =
+        dynamic_cast<structured_control_flow::For*>(&new_loop2->root().at(0).first);
+    EXPECT_EQ(new_loop2_tile->indvar()->get_name(), "j_tile");
 }
 
 TEST(LoopInterchangeTest, Reduction_2D_Tiled) {
@@ -181,10 +207,35 @@ TEST(LoopInterchangeTest, Reduction_2D_Tiled) {
     EXPECT_TRUE(transformation.can_be_applied(*schedule));
     transformation.apply(*schedule);
 
-    EXPECT_EQ(loop1.indvar()->get_name(), "i");
-    EXPECT_EQ(loop1_tile.indvar()->get_name(), "j");
-    EXPECT_EQ(loop2.indvar()->get_name(), "i_tile");
-    EXPECT_EQ(loop2_tile.indvar()->get_name(), "j_tile");
+    auto& new_sdfg = schedule->sdfg();
+
+    EXPECT_EQ(new_sdfg.root().size(), 1);
+
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_sdfg.root().at(0).first) !=
+                nullptr);
+    auto new_loop1 = dynamic_cast<structured_control_flow::For*>(&new_sdfg.root().at(0).first);
+    EXPECT_EQ(new_loop1->indvar()->get_name(), "i");
+    EXPECT_EQ(new_loop1->root().size(), 1);
+
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_loop1->root().at(0).first) !=
+                nullptr);
+    auto new_loop1_tile =
+        dynamic_cast<structured_control_flow::For*>(&new_loop1->root().at(0).first);
+    EXPECT_EQ(new_loop1_tile->indvar()->get_name(), "j");
+    EXPECT_EQ(new_loop1_tile->root().size(), 1);
+
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_loop1_tile->root().at(0).first) !=
+                nullptr);
+    auto new_loop2 =
+        dynamic_cast<structured_control_flow::For*>(&new_loop1_tile->root().at(0).first);
+    EXPECT_EQ(new_loop2->indvar()->get_name(), "i_tile");
+    EXPECT_EQ(new_loop2->root().size(), 1);
+
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_loop2->root().at(0).first) !=
+                nullptr);
+    auto new_loop2_tile =
+        dynamic_cast<structured_control_flow::For*>(&new_loop2->root().at(0).first);
+    EXPECT_EQ(new_loop2_tile->indvar()->get_name(), "j_tile");
 }
 
 TEST(LoopInterchangeTest, Reduction_3D_Tiled) {
@@ -298,14 +349,68 @@ TEST(LoopInterchangeTest, Reduction_3D_Tiled) {
     EXPECT_TRUE(transformation.can_be_applied(*schedule));
     transformation.apply(*schedule);
 
-    transformations::LoopInterchange transformation2(loop1_tile.root(), loop2, loop2_tile);
+    auto& new_sdfg = schedule->sdfg();
+    EXPECT_EQ(new_sdfg.root().size(), 1);
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_sdfg.root().at(0).first) !=
+                nullptr);
+    auto new_loop1 = dynamic_cast<structured_control_flow::For*>(&new_sdfg.root().at(0).first);
+    EXPECT_EQ(new_loop1->indvar()->get_name(), "i");
+    EXPECT_EQ(new_loop1->root().size(), 1);
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_loop1->root().at(0).first) !=
+                nullptr);
+    auto new_loop1_tile =
+        dynamic_cast<structured_control_flow::For*>(&new_loop1->root().at(0).first);
+    EXPECT_EQ(new_loop1_tile->indvar()->get_name(), "i_tile");
+    EXPECT_EQ(new_loop1_tile->root().size(), 1);
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_loop1_tile->root().at(0).first) !=
+                nullptr);
+    auto new_loop2 =
+        dynamic_cast<structured_control_flow::For*>(&new_loop1_tile->root().at(0).first);
+    EXPECT_EQ(new_loop2->root().size(), 1);
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_loop2->root().at(0).first) !=
+                nullptr);
+    auto new_loop2_tile =
+        dynamic_cast<structured_control_flow::For*>(&new_loop2->root().at(0).first);
+
+    transformations::LoopInterchange transformation2(loop1_tile.root(), *new_loop2,
+                                                     *new_loop2_tile);
     EXPECT_TRUE(transformation2.can_be_applied(*schedule));
     transformation2.apply(*schedule);
 
-    EXPECT_EQ(loop1.indvar()->get_name(), "i");
-    EXPECT_EQ(loop1_tile.indvar()->get_name(), "i_tile");
-    EXPECT_EQ(loop2.indvar()->get_name(), "k");
-    EXPECT_EQ(loop2_tile.indvar()->get_name(), "j");
-    EXPECT_EQ(loop3.indvar()->get_name(), "j_tile");
-    EXPECT_EQ(loop3_tile.indvar()->get_name(), "k_tile");
+    auto& new_sdfg2 = schedule->sdfg();
+    EXPECT_EQ(new_sdfg2.root().size(), 1);
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_sdfg2.root().at(0).first) !=
+                nullptr);
+    auto new_loop1_2 = dynamic_cast<structured_control_flow::For*>(&new_sdfg2.root().at(0).first);
+    EXPECT_EQ(new_loop1_2->indvar()->get_name(), "i");
+    EXPECT_EQ(new_loop1_2->root().size(), 1);
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_loop1_2->root().at(0).first) !=
+                nullptr);
+    auto new_loop1_tile_2 =
+        dynamic_cast<structured_control_flow::For*>(&new_loop1_2->root().at(0).first);
+    EXPECT_EQ(new_loop1_tile_2->indvar()->get_name(), "i_tile");
+    EXPECT_EQ(new_loop1_tile_2->root().size(), 1);
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(
+                    &new_loop1_tile_2->root().at(0).first) != nullptr);
+    auto new_loop2_2 =
+        dynamic_cast<structured_control_flow::For*>(&new_loop1_tile_2->root().at(0).first);
+    EXPECT_EQ(new_loop2_2->indvar()->get_name(), "k");
+    EXPECT_EQ(new_loop2_2->root().size(), 1);
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_loop2_2->root().at(0).first) !=
+                nullptr);
+    auto new_loop2_tile_2 =
+        dynamic_cast<structured_control_flow::For*>(&new_loop2_2->root().at(0).first);
+    EXPECT_EQ(new_loop2_tile_2->indvar()->get_name(), "j");
+    EXPECT_EQ(new_loop2_tile_2->root().size(), 1);
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(
+                    &new_loop2_tile_2->root().at(0).first) != nullptr);
+    auto new_loop3_2 =
+        dynamic_cast<structured_control_flow::For*>(&new_loop2_tile_2->root().at(0).first);
+    EXPECT_EQ(new_loop3_2->indvar()->get_name(), "j_tile");
+    EXPECT_EQ(new_loop3_2->root().size(), 1);
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_loop3_2->root().at(0).first) !=
+                nullptr);
+    auto new_loop3_tile_2 =
+        dynamic_cast<structured_control_flow::For*>(&new_loop3_2->root().at(0).first);
+    EXPECT_EQ(new_loop3_tile_2->indvar()->get_name(), "k_tile");
 }

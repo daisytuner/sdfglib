@@ -77,37 +77,21 @@ bool LoopInterchange::can_be_applied(Schedule& schedule) {
 void LoopInterchange::apply(Schedule& schedule) {
     auto& builder = schedule.builder();
 
-    auto new_outer_loop = builder.add_for_after(
-        builder.parent(outer_loop_), this->outer_loop_, this->outer_loop_.indvar(),
-        this->outer_loop_.condition(), this->outer_loop_.init(), this->outer_loop_.update());
     auto new_inner_loop = builder.add_for_after(
-        builder.parent(inner_loop_), this->inner_loop_, this->inner_loop_.indvar(),
-        this->inner_loop_.condition(), this->inner_loop_.init(), this->inner_loop_.update());
-    auto& outer_body = this->outer_loop_.root();
+        builder.parent(inner_loop_), this->inner_loop_, this->outer_loop_.indvar(),
+        this->outer_loop_.condition(), this->outer_loop_.init(), this->outer_loop_.update());
     auto& inner_body = this->inner_loop_.root();
 
-    for (int i = 0; i < inner_body.size(); i++) {
-    }
+    builder.insert_children(new_inner_loop.first.root(), inner_body, 0);
 
-    // TODO: new loop generation
+    auto new_outer_loop = builder.add_for_after(
+        builder.parent(outer_loop_), this->outer_loop_, this->inner_loop_.indvar(),
+        this->inner_loop_.condition(), this->inner_loop_.init(), this->inner_loop_.update());
 
-    // TODO: remove code after
-
-    // Swap loop definitions
-    auto outer_indvar = this->outer_loop_.indvar();
-    auto outer_init = this->outer_loop_.init();
-    auto outer_condition = this->outer_loop_.condition();
-    auto outer_update = this->outer_loop_.update();
-
-    this->outer_loop_.indvar() = this->inner_loop_.indvar();
-    this->outer_loop_.init() = this->inner_loop_.init();
-    this->outer_loop_.condition() = this->inner_loop_.condition();
-    this->outer_loop_.update() = this->inner_loop_.update();
-
-    this->inner_loop_.indvar() = outer_indvar;
-    this->inner_loop_.init() = outer_init;
-    this->inner_loop_.condition() = outer_condition;
-    this->inner_loop_.update() = outer_update;
+    auto& outer_body = this->outer_loop_.root();
+    builder.insert_children(new_outer_loop.first.root(), outer_body, 0);
+    builder.remove_child(builder.parent(inner_loop_), this->inner_loop_);
+    builder.remove_child(builder.parent(outer_loop_), this->outer_loop_);
 
     auto& analysis_manager = schedule.analysis_manager();
     analysis_manager.invalidate_all();
