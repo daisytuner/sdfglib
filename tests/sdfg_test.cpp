@@ -208,3 +208,15 @@ TEST(SDFGTest, AsDot) {
 }
 )");
 }
+
+TEST(SDFGTest, Metadata) {
+    builder::SDFGBuilder builder("sdfg_1");
+
+    auto sdfg = builder.move();
+    sdfg->add_metadata("key", "value");
+
+    EXPECT_EQ(sdfg->metadata("key"), "value");
+
+    sdfg->remove_metadata("key");
+    EXPECT_THROW(sdfg->metadata("key"), std::out_of_range);
+}

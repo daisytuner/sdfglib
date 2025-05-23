@@ -37,3 +37,16 @@ TEST(StructuredSDFGTest, Clone) {
     EXPECT_TRUE(symbolic::eq(cloned_block.second.assignments().at(symbolic::symbol("N")),
                              symbolic::integer(10)));
 }
+
+
+TEST(StructuredSDFGTest, Metadata) {
+    builder::StructuredSDFGBuilder builder("sdfg_1");
+
+    auto sdfg = builder.move();
+    sdfg->add_metadata("key", "value");
+
+    EXPECT_EQ(sdfg->metadata("key"), "value");
+
+    sdfg->remove_metadata("key");
+    EXPECT_THROW(sdfg->metadata("key"), std::out_of_range);
+}

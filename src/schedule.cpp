@@ -23,6 +23,8 @@ const symbolic::Assumptions& Schedule::assumptions() const { return this->assump
 
 builder::StructuredSDFGBuilder& Schedule::builder() { return this->builder_; };
 
+StructuredSDFG& Schedule::sdfg() { return this->builder_.subject(); };
+
 const StructuredSDFG& Schedule::sdfg() const { return this->builder_.subject(); };
 
 analysis::AnalysisManager& Schedule::analysis_manager() { return this->analysis_manager_; };

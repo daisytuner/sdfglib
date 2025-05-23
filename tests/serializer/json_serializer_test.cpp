@@ -1825,6 +1825,8 @@ TEST(JSONSerializerTest, SerializeDeserialize) {
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg");
     auto sdfg = builder.move();
 
+    sdfg->add_metadata("key", "value");
+
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     sdfg::serializer::JSONSerializer serializer;
@@ -1837,6 +1839,7 @@ TEST(JSONSerializerTest, SerializeDeserialize) {
 
     // Check if the deserialized SDFG matches the original SDFG
     EXPECT_EQ(sdfg_new->name(), "test_sdfg");
+    EXPECT_EQ(sdfg_new->metadata("key"), "value");
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize_Arguments) {

@@ -80,6 +80,11 @@ nlohmann::json JSONSerializer::serialize(std::unique_ptr<sdfg::StructuredSDFG>& 
     sequence_to_json(root_json, sdfg->root());
     j["root"] = root_json;
 
+    j["metadata"] = nlohmann::json::object();
+    for (const auto& entry : sdfg->metadata()) {
+        j["metadata"][entry.first] = entry.second;
+    }
+
     return j;
 }
 
@@ -398,6 +403,13 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
     assert(j.contains("root"));
     auto& root = builder.subject().root();
     json_to_sequence(j["root"], builder, root);
+
+    // deserialize metadata
+    assert(j.contains("metadata"));
+    assert(j["metadata"].is_object());
+    for (const auto& entry : j["metadata"].items()) {
+        builder.subject().add_metadata(entry.key(), entry.value());
+    }
 
     return builder.move();
 }

@@ -22,6 +22,20 @@ void __daisy_instrument_exit(const char* region_name, const char* file_name, lon
                                             column_begin, column_end);
 }
 
+void __daisy_instrument_exit_with_metadata(
+    const char* region_name,
+    const char* dbg_file_name,
+    long dbg_line_begin,
+    long dbg_line_end,
+    long dbg_column_begin,
+    long dbg_column_end,
+    const char* source_file,
+    const char* features_file
+) {
+    instrumentation.__daisy_instrument_exit_with_metadata(region_name, dbg_file_name, dbg_line_begin, dbg_line_end,
+                                            dbg_column_begin, dbg_column_end, source_file, features_file);
+}
+
 #ifdef __cplusplus
 }
 #endif
@@ -170,6 +184,43 @@ void Instrumentation_PAPI::__daisy_instrument_exit(const char* region_name, cons
     for (size_t i = 0; i < event_names.size(); ++i) {
         fprintf(f, "%s,%s,%ld,%ld,%ld,%ld,%s,%lld,%ld\n", region_name, file_name, line_begin, line_end,
             column_begin, column_end, event_names.at(i).c_str(), count[i], std::time(nullptr));
+    }
+
+    fclose(f);
+}
+
+void Instrumentation_PAPI::__daisy_instrument_exit_with_metadata(
+    const char* region_name,
+    const char* dbg_file_name,
+    long dbg_line_begin,
+    long dbg_line_end,
+    long dbg_column_begin,
+    long dbg_column_end,
+    const char* source_file,
+    const char* features_file
+) {
+if (output_file == nullptr || event_names.empty()) return;
+
+    long long count[event_names.size()];
+    if (runtime) {
+        count[0] = _PAPI_get_real_nsec() - runtime_start;
+    } else {
+        int retval = _PAPI_stop(eventset, count);
+        if (retval != 0) {
+            fprintf(stderr, "Error stopping PAPI:  %s\n", _PAPI_strerror(retval));
+            return;
+        }
+    }
+
+    FILE* f = fopen(output_file, "a");
+    if (f == nullptr) {
+        fprintf(stderr, "Error opening file %s\n", output_file);
+        f = fopen(output_file, "w");
+    }
+
+    for (size_t i = 0; i < event_names.size(); ++i) {
+        fprintf(f, "%s,%s,%ld,%ld,%ld,%ld,%s,%s,%s,%lld,%ld\n", region_name, dbg_file_name, dbg_line_begin, dbg_line_end,
+            dbg_column_begin, dbg_column_end, source_file, features_file, event_names.at(i).c_str(), count[i], std::time(nullptr));
     }
 
     fclose(f);

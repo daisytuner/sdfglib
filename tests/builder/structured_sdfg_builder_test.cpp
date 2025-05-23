@@ -346,6 +346,9 @@ TEST(SDFG2StructuredSDFGTest, Function_Definition) {
     auto sdfg = builder.move();
     EXPECT_EQ(sdfg->assumptions().size(), 3);
 
+    sdfg->add_metadata("key", "value");
+    sdfg->add_metadata("key2", "value2");
+
     builder::StructuredSDFGBuilder structured_builder(*sdfg);
     auto structured_sdfg = structured_builder.move();
 
@@ -369,6 +372,9 @@ TEST(SDFG2StructuredSDFGTest, Function_Definition) {
     }
 
     EXPECT_EQ(structured_sdfg->assumptions().size(), 3);
+
+    EXPECT_EQ(structured_sdfg->metadata("key"), "value");
+    EXPECT_EQ(structured_sdfg->metadata("key2"), "value2");
 }
 
 TEST(SDFG2StructuredSDFGTest, Sequence) {

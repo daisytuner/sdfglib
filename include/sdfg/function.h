@@ -62,6 +62,9 @@ class Function {
     // Symbolic assumptions
     symbolic::Assumptions assumptions_;
 
+    // Metadata
+    std::unordered_map<std::string, std::string> metadata_;
+
     Function(const std::string& name);
 
    public:
@@ -105,6 +108,12 @@ class Function {
 
     const symbolic::Assumptions& assumptions() const;
 
-    /***** Section: Serialization *****/
+    void add_metadata(const std::string& key, const std::string& value);
+
+    void remove_metadata(const std::string& key);
+
+    const std::string& metadata(const std::string& key) const;
+
+    const std::unordered_map<std::string, std::string>& metadata() const;
 };
 }  // namespace sdfg

@@ -41,6 +41,10 @@ std::unique_ptr<StructuredSDFG> StructuredSDFG::clone() const {
         new_sdfg.externals_.push_back(ext);
     }
 
+    for (auto& entry : this->metadata_) {
+        new_sdfg.metadata_[entry.first] = entry.second;
+    }
+
     for (auto& assumption : this->assumptions_) {
         new_sdfg.assumptions_.insert({assumption.first, assumption.second});
     }

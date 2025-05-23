@@ -77,4 +77,20 @@ symbolic::Assumption& Function::assumption(const symbolic::Symbol& symbol) {
 
 const symbolic::Assumptions& Function::assumptions() const { return this->assumptions_; };
 
+void Function::add_metadata(const std::string& key, const std::string& value) {
+    this->metadata_[key] = value;
+};
+
+void Function::remove_metadata(const std::string& key) {
+    this->metadata_.erase(key);
+};
+
+const std::string& Function::metadata(const std::string& key) const {
+    return this->metadata_.at(key);
+};
+
+const std::unordered_map<std::string, std::string>& Function::metadata() const {
+    return this->metadata_;
+};
+
 }  // namespace sdfg
