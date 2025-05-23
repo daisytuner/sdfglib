@@ -32,6 +32,7 @@ symbolic::Expression For2Map::num_iterations(const structured_control_flow::For&
     // addition during the update)
     auto& index_var = for_stmt.indvar();
     auto& update = for_stmt.update();
+    auto& init = for_stmt.init();
 
     bool normalizable_update = symbolic::eq(
         symbolic::subs(update, index_var, symbolic::one()),
@@ -73,6 +74,9 @@ symbolic::Expression For2Map::num_iterations(const structured_control_flow::For&
     if (!is_strict) {
         bound = symbolic::add(bound, symbolic::one());
     }
+
+    // subtract the init value from the bound
+    bound = symbolic::sub(bound, init);
 
     symbolic::Expression num_iterations;
 
@@ -122,15 +126,17 @@ bool For2Map::run_pass(builder::StructuredSDFGBuilder& builder,
                     continue;
                 }
 
+                auto init = for_stmt->init();
+                auto indvar = for_stmt->indvar();
+                auto update = for_stmt->update();
+
                 // Create map
                 auto& map = builder.convert_for(*curr, *for_stmt, num_iterations);
                 auto& root = map.root();
-                auto stride =
-                    symbolic::subs(for_stmt->update(), for_stmt->indvar(), symbolic::zero());
+                auto stride = symbolic::subs(update, indvar, symbolic::zero());
 
-                auto replacement =
-                    symbolic::add(symbolic::mul(map.indvar(), stride), for_stmt->init());
-                root.replace(for_stmt->indvar(), replacement);
+                auto replacement = symbolic::add(symbolic::mul(map.indvar(), stride), init);
+                root.replace(map.indvar(), replacement);
 
                 queue.push_back(&root);
                 applied = true;

@@ -186,7 +186,7 @@ TEST(SymbolicTest, rearrange_simple_condition) {
 
     auto cond = symbolic::Le(symbolic::add(x, symbolic::integer(3)), y);
     auto rearranged = symbolic::rearrange_simple_condition(cond, x);
-    EXPECT_EQ(rearranged->__str__(), "x <= y - 3");
+    EXPECT_TRUE(rearranged->__str__() == "x <= y - 3" || rearranged->__str__() == "x <= -3 + y");
 
     cond = symbolic::Le(y, x);
     rearranged = symbolic::rearrange_simple_condition(cond, x);

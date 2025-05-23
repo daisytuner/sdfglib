@@ -64,9 +64,9 @@ TEST(For2MapTest, Simple) {
     bool found_tasklet = false;
     for (const auto& node : block2->dataflow().nodes()) {
         if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
-            if (access_node->name() == "A") {
+            if (access_node->data() == "A") {
                 found_input = true;
-            } else if (access_node->name() == "B") {
+            } else if (access_node->data() == "B") {
                 found_output = true;
             }
         } else if (auto tasklet_node = dynamic_cast<const data_flow::Tasklet*>(&node)) {
@@ -82,14 +82,18 @@ TEST(For2MapTest, Simple) {
     bool found_memlet_input = false;
     bool found_memlet_output = false;
     for (const auto& edge : block2->dataflow().edges()) {
-        if (edge.src_conn() == "_in" && edge.dst_conn() == "void") {
+        if (edge.src_conn() == "void" && edge.dst_conn() == "_in") {
             found_memlet_input = true;
-            EXPECT_EQ(edge.src().name(), "B");
-            EXPECT_EQ(edge.dst().name(), "A");
+            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.src()) != nullptr);
+            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.src());
+            EXPECT_EQ(access_node->data(), "B");
+            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.dst()) != nullptr);
         } else if (edge.src_conn() == "_out" && edge.dst_conn() == "void") {
             found_memlet_output = true;
-            EXPECT_EQ(edge.src().name(), "A");
-            EXPECT_EQ(edge.dst().name(), "B");
+            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.dst()) != nullptr);
+            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.dst());
+            EXPECT_EQ(access_node->data(), "A");
+            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.src()) != nullptr);
             EXPECT_EQ(edge.subset().size(), 1);
             EXPECT_TRUE(symbolic::eq(edge.subset().at(0), symbolic::symbol("i")));
         }
@@ -158,9 +162,9 @@ TEST(For2MapTest, Strided) {
     bool found_tasklet = false;
     for (const auto& node : block2->dataflow().nodes()) {
         if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
-            if (access_node->name() == "A") {
+            if (access_node->data() == "A") {
                 found_input = true;
-            } else if (access_node->name() == "B") {
+            } else if (access_node->data() == "B") {
                 found_output = true;
             }
         } else if (auto tasklet_node = dynamic_cast<const data_flow::Tasklet*>(&node)) {
@@ -176,14 +180,18 @@ TEST(For2MapTest, Strided) {
     bool found_memlet_input = false;
     bool found_memlet_output = false;
     for (const auto& edge : block2->dataflow().edges()) {
-        if (edge.src_conn() == "_in" && edge.dst_conn() == "void") {
+        if (edge.src_conn() == "void" && edge.dst_conn() == "_in") {
             found_memlet_input = true;
-            EXPECT_EQ(edge.src().name(), "B");
-            EXPECT_EQ(edge.dst().name(), "A");
+            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.src()) != nullptr);
+            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.src());
+            EXPECT_EQ(access_node->data(), "B");
+            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.dst()) != nullptr);
         } else if (edge.src_conn() == "_out" && edge.dst_conn() == "void") {
             found_memlet_output = true;
-            EXPECT_EQ(edge.src().name(), "A");
-            EXPECT_EQ(edge.dst().name(), "B");
+            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.dst()) != nullptr);
+            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.dst());
+            EXPECT_EQ(access_node->data(), "A");
+            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.src()) != nullptr);
             EXPECT_EQ(edge.subset().size(), 1);
             EXPECT_TRUE(symbolic::eq(edge.subset().at(0),
                                      symbolic::mul(symbolic::symbol("n"), symbolic::symbol("i"))));
@@ -250,9 +258,9 @@ TEST(For2MapTest, Init) {
     bool found_tasklet = false;
     for (const auto& node : block2->dataflow().nodes()) {
         if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
-            if (access_node->name() == "A") {
+            if (access_node->data() == "A") {
                 found_input = true;
-            } else if (access_node->name() == "B") {
+            } else if (access_node->data() == "B") {
                 found_output = true;
             }
         } else if (auto tasklet_node = dynamic_cast<const data_flow::Tasklet*>(&node)) {
@@ -268,17 +276,21 @@ TEST(For2MapTest, Init) {
     bool found_memlet_input = false;
     bool found_memlet_output = false;
     for (const auto& edge : block2->dataflow().edges()) {
-        if (edge.src_conn() == "_in" && edge.dst_conn() == "void") {
+        if (edge.src_conn() == "void" && edge.dst_conn() == "_in") {
             found_memlet_input = true;
-            EXPECT_EQ(edge.src().name(), "B");
-            EXPECT_EQ(edge.dst().name(), "A");
+            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.src()) != nullptr);
+            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.src());
+            EXPECT_EQ(access_node->data(), "B");
+            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.dst()) != nullptr);
         } else if (edge.src_conn() == "_out" && edge.dst_conn() == "void") {
             found_memlet_output = true;
-            EXPECT_EQ(edge.src().name(), "A");
-            EXPECT_EQ(edge.dst().name(), "B");
+            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.dst()) != nullptr);
+            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.dst());
+            EXPECT_EQ(access_node->data(), "A");
+            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.src()) != nullptr);
             EXPECT_EQ(edge.subset().size(), 1);
             EXPECT_TRUE(symbolic::eq(edge.subset().at(0),
-                                     symbolic::mul(symbolic::integer(2), symbolic::symbol("i"))));
+                                     symbolic::add(symbolic::integer(2), symbolic::symbol("i"))));
         }
     }
     EXPECT_TRUE(found_memlet_input);
@@ -345,9 +357,9 @@ TEST(For2MapTest, Bound) {
     bool found_tasklet = false;
     for (const auto& node : block2->dataflow().nodes()) {
         if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
-            if (access_node->name() == "A") {
+            if (access_node->data() == "A") {
                 found_input = true;
-            } else if (access_node->name() == "B") {
+            } else if (access_node->data() == "B") {
                 found_output = true;
             }
         } else if (auto tasklet_node = dynamic_cast<const data_flow::Tasklet*>(&node)) {
@@ -363,14 +375,18 @@ TEST(For2MapTest, Bound) {
     bool found_memlet_input = false;
     bool found_memlet_output = false;
     for (const auto& edge : block2->dataflow().edges()) {
-        if (edge.src_conn() == "_in" && edge.dst_conn() == "void") {
+        if (edge.src_conn() == "void" && edge.dst_conn() == "_in") {
             found_memlet_input = true;
-            EXPECT_EQ(edge.src().name(), "B");
-            EXPECT_EQ(edge.dst().name(), "A");
+            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.src()) != nullptr);
+            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.src());
+            EXPECT_EQ(access_node->data(), "B");
+            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.dst()) != nullptr);
         } else if (edge.src_conn() == "_out" && edge.dst_conn() == "void") {
             found_memlet_output = true;
-            EXPECT_EQ(edge.src().name(), "A");
-            EXPECT_EQ(edge.dst().name(), "B");
+            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.dst()) != nullptr);
+            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.dst());
+            EXPECT_EQ(access_node->data(), "A");
+            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.src()) != nullptr);
             EXPECT_EQ(edge.subset().size(), 1);
             EXPECT_TRUE(symbolic::eq(edge.subset().at(0), symbolic::symbol("i")));
         }
