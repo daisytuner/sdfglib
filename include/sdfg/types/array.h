@@ -13,11 +13,12 @@ class Array : public IType {
     DeviceLocation device_location_;
     uint address_space_;
     std::string initializer_;
+    size_t alignment_;
 
    public:
     Array(const IType& element_type, const symbolic::Expression& num_elements,
           DeviceLocation device_location = DeviceLocation::x86, uint address_space = 0,
-          const std::string& initializer = "");
+          const std::string& initializer = "", size_t alignment = 1);
 
     virtual PrimitiveType primitive_type() const override;
 
@@ -26,6 +27,8 @@ class Array : public IType {
     const IType& element_type() const;
 
     const symbolic::Expression& num_elements() const;
+
+    size_t alignment() const;
 
     virtual bool operator==(const IType& other) const override;
 

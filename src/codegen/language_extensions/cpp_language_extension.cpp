@@ -377,6 +377,9 @@ std::string CPPLanguageExtension::declaration(const std::string& name, const typ
         auto& element_type = array_type->element_type();
         val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
                            element_type);
+        if (array_type->alignment() > 1) {
+            val << " __attribute__((aligned(" << array_type->alignment() << ")))";
+        }
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         auto& pointee_type = pointer_type->pointee_type();
         val << declaration("(*" + name + ")", pointee_type);
