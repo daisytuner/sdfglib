@@ -36,8 +36,9 @@ Sequence& For::root() const { return *this->root_; };
 void For::replace(const symbolic::Expression& old_expression,
                   const symbolic::Expression& new_expression) {
     if (symbolic::eq(this->indvar_, old_expression)) {
-        assert(SymEngine::is_a<SymEngine::Symbol>(*new_expression) &&
-               "New Indvar must be a symbol");
+        if (!SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
+            throw InvalidSDFGException("For: New Indvar must be a symbol");
+        }
         this->indvar_ = SymEngine::rcp_static_cast<const SymEngine::Symbol>(new_expression);
     }
     this->init_ = symbolic::subs(this->init_, old_expression, new_expression);

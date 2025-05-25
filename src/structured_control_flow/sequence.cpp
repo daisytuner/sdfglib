@@ -53,8 +53,10 @@ void Sequence::replace(const symbolic::Expression& old_expression,
 
         for (auto& trans : this->transitions_) {
             if (trans->assignments().find(old_symbol) != trans->assignments().end()) {
-                assert(SymEngine::is_a<SymEngine::Symbol>(*new_expression) &&
-                       "Assigments do not support complex expressions on LHS");
+                if (!SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
+                    throw InvalidSDFGException(
+                        "Sequence: Assigments do not support complex expressions on LHS");
+                }
                 auto new_symbol =
                     SymEngine::rcp_static_cast<const SymEngine::Symbol>(new_expression);
                 trans->assignments()[new_symbol] = trans->assignments()[old_symbol];

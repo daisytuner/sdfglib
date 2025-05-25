@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "sdfg/element.h"
+#include "sdfg/exceptions.h"
 #include "sdfg/helpers/helpers.h"
 #include "sdfg/symbolic/analysis.h"
 #include "sdfg/symbolic/assumptions.h"
@@ -27,16 +28,6 @@
 using json = nlohmann::json;
 
 namespace sdfg {
-
-class InvalidSDFGException : public std::exception {
-   private:
-    std::string message_;
-
-   public:
-    InvalidSDFGException(const std::string& message) : message_(message) {}
-
-    const char* what() const noexcept override { return message_.c_str(); }
-};
 
 namespace builder {
 class FunctionBuilder;

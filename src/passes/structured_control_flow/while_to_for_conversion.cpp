@@ -230,7 +230,7 @@ void WhileToForConversion::apply(builder::StructuredSDFGBuilder& builder,
                 }
             }
         } else {
-            assert(false);
+            throw InvalidSDFGException("WhileToForConversion: Expected Transition or Memlet");
         }
     }
 
