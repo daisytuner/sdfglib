@@ -505,16 +505,22 @@ void Users::run(analysis::AnalysisManager& analysis_manager) {
     // Require a single source
     for (auto& entry : this->users_) {
         if (boost::in_degree(entry.first, this->graph_) == 0) {
-            assert(this->source_ == nullptr);
+            if (this->source_ != nullptr) {
+                throw InvalidSDFGException("Users Analysis: Non-unique source node");
+            }
             this->source_ = entry.second.get();
         }
     }
-    assert(this->source_ != nullptr);
+    if (this->source_ == nullptr) {
+        throw InvalidSDFGException("Users Analysis: No source node");
+    }
 
     // Sink may be empty
     for (auto& entry : this->users_) {
         if (boost::out_degree(entry.first, this->graph_) == 0) {
-            assert(this->sink_ == nullptr);
+            if (this->sink_ != nullptr) {
+                throw InvalidSDFGException("Users Analysis: Non-unique sink node");
+            }
             this->sink_ = entry.second.get();
         }
     }
