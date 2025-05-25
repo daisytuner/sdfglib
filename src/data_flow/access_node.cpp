@@ -24,8 +24,9 @@ void AccessNode::replace(const symbolic::Expression& old_expression,
     if (SymEngine::is_a<SymEngine::Symbol>(*old_expression)) {
         auto old_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(old_expression);
         if (this->data_ == old_symbol->get_name()) {
-            assert(SymEngine::is_a<SymEngine::Symbol>(*new_expression) &&
-                   "Access Nodes do not support complex expressions");
+            if (!SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
+                throw InvalidSDFGException("Access Nodes do not support complex expressions");
+            }
             auto new_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(new_expression);
             this->data_ = new_symbol->get_name();
         }

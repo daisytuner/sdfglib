@@ -42,7 +42,9 @@ DebugInfo DebugInfo::merge(const DebugInfo& left, const DebugInfo& right) {
     if (!right.has()) {
         return left;
     }
-    assert(left.filename() == right.filename());
+    if (left.filename() != right.filename()) {
+        throw InvalidSDFGException("DebugInfo: Filenames do not match");
+    }
 
     size_t start_line = 0;
     size_t start_column = 0;

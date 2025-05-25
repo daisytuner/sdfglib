@@ -77,7 +77,9 @@ std::unordered_map<const control_flow::State*, const control_flow::State*> SDFG:
 std::unordered_map<const control_flow::State*, const control_flow::State*>
 SDFG::post_dominator_tree() const {
     auto terminal_state = this->terminal_states();
-    assert(std::distance(terminal_state.begin(), terminal_state.end()) == 1);
+    if (std::distance(terminal_state.begin(), terminal_state.end()) != 1) {
+        throw InvalidSDFGException("SDFG: Multiple terminal states");
+    }
 
     auto pdom_tree_ = graph::post_dominator_tree(this->graph_, (*terminal_state.begin()).vertex());
 

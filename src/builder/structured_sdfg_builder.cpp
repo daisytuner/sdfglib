@@ -125,8 +125,10 @@ void StructuredSDFGBuilder::traverse_with_loop_detection(
                 }
             }
         }
-        assert(exit_states.size() == 1 &&
-               "Degenerated structured control flow: Loop body must have exactly one exit state");
+        if (exit_states.size() != 1) {
+            throw InvalidSDFGException(
+                "Degenerated structured control flow: Loop body must have exactly one exit state");
+        }
         const control_flow::State* exit_state = *exit_states.begin();
 
         for (auto& edge : breaks) {
@@ -192,8 +194,10 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
         // Case 2: Transition
         if (out_degree == 1) {
             auto& oedge = *out_edges.begin();
-            assert(oedge.is_unconditional() &&
-                   "Degenerated structured control flow: Non-deterministic transition");
+            if (!oedge.is_unconditional()) {
+                throw InvalidSDFGException(
+                    "Degenerated structured control flow: Non-deterministic transition");
+            }
             this->add_block(scope, curr->dataflow(), oedge.assignments(), curr->debug_info());
 
             if (continues.find(&oedge) != continues.end()) {
@@ -344,7 +348,9 @@ std::pair<Sequence&, Transition&> StructuredSDFGBuilder::add_sequence_before(
             break;
         }
     }
-    assert(index > -1);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Block not found");
+    }
 
     parent.children_.insert(
         parent.children_.begin() + index,
@@ -1001,7 +1007,9 @@ void StructuredSDFGBuilder::clear_node(structured_control_flow::Block& block,
 void StructuredSDFGBuilder::clear_node(structured_control_flow::Block& block,
                                        const data_flow::AccessNode& node) {
     auto& graph = block.dataflow();
-    assert(graph.out_degree(node) == 0);
+    if (graph.out_degree(node) != 0) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Access node has outgoing edges");
+    }
 
     std::list<const data_flow::Memlet*> tmp;
     std::list<const data_flow::DataFlowNode*> queue = {&node};
@@ -1090,7 +1098,10 @@ data_flow::AccessNode& StructuredSDFGBuilder::symbolic_expression_to_dataflow(
         return output_node;
     } else if (SymEngine::is_a<SymEngine::Or>(*expr)) {
         auto or_expr = SymEngine::rcp_static_cast<const SymEngine::Or>(expr);
-        assert(or_expr->get_container().size() == 2);
+        if (or_expr->get_container().size() != 2) {
+            throw InvalidSDFGException(
+                "StructuredSDFGBuilder: Or expression must have exactly two arguments");
+        }
 
         std::vector<data_flow::AccessNode*> input_nodes;
         std::vector<std::pair<std::string, types::Scalar>> input_types;
@@ -1118,7 +1129,10 @@ data_flow::AccessNode& StructuredSDFGBuilder::symbolic_expression_to_dataflow(
         return output_node;
     } else if (SymEngine::is_a<SymEngine::And>(*expr)) {
         auto and_expr = SymEngine::rcp_static_cast<const SymEngine::And>(expr);
-        assert(and_expr->get_container().size() == 2);
+        if (and_expr->get_container().size() != 2) {
+            throw InvalidSDFGException(
+                "StructuredSDFGBuilder: And expression must have exactly two arguments");
+        }
 
         std::vector<data_flow::AccessNode*> input_nodes;
         std::vector<std::pair<std::string, types::Scalar>> input_types;

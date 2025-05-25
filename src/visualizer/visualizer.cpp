@@ -357,7 +357,7 @@ constexpr const char* code_to_string(data_flow::TaskletCode c) {
         case data_flow::TaskletCode::tanhl:
             return "tanhl";
     };
-    assert(false);
+    throw InvalidSDFGException("code_to_string: Unsupported tasklet code");
 };
 
 std::string Visualizer::expression(const std::string expr) {
@@ -531,7 +531,7 @@ void Visualizer::visualizeSubset(Function const& function, types::IType const& t
             this->visualizeSubset(function, member_type, element_subset);
         }
     } else {
-        assert(false);
+        throw InvalidSDFGException("visualizeSubset: Unsupported type");
     }
 }
 

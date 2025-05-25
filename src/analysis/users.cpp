@@ -532,16 +532,22 @@ void Users::run(analysis::AnalysisManager& analysis_manager) {
     // Require a single source
     for (auto& entry : this->users_) {
         if (boost::in_degree(entry.first, this->graph_) == 0) {
-            assert(this->source_ == nullptr);
+            if (this->source_ != nullptr) {
+                throw InvalidSDFGException("Users Analysis: Non-unique source node");
+            }
             this->source_ = entry.second.get();
         }
     }
-    assert(this->source_ != nullptr);
+    if (this->source_ == nullptr) {
+        throw InvalidSDFGException("Users Analysis: No source node");
+    }
 
     // Sink may be empty
     for (auto& entry : this->users_) {
         if (boost::out_degree(entry.first, this->graph_) == 0) {
-            assert(this->sink_ == nullptr);
+            if (this->sink_ != nullptr) {
+                throw InvalidSDFGException("Users Analysis: Non-unique sink node");
+            }
             this->sink_ = entry.second.get();
         }
     }
@@ -736,7 +742,9 @@ bool Users::post_dominates(User& user1, User& user) {
 };
 
 const std::unordered_set<User*> Users::all_uses_between(User& user1, User& user) {
-    assert(this->dominates(user1, user));
+    if (!this->dominates(user1, user)) {
+        throw InvalidSDFGException("Users Analysis: User1 does not dominate user");
+    }
 
     std::unordered_set<User*> uses;
     std::unordered_set<User*> visited;
@@ -919,8 +927,12 @@ std::unordered_set<std::string> Users::locals(StructuredSDFG& sdfg,
 UsersView::UsersView(Users& users, structured_control_flow::ControlFlowNode& node) : users_(users) {
     auto& entry = users.entries_.at(&node);
     auto& exit = users.exits_.at(&node);
-    assert(users.dominates(*entry, *exit));
-    assert(users.post_dominates(*exit, *entry));
+    if (!users.dominates(*entry, *exit)) {
+        throw InvalidSDFGException("Users Analysis: Entry does not dominate exit");
+    }
+    if (!users.post_dominates(*exit, *entry)) {
+        throw InvalidSDFGException("Users Analysis: Exit does not post-dominate entry");
+    }
 
     this->entry_ = entry;
     this->exit_ = exit;
@@ -1117,7 +1129,9 @@ bool UsersView::post_dominates(User& user1, User& user) {
 std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user) {
     assert(this->sub_users_.find(&user1) != this->sub_users_.end());
     assert(this->sub_users_.find(&user) != this->sub_users_.end());
-    assert(this->dominates(user1, user));
+    if (!this->dominates(user1, user)) {
+        throw InvalidSDFGException("Users Analysis: User1 does not dominate user");
+    }
     bool post_dominates = this->post_dominates(user, user1);
 
     std::unordered_set<User*> uses;
