@@ -348,6 +348,8 @@ std::string CPPLanguageExtension::primitive_type(const types::PrimitiveType prim
             return "int";
         case types::PrimitiveType::Int64:
             return "long long";
+        case types::PrimitiveType::Int128:
+            return "__int128";
         case types::PrimitiveType::UInt8:
             return "char";
         case types::PrimitiveType::UInt16:
@@ -356,6 +358,8 @@ std::string CPPLanguageExtension::primitive_type(const types::PrimitiveType prim
             return "unsigned int";
         case types::PrimitiveType::UInt64:
             return "unsigned long long";
+        case types::PrimitiveType::UInt128:
+            return "unsigned __int128";
         case types::PrimitiveType::Half:
             return "__fp16";
         case types::PrimitiveType::BFloat:
@@ -647,7 +651,7 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::Min& x) {
 
         s << ")";
     }
-    
+
     str_ = s.str();
 };
 
@@ -670,12 +674,13 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::Max& x) {
 
         s << ")";
     }
-    
+
     str_ = s.str();
 };
 
-void CPPSymbolicPrinter::_print_pow(std::ostringstream &o, const SymEngine::RCP<const SymEngine::Basic> &a,
-                                  const SymEngine::RCP<const SymEngine::Basic> &b) {
+void CPPSymbolicPrinter::_print_pow(std::ostringstream& o,
+                                    const SymEngine::RCP<const SymEngine::Basic>& a,
+                                    const SymEngine::RCP<const SymEngine::Basic>& b) {
     if (SymEngine::eq(*a, *SymEngine::E)) {
         o << "exp(" << apply(b) << ")";
     } else if (SymEngine::eq(*b, *SymEngine::rational(1, 2))) {

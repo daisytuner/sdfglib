@@ -348,6 +348,8 @@ std::string CLanguageExtension::primitive_type(const types::PrimitiveType prim_t
             return "int";
         case types::PrimitiveType::Int64:
             return "long long";
+        case types::PrimitiveType::Int128:
+            return "__int128";
         case types::PrimitiveType::UInt8:
             return "char";
         case types::PrimitiveType::UInt16:
@@ -356,6 +358,8 @@ std::string CLanguageExtension::primitive_type(const types::PrimitiveType prim_t
             return "unsigned int";
         case types::PrimitiveType::UInt64:
             return "unsigned long long";
+        case types::PrimitiveType::UInt128:
+            return "unsigned __int128";
         case types::PrimitiveType::Half:
             return "__fp16";
         case types::PrimitiveType::BFloat:
@@ -392,7 +396,7 @@ std::string CLanguageExtension::declaration(const std::string& name, const types
         }
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         auto& pointee_type = pointer_type->pointee_type();
-         val << declaration("(*" + name + ")", pointee_type);
+        val << declaration("(*" + name + ")", pointee_type);
     } else if (auto ref_type = dynamic_cast<const Reference*>(&type)) {
         val << declaration("&" + name, ref_type->reference_type());
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
@@ -648,7 +652,7 @@ void CSymbolicPrinter::bvisit(const SymEngine::Min& x) {
 
         s << ")";
     }
-    
+
     str_ = s.str();
 };
 
@@ -671,12 +675,13 @@ void CSymbolicPrinter::bvisit(const SymEngine::Max& x) {
 
         s << ")";
     }
-    
+
     str_ = s.str();
 };
 
-void CSymbolicPrinter::_print_pow(std::ostringstream &o, const SymEngine::RCP<const SymEngine::Basic> &a,
-                                  const SymEngine::RCP<const SymEngine::Basic> &b) {
+void CSymbolicPrinter::_print_pow(std::ostringstream& o,
+                                  const SymEngine::RCP<const SymEngine::Basic>& a,
+                                  const SymEngine::RCP<const SymEngine::Basic>& b) {
     if (SymEngine::eq(*a, *SymEngine::E)) {
         o << "exp(" << apply(b) << ")";
     } else if (SymEngine::eq(*b, *SymEngine::rational(1, 2))) {
