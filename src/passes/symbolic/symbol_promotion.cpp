@@ -193,7 +193,7 @@ void SymbolPromotion::apply(builder::StructuredSDFGBuilder& builder,
             break;
         }
         default: {
-            assert(false);
+            throw InvalidSDFGException("SymbolPromotion: Invalid tasklet code");
         }
     }
 

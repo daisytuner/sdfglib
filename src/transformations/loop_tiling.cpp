@@ -12,7 +12,9 @@ namespace transformations {
 LoopTiling::LoopTiling(structured_control_flow::Sequence& parent,
                        structured_control_flow::For& loop, size_t tile_size)
     : parent_(parent), loop_(loop), tile_size_(tile_size) {
-    assert(tile_size > 1);
+    if (tile_size <= 1) {
+        throw InvalidSDFGException("LoopTiling: Tile size must be greater than 1");
+    }
 };
 
 std::string LoopTiling::name() { return "LoopTiling"; };

@@ -1,8 +1,9 @@
 #pragma once
 
-#include "sdfg/data_flow/code_node.h"
+#include "sdfg/exceptions.h"
 #include "sdfg/graph/graph.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/data_flow/code_node.h"
 
 namespace sdfg {
 
@@ -517,7 +518,7 @@ constexpr size_t arity(TaskletCode c) {
         case TaskletCode::tanhl:
             return 1;
     };
-    assert(false);
+    throw InvalidSDFGException("Invalid tasklet code");
 };
 
 constexpr bool is_infix(TaskletCode c) {
@@ -552,7 +553,7 @@ constexpr bool is_infix(TaskletCode c) {
         default:
             return false;
     }
-    assert(false);
+    throw InvalidSDFGException("Invalid tasklet code");
 };
 
 class Tasklet : public CodeNode {
