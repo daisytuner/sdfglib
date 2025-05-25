@@ -169,6 +169,10 @@ std::tuple<control_flow::State&, control_flow::State&, control_flow::State&> SDF
 
 data_flow::AccessNode& SDFGBuilder::add_access(control_flow::State& state, const std::string& data,
                                                const DebugInfo& debug_info) {
+    if (!this->subject().exists(data)) {
+        throw InvalidSDFGException("Data does not exist in SDFG: " + data);
+    }
+
     auto& dataflow = state.dataflow();
 
     auto vertex = boost::add_vertex(dataflow.graph_);
