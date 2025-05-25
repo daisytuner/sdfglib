@@ -356,10 +356,20 @@ std::string CLanguageExtension::primitive_type(const types::PrimitiveType prim_t
             return "unsigned int";
         case types::PrimitiveType::UInt64:
             return "unsigned long long";
+        case types::PrimitiveType::Half:
+            return "__fp16";
+        case types::PrimitiveType::BFloat:
+            return "__bf16";
         case types::PrimitiveType::Float:
             return "float";
         case types::PrimitiveType::Double:
             return "double";
+        case types::PrimitiveType::X86_FP80:
+            return "__float80";
+        case types::PrimitiveType::FP128:
+            return "__float128";
+        case types::PrimitiveType::PPC_FP128:
+            return "__float128";
     }
 
     throw std::runtime_error("Unknown primitive type");
