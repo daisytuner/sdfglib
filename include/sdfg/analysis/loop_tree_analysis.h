@@ -8,13 +8,12 @@ namespace analysis {
 class LoopTreeAnalysis : public Analysis {
    private:
     std::unordered_map<structured_control_flow::ControlFlowNode*,
-                       structured_control_flow::ControlFlowNode*> loop_tree_;
+                       structured_control_flow::ControlFlowNode*>
+        loop_tree_;
 
-    void run(
-      structured_control_flow::ControlFlowNode& scope,
-      structured_control_flow::ControlFlowNode* parent_loop
-    );
- 
+    void run(structured_control_flow::ControlFlowNode& scope,
+             structured_control_flow::ControlFlowNode* parent_loop);
+
    protected:
     void run(analysis::AnalysisManager& analysis_manager) override;
 
@@ -22,11 +21,13 @@ class LoopTreeAnalysis : public Analysis {
     LoopTreeAnalysis(StructuredSDFG& sdfg);
 
     const std::unordered_map<structured_control_flow::ControlFlowNode*,
-                       structured_control_flow::ControlFlowNode*>& loop_tree() const;
+                             structured_control_flow::ControlFlowNode*>&
+    loop_tree() const;
 
-   structured_control_flow::ControlFlowNode* parent_loop(structured_control_flow::ControlFlowNode* loop) const;
+    structured_control_flow::ControlFlowNode* parent_loop(
+        structured_control_flow::ControlFlowNode* loop) const;
 
-   const std::vector<structured_control_flow::ControlFlowNode*> outermost_loops() const;
+    const std::vector<structured_control_flow::ControlFlowNode*> outermost_loops() const;
 };
 
 }  // namespace analysis

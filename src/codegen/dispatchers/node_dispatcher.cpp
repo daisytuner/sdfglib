@@ -4,11 +4,12 @@ namespace sdfg {
 namespace codegen {
 
 NodeDispatcher::NodeDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                               structured_control_flow::ControlFlowNode& node, Instrumentation& instrumentation)
+                               structured_control_flow::ControlFlowNode& node,
+                               Instrumentation& instrumentation)
     : node_(node),
       language_extension_(language_extension),
       schedule_(schedule),
-      instrumentation_(instrumentation){};
+      instrumentation_(instrumentation) {};
 
 bool NodeDispatcher::begin_node(PrettyPrinter& stream) {
     auto& sdfg = schedule_.sdfg();

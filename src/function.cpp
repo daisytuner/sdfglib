@@ -5,7 +5,7 @@ using json = nlohmann::json;
 namespace sdfg {
 
 Function::Function(const std::string& name)
-    : name_(name){
+    : name_(name) {
 
       };
 
@@ -81,9 +81,7 @@ void Function::add_metadata(const std::string& key, const std::string& value) {
     this->metadata_[key] = value;
 };
 
-void Function::remove_metadata(const std::string& key) {
-    this->metadata_.erase(key);
-};
+void Function::remove_metadata(const std::string& key) { this->metadata_.erase(key); };
 
 const std::string& Function::metadata(const std::string& key) const {
     return this->metadata_.at(key);

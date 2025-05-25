@@ -4,7 +4,7 @@ namespace sdfg {
 namespace passes {
 
 DeadReferenceElimination::DeadReferenceElimination()
-    : Pass(){
+    : Pass() {
 
       };
 

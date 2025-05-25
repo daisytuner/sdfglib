@@ -4,9 +4,9 @@ namespace sdfg {
 namespace codegen {
 
 WhileDispatcher::WhileDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                                 structured_control_flow::While& node, Instrumentation& instrumentation)
-    : NodeDispatcher(language_extension, schedule, node, instrumentation),
-      node_(node){
+                                 structured_control_flow::While& node,
+                                 Instrumentation& instrumentation)
+    : NodeDispatcher(language_extension, schedule, node, instrumentation), node_(node) {
 
       };
 
@@ -24,9 +24,9 @@ void WhileDispatcher::dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& g
 };
 
 BreakDispatcher::BreakDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                                 structured_control_flow::Break& node, Instrumentation& instrumentation)
-    : NodeDispatcher(language_extension, schedule, node, instrumentation),
-      node_(node){
+                                 structured_control_flow::Break& node,
+                                 Instrumentation& instrumentation)
+    : NodeDispatcher(language_extension, schedule, node, instrumentation), node_(node) {
 
       };
 
@@ -36,9 +36,9 @@ void BreakDispatcher::dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& g
 };
 
 ContinueDispatcher::ContinueDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                                       structured_control_flow::Continue& node, Instrumentation& instrumentation)
-    : NodeDispatcher(language_extension, schedule, node, instrumentation),
-      node_(node){
+                                       structured_control_flow::Continue& node,
+                                       Instrumentation& instrumentation)
+    : NodeDispatcher(language_extension, schedule, node, instrumentation), node_(node) {
 
       };
 
@@ -48,9 +48,9 @@ void ContinueDispatcher::dispatch_node(PrettyPrinter& main_stream, PrettyPrinter
 };
 
 ReturnDispatcher::ReturnDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                                   structured_control_flow::Return& node, Instrumentation& instrumentation)
-    : NodeDispatcher(language_extension, schedule, node, instrumentation),
-      node_(node){
+                                   structured_control_flow::Return& node,
+                                   Instrumentation& instrumentation)
+    : NodeDispatcher(language_extension, schedule, node, instrumentation), node_(node) {
 
       };
 

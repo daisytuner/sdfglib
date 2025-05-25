@@ -7,8 +7,7 @@
 namespace sdfg {
 
 SDFG::SDFG(const std::string& name)
-    : Function(name),
-      start_state_(nullptr){
+    : Function(name), start_state_(nullptr) {
 
       };
 

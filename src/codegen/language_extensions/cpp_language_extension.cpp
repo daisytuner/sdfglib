@@ -647,7 +647,7 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::Min& x) {
 
         s << ")";
     }
-    
+
     str_ = s.str();
 };
 
@@ -670,12 +670,13 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::Max& x) {
 
         s << ")";
     }
-    
+
     str_ = s.str();
 };
 
-void CPPSymbolicPrinter::_print_pow(std::ostringstream &o, const SymEngine::RCP<const SymEngine::Basic> &a,
-                                  const SymEngine::RCP<const SymEngine::Basic> &b) {
+void CPPSymbolicPrinter::_print_pow(std::ostringstream& o,
+                                    const SymEngine::RCP<const SymEngine::Basic>& a,
+                                    const SymEngine::RCP<const SymEngine::Basic>& b) {
     if (SymEngine::eq(*a, *SymEngine::E)) {
         o << "exp(" << apply(b) << ")";
     } else if (SymEngine::eq(*b, *SymEngine::rational(1, 2))) {

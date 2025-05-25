@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/bimap.hpp>
+#include <boost/functional/hash.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/connected_components.hpp>
 #include <boost/graph/copy.hpp>
@@ -10,7 +11,6 @@
 #include <boost/graph/reverse_graph.hpp>
 #include <boost/graph/strong_components.hpp>
 #include <boost/graph/topological_sort.hpp>
-#include <boost/functional/hash.hpp>
 #include <list>
 #include <ranges>
 #include <set>
@@ -38,7 +38,7 @@ struct DFSVisitor : boost::default_dfs_visitor {
     std::list<Edge>& back_edges_;
 
     DFSVisitor(std::list<Edge>& back_edges, std::list<Vertex>& nodes)
-        : nodes_(nodes), back_edges_(back_edges){};
+        : nodes_(nodes), back_edges_(back_edges) {};
 
     void discover_vertex(Vertex v, const Graph& g) { nodes_.push_back(v); };
 

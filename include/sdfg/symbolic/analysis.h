@@ -7,12 +7,11 @@ namespace sdfg {
 namespace symbolic {
 
 class CNFException : public std::exception {
-public:
+   public:
     CNFException(const std::string& message) : message_(message) {}
-    const char* what() const noexcept override {
-        return message_.c_str();
-    }
-private:
+    const char* what() const noexcept override { return message_.c_str(); }
+
+   private:
     std::string message_;
 };
 
@@ -21,7 +20,8 @@ enum Sign { POSITIVE, NEGATIVE, NONE };
 typedef SymEngine::RCP<const SymEngine::UExprPoly> Polynomial;
 typedef SymEngine::RCP<const SymEngine::MExprPoly> MultiPolynomial;
 typedef std::pair<Expression, Expression> Affine;
-typedef std::unordered_map<Symbol, int, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq> AffineCoefficients;
+typedef std::unordered_map<Symbol, int, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq>
+    AffineCoefficients;
 
 Polynomial polynomial(const Expression& expr, const Symbol& symbol);
 

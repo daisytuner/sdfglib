@@ -12,7 +12,7 @@ namespace sdfg {
 namespace passes {
 
 TrivialArrayElimination::TrivialArrayElimination()
-    : Pass(){
+    : Pass() {
 
       };
 

@@ -4,7 +4,7 @@ namespace sdfg {
 namespace passes {
 
 AllocationInference::AllocationInference()
-    : Pass(){
+    : Pass() {
 
       };
 
