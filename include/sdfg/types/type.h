@@ -5,8 +5,8 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
-#include <type_traits>
 #include <string_view>
+#include <type_traits>
 
 #include "sdfg/symbolic/symbolic.h"
 

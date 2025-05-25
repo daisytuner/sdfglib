@@ -14,7 +14,7 @@ namespace sdfg {
 namespace passes {
 
 RedundantArrayElimination::RedundantArrayElimination()
-    : Pass(){
+    : Pass() {
 
       };
 

@@ -4,10 +4,9 @@
 #include <sstream>
 #include <string>
 
+#include "sdfg/codegen/instrumentation/instrumentation_strategy.h"
 #include "sdfg/codegen/utils.h"
 #include "sdfg/conditional_schedule.h"
-
-#include "sdfg/codegen/instrumentation/instrumentation_strategy.h"
 
 namespace sdfg {
 namespace codegen {
@@ -43,7 +42,7 @@ class CodeGenerator {
 
    public:
     CodeGenerator(ConditionalSchedule& schedule, InstrumentationStrategy instrumentation_strategy)
-        : schedule_(schedule), instrumentation_strategy_(instrumentation_strategy){};
+        : schedule_(schedule), instrumentation_strategy_(instrumentation_strategy) {};
 
     virtual ~CodeGenerator() = default;
 

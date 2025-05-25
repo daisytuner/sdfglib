@@ -4,7 +4,7 @@ namespace sdfg {
 namespace passes {
 
 SequenceFusion::SequenceFusion()
-    : Pass(){
+    : Pass() {
 
       };
 

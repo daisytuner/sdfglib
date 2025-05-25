@@ -248,7 +248,7 @@ void WhileToForConversion::apply(builder::StructuredSDFGBuilder& builder,
 };
 
 WhileToForConversion::WhileToForConversion()
-    : Pass(){
+    : Pass() {
 
       };
 

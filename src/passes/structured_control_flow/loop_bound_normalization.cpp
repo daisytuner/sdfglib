@@ -57,7 +57,7 @@ bool LoopBoundNormalization::apply(builder::StructuredSDFGBuilder& builder,
 };
 
 LoopBoundNormalization::LoopBoundNormalization()
-    : Pass(){
+    : Pass() {
 
       };
 

@@ -205,7 +205,7 @@ void SymbolPromotion::apply(builder::StructuredSDFGBuilder& builder,
 };
 
 SymbolPromotion::SymbolPromotion()
-    : Pass(){
+    : Pass() {
 
       };
 

@@ -4,7 +4,7 @@ namespace sdfg {
 namespace passes {
 
 CommonAssignmentElimination::CommonAssignmentElimination()
-    : Pass(){
+    : Pass() {
 
       };
 

@@ -3,18 +3,14 @@
 namespace sdfg {
 namespace codegen {
 
-ForDispatcher::ForDispatcher(LanguageExtension& language_extension,
-                                                 Schedule& schedule,
-                                                 structured_control_flow::For& node,
-                                                 Instrumentation& instrumentation)
-    : NodeDispatcher(language_extension, schedule, node, instrumentation),
-      node_(node){
+ForDispatcher::ForDispatcher(LanguageExtension& language_extension, Schedule& schedule,
+                             structured_control_flow::For& node, Instrumentation& instrumentation)
+    : NodeDispatcher(language_extension, schedule, node, instrumentation), node_(node) {
 
       };
 
-void ForDispatcher::dispatch_node(PrettyPrinter& main_stream,
-                                            PrettyPrinter& globals_stream,
-                                            PrettyPrinter& library_stream) {
+void ForDispatcher::dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
+                                  PrettyPrinter& library_stream) {
     main_stream << "for";
     main_stream << "(";
     main_stream << node_.indvar()->get_name();

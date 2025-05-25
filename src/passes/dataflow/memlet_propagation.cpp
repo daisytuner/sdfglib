@@ -4,7 +4,7 @@ namespace sdfg {
 namespace passes {
 
 ForwardMemletPropagation::ForwardMemletPropagation()
-    : Pass(){
+    : Pass() {
 
       };
 
@@ -204,7 +204,7 @@ bool ForwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
 };
 
 BackwardMemletPropagation::BackwardMemletPropagation()
-    : Pass(){
+    : Pass() {
 
       };
 

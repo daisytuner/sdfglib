@@ -3,12 +3,7 @@
 namespace sdfg {
 
 DebugInfo::DebugInfo()
-    : filename_(),
-      start_line_(0),
-      start_column_(0),
-      end_line_(0),
-      end_column_(0),
-      has_(false) {
+    : filename_(), start_line_(0), start_column_(0), end_line_(0), end_column_(0), has_(false) {
 
       };
 
@@ -70,8 +65,7 @@ DebugInfo DebugInfo::merge(const DebugInfo& left, const DebugInfo& right) {
 };
 
 Element::Element(size_t element_id, const DebugInfo& debug_info)
-    : element_id_(element_id),
-      debug_info_(debug_info){
+    : element_id_(element_id), debug_info_(debug_info) {
 
       };
 

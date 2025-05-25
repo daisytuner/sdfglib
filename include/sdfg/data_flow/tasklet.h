@@ -1,9 +1,9 @@
 #pragma once
 
+#include "sdfg/data_flow/code_node.h"
 #include "sdfg/exceptions.h"
 #include "sdfg/graph/graph.h"
 #include "sdfg/symbolic/symbolic.h"
-#include "sdfg/data_flow/code_node.h"
 
 namespace sdfg {
 

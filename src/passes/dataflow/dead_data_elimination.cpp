@@ -5,7 +5,7 @@
 namespace sdfg {
 namespace passes {
 
-DeadDataElimination::DeadDataElimination() : Pass(){};
+DeadDataElimination::DeadDataElimination() : Pass() {};
 
 std::string DeadDataElimination::name() { return "DeadDataElimination"; };
 

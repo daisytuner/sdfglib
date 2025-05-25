@@ -6,7 +6,7 @@ namespace sdfg {
 namespace passes {
 
 ForwardConditionPropagation::ForwardConditionPropagation()
-    : Pass(){
+    : Pass() {
 
       };
 
@@ -168,7 +168,7 @@ bool BackwardConditionPropagation::eliminate_condition(builder::StructuredSDFGBu
 };
 
 BackwardConditionPropagation::BackwardConditionPropagation()
-    : Pass(){
+    : Pass() {
 
       };
 

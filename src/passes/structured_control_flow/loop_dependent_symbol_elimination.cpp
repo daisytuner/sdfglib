@@ -92,7 +92,7 @@ bool LoopDependentSymbolElimination::eliminate_symbols(
 };
 
 LoopDependentSymbolElimination::LoopDependentSymbolElimination()
-    : Pass(){
+    : Pass() {
 
       };
 

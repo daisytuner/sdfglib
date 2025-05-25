@@ -4,7 +4,7 @@ namespace sdfg {
 namespace passes {
 
 ViewPropagation::ViewPropagation()
-    : Pass(){
+    : Pass() {
 
       };
 

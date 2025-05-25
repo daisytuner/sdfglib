@@ -26,9 +26,7 @@ namespace builder {
 
 class UnstructuredControlFlowException : public std::exception {
    public:
-    const char* what() const noexcept override {
-        return "Unstructured control flow detected";
-    }
+    const char* what() const noexcept override { return "Unstructured control flow detected"; }
 };
 
 class StructuredSDFGBuilder : public FunctionBuilder {
@@ -40,32 +38,24 @@ class StructuredSDFGBuilder : public FunctionBuilder {
 
     const control_flow::State* find_end_of_if_else(
         const SDFG& sdfg, const State* current, std::vector<const InterstateEdge*>& out_edges,
-        const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
-    );
+        const std::unordered_map<const control_flow::State*, const control_flow::State*>&
+            pdom_tree);
 
     void traverse(const SDFG& sdfg);
 
     void traverse_with_loop_detection(
-        const SDFG& sdfg,
-        Sequence& scope,
-        const State* current,
-        const State* end,
+        const SDFG& sdfg, Sequence& scope, const State* current, const State* end,
         const std::unordered_set<const InterstateEdge*>& continues,
         const std::unordered_set<const InterstateEdge*>& breaks,
         const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree,
-        std::unordered_set<const control_flow::State*>& visited
-    );
+        std::unordered_set<const control_flow::State*>& visited);
 
     void traverse_without_loop_detection(
-        const SDFG& sdfg,
-        Sequence& scope,
-        const State* current,
-        const State* end,
+        const SDFG& sdfg, Sequence& scope, const State* current, const State* end,
         const std::unordered_set<const InterstateEdge*>& continues,
         const std::unordered_set<const InterstateEdge*>& breaks,
         const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree,
-        std::unordered_set<const control_flow::State*>& visited
-    );
+        std::unordered_set<const control_flow::State*>& visited);
 
    protected:
     Function& function() const override;
@@ -165,18 +155,14 @@ class StructuredSDFGBuilder : public FunctionBuilder {
         const symbolic::Expression& threadIdx_y_init = symbolic::symbol("threadIdx.y"),
         const symbolic::Expression& threadIdx_z_init = symbolic::symbol("threadIdx.z"));
 
-    Continue& add_continue(Sequence& parent,
+    Continue& add_continue(Sequence& parent, const DebugInfo& debug_info = DebugInfo());
+
+    Continue& add_continue(Sequence& parent, const sdfg::symbolic::Assignments& assignments,
                            const DebugInfo& debug_info = DebugInfo());
 
-    Continue& add_continue(Sequence& parent,
-                           const sdfg::symbolic::Assignments& assignments,
-                           const DebugInfo& debug_info = DebugInfo());
+    Break& add_break(Sequence& parent, const DebugInfo& debug_info = DebugInfo());
 
-    Break& add_break(Sequence& parent,
-                     const DebugInfo& debug_info = DebugInfo());
-
-    Break& add_break(Sequence& parent,
-                     const sdfg::symbolic::Assignments& assignments,
+    Break& add_break(Sequence& parent, const sdfg::symbolic::Assignments& assignments,
                      const DebugInfo& debug_info = DebugInfo());
 
     Return& add_return(Sequence& parent, const sdfg::symbolic::Assignments& assignments = {},

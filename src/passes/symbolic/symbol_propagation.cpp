@@ -6,7 +6,7 @@ namespace sdfg {
 namespace passes {
 
 SymbolPropagation::SymbolPropagation()
-    : Pass(){
+    : Pass() {
 
       };
 

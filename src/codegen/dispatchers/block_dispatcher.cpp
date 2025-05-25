@@ -156,9 +156,7 @@ void DataFlowDispatcher::dispatch_library_node(PrettyPrinter& stream,
 
 DataFlowDispatcher::DataFlowDispatcher(LanguageExtension& language_extension, const Function& sdfg,
                                        const data_flow::DataFlowGraph& data_flow_graph)
-    : language_extension_(language_extension),
-      function_(sdfg),
-      data_flow_graph_(data_flow_graph){
+    : language_extension_(language_extension), function_(sdfg), data_flow_graph_(data_flow_graph) {
 
       };
 
@@ -181,9 +179,9 @@ void DataFlowDispatcher::dispatch(PrettyPrinter& stream) {
 };
 
 BlockDispatcher::BlockDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                                 structured_control_flow::Block& node, Instrumentation& instrumentation)
-    : NodeDispatcher(language_extension, schedule, node, instrumentation),
-      node_(node){
+                                 structured_control_flow::Block& node,
+                                 Instrumentation& instrumentation)
+    : NodeDispatcher(language_extension, schedule, node, instrumentation), node_(node) {
 
       };
 

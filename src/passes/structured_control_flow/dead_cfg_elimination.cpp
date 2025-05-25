@@ -20,7 +20,7 @@ bool DeadCFGElimination::is_dead(const structured_control_flow::ControlFlowNode&
 };
 
 DeadCFGElimination::DeadCFGElimination()
-    : Pass(){
+    : Pass() {
 
       };
 

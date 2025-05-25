@@ -6,9 +6,9 @@ namespace sdfg {
 namespace codegen {
 
 SequenceDispatcher::SequenceDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                                       structured_control_flow::Sequence& node, Instrumentation& instrumentation)
-    : NodeDispatcher(language_extension, schedule, node, instrumentation),
-      node_(node){
+                                       structured_control_flow::Sequence& node,
+                                       Instrumentation& instrumentation)
+    : NodeDispatcher(language_extension, schedule, node, instrumentation), node_(node) {
 
       };
 
