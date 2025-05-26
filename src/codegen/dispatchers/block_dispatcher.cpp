@@ -70,13 +70,13 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
     }
     stream << " = ";
 
-    // Omit & for raw pointers
+    std::string rhs;
     if (!symbolic::is_pointer(symbolic::symbol(src.data()))) {
-        stream << "&";
+        rhs += "&";
     }
+    rhs += src.data();
 
     bool allocated_src_type = false;
-    std::string rhs = src.data();
     if (memlet.src_conn() == "void") {
         rhs += this->language_extension_.subset(function_, *final_src_type, memlet.subset());
 
