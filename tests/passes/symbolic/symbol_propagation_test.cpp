@@ -121,7 +121,8 @@ TEST(SymbolPropagationTest, Transition2Memlet_Constant) {
     builder::StructuredSDFGBuilder builder("sdfg");
 
     types::Scalar desc(types::PrimitiveType::UInt32);
-    builder.add_container("A", desc);
+    types::Array array(desc, symbolic::integer(10));
+    builder.add_container("A", array);
     builder.add_container("i", desc);
     auto sym1 = symbolic::symbol("i");
 
@@ -129,9 +130,8 @@ TEST(SymbolPropagationTest, Transition2Memlet_Constant) {
     auto& block1 = builder.add_block(root, {{sym1, symbolic::integer(0)}});
     auto& block2 = builder.add_block(root);
     auto& output_node = builder.add_access(block2, "A");
-    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"1", types::PrimitiveType::Int32}});
+    auto& tasklet =
+        builder.add_tasklet(block2, data_flow::TaskletCode::assign, {"_out", desc}, {{"1", desc}});
     auto& edge = builder.add_memlet(block2, tasklet, "_out", output_node, "void", {sym1});
 
     auto sdfg = builder.move();
@@ -159,7 +159,8 @@ TEST(SymbolPropagationTest, Transition2Memlet_Argument) {
     builder::StructuredSDFGBuilder builder("sdfg");
 
     types::Scalar desc(types::PrimitiveType::UInt32);
-    builder.add_container("A", desc);
+    types::Array array(desc, symbolic::integer(10));
+    builder.add_container("A", array);
     builder.add_container("i", desc);
     auto sym1 = symbolic::symbol("i");
 
@@ -167,9 +168,8 @@ TEST(SymbolPropagationTest, Transition2Memlet_Argument) {
     auto& block1 = builder.add_block(root, {{sym1, symbolic::symbol("A")}});
     auto& block2 = builder.add_block(root);
     auto& output_node = builder.add_access(block2, "A");
-    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"1", types::PrimitiveType::Int32}});
+    auto& tasklet =
+        builder.add_tasklet(block2, data_flow::TaskletCode::assign, {"_out", desc}, {{"1", desc}});
     auto& edge = builder.add_memlet(block2, tasklet, "_out", output_node, "void", {sym1});
 
     auto sdfg = builder.move();

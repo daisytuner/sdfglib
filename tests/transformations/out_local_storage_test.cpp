@@ -321,7 +321,7 @@ TEST(OutLocalStorage, Array) {
     }
 }
 
-TEST(LoopUnrollTest, Fail) {
+TEST(OutLocalStorage, Fail) {
     builder::StructuredSDFGBuilder builder("sdfg_test");
 
     auto& sdfg = builder.subject();
@@ -353,7 +353,8 @@ TEST(LoopUnrollTest, Fail) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"_in", base_desc}});
     auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in", {});
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {});
+    auto& memlet_out =
+        builder.add_memlet(block, tasklet, "_out", access_out, "void", {symbolic::integer(0)});
 
     auto structured_sdfg = builder.move();
 

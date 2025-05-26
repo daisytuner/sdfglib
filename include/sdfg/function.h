@@ -56,6 +56,9 @@ class Function {
     // Metadata
     std::unordered_map<std::string, std::string> metadata_;
 
+    // Static types for reserved symbols
+    static const std::unique_ptr<types::Scalar> NVPTX_SYMBOL_TYPE;
+
     Function(const std::string& name);
 
    public:

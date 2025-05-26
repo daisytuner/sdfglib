@@ -82,7 +82,7 @@ inline std::unique_ptr<StructuredSDFG> correlation() {
                            {symbolic::symbol("k"), symbolic::symbol("i")});
         builder.add_memlet(block, D_node, "void", tasklet, "_in2",
                            {symbolic::symbol("k"), symbolic::symbol("j")});
-        builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {});
 
         auto& C_in_node = builder.add_access(block, "C");
         auto& C_out_node = builder.add_access(block, "C");
@@ -91,7 +91,7 @@ inline std::unique_ptr<StructuredSDFG> correlation() {
                                 {{"_in1", desc_element}, {"_in2", desc_element}});
         builder.add_memlet(block, C_in_node, "void", tasklet_2, "_in1",
                            {symbolic::symbol("i"), symbolic::symbol("j")});
-        builder.add_memlet(block, tmp_node, "void", tasklet_2, "_in2", {symbolic::integer(0)});
+        builder.add_memlet(block, tmp_node, "void", tasklet_2, "_in2", {});
         builder.add_memlet(block, tasklet_2, "_out", C_out_node, "void",
                            {symbolic::symbol("i"), symbolic::symbol("j")});
     }
@@ -176,7 +176,7 @@ inline std::unique_ptr<StructuredSDFG> covariance() {
                            {symbolic::symbol("k"), symbolic::symbol("i")});
         builder.add_memlet(block, D_node, "void", tasklet, "_in2",
                            {symbolic::symbol("k"), symbolic::symbol("j")});
-        builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {});
 
         auto& C_in_node = builder.add_access(block, "C");
         auto& C_out_node = builder.add_access(block, "C");
@@ -185,7 +185,7 @@ inline std::unique_ptr<StructuredSDFG> covariance() {
                                 {{"_in1", desc_element}, {"_in2", desc_element}});
         builder.add_memlet(block, C_in_node, "void", tasklet_2, "_in1",
                            {symbolic::symbol("i"), symbolic::symbol("j")});
-        builder.add_memlet(block, tmp_node, "void", tasklet_2, "_in2", {symbolic::integer(0)});
+        builder.add_memlet(block, tmp_node, "void", tasklet_2, "_in2", {});
         builder.add_memlet(block, tasklet_2, "_out", C_out_node, "void",
                            {symbolic::symbol("i"), symbolic::symbol("j")});
     }
@@ -259,7 +259,7 @@ inline std::unique_ptr<StructuredSDFG> gemm() {
                                 {{"_in1", desc_element}, {"_in2", desc_element}});
         builder.add_memlet(block, C_in_node, "void", tasklet, "_in1",
                            {symbolic::symbol("i"), symbolic::symbol("j_1")});
-        builder.add_memlet(block, beta_node, "void", tasklet, "_in2", {symbolic::integer(0)});
+        builder.add_memlet(block, beta_node, "void", tasklet, "_in2", {});
         builder.add_memlet(block, tasklet, "_out", C_out_node, "void",
                            {symbolic::symbol("i"), symbolic::symbol("j_1")});
     }
@@ -285,7 +285,7 @@ inline std::unique_ptr<StructuredSDFG> gemm() {
                            {symbolic::symbol("i"), symbolic::symbol("k")});
         builder.add_memlet(block, B_node, "void", tasklet, "_in2",
                            {symbolic::symbol("k"), symbolic::symbol("j_2")});
-        builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {});
 
         auto& tmp_node_2 = builder.add_access(block, "tmp");
         auto& alpha_node = builder.add_access(block, "alpha");
@@ -293,8 +293,8 @@ inline std::unique_ptr<StructuredSDFG> gemm() {
             builder.add_tasklet(block, data_flow::TaskletCode::mul, {"_out", desc_element},
                                 {{"_in1", desc_element}, {"_in2", desc_element}});
         builder.add_memlet(block, tmp_node, "void", tasklet_2, "_in1", {symbolic::integer(0)});
-        builder.add_memlet(block, alpha_node, "void", tasklet_2, "_in2", {symbolic::integer(0)});
-        builder.add_memlet(block, tasklet_2, "_out", tmp_node_2, "void", {symbolic::integer(0)});
+        builder.add_memlet(block, alpha_node, "void", tasklet_2, "_in2", {});
+        builder.add_memlet(block, tasklet_2, "_out", tmp_node_2, "void", {});
 
         auto& C_in_node = builder.add_access(block, "C");
         auto& C_out_node = builder.add_access(block, "C");
@@ -303,7 +303,7 @@ inline std::unique_ptr<StructuredSDFG> gemm() {
                                 {{"_in1", desc_element}, {"_in2", desc_element}});
         builder.add_memlet(block, C_in_node, "void", tasklet_3, "_in1",
                            {symbolic::symbol("i"), symbolic::symbol("j_2")});
-        builder.add_memlet(block, tmp_node_2, "void", tasklet_3, "_in2", {symbolic::integer(0)});
+        builder.add_memlet(block, tmp_node_2, "void", tasklet_3, "_in2", {});
         builder.add_memlet(block, tasklet_3, "_out", C_out_node, "void",
                            {symbolic::symbol("i"), symbolic::symbol("j_2")});
     }
@@ -357,7 +357,7 @@ inline std::unique_ptr<StructuredSDFG> symm() {
         auto& temp2_node = builder.add_access(block, "tmp");
         auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                             {"_out", desc_element}, {{"0", desc_element}});
-        builder.add_memlet(block, tasklet, "_out", temp2_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block, tasklet, "_out", temp2_node, "void", {});
     }
     auto& loop_k = builder.add_for(
         body_j, symbolic::symbol("k"), symbolic::Lt(symbolic::symbol("k"), symbolic::symbol("i")),
@@ -374,7 +374,7 @@ inline std::unique_ptr<StructuredSDFG> symm() {
                            {symbolic::symbol("i"), symbolic::symbol("k")});
         builder.add_memlet(block, b_node, "void", tasklet, "_in2",
                            {symbolic::symbol("i"), symbolic::symbol("j")});
-        builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {});
 
         auto& c_in_node = builder.add_access(block, "C");
         auto& c_node = builder.add_access(block, "C");
@@ -398,14 +398,14 @@ inline std::unique_ptr<StructuredSDFG> symm() {
                            {symbolic::symbol("k"), symbolic::symbol("j")});
         builder.add_memlet(block2, a2_node, "void", tasklet_3, "_in2",
                            {symbolic::symbol("i"), symbolic::symbol("k")});
-        builder.add_memlet(block2, tasklet_3, "_out", tmp3_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block2, tasklet_3, "_out", tmp3_node, "void", {});
 
         auto& temp2_node = builder.add_access(block2, "tmp");
         auto& tasklet_4 =
             builder.add_tasklet(block2, data_flow::TaskletCode::add, {"_out", desc_element},
                                 {{"_in1", desc_element}, {"_in2", desc_element}});
         builder.add_memlet(block2, temp2_node, "void", tasklet_4, "_in1", {symbolic::integer(0)});
-        builder.add_memlet(block2, tmp3_node, "void", tasklet_4, "_in2", {symbolic::integer(0)});
+        builder.add_memlet(block2, tmp3_node, "void", tasklet_4, "_in2", {});
     }
     {
         auto& block = builder.add_block(body_j);
@@ -417,7 +417,7 @@ inline std::unique_ptr<StructuredSDFG> symm() {
                                 {{"_in1", desc_element}, {"_in2", desc_element}});
         builder.add_memlet(block, c_in_node, "void", tasklet, "_in1",
                            {symbolic::symbol("i"), symbolic::symbol("j")});
-        builder.add_memlet(block, tmp_node, "void", tasklet, "_in2", {symbolic::integer(0)});
+        builder.add_memlet(block, tmp_node, "void", tasklet, "_in2", {});
         builder.add_memlet(block, tasklet, "_out", c_out_node, "void",
                            {symbolic::symbol("i"), symbolic::symbol("j")});
     }
@@ -494,7 +494,7 @@ inline std::unique_ptr<StructuredSDFG> gemver() {
                                 {{"_in1", desc_element}, {"_in2", desc_element}});
         builder.add_memlet(block, u1_node, "void", tasklet, "_in1", {symbolic::symbol("i_1")});
         builder.add_memlet(block, v1_node, "void", tasklet, "_in2", {symbolic::symbol("j_1")});
-        builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {});
 
         builder.add_container("tmp_2", desc_element);
 
@@ -507,7 +507,7 @@ inline std::unique_ptr<StructuredSDFG> gemver() {
                                 {{"_in1", desc_element}, {"_in2", desc_element}});
         builder.add_memlet(block2, u2_node, "void", tasklet2, "_in1", {symbolic::symbol("i_1")});
         builder.add_memlet(block2, v2_node, "void", tasklet2, "_in2", {symbolic::symbol("j_1")});
-        builder.add_memlet(block2, tasklet2, "_out", tmp2_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block2, tasklet2, "_out", tmp2_node, "void", {});
 
         builder.add_container("tmp_3", desc_element);
 
@@ -519,8 +519,8 @@ inline std::unique_ptr<StructuredSDFG> gemver() {
             builder.add_tasklet(block3, data_flow::TaskletCode::add, {"_out", desc_element},
                                 {{"_in1", desc_element}, {"_in2", desc_element}});
         builder.add_memlet(block3, tmp_node_1, "void", tasklet3, "_in1", {symbolic::integer(0)});
-        builder.add_memlet(block3, tmp2_node_1, "void", tasklet3, "_in2", {symbolic::integer(0)});
-        builder.add_memlet(block3, tasklet3, "_out", tmp3_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block3, tmp2_node_1, "void", tasklet3, "_in2", {});
+        builder.add_memlet(block3, tasklet3, "_out", tmp3_node, "void", {});
 
         auto& A_node = builder.add_access(block3, "A");
         auto& A_node_out = builder.add_access(block3, "A");
@@ -529,7 +529,7 @@ inline std::unique_ptr<StructuredSDFG> gemver() {
                                 {{"_in1", desc_element}, {"_in2", desc_element}});
         builder.add_memlet(block3, A_node, "void", tasklet4, "_in1",
                            {symbolic::symbol("i_1"), symbolic::symbol("j_1")});
-        builder.add_memlet(block3, tmp3_node, "void", tasklet4, "_in2", {symbolic::integer(0)});
+        builder.add_memlet(block3, tmp3_node, "void", tasklet4, "_in2", {});
         builder.add_memlet(block3, tasklet4, "_out", A_node_out, "void",
                            {symbolic::symbol("i_1"), symbolic::symbol("j_1")});
     }
@@ -777,7 +777,7 @@ inline std::unique_ptr<StructuredSDFG> syr2k() {
                                 {{"_in1", desc_element}, {"_in2", desc_element}});
         builder.add_memlet(block, C_in_node, "void", tasklet, "_in1",
                            {symbolic::symbol("i"), symbolic::symbol("j_1")});
-        builder.add_memlet(block, beta_node, "void", tasklet, "_in2", {symbolic::integer(0)});
+        builder.add_memlet(block, beta_node, "void", tasklet, "_in2", {});
         builder.add_memlet(block, tasklet, "_out", C_out_node, "void",
                            {symbolic::symbol("i"), symbolic::symbol("j_1")});
     }
@@ -802,7 +802,7 @@ inline std::unique_ptr<StructuredSDFG> syr2k() {
                            {symbolic::symbol("j_2"), symbolic::symbol("k")});
         builder.add_memlet(block, B_node, "void", tasklet, "_in2",
                            {symbolic::symbol("i"), symbolic::symbol("k")});
-        builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {});
 
         auto& block2 = builder.add_block(loop_j_2.root());
         auto& tmp_node_2 = builder.add_access(block2, "tmp");
@@ -817,7 +817,7 @@ inline std::unique_ptr<StructuredSDFG> syr2k() {
         builder.add_memlet(block2, A_node_2, "void", tasklet_2, "_in2",
                            {symbolic::symbol("i"), symbolic::symbol("k")});
         builder.add_memlet(block2, tmp_node_2, "void", tasklet_2, "_in3", {symbolic::integer(0)});
-        builder.add_memlet(block2, tasklet_2, "_out", tmp2_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block2, tasklet_2, "_out", tmp2_node, "void", {});
 
         auto& block3 = builder.add_block(loop_j_2.root());
         auto& C_in_node = builder.add_access(block3, "C");
@@ -828,7 +828,7 @@ inline std::unique_ptr<StructuredSDFG> syr2k() {
                                 {{"_in1", desc_element}, {"_in2", desc_element}});
         builder.add_memlet(block3, C_in_node, "void", tasklet_3, "_in1",
                            {symbolic::symbol("i"), symbolic::symbol("j_2")});
-        builder.add_memlet(block3, tmp2_node_2, "void", tasklet_3, "_in2", {symbolic::integer(0)});
+        builder.add_memlet(block3, tmp2_node_2, "void", tasklet_3, "_in2", {});
         builder.add_memlet(block3, tasklet_3, "_out", C_out_node, "void",
                            {symbolic::symbol("i"), symbolic::symbol("j_2")});
     }
@@ -888,7 +888,7 @@ inline std::unique_ptr<StructuredSDFG> syrk() {
                                          {{"_in1", desc_element}, {"_in2", desc_element}});
         sdfg.add_memlet(block, C_in_node, "void", tasklet, "_in1",
                         {symbolic::symbol("i"), symbolic::symbol("j_1")});
-        sdfg.add_memlet(block, beta_node, "void", tasklet, "_in2", {symbolic::integer(0)});
+        sdfg.add_memlet(block, beta_node, "void", tasklet, "_in2", {});
         sdfg.add_memlet(block, tasklet, "_out", C_out_node, "void",
                         {symbolic::symbol("i"), symbolic::symbol("j_1")});
     }
@@ -911,7 +911,7 @@ inline std::unique_ptr<StructuredSDFG> syrk() {
                         {symbolic::symbol("j_2"), symbolic::symbol("k")});
         sdfg.add_memlet(block, A_node, "void", tasklet, "_in2",
                         {symbolic::symbol("i"), symbolic::symbol("k")});
-        sdfg.add_memlet(block, tasklet, "_out", tmp_node, "void", {symbolic::integer(0)});
+        sdfg.add_memlet(block, tasklet, "_out", tmp_node, "void", {});
 
         auto& block2 = sdfg.add_block(loop_j_2.root());
         auto& C_in_node = sdfg.add_access(block2, "C");
@@ -922,7 +922,7 @@ inline std::unique_ptr<StructuredSDFG> syrk() {
                              {{"_in1", desc_element}, {"_in2", desc_element}});
         sdfg.add_memlet(block2, C_in_node, "void", tasklet_2, "_in1",
                         {symbolic::symbol("i"), symbolic::symbol("j_2")});
-        sdfg.add_memlet(block2, tmp_node_2, "void", tasklet_2, "_in2", {symbolic::integer(0)});
+        sdfg.add_memlet(block2, tmp_node_2, "void", tasklet_2, "_in2", {});
         sdfg.add_memlet(block2, tasklet_2, "_out", C_out_node, "void",
                         {symbolic::symbol("i"), symbolic::symbol("j_2")});
     }
@@ -988,7 +988,7 @@ inline std::unique_ptr<StructuredSDFG> trmm() {
                         {symbolic::symbol("k"), symbolic::symbol("i")});
         sdfg.add_memlet(block, B_node, "void", tasklet, "_in2",
                         {symbolic::symbol("k"), symbolic::symbol("j")});
-        sdfg.add_memlet(block, tasklet, "_out", tmp_node, "void", {symbolic::integer(0)});
+        sdfg.add_memlet(block, tasklet, "_out", tmp_node, "void", {});
 
         auto& block2 = sdfg.add_block(loop_k.root());
         auto& B_in_node = sdfg.add_access(block2, "B");
@@ -999,7 +999,7 @@ inline std::unique_ptr<StructuredSDFG> trmm() {
                              {{"_in1", desc_element}, {"_in2", desc_element}});
         sdfg.add_memlet(block2, B_in_node, "void", tasklet_2, "_in1",
                         {symbolic::symbol("i"), symbolic::symbol("j")});
-        sdfg.add_memlet(block2, tmp_node_2, "void", tasklet_2, "_in2", {symbolic::integer(0)});
+        sdfg.add_memlet(block2, tmp_node_2, "void", tasklet_2, "_in2", {});
         sdfg.add_memlet(block2, tasklet_2, "_out", B_out_node, "void",
                         {symbolic::symbol("i"), symbolic::symbol("j")});
     }
@@ -1012,7 +1012,7 @@ inline std::unique_ptr<StructuredSDFG> trmm() {
                                        {{"_in1", desc_element}, {"_in2", desc_element}});
     sdfg.add_memlet(block3, B_in_node, "void", tasklet_3, "_in1",
                     {symbolic::symbol("i"), symbolic::symbol("j")});
-    sdfg.add_memlet(block3, alpha_node, "void", tasklet_3, "_in2", {symbolic::integer(0)});
+    sdfg.add_memlet(block3, alpha_node, "void", tasklet_3, "_in2", {});
     sdfg.add_memlet(block3, tasklet_3, "_out", B_out_node, "void",
                     {symbolic::symbol("i"), symbolic::symbol("j")});
 
@@ -1543,7 +1543,7 @@ inline std::unique_ptr<StructuredSDFG> cholesky() {
                                {symbolic::symbol("i"), symbolic::symbol("k_2")});
             builder.add_memlet(block, A_node, "void", tasklet, "_in2",
                                {symbolic::symbol("i"), symbolic::symbol("k_2")});
-            builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {symbolic::integer(0)});
+            builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {});
 
             auto& block2 = builder.add_block(body_k_2);
             auto& A_in_node = builder.add_access(block2, "A");
@@ -1671,7 +1671,7 @@ inline std::unique_ptr<StructuredSDFG> fdtd_2d() {
             builder.add_memlet(block, hz_node, "void", tasklet, "_in2",
                                {symbolic::sub(symbolic::symbol("i_1"), symbolic::integer(1)),
                                 symbolic::symbol("j_2")});
-            builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {symbolic::integer(0)});
+            builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {});
 
             auto& block2 = builder.add_block(loop_j_2.root());
             auto& ey_node = builder.add_access(block2, "ey");
@@ -1715,7 +1715,7 @@ inline std::unique_ptr<StructuredSDFG> fdtd_2d() {
             builder.add_memlet(block, hz_node, "void", tasklet, "_in2",
                                {symbolic::symbol("i_2"),
                                 symbolic::sub(symbolic::symbol("j_3"), symbolic::integer(1))});
-            builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {symbolic::integer(0)});
+            builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {});
 
             auto& block2 = builder.add_block(loop_j_3.root());
             auto& ex_node = builder.add_access(block2, "ex");
@@ -1761,7 +1761,7 @@ inline std::unique_ptr<StructuredSDFG> fdtd_2d() {
                                 symbolic::add(symbolic::symbol("j_4"), symbolic::integer(1))});
             builder.add_memlet(block, ex_node, "void", tasklet, "_in2",
                                {symbolic::symbol("i_3"), symbolic::symbol("j_4")});
-            builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {symbolic::integer(0)});
+            builder.add_memlet(block, tasklet, "_out", tmp_node, "void", {});
 
             auto& block2 = builder.add_block(loop_j_4.root());
             auto& ey_node = builder.add_access(block2, "ey");

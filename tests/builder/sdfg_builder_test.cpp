@@ -193,8 +193,8 @@ TEST(SDFGBuilderTest, AddTasklet) {
     auto& tasklet =
         builder.add_tasklet(state, data_flow::TaskletCode::assign, {"_out", desc}, {{"_in", desc}});
 
-    builder.add_memlet(state, access_node_in, "void", tasklet, "_in", {symbolic::integer(0)});
-    builder.add_memlet(state, tasklet, "_out", access_node_out, "void", {symbolic::integer(0)});
+    builder.add_memlet(state, access_node_in, "void", tasklet, "_in", {});
+    builder.add_memlet(state, tasklet, "_out", access_node_out, "void", {});
 
     auto sdfg = builder.move();
 

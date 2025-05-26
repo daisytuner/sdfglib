@@ -23,7 +23,8 @@ TEST(BlockDispatcherTest, DispatchNode) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::BlockDispatcher dispatcher(language_extension, schedule.schedule(0), block, instrumentation);
+    codegen::BlockDispatcher dispatcher(language_extension, schedule.schedule(0), block,
+                                        instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -52,12 +53,9 @@ TEST(BlockDispatcherTest, DispatchNode_withDataflow) {
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in1", types::Scalar(types::PrimitiveType::Int32)},
                                          {"_in2", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, access_node_1, "void", tasklet, "_in1",
-                       data_flow::Subset{symbolic::integer(0)});
-    builder.add_memlet(block, access_node_2, "void", tasklet, "_in2",
-                       data_flow::Subset{symbolic::integer(0)});
-    builder.add_memlet(block, tasklet, "_out", access_node_3, "void",
-                       data_flow::Subset{symbolic::integer(0)});
+    builder.add_memlet(block, access_node_1, "void", tasklet, "_in1", data_flow::Subset{});
+    builder.add_memlet(block, access_node_2, "void", tasklet, "_in2", data_flow::Subset{});
+    builder.add_memlet(block, tasklet, "_out", access_node_3, "void", data_flow::Subset{});
 
     auto final_sdfg = builder.move();
 
@@ -65,7 +63,8 @@ TEST(BlockDispatcherTest, DispatchNode_withDataflow) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::BlockDispatcher dispatcher(language_extension, schedule.schedule(0), block, instrumentation);
+    codegen::BlockDispatcher dispatcher(language_extension, schedule.schedule(0), block,
+                                        instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -96,12 +95,9 @@ TEST(DataFlowDispatcherTest, DispatchTasklet) {
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in1", types::Scalar(types::PrimitiveType::Int32)},
                                          {"_in2", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, access_node_1, "void", tasklet, "_in1",
-                       data_flow::Subset{symbolic::integer(0)});
-    builder.add_memlet(block, access_node_2, "void", tasklet, "_in2",
-                       data_flow::Subset{symbolic::integer(0)});
-    builder.add_memlet(block, tasklet, "_out", access_node_3, "void",
-                       data_flow::Subset{symbolic::integer(0)});
+    builder.add_memlet(block, access_node_1, "void", tasklet, "_in1", data_flow::Subset{});
+    builder.add_memlet(block, access_node_2, "void", tasklet, "_in2", data_flow::Subset{});
+    builder.add_memlet(block, tasklet, "_out", access_node_3, "void", data_flow::Subset{});
 
     auto final_sdfg = builder.move();
 

@@ -25,7 +25,7 @@ TEST(AllocationInferenceTest, Scalar) {
     auto& output_node = builder.add_access(block, "i");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", sym_desc},
                                         {{"0", base_desc}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     auto structured_sdfg = builder.move();
     auto schedule = std::make_unique<Schedule>(structured_sdfg);
@@ -143,7 +143,7 @@ TEST(AllocationInferenceTest, Pointer_Refs) {
     auto& block = builder.add_block(root);
     auto& input_node = builder.add_access(block, "A");
     auto& output_node = builder.add_access(block, "a");
-    builder.add_memlet(block, input_node, "refs", output_node, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, input_node, "refs", output_node, "void", {});
 
     auto structured_sdfg = builder.move();
     auto schedule = std::make_unique<Schedule>(structured_sdfg);

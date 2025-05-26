@@ -4,6 +4,9 @@ using json = nlohmann::json;
 
 namespace sdfg {
 
+const std::unique_ptr<types::Scalar> Function::NVPTX_SYMBOL_TYPE =
+    std::make_unique<types::Scalar>(types::PrimitiveType::UInt32);
+
 Function::Function(const std::string& name)
     : name_(name) {
 
@@ -13,13 +16,18 @@ std::string Function::name() const { return this->name_; };
 
 bool Function::exists(const std::string& name) const {
     return this->containers_.find(name) != this->containers_.end() ||
-           symbolic::is_pointer(symbolic::symbol(name));
+           symbolic::is_pointer(symbolic::symbol(name)) ||
+           symbolic::is_nvptx(symbolic::symbol(name));
 };
 
 const types::IType& Function::type(const std::string& name) const {
+    if (symbolic::is_nvptx(symbolic::symbol(name))) {
+        return *NVPTX_SYMBOL_TYPE;
+    }
+
     auto entry = this->containers_.find(name);
     if (entry == this->containers_.end()) {
-        throw InvalidSDFGException("Container does not exist in SDFG: " + name);
+        throw InvalidSDFGException("Type: Container " + name + " not found");
     }
     return *entry->second;
 };
@@ -27,7 +35,7 @@ const types::IType& Function::type(const std::string& name) const {
 const types::StructureDefinition& Function::structure(const std::string& name) const {
     auto entry = this->structures_.find(name);
     if (entry == this->structures_.end()) {
-        throw InvalidSDFGException("Structure does not exist in SDFG");
+        throw InvalidSDFGException("Structure: " + name + " not found");
     }
     return *entry->second;
 };

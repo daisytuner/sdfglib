@@ -10,6 +10,9 @@ const types::IType& infer_type(const sdfg::Function& function, const types::ITyp
     }
 
     if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
+        if (!subset.empty()) {
+            throw InvalidSDFGException("Scalar type must have no subset");
+        }
         return *scalar_type;
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
         data_flow::Subset element_subset(subset.begin() + 1, subset.end());
@@ -25,7 +28,7 @@ const types::IType& infer_type(const sdfg::Function& function, const types::ITyp
         return infer_type(function, definition.member_type(member), element_subset);
     }
 
-    throw std::invalid_argument("Invalid type");
+    throw InvalidSDFGException("Type inference failed");
 };
 
 std::unique_ptr<types::IType> recombine_array_type(const types::IType& type, uint depth,

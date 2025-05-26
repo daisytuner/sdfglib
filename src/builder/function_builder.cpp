@@ -9,7 +9,8 @@ const types::IType& FunctionBuilder::add_container(const std::string& name,
                                                    const types::IType& type, bool is_argument,
                                                    bool is_external) const {
     if (is_argument && is_external) {
-        throw std::invalid_argument("Container cannot be both an argument and an external");
+        throw InvalidSDFGException("Container " + name +
+                                   " cannot be both an argument and an external");
     }
 
     auto res = this->function().containers_.insert({name, type.clone()});
@@ -32,7 +33,10 @@ const types::IType& FunctionBuilder::add_container(const std::string& name,
 void FunctionBuilder::remove_container(const std::string& name) const {
     auto& function = this->function();
     if (!function.is_transient(name)) {
-        throw std::invalid_argument("Container is not transient");
+        throw InvalidSDFGException("Container " + name + " is not transient");
+    }
+    if (this->function().containers_.find(name) == this->function().containers_.end()) {
+        throw InvalidSDFGException("Container " + name + " does not exist");
     }
 
     auto& type = function.containers_[name];
@@ -46,7 +50,10 @@ void FunctionBuilder::remove_container(const std::string& name) const {
 void FunctionBuilder::change_type(const std::string& name, const types::IType& type) const {
     auto& function = this->function();
     if (!function.is_transient(name)) {
-        throw std::invalid_argument("Container is not transient");
+        throw InvalidSDFGException("Container " + name + " is not transient");
+    }
+    if (function.containers_.find(name) == function.containers_.end()) {
+        throw InvalidSDFGException("Container " + name + " does not exist");
     }
 
     function.containers_[name] = type.clone();
@@ -54,6 +61,10 @@ void FunctionBuilder::change_type(const std::string& name, const types::IType& t
 
 types::StructureDefinition& FunctionBuilder::add_structure(const std::string& name,
                                                            bool is_packed) const {
+    if (this->function().structures_.find(name) != this->function().structures_.end()) {
+        throw InvalidSDFGException("Structure " + name + " already exists");
+    }
+
     auto res = this->function().structures_.insert(
         {name, std::make_unique<types::StructureDefinition>(name, is_packed)});
     assert(res.second);
@@ -64,12 +75,14 @@ types::StructureDefinition& FunctionBuilder::add_structure(const std::string& na
 void FunctionBuilder::make_array(const std::string& name, const symbolic::Expression& size) const {
     auto& function = this->function();
     if (!function.is_transient(name)) {
-        throw std::invalid_argument("Container is not transient");
+        throw InvalidSDFGException("Container " + name + " is not transient");
+    }
+    if (function.containers_.find(name) == function.containers_.end()) {
+        throw InvalidSDFGException("Container " + name + " does not exist");
     }
 
     auto& old_type = function.containers_[name];
-
-    if (old_type->is_symbol()) {
+    if (old_type->is_symbol() && dynamic_cast<const types::Scalar*>(old_type.get())) {
         function.assumptions_.erase(symbolic::symbol(name));
     }
 

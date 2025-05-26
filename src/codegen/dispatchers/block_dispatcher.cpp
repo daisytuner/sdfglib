@@ -11,27 +11,25 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream,
     stream << "{" << std::endl;
     stream.setIndent(stream.indent() + 4);
 
-    // Connector declarations
+    std::unordered_map<std::string, const data_flow::Memlet*> in_edges;
     for (auto& iedge : this->data_flow_graph_.in_edges(tasklet)) {
-        auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
-
-        const types::Scalar& conn_type = tasklet.input_type(iedge.dst_conn());
-        stream << this->language_extension_.declaration(iedge.dst_conn(), conn_type);
-
-        if (symbolic::is_nvptx(symbolic::symbol(src.data()))) {
-            stream << " = " << src.data() << ";";
-        } else {
-            const types::IType& type = this->function_.type(src.data());
-            stream << " = " << src.data()
-                   << this->language_extension_.subset(function_, type, iedge.subset()) << ";";
+        in_edges[iedge.dst_conn()] = &iedge;
+    }
+    for (auto& input : tasklet.inputs()) {
+        if (in_edges.find(input.first) == in_edges.end()) {
+            continue;
         }
+        auto& iedge = *in_edges[input.first];
+        auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
+        stream << this->language_extension_.declaration(input.first, input.second);
+        const types::IType& type = this->function_.type(src.data());
+        stream << " = " << src.data()
+               << this->language_extension_.subset(function_, type, iedge.subset()) << ";";
         stream << std::endl;
     }
-    for (auto& oedge : this->data_flow_graph_.out_edges(tasklet)) {
-        const types::Scalar& conn_type = tasklet.output_type(oedge.src_conn());
-        stream << this->language_extension_.declaration(oedge.src_conn(), conn_type) << ";"
-               << std::endl;
-    }
+    stream << this->language_extension_.declaration(tasklet.output(0).first,
+                                                    tasklet.output(0).second);
+    stream << ";" << std::endl;
 
     stream << std::endl;
     stream << tasklet.output(0).first << " = ";
@@ -56,50 +54,47 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
     stream << "{" << std::endl;
     stream.setIndent(stream.indent() + 4);
 
-    auto dst_access_node = static_cast<const data_flow::AccessNode*>(&memlet.dst());
-    auto dst_type =
-        static_cast<const types::Pointer*>(&this->function_.type(dst_access_node->data()));
+    auto& src = dynamic_cast<const data_flow::AccessNode&>(memlet.src());
+    auto& src_type = this->function_.type(src.data());
+    auto& dst = dynamic_cast<const data_flow::AccessNode&>(memlet.dst());
+    auto& dst_type = this->function_.type(dst.data());
 
-    stream << dst_access_node->data();
+    const types::IType* final_src_type = &src_type;
+    const types::IType* final_dst_type = &dst_type;
 
-    // Case 1: Dereference dst
+    stream << dst.data();
     if (memlet.dst_conn() == "void") {
-        stream << this->language_extension_.subset(function_, *dst_type, memlet.subset());
+        stream << this->language_extension_.subset(function_, dst_type, memlet.subset());
 
-        dst_type = static_cast<const types::Pointer*>(
-            &types::infer_type(function_, *dst_type, memlet.subset()));
+        final_dst_type = &types::infer_type(function_, *final_dst_type, memlet.subset());
     }
-
     stream << " = ";
 
-    // src is raw pointer
-    auto src_access_node = static_cast<const data_flow::AccessNode*>(&memlet.src());
-    if (symbolic::is_pointer(symbolic::symbol(src_access_node->data()))) {
-        stream << language_extension_.expression(symbolic::symbol(src_access_node->data()));
+    // Omit & for raw pointers
+    if (!symbolic::is_pointer(symbolic::symbol(src.data()))) {
+        stream << "&";
+    }
+
+    bool allocated_src_type = false;
+    std::string rhs = src.data();
+    if (memlet.src_conn() == "void") {
+        rhs += this->language_extension_.subset(function_, *final_src_type, memlet.subset());
+
+        final_src_type = &types::infer_type(function_, *final_src_type, memlet.subset());
+        if (!symbolic::is_pointer(symbolic::symbol(src.data()))) {
+            allocated_src_type = true;
+            final_src_type = new types::Pointer(*final_src_type);
+        }
+    }
+
+    if (*final_dst_type == *final_src_type) {
+        stream << rhs;
     } else {
-        auto src_type = &this->function_.type(src_access_node->data());
+        stream << this->language_extension_.type_cast(rhs, *final_dst_type);
+    }
 
-        // Case 2: Dereference src
-        std::string rhs;
-        if (memlet.src_conn() == "void") {
-            rhs += "&";
-            rhs += src_access_node->data();
-            rhs += this->language_extension_.subset(function_, *src_type, memlet.subset());
-
-            src_type = new types::Pointer(types::infer_type(function_, *src_type, memlet.subset()));
-        } else {
-            rhs = src_access_node->data();
-        }
-
-        if (*dst_type == *src_type) {
-            stream << rhs;
-        } else {
-            stream << this->language_extension_.type_cast(rhs, *dst_type);
-        }
-
-        if (memlet.src_conn() == "void") {
-            delete src_type;
-        }
+    if (allocated_src_type) {
+        delete final_src_type;
     }
 
     stream << ";";
@@ -156,9 +151,7 @@ void DataFlowDispatcher::dispatch_library_node(PrettyPrinter& stream,
 
 DataFlowDispatcher::DataFlowDispatcher(LanguageExtension& language_extension, const Function& sdfg,
                                        const data_flow::DataFlowGraph& data_flow_graph)
-    : language_extension_(language_extension),
-      function_(sdfg),
-      data_flow_graph_(data_flow_graph){
+    : language_extension_(language_extension), function_(sdfg), data_flow_graph_(data_flow_graph) {
 
       };
 
@@ -181,9 +174,9 @@ void DataFlowDispatcher::dispatch(PrettyPrinter& stream) {
 };
 
 BlockDispatcher::BlockDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                                 structured_control_flow::Block& node, Instrumentation& instrumentation)
-    : NodeDispatcher(language_extension, schedule, node, instrumentation),
-      node_(node){
+                                 structured_control_flow::Block& node,
+                                 Instrumentation& instrumentation)
+    : NodeDispatcher(language_extension, schedule, node, instrumentation), node_(node) {
 
       };
 

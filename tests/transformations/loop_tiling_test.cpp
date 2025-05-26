@@ -38,7 +38,7 @@ TEST(LoopTilingTest, Basic) {
     auto& A_out = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"_in", base_desc}});
-    builder.add_memlet(block, A_in, "void", tasklet, "_in1", {symbolic::symbol("i")});
+    builder.add_memlet(block, A_in, "void", tasklet, "_in", {symbolic::symbol("i")});
     builder.add_memlet(block, tasklet, "_out", A_out, "void", {symbolic::symbol("i")});
 
     auto structured_sdfg = builder.move();

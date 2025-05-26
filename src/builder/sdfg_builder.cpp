@@ -1,5 +1,7 @@
 #include "sdfg/builder/sdfg_builder.h"
 
+#include "sdfg/types/utils.h"
+
 namespace sdfg {
 namespace builder {
 
@@ -169,12 +171,12 @@ std::tuple<control_flow::State&, control_flow::State&, control_flow::State&> SDF
 
 data_flow::AccessNode& SDFGBuilder::add_access(control_flow::State& state, const std::string& data,
                                                const DebugInfo& debug_info) {
+    // Check: Data exists
     if (!this->subject().exists(data)) {
         throw InvalidSDFGException("Data does not exist in SDFG: " + data);
     }
 
     auto& dataflow = state.dataflow();
-
     auto vertex = boost::add_vertex(dataflow.graph_);
     auto res = dataflow.nodes_.insert(
         {vertex, std::unique_ptr<data_flow::AccessNode>(new data_flow::AccessNode(
@@ -188,8 +190,16 @@ data_flow::Tasklet& SDFGBuilder::add_tasklet(
     const std::pair<std::string, sdfg::types::Scalar>& output,
     const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
     const DebugInfo& debug_info) {
-    auto& dataflow = state.dataflow();
+    // Check: Duplicate inputs
+    std::unordered_set<std::string> input_names;
+    for (auto& input : inputs) {
+        if (input_names.find(input.first) != input_names.end()) {
+            throw InvalidSDFGException("Input " + input.first + " already exists in SDFG");
+        }
+        input_names.insert(input.first);
+    }
 
+    auto& dataflow = state.dataflow();
     auto vertex = boost::add_vertex(dataflow.graph_);
     auto res =
         dataflow.nodes_.insert({vertex, std::unique_ptr<data_flow::Tasklet>(new data_flow::Tasklet(
@@ -205,8 +215,124 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
                                            const std::string& dst_conn,
                                            const data_flow::Subset& subset,
                                            const DebugInfo& debug_info) {
-    auto& dataflow = state.dataflow();
+    auto& function_ = this->function();
 
+    // Check - Case 1: Access Node -> Access Node
+    // - src_conn or dst_conn must be refs. The other must be void.
+    // - The side of the memlet that is void, is dereferenced.
+    // - The dst type must always be a pointer after potential dereferencing.
+    // - The src type can be any type after dereferecing (&dereferenced_src_type).
+    if (dynamic_cast<data_flow::AccessNode*>(&src) && dynamic_cast<data_flow::AccessNode*>(&dst)) {
+        auto& src_node = dynamic_cast<data_flow::AccessNode&>(src);
+        auto& dst_node = dynamic_cast<data_flow::AccessNode&>(dst);
+        if (src_conn == "refs") {
+            if (dst_conn != "void") {
+                throw InvalidSDFGException("Invalid dst connector: " + dst_conn);
+            }
+
+            auto& dereferenced_dst_type =
+                types::infer_type(function_, function_.type(dst_node.data()), subset);
+            if (!dynamic_cast<const types::Pointer*>(&dereferenced_dst_type)) {
+                throw InvalidSDFGException("dst type must be a pointer");
+            }
+        } else if (src_conn == "void") {
+            if (dst_conn != "refs") {
+                throw InvalidSDFGException("Invalid dst connector: " + dst_conn);
+            }
+
+            try {
+                types::infer_type(function_, function_.type(src_node.data()), subset);
+            } catch (const InvalidSDFGException& e) {
+                throw InvalidSDFGException("Invalid src subset in memlet");
+            }
+        } else {
+            throw InvalidSDFGException("Invalid src connector: " + src_conn);
+        }
+    } else if (dynamic_cast<data_flow::AccessNode*>(&src) &&
+               dynamic_cast<data_flow::Tasklet*>(&dst)) {
+        auto& src_node = dynamic_cast<data_flow::AccessNode&>(src);
+        auto& dst_node = dynamic_cast<data_flow::Tasklet&>(dst);
+        if (src_conn != "void") {
+            throw InvalidSDFGException("src_conn must be void. Found: " + src_conn);
+        }
+        bool found = false;
+        for (auto& input : dst_node.inputs()) {
+            if (input.first == dst_conn) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw InvalidSDFGException("dst_conn not found in tasklet: " + dst_conn);
+        }
+        auto& element_type = types::infer_type(function_, function_.type(src_node.data()), subset);
+        if (!dynamic_cast<const types::Scalar*>(&element_type)) {
+            throw InvalidSDFGException("Tasklets inputs must be scalars");
+        }
+    } else if (dynamic_cast<data_flow::Tasklet*>(&src) &&
+               dynamic_cast<data_flow::AccessNode*>(&dst)) {
+        auto& src_node = dynamic_cast<data_flow::Tasklet&>(src);
+        auto& dst_node = dynamic_cast<data_flow::AccessNode&>(dst);
+        if (src_conn != src_node.outputs()[0].first) {
+            throw InvalidSDFGException("src_conn must match tasklet output name");
+        }
+        if (dst_conn != "void") {
+            throw InvalidSDFGException("dst_conn must be void. Found: " + dst_conn);
+        }
+
+        auto& element_type = types::infer_type(function_, function_.type(dst_node.data()), subset);
+        if (!dynamic_cast<const types::Scalar*>(&element_type)) {
+            throw InvalidSDFGException("Tasklet output must be a scalar");
+        }
+    } else if (dynamic_cast<data_flow::AccessNode*>(&src) &&
+               dynamic_cast<data_flow::LibraryNode*>(&dst)) {
+        auto& src_node = dynamic_cast<data_flow::AccessNode&>(src);
+        auto& dst_node = dynamic_cast<data_flow::LibraryNode&>(dst);
+        if (src_conn != "void") {
+            throw InvalidSDFGException("src_conn must be void. Found: " + src_conn);
+        }
+        bool found = false;
+        for (auto& input : dst_node.inputs()) {
+            if (input.first == dst_conn) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw InvalidSDFGException("dst_conn not found in library node: " + dst_conn);
+        }
+
+        auto& element_type = types::infer_type(function_, function_.type(src_node.data()), subset);
+        if (!dynamic_cast<const types::Scalar*>(&element_type)) {
+            throw InvalidSDFGException("Library node inputs must be scalars");
+        }
+    } else if (dynamic_cast<data_flow::LibraryNode*>(&src) &&
+               dynamic_cast<data_flow::AccessNode*>(&dst)) {
+        auto& src_node = dynamic_cast<data_flow::LibraryNode&>(src);
+        auto& dst_node = dynamic_cast<data_flow::AccessNode&>(dst);
+        if (dst_conn != "void") {
+            throw InvalidSDFGException("dst_conn must be void. Found: " + dst_conn);
+        }
+        bool found = false;
+        for (auto& output : src_node.outputs()) {
+            if (output.first == src_conn) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw InvalidSDFGException("src_conn not found in library node: " + src_conn);
+        }
+
+        auto& element_type = types::infer_type(function_, function_.type(dst_node.data()), subset);
+        if (!dynamic_cast<const types::Pointer*>(&element_type)) {
+            throw InvalidSDFGException("Access node must be a pointer");
+        }
+    } else {
+        throw InvalidSDFGException("Invalid src or dst node type");
+    }
+
+    auto& dataflow = state.dataflow();
     auto edge = boost::add_edge(src.vertex_, dst.vertex_, dataflow.graph_);
     auto res = dataflow.edges_.insert(
         {edge.first, std::unique_ptr<data_flow::Memlet>(
