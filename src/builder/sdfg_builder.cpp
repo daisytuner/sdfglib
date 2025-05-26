@@ -230,20 +230,34 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
                 throw InvalidSDFGException("Invalid dst connector: " + dst_conn);
             }
 
-            auto& dereferenced_dst_type =
-                types::infer_type(function_, function_.type(dst_node.data()), subset);
-            if (!dynamic_cast<const types::Pointer*>(&dereferenced_dst_type)) {
+            auto& dst_type = types::infer_type(function_, function_.type(dst_node.data()), subset);
+            if (!dynamic_cast<const types::Pointer*>(&dst_type)) {
                 throw InvalidSDFGException("dst type must be a pointer");
+            }
+
+            auto& src_type = function_.type(src_node.data());
+            if (!dynamic_cast<const types::Pointer*>(&src_type)) {
+                throw InvalidSDFGException("src type must be a pointer");
             }
         } else if (src_conn == "void") {
             if (dst_conn != "refs") {
                 throw InvalidSDFGException("Invalid dst connector: " + dst_conn);
             }
 
-            try {
-                types::infer_type(function_, function_.type(src_node.data()), subset);
-            } catch (const InvalidSDFGException& e) {
-                throw InvalidSDFGException("Invalid src subset in memlet");
+            if (symbolic::is_pointer(symbolic::symbol(src_node.data()))) {
+                throw InvalidSDFGException("src_conn is void: src cannot be a raw pointer");
+            }
+
+            // Trivially correct but checks inference
+            auto& src_type = types::infer_type(function_, function_.type(src_node.data()), subset);
+            types::Pointer ref_type(src_type);
+            if (!dynamic_cast<const types::Pointer*>(&ref_type)) {
+                throw InvalidSDFGException("src type must be a pointer");
+            }
+
+            auto& dst_type = function_.type(dst_node.data());
+            if (!dynamic_cast<const types::Pointer*>(&dst_type)) {
+                throw InvalidSDFGException("dst type must be a pointer");
             }
         } else {
             throw InvalidSDFGException("Invalid src connector: " + src_conn);

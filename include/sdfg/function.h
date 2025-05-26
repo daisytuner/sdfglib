@@ -58,6 +58,7 @@ class Function {
 
     // Static types for reserved symbols
     static const std::unique_ptr<types::Scalar> NVPTX_SYMBOL_TYPE;
+    static const std::unique_ptr<types::Pointer> CONST_POINTER_TYPE;
 
     Function(const std::string& name);
 

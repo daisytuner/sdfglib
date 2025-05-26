@@ -71,19 +71,22 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
     stream << " = ";
 
     std::string rhs;
-    if (!symbolic::is_pointer(symbolic::symbol(src.data()))) {
-        rhs += "&";
-    }
-    rhs += src.data();
-
     bool allocated_src_type = false;
     if (memlet.src_conn() == "void") {
+        rhs += "&";
+        rhs += src.data();
         rhs += this->language_extension_.subset(function_, *final_src_type, memlet.subset());
 
         final_src_type = &types::infer_type(function_, *final_src_type, memlet.subset());
         if (!symbolic::is_pointer(symbolic::symbol(src.data()))) {
             allocated_src_type = true;
             final_src_type = new types::Pointer(*final_src_type);
+        }
+    } else {
+        if (symbolic::is_pointer(symbolic::symbol(src.data()))) {
+            rhs += this->language_extension_.expression(symbolic::symbol(src.data()));
+        } else {
+            rhs += src.data();
         }
     }
 

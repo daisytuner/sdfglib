@@ -6,6 +6,8 @@ namespace sdfg {
 
 const std::unique_ptr<types::Scalar> Function::NVPTX_SYMBOL_TYPE =
     std::make_unique<types::Scalar>(types::PrimitiveType::UInt32);
+const std::unique_ptr<types::Pointer> Function::CONST_POINTER_TYPE =
+    std::make_unique<types::Pointer>(types::Scalar(types::PrimitiveType::Void));
 
 Function::Function(const std::string& name)
     : name_(name) {
@@ -23,6 +25,9 @@ bool Function::exists(const std::string& name) const {
 const types::IType& Function::type(const std::string& name) const {
     if (symbolic::is_nvptx(symbolic::symbol(name))) {
         return *NVPTX_SYMBOL_TYPE;
+    }
+    if (symbolic::is_pointer(symbolic::symbol(name))) {
+        return *CONST_POINTER_TYPE;
     }
 
     auto entry = this->containers_.find(name);
