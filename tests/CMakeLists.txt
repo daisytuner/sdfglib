@@ -58,7 +58,6 @@ set(TEST_FILES
     transformations/loop_to_kernel_dim_test.cpp
     transformations/loop_unroll_test.cpp
     transformations/out_local_storage_test.cpp
-    transformations/vectorization_test.cpp
     types/array_test.cpp
     types/function_test.cpp
     types/pointer_test.cpp

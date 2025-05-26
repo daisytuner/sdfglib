@@ -34,7 +34,7 @@ TEST(TypeInferenceTest, Scalar) {
     auto& function = builder.subject();
 
     types::Scalar scalar_type(types::PrimitiveType::Int32);
-    data_flow::Subset subset = {symbolic::integer(0)};
+    data_flow::Subset subset = {};
     auto& inferred = types::infer_type(function, scalar_type, subset);
     EXPECT_EQ(inferred, scalar_type);
 }

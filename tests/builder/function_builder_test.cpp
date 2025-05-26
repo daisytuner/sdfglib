@@ -78,11 +78,7 @@ TEST(FunctionBuilderTest, RemoveArgument) {
 
     auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), true);
 
-    try {
-        builder.remove_container("i");
-    } catch (const std::invalid_argument& e) {
-        EXPECT_EQ(e.what(), std::string("Container is not transient"));
-    }
+    EXPECT_THROW(builder.remove_container("i"), sdfg::InvalidSDFGException);
 }
 
 TEST(FunctionBuilderTest, RemoveExternal) {
@@ -91,11 +87,7 @@ TEST(FunctionBuilderTest, RemoveExternal) {
     auto& container =
         builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), false, true);
 
-    try {
-        builder.remove_container("i");
-    } catch (const std::invalid_argument& e) {
-        EXPECT_EQ(e.what(), std::string("Container is not transient"));
-    }
+    EXPECT_THROW(builder.remove_container("i"), sdfg::InvalidSDFGException);
 }
 
 TEST(FunctionBuilderTest, AddStructure) {
@@ -128,11 +120,7 @@ TEST(FunctionBuilderTest, MakeArrayArgument) {
 
     auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), true);
 
-    try {
-        builder.make_array("i", symbolic::integer(10));
-    } catch (const std::invalid_argument& e) {
-        EXPECT_EQ(e.what(), std::string("Container is not transient"));
-    }
+    EXPECT_THROW(builder.make_array("i", symbolic::integer(10)), sdfg::InvalidSDFGException);
 }
 
 TEST(FunctionBuilderTest, FindNewName) {
