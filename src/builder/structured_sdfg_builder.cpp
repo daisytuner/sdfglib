@@ -125,8 +125,7 @@ void StructuredSDFGBuilder::traverse_with_loop_detection(
             }
         }
         if (exit_states.size() != 1) {
-            throw InvalidSDFGException(
-                "Degenerated structured control flow: Loop body must have exactly one exit state");
+            throw UnstructuredControlFlowException();
         }
         const control_flow::State* exit_state = *exit_states.begin();
 
