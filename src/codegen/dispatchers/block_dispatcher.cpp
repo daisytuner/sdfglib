@@ -78,10 +78,8 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
         rhs += this->language_extension_.subset(function_, *final_src_type, memlet.subset());
 
         final_src_type = &types::infer_type(function_, *final_src_type, memlet.subset());
-        if (!symbolic::is_pointer(symbolic::symbol(src.data()))) {
-            allocated_src_type = true;
-            final_src_type = new types::Pointer(*final_src_type);
-        }
+        allocated_src_type = true;
+        final_src_type = new types::Pointer(*final_src_type);
     } else {
         if (symbolic::is_pointer(symbolic::symbol(src.data()))) {
             rhs += this->language_extension_.expression(symbolic::symbol(src.data()));
@@ -90,7 +88,7 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
         }
     }
 
-    if (*final_dst_type == *final_src_type) {
+    if (*final_dst_type == *final_src_type || symbolic::is_pointer(symbolic::symbol(src.data()))) {
         stream << rhs;
     } else {
         stream << this->language_extension_.type_cast(rhs, *final_dst_type);
