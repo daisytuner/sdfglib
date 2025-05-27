@@ -73,15 +73,22 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
     std::string rhs;
     bool allocated_src_type = false;
     if (memlet.src_conn() == "void") {
-        rhs += "&";
-        rhs += src.data();
-        rhs += this->language_extension_.subset(function_, *final_src_type, memlet.subset());
+        // Infer the dereferenced type
+        auto subset = memlet.subset();
+        const types::IType* dereferenced_type =
+            &types::infer_type(function_, *final_src_type, subset);
 
-        final_src_type = &types::infer_type(function_, *final_src_type, memlet.subset());
-        if (!symbolic::is_pointer(symbolic::symbol(src.data()))) {
-            allocated_src_type = true;
-            final_src_type = new types::Pointer(*final_src_type);
+        // Function are incomplete types, so we need to remove one level of indirection
+        if (dynamic_cast<const types::Function*>(dereferenced_type)) {
+            subset.pop_back();
+        } else {
+            rhs += "&";
         }
+        rhs += src.data();
+        rhs += this->language_extension_.subset(function_, *final_src_type, subset);
+
+        allocated_src_type = true;
+        final_src_type = new types::Pointer(*dereferenced_type);
     } else {
         if (symbolic::is_pointer(symbolic::symbol(src.data()))) {
             rhs += this->language_extension_.expression(symbolic::symbol(src.data()));
@@ -90,7 +97,7 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
         }
     }
 
-    if (*final_dst_type == *final_src_type) {
+    if (*final_dst_type == *final_src_type || symbolic::is_pointer(symbolic::symbol(src.data()))) {
         stream << rhs;
     } else {
         stream << this->language_extension_.type_cast(rhs, *final_dst_type);
