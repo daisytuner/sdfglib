@@ -443,9 +443,13 @@ std::string CPPLanguageExtension::allocation(const std::string& name, const type
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         val << declaration(name, type);
         val << " = ";
-        val << "(" << declaration("", *pointer_type) << ")";
-        val << " new ";
+        val << "(";
+        val << declaration("", *pointer_type);
+        val << ") ";
+        val << "new ";
+        val << "(";
         val << declaration("", pointer_type->pointee_type());
+        val << ")";
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
         val << declaration(name, *structure_type);
     } else {
