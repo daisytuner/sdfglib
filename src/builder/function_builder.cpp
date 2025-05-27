@@ -12,6 +12,54 @@ const types::IType& FunctionBuilder::add_container(const std::string& name,
         throw InvalidSDFGException("Container " + name +
                                    " cannot be both an argument and an external");
     }
+    // Legal name
+    if (name.find(".") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a dot");
+    } else if (name.find(" ") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a space");
+    } else if (name.find("(") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a parenthesis");
+    } else if (name.find(")") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a parenthesis");
+    } else if (name.find("[") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a bracket");
+    } else if (name.find("]") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a bracket");
+    } else if (name.find("*") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a star");
+    } else if (name.find("&") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a ampersand");
+    } else if (name.find("!") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a bang");
+    } else if (name.find("~") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a tilde");
+    } else if (name.find("`") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a backtick");
+    } else if (name.find("\"") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a quote");
+    } else if (name.find("'") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a single quote");
+    } else if (name.find(";") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a semicolon");
+    } else if (name.find(":") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a colon");
+    } else if (name.find(",") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a comma");
+    } else if (name.find("=") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a equal sign");
+    } else if (name.find("+") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a plus sign");
+    } else if (name.find("-") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a minus sign");
+    } else if (name.find("/") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a slash");
+    } else if (name.find("%") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a percent sign");
+    } else if (name.find("^") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a caret");
+    } else if (name.find("|") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a pipe");
+    }
 
     auto res = this->function().containers_.insert({name, type.clone()});
     assert(res.second);
