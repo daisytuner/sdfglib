@@ -136,7 +136,7 @@ TEST(CPPLanguageExtensionTest, Allocation_Pointer) {
     codegen::CPPLanguageExtension generator;
     auto result =
         generator.allocation("var", types::Pointer(types::Scalar(types::PrimitiveType::Float)));
-    EXPECT_EQ(result, "float (*var) = (float (*)) new float ");
+    EXPECT_EQ(result, "float (*var) = (float (*)) new (float )");
 }
 
 TEST(CPPLanguageExtensionTest, Allocation_Struct) {
