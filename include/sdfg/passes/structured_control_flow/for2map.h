@@ -18,6 +18,8 @@ class For2Map : public Pass {
    private:
     symbolic::Expression num_iterations(const structured_control_flow::For& for_stmt,
                                         analysis::AnalysisManager& analysis_manager) const;
+    bool can_be_applied(const structured_control_flow::For& for_stmt,
+                        analysis::AnalysisManager& analysis_manager);
 };
 
 }  // namespace passes

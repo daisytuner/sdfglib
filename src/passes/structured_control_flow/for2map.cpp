@@ -19,15 +19,61 @@ For2Map::For2Map()
 
 std::string For2Map::name() { return "For2Map"; };
 
-symbolic::Expression For2Map::num_iterations(const structured_control_flow::For& for_stmt,
-                                             analysis::AnalysisManager& analysis_manager) const {
+bool For2Map::can_be_applied(const structured_control_flow::For& for_stmt,
+                             analysis::AnalysisManager& analysis_manager) {
     // Criterion: loop must be data-parallel w.r.t containers
     auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
     auto& dependencies = analysis.get(for_stmt);
     if (dependencies.size() == 0) {
-        return symbolic::zero();
+        return false;
     }
 
+    // Criterion: update must be normalizable (i.e., it may not be involved in anything but an
+    // addition during the update)
+    auto& index_var = for_stmt.indvar();
+    auto& update = for_stmt.update();
+    auto& init = for_stmt.init();
+
+    bool normalizable_update = symbolic::eq(
+        symbolic::subs(update, index_var, symbolic::one()),
+        symbolic::add(symbolic::subs(update, index_var, symbolic::zero()), symbolic::one()));
+
+    if (!normalizable_update) {
+        return false;
+    }
+
+    auto stride = symbolic::subs(update, index_var, symbolic::zero());
+
+    // Criterion: loop bound must be simple, less than or equal statement (e.g., i < N)
+
+    auto condition = symbolic::rearrange_simple_condition(for_stmt.condition(), index_var);
+
+    symbolic::Expression bound;
+    bool is_strict = false;
+    symbolic::Expression lhs;
+    symbolic::Expression rhs;
+    if (SymEngine::is_a<SymEngine::LessThan>(*condition)) {
+        auto condition_LE = SymEngine::rcp_dynamic_cast<const SymEngine::LessThan>(condition);
+        lhs = condition_LE->get_arg1();
+        rhs = condition_LE->get_arg2();
+    } else if (SymEngine::is_a<SymEngine::StrictLessThan>(*condition)) {
+        auto condition_LT = SymEngine::rcp_dynamic_cast<const SymEngine::StrictLessThan>(condition);
+        lhs = condition_LT->get_arg1();
+        rhs = condition_LT->get_arg2();
+        is_strict = true;
+    } else {
+        return false;
+    }
+
+    if (!symbolic::eq(lhs, index_var)) {
+        return false;
+    }
+
+    return true;
+}
+
+symbolic::Expression For2Map::num_iterations(const structured_control_flow::For& for_stmt,
+                                             analysis::AnalysisManager& analysis_manager) const {
     // Criterion: update must be normalizable (i.e., it may not be involved in anything but an
     // addition during the update)
     auto& index_var = for_stmt.indvar();
@@ -119,12 +165,13 @@ bool For2Map::run_pass(builder::StructuredSDFGBuilder& builder,
                 auto& root = loop_stmt->root();
                 queue.push_back(&root);
             } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(&child)) {
-                auto num_iterations = this->num_iterations(*for_stmt, analysis_manager);
-                if (symbolic::eq(num_iterations, symbolic::zero())) {
+                if (can_be_applied(*for_stmt, analysis_manager)) {
                     auto& root = for_stmt->root();
                     queue.push_back(&root);
                     continue;
                 }
+
+                auto num_iterations = this->num_iterations(*for_stmt, analysis_manager);
 
                 auto init = for_stmt->init();
                 auto indvar = for_stmt->indvar();
@@ -137,6 +184,9 @@ bool For2Map::run_pass(builder::StructuredSDFGBuilder& builder,
 
                 auto replacement = symbolic::add(symbolic::mul(map.indvar(), stride), init);
                 root.replace(map.indvar(), replacement);
+
+                auto successor = builder.add_block_after(*curr, map);
+                successor.second.assignments().insert({indvar, num_iterations});
 
                 queue.push_back(&root);
                 applied = true;

@@ -13,14 +13,6 @@ MapDispatcher::MapDispatcher(LanguageExtension& language_extension, Schedule& sc
 
 void MapDispatcher::dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                                   PrettyPrinter& library_stream) {
-    LoopSchedule loop_schedule = this->schedule_.loop_schedule(&this->node_);
-    if (loop_schedule == LoopSchedule::VECTORIZATION) {
-        main_stream << "#pragma omp simd" << std::endl;
-    }
-    if (loop_schedule == LoopSchedule::MULTICORE) {
-        main_stream << "#pragma omp parallel for" << std::endl;
-    }
-
     main_stream << "for";
     main_stream << "(";
     main_stream << node_.indvar()->get_name();
