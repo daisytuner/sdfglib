@@ -456,15 +456,11 @@ TEST(HappensBeforeAnalysisTest, visit_map) {
 
     auto sdfg = builder.move();
 
-    std::cout << "Map: " << map.name() << std::endl;
-
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
     auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
-
-    std::cout << "Map: " << map.name() << std::endl;
 
     std::unordered_set<analysis::User*> open_reads;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
