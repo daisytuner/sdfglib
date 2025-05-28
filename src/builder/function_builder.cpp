@@ -9,7 +9,56 @@ const types::IType& FunctionBuilder::add_container(const std::string& name,
                                                    const types::IType& type, bool is_argument,
                                                    bool is_external) const {
     if (is_argument && is_external) {
-        throw std::invalid_argument("Container cannot be both an argument and an external");
+        throw InvalidSDFGException("Container " + name +
+                                   " cannot be both an argument and an external");
+    }
+    // Legal name
+    if (name.find(".") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a dot");
+    } else if (name.find(" ") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a space");
+    } else if (name.find("(") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a parenthesis");
+    } else if (name.find(")") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a parenthesis");
+    } else if (name.find("[") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a bracket");
+    } else if (name.find("]") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a bracket");
+    } else if (name.find("*") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a star");
+    } else if (name.find("&") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a ampersand");
+    } else if (name.find("!") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a bang");
+    } else if (name.find("~") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a tilde");
+    } else if (name.find("`") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a backtick");
+    } else if (name.find("\"") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a quote");
+    } else if (name.find("'") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a single quote");
+    } else if (name.find(";") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a semicolon");
+    } else if (name.find(":") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a colon");
+    } else if (name.find(",") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a comma");
+    } else if (name.find("=") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a equal sign");
+    } else if (name.find("+") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a plus sign");
+    } else if (name.find("-") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a minus sign");
+    } else if (name.find("/") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a slash");
+    } else if (name.find("%") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a percent sign");
+    } else if (name.find("^") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a caret");
+    } else if (name.find("|") != std::string::npos) {
+        throw InvalidSDFGException("Container name " + name + " contains a pipe");
     }
 
     auto res = this->function().containers_.insert({name, type.clone()});
@@ -32,7 +81,10 @@ const types::IType& FunctionBuilder::add_container(const std::string& name,
 void FunctionBuilder::remove_container(const std::string& name) const {
     auto& function = this->function();
     if (!function.is_transient(name)) {
-        throw std::invalid_argument("Container is not transient");
+        throw InvalidSDFGException("Container " + name + " is not transient");
+    }
+    if (this->function().containers_.find(name) == this->function().containers_.end()) {
+        throw InvalidSDFGException("Container " + name + " does not exist");
     }
 
     auto& type = function.containers_[name];
@@ -46,7 +98,10 @@ void FunctionBuilder::remove_container(const std::string& name) const {
 void FunctionBuilder::change_type(const std::string& name, const types::IType& type) const {
     auto& function = this->function();
     if (!function.is_transient(name)) {
-        throw std::invalid_argument("Container is not transient");
+        throw InvalidSDFGException("Container " + name + " is not transient");
+    }
+    if (function.containers_.find(name) == function.containers_.end()) {
+        throw InvalidSDFGException("Container " + name + " does not exist");
     }
 
     function.containers_[name] = type.clone();
@@ -54,6 +109,10 @@ void FunctionBuilder::change_type(const std::string& name, const types::IType& t
 
 types::StructureDefinition& FunctionBuilder::add_structure(const std::string& name,
                                                            bool is_packed) const {
+    if (this->function().structures_.find(name) != this->function().structures_.end()) {
+        throw InvalidSDFGException("Structure " + name + " already exists");
+    }
+
     auto res = this->function().structures_.insert(
         {name, std::make_unique<types::StructureDefinition>(name, is_packed)});
     assert(res.second);
@@ -64,12 +123,14 @@ types::StructureDefinition& FunctionBuilder::add_structure(const std::string& na
 void FunctionBuilder::make_array(const std::string& name, const symbolic::Expression& size) const {
     auto& function = this->function();
     if (!function.is_transient(name)) {
-        throw std::invalid_argument("Container is not transient");
+        throw InvalidSDFGException("Container " + name + " is not transient");
+    }
+    if (function.containers_.find(name) == function.containers_.end()) {
+        throw InvalidSDFGException("Container " + name + " does not exist");
     }
 
     auto& old_type = function.containers_[name];
-
-    if (old_type->is_symbol()) {
+    if (old_type->is_symbol() && dynamic_cast<const types::Scalar*>(old_type.get())) {
         function.assumptions_.erase(symbolic::symbol(name));
     }
 

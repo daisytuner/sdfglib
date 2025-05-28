@@ -20,10 +20,10 @@ TEST(DataflowTest, TopologicalSort) {
     auto& tasklet_2 = builder.add_tasklet(state, data_flow::TaskletCode::add, {"_out", desc},
                                           {{"_in", desc}, {"2", desc}});
 
-    builder.add_memlet(state, access_node_1, "void", tasklet_1, "_in", {symbolic::integer(0)});
-    builder.add_memlet(state, tasklet_1, "_out", access_node_2, "void", {symbolic::integer(0)});
-    builder.add_memlet(state, access_node_2, "void", tasklet_2, "_in", {symbolic::integer(0)});
-    builder.add_memlet(state, tasklet_2, "_out", access_node_3, "void", {symbolic::integer(0)});
+    builder.add_memlet(state, access_node_1, "void", tasklet_1, "_in", {});
+    builder.add_memlet(state, tasklet_1, "_out", access_node_2, "void", {});
+    builder.add_memlet(state, access_node_2, "void", tasklet_2, "_in", {});
+    builder.add_memlet(state, tasklet_2, "_out", access_node_3, "void", {});
 
     auto sdfg = builder.move();
 

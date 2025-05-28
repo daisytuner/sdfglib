@@ -85,7 +85,7 @@ TEST(VectorizationTest, Constant_Assignment) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"_in", base_desc}});
     builder.add_memlet(block, A_in, "void", tasklet, "_in1", {symbolic::integer(0)});
-    builder.add_memlet(block, tasklet, "_out", A_out, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", A_out, "void", {});
 
     auto structured_sdfg = builder.move();
 
@@ -134,8 +134,8 @@ TEST(VectorizationTest, Constant_Reduction) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
                                         {{"_in1", base_desc}, {"_in2", base_desc}});
     builder.add_memlet(block, A_in, "void", tasklet, "_in1", {indvar});
-    builder.add_memlet(block, A_in2, "void", tasklet, "_in2", {symbolic::integer(0)});
-    builder.add_memlet(block, tasklet, "_out", A_out, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, A_in2, "void", tasklet, "_in2", {});
+    builder.add_memlet(block, tasklet, "_out", A_out, "void", {});
 
     auto structured_sdfg = builder.move();
 
@@ -186,7 +186,7 @@ TEST(VectorizationTest, Indirection_Scatter) {
     auto& tasklet1 = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                          {{"_in", base_desc}});
     builder.add_memlet(block, A, "void", tasklet1, "_in", {indvar});
-    builder.add_memlet(block, tasklet1, "_out", b, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet1, "_out", b, "void", {});
 
     auto& block1 = builder.add_block(body);
 
@@ -246,7 +246,7 @@ TEST(VectorizationTest, Indirection_Gather) {
     auto& tasklet1 = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                          {{"_in", base_desc}});
     builder.add_memlet(block, A, "void", tasklet1, "_in", {indvar});
-    builder.add_memlet(block, tasklet1, "_out", b, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet1, "_out", b, "void", {});
 
     auto& block1 = builder.add_block(body);
 

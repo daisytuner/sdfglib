@@ -181,6 +181,7 @@ TEST(JSONSerializerTest, DataflowToJSON) {
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer desc(base_desc);
     builder.add_container("A", desc, true);
+    builder.add_container("D", desc, true);
     builder.add_container("C", base_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -195,7 +196,8 @@ TEST(JSONSerializerTest, DataflowToJSON) {
     auto& memlet_in =
         builder.add_memlet(block, access_in, "void", tasklet, "_in1", {{symbolic::symbol("i")}});
     auto& memlet_in2 = builder.add_memlet(block, access_in2, "void", tasklet, "_in2", {});
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {});
+    auto& memlet_out =
+        builder.add_memlet(block, tasklet, "_out", access_out, "void", {symbolic::symbol("i")});
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";

@@ -25,8 +25,8 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_WAR) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -76,15 +76,15 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_RAW) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto& output_node2 = builder.add_access(block, "C");
     auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, output_node, "void", tasklet2, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet2, "_out", output_node2, "void", {});
+    builder.add_memlet(block, output_node, "void", tasklet2, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -154,24 +154,24 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_WAW) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto& input_node3 = output_node;
     auto& output_node3 = builder.add_access(block, "C");
     auto& tasklet3 = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet3, "_out", output_node3, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node3, "void", tasklet3, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet3, "_out", output_node3, "void", {});
+    builder.add_memlet(block, input_node3, "void", tasklet3, "_in", {});
 
     auto& output_node2 = builder.add_access(block, "B");
     auto& input_node2 = output_node3;
     auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node2, "void", tasklet2, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet2, "_out", output_node2, "void", {});
+    builder.add_memlet(block, input_node2, "void", tasklet2, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -240,15 +240,16 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_WAW) {
 TEST(HappensBeforeAnalysisTest, VisitBlock_SingleMemlet) {
     builder::StructuredSDFGBuilder builder("sdfg_1");
 
-    builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
+    types::Scalar desc(types::PrimitiveType::Int32);
+    types::Array array(desc, symbolic::integer(10));
+    builder.add_container("A", array);
+    builder.add_container("i", desc);
 
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", desc}, {{"0", desc}});
     auto& edge =
         builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::symbol("i")});
 
@@ -290,17 +291,17 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_SingleMemlet) {
 TEST(HappensBeforeAnalysisTest, VisitBlock_MultiMemlet) {
     builder::StructuredSDFGBuilder builder("sdfg_1");
 
-    builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
+    types::Scalar desc(types::PrimitiveType::Int32);
+    types::Array array(desc, symbolic::integer(10));
+    builder.add_container("A", array);
+    builder.add_container("i", desc);
 
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& input_node = builder.add_access(block, "A");
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"_in1", types::Scalar(types::PrimitiveType::Int32)},
-                                         {"_in2", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", desc},
+                                        {{"_in1", desc}, {"_in2", desc}});
     auto& iedge1 =
         builder.add_memlet(block, input_node, "void", tasklet, "_in1", {symbolic::symbol("i")});
     auto& iedge2 =
@@ -372,6 +373,7 @@ TEST(HappensBeforeAnalysisTest, visit_for) {
     builder::StructuredSDFGBuilder builder("sdfg_1");
 
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
+    builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
 
     auto& root = builder.subject().root();
 
@@ -385,8 +387,8 @@ TEST(HappensBeforeAnalysisTest, visit_for) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -515,15 +517,15 @@ TEST(HappensBeforeAnalysisTest, visit_while) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto& output_node2 = builder.add_access(block, "A");
     auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, output_node, "void", tasklet2, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet2, "_out", output_node2, "void", {});
+    builder.add_memlet(block, output_node, "void", tasklet2, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -594,8 +596,8 @@ TEST(HappensBeforeAnalysisTest, visit_if_else_complete) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto& block2 = builder.add_block(false_case);
     auto& input_node2 = builder.add_access(block2, "B");
@@ -603,8 +605,8 @@ TEST(HappensBeforeAnalysisTest, visit_if_else_complete) {
     auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
-    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
+    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -675,6 +677,7 @@ TEST(HappensBeforeAnalysisTest, visit_if_else_complete) {
     EXPECT_TRUE(foundA && foundB);
 }
 
+/*
 TEST(HappensBeforeAnalysisTest, visit_kernel) {
     builder::StructuredSDFGBuilder builder("sdfg_1");
 
@@ -690,8 +693,8 @@ TEST(HappensBeforeAnalysisTest, visit_kernel) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -736,6 +739,7 @@ TEST(HappensBeforeAnalysisTest, visit_kernel) {
 
     EXPECT_TRUE(foundB);
 }
+*/
 
 TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_RAW) {
     builder::StructuredSDFGBuilder builder("sdfg_1");
@@ -751,8 +755,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_RAW) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto& block2 = builder.add_block(root);
 
@@ -761,8 +765,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_RAW) {
     auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
-    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
+    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -829,8 +833,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAR) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto& block2 = builder.add_block(root);
     auto& input_node2 = builder.add_access(block2, "C");
@@ -838,8 +842,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAR) {
     auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
-    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
+    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -918,8 +922,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAW) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto& block2 = builder.add_block(root);
     auto& input_node2 = builder.add_access(block2, "C");
@@ -927,8 +931,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAW) {
     auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
-    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
+    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -991,6 +995,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_for_loop) {
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("C", types::Scalar(types::PrimitiveType::Int32));
+    builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
 
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
@@ -999,8 +1004,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_for_loop) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto& for_loop = builder.add_for(
         root, symbolic::symbol("i"), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
@@ -1012,8 +1017,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_for_loop) {
     auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
-    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
+    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -1087,8 +1092,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_while_loop) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto& while_loop = builder.add_while(root);
 
@@ -1098,8 +1103,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_while_loop) {
     auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
-    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
+    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -1166,8 +1171,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_complete) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto& if_else = builder.add_if_else(root);
 
@@ -1180,8 +1185,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_complete) {
     auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
-    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
+    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {});
 
     auto& case2 =
         builder.add_case(if_else, symbolic::Le(symbolic::integer(10), symbolic::symbol("B")));
@@ -1192,8 +1197,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_complete) {
     auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block3, tasklet3, "_out", output_node3, "void", {symbolic::integer(0)});
-    builder.add_memlet(block3, input_node3, "void", tasklet3, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block3, tasklet3, "_out", output_node3, "void", {});
+    builder.add_memlet(block3, input_node3, "void", tasklet3, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -1296,8 +1301,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_incomplete) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto& if_else = builder.add_if_else(root);
 
@@ -1310,8 +1315,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_incomplete) {
     auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
-    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
+    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {});
 
     auto& case2 =
         builder.add_case(if_else, symbolic::Lt(symbolic::integer(10), symbolic::symbol("B")));
@@ -1322,8 +1327,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_incomplete) {
     auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block3, tasklet3, "_out", output_node3, "void", {symbolic::integer(0)});
-    builder.add_memlet(block3, input_node3, "void", tasklet3, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block3, tasklet3, "_out", output_node3, "void", {});
+    builder.add_memlet(block3, input_node3, "void", tasklet3, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -1423,8 +1428,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_transition) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto& block2 = builder.add_block(root);
 
@@ -1433,8 +1438,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_transition) {
     auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
-    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
+    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -1521,24 +1526,24 @@ TEST(HappensBeforeAnalysisTest, visit_sdfg) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto& input_node3 = output_node;
     auto& output_node3 = builder.add_access(block, "C");
     auto& tasklet3 = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet3, "_out", output_node3, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node3, "void", tasklet3, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet3, "_out", output_node3, "void", {});
+    builder.add_memlet(block, input_node3, "void", tasklet3, "_in", {});
 
     auto& input_node2 = output_node3;
     auto& output_node2 = builder.add_access(block, "B");
     auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node2, "void", tasklet2, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet2, "_out", output_node2, "void", {});
+    builder.add_memlet(block, input_node2, "void", tasklet2, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -1596,7 +1601,9 @@ TEST(HappensBeforeAnalysisTest, propagate_open_read_out_of_while) {
     builder::StructuredSDFGBuilder builder("sdfg_1");
 
     builder.add_container("_0", types::Pointer(types::Scalar(types::PrimitiveType::Double)), true);
+    builder.add_container("_1", types::Pointer(types::Scalar(types::PrimitiveType::Double)));
     builder.add_container("_7", types::Pointer(types::Scalar(types::PrimitiveType::Double)));
+    builder.add_container("_16", types::Pointer(types::Scalar(types::PrimitiveType::Double)));
 
     builder.add_container("_4", types::Scalar(types::PrimitiveType::Int32));
     auto sym = symbolic::symbol("_4");

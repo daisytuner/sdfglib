@@ -356,6 +356,8 @@ std::string CUDALanguageExtension::primitive_type(const types::PrimitiveType pri
             return "int";
         case types::PrimitiveType::Int64:
             return "long long";
+        case types::PrimitiveType::Int128:
+            return "__int128";
         case types::PrimitiveType::UInt8:
             return "char";
         case types::PrimitiveType::UInt16:
@@ -364,6 +366,8 @@ std::string CUDALanguageExtension::primitive_type(const types::PrimitiveType pri
             return "unsigned int";
         case types::PrimitiveType::UInt64:
             return "unsigned long long";
+        case types::PrimitiveType::UInt128:
+            return "unsigned __int128";
         case types::PrimitiveType::Half:
             return "__fp16";
         case types::PrimitiveType::BFloat:

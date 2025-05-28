@@ -27,7 +27,36 @@ const IType& Function::return_type() const { return *this->return_type_; }
 
 bool Function::is_var_arg() const { return this->is_var_arg_; }
 
-bool Function::operator==(const IType& other) const { return false; }
+bool Function::operator==(const IType& other) const {
+    auto other_function = dynamic_cast<const Function*>(&other);
+    if (other_function == nullptr) {
+        return false;
+    }
+
+    if (this->is_var_arg_ != other_function->is_var_arg_) {
+        return false;
+    }
+
+    if (*this->return_type_ == *other_function->return_type_) {
+        // Do nothing
+    } else {
+        return false;
+    }
+
+    if (this->params_.size() != other_function->params_.size()) {
+        return false;
+    }
+
+    for (size_t i = 0; i < this->params_.size(); i++) {
+        if (*this->params_[i] == *other_function->params_[i]) {
+            continue;
+        } else {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 std::unique_ptr<IType> Function::clone() const {
     auto new_function =
