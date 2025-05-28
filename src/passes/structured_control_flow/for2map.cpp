@@ -5,6 +5,7 @@
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/visitor/structured_sdfg_visitor.h"
 #include "symengine/basic.h"
 #include "symengine/logic.h"
 #include "symengine/symengine_rcp.h"
@@ -12,12 +13,11 @@
 namespace sdfg {
 namespace passes {
 
-For2Map::For2Map()
-    : Pass() {
+For2Map::For2Map(builder::StructuredSDFGBuilder& builder,
+                 analysis::AnalysisManager& analysis_manager)
+    : visitor::StructuredSDFGVisitor(builder, analysis_manager) {
 
       };
-
-std::string For2Map::name() { return "For2Map"; };
 
 bool For2Map::can_be_applied(const structured_control_flow::For& for_stmt,
                              analysis::AnalysisManager& analysis_manager) {
@@ -32,7 +32,6 @@ bool For2Map::can_be_applied(const structured_control_flow::For& for_stmt,
     // addition during the update)
     auto& index_var = for_stmt.indvar();
     auto& update = for_stmt.update();
-    auto& init = for_stmt.init();
 
     bool normalizable_update = symbolic::eq(
         symbolic::subs(update, index_var, symbolic::one()),
@@ -49,7 +48,6 @@ bool For2Map::can_be_applied(const structured_control_flow::For& for_stmt,
     auto condition = symbolic::rearrange_simple_condition(for_stmt.condition(), index_var);
 
     symbolic::Expression bound;
-    bool is_strict = false;
     symbolic::Expression lhs;
     symbolic::Expression rhs;
     if (SymEngine::is_a<SymEngine::LessThan>(*condition)) {
@@ -60,7 +58,6 @@ bool For2Map::can_be_applied(const structured_control_flow::For& for_stmt,
         auto condition_LT = SymEngine::rcp_dynamic_cast<const SymEngine::StrictLessThan>(condition);
         lhs = condition_LT->get_arg1();
         rhs = condition_LT->get_arg2();
-        is_strict = true;
     } else {
         return false;
     }
@@ -137,71 +134,36 @@ symbolic::Expression For2Map::num_iterations(const structured_control_flow::For&
     return num_iterations;
 }
 
-bool For2Map::run_pass(builder::StructuredSDFGBuilder& builder,
-                       analysis::AnalysisManager& analysis_manager) {
-    bool applied = false;
+void For2Map::apply(structured_control_flow::For& for_stmt, builder::StructuredSDFGBuilder& builder,
+                    analysis::AnalysisManager& analysis_manager) {
+    auto num_iterations = this->num_iterations(for_stmt, analysis_manager);
 
-    auto& sdfg = builder.subject();
+    auto init = for_stmt.init();
+    auto indvar = for_stmt.indvar();
+    auto update = for_stmt.update();
 
-    auto& root = sdfg.root();
-    if (root.size() == 0) {
+    auto& parent = builder.parent(for_stmt);
+
+    // Create map
+    auto& map = builder.convert_for(parent, for_stmt, num_iterations);
+    auto& root = map.root();
+    auto stride = symbolic::subs(update, indvar, symbolic::zero());
+
+    auto replacement = symbolic::add(symbolic::mul(map.indvar(), stride), init);
+    root.replace(map.indvar(), replacement);
+
+    auto successor = builder.add_block_after(parent, map);
+    successor.second.assignments().insert({indvar, num_iterations});
+}
+
+bool For2Map::accept(structured_control_flow::Sequence& parent,
+                     structured_control_flow::For& node) {
+    if (!this->can_be_applied(node, analysis_manager_)) {
         return false;
     }
 
-    std::list<structured_control_flow::Sequence*> queue = {&sdfg.root()};
-    while (!queue.empty()) {
-        auto curr = queue.front();
-        queue.pop_front();
-
-        for (size_t i = 0; i < curr->size(); i++) {
-            auto& child = curr->at(i).first;
-
-            if (auto if_else_stmt = dynamic_cast<structured_control_flow::IfElse*>(&child)) {
-                // Add to queue
-                for (size_t j = 0; j < if_else_stmt->size(); j++) {
-                    queue.push_back(&if_else_stmt->at(j).first);
-                }
-            } else if (auto loop_stmt = dynamic_cast<structured_control_flow::While*>(&child)) {
-                auto& root = loop_stmt->root();
-                queue.push_back(&root);
-            } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(&child)) {
-                if (can_be_applied(*for_stmt, analysis_manager)) {
-                    auto& root = for_stmt->root();
-                    queue.push_back(&root);
-                    continue;
-                }
-
-                auto num_iterations = this->num_iterations(*for_stmt, analysis_manager);
-
-                auto init = for_stmt->init();
-                auto indvar = for_stmt->indvar();
-                auto update = for_stmt->update();
-
-                // Create map
-                auto& map = builder.convert_for(*curr, *for_stmt, num_iterations);
-                auto& root = map.root();
-                auto stride = symbolic::subs(update, indvar, symbolic::zero());
-
-                auto replacement = symbolic::add(symbolic::mul(map.indvar(), stride), init);
-                root.replace(map.indvar(), replacement);
-
-                auto successor = builder.add_block_after(*curr, map);
-                successor.second.assignments().insert({indvar, num_iterations});
-
-                queue.push_back(&root);
-                applied = true;
-
-            } else if (auto kernel_stmt = dynamic_cast<structured_control_flow::Kernel*>(&child)) {
-                auto& root = kernel_stmt->root();
-                queue.push_back(&root);
-            } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&child)) {
-                auto& root = map_stmt->root();
-                queue.push_back(&root);
-            }
-        }
-    }
-
-    return applied;
+    this->apply(node, builder_, analysis_manager_);
+    return true;
 }
 
 }  // namespace passes

@@ -439,6 +439,7 @@ TEST(HappensBeforeAnalysisTest, visit_map) {
     builder::StructuredSDFGBuilder builder("sdfg_1");
 
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
+    builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
 
     auto& root = builder.subject().root();
 
@@ -450,8 +451,8 @@ TEST(HappensBeforeAnalysisTest, visit_map) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto sdfg = builder.move();
 

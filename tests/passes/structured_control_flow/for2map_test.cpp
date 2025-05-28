@@ -39,12 +39,12 @@ TEST(For2MapTest, Simple) {
     // Fusion
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::For2Map conversion_pass;
+    passes::For2MapPass conversion_pass;
     EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
 
     sdfg = builder_opt.move();
     EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->root().size(), 1);
+    EXPECT_EQ(sdfg->root().size(), 2);
 
     EXPECT_TRUE(dynamic_cast<const structured_control_flow::Map*>(&sdfg->root().at(0).first) !=
                 nullptr);
@@ -135,12 +135,12 @@ TEST(For2MapTest, Strided) {
     // Fusion
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::For2Map conversion_pass;
+    passes::For2MapPass conversion_pass;
     EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
 
     sdfg = builder_opt.move();
     EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->root().size(), 1);
+    EXPECT_EQ(sdfg->root().size(), 2);
 
     EXPECT_TRUE(dynamic_cast<const structured_control_flow::Map*>(&sdfg->root().at(0).first) !=
                 nullptr);
@@ -233,12 +233,12 @@ TEST(For2MapTest, Init) {
     // Fusion
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::For2Map conversion_pass;
+    passes::For2MapPass conversion_pass;
     EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
 
     sdfg = builder_opt.move();
     EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->root().size(), 1);
+    EXPECT_EQ(sdfg->root().size(), 2);
 
     EXPECT_TRUE(dynamic_cast<const structured_control_flow::Map*>(&sdfg->root().at(0).first) !=
                 nullptr);
@@ -331,12 +331,12 @@ TEST(For2MapTest, Bound) {
     // Fusion
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::For2Map conversion_pass;
+    passes::For2MapPass conversion_pass;
     EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
 
     sdfg = builder_opt.move();
     EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->root().size(), 1);
+    EXPECT_EQ(sdfg->root().size(), 2);
 
     EXPECT_TRUE(dynamic_cast<const structured_control_flow::Map*>(&sdfg->root().at(0).first) !=
                 nullptr);
@@ -427,7 +427,7 @@ TEST(For2MapTest, Failed_update) {
     // Fusion
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::For2Map conversion_pass;
+    passes::For2MapPass conversion_pass;
     EXPECT_FALSE(conversion_pass.run(builder_opt, analysis_manager));
 }
 
@@ -464,6 +464,6 @@ TEST(For2MapTest, Failed_bound) {
     // Fusion
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::For2Map conversion_pass;
+    passes::For2MapPass conversion_pass;
     EXPECT_FALSE(conversion_pass.run(builder_opt, analysis_manager));
 }
