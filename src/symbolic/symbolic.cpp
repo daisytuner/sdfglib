@@ -2,9 +2,9 @@
 
 #include <string>
 
+#include "sdfg/exceptions.h"
 #include "symengine/functions.h"
 #include "symengine/logic.h"
-#include "sdfg/exceptions.h"
 
 namespace sdfg {
 namespace symbolic {
