@@ -391,9 +391,6 @@ std::string CLanguageExtension::declaration(const std::string& name, const types
         auto& element_type = array_type->element_type();
         val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
                            element_type);
-        if (array_type->alignment() > 1) {
-            val << " __attribute__((aligned(" << array_type->alignment() << ")))";
-        }
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         auto& pointee_type = pointer_type->pointee_type();
         val << declaration("(*" + name + ")", pointee_type);
@@ -440,18 +437,28 @@ std::string CLanguageExtension::allocation(const std::string& name, const types:
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
         val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
                            array_type->element_type());
+        val << " __attribute__((aligned(" << array_type->alignment() << ")))";
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         val << declaration(name, type);
         val << " = (" << declaration("", type) << ") ";
-        val << "malloc(";
         if (auto array_type = dynamic_cast<const types::Array*>(&pointer_type->pointee_type())) {
-            val << this->expression(array_type->num_elements());
+            auto alignment = array_type->alignment();
+            auto num_elements = this->expression(array_type->num_elements());
+            auto& element_type = array_type->element_type();
+            val << "aligned_alloc(";
+            val << alignment;
+            val << ", ";
+            val << num_elements;
+            val << " * sizeof(";
+            val << declaration("", element_type);
+            val << "))";
         } else {
+            val << "malloc(";
             val << "1";
+            val << " * sizeof(";
+            val << declaration("", pointer_type->pointee_type());
+            val << "))";
         }
-        val << " * sizeof(";
-        val << declaration("", pointer_type->pointee_type());
-        val << "))";
     } else if (dynamic_cast<const types::Structure*>(&type)) {
         val << declaration(name, type);
     } else {
