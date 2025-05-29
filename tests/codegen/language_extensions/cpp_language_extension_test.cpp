@@ -129,7 +129,7 @@ TEST(CPPLanguageExtensionTest, Allocation_Array) {
     codegen::CPPLanguageExtension generator;
     auto result = generator.allocation(
         "var", types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)));
-    EXPECT_EQ(result, "int var[10]");
+    EXPECT_EQ(result, "int var[10] __attribute__((aligned(1)))");
 }
 
 TEST(CPPLanguageExtensionTest, Allocation_Pointer) {

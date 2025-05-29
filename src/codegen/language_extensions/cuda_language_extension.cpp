@@ -404,9 +404,6 @@ std::string CUDALanguageExtension::declaration(const std::string& name, const ty
         auto& element_type = array_type->element_type();
         val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
                            element_type);
-        if (array_type->alignment() > 1) {
-            val << " __attribute__((aligned(" << array_type->alignment() << ")))";
-        }
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         auto& pointee_type = pointer_type->pointee_type();
         val << declaration("(*" + name + ")", pointee_type);
@@ -458,6 +455,7 @@ std::string CUDALanguageExtension::allocation(const std::string& name, const typ
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
         val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
                            array_type->element_type());
+        val << " __attribute__((aligned(" << array_type->alignment() << ")))";
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         std::string pointee_name = name + "__daisy_nvptx_internal_";
         val << declaration(pointee_name, pointer_type->pointee_type());
