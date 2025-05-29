@@ -4,11 +4,22 @@
 
 #include "symengine/functions.h"
 #include "symengine/logic.h"
+#include "sdfg/exceptions.h"
 
 namespace sdfg {
 namespace symbolic {
 
-Symbol symbol(const std::string& name) { return SymEngine::symbol(name); };
+Symbol symbol(const std::string& name) {
+    if (name == "null") {
+        throw InvalidSDFGException("null is not a valid symbol");
+    } else if (name == "NULL") {
+        throw InvalidSDFGException("NULL is not a valid symbol");
+    } else if (name == "nullptr") {
+        throw InvalidSDFGException("nullptr is not a valid symbol");
+    }
+
+    return SymEngine::symbol(name);
+};
 
 Integer integer(int64_t value) { return SymEngine::integer(value); };
 
@@ -22,7 +33,7 @@ Condition __false__() { return SymEngine::boolean(false); };
 
 Condition __true__() { return SymEngine::boolean(true); };
 
-Symbol __nullptr__() { return symbol("__daisy_nullptr"); };
+Symbol __nullptr__() { return SymEngine::symbol("__daisy_nullptr"); };
 
 bool is_memory_address(const Symbol& symbol) {
     return symbol->get_name().starts_with("reinterpret_cast");
