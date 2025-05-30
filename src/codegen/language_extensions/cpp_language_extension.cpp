@@ -369,7 +369,7 @@ std::string CPPLanguageExtension::primitive_type(const types::PrimitiveType prim
         case types::PrimitiveType::Double:
             return "double";
         case types::PrimitiveType::X86_FP80:
-            return "__float80";
+            return "long double";
         case types::PrimitiveType::FP128:
             return "__float128";
         case types::PrimitiveType::PPC_FP128:
