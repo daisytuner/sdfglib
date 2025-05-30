@@ -88,7 +88,7 @@ TEST(CUDALanguageExtensionTest, Declaration_Pointer) {
     codegen::CUDALanguageExtension generator;
     auto result =
         generator.declaration("var", types::Pointer(types::Scalar(types::PrimitiveType::Int32)));
-    EXPECT_EQ(result, "int (*var)");
+    EXPECT_EQ(result, "int *var");
 }
 
 TEST(CUDALanguageExtensionTest, Declaration_Array) {
@@ -137,7 +137,7 @@ TEST(CUDALanguageExtensionTest, Allocation_Pointer) {
     auto result =
         generator.allocation("var", types::Pointer(types::Scalar(types::PrimitiveType::Float)));
     EXPECT_EQ(result,
-              "float var__daisy_nvptx_internal_;\nfloat (*var) = &var__daisy_nvptx_internal_");
+              "float var__daisy_nvptx_internal_;\nfloat *var = &var__daisy_nvptx_internal_");
 }
 
 TEST(CUDALanguageExtensionTest, Allocation_Struct) {
@@ -176,7 +176,7 @@ TEST(CUDALanguageExtensionTest, Typecast) {
     codegen::CUDALanguageExtension generator;
     auto result =
         generator.type_cast("var", types::Pointer(types::Scalar(types::PrimitiveType::Float)));
-    EXPECT_EQ(result, "reinterpret_cast<float (*)>(var)");
+    EXPECT_EQ(result, "reinterpret_cast<float *>(var)");
 }
 
 TEST(CUDALanguageExtensionTest, SubsetToCpp_Scalar) {
