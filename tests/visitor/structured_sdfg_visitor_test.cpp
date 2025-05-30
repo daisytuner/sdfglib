@@ -24,7 +24,7 @@ TEST(StructuredSDFGVisitorTest, None) {
     auto& if_else = builder.add_if_else(sequence);
     auto& loop = builder.add_while(sequence);
     auto& cont = builder.add_continue(loop.root());
-    auto& br = builder.add_break(sequence);
+    auto& br = builder.add_break(loop.root());
     auto& for_l = builder.add_for(
         sequence, symbolic::symbol("i"), symbolic::Le(symbolic::symbol("i"), symbolic::integer(0)),
         symbolic::integer(1), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)));
