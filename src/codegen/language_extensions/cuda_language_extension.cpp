@@ -426,23 +426,18 @@ std::string CUDALanguageExtension::declaration(const std::string& name, const ty
         val << " ";
         val << name;
     } else if (auto function_type = dynamic_cast<const types::Function*>(&type)) {
-        val << declaration("", function_type->return_type());
-        val << " ";
-        val << name;
-        val << "(";
+        std::stringstream params;
         for (size_t i = 0; i < function_type->num_params(); ++i) {
-            val << declaration("", function_type->param_type(symbolic::integer(i)));
-            if (i < function_type->num_params() - 1) {
-                val << ", ";
-            }
+            params << declaration("", function_type->param_type(symbolic::integer(i)));
+            if (i + 1 < function_type->num_params()) params << ", ";
         }
         if (function_type->is_var_arg()) {
-            if (function_type->num_params() > 0) {
-                val << ", ";
-            }
-            val << "...";
+            if (function_type->num_params() > 0) params << ", ";
+            params << "...";
         }
-        val << ")";
+
+        const std::string fun_name = name + "(" + params.str() + ")";
+        val << declaration(fun_name, function_type->return_type());
     } else {
         throw std::runtime_error("Unknown declaration type");
     }
