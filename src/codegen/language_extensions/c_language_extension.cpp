@@ -392,8 +392,15 @@ std::string CLanguageExtension::declaration(const std::string& name, const types
         val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
                            element_type);
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
-        auto& pointee_type = pointer_type->pointee_type();
-        val << declaration("(*" + name + ")", pointee_type);
+        const types::IType& pointee = pointer_type->pointee_type();
+
+        const bool pointee_is_function_or_array = dynamic_cast<const types::Function*>(&pointee) ||
+                                                  dynamic_cast<const types::Array*>(&pointee);
+
+        // Parenthesise *only* when it is needed to bind tighter than [] or ()
+        std::string decorated = pointee_is_function_or_array ? "(*" + name + ")" : "*" + name;
+
+        val << declaration(decorated, pointee);
     } else if (auto ref_type = dynamic_cast<const Reference*>(&type)) {
         val << declaration("&" + name, ref_type->reference_type());
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
