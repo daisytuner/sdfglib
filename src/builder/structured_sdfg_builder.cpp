@@ -710,6 +710,8 @@ Continue& StructuredSDFGBuilder::add_continue(Sequence& parent,
         if (dynamic_cast<structured_control_flow::While*>(current_scope)) {
             in_loop = true;
             break;
+        } else if (dynamic_cast<structured_control_flow::For*>(current_scope)) {
+            throw InvalidSDFGException("Continue statement is not allowed in a for loop");
         }
         current_scope = scope_tree_analysis.parent_scope(current_scope);
     }
@@ -742,6 +744,8 @@ Break& StructuredSDFGBuilder::add_break(Sequence& parent,
         if (dynamic_cast<structured_control_flow::While*>(current_scope)) {
             in_loop = true;
             break;
+        } else if (dynamic_cast<structured_control_flow::For*>(current_scope)) {
+            throw InvalidSDFGException("Break statement is not allowed in a for loop");
         }
         current_scope = scope_tree_analysis.parent_scope(current_scope);
     }
