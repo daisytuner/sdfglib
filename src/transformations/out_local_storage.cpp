@@ -15,7 +15,8 @@ namespace sdfg {
 namespace transformations {
 
 OutLocalStorage::OutLocalStorage(structured_control_flow::Sequence& parent,
-                                 structured_control_flow::For& loop, std::string container)
+                                 structured_control_flow::StructuredLoop& loop,
+                                 std::string container)
     : parent_(parent), loop_(loop), container_(container) {};
 
 std::string OutLocalStorage::name() { return "OutLocalStorage"; };
