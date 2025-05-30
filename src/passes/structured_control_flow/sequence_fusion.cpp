@@ -4,7 +4,7 @@ namespace sdfg {
 namespace passes {
 
 SequenceFusion::SequenceFusion()
-    : Pass(){
+    : Pass() {
 
       };
 
@@ -51,6 +51,8 @@ bool SequenceFusion::run_pass(builder::StructuredSDFGBuilder& builder,
             queue.push_back(&for_stmt->root());
         } else if (auto kern_stmt = dynamic_cast<const structured_control_flow::Kernel*>(current)) {
             queue.push_back(&kern_stmt->root());
+        } else if (auto map_stmt = dynamic_cast<const structured_control_flow::Map*>(current)) {
+            queue.push_back(&map_stmt->root());
         }
     }
 

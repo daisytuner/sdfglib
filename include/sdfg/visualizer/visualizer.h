@@ -47,6 +47,7 @@ class Visualizer {
                                    structured_control_flow::Continue& continue_node) = 0;
     virtual void visualizeKernel(Schedule& schedule,
                                  structured_control_flow::Kernel& kernel_node) = 0;
+    virtual void visualizeMap(Schedule& schedule, structured_control_flow::Map& map_node) = 0;
 
     virtual void visualizeTasklet(data_flow::Tasklet const& tasklet);
     virtual void visualizeForBounds(symbolic::Symbol const& indvar,

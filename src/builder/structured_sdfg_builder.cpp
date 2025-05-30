@@ -2,6 +2,8 @@
 
 #include "sdfg/codegen/language_extensions/cpp_language_extension.h"
 #include "sdfg/data_flow/library_node.h"
+#include "sdfg/structured_control_flow/map.h"
+#include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/types/utils.h"
 
 using namespace sdfg::control_flow;
@@ -735,6 +737,20 @@ Return& StructuredSDFGBuilder::add_return(Sequence& parent,
     return static_cast<Return&>(*parent.children_.back().get());
 };
 
+Map& StructuredSDFGBuilder::add_map(Sequence& parent, const symbolic::Symbol& indvar,
+                                    const symbolic::Expression& num_iterations,
+                                    const sdfg::symbolic::Assignments& assignments,
+                                    const DebugInfo& debug_info) {
+    parent.children_.push_back(
+        std::unique_ptr<Map>(new Map(this->element_counter_, debug_info, indvar, num_iterations)));
+    this->element_counter_ = this->element_counter_ + 2;
+    parent.transitions_.push_back(std::unique_ptr<Transition>(
+        new Transition(this->element_counter_, debug_info, assignments)));
+    this->element_counter_++;
+
+    return static_cast<Map&>(*parent.children_.back().get());
+};
+
 For& StructuredSDFGBuilder::convert_while(Sequence& parent, While& loop,
                                           const symbolic::Symbol& indvar,
                                           const symbolic::Condition& condition,
@@ -760,6 +776,30 @@ For& StructuredSDFGBuilder::convert_while(Sequence& parent, While& loop,
     parent.children_.erase(parent.children_.begin() + index);
 
     return for_loop;
+};
+
+Map& StructuredSDFGBuilder::convert_for(Sequence& parent, For& loop,
+                                        const symbolic::Expression& num_iterations) {
+    // Insert for loop
+    size_t index = 0;
+    for (auto& entry : parent.children_) {
+        if (entry.get() == &loop) {
+            break;
+        }
+        index++;
+    }
+    auto iter = parent.children_.begin() + index;
+    auto& new_iter = *parent.children_.insert(
+        iter + 1, std::unique_ptr<Map>(new Map(this->element_counter_, loop.debug_info(),
+                                               loop.indvar(), num_iterations)));
+    this->element_counter_ = this->element_counter_ + 2;
+    auto& map = dynamic_cast<Map&>(*new_iter);
+    this->insert_children(map.root(), loop.root(), 0);
+
+    // Remove for loop
+    parent.children_.erase(parent.children_.begin() + index);
+
+    return map;
 };
 
 void StructuredSDFGBuilder::clear_sequence(Sequence& parent) {

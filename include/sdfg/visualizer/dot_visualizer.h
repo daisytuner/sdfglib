@@ -36,6 +36,7 @@ class DotVisualizer : public Visualizer {
                                    structured_control_flow::Continue& continue_node) override;
     virtual void visualizeKernel(Schedule& schedule,
                                  structured_control_flow::Kernel& kernel_node) override;
+    virtual void visualizeMap(Schedule& schedule, structured_control_flow::Map& map_node) override;
 
    public:
     using Visualizer::Visualizer;

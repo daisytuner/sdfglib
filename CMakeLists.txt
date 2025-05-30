@@ -68,6 +68,7 @@ set(SOURCE_FILES
     src/codegen/dispatchers/if_else_dispatcher.cpp
     src/codegen/dispatchers/sequence_dispatcher.cpp
     src/codegen/dispatchers/for_dispatcher.cpp
+    src/codegen/dispatchers/map_dispatcher.cpp
     src/codegen/dispatchers/while_dispatcher.cpp
     src/codegen/dispatchers/kernel_dispatcher.cpp
     src/codegen/dispatchers/schedules/highway_dispatcher.cpp
@@ -101,6 +102,7 @@ set(SOURCE_FILES
     src/passes/structured_control_flow/block_fusion.cpp
     src/passes/structured_control_flow/common_assignment_elimination.cpp
     src/passes/structured_control_flow/dead_cfg_elimination.cpp
+    src/passes/structured_control_flow/for2map.cpp
     src/passes/structured_control_flow/loop_bound_normalization.cpp
     src/passes/structured_control_flow/loop_dependent_symbol_elimination.cpp
     src/passes/structured_control_flow/sequence_fusion.cpp
@@ -111,6 +113,7 @@ set(SOURCE_FILES
     src/structured_control_flow/for.cpp
     src/structured_control_flow/if_else.cpp
     src/structured_control_flow/kernel.cpp
+    src/structured_control_flow/map.cpp
     src/structured_control_flow/return.cpp
     src/structured_control_flow/sequence.cpp
     src/structured_control_flow/while.cpp

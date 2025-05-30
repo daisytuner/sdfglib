@@ -249,6 +249,24 @@ void DotVisualizer::visualizeKernel(Schedule& schedule,
     this->replacements_.resize(replacements_size_before);
 }
 
+void DotVisualizer::visualizeMap(Schedule& schedule, structured_control_flow::Map& map_node) {
+    this->stream_ << "subgraph cluster_" << map_node.name() << " {" << std::endl;
+    this->stream_.setIndent(this->stream_.indent() + 4);
+    this->stream_ << "style=filled;shape=box;fillcolor=white;color=black;label=\"map: ";
+    this->stream_ << map_node.indvar()->get_name() << "[0:";
+    this->stream_ << map_node.num_iterations()->__str__() << "];";
+    LoopSchedule loop_schedule = schedule.loop_schedule(&map_node);
+    if (loop_schedule == LoopSchedule::VECTORIZATION) this->stream_ << " (vectorized)";
+    if (loop_schedule == LoopSchedule::MULTICORE) this->stream_ << " (parallelized)";
+    this->stream_ << "\";" << std::endl
+                  << map_node.name() << " [shape=point,style=invis,label=\"\"];" << std::endl;
+    this->visualizeSequence(schedule, map_node.root());
+    this->stream_.setIndent(this->stream_.indent() - 4);
+    this->stream_ << "}" << std::endl;
+    this->last_comp_name_ = map_node.name();
+    this->last_comp_name_cluster_ = "cluster_" + map_node.name();
+}
+
 void DotVisualizer::visualize() {
     this->stream_.clear();
     this->stream_ << "digraph " << this->schedule_.name() << " {" << std::endl;

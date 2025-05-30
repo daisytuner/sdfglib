@@ -4,6 +4,7 @@
 #include "sdfg/codegen/dispatchers/for_dispatcher.h"
 #include "sdfg/codegen/dispatchers/if_else_dispatcher.h"
 #include "sdfg/codegen/dispatchers/kernel_dispatcher.h"
+#include "sdfg/codegen/dispatchers/map_dispatcher.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher.h"
 #include "sdfg/codegen/dispatchers/sequence_dispatcher.h"
 #include "sdfg/codegen/dispatchers/while_dispatcher.h"
@@ -28,7 +29,8 @@ inline std::unique_ptr<NodeDispatcher> create_dispatcher(
         return std::make_unique<WhileDispatcher>(language_extension, schedule, *while_loop,
                                                  instrumentation);
     } else if (auto loop = dynamic_cast<structured_control_flow::For*>(&node)) {
-        return std::make_unique<ForDispatcher>(language_extension, schedule, *loop, instrumentation);
+        return std::make_unique<ForDispatcher>(language_extension, schedule, *loop,
+                                               instrumentation);
     } else if (auto return_node = dynamic_cast<structured_control_flow::Return*>(&node)) {
         return std::make_unique<ReturnDispatcher>(language_extension, schedule, *return_node,
                                                   instrumentation);
@@ -41,6 +43,9 @@ inline std::unique_ptr<NodeDispatcher> create_dispatcher(
     } else if (auto kernel_node = dynamic_cast<structured_control_flow::Kernel*>(&node)) {
         return std::make_unique<KernelDispatcher>(language_extension, schedule, *kernel_node,
                                                   instrumentation);
+    } else if (auto map_node = dynamic_cast<structured_control_flow::Map*>(&node)) {
+        return std::make_unique<MapDispatcher>(language_extension, schedule, *map_node,
+                                               instrumentation);
     } else {
         throw std::runtime_error("Unsupported control flow node");
     }

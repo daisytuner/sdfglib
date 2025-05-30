@@ -231,6 +231,15 @@ void JSONSerializer::kernel_to_json(nlohmann::json& j,
     j["children"] = body_json;
 }
 
+void JSONSerializer::map_to_json(nlohmann::json& j, const structured_control_flow::Map& map_node) {
+    j["type"] = "map";
+    j["indvar"] = expression(map_node.indvar());
+    j["num_iterations"] = expression(map_node.num_iterations());
+    nlohmann::json body_json;
+    sequence_to_json(body_json, map_node.root());
+    j["children"] = body_json;
+}
+
 void JSONSerializer::return_node_to_json(nlohmann::json& j,
                                          const structured_control_flow::Return& return_node) {
     j["type"] = "return";
@@ -270,6 +279,8 @@ void JSONSerializer::sequence_to_json(nlohmann::json& j,
         } else if (auto continue_node =
                        dynamic_cast<const structured_control_flow::Continue*>(&child)) {
             continue_node_to_json(child_json, *continue_node);
+        } else if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(&child)) {
+            map_to_json(child_json, *map_node);
         } else {
             throw std::runtime_error("Unknown child type");
         }
@@ -734,6 +745,33 @@ void JSONSerializer::json_to_kernel_node(const nlohmann::json& j,
     std::string type = j["children"]["type"];
     if (type == "sequence") {
         json_to_sequence(j["children"], builder, kernel_node.root());
+    } else {
+        throw std::runtime_error("Unknown child type");
+    }
+}
+
+void JSONSerializer::json_to_map_node(const nlohmann::json& j,
+                                      builder::StructuredSDFGBuilder& builder,
+                                      structured_control_flow::Sequence& parent,
+                                      symbolic::Assignments& assignments) {
+    assert(j.contains("type"));
+    assert(j["type"].is_string());
+    assert(j["type"] == "map");
+    assert(j.contains("indvar"));
+    assert(j["indvar"].is_string());
+    assert(j.contains("num_iterations"));
+    assert(j["num_iterations"].is_string());
+    assert(j.contains("children"));
+    assert(j["children"].is_object());
+    symbolic::Symbol indvar = symbolic::symbol(j["indvar"]);
+    SymEngine::Expression num_iterations(j["num_iterations"]);
+
+    auto& map_node = builder.add_map(parent, indvar, num_iterations, assignments);
+    assert(j["children"].contains("type"));
+    assert(j["children"]["type"].is_string());
+    std::string type = j["children"]["type"];
+    if (type == "sequence") {
+        json_to_sequence(j["children"], builder, map_node.root());
     } else {
         throw std::runtime_error("Unknown child type");
     }
