@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "fixtures/rodinia.h"
+#include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/symbolic/symbolic.h"

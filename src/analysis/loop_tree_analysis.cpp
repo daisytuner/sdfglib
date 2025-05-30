@@ -1,5 +1,7 @@
 #include "sdfg/analysis/loop_tree_analysis.h"
 
+#include "sdfg/structured_control_flow/structured_loop.h"
+
 namespace sdfg {
 namespace analysis {
 
@@ -15,7 +17,8 @@ void LoopTreeAnalysis::run(structured_control_flow::ControlFlowNode& scope,
         // Loop detected
         if (auto while_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
             this->loop_tree_[while_stmt] = parent_loop;
-        } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(current)) {
+        } else if (auto for_stmt =
+                       dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
             this->loop_tree_[for_stmt] = parent_loop;
         }
 
@@ -31,7 +34,8 @@ void LoopTreeAnalysis::run(structured_control_flow::ControlFlowNode& scope,
             }
         } else if (auto while_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
             this->run(while_stmt->root(), while_stmt);
-        } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(current)) {
+        } else if (auto for_stmt =
+                       dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
             this->run(for_stmt->root(), for_stmt);
         } else if (dynamic_cast<structured_control_flow::Kernel*>(current)) {
             continue;

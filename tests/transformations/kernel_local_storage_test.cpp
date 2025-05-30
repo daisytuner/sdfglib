@@ -38,8 +38,8 @@ TEST(KernelLocalStorageTest, Basic) {
     auto condition = symbolic::Lt(indvar, bound);
     auto update = symbolic::add(indvar, symbolic::integer(1));
 
-    auto& loop = builder.add_for(kernel.root(), indvar, condition, init, update);
-    auto& body = loop.root();
+    auto& orig_loop = builder.add_for(kernel.root(), indvar, condition, init, update);
+    auto& body = orig_loop.root();
 
     // Add computation
     auto& block = builder.add_block(body);
@@ -57,7 +57,7 @@ TEST(KernelLocalStorageTest, Basic) {
     auto& builder_opt = schedule->builder();
 
     // Apply
-    transformations::LoopTiling transformation(kernel.root(), loop, 32);
+    transformations::LoopTiling transformation(kernel.root(), orig_loop, 32);
     EXPECT_TRUE(transformation.can_be_applied(*schedule));
     transformation.apply(*schedule);
 
@@ -70,6 +70,17 @@ TEST(KernelLocalStorageTest, Basic) {
         applies |= dead_cfg.run(builder_opt, analysis_manager);
         applies |= sequence_fusion.run(builder_opt, analysis_manager);
     } while (applies);
+
+    auto& sdfg_opt = builder_opt.subject();
+    EXPECT_EQ(sdfg_opt.root().size(), 1);
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::Kernel*>(&sdfg_opt.root().at(0).first) !=
+                nullptr);
+    auto& kernel_opt = static_cast<structured_control_flow::Kernel&>(sdfg_opt.root().at(0).first);
+
+    EXPECT_EQ(kernel_opt.root().size(), 1);
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&kernel_opt.root().at(0).first) !=
+                nullptr);
+    auto& loop = static_cast<structured_control_flow::For&>(kernel_opt.root().at(0).first);
 
     EXPECT_EQ(loop.root().size(), 1);
 

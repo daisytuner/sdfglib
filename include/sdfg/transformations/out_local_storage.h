@@ -8,13 +8,13 @@ namespace transformations {
 
 class OutLocalStorage : public Transformation {
     structured_control_flow::Sequence& parent_;
-    structured_control_flow::For& loop_;
+    structured_control_flow::StructuredLoop& loop_;
     std::string container_;
     bool requires_array_;
 
    public:
-    OutLocalStorage(structured_control_flow::Sequence& parent, structured_control_flow::For& loop,
-                    std::string container);
+    OutLocalStorage(structured_control_flow::Sequence& parent,
+                    structured_control_flow::StructuredLoop& loop, std::string container);
 
     virtual std::string name() override;
 
