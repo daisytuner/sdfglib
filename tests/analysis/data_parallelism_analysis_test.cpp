@@ -309,7 +309,7 @@ TEST(TestDataParallelism, Map_1D_Scalar) {
     auto& A = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"_in", base_desc}});
-    builder.add_memlet(block, a, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, a, "void", tasklet, "_in", {});
     builder.add_memlet(block, tasklet, "_out", A, "void", {indvar});
 
     auto& graph = block.dataflow();
@@ -458,7 +458,7 @@ TEST(TestDataParallelism, Reduction_1D) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"_in", base_desc}});
     builder.add_memlet(block, A, "void", tasklet, "_in", {indvar});
-    builder.add_memlet(block, tasklet, "_out", b, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", b, "void", {});
 
     auto& graph = block.dataflow();
     EXPECT_EQ(graph.nodes().size(), 3);
@@ -669,7 +669,7 @@ TEST(TestDataParallelism, Gather_1D) {
     auto& tasklet1 = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                          {{"_in", base_desc}});
     builder.add_memlet(block, A, "void", tasklet1, "_in", {indvar});
-    builder.add_memlet(block, tasklet1, "_out", b, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet1, "_out", b, "void", {});
 
     auto& A1 = builder.add_access(block, "B");
     auto& A2 = builder.add_access(block, "C");
@@ -731,7 +731,7 @@ TEST(TestDataParallelism, Scatter_1D) {
     auto& tasklet1 = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                          {{"_in", base_desc}});
     builder.add_memlet(block, A, "void", tasklet1, "_in", {indvar});
-    builder.add_memlet(block, tasklet1, "_out", b, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet1, "_out", b, "void", {});
 
     auto& A1 = builder.add_access(block, "B");
     auto& A2 = builder.add_access(block, "B");
@@ -1132,7 +1132,7 @@ TEST(TestDataParallelism, Intervals_Disjoint_1D) {
     auto& B = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"_in", base_desc}});
-    builder.add_memlet(block, A, "void", tasklet, "_in1", {indvar1});
+    builder.add_memlet(block, A, "void", tasklet, "_in", {indvar1});
     builder.add_memlet(block, tasklet, "_out", B, "void",
                        {symbolic::add(indvar1, symbolic::symbol("N"))});
 
@@ -1192,7 +1192,7 @@ TEST(TestDataParallelism, Triangle_2D) {
     auto& B = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"_in", base_desc}});
-    builder.add_memlet(block, A, "void", tasklet, "_in1", {indvar1, indvar2});
+    builder.add_memlet(block, A, "void", tasklet, "_in", {indvar1, indvar2});
     builder.add_memlet(block, tasklet, "_out", B, "void", {indvar2, indvar1});
 
     auto& graph = block.dataflow();
@@ -1257,7 +1257,7 @@ TEST(TestDataParallelism, Triangle_2D_2) {
     auto& B = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"_in", base_desc}});
-    builder.add_memlet(block, A, "void", tasklet, "_in1", {indvar1, indvar2});
+    builder.add_memlet(block, A, "void", tasklet, "_in", {indvar1, indvar2});
     builder.add_memlet(block, tasklet, "_out", B, "void", {indvar2, indvar1});
 
     auto& graph = block.dataflow();
@@ -1444,7 +1444,7 @@ TEST(TestDataParallelism, Conditional_Tasklets_Private) {
     auto& tasklet1 = builder.add_tasklet(block1, data_flow::TaskletCode::assign,
                                          {"_out", base_desc}, {{"_in", base_desc}});
     builder.add_memlet(block1, B, "void", tasklet1, "_in", {indvar1});
-    builder.add_memlet(block1, tasklet1, "_out", j, "void", {symbolic::integer(0)});
+    builder.add_memlet(block1, tasklet1, "_out", j, "void", {});
 
     auto& block2 = builder.add_block(body1);
     auto& A_in = builder.add_access(block2, "A");
@@ -1499,8 +1499,8 @@ TEST(TestDataParallelism, Conditional_Tasklets_Dependent) {
     auto& j_out = builder.add_access(block1, "j");
     auto& tasklet1 = builder.add_tasklet(block1, data_flow::TaskletCode::add, {"_out", base_desc},
                                          {{"_in", base_desc}, {"1", base_desc}});
-    builder.add_memlet(block1, j_in, "void", tasklet1, "_in", {indvar1});
-    builder.add_memlet(block1, tasklet1, "_out", j_out, "void", {symbolic::integer(0)});
+    builder.add_memlet(block1, j_in, "void", tasklet1, "_in", {});
+    builder.add_memlet(block1, tasklet1, "_out", j_out, "void", {});
 
     auto& block2 = builder.add_block(body1);
     auto& A_in = builder.add_access(block2, "A");
@@ -2011,7 +2011,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
         auto& tasklet1 = builder.add_tasklet(block1, data_flow::TaskletCode::assign,
                                              {"_out", sym_desc}, {{"_in", sym_desc}});
         builder.add_memlet(block1, iN_node, "void", tasklet1, "_in", {symbolic::symbol("i")});
-        builder.add_memlet(block1, tasklet1, "_out", iN_i_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block1, tasklet1, "_out", iN_i_node, "void", {});
 
         auto& block2 = builder.add_block(body_loop_j);
         auto& iS_i_node = builder.add_access(block2, "iS_i");
@@ -2019,7 +2019,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
         auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
                                              {"_out", sym_desc}, {{"_in", sym_desc}});
         builder.add_memlet(block2, iS_node, "void", tasklet2, "_in", {symbolic::symbol("i")});
-        builder.add_memlet(block2, tasklet2, "_out", iS_i_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block2, tasklet2, "_out", iS_i_node, "void", {});
 
         auto& block3 = builder.add_block(body_loop_j);
         auto& jW_j_node = builder.add_access(block3, "jW_j");
@@ -2027,7 +2027,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
         auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::assign,
                                              {"_out", sym_desc}, {{"_in", sym_desc}});
         builder.add_memlet(block3, jW_node, "void", tasklet3, "_in", {symbolic::symbol("j")});
-        builder.add_memlet(block3, tasklet3, "_out", jW_j_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block3, tasklet3, "_out", jW_j_node, "void", {});
 
         auto& block4 = builder.add_block(body_loop_j);
         auto& jE_j_node = builder.add_access(block4, "jE_j");
@@ -2035,7 +2035,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
         auto& tasklet4 = builder.add_tasklet(block4, data_flow::TaskletCode::assign,
                                              {"_out", sym_desc}, {{"_in", sym_desc}});
         builder.add_memlet(block4, jE_node, "void", tasklet4, "_in", {symbolic::symbol("j")});
-        builder.add_memlet(block4, tasklet4, "_out", jE_j_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block4, tasklet4, "_out", jE_j_node, "void", {});
     }
 
     {
@@ -2048,7 +2048,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
             block, J, "void", tasklet11, "_in",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
                            symbolic::symbol("j"))});
-        builder.add_memlet(block, tasklet11, "_out", Jc, "void", {symbolic::integer(0)});
+        builder.add_memlet(block, tasklet11, "_out", Jc, "void", {});
     }
 
     // directional derivates
@@ -2064,7 +2064,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
             block1, J_node1, "void", tasklet1, "_in1",
             {symbolic::add(symbolic::mul(symbolic::symbol("iN_i"), symbolic::symbol("cols")),
                            symbolic::symbol("j"))});
-        builder.add_memlet(block1, Jc_node1, "void", tasklet1, "_in2", {symbolic::integer(0)});
+        builder.add_memlet(block1, Jc_node1, "void", tasklet1, "_in2", {});
         builder.add_memlet(
             block1, tasklet1, "_out", dN, "void",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
@@ -2081,7 +2081,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
             block2, J_node2, "void", tasklet2, "_in1",
             {symbolic::add(symbolic::mul(symbolic::symbol("iS_i"), symbolic::symbol("cols")),
                            symbolic::symbol("j"))});
-        builder.add_memlet(block2, Jc_node2, "void", tasklet2, "_in2", {symbolic::integer(0)});
+        builder.add_memlet(block2, Jc_node2, "void", tasklet2, "_in2", {});
         builder.add_memlet(
             block2, tasklet2, "_out", dS, "void",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
@@ -2098,7 +2098,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
             block3, J_node3, "void", tasklet3, "_in1",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
                            symbolic::symbol("jW_j"))});
-        builder.add_memlet(block3, Jc_node3, "void", tasklet3, "_in2", {symbolic::integer(0)});
+        builder.add_memlet(block3, Jc_node3, "void", tasklet3, "_in2", {});
         builder.add_memlet(
             block3, tasklet3, "_out", dW, "void",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
@@ -2115,7 +2115,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
             block4, J_node4, "void", tasklet4, "_in1",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
                            symbolic::symbol("jE_j"))});
-        builder.add_memlet(block4, Jc_node4, "void", tasklet4, "_in2", {symbolic::integer(0)});
+        builder.add_memlet(block4, Jc_node4, "void", tasklet4, "_in2", {});
         builder.add_memlet(
             block4, tasklet4, "_out", dE, "void",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
@@ -2138,7 +2138,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
             block1, dN_node1, "void", tasklet2, "_in2",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
                            symbolic::symbol("j"))});
-        builder.add_memlet(block1, tasklet2, "_out", G2_node1, "void", {symbolic::integer(0)});
+        builder.add_memlet(block1, tasklet2, "_out", G2_node1, "void", {});
 
         auto& block2 = builder.add_block(body_loop_j);
         auto& G2_node2 = builder.add_access(block2, "G2");
@@ -2155,8 +2155,8 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
             block2, dS_node2, "void", tasklet3, "_in2",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
                            symbolic::symbol("j"))});
-        builder.add_memlet(block2, G2_node2, "void", tasklet3, "_in3", {symbolic::integer(0)});
-        builder.add_memlet(block2, tasklet3, "_out", G2_node2_out, "void", {symbolic::integer(0)});
+        builder.add_memlet(block2, G2_node2, "void", tasklet3, "_in3", {});
+        builder.add_memlet(block2, tasklet3, "_out", G2_node2_out, "void", {});
 
         auto& block3 = builder.add_block(body_loop_j);
         auto& G2_node3 = builder.add_access(block3, "G2");
@@ -2173,8 +2173,8 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
             block3, dW_node3, "void", tasklet4, "_in2",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
                            symbolic::symbol("j"))});
-        builder.add_memlet(block3, G2_node3, "void", tasklet4, "_in3", {symbolic::integer(0)});
-        builder.add_memlet(block3, tasklet4, "_out", G2_node3_out, "void", {symbolic::integer(0)});
+        builder.add_memlet(block3, G2_node3, "void", tasklet4, "_in3", {});
+        builder.add_memlet(block3, tasklet4, "_out", G2_node3_out, "void", {});
 
         auto& block4 = builder.add_block(body_loop_j);
         auto& G2_node4 = builder.add_access(block4, "G2");
@@ -2191,8 +2191,8 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
             block4, dE_node4, "void", tasklet5, "_in2",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
                            symbolic::symbol("j"))});
-        builder.add_memlet(block4, G2_node4, "void", tasklet5, "_in3", {symbolic::integer(0)});
-        builder.add_memlet(block4, tasklet5, "_out", G2_node4_out, "void", {symbolic::integer(0)});
+        builder.add_memlet(block4, G2_node4, "void", tasklet5, "_in3", {});
+        builder.add_memlet(block4, tasklet5, "_out", G2_node4_out, "void", {});
 
         auto& block5 = builder.add_block(body_loop_j);
         auto& G2_node5 = builder.add_access(block5, "G2");
@@ -2201,9 +2201,9 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
         auto& tasklet6 =
             builder.add_tasklet(block5, data_flow::TaskletCode::div, {"_out", element_desc},
                                 {{"_in1", element_desc}, {"_in2", element_desc}});
-        builder.add_memlet(block5, G2_node5, "void", tasklet6, "_in1", {symbolic::integer(0)});
-        builder.add_memlet(block5, Jc_node5, "void", tasklet6, "_in2", {symbolic::integer(0)});
-        builder.add_memlet(block5, tasklet6, "_out", G2_node5_out, "void", {symbolic::integer(0)});
+        builder.add_memlet(block5, G2_node5, "void", tasklet6, "_in1", {});
+        builder.add_memlet(block5, Jc_node5, "void", tasklet6, "_in2", {});
+        builder.add_memlet(block5, tasklet6, "_out", G2_node5_out, "void", {});
     }
 
     // L
@@ -2223,7 +2223,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
             block1, dS_node1, "void", tasklet1, "_in2",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
                            symbolic::symbol("j"))});
-        builder.add_memlet(block1, tasklet1, "_out", L_node1, "void", {symbolic::integer(0)});
+        builder.add_memlet(block1, tasklet1, "_out", L_node1, "void", {});
 
         auto& block2 = builder.add_block(body_loop_j);
         auto& L_node2 = builder.add_access(block2, "L");
@@ -2232,12 +2232,12 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
         auto& tasklet2 =
             builder.add_tasklet(block2, data_flow::TaskletCode::add, {"_out", element_desc},
                                 {{"_in1", element_desc}, {"_in2", element_desc}});
-        builder.add_memlet(block2, L_node2, "void", tasklet2, "_in1", {symbolic::integer(0)});
+        builder.add_memlet(block2, L_node2, "void", tasklet2, "_in1", {});
         builder.add_memlet(
             block2, dW_node2, "void", tasklet2, "_in2",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
                            symbolic::symbol("j"))});
-        builder.add_memlet(block2, tasklet2, "_out", L_node2_out, "void", {symbolic::integer(0)});
+        builder.add_memlet(block2, tasklet2, "_out", L_node2_out, "void", {});
 
         auto& block3 = builder.add_block(body_loop_j);
         auto& L_node3 = builder.add_access(block3, "L");
@@ -2246,12 +2246,12 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
         auto& tasklet3 =
             builder.add_tasklet(block3, data_flow::TaskletCode::add, {"_out", element_desc},
                                 {{"_in1", element_desc}, {"_in2", element_desc}});
-        builder.add_memlet(block3, L_node3, "void", tasklet3, "_in1", {symbolic::integer(0)});
+        builder.add_memlet(block3, L_node3, "void", tasklet3, "_in1", {});
         builder.add_memlet(
             block3, dE_node3, "void", tasklet3, "_in2",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
                            symbolic::symbol("j"))});
-        builder.add_memlet(block3, tasklet3, "_out", L_node3_out, "void", {symbolic::integer(0)});
+        builder.add_memlet(block3, tasklet3, "_out", L_node3_out, "void", {});
 
         auto& block4 = builder.add_block(body_loop_j);
         auto& L_node4 = builder.add_access(block4, "L");
@@ -2260,9 +2260,9 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
         auto& tasklet4 =
             builder.add_tasklet(block4, data_flow::TaskletCode::div, {"_out", element_desc},
                                 {{"_in1", element_desc}, {"_in2", element_desc}});
-        builder.add_memlet(block4, L_node4, "void", tasklet4, "_in1", {symbolic::integer(0)});
-        builder.add_memlet(block4, Jc_node4, "void", tasklet4, "_in2", {symbolic::integer(0)});
-        builder.add_memlet(block4, tasklet4, "_out", L_node4_out, "void", {symbolic::integer(0)});
+        builder.add_memlet(block4, L_node4, "void", tasklet4, "_in1", {});
+        builder.add_memlet(block4, Jc_node4, "void", tasklet4, "_in2", {});
+        builder.add_memlet(block4, tasklet4, "_out", L_node4_out, "void", {});
     }
 
     // diffusion coefficent (equ 33)
@@ -2274,8 +2274,8 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
         auto& tasklet1 =
             builder.add_tasklet(block1, data_flow::TaskletCode::sub, {"_out", element_desc},
                                 {{"_in1", element_desc}, {"_in2", element_desc}});
-        builder.add_memlet(block1, L_node1, "void", tasklet1, "_in1", {symbolic::integer(0)});
-        builder.add_memlet(block1, q0sqr_node1, "void", tasklet1, "_in2", {symbolic::integer(0)});
+        builder.add_memlet(block1, L_node1, "void", tasklet1, "_in1", {});
+        builder.add_memlet(block1, q0sqr_node1, "void", tasklet1, "_in2", {});
         builder.add_memlet(
             block1, tasklet1, "_out", c_node1, "void",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
@@ -2300,7 +2300,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
             block0, c_node0, "void", tasklet0, "_in",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
                            symbolic::symbol("j"))});
-        builder.add_memlet(block0, tasklet0, "_out", tmp_0_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block0, tasklet0, "_out", tmp_0_node, "void", {});
 
         auto& block1 = builder.add_block(body_loop_j);
         auto& c_node1 = builder.add_access(block1, "c");
@@ -2312,7 +2312,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
             block1, c_node1, "void", tasklet1, "_in",
             {symbolic::add(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("cols")),
                            symbolic::symbol("j"))});
-        builder.add_memlet(block1, tasklet1, "_out", tmp_1_node, "void", {symbolic::integer(0)});
+        builder.add_memlet(block1, tasklet1, "_out", tmp_1_node, "void", {});
 
         auto& block2 = builder.add_block(body_loop_j);
         auto& c_node2 = builder.add_access(block2, "c");

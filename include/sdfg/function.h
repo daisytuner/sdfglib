@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "sdfg/element.h"
+#include "sdfg/exceptions.h"
 #include "sdfg/helpers/helpers.h"
 #include "sdfg/symbolic/analysis.h"
 #include "sdfg/symbolic/assumptions.h"
@@ -27,16 +28,6 @@
 using json = nlohmann::json;
 
 namespace sdfg {
-
-class InvalidSDFGException : public std::exception {
-   private:
-    std::string message_;
-
-   public:
-    InvalidSDFGException(const std::string& message) : message_(message) {}
-
-    const char* what() const noexcept override { return message_.c_str(); }
-};
 
 namespace builder {
 class FunctionBuilder;
@@ -64,6 +55,10 @@ class Function {
 
     // Metadata
     std::unordered_map<std::string, std::string> metadata_;
+
+    // Static types for reserved symbols
+    static const std::unique_ptr<types::Scalar> NVPTX_SYMBOL_TYPE;
+    static const std::unique_ptr<types::Pointer> CONST_POINTER_TYPE;
 
     Function(const std::string& name);
 

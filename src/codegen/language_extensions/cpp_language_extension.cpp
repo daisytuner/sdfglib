@@ -348,6 +348,8 @@ std::string CPPLanguageExtension::primitive_type(const types::PrimitiveType prim
             return "int";
         case types::PrimitiveType::Int64:
             return "long long";
+        case types::PrimitiveType::Int128:
+            return "__int128";
         case types::PrimitiveType::UInt8:
             return "char";
         case types::PrimitiveType::UInt16:
@@ -356,10 +358,22 @@ std::string CPPLanguageExtension::primitive_type(const types::PrimitiveType prim
             return "unsigned int";
         case types::PrimitiveType::UInt64:
             return "unsigned long long";
+        case types::PrimitiveType::UInt128:
+            return "unsigned __int128";
+        case types::PrimitiveType::Half:
+            return "__fp16";
+        case types::PrimitiveType::BFloat:
+            return "__bf16";
         case types::PrimitiveType::Float:
             return "float";
         case types::PrimitiveType::Double:
             return "double";
+        case types::PrimitiveType::X86_FP80:
+            return "__float80";
+        case types::PrimitiveType::FP128:
+            return "__float128";
+        case types::PrimitiveType::PPC_FP128:
+            return "__float128";
     }
 
     throw std::runtime_error("Unknown primitive type");
@@ -423,12 +437,17 @@ std::string CPPLanguageExtension::allocation(const std::string& name, const type
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
         val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
                            array_type->element_type());
+        val << " __attribute__((aligned(" << array_type->alignment() << ")))";
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         val << declaration(name, type);
         val << " = ";
-        val << "(" << declaration("", *pointer_type) << ")";
-        val << " new ";
+        val << "(";
+        val << declaration("", *pointer_type);
+        val << ") ";
+        val << "new ";
+        val << "(";
         val << declaration("", pointer_type->pointee_type());
+        val << ")";
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
         val << declaration(name, *structure_type);
     } else {
@@ -634,7 +653,7 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::Min& x) {
 
         s << ")";
     }
-    
+
     str_ = s.str();
 };
 
@@ -657,12 +676,13 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::Max& x) {
 
         s << ")";
     }
-    
+
     str_ = s.str();
 };
 
-void CPPSymbolicPrinter::_print_pow(std::ostringstream &o, const SymEngine::RCP<const SymEngine::Basic> &a,
-                                  const SymEngine::RCP<const SymEngine::Basic> &b) {
+void CPPSymbolicPrinter::_print_pow(std::ostringstream& o,
+                                    const SymEngine::RCP<const SymEngine::Basic>& a,
+                                    const SymEngine::RCP<const SymEngine::Basic>& b) {
     if (SymEngine::eq(*a, *SymEngine::E)) {
         o << "exp(" << apply(b) << ")";
     } else if (SymEngine::eq(*b, *SymEngine::rational(1, 2))) {

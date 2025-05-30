@@ -100,7 +100,9 @@ void BlockFusion::apply(structured_control_flow::Block& first_block,
     for (auto& node : second_graph.nodes()) {
         if (auto access_node = dynamic_cast<data_flow::AccessNode*>(&node)) {
             if (connectors.find(access_node) != connectors.end()) {
-                assert(connectors[access_node].size() == 1);
+                if (connectors[access_node].size() != 1) {
+                    throw InvalidSDFGException("BlockFusion: Expected exactly one connector");
+                }
                 // Connect by replacement
                 node_mapping[access_node] = *connectors[access_node].begin();
             } else {

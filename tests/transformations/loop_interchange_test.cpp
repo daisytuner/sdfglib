@@ -77,7 +77,7 @@ TEST(LoopInterchangeTest, Map_2D_Tiled) {
     auto& A_out = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"_in", base_desc}});
-    builder.add_memlet(block, A_in, "void", tasklet, "_in1",
+    builder.add_memlet(block, A_in, "void", tasklet, "_in",
                        {symbolic::symbol("i_tile"), symbolic::symbol("j_tile")});
     builder.add_memlet(block, tasklet, "_out", A_out, "void",
                        {symbolic::symbol("i_tile"), symbolic::symbol("j_tile")});
@@ -193,7 +193,7 @@ TEST(LoopInterchangeTest, Reduction_2D_Tiled) {
     auto& A_out = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
                                         {{"_in", base_desc}, {"1", base_desc}});
-    builder.add_memlet(block, A_in, "void", tasklet, "_in1", {symbolic::symbol("i_tile")});
+    builder.add_memlet(block, A_in, "void", tasklet, "_in", {symbolic::symbol("i_tile")});
     builder.add_memlet(block, tasklet, "_out", A_out, "void", {symbolic::symbol("i_tile")});
 
     auto structured_sdfg = builder.move();
@@ -333,7 +333,7 @@ TEST(LoopInterchangeTest, Reduction_3D_Tiled) {
     auto& A_out = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
                                         {{"_in", base_desc}, {"1", base_desc}});
-    builder.add_memlet(block, A_in, "void", tasklet, "_in1",
+    builder.add_memlet(block, A_in, "void", tasklet, "_in",
                        {symbolic::symbol("i_tile"), symbolic::symbol("j_tile")});
     builder.add_memlet(block, tasklet, "_out", A_out, "void",
                        {symbolic::symbol("i_tile"), symbolic::symbol("j_tile")});

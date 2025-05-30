@@ -135,6 +135,11 @@ Assumption Assumption::create(const symbolic::Symbol& symbol, const types::IType
                 assum.upper_bound(symbolic::infty(1));
                 break;
             }
+            case types::PrimitiveType::UInt128: {
+                assum.lower_bound(symbolic::integer(0));
+                assum.upper_bound(symbolic::infty(1));
+                break;
+            }
             case types::PrimitiveType::Int8: {
                 assum.lower_bound(symbolic::integer(std::numeric_limits<int8_t>::min()));
                 assum.upper_bound(symbolic::integer(std::numeric_limits<int8_t>::max()));
@@ -151,6 +156,11 @@ Assumption Assumption::create(const symbolic::Symbol& symbol, const types::IType
                 break;
             }
             case types::PrimitiveType::Int64: {
+                assum.lower_bound(symbolic::infty(-1));
+                assum.upper_bound(symbolic::infty(1));
+                break;
+            }
+            case types::PrimitiveType::Int128: {
                 assum.lower_bound(symbolic::infty(-1));
                 assum.upper_bound(symbolic::infty(1));
                 break;

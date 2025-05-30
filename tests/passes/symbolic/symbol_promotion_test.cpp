@@ -21,7 +21,7 @@ TEST(SymbolPromotionTest, as_symbol_int) {
     auto& output_node = builder.add_access(block, "i");
     auto& tasklet =
         builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", desc}, {{"0", desc}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     auto res = passes::SymbolPromotion::as_symbol(block.dataflow(), tasklet, "0");
     codegen::CPPLanguageExtension language_extension;
@@ -40,7 +40,7 @@ TEST(SymbolPromotionTest, as_symbol_long) {
     auto& output_node = builder.add_access(block, "i");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", desc},
                                         {{"4294967296", desc}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     auto res = passes::SymbolPromotion::as_symbol(block.dataflow(), tasklet, "4294967296");
     codegen::CPPLanguageExtension language_extension;
@@ -61,8 +61,8 @@ TEST(SymbolPromotionTest, as_symbol_input) {
     auto& output_node = builder.add_access(block, "i");
     auto& tasklet =
         builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", desc}, {{"_in", desc}});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     auto res = passes::SymbolPromotion::as_symbol(block.dataflow(), tasklet, "_in");
     codegen::CPPLanguageExtension language_extension;
@@ -81,7 +81,7 @@ TEST(SymbolPromotionTest, Assignment1) {
     auto& output_node = builder.add_access(block, "i");
     auto& tasklet =
         builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", desc}, {{"0", desc}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     auto sdfg = builder.move();
 
@@ -125,8 +125,8 @@ TEST(SymbolPromotionTest, Assignment2) {
     auto& output_node = builder.add_access(block, "j");
     auto& tasklet =
         builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", desc}, {{"_in", desc}});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     auto sdfg = builder.move();
 
@@ -167,7 +167,7 @@ TEST(SymbolPromotionTest, Add1) {
     auto& output_node = builder.add_access(block, "i");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", desc},
                                         {{"0", desc}, {"1", desc}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     auto sdfg = builder.move();
 
@@ -212,9 +212,9 @@ TEST(SymbolPromotionTest, Add2) {
     auto& output_node = builder.add_access(block, "j");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", desc},
                                         {{"_in1", desc}, {"_in2", desc}});
-    builder.add_memlet(block, input_node1, "void", tasklet, "_in1", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node2, "void", tasklet, "_in2", {symbolic::integer(0)});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, input_node1, "void", tasklet, "_in1", {});
+    builder.add_memlet(block, input_node2, "void", tasklet, "_in2", {});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     auto sdfg = builder.move();
 
@@ -254,7 +254,7 @@ TEST(SymbolPromotionTest, Sub1) {
     auto& output_node = builder.add_access(block, "i");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::sub, {"_out", desc},
                                         {{"0", desc}, {"1", desc}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     auto sdfg = builder.move();
 
@@ -299,9 +299,9 @@ TEST(SymbolPromotionTest, Sub2) {
     auto& output_node = builder.add_access(block, "j");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::sub, {"_out", desc},
                                         {{"_in1", desc}, {"_in2", desc}});
-    builder.add_memlet(block, input_node1, "void", tasklet, "_in1", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node2, "void", tasklet, "_in2", {symbolic::integer(0)});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, input_node1, "void", tasklet, "_in1", {});
+    builder.add_memlet(block, input_node2, "void", tasklet, "_in2", {});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     auto sdfg = builder.move();
 
@@ -341,7 +341,7 @@ TEST(SymbolPromotionTest, Mul1) {
     auto& output_node = builder.add_access(block, "i");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::mul, {"_out", desc},
                                         {{"0", desc}, {"1", desc}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     auto sdfg = builder.move();
 
@@ -386,9 +386,9 @@ TEST(SymbolPromotionTest, Mul2) {
     auto& output_node = builder.add_access(block, "j");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::mul, {"_out", desc},
                                         {{"_in1", desc}, {"_in2", desc}});
-    builder.add_memlet(block, input_node1, "void", tasklet, "_in1", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node2, "void", tasklet, "_in2", {symbolic::integer(0)});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_memlet(block, input_node1, "void", tasklet, "_in1", {});
+    builder.add_memlet(block, input_node2, "void", tasklet, "_in2", {});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     auto sdfg = builder.move();
 

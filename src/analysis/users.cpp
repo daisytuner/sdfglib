@@ -532,18 +532,38 @@ void Users::run(analysis::AnalysisManager& analysis_manager) {
     // Require a single source
     for (auto& entry : this->users_) {
         if (boost::in_degree(entry.first, this->graph_) == 0) {
-            assert(this->source_ == nullptr);
+            if (this->source_ != nullptr) {
+                throw InvalidSDFGException("Users Analysis: Non-unique source node");
+            }
             this->source_ = entry.second.get();
         }
     }
-    assert(this->source_ != nullptr);
+    if (this->source_ == nullptr) {
+        throw InvalidSDFGException("Users Analysis: No source node");
+    }
 
-    // Sink may be empty
+    std::list<User*> sinks;
     for (auto& entry : this->users_) {
         if (boost::out_degree(entry.first, this->graph_) == 0) {
-            assert(this->sink_ == nullptr);
-            this->sink_ = entry.second.get();
+            sinks.push_back(entry.second.get());
         }
+    }
+    if (sinks.size() == 0) {
+        throw InvalidSDFGException("Users Analysis: No sink node");
+    }
+    if (sinks.size() > 1) {
+        // add artificial sink
+        auto v = boost::add_vertex(this->graph_);
+        auto sink = std::make_unique<User>(v, "", nullptr, Use::NOP);
+        this->users_.insert({v, std::move(sink)});
+        for (auto sink : sinks) {
+            boost::add_edge(sink->vertex_, v, this->graph_);
+        }
+        sinks.clear();
+
+        this->sink_ = this->users_.at(v).get();
+    } else {
+        this->sink_ = sinks.front();
     }
 
     // Collect sub structures
@@ -736,8 +756,6 @@ bool Users::post_dominates(User& user1, User& user) {
 };
 
 const std::unordered_set<User*> Users::all_uses_between(User& user1, User& user) {
-    assert(this->dominates(user1, user));
-
     std::unordered_set<User*> uses;
     std::unordered_set<User*> visited;
     std::list<User*> queue = {&user};
@@ -755,7 +773,7 @@ const std::unordered_set<User*> Users::all_uses_between(User& user1, User& user)
         }
         visited.insert(current);
 
-        if (current != &user1 && current != &user) {
+        if (current != &user1 && current != &user && current->use() != Use::NOP) {
             uses.insert(current);
         }
 
@@ -784,7 +802,7 @@ const std::unordered_set<User*> Users::all_uses_after(User& user1) {
         }
         visited.insert(current);
 
-        if (current != &user1) {
+        if (current != &user1 && current->use() != Use::NOP) {
             uses.insert(current);
         }
 
@@ -814,7 +832,7 @@ const std::unordered_set<User*> Users::sources(const std::string& container) con
         }
         visited.insert(current);
 
-        if (current->container() == container) {
+        if (current->container() == container && current->use() != Use::NOP) {
             sources.insert(current);
             continue;
         }
@@ -919,9 +937,6 @@ std::unordered_set<std::string> Users::locals(StructuredSDFG& sdfg,
 UsersView::UsersView(Users& users, structured_control_flow::ControlFlowNode& node) : users_(users) {
     auto& entry = users.entries_.at(&node);
     auto& exit = users.exits_.at(&node);
-    assert(users.dominates(*entry, *exit));
-    assert(users.post_dominates(*exit, *entry));
-
     this->entry_ = entry;
     this->exit_ = exit;
     this->sub_users_ = users.all_uses_between(*entry, *exit);
@@ -1117,8 +1132,6 @@ bool UsersView::post_dominates(User& user1, User& user) {
 std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user) {
     assert(this->sub_users_.find(&user1) != this->sub_users_.end());
     assert(this->sub_users_.find(&user) != this->sub_users_.end());
-    assert(this->dominates(user1, user));
-    bool post_dominates = this->post_dominates(user, user1);
 
     std::unordered_set<User*> uses;
     std::unordered_set<User*> visited;
@@ -1131,7 +1144,7 @@ std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user) {
         }
         visited.insert(current);
 
-        if (current != &user1 && current != &user) {
+        if (current != &user1 && current != &user && current->use() != Use::NOP) {
             uses.insert(current);
         }
 
@@ -1142,10 +1155,6 @@ std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user) {
 
         if (current == &user) {
             continue;
-        } else if (!post_dominates) {
-            if (this->post_dominates(*current, user)) {
-                continue;
-            }
         }
 
         // Extend search
@@ -1174,7 +1183,7 @@ std::unordered_set<User*> UsersView::all_uses_after(User& user1) {
         }
         visited.insert(current);
 
-        if (current != &user1) {
+        if (current != &user1 && current->use() != Use::NOP) {
             uses.insert(current);
         }
 

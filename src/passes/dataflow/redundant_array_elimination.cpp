@@ -118,7 +118,9 @@ bool RedundantArrayElimination::run_pass(builder::StructuredSDFGBuilder& builder
         // Replace all reads
         for (auto& user : users.reads(name)) {
             auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element());
-            assert(access_node != nullptr && "Expected AccessNode");
+            if (access_node == nullptr) {
+                throw InvalidSDFGException("RedundantArrayElimination: Expected AccessNode");
+            }
 
             auto& graph = access_node->get_parent();
             for (auto& oedge : graph.out_edges(*access_node)) {
@@ -129,7 +131,9 @@ bool RedundantArrayElimination::run_pass(builder::StructuredSDFGBuilder& builder
         // Replace all writes
         for (auto& user : users.writes(name)) {
             auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element());
-            assert(access_node != nullptr && "Expected AccessNode");
+            if (access_node == nullptr) {
+                throw InvalidSDFGException("RedundantArrayElimination: Expected AccessNode");
+            }
 
             auto& graph = access_node->get_parent();
             for (auto& iedge : graph.in_edges(*access_node)) {

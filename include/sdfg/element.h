@@ -3,6 +3,7 @@
 #include <cassert>
 #include <string>
 
+#include "sdfg/exceptions.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {

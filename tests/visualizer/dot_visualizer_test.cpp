@@ -151,7 +151,7 @@ TEST(DotVisualizerTest, syrk) {
                                       {{"_in1", desc_element}, {"_in2", desc_element}});
     sdfg.add_memlet(block1, C_in_node_1, "void", tasklet1, "_in1",
                     {symbolic::symbol("i"), symbolic::symbol("j_1")});
-    sdfg.add_memlet(block1, beta_node, "void", tasklet1, "_in2", {symbolic::integer(0)});
+    sdfg.add_memlet(block1, beta_node, "void", tasklet1, "_in2", {});
     sdfg.add_memlet(block1, tasklet1, "_out", C_out_node_1, "void",
                     {symbolic::symbol("i"), symbolic::symbol("j_1")});
 
@@ -173,7 +173,7 @@ TEST(DotVisualizerTest, syrk) {
                     {symbolic::symbol("j_2"), symbolic::symbol("k")});
     sdfg.add_memlet(block2, A_node, "void", tasklet2, "_in2",
                     {symbolic::symbol("i"), symbolic::symbol("k")});
-    sdfg.add_memlet(block2, tasklet2, "_out", tmp_node, "void", {symbolic::integer(0)});
+    sdfg.add_memlet(block2, tasklet2, "_out", tmp_node, "void", {});
 
     auto& block3 = sdfg.add_block(loop_j_2.root());
     auto& C_in_node_2 = sdfg.add_access(block3, "C");
@@ -183,7 +183,7 @@ TEST(DotVisualizerTest, syrk) {
                                       {{"_in1", desc_element}, {"_in2", desc_element}});
     sdfg.add_memlet(block3, C_in_node_2, "void", tasklet3, "_in1",
                     {symbolic::symbol("i"), symbolic::symbol("j_2")});
-    sdfg.add_memlet(block3, tmp_node_2, "void", tasklet3, "_in2", {symbolic::integer(0)});
+    sdfg.add_memlet(block3, tmp_node_2, "void", tasklet3, "_in2", {});
     sdfg.add_memlet(block3, tasklet3, "_out", C_out_node_2, "void",
                     {symbolic::symbol("i"), symbolic::symbol("j_2")});
 
@@ -539,8 +539,8 @@ TEST(DotVisualizerTest, test_if_else) {
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto& block2 = builder.add_block(false_case);
     auto& input_node2 = builder.add_access(block2, "B");
@@ -548,8 +548,8 @@ TEST(DotVisualizerTest, test_if_else) {
     auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
-    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {symbolic::integer(0)});
+    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
+    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {});
 
     auto sdfg = builder.move();
     ConditionalSchedule schedule(sdfg);

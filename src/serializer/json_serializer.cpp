@@ -318,6 +318,7 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
         j["address_space"] = array_type->address_space();
         j["initializer"] = array_type->initializer();
         j["device_location"] = array_type->device_location();
+        j["alignment"] = array_type->alignment();
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         j["type"] = "pointer";
         nlohmann::json pointee_type_json;
@@ -815,8 +816,10 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             std::string initializer = j["initializer"];
             assert(j.contains("device_location"));
             types::DeviceLocation device_location = j["device_location"];
+            assert(j.contains("alignment"));
+            size_t alignment = j["alignment"];
             return std::make_unique<types::Array>(*member_type, num_elements, device_location,
-                                                  address_space, initializer);
+                                                  address_space, initializer, alignment);
         } else if (j["type"] == "pointer") {
             // Deserialize pointer type
             assert(j.contains("pointee_type"));

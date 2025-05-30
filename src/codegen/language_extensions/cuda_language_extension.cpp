@@ -356,6 +356,8 @@ std::string CUDALanguageExtension::primitive_type(const types::PrimitiveType pri
             return "int";
         case types::PrimitiveType::Int64:
             return "long long";
+        case types::PrimitiveType::Int128:
+            return "__int128";
         case types::PrimitiveType::UInt8:
             return "char";
         case types::PrimitiveType::UInt16:
@@ -364,10 +366,22 @@ std::string CUDALanguageExtension::primitive_type(const types::PrimitiveType pri
             return "unsigned int";
         case types::PrimitiveType::UInt64:
             return "unsigned long long";
+        case types::PrimitiveType::UInt128:
+            return "unsigned __int128";
+        case types::PrimitiveType::Half:
+            return "__fp16";
+        case types::PrimitiveType::BFloat:
+            return "__bf16";
         case types::PrimitiveType::Float:
             return "float";
         case types::PrimitiveType::Double:
             return "double";
+        case types::PrimitiveType::X86_FP80:
+            return "__float80";
+        case types::PrimitiveType::FP128:
+            return "__float128";
+        case types::PrimitiveType::PPC_FP128:
+            return "__float128";
     }
 
     throw std::runtime_error("Unknown primitive type");
@@ -441,6 +455,7 @@ std::string CUDALanguageExtension::allocation(const std::string& name, const typ
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
         val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
                            array_type->element_type());
+        val << " __attribute__((aligned(" << array_type->alignment() << ")))";
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         std::string pointee_name = name + "__daisy_nvptx_internal_";
         val << declaration(pointee_name, pointer_type->pointee_type());

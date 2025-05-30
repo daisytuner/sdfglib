@@ -1,6 +1,5 @@
 #include "sdfg/structured_control_flow/map.h"
 
-#include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {

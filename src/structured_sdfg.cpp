@@ -85,6 +85,8 @@ size_t StructuredSDFG::num_nodes() const {
             to_visit.insert(&kernel_node->root());
         } else if (dynamic_cast<const structured_control_flow::Return*>(current)) {
             continue;
+        } else if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(current)) {
+            to_visit.insert(&map_node->root());
         }
     }
     return count;
@@ -133,6 +135,9 @@ const DebugInfo StructuredSDFG::debug_info() const {
         } else if (auto return_node =
                        dynamic_cast<const structured_control_flow::Return*>(current)) {
             info = DebugInfo::merge(info, return_node->debug_info());
+        } else if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(current)) {
+            info = DebugInfo::merge(info, map_node->debug_info());
+            to_visit.insert(&map_node->root());
         }
     }
     return info;

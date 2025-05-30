@@ -135,6 +135,8 @@ bool LoopDependentSymbolElimination::run_pass(builder::StructuredSDFGBuilder& bu
             queue.push_back(&sloop_stmt->root());
         } else if (auto kern_stmt = dynamic_cast<const structured_control_flow::Kernel*>(current)) {
             queue.push_back(&kern_stmt->root());
+        } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(current)) {
+            queue.push_back(&map_stmt->root());
         }
     }
 

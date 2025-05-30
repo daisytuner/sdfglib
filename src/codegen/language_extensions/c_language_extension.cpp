@@ -348,6 +348,8 @@ std::string CLanguageExtension::primitive_type(const types::PrimitiveType prim_t
             return "int";
         case types::PrimitiveType::Int64:
             return "long long";
+        case types::PrimitiveType::Int128:
+            return "__int128";
         case types::PrimitiveType::UInt8:
             return "char";
         case types::PrimitiveType::UInt16:
@@ -356,10 +358,22 @@ std::string CLanguageExtension::primitive_type(const types::PrimitiveType prim_t
             return "unsigned int";
         case types::PrimitiveType::UInt64:
             return "unsigned long long";
+        case types::PrimitiveType::UInt128:
+            return "unsigned __int128";
+        case types::PrimitiveType::Half:
+            return "__fp16";
+        case types::PrimitiveType::BFloat:
+            return "__bf16";
         case types::PrimitiveType::Float:
             return "float";
         case types::PrimitiveType::Double:
             return "double";
+        case types::PrimitiveType::X86_FP80:
+            return "__float80";
+        case types::PrimitiveType::FP128:
+            return "__float128";
+        case types::PrimitiveType::PPC_FP128:
+            return "__float128";
     }
 
     throw std::runtime_error("Unknown primitive type");
@@ -379,7 +393,7 @@ std::string CLanguageExtension::declaration(const std::string& name, const types
                            element_type);
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         auto& pointee_type = pointer_type->pointee_type();
-         val << declaration("(*" + name + ")", pointee_type);
+        val << declaration("(*" + name + ")", pointee_type);
     } else if (auto ref_type = dynamic_cast<const Reference*>(&type)) {
         val << declaration("&" + name, ref_type->reference_type());
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
@@ -423,18 +437,28 @@ std::string CLanguageExtension::allocation(const std::string& name, const types:
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
         val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
                            array_type->element_type());
+        val << " __attribute__((aligned(" << array_type->alignment() << ")))";
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         val << declaration(name, type);
         val << " = (" << declaration("", type) << ") ";
-        val << "malloc(";
         if (auto array_type = dynamic_cast<const types::Array*>(&pointer_type->pointee_type())) {
-            val << this->expression(array_type->num_elements());
+            auto alignment = array_type->alignment();
+            auto num_elements = this->expression(array_type->num_elements());
+            auto& element_type = array_type->element_type();
+            val << "aligned_alloc(";
+            val << alignment;
+            val << ", ";
+            val << num_elements;
+            val << " * sizeof(";
+            val << declaration("", element_type);
+            val << "))";
         } else {
+            val << "malloc(";
             val << "1";
+            val << " * sizeof(";
+            val << declaration("", pointer_type->pointee_type());
+            val << "))";
         }
-        val << " * sizeof(";
-        val << declaration("", pointer_type->pointee_type());
-        val << "))";
     } else if (dynamic_cast<const types::Structure*>(&type)) {
         val << declaration(name, type);
     } else {
@@ -635,7 +659,7 @@ void CSymbolicPrinter::bvisit(const SymEngine::Min& x) {
 
         s << ")";
     }
-    
+
     str_ = s.str();
 };
 
@@ -658,12 +682,13 @@ void CSymbolicPrinter::bvisit(const SymEngine::Max& x) {
 
         s << ")";
     }
-    
+
     str_ = s.str();
 };
 
-void CSymbolicPrinter::_print_pow(std::ostringstream &o, const SymEngine::RCP<const SymEngine::Basic> &a,
-                                  const SymEngine::RCP<const SymEngine::Basic> &b) {
+void CSymbolicPrinter::_print_pow(std::ostringstream& o,
+                                  const SymEngine::RCP<const SymEngine::Basic>& a,
+                                  const SymEngine::RCP<const SymEngine::Basic>& b) {
     if (SymEngine::eq(*a, *SymEngine::E)) {
         o << "exp(" << apply(b) << ")";
     } else if (SymEngine::eq(*b, *SymEngine::rational(1, 2))) {
