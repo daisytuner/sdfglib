@@ -196,8 +196,7 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
         if (out_degree == 1) {
             auto& oedge = *out_edges.begin();
             if (!oedge.is_unconditional()) {
-                throw InvalidSDFGException(
-                    "Degenerated structured control flow: Non-deterministic transition");
+                throw UnstructuredControlFlowException();
             }
             this->add_block(scope, curr->dataflow(), oedge.assignments(), curr->debug_info());
 
@@ -711,12 +710,12 @@ Continue& StructuredSDFGBuilder::add_continue(Sequence& parent,
             in_loop = true;
             break;
         } else if (dynamic_cast<structured_control_flow::For*>(current_scope)) {
-            throw InvalidSDFGException("Continue statement is not allowed in a for loop");
+            throw UnstructuredControlFlowException();
         }
         current_scope = scope_tree_analysis.parent_scope(current_scope);
     }
     if (!in_loop) {
-        throw InvalidSDFGException("Continue statement is not allowed outside of a loop");
+        throw UnstructuredControlFlowException();
     }
 
     parent.children_.push_back(
@@ -745,12 +744,12 @@ Break& StructuredSDFGBuilder::add_break(Sequence& parent,
             in_loop = true;
             break;
         } else if (dynamic_cast<structured_control_flow::For*>(current_scope)) {
-            throw InvalidSDFGException("Break statement is not allowed in a for loop");
+            throw UnstructuredControlFlowException();
         }
         current_scope = scope_tree_analysis.parent_scope(current_scope);
     }
     if (!in_loop) {
-        throw InvalidSDFGException("Break statement is not allowed outside of a loop");
+        throw UnstructuredControlFlowException();
     }
 
     parent.children_.push_back(
