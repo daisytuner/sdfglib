@@ -15,4 +15,9 @@ class InvalidSDFGException : public std::exception {
     const char* what() const noexcept override { return message_.c_str(); }
 };
 
+class UnstructuredControlFlowException : public std::exception {
+   public:
+    const char* what() const noexcept override { return "Unstructured control flow detected"; }
+};
+
 }  // namespace sdfg
