@@ -385,13 +385,15 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
 
     // deserialize externals
     for (const auto& name : j["externals"]) {
-        auto type = json_to_type(containers[name]);
+        auto& type_desc = containers.at(name.get<std::string>());
+        auto type = json_to_type(type_desc);
         builder.add_container(name, *type, false, true);
     }
 
     // deserialize arguments
     for (const auto& name : j["arguments"]) {
-        auto type = json_to_type(containers[name]);
+        auto& type_desc = containers.at(name.get<std::string>());
+        auto type = json_to_type(type_desc);
         builder.add_container(name, *type, true, false);
     }
 
