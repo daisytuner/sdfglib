@@ -45,45 +45,33 @@ nlohmann::json JSONSerializer::serialize(std::unique_ptr<sdfg::StructuredSDFG>& 
         structure_definition_to_json(structure_json, structure);
         j["structures"].push_back(structure_json);
     }
-    j["containers"] = nlohmann::json::array();
+
+    j["containers"] = nlohmann::json::object();
     for (const auto& container : sdfg->containers()) {
-        if (sdfg->is_argument(container)) {
-            continue;
-        }
-        nlohmann::json container_json;
-        container_json["name"] = container;
-
-        if (sdfg->is_external(container)) {
-            container_json["external"] = true;
-        } else {
-            container_json["external"] = false;
-        }
-
-        nlohmann::json container_type_json;
-        type_to_json(container_type_json, sdfg->type(container));
-        container_json["type"] = container_type_json;
-        j["containers"].push_back(container_json);
+        nlohmann::json desc;
+        type_to_json(desc, sdfg->type(container));
+        j["containers"][container] = desc;
     }
 
     j["arguments"] = nlohmann::json::array();
     for (const auto& argument : sdfg->arguments()) {
-        nlohmann::json argument_json;
-        argument_json["name"] = argument;
-        nlohmann::json argument_type_json;
-        type_to_json(argument_type_json, sdfg->type(argument));
-        argument_json["type"] = argument_type_json;
-        j["arguments"].push_back(argument_json);
+        j["arguments"].push_back(argument);
     }
 
-    // dump the root node
-    nlohmann::json root_json;
-    sequence_to_json(root_json, sdfg->root());
-    j["root"] = root_json;
+    j["externals"] = nlohmann::json::array();
+    for (const auto& external : sdfg->externals()) {
+        j["externals"].push_back(external);
+    }
 
     j["metadata"] = nlohmann::json::object();
     for (const auto& entry : sdfg->metadata()) {
         j["metadata"][entry.first] = entry.second;
     }
+
+    // Walk the SDFG
+    nlohmann::json root_json;
+    sequence_to_json(root_json, sdfg->root());
+    j["root"] = root_json;
 
     return j;
 }
@@ -384,21 +372,31 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
         json_to_structure_definition(structure, builder);
     }
 
+    nlohmann::json& containers = j["containers"];
+
+    // deserialize externals
+    for (const auto& name : j["externals"]) {
+        auto type = json_to_type(containers[name]);
+        builder.add_container(name, *type, false, true);
+    }
+
     // deserialize arguments
-    assert(j.contains("arguments"));
-    assert(j["arguments"].is_array());
-    for (const auto& argument : j["arguments"]) {
-        assert(argument.contains("name"));
-        assert(argument["name"].is_string());
-        assert(argument.contains("type"));
-        assert(argument["type"].is_object());
-        std::string name = argument["name"];
-        auto type = json_to_type(argument["type"]);
+    for (const auto& name : j["arguments"]) {
+        auto type = json_to_type(containers[name]);
         builder.add_container(name, *type, true, false);
     }
 
-    // deserialize containers
-    json_to_containers(j, builder);
+    // deserialize transients
+    for (const auto& entry : containers.items()) {
+        if (builder.subject().is_argument(entry.key())) {
+            continue;
+        }
+        if (builder.subject().is_external(entry.key())) {
+            continue;
+        }
+        auto type = json_to_type(entry.value());
+        builder.add_container(entry.key(), *type, false, false);
+    }
 
     // deserialize root node
     assert(j.contains("root"));
@@ -429,24 +427,6 @@ void JSONSerializer::json_to_structure_definition(const nlohmann::json& j,
         nlohmann::json member_json;
         auto member_type = json_to_type(member);
         definition.add_member(*member_type);
-    }
-}
-
-void JSONSerializer::json_to_containers(const nlohmann::json& j,
-                                        builder::StructuredSDFGBuilder& builder) {
-    assert(j.contains("containers"));
-    assert(j["containers"].is_array());
-    for (const auto& container : j["containers"]) {
-        assert(container.contains("name"));
-        assert(container["name"].is_string());
-        assert(container.contains("external"));
-        assert(container["external"].is_boolean());
-        assert(container.contains("type"));
-        assert(container["type"].is_object());
-        std::string name = container["name"];
-        bool external = container["external"];
-        auto container_type = json_to_type(container["type"]);
-        builder.add_container(name, *container_type, false, external);
     }
 }
 
