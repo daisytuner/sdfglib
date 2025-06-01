@@ -159,10 +159,10 @@ TEST(JSONSerializerTest, DatatypeToJSON_Function) {
     EXPECT_TRUE(j.contains("return_type"));
     EXPECT_EQ(j["return_type"]["type"], "scalar");
     EXPECT_EQ(j["return_type"]["primitive_type"], scalar_type.primitive_type());
-    EXPECT_TRUE(j.contains("argument_types"));
-    EXPECT_EQ(j["argument_types"].size(), 1);
-    EXPECT_EQ(j["argument_types"][0]["type"], "scalar");
-    EXPECT_EQ(j["argument_types"][0]["primitive_type"], scalar_type.primitive_type());
+    EXPECT_TRUE(j.contains("params"));
+    EXPECT_EQ(j["params"].size(), 1);
+    EXPECT_EQ(j["params"][0]["type"], "scalar");
+    EXPECT_EQ(j["params"][0]["primitive_type"], scalar_type.primitive_type());
     EXPECT_TRUE(j.contains("is_var_arg"));
     EXPECT_EQ(j["is_var_arg"], function_type.is_var_arg());
     EXPECT_TRUE(j.contains("address_space"));
@@ -218,13 +218,13 @@ TEST(JSONSerializerTest, DataflowToJSON) {
 
     // Check if the nodes and edges are serialized correctly
     auto access_node_A = std::find_if(j["nodes"].begin(), j["nodes"].end(), [](const auto& node) {
-        return node["type"] == "access_node" && node["container"] == "A";
+        return node["type"] == "access_node" && node["data"] == "A";
     });
     auto access_node_C = std::find_if(j["nodes"].begin(), j["nodes"].end(), [](const auto& node) {
-        return node["type"] == "access_node" && node["container"] == "C";
+        return node["type"] == "access_node" && node["data"] == "C";
     });
     auto access_node_D = std::find_if(j["nodes"].begin(), j["nodes"].end(), [](const auto& node) {
-        return node["type"] == "access_node" && node["container"] == "D";
+        return node["type"] == "access_node" && node["data"] == "D";
     });
     auto tasklet_node = std::find_if(j["nodes"].begin(), j["nodes"].end(), [](const auto& node) {
         return node["type"] == "tasklet" && node["code"] == data_flow::TaskletCode::add;
@@ -240,21 +240,21 @@ TEST(JSONSerializerTest, DataflowToJSON) {
 
     auto edge_to_tasklet =
         std::find_if(j["edges"].begin(), j["edges"].end(), [&](const auto& edge) {
-            return edge["source"] == access_node_A->at("element_id") &&
-                   edge["target"] == tasklet_node->at("element_id") &&
-                   edge["source_connector"] == "void" && edge["target_connector"] == "_in1";
+            return edge["src"] == access_node_A->at("serialization_id") &&
+                   edge["dst"] == tasklet_node->at("serialization_id") &&
+                   edge["src_conn"] == "void" && edge["dst_conn"] == "_in1";
         });
     auto edge_to_tasklet2 =
         std::find_if(j["edges"].begin(), j["edges"].end(), [&](const auto& edge) {
-            return edge["source"] == access_node_C->at("element_id") &&
-                   edge["target"] == tasklet_node->at("element_id") &&
-                   edge["source_connector"] == "void" && edge["target_connector"] == "_in2";
+            return edge["src"] == access_node_C->at("serialization_id") &&
+                   edge["dst"] == tasklet_node->at("serialization_id") &&
+                   edge["src_conn"] == "void" && edge["dst_conn"] == "_in2";
         });
     auto edge_from_tasklet =
         std::find_if(j["edges"].begin(), j["edges"].end(), [&](const auto& edge) {
-            return edge["source"] == tasklet_node->at("element_id") &&
-                   edge["target"] == access_node_D->at("element_id") &&
-                   edge["source_connector"] == "_out" && edge["target_connector"] == "void";
+            return edge["src"] == tasklet_node->at("serialization_id") &&
+                   edge["dst"] == access_node_D->at("serialization_id") &&
+                   edge["src_conn"] == "_out" && edge["dst_conn"] == "void";
         });
 
     EXPECT_NE(edge_to_tasklet, j["edges"].end());

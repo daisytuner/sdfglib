@@ -81,6 +81,8 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
     j["nodes"] = nlohmann::json::array();
     j["edges"] = nlohmann::json::array();
 
+    size_t node_id = 0;
+    std::unordered_map<const data_flow::DataFlowNode*, size_t> node_id_map;
     for (auto& node : dataflow.nodes()) {
         nlohmann::json node_json;
         if (auto code_node = dynamic_cast<const data_flow::Tasklet*>(&node)) {
@@ -111,7 +113,7 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
         } else if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
             node_json["type"] = "library_node";
             node_json["call"] = lib_node->call();
-            node_json["side_effect"] = lib_node->has_side_effect();
+            node_json["has_side_effect"] = lib_node->has_side_effect();
             node_json["inputs"] = nlohmann::json::array();
             for (auto& input : lib_node->inputs()) {
                 nlohmann::json input_json;
@@ -132,23 +134,30 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
             }
         } else if (auto code_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
             node_json["type"] = "access_node";
-            node_json["container"] = code_node->data();
+            node_json["data"] = code_node->data();
         } else {
             throw std::runtime_error("Unknown node type");
         }
-        node_json["element_id"] = node.element_id();
+
+        // Internal id for serialization
+        node_json["serialization_id"] = node_id;
+        node_id_map.insert({&node, node_id});
+        node_id++;
+
         j["nodes"].push_back(node_json);
     }
 
     for (auto& edge : dataflow.edges()) {
         nlohmann::json edge_json;
-        edge_json["source"] = edge.src().element_id();
-        edge_json["target"] = edge.dst().element_id();
 
-        edge_json["source_connector"] = edge.src_conn();
-        edge_json["target_connector"] = edge.dst_conn();
+        size_t src_id = node_id_map.at(&edge.src());
+        size_t dst_id = node_id_map.at(&edge.dst());
+        edge_json["src"] = src_id;
+        edge_json["dst"] = dst_id;
 
-        // add subset
+        edge_json["src_conn"] = edge.src_conn();
+        edge_json["dst_conn"] = edge.dst_conn();
+
         edge_json["subset"] = nlohmann::json::array();
         for (auto& subset : edge.subset()) {
             edge_json["subset"].push_back(expression(subset));
@@ -455,8 +464,8 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
     for (const auto& node : j["nodes"]) {
         assert(node.contains("type"));
         assert(node["type"].is_string());
-        assert(node.contains("element_id"));
-        assert(node["element_id"].is_number_integer());
+        assert(node.contains("serialization_id"));
+        assert(node["serialization_id"].is_number_integer());
         std::string type = node["type"];
         if (type == "tasklet") {
             assert(node.contains("code"));
@@ -470,7 +479,7 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
             auto inputs = json_to_arguments(node["inputs"]);
             auto& tasklet = builder.add_tasklet(parent, node["code"], outputs.at(0), inputs);
 
-            nodes_map.insert({node["element_id"], tasklet});
+            nodes_map.insert({node["serialization_id"], tasklet});
         } else if (type == "library_node") {
             assert(node.contains("call"));
             assert(node.contains("inputs"));
@@ -481,12 +490,12 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
             auto inputs = json_to_arguments(node["inputs"]);
             auto& lib_node = builder.add_library_node(parent, node["call"], outputs, inputs);
 
-            nodes_map.insert({node["element_id"], lib_node});
+            nodes_map.insert({node["serialization_id"], lib_node});
         } else if (type == "access_node") {
-            assert(node.contains("container"));
-            auto& access_node = builder.add_access(parent, node["container"]);
+            assert(node.contains("data"));
+            auto& access_node = builder.add_access(parent, node["data"]);
 
-            nodes_map.insert({node["element_id"], access_node});
+            nodes_map.insert({node["serialization_id"], access_node});
         } else {
             throw std::runtime_error("Unknown node type");
         }
@@ -495,21 +504,21 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
     assert(j.contains("edges"));
     assert(j["edges"].is_array());
     for (const auto& edge : j["edges"]) {
-        assert(edge.contains("source"));
-        assert(edge["source"].is_number_integer());
-        assert(edge.contains("target"));
-        assert(edge["target"].is_number_integer());
-        assert(edge.contains("source_connector"));
-        assert(edge["source_connector"].is_string());
-        assert(edge.contains("target_connector"));
-        assert(edge["target_connector"].is_string());
+        assert(edge.contains("src"));
+        assert(edge["src"].is_number_integer());
+        assert(edge.contains("dst"));
+        assert(edge["dst"].is_number_integer());
+        assert(edge.contains("src_conn"));
+        assert(edge["src_conn"].is_string());
+        assert(edge.contains("dst_conn"));
+        assert(edge["dst_conn"].is_string());
         assert(edge.contains("subset"));
         assert(edge["subset"].is_array());
 
-        assert(nodes_map.contains(edge["source"]));
-        assert(nodes_map.contains(edge["target"]));
-        auto& source = nodes_map.at(edge["source"]);
-        auto& target = nodes_map.at(edge["target"]);
+        assert(nodes_map.contains(edge["src"]));
+        assert(nodes_map.contains(edge["dst"]));
+        auto& source = nodes_map.at(edge["src"]);
+        auto& target = nodes_map.at(edge["dst"]);
 
         assert(edge.contains("subset"));
         assert(edge["subset"].is_array());
@@ -519,8 +528,7 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
             SymEngine::Expression subset_expr(subset_str);
             subset.push_back(subset_expr);
         }
-        builder.add_memlet(parent, source, edge["source_connector"], target,
-                           edge["target_connector"], subset);
+        builder.add_memlet(parent, source, edge["src_conn"], target, edge["dst_conn"], subset);
     }
 }
 
