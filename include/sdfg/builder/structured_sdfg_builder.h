@@ -24,11 +24,6 @@ using namespace sdfg::structured_control_flow;
 namespace sdfg {
 namespace builder {
 
-class UnstructuredControlFlowException : public std::exception {
-   public:
-    const char* what() const noexcept override { return "Unstructured control flow detected"; }
-};
-
 class StructuredSDFGBuilder : public FunctionBuilder {
    private:
     std::unique_ptr<StructuredSDFG> structured_sdfg_;
