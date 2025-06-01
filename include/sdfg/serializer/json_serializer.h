@@ -50,7 +50,6 @@ class JSONSerializer {
 
     void json_to_structure_definition(const nlohmann::json& j,
                                       sdfg::builder::StructuredSDFGBuilder& builder);
-    void json_to_containers(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder);
     void json_to_dataflow(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
                           sdfg::structured_control_flow::Block& parent);
 

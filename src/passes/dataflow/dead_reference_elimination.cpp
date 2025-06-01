@@ -4,7 +4,7 @@ namespace sdfg {
 namespace passes {
 
 DeadReferenceElimination::DeadReferenceElimination()
-    : Pass(){
+    : Pass() {
 
       };
 
@@ -17,7 +17,7 @@ bool DeadReferenceElimination::run_pass(builder::StructuredSDFGBuilder& builder,
     auto& sdfg = builder.subject();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::list<std::string> containers_copy;
+    std::list<std::string> to_delete;
     for (auto& name : sdfg.containers()) {
         if (!sdfg.is_transient(name)) {
             continue;
@@ -25,13 +25,15 @@ bool DeadReferenceElimination::run_pass(builder::StructuredSDFGBuilder& builder,
         if (!dynamic_cast<const types::Pointer*>(&sdfg.type(name))) {
             continue;
         }
-        containers_copy.push_back(name);
-    }
-
-    for (auto& name : containers_copy) {
+        // Requirement: Pointer is only assigned
+        auto reads = users.reads(name);
+        auto writes = users.writes(name);
+        if (reads.size() > 0 || writes.size() > 0) {
+            continue;
+        }
+        auto views = users.views(name);
         auto moves = users.moves(name);
-        auto uses = users.uses(name);
-        if (uses.size() != moves.size()) {
+        if (views.size() > 0) {
             continue;
         }
 
@@ -57,6 +59,9 @@ bool DeadReferenceElimination::run_pass(builder::StructuredSDFGBuilder& builder,
             applied = true;
         }
 
+        to_delete.push_back(name);
+    }
+    for (auto& name : to_delete) {
         builder.remove_container(name);
     }
 
