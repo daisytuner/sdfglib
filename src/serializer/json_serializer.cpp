@@ -326,11 +326,11 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
         nlohmann::json return_type_json;
         type_to_json(return_type_json, function_type->return_type());
         j["return_type"] = return_type_json;
-        j["argument_types"] = nlohmann::json::array();
+        j["params"] = nlohmann::json::array();
         for (size_t i = 0; i < function_type->num_params(); i++) {
             nlohmann::json param_json;
             type_to_json(param_json, function_type->param_type(symbolic::integer(i)));
-            j["argument_types"].push_back(param_json);
+            j["params"].push_back(param_json);
         }
         j["is_var_arg"] = function_type->is_var_arg();
         j["address_space"] = function_type->address_space();
@@ -828,10 +828,10 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             // Deserialize function type
             assert(j.contains("return_type"));
             std::unique_ptr<types::IType> return_type = json_to_type(j["return_type"]);
-            assert(j.contains("argument_types"));
-            std::vector<std::unique_ptr<types::IType>> argument_types;
-            for (const auto& arg : j["argument_types"]) {
-                argument_types.push_back(json_to_type(arg));
+            assert(j.contains("params"));
+            std::vector<std::unique_ptr<types::IType>> params;
+            for (const auto& param : j["params"]) {
+                params.push_back(json_to_type(param));
             }
             assert(j.contains("is_var_arg"));
             bool is_var_arg = j["is_var_arg"];
@@ -843,8 +843,8 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             types::DeviceLocation device_location = j["device_location"];
             auto function = std::make_unique<types::Function>(
                 *return_type, is_var_arg, device_location, address_space, initializer);
-            for (const auto& arg : argument_types) {
-                function->add_param(*arg);
+            for (const auto& param : params) {
+                function->add_param(*param);
             }
             return function->clone();
 
