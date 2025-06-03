@@ -8,10 +8,11 @@ namespace transformations {
 
 class LoopToKernelDim : public Transformation {
     structured_control_flow::Sequence& parent_;
-    structured_control_flow::For& loop_;
+    structured_control_flow::StructuredLoop& loop_;
 
    public:
-    LoopToKernelDim(structured_control_flow::Sequence& parent, structured_control_flow::For& loop);
+    LoopToKernelDim(structured_control_flow::Sequence& parent,
+                    structured_control_flow::StructuredLoop& loop);
 
     virtual std::string name() override;
 

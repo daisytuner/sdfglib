@@ -1,8 +1,5 @@
 #pragma once
 
-#include "sdfg/analysis/assumptions_analysis.h"
-#include "sdfg/analysis/data_parallelism_analysis.h"
-#include "sdfg/analysis/users.h"
 #include "sdfg/passes/pass.h"
 
 namespace sdfg {
@@ -12,7 +9,7 @@ class LoopDependentSymbolElimination : public Pass {
    private:
     bool eliminate_symbols(builder::StructuredSDFGBuilder& builder,
                            analysis::AnalysisManager& analysis_manager,
-                           structured_control_flow::For& loop,
+                           structured_control_flow::StructuredLoop& loop,
                            structured_control_flow::Transition& transition);
 
    public:

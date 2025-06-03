@@ -1,11 +1,12 @@
 #include "sdfg/transformations/utils.h"
 
+#include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "symengine/logic.h"
 
 using namespace sdfg;
 
-symbolic::Integer sdfg::get_iteration_count(sdfg::structured_control_flow::For& loop) {
+symbolic::Integer sdfg::get_iteration_count(sdfg::structured_control_flow::StructuredLoop& loop) {
     auto condition = loop.condition();
     // TODO: extend me to support more complex loop conditions and update expressions
     if (SymEngine::is_a<SymEngine::And>(*condition)) {

@@ -1,5 +1,6 @@
 #include "sdfg/transformations/vectorization.h"
 
+#include "sdfg/analysis/data_parallelism_analysis.h"
 #include "sdfg/types/utils.h"
 
 namespace sdfg {
@@ -83,13 +84,13 @@ bool Vectorization::tasklet_supported(data_flow::TaskletCode c) {
             return true;
         case data_flow::TaskletCode::bitwise_not:
             return true;
+        default:
+            return false;
     }
-
-    return false;
 };
 
 Vectorization::Vectorization(structured_control_flow::Sequence& parent,
-                             structured_control_flow::For& loop)
+                             structured_control_flow::StructuredLoop& loop)
     : loop_(loop) {
 
       };

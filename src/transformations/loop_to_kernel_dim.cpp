@@ -11,6 +11,7 @@
 #include "sdfg/structured_control_flow/if_else.h"
 #include "sdfg/structured_control_flow/kernel.h"
 #include "sdfg/structured_control_flow/sequence.h"
+#include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/transformations/utils.h"
 #include "symengine/symengine_rcp.h"
@@ -19,7 +20,7 @@ namespace sdfg {
 namespace transformations {
 
 LoopToKernelDim::LoopToKernelDim(structured_control_flow::Sequence& parent,
-                                 structured_control_flow::For& loop)
+                                 structured_control_flow::StructuredLoop& loop)
     : parent_(parent), loop_(loop) {};
 
 std::string LoopToKernelDim::name() { return "LoopToKernelDim"; };

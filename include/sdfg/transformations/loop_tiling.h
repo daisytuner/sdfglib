@@ -7,12 +7,12 @@ namespace transformations {
 
 class LoopTiling : public Transformation {
     structured_control_flow::Sequence& parent_;
-    structured_control_flow::For& loop_;
+    structured_control_flow::StructuredLoop& loop_;
     size_t tile_size_;
 
    public:
-    LoopTiling(structured_control_flow::Sequence& parent, structured_control_flow::For& loop,
-               size_t tile_size);
+    LoopTiling(structured_control_flow::Sequence& parent,
+               structured_control_flow::StructuredLoop& loop, size_t tile_size);
 
     virtual std::string name() override;
 

@@ -4,6 +4,7 @@
 
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/sequence.h"
+#include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
@@ -14,7 +15,7 @@ class StructuredSDFGBuilder;
 
 namespace structured_control_flow {
 
-class For : public ControlFlowNode {
+class For : public StructuredLoop {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
    private:
@@ -32,23 +33,23 @@ class For : public ControlFlowNode {
     For(const For& node) = delete;
     For& operator=(const For&) = delete;
 
-    const symbolic::Symbol& indvar() const;
+    const symbolic::Symbol& indvar() const override;
 
     symbolic::Symbol& indvar();
 
-    const symbolic::Expression& init() const;
+    const symbolic::Expression& init() const override;
 
     symbolic::Expression& init();
 
-    const symbolic::Expression& update() const;
+    const symbolic::Expression& update() const override;
 
     symbolic::Expression& update();
 
-    const symbolic::Condition& condition() const;
+    const symbolic::Condition& condition() const override;
 
     symbolic::Condition& condition();
 
-    Sequence& root() const;
+    Sequence& root() const override;
 
     void replace(const symbolic::Expression& old_expression,
                  const symbolic::Expression& new_expression) override;
