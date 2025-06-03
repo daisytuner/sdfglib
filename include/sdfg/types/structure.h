@@ -36,6 +36,8 @@ class Structure : public IType {
     virtual uint address_space() const override;
 
     virtual std::string initializer() const override;
+
+    virtual std::string print() const override;
 };
 
 class StructureDefinition {

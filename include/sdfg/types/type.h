@@ -283,6 +283,13 @@ class IType {
     virtual std::unique_ptr<IType> clone() const = 0;
 
     virtual std::string initializer() const = 0;
+
+    virtual std::string print() const = 0;
+
+    friend std::ostream& operator<<(std::ostream& os, const IType& type) {
+        os << type.print();
+        return os;
+    };
 };
 
 }  // namespace types

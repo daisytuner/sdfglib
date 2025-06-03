@@ -39,6 +39,8 @@ class Array : public IType {
     virtual uint address_space() const override;
 
     virtual std::string initializer() const override;
+
+    virtual std::string print() const override;
 };
 
 }  // namespace types

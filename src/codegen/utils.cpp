@@ -77,5 +77,7 @@ sdfg::types::DeviceLocation Reference::device_location() const {
 
 std::string Reference::initializer() const { return this->reference_->initializer(); };
 
+std::string Reference::print() const { return "Reference(" + this->reference_->print() + ")"; };
+
 }  // namespace codegen
 }  // namespace sdfg
