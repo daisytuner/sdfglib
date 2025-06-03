@@ -35,6 +35,8 @@ DeviceLocation Structure::device_location() const { return this->device_location
 
 std::string Structure::initializer() const { return this->initializer_; };
 
+std::string Structure::print() const { return "Structure(" + this->name_ + ")"; };
+
 StructureDefinition::StructureDefinition(const std::string& name, bool is_packed)
     : name_(name), is_packed_(is_packed), members_() {};
 

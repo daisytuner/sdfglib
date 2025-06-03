@@ -35,5 +35,7 @@ DeviceLocation Pointer::device_location() const { return this->device_location_;
 
 std::string Pointer::initializer() const { return this->initializer_; }
 
+std::string Pointer::print() const { return "Pointer(" + this->pointee_type_->print() + ")"; };
+
 }  // namespace types
 }  // namespace sdfg

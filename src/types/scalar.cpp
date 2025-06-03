@@ -43,5 +43,9 @@ DeviceLocation Scalar::device_location() const { return this->device_location_; 
 
 std::string Scalar::initializer() const { return this->initializer_; };
 
+std::string Scalar::print() const {
+    return "Scalar(" + std::string(primitive_type_to_string(this->primitive_type_)) + ")";
+};
+
 }  // namespace types
 }  // namespace sdfg

@@ -74,5 +74,21 @@ uint Function::address_space() const { return this->address_space_; }
 
 std::string Function::initializer() const { return this->initializer_; }
 
+std::string Function::print() const {
+    std::string params = "";
+    for (size_t i = 0; i < this->params_.size(); i++) {
+        params += this->params_[i]->print();
+        if (i != this->params_.size() - 1) {
+            params += ", ";
+        }
+    }
+    if (this->is_var_arg_) {
+        params += ", ...)";
+    } else {
+        params += ")";
+    }
+    return "Function(" + this->return_type_->print() + ", " + params + ")";
+};
+
 }  // namespace types
 }  // namespace sdfg

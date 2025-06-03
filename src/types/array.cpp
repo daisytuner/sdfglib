@@ -45,5 +45,7 @@ DeviceLocation Array::device_location() const { return this->device_location_; }
 
 std::string Array::initializer() const { return this->initializer_; };
 
+std::string Array::print() const { return "Array(" + this->element_type_->print() + ")"; };
+
 }  // namespace types
 }  // namespace sdfg

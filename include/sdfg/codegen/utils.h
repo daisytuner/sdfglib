@@ -70,6 +70,8 @@ class Reference : public types::IType {
     sdfg::types::DeviceLocation device_location() const override;
 
     std::string initializer() const override;
+
+    std::string print() const override;
 };
 
 }  // namespace codegen
