@@ -952,6 +952,9 @@ data_flow::Tasklet& StructuredSDFGBuilder::add_tasklet(
     // Check: Duplicate inputs
     std::unordered_set<std::string> input_names;
     for (auto& input : inputs) {
+        if (!input.first.starts_with("_in")) {
+            continue;
+        }
         if (input_names.find(input.first) != input_names.end()) {
             throw InvalidSDFGException("Input " + input.first + " already exists in SDFG");
         }
