@@ -81,10 +81,10 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
     j["nodes"] = nlohmann::json::array();
     j["edges"] = nlohmann::json::array();
 
-    size_t node_id = 0;
-    std::unordered_map<const data_flow::DataFlowNode*, size_t> node_id_map;
     for (auto& node : dataflow.nodes()) {
         nlohmann::json node_json;
+        node_json["element_id"] = node.element_id();
+
         if (auto code_node = dynamic_cast<const data_flow::Tasklet*>(&node)) {
             node_json["type"] = "tasklet";
             node_json["code"] = code_node->code();
@@ -139,21 +139,14 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
             throw std::runtime_error("Unknown node type");
         }
 
-        // Internal id for serialization
-        node_json["serialization_id"] = node_id;
-        node_id_map.insert({&node, node_id});
-        node_id++;
-
         j["nodes"].push_back(node_json);
     }
 
     for (auto& edge : dataflow.edges()) {
         nlohmann::json edge_json;
 
-        size_t src_id = node_id_map.at(&edge.src());
-        size_t dst_id = node_id_map.at(&edge.dst());
-        edge_json["src"] = src_id;
-        edge_json["dst"] = dst_id;
+        edge_json["src"] = edge.src().element_id();
+        edge_json["dst"] = edge.dst().element_id();
 
         edge_json["src_conn"] = edge.src_conn();
         edge_json["dst_conn"] = edge.dst_conn();
@@ -169,6 +162,7 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
 
 void JSONSerializer::block_to_json(nlohmann::json& j, const structured_control_flow::Block& block) {
     j["type"] = "block";
+    j["element_id"] = block.element_id();
     nlohmann::json dataflow_json;
     dataflow_to_json(dataflow_json, block.dataflow());
     j["dataflow"] = dataflow_json;
@@ -176,6 +170,7 @@ void JSONSerializer::block_to_json(nlohmann::json& j, const structured_control_f
 
 void JSONSerializer::for_to_json(nlohmann::json& j, const structured_control_flow::For& for_node) {
     j["type"] = "for";
+    j["element_id"] = for_node.element_id();
     j["indvar"] = expression(for_node.indvar());
     j["init"] = expression(for_node.init());
     j["condition"] = expression(for_node.condition());
@@ -189,6 +184,7 @@ void JSONSerializer::for_to_json(nlohmann::json& j, const structured_control_flo
 void JSONSerializer::if_else_to_json(nlohmann::json& j,
                                      const structured_control_flow::IfElse& if_else_node) {
     j["type"] = "if_else";
+    j["element_id"] = if_else_node.element_id();
     j["branches"] = nlohmann::json::array();
     for (size_t i = 0; i < if_else_node.size(); i++) {
         nlohmann::json branch_json;
@@ -203,7 +199,7 @@ void JSONSerializer::if_else_to_json(nlohmann::json& j,
 void JSONSerializer::while_node_to_json(nlohmann::json& j,
                                         const structured_control_flow::While& while_node) {
     j["type"] = "while";
-
+    j["element_id"] = while_node.element_id();
     nlohmann::json body_json;
     sequence_to_json(body_json, while_node.root());
     j["children"] = body_json;
@@ -212,15 +208,18 @@ void JSONSerializer::while_node_to_json(nlohmann::json& j,
 void JSONSerializer::break_node_to_json(nlohmann::json& j,
                                         const structured_control_flow::Break& break_node) {
     j["type"] = "break";
+    j["element_id"] = break_node.element_id();
 }
 void JSONSerializer::continue_node_to_json(nlohmann::json& j,
                                            const structured_control_flow::Continue& continue_node) {
     j["type"] = "continue";
+    j["element_id"] = continue_node.element_id();
 }
 
 void JSONSerializer::kernel_to_json(nlohmann::json& j,
                                     const structured_control_flow::Kernel& kernel_node) {
     j["type"] = "kernel";
+    j["element_id"] = kernel_node.element_id();
     j["suffix"] = kernel_node.suffix();
 
     nlohmann::json body_json;
@@ -230,6 +229,7 @@ void JSONSerializer::kernel_to_json(nlohmann::json& j,
 
 void JSONSerializer::map_to_json(nlohmann::json& j, const structured_control_flow::Map& map_node) {
     j["type"] = "map";
+    j["element_id"] = map_node.element_id();
     j["indvar"] = expression(map_node.indvar());
     j["num_iterations"] = expression(map_node.num_iterations());
     nlohmann::json body_json;
@@ -240,11 +240,13 @@ void JSONSerializer::map_to_json(nlohmann::json& j, const structured_control_flo
 void JSONSerializer::return_node_to_json(nlohmann::json& j,
                                          const structured_control_flow::Return& return_node) {
     j["type"] = "return";
+    j["element_id"] = return_node.element_id();
 }
 
 void JSONSerializer::sequence_to_json(nlohmann::json& j,
                                       const structured_control_flow::Sequence& sequence) {
     j["type"] = "sequence";
+    j["element_id"] = sequence.element_id();
     j["children"] = nlohmann::json::array();
     j["transitions"] = nlohmann::json::array();
 
@@ -287,6 +289,7 @@ void JSONSerializer::sequence_to_json(nlohmann::json& j,
         // Add transition information
         nlohmann::json transition_json;
         transition_json["type"] = "transition";
+        transition_json["element_id"] = transition.element_id();
         transition_json["assignments"] = nlohmann::json::array();
         for (const auto& assignment : transition.assignments()) {
             nlohmann::json assignment_json;
@@ -459,15 +462,15 @@ std::vector<std::pair<std::string, types::Scalar>> JSONSerializer::json_to_argum
 void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
                                       builder::StructuredSDFGBuilder& builder,
                                       structured_control_flow::Block& parent) {
-    std::unordered_map<long, data_flow::DataFlowNode&> nodes_map;
+    std::unordered_map<std::string, data_flow::DataFlowNode&> nodes_map;
 
     assert(j.contains("nodes"));
     assert(j["nodes"].is_array());
     for (const auto& node : j["nodes"]) {
         assert(node.contains("type"));
         assert(node["type"].is_string());
-        assert(node.contains("serialization_id"));
-        assert(node["serialization_id"].is_number_integer());
+        assert(node.contains("element_id"));
+        assert(node["element_id"].is_string());
         std::string type = node["type"];
         if (type == "tasklet") {
             assert(node.contains("code"));
@@ -481,7 +484,7 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
             auto inputs = json_to_arguments(node["inputs"]);
             auto& tasklet = builder.add_tasklet(parent, node["code"], outputs.at(0), inputs);
 
-            nodes_map.insert({node["serialization_id"], tasklet});
+            nodes_map.insert({node["element_id"], tasklet});
         } else if (type == "library_node") {
             assert(node.contains("call"));
             assert(node.contains("inputs"));
@@ -492,12 +495,12 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
             auto inputs = json_to_arguments(node["inputs"]);
             auto& lib_node = builder.add_library_node(parent, node["call"], outputs, inputs);
 
-            nodes_map.insert({node["serialization_id"], lib_node});
+            nodes_map.insert({node["element_id"], lib_node});
         } else if (type == "access_node") {
             assert(node.contains("data"));
             auto& access_node = builder.add_access(parent, node["data"]);
 
-            nodes_map.insert({node["serialization_id"], access_node});
+            nodes_map.insert({node["element_id"], access_node});
         } else {
             throw std::runtime_error("Unknown node type");
         }
@@ -507,9 +510,9 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
     assert(j["edges"].is_array());
     for (const auto& edge : j["edges"]) {
         assert(edge.contains("src"));
-        assert(edge["src"].is_number_integer());
+        assert(edge["src"].is_string());
         assert(edge.contains("dst"));
-        assert(edge["dst"].is_number_integer());
+        assert(edge["dst"].is_string());
         assert(edge.contains("src_conn"));
         assert(edge["src_conn"].is_string());
         assert(edge.contains("dst_conn"));
@@ -517,8 +520,8 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
         assert(edge.contains("subset"));
         assert(edge["subset"].is_array());
 
-        assert(nodes_map.contains(edge["src"]));
-        assert(nodes_map.contains(edge["dst"]));
+        assert(nodes_map.find(edge["src"]) != nodes_map.end());
+        assert(nodes_map.find(edge["dst"]) != nodes_map.end());
         auto& source = nodes_map.at(edge["src"]);
         auto& target = nodes_map.at(edge["dst"]);
 
