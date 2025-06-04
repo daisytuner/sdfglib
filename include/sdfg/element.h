@@ -15,6 +15,10 @@ class SDFGBuilder;
 class StructuredSDFGBuilder;
 }  // namespace builder
 
+namespace serializer {
+class JSONSerializer;
+}  // namespace serializer
+
 class DebugInfo {
    private:
     std::string filename_;
@@ -49,6 +53,7 @@ class DebugInfo {
 class Element {
     friend class builder::SDFGBuilder;
     friend class builder::StructuredSDFGBuilder;
+    friend class serializer::JSONSerializer;
 
     static thread_local boost::uuids::random_generator UUID_GENERATOR;
 

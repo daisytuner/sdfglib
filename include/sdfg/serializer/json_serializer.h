@@ -84,6 +84,7 @@ class JSONSerializer {
                           symbolic::Assignments& assignments);
     std::unique_ptr<sdfg::types::IType> json_to_type(const nlohmann::json& j);
     std::vector<std::pair<std::string, types::Scalar>> json_to_arguments(const nlohmann::json& j);
+    DebugInfo json_to_debug_info(const nlohmann::json& j);
 
     std::string expression(const symbolic::Expression& expr);
 };
