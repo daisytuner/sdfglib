@@ -643,17 +643,23 @@ void JSONSerializer::json_to_sequence(const nlohmann::json& j,
             } else if (child["type"] == "for") {
                 json_to_for_node(child, builder, sequence, assignments);
             } else if (child["type"] == "if_else") {
-                json_to_if_else_node(child, builder, sequence);
+                json_to_if_else_node(child, builder, sequence, assignments);
             } else if (child["type"] == "while") {
                 json_to_while_node(child, builder, sequence, assignments);
             } else if (child["type"] == "break") {
-                json_to_break_node(child, builder, sequence);
+                json_to_break_node(child, builder, sequence, assignments);
             } else if (child["type"] == "continue") {
-                json_to_continue_node(child, builder, sequence);
+                json_to_continue_node(child, builder, sequence, assignments);
             } else if (child["type"] == "kernel") {
-                json_to_kernel_node(child, builder, sequence);
+                json_to_kernel_node(child, builder, sequence, assignments);
             } else if (child["type"] == "return") {
                 json_to_return_node(child, builder, sequence, assignments);
+            } else if (child["type"] == "map") {
+                json_to_map_node(child, builder, sequence, assignments);
+            } else if (child["type"] == "sequence") {
+                auto& subseq = builder.add_sequence(sequence, assignments,
+                                                    json_to_debug_info(child["debug_info"]));
+                json_to_sequence(child, builder, subseq);
             } else {
                 throw std::runtime_error("Unknown child type");
             }
@@ -723,13 +729,15 @@ void JSONSerializer::json_to_for_node(const nlohmann::json& j,
 
 void JSONSerializer::json_to_if_else_node(const nlohmann::json& j,
                                           builder::StructuredSDFGBuilder& builder,
-                                          structured_control_flow::Sequence& parent) {
+                                          structured_control_flow::Sequence& parent,
+                                          symbolic::Assignments& assignments) {
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "if_else");
     assert(j.contains("branches"));
     assert(j["branches"].is_array());
-    auto& if_else_node = builder.add_if_else(parent, json_to_debug_info(j["debug_info"]));
+    auto& if_else_node =
+        builder.add_if_else(parent, assignments, json_to_debug_info(j["debug_info"]));
     if_else_node.element_id_ = j["element_id"];
     for (const auto& branch : j["branches"]) {
         assert(branch.contains("condition"));
@@ -772,27 +780,30 @@ void JSONSerializer::json_to_while_node(const nlohmann::json& j,
 
 void JSONSerializer::json_to_break_node(const nlohmann::json& j,
                                         builder::StructuredSDFGBuilder& builder,
-                                        structured_control_flow::Sequence& parent) {
+                                        structured_control_flow::Sequence& parent,
+                                        symbolic::Assignments& assignments) {
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "break");
-    auto& node = builder.add_break(parent, json_to_debug_info(j["debug_info"]));
+    auto& node = builder.add_break(parent, assignments, json_to_debug_info(j["debug_info"]));
     node.element_id_ = j["element_id"];
 }
 
 void JSONSerializer::json_to_continue_node(const nlohmann::json& j,
                                            builder::StructuredSDFGBuilder& builder,
-                                           structured_control_flow::Sequence& parent) {
+                                           structured_control_flow::Sequence& parent,
+                                           symbolic::Assignments& assignments) {
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "continue");
-    auto& node = builder.add_continue(parent, json_to_debug_info(j["debug_info"]));
+    auto& node = builder.add_continue(parent, assignments, json_to_debug_info(j["debug_info"]));
     node.element_id_ = j["element_id"];
 }
 
 void JSONSerializer::json_to_kernel_node(const nlohmann::json& j,
                                          builder::StructuredSDFGBuilder& builder,
-                                         structured_control_flow::Sequence& parent) {
+                                         structured_control_flow::Sequence& parent,
+                                         symbolic::Assignments& assignments) {
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "kernel");

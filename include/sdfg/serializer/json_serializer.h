@@ -65,17 +65,21 @@ class JSONSerializer {
                           symbolic::Assignments& assignments);
     void json_to_if_else_node(const nlohmann::json& j,
                               sdfg::builder::StructuredSDFGBuilder& builder,
-                              sdfg::structured_control_flow::Sequence& parent);
+                              sdfg::structured_control_flow::Sequence& parent,
+                              symbolic::Assignments& assignments);
     void json_to_while_node(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
                             sdfg::structured_control_flow::Sequence& parent,
                             symbolic::Assignments& assignments);
     void json_to_break_node(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
-                            sdfg::structured_control_flow::Sequence& parent);
+                            sdfg::structured_control_flow::Sequence& parent,
+                            symbolic::Assignments& assignments);
     void json_to_continue_node(const nlohmann::json& j,
                                sdfg::builder::StructuredSDFGBuilder& builder,
-                               sdfg::structured_control_flow::Sequence& parent);
+                               sdfg::structured_control_flow::Sequence& parent,
+                               symbolic::Assignments& assignments);
     void json_to_kernel_node(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
-                             sdfg::structured_control_flow::Sequence& parent);
+                             sdfg::structured_control_flow::Sequence& parent,
+                             symbolic::Assignments& assignments);
     void json_to_return_node(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
                              sdfg::structured_control_flow::Sequence& parent,
                              symbolic::Assignments& assignments);

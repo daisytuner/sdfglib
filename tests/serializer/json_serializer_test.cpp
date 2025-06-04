@@ -1428,7 +1428,8 @@ TEST(JSONSerializerTest, SerializeDeserialize_ifelse) {
     // Deserialize the JSON back into an IfElse node
     auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg");
     des_builder.add_container("i", sym_desc);
-    serializer.json_to_if_else_node(j, des_builder, des_builder.subject().root());
+    symbolic::Assignments assignments;
+    serializer.json_to_if_else_node(j, des_builder, des_builder.subject().root(), assignments);
     auto des_sdfg = des_builder.move();
 
     EXPECT_EQ(des_sdfg->name(), sdfg->name());
@@ -1648,8 +1649,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_kernel) {
     auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg");
 
     symbolic::Assignments assignments;
-
-    serializer.json_to_kernel_node(j, des_builder, des_builder.subject().root());
+    serializer.json_to_kernel_node(j, des_builder, des_builder.subject().root(), assignments);
     auto des_sdfg = des_builder.move();
     EXPECT_EQ(des_sdfg->name(), sdfg->name());
     EXPECT_EQ(des_sdfg->containers().size(), 0);
