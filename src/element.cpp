@@ -1,14 +1,13 @@
 #include "sdfg/element.h"
 
+#include <boost/uuid/uuid_io.hpp>
+
 namespace sdfg {
 
+boost::uuids::random_generator thread_local Element::UUID_GENERATOR;
+
 DebugInfo::DebugInfo()
-    : filename_(),
-      start_line_(0),
-      start_column_(0),
-      end_line_(0),
-      end_column_(0),
-      has_(false) {
+    : filename_(), start_line_(0), start_column_(0), end_line_(0), end_column_(0), has_(false) {
 
       };
 
@@ -69,19 +68,12 @@ DebugInfo DebugInfo::merge(const DebugInfo& left, const DebugInfo& right) {
     return DebugInfo(left.filename_, start_line, start_column, end_line, end_column);
 };
 
-Element::Element(size_t element_id, const DebugInfo& debug_info)
-    : element_id_(element_id),
-      debug_info_(debug_info){
-
-      };
-
-size_t Element::element_id() const { return this->element_id_; };
-
-std::string Element::name() const {
-    std::string name = std::to_string(this->element_id());
-    std::replace(name.begin(), name.end(), '-', '_');
-    return "__element_" + name;
+Element::Element(const DebugInfo& debug_info) : debug_info_(debug_info) {
+    boost::uuids::uuid uuid = UUID_GENERATOR();
+    this->element_id_ = boost::uuids::to_string(uuid);
 };
+
+std::string Element::element_id() const { return this->element_id_; };
 
 const DebugInfo& Element::debug_info() const { return this->debug_info_; };
 

@@ -175,40 +175,6 @@ TEST(SDFGTest, AllSimplePaths) {
     }
 }
 
-TEST(SDFGTest, AsDot) {
-    builder::SDFGBuilder builder("sdfg_1");
-
-    auto& state_1 = builder.add_state(true);
-    auto& state_2 = builder.add_state();
-    auto& state_3 = builder.add_state();
-    auto& state_4 = builder.add_state();
-    auto& state_5 = builder.add_state();
-    auto& edge_1 = builder.add_edge(state_1, state_2);
-    auto& edge_2 = builder.add_edge(state_1, state_3);
-    auto& edge_3 = builder.add_edge(state_2, state_4);
-    auto& edge_4 = builder.add_edge(state_3, state_4);
-    auto& edge_5 = builder.add_edge(state_4, state_5);
-
-    auto sdfg = builder.move();
-
-    std::stringstream ss;
-    sdfg->as_dot(ss);
-
-    EXPECT_EQ(ss.str(), R"(digraph G {
-0[label=__element_1];
-1[label=__element_2];
-2[label=__element_3];
-3[label=__element_4];
-4[label=__element_5];
-0->1 [label="true ; "];
-0->2 [label="true ; "];
-1->3 [label="true ; "];
-2->3 [label="true ; "];
-3->4 [label="true ; "];
-}
-)");
-}
-
 TEST(SDFGTest, Metadata) {
     builder::SDFGBuilder builder("sdfg_1");
 

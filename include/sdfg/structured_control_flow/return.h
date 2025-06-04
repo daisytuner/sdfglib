@@ -13,7 +13,7 @@ namespace structured_control_flow {
 class Return : public ControlFlowNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-    Return(size_t element_id, const DebugInfo& debug_info);
+    Return(const DebugInfo& debug_info);
 
    public:
     Return(const Return& Return) = delete;

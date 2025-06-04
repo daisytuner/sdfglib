@@ -7,8 +7,7 @@
 namespace sdfg {
 
 SDFG::SDFG(const std::string& name)
-    : Function(name),
-      start_state_(nullptr){
+    : Function(name), start_state_(nullptr) {
 
       };
 
@@ -120,32 +119,6 @@ std::list<std::list<const control_flow::InterstateEdge*>> SDFG::all_simple_paths
     }
 
     return all_paths;
-};
-
-void SDFG::as_dot(std::ostream& f) const {
-    std::map<graph::Graph::vertex_descriptor, size_t> node_ids;
-    std::map<graph::Graph::vertex_descriptor, std::string> node_names;
-    for (auto u : boost::make_iterator_range(boost::vertices(this->graph_))) {
-        node_ids[u] = node_ids.size();
-        node_names[u] = this->states_.at(u)->name();
-    }
-
-    codegen::CLanguageExtension lang_ext;
-    std::map<graph::Graph::edge_descriptor, std::string> edge_names;
-    for (auto u : boost::make_iterator_range(boost::edges(this->graph_))) {
-        std::string desc = lang_ext.expression(this->edges_.at(u)->condition());
-        desc += " ; ";
-        for (auto& ass : this->edges_.at(u)->assignments()) {
-            desc += lang_ext.expression(ass.first) + " = " + lang_ext.expression(ass.second) + ",";
-        }
-        edge_names[u] = desc;
-    }
-
-    boost::default_writer w;
-    boost::write_graphviz(f, this->graph_,
-                          boost::make_label_writer(boost::make_assoc_property_map(node_names)),
-                          boost::make_label_writer(boost::make_assoc_property_map(edge_names)), w,
-                          boost::make_assoc_property_map(node_ids));
 };
 
 }  // namespace sdfg

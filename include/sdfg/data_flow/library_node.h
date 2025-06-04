@@ -34,8 +34,7 @@ class LibraryNode : public CodeNode {
     LibraryNodeType call_;
     bool side_effect_;
 
-    LibraryNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
-                DataFlowGraph& parent,
+    LibraryNode(const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent,
                 const std::vector<std::pair<std::string, sdfg::types::Scalar>>& outputs,
                 const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
                 const LibraryNodeType& call, const bool has_side_effect);

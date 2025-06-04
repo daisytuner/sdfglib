@@ -10,13 +10,9 @@ namespace builder {
 
 class FunctionBuilder {
    protected:
-    size_t element_counter_;
-
     virtual Function& function() const = 0;
 
    public:
-    FunctionBuilder();
-
     virtual ~FunctionBuilder() = default;
 
     /***** Section: Containers *****/

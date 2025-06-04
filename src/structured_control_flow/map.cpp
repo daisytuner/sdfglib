@@ -5,10 +5,9 @@
 namespace sdfg {
 namespace structured_control_flow {
 
-Map::Map(size_t element_id, const DebugInfo& debug_info, symbolic::Symbol indvar,
-         symbolic::Expression num_iterations)
-    : ControlFlowNode(element_id, debug_info), indvar_(indvar), num_iterations_(num_iterations) {
-    this->root_ = std::unique_ptr<Sequence>(new Sequence(++element_id, debug_info));
+Map::Map(const DebugInfo& debug_info, symbolic::Symbol indvar, symbolic::Expression num_iterations)
+    : ControlFlowNode(debug_info), indvar_(indvar), num_iterations_(num_iterations) {
+    this->root_ = std::unique_ptr<Sequence>(new Sequence(debug_info));
 };
 
 const symbolic::Symbol& Map::indvar() const { return this->indvar_; };

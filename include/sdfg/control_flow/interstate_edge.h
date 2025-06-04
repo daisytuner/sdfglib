@@ -34,7 +34,7 @@ class InterstateEdge : public Element {
     symbolic::Condition condition_;
     symbolic::Assignments assignments_;
 
-    InterstateEdge(size_t element_id, const DebugInfo& debug_info, const graph::Edge& edge,
+    InterstateEdge(const DebugInfo& debug_info, const graph::Edge& edge,
                    const control_flow::State& src, const control_flow::State& dst,
                    const symbolic::Condition& condition, const symbolic::Assignments& assignments);
 

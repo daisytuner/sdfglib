@@ -134,10 +134,6 @@ class SDFG : public Function {
 
     std::list<std::list<const control_flow::InterstateEdge*>> all_simple_paths(
         const control_flow::State& src, const control_flow::State& dst) const;
-
-    /***** Section: Serialization *****/
-
-    void as_dot(std::ostream& f) const;
 };
 
 }  // namespace sdfg
