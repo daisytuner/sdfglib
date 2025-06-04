@@ -52,7 +52,7 @@ class Kernel : public ControlFlowNode {
 
     std::string suffix_;
 
-    Kernel(size_t element_id, const DebugInfo& debug_info, std::string suffix,
+    Kernel(const DebugInfo& debug_info, std::string suffix,
            symbolic::Expression gridDim_x_init = symbolic::symbol("gridDim.x"),
            symbolic::Expression gridDim_y_init = symbolic::symbol("gridDim.y"),
            symbolic::Expression gridDim_z_init = symbolic::symbol("gridDim.z"),

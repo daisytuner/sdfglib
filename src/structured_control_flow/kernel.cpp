@@ -6,14 +6,14 @@
 namespace sdfg {
 namespace structured_control_flow {
 
-Kernel::Kernel(size_t element_id, const DebugInfo& debug_info, std::string suffix,
-               symbolic::Expression gridDim_x_init, symbolic::Expression gridDim_y_init,
-               symbolic::Expression gridDim_z_init, symbolic::Expression blockDim_x_init,
-               symbolic::Expression blockDim_y_init, symbolic::Expression blockDim_z_init,
-               symbolic::Expression blockIdx_x_init, symbolic::Expression blockIdx_y_init,
-               symbolic::Expression blockIdx_z_init, symbolic::Expression threadIdx_x_init,
-               symbolic::Expression threadIdx_y_init, symbolic::Expression threadIdx_z_init)
-    : ControlFlowNode(element_id, debug_info),
+Kernel::Kernel(const DebugInfo& debug_info, std::string suffix, symbolic::Expression gridDim_x_init,
+               symbolic::Expression gridDim_y_init, symbolic::Expression gridDim_z_init,
+               symbolic::Expression blockDim_x_init, symbolic::Expression blockDim_y_init,
+               symbolic::Expression blockDim_z_init, symbolic::Expression blockIdx_x_init,
+               symbolic::Expression blockIdx_y_init, symbolic::Expression blockIdx_z_init,
+               symbolic::Expression threadIdx_x_init, symbolic::Expression threadIdx_y_init,
+               symbolic::Expression threadIdx_z_init)
+    : ControlFlowNode(debug_info),
       gridDim_x_init_(gridDim_x_init),
       gridDim_y_init_(gridDim_y_init),
       gridDim_z_init_(gridDim_z_init),
@@ -27,7 +27,7 @@ Kernel::Kernel(size_t element_id, const DebugInfo& debug_info, std::string suffi
       threadIdx_y_init_(threadIdx_y_init),
       threadIdx_z_init_(threadIdx_z_init),
       suffix_(suffix) {
-    this->root_ = std::unique_ptr<Sequence>(new Sequence(++element_id, debug_info));
+    this->root_ = std::unique_ptr<Sequence>(new Sequence(debug_info));
 
     this->gridDim_x_ = symbolic::symbol("__daisy_gridDim_x_" + suffix);
     this->gridDim_y_ = symbolic::symbol("__daisy_gridDim_y_" + suffix);

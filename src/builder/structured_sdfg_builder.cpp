@@ -328,12 +328,10 @@ std::unique_ptr<StructuredSDFG> StructuredSDFGBuilder::move() {
 Sequence& StructuredSDFGBuilder::add_sequence(Sequence& parent,
                                               const sdfg::symbolic::Assignments& assignments,
                                               const DebugInfo& debug_info) {
-    parent.children_.push_back(
-        std::unique_ptr<Sequence>(new Sequence(this->element_counter_, debug_info)));
-    this->element_counter_++;
-    parent.transitions_.push_back(std::unique_ptr<Transition>(
-        new Transition(this->element_counter_, debug_info, assignments)));
-    this->element_counter_++;
+    parent.children_.push_back(std::unique_ptr<Sequence>(new Sequence(debug_info)));
+
+    parent.transitions_.push_back(
+        std::unique_ptr<Transition>(new Transition(debug_info, assignments)));
 
     return static_cast<Sequence&>(*parent.children_.back().get());
 };
@@ -352,14 +350,12 @@ std::pair<Sequence&, Transition&> StructuredSDFGBuilder::add_sequence_before(
         throw InvalidSDFGException("StructuredSDFGBuilder: Block not found");
     }
 
-    parent.children_.insert(
-        parent.children_.begin() + index,
-        std::unique_ptr<Sequence>(new Sequence(this->element_counter_, debug_info)));
-    this->element_counter_++;
-    parent.transitions_.insert(
-        parent.transitions_.begin() + index,
-        std::unique_ptr<Transition>(new Transition(this->element_counter_, debug_info)));
-    this->element_counter_++;
+    parent.children_.insert(parent.children_.begin() + index,
+                            std::unique_ptr<Sequence>(new Sequence(debug_info)));
+
+    parent.transitions_.insert(parent.transitions_.begin() + index,
+                               std::unique_ptr<Transition>(new Transition(debug_info)));
+
     auto new_entry = parent.at(index);
     auto& new_block = dynamic_cast<structured_control_flow::Sequence&>(new_entry.first);
 
@@ -398,12 +394,11 @@ void StructuredSDFGBuilder::insert_children(Sequence& parent, Sequence& other, s
 Block& StructuredSDFGBuilder::add_block(Sequence& parent,
                                         const sdfg::symbolic::Assignments& assignments,
                                         const DebugInfo& debug_info) {
-    parent.children_.push_back(
-        std::unique_ptr<Block>(new Block(this->element_counter_, debug_info)));
-    this->element_counter_++;
-    parent.transitions_.push_back(std::unique_ptr<Transition>(
-        new Transition(this->element_counter_, debug_info, assignments)));
-    this->element_counter_++;
+    parent.children_.push_back(std::unique_ptr<Block>(new Block(debug_info)));
+
+    parent.transitions_.push_back(
+        std::unique_ptr<Transition>(new Transition(debug_info, assignments)));
+
     auto& new_block = dynamic_cast<structured_control_flow::Block&>(*parent.children_.back().get());
     (*new_block.dataflow_).parent_ = &new_block;
 
@@ -414,12 +409,11 @@ Block& StructuredSDFGBuilder::add_block(Sequence& parent,
                                         const data_flow::DataFlowGraph& data_flow_graph,
                                         const sdfg::symbolic::Assignments& assignments,
                                         const DebugInfo& debug_info) {
-    parent.children_.push_back(
-        std::unique_ptr<Block>(new Block(this->element_counter_, debug_info, data_flow_graph)));
-    this->element_counter_++;
-    parent.transitions_.push_back(std::unique_ptr<Transition>(
-        new Transition(this->element_counter_, debug_info, assignments)));
-    this->element_counter_++;
+    parent.children_.push_back(std::unique_ptr<Block>(new Block(debug_info, data_flow_graph)));
+
+    parent.transitions_.push_back(
+        std::unique_ptr<Transition>(new Transition(debug_info, assignments)));
+
     auto& new_block = dynamic_cast<structured_control_flow::Block&>(*parent.children_.back().get());
     (*new_block.dataflow_).parent_ = &new_block;
 
@@ -439,12 +433,11 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_before(
     assert(index > -1);
 
     parent.children_.insert(parent.children_.begin() + index,
-                            std::unique_ptr<Block>(new Block(this->element_counter_, debug_info)));
-    this->element_counter_++;
-    parent.transitions_.insert(
-        parent.transitions_.begin() + index,
-        std::unique_ptr<Transition>(new Transition(this->element_counter_, debug_info)));
-    this->element_counter_++;
+                            std::unique_ptr<Block>(new Block(debug_info)));
+
+    parent.transitions_.insert(parent.transitions_.begin() + index,
+                               std::unique_ptr<Transition>(new Transition(debug_info)));
+
     auto new_entry = parent.at(index);
     auto& new_block = dynamic_cast<structured_control_flow::Block&>(new_entry.first);
     (*new_block.dataflow_).parent_ = &new_block;
@@ -465,14 +458,12 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_before(
     }
     assert(index > -1);
 
-    parent.children_.insert(
-        parent.children_.begin() + index,
-        std::unique_ptr<Block>(new Block(this->element_counter_, debug_info, data_flow_graph)));
-    this->element_counter_++;
-    parent.transitions_.insert(
-        parent.transitions_.begin() + index,
-        std::unique_ptr<Transition>(new Transition(this->element_counter_, debug_info)));
-    this->element_counter_++;
+    parent.children_.insert(parent.children_.begin() + index,
+                            std::unique_ptr<Block>(new Block(debug_info, data_flow_graph)));
+
+    parent.transitions_.insert(parent.transitions_.begin() + index,
+                               std::unique_ptr<Transition>(new Transition(debug_info)));
+
     auto new_entry = parent.at(index);
     auto& new_block = dynamic_cast<structured_control_flow::Block&>(new_entry.first);
     (*new_block.dataflow_).parent_ = &new_block;
@@ -494,12 +485,11 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_after(Sequence& 
     assert(index > -1);
 
     parent.children_.insert(parent.children_.begin() + index + 1,
-                            std::unique_ptr<Block>(new Block(this->element_counter_, debug_info)));
-    this->element_counter_++;
-    parent.transitions_.insert(
-        parent.transitions_.begin() + index + 1,
-        std::unique_ptr<Transition>(new Transition(this->element_counter_, debug_info)));
-    this->element_counter_++;
+                            std::unique_ptr<Block>(new Block(debug_info)));
+
+    parent.transitions_.insert(parent.transitions_.begin() + index + 1,
+                               std::unique_ptr<Transition>(new Transition(debug_info)));
+
     auto new_entry = parent.at(index + 1);
     auto& new_block = dynamic_cast<structured_control_flow::Block&>(new_entry.first);
     (*new_block.dataflow_).parent_ = &new_block;
@@ -519,14 +509,12 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_after(
     }
     assert(index > -1);
 
-    parent.children_.insert(
-        parent.children_.begin() + index + 1,
-        std::unique_ptr<Block>(new Block(this->element_counter_, debug_info, data_flow_graph)));
-    this->element_counter_++;
-    parent.transitions_.insert(
-        parent.transitions_.begin() + index + 1,
-        std::unique_ptr<Transition>(new Transition(this->element_counter_, debug_info)));
-    this->element_counter_++;
+    parent.children_.insert(parent.children_.begin() + index + 1,
+                            std::unique_ptr<Block>(new Block(debug_info, data_flow_graph)));
+
+    parent.transitions_.insert(parent.transitions_.begin() + index + 1,
+                               std::unique_ptr<Transition>(new Transition(debug_info)));
+
     auto new_entry = parent.at(index + 1);
     auto& new_block = dynamic_cast<structured_control_flow::Block&>(new_entry.first);
     (*new_block.dataflow_).parent_ = &new_block;
@@ -540,12 +528,11 @@ For& StructuredSDFGBuilder::add_for(Sequence& parent, const symbolic::Symbol& in
                                     const symbolic::Expression& update,
                                     const sdfg::symbolic::Assignments& assignments,
                                     const DebugInfo& debug_info) {
-    parent.children_.push_back(std::unique_ptr<For>(
-        new For(this->element_counter_, debug_info, indvar, init, update, condition)));
-    this->element_counter_ = this->element_counter_ + 2;
-    parent.transitions_.push_back(std::unique_ptr<Transition>(
-        new Transition(this->element_counter_, debug_info, assignments)));
-    this->element_counter_++;
+    parent.children_.push_back(
+        std::unique_ptr<For>(new For(debug_info, indvar, init, update, condition)));
+
+    parent.transitions_.push_back(
+        std::unique_ptr<Transition>(new Transition(debug_info, assignments)));
 
     return static_cast<For&>(*parent.children_.back().get());
 };
@@ -564,14 +551,13 @@ std::pair<For&, Transition&> StructuredSDFGBuilder::add_for_before(
     }
     assert(index > -1);
 
-    parent.children_.insert(parent.children_.begin() + index,
-                            std::unique_ptr<For>(new For(this->element_counter_, debug_info, indvar,
-                                                         init, update, condition)));
-    this->element_counter_ = this->element_counter_ + 2;
-    parent.transitions_.insert(
-        parent.transitions_.begin() + index,
-        std::unique_ptr<Transition>(new Transition(this->element_counter_, debug_info)));
-    this->element_counter_++;
+    parent.children_.insert(
+        parent.children_.begin() + index,
+        std::unique_ptr<For>(new For(debug_info, indvar, init, update, condition)));
+
+    parent.transitions_.insert(parent.transitions_.begin() + index,
+                               std::unique_ptr<Transition>(new Transition(debug_info)));
+
     auto new_entry = parent.at(index);
     auto& new_block = dynamic_cast<structured_control_flow::For&>(new_entry.first);
 
@@ -592,14 +578,13 @@ std::pair<For&, Transition&> StructuredSDFGBuilder::add_for_after(
     }
     assert(index > -1);
 
-    parent.children_.insert(parent.children_.begin() + index + 1,
-                            std::unique_ptr<For>(new For(this->element_counter_, debug_info, indvar,
-                                                         init, update, condition)));
-    this->element_counter_ = this->element_counter_ + 2;
-    parent.transitions_.insert(
-        parent.transitions_.begin() + index + 1,
-        std::unique_ptr<Transition>(new Transition(this->element_counter_, debug_info)));
-    this->element_counter_++;
+    parent.children_.insert(
+        parent.children_.begin() + index + 1,
+        std::unique_ptr<For>(new For(debug_info, indvar, init, update, condition)));
+
+    parent.transitions_.insert(parent.transitions_.begin() + index + 1,
+                               std::unique_ptr<Transition>(new Transition(debug_info)));
+
     auto new_entry = parent.at(index + 1);
     auto& new_block = dynamic_cast<structured_control_flow::For&>(new_entry.first);
 
@@ -613,12 +598,11 @@ IfElse& StructuredSDFGBuilder::add_if_else(Sequence& parent, const DebugInfo& de
 IfElse& StructuredSDFGBuilder::add_if_else(Sequence& parent,
                                            const sdfg::symbolic::Assignments& assignments,
                                            const DebugInfo& debug_info) {
-    parent.children_.push_back(
-        std::unique_ptr<IfElse>(new IfElse(this->element_counter_, debug_info)));
-    this->element_counter_++;
-    parent.transitions_.push_back(std::unique_ptr<Transition>(
-        new Transition(this->element_counter_, debug_info, assignments)));
-    this->element_counter_++;
+    parent.children_.push_back(std::unique_ptr<IfElse>(new IfElse(debug_info)));
+
+    parent.transitions_.push_back(
+        std::unique_ptr<Transition>(new Transition(debug_info, assignments)));
+
     return static_cast<IfElse&>(*parent.children_.back().get());
 };
 
@@ -634,14 +618,12 @@ std::pair<IfElse&, Transition&> StructuredSDFGBuilder::add_if_else_before(
     }
     assert(index > -1);
 
-    parent.children_.insert(
-        parent.children_.begin() + index,
-        std::unique_ptr<IfElse>(new IfElse(this->element_counter_, debug_info)));
-    this->element_counter_++;
-    parent.transitions_.insert(
-        parent.transitions_.begin() + index,
-        std::unique_ptr<Transition>(new Transition(this->element_counter_, debug_info)));
-    this->element_counter_++;
+    parent.children_.insert(parent.children_.begin() + index,
+                            std::unique_ptr<IfElse>(new IfElse(debug_info)));
+
+    parent.transitions_.insert(parent.transitions_.begin() + index,
+                               std::unique_ptr<Transition>(new Transition(debug_info)));
+
     auto new_entry = parent.at(index);
     auto& new_block = dynamic_cast<structured_control_flow::IfElse&>(new_entry.first);
 
@@ -650,9 +632,8 @@ std::pair<IfElse&, Transition&> StructuredSDFGBuilder::add_if_else_before(
 
 Sequence& StructuredSDFGBuilder::add_case(IfElse& scope, const sdfg::symbolic::Condition cond,
                                           const DebugInfo& debug_info) {
-    scope.cases_.push_back(
-        std::unique_ptr<Sequence>(new Sequence(this->element_counter_, debug_info)));
-    this->element_counter_++;
+    scope.cases_.push_back(std::unique_ptr<Sequence>(new Sequence(debug_info)));
+
     scope.conditions_.push_back(cond);
     return *scope.cases_.back();
 };
@@ -665,12 +646,11 @@ void StructuredSDFGBuilder::remove_case(IfElse& scope, size_t i, const DebugInfo
 While& StructuredSDFGBuilder::add_while(Sequence& parent,
                                         const sdfg::symbolic::Assignments& assignments,
                                         const DebugInfo& debug_info) {
-    parent.children_.push_back(
-        std::unique_ptr<While>(new While(this->element_counter_, debug_info)));
-    this->element_counter_ = this->element_counter_ + 2;
-    parent.transitions_.push_back(std::unique_ptr<Transition>(
-        new Transition(this->element_counter_, debug_info, assignments)));
-    this->element_counter_++;
+    parent.children_.push_back(std::unique_ptr<While>(new While(debug_info)));
+
+    parent.transitions_.push_back(
+        std::unique_ptr<Transition>(new Transition(debug_info, assignments)));
+
     return static_cast<While&>(*parent.children_.back().get());
 };
 
@@ -683,13 +663,12 @@ Kernel& StructuredSDFGBuilder::add_kernel(
     const symbolic::Expression& blockIdx_z_init, const symbolic::Expression& threadIdx_x_init,
     const symbolic::Expression& threadIdx_y_init, const symbolic::Expression& threadIdx_z_init) {
     parent.children_.push_back(std::unique_ptr<Kernel>(new Kernel(
-        this->element_counter_, debug_info, suffix, gridDim_x_init, gridDim_y_init, gridDim_z_init,
-        blockDim_x_init, blockDim_y_init, blockDim_z_init, blockIdx_x_init, blockIdx_y_init,
-        blockIdx_z_init, threadIdx_x_init, threadIdx_y_init, threadIdx_z_init)));
-    this->element_counter_ = this->element_counter_ + 2;
-    parent.transitions_.push_back(
-        std::unique_ptr<Transition>(new Transition(this->element_counter_, debug_info)));
-    this->element_counter_++;
+        debug_info, suffix, gridDim_x_init, gridDim_y_init, gridDim_z_init, blockDim_x_init,
+        blockDim_y_init, blockDim_z_init, blockIdx_x_init, blockIdx_y_init, blockIdx_z_init,
+        threadIdx_x_init, threadIdx_y_init, threadIdx_z_init)));
+
+    parent.transitions_.push_back(std::unique_ptr<Transition>(new Transition(debug_info)));
+
     return static_cast<Kernel&>(*parent.children_.back().get());
 };
 
@@ -718,12 +697,11 @@ Continue& StructuredSDFGBuilder::add_continue(Sequence& parent,
         throw UnstructuredControlFlowException();
     }
 
-    parent.children_.push_back(
-        std::unique_ptr<Continue>(new Continue(this->element_counter_, debug_info)));
-    this->element_counter_++;
-    parent.transitions_.push_back(std::unique_ptr<Transition>(
-        new Transition(this->element_counter_, debug_info, assignments)));
-    this->element_counter_++;
+    parent.children_.push_back(std::unique_ptr<Continue>(new Continue(debug_info)));
+
+    parent.transitions_.push_back(
+        std::unique_ptr<Transition>(new Transition(debug_info, assignments)));
+
     return static_cast<Continue&>(*parent.children_.back().get());
 };
 
@@ -752,24 +730,22 @@ Break& StructuredSDFGBuilder::add_break(Sequence& parent,
         throw UnstructuredControlFlowException();
     }
 
-    parent.children_.push_back(
-        std::unique_ptr<Break>(new Break(this->element_counter_, debug_info)));
-    this->element_counter_++;
-    parent.transitions_.push_back(std::unique_ptr<Transition>(
-        new Transition(this->element_counter_, debug_info, assignments)));
-    this->element_counter_++;
+    parent.children_.push_back(std::unique_ptr<Break>(new Break(debug_info)));
+
+    parent.transitions_.push_back(
+        std::unique_ptr<Transition>(new Transition(debug_info, assignments)));
+
     return static_cast<Break&>(*parent.children_.back().get());
 };
 
 Return& StructuredSDFGBuilder::add_return(Sequence& parent,
                                           const sdfg::symbolic::Assignments& assignments,
                                           const DebugInfo& debug_info) {
-    parent.children_.push_back(
-        std::unique_ptr<Return>(new Return(this->element_counter_, debug_info)));
-    this->element_counter_++;
-    parent.transitions_.push_back(std::unique_ptr<Transition>(
-        new Transition(this->element_counter_, debug_info, assignments)));
-    this->element_counter_++;
+    parent.children_.push_back(std::unique_ptr<Return>(new Return(debug_info)));
+
+    parent.transitions_.push_back(
+        std::unique_ptr<Transition>(new Transition(debug_info, assignments)));
+
     return static_cast<Return&>(*parent.children_.back().get());
 };
 
@@ -777,12 +753,10 @@ Map& StructuredSDFGBuilder::add_map(Sequence& parent, const symbolic::Symbol& in
                                     const symbolic::Expression& num_iterations,
                                     const sdfg::symbolic::Assignments& assignments,
                                     const DebugInfo& debug_info) {
-    parent.children_.push_back(
-        std::unique_ptr<Map>(new Map(this->element_counter_, debug_info, indvar, num_iterations)));
-    this->element_counter_ = this->element_counter_ + 2;
-    parent.transitions_.push_back(std::unique_ptr<Transition>(
-        new Transition(this->element_counter_, debug_info, assignments)));
-    this->element_counter_++;
+    parent.children_.push_back(std::unique_ptr<Map>(new Map(debug_info, indvar, num_iterations)));
+
+    parent.transitions_.push_back(
+        std::unique_ptr<Transition>(new Transition(debug_info, assignments)));
 
     return static_cast<Map&>(*parent.children_.back().get());
 };
@@ -802,9 +776,9 @@ For& StructuredSDFGBuilder::convert_while(Sequence& parent, While& loop,
     }
     auto iter = parent.children_.begin() + index;
     auto& new_iter = *parent.children_.insert(
-        iter + 1, std::unique_ptr<For>(new For(this->element_counter_, loop.debug_info(), indvar,
-                                               init, update, condition)));
-    this->element_counter_ = this->element_counter_ + 2;
+        iter + 1,
+        std::unique_ptr<For>(new For(loop.debug_info(), indvar, init, update, condition)));
+
     auto& for_loop = dynamic_cast<For&>(*new_iter);
     this->insert_children(for_loop.root(), loop.root(), 0);
 
@@ -826,9 +800,8 @@ Map& StructuredSDFGBuilder::convert_for(Sequence& parent, For& loop,
     }
     auto iter = parent.children_.begin() + index;
     auto& new_iter = *parent.children_.insert(
-        iter + 1, std::unique_ptr<Map>(new Map(this->element_counter_, loop.debug_info(),
-                                               loop.indvar(), num_iterations)));
-    this->element_counter_ = this->element_counter_ + 2;
+        iter + 1, std::unique_ptr<Map>(new Map(loop.debug_info(), loop.indvar(), num_iterations)));
+
     auto& map = dynamic_cast<Map&>(*new_iter);
     this->insert_children(map.root(), loop.root(), 0);
 
@@ -874,9 +847,8 @@ Sequence& StructuredSDFGBuilder::parent(const ControlFlowNode& node) {
 
 Kernel& StructuredSDFGBuilder::convert_into_kernel() {
     auto old_root = std::move(this->structured_sdfg_->root_);
-    this->structured_sdfg_->root_ =
-        std::unique_ptr<Sequence>(new Sequence(this->element_counter_, old_root->debug_info()));
-    this->element_counter_++;
+    this->structured_sdfg_->root_ = std::unique_ptr<Sequence>(new Sequence(old_root->debug_info()));
+
     auto& new_root = this->structured_sdfg_->root();
     auto& kernel = this->add_kernel(new_root, this->function().name());
 
@@ -938,9 +910,9 @@ data_flow::AccessNode& StructuredSDFGBuilder::add_access(structured_control_flow
 
     auto vertex = boost::add_vertex(block.dataflow_->graph_);
     auto res = block.dataflow_->nodes_.insert(
-        {vertex, std::unique_ptr<data_flow::AccessNode>(new data_flow::AccessNode(
-                     this->element_counter_, debug_info, vertex, block.dataflow(), data))});
-    this->element_counter_++;
+        {vertex, std::unique_ptr<data_flow::AccessNode>(
+                     new data_flow::AccessNode(debug_info, vertex, block.dataflow(), data))});
+
     return dynamic_cast<data_flow::AccessNode&>(*(res.first->second));
 };
 
@@ -963,10 +935,10 @@ data_flow::Tasklet& StructuredSDFGBuilder::add_tasklet(
 
     auto vertex = boost::add_vertex(block.dataflow_->graph_);
     auto res = block.dataflow_->nodes_.insert(
-        {vertex, std::unique_ptr<data_flow::Tasklet>(new data_flow::Tasklet(
-                     this->element_counter_, debug_info, vertex, block.dataflow(), code, output,
-                     inputs, symbolic::__true__()))});
-    this->element_counter_++;
+        {vertex,
+         std::unique_ptr<data_flow::Tasklet>(new data_flow::Tasklet(
+             debug_info, vertex, block.dataflow(), code, output, inputs, symbolic::__true__()))});
+
     return dynamic_cast<data_flow::Tasklet&>(*(res.first->second));
 };
 
@@ -1107,10 +1079,10 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
 
     auto edge = boost::add_edge(src.vertex_, dst.vertex_, block.dataflow_->graph_);
     auto res = block.dataflow_->edges_.insert(
-        {edge.first, std::unique_ptr<data_flow::Memlet>(new data_flow::Memlet(
-                         this->element_counter_, debug_info, edge.first, block.dataflow(), src,
-                         src_conn, dst, dst_conn, subset))});
-    this->element_counter_++;
+        {edge.first,
+         std::unique_ptr<data_flow::Memlet>(new data_flow::Memlet(
+             debug_info, edge.first, block.dataflow(), src, src_conn, dst, dst_conn, subset))});
+
     return dynamic_cast<data_flow::Memlet&>(*(res.first->second));
 };
 
@@ -1121,10 +1093,10 @@ data_flow::LibraryNode& StructuredSDFGBuilder::add_library_node(
     const bool has_side_effect, const DebugInfo& debug_info) {
     auto vertex = boost::add_vertex(block.dataflow_->graph_);
     auto res = block.dataflow_->nodes_.insert(
-        {vertex, std::unique_ptr<data_flow::LibraryNode>(new data_flow::LibraryNode(
-                     this->element_counter_, debug_info, vertex, block.dataflow(), outputs, inputs,
-                     call, has_side_effect))});
-    this->element_counter_++;
+        {vertex,
+         std::unique_ptr<data_flow::LibraryNode>(new data_flow::LibraryNode(
+             debug_info, vertex, block.dataflow(), outputs, inputs, call, has_side_effect))});
+
     return dynamic_cast<data_flow::LibraryNode&>(*(res.first->second));
 }
 

@@ -3,11 +3,10 @@
 namespace sdfg {
 namespace data_flow {
 
-CodeNode::CodeNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
-                   DataFlowGraph& parent,
+CodeNode::CodeNode(const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent,
                    const std::vector<std::pair<std::string, sdfg::types::Scalar>>& outputs,
                    const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs)
-    : DataFlowNode(element_id, debug_info, vertex, parent), outputs_(outputs), inputs_(inputs) {
+    : DataFlowNode(debug_info, vertex, parent), outputs_(outputs), inputs_(inputs) {
 
       };
 

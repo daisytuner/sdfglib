@@ -12,9 +12,8 @@
 namespace sdfg {
 
 StructuredSDFG::StructuredSDFG(const std::string& name) : Function(name) {
-    size_t element_id = 0;
     this->root_ = std::unique_ptr<structured_control_flow::Sequence>(
-        new structured_control_flow::Sequence(element_id, DebugInfo()));
+        new structured_control_flow::Sequence(DebugInfo()));
 };
 
 const structured_control_flow::Sequence& StructuredSDFG::root() const { return *this->root_; };

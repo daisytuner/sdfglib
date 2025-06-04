@@ -21,8 +21,7 @@ class CodeNode : public DataFlowNode {
     std::vector<std::pair<std::string, sdfg::types::Scalar>> outputs_;
     std::vector<std::pair<std::string, sdfg::types::Scalar>> inputs_;
 
-    CodeNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
-             DataFlowGraph& parent,
+    CodeNode(const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent,
              const std::vector<std::pair<std::string, sdfg::types::Scalar>>& outputs,
              const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs);
 

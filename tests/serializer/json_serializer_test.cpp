@@ -240,21 +240,21 @@ TEST(JSONSerializerTest, DataflowToJSON) {
 
     auto edge_to_tasklet =
         std::find_if(j["edges"].begin(), j["edges"].end(), [&](const auto& edge) {
-            return edge["src"] == access_node_A->at("serialization_id") &&
-                   edge["dst"] == tasklet_node->at("serialization_id") &&
-                   edge["src_conn"] == "void" && edge["dst_conn"] == "_in1";
+            return edge["src"] == access_node_A->at("element_id") &&
+                   edge["dst"] == tasklet_node->at("element_id") && edge["src_conn"] == "void" &&
+                   edge["dst_conn"] == "_in1";
         });
     auto edge_to_tasklet2 =
         std::find_if(j["edges"].begin(), j["edges"].end(), [&](const auto& edge) {
-            return edge["src"] == access_node_C->at("serialization_id") &&
-                   edge["dst"] == tasklet_node->at("serialization_id") &&
-                   edge["src_conn"] == "void" && edge["dst_conn"] == "_in2";
+            return edge["src"] == access_node_C->at("element_id") &&
+                   edge["dst"] == tasklet_node->at("element_id") && edge["src_conn"] == "void" &&
+                   edge["dst_conn"] == "_in2";
         });
     auto edge_from_tasklet =
         std::find_if(j["edges"].begin(), j["edges"].end(), [&](const auto& edge) {
-            return edge["src"] == tasklet_node->at("serialization_id") &&
-                   edge["dst"] == access_node_D->at("serialization_id") &&
-                   edge["src_conn"] == "_out" && edge["dst_conn"] == "void";
+            return edge["src"] == tasklet_node->at("element_id") &&
+                   edge["dst"] == access_node_D->at("element_id") && edge["src_conn"] == "_out" &&
+                   edge["dst_conn"] == "void";
         });
 
     EXPECT_NE(edge_to_tasklet, j["edges"].end());

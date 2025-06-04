@@ -1,9 +1,9 @@
 #pragma once
 
+#include "sdfg/data_flow/code_node.h"
 #include "sdfg/exceptions.h"
 #include "sdfg/graph/graph.h"
 #include "sdfg/symbolic/symbolic.h"
-#include "sdfg/data_flow/code_node.h"
 
 namespace sdfg {
 
@@ -564,9 +564,8 @@ class Tasklet : public CodeNode {
     TaskletCode code_;
     symbolic::Condition condition_;
 
-    Tasklet(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
-            DataFlowGraph& parent, const TaskletCode code,
-            const std::pair<std::string, sdfg::types::Scalar>& output,
+    Tasklet(const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent,
+            const TaskletCode code, const std::pair<std::string, sdfg::types::Scalar>& output,
             const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
             const symbolic::Condition& condition);
 

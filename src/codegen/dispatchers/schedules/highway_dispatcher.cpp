@@ -707,12 +707,11 @@ std::string HighwayDispatcher::indirection_to_cpp(const symbolic::Expression& ac
 };
 
 std::string HighwayDispatcher::function_name(const structured_control_flow::ControlFlowNode& node) {
-    return node.name();
+    return node.element_id();
 };
 
 std::vector<std::string> HighwayDispatcher::function_arguments(
     Schedule& schedule, structured_control_flow::ControlFlowNode& node) {
-
     // Local variables
     auto allocations = schedule.allocations(&node);
 
@@ -932,7 +931,8 @@ std::string HighwayDispatcher::tasklet_to_simd_instruction(data_flow::TaskletCod
 };
 
 HighwayDispatcher::HighwayDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                                     structured_control_flow::For& node, Instrumentation& instrumentation)
+                                     structured_control_flow::For& node,
+                                     Instrumentation& instrumentation)
     : NodeDispatcher(language_extension, schedule, node, instrumentation),
       node_(node),
       indvar_(node.indvar()) {
