@@ -48,6 +48,8 @@ class JSONSerializer {
                              const sdfg::structured_control_flow::Return& return_node);
     void map_to_json(nlohmann::json& j, const sdfg::structured_control_flow::Map& map_node);
 
+    void debug_info_to_json(nlohmann::json& j, const sdfg::DebugInfo& debug_info);
+
     void json_to_structure_definition(const nlohmann::json& j,
                                       sdfg::builder::StructuredSDFGBuilder& builder);
     void json_to_dataflow(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
