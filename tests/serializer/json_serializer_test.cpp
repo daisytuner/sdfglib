@@ -316,10 +316,10 @@ TEST(JSONSerializerTest, ForNodeToJSON) {
     EXPECT_TRUE(j.contains("update"));
     EXPECT_TRUE(symbolic::eq(SymEngine::Expression(j["update"]),
                              symbolic::add(symbolic::symbol("i"), symbolic::integer(1))));
-    EXPECT_TRUE(j.contains("children"));
-    EXPECT_EQ(j["children"]["type"], "sequence");
-    EXPECT_EQ(j["children"]["children"].size(), 1);
-    EXPECT_EQ(j["children"]["children"][0]["type"], "block");
+    EXPECT_TRUE(j.contains("root"));
+    EXPECT_EQ(j["root"]["type"], "sequence");
+    EXPECT_EQ(j["root"]["children"].size(), 1);
+    EXPECT_EQ(j["root"]["children"][0]["type"], "block");
 }
 
 TEST(JSONSerializerTest, IfElseToJSON) {
@@ -353,14 +353,12 @@ TEST(JSONSerializerTest, IfElseToJSON) {
     EXPECT_EQ(j["branches"].size(), 2);
     EXPECT_EQ(j["branches"][0]["condition"], "True");
     EXPECT_EQ(j["branches"][1]["condition"], "False");
-    EXPECT_TRUE(j["branches"][0].contains("children"));
-    EXPECT_EQ(j["branches"][0]["children"]["type"], "sequence");
-    EXPECT_EQ(j["branches"][0]["children"]["children"].size(), 1);
-    EXPECT_EQ(j["branches"][0]["children"]["children"][0]["type"], "block");
-    EXPECT_TRUE(j["branches"][1].contains("children"));
-    EXPECT_EQ(j["branches"][1]["children"]["type"], "sequence");
-    EXPECT_EQ(j["branches"][1]["children"]["children"].size(), 1);
-    EXPECT_EQ(j["branches"][1]["children"]["children"][0]["type"], "block");
+    EXPECT_EQ(j["branches"][0]["root"]["type"], "sequence");
+    EXPECT_EQ(j["branches"][0]["root"]["children"].size(), 1);
+    EXPECT_EQ(j["branches"][0]["root"]["children"][0]["type"], "block");
+    EXPECT_EQ(j["branches"][1]["root"]["type"], "sequence");
+    EXPECT_EQ(j["branches"][1]["root"]["children"].size(), 1);
+    EXPECT_EQ(j["branches"][1]["root"]["children"][0]["type"], "block");
 }
 
 TEST(JSONSerializerTest, WhileToJSON_break) {
@@ -388,11 +386,11 @@ TEST(JSONSerializerTest, WhileToJSON_break) {
     EXPECT_TRUE(j.contains("type"));
     EXPECT_EQ(j["type"], "while");
 
-    EXPECT_TRUE(j.contains("children"));
-    EXPECT_EQ(j["children"]["type"], "sequence");
-    EXPECT_EQ(j["children"]["children"].size(), 2);
-    EXPECT_EQ(j["children"]["children"][0]["type"], "block");
-    EXPECT_EQ(j["children"]["children"][1]["type"], "break");
+    EXPECT_TRUE(j.contains("root"));
+    EXPECT_EQ(j["root"]["type"], "sequence");
+    EXPECT_EQ(j["root"]["children"].size(), 2);
+    EXPECT_EQ(j["root"]["children"][0]["type"], "block");
+    EXPECT_EQ(j["root"]["children"][1]["type"], "break");
 }
 
 TEST(JSONSerializerTest, WhileToJSON_continue) {
@@ -420,11 +418,11 @@ TEST(JSONSerializerTest, WhileToJSON_continue) {
     EXPECT_TRUE(j.contains("type"));
     EXPECT_EQ(j["type"], "while");
 
-    EXPECT_TRUE(j.contains("children"));
-    EXPECT_EQ(j["children"]["type"], "sequence");
-    EXPECT_EQ(j["children"]["children"].size(), 2);
-    EXPECT_EQ(j["children"]["children"][0]["type"], "block");
-    EXPECT_EQ(j["children"]["children"][1]["type"], "continue");
+    EXPECT_TRUE(j.contains("root"));
+    EXPECT_EQ(j["root"]["type"], "sequence");
+    EXPECT_EQ(j["root"]["children"].size(), 2);
+    EXPECT_EQ(j["root"]["children"][0]["type"], "block");
+    EXPECT_EQ(j["root"]["children"][1]["type"], "continue");
 }
 
 TEST(JSONSerializerTest, KernelToJSON) {
@@ -453,10 +451,10 @@ TEST(JSONSerializerTest, KernelToJSON) {
     EXPECT_TRUE(j.contains("suffix"));
     EXPECT_EQ(j["suffix"], "suffix");
 
-    EXPECT_TRUE(j.contains("children"));
-    EXPECT_EQ(j["children"]["type"], "sequence");
-    EXPECT_EQ(j["children"]["children"].size(), 1);
-    EXPECT_EQ(j["children"]["children"][0]["type"], "block");
+    EXPECT_TRUE(j.contains("root"));
+    EXPECT_EQ(j["root"]["type"], "sequence");
+    EXPECT_EQ(j["root"]["children"].size(), 1);
+    EXPECT_EQ(j["root"]["children"][0]["type"], "block");
 }
 
 TEST(JSONSerializerTest, ReturnToJSON) {
@@ -555,9 +553,9 @@ TEST(JSONSerializerTest, MapToJSON) {
     EXPECT_EQ(j["indvar"], "i");
     EXPECT_TRUE(j.contains("num_iterations"));
     EXPECT_EQ(j["num_iterations"], "10");
-    EXPECT_TRUE(j.contains("children"));
-    EXPECT_EQ(j["children"]["type"], "sequence");
-    EXPECT_EQ(j["children"]["children"].size(), 1);
+    EXPECT_TRUE(j.contains("root"));
+    EXPECT_EQ(j["root"]["type"], "sequence");
+    EXPECT_EQ(j["root"]["children"].size(), 1);
 }
 
 TEST(JSONSerializerTest, SerializeDeserializeDataType_Scalar) {
@@ -1430,7 +1428,8 @@ TEST(JSONSerializerTest, SerializeDeserialize_ifelse) {
     // Deserialize the JSON back into an IfElse node
     auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg");
     des_builder.add_container("i", sym_desc);
-    serializer.json_to_if_else_node(j, des_builder, des_builder.subject().root());
+    symbolic::Assignments assignments;
+    serializer.json_to_if_else_node(j, des_builder, des_builder.subject().root(), assignments);
     auto des_sdfg = des_builder.move();
 
     EXPECT_EQ(des_sdfg->name(), sdfg->name());
@@ -1650,8 +1649,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_kernel) {
     auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg");
 
     symbolic::Assignments assignments;
-
-    serializer.json_to_kernel_node(j, des_builder, des_builder.subject().root());
+    serializer.json_to_kernel_node(j, des_builder, des_builder.subject().root(), assignments);
     auto des_sdfg = des_builder.move();
     EXPECT_EQ(des_sdfg->name(), sdfg->name());
     EXPECT_EQ(des_sdfg->containers().size(), 0);
