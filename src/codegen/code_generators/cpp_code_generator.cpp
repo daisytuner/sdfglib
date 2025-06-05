@@ -203,6 +203,20 @@ void CPPCodeGenerator::dispatch_schedule() {
         this->main_stream_ << ";" << std::endl;
     }
 
+    // Declare transient containers
+    for (auto& container : function.containers()) {
+        if (!function.is_transient(container)) {
+            continue;
+        }
+
+        std::string val =
+            this->language_extension_.declaration(container, function.type(container));
+        if (!val.empty()) {
+            this->main_stream_ << val;
+            this->main_stream_ << ";" << std::endl;
+        }
+    }
+
     for (size_t i = 0; i < schedule_.size(); i++) {
         auto& schedule = schedule_.schedule(i);
         auto condition = schedule_.condition(i);
