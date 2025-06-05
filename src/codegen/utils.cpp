@@ -44,14 +44,14 @@ void PrettyPrinter::applyIndent() {
     }
 };
 
-Reference::Reference(const types::IType& reference_)
-    : reference_(reference_.clone()) {
-
-      };
+Reference::Reference(const types::IType& reference_, size_t alignment)
+    : reference_(reference_.clone()), alignment_(alignment) {};
 
 std::unique_ptr<types::IType> Reference::clone() const {
-    return std::make_unique<Reference>(*this->reference_);
+    return std::make_unique<Reference>(*this->reference_, this->alignment_);
 };
+
+size_t Reference::alignment() const { return this->alignment_; };
 
 types::PrimitiveType Reference::primitive_type() const {
     return this->reference_->primitive_type();
@@ -63,7 +63,8 @@ const types::IType& Reference::reference_type() const { return *this->reference_
 
 bool Reference::operator==(const types::IType& other) const {
     if (auto reference = dynamic_cast<const Reference*>(&other)) {
-        return *(this->reference_) == *reference->reference_;
+        return *(this->reference_) == *reference->reference_ &&
+               this->alignment_ == reference->alignment_;
     } else {
         return false;
     }

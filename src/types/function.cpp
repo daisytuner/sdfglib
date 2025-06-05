@@ -4,12 +4,13 @@ namespace sdfg {
 namespace types {
 
 Function::Function(const IType& return_type, bool is_var_arg, DeviceLocation device_location,
-                   uint address_space, const std::string& initializer)
+                   uint address_space, const std::string& initializer, size_t alignment)
     : return_type_(return_type.clone()),
       is_var_arg_(is_var_arg),
       device_location_(device_location),
       address_space_(address_space),
-      initializer_(initializer) {}
+      initializer_(initializer),
+      alignment_(alignment) {}
 
 PrimitiveType Function::primitive_type() const { return PrimitiveType::Void; }
 
@@ -37,6 +38,10 @@ bool Function::operator==(const IType& other) const {
         return false;
     }
 
+    if (this->alignment_ != other_function->alignment_) {
+        return false;
+    }
+
     if (*this->return_type_ == *other_function->return_type_) {
         // Do nothing
     } else {
@@ -61,7 +66,7 @@ bool Function::operator==(const IType& other) const {
 std::unique_ptr<IType> Function::clone() const {
     auto new_function =
         std::make_unique<Function>(*this->return_type_, this->is_var_arg_, this->device_location_,
-                                   this->address_space_, this->initializer_);
+                                   this->address_space_, this->initializer_, this->alignment_);
     for (const auto& param : this->params_) {
         new_function->add_param(*param);
     }
@@ -73,6 +78,8 @@ DeviceLocation Function::device_location() const { return this->device_location_
 uint Function::address_space() const { return this->address_space_; }
 
 std::string Function::initializer() const { return this->initializer_; }
+
+size_t Function::alignment() const { return this->alignment_; }
 
 std::string Function::print() const {
     std::string params = "";

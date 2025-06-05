@@ -14,11 +14,12 @@ class Function : public IType {
     DeviceLocation device_location_;
     uint address_space_;
     std::string initializer_;
+    size_t alignment_;
 
    public:
     Function(const IType& return_type, bool is_var_arg = false,
              DeviceLocation device_location = DeviceLocation::x86, uint address_space = 0,
-             const std::string& initializer = "");
+             const std::string& initializer = "", size_t alignment = 0);
 
     virtual PrimitiveType primitive_type() const override;
 
@@ -43,6 +44,8 @@ class Function : public IType {
     virtual uint address_space() const override;
 
     virtual std::string initializer() const override;
+
+    virtual size_t alignment() const override;
 
     virtual std::string print() const override;
 };

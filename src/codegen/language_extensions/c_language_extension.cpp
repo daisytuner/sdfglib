@@ -380,7 +380,7 @@ std::string CLanguageExtension::primitive_type(const types::PrimitiveType prim_t
 };
 
 std::string CLanguageExtension::declaration(const std::string& name, const types::IType& type,
-                                            bool use_initializer) {
+                                            bool use_initializer, bool use_alignment) {
     std::stringstream val;
 
     if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
@@ -424,65 +424,12 @@ std::string CLanguageExtension::declaration(const std::string& name, const types
         throw std::runtime_error("Unknown declaration type");
     }
 
+    if (use_alignment && type.alignment() > 0) {
+        val << " __attribute__((aligned(" << type.alignment() << ")))";
+    }
+
     if (use_initializer && !type.initializer().empty()) {
         val << " = " << type.initializer();
-    }
-
-    return val.str();
-};
-
-std::string CLanguageExtension::allocation(const std::string& name, const types::IType& type) {
-    std::stringstream val;
-
-    if (dynamic_cast<const types::Scalar*>(&type)) {
-        val << declaration(name, type);
-    } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
-        val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
-                           array_type->element_type());
-        val << " __attribute__((aligned(" << array_type->alignment() << ")))";
-    } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
-        val << declaration(name, type);
-        val << " = (" << declaration("", type) << ") ";
-        if (auto array_type = dynamic_cast<const types::Array*>(&pointer_type->pointee_type())) {
-            auto alignment = array_type->alignment();
-            auto num_elements = this->expression(array_type->num_elements());
-            auto& element_type = array_type->element_type();
-            val << "aligned_alloc(";
-            val << alignment;
-            val << ", ";
-            val << num_elements;
-            val << " * sizeof(";
-            val << declaration("", element_type);
-            val << "))";
-        } else {
-            val << "malloc(";
-            val << "1";
-            val << " * sizeof(";
-            val << declaration("", pointer_type->pointee_type());
-            val << "))";
-        }
-    } else if (dynamic_cast<const types::Structure*>(&type)) {
-        val << declaration(name, type);
-    } else {
-        throw std::runtime_error("Unknown allocation type");
-    }
-
-    return val.str();
-};
-
-std::string CLanguageExtension::deallocation(const std::string& name, const types::IType& type) {
-    std::stringstream val;
-
-    if (dynamic_cast<const types::Scalar*>(&type)) {
-        // Do nothing
-    } else if (dynamic_cast<const types::Array*>(&type)) {
-        // Do nothing
-    } else if (dynamic_cast<const types::Pointer*>(&type)) {
-        val << "free(" << name << ")";
-    } else if (dynamic_cast<const types::Structure*>(&type)) {
-        // Do nothing
-    } else {
-        throw std::runtime_error("Unknown deallocation type");
     }
 
     return val.str();

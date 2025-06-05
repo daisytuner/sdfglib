@@ -388,7 +388,7 @@ std::string CUDALanguageExtension::primitive_type(const types::PrimitiveType pri
 };
 
 std::string CUDALanguageExtension::declaration(const std::string& name, const types::IType& type,
-                                               bool use_initializer) {
+                                               bool use_initializer, bool use_alignment) {
     std::stringstream val;
 
     if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
@@ -442,42 +442,15 @@ std::string CUDALanguageExtension::declaration(const std::string& name, const ty
         throw std::runtime_error("Unknown declaration type");
     }
 
+    if (use_alignment && type.alignment() > 0) {
+        val << " __attribute__((aligned(" << type.alignment() << ")))";
+    }
+
     if (use_initializer && !type.initializer().empty()) {
         val << " = " << type.initializer();
     }
 
     return val.str();
-};
-
-std::string CUDALanguageExtension::allocation(const std::string& name, const types::IType& type) {
-    std::stringstream val;
-
-    if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
-        val << declaration(name, *scalar_type);
-    } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
-        val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
-                           array_type->element_type());
-        val << " __attribute__((aligned(" << array_type->alignment() << ")))";
-    } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
-        std::string pointee_name = name + "__daisy_nvptx_internal_";
-        val << declaration(pointee_name, pointer_type->pointee_type());
-        val << ";";
-        val << std::endl;
-
-        val << declaration(name, type);
-        val << " = ";
-        val << "&" << pointee_name;
-    } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
-        val << declaration(name, *structure_type);
-    } else {
-        throw std::runtime_error("Unknown allocation type");
-    }
-
-    return val.str();
-};
-
-std::string CUDALanguageExtension::deallocation(const std::string& name, const types::IType& type) {
-    return "";
 };
 
 std::string CUDALanguageExtension::type_cast(const std::string& name, const types::IType& type) {

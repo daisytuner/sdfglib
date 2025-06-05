@@ -169,7 +169,7 @@ void CPPCodeGenerator::dispatch_structures() {
                 this->classes_stream_ << "struct ";
             }
             this->classes_stream_ << language_extension_.declaration("member_" + std::to_string(i),
-                                                                     member_type);
+                                                                     member_type, false, true);
             this->classes_stream_ << ";" << std::endl;
         }
 
@@ -210,7 +210,7 @@ void CPPCodeGenerator::dispatch_schedule() {
         }
 
         std::string val =
-            this->language_extension_.declaration(container, function.type(container));
+            this->language_extension_.declaration(container, function.type(container), false, true);
         if (!val.empty()) {
             this->main_stream_ << val;
             this->main_stream_ << ";" << std::endl;

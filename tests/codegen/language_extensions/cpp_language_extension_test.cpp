@@ -119,58 +119,6 @@ TEST(CPPLanguageExtensionTest, Declaration_PointerToArray) {
     EXPECT_EQ(result, "int (*var)[10]");
 }
 
-TEST(CPPLanguageExtensionTest, Allocation_Scalar) {
-    codegen::CPPLanguageExtension generator;
-    auto result = generator.allocation("var", types::Scalar(types::PrimitiveType::Int32));
-    EXPECT_EQ(result, "int var");
-}
-
-TEST(CPPLanguageExtensionTest, Allocation_Array) {
-    codegen::CPPLanguageExtension generator;
-    auto result = generator.allocation(
-        "var", types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)));
-    EXPECT_EQ(result, "int var[10] __attribute__((aligned(1)))");
-}
-
-TEST(CPPLanguageExtensionTest, Allocation_Pointer) {
-    codegen::CPPLanguageExtension generator;
-    auto result =
-        generator.allocation("var", types::Pointer(types::Scalar(types::PrimitiveType::Float)));
-    EXPECT_EQ(result, "float *var = (float *) new (float )");
-}
-
-TEST(CPPLanguageExtensionTest, Allocation_Struct) {
-    codegen::CPPLanguageExtension generator;
-    auto result = generator.allocation("var", types::Structure("MyStruct"));
-    EXPECT_EQ(result, "MyStruct var");
-}
-
-TEST(CPPLanguageExtensionTestTest, Deallocation_Scalar) {
-    codegen::CPPLanguageExtension generator;
-    auto result = generator.deallocation("var", types::Scalar(types::PrimitiveType::Int32));
-    EXPECT_EQ(result, "");
-}
-
-TEST(CPPLanguageExtensionTest, Deallocation_Array) {
-    codegen::CPPLanguageExtension generator;
-    auto result = generator.deallocation(
-        "var", types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)));
-    EXPECT_EQ(result, "");
-}
-
-TEST(CPPLanguageExtensionTest, Deallocation_Pointer) {
-    codegen::CPPLanguageExtension generator;
-    auto result =
-        generator.deallocation("var", types::Pointer(types::Scalar(types::PrimitiveType::Float)));
-    EXPECT_EQ(result, "delete var");
-}
-
-TEST(CPPLanguageExtensionTest, Deallocation_Struct) {
-    codegen::CPPLanguageExtension generator;
-    auto result = generator.deallocation("var", types::Structure("MyStruct"));
-    EXPECT_EQ(result, "");
-}
-
 TEST(CPPLanguageExtensionTest, Typecast) {
     codegen::CPPLanguageExtension generator;
     auto result =
