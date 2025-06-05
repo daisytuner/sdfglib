@@ -380,7 +380,7 @@ std::string CPPLanguageExtension::primitive_type(const types::PrimitiveType prim
 };
 
 std::string CPPLanguageExtension::declaration(const std::string& name, const types::IType& type,
-                                              bool use_initializer) {
+                                              bool use_initializer, bool use_alignment) {
     std::stringstream val;
 
     if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
@@ -424,59 +424,11 @@ std::string CPPLanguageExtension::declaration(const std::string& name, const typ
         throw std::runtime_error("Unknown declaration type");
     }
 
+    if (use_alignment && type.alignment() > 0) {
+        val << " __attribute__((aligned(" << type.alignment() << ")))";
+    }
     if (use_initializer && !type.initializer().empty()) {
         val << " = " << type.initializer();
-    }
-
-    return val.str();
-};
-
-std::string CPPLanguageExtension::allocation(const std::string& name, const types::IType& type) {
-    std::stringstream val;
-
-    if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
-        val << declaration(name, *scalar_type);
-    } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
-        val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
-                           array_type->element_type());
-        val << " __attribute__((aligned(" << array_type->alignment() << ")))";
-    } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
-        val << declaration(name, type);
-        val << " = ";
-        val << "(";
-        val << declaration("", *pointer_type);
-        val << ") ";
-        val << "new ";
-        val << "(";
-        val << declaration("", pointer_type->pointee_type());
-        val << ")";
-    } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
-        val << declaration(name, *structure_type);
-    } else {
-        throw std::runtime_error("Unknown allocation type");
-    }
-
-    return val.str();
-};
-
-std::string CPPLanguageExtension::deallocation(const std::string& name, const types::IType& type) {
-    std::stringstream val;
-
-    if (dynamic_cast<const types::Scalar*>(&type)) {
-        // Do nothing
-    } else if (dynamic_cast<const types::Array*>(&type)) {
-        // Do nothing
-    } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
-        if (dynamic_cast<const types::Array*>(&pointer_type->pointee_type())) {
-            val << "delete[] ";
-        } else {
-            val << "delete ";
-        }
-        val << name;
-    } else if (dynamic_cast<const types::Structure*>(&type)) {
-        // Do nothing
-    } else {
-        throw std::runtime_error("Unknown deallocation type");
     }
 
     return val.str();

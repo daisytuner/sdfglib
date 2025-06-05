@@ -13,11 +13,7 @@ class CUDALanguageExtension : public LanguageExtension {
     std::string primitive_type(const types::PrimitiveType prim_type) override;
 
     std::string declaration(const std::string& name, const types::IType& type,
-                            bool use_initializer = false) override;
-
-    std::string allocation(const std::string& name, const types::IType& type) override;
-
-    std::string deallocation(const std::string& name, const types::IType& type) override;
+                            bool use_initializer = false, bool use_alignment = false) override;
 
     std::string type_cast(const std::string& name, const types::IType& type) override;
 

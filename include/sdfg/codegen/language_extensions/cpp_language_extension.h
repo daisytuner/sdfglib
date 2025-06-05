@@ -13,11 +13,7 @@ class CPPLanguageExtension : public LanguageExtension {
     std::string primitive_type(const types::PrimitiveType prim_type) override;
 
     std::string declaration(const std::string& name, const types::IType& type,
-                            bool use_initializer = false) override;
-
-    std::string allocation(const std::string& name, const types::IType& type) override;
-
-    std::string deallocation(const std::string& name, const types::IType& type) override;
+                            bool use_initializer = false, bool use_alignment = false) override;
 
     std::string type_cast(const std::string& name, const types::IType& type) override;
 
@@ -54,8 +50,8 @@ class CPPSymbolicPrinter
     void bvisit(const SymEngine::Min& x);
     void bvisit(const SymEngine::Max& x);
 
-    void _print_pow(std::ostringstream &o, const SymEngine::RCP<const SymEngine::Basic> &a,
-                    const SymEngine::RCP<const SymEngine::Basic> &b) override;
+    void _print_pow(std::ostringstream& o, const SymEngine::RCP<const SymEngine::Basic>& a,
+                    const SymEngine::RCP<const SymEngine::Basic>& b) override;
 };
 
 }  // namespace codegen

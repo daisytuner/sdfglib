@@ -23,11 +23,7 @@ class LanguageExtension {
     virtual std::string primitive_type(const types::PrimitiveType prim_type) = 0;
 
     virtual std::string declaration(const std::string& name, const types::IType& type,
-                                    bool use_initializer = false) = 0;
-
-    virtual std::string allocation(const std::string& name, const types::IType& type) = 0;
-
-    virtual std::string deallocation(const std::string& name, const types::IType& type) = 0;
+                                    bool use_initializer = false, bool use_alignment = false) = 0;
 
     virtual std::string type_cast(const std::string& name, const types::IType& type) = 0;
 

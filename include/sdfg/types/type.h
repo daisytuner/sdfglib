@@ -284,6 +284,8 @@ class IType {
 
     virtual std::string initializer() const = 0;
 
+    virtual size_t alignment() const = 0;
+
     virtual std::string print() const = 0;
 
     friend std::ostream& operator<<(std::ostream& os, const IType& type) {

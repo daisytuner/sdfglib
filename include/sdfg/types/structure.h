@@ -16,10 +16,11 @@ class Structure : public IType {
     DeviceLocation device_location_;
     uint address_space_;
     std::string initializer_;
+    size_t alignment_;
 
    public:
     Structure(const std::string& name, DeviceLocation device_location = DeviceLocation::x86,
-              uint address_space = 0, const std::string& initializer = "");
+              uint address_space = 0, const std::string& initializer = "", size_t alignment = 0);
 
     virtual PrimitiveType primitive_type() const override;
 
@@ -36,6 +37,8 @@ class Structure : public IType {
     virtual uint address_space() const override;
 
     virtual std::string initializer() const override;
+
+    virtual size_t alignment() const override;
 
     virtual std::string print() const override;
 };

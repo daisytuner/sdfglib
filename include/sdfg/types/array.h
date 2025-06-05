@@ -18,7 +18,7 @@ class Array : public IType {
    public:
     Array(const IType& element_type, const symbolic::Expression& num_elements,
           DeviceLocation device_location = DeviceLocation::x86, uint address_space = 0,
-          const std::string& initializer = "", size_t alignment = 1);
+          const std::string& initializer = "", size_t alignment = 0);
 
     virtual PrimitiveType primitive_type() const override;
 
@@ -28,7 +28,7 @@ class Array : public IType {
 
     const symbolic::Expression& num_elements() const;
 
-    size_t alignment() const;
+    virtual size_t alignment() const override;
 
     virtual bool operator==(const IType& other) const override;
 

@@ -51,9 +51,10 @@ class PrettyPrinter {
 class Reference : public types::IType {
    private:
     std::unique_ptr<types::IType> reference_;
+    size_t alignment_;
 
    public:
-    Reference(const types::IType& reference_);
+    Reference(const types::IType& reference_, size_t alignment = 0);
 
     std::unique_ptr<types::IType> clone() const override;
 
@@ -70,6 +71,8 @@ class Reference : public types::IType {
     sdfg::types::DeviceLocation device_location() const override;
 
     std::string initializer() const override;
+
+    size_t alignment() const override;
 
     std::string print() const override;
 };
