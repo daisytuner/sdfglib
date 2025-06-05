@@ -63,8 +63,7 @@ const types::IType& Reference::reference_type() const { return *this->reference_
 
 bool Reference::operator==(const types::IType& other) const {
     if (auto reference = dynamic_cast<const Reference*>(&other)) {
-        return *(this->reference_) == *reference->reference_ &&
-               this->alignment_ == reference->alignment_;
+        return *(this->reference_) == *reference->reference_;
     } else {
         return false;
     }
