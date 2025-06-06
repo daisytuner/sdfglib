@@ -32,7 +32,7 @@ void DotVisualizer::visualizeBlock(Schedule& schedule, structured_control_flow::
     for (data_flow::DataFlowNode* node : nodes) {
         if (const data_flow::Tasklet* tasklet = dynamic_cast<data_flow::Tasklet*>(node)) {
             this->stream_ << tasklet->element_id() << " [shape=octagon,label=\""
-                          << tasklet->output(0).first << " = ";
+                          << tasklet->output().first << " = ";
             this->visualizeTasklet(*tasklet);
             this->stream_ << "\"];" << std::endl;
             for (data_flow::Memlet& iedge : block.dataflow().in_edges(*tasklet)) {
@@ -74,7 +74,7 @@ void DotVisualizer::visualizeBlock(Schedule& schedule, structured_control_flow::
         } else if (const data_flow::LibraryNode* libnode =
                        dynamic_cast<data_flow::LibraryNode*>(node)) {
             this->stream_ << libnode->element_id() << " [shape=doubleoctagon,label=\"";
-            this->visualizeLibraryNode(libnode->call());
+            this->visualizeLibraryNode(libnode->code());
             this->stream_ << "\"];" << std::endl;
             if (this->last_comp_name_.empty()) this->last_comp_name_ = libnode->element_id();
         }

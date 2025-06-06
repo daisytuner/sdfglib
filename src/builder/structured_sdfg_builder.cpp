@@ -945,7 +945,7 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
                dynamic_cast<data_flow::AccessNode*>(&dst)) {
         auto& src_node = dynamic_cast<data_flow::Tasklet&>(src);
         auto& dst_node = dynamic_cast<data_flow::AccessNode&>(dst);
-        if (src_conn != src_node.outputs()[0].first) {
+        if (src_conn != src_node.output().first) {
             throw InvalidSDFGException("src_conn must match tasklet output name");
         }
         if (dst_conn != "void") {
@@ -965,7 +965,7 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
         }
         bool found = false;
         for (auto& input : dst_node.inputs()) {
-            if (input.first == dst_conn) {
+            if (input == dst_conn) {
                 found = true;
                 break;
             }
@@ -987,7 +987,7 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
         }
         bool found = false;
         for (auto& output : src_node.outputs()) {
-            if (output.first == src_conn) {
+            if (output == src_conn) {
                 found = true;
                 break;
             }
@@ -1014,15 +1014,13 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
 };
 
 data_flow::LibraryNode& StructuredSDFGBuilder::add_library_node(
-    structured_control_flow::Block& block, const data_flow::LibraryNodeCode& call,
-    const std::vector<std::pair<std::string, sdfg::types::Scalar>>& outputs,
-    const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
-    const bool has_side_effect, const DebugInfo& debug_info) {
+    structured_control_flow::Block& block, const data_flow::LibraryNodeCode& code,
+    const std::vector<std::string>& outputs, const std::vector<std::string>& inputs,
+    const bool side_effect, const DebugInfo& debug_info) {
     auto vertex = boost::add_vertex(block.dataflow_->graph_);
     auto res = block.dataflow_->nodes_.insert(
-        {vertex,
-         std::unique_ptr<data_flow::LibraryNode>(new data_flow::LibraryNode(
-             debug_info, vertex, block.dataflow(), outputs, inputs, call, has_side_effect))});
+        {vertex, std::unique_ptr<data_flow::LibraryNode>(new data_flow::LibraryNode(
+                     debug_info, vertex, block.dataflow(), code, outputs, inputs, side_effect))});
 
     return dynamic_cast<data_flow::LibraryNode&>(*(res.first->second));
 }

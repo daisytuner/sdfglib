@@ -88,11 +88,11 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
         node_json["debug_info"] = nlohmann::json::object();
         debug_info_to_json(node_json["debug_info"], node.debug_info());
 
-        if (auto code_node = dynamic_cast<const data_flow::Tasklet*>(&node)) {
+        if (auto tasklet = dynamic_cast<const data_flow::Tasklet*>(&node)) {
             node_json["type"] = "tasklet";
-            node_json["code"] = code_node->code();
+            node_json["code"] = tasklet->code();
             node_json["inputs"] = nlohmann::json::array();
-            for (auto& input : code_node->inputs()) {
+            for (auto& input : tasklet->inputs()) {
                 nlohmann::json input_json;
                 nlohmann::json type_json;
                 type_to_json(type_json, input.second);
@@ -100,40 +100,26 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
                 input_json["name"] = input.first;
                 node_json["inputs"].push_back(input_json);
             }
-            node_json["outputs"] = nlohmann::json::array();
-            for (auto& output : code_node->outputs()) {
-                nlohmann::json output_json;
-                nlohmann::json type_json;
-                type_to_json(type_json, output.second);
-                output_json["type"] = type_json;
-                output_json["name"] = output.first;
-                node_json["outputs"].push_back(output_json);
-            }
-            // node_json["conditional"] = code_node->is_conditional();
-            // if (code_node->is_conditional()) {
-            //     node_json["condition"] = dumps_expression(code_node->condition());
+            node_json["output"] = nlohmann::json::object();
+            node_json["output"]["name"] = tasklet->output().first;
+            nlohmann::json type_json;
+            type_to_json(type_json, tasklet->output().second);
+            node_json["output"]["type"] = type_json;
+            // node_json["conditional"] = tasklet->is_conditional();
+            // if (tasklet->is_conditional()) {
+            //     node_json["condition"] = dumps_expression(tasklet->condition());
             // }
         } else if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
             node_json["type"] = "library_node";
-            node_json["call"] = lib_node->call();
-            node_json["has_side_effect"] = lib_node->has_side_effect();
+            node_json["code"] = lib_node->code();
+            node_json["side_effect"] = lib_node->side_effect();
             node_json["inputs"] = nlohmann::json::array();
             for (auto& input : lib_node->inputs()) {
-                nlohmann::json input_json;
-                nlohmann::json type_json;
-                type_to_json(type_json, input.second);
-                input_json["type"] = type_json;
-                input_json["name"] = input.first;
-                node_json["inputs"].push_back(input_json);
+                node_json["inputs"].push_back(input);
             }
             node_json["outputs"] = nlohmann::json::array();
             for (auto& output : lib_node->outputs()) {
-                nlohmann::json output_json;
-                nlohmann::json type_json;
-                type_to_json(type_json, output.second);
-                output_json["type"] = type_json;
-                output_json["name"] = output.first;
-                node_json["outputs"].push_back(output_json);
+                node_json["outputs"].push_back(output);
             }
         } else if (auto code_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
             node_json["type"] = "access_node";
@@ -518,26 +504,40 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
             assert(node["code"].is_number_integer());
             assert(node.contains("inputs"));
             assert(node["inputs"].is_array());
-            assert(node.contains("outputs"));
-            assert(node["outputs"].is_array());
-            auto outputs = json_to_arguments(node["outputs"]);
-            assert(outputs.size() == 1);
+            assert(node.contains("output"));
+            assert(node["output"].is_object());
+            assert(node["output"].contains("name"));
+            assert(node["output"].contains("type"));
             auto inputs = json_to_arguments(node["inputs"]);
-            auto& tasklet = builder.add_tasklet(parent, node["code"], outputs.at(0), inputs,
-                                                json_to_debug_info(node["debug_info"]));
+
+            auto output_name = node["output"]["name"];
+            auto output_type = json_to_type(node["output"]["type"]);
+            auto& output_type_scalar = dynamic_cast<types::Scalar&>(*output_type);
+
+            auto& tasklet =
+                builder.add_tasklet(parent, node["code"], {output_name, output_type_scalar}, inputs,
+                                    json_to_debug_info(node["debug_info"]));
             tasklet.element_id_ = node["element_id"];
             nodes_map.insert({node["element_id"], tasklet});
         } else if (type == "library_node") {
-            assert(node.contains("call"));
+            assert(node.contains("code"));
             assert(node.contains("inputs"));
             assert(node["inputs"].is_array());
             assert(node.contains("outputs"));
             assert(node["outputs"].is_array());
-            auto outputs = json_to_arguments(node["outputs"]);
-            auto inputs = json_to_arguments(node["inputs"]);
-            auto& lib_node = builder.add_library_node(parent, node["call"], outputs, inputs,
-                                                      node["has_side_effect"],
-                                                      json_to_debug_info(node["debug_info"]));
+            std::vector<std::string> outputs;
+            for (const auto& output : node["outputs"]) {
+                assert(output.is_string());
+                outputs.push_back(output);
+            }
+            std::vector<std::string> inputs;
+            for (const auto& input : node["inputs"]) {
+                assert(input.is_string());
+                inputs.push_back(input);
+            }
+            auto& lib_node =
+                builder.add_library_node(parent, node["code"], outputs, inputs, node["side_effect"],
+                                         json_to_debug_info(node["debug_info"]));
             lib_node.element_id_ = node["element_id"];
             nodes_map.insert({node["element_id"], lib_node});
         } else if (type == "access_node") {

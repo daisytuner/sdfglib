@@ -235,7 +235,9 @@ TEST(JSONSerializerTest, DataflowToJSON) {
     EXPECT_NE(tasklet_node, j["nodes"].end());
 
     EXPECT_EQ(tasklet_node->at("inputs").size(), 2);
-    EXPECT_EQ(tasklet_node->at("outputs").size(), 1);
+    EXPECT_EQ(tasklet_node->at("output")["name"], "_out");
+    EXPECT_EQ(tasklet_node->at("output")["type"]["type"], "scalar");
+    EXPECT_EQ(tasklet_node->at("output")["type"]["primitive_type"], base_desc.primitive_type());
 
     auto edge_to_tasklet =
         std::find_if(j["edges"].begin(), j["edges"].end(), [&](const auto& edge) {
@@ -841,16 +843,14 @@ TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {
             EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::add);
             EXPECT_EQ(tasklet_node->inputs().size(), 2);
-            EXPECT_EQ(tasklet_node->outputs().size(), 1);
+            EXPECT_EQ(tasklet_node->output().first, "_out");
             EXPECT_EQ(tasklet_node->inputs().at(0).first, "_in1");
             EXPECT_EQ(tasklet_node->inputs().at(1).first, "_in2");
-            EXPECT_EQ(tasklet_node->outputs().at(0).first, "_out");
             EXPECT_EQ(tasklet_node->inputs().at(0).second.primitive_type(),
                       types::PrimitiveType::Float);
             EXPECT_EQ(tasklet_node->inputs().at(1).second.primitive_type(),
                       types::PrimitiveType::Float);
-            EXPECT_EQ(tasklet_node->outputs().at(0).second.primitive_type(),
-                      types::PrimitiveType::Float);
+            EXPECT_EQ(tasklet_node->output().second.primitive_type(), types::PrimitiveType::Float);
             found_tasklet = true;
         }
     }
@@ -978,16 +978,14 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {
             EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::add);
             EXPECT_EQ(tasklet_node->inputs().size(), 2);
-            EXPECT_EQ(tasklet_node->outputs().size(), 1);
+            EXPECT_EQ(tasklet_node->output().first, "_out");
             EXPECT_EQ(tasklet_node->inputs().at(0).first, "_in1");
             EXPECT_EQ(tasklet_node->inputs().at(1).first, "_in2");
-            EXPECT_EQ(tasklet_node->outputs().at(0).first, "_out");
             EXPECT_EQ(tasklet_node->inputs().at(0).second.primitive_type(),
                       types::PrimitiveType::Float);
             EXPECT_EQ(tasklet_node->inputs().at(1).second.primitive_type(),
                       types::PrimitiveType::Float);
-            EXPECT_EQ(tasklet_node->outputs().at(0).second.primitive_type(),
-                      types::PrimitiveType::Float);
+            EXPECT_EQ(tasklet_node->output().second.primitive_type(), types::PrimitiveType::Float);
             found_tasklet = true;
         }
     }
@@ -1120,16 +1118,14 @@ TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {
             EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::add);
             EXPECT_EQ(tasklet_node->inputs().size(), 2);
-            EXPECT_EQ(tasklet_node->outputs().size(), 1);
+            EXPECT_EQ(tasklet_node->output().first, "_out");
             EXPECT_EQ(tasklet_node->inputs().at(0).first, "_in1");
             EXPECT_EQ(tasklet_node->inputs().at(1).first, "_in2");
-            EXPECT_EQ(tasklet_node->outputs().at(0).first, "_out");
             EXPECT_EQ(tasklet_node->inputs().at(0).second.primitive_type(),
                       types::PrimitiveType::Float);
             EXPECT_EQ(tasklet_node->inputs().at(1).second.primitive_type(),
                       types::PrimitiveType::Float);
-            EXPECT_EQ(tasklet_node->outputs().at(0).second.primitive_type(),
-                      types::PrimitiveType::Float);
+            EXPECT_EQ(tasklet_node->output().second.primitive_type(), types::PrimitiveType::Float);
             found_tasklet = true;
         }
     }
@@ -1256,16 +1252,14 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {
             EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::add);
             EXPECT_EQ(tasklet_node->inputs().size(), 2);
-            EXPECT_EQ(tasklet_node->outputs().size(), 1);
             EXPECT_EQ(tasklet_node->inputs().at(0).first, "_in1");
             EXPECT_EQ(tasklet_node->inputs().at(1).first, "_in2");
-            EXPECT_EQ(tasklet_node->outputs().at(0).first, "_out");
+            EXPECT_EQ(tasklet_node->output().first, "_out");
             EXPECT_EQ(tasklet_node->inputs().at(0).second.primitive_type(),
                       types::PrimitiveType::Float);
             EXPECT_EQ(tasklet_node->inputs().at(1).second.primitive_type(),
                       types::PrimitiveType::Float);
-            EXPECT_EQ(tasklet_node->outputs().at(0).second.primitive_type(),
-                      types::PrimitiveType::Float);
+            EXPECT_EQ(tasklet_node->output().second.primitive_type(), types::PrimitiveType::Float);
             found_tasklet = true;
         }
     }

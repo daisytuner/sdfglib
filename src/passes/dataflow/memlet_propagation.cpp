@@ -78,7 +78,7 @@ bool ForwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
             tasklet->input_type(edge.dst_conn()).primitive_type()) {
             continue;
         }
-        if (type.primitive_type() != tasklet->outputs().begin()->second.primitive_type()) {
+        if (type.primitive_type() != tasklet->output().second.primitive_type()) {
             continue;
         }
 
@@ -279,8 +279,7 @@ bool BackwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder
 
         // Criterion: Not casting types
         auto& assigning_type = types::infer_type(sdfg, sdfg.type(assigning_data), assigning_subset);
-        if (assigning_type.primitive_type() !=
-            tasklet->outputs().begin()->second.primitive_type()) {
+        if (assigning_type.primitive_type() != tasklet->output().second.primitive_type()) {
             continue;
         }
         if (type.primitive_type() != tasklet->inputs().begin()->second.primitive_type()) {

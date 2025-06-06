@@ -91,11 +91,12 @@ class SDFGBuilder : public FunctionBuilder {
                                   const std::string& dst_conn, const data_flow::Subset& subset,
                                   const DebugInfo& debug_info = DebugInfo());
 
-    data_flow::LibraryNode& add_library_node(
-        control_flow::State& state, const data_flow::LibraryNodeCode& call,
-        const std::vector<std::pair<std::string, sdfg::types::Scalar>>& outputs,
-        const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
-        const bool has_side_effect = true, const DebugInfo& debug_info = DebugInfo());
+    data_flow::LibraryNode& add_library_node(control_flow::State& state,
+                                             const data_flow::LibraryNodeCode& code,
+                                             const std::vector<std::string>& outputs,
+                                             const std::vector<std::string>& inputs,
+                                             const bool side_effect = true,
+                                             const DebugInfo& debug_info = DebugInfo());
 };
 
 }  // namespace builder

@@ -91,8 +91,8 @@ TEST(StructuredSDFGDeepCopy, Block_WithLibraryNodebarrier_local) {
         dynamic_cast<data_flow::LibraryNode*>(&(*inserted_block->dataflow().nodes().begin())));
     auto inserted_barrier =
         dynamic_cast<data_flow::LibraryNode*>(&(*inserted_block->dataflow().nodes().begin()));
-    EXPECT_EQ(inserted_barrier->call(), data_flow::LibraryNodeCode::barrier_local);
-    EXPECT_EQ(inserted_barrier->has_side_effect(), barrier.has_side_effect());
+    EXPECT_EQ(inserted_barrier->code(), data_flow::LibraryNodeCode::barrier_local);
+    EXPECT_EQ(inserted_barrier->side_effect(), barrier.side_effect());
 }
 
 TEST(StructuredSDFGDeepCopy, Sequence) {

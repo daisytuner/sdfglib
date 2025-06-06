@@ -180,11 +180,12 @@ class StructuredSDFGBuilder : public FunctionBuilder {
                                   const data_flow::Subset& subset,
                                   const DebugInfo& debug_info = DebugInfo());
 
-    data_flow::LibraryNode& add_library_node(
-        structured_control_flow::Block& block, const data_flow::LibraryNodeCode& call,
-        const std::vector<std::pair<std::string, sdfg::types::Scalar>>& outputs,
-        const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
-        const bool has_side_effect = true, const DebugInfo& debug_info = DebugInfo());
+    data_flow::LibraryNode& add_library_node(structured_control_flow::Block& block,
+                                             const data_flow::LibraryNodeCode& code,
+                                             const std::vector<std::string>& outputs,
+                                             const std::vector<std::string>& inputs,
+                                             const bool side_effect = true,
+                                             const DebugInfo& debug_info = DebugInfo());
 
     void remove_memlet(structured_control_flow::Block& block, const data_flow::Memlet& edge);
 

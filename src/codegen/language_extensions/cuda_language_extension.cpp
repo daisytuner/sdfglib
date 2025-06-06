@@ -543,7 +543,7 @@ std::string CUDALanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
 };
 
 std::string CUDALanguageExtension::library_node(const data_flow::LibraryNode& libnode) {
-    data_flow::LibraryNodeCode lib_node_type = libnode.call();
+    data_flow::LibraryNodeCode lib_node_type = libnode.code();
     switch (lib_node_type) {
         case sdfg::data_flow::LibraryNodeCode::barrier_local:
             return "__syncthreads();";

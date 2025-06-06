@@ -107,7 +107,7 @@ TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
     EXPECT_EQ(block.dataflow().nodes().size(), 1);
     EXPECT_EQ(block.dataflow().edges().size(), 0);
     EXPECT_EQ(&(*block.dataflow().nodes().begin()), &lib_node);
-    EXPECT_EQ(lib_node.call(), data_flow::LibraryNodeCode::barrier_local);
+    EXPECT_EQ(lib_node.code(), data_flow::LibraryNodeCode::barrier_local);
 }
 
 TEST(StructuredSDFGBuilderTest, AddIfElse) {
