@@ -9,7 +9,7 @@
 using namespace sdfg;
 
 TEST(OpenMPDispatcherTest, DispatchNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 

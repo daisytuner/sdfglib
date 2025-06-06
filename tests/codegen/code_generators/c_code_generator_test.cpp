@@ -8,7 +8,7 @@
 using namespace sdfg;
 
 TEST(CCodeGeneratorTest, FunctionDefintion) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto sdfg = builder.move();
 
     ConditionalSchedule schedule(sdfg);
@@ -19,7 +19,7 @@ TEST(CCodeGeneratorTest, FunctionDefintion) {
 }
 
 TEST(CCodeGeneratorTest, Dispatch_Includes) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto sdfg = builder.move();
 
     ConditionalSchedule schedule(sdfg);
@@ -35,7 +35,7 @@ TEST(CCodeGeneratorTest, Dispatch_Includes) {
 }
 
 TEST(CCodeGeneratorTest, DispatchStructures_Basic) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
@@ -57,7 +57,7 @@ char member_0;
 }
 
 TEST(CCodeGeneratorTest, DispatchStructures_Nested) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
@@ -87,7 +87,7 @@ MyStructA member_0;
 }
 
 TEST(CCodeGeneratorTest, DispatchGlobals) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     builder.add_container("a", types::Scalar(types::PrimitiveType::Int32), false, true);
 

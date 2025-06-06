@@ -8,6 +8,7 @@
 #include <string_view>
 #include <type_traits>
 
+#include "sdfg/exceptions.h"
 #include "sdfg/symbolic/symbolic.h"
 
 using json = nlohmann::json;
@@ -38,7 +39,13 @@ enum PrimitiveType {
     PPC_FP128
 };
 
-enum StorageType { CPU_Stack, CPU_Heap, NV_Generic, NV_Shared, NV_Global, NV_Constant };
+typedef StringEnum StorageType;
+inline constexpr StorageType StorageType_CPU_Stack{"CPU_Stack"};
+inline constexpr StorageType StorageType_CPU_Heap{"CPU_Heap"};
+inline constexpr StorageType StorageType_NV_Generic{"NV_Generic"};
+inline constexpr StorageType StorageType_NV_Shared{"NV_Shared"};
+inline constexpr StorageType StorageType_NV_Global{"NV_Global"};
+inline constexpr StorageType StorageType_NV_Constant{"NV_Constant"};
 
 constexpr const char* primitive_type_to_string(PrimitiveType e) {
     switch (e) {
@@ -273,7 +280,7 @@ class IType {
     std::string initializer_;
 
    public:
-    IType(StorageType storage_type = StorageType::CPU_Stack, size_t alignment = 0,
+    IType(StorageType storage_type = StorageType_CPU_Stack, size_t alignment = 0,
           const std::string& initializer = "")
         : storage_type_(storage_type), alignment_(alignment), initializer_(initializer) {};
 

@@ -36,7 +36,7 @@ nlohmann::json JSONSerializer::serialize(std::unique_ptr<sdfg::StructuredSDFG>& 
     nlohmann::json j;
 
     j["name"] = sdfg->name();
-    j["type"] = sdfg->type();
+    j["type"] = std::string(sdfg->type().value());
 
     j["structures"] = nlohmann::json::array();
     for (const auto& structure_name : sdfg->structures()) {
@@ -323,7 +323,7 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
     if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
         j["type"] = "scalar";
         j["primitive_type"] = scalar_type->primitive_type();
-        j["storage_type"] = scalar_type->storage_type();
+        j["storage_type"] = std::string(scalar_type->storage_type().value());
         j["initializer"] = scalar_type->initializer();
         j["alignment"] = scalar_type->alignment();
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
@@ -332,7 +332,7 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
         type_to_json(element_type_json, array_type->element_type());
         j["element_type"] = element_type_json;
         j["num_elements"] = expression(array_type->num_elements());
-        j["storage_type"] = array_type->storage_type();
+        j["storage_type"] = std::string(array_type->storage_type().value());
         j["initializer"] = array_type->initializer();
         j["alignment"] = array_type->alignment();
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
@@ -340,13 +340,13 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
         nlohmann::json pointee_type_json;
         type_to_json(pointee_type_json, pointer_type->pointee_type());
         j["pointee_type"] = pointee_type_json;
-        j["storage_type"] = pointer_type->storage_type();
+        j["storage_type"] = std::string(pointer_type->storage_type().value());
         j["initializer"] = pointer_type->initializer();
         j["alignment"] = pointer_type->alignment();
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
         j["type"] = "structure";
         j["name"] = structure_type->name();
-        j["storage_type"] = structure_type->storage_type();
+        j["storage_type"] = std::string(structure_type->storage_type().value());
         j["initializer"] = structure_type->initializer();
         j["alignment"] = structure_type->alignment();
     } else if (auto function_type = dynamic_cast<const types::Function*>(&type)) {
@@ -361,7 +361,7 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
             j["params"].push_back(param_json);
         }
         j["is_var_arg"] = function_type->is_var_arg();
-        j["storage_type"] = function_type->storage_type();
+        j["storage_type"] = std::string(function_type->storage_type().value());
         j["initializer"] = function_type->initializer();
         j["alignment"] = function_type->alignment();
     } else {
@@ -398,9 +398,10 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
     assert(j.contains("name"));
     assert(j["name"].is_string());
     assert(j.contains("type"));
-    assert(j["type"].is_number_integer());
+    assert(j["type"].is_string());
 
-    builder::StructuredSDFGBuilder builder(j["name"], static_cast<FunctionType>(j["type"]));
+    FunctionType type{j["type"].get<std::string_view>()};
+    builder::StructuredSDFGBuilder builder(j["name"], type);
 
     // deserialize structures
     assert(j.contains("structures"));
@@ -826,8 +827,7 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             assert(j.contains("primitive_type"));
             types::PrimitiveType primitive_type = j["primitive_type"];
             assert(j.contains("storage_type"));
-            types::StorageType storage_type = j["storage_type"];
-            ;
+            types::StorageType storage_type{j["storage_type"].get<std::string_view>()};
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
@@ -843,7 +843,7 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             // Convert num_elements_str to symbolic::Expression
             SymEngine::Expression num_elements(num_elements_str);
             assert(j.contains("storage_type"));
-            types::StorageType storage_type = j["storage_type"];
+            types::StorageType storage_type{j["storage_type"].get<std::string_view>()};
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
@@ -855,7 +855,7 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             assert(j.contains("pointee_type"));
             std::unique_ptr<types::IType> pointee_type = json_to_type(j["pointee_type"]);
             assert(j.contains("storage_type"));
-            types::StorageType storage_type = j["storage_type"];
+            types::StorageType storage_type{j["storage_type"].get<std::string_view>()};
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
@@ -867,7 +867,7 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             assert(j.contains("name"));
             std::string name = j["name"];
             assert(j.contains("storage_type"));
-            types::StorageType storage_type = j["storage_type"];
+            types::StorageType storage_type{j["storage_type"].get<std::string_view>()};
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
@@ -885,7 +885,7 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             assert(j.contains("is_var_arg"));
             bool is_var_arg = j["is_var_arg"];
             assert(j.contains("storage_type"));
-            types::StorageType storage_type = j["storage_type"];
+            types::StorageType storage_type{j["storage_type"].get<std::string_view>()};
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));

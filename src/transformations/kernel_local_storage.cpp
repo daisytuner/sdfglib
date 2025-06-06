@@ -73,7 +73,7 @@ bool KernelLocalStorage::can_be_applied(Schedule& schedule) {
     auto& builder = schedule.builder();
 
     auto& sdfg = builder.subject();
-    if (sdfg.type() != FunctionType::NV_GLOBAL) {
+    if (sdfg.type() != FunctionType_NV_GLOBAL) {
         return false;
     }
 
@@ -224,17 +224,17 @@ void KernelLocalStorage::apply(Schedule& schedule) {
     const types::Scalar* base_type =
         static_cast<const types::Scalar*>(&pointer->pointee_type());  // must be scalar or struct
 
-    const types::Scalar type(types::StorageType::NV_Shared, base_type->alignment(), "",
+    const types::Scalar type(types::StorageType_NV_Shared, base_type->alignment(), "",
                              base_type->primitive_type());
 
     // Allocate shared memory before the outer loop, starting from z, y, x, iteration_count
-    types::Array shared_memory(types::StorageType::NV_Shared, type.alignment(), "", type,
+    types::Array shared_memory(types::StorageType_NV_Shared, type.alignment(), "", type,
                                std::get<0>(shared_memory_shape));
-    types::Array shared_memory_x(types::StorageType::NV_Shared, type.alignment(), "", shared_memory,
+    types::Array shared_memory_x(types::StorageType_NV_Shared, type.alignment(), "", shared_memory,
                                  std::get<1>(shared_memory_shape));
-    types::Array shared_memory_y(types::StorageType::NV_Shared, type.alignment(), "",
+    types::Array shared_memory_y(types::StorageType_NV_Shared, type.alignment(), "",
                                  shared_memory_x, std::get<2>(shared_memory_shape));
-    types::Array shared_memory_z(types::StorageType::NV_Shared, type.alignment(), "",
+    types::Array shared_memory_z(types::StorageType_NV_Shared, type.alignment(), "",
                                  shared_memory_y, std::get<3>(shared_memory_shape));
 
     builder.add_container("__daisy_share_" + this->container_, shared_memory_z);
@@ -245,7 +245,7 @@ void KernelLocalStorage::apply(Schedule& schedule) {
 
     builder.add_container(
         "__daisy_shared_indvar_" + this->container_,
-        types::Scalar(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32));
+        types::Scalar(types::StorageType_NV_Generic, 0, "", types::PrimitiveType::Int32));
 
     symbolic::Symbol indvar = symbolic::symbol("__daisy_shared_indvar_" + this->container_);
     symbolic::Expression init_expr =

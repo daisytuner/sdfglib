@@ -8,7 +8,7 @@
 using namespace sdfg;
 
 TEST(CPPCodeGeneratorTest, FunctionDefintion) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto sdfg = builder.move();
 
     ConditionalSchedule schedule(sdfg);
@@ -19,7 +19,7 @@ TEST(CPPCodeGeneratorTest, FunctionDefintion) {
 }
 
 TEST(CPPCodeGeneratorTest, Dispatch_Includes) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto sdfg = builder.move();
 
     ConditionalSchedule schedule(sdfg);
@@ -34,7 +34,7 @@ TEST(CPPCodeGeneratorTest, Dispatch_Includes) {
 }
 
 TEST(CPPCodeGeneratorTest, DispatchStructures_Basic) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
@@ -56,7 +56,7 @@ char member_0;
 }
 
 TEST(CPPCodeGeneratorTest, DispatchStructures_Packed) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     auto& struct_def_A = builder.add_structure("MyStructA", true);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
@@ -78,7 +78,7 @@ char member_0;
 }
 
 TEST(CPPCodeGeneratorTest, DispatchStructures_Nested) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
@@ -108,7 +108,7 @@ struct MyStructA member_0;
 }
 
 TEST(CPPCodeGeneratorTest, DispatchGlobals) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     builder.add_container("a", types::Scalar(types::PrimitiveType::Int32), false, true);
 

@@ -31,7 +31,7 @@ bool LoopToKernelDim::can_be_applied(Schedule& schedule) {
     auto& builder = schedule.builder();
 
     auto& sdfg = builder.subject();
-    if (sdfg.type() != FunctionType::NV_GLOBAL) {
+    if (sdfg.type() != FunctionType_NV_GLOBAL) {
         return false;
     }
 
