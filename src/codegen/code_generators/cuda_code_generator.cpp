@@ -9,14 +9,18 @@ namespace codegen {
 
 CUDACodeGenerator::CUDACodeGenerator(ConditionalSchedule& schedule)
     : CodeGenerator(schedule, InstrumentationStrategy::NONE) {
-
-      };
+    if (schedule.schedule(0).sdfg().type() != FunctionType::NV_GLOBAL) {
+        throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
+    }
+};
 
 CUDACodeGenerator::CUDACodeGenerator(ConditionalSchedule& schedule,
                                      InstrumentationStrategy instrumentation_strategy)
     : CodeGenerator(schedule, instrumentation_strategy) {
-
-      };
+    if (schedule.schedule(0).sdfg().type() != FunctionType::NV_GLOBAL) {
+        throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
+    }
+};
 
 bool CUDACodeGenerator::generate() {
     this->dispatch_includes();

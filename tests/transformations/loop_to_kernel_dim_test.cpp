@@ -17,7 +17,7 @@ using namespace sdfg;
 
 TEST(LoopToKernelDimTest, Basic) {
     /*
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& kernel = builder.add_kernel(
@@ -176,7 +176,7 @@ TEST(LoopToKernelDimTest, Basic) {
 }
 
 TEST(LoopToKernelDimTest, DimNotAvailable) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& kernel = builder.add_kernel(
@@ -281,7 +281,7 @@ TEST(LoopToKernelDimTest, DimNotAvailable) {
 }
 
 TEST(LoopToKernelDimTest, DimToSmall) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& kernel = builder.add_kernel(
@@ -386,7 +386,7 @@ TEST(LoopToKernelDimTest, DimToSmall) {
 }
 
 TEST(LoopToKernelDimTest, NonIndvarAccess) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& kernel = builder.add_kernel(

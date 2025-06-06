@@ -15,7 +15,7 @@
 using namespace sdfg;
 
 TEST(KernelLocalStorageTest, Basic) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& kernel = builder.add_kernel(

@@ -58,7 +58,7 @@ class StructuredSDFGBuilder : public FunctionBuilder {
    public:
     StructuredSDFGBuilder(std::unique_ptr<StructuredSDFG>& sdfg);
 
-    StructuredSDFGBuilder(const std::string& name);
+    StructuredSDFGBuilder(const std::string& name, FunctionType type);
 
     StructuredSDFGBuilder(const SDFG& sdfg);
 

@@ -36,7 +36,7 @@ class StructuredSDFG : public Function {
     std::unique_ptr<structured_control_flow::Sequence> root_;
 
    public:
-    StructuredSDFG(const std::string& name);
+    StructuredSDFG(const std::string& name, FunctionType type);
 
     StructuredSDFG(const StructuredSDFG& sdfg) = delete;
     StructuredSDFG& operator=(const StructuredSDFG&) = delete;

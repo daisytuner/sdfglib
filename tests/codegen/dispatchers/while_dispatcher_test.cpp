@@ -9,7 +9,7 @@
 using namespace sdfg;
 
 TEST(WhileDispatcherTest, DispatchNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -21,7 +21,8 @@ TEST(WhileDispatcherTest, DispatchNode) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::WhileDispatcher dispatcher(language_extension, schedule.schedule(0), loop, instrumentation);
+    codegen::WhileDispatcher dispatcher(language_extension, schedule.schedule(0), loop,
+                                        instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -34,7 +35,7 @@ TEST(WhileDispatcherTest, DispatchNode) {
 }
 
 TEST(BreakDispatcherTest, DispatchNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -61,7 +62,7 @@ TEST(BreakDispatcherTest, DispatchNode) {
 }
 
 TEST(ContinueDispatcherTest, DispatchNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -88,7 +89,7 @@ TEST(ContinueDispatcherTest, DispatchNode) {
 }
 
 TEST(ReturnDispatcherTest, DispatchNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 

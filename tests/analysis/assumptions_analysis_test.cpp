@@ -7,7 +7,7 @@
 using namespace sdfg;
 
 TEST(SymbolsTest, Init_bool) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -29,7 +29,7 @@ TEST(SymbolsTest, Init_bool) {
 }
 
 TEST(SymbolsTest, Init_i8) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -57,7 +57,7 @@ TEST(SymbolsTest, Init_i8) {
 }
 
 TEST(SymbolsTest, Init_i16) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -85,7 +85,7 @@ TEST(SymbolsTest, Init_i16) {
 }
 
 TEST(SymbolsTest, Init_i32) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -113,7 +113,7 @@ TEST(SymbolsTest, Init_i32) {
 }
 
 TEST(SymbolsTest, Init_i64) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -141,7 +141,7 @@ TEST(SymbolsTest, Init_i64) {
 }
 
 TEST(SymbolsTest, Iteration_Rectangle_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -178,7 +178,7 @@ TEST(SymbolsTest, Iteration_Rectangle_1D) {
 }
 
 TEST(SymbolsTest, Iteration_Rectangle_1D_And) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -221,7 +221,7 @@ TEST(SymbolsTest, Iteration_Rectangle_1D_And) {
 }
 
 TEST(SymbolsTest, Iteration_Triangle_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();

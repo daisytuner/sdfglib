@@ -8,7 +8,7 @@
 using namespace sdfg;
 
 TEST(CUDACodeGeneratorTest, FunctionDefintion) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::NV_GLOBAL);
     auto sdfg = builder.move();
 
     ConditionalSchedule schedule(sdfg);
@@ -19,7 +19,7 @@ TEST(CUDACodeGeneratorTest, FunctionDefintion) {
 }
 
 TEST(CUDACodeGeneratorTest, Dispatch_Includes) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::NV_GLOBAL);
     auto sdfg = builder.move();
 
     ConditionalSchedule schedule(sdfg);
@@ -35,7 +35,7 @@ TEST(CUDACodeGeneratorTest, Dispatch_Includes) {
 }
 
 TEST(CUDACodeGeneratorTest, DispatchStructures_Basic) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::NV_GLOBAL);
 
     auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
@@ -57,7 +57,7 @@ char member_0;
 }
 
 TEST(CUDACodeGeneratorTest, DispatchStructures_Nested) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::NV_GLOBAL);
 
     auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
@@ -87,7 +87,7 @@ struct MyStructA member_0;
 }
 
 TEST(CUDACodeGeneratorTest, DispatchGlobals) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::NV_GLOBAL);
 
     builder.add_container(
         "a", types::Scalar(types::StorageType::NV_Global, 0, "", types::PrimitiveType::Int32),

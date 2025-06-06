@@ -9,12 +9,11 @@ const std::unique_ptr<types::Scalar> Function::NVPTX_SYMBOL_TYPE =
 const std::unique_ptr<types::Pointer> Function::CONST_POINTER_TYPE =
     std::make_unique<types::Pointer>(types::Scalar(types::PrimitiveType::Void));
 
-Function::Function(const std::string& name)
-    : name_(name) {
-
-      };
+Function::Function(const std::string& name, FunctionType type) : name_(name), type_(type) {};
 
 std::string Function::name() const { return this->name_; };
+
+FunctionType Function::type() const { return this->type_; };
 
 bool Function::exists(const std::string& name) const {
     return this->containers_.find(name) != this->containers_.end() ||

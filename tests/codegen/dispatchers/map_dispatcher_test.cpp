@@ -9,7 +9,7 @@
 using namespace sdfg;
 
 TEST(MapDispatcherTest, DispatchNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 

@@ -11,7 +11,7 @@
 
 namespace sdfg {
 
-StructuredSDFG::StructuredSDFG(const std::string& name) : Function(name) {
+StructuredSDFG::StructuredSDFG(const std::string& name, FunctionType type) : Function(name, type) {
     this->root_ = std::unique_ptr<structured_control_flow::Sequence>(
         new structured_control_flow::Sequence(DebugInfo()));
 };
@@ -21,7 +21,7 @@ const structured_control_flow::Sequence& StructuredSDFG::root() const { return *
 structured_control_flow::Sequence& StructuredSDFG::root() { return *this->root_; };
 
 std::unique_ptr<StructuredSDFG> StructuredSDFG::clone() const {
-    builder::StructuredSDFGBuilder builder(this->name_);
+    builder::StructuredSDFGBuilder builder(this->name_, this->type_);
     auto& new_sdfg = builder.subject();
 
     for (auto& structure : this->structures_) {
