@@ -41,12 +41,12 @@ TEST(JSONSerializerTest, DatatypeToJSON_Scalar) {
     EXPECT_EQ(j["type"], "scalar");
     EXPECT_TRUE(j.contains("primitive_type"));
     EXPECT_EQ(j["primitive_type"], scalar_type.primitive_type());
-    EXPECT_TRUE(j.contains("address_space"));
-    EXPECT_EQ(j["address_space"], scalar_type.address_space());
+    EXPECT_TRUE(j.contains("storage_type"));
+    EXPECT_EQ(j["storage_type"], scalar_type.storage_type());
+    EXPECT_TRUE(j.contains("alignment"));
+    EXPECT_EQ(j["alignment"], scalar_type.alignment());
     EXPECT_TRUE(j.contains("initializer"));
     EXPECT_EQ(j["initializer"], scalar_type.initializer());
-    EXPECT_TRUE(j.contains("device_location"));
-    EXPECT_EQ(j["device_location"], scalar_type.device_location());
 }
 
 TEST(JSONSerializerTest, DatatypeToJSON_Pointer) {
@@ -70,12 +70,12 @@ TEST(JSONSerializerTest, DatatypeToJSON_Pointer) {
     EXPECT_TRUE(j.contains("pointee_type"));
     EXPECT_EQ(j["pointee_type"]["type"], "scalar");
     EXPECT_EQ(j["pointee_type"]["primitive_type"], base_desc.primitive_type());
-    EXPECT_TRUE(j.contains("address_space"));
-    EXPECT_EQ(j["address_space"], pointer_type.address_space());
+    EXPECT_TRUE(j.contains("storage_type"));
+    EXPECT_EQ(j["storage_type"], pointer_type.storage_type());
+    EXPECT_TRUE(j.contains("alignment"));
+    EXPECT_EQ(j["alignment"], pointer_type.alignment());
     EXPECT_TRUE(j.contains("initializer"));
     EXPECT_EQ(j["initializer"], pointer_type.initializer());
-    EXPECT_TRUE(j.contains("device_location"));
-    EXPECT_EQ(j["device_location"], pointer_type.device_location());
 }
 
 TEST(JSONSerializerTest, DatatypeToJSON_Structure) {
@@ -98,12 +98,12 @@ TEST(JSONSerializerTest, DatatypeToJSON_Structure) {
     EXPECT_EQ(j["type"], "structure");
     EXPECT_TRUE(j.contains("name"));
     EXPECT_EQ(j["name"], "MyStruct");
-    EXPECT_TRUE(j.contains("address_space"));
-    EXPECT_EQ(j["address_space"], structure_type.address_space());
+    EXPECT_TRUE(j.contains("storage_type"));
+    EXPECT_EQ(j["storage_type"], structure_type.storage_type());
+    EXPECT_TRUE(j.contains("alignment"));
+    EXPECT_EQ(j["alignment"], structure_type.alignment());
     EXPECT_TRUE(j.contains("initializer"));
     EXPECT_EQ(j["initializer"], structure_type.initializer());
-    EXPECT_TRUE(j.contains("device_location"));
-    EXPECT_EQ(j["device_location"], structure_type.device_location());
 }
 
 TEST(JSONSerializerTest, DatatypeToJSON_Array) {
@@ -129,12 +129,12 @@ TEST(JSONSerializerTest, DatatypeToJSON_Array) {
     EXPECT_EQ(j["element_type"]["primitive_type"], base_desc.primitive_type());
     EXPECT_TRUE(j.contains("num_elements"));
     EXPECT_TRUE(symbolic::eq(SymEngine::Expression(j["num_elements"]), symbolic::symbol("N")));
-    EXPECT_TRUE(j.contains("address_space"));
-    EXPECT_EQ(j["address_space"], array_type.address_space());
+    EXPECT_TRUE(j.contains("storage_type"));
+    EXPECT_EQ(j["storage_type"], array_type.storage_type());
+    EXPECT_TRUE(j.contains("alignment"));
+    EXPECT_EQ(j["alignment"], array_type.alignment());
     EXPECT_TRUE(j.contains("initializer"));
     EXPECT_EQ(j["initializer"], array_type.initializer());
-    EXPECT_TRUE(j.contains("device_location"));
-    EXPECT_EQ(j["device_location"], array_type.device_location());
 }
 
 TEST(JSONSerializerTest, DatatypeToJSON_Function) {
@@ -165,12 +165,12 @@ TEST(JSONSerializerTest, DatatypeToJSON_Function) {
     EXPECT_EQ(j["params"][0]["primitive_type"], scalar_type.primitive_type());
     EXPECT_TRUE(j.contains("is_var_arg"));
     EXPECT_EQ(j["is_var_arg"], function_type.is_var_arg());
-    EXPECT_TRUE(j.contains("address_space"));
-    EXPECT_EQ(j["address_space"], scalar_type.address_space());
+    EXPECT_TRUE(j.contains("storage_type"));
+    EXPECT_EQ(j["storage_type"], scalar_type.storage_type());
+    EXPECT_TRUE(j.contains("alignment"));
+    EXPECT_EQ(j["alignment"], scalar_type.alignment());
     EXPECT_TRUE(j.contains("initializer"));
     EXPECT_EQ(j["initializer"], scalar_type.initializer());
-    EXPECT_TRUE(j.contains("device_location"));
-    EXPECT_EQ(j["device_location"], scalar_type.device_location());
 }
 
 TEST(JSONSerializerTest, DataflowToJSON) {
@@ -560,8 +560,8 @@ TEST(JSONSerializerTest, MapToJSON) {
 
 TEST(JSONSerializerTest, SerializeDeserializeDataType_Scalar) {
     // Create a sample Scalar data type
-    types::Scalar scalar_type(types::PrimitiveType::Int32, types::DeviceLocation::x86, 0,
-                              "initializer");
+    types::Scalar scalar_type(types::StorageType::CPU_Stack, 0, "initializer",
+                              types::PrimitiveType::Int32);
     nlohmann::json j;
 
     // Create a JSONSerializer object
@@ -582,15 +582,15 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Scalar) {
 
     // Check if the deserialized data type matches the original data type
     EXPECT_EQ(scalar_ptr->primitive_type(), scalar_type.primitive_type());
-    EXPECT_EQ(scalar_ptr->address_space(), scalar_type.address_space());
+    EXPECT_EQ(scalar_ptr->storage_type(), scalar_type.storage_type());
+    EXPECT_EQ(scalar_ptr->alignment(), scalar_type.alignment());
     EXPECT_EQ(scalar_ptr->initializer(), scalar_type.initializer());
-    EXPECT_EQ(scalar_ptr->device_location(), scalar_type.device_location());
 }
 
 TEST(JSONSerializerTest, SerializeDeserializeDataType_Pointer) {
     // Create a sample Pointer data type
     types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Pointer pointer_type(base_desc, types::DeviceLocation::x86, 0, "initializer");
+    types::Pointer pointer_type(types::StorageType::CPU_Stack, 0, "initializer", base_desc);
     nlohmann::json j;
 
     // Create a JSONSerializer object
@@ -610,9 +610,9 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Pointer) {
     auto pointer_ptr = dynamic_cast<types::Pointer*>(deserialized_pointer_type.get());
 
     // Check if the deserialized data type matches the original data type
-    EXPECT_EQ(pointer_ptr->address_space(), pointer_type.address_space());
+    EXPECT_EQ(pointer_ptr->storage_type(), pointer_type.storage_type());
+    EXPECT_EQ(pointer_ptr->alignment(), pointer_type.alignment());
     EXPECT_EQ(pointer_ptr->initializer(), pointer_type.initializer());
-    EXPECT_EQ(pointer_ptr->device_location(), pointer_type.device_location());
     EXPECT_EQ(pointer_ptr->pointee_type().primitive_type(), base_desc.primitive_type());
 
     // Check if the deserialized pointee data type matches the original pointee data type
@@ -621,15 +621,15 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Pointer) {
     auto deserialized_base_desc = dynamic_cast<const types::Scalar*>(deserialized_pointee_type);
     EXPECT_TRUE(deserialized_base_desc != nullptr);
     EXPECT_EQ(deserialized_base_desc->primitive_type(), base_desc.primitive_type());
-    EXPECT_EQ(deserialized_base_desc->address_space(), base_desc.address_space());
+    EXPECT_EQ(deserialized_base_desc->storage_type(), base_desc.storage_type());
+    EXPECT_EQ(deserialized_base_desc->alignment(), base_desc.alignment());
     EXPECT_EQ(deserialized_base_desc->initializer(), base_desc.initializer());
-    EXPECT_EQ(deserialized_base_desc->device_location(), base_desc.device_location());
 }
 
 TEST(JSONSerializerTest, SerializeDeserializeDataType_Structure) {
     // Create a sample Structure data type
     types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Structure structure_type("MyStruct", types::DeviceLocation::x86, 0, "initializer");
+    types::Structure structure_type(types::StorageType::CPU_Stack, 0, "initializer", "MyStruct");
     nlohmann::json j;
 
     // Create a JSONSerializer object
@@ -649,16 +649,16 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Structure) {
     EXPECT_TRUE(structure_ptr != nullptr);
     // Check if the deserialized data type matches the original data type
     EXPECT_EQ(structure_ptr->name(), structure_type.name());
-    EXPECT_EQ(structure_ptr->address_space(), structure_type.address_space());
+    EXPECT_EQ(structure_ptr->storage_type(), structure_type.storage_type());
+    EXPECT_EQ(structure_ptr->alignment(), structure_type.alignment());
     EXPECT_EQ(structure_ptr->initializer(), structure_type.initializer());
-    EXPECT_EQ(structure_ptr->device_location(), structure_type.device_location());
 }
 
 TEST(JSONSerializerTest, SerializeDeserializeDataType_Array) {
     // Create a sample Array data type
     types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Array array_type(base_desc, {symbolic::symbol("N")}, types::DeviceLocation::x86, 0,
-                            "initializer");
+    types::Array array_type(types::StorageType::CPU_Stack, 0, "initializer", base_desc,
+                            {symbolic::symbol("N")});
     nlohmann::json j;
 
     // Create a JSONSerializer object
@@ -679,9 +679,9 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Array) {
     EXPECT_TRUE(array_ptr != nullptr);
 
     // Check if the deserialized data type matches the original data type
-    EXPECT_EQ(array_ptr->address_space(), array_type.address_space());
+    EXPECT_EQ(array_ptr->storage_type(), array_type.storage_type());
+    EXPECT_EQ(array_ptr->alignment(), array_type.alignment());
     EXPECT_EQ(array_ptr->initializer(), array_type.initializer());
-    EXPECT_EQ(array_ptr->device_location(), array_type.device_location());
     EXPECT_EQ(array_ptr->num_elements()->__str__(), "N");
 
     // Check if the deserialized element type matches the original element type
@@ -690,15 +690,15 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Array) {
     auto deserialized_base_desc = dynamic_cast<const types::Scalar*>(deserialized_element_type);
     EXPECT_TRUE(deserialized_base_desc != nullptr);
     EXPECT_EQ(deserialized_base_desc->primitive_type(), base_desc.primitive_type());
-    EXPECT_EQ(deserialized_base_desc->address_space(), base_desc.address_space());
+    EXPECT_EQ(deserialized_base_desc->storage_type(), base_desc.storage_type());
+    EXPECT_EQ(deserialized_base_desc->alignment(), base_desc.alignment());
     EXPECT_EQ(deserialized_base_desc->initializer(), base_desc.initializer());
-    EXPECT_EQ(deserialized_base_desc->device_location(), base_desc.device_location());
 }
 
 TEST(JSONSerializerTest, SerializeDeserializeDataType_Function) {
     // Create a sample Scalar data type
-    types::Scalar scalar_type(types::PrimitiveType::Int32, types::DeviceLocation::x86, 0,
-                              "initializer");
+    types::Scalar scalar_type(types::StorageType::CPU_Stack, 0, "initializer",
+                              types::PrimitiveType::Int32);
     types::Function function_type(scalar_type, false);
     function_type.add_param(scalar_type);
     function_type.add_param(scalar_type);
@@ -722,9 +722,9 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Function) {
 
     // Check if the deserialized data type matches the original data type
     EXPECT_EQ(function_ptr->primitive_type(), function_type.primitive_type());
-    EXPECT_EQ(function_ptr->address_space(), function_type.address_space());
+    EXPECT_EQ(function_ptr->storage_type(), function_type.storage_type());
+    EXPECT_EQ(function_ptr->alignment(), function_type.alignment());
     EXPECT_EQ(function_ptr->initializer(), function_type.initializer());
-    EXPECT_EQ(function_ptr->device_location(), function_type.device_location());
     EXPECT_EQ(function_ptr->is_var_arg(), function_type.is_var_arg());
     EXPECT_EQ(function_ptr->num_params(), function_type.num_params());
     EXPECT_EQ(function_ptr->num_params(), 2);
@@ -773,9 +773,9 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_StructureDefinition) {
     EXPECT_TRUE(dynamic_cast<const types::Scalar*>(&des_member_0) != nullptr);
     EXPECT_TRUE(dynamic_cast<const types::Scalar*>(&member_0) != nullptr);
     EXPECT_EQ(des_member_0.primitive_type(), member_0.primitive_type());
-    EXPECT_EQ(des_member_0.address_space(), member_0.address_space());
+    EXPECT_EQ(des_member_0.storage_type(), member_0.storage_type());
     EXPECT_EQ(des_member_0.initializer(), member_0.initializer());
-    EXPECT_EQ(des_member_0.device_location(), member_0.device_location());
+    EXPECT_EQ(des_member_0.alignment(), member_0.alignment());
 
     auto& des_member_1 = deserialized_structure_definition->member_type(symbolic::integer(1));
     auto& member_1 = structure_definition.member_type(symbolic::integer(1));
@@ -786,9 +786,9 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_StructureDefinition) {
 
     EXPECT_EQ(des_member_1_arr.element_type().primitive_type(),
               member_1_arr.element_type().primitive_type());
-    EXPECT_EQ(des_member_1_arr.address_space(), member_1_arr.address_space());
+    EXPECT_EQ(des_member_1_arr.storage_type(), member_1_arr.storage_type());
     EXPECT_EQ(des_member_1_arr.initializer(), member_1_arr.initializer());
-    EXPECT_EQ(des_member_1_arr.device_location(), member_1_arr.device_location());
+    EXPECT_EQ(des_member_1_arr.alignment(), member_1_arr.alignment());
     EXPECT_TRUE(sdfg::symbolic::eq(des_member_1_arr.num_elements(), member_1_arr.num_elements()));
 }
 
@@ -856,9 +856,9 @@ TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
                 EXPECT_TRUE(dynamic_cast<const types::Pointer*>(&type) != nullptr);
                 auto& type_ptr = dynamic_cast<const types::Pointer&>(type);
                 EXPECT_EQ(type_ptr.primitive_type(), base_desc.primitive_type());
-                EXPECT_EQ(type_ptr.address_space(), base_desc.address_space());
+                EXPECT_EQ(type_ptr.storage_type(), base_desc.storage_type());
                 EXPECT_EQ(type_ptr.initializer(), base_desc.initializer());
-                EXPECT_EQ(type_ptr.device_location(), base_desc.device_location());
+                EXPECT_EQ(type_ptr.alignment(), base_desc.alignment());
                 EXPECT_EQ(type_ptr.pointee_type().primitive_type(), base_desc.primitive_type());
             } else if (access_node->data() == "C") {
                 foundC++;
@@ -866,9 +866,9 @@ TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
                 EXPECT_TRUE(dynamic_cast<const types::Scalar*>(&type) != nullptr);
                 auto& type_ptr = dynamic_cast<const types::Scalar&>(type);
                 EXPECT_EQ(type_ptr.primitive_type(), base_desc.primitive_type());
-                EXPECT_EQ(type_ptr.address_space(), base_desc.address_space());
+                EXPECT_EQ(type_ptr.storage_type(), base_desc.storage_type());
                 EXPECT_EQ(type_ptr.initializer(), base_desc.initializer());
-                EXPECT_EQ(type_ptr.device_location(), base_desc.device_location());
+                EXPECT_EQ(type_ptr.alignment(), base_desc.alignment());
             }
 
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {
@@ -993,9 +993,9 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
                 EXPECT_TRUE(dynamic_cast<const types::Pointer*>(&type) != nullptr);
                 auto& type_ptr = dynamic_cast<const types::Pointer&>(type);
                 EXPECT_EQ(type_ptr.primitive_type(), base_desc.primitive_type());
-                EXPECT_EQ(type_ptr.address_space(), base_desc.address_space());
+                EXPECT_EQ(type_ptr.storage_type(), base_desc.storage_type());
                 EXPECT_EQ(type_ptr.initializer(), base_desc.initializer());
-                EXPECT_EQ(type_ptr.device_location(), base_desc.device_location());
+                EXPECT_EQ(type_ptr.alignment(), base_desc.alignment());
                 EXPECT_EQ(type_ptr.pointee_type().primitive_type(), base_desc.primitive_type());
             } else if (access_node->data() == "C") {
                 foundC++;
@@ -1003,9 +1003,9 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
                 EXPECT_TRUE(dynamic_cast<const types::Scalar*>(&type) != nullptr);
                 auto& type_ptr = dynamic_cast<const types::Scalar&>(type);
                 EXPECT_EQ(type_ptr.primitive_type(), base_desc.primitive_type());
-                EXPECT_EQ(type_ptr.address_space(), base_desc.address_space());
+                EXPECT_EQ(type_ptr.storage_type(), base_desc.storage_type());
                 EXPECT_EQ(type_ptr.initializer(), base_desc.initializer());
-                EXPECT_EQ(type_ptr.device_location(), base_desc.device_location());
+                EXPECT_EQ(type_ptr.alignment(), base_desc.alignment());
             }
 
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {
@@ -1135,9 +1135,9 @@ TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
                 EXPECT_TRUE(dynamic_cast<const types::Pointer*>(&type) != nullptr);
                 auto& type_ptr = dynamic_cast<const types::Pointer&>(type);
                 EXPECT_EQ(type_ptr.primitive_type(), base_desc.primitive_type());
-                EXPECT_EQ(type_ptr.address_space(), base_desc.address_space());
+                EXPECT_EQ(type_ptr.storage_type(), base_desc.storage_type());
                 EXPECT_EQ(type_ptr.initializer(), base_desc.initializer());
-                EXPECT_EQ(type_ptr.device_location(), base_desc.device_location());
+                EXPECT_EQ(type_ptr.alignment(), base_desc.alignment());
                 EXPECT_EQ(type_ptr.pointee_type().primitive_type(), base_desc.primitive_type());
             } else if (access_node->data() == "C") {
                 foundC++;
@@ -1145,9 +1145,9 @@ TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
                 EXPECT_TRUE(dynamic_cast<const types::Scalar*>(&type) != nullptr);
                 auto& type_ptr = dynamic_cast<const types::Scalar&>(type);
                 EXPECT_EQ(type_ptr.primitive_type(), base_desc.primitive_type());
-                EXPECT_EQ(type_ptr.address_space(), base_desc.address_space());
+                EXPECT_EQ(type_ptr.storage_type(), base_desc.storage_type());
                 EXPECT_EQ(type_ptr.initializer(), base_desc.initializer());
-                EXPECT_EQ(type_ptr.device_location(), base_desc.device_location());
+                EXPECT_EQ(type_ptr.alignment(), base_desc.alignment());
             }
 
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {
@@ -1271,9 +1271,9 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
                 EXPECT_TRUE(dynamic_cast<const types::Pointer*>(&type) != nullptr);
                 auto& type_ptr = dynamic_cast<const types::Pointer&>(type);
                 EXPECT_EQ(type_ptr.primitive_type(), base_desc.primitive_type());
-                EXPECT_EQ(type_ptr.address_space(), base_desc.address_space());
+                EXPECT_EQ(type_ptr.storage_type(), base_desc.storage_type());
                 EXPECT_EQ(type_ptr.initializer(), base_desc.initializer());
-                EXPECT_EQ(type_ptr.device_location(), base_desc.device_location());
+                EXPECT_EQ(type_ptr.alignment(), base_desc.alignment());
                 EXPECT_EQ(type_ptr.pointee_type().primitive_type(), base_desc.primitive_type());
             } else if (access_node->data() == "C") {
                 foundC++;
@@ -1281,9 +1281,9 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
                 EXPECT_TRUE(dynamic_cast<const types::Scalar*>(&type) != nullptr);
                 auto& type_ptr = dynamic_cast<const types::Scalar&>(type);
                 EXPECT_EQ(type_ptr.primitive_type(), base_desc.primitive_type());
-                EXPECT_EQ(type_ptr.address_space(), base_desc.address_space());
+                EXPECT_EQ(type_ptr.storage_type(), base_desc.storage_type());
                 EXPECT_EQ(type_ptr.initializer(), base_desc.initializer());
-                EXPECT_EQ(type_ptr.device_location(), base_desc.device_location());
+                EXPECT_EQ(type_ptr.alignment(), base_desc.alignment());
             }
 
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {

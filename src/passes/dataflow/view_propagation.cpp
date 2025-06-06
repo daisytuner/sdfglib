@@ -4,7 +4,7 @@ namespace sdfg {
 namespace passes {
 
 ViewPropagation::ViewPropagation()
-    : Pass(){
+    : Pass() {
 
       };
 
@@ -47,6 +47,9 @@ bool ViewPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
             auto& viewed_node = dynamic_cast<const data_flow::AccessNode&>(edge.src());
             auto& viewed_container = viewed_node.data();
             auto& viewed_subset = edge.subset();
+            if (viewed_subset.empty()) {
+                continue;
+            }
             if (edge.src_conn() != "void") {
                 continue;
             }

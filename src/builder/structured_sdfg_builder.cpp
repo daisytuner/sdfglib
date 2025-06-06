@@ -854,29 +854,29 @@ Kernel& StructuredSDFGBuilder::convert_into_kernel() {
 
     this->insert_children(kernel.root(), *old_root, 0);
 
-    types::Scalar gridDim_x(types::PrimitiveType::Int32, types::DeviceLocation::nvptx, 0);
+    types::Scalar gridDim_x(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32);
     add_container(kernel.gridDim_x()->get_name(), gridDim_x);
-    types::Scalar gridDim_y(types::PrimitiveType::Int32, types::DeviceLocation::nvptx, 0);
+    types::Scalar gridDim_y(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32);
     add_container(kernel.gridDim_y()->get_name(), gridDim_y);
-    types::Scalar gridDim_z(types::PrimitiveType::Int32, types::DeviceLocation::nvptx, 0);
+    types::Scalar gridDim_z(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32);
     add_container(kernel.gridDim_z()->get_name(), gridDim_z);
-    types::Scalar blockDim_x(types::PrimitiveType::Int32, types::DeviceLocation::nvptx, 0);
+    types::Scalar blockDim_x(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32);
     add_container(kernel.blockDim_x()->get_name(), blockDim_x);
-    types::Scalar blockDim_y(types::PrimitiveType::Int32, types::DeviceLocation::nvptx, 0);
+    types::Scalar blockDim_y(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32);
     add_container(kernel.blockDim_y()->get_name(), blockDim_y);
-    types::Scalar blockDim_z(types::PrimitiveType::Int32, types::DeviceLocation::nvptx, 0);
+    types::Scalar blockDim_z(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32);
     add_container(kernel.blockDim_z()->get_name(), blockDim_z);
-    types::Scalar blockIdx_x(types::PrimitiveType::Int32, types::DeviceLocation::nvptx, 0);
+    types::Scalar blockIdx_x(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32);
     add_container(kernel.blockIdx_x()->get_name(), blockIdx_x);
-    types::Scalar blockIdx_y(types::PrimitiveType::Int32, types::DeviceLocation::nvptx, 0);
+    types::Scalar blockIdx_y(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32);
     add_container(kernel.blockIdx_y()->get_name(), blockIdx_y);
-    types::Scalar blockIdx_z(types::PrimitiveType::Int32, types::DeviceLocation::nvptx, 0);
+    types::Scalar blockIdx_z(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32);
     add_container(kernel.blockIdx_z()->get_name(), blockIdx_z);
-    types::Scalar threadIdx_x(types::PrimitiveType::Int32, types::DeviceLocation::nvptx, 0);
+    types::Scalar threadIdx_x(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32);
     add_container(kernel.threadIdx_x()->get_name(), threadIdx_x);
-    types::Scalar threadIdx_y(types::PrimitiveType::Int32, types::DeviceLocation::nvptx, 0);
+    types::Scalar threadIdx_y(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32);
     add_container(kernel.threadIdx_y()->get_name(), threadIdx_y);
-    types::Scalar threadIdx_z(types::PrimitiveType::Int32, types::DeviceLocation::nvptx, 0);
+    types::Scalar threadIdx_z(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32);
     add_container(kernel.threadIdx_z()->get_name(), threadIdx_z);
 
     kernel.root().replace(symbolic::symbol("gridDim.x"), kernel.gridDim_x());

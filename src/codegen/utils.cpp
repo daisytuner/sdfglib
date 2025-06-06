@@ -44,14 +44,16 @@ void PrettyPrinter::applyIndent() {
     }
 };
 
-Reference::Reference(const types::IType& reference_, size_t alignment)
-    : reference_(reference_.clone()), alignment_(alignment) {};
+Reference::Reference(const types::IType& reference_) : reference_(reference_.clone()) {};
+
+Reference::Reference(types::StorageType storage_type, size_t alignment,
+                     const std::string& initializer, const types::IType& reference_)
+    : IType(storage_type, alignment, initializer), reference_(reference_.clone()) {};
 
 std::unique_ptr<types::IType> Reference::clone() const {
-    return std::make_unique<Reference>(*this->reference_, this->alignment_);
+    return std::make_unique<Reference>(this->storage_type(), this->alignment(), this->initializer(),
+                                       *this->reference_);
 };
-
-size_t Reference::alignment() const { return this->alignment_; };
 
 types::PrimitiveType Reference::primitive_type() const {
     return this->reference_->primitive_type();
@@ -69,14 +71,6 @@ bool Reference::operator==(const types::IType& other) const {
         return false;
     }
 };
-
-uint Reference::address_space() const { return this->reference_->address_space(); };
-
-sdfg::types::DeviceLocation Reference::device_location() const {
-    return this->reference_->device_location();
-};
-
-std::string Reference::initializer() const { return this->reference_->initializer(); };
 
 std::string Reference::print() const { return "Reference(" + this->reference_->print() + ")"; };
 

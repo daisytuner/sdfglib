@@ -10,15 +10,12 @@ class Array : public IType {
    private:
     std::unique_ptr<IType> element_type_;
     symbolic::Expression num_elements_;
-    DeviceLocation device_location_;
-    uint address_space_;
-    std::string initializer_;
-    size_t alignment_;
 
    public:
-    Array(const IType& element_type, const symbolic::Expression& num_elements,
-          DeviceLocation device_location = DeviceLocation::x86, uint address_space = 0,
-          const std::string& initializer = "", size_t alignment = 0);
+    Array(const IType& element_type, const symbolic::Expression& num_elements);
+
+    Array(StorageType storage_type, size_t alignment, const std::string& initializer,
+          const IType& element_type, const symbolic::Expression& num_elements);
 
     virtual PrimitiveType primitive_type() const override;
 
@@ -28,17 +25,9 @@ class Array : public IType {
 
     const symbolic::Expression& num_elements() const;
 
-    virtual size_t alignment() const override;
-
     virtual bool operator==(const IType& other) const override;
 
     virtual std::unique_ptr<IType> clone() const override;
-
-    virtual DeviceLocation device_location() const override;
-
-    virtual uint address_space() const override;
-
-    virtual std::string initializer() const override;
 
     virtual std::string print() const override;
 };
