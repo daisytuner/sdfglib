@@ -126,7 +126,7 @@ void DataFlowDispatcher::dispatch_library_node(PrettyPrinter& stream,
         const types::Scalar& conn_type = libnode.input_type(iedge.dst_conn());
         stream << this->language_extension_.declaration(iedge.dst_conn(), conn_type);
 
-        if (symbolic::is_nvptx(symbolic::symbol(src.data()))) {
+        if (symbolic::is_nv(symbolic::symbol(src.data()))) {
             stream << " = " << src.data() << ";";
         } else {
             const types::IType& type = this->function_.type(src.data());

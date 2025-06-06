@@ -26,13 +26,10 @@ class KernelLocalStorage : public Transformation {
     virtual void apply(Schedule& schedule) override;
 
    private:
-    bool reads_container(std::string container, const structured_control_flow::Sequence& sequence,
-                         analysis::UsersView& body_users);
-    bool uses_inner_indvar(const structured_control_flow::Kernel* kernel,
-                           const structured_control_flow::Sequence& body,
-                           analysis::UsersView& body_users);
+    bool reads_container(std::string container, analysis::UsersView& body_users);
+    bool uses_inner_indvar(analysis::UsersView& body_users);
     std::tuple<symbolic::Integer, symbolic::Integer, symbolic::Integer> dim_size(
-        const structured_control_flow::Kernel* kernel, symbolic::Assumptions& assumptions);
+        symbolic::Assumptions& assumptions);
 };
 
 }  // namespace transformations

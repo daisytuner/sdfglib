@@ -130,9 +130,6 @@ bool DeadCFGElimination::run_pass(builder::StructuredSDFGBuilder& builder,
         } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(curr)) {
             auto& root = for_stmt->root();
             queue.push_back(&root);
-        } else if (auto kernel_stmt = dynamic_cast<structured_control_flow::Kernel*>(curr)) {
-            auto& root = kernel_stmt->root();
-            queue.push_back(&root);
         } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(curr)) {
             auto& root = map_stmt->root();
             queue.push_back(&root);

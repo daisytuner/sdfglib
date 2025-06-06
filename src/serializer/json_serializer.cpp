@@ -12,7 +12,6 @@
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
-#include "sdfg/structured_control_flow/kernel.h"
 #include "sdfg/structured_control_flow/return.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
@@ -247,21 +246,6 @@ void JSONSerializer::continue_node_to_json(nlohmann::json& j,
     debug_info_to_json(j["debug_info"], continue_node.debug_info());
 }
 
-void JSONSerializer::kernel_to_json(nlohmann::json& j,
-                                    const structured_control_flow::Kernel& kernel_node) {
-    j["type"] = "kernel";
-    j["element_id"] = kernel_node.element_id();
-
-    j["debug_info"] = nlohmann::json::object();
-    debug_info_to_json(j["debug_info"], kernel_node.debug_info());
-
-    j["suffix"] = kernel_node.suffix();
-
-    nlohmann::json body_json;
-    sequence_to_json(body_json, kernel_node.root());
-    j["root"] = body_json;
-}
-
 void JSONSerializer::map_to_json(nlohmann::json& j, const structured_control_flow::Map& map_node) {
     j["type"] = "map";
     j["element_id"] = map_node.element_id();
@@ -313,9 +297,6 @@ void JSONSerializer::sequence_to_json(nlohmann::json& j,
             if_else_to_json(child_json, *condition_node);
         } else if (auto while_node = dynamic_cast<const structured_control_flow::While*>(&child)) {
             while_node_to_json(child_json, *while_node);
-        } else if (auto kernel_node =
-                       dynamic_cast<const structured_control_flow::Kernel*>(&child)) {
-            kernel_to_json(child_json, *kernel_node);
         } else if (auto return_node =
                        dynamic_cast<const structured_control_flow::Return*>(&child)) {
             return_node_to_json(child_json, *return_node);
@@ -652,8 +633,6 @@ void JSONSerializer::json_to_sequence(const nlohmann::json& j,
                 json_to_break_node(child, builder, sequence, assignments);
             } else if (child["type"] == "continue") {
                 json_to_continue_node(child, builder, sequence, assignments);
-            } else if (child["type"] == "kernel") {
-                json_to_kernel_node(child, builder, sequence, assignments);
             } else if (child["type"] == "return") {
                 json_to_return_node(child, builder, sequence, assignments);
             } else if (child["type"] == "map") {
@@ -800,27 +779,6 @@ void JSONSerializer::json_to_continue_node(const nlohmann::json& j,
     assert(j["type"] == "continue");
     auto& node = builder.add_continue(parent, assignments, json_to_debug_info(j["debug_info"]));
     node.element_id_ = j["element_id"];
-}
-
-void JSONSerializer::json_to_kernel_node(const nlohmann::json& j,
-                                         builder::StructuredSDFGBuilder& builder,
-                                         structured_control_flow::Sequence& parent,
-                                         symbolic::Assignments& assignments) {
-    assert(j.contains("type"));
-    assert(j["type"].is_string());
-    assert(j["type"] == "kernel");
-    assert(j.contains("suffix"));
-    assert(j["suffix"].is_string());
-    assert(j.contains("root"));
-    assert(j["root"].is_object());
-    auto& kernel_node =
-        builder.add_kernel(parent, j["suffix"], json_to_debug_info(j["debug_info"]));
-    kernel_node.element_id_ = j["element_id"];
-
-    assert(j["root"].contains("type"));
-    assert(j["root"]["type"].is_string());
-    assert(j["root"]["type"] == "sequence");
-    json_to_sequence(j["root"], builder, kernel_node.root());
 }
 
 void JSONSerializer::json_to_map_node(const nlohmann::json& j,

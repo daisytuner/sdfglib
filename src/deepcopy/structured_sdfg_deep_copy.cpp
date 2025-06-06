@@ -55,17 +55,6 @@ void StructuredSDFGDeepCopy::append(structured_control_flow::Sequence& root,
                 for_stmt->update(), trans.assignments(), for_stmt->debug_info());
             this->node_mapping[for_stmt] = &new_scope;
             this->append(new_scope.root(), for_stmt->root());
-        } else if (auto kern_stmt = dynamic_cast<structured_control_flow::Kernel*>(&node)) {
-            auto& new_scope = this->builder_.add_kernel(
-                root, kern_stmt->suffix(), DebugInfo(), kern_stmt->gridDim_x_init(),
-                kern_stmt->gridDim_y_init(), kern_stmt->gridDim_z_init(),
-                kern_stmt->blockDim_x_init(), kern_stmt->blockDim_y_init(),
-                kern_stmt->blockDim_z_init(), kern_stmt->blockIdx_x_init(),
-                kern_stmt->blockIdx_y_init(), kern_stmt->blockIdx_z_init(),
-                kern_stmt->threadIdx_x_init(), kern_stmt->threadIdx_y_init(),
-                kern_stmt->threadIdx_z_init());
-            this->node_mapping[kern_stmt] = &new_scope;
-            this->append(new_scope.root(), kern_stmt->root());
         } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&node)) {
             auto& new_scope =
                 this->builder_.add_map(root, map_stmt->indvar(), map_stmt->num_iterations(),
@@ -117,16 +106,6 @@ void StructuredSDFGDeepCopy::insert(structured_control_flow::Sequence& root,
     } else if (auto ret_stmt = dynamic_cast<structured_control_flow::Return*>(&source)) {
         auto& new_ret = this->builder_.add_return(root, {}, ret_stmt->debug_info());
         this->node_mapping[ret_stmt] = &new_ret;
-    } else if (auto kern_stmt = dynamic_cast<structured_control_flow::Kernel*>(&source)) {
-        auto& new_scope = this->builder_.add_kernel(
-            root, kern_stmt->suffix(), DebugInfo(), kern_stmt->gridDim_x_init(),
-            kern_stmt->gridDim_y_init(), kern_stmt->gridDim_z_init(), kern_stmt->blockDim_x_init(),
-            kern_stmt->blockDim_y_init(), kern_stmt->blockDim_z_init(),
-            kern_stmt->blockIdx_x_init(), kern_stmt->blockIdx_y_init(),
-            kern_stmt->blockIdx_z_init(), kern_stmt->threadIdx_x_init(),
-            kern_stmt->threadIdx_y_init(), kern_stmt->threadIdx_z_init());
-        this->node_mapping[kern_stmt] = &new_scope;
-        this->append(new_scope.root(), kern_stmt->root());
     } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&source)) {
         auto& new_scope = this->builder_.add_map(
             root, map_stmt->indvar(), map_stmt->num_iterations(), {}, map_stmt->debug_info());

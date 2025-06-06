@@ -43,31 +43,11 @@ bool is_nullptr(const Symbol& symbol) { return symbol->get_name() == "__daisy_nu
 
 bool is_pointer(const Symbol& symbol) { return is_memory_address(symbol) || is_nullptr(symbol); };
 
-bool is_nvptx(const Symbol& symbol) {
-    const std::string& name = symbol->get_name();
-    if (name == "threadIdx.x") {
-        return true;
-    } else if (name == "threadIdx.y") {
-        return true;
-    } else if (name == "threadIdx.z") {
-        return true;
-    } else if (name == "blockIdx.x") {
-        return true;
-    } else if (name == "blockIdx.y") {
-        return true;
-    } else if (name == "blockIdx.z") {
-        return true;
-    } else if (name == "blockDim.x") {
-        return true;
-    } else if (name == "blockDim.y") {
-        return true;
-    } else if (name == "blockDim.z") {
-        return true;
-    } else if (name == "gridDim.x") {
-        return true;
-    } else if (name == "gridDim.y") {
-        return true;
-    } else if (name == "gridDim.z") {
+bool is_nv(const Symbol& symbol) {
+    if (symbol == threadIdx_x() || symbol == threadIdx_y() || symbol == threadIdx_z() ||
+        symbol == blockIdx_x() || symbol == blockIdx_y() || symbol == blockIdx_z() ||
+        symbol == blockDim_x() || symbol == blockDim_y() || symbol == blockDim_z() ||
+        symbol == gridDim_x() || symbol == gridDim_y() || symbol == gridDim_z()) {
         return true;
     } else {
         return false;
@@ -330,6 +310,32 @@ Condition rearrange_simple_condition(const Condition& inequality, const Symbol& 
 
     return inequality;  // Return original if rearrangement is not handled
 }
+
+/***** NV Symbols *****/
+
+Symbol threadIdx_x() { return symbol("threadIdx.x"); };
+
+Symbol threadIdx_y() { return symbol("threadIdx.y"); };
+
+Symbol threadIdx_z() { return symbol("threadIdx.z"); };
+
+Symbol blockDim_x() { return symbol("blockDim.x"); };
+
+Symbol blockDim_y() { return symbol("blockDim.y"); };
+
+Symbol blockDim_z() { return symbol("blockDim.z"); };
+
+Symbol blockIdx_x() { return symbol("blockIdx.x"); };
+
+Symbol blockIdx_y() { return symbol("blockIdx.y"); };
+
+Symbol blockIdx_z() { return symbol("blockIdx.z"); };
+
+Symbol gridDim_x() { return symbol("gridDim.x"); };
+
+Symbol gridDim_y() { return symbol("gridDim.y"); };
+
+Symbol gridDim_z() { return symbol("gridDim.z"); };
 
 }  // namespace symbolic
 }  // namespace sdfg

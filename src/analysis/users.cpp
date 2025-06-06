@@ -447,25 +447,6 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
         this->entries_.insert({ret_stmt, this->users_.at(v).get()});
         this->exits_.insert({ret_stmt, this->users_.at(v).get()});
         return {v, boost::graph_traits<graph::Graph>::null_vertex()};
-    } else if (auto kern_stmt = dynamic_cast<structured_control_flow::Kernel*>(&node)) {
-        // NOP
-        auto s = boost::add_vertex(this->graph_);
-        this->users_.insert({s, std::make_unique<User>(s, "", kern_stmt, Use::NOP)});
-        this->entries_.insert({kern_stmt, this->users_.at(s).get()});
-
-        auto subgraph = this->traverse(kern_stmt->root());
-        boost::add_edge(s, subgraph.first, this->graph_);
-        if (subgraph.second == boost::graph_traits<graph::Graph>::null_vertex()) {
-            this->exits_.insert({kern_stmt, this->users_.at(s).get()});
-            return {s, subgraph.second};
-        }
-
-        auto t = boost::add_vertex(this->graph_);
-        this->users_.insert({t, std::make_unique<User>(t, "", kern_stmt, Use::NOP)});
-        boost::add_edge(subgraph.second, t, this->graph_);
-        this->exits_.insert({kern_stmt, this->users_.at(t).get()});
-
-        return {s, t};
     } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&node)) {
         // NOP
         auto s = boost::add_vertex(this->graph_);

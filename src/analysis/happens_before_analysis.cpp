@@ -452,15 +452,6 @@ void HappensBeforeAnalysis::visit_return(
     open_reads_after_writes.clear();
 }
 
-void HappensBeforeAnalysis::visit_kernel(
-    analysis::Users& users, structured_control_flow::Kernel& kernel,
-    std::unordered_set<User*>& open_reads,
-    std::unordered_map<User*, std::unordered_set<User*>>& open_reads_after_writes,
-    std::unordered_map<User*, std::unordered_set<User*>>& closed_reads_after_write) {
-    visit_sequence(users, kernel.root(), open_reads, open_reads_after_writes,
-                   closed_reads_after_write);
-}
-
 void HappensBeforeAnalysis::visit_map(
     analysis::Users& users, structured_control_flow::Map& map,
     std::unordered_set<User*>& open_reads,
@@ -531,9 +522,6 @@ void HappensBeforeAnalysis::visit_sequence(
         } else if (auto return_statement =
                        dynamic_cast<structured_control_flow::Return*>(&child.first)) {
             visit_return(users, *return_statement, open_reads, open_reads_after_writes,
-                         closed_reads_after_write);
-        } else if (auto kernel = dynamic_cast<structured_control_flow::Kernel*>(&child.first)) {
-            visit_kernel(users, *kernel, open_reads, open_reads_after_writes,
                          closed_reads_after_write);
         } else if (auto sequence = dynamic_cast<structured_control_flow::Sequence*>(&child.first)) {
             visit_sequence(users, *sequence, open_reads, open_reads_after_writes,

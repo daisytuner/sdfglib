@@ -31,8 +31,6 @@ class AssumptionsAnalysis : public Analysis {
 
     void visit_for(structured_control_flow::For* for_loop);
 
-    void visit_kernel(const structured_control_flow::Kernel* kernel);
-
     void visit_map(const structured_control_flow::Map* map);
 
    protected:

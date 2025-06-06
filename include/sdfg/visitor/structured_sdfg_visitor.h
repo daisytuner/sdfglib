@@ -47,9 +47,6 @@ class StructuredSDFGVisitor {
                         structured_control_flow::Break& node);
 
     virtual bool accept(structured_control_flow::Sequence& parent,
-                        structured_control_flow::Kernel& node);
-
-    virtual bool accept(structured_control_flow::Sequence& parent,
                         structured_control_flow::Map& node);
 };
 

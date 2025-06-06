@@ -435,11 +435,11 @@ TEST(SymbolReplaceTest, KernelConversionTest) {
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
 
-    symbolic::Expression read_expr = symbolic::symbol("threadIdx.x");
+    symbolic::Expression read_expr = symbolic::threadIdx_x();
     auto& memlet_in =
         builder.add_memlet(block, access_node_in, "void", tasklet, "_in", {read_expr});
 
-    symbolic::Expression write_expr = symbolic::symbol("threadIdx.y");
+    symbolic::Expression write_expr = symbolic::threadIdx_y();
     symbolic::Expression write_expr2 = symbolic::symbol("blockIdx.y");
     auto& memlet_out = builder.add_memlet(block, access_node_out, "_out", tasklet, "void",
                                           {write_expr, write_expr2});

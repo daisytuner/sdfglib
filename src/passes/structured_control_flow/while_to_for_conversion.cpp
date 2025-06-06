@@ -285,8 +285,6 @@ bool WhileToForConversion::run_pass(builder::StructuredSDFGBuilder& builder,
             queue.push_back(&loop_stmt->root());
         } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(current)) {
             queue.push_back(&for_stmt->root());
-        } else if (auto kern_stmt = dynamic_cast<const structured_control_flow::Kernel*>(current)) {
-            queue.push_back(&kern_stmt->root());
         } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(current)) {
             queue.push_back(&map_stmt->root());
         }

@@ -25,8 +25,6 @@ void ScopeTreeAnalysis::run(structured_control_flow::ControlFlowNode* current,
     } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(current)) {
         this->scope_tree_[current] = parent_scope;
         this->run(&for_stmt->root(), current);
-    } else if (dynamic_cast<structured_control_flow::Kernel*>(current)) {
-        this->scope_tree_[current] = parent_scope;
     } else if (dynamic_cast<structured_control_flow::Break*>(current)) {
         this->scope_tree_[current] = parent_scope;
     } else if (dynamic_cast<structured_control_flow::Continue*>(current)) {
