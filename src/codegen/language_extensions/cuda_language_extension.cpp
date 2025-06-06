@@ -545,7 +545,7 @@ std::string CUDALanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
 std::string CUDALanguageExtension::library_node(const data_flow::LibraryNode& libnode) {
     data_flow::LibraryNodeType lib_node_type = libnode.call();
     switch (lib_node_type) {
-        case sdfg::data_flow::LibraryNodeType::LocalBarrier:
+        case sdfg::data_flow::LibraryNodeType::barrier_local:
             return "__syncthreads();";
         default:
             throw std::runtime_error("Unsupported library node type");

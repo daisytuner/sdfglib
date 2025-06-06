@@ -491,7 +491,7 @@ void Visualizer::visualizeForBounds(symbolic::Symbol const& indvar,
 
 void Visualizer::visualizeLibraryNode(const data_flow::LibraryNodeType libnode_type) {
     switch (libnode_type) {
-        case data_flow::LibraryNodeType::LocalBarrier:
+        case data_flow::LibraryNodeType::barrier_local:
             this->stream_ << "Local Barrier";
             break;
         default:

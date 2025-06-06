@@ -93,7 +93,7 @@ TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
         root, symbolic::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
 
     auto& lib_node =
-        builder.add_library_node(block, data_flow::LibraryNodeType::LocalBarrier, {}, {}, false);
+        builder.add_library_node(block, data_flow::LibraryNodeType::barrier_local, {}, {}, false);
 
     auto sdfg = builder.move();
 
@@ -107,7 +107,7 @@ TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
     EXPECT_EQ(block.dataflow().nodes().size(), 1);
     EXPECT_EQ(block.dataflow().edges().size(), 0);
     EXPECT_EQ(&(*block.dataflow().nodes().begin()), &lib_node);
-    EXPECT_EQ(lib_node.call(), data_flow::LibraryNodeType::LocalBarrier);
+    EXPECT_EQ(lib_node.call(), data_flow::LibraryNodeType::barrier_local);
 }
 
 TEST(StructuredSDFGBuilderTest, AddIfElse) {

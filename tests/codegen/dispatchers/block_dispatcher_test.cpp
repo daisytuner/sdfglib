@@ -115,7 +115,7 @@ TEST(DataFlowDispatcherTest, DispatchTasklet) {
               "_in2;\n\n    c = _out;\n}\n");
 }
 
-TEST(DataFlowDispatcherTest, DispatchLibraryNodeLocalBarrier) {
+TEST(DataFlowDispatcherTest, DispatchLibraryNodebarrier_local) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -123,7 +123,7 @@ TEST(DataFlowDispatcherTest, DispatchLibraryNodeLocalBarrier) {
     auto& block = builder.add_block(root);
 
     auto& library_node =
-        builder.add_library_node(block, data_flow::LibraryNodeType::LocalBarrier, {}, {});
+        builder.add_library_node(block, data_flow::LibraryNodeType::barrier_local, {}, {});
 
     auto final_sdfg = builder.move();
 
