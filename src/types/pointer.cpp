@@ -3,17 +3,15 @@
 namespace sdfg {
 namespace types {
 
-Pointer::Pointer(const IType& pointee_type, DeviceLocation device_location, uint address_space,
-                 const std::string& initializer, size_t alignment)
-    : pointee_type_(pointee_type.clone()),
-      device_location_(device_location),
-      address_space_(address_space),
-      initializer_(initializer),
-      alignment_(alignment) {};
+Pointer::Pointer(const IType& pointee_type) : pointee_type_(pointee_type.clone()) {};
+
+Pointer::Pointer(StorageType storage_type, size_t alignment, const std::string& initializer,
+                 const IType& pointee_type)
+    : IType(storage_type, alignment, initializer), pointee_type_(pointee_type.clone()) {};
 
 std::unique_ptr<IType> Pointer::clone() const {
-    return std::make_unique<Pointer>(*this->pointee_type_, this->device_location_,
-                                     this->address_space_, this->initializer_, this->alignment_);
+    return std::make_unique<Pointer>(this->storage_type(), this->alignment(), this->initializer(),
+                                     *this->pointee_type_);
 };
 
 PrimitiveType Pointer::primitive_type() const { return this->pointee_type_->primitive_type(); };
@@ -30,14 +28,6 @@ bool Pointer::operator==(const IType& other) const {
         return false;
     }
 };
-
-uint Pointer::address_space() const { return this->address_space_; };
-
-DeviceLocation Pointer::device_location() const { return this->device_location_; };
-
-std::string Pointer::initializer() const { return this->initializer_; }
-
-size_t Pointer::alignment() const { return this->alignment_; }
 
 std::string Pointer::print() const { return "Pointer(" + this->pointee_type_->print() + ")"; };
 

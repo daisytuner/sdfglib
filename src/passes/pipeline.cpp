@@ -84,6 +84,7 @@ Pipeline Pipeline::memlet_combine() {
     p.register_pass<ViewPropagation>();
     p.register_pass<ForwardMemletPropagation>();
     p.register_pass<BackwardMemletPropagation>();
+    p.register_pass<DeadReferenceElimination>();
 
     return p;
 };

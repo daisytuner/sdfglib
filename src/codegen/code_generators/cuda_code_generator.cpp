@@ -166,11 +166,11 @@ void CUDACodeGenerator::dispatch_globals() {
     auto& function = schedule_.schedule(0).sdfg();
     for (auto& container : function.externals()) {
         auto& type = function.type(container);
-        if (type.address_space() != 3 && type.address_space() != 4) {
+        if (type.storage_type() == types::StorageType::NV_Global) {
             this->globals_stream_ << "extern " << language_extension_.declaration(container, type)
                                   << ";" << std::endl;
         }
-        if (type.address_space() == 4) {
+        if (type.storage_type() == types::StorageType::NV_Constant) {
             assert(type.initializer().empty());
             this->globals_stream_ << "__constant__ "
                                   << language_extension_.declaration(container, type, true) << ";"
@@ -185,7 +185,7 @@ void CUDACodeGenerator::dispatch_schedule() {
     // Declare shared memory
     for (auto& container : function.externals()) {
         auto& type = function.type(container);
-        if (type.address_space() == 3) {
+        if (type.storage_type() == types::StorageType::NV_Shared) {
             this->main_stream_ << language_extension_.declaration(container,
                                                                   function.type(container))
                                << ";" << std::endl;

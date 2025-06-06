@@ -13,14 +13,12 @@ namespace types {
 class Structure : public IType {
    private:
     std::string name_;
-    DeviceLocation device_location_;
-    uint address_space_;
-    std::string initializer_;
-    size_t alignment_;
 
    public:
-    Structure(const std::string& name, DeviceLocation device_location = DeviceLocation::x86,
-              uint address_space = 0, const std::string& initializer = "", size_t alignment = 0);
+    Structure(const std::string& name);
+
+    Structure(StorageType storage_type, size_t alignment, const std::string& initializer,
+              const std::string& name);
 
     virtual PrimitiveType primitive_type() const override;
 
@@ -31,14 +29,6 @@ class Structure : public IType {
     virtual bool operator==(const IType& other) const override;
 
     virtual std::unique_ptr<IType> clone() const override;
-
-    virtual DeviceLocation device_location() const override;
-
-    virtual uint address_space() const override;
-
-    virtual std::string initializer() const override;
-
-    virtual size_t alignment() const override;
 
     virtual std::string print() const override;
 };

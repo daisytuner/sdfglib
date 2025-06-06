@@ -392,9 +392,9 @@ std::string CUDALanguageExtension::declaration(const std::string& name, const ty
     std::stringstream val;
 
     if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
-        if (type.address_space() == 3) {
+        if (scalar_type->storage_type() == types::StorageType::NV_Shared) {
             val << "__shared__ ";
-        } else if (type.address_space() == 4) {
+        } else if (scalar_type->storage_type() == types::StorageType::NV_Constant) {
             val << "__constant__ ";
         }
         val << primitive_type(scalar_type->primitive_type());
@@ -417,9 +417,9 @@ std::string CUDALanguageExtension::declaration(const std::string& name, const ty
     } else if (auto ref_type = dynamic_cast<const Reference*>(&type)) {
         val << declaration("&" + name, ref_type->reference_type());
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
-        if (type.address_space() == 3) {
+        if (structure_type->storage_type() == types::StorageType::NV_Shared) {
             val << "__shared__ ";
-        } else if (type.address_space() == 4) {
+        } else if (structure_type->storage_type() == types::StorageType::NV_Constant) {
             val << "__constant__ ";
         }
         val << structure_type->name();

@@ -89,7 +89,9 @@ struct MyStructA member_0;
 TEST(CUDACodeGeneratorTest, DispatchGlobals) {
     builder::StructuredSDFGBuilder builder("sdfg_a");
 
-    builder.add_container("a", types::Scalar(types::PrimitiveType::Int32), false, true);
+    builder.add_container(
+        "a", types::Scalar(types::StorageType::NV_Global, 0, "", types::PrimitiveType::Int32),
+        false, true);
 
     auto sdfg = builder.move();
 

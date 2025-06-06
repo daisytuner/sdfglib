@@ -38,7 +38,7 @@ enum PrimitiveType {
     PPC_FP128
 };
 
-enum DeviceLocation { x86, nvptx };
+enum StorageType { CPU_Stack, CPU_Heap, NV_Generic, NV_Shared, NV_Global, NV_Constant };
 
 constexpr const char* primitive_type_to_string(PrimitiveType e) {
     switch (e) {
@@ -267,24 +267,31 @@ constexpr PrimitiveType as_unsigned(PrimitiveType e) noexcept {
 };
 
 class IType {
+   protected:
+    StorageType storage_type_;
+    size_t alignment_;
+    std::string initializer_;
+
    public:
+    IType(StorageType storage_type = StorageType::CPU_Stack, size_t alignment = 0,
+          const std::string& initializer = "")
+        : storage_type_(storage_type), alignment_(alignment), initializer_(initializer) {};
+
     virtual ~IType() = default;
 
+    StorageType storage_type() const { return storage_type_; };
+
+    size_t alignment() const { return alignment_; };
+
+    std::string initializer() const { return initializer_; };
+
     virtual PrimitiveType primitive_type() const = 0;
-
-    virtual DeviceLocation device_location() const = 0;
-
-    virtual uint address_space() const = 0;
 
     virtual bool is_symbol() const = 0;
 
     virtual bool operator==(const IType& other) const = 0;
 
     virtual std::unique_ptr<IType> clone() const = 0;
-
-    virtual std::string initializer() const = 0;
-
-    virtual size_t alignment() const = 0;
 
     virtual std::string print() const = 0;
 

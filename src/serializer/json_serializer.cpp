@@ -355,9 +355,8 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
     if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
         j["type"] = "scalar";
         j["primitive_type"] = scalar_type->primitive_type();
-        j["address_space"] = scalar_type->address_space();
+        j["storage_type"] = scalar_type->storage_type();
         j["initializer"] = scalar_type->initializer();
-        j["device_location"] = scalar_type->device_location();
         j["alignment"] = scalar_type->alignment();
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
         j["type"] = "array";
@@ -365,25 +364,22 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
         type_to_json(element_type_json, array_type->element_type());
         j["element_type"] = element_type_json;
         j["num_elements"] = expression(array_type->num_elements());
-        j["address_space"] = array_type->address_space();
+        j["storage_type"] = array_type->storage_type();
         j["initializer"] = array_type->initializer();
-        j["device_location"] = array_type->device_location();
         j["alignment"] = array_type->alignment();
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         j["type"] = "pointer";
         nlohmann::json pointee_type_json;
         type_to_json(pointee_type_json, pointer_type->pointee_type());
         j["pointee_type"] = pointee_type_json;
-        j["address_space"] = pointer_type->address_space();
+        j["storage_type"] = pointer_type->storage_type();
         j["initializer"] = pointer_type->initializer();
-        j["device_location"] = pointer_type->device_location();
         j["alignment"] = pointer_type->alignment();
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
         j["type"] = "structure";
         j["name"] = structure_type->name();
-        j["address_space"] = structure_type->address_space();
+        j["storage_type"] = structure_type->storage_type();
         j["initializer"] = structure_type->initializer();
-        j["device_location"] = structure_type->device_location();
         j["alignment"] = structure_type->alignment();
     } else if (auto function_type = dynamic_cast<const types::Function*>(&type)) {
         j["type"] = "function";
@@ -397,9 +393,8 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
             j["params"].push_back(param_json);
         }
         j["is_var_arg"] = function_type->is_var_arg();
-        j["address_space"] = function_type->address_space();
+        j["storage_type"] = function_type->storage_type();
         j["initializer"] = function_type->initializer();
-        j["device_location"] = function_type->device_location();
         j["alignment"] = function_type->alignment();
     } else {
         throw std::runtime_error("Unknown type");
@@ -869,16 +864,15 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             // Deserialize scalar type
             assert(j.contains("primitive_type"));
             types::PrimitiveType primitive_type = j["primitive_type"];
-            assert(j.contains("device_location"));
-            types::DeviceLocation device_location = j["device_location"];
-            assert(j.contains("address_space"));
-            uint address_space = j["address_space"];
+            assert(j.contains("storage_type"));
+            types::StorageType storage_type = j["storage_type"];
+            ;
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
             size_t alignment = j["alignment"];
-            return std::make_unique<types::Scalar>(primitive_type, device_location, address_space,
-                                                   initializer, alignment);
+            return std::make_unique<types::Scalar>(storage_type, alignment, initializer,
+                                                   primitive_type);
         } else if (j["type"] == "array") {
             // Deserialize array type
             assert(j.contains("element_type"));
@@ -887,44 +881,37 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             std::string num_elements_str = j["num_elements"];
             // Convert num_elements_str to symbolic::Expression
             SymEngine::Expression num_elements(num_elements_str);
-            assert(j.contains("address_space"));
-            uint address_space = j["address_space"];
+            assert(j.contains("storage_type"));
+            types::StorageType storage_type = j["storage_type"];
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
-            assert(j.contains("device_location"));
-            types::DeviceLocation device_location = j["device_location"];
             assert(j.contains("alignment"));
             size_t alignment = j["alignment"];
-            return std::make_unique<types::Array>(*member_type, num_elements, device_location,
-                                                  address_space, initializer, alignment);
+            return std::make_unique<types::Array>(storage_type, alignment, initializer,
+                                                  *member_type, num_elements);
         } else if (j["type"] == "pointer") {
             // Deserialize pointer type
             assert(j.contains("pointee_type"));
             std::unique_ptr<types::IType> pointee_type = json_to_type(j["pointee_type"]);
-            assert(j.contains("address_space"));
-            uint address_space = j["address_space"];
+            assert(j.contains("storage_type"));
+            types::StorageType storage_type = j["storage_type"];
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
-            assert(j.contains("device_location"));
-            types::DeviceLocation device_location = j["device_location"];
             assert(j.contains("alignment"));
             size_t alignment = j["alignment"];
-            return std::make_unique<types::Pointer>(*pointee_type, device_location, address_space,
-                                                    initializer, alignment);
+            return std::make_unique<types::Pointer>(storage_type, alignment, initializer,
+                                                    *pointee_type);
         } else if (j["type"] == "structure") {
             // Deserialize structure type
             assert(j.contains("name"));
             std::string name = j["name"];
-            assert(j.contains("address_space"));
-            uint address_space = j["address_space"];
+            assert(j.contains("storage_type"));
+            types::StorageType storage_type = j["storage_type"];
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
-            assert(j.contains("device_location"));
-            types::DeviceLocation device_location = j["device_location"];
             assert(j.contains("alignment"));
             size_t alignment = j["alignment"];
-            return std::make_unique<types::Structure>(name, device_location, address_space,
-                                                      initializer, alignment);
+            return std::make_unique<types::Structure>(storage_type, alignment, initializer, name);
         } else if (j["type"] == "function") {
             // Deserialize function type
             assert(j.contains("return_type"));
@@ -936,16 +923,14 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             }
             assert(j.contains("is_var_arg"));
             bool is_var_arg = j["is_var_arg"];
-            assert(j.contains("address_space"));
-            uint address_space = j["address_space"];
+            assert(j.contains("storage_type"));
+            types::StorageType storage_type = j["storage_type"];
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
-            assert(j.contains("device_location"));
-            types::DeviceLocation device_location = j["device_location"];
             assert(j.contains("alignment"));
             size_t alignment = j["alignment"];
-            auto function = std::make_unique<types::Function>(
-                *return_type, is_var_arg, device_location, address_space, initializer, alignment);
+            auto function = std::make_unique<types::Function>(storage_type, alignment, initializer,
+                                                              *return_type, is_var_arg);
             for (const auto& param : params) {
                 function->add_param(*param);
             }

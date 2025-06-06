@@ -237,17 +237,18 @@ void KernelLocalStorage::apply(Schedule& schedule) {
     const types::Scalar* base_type =
         static_cast<const types::Scalar*>(&pointer->pointee_type());  // must be scalar or struct
 
-    const types::Scalar type(base_type->primitive_type(), types::DeviceLocation::nvptx, 3);
+    const types::Scalar type(types::StorageType::NV_Shared, base_type->alignment(), "",
+                             base_type->primitive_type());
 
     // Allocate shared memory before the outer loop, starting from z, y, x, iteration_count
-    types::Array shared_memory(type, std::get<0>(shared_memory_shape), types::DeviceLocation::nvptx,
-                               3);
-    types::Array shared_memory_x(shared_memory, std::get<1>(shared_memory_shape),
-                                 types::DeviceLocation::nvptx, 3);
-    types::Array shared_memory_y(shared_memory_x, std::get<2>(shared_memory_shape),
-                                 types::DeviceLocation::nvptx, 3);
-    types::Array shared_memory_z(shared_memory_y, std::get<3>(shared_memory_shape),
-                                 types::DeviceLocation::nvptx, 3);
+    types::Array shared_memory(types::StorageType::NV_Shared, type.alignment(), "", type,
+                               std::get<0>(shared_memory_shape));
+    types::Array shared_memory_x(types::StorageType::NV_Shared, type.alignment(), "", shared_memory,
+                                 std::get<1>(shared_memory_shape));
+    types::Array shared_memory_y(types::StorageType::NV_Shared, type.alignment(), "",
+                                 shared_memory_x, std::get<2>(shared_memory_shape));
+    types::Array shared_memory_z(types::StorageType::NV_Shared, type.alignment(), "",
+                                 shared_memory_y, std::get<3>(shared_memory_shape));
 
     builder.add_container("__daisy_share_" + this->container_, shared_memory_z);
 
@@ -266,24 +267,28 @@ void KernelLocalStorage::apply(Schedule& schedule) {
         }
     }
     if (!has_tid_x) {
-        builder.add_container(kernel->threadIdx_x()->get_name(),
-                              types::Scalar(types::PrimitiveType::Int32));
+        builder.add_container(
+            kernel->threadIdx_x()->get_name(),
+            types::Scalar(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32));
     }
     if (!has_tid_y) {
-        builder.add_container(kernel->threadIdx_y()->get_name(),
-                              types::Scalar(types::PrimitiveType::Int32));
+        builder.add_container(
+            kernel->threadIdx_y()->get_name(),
+            types::Scalar(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32));
     }
     if (!has_tid_z) {
-        builder.add_container(kernel->threadIdx_z()->get_name(),
-                              types::Scalar(types::PrimitiveType::Int32));
+        builder.add_container(
+            kernel->threadIdx_z()->get_name(),
+            types::Scalar(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32));
     }
 
     // Deconstrunct array accesses into dimensions
     // Read from global memory to shared memory. Ensure the data access bounds are correct
     auto& outer_body = this->outer_loop_.root();
 
-    builder.add_container("__daisy_shared_indvar_" + this->container_,
-                          types::Scalar(types::Scalar(types::PrimitiveType::Int32)));
+    builder.add_container(
+        "__daisy_shared_indvar_" + this->container_,
+        types::Scalar(types::StorageType::NV_Generic, 0, "", types::PrimitiveType::Int32));
 
     symbolic::Symbol indvar = symbolic::symbol("__daisy_shared_indvar_" + this->container_);
     symbolic::Expression init_expr =
