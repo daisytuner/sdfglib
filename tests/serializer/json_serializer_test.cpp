@@ -9,7 +9,6 @@
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
-#include "sdfg/structured_control_flow/kernel.h"
 #include "sdfg/structured_control_flow/return.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
@@ -423,38 +422,6 @@ TEST(JSONSerializerTest, WhileToJSON_continue) {
     EXPECT_EQ(j["root"]["children"].size(), 2);
     EXPECT_EQ(j["root"]["children"][0]["type"], "block");
     EXPECT_EQ(j["root"]["children"][1]["type"], "continue");
-}
-
-TEST(JSONSerializerTest, KernelToJSON) {
-    // Create a sample Kernel node
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType::CPU);
-    auto& root = builder.subject().root();
-
-    types::Scalar sym_desc(types::PrimitiveType::UInt64);
-    builder.add_container("i", sym_desc);
-
-    auto& kernel = builder.add_kernel(root, "suffix");
-    auto& body = builder.add_block(kernel.root());
-
-    // Create a JSONSerializer object
-    std::string filename = "test_sdfg.json";
-    auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer;
-
-    // Serialize the Kernel node to JSON
-    nlohmann::json j;
-    serializer.kernel_to_json(j, kernel);
-
-    // Check if the JSON contains the expected keys
-    EXPECT_TRUE(j.contains("type"));
-    EXPECT_EQ(j["type"], "kernel");
-    EXPECT_TRUE(j.contains("suffix"));
-    EXPECT_EQ(j["suffix"], "suffix");
-
-    EXPECT_TRUE(j.contains("root"));
-    EXPECT_EQ(j["root"]["type"], "sequence");
-    EXPECT_EQ(j["root"]["children"].size(), 1);
-    EXPECT_EQ(j["root"]["children"][0]["type"], "block");
 }
 
 TEST(JSONSerializerTest, ReturnToJSON) {
@@ -1627,57 +1594,6 @@ TEST(JSONSerializerTest, SerializeDeserialize_while_continue) {
     EXPECT_EQ(des_while.root().size(), 1);
     auto& des_continue =
         dynamic_cast<sdfg::structured_control_flow::Continue&>(des_while.root().at(0).first);
-}
-
-TEST(JSONSerializerTest, SerializeDeserialize_kernel) {
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType::CPU);
-    auto& root = builder.subject().root();
-
-    auto& kernel = builder.add_kernel(root, builder.subject().name());
-    auto& block = builder.add_block(kernel.root());
-
-    // Create a JSONSerializer object
-    std::string filename = "test_sdfg.json";
-    auto sdfg = builder.move();
-    sdfg::serializer::JSONSerializer serializer;
-
-    // Serialize the Sequence node to JSON
-    nlohmann::json j;
-    serializer.kernel_to_json(j, kernel);
-
-    // Deserialize the JSON back into a Sequence node
-    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType::CPU);
-
-    symbolic::Assignments assignments;
-    serializer.json_to_kernel_node(j, des_builder, des_builder.subject().root(), assignments);
-    auto des_sdfg = des_builder.move();
-    EXPECT_EQ(des_sdfg->name(), sdfg->name());
-    EXPECT_EQ(des_sdfg->containers().size(), 0);
-    EXPECT_EQ(des_sdfg->root().size(), 1);
-    EXPECT_TRUE(dynamic_cast<sdfg::structured_control_flow::Kernel*>(
-                    &des_sdfg->root().at(0).first) != nullptr);
-    auto& des_kernel =
-        dynamic_cast<sdfg::structured_control_flow::Kernel&>(des_sdfg->root().at(0).first);
-    EXPECT_TRUE(symbolic::eq(des_kernel.blockDim_x_init(), kernel.blockDim_x_init()));
-    EXPECT_TRUE(symbolic::eq(des_kernel.blockDim_y_init(), kernel.blockDim_y_init()));
-    EXPECT_TRUE(symbolic::eq(des_kernel.blockDim_z_init(), kernel.blockDim_z_init()));
-    EXPECT_TRUE(symbolic::eq(des_kernel.gridDim_x_init(), kernel.gridDim_x_init()));
-    EXPECT_TRUE(symbolic::eq(des_kernel.gridDim_y_init(), kernel.gridDim_y_init()));
-    EXPECT_TRUE(symbolic::eq(des_kernel.gridDim_z_init(), kernel.gridDim_z_init()));
-
-    EXPECT_TRUE(symbolic::eq(des_kernel.threadIdx_x_init(), kernel.threadIdx_x_init()));
-    EXPECT_TRUE(symbolic::eq(des_kernel.threadIdx_y_init(), kernel.threadIdx_y_init()));
-    EXPECT_TRUE(symbolic::eq(des_kernel.threadIdx_z_init(), kernel.threadIdx_z_init()));
-    EXPECT_TRUE(symbolic::eq(des_kernel.blockIdx_x_init(), kernel.blockIdx_x_init()));
-    EXPECT_TRUE(symbolic::eq(des_kernel.blockIdx_y_init(), kernel.blockIdx_y_init()));
-    EXPECT_TRUE(symbolic::eq(des_kernel.blockIdx_z_init(), kernel.blockIdx_z_init()));
-
-    EXPECT_EQ(des_kernel.suffix(), kernel.suffix());
-
-    EXPECT_TRUE(dynamic_cast<sdfg::structured_control_flow::Block*>(
-                    &des_kernel.root().at(0).first) != nullptr);
-    auto& des_block_new =
-        dynamic_cast<sdfg::structured_control_flow::Block&>(des_kernel.root().at(0).first);
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize_Map) {

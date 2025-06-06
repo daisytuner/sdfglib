@@ -3,7 +3,6 @@
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 #include "sdfg/codegen/dispatchers/for_dispatcher.h"
 #include "sdfg/codegen/dispatchers/if_else_dispatcher.h"
-#include "sdfg/codegen/dispatchers/kernel_dispatcher.h"
 #include "sdfg/codegen/dispatchers/map_dispatcher.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher.h"
 #include "sdfg/codegen/dispatchers/sequence_dispatcher.h"
@@ -40,9 +39,6 @@ inline std::unique_ptr<NodeDispatcher> create_dispatcher(
     } else if (auto continue_node = dynamic_cast<structured_control_flow::Continue*>(&node)) {
         return std::make_unique<ContinueDispatcher>(language_extension, schedule, *continue_node,
                                                     instrumentation);
-    } else if (auto kernel_node = dynamic_cast<structured_control_flow::Kernel*>(&node)) {
-        return std::make_unique<KernelDispatcher>(language_extension, schedule, *kernel_node,
-                                                  instrumentation);
     } else if (auto map_node = dynamic_cast<structured_control_flow::Map*>(&node)) {
         return std::make_unique<MapDispatcher>(language_extension, schedule, *map_node,
                                                instrumentation);

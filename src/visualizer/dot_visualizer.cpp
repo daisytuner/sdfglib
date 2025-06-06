@@ -40,7 +40,7 @@ void DotVisualizer::visualizeBlock(Schedule& schedule, structured_control_flow::
                     dynamic_cast<data_flow::AccessNode const&>(iedge.src());
                 this->stream_ << src.element_id() << " -> " << tasklet->element_id()
                               << " [label=\"   " << iedge.dst_conn() << " = " << src.data();
-                if (!symbolic::is_nvptx(symbolic::symbol(src.data()))) {
+                if (!symbolic::is_nv(symbolic::symbol(src.data()))) {
                     types::IType const& type = schedule.sdfg().type(src.data());
                     this->visualizeSubset(schedule.sdfg(), type, iedge.subset());
                 }
@@ -176,80 +176,6 @@ void DotVisualizer::visualizeContinue(Schedule& schedule,
                   << std::endl;
     this->last_comp_name_ = continue_node.element_id();
     this->last_comp_name_cluster_.clear();
-}
-
-void DotVisualizer::visualizeKernel(Schedule& schedule,
-                                    structured_control_flow::Kernel& kernel_node) {
-    bool gridDim_x = false;
-    bool gridDim_y = false;
-    bool gridDim_z = false;
-    bool blockDim_x = false;
-    bool blockDim_y = false;
-    bool blockDim_z = false;
-    bool blockIdx_x = false;
-    bool blockIdx_y = false;
-    bool blockIdx_z = false;
-    bool threadIdx_x = false;
-    bool threadIdx_y = false;
-    bool threadIdx_z = false;
-
-    for (std::string const& container : schedule.sdfg().containers()) {
-        gridDim_x = gridDim_x || (container == kernel_node.gridDim_x()->get_name());
-        gridDim_y = gridDim_y || (container == kernel_node.gridDim_y()->get_name());
-        gridDim_z = gridDim_z || (container == kernel_node.gridDim_z()->get_name());
-        blockDim_x = blockDim_x || (container == kernel_node.blockDim_x()->get_name());
-        blockDim_y = blockDim_y || (container == kernel_node.blockDim_y()->get_name());
-        blockDim_z = blockDim_z || (container == kernel_node.blockDim_z()->get_name());
-        blockIdx_x = blockIdx_x || (container == kernel_node.blockIdx_x()->get_name());
-        blockIdx_y = blockIdx_y || (container == kernel_node.blockIdx_y()->get_name());
-        blockIdx_z = blockIdx_z || (container == kernel_node.blockIdx_z()->get_name());
-        threadIdx_x = threadIdx_x || (container == kernel_node.threadIdx_x()->get_name());
-        threadIdx_y = threadIdx_y || (container == kernel_node.threadIdx_y()->get_name());
-        threadIdx_z = threadIdx_z || (container == kernel_node.threadIdx_z()->get_name());
-    }
-
-    size_t replacements_size_before = this->replacements_.size();
-
-    if (gridDim_x)
-        this->replacements_.push_back(
-            {kernel_node.gridDim_x()->get_name(), kernel_node.gridDim_x_init()->__str__()});
-    if (gridDim_y)
-        this->replacements_.push_back(
-            {kernel_node.gridDim_y()->get_name(), kernel_node.gridDim_y_init()->__str__()});
-    if (gridDim_z)
-        this->replacements_.push_back(
-            {kernel_node.gridDim_z()->get_name(), kernel_node.gridDim_z_init()->__str__()});
-    if (blockDim_x)
-        this->replacements_.push_back(
-            {kernel_node.blockDim_x()->get_name(), kernel_node.blockDim_x_init()->__str__()});
-    if (blockDim_y)
-        this->replacements_.push_back(
-            {kernel_node.blockDim_y()->get_name(), kernel_node.blockDim_y_init()->__str__()});
-    if (blockDim_z)
-        this->replacements_.push_back(
-            {kernel_node.blockDim_z()->get_name(), kernel_node.blockDim_z_init()->__str__()});
-    if (blockIdx_x)
-        this->replacements_.push_back(
-            {kernel_node.blockIdx_x()->get_name(), kernel_node.blockIdx_x_init()->__str__()});
-    if (blockIdx_y)
-        this->replacements_.push_back(
-            {kernel_node.blockIdx_y()->get_name(), kernel_node.blockIdx_y_init()->__str__()});
-    if (blockIdx_z)
-        this->replacements_.push_back(
-            {kernel_node.blockIdx_z()->get_name(), kernel_node.blockIdx_z_init()->__str__()});
-    if (threadIdx_x)
-        this->replacements_.push_back(
-            {kernel_node.threadIdx_x()->get_name(), kernel_node.threadIdx_x_init()->__str__()});
-    if (threadIdx_y)
-        this->replacements_.push_back(
-            {kernel_node.threadIdx_y()->get_name(), kernel_node.threadIdx_y_init()->__str__()});
-    if (threadIdx_z)
-        this->replacements_.push_back(
-            {kernel_node.threadIdx_z()->get_name(), kernel_node.threadIdx_z_init()->__str__()});
-
-    this->visualizeSequence(schedule, kernel_node.root());
-
-    this->replacements_.resize(replacements_size_before);
 }
 
 void DotVisualizer::visualizeMap(Schedule& schedule, structured_control_flow::Map& map_node) {

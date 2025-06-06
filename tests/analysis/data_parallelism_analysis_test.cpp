@@ -1635,11 +1635,10 @@ TEST(TestDataParallelism, Map_2D_Linearized) {
 }
 
 TEST(TestDataParallelism, KernelTestBasic) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::NV_GLOBAL);
 
     auto& sdfg = builder.subject();
-    auto& kernel = builder.convert_into_kernel();
-    auto& root = kernel.root();
+    auto& root = sdfg.root();
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
@@ -1666,12 +1665,14 @@ TEST(TestDataParallelism, KernelTestBasic) {
     auto& B = builder.add_access(block, "B");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"_in", base_desc}});
-    builder.add_memlet(block, A, "void", tasklet, "_in",
-                       {symbolic::add(kernel.threadIdx_x(),
-                                      symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x()))});
-    builder.add_memlet(block, tasklet, "_out", B, "void",
-                       {symbolic::add(kernel.threadIdx_x(),
-                                      symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x()))});
+    builder.add_memlet(
+        block, A, "void", tasklet, "_in",
+        {symbolic::add(symbolic::threadIdx_x(),
+                       symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x")))});
+    builder.add_memlet(
+        block, tasklet, "_out", B, "void",
+        {symbolic::add(symbolic::threadIdx_x(),
+                       symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x")))});
 
     auto& graph = block.dataflow();
     EXPECT_EQ(graph.nodes().size(), 3);
@@ -1689,11 +1690,10 @@ TEST(TestDataParallelism, KernelTestBasic) {
 }
 
 TEST(TestDataParallelism, KernelTest) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::NV_GLOBAL);
 
     auto& sdfg = builder.subject();
-    auto& kernel = builder.convert_into_kernel();
-    auto& root = kernel.root();
+    auto& root = sdfg.root();
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
@@ -1722,16 +1722,18 @@ TEST(TestDataParallelism, KernelTest) {
                                         {{"_in", base_desc}});
     builder.add_memlet(
         block, A, "void", tasklet, "_in",
-        {symbolic::add(indvar, symbolic::mul(symbolic::integer(512),
-                                             symbolic::add(kernel.threadIdx_x(),
-                                                           symbolic::mul(kernel.blockDim_x(),
-                                                                         kernel.blockIdx_x()))))});
+        {symbolic::add(
+            indvar, symbolic::mul(symbolic::integer(512),
+                                  symbolic::add(symbolic::threadIdx_x(),
+                                                symbolic::mul(symbolic::blockDim_x(),
+                                                              symbolic::symbol("blockIdx.x")))))});
     builder.add_memlet(
         block, tasklet, "_out", B, "void",
-        {symbolic::add(indvar, symbolic::mul(symbolic::integer(512),
-                                             symbolic::add(kernel.threadIdx_x(),
-                                                           symbolic::mul(kernel.blockDim_x(),
-                                                                         kernel.blockIdx_x()))))});
+        {symbolic::add(
+            indvar, symbolic::mul(symbolic::integer(512),
+                                  symbolic::add(symbolic::threadIdx_x(),
+                                                symbolic::mul(symbolic::blockDim_x(),
+                                                              symbolic::symbol("blockIdx.x")))))});
 
     auto& graph = block.dataflow();
     EXPECT_EQ(graph.nodes().size(), 3);
@@ -1749,11 +1751,10 @@ TEST(TestDataParallelism, KernelTest) {
 }
 
 TEST(TestDataParallelism, KernelTestMult) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::NV_GLOBAL);
 
     auto& sdfg = builder.subject();
-    auto& kernel = builder.convert_into_kernel();
-    auto& root = kernel.root();
+    auto& root = sdfg.root();
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
@@ -1781,16 +1782,18 @@ TEST(TestDataParallelism, KernelTestMult) {
                                         {{"_in", base_desc}});
     builder.add_memlet(
         block, A, "void", tasklet, "_in",
-        {symbolic::add(symbolic::mul(symbolic::integer(512), indvar),
-                       symbolic::add(kernel.threadIdx_x(),
-                                     symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x())))});
+        {symbolic::add(
+            symbolic::mul(symbolic::integer(512), indvar),
+            symbolic::add(symbolic::threadIdx_x(),
+                          symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x"))))});
 
     auto& B = builder.add_access(block, "B");
     builder.add_memlet(
         block, tasklet, "_out", B, "void",
-        {symbolic::add(symbolic::mul(symbolic::integer(512), indvar),
-                       symbolic::add(kernel.threadIdx_x(),
-                                     symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x())))});
+        {symbolic::add(
+            symbolic::mul(symbolic::integer(512), indvar),
+            symbolic::add(symbolic::threadIdx_x(),
+                          symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x"))))});
 
     auto& graph = block.dataflow();
     EXPECT_EQ(graph.nodes().size(), 3);
@@ -1808,11 +1811,10 @@ TEST(TestDataParallelism, KernelTestMult) {
 }
 
 TEST(TestDataParallelism, KernelTestTiled) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::NV_GLOBAL);
 
     auto& sdfg = builder.subject();
-    auto& kernel = builder.convert_into_kernel();
-    auto& root = kernel.root();
+    auto& root = sdfg.root();
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
@@ -1859,13 +1861,14 @@ TEST(TestDataParallelism, KernelTestTiled) {
 
     auto& shared_in = builder.add_memlet(
         block_shared, B, "void", tasklet_shared, "_in",
-        {symbolic::add(symbolic::mul(symbolic::integer(512), indvar_shared),
-                       symbolic::add(kernel.threadIdx_x(),
-                                     symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x())))});
+        {symbolic::add(
+            symbolic::mul(symbolic::integer(512), indvar_shared),
+            symbolic::add(symbolic::threadIdx_x(),
+                          symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x"))))});
 
     auto& shared_out =
         builder.add_memlet(block_shared, tasklet_shared, "_out", B_shared, "void",
-                           {kernel.threadIdx_x(), symbolic::sub(indvar_shared, indvar)});
+                           {symbolic::threadIdx_x(), symbolic::sub(indvar_shared, indvar)});
 
     auto& sync_block = builder.add_block(body);
     auto& libnode =
@@ -1891,13 +1894,14 @@ TEST(TestDataParallelism, KernelTestTiled) {
 
     auto& access_in =
         builder.add_memlet(block_access, B_shared_access, "void", tasklet_access, "_in",
-                           {kernel.threadIdx_x(), symbolic::sub(indvar_access, indvar)});
+                           {symbolic::threadIdx_x(), symbolic::sub(indvar_access, indvar)});
 
     auto& access_out = builder.add_memlet(
         block_access, tasklet_access, "_out", A, "void",
-        {symbolic::add(symbolic::mul(symbolic::integer(512), indvar_access),
-                       symbolic::add(kernel.threadIdx_x(),
-                                     symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x())))});
+        {symbolic::add(
+            symbolic::mul(symbolic::integer(512), indvar_access),
+            symbolic::add(symbolic::threadIdx_x(),
+                          symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x"))))});
 
     auto& graph_shared = block_shared.dataflow();
     EXPECT_EQ(graph_shared.nodes().size(), 3);

@@ -157,21 +157,3 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Continue) {
                                                  continue_node, instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::ContinueDispatcher*>(dispatcher.get()));
 }
-
-TEST(NodeDispatcherFactoryTest, CreateDispatch_Kernel) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
-    auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
-
-    auto& kernel_node = builder.add_kernel(root, "__daisy_generated_kernel");
-
-    auto final_sdfg = builder.move();
-
-    ConditionalSchedule schedule(final_sdfg);
-
-    codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(schedule.schedule(0));
-    auto dispatcher = codegen::create_dispatcher(language_extension, schedule.schedule(0),
-                                                 kernel_node, instrumentation);
-    EXPECT_TRUE(dynamic_cast<codegen::KernelDispatcher*>(dispatcher.get()));
-}

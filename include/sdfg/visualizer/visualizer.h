@@ -15,7 +15,6 @@
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
-#include "sdfg/structured_control_flow/kernel.h"
 #include "sdfg/structured_control_flow/return.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
@@ -45,8 +44,6 @@ class Visualizer {
     virtual void visualizeBreak(Schedule& schedule, structured_control_flow::Break& break_node) = 0;
     virtual void visualizeContinue(Schedule& schedule,
                                    structured_control_flow::Continue& continue_node) = 0;
-    virtual void visualizeKernel(Schedule& schedule,
-                                 structured_control_flow::Kernel& kernel_node) = 0;
     virtual void visualizeMap(Schedule& schedule, structured_control_flow::Map& map_node) = 0;
 
     virtual void visualizeTasklet(data_flow::Tasklet const& tasklet);

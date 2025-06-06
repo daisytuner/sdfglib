@@ -15,12 +15,24 @@
 using namespace sdfg;
 
 TEST(KernelLocalStorageTest, Basic) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::NV_GLOBAL);
 
     auto& sdfg = builder.subject();
-    auto& kernel = builder.add_kernel(
-        sdfg.root(), sdfg.name(), DebugInfo(), symbolic::integer(1), symbolic::integer(1),
-        symbolic::integer(1), symbolic::integer(32), symbolic::integer(8), symbolic::integer(2));
+
+    // Add assumptions about grid and block dims
+    sdfg.assumption(symbolic::gridDim_x()).lower_bound(symbolic::integer(1));
+    sdfg.assumption(symbolic::gridDim_x()).upper_bound(symbolic::integer(1));
+    sdfg.assumption(symbolic::gridDim_y()).lower_bound(symbolic::integer(1));
+    sdfg.assumption(symbolic::gridDim_y()).upper_bound(symbolic::integer(1));
+    sdfg.assumption(symbolic::gridDim_z()).lower_bound(symbolic::integer(1));
+    sdfg.assumption(symbolic::gridDim_z()).upper_bound(symbolic::integer(1));
+
+    sdfg.assumption(symbolic::blockDim_x()).lower_bound(symbolic::integer(32));
+    sdfg.assumption(symbolic::blockDim_x()).upper_bound(symbolic::integer(32));
+    sdfg.assumption(symbolic::blockDim_y()).lower_bound(symbolic::integer(8));
+    sdfg.assumption(symbolic::blockDim_y()).upper_bound(symbolic::integer(8));
+    sdfg.assumption(symbolic::blockDim_z()).lower_bound(symbolic::integer(2));
+    sdfg.assumption(symbolic::blockDim_z()).upper_bound(symbolic::integer(2));
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
@@ -38,7 +50,7 @@ TEST(KernelLocalStorageTest, Basic) {
     auto condition = symbolic::Lt(indvar, bound);
     auto update = symbolic::add(indvar, symbolic::integer(1));
 
-    auto& loop = builder.add_for(kernel.root(), indvar, condition, init, update);
+    auto& loop = builder.add_for(sdfg.root(), indvar, condition, init, update);
     auto& body = loop.root();
 
     // Add computation
@@ -57,7 +69,7 @@ TEST(KernelLocalStorageTest, Basic) {
     auto& builder_opt = schedule->builder();
 
     // Apply
-    transformations::LoopTiling transformation(kernel.root(), loop, 32);
+    transformations::LoopTiling transformation(sdfg.root(), loop, 32);
     EXPECT_TRUE(transformation.can_be_applied(*schedule));
     transformation.apply(*schedule);
 
@@ -121,15 +133,17 @@ TEST(KernelLocalStorageTest, Basic) {
 
     auto subset_x = symbolic::add(
         inner_loop->indvar(),
-        symbolic::mul(symbolic::integer(512),
-                      symbolic::add(kernel.threadIdx_x(),
-                                    symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x()))));
+        symbolic::mul(
+            symbolic::integer(512),
+            symbolic::add(symbolic::threadIdx_x(),
+                          symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x")))));
     auto subset_y = symbolic::add(
-        symbolic::add(kernel.threadIdx_y(),
-                      symbolic::mul(kernel.blockDim_y(), kernel.blockIdx_y())),
-        symbolic::mul(symbolic::integer(512),
-                      symbolic::add(kernel.threadIdx_x(),
-                                    symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x()))));
+        symbolic::add(symbolic::threadIdx_y(),
+                      symbolic::mul(symbolic::blockDim_y(), symbolic::symbol("blockIdx.y"))),
+        symbolic::mul(
+            symbolic::integer(512),
+            symbolic::add(symbolic::threadIdx_x(),
+                          symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x")))));
 
     builder_opt.add_memlet(inner_block, xread, "void", inner_tasklet, "_in1", {subset_x});
     builder_opt.add_memlet(inner_block, yread, "void", inner_tasklet, "_in2", {subset_y});
@@ -138,7 +152,7 @@ TEST(KernelLocalStorageTest, Basic) {
 
     builder_opt.add_memlet(inner_block, inner_tasklet, "_out", ywrite, "void", {subset_y});
 
-    transformations::KernelLocalStorage transformation2(kernel.root(), loop, *inner_loop, "x");
+    transformations::KernelLocalStorage transformation2(sdfg.root(), loop, *inner_loop, "x");
     EXPECT_TRUE(transformation2.can_be_applied(*schedule));
     transformation2.apply(*schedule);
 

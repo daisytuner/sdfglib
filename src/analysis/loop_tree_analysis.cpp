@@ -33,8 +33,6 @@ void LoopTreeAnalysis::run(structured_control_flow::ControlFlowNode& scope,
             this->run(while_stmt->root(), while_stmt);
         } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(current)) {
             this->run(for_stmt->root(), for_stmt);
-        } else if (dynamic_cast<structured_control_flow::Kernel*>(current)) {
-            continue;
         } else if (dynamic_cast<structured_control_flow::Break*>(current)) {
             continue;
         } else if (dynamic_cast<structured_control_flow::Continue*>(current)) {

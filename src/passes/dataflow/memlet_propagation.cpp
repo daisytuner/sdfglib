@@ -4,7 +4,7 @@ namespace sdfg {
 namespace passes {
 
 ForwardMemletPropagation::ForwardMemletPropagation()
-    : Pass(){
+    : Pass() {
 
       };
 
@@ -66,7 +66,7 @@ bool ForwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
         auto& edge = *graph.in_edges(*tasklet).begin();
         auto& src = static_cast<const data_flow::AccessNode&>(edge.src());
         std::string assigning_data = src.data();
-        if (symbolic::is_nvptx(symbolic::symbol(assigning_data))) {
+        if (symbolic::is_nv(symbolic::symbol(assigning_data))) {
             continue;
         }
         data_flow::Subset assigning_subset = edge.subset();
@@ -204,7 +204,7 @@ bool ForwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
 };
 
 BackwardMemletPropagation::BackwardMemletPropagation()
-    : Pass(){
+    : Pass() {
 
       };
 
