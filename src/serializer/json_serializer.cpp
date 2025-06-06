@@ -400,7 +400,14 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
     assert(j.contains("type"));
     assert(j["type"].is_string());
 
-    FunctionType type{j["type"].get<std::string_view>()};
+    FunctionType type{"Unknown"};
+    if (j["type"] == FunctionType_CPU.value()) {
+        type = FunctionType_CPU;
+    } else if (j["type"] == FunctionType_NV_GLOBAL.value()) {
+        type = FunctionType_NV_GLOBAL;
+    } else {
+        throw std::runtime_error("Unknown function type");
+    }
     builder::StructuredSDFGBuilder builder(j["name"], type);
 
     // deserialize structures
