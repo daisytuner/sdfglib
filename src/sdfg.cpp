@@ -6,10 +6,8 @@
 
 namespace sdfg {
 
-SDFG::SDFG(const std::string& name)
-    : Function(name), start_state_(nullptr) {
-
-      };
+SDFG::SDFG(const std::string& name, FunctionType type)
+    : Function(name, type), start_state_(nullptr) {};
 
 const DebugInfo SDFG::debug_info() const {
     DebugInfo info;

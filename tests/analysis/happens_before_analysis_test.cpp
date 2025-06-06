@@ -13,7 +13,7 @@
 using namespace sdfg;
 
 TEST(HappensBeforeAnalysisTest, VisitBlock_WAR) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -63,7 +63,7 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_WAR) {
 }
 
 TEST(HappensBeforeAnalysisTest, VisitBlock_RAW) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -141,7 +141,7 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_RAW) {
 }
 
 TEST(HappensBeforeAnalysisTest, VisitBlock_WAW) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -238,7 +238,7 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_WAW) {
 }
 
 TEST(HappensBeforeAnalysisTest, VisitBlock_SingleMemlet) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     types::Scalar desc(types::PrimitiveType::Int32);
     types::Array array(desc, symbolic::integer(10));
@@ -289,7 +289,7 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_SingleMemlet) {
 }
 
 TEST(HappensBeforeAnalysisTest, VisitBlock_MultiMemlet) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     types::Scalar desc(types::PrimitiveType::Int32);
     types::Array array(desc, symbolic::integer(10));
@@ -370,7 +370,7 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_MultiMemlet) {
 }
 
 TEST(HappensBeforeAnalysisTest, visit_for) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
@@ -436,7 +436,7 @@ TEST(HappensBeforeAnalysisTest, visit_for) {
 }
 
 TEST(HappensBeforeAnalysisTest, visit_map) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
@@ -499,7 +499,7 @@ TEST(HappensBeforeAnalysisTest, visit_map) {
 }
 
 TEST(HappensBeforeAnalysisTest, visit_while) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -574,7 +574,7 @@ TEST(HappensBeforeAnalysisTest, visit_while) {
 }
 
 TEST(HappensBeforeAnalysisTest, visit_if_else_complete) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -676,7 +676,7 @@ TEST(HappensBeforeAnalysisTest, visit_if_else_complete) {
 
 /*
 TEST(HappensBeforeAnalysisTest, visit_kernel) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
 
@@ -739,7 +739,7 @@ TEST(HappensBeforeAnalysisTest, visit_kernel) {
 */
 
 TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_RAW) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -817,7 +817,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_RAW) {
 }
 
 TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAR) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -906,7 +906,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAR) {
 }
 
 TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAW) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -987,7 +987,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAW) {
 }
 
 TEST(HappensBeforeAnalysisTest, visit_sequence_for_loop) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -1076,7 +1076,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_for_loop) {
 }
 
 TEST(HappensBeforeAnalysisTest, visit_sequence_while_loop) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -1155,7 +1155,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_while_loop) {
 }
 
 TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_complete) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -1285,7 +1285,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_complete) {
 }
 
 TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_incomplete) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -1412,7 +1412,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_incomplete) {
 }
 
 TEST(HappensBeforeAnalysisTest, visit_sequence_transition) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -1510,7 +1510,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_transition) {
 }
 
 TEST(HappensBeforeAnalysisTest, visit_sdfg) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -1595,7 +1595,7 @@ TEST(HappensBeforeAnalysisTest, visit_sdfg) {
 }
 
 TEST(HappensBeforeAnalysisTest, propagate_open_read_out_of_while) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     builder.add_container("_0", types::Pointer(types::Scalar(types::PrimitiveType::Double)), true);
     builder.add_container("_1", types::Pointer(types::Scalar(types::PrimitiveType::Double)));

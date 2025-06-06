@@ -54,7 +54,7 @@ class SDFG : public Function {
     const control_flow::State* start_state_;
 
    public:
-    SDFG(const std::string& name);
+    SDFG(const std::string& name, FunctionType type);
 
     SDFG(const SDFG& sdfg) = delete;
     SDFG& operator=(const SDFG&) = delete;

@@ -12,8 +12,8 @@ SDFGBuilder::SDFGBuilder(std::unique_ptr<SDFG>& sdfg)
 
       };
 
-SDFGBuilder::SDFGBuilder(const std::string& name)
-    : FunctionBuilder(), sdfg_(new SDFG(name)) {
+SDFGBuilder::SDFGBuilder(const std::string& name, FunctionType type)
+    : FunctionBuilder(), sdfg_(new SDFG(name, type)) {
 
       };
 

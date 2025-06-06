@@ -35,12 +35,18 @@ class FunctionBuilder;
 
 static std::string external_suffix = "__daisy__internal__";
 
+enum FunctionType {
+    CPU,
+    NV_GLOBAL,
+};
+
 class Function {
     friend class sdfg::builder::FunctionBuilder;
 
    protected:
     // Name
     std::string name_;
+    FunctionType type_;
 
     // Data definition
     std::unordered_map<std::string, std::unique_ptr<types::IType>> containers_;
@@ -60,7 +66,7 @@ class Function {
     static const std::unique_ptr<types::Scalar> NVPTX_SYMBOL_TYPE;
     static const std::unique_ptr<types::Pointer> CONST_POINTER_TYPE;
 
-    Function(const std::string& name);
+    Function(const std::string& name, FunctionType type);
 
    public:
     Function(const Function& function) = delete;
@@ -70,6 +76,8 @@ class Function {
     /***** Section: Definition *****/
 
     std::string name() const;
+
+    FunctionType type() const;
 
     virtual const DebugInfo debug_info() const = 0;
 

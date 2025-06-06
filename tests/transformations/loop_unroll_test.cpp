@@ -10,7 +10,7 @@
 using namespace sdfg;
 
 TEST(LoopUnrollTest, Basic) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -136,7 +136,7 @@ TEST(LoopUnrollTest, Basic) {
 }
 
 TEST(LoopUnrollTest, FirstIterationFail) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();

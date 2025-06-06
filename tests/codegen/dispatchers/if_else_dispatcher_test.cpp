@@ -9,7 +9,7 @@
 using namespace sdfg;
 
 TEST(IfElseDispatcherTest, DispatchNode_Trivial) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -23,7 +23,8 @@ TEST(IfElseDispatcherTest, DispatchNode_Trivial) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::IfElseDispatcher dispatcher(language_extension, schedule.schedule(0), if_else, instrumentation);
+    codegen::IfElseDispatcher dispatcher(language_extension, schedule.schedule(0), if_else,
+                                         instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -36,7 +37,7 @@ TEST(IfElseDispatcherTest, DispatchNode_Trivial) {
 }
 
 TEST(IfElseDispatcherTest, DispatchNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -54,7 +55,8 @@ TEST(IfElseDispatcherTest, DispatchNode) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::IfElseDispatcher dispatcher(language_extension, schedule.schedule(0), if_else, instrumentation);
+    codegen::IfElseDispatcher dispatcher(language_extension, schedule.schedule(0), if_else,
+                                         instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

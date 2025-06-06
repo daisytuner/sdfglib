@@ -4,7 +4,7 @@
 using namespace sdfg;
 
 TEST(SDFGTest, InAndOutDegree) {
-    builder::SDFGBuilder builder("sdfg_1");
+    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     auto& state_1 = builder.add_state(true);
     auto& state_2 = builder.add_state();
@@ -28,7 +28,7 @@ TEST(SDFGTest, InAndOutDegree) {
 }
 
 TEST(SDFGTest, IsAdjacent) {
-    builder::SDFGBuilder builder("sdfg_1");
+    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     auto& state_1 = builder.add_state(true);
     auto& state_2 = builder.add_state();
@@ -50,7 +50,7 @@ TEST(SDFGTest, IsAdjacent) {
 }
 
 TEST(SDFGTest, Edge) {
-    builder::SDFGBuilder builder("sdfg_1");
+    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     auto& state_1 = builder.add_state(true);
     auto& state_2 = builder.add_state();
@@ -70,7 +70,7 @@ TEST(SDFGTest, Edge) {
 }
 
 TEST(SDFGTest, DominatorTree) {
-    builder::SDFGBuilder builder("sdfg_1");
+    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     auto& state_1 = builder.add_state(true);
     auto& state_2 = builder.add_state();
@@ -96,7 +96,7 @@ TEST(SDFGTest, DominatorTree) {
 }
 
 TEST(SDFGTest, PostDominatorTree) {
-    builder::SDFGBuilder builder("sdfg_1");
+    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     auto& state_1 = builder.add_state(true);
     auto& state_2 = builder.add_state();
@@ -122,7 +122,7 @@ TEST(SDFGTest, PostDominatorTree) {
 }
 
 TEST(SDFGTest, AllSimplePaths) {
-    builder::SDFGBuilder builder("sdfg_1");
+    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     auto& state_1 = builder.add_state(true);
     auto& state_2 = builder.add_state();
@@ -176,7 +176,7 @@ TEST(SDFGTest, AllSimplePaths) {
 }
 
 TEST(SDFGTest, Metadata) {
-    builder::SDFGBuilder builder("sdfg_1");
+    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     auto sdfg = builder.move();
     sdfg->add_metadata("key", "value");

@@ -37,6 +37,7 @@ nlohmann::json JSONSerializer::serialize(std::unique_ptr<sdfg::StructuredSDFG>& 
     nlohmann::json j;
 
     j["name"] = sdfg->name();
+    j["type"] = sdfg->type();
 
     j["structures"] = nlohmann::json::array();
     for (const auto& structure_name : sdfg->structures()) {
@@ -429,8 +430,10 @@ void JSONSerializer::debug_info_to_json(nlohmann::json& j, const DebugInfo& debu
 std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
     assert(j.contains("name"));
     assert(j["name"].is_string());
+    assert(j.contains("type"));
+    assert(j["type"].is_number_integer());
 
-    builder::StructuredSDFGBuilder builder(j["name"]);
+    builder::StructuredSDFGBuilder builder(j["name"], static_cast<FunctionType>(j["type"]));
 
     // deserialize structures
     assert(j.contains("structures"));

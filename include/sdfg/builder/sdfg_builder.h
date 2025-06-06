@@ -20,7 +20,7 @@ class SDFGBuilder : public FunctionBuilder {
    public:
     SDFGBuilder(std::unique_ptr<SDFG>& sdfg);
 
-    SDFGBuilder(const std::string& name);
+    SDFGBuilder(const std::string& name, FunctionType type);
 
     SDFG& subject() const;
 

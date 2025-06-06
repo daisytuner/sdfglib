@@ -9,7 +9,7 @@
 using namespace sdfg;
 
 TEST(HighwayDispatcherTest, DispatchNode_Empty) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -70,7 +70,7 @@ extern "C" void __node_1_lib(int *N, int *i)
 }
 
 TEST(HighwayDispatcherTest, DispatchNode_64) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -162,7 +162,7 @@ extern "C" void __node_1_lib(int *N, double *a, double *b, int *i)
 }
 
 TEST(HighwayDispatcherTest, DispatchNode_32) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -254,7 +254,7 @@ extern "C" void __node_1_lib(int *N, float *a, float *b, int *i)
 }
 
 TEST(HighwayDispatcherTest, DispatchNode_16) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -345,7 +345,7 @@ extern "C" void __node_1_lib(short *N, short *a, short *b, short *i)
 }
 
 TEST(HighwayDispatcherTest, DispatchNode_8) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 

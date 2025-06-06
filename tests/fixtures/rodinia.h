@@ -32,7 +32,7 @@ inline std::unique_ptr<StructuredSDFG> srad() {
         }
     */
 
-    builder::StructuredSDFGBuilder builder("srad");
+    builder::StructuredSDFGBuilder builder("srad", FunctionType::CPU);
 
     types::Scalar sym_desc(types::PrimitiveType::Int32);
     builder.add_container("rows", sym_desc, true);

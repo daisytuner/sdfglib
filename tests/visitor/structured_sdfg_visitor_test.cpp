@@ -14,7 +14,7 @@ class NoneVisitor : public visitor::StructuredSDFGVisitor {
 };
 
 TEST(StructuredSDFGVisitorTest, None) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -87,7 +87,7 @@ class AllVisitor : public visitor::StructuredSDFGVisitor {
 };
 
 TEST(StructuredSDFGVisitorTest, All) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -153,7 +153,7 @@ class BlockVisitor : public visitor::StructuredSDFGVisitor {
 };
 
 TEST(StructuredSDFGVisitorTest, Block) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -221,7 +221,7 @@ class SequenceVisitor : public visitor::StructuredSDFGVisitor {
 };
 
 TEST(StructuredSDFGVisitorTest, Sequence) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -289,7 +289,7 @@ class IfElseVisitor : public visitor::StructuredSDFGVisitor {
 };
 
 TEST(StructuredSDFGVisitorTest, IfElse) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -357,7 +357,7 @@ class WhileVisitor : public visitor::StructuredSDFGVisitor {
 };
 
 TEST(StructuredSDFGVisitorTest, While) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -425,7 +425,7 @@ class ReturnVisitor : public visitor::StructuredSDFGVisitor {
 };
 
 TEST(StructuredSDFGVisitorTest, Return) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -493,7 +493,7 @@ class ContinueVisitor : public visitor::StructuredSDFGVisitor {
 };
 
 TEST(StructuredSDFGVisitorTest, Continue) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -562,7 +562,7 @@ class BreakVisitor : public visitor::StructuredSDFGVisitor {
 };
 
 TEST(StructuredSDFGVisitorTest, Break) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -630,7 +630,7 @@ class ForVisitor : public visitor::StructuredSDFGVisitor {
 };
 
 TEST(StructuredSDFGVisitorTest, For) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -701,7 +701,7 @@ class KernelVisitor : public visitor::StructuredSDFGVisitor {
 };
 
 TEST(StructuredSDFGVisitorTest, Kernel) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -769,7 +769,7 @@ class MapVisitor : public visitor::StructuredSDFGVisitor {
 };
 
 TEST(StructuredSDFGVisitorTest, Map) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();

@@ -9,14 +9,18 @@ namespace codegen {
 
 CCodeGenerator::CCodeGenerator(ConditionalSchedule& schedule)
     : CodeGenerator(schedule, InstrumentationStrategy::NONE) {
-
-      };
+    if (schedule.schedule(0).sdfg().type() != FunctionType::CPU) {
+        throw std::runtime_error("CCodeGenerator can only be used for CPU SDFGs");
+    }
+};
 
 CCodeGenerator::CCodeGenerator(ConditionalSchedule& schedule,
                                InstrumentationStrategy instrumentation_strategy)
     : CodeGenerator(schedule, instrumentation_strategy) {
-
-      };
+    if (schedule.schedule(0).sdfg().type() != FunctionType::CPU) {
+        throw std::runtime_error("CCodeGenerator can only be used for CPU SDFGs");
+    }
+};
 
 bool CCodeGenerator::generate() {
     this->dispatch_includes();

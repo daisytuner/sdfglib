@@ -9,7 +9,7 @@
 using namespace sdfg;
 
 TEST(ForDispatcherTest, DispatchNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -24,7 +24,8 @@ TEST(ForDispatcherTest, DispatchNode) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::ForDispatcher dispatcher(language_extension, schedule.schedule(0), loop, instrumentation);
+    codegen::ForDispatcher dispatcher(language_extension, schedule.schedule(0), loop,
+                                      instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

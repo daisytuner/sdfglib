@@ -7,7 +7,7 @@
 using namespace sdfg;
 
 TEST(ConditionalScheduleTest, Default) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("N", desc, true);
@@ -33,7 +33,7 @@ TEST(ConditionalScheduleTest, Default) {
 }
 
 TEST(ConditionalScheduleTest, PushFront) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("N", desc, true);

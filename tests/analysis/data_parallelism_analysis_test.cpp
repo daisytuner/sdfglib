@@ -140,7 +140,7 @@ TEST(TestDataParallelism, Delinearization_Negative) {
 }
 
 TEST(TestDataParallelism, Trivial_1D_Identity) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -184,7 +184,7 @@ TEST(TestDataParallelism, Trivial_1D_Identity) {
 }
 
 TEST(TestDataParallelism, Reduction) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -232,7 +232,7 @@ TEST(TestDataParallelism, Reduction) {
 }
 
 TEST(TestDataParallelism, Map_1D_WriteOnly) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -278,7 +278,7 @@ TEST(TestDataParallelism, Map_1D_WriteOnly) {
 }
 
 TEST(TestDataParallelism, Map_1D_Scalar) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -328,7 +328,7 @@ TEST(TestDataParallelism, Map_1D_Scalar) {
 }
 
 TEST(TestDataParallelism, Map_1D_Identity) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -376,7 +376,7 @@ TEST(TestDataParallelism, Map_1D_Identity) {
 }
 
 TEST(TestDataParallelism, Map_1D_Copy) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -426,7 +426,7 @@ TEST(TestDataParallelism, Map_1D_Copy) {
 }
 
 TEST(TestDataParallelism, Reduction_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -476,7 +476,7 @@ TEST(TestDataParallelism, Reduction_1D) {
 }
 
 TEST(TestDataParallelism, Sequential_Left_Shift_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -525,7 +525,7 @@ TEST(TestDataParallelism, Sequential_Left_Shift_1D) {
 }
 
 TEST(TestDataParallelism, Sequential_Partial_Sum_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -576,7 +576,7 @@ TEST(TestDataParallelism, Sequential_Partial_Sum_1D) {
 }
 
 TEST(TestDataParallelism, Stencil_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -633,7 +633,7 @@ TEST(TestDataParallelism, Stencil_1D) {
 }
 
 TEST(TestDataParallelism, Gather_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -696,7 +696,7 @@ TEST(TestDataParallelism, Gather_1D) {
 }
 
 TEST(TestDataParallelism, Scatter_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -757,7 +757,7 @@ TEST(TestDataParallelism, Scatter_1D) {
 }
 
 TEST(TestDataParallelism, Map_2D_Copy) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -826,7 +826,7 @@ TEST(TestDataParallelism, Map_2D_Copy) {
 }
 
 TEST(TestDataParallelism, Map_2D_Transpose) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -895,7 +895,7 @@ TEST(TestDataParallelism, Map_2D_Transpose) {
 }
 
 TEST(TestDataParallelism, Sequential_2D_Transpose) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -961,7 +961,7 @@ TEST(TestDataParallelism, Sequential_2D_Transpose) {
 }
 
 TEST(TestDataParallelism, Reduction_2D_Inner) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1032,7 +1032,7 @@ TEST(TestDataParallelism, Reduction_2D_Inner) {
 }
 
 TEST(TestDataParallelism, Reduction_2D_Outer) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1103,7 +1103,7 @@ TEST(TestDataParallelism, Reduction_2D_Outer) {
 }
 
 TEST(TestDataParallelism, Intervals_Disjoint_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1152,7 +1152,7 @@ TEST(TestDataParallelism, Intervals_Disjoint_1D) {
 }
 
 TEST(TestDataParallelism, Triangle_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1217,7 +1217,7 @@ TEST(TestDataParallelism, Triangle_2D) {
 }
 
 TEST(TestDataParallelism, Triangle_2D_2) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1282,7 +1282,7 @@ TEST(TestDataParallelism, Triangle_2D_2) {
 }
 
 TEST(TestDataParallelism, Temporal_Loop_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1365,7 +1365,7 @@ TEST(TestDataParallelism, Temporal_Loop_1D) {
 }
 
 TEST(TestDataParallelism, Conditional_Tasklets_Readonly) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1411,7 +1411,7 @@ TEST(TestDataParallelism, Conditional_Tasklets_Readonly) {
 }
 
 TEST(TestDataParallelism, Conditional_Tasklets_Private) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1466,7 +1466,7 @@ TEST(TestDataParallelism, Conditional_Tasklets_Private) {
 }
 
 TEST(TestDataParallelism, Conditional_Tasklets_Dependent) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1519,7 +1519,7 @@ TEST(TestDataParallelism, Conditional_Tasklets_Dependent) {
 }
 
 TEST(TestDataParallelism, AffineParameters) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1571,7 +1571,7 @@ TEST(TestDataParallelism, AffineParameters) {
 }
 
 TEST(TestDataParallelism, Map_2D_Linearized) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1635,7 +1635,7 @@ TEST(TestDataParallelism, Map_2D_Linearized) {
 }
 
 TEST(TestDataParallelism, KernelTestBasic) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& kernel = builder.convert_into_kernel();
@@ -1689,7 +1689,7 @@ TEST(TestDataParallelism, KernelTestBasic) {
 }
 
 TEST(TestDataParallelism, KernelTest) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& kernel = builder.convert_into_kernel();
@@ -1749,7 +1749,7 @@ TEST(TestDataParallelism, KernelTest) {
 }
 
 TEST(TestDataParallelism, KernelTestMult) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& kernel = builder.convert_into_kernel();
@@ -1808,7 +1808,7 @@ TEST(TestDataParallelism, KernelTestMult) {
 }
 
 TEST(TestDataParallelism, KernelTestTiled) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::CPU);
 
     auto& sdfg = builder.subject();
     auto& kernel = builder.convert_into_kernel();
@@ -1958,7 +1958,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
             }
         */
 
-    builder::StructuredSDFGBuilder builder("srad");
+    builder::StructuredSDFGBuilder builder("srad", FunctionType::CPU);
 
     types::Scalar sym_desc(types::PrimitiveType::Int32);
     builder.add_container("rows", sym_desc, true);
