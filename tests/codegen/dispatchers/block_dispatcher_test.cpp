@@ -123,7 +123,7 @@ TEST(DataFlowDispatcherTest, DispatchLibraryNodebarrier_local) {
     auto& block = builder.add_block(root);
 
     auto& library_node =
-        builder.add_library_node(block, data_flow::LibraryNodeType::barrier_local, {}, {});
+        builder.add_library_node(block, data_flow::LibraryNodeCode::barrier_local, {}, {});
 
     auto final_sdfg = builder.move();
 

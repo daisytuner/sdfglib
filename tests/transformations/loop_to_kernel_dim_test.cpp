@@ -81,7 +81,7 @@ TEST(LoopToKernelDimTest, Basic) {
 
     auto& sync_block = builder.add_block(body);
     auto& libnode =
-        builder.add_library_node(sync_block, data_flow::LibraryNodeType::barrier_local, {}, {});
+        builder.add_library_node(sync_block, data_flow::LibraryNodeCode::barrier_local, {}, {});
 
     auto indvar_access = symbolic::symbol("i_access");
     auto access_bound =
@@ -239,7 +239,7 @@ TEST(LoopToKernelDimTest, DimNotAvailable) {
 
     auto& sync_block = builder.add_block(body);
     auto& libnode =
-        builder.add_library_node(sync_block, data_flow::LibraryNodeType::barrier_local, {}, {});
+        builder.add_library_node(sync_block, data_flow::LibraryNodeCode::barrier_local, {}, {});
 
     auto indvar_access = symbolic::symbol("i_access");
     auto access_bound =
@@ -343,7 +343,7 @@ TEST(LoopToKernelDimTest, DimToSmall) {
 
     auto& sync_block = builder.add_block(body);
     auto& libnode =
-        builder.add_library_node(sync_block, data_flow::LibraryNodeType::barrier_local, {}, {});
+        builder.add_library_node(sync_block, data_flow::LibraryNodeCode::barrier_local, {}, {});
 
     auto indvar_access = symbolic::symbol("i_access");
     auto access_bound =
@@ -446,7 +446,7 @@ TEST(LoopToKernelDimTest, NonIndvarAccess) {
 
     auto& sync_block = builder.add_block(body);
     auto& libnode =
-        builder.add_library_node(sync_block, data_flow::LibraryNodeType::barrier_local, {}, {});
+        builder.add_library_node(sync_block, data_flow::LibraryNodeCode::barrier_local, {}, {});
 
     auto indvar_access = symbolic::symbol("i_access");
     auto access_bound =

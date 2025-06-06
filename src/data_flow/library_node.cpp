@@ -9,14 +9,14 @@ LibraryNode::LibraryNode(const DebugInfo& debug_info, const graph::Vertex vertex
                          DataFlowGraph& parent,
                          const std::vector<std::pair<std::string, sdfg::types::Scalar>>& outputs,
                          const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
-                         const LibraryNodeType& call, const bool side_effect)
+                         const LibraryNodeCode& call, const bool side_effect)
     : CodeNode(debug_info, vertex, parent, outputs, inputs),
       call_(call),
       side_effect_(side_effect) {
 
       };
 
-const LibraryNodeType& LibraryNode::call() const { return this->call_; };
+const LibraryNodeCode& LibraryNode::call() const { return this->call_; };
 
 bool LibraryNode::has_side_effect() const { return this->side_effect_; };
 

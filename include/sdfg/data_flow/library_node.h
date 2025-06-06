@@ -15,7 +15,7 @@ class StructuredSDFGBuilder;
 
 namespace data_flow {
 
-enum LibraryNodeType {
+enum LibraryNodeCode {
     barrier_local,
 };
 
@@ -24,13 +24,13 @@ class LibraryNode : public CodeNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
    private:
-    LibraryNodeType call_;
+    LibraryNodeCode call_;
     bool side_effect_;
 
     LibraryNode(const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent,
                 const std::vector<std::pair<std::string, sdfg::types::Scalar>>& outputs,
                 const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
-                const LibraryNodeType& call, const bool has_side_effect);
+                const LibraryNodeCode& call, const bool has_side_effect);
 
    public:
     LibraryNode(const LibraryNode& data_node) = delete;
@@ -38,7 +38,7 @@ class LibraryNode : public CodeNode {
 
     const std::vector<std::string>& params() const;
 
-    const LibraryNodeType& call() const;
+    const LibraryNodeCode& call() const;
 
     virtual std::unique_ptr<DataFlowNode> clone(const graph::Vertex vertex,
                                                 DataFlowGraph& parent) const override;

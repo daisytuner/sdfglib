@@ -357,7 +357,7 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
 };
 
 data_flow::LibraryNode& SDFGBuilder::add_library_node(
-    control_flow::State& state, const data_flow::LibraryNodeType& call,
+    control_flow::State& state, const data_flow::LibraryNodeCode& call,
     const std::vector<std::pair<std::string, sdfg::types::Scalar>>& outputs,
     const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
     const bool has_side_effect, const DebugInfo& debug_info) {

@@ -167,7 +167,7 @@ TEST(CUDALanguageExtensionTest, LibNodeToCall) {
     auto& state = builder.add_state(true);
 
     auto& lib_node =
-        builder.add_library_node(state, data_flow::LibraryNodeType::barrier_local, {}, {}, true);
+        builder.add_library_node(state, data_flow::LibraryNodeCode::barrier_local, {}, {}, true);
 
     auto sdfg = builder.move();
 

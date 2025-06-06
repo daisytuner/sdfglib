@@ -1014,7 +1014,7 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
 };
 
 data_flow::LibraryNode& StructuredSDFGBuilder::add_library_node(
-    structured_control_flow::Block& block, const data_flow::LibraryNodeType& call,
+    structured_control_flow::Block& block, const data_flow::LibraryNodeCode& call,
     const std::vector<std::pair<std::string, sdfg::types::Scalar>>& outputs,
     const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
     const bool has_side_effect, const DebugInfo& debug_info) {

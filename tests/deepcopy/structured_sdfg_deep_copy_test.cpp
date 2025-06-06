@@ -66,7 +66,7 @@ TEST(StructuredSDFGDeepCopy, Block_WithLibraryNodebarrier_local) {
 
     auto& block = builder_source.add_block(root_source);
     auto& barrier =
-        builder_source.add_library_node(block, data_flow::LibraryNodeType::barrier_local, {}, {});
+        builder_source.add_library_node(block, data_flow::LibraryNodeCode::barrier_local, {}, {});
 
     builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType::CPU);
     auto& sdfg_target = builder_target.subject();
@@ -91,7 +91,7 @@ TEST(StructuredSDFGDeepCopy, Block_WithLibraryNodebarrier_local) {
         dynamic_cast<data_flow::LibraryNode*>(&(*inserted_block->dataflow().nodes().begin())));
     auto inserted_barrier =
         dynamic_cast<data_flow::LibraryNode*>(&(*inserted_block->dataflow().nodes().begin()));
-    EXPECT_EQ(inserted_barrier->call(), data_flow::LibraryNodeType::barrier_local);
+    EXPECT_EQ(inserted_barrier->call(), data_flow::LibraryNodeCode::barrier_local);
     EXPECT_EQ(inserted_barrier->has_side_effect(), barrier.has_side_effect());
 }
 

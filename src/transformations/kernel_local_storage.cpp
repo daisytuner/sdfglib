@@ -311,7 +311,7 @@ void KernelLocalStorage::apply(Schedule& schedule) {
     builder.add_memlet(read_block, tasklet_read, "_out", read_node_out, "void", {});
 
     auto& sync_block = builder.add_block_before(outer_body, this->inner_loop_).first;
-    builder.add_library_node(sync_block, data_flow::LibraryNodeType::barrier_local, {}, {}, true);
+    builder.add_library_node(sync_block, data_flow::LibraryNodeCode::barrier_local, {}, {}, true);
 
     // End of transformation
 
