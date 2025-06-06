@@ -7,7 +7,7 @@
 using namespace sdfg;
 
 TEST(TypeInferenceTest, Identity) {
-    builder::SDFGBuilder builder("test", FunctionType::CPU);
+    builder::SDFGBuilder builder("test", FunctionType_CPU);
     auto& function = builder.subject();
 
     data_flow::Subset subset = {};
@@ -30,7 +30,7 @@ TEST(TypeInferenceTest, Identity) {
 }
 
 TEST(TypeInferenceTest, Scalar) {
-    builder::SDFGBuilder builder("test", FunctionType::CPU);
+    builder::SDFGBuilder builder("test", FunctionType_CPU);
     auto& function = builder.subject();
 
     types::Scalar scalar_type(types::PrimitiveType::Int32);
@@ -40,7 +40,7 @@ TEST(TypeInferenceTest, Scalar) {
 }
 
 TEST(TypeInferenceTest, ElementType) {
-    builder::SDFGBuilder builder("test", FunctionType::CPU);
+    builder::SDFGBuilder builder("test", FunctionType_CPU);
     auto& function = builder.subject();
 
     types::Scalar scalar_type(types::PrimitiveType::Int32);
@@ -52,7 +52,7 @@ TEST(TypeInferenceTest, ElementType) {
 }
 
 TEST(TypeInferenceTest, PointeeType) {
-    builder::SDFGBuilder builder("test", FunctionType::CPU);
+    builder::SDFGBuilder builder("test", FunctionType_CPU);
     auto& function = builder.subject();
 
     types::Scalar scalar_type(types::PrimitiveType::Int32);
@@ -64,7 +64,7 @@ TEST(TypeInferenceTest, PointeeType) {
 }
 
 TEST(TypeInferenceTest, StructureMember) {
-    builder::SDFGBuilder builder("test", FunctionType::CPU);
+    builder::SDFGBuilder builder("test", FunctionType_CPU);
 
     auto& sd = builder.add_structure("test", false);
 

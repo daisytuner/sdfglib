@@ -8,7 +8,7 @@
 using namespace sdfg;
 
 TEST(For2MapTest, Simple) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc_element(types::PrimitiveType::Double);
     types::Scalar desc_element2(types::PrimitiveType::Int32);
@@ -103,7 +103,7 @@ TEST(For2MapTest, Simple) {
 }
 
 TEST(For2MapTest, Strided) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc_element(types::PrimitiveType::Double);
     types::Scalar desc_element2(types::PrimitiveType::Int32);
@@ -202,7 +202,7 @@ TEST(For2MapTest, Strided) {
 }
 
 TEST(For2MapTest, Init) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc_element(types::PrimitiveType::Double);
     types::Scalar desc_element2(types::PrimitiveType::Int32);
@@ -298,7 +298,7 @@ TEST(For2MapTest, Init) {
 }
 
 TEST(For2MapTest, Bound) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc_element(types::PrimitiveType::Double);
     types::Scalar desc_element2(types::PrimitiveType::Int32);
@@ -396,7 +396,7 @@ TEST(For2MapTest, Bound) {
 }
 
 TEST(For2MapTest, Failed_update) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc_element(types::PrimitiveType::Double);
     types::Scalar desc_element2(types::PrimitiveType::Int32);
@@ -432,7 +432,7 @@ TEST(For2MapTest, Failed_update) {
 }
 
 TEST(For2MapTest, Failed_bound) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc_element(types::PrimitiveType::Double);
     types::Scalar desc_element2(types::PrimitiveType::Int32);

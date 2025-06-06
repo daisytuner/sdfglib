@@ -9,7 +9,7 @@ namespace codegen {
 
 CUDACodeGenerator::CUDACodeGenerator(ConditionalSchedule& schedule)
     : CodeGenerator(schedule, InstrumentationStrategy::NONE) {
-    if (schedule.schedule(0).sdfg().type() != FunctionType::NV_GLOBAL) {
+    if (schedule.schedule(0).sdfg().type() != FunctionType_NV_GLOBAL) {
         throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
     }
 };
@@ -17,7 +17,7 @@ CUDACodeGenerator::CUDACodeGenerator(ConditionalSchedule& schedule)
 CUDACodeGenerator::CUDACodeGenerator(ConditionalSchedule& schedule,
                                      InstrumentationStrategy instrumentation_strategy)
     : CodeGenerator(schedule, instrumentation_strategy) {
-    if (schedule.schedule(0).sdfg().type() != FunctionType::NV_GLOBAL) {
+    if (schedule.schedule(0).sdfg().type() != FunctionType_NV_GLOBAL) {
         throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
     }
 };
@@ -170,11 +170,11 @@ void CUDACodeGenerator::dispatch_globals() {
     auto& function = schedule_.schedule(0).sdfg();
     for (auto& container : function.externals()) {
         auto& type = function.type(container);
-        if (type.storage_type() == types::StorageType::NV_Global) {
+        if (type.storage_type() == types::StorageType_NV_Global) {
             this->globals_stream_ << "extern " << language_extension_.declaration(container, type)
                                   << ";" << std::endl;
         }
-        if (type.storage_type() == types::StorageType::NV_Constant) {
+        if (type.storage_type() == types::StorageType_NV_Constant) {
             assert(type.initializer().empty());
             this->globals_stream_ << "__constant__ "
                                   << language_extension_.declaration(container, type, true) << ";"
@@ -189,7 +189,7 @@ void CUDACodeGenerator::dispatch_schedule() {
     // Declare shared memory
     for (auto& container : function.externals()) {
         auto& type = function.type(container);
-        if (type.storage_type() == types::StorageType::NV_Shared) {
+        if (type.storage_type() == types::StorageType_NV_Shared) {
             this->main_stream_ << language_extension_.declaration(container,
                                                                   function.type(container))
                                << ";" << std::endl;

@@ -5,7 +5,7 @@
 using namespace sdfg;
 
 TEST(FunctionBuilderTest, Empty) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto sdfg = builder.move();
 
@@ -15,7 +15,7 @@ TEST(FunctionBuilderTest, Empty) {
 }
 
 TEST(FunctionBuilderTest, AddTransient) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64));
 
@@ -30,7 +30,7 @@ TEST(FunctionBuilderTest, AddTransient) {
 }
 
 TEST(FunctionBuilderTest, AddArgument) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), true);
 
@@ -45,7 +45,7 @@ TEST(FunctionBuilderTest, AddArgument) {
 }
 
 TEST(FunctionBuilderTest, AddExternal) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& container =
         builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), false, true);
@@ -61,7 +61,7 @@ TEST(FunctionBuilderTest, AddExternal) {
 }
 
 TEST(FunctionBuilderTest, RemoveTransient) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64));
 
@@ -74,7 +74,7 @@ TEST(FunctionBuilderTest, RemoveTransient) {
 }
 
 TEST(FunctionBuilderTest, RemoveArgument) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), true);
 
@@ -82,7 +82,7 @@ TEST(FunctionBuilderTest, RemoveArgument) {
 }
 
 TEST(FunctionBuilderTest, RemoveExternal) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& container =
         builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), false, true);
@@ -91,7 +91,7 @@ TEST(FunctionBuilderTest, RemoveExternal) {
 }
 
 TEST(FunctionBuilderTest, AddStructure) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& structure = builder.add_structure("struct_1", false);
 
@@ -102,7 +102,7 @@ TEST(FunctionBuilderTest, AddStructure) {
 }
 
 TEST(FunctionBuilderTest, MakeArrayTransient) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64));
 
@@ -116,7 +116,7 @@ TEST(FunctionBuilderTest, MakeArrayTransient) {
 }
 
 TEST(FunctionBuilderTest, MakeArrayArgument) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), true);
 
@@ -124,7 +124,7 @@ TEST(FunctionBuilderTest, MakeArrayArgument) {
 }
 
 TEST(FunctionBuilderTest, FindNewName) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64));
 
@@ -134,7 +134,7 @@ TEST(FunctionBuilderTest, FindNewName) {
 }
 
 TEST(FunctionBuilderTest, Assumptions) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt8));
     auto sdfg = builder.move();

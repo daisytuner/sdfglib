@@ -17,7 +17,7 @@ using namespace sdfg;
 
 TEST(LoopToKernelDimTest, Basic) {
     /*
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::NV_GLOBAL);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_NV_GLOBAL);
 
     auto& sdfg = builder.subject();
     auto& kernel = builder.add_kernel(
@@ -178,7 +178,7 @@ TEST(LoopToKernelDimTest, Basic) {
 }
 
 TEST(LoopToKernelDimTest, DimNotAvailable) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::NV_GLOBAL);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_NV_GLOBAL);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -282,7 +282,7 @@ TEST(LoopToKernelDimTest, DimNotAvailable) {
 }
 
 TEST(LoopToKernelDimTest, DimToSmall) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::NV_GLOBAL);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_NV_GLOBAL);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -386,7 +386,7 @@ TEST(LoopToKernelDimTest, DimToSmall) {
 }
 
 TEST(LoopToKernelDimTest, NonIndvarAccess) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::NV_GLOBAL);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_NV_GLOBAL);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();

@@ -9,7 +9,7 @@
 using namespace sdfg;
 
 TEST(WhileDispatcherTest, DispatchNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -35,7 +35,7 @@ TEST(WhileDispatcherTest, DispatchNode) {
 }
 
 TEST(BreakDispatcherTest, DispatchNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -62,7 +62,7 @@ TEST(BreakDispatcherTest, DispatchNode) {
 }
 
 TEST(ContinueDispatcherTest, DispatchNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -89,7 +89,7 @@ TEST(ContinueDispatcherTest, DispatchNode) {
 }
 
 TEST(ReturnDispatcherTest, DispatchNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 

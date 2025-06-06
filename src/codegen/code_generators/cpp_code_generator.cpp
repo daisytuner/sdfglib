@@ -9,7 +9,7 @@ namespace codegen {
 
 CPPCodeGenerator::CPPCodeGenerator(ConditionalSchedule& schedule)
     : CodeGenerator(schedule, InstrumentationStrategy::NONE) {
-    if (schedule.schedule(0).sdfg().type() != FunctionType::CPU) {
+    if (schedule.schedule(0).sdfg().type() != FunctionType_CPU) {
         throw std::runtime_error("CPPCodeGenerator can only be used for CPU SDFGs");
     }
 };
@@ -17,7 +17,7 @@ CPPCodeGenerator::CPPCodeGenerator(ConditionalSchedule& schedule)
 CPPCodeGenerator::CPPCodeGenerator(ConditionalSchedule& schedule,
                                    InstrumentationStrategy instrumentation_strategy)
     : CodeGenerator(schedule, instrumentation_strategy) {
-    if (schedule.schedule(0).sdfg().type() != FunctionType::CPU) {
+    if (schedule.schedule(0).sdfg().type() != FunctionType_CPU) {
         throw std::runtime_error("CPPCodeGenerator can only be used for CPU SDFGs");
     }
 };

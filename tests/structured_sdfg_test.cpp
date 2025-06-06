@@ -4,7 +4,7 @@
 using namespace sdfg;
 
 TEST(StructuredSDFGTest, Clone) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("N", desc, true);
@@ -39,7 +39,7 @@ TEST(StructuredSDFGTest, Clone) {
 }
 
 TEST(StructuredSDFGTest, Metadata) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto sdfg = builder.move();
     sdfg->add_metadata("key", "value");

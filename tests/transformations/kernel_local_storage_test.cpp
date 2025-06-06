@@ -15,7 +15,7 @@
 using namespace sdfg;
 
 TEST(KernelLocalStorageTest, Basic) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType::NV_GLOBAL);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_NV_GLOBAL);
 
     auto& sdfg = builder.subject();
 

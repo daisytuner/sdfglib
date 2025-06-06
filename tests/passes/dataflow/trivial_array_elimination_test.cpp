@@ -9,7 +9,7 @@
 using namespace sdfg;
 
 TEST(TrivialArrayElimination, ReadArrayLate) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     auto& block = builder.add_block(builder.subject().root());
 
@@ -66,7 +66,7 @@ TEST(TrivialArrayElimination, ReadArrayLate) {
 }
 
 TEST(TrivialArrayElimination, ReadArrayEarly) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     auto& block = builder.add_block(builder.subject().root());
 
@@ -123,7 +123,7 @@ TEST(TrivialArrayElimination, ReadArrayEarly) {
 }
 
 TEST(TrivialArrayElimination, ReadArrayMiddle) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     auto& block = builder.add_block(builder.subject().root());
 
@@ -180,7 +180,7 @@ TEST(TrivialArrayElimination, ReadArrayMiddle) {
 }
 
 TEST(TrivialArrayElimination, WriteArrayLate) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     auto& block = builder.add_block(builder.subject().root());
 
@@ -237,7 +237,7 @@ TEST(TrivialArrayElimination, WriteArrayLate) {
 }
 
 TEST(TrivialArrayElimination, WriteArrayEarly) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     auto& block = builder.add_block(builder.subject().root());
 
@@ -294,7 +294,7 @@ TEST(TrivialArrayElimination, WriteArrayEarly) {
 }
 
 TEST(TrivialArrayElimination, WriteArrayMiddle) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     auto& block = builder.add_block(builder.subject().root());
 

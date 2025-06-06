@@ -12,7 +12,7 @@ const std::unique_ptr<types::Pointer> Function::CONST_POINTER_TYPE =
     std::make_unique<types::Pointer>(types::Scalar(types::PrimitiveType::Void));
 
 Function::Function(const std::string& name, FunctionType type) : name_(name), type_(type) {
-    if (this->type_ == FunctionType::NV_GLOBAL) {
+    if (this->type_ == FunctionType_NV_GLOBAL) {
         this->assumptions_[symbolic::threadIdx_x()] =
             symbolic::Assumption::create(symbolic::threadIdx_x(), *NVPTX_SYMBOL_TYPE);
         this->assumptions_[symbolic::threadIdx_y()] =

@@ -9,7 +9,7 @@
 using namespace sdfg;
 
 TEST(IfElseDispatcherTest, DispatchNode_Trivial) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -37,7 +37,7 @@ TEST(IfElseDispatcherTest, DispatchNode_Trivial) {
 }
 
 TEST(IfElseDispatcherTest, DispatchNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType::CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
