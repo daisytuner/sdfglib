@@ -562,6 +562,8 @@ class Tasklet : public CodeNode {
 
    private:
     TaskletCode code_;
+    std::pair<std::string, sdfg::types::Scalar> output_;
+    std::vector<std::pair<std::string, sdfg::types::Scalar>> inputs_;
     symbolic::Condition condition_;
 
     Tasklet(const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent,
@@ -574,6 +576,18 @@ class Tasklet : public CodeNode {
     Tasklet& operator=(const Tasklet&) = delete;
 
     TaskletCode code() const;
+
+    const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs() const;
+
+    const std::pair<std::string, sdfg::types::Scalar>& output() const;
+
+    const std::pair<std::string, sdfg::types::Scalar>& input(size_t index) const;
+
+    const sdfg::types::Scalar& input_type(const std::string& input) const;
+
+    const sdfg::types::Scalar& output_type() const;
+
+    bool needs_connector(size_t index) const override;
 
     const symbolic::Condition& condition() const;
 

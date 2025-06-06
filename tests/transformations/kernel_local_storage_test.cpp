@@ -182,7 +182,7 @@ TEST(KernelLocalStorageTest, Basic) {
                 dynamic_cast<data_flow::LibraryNode*>(&(*sync_block->dataflow().nodes().begin())));
     auto* sync_node =
         static_cast<data_flow::LibraryNode*>(&(*sync_block->dataflow().nodes().begin()));
-    EXPECT_EQ(sync_node->call(), data_flow::LibraryNodeType::LocalBarrier);
+    EXPECT_EQ(sync_node->code(), data_flow::LibraryNodeCode::barrier_local);
 
     EXPECT_EQ(sharedLoop->root().size(), 1);
     EXPECT_TRUE(dynamic_cast<structured_control_flow::Block*>(&sharedLoop->root().at(0).first) !=
@@ -197,7 +197,8 @@ TEST(KernelLocalStorageTest, Basic) {
     auto tasklet_shared = *graph.tasklets().begin();
 
     EXPECT_EQ(tasklet_shared->inputs().size(), 1);
-    EXPECT_EQ(tasklet_shared->outputs().size(), 1);
+    EXPECT_EQ(tasklet_shared->output().first, "_out");
+    EXPECT_EQ(tasklet_shared->output().second.primitive_type(), types::PrimitiveType::Float);
 
     auto& input = *(graph.in_edges(*tasklet_shared).begin());
     EXPECT_TRUE(dynamic_cast<data_flow::AccessNode*>(&input.src()) != nullptr);

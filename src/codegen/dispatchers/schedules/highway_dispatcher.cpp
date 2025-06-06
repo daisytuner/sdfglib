@@ -120,7 +120,7 @@ void HighwayDispatcher::dispatch_tasklet(const data_flow::DataFlowGraph& graph,
 
     types::PrimitiveType operation_type = types::PrimitiveType::Void;
     if (tasklet.inputs().empty()) {
-        operation_type = tasklet.output(0).second.primitive_type();
+        operation_type = tasklet.output().second.primitive_type();
     } else {
         operation_type = tasklet.input(0).second.primitive_type();
     }

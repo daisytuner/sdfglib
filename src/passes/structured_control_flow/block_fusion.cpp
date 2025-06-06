@@ -111,7 +111,7 @@ void BlockFusion::apply(structured_control_flow::Block& first_block,
             }
         } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(&node)) {
             node_mapping[tasklet] = &builder_.add_tasklet(first_block, tasklet->code(),
-                                                          tasklet->output(0), tasklet->inputs());
+                                                          tasklet->output(), tasklet->inputs());
         }
     }
 

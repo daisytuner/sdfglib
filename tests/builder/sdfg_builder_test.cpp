@@ -208,7 +208,7 @@ TEST(SDFGBuilderTest, AddLibnode) {
 
     auto& state = builder.add_state(true);
 
-    builder.add_library_node(state, data_flow::LibraryNodeType::LocalBarrier, {}, {}, false);
+    builder.add_library_node(state, data_flow::LibraryNodeCode::barrier_local, {}, {}, false);
 
     auto sdfg = builder.move();
     auto states = sdfg->states();
