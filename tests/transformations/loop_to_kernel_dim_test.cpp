@@ -2,12 +2,13 @@
 
 #include <gtest/gtest.h>
 
+#include "sdfg/analysis/analysis.h"
+#include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/element.h"
 #include "sdfg/passes/structured_control_flow/dead_cfg_elimination.h"
 #include "sdfg/passes/structured_control_flow/sequence_fusion.h"
-#include "sdfg/schedule.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/if_else.h"
 #include "sdfg/symbolic/symbolic.h"
@@ -114,14 +115,13 @@ TEST(LoopToKernelDimTest, Basic) {
 
     auto structured_sdfg = builder.move();
 
-    auto schedule = std::make_unique<Schedule>(structured_sdfg);
-    auto& analysis_manager = schedule->analysis_manager();
-    auto& builder_opt = schedule->builder();
+    builder::StructuredSDFGBuilder builder_opt(structured_sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
     transformations::LoopToKernelDim transformation(sdfg.root(), loop_shared);
-    EXPECT_TRUE(transformation.can_be_applied(*schedule));
-    transformation.apply(*schedule);
+    EXPECT_TRUE(transformation.can_be_applied(builder_opt, analysis_manager));
+    transformation.apply(builder_opt, analysis_manager);
 
     // Cleanup
     bool applies = false;
@@ -272,13 +272,12 @@ TEST(LoopToKernelDimTest, DimNotAvailable) {
 
     auto structured_sdfg = builder.move();
 
-    auto schedule = std::make_unique<Schedule>(structured_sdfg);
-    auto& analysis_manager = schedule->analysis_manager();
-    auto& builder_opt = schedule->builder();
+    builder::StructuredSDFGBuilder builder_opt(structured_sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
     transformations::LoopToKernelDim transformation(sdfg.root(), loop_shared);
-    EXPECT_FALSE(transformation.can_be_applied(*schedule));
+    EXPECT_FALSE(transformation.can_be_applied(builder_opt, analysis_manager));
 }
 
 TEST(LoopToKernelDimTest, DimToSmall) {
@@ -376,13 +375,12 @@ TEST(LoopToKernelDimTest, DimToSmall) {
 
     auto structured_sdfg = builder.move();
 
-    auto schedule = std::make_unique<Schedule>(structured_sdfg);
-    auto& analysis_manager = schedule->analysis_manager();
-    auto& builder_opt = schedule->builder();
+    builder::StructuredSDFGBuilder builder_opt(structured_sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
     transformations::LoopToKernelDim transformation(sdfg.root(), loop_shared);
-    EXPECT_FALSE(transformation.can_be_applied(*schedule));
+    EXPECT_FALSE(transformation.can_be_applied(builder_opt, analysis_manager));
 }
 
 TEST(LoopToKernelDimTest, NonIndvarAccess) {
@@ -479,11 +477,10 @@ TEST(LoopToKernelDimTest, NonIndvarAccess) {
 
     auto structured_sdfg = builder.move();
 
-    auto schedule = std::make_unique<Schedule>(structured_sdfg);
-    auto& analysis_manager = schedule->analysis_manager();
-    auto& builder_opt = schedule->builder();
+    builder::StructuredSDFGBuilder builder_opt(structured_sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
     transformations::LoopToKernelDim transformation(sdfg.root(), loop_shared);
-    EXPECT_FALSE(transformation.can_be_applied(*schedule));
+    EXPECT_FALSE(transformation.can_be_applied(builder_opt, analysis_manager));
 }

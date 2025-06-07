@@ -29,7 +29,6 @@ set(TEST_FILES
     codegen/language_extensions/cpp_language_extension_test.cpp
     codegen/language_extensions/cuda_language_extension_test.cpp
     codegen/utils_test.cpp
-    conditional_schedule_test.cpp
     data_flow/data_flow_graph_test.cpp
     deepcopy/structured_sdfg_deep_copy_test.cpp
     element_test.cpp
@@ -45,7 +44,6 @@ set(TEST_FILES
     passes/symbolic/symbol_promotion_test.cpp
     passes/symbolic/symbol_propagation_test.cpp
     replace/symbol_replace_test.cpp
-    schedule_test.cpp
     sdfg_test.cpp
     serializer/json_serializer_test.cpp
     structured_sdfg_test.cpp

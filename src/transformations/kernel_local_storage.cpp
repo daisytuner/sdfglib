@@ -69,10 +69,8 @@ std::tuple<symbolic::Integer, symbolic::Integer, symbolic::Integer> KernelLocalS
     return std::make_tuple(x_dim_size, y_dim_size, z_dim_size);
 };
 
-bool KernelLocalStorage::can_be_applied(Schedule& schedule) {
-    auto& analysis_manager = schedule.analysis_manager();
-    auto& builder = schedule.builder();
-
+bool KernelLocalStorage::can_be_applied(builder::StructuredSDFGBuilder& builder,
+                                        analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
     if (sdfg.type() != FunctionType_NV_GLOBAL) {
         return false;
@@ -199,9 +197,8 @@ bool KernelLocalStorage::can_be_applied(Schedule& schedule) {
     return true;
 };
 
-void KernelLocalStorage::apply(Schedule& schedule) {
-    auto& analysis_manager = schedule.analysis_manager();
-    auto& builder = schedule.builder();
+void KernelLocalStorage::apply(builder::StructuredSDFGBuilder& builder,
+                               analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
     auto& users = analysis_manager.get<analysis::Users>();
 
@@ -323,8 +320,8 @@ void KernelLocalStorage::apply(Schedule& schedule) {
     bool applies = false;
     do {
         applies = false;
-        applies |= dce_pass.run(schedule.builder(), analysis_manager);
-        applies |= sf_pass.run(schedule.builder(), analysis_manager);
+        applies |= dce_pass.run(builder, analysis_manager);
+        applies |= sf_pass.run(builder, analysis_manager);
     } while (applies);
 };
 

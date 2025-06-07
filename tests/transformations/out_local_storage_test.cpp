@@ -2,8 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include "sdfg/analysis/analysis.h"
+#include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/access_node.h"
-#include "sdfg/schedule.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
@@ -52,14 +53,14 @@ TEST(OutLocalStorage, Scalar) {
 
     auto structured_sdfg = builder.move();
 
-    auto schedule = std::make_unique<Schedule>(structured_sdfg);
-    auto& builder_opt = schedule->builder();
+    builder::StructuredSDFGBuilder builder_opt(structured_sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     auto& new_root = builder_opt.subject().root();
     // Apply
     transformations::OutLocalStorage transformation(new_root, loop, "C");
-    EXPECT_TRUE(transformation.can_be_applied(*schedule));
-    transformation.apply(*schedule);
+    EXPECT_TRUE(transformation.can_be_applied(builder_opt, analysis_manager));
+    transformation.apply(builder_opt, analysis_manager);
 
     // Check
     EXPECT_EQ(new_root.size(), 3);
@@ -192,14 +193,14 @@ TEST(OutLocalStorage, Array) {
 
     auto structured_sdfg = builder.move();
 
-    auto schedule = std::make_unique<Schedule>(structured_sdfg);
-    auto& builder_opt = schedule->builder();
+    builder::StructuredSDFGBuilder builder_opt(structured_sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     auto& new_root = builder_opt.subject().root();
     // Apply
     transformations::OutLocalStorage transformation(new_root, loop, "C");
-    EXPECT_TRUE(transformation.can_be_applied(*schedule));
-    transformation.apply(*schedule);
+    EXPECT_TRUE(transformation.can_be_applied(builder_opt, analysis_manager));
+    transformation.apply(builder_opt, analysis_manager);
 
     // Check
     {
@@ -358,11 +359,10 @@ TEST(OutLocalStorage, Fail) {
 
     auto structured_sdfg = builder.move();
 
-    auto schedule = std::make_unique<Schedule>(structured_sdfg);
-    auto& analysis_manager = schedule->analysis_manager();
-    auto& builder_opt = schedule->builder();
+    builder::StructuredSDFGBuilder builder_opt(structured_sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
     transformations::OutLocalStorage transformation(root, loop, "C");
-    EXPECT_FALSE(transformation.can_be_applied(*schedule));
+    EXPECT_FALSE(transformation.can_be_applied(builder_opt, analysis_manager));
 }

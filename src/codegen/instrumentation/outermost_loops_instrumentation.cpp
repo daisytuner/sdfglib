@@ -5,9 +5,9 @@
 namespace sdfg {
 namespace codegen {
 
-OutermostLoopsInstrumentation::OutermostLoopsInstrumentation(Schedule& schedule)
-    : Instrumentation(schedule) {
-    auto& analysis_manager = schedule.analysis_manager();
+OutermostLoopsInstrumentation::OutermostLoopsInstrumentation(StructuredSDFG& sdfg)
+    : Instrumentation(sdfg) {
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& loop_tree_analysis = analysis_manager.get<analysis::LoopTreeAnalysis>();
     auto ols = loop_tree_analysis.outermost_loops();
     for (auto loop : ols) {
@@ -27,11 +27,10 @@ void OutermostLoopsInstrumentation::begin_instrumentation(
 
 void OutermostLoopsInstrumentation::end_instrumentation(
     const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream) const {
-    std::string region_name = schedule_.sdfg().name() + "_" + node.element_id();
+    std::string region_name = sdfg_.name() + "_" + node.element_id();
 
-    bool has_metadata =
-        schedule_.sdfg().metadata().find("source_file") != schedule_.sdfg().metadata().end() &&
-        schedule_.sdfg().metadata().find("features_path") != schedule_.sdfg().metadata().end();
+    bool has_metadata = sdfg_.metadata().find("source_file") != sdfg_.metadata().end() &&
+                        sdfg_.metadata().find("features_path") != sdfg_.metadata().end();
 
     if (has_metadata) {
         stream << "__daisy_instrument_exit_with_metadata(";
@@ -48,10 +47,9 @@ void OutermostLoopsInstrumentation::end_instrumentation(
 
     if (has_metadata) {
         stream << ", ";
-        stream << "\"" << schedule_.sdfg().metadata("source_file") << "\", ";
+        stream << "\"" << sdfg_.metadata("source_file") << "\", ";
 
-        std::string features_path =
-            schedule_.sdfg().metadata("features_path") + "/" + region_name + ".npz";
+        std::string features_path = sdfg_.metadata("features_path") + "/" + region_name + ".npz";
         stream << "\"" << features_path << "\"";
     }
 

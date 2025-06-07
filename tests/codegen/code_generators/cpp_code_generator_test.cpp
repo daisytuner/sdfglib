@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/conditional_schedule.h"
 
 using namespace sdfg;
 
@@ -11,9 +10,7 @@ TEST(CPPCodeGeneratorTest, FunctionDefintion) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CPPCodeGenerator generator(schedule);
+    codegen::CPPCodeGenerator generator(*sdfg);
     auto result = generator.function_definition();
     EXPECT_EQ(result, "extern \"C\" void sdfg_a()");
 }
@@ -22,9 +19,7 @@ TEST(CPPCodeGeneratorTest, Dispatch_Includes) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CPPCodeGenerator generator(schedule);
+    codegen::CPPCodeGenerator generator(*sdfg);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.includes().str();
@@ -41,9 +36,7 @@ TEST(CPPCodeGeneratorTest, DispatchStructures_Basic) {
 
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CPPCodeGenerator generator(schedule);
+    codegen::CPPCodeGenerator generator(*sdfg);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -63,9 +56,7 @@ TEST(CPPCodeGeneratorTest, DispatchStructures_Packed) {
 
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CPPCodeGenerator generator(schedule);
+    codegen::CPPCodeGenerator generator(*sdfg);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -88,9 +79,7 @@ TEST(CPPCodeGeneratorTest, DispatchStructures_Nested) {
 
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CPPCodeGenerator generator(schedule);
+    codegen::CPPCodeGenerator generator(*sdfg);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -114,9 +103,7 @@ TEST(CPPCodeGeneratorTest, DispatchGlobals) {
 
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CPPCodeGenerator generator(schedule);
+    codegen::CPPCodeGenerator generator(*sdfg);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.globals().str();

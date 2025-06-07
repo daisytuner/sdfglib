@@ -11,7 +11,7 @@ class MapDispatcher : public NodeDispatcher {
     structured_control_flow::Map& node_;
 
    public:
-    MapDispatcher(LanguageExtension& language_extension, Schedule& schedule,
+    MapDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
                   structured_control_flow::Map& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,

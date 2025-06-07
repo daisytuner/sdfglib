@@ -5,7 +5,6 @@
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
 #include "sdfg/codegen/language_extensions/cuda_language_extension.h"
-#include "sdfg/conditional_schedule.h"
 #include "sdfg/data_flow/library_node.h"
 
 using namespace sdfg;
@@ -19,12 +18,9 @@ TEST(BlockDispatcherTest, DispatchNode) {
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::BlockDispatcher dispatcher(language_extension, schedule.schedule(0), block,
-                                        instrumentation);
+    codegen::Instrumentation instrumentation(*final_sdfg);
+    codegen::BlockDispatcher dispatcher(language_extension, *final_sdfg, block, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -59,12 +55,9 @@ TEST(BlockDispatcherTest, DispatchNode_withDataflow) {
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::BlockDispatcher dispatcher(language_extension, schedule.schedule(0), block,
-                                        instrumentation);
+    codegen::Instrumentation instrumentation(*final_sdfg);
+    codegen::BlockDispatcher dispatcher(language_extension, *final_sdfg, block, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -101,11 +94,8 @@ TEST(DataFlowDispatcherTest, DispatchTasklet) {
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CLanguageExtension language_extension;
-    codegen::DataFlowDispatcher dispatcher(language_extension, schedule.schedule(0).sdfg(),
-                                           block.dataflow());
+    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
 
     codegen::PrettyPrinter main_stream;
     dispatcher.dispatch(main_stream);
@@ -127,11 +117,8 @@ TEST(DataFlowDispatcherTest, DispatchLibraryNodebarrier_local) {
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CUDALanguageExtension language_extension;
-    codegen::DataFlowDispatcher dispatcher(language_extension, schedule.schedule(0).sdfg(),
-                                           block.dataflow());
+    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
 
     codegen::PrettyPrinter main_stream;
     dispatcher.dispatch(main_stream);
@@ -156,12 +143,10 @@ TEST(DataFlowDispatcherTest, DispatchRef_Input)
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CLanguageExtension language_extension;
     codegen::DataFlowDispatcher dispatcher(
         language_extension,
-        schedule.schedule(0).sdfg(),
+        *final_sdfg,
         block.dataflow()
     );
 
@@ -189,12 +174,10 @@ data_flow::Subset{symbolic::integer(2)});
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CLanguageExtension language_extension;
     codegen::DataFlowDispatcher dispatcher(
         language_extension,
-        schedule.schedule(0).sdfg(),
+        *final_sdfg,
         block.dataflow()
     );
 
@@ -220,12 +203,10 @@ TEST(DataFlowDispatcherTest, DispatchRef_Output)
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CLanguageExtension language_extension;
     codegen::DataFlowDispatcher dispatcher(
         language_extension,
-        schedule.schedule(0).sdfg(),
+        *final_sdfg,
         block.dataflow()
     );
 
@@ -258,7 +239,7 @@ data_flow::Subset{symbolic::integer(1)});
     codegen::CLanguageExtension language_extension;
     codegen::DataFlowDispatcher dispatcher(
         language_extension,
-        schedule.schedule(0).sdfg(),
+        *final_sdfg,
         block.dataflow()
     );
 
@@ -282,8 +263,6 @@ TEST(DataFlowDispatcherTest, DispatchRef_Nullptr)
     builder.add_memlet(block, access_node_1, "refs", access_node_2, "void", data_flow::Subset{});
 
     auto final_sdfg = builder.move();
-
-    ConditionalSchedule schedule(final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     codegen::DataFlowDispatcher dispatcher(
@@ -315,12 +294,10 @@ data_flow::Subset{symbolic::integer(0)});
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CLanguageExtension language_extension;
     codegen::DataFlowDispatcher dispatcher(
         language_extension,
-        schedule.schedule(0).sdfg(),
+        *final_sdfg,
         block.dataflow()
     );
 

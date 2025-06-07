@@ -2,7 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "sdfg/schedule.h"
+#include "sdfg/analysis/analysis.h"
+#include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/structured_control_flow/for.h"
 
 using namespace sdfg;
@@ -84,16 +85,15 @@ TEST(LoopInterchangeTest, Map_2D_Tiled) {
 
     auto structured_sdfg = builder.move();
 
-    auto schedule = std::make_unique<Schedule>(structured_sdfg);
-    auto& analysis_manager = schedule->analysis_manager();
-    auto& builder_opt = schedule->builder();
+    builder::StructuredSDFGBuilder builder_opt(structured_sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
     transformations::LoopInterchange transformation(body1, loop1_tile, loop2);
-    EXPECT_TRUE(transformation.can_be_applied(*schedule));
-    transformation.apply(*schedule);
+    EXPECT_TRUE(transformation.can_be_applied(builder_opt, analysis_manager));
+    transformation.apply(builder_opt, analysis_manager);
 
-    auto& new_sdfg = schedule->sdfg();
+    auto& new_sdfg = builder_opt.subject();
 
     EXPECT_EQ(new_sdfg.root().size(), 1);
 
@@ -198,16 +198,15 @@ TEST(LoopInterchangeTest, Reduction_2D_Tiled) {
 
     auto structured_sdfg = builder.move();
 
-    auto schedule = std::make_unique<Schedule>(structured_sdfg);
-    auto& analysis_manager = schedule->analysis_manager();
-    auto& builder_opt = schedule->builder();
+    builder::StructuredSDFGBuilder builder_opt(structured_sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
     transformations::LoopInterchange transformation(body1, loop1_tile, loop2);
-    EXPECT_TRUE(transformation.can_be_applied(*schedule));
-    transformation.apply(*schedule);
+    EXPECT_TRUE(transformation.can_be_applied(builder_opt, analysis_manager));
+    transformation.apply(builder_opt, analysis_manager);
 
-    auto& new_sdfg = schedule->sdfg();
+    auto& new_sdfg = builder_opt.subject();
 
     EXPECT_EQ(new_sdfg.root().size(), 1);
 
@@ -340,16 +339,15 @@ TEST(LoopInterchangeTest, Reduction_3D_Tiled) {
 
     auto structured_sdfg = builder.move();
 
-    auto schedule = std::make_unique<Schedule>(structured_sdfg);
-    auto& analysis_manager = schedule->analysis_manager();
-    auto& builder_opt = schedule->builder();
+    builder::StructuredSDFGBuilder builder_opt(structured_sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
     transformations::LoopInterchange transformation(loop2.root(), loop2_tile, loop3);
-    EXPECT_TRUE(transformation.can_be_applied(*schedule));
-    transformation.apply(*schedule);
+    EXPECT_TRUE(transformation.can_be_applied(builder_opt, analysis_manager));
+    transformation.apply(builder_opt, analysis_manager);
 
-    auto& new_sdfg = schedule->sdfg();
+    auto& new_sdfg = builder_opt.subject();
     EXPECT_EQ(new_sdfg.root().size(), 1);
     EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_sdfg.root().at(0).first) !=
                 nullptr);
@@ -374,10 +372,10 @@ TEST(LoopInterchangeTest, Reduction_3D_Tiled) {
 
     transformations::LoopInterchange transformation2(loop1_tile.root(), *new_loop2,
                                                      *new_loop2_tile);
-    EXPECT_TRUE(transformation2.can_be_applied(*schedule));
-    transformation2.apply(*schedule);
+    EXPECT_TRUE(transformation2.can_be_applied(builder_opt, analysis_manager));
+    transformation2.apply(builder_opt, analysis_manager);
 
-    auto& new_sdfg2 = schedule->sdfg();
+    auto& new_sdfg2 = builder_opt.subject();
     EXPECT_EQ(new_sdfg2.root().size(), 1);
     EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&new_sdfg2.root().at(0).first) !=
                 nullptr);

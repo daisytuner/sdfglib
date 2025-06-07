@@ -2,8 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include "sdfg/analysis/analysis.h"
+#include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/passes/pipeline.h"
-#include "sdfg/schedule.h"
 
 using namespace sdfg;
 
@@ -39,9 +40,8 @@ TEST(LoopSlicingTest, FirstIteration) {
 
     auto structured_sdfg = builder.move();
 
-    auto schedule = std::make_unique<Schedule>(structured_sdfg);
-    auto& analysis_manager = schedule->analysis_manager();
-    auto& builder_opt = schedule->builder();
+    builder::StructuredSDFGBuilder builder_opt(structured_sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
     transformations::LoopSlicing transformation(root, loop);

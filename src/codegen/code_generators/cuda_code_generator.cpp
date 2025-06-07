@@ -7,17 +7,17 @@
 namespace sdfg {
 namespace codegen {
 
-CUDACodeGenerator::CUDACodeGenerator(ConditionalSchedule& schedule)
-    : CodeGenerator(schedule, InstrumentationStrategy::NONE) {
-    if (schedule.schedule(0).sdfg().type() != FunctionType_NV_GLOBAL) {
+CUDACodeGenerator::CUDACodeGenerator(StructuredSDFG& sdfg)
+    : CodeGenerator(sdfg, InstrumentationStrategy::NONE) {
+    if (sdfg.type() != FunctionType_NV_GLOBAL) {
         throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
     }
 };
 
-CUDACodeGenerator::CUDACodeGenerator(ConditionalSchedule& schedule,
+CUDACodeGenerator::CUDACodeGenerator(StructuredSDFG& sdfg,
                                      InstrumentationStrategy instrumentation_strategy)
-    : CodeGenerator(schedule, instrumentation_strategy) {
-    if (schedule.schedule(0).sdfg().type() != FunctionType_NV_GLOBAL) {
+    : CodeGenerator(sdfg, instrumentation_strategy) {
+    if (sdfg.type() != FunctionType_NV_GLOBAL) {
         throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
     }
 };
@@ -31,18 +31,15 @@ bool CUDACodeGenerator::generate() {
 };
 
 std::string CUDACodeGenerator::function_definition() {
-    // Define SDFG as a function
-    auto& function = this->schedule_.schedule(0).sdfg();
-
     /********** Arglist **********/
     std::vector<std::string> args;
-    for (auto& container : function.arguments()) {
-        args.push_back(language_extension_.declaration(container, function.type(container)));
+    for (auto& container : sdfg_.arguments()) {
+        args.push_back(language_extension_.declaration(container, sdfg_.type(container)));
     }
     std::stringstream arglist;
     arglist << sdfg::helpers::join(args, ", ");
 
-    return "extern \"C\" __global__ void " + function.name() + "(" + arglist.str() + ")";
+    return "extern \"C\" __global__ void " + sdfg_.name() + "(" + arglist.str() + ")";
 };
 
 bool CUDACodeGenerator::as_source(const std::filesystem::path& header_path,
@@ -103,10 +100,8 @@ void CUDACodeGenerator::dispatch_includes() {
 };
 
 void CUDACodeGenerator::dispatch_structures() {
-    auto& function = this->schedule_.schedule(0).sdfg();
-
     // Forward declarations
-    for (auto& structure : function.structures()) {
+    for (auto& structure : sdfg_.structures()) {
         this->classes_stream_ << "struct " << structure << ";" << std::endl;
     }
 
@@ -114,13 +109,13 @@ void CUDACodeGenerator::dispatch_structures() {
     typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS> structures_graph;
     typedef boost::graph_traits<structures_graph>::vertex_descriptor Vertex;
     std::vector<std::string> names;
-    for (auto& structure : function.structures()) {
+    for (auto& structure : sdfg_.structures()) {
         names.push_back(structure);
     }
     structures_graph graph(names.size());
 
     for (auto& structure : names) {
-        auto& definition = function.structure(structure);
+        auto& definition = sdfg_.structure(structure);
         for (size_t i = 0; i < definition.num_members(); i++) {
             auto member_type = &definition.member_type(symbolic::integer(i));
             while (dynamic_cast<const types::Array*>(member_type)) {
@@ -144,7 +139,7 @@ void CUDACodeGenerator::dispatch_structures() {
 
     for (auto& structure_index : order) {
         std::string structure = names.at(structure_index);
-        auto& definition = function.structure(structure);
+        auto& definition = sdfg_.structure(structure);
         this->classes_stream_ << "struct ";
         if (definition.is_packed()) {
             this->classes_stream_ << "__attribute__((packed)) ";
@@ -167,9 +162,8 @@ void CUDACodeGenerator::dispatch_structures() {
 };
 
 void CUDACodeGenerator::dispatch_globals() {
-    auto& function = schedule_.schedule(0).sdfg();
-    for (auto& container : function.externals()) {
-        auto& type = function.type(container);
+    for (auto& container : sdfg_.externals()) {
+        auto& type = sdfg_.type(container);
         if (type.storage_type() == types::StorageType_NV_Global) {
             this->globals_stream_ << "extern " << language_extension_.declaration(container, type)
                                   << ";" << std::endl;
@@ -184,66 +178,48 @@ void CUDACodeGenerator::dispatch_globals() {
 };
 
 void CUDACodeGenerator::dispatch_schedule() {
-    auto& function = schedule_.schedule(0).sdfg();
-
     // Declare shared memory
-    for (auto& container : function.externals()) {
-        auto& type = function.type(container);
+    for (auto& container : sdfg_.externals()) {
+        auto& type = sdfg_.type(container);
         if (type.storage_type() == types::StorageType_NV_Shared) {
-            this->main_stream_ << language_extension_.declaration(container,
-                                                                  function.type(container))
+            this->main_stream_ << language_extension_.declaration(container, sdfg_.type(container))
                                << ";" << std::endl;
         }
     }
 
     // Map external variables to internal variables
-    for (auto& container : function.containers()) {
-        if (!function.is_internal(container)) {
+    for (auto& container : sdfg_.containers()) {
+        if (!sdfg_.is_internal(container)) {
             continue;
         }
 
         std::string external_name =
             container.substr(0, container.length() - external_suffix.length());
-        this->main_stream_ << language_extension_.declaration(container, function.type(container));
+        this->main_stream_ << language_extension_.declaration(container, sdfg_.type(container));
         this->main_stream_ << " = "
                            << "&" << external_name;
         this->main_stream_ << ";" << std::endl;
     }
 
     // Declare transient containers
-    for (auto& container : function.containers()) {
-        if (!function.is_transient(container)) {
+    for (auto& container : sdfg_.containers()) {
+        if (!sdfg_.is_transient(container)) {
             continue;
         }
 
         std::string val =
-            this->language_extension_.declaration(container, function.type(container), false, true);
+            this->language_extension_.declaration(container, sdfg_.type(container), false, true);
         if (!val.empty()) {
             this->main_stream_ << val;
             this->main_stream_ << ";" << std::endl;
         }
     }
 
-    for (size_t i = 0; i < schedule_.size(); i++) {
-        auto& schedule = schedule_.schedule(i);
-        auto condition = schedule_.condition(i);
+    // Add instrumentation
+    auto instrumentation = create_instrumentation(instrumentation_strategy_, sdfg_);
 
-        // Add instrumentation
-        auto instrumentation = create_instrumentation(instrumentation_strategy_, schedule);
-
-        if (i > 0) {
-            this->main_stream_ << "else ";
-        }
-
-        this->main_stream_ << "if (" << language_extension_.expression(condition) << ") {\n";
-
-        auto& function_i = schedule.builder().subject();
-        auto dispatcher =
-            create_dispatcher(language_extension_, schedule, function_i.root(), *instrumentation);
-        dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_stream_);
-
-        this->main_stream_ << "}\n";
-    }
+    auto dispatcher = create_dispatcher(language_extension_, sdfg_, sdfg_.root(), *instrumentation);
+    dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_stream_);
 };
 
 }  // namespace codegen

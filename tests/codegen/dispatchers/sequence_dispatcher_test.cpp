@@ -4,7 +4,6 @@
 
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
-#include "sdfg/conditional_schedule.h"
 
 using namespace sdfg;
 
@@ -15,12 +14,9 @@ TEST(SequenceDispatcherTest, DispatchNode_Empty) {
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::SequenceDispatcher dispatcher(language_extension, schedule.schedule(0), root,
-                                           instrumentation);
+    codegen::Instrumentation instrumentation(*final_sdfg);
+    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, root, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -43,12 +39,9 @@ TEST(SequenceDispatcherTest, DispatchNode_Transition) {
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::SequenceDispatcher dispatcher(language_extension, schedule.schedule(0), root,
-                                           instrumentation);
+    codegen::Instrumentation instrumentation(*final_sdfg);
+    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, root, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -73,12 +66,9 @@ TEST(SequenceDispatcherTest, DispatchNode_MultipleBlocks) {
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::SequenceDispatcher dispatcher(language_extension, schedule.schedule(0), root,
-                                           instrumentation);
+    codegen::Instrumentation instrumentation(*final_sdfg);
+    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, root, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

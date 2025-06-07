@@ -3,12 +3,12 @@
 namespace sdfg {
 namespace codegen {
 
-NodeDispatcher::NodeDispatcher(LanguageExtension& language_extension, Schedule& schedule,
+NodeDispatcher::NodeDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
                                structured_control_flow::ControlFlowNode& node,
                                Instrumentation& instrumentation)
     : node_(node),
       language_extension_(language_extension),
-      schedule_(schedule),
+      sdfg_(sdfg),
       instrumentation_(instrumentation) {};
 
 bool NodeDispatcher::begin_node(PrettyPrinter& stream) { return false; };

@@ -8,7 +8,6 @@
 
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/codegen/utils.h"
-#include "sdfg/conditional_schedule.h"
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/symbolic/symbolic.h"
@@ -67,13 +66,12 @@ TEST(DotVisualizerTest, transpose) {
     builder.add_memlet(block, tasklet, "_out", B, "void", {indvar2, indvar1});
 
     auto sdfg2 = builder.move();
-    ConditionalSchedule schedule(sdfg2);
 
     codegen::PrettyPrinter exp;
-    exp << "digraph " << schedule.name() << " {" << std::endl;
+    exp << "digraph " << sdfg2->name() << " {" << std::endl;
     exp.setIndent(4);
     exp << "graph [compound=true];" << std::endl
-        << "subgraph cluster_" << sdfg.name() << " {" << std::endl;
+        << "subgraph cluster_" << sdfg2->name() << " {" << std::endl;
     exp.setIndent(8);
     exp << "node [style=filled,fillcolor=white];" << std::endl
         << "style=filled;color=lightblue;label=\"\";" << std::endl
@@ -108,7 +106,7 @@ TEST(DotVisualizerTest, transpose) {
     exp.setIndent(0);
     exp << "}" << std::endl;
 
-    visualizer::DotVisualizer dot(schedule);
+    visualizer::DotVisualizer dot(*sdfg2);
     dot.visualize();
     EXPECT_EQ(dot.getStream().str(), exp.str());
 }
@@ -190,13 +188,12 @@ TEST(DotVisualizerTest, syrk) {
                     {symbolic::symbol("i"), symbolic::symbol("j_2")});
 
     auto sdfg2 = sdfg.move();
-    ConditionalSchedule schedule(sdfg2);
 
     codegen::PrettyPrinter exp;
-    exp << "digraph " << schedule.name() << " {" << std::endl;
+    exp << "digraph " << sdfg2->name() << " {" << std::endl;
     exp.setIndent(4);
     exp << "graph [compound=true];" << std::endl
-        << "subgraph cluster_" << schedule.schedule(0).sdfg().name() << " {" << std::endl;
+        << "subgraph cluster_" << sdfg2->name() << " {" << std::endl;
     exp.setIndent(8);
     exp << "node [style=filled,fillcolor=white];" << std::endl
         << "style=filled;color=lightblue;label=\"\";" << std::endl
@@ -283,7 +280,7 @@ TEST(DotVisualizerTest, syrk) {
     exp.setIndent(0);
     exp << "}" << std::endl;
 
-    visualizer::DotVisualizer dot(schedule);
+    visualizer::DotVisualizer dot(*sdfg2);
     dot.visualize();
     EXPECT_EQ(dot.getStream().str(), exp.str());
 }
@@ -317,13 +314,12 @@ TEST(DotVisualizerTest, multi_tasklet_block) {
     builder.add_memlet(block, tasklet2, "_out", A3, "void", {symbolic::integer(0)});
 
     auto sdfg2 = builder.move();
-    ConditionalSchedule schedule(sdfg2);
 
     codegen::PrettyPrinter exp;
-    exp << "digraph " << schedule.name() << " {" << std::endl;
+    exp << "digraph " << sdfg2->name() << " {" << std::endl;
     exp.setIndent(4);
     exp << "graph [compound=true];" << std::endl
-        << "subgraph cluster_" << sdfg.name() << " {" << std::endl;
+        << "subgraph cluster_" << sdfg2->name() << " {" << std::endl;
     exp.setIndent(8);
     exp << "node [style=filled,fillcolor=white];" << std::endl
         << "style=filled;color=lightblue;label=\"\";" << std::endl
@@ -350,7 +346,7 @@ TEST(DotVisualizerTest, multi_tasklet_block) {
     exp.setIndent(0);
     exp << "}" << std::endl;
 
-    visualizer::DotVisualizer dot(schedule);
+    visualizer::DotVisualizer dot(*sdfg2);
     dot.visualize();
     EXPECT_EQ(dot.getStream().str(), exp.str());
 }
@@ -387,14 +383,13 @@ TEST(DotVisualizerTest, test_if_else) {
     builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
     builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {});
 
-    auto sdfg = builder.move();
-    ConditionalSchedule schedule(sdfg);
+    auto sdfg2 = builder.move();
 
     codegen::PrettyPrinter exp;
-    exp << "digraph " << schedule.name() << " {" << std::endl;
+    exp << "digraph " << sdfg2->name() << " {" << std::endl;
     exp.setIndent(4);
     exp << "graph [compound=true];" << std::endl
-        << "subgraph cluster_" << schedule.schedule(0).sdfg().name() << " {" << std::endl;
+        << "subgraph cluster_" << sdfg2->name() << " {" << std::endl;
     exp.setIndent(8);
     exp << "node [style=filled,fillcolor=white];" << std::endl
         << "style=filled;color=lightblue;label=\"\";" << std::endl
@@ -446,7 +441,7 @@ TEST(DotVisualizerTest, test_if_else) {
     exp.setIndent(0);
     exp << "}" << std::endl;
 
-    visualizer::DotVisualizer dot(schedule);
+    visualizer::DotVisualizer dot(*sdfg2);
     dot.visualize();
     EXPECT_EQ(dot.getStream().str(), exp.str());
 }
@@ -472,14 +467,13 @@ TEST(DotVisualizerTest, test_while) {
     auto& block2 = builder.add_block(case2, {{sym, symbolic::integer(0)}});
     auto& break1 = builder.add_break(case2);
 
-    auto sdfg = builder.move();
-    ConditionalSchedule schedule(sdfg);
+    auto sdfg2 = builder.move();
 
     codegen::PrettyPrinter exp;
-    exp << "digraph " << schedule.name() << " {" << std::endl;
+    exp << "digraph " << sdfg2->name() << " {" << std::endl;
     exp.setIndent(4);
     exp << "graph [compound=true];" << std::endl
-        << "subgraph cluster_" << schedule.schedule(0).sdfg().name() << " {" << std::endl;
+        << "subgraph cluster_" << sdfg2->name() << " {" << std::endl;
     exp.setIndent(8);
     exp << "node [style=filled,fillcolor=white];" << std::endl
         << "style=filled;color=lightblue;label=\"\";" << std::endl
@@ -527,7 +521,7 @@ TEST(DotVisualizerTest, test_while) {
     exp.setIndent(0);
     exp << "}" << std::endl;
 
-    visualizer::DotVisualizer dot(schedule);
+    visualizer::DotVisualizer dot(*sdfg2);
     dot.visualize();
     EXPECT_EQ(dot.getStream().str(), exp.str());
 }
@@ -580,13 +574,12 @@ TEST(DotVisualizerTest, test_return) {
     builder.add_memlet(block3, tasklet3, "_out", output3, "void", {});
 
     auto sdfg2 = builder.move();
-    ConditionalSchedule schedule(sdfg2);
 
     codegen::PrettyPrinter exp;
-    exp << "digraph " << schedule.name() << " {" << std::endl;
+    exp << "digraph " << sdfg2->name() << " {" << std::endl;
     exp.setIndent(4);
     exp << "graph [compound=true];" << std::endl
-        << "subgraph cluster_" << sdfg.name() << " {" << std::endl;
+        << "subgraph cluster_" << sdfg2->name() << " {" << std::endl;
     exp.setIndent(8);
     exp << "node [style=filled,fillcolor=white];" << std::endl
         << "style=filled;color=lightblue;label=\"\";" << std::endl
@@ -657,7 +650,7 @@ TEST(DotVisualizerTest, test_return) {
     exp.setIndent(0);
     exp << "}" << std::endl;
 
-    visualizer::DotVisualizer dot(schedule);
+    visualizer::DotVisualizer dot(*sdfg2);
     dot.visualize();
     EXPECT_EQ(dot.getStream().str(), exp.str());
 }
@@ -846,13 +839,12 @@ TEST(DotVisualizerTest, test_handleTasklet) {
         builder.add_memlet(block, tasklet, "_out", output, "void", {});
 
         auto sdfg2 = builder.move();
-        ConditionalSchedule schedule(sdfg2);
 
         codegen::PrettyPrinter exp;
-        exp << "digraph " << schedule.name() << " {" << std::endl;
+        exp << "digraph " << sdfg2->name() << " {" << std::endl;
         exp.setIndent(4);
         exp << "graph [compound=true];" << std::endl
-            << "subgraph cluster_" << sdfg.name() << " {" << std::endl;
+            << "subgraph cluster_" << sdfg2->name() << " {" << std::endl;
         exp.setIndent(8);
         exp << "node [style=filled,fillcolor=white];" << std::endl
             << "style=filled;color=lightblue;label=\"\";" << std::endl
@@ -888,7 +880,7 @@ TEST(DotVisualizerTest, test_handleTasklet) {
         exp.setIndent(0);
         exp << "}" << std::endl;
 
-        visualizer::DotVisualizer dot(schedule);
+        visualizer::DotVisualizer dot(*sdfg2);
         dot.visualize();
         EXPECT_EQ(dot.getStream().str(), exp.str());
     }

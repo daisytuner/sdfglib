@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/conditional_schedule.h"
 
 using namespace sdfg;
 
@@ -11,9 +10,7 @@ TEST(CUDACodeGeneratorTest, FunctionDefintion) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL);
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CUDACodeGenerator generator(schedule);
+    codegen::CUDACodeGenerator generator(*sdfg);
     auto result = generator.function_definition();
     EXPECT_EQ(result, "extern \"C\" __global__ void sdfg_a()");
 }
@@ -22,9 +19,7 @@ TEST(CUDACodeGeneratorTest, Dispatch_Includes) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL);
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CUDACodeGenerator generator(schedule);
+    codegen::CUDACodeGenerator generator(*sdfg);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.includes().str();
@@ -42,9 +37,7 @@ TEST(CUDACodeGeneratorTest, DispatchStructures_Basic) {
 
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CUDACodeGenerator generator(schedule);
+    codegen::CUDACodeGenerator generator(*sdfg);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -67,9 +60,7 @@ TEST(CUDACodeGeneratorTest, DispatchStructures_Nested) {
 
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CUDACodeGenerator generator(schedule);
+    codegen::CUDACodeGenerator generator(*sdfg);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -95,9 +86,7 @@ TEST(CUDACodeGeneratorTest, DispatchGlobals) {
 
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CUDACodeGenerator generator(schedule);
+    codegen::CUDACodeGenerator generator(*sdfg);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.globals().str();

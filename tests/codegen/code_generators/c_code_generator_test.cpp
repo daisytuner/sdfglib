@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/conditional_schedule.h"
 
 using namespace sdfg;
 
@@ -11,9 +10,7 @@ TEST(CCodeGeneratorTest, FunctionDefintion) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CCodeGenerator generator(schedule);
+    codegen::CCodeGenerator generator(*sdfg);
     auto result = generator.function_definition();
     EXPECT_EQ(result, "extern void sdfg_a()");
 }
@@ -22,9 +19,7 @@ TEST(CCodeGeneratorTest, Dispatch_Includes) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CCodeGenerator generator(schedule);
+    codegen::CCodeGenerator generator(*sdfg);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.includes().str();
@@ -42,9 +37,7 @@ TEST(CCodeGeneratorTest, DispatchStructures_Basic) {
 
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CCodeGenerator generator(schedule);
+    codegen::CCodeGenerator generator(*sdfg);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -67,9 +60,7 @@ TEST(CCodeGeneratorTest, DispatchStructures_Nested) {
 
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CCodeGenerator generator(schedule);
+    codegen::CCodeGenerator generator(*sdfg);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -93,9 +84,7 @@ TEST(CCodeGeneratorTest, DispatchGlobals) {
 
     auto sdfg = builder.move();
 
-    ConditionalSchedule schedule(sdfg);
-
-    codegen::CCodeGenerator generator(schedule);
+    codegen::CCodeGenerator generator(*sdfg);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.globals().str();

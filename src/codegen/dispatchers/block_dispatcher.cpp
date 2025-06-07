@@ -184,10 +184,10 @@ void DataFlowDispatcher::dispatch(PrettyPrinter& stream) {
     }
 };
 
-BlockDispatcher::BlockDispatcher(LanguageExtension& language_extension, Schedule& schedule,
+BlockDispatcher::BlockDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
                                  structured_control_flow::Block& node,
                                  Instrumentation& instrumentation)
-    : NodeDispatcher(language_extension, schedule, node, instrumentation), node_(node) {
+    : NodeDispatcher(language_extension, sdfg, node, instrumentation), node_(node) {
 
       };
 
@@ -197,8 +197,7 @@ void BlockDispatcher::dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& g
         return;
     }
 
-    auto& sdfg = schedule_.sdfg();
-    DataFlowDispatcher dispatcher(this->language_extension_, sdfg, node_.dataflow());
+    DataFlowDispatcher dispatcher(this->language_extension_, sdfg_, node_.dataflow());
     dispatcher.dispatch(main_stream);
 };
 

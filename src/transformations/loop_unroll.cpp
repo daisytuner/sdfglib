@@ -17,7 +17,8 @@ LoopUnroll::LoopUnroll(structured_control_flow::Sequence& parent,
 
 std::string LoopUnroll::name() { return "LoopUnroll"; };
 
-bool LoopUnroll::can_be_applied(Schedule& schedule) {
+bool LoopUnroll::can_be_applied(builder::StructuredSDFGBuilder& builder,
+                                analysis::AnalysisManager& analysis_manager) {
     // Criterion: Check if the loop iteration count is known and an Integer
     auto iteration_count = get_iteration_count(this->loop_);
     if (iteration_count == SymEngine::null) {
@@ -31,7 +32,6 @@ bool LoopUnroll::can_be_applied(Schedule& schedule) {
     }
 
     // Criterion: Check if the loop indvar is not used as an access_node in the loop body
-    auto& analysis_manager = schedule.analysis_manager();
     auto& users = analysis_manager.get<analysis::Users>();
     auto& body = loop_.root();
     analysis::UsersView body_users(users, body);
@@ -44,9 +44,8 @@ bool LoopUnroll::can_be_applied(Schedule& schedule) {
     return true;
 };
 
-void LoopUnroll::apply(Schedule& schedule) {
-    auto& builder = schedule.builder();
-    auto& analysis_manager = schedule.analysis_manager();
+void LoopUnroll::apply(builder::StructuredSDFGBuilder& builder,
+                       analysis::AnalysisManager& analysis_manager) {
     auto iteration_count = get_iteration_count(this->loop_);
 
     auto& init = loop_.init();

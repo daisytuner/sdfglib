@@ -127,7 +127,6 @@ set(SOURCE_FILES
     src/transformations/out_local_storage.cpp
     src/transformations/transformation.cpp
     src/transformations/utils.cpp
-    src/transformations/vectorization.cpp
     src/types/array.cpp
     src/types/function.cpp
     src/types/pointer.cpp
@@ -140,8 +139,6 @@ set(SOURCE_FILES
     src/function.cpp
     src/sdfg.cpp
     src/structured_sdfg.cpp
-    src/schedule.cpp
-    src/conditional_schedule.cpp
 )
 
 # Original Library

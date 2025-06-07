@@ -18,14 +18,18 @@ class OutLocalStorage : public Transformation {
 
     virtual std::string name() override;
 
-    virtual bool can_be_applied(Schedule& schedule) override;
+    virtual bool can_be_applied(builder::StructuredSDFGBuilder& builder,
+                                analysis::AnalysisManager& analysis_manager) override;
 
-    virtual void apply(Schedule& schedule) override;
+    virtual void apply(builder::StructuredSDFGBuilder& builder,
+                       analysis::AnalysisManager& analysis_manager) override;
 
    private:
-    void apply_array(Schedule& schedule);
+    void apply_array(builder::StructuredSDFGBuilder& builder,
+                     analysis::AnalysisManager& analysis_manager);
 
-    void apply_scalar(Schedule& schedule);
+    void apply_scalar(builder::StructuredSDFGBuilder& builder,
+                      analysis::AnalysisManager& analysis_manager);
 };
 
 }  // namespace transformations

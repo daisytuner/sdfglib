@@ -4,10 +4,9 @@
 #include <sstream>
 #include <string>
 
-#include "sdfg/codegen/utils.h"
-#include "sdfg/conditional_schedule.h"
-
 #include "sdfg/codegen/instrumentation/instrumentation_strategy.h"
+#include "sdfg/codegen/utils.h"
+#include "sdfg/structured_sdfg.h"
 
 namespace sdfg {
 namespace codegen {
@@ -21,7 +20,7 @@ namespace codegen {
 class CodeGenerator {
    protected:
     /// @brief Reference to the schedule
-    ConditionalSchedule& schedule_;
+    StructuredSDFG& sdfg_;
 
     /// @brief Instrumentation strategy
     InstrumentationStrategy instrumentation_strategy_;
@@ -42,8 +41,8 @@ class CodeGenerator {
     PrettyPrinter main_stream_;
 
    public:
-    CodeGenerator(ConditionalSchedule& schedule, InstrumentationStrategy instrumentation_strategy)
-        : schedule_(schedule), instrumentation_strategy_(instrumentation_strategy){};
+    CodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy)
+        : sdfg_(sdfg), instrumentation_strategy_(instrumentation_strategy) {};
 
     virtual ~CodeGenerator() = default;
 

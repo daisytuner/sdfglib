@@ -10,7 +10,6 @@
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/helpers/helpers.h"
-#include "sdfg/schedule.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/for.h"
@@ -379,41 +378,42 @@ std::string Visualizer::expression(const std::string expr) {
     return res;
 }
 
-void Visualizer::visualizeNode(Schedule& schedule, structured_control_flow::ControlFlowNode& node) {
+void Visualizer::visualizeNode(StructuredSDFG& sdfg,
+                               structured_control_flow::ControlFlowNode& node) {
     if (auto block = dynamic_cast<structured_control_flow::Block*>(&node)) {
-        this->visualizeBlock(schedule, *block);
+        this->visualizeBlock(sdfg, *block);
         return;
     }
     if (auto sequence = dynamic_cast<structured_control_flow::Sequence*>(&node)) {
-        this->visualizeSequence(schedule, *sequence);
+        this->visualizeSequence(sdfg, *sequence);
         return;
     }
     if (auto if_else = dynamic_cast<structured_control_flow::IfElse*>(&node)) {
-        this->visualizeIfElse(schedule, *if_else);
+        this->visualizeIfElse(sdfg, *if_else);
         return;
     }
     if (auto while_loop = dynamic_cast<structured_control_flow::While*>(&node)) {
-        this->visualizeWhile(schedule, *while_loop);
+        this->visualizeWhile(sdfg, *while_loop);
         return;
     }
     if (auto loop = dynamic_cast<structured_control_flow::For*>(&node)) {
-        this->visualizeFor(schedule, *loop);
+        this->visualizeFor(sdfg, *loop);
         return;
     }
     if (auto return_node = dynamic_cast<structured_control_flow::Return*>(&node)) {
-        this->visualizeReturn(schedule, *return_node);
+        this->visualizeReturn(sdfg, *return_node);
         return;
     }
     if (auto break_node = dynamic_cast<structured_control_flow::Break*>(&node)) {
-        this->visualizeBreak(schedule, *break_node);
+        this->visualizeBreak(sdfg, *break_node);
         return;
     }
     if (auto continue_node = dynamic_cast<structured_control_flow::Continue*>(&node)) {
-        this->visualizeContinue(schedule, *continue_node);
+        this->visualizeContinue(sdfg, *continue_node);
         return;
     }
     if (auto map_node = dynamic_cast<structured_control_flow::Map*>(&node)) {
-        this->visualizeMap(schedule, *map_node);
+        this->visualizeMap(sdfg, *map_node);
         return;
     }
     throw std::runtime_error("Unsupported control flow node");

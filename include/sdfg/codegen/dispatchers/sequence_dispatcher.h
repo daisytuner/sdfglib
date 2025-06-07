@@ -10,7 +10,7 @@ class SequenceDispatcher : public NodeDispatcher {
     structured_control_flow::Sequence& node_;
 
    public:
-    SequenceDispatcher(LanguageExtension& language_extension, Schedule& schedule,
+    SequenceDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
                        structured_control_flow::Sequence& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
