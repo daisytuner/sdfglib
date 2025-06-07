@@ -6,8 +6,8 @@
 namespace sdfg {
 namespace structured_control_flow {
 
-For::For(const DebugInfo& debug_info, symbolic::Symbol indvar,
-         symbolic::Expression init, symbolic::Expression update, symbolic::Condition condition)
+For::For(const DebugInfo& debug_info, symbolic::Symbol indvar, symbolic::Expression init,
+         symbolic::Expression update, symbolic::Condition condition)
     : StructuredLoop(debug_info),
       indvar_(indvar),
       init_(init),

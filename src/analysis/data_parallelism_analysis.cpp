@@ -2,7 +2,6 @@
 
 #include <regex>
 
-
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/users.h"
 #include "sdfg/codegen/language_extensions/cpp_language_extension.h"
