@@ -9,7 +9,7 @@
 using namespace sdfg;
 
 TEST(SequenceDispatcherTest, DispatchNode_Empty) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -19,7 +19,8 @@ TEST(SequenceDispatcherTest, DispatchNode_Empty) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::SequenceDispatcher dispatcher(language_extension, schedule.schedule(0), root, instrumentation);
+    codegen::SequenceDispatcher dispatcher(language_extension, schedule.schedule(0), root,
+                                           instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -32,7 +33,7 @@ TEST(SequenceDispatcherTest, DispatchNode_Empty) {
 }
 
 TEST(SequenceDispatcherTest, DispatchNode_Transition) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -46,7 +47,8 @@ TEST(SequenceDispatcherTest, DispatchNode_Transition) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::SequenceDispatcher dispatcher(language_extension, schedule.schedule(0), root, instrumentation);
+    codegen::SequenceDispatcher dispatcher(language_extension, schedule.schedule(0), root,
+                                           instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -59,7 +61,7 @@ TEST(SequenceDispatcherTest, DispatchNode_Transition) {
 }
 
 TEST(SequenceDispatcherTest, DispatchNode_MultipleBlocks) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -75,7 +77,8 @@ TEST(SequenceDispatcherTest, DispatchNode_MultipleBlocks) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::SequenceDispatcher dispatcher(language_extension, schedule.schedule(0), root, instrumentation);
+    codegen::SequenceDispatcher dispatcher(language_extension, schedule.schedule(0), root,
+                                           instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

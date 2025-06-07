@@ -15,7 +15,6 @@
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
-#include "sdfg/structured_control_flow/kernel.h"
 #include "sdfg/structured_control_flow/return.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
@@ -413,10 +412,6 @@ void Visualizer::visualizeNode(Schedule& schedule, structured_control_flow::Cont
         this->visualizeContinue(schedule, *continue_node);
         return;
     }
-    if (auto kernel_node = dynamic_cast<structured_control_flow::Kernel*>(&node)) {
-        this->visualizeKernel(schedule, *kernel_node);
-        return;
-    }
     if (auto map_node = dynamic_cast<structured_control_flow::Map*>(&node)) {
         this->visualizeMap(schedule, *map_node);
         return;
@@ -494,9 +489,9 @@ void Visualizer::visualizeForBounds(symbolic::Symbol const& indvar,
     }
 }
 
-void Visualizer::visualizeLibraryNode(const data_flow::LibraryNodeType libnode_type) {
+void Visualizer::visualizeLibraryNode(const data_flow::LibraryNodeCode libnode_type) {
     switch (libnode_type) {
-        case data_flow::LibraryNodeType::LocalBarrier:
+        case data_flow::LibraryNodeCode::barrier_local:
             this->stream_ << "Local Barrier";
             break;
         default:

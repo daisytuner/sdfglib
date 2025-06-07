@@ -20,7 +20,7 @@
 using namespace sdfg;
 
 TEST(DotVisualizerTest, transpose) {
-    builder::StructuredSDFGBuilder builder("transpose");
+    builder::StructuredSDFGBuilder builder("transpose", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -77,24 +77,26 @@ TEST(DotVisualizerTest, transpose) {
     exp.setIndent(8);
     exp << "node [style=filled,fillcolor=white];" << std::endl
         << "style=filled;color=lightblue;label=\"\";" << std::endl
-        << "subgraph cluster_" << loop1.name() << " {" << std::endl;
+        << "subgraph cluster_" << loop1.element_id() << " {" << std::endl;
     exp.setIndent(12);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: i = 0:(M-1)\";"
         << std::endl
-        << loop1.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
-        << "subgraph cluster_" << loop2.name() << " {" << std::endl;
+        << loop1.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl
+        << "subgraph cluster_" << loop2.element_id() << " {" << std::endl;
     exp.setIndent(16);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: j = 0:(N-1)\";"
         << std::endl
-        << loop2.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
-        << "subgraph cluster_" << block.name() << " {" << std::endl;
+        << loop2.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl
+        << "subgraph cluster_" << block.element_id() << " {" << std::endl;
     exp.setIndent(20);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << A.name() << " [penwidth=3.0,label=\"A\"];" << std::endl
-        << tasklet.name() << " [shape=octagon,label=\"_out = _in\"];" << std::endl
-        << A.name() << " -> " << tasklet.name() << " [label=\"   _in = A[i][j]   \"];" << std::endl
-        << tasklet.name() << " -> " << B.name() << " [label=\"   B[j][i] = _out   \"];" << std::endl
-        << B.name() << " [penwidth=3.0,label=\"B\"];" << std::endl;
+        << A.element_id() << " [penwidth=3.0,label=\"A\"];" << std::endl
+        << tasklet.element_id() << " [shape=octagon,label=\"_out = _in\"];" << std::endl
+        << A.element_id() << " -> " << tasklet.element_id() << " [label=\"   _in = A[i][j]   \"];"
+        << std::endl
+        << tasklet.element_id() << " -> " << B.element_id() << " [label=\"   B[j][i] = _out   \"];"
+        << std::endl
+        << B.element_id() << " [penwidth=3.0,label=\"B\"];" << std::endl;
     exp.setIndent(16);
     exp << "}" << std::endl;
     exp.setIndent(12);
@@ -112,7 +114,7 @@ TEST(DotVisualizerTest, transpose) {
 }
 
 TEST(DotVisualizerTest, syrk) {
-    builder::StructuredSDFGBuilder sdfg("sdfg_1");
+    builder::StructuredSDFGBuilder sdfg("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc_symbols(types::PrimitiveType::UInt64);
     sdfg.add_container("M", desc_symbols, true);
@@ -198,79 +200,82 @@ TEST(DotVisualizerTest, syrk) {
     exp.setIndent(8);
     exp << "node [style=filled,fillcolor=white];" << std::endl
         << "style=filled;color=lightblue;label=\"\";" << std::endl
-        << "subgraph cluster_" << loop_i.name() << " {" << std::endl;
+        << "subgraph cluster_" << loop_i.element_id() << " {" << std::endl;
     exp.setIndent(12);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: i = 0:(N-1)\";"
         << std::endl
-        << loop_i.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
-        << "subgraph cluster_" << loop_j_1.name() << " {" << std::endl;
+        << loop_i.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl
+        << "subgraph cluster_" << loop_j_1.element_id() << " {" << std::endl;
     exp.setIndent(16);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: j_1 = 0:i\";"
         << std::endl
-        << loop_j_1.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
-        << "subgraph cluster_" << block1.name() << " {" << std::endl;
+        << loop_j_1.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl
+        << "subgraph cluster_" << block1.element_id() << " {" << std::endl;
     exp.setIndent(20);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << beta_node.name() << " [penwidth=3.0,label=\"beta\"];" << std::endl
-        << C_in_node_1.name() << " [penwidth=3.0,label=\"C\"];" << std::endl
-        << tasklet1.name() << " [shape=octagon,label=\"_out = _in1 * _in2\"];" << std::endl
-        << C_in_node_1.name() << " -> " << tasklet1.name() << " [label=\"   _in1 = C[i][j_1]   \"];"
-        << std::endl
-        << beta_node.name() << " -> " << tasklet1.name() << " [label=\"   _in2 = beta   \"];"
-        << std::endl
-        << tasklet1.name() << " -> " << C_out_node_1.name()
+        << beta_node.element_id() << " [penwidth=3.0,label=\"beta\"];" << std::endl
+        << C_in_node_1.element_id() << " [penwidth=3.0,label=\"C\"];" << std::endl
+        << tasklet1.element_id() << " [shape=octagon,label=\"_out = _in1 * _in2\"];" << std::endl
+        << C_in_node_1.element_id() << " -> " << tasklet1.element_id()
+        << " [label=\"   _in1 = C[i][j_1]   \"];" << std::endl
+        << beta_node.element_id() << " -> " << tasklet1.element_id()
+        << " [label=\"   _in2 = beta   \"];" << std::endl
+        << tasklet1.element_id() << " -> " << C_out_node_1.element_id()
         << " [label=\"   C[i][j_1] = _out   \"];" << std::endl
-        << C_out_node_1.name() << " [penwidth=3.0,label=\"C\"];" << std::endl;
+        << C_out_node_1.element_id() << " [penwidth=3.0,label=\"C\"];" << std::endl;
     exp.setIndent(16);
     exp << "}" << std::endl;
     exp.setIndent(12);
-    exp << "}" << std::endl << "subgraph cluster_" << loop_k.name() << " {" << std::endl;
+    exp << "}" << std::endl << "subgraph cluster_" << loop_k.element_id() << " {" << std::endl;
     exp.setIndent(16);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: k = 0:(M-1)\";"
         << std::endl
-        << loop_k.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
-        << "subgraph cluster_" << loop_j_2.name() << " {" << std::endl;
+        << loop_k.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl
+        << "subgraph cluster_" << loop_j_2.element_id() << " {" << std::endl;
     exp.setIndent(20);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: j_2 = 0:i\";"
         << std::endl
-        << loop_j_2.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
-        << "subgraph cluster_" << block2.name() << " {" << std::endl;
+        << loop_j_2.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl
+        << "subgraph cluster_" << block2.element_id() << " {" << std::endl;
     exp.setIndent(24);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << A_node.name() << " [penwidth=3.0,label=\"A\"];" << std::endl
-        << tasklet2.name() << " [shape=octagon,label=\"_out = _in1 * _in2\"];" << std::endl
-        << A_node.name() << " -> " << tasklet2.name() << " [label=\"   _in1 = A[j_2][k]   \"];"
-        << std::endl
-        << A_node.name() << " -> " << tasklet2.name() << " [label=\"   _in2 = A[i][k]   \"];"
-        << std::endl
-        << tasklet2.name() << " -> " << tmp_node.name() << " [label=\"   tmp = _out   \"];"
-        << std::endl
-        << tmp_node.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"tmp\"];" << std::endl;
+        << A_node.element_id() << " [penwidth=3.0,label=\"A\"];" << std::endl
+        << tasklet2.element_id() << " [shape=octagon,label=\"_out = _in1 * _in2\"];" << std::endl
+        << A_node.element_id() << " -> " << tasklet2.element_id()
+        << " [label=\"   _in1 = A[j_2][k]   \"];" << std::endl
+        << A_node.element_id() << " -> " << tasklet2.element_id()
+        << " [label=\"   _in2 = A[i][k]   \"];" << std::endl
+        << tasklet2.element_id() << " -> " << tmp_node.element_id()
+        << " [label=\"   tmp = _out   \"];" << std::endl
+        << tmp_node.element_id() << " [penwidth=3.0,style=\"dashed,filled\",label=\"tmp\"];"
+        << std::endl;
     exp.setIndent(20);
-    exp << "}" << std::endl << "subgraph cluster_" << block3.name() << " {" << std::endl;
+    exp << "}" << std::endl << "subgraph cluster_" << block3.element_id() << " {" << std::endl;
     exp.setIndent(24);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << tmp_node_2.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"tmp\"];"
+        << tmp_node_2.element_id() << " [penwidth=3.0,style=\"dashed,filled\",label=\"tmp\"];"
         << std::endl
-        << C_in_node_2.name() << " [penwidth=3.0,label=\"C\"];" << std::endl
-        << tasklet3.name() << " [shape=octagon,label=\"_out = _in1 + _in2\"];" << std::endl
-        << C_in_node_2.name() << " -> " << tasklet3.name() << " [label=\"   _in1 = C[i][j_2]   \"];"
-        << std::endl
-        << tmp_node_2.name() << " -> " << tasklet3.name() << " [label=\"   _in2 = tmp   \"];"
-        << std::endl
-        << tasklet3.name() << " -> " << C_out_node_2.name()
+        << C_in_node_2.element_id() << " [penwidth=3.0,label=\"C\"];" << std::endl
+        << tasklet3.element_id() << " [shape=octagon,label=\"_out = _in1 + _in2\"];" << std::endl
+        << C_in_node_2.element_id() << " -> " << tasklet3.element_id()
+        << " [label=\"   _in1 = C[i][j_2]   \"];" << std::endl
+        << tmp_node_2.element_id() << " -> " << tasklet3.element_id()
+        << " [label=\"   _in2 = tmp   \"];" << std::endl
+        << tasklet3.element_id() << " -> " << C_out_node_2.element_id()
         << " [label=\"   C[i][j_2] = _out   \"];" << std::endl
-        << C_out_node_2.name() << " [penwidth=3.0,label=\"C\"];" << std::endl;
+        << C_out_node_2.element_id() << " [penwidth=3.0,label=\"C\"];" << std::endl;
     exp.setIndent(20);
     exp << "}" << std::endl
-        << tasklet2.name() << " -> " << tasklet3.name() << " [ltail=\"cluster_" << block2.name()
-        << "\",lhead=\"cluster_" << block3.name() << "\",minlen=3];" << std::endl;
+        << tasklet2.element_id() << " -> " << tasklet3.element_id() << " [ltail=\"cluster_"
+        << block2.element_id() << "\",lhead=\"cluster_" << block3.element_id() << "\",minlen=3];"
+        << std::endl;
     exp.setIndent(16);
     exp << "}" << std::endl;
     exp.setIndent(12);
     exp << "}" << std::endl
-        << loop_j_1.name() << " -> " << loop_k.name() << " [ltail=\"cluster_" << loop_j_1.name()
-        << "\",lhead=\"cluster_" << loop_k.name() << "\",minlen=3];" << std::endl;
+        << loop_j_1.element_id() << " -> " << loop_k.element_id() << " [ltail=\"cluster_"
+        << loop_j_1.element_id() << "\",lhead=\"cluster_" << loop_k.element_id() << "\",minlen=3];"
+        << std::endl;
     exp.setIndent(8);
     exp << "}" << std::endl;
     exp.setIndent(4);
@@ -284,7 +289,7 @@ TEST(DotVisualizerTest, syrk) {
 }
 
 TEST(DotVisualizerTest, multi_tasklet_block) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc_element(types::PrimitiveType::Double);
     types::Array desc_array(desc_element, symbolic::integer(10));
@@ -322,191 +327,22 @@ TEST(DotVisualizerTest, multi_tasklet_block) {
     exp.setIndent(8);
     exp << "node [style=filled,fillcolor=white];" << std::endl
         << "style=filled;color=lightblue;label=\"\";" << std::endl
-        << "subgraph cluster_" << block.name() << " {" << std::endl;
+        << "subgraph cluster_" << block.element_id() << " {" << std::endl;
     exp.setIndent(12);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << A1.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"A\"];" << std::endl
-        << tasklet1.name() << " [shape=octagon,label=\"_out = 2 * _in + 1\"];" << std::endl
-        << A1.name() << " -> " << tasklet1.name() << " [label=\"   _in = A[0]   \"];" << std::endl
-        << tasklet1.name() << " -> " << A2.name() << " [label=\"   A[0] = _out   \"];" << std::endl
-        << A2.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"A\"];" << std::endl
-        << tasklet2.name() << " [shape=octagon,label=\"_out = 2 * _in + 1\"];" << std::endl
-        << A2.name() << " -> " << tasklet2.name() << " [label=\"   _in = A[0]   \"];" << std::endl
-        << tasklet2.name() << " -> " << A3.name() << " [label=\"   A[0] = _out   \"];" << std::endl
-        << A3.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"A\"];" << std::endl;
-    exp.setIndent(8);
-    exp << "}" << std::endl;
-    exp.setIndent(4);
-    exp << "}" << std::endl;
-    exp.setIndent(0);
-    exp << "}" << std::endl;
-
-    visualizer::DotVisualizer dot(schedule);
-    dot.visualize();
-    EXPECT_EQ(dot.getStream().str(), exp.str());
-}
-
-TEST(DotVisualizerTest, kernel_test_tiled) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
-
-    auto& sdfg = builder.subject();
-    auto& kernel = builder.convert_into_kernel();
-    auto& root = kernel.root();
-
-    // Add containers
-    types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Pointer desc(base_desc);
-    builder.add_container("A", desc, true);
-    builder.add_container("B", desc, true);
-
-    types::Array array_desc(base_desc, {symbolic::integer(8)});
-    types::Array array_desc2(array_desc, {symbolic::integer(512)});
-    builder.add_container("B_shared", array_desc2);
-
-    types::Scalar sym_desc(types::PrimitiveType::UInt32);
-    builder.add_container("N", sym_desc, true);
-    builder.add_container("i", sym_desc);
-    builder.add_container("i_shared", sym_desc);
-    builder.add_container("i_access", sym_desc);
-
-    auto bound = symbolic::symbol("N");
-    auto indvar = symbolic::symbol("i");
-    auto init = symbolic::integer(0);
-    auto condition = symbolic::Lt(indvar, bound);
-    auto update = symbolic::add(indvar, symbolic::integer(8));
-
-    auto& loop = builder.add_for(root, indvar, condition, init, update);
-    auto& body = loop.root();
-
-    auto indvar_shared = symbolic::symbol("i_shared");
-    auto shared_bound =
-        symbolic::And(symbolic::Lt(indvar_shared, symbolic::add(symbolic::integer(8), indvar)),
-                      symbolic::Lt(indvar_shared, symbolic::max(symbolic::integer(0), bound)));
-    auto shared_init = indvar;
-    auto shared_update = symbolic::add(indvar_shared, symbolic::integer(1));
-
-    auto& loop_shared =
-        builder.add_for(body, indvar_shared, shared_bound, shared_init, shared_update);
-    auto& body_shared = loop_shared.root();
-
-    auto& block_shared = builder.add_block(body_shared);
-    auto& B = builder.add_access(block_shared, "B");
-    auto& B_shared = builder.add_access(block_shared, "B_shared");
-
-    auto& tasklet_shared = builder.add_tasklet(block_shared, data_flow::TaskletCode::assign,
-                                               {"_out", base_desc}, {{"_in", base_desc}});
-
-    auto& shared_in = builder.add_memlet(
-        block_shared, B, "void", tasklet_shared, "_in",
-        {symbolic::add(symbolic::mul(symbolic::integer(512), indvar_shared),
-                       symbolic::add(kernel.threadIdx_x(),
-                                     symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x())))});
-
-    auto& shared_out =
-        builder.add_memlet(block_shared, tasklet_shared, "_out", B_shared, "void",
-                           {kernel.threadIdx_x(), symbolic::sub(indvar_shared, indvar)});
-
-    auto& sync_block = builder.add_block(body);
-    auto& libnode =
-        builder.add_library_node(sync_block, data_flow::LibraryNodeType::LocalBarrier, {}, {});
-
-    auto indvar_access = symbolic::symbol("i_access");
-    auto access_bound =
-        symbolic::And(symbolic::Lt(indvar_access, symbolic::add(symbolic::integer(8), indvar)),
-                      symbolic::Lt(indvar_access, symbolic::max(symbolic::integer(0), bound)));
-    auto access_init = indvar;
-    auto access_update = symbolic::add(indvar_access, symbolic::integer(1));
-
-    auto& loop_access =
-        builder.add_for(body, indvar_access, access_bound, access_init, access_update);
-    auto& body_access = loop_access.root();
-
-    auto& block_access = builder.add_block(body_access);
-    auto& B_shared_access = builder.add_access(block_access, "B_shared");
-    auto& A = builder.add_access(block_access, "A");
-
-    auto& tasklet_access = builder.add_tasklet(block_access, data_flow::TaskletCode::assign,
-                                               {"_out", base_desc}, {{"_in", base_desc}});
-
-    auto& access_in =
-        builder.add_memlet(block_access, B_shared_access, "void", tasklet_access, "_in",
-                           {kernel.threadIdx_x(), symbolic::sub(indvar_access, indvar)});
-
-    auto& access_out = builder.add_memlet(
-        block_access, tasklet_access, "_out", A, "void",
-        {symbolic::add(symbolic::mul(symbolic::integer(512), indvar_access),
-                       symbolic::add(kernel.threadIdx_x(),
-                                     symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x())))});
-
-    auto sdfgp = builder.move();
-    ConditionalSchedule schedule(sdfgp);
-
-    codegen::PrettyPrinter exp;
-    exp << "digraph " << schedule.name() << " {" << std::endl;
-    exp.setIndent(4);
-    exp << "graph [compound=true];" << std::endl
-        << "subgraph cluster_" << sdfg.name() << " {" << std::endl;
-    exp.setIndent(8);
-    exp << "node [style=filled,fillcolor=white];" << std::endl
-        << "style=filled;color=lightblue;label=\"\";" << std::endl
-        << "subgraph cluster_" << loop.name() << " {" << std::endl;
-    exp.setIndent(12);
-    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: i = 0:(N-1):8\";"
+        << A1.element_id() << " [penwidth=3.0,style=\"dashed,filled\",label=\"A\"];" << std::endl
+        << tasklet1.element_id() << " [shape=octagon,label=\"_out = 2 * _in + 1\"];" << std::endl
+        << A1.element_id() << " -> " << tasklet1.element_id() << " [label=\"   _in = A[0]   \"];"
         << std::endl
-        << loop.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
-        << "subgraph cluster_" << loop_shared.name() << " {" << std::endl;
-    exp.setIndent(16);
-    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: i_shared = i; And(i_sha"
-        << "red < max(0, N), i_shared < 8 + i); i_shared = 1 + i_shared\";" << std::endl
-        << loop_shared.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
-        << "subgraph cluster_" << block_shared.name() << " {" << std::endl;
-    exp.setIndent(20);
-    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << B.name() << " [penwidth=3.0,label=\"B\"];" << std::endl
-        << tasklet_shared.name() << " [shape=octagon,label=\"_out = _in\"];" << std::endl
-        << B.name() << " -> " << tasklet_shared.name()
-        << " [label=\"   _in = B[threadIdx.x + 512*i_shared + blockIdx.x*blockDim.x]   \"];"
+        << tasklet1.element_id() << " -> " << A2.element_id() << " [label=\"   A[0] = _out   \"];"
         << std::endl
-        << tasklet_shared.name() << " -> " << B_shared.name()
-        << " [label=\"   B_shared[threadIdx.x][-i + i_shared] = _out   \"];" << std::endl
-        << B_shared.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"B_shared\"];"
-        << std::endl;
-    exp.setIndent(16);
-    exp << "}" << std::endl;
-    exp.setIndent(12);
-    exp << "}" << std::endl << "subgraph cluster_" << sync_block.name() << " {" << std::endl;
-    exp.setIndent(16);
-    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << libnode.name() << " [shape=doubleoctagon,label=\"Local Barrier\"];" << std::endl;
-    exp.setIndent(12);
-    exp << "}" << std::endl
-        << loop_shared.name() << " -> " << libnode.name() << " [ltail=\"cluster_"
-        << loop_shared.name() << "\",lhead=\"cluster_" << sync_block.name() << "\",minlen=3];"
+        << A2.element_id() << " [penwidth=3.0,style=\"dashed,filled\",label=\"A\"];" << std::endl
+        << tasklet2.element_id() << " [shape=octagon,label=\"_out = 2 * _in + 1\"];" << std::endl
+        << A2.element_id() << " -> " << tasklet2.element_id() << " [label=\"   _in = A[0]   \"];"
         << std::endl
-        << "subgraph cluster_" << loop_access.name() << " {" << std::endl;
-    exp.setIndent(16);
-    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: i_access = i; And(i_acc"
-        << "ess < max(0, N), i_access < 8 + i); i_access = 1 + i_access\";" << std::endl
-        << loop_access.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
-        << "subgraph cluster_" << block_access.name() << " {" << std::endl;
-    exp.setIndent(20);
-    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << B_shared_access.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"B_shared\"];"
+        << tasklet2.element_id() << " -> " << A3.element_id() << " [label=\"   A[0] = _out   \"];"
         << std::endl
-        << tasklet_access.name() << " [shape=octagon,label=\"_out = _in\"];" << std::endl
-        << B_shared_access.name() << " -> " << tasklet_access.name()
-        << " [label=\"   _in = B_shared[threadIdx.x][-i + i_access]   \"];" << std::endl
-        << tasklet_access.name() << " -> " << A.name()
-        << " [label=\"   A[threadIdx.x + 512*i_access + blockIdx.x*blockDim.x] = _out   \"];"
-        << std::endl
-        << A.name() << " [penwidth=3.0,label=\"A\"];" << std::endl;
-    exp.setIndent(16);
-    exp << "}" << std::endl;
-    exp.setIndent(12);
-    exp << "}" << std::endl
-        << libnode.name() << " -> " << loop_access.name() << " [ltail=\"cluster_"
-        << sync_block.name() << "\",lhead=\"cluster_" << loop_access.name() << "\",minlen=3];"
-        << std::endl;
+        << A3.element_id() << " [penwidth=3.0,style=\"dashed,filled\",label=\"A\"];" << std::endl;
     exp.setIndent(8);
     exp << "}" << std::endl;
     exp.setIndent(4);
@@ -520,7 +356,7 @@ TEST(DotVisualizerTest, kernel_test_tiled) {
 }
 
 TEST(DotVisualizerTest, test_if_else) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -562,40 +398,42 @@ TEST(DotVisualizerTest, test_if_else) {
     exp.setIndent(8);
     exp << "node [style=filled,fillcolor=white];" << std::endl
         << "style=filled;color=lightblue;label=\"\";" << std::endl
-        << "subgraph cluster_" << if_else.name() << " {" << std::endl;
+        << "subgraph cluster_" << if_else.element_id() << " {" << std::endl;
     exp.setIndent(12);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"if:\";" << std::endl
-        << if_else.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
-        << "subgraph cluster_" << if_else.name() << "_0 {" << std::endl;
+        << if_else.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl
+        << "subgraph cluster_" << if_else.element_id() << "_0 {" << std::endl;
     exp.setIndent(16);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"A <= 0\";" << std::endl
-        << "subgraph cluster_" << block.name() << " {" << std::endl;
+        << "subgraph cluster_" << block.element_id() << " {" << std::endl;
     exp.setIndent(20);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << input_node.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"A\"];" << std::endl
-        << tasklet.name() << " [shape=octagon,label=\"_out = _in\"];" << std::endl
-        << input_node.name() << " -> " << tasklet.name() << " [label=\"   _in = A   \"];"
+        << input_node.element_id() << " [penwidth=3.0,style=\"dashed,filled\",label=\"A\"];"
         << std::endl
-        << tasklet.name() << " -> " << output_node.name() << " [label=\"   B = _out   \"];"
-        << std::endl
-        << output_node.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"B\"];"
+        << tasklet.element_id() << " [shape=octagon,label=\"_out = _in\"];" << std::endl
+        << input_node.element_id() << " -> " << tasklet.element_id()
+        << " [label=\"   _in = A   \"];" << std::endl
+        << tasklet.element_id() << " -> " << output_node.element_id()
+        << " [label=\"   B = _out   \"];" << std::endl
+        << output_node.element_id() << " [penwidth=3.0,style=\"dashed,filled\",label=\"B\"];"
         << std::endl;
     exp.setIndent(16);
     exp << "}" << std::endl;
     exp.setIndent(12);
-    exp << "}" << std::endl << "subgraph cluster_" << if_else.name() << "_1 {" << std::endl;
+    exp << "}" << std::endl << "subgraph cluster_" << if_else.element_id() << "_1 {" << std::endl;
     exp.setIndent(16);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"0 < A\";" << std::endl
-        << "subgraph cluster_" << block2.name() << " {" << std::endl;
+        << "subgraph cluster_" << block2.element_id() << " {" << std::endl;
     exp.setIndent(20);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << input_node2.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"B\"];" << std::endl
-        << tasklet2.name() << " [shape=octagon,label=\"_out = _in\"];" << std::endl
-        << input_node2.name() << " -> " << tasklet2.name() << " [label=\"   _in = B   \"];"
+        << input_node2.element_id() << " [penwidth=3.0,style=\"dashed,filled\",label=\"B\"];"
         << std::endl
-        << tasklet2.name() << " -> " << output_node2.name() << " [label=\"   A = _out   \"];"
-        << std::endl
-        << output_node2.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"A\"];"
+        << tasklet2.element_id() << " [shape=octagon,label=\"_out = _in\"];" << std::endl
+        << input_node2.element_id() << " -> " << tasklet2.element_id()
+        << " [label=\"   _in = B   \"];" << std::endl
+        << tasklet2.element_id() << " -> " << output_node2.element_id()
+        << " [label=\"   A = _out   \"];" << std::endl
+        << output_node2.element_id() << " [penwidth=3.0,style=\"dashed,filled\",label=\"A\"];"
         << std::endl;
     exp.setIndent(16);
     exp << "}" << std::endl;
@@ -614,7 +452,7 @@ TEST(DotVisualizerTest, test_if_else) {
 }
 
 TEST(DotVisualizerTest, test_while) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -645,39 +483,39 @@ TEST(DotVisualizerTest, test_while) {
     exp.setIndent(8);
     exp << "node [style=filled,fillcolor=white];" << std::endl
         << "style=filled;color=lightblue;label=\"\";" << std::endl
-        << "subgraph cluster_" << loop.name() << " {" << std::endl;
+        << "subgraph cluster_" << loop.element_id() << " {" << std::endl;
     exp.setIndent(12);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"while:\";" << std::endl
-        << loop.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
-        << "subgraph cluster_" << if_else.name() << " {" << std::endl;
+        << loop.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl
+        << "subgraph cluster_" << if_else.element_id() << " {" << std::endl;
     exp.setIndent(16);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"if:\";" << std::endl
-        << if_else.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
-        << "subgraph cluster_" << if_else.name() << "_0 {" << std::endl;
+        << if_else.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl
+        << "subgraph cluster_" << if_else.element_id() << "_0 {" << std::endl;
     exp.setIndent(20);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"i < 10\";" << std::endl
-        << "subgraph cluster_" << block1.name() << " {" << std::endl;
+        << "subgraph cluster_" << block1.element_id() << " {" << std::endl;
     exp.setIndent(24);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << block1.name() << " [shape=point,style=invis,label=\"\"];" << std::endl;
+        << block1.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl;
     exp.setIndent(20);
     exp << "}" << std::endl
-        << cont1.name() << " [shape=cds,label=\" continue  \"];" << std::endl
-        << block1.name() << " -> " << cont1.name() << " [ltail=\"cluster_" << block1.name()
-        << "\",minlen=3];" << std::endl;
+        << cont1.element_id() << " [shape=cds,label=\" continue  \"];" << std::endl
+        << block1.element_id() << " -> " << cont1.element_id() << " [ltail=\"cluster_"
+        << block1.element_id() << "\",minlen=3];" << std::endl;
     exp.setIndent(16);
-    exp << "}" << std::endl << "subgraph cluster_" << if_else.name() << "_1 {" << std::endl;
+    exp << "}" << std::endl << "subgraph cluster_" << if_else.element_id() << "_1 {" << std::endl;
     exp.setIndent(20);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"10 <= i\";" << std::endl
-        << "subgraph cluster_" << block2.name() << " {" << std::endl;
+        << "subgraph cluster_" << block2.element_id() << " {" << std::endl;
     exp.setIndent(24);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << block2.name() << " [shape=point,style=invis,label=\"\"];" << std::endl;
+        << block2.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl;
     exp.setIndent(20);
     exp << "}" << std::endl
-        << break1.name() << " [shape=cds,label=\" break  \"];" << std::endl
-        << block2.name() << " -> " << break1.name() << " [ltail=\"cluster_" << block2.name()
-        << "\",minlen=3];" << std::endl;
+        << break1.element_id() << " [shape=cds,label=\" break  \"];" << std::endl
+        << block2.element_id() << " -> " << break1.element_id() << " [ltail=\"cluster_"
+        << block2.element_id() << "\",minlen=3];" << std::endl;
     exp.setIndent(16);
     exp << "}" << std::endl;
     exp.setIndent(12);
@@ -695,7 +533,7 @@ TEST(DotVisualizerTest, test_while) {
 }
 
 TEST(DotVisualizerTest, test_return) {
-    builder::StructuredSDFGBuilder builder("test_return");
+    builder::StructuredSDFGBuilder builder("test_return", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -752,62 +590,68 @@ TEST(DotVisualizerTest, test_return) {
     exp.setIndent(8);
     exp << "node [style=filled,fillcolor=white];" << std::endl
         << "style=filled;color=lightblue;label=\"\";" << std::endl
-        << "subgraph cluster_" << block1.name() << " {" << std::endl;
+        << "subgraph cluster_" << block1.element_id() << " {" << std::endl;
     exp.setIndent(12);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << tasklet1.name() << " [shape=octagon,label=\"_out = 0\"];" << std::endl
-        << tasklet1.name() << " -> " << output1.name() << " [label=\"   i = _out   \"];"
+        << tasklet1.element_id() << " [shape=octagon,label=\"_out = 0\"];" << std::endl
+        << tasklet1.element_id() << " -> " << output1.element_id() << " [label=\"   i = _out   \"];"
         << std::endl
-        << output1.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"i\"];" << std::endl;
+        << output1.element_id() << " [penwidth=3.0,style=\"dashed,filled\",label=\"i\"];"
+        << std::endl;
     exp.setIndent(8);
-    exp << "}" << std::endl << "subgraph cluster_" << loop.name() << " {" << std::endl;
+    exp << "}" << std::endl << "subgraph cluster_" << loop.element_id() << " {" << std::endl;
     exp.setIndent(12);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"while:\";" << std::endl
-        << loop.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
-        << "subgraph cluster_" << if_else.name() << " {" << std::endl;
+        << loop.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl
+        << "subgraph cluster_" << if_else.element_id() << " {" << std::endl;
     exp.setIndent(16);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"if:\";" << std::endl
-        << if_else.name() << " [shape=point,style=invis,label=\"\"];" << std::endl
-        << "subgraph cluster_" << if_else.name() << "_0 {" << std::endl;
+        << if_else.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl
+        << "subgraph cluster_" << if_else.element_id() << "_0 {" << std::endl;
     exp.setIndent(20);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"N <= i\";" << std::endl
-        << return_node.name() << " [shape=cds,label=\" return  \"];" << std::endl;
+        << return_node.element_id() << " [shape=cds,label=\" return  \"];" << std::endl;
     exp.setIndent(16);
-    exp << "}" << std::endl << "subgraph cluster_" << if_else.name() << "_1 {" << std::endl;
+    exp << "}" << std::endl << "subgraph cluster_" << if_else.element_id() << "_1 {" << std::endl;
     exp.setIndent(20);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"i < N\";" << std::endl
-        << "subgraph cluster_" << block2.name() << " {" << std::endl;
+        << "subgraph cluster_" << block2.element_id() << " {" << std::endl;
     exp.setIndent(24);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << input2.name() << " [penwidth=3.0,label=\"A\"];" << std::endl
-        << tasklet2.name() << " [shape=octagon,label=\"_out = _in * 2.0\"];" << std::endl
-        << input2.name() << " -> " << tasklet2.name() << " [label=\"   _in = A[i]   \"];"
-        << std::endl
-        << tasklet2.name() << " -> " << output2.name() << " [label=\"   A[i] = _out   \"];"
-        << std::endl
-        << output2.name() << " [penwidth=3.0,label=\"A\"];" << std::endl;
+        << input2.element_id() << " [penwidth=3.0,label=\"A\"];" << std::endl
+        << tasklet2.element_id() << " [shape=octagon,label=\"_out = _in * 2.0\"];" << std::endl
+        << input2.element_id() << " -> " << tasklet2.element_id()
+        << " [label=\"   _in = A[i]   \"];" << std::endl
+        << tasklet2.element_id() << " -> " << output2.element_id()
+        << " [label=\"   A[i] = _out   \"];" << std::endl
+        << output2.element_id() << " [penwidth=3.0,label=\"A\"];" << std::endl;
     exp.setIndent(20);
-    exp << "}" << std::endl << "subgraph cluster_" << block3.name() << " {" << std::endl;
+    exp << "}" << std::endl << "subgraph cluster_" << block3.element_id() << " {" << std::endl;
     exp.setIndent(24);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << input3.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"i\"];" << std::endl
-        << tasklet3.name() << " [shape=octagon,label=\"_out = _in + 1\"];" << std::endl
-        << input3.name() << " -> " << tasklet3.name() << " [label=\"   _in = i   \"];" << std::endl
-        << tasklet3.name() << " -> " << output3.name() << " [label=\"   i = _out   \"];"
+        << input3.element_id() << " [penwidth=3.0,style=\"dashed,filled\",label=\"i\"];"
         << std::endl
-        << output3.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"i\"];" << std::endl;
+        << tasklet3.element_id() << " [shape=octagon,label=\"_out = _in + 1\"];" << std::endl
+        << input3.element_id() << " -> " << tasklet3.element_id() << " [label=\"   _in = i   \"];"
+        << std::endl
+        << tasklet3.element_id() << " -> " << output3.element_id() << " [label=\"   i = _out   \"];"
+        << std::endl
+        << output3.element_id() << " [penwidth=3.0,style=\"dashed,filled\",label=\"i\"];"
+        << std::endl;
     exp.setIndent(20);
     exp << "}" << std::endl
-        << tasklet2.name() << " -> " << tasklet3.name() << " [ltail=\"cluster_" << block2.name()
-        << "\",lhead=\"cluster_" << block3.name() << "\",minlen=3];" << std::endl;
+        << tasklet2.element_id() << " -> " << tasklet3.element_id() << " [ltail=\"cluster_"
+        << block2.element_id() << "\",lhead=\"cluster_" << block3.element_id() << "\",minlen=3];"
+        << std::endl;
     exp.setIndent(16);
     exp << "}" << std::endl;
     exp.setIndent(12);
     exp << "}" << std::endl;
     exp.setIndent(8);
     exp << "}" << std::endl
-        << tasklet1.name() << " -> " << loop.name() << " [ltail=\"cluster_" << block1.name()
-        << "\",lhead=\"cluster_" << loop.name() << "\",minlen=3];" << std::endl;
+        << tasklet1.element_id() << " -> " << loop.element_id() << " [ltail=\"cluster_"
+        << block1.element_id() << "\",lhead=\"cluster_" << loop.element_id() << "\",minlen=3];"
+        << std::endl;
     exp.setIndent(4);
     exp << "}" << std::endl;
     exp.setIndent(0);
@@ -986,7 +830,7 @@ TEST(DotVisualizerTest, test_handleTasklet) {
         {data_flow::TaskletCode::tanhl, "tanhl"}};
     for (const std::pair<const data_flow::TaskletCode, const std::string> code : codes) {
         const size_t arity = data_flow::arity(code.first);
-        builder::StructuredSDFGBuilder builder("test");
+        builder::StructuredSDFGBuilder builder("test", FunctionType_CPU);
 
         auto& sdfg = builder.subject();
         auto& root = sdfg.root();
@@ -1012,10 +856,10 @@ TEST(DotVisualizerTest, test_handleTasklet) {
         exp.setIndent(8);
         exp << "node [style=filled,fillcolor=white];" << std::endl
             << "style=filled;color=lightblue;label=\"\";" << std::endl
-            << "subgraph cluster_" << block.name() << " {" << std::endl;
+            << "subgraph cluster_" << block.element_id() << " {" << std::endl;
         exp.setIndent(12);
         exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-            << tasklet.name() << " [shape=octagon,label=\"";
+            << tasklet.element_id() << " [shape=octagon,label=\"";
         if (code.first == data_flow::TaskletCode::assign) {
             exp << "_out = 0";
         } else if (code.first == data_flow::TaskletCode::fma) {
@@ -1033,9 +877,10 @@ TEST(DotVisualizerTest, test_handleTasklet) {
             exp << ")";
         }
         exp << "\"];" << std::endl
-            << tasklet.name() << " -> " << output.name() << " [label=\"   x = _out   \"];"
-            << std::endl
-            << output.name() << " [penwidth=3.0,style=\"dashed,filled\",label=\"x\"];" << std::endl;
+            << tasklet.element_id() << " -> " << output.element_id()
+            << " [label=\"   x = _out   \"];" << std::endl
+            << output.element_id() << " [penwidth=3.0,style=\"dashed,filled\",label=\"x\"];"
+            << std::endl;
         exp.setIndent(8);
         exp << "}" << std::endl;
         exp.setIndent(4);

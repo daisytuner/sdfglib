@@ -28,8 +28,7 @@ class Map : public StructuredLoop {
 
     std::unique_ptr<Sequence> root_;
 
-    Map(size_t element_id, const DebugInfo& debug_info, symbolic::Symbol indvar,
-        symbolic::Expression num_iterations);
+    Map(const DebugInfo& debug_info, symbolic::Symbol indvar, symbolic::Expression num_iterations);
 
    public:
     Map(const Map& node) = delete;

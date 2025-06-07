@@ -9,7 +9,6 @@
 #include "sdfg/passes/structured_control_flow/dead_cfg_elimination.h"
 #include "sdfg/passes/structured_control_flow/sequence_fusion.h"
 #include "sdfg/structured_control_flow/if_else.h"
-#include "sdfg/structured_control_flow/kernel.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/symbolic.h"
@@ -33,14 +32,7 @@ bool LoopToKernelDim::can_be_applied(Schedule& schedule) {
     auto& builder = schedule.builder();
 
     auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
-
-    // Criterion: Check if ancestor is a kernel
-    if (root.size() != 1) {
-        return false;
-    }
-    auto kernel = dynamic_cast<const sdfg::structured_control_flow::Kernel*>(&root.at(0).first);
-    if (!kernel) {
+    if (sdfg.type() != FunctionType_NV_GLOBAL) {
         return false;
     }
 
@@ -62,15 +54,15 @@ bool LoopToKernelDim::can_be_applied(Schedule& schedule) {
     // Criterion: Kernel dimensions are known and an Integer
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
     auto assumptions = assumptions_analysis.get(loop_.root());
-    auto x_dim_size = assumptions[kernel->blockDim_x()].integer_value();
+    auto x_dim_size = assumptions[symbolic::blockDim_x()].integer_value();
     if (x_dim_size == SymEngine::null) {
         return false;
     }
-    auto y_dim_size = assumptions[kernel->blockDim_y()].integer_value();
+    auto y_dim_size = assumptions[symbolic::blockDim_y()].integer_value();
     if (y_dim_size == SymEngine::null) {
         return false;
     }
-    auto z_dim_size = assumptions[kernel->blockDim_z()].integer_value();
+    auto z_dim_size = assumptions[symbolic::blockDim_z()].integer_value();
     if (z_dim_size == SymEngine::null) {
         return false;
     }
@@ -81,17 +73,17 @@ bool LoopToKernelDim::can_be_applied(Schedule& schedule) {
     bool z_dim_available = false;
 
     if (!symbolic::eq(x_dim_size, symbolic::integer(1))) {
-        if (body_users.reads(kernel->threadIdx_x()->get_name()).empty()) {
+        if (body_users.reads("threadIdx.x").empty()) {
             x_dim_available = true;
         }
     }
     if (!symbolic::eq(y_dim_size, symbolic::integer(1))) {
-        if (body_users.reads(kernel->threadIdx_y()->get_name()).empty()) {
+        if (body_users.reads("threadIdx.y").empty()) {
             y_dim_available = true;
         }
     }
     if (!symbolic::eq(z_dim_size, symbolic::integer(1))) {
-        if (body_users.reads(kernel->threadIdx_z()->get_name()).empty()) {
+        if (body_users.reads("threadIdx.z").empty()) {
             z_dim_available = true;
         }
     }
@@ -141,15 +133,12 @@ bool LoopToKernelDim::can_be_applied(Schedule& schedule) {
 void LoopToKernelDim::apply(Schedule& schedule) {
     auto& analysis_manager = schedule.analysis_manager();
     auto& builder = schedule.builder();
-    auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
-    auto kernel = static_cast<const sdfg::structured_control_flow::Kernel*>(&root.at(0).first);
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
     auto assumptions = assumptions_analysis.get(loop_.root());
-    auto x_dim_size = assumptions[kernel->blockDim_x()].integer_value();
-    auto y_dim_size = assumptions[kernel->blockDim_y()].integer_value();
-    auto z_dim_size = assumptions[kernel->blockDim_z()].integer_value();
+    auto x_dim_size = assumptions[symbolic::blockDim_x()].integer_value();
+    auto y_dim_size = assumptions[symbolic::blockDim_y()].integer_value();
+    auto z_dim_size = assumptions[symbolic::blockDim_z()].integer_value();
 
     bool x_dim_available = false;
     bool y_dim_available = false;
@@ -157,12 +146,12 @@ void LoopToKernelDim::apply(Schedule& schedule) {
     analysis::UsersView body_users(users, loop_.root());
 
     if (!symbolic::eq(x_dim_size, symbolic::integer(1))) {
-        if (body_users.reads(kernel->threadIdx_x()->get_name()).empty()) {
+        if (body_users.reads("threadIdx.x").empty()) {
             x_dim_available = true;
         }
     }
     if (!symbolic::eq(y_dim_size, symbolic::integer(1))) {
-        if (body_users.reads(kernel->threadIdx_y()->get_name()).empty()) {
+        if (body_users.reads("threadIdx.y").empty()) {
             y_dim_available = true;
         }
     }
@@ -183,11 +172,11 @@ void LoopToKernelDim::apply(Schedule& schedule) {
         }
     }
 
-    auto target_dim = kernel->threadIdx_z();
+    auto target_dim = symbolic::threadIdx_z();
     if (x_match) {
-        target_dim = kernel->threadIdx_x();
+        target_dim = symbolic::threadIdx_x();
     } else if (y_match) {
-        target_dim = kernel->threadIdx_y();
+        target_dim = symbolic::threadIdx_y();
     }
 
     auto& parent = builder.parent(loop_);

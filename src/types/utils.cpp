@@ -38,9 +38,9 @@ std::unique_ptr<types::IType> recombine_array_type(const types::IType& type, uin
     } else {
         if (auto atype = dynamic_cast<const types::Array*>(&type)) {
             return std::make_unique<types::Array>(
+                atype->storage_type(), atype->alignment(), atype->initializer(),
                 *recombine_array_type(atype->element_type(), depth - 1, inner_type).get(),
-                atype->num_elements(), atype->device_location(), atype->address_space(),
-                atype->initializer());
+                atype->num_elements());
         } else {
             throw std::runtime_error("construct_type: Non array types are not supported yet!");
         }

@@ -7,7 +7,7 @@
 using namespace sdfg;
 
 TEST(VectorizationTest, Contiguous) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -54,7 +54,7 @@ TEST(VectorizationTest, Contiguous) {
 }
 
 TEST(VectorizationTest, Constant_Assignment) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -101,7 +101,7 @@ TEST(VectorizationTest, Constant_Assignment) {
 }
 
 TEST(VectorizationTest, Constant_Reduction) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -151,7 +151,7 @@ TEST(VectorizationTest, Constant_Reduction) {
 }
 
 TEST(VectorizationTest, Indirection_Scatter) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -211,7 +211,7 @@ TEST(VectorizationTest, Indirection_Scatter) {
 }
 
 TEST(VectorizationTest, Indirection_Gather) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -271,7 +271,7 @@ TEST(VectorizationTest, Indirection_Gather) {
 }
 
 TEST(VectorizationTest, Tiling) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();

@@ -27,7 +27,7 @@ bool ForwardConditionPropagation::propagate_condition(builder::StructuredSDFGBui
         if (symbolic::is_pointer(sym)) {
             return false;
         }
-        if (!symbolic::is_nvptx(sym)) {
+        if (!symbolic::is_nv(sym)) {
             if (!dynamic_cast<const types::Scalar*>(&sdfg.type(sym->get_name()))) {
                 return false;
             }
@@ -96,10 +96,6 @@ bool ForwardConditionPropagation::propagate_condition(builder::StructuredSDFGBui
             queue.push_back(&while_stmt->root());
         } else if (auto sloop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(curr)) {
             queue.push_back(&sloop_stmt->root());
-        } else if (auto kernel_stmt = dynamic_cast<structured_control_flow::Kernel*>(curr)) {
-            queue.push_back(&kernel_stmt->root());
-        } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(curr)) {
-            queue.push_back(&map_stmt->root());
         }
     }
 
@@ -138,10 +134,6 @@ bool ForwardConditionPropagation::run_pass(builder::StructuredSDFGBuilder& build
             queue.push_back(&while_stmt->root());
         } else if (auto sloop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(curr)) {
             queue.push_back(&sloop_stmt->root());
-        } else if (auto kernel_stmt = dynamic_cast<structured_control_flow::Kernel*>(curr)) {
-            queue.push_back(&kernel_stmt->root());
-        } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(curr)) {
-            queue.push_back(&map_stmt->root());
         }
     }
 
@@ -234,10 +226,6 @@ bool BackwardConditionPropagation::run_pass(builder::StructuredSDFGBuilder& buil
         } else if (auto sloop_stmt =
                        dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
             queue.push_back(&sloop_stmt->root());
-        } else if (auto kern_stmt = dynamic_cast<const structured_control_flow::Kernel*>(current)) {
-            queue.push_back(&kern_stmt->root());
-        } else if (auto map_stmt = dynamic_cast<const structured_control_flow::Map*>(current)) {
-            queue.push_back(&map_stmt->root());
         }
     }
 

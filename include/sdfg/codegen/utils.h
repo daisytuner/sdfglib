@@ -55,6 +55,9 @@ class Reference : public types::IType {
    public:
     Reference(const types::IType& reference_);
 
+    Reference(types::StorageType storage_type, size_t alignment, const std::string& initializer,
+              const types::IType& reference_);
+
     std::unique_ptr<types::IType> clone() const override;
 
     types::PrimitiveType primitive_type() const override;
@@ -65,11 +68,7 @@ class Reference : public types::IType {
 
     bool operator==(const types::IType& other) const override;
 
-    uint address_space() const override;
-
-    sdfg::types::DeviceLocation device_location() const override;
-
-    std::string initializer() const override;
+    std::string print() const override;
 };
 
 }  // namespace codegen

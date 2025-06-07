@@ -17,13 +17,13 @@ using namespace sdfg;
 
 TEST(LoopToKernelDimTest, Basic) {
     /*
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_NV_GLOBAL);
 
     auto& sdfg = builder.subject();
     auto& kernel = builder.add_kernel(
         sdfg.root(), sdfg.name(), DebugInfo(), symbolic::integer(1), symbolic::integer(1),
         symbolic::integer(1), symbolic::integer(32), symbolic::integer(8), symbolic::integer(1));
-    auto& root = kernel.root();
+    auto& root = sdfg.root();
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
@@ -71,16 +71,17 @@ TEST(LoopToKernelDimTest, Basic) {
     auto& shared_in = builder.add_memlet(
         block_shared, B, "void", tasklet_shared, "_in",
         {symbolic::add(symbolic::mul(symbolic::integer(512), indvar_shared),
-                       symbolic::add(kernel.threadIdx_x(),
-                                     symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x())))});
+                       symbolic::add(symbolic::threadIdx_x(),
+                                     symbolic::mul(symbolic::blockDim_x(),
+    symbolic::symbol("blockIdx.x"))))});
 
     auto& shared_out =
         builder.add_memlet(block_shared, tasklet_shared, "_out", B_shared, "void",
-                           {kernel.threadIdx_x(), symbolic::sub(indvar_shared, indvar)});
+                           {symbolic::threadIdx_x(), symbolic::sub(indvar_shared, indvar)});
 
     auto& sync_block = builder.add_block(body);
     auto& libnode =
-        builder.add_library_node(sync_block, data_flow::LibraryNodeType::LocalBarrier, {}, {});
+        builder.add_library_node(sync_block, data_flow::LibraryNodeCode::barrier_local, {}, {});
 
     auto indvar_access = symbolic::symbol("i_access");
     auto access_bound =
@@ -102,13 +103,14 @@ TEST(LoopToKernelDimTest, Basic) {
 
     auto& access_in =
         builder.add_memlet(block_access, B_shared_access, "void", tasklet_access, "_in",
-                           {kernel.threadIdx_x(), symbolic::sub(indvar_access, indvar)});
+                           {symbolic::threadIdx_x(), symbolic::sub(indvar_access, indvar)});
 
     auto& access_out = builder.add_memlet(
         block_access, tasklet_access, "_out", A, "void",
         {symbolic::add(symbolic::mul(symbolic::integer(512), indvar_access),
-                       symbolic::add(kernel.threadIdx_x(),
-                                     symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x())))});
+                       symbolic::add(symbolic::threadIdx_x(),
+                                     symbolic::mul(symbolic::blockDim_x(),
+    symbolic::symbol("blockIdx.x"))))});
 
     auto structured_sdfg = builder.move();
 
@@ -117,7 +119,7 @@ TEST(LoopToKernelDimTest, Basic) {
     auto& builder_opt = schedule->builder();
 
     // Apply
-    transformations::LoopToKernelDim transformation(kernel.root(), loop_shared);
+    transformations::LoopToKernelDim transformation(sdfg.root(), loop_shared);
     EXPECT_TRUE(transformation.can_be_applied(*schedule));
     transformation.apply(*schedule);
 
@@ -161,12 +163,12 @@ TEST(LoopToKernelDimTest, Basic) {
                 symbolic::add(
                     symbolic::mul(symbolic::integer(512),
                                   symbolic::add(kernel.threadIdx_y(), loop.indvar())),
-                    symbolic::add(kernel.threadIdx_x(),
-                                  symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x())))));
-        } else if (auto* access_node = dynamic_cast<data_flow::AccessNode*>(&node.dst())) {
-            EXPECT_EQ(access_node->data(), "B_shared");
+                    symbolic::add(symbolic::threadIdx_x(),
+                                  symbolic::mul(symbolic::blockDim_x(),
+    symbolic::symbol("blockIdx.x")))))); } else if (auto* access_node =
+    dynamic_cast<data_flow::AccessNode*>(&node.dst())) { EXPECT_EQ(access_node->data(), "B_shared");
             EXPECT_EQ(node.subset().size(), 2);
-            EXPECT_TRUE(symbolic::eq(node.subset().at(0), kernel.threadIdx_x()));
+            EXPECT_TRUE(symbolic::eq(node.subset().at(0), symbolic::threadIdx_x()));
             EXPECT_TRUE(symbolic::eq(node.subset().at(1), kernel.threadIdx_y()));
         } else {
             FAIL();
@@ -176,13 +178,10 @@ TEST(LoopToKernelDimTest, Basic) {
 }
 
 TEST(LoopToKernelDimTest, DimNotAvailable) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_NV_GLOBAL);
 
     auto& sdfg = builder.subject();
-    auto& kernel = builder.add_kernel(
-        sdfg.root(), sdfg.name(), DebugInfo(), symbolic::integer(1), symbolic::integer(1),
-        symbolic::integer(1), symbolic::integer(32), symbolic::integer(1), symbolic::integer(1));
-    auto& root = kernel.root();
+    auto& root = sdfg.root();
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
@@ -229,17 +228,18 @@ TEST(LoopToKernelDimTest, DimNotAvailable) {
 
     auto& shared_in = builder.add_memlet(
         block_shared, B, "void", tasklet_shared, "_in",
-        {symbolic::add(symbolic::mul(symbolic::integer(512), indvar_shared),
-                       symbolic::add(kernel.threadIdx_x(),
-                                     symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x())))});
+        {symbolic::add(
+            symbolic::mul(symbolic::integer(512), indvar_shared),
+            symbolic::add(symbolic::threadIdx_x(),
+                          symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x"))))});
 
     auto& shared_out =
         builder.add_memlet(block_shared, tasklet_shared, "_out", B_shared, "void",
-                           {kernel.threadIdx_x(), symbolic::sub(indvar_shared, indvar)});
+                           {symbolic::threadIdx_x(), symbolic::sub(indvar_shared, indvar)});
 
     auto& sync_block = builder.add_block(body);
     auto& libnode =
-        builder.add_library_node(sync_block, data_flow::LibraryNodeType::LocalBarrier, {}, {});
+        builder.add_library_node(sync_block, data_flow::LibraryNodeCode::barrier_local, {}, {});
 
     auto indvar_access = symbolic::symbol("i_access");
     auto access_bound =
@@ -261,13 +261,14 @@ TEST(LoopToKernelDimTest, DimNotAvailable) {
 
     auto& access_in =
         builder.add_memlet(block_access, B_shared_access, "void", tasklet_access, "_in",
-                           {kernel.threadIdx_x(), symbolic::sub(indvar_access, indvar)});
+                           {symbolic::threadIdx_x(), symbolic::sub(indvar_access, indvar)});
 
     auto& access_out = builder.add_memlet(
         block_access, tasklet_access, "_out", A, "void",
-        {symbolic::add(symbolic::mul(symbolic::integer(512), indvar_access),
-                       symbolic::add(kernel.threadIdx_x(),
-                                     symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x())))});
+        {symbolic::add(
+            symbolic::mul(symbolic::integer(512), indvar_access),
+            symbolic::add(symbolic::threadIdx_x(),
+                          symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x"))))});
 
     auto structured_sdfg = builder.move();
 
@@ -276,18 +277,15 @@ TEST(LoopToKernelDimTest, DimNotAvailable) {
     auto& builder_opt = schedule->builder();
 
     // Apply
-    transformations::LoopToKernelDim transformation(kernel.root(), loop_shared);
+    transformations::LoopToKernelDim transformation(sdfg.root(), loop_shared);
     EXPECT_FALSE(transformation.can_be_applied(*schedule));
 }
 
 TEST(LoopToKernelDimTest, DimToSmall) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_NV_GLOBAL);
 
     auto& sdfg = builder.subject();
-    auto& kernel = builder.add_kernel(
-        sdfg.root(), sdfg.name(), DebugInfo(), symbolic::integer(1), symbolic::integer(1),
-        symbolic::integer(1), symbolic::integer(32), symbolic::integer(4), symbolic::integer(1));
-    auto& root = kernel.root();
+    auto& root = sdfg.root();
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
@@ -334,17 +332,18 @@ TEST(LoopToKernelDimTest, DimToSmall) {
 
     auto& shared_in = builder.add_memlet(
         block_shared, B, "void", tasklet_shared, "_in",
-        {symbolic::add(symbolic::mul(symbolic::integer(512), indvar_shared),
-                       symbolic::add(kernel.threadIdx_x(),
-                                     symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x())))});
+        {symbolic::add(
+            symbolic::mul(symbolic::integer(512), indvar_shared),
+            symbolic::add(symbolic::threadIdx_x(),
+                          symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x"))))});
 
     auto& shared_out =
         builder.add_memlet(block_shared, tasklet_shared, "_out", B_shared, "void",
-                           {kernel.threadIdx_x(), symbolic::sub(indvar_shared, indvar)});
+                           {symbolic::threadIdx_x(), symbolic::sub(indvar_shared, indvar)});
 
     auto& sync_block = builder.add_block(body);
     auto& libnode =
-        builder.add_library_node(sync_block, data_flow::LibraryNodeType::LocalBarrier, {}, {});
+        builder.add_library_node(sync_block, data_flow::LibraryNodeCode::barrier_local, {}, {});
 
     auto indvar_access = symbolic::symbol("i_access");
     auto access_bound =
@@ -366,13 +365,14 @@ TEST(LoopToKernelDimTest, DimToSmall) {
 
     auto& access_in =
         builder.add_memlet(block_access, B_shared_access, "void", tasklet_access, "_in",
-                           {kernel.threadIdx_x(), symbolic::sub(indvar_access, indvar)});
+                           {symbolic::threadIdx_x(), symbolic::sub(indvar_access, indvar)});
 
     auto& access_out = builder.add_memlet(
         block_access, tasklet_access, "_out", A, "void",
-        {symbolic::add(symbolic::mul(symbolic::integer(512), indvar_access),
-                       symbolic::add(kernel.threadIdx_x(),
-                                     symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x())))});
+        {symbolic::add(
+            symbolic::mul(symbolic::integer(512), indvar_access),
+            symbolic::add(symbolic::threadIdx_x(),
+                          symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x"))))});
 
     auto structured_sdfg = builder.move();
 
@@ -381,18 +381,15 @@ TEST(LoopToKernelDimTest, DimToSmall) {
     auto& builder_opt = schedule->builder();
 
     // Apply
-    transformations::LoopToKernelDim transformation(kernel.root(), loop_shared);
+    transformations::LoopToKernelDim transformation(sdfg.root(), loop_shared);
     EXPECT_FALSE(transformation.can_be_applied(*schedule));
 }
 
 TEST(LoopToKernelDimTest, NonIndvarAccess) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_NV_GLOBAL);
 
     auto& sdfg = builder.subject();
-    auto& kernel = builder.add_kernel(
-        sdfg.root(), sdfg.name(), DebugInfo(), symbolic::integer(1), symbolic::integer(1),
-        symbolic::integer(1), symbolic::integer(32), symbolic::integer(8), symbolic::integer(1));
-    auto& root = kernel.root();
+    auto& root = sdfg.root();
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
@@ -439,16 +436,17 @@ TEST(LoopToKernelDimTest, NonIndvarAccess) {
 
     auto& shared_in = builder.add_memlet(
         block_shared, B, "void", tasklet_shared, "_in",
-        {symbolic::add(symbolic::mul(symbolic::integer(512), indvar_shared),
-                       symbolic::add(kernel.threadIdx_x(),
-                                     symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x())))});
+        {symbolic::add(
+            symbolic::mul(symbolic::integer(512), indvar_shared),
+            symbolic::add(symbolic::threadIdx_x(),
+                          symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x"))))});
 
     auto& shared_out = builder.add_memlet(block_shared, tasklet_shared, "_out", B_shared, "void",
-                                          {kernel.threadIdx_x(), indvar});
+                                          {symbolic::threadIdx_x(), indvar});
 
     auto& sync_block = builder.add_block(body);
     auto& libnode =
-        builder.add_library_node(sync_block, data_flow::LibraryNodeType::LocalBarrier, {}, {});
+        builder.add_library_node(sync_block, data_flow::LibraryNodeCode::barrier_local, {}, {});
 
     auto indvar_access = symbolic::symbol("i_access");
     auto access_bound =
@@ -470,13 +468,14 @@ TEST(LoopToKernelDimTest, NonIndvarAccess) {
 
     auto& access_in =
         builder.add_memlet(block_access, B_shared_access, "void", tasklet_access, "_in",
-                           {kernel.threadIdx_x(), symbolic::sub(indvar_access, indvar)});
+                           {symbolic::threadIdx_x(), symbolic::sub(indvar_access, indvar)});
 
     auto& access_out = builder.add_memlet(
         block_access, tasklet_access, "_out", A, "void",
-        {symbolic::add(symbolic::mul(symbolic::integer(512), indvar_access),
-                       symbolic::add(kernel.threadIdx_x(),
-                                     symbolic::mul(kernel.blockDim_x(), kernel.blockIdx_x())))});
+        {symbolic::add(
+            symbolic::mul(symbolic::integer(512), indvar_access),
+            symbolic::add(symbolic::threadIdx_x(),
+                          symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x"))))});
 
     auto structured_sdfg = builder.move();
 
@@ -485,6 +484,6 @@ TEST(LoopToKernelDimTest, NonIndvarAccess) {
     auto& builder_opt = schedule->builder();
 
     // Apply
-    transformations::LoopToKernelDim transformation(kernel.root(), loop_shared);
+    transformations::LoopToKernelDim transformation(sdfg.root(), loop_shared);
     EXPECT_FALSE(transformation.can_be_applied(*schedule));
 }

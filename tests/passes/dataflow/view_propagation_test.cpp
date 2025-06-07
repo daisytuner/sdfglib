@@ -9,7 +9,7 @@
 using namespace sdfg;
 
 TEST(ViewPropagationTest, Simple) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::Double);
     types::Pointer desc_ptr(desc);

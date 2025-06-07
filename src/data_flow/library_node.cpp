@@ -5,26 +5,43 @@
 namespace sdfg {
 namespace data_flow {
 
-LibraryNode::LibraryNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
-                         DataFlowGraph& parent,
-                         const std::vector<std::pair<std::string, sdfg::types::Scalar>>& outputs,
-                         const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
-                         const LibraryNodeType& call, const bool side_effect)
-    : CodeNode(element_id, debug_info, vertex, parent, outputs, inputs),
-      call_(call),
+LibraryNode::LibraryNode(const DebugInfo& debug_info, const graph::Vertex vertex,
+                         DataFlowGraph& parent, const LibraryNodeCode& code,
+                         const std::vector<std::string>& outputs,
+                         const std::vector<std::string>& inputs, const bool side_effect)
+    : CodeNode(debug_info, vertex, parent),
+      code_(code),
+      outputs_(outputs),
+      inputs_(inputs),
       side_effect_(side_effect) {
 
       };
 
-const LibraryNodeType& LibraryNode::call() const { return this->call_; };
+const LibraryNodeCode& LibraryNode::code() const { return this->code_; };
 
-bool LibraryNode::has_side_effect() const { return this->side_effect_; };
+const std::vector<std::string>& LibraryNode::inputs() const { return this->inputs_; };
+
+const std::vector<std::string>& LibraryNode::outputs() const { return this->outputs_; };
+
+const std::string& LibraryNode::input(size_t index) const { return this->inputs_[index]; };
+
+const std::string& LibraryNode::output(size_t index) const { return this->outputs_[index]; };
+
+bool LibraryNode::side_effect() const { return this->side_effect_; };
+
+bool LibraryNode::needs_connector(size_t index) const {
+    // Is non-constant, if starts with _in prefix
+    if (this->inputs_[index].compare(0, 3, "_in") == 0) {
+        return true;
+    }
+    return false;
+};
 
 std::unique_ptr<DataFlowNode> LibraryNode::clone(const graph::Vertex vertex,
                                                  DataFlowGraph& parent) const {
-    return std::unique_ptr<LibraryNode>(
-        new LibraryNode(this->element_id_, this->debug_info_, vertex, parent, this->outputs_,
-                        this->inputs_, this->call_, this->side_effect_));
+    return std::unique_ptr<LibraryNode>(new LibraryNode(this->debug_info_, vertex, parent,
+                                                        this->code_, this->outputs_, this->inputs_,
+                                                        this->side_effect_));
 };
 
 void LibraryNode::replace(const symbolic::Expression& old_expression,

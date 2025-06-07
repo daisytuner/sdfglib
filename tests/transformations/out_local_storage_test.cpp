@@ -13,7 +13,7 @@
 using namespace sdfg;
 
 TEST(OutLocalStorage, Scalar) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -151,7 +151,7 @@ TEST(OutLocalStorage, Scalar) {
 }
 
 TEST(OutLocalStorage, Array) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -322,7 +322,7 @@ TEST(OutLocalStorage, Array) {
 }
 
 TEST(OutLocalStorage, Fail) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();

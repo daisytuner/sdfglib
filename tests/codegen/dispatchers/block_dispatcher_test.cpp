@@ -11,7 +11,7 @@
 using namespace sdfg;
 
 TEST(BlockDispatcherTest, DispatchNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -37,7 +37,7 @@ TEST(BlockDispatcherTest, DispatchNode) {
 }
 
 TEST(BlockDispatcherTest, DispatchNode_withDataflow) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -79,7 +79,7 @@ TEST(BlockDispatcherTest, DispatchNode_withDataflow) {
 }
 
 TEST(DataFlowDispatcherTest, DispatchTasklet) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -115,15 +115,15 @@ TEST(DataFlowDispatcherTest, DispatchTasklet) {
               "_in2;\n\n    c = _out;\n}\n");
 }
 
-TEST(DataFlowDispatcherTest, DispatchLibraryNodeLocalBarrier) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+TEST(DataFlowDispatcherTest, DispatchLibraryNodebarrier_local) {
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
     auto& block = builder.add_block(root);
 
     auto& library_node =
-        builder.add_library_node(block, data_flow::LibraryNodeType::LocalBarrier, {}, {});
+        builder.add_library_node(block, data_flow::LibraryNodeCode::barrier_local, {}, {});
 
     auto final_sdfg = builder.move();
 
@@ -142,7 +142,7 @@ TEST(DataFlowDispatcherTest, DispatchLibraryNodeLocalBarrier) {
 /*
 TEST(DataFlowDispatcherTest, DispatchRef_Input)
 {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -173,7 +173,7 @@ TEST(DataFlowDispatcherTest, DispatchRef_Input)
 
 TEST(DataFlowDispatcherTest, DispatchRef_InputWithSubset)
 {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -206,7 +206,7 @@ data_flow::Subset{symbolic::integer(2)});
 
 TEST(DataFlowDispatcherTest, DispatchRef_Output)
 {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -237,7 +237,7 @@ TEST(DataFlowDispatcherTest, DispatchRef_Output)
 
 TEST(DataFlowDispatcherTest, DispatchRef_OutputWithSubset)
 {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -270,7 +270,7 @@ data_flow::Subset{symbolic::integer(1)});
 
 TEST(DataFlowDispatcherTest, DispatchRef_Nullptr)
 {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -300,7 +300,7 @@ TEST(DataFlowDispatcherTest, DispatchRef_Nullptr)
 
 TEST(DataFlowDispatcherTest, DispatchRef_Nullptr_Subset)
 {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 

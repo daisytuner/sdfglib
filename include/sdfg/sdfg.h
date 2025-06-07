@@ -54,7 +54,7 @@ class SDFG : public Function {
     const control_flow::State* start_state_;
 
    public:
-    SDFG(const std::string& name);
+    SDFG(const std::string& name, FunctionType type);
 
     SDFG(const SDFG& sdfg) = delete;
     SDFG& operator=(const SDFG&) = delete;
@@ -134,10 +134,6 @@ class SDFG : public Function {
 
     std::list<std::list<const control_flow::InterstateEdge*>> all_simple_paths(
         const control_flow::State& src, const control_flow::State& dst) const;
-
-    /***** Section: Serialization *****/
-
-    void as_dot(std::ostream& f) const;
 };
 
 }  // namespace sdfg

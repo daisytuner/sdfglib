@@ -8,19 +8,19 @@ namespace codegen {
 
 void HighwayDispatcher::dispatch_declarations(const structured_control_flow::ControlFlowNode& node,
                                               PrettyPrinter& stream) {
-    auto& sdfg = schedule_.sdfg();
-    for (auto& container : schedule_.node_allocations(&node)) {
+    // auto& sdfg = schedule_.sdfg();
+    /*for (auto& container : schedule_.node_allocations(&node)) {
         if (container == node_.indvar()->get_name()) {
             continue;
         }
         auto& type = sdfg.type(container);
         stream << language_extension_.declaration(container, type) << ";" << std::endl;
-    }
+    }*/
 };
 
 void HighwayDispatcher::dispatch_declarations_vector(
     const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream) {
-    auto& sdfg = schedule_.sdfg();
+    /*auto& sdfg = schedule_.sdfg();
     for (auto& container : schedule_.allocations(&node)) {
         if (container == node_.indvar()->get_name()) {
             continue;
@@ -43,7 +43,7 @@ void HighwayDispatcher::dispatch_declarations_vector(
                    << ");" << std::endl;
         }
         this->declared_vectors_.insert(container);
-    }
+    }*/
 };
 
 void HighwayDispatcher::dispatch(structured_control_flow::ControlFlowNode& node,
@@ -120,7 +120,7 @@ void HighwayDispatcher::dispatch_tasklet(const data_flow::DataFlowGraph& graph,
 
     types::PrimitiveType operation_type = types::PrimitiveType::Void;
     if (tasklet.inputs().empty()) {
-        operation_type = tasklet.output(0).second.primitive_type();
+        operation_type = tasklet.output().second.primitive_type();
     } else {
         operation_type = tasklet.input(0).second.primitive_type();
     }
@@ -707,14 +707,13 @@ std::string HighwayDispatcher::indirection_to_cpp(const symbolic::Expression& ac
 };
 
 std::string HighwayDispatcher::function_name(const structured_control_flow::ControlFlowNode& node) {
-    return node.name();
+    return node.element_id();
 };
 
 std::vector<std::string> HighwayDispatcher::function_arguments(
     Schedule& schedule, structured_control_flow::ControlFlowNode& node) {
-
     // Local variables
-    auto allocations = schedule.allocations(&node);
+    // auto allocations = schedule.allocations(&node);
 
     // All read and write sets
     auto& analysis_manager = schedule.analysis_manager();
@@ -722,11 +721,11 @@ std::vector<std::string> HighwayDispatcher::function_arguments(
     analysis::UsersView node_users(users, node);
 
     std::unordered_set<std::string> arguments_unique;
-    for (auto& use : node_users.uses()) {
+    /*for (auto& use : node_users.uses()) {
         if (allocations.find(use->container()) == allocations.end()) {
             arguments_unique.insert(use->container());
         }
-    }
+    }*/
     std::vector<std::string> arguments_vector(arguments_unique.begin(), arguments_unique.end());
     std::sort(arguments_vector.begin(), arguments_vector.end());
 
@@ -932,7 +931,8 @@ std::string HighwayDispatcher::tasklet_to_simd_instruction(data_flow::TaskletCod
 };
 
 HighwayDispatcher::HighwayDispatcher(LanguageExtension& language_extension, Schedule& schedule,
-                                     structured_control_flow::For& node, Instrumentation& instrumentation)
+                                     structured_control_flow::For& node,
+                                     Instrumentation& instrumentation)
     : NodeDispatcher(language_extension, schedule, node, instrumentation),
       node_(node),
       indvar_(node.indvar()) {
@@ -1133,7 +1133,7 @@ void HighwayDispatcher::dispatch(PrettyPrinter& main_stream, PrettyPrinter& glob
 
 void HighwayDispatcher::dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                                       PrettyPrinter& library_stream) {
-    auto& sdfg = schedule_.sdfg();
+    // auto& sdfg = schedule_.sdfg();
 
     // Indvar and bound
     auto indvar = node_.indvar();
@@ -1141,11 +1141,11 @@ void HighwayDispatcher::dispatch_node(PrettyPrinter& main_stream, PrettyPrinter&
         symbolic::subs(node_.condition(), indvar,
                        symbolic::symbol("(" + indvar->get_name() + " + hn::Lanes(daisy_vec_i))"));
 
-    if (schedule_.allocation_lifetime(indvar->get_name()) == &this->node_) {
+    /*if (schedule_.allocation_lifetime(indvar->get_name()) == &this->node_) {
         main_stream << language_extension_.declaration(indvar->get_name(),
                                                        sdfg.type(indvar->get_name()))
                     << ";" << std::endl;
-    }
+    }*/
     main_stream << indvar->get_name() << " = " << language_extension_.expression(node_.init())
                 << ";" << std::endl;
 

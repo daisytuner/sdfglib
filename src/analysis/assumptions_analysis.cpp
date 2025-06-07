@@ -37,9 +37,6 @@ void AssumptionsAnalysis::traverse(structured_control_flow::Sequence& root) {
         } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(current)) {
             this->visit_for(for_stmt);
             queue.push_back(&for_stmt->root());
-        } else if (auto kern_stmt = dynamic_cast<const structured_control_flow::Kernel*>(current)) {
-            this->visit_kernel(kern_stmt);
-            queue.push_back(&kern_stmt->root());
         } else if (auto map_stmt = dynamic_cast<const structured_control_flow::Map*>(current)) {
             this->visit_map(map_stmt);
             queue.push_back(&map_stmt->root());
@@ -139,68 +136,6 @@ void AssumptionsAnalysis::visit_map(const structured_control_flow::Map* map) {
 
     body_assumptions[sym].lower_bound(symbolic::zero());
     body_assumptions[sym].upper_bound(num_iterations);
-}
-
-void AssumptionsAnalysis::visit_kernel(const structured_control_flow::Kernel* kernel) {
-    auto& body = kernel->root();
-    if (this->assumptions_.find(&body) == this->assumptions_.end()) {
-        this->assumptions_.insert({&body, symbolic::Assumptions()});
-    }
-    auto& body_assumptions = this->assumptions_[&body];
-
-    auto global_assumptions = this->assumptions_[&sdfg_.root()];
-
-    std::vector<std::pair<symbolic::Symbol, symbolic::Expression>> dimensions = {
-        {kernel->blockDim_x(), kernel->blockDim_x_init()},
-        {kernel->blockDim_y(), kernel->blockDim_y_init()},
-        {kernel->blockDim_z(), kernel->blockDim_z_init()},
-        {kernel->gridDim_x(), kernel->gridDim_x_init()},
-        {kernel->gridDim_y(), kernel->gridDim_y_init()},
-        {kernel->gridDim_z(), kernel->gridDim_z_init()},
-    };
-
-    // Augment body assumptions by global assumptions
-    for (auto& entry : dimensions) {
-        for (auto& atom : symbolic::atoms(entry.second)) {
-            auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom);
-            if (global_assumptions.find(sym) != global_assumptions.end()) {
-                if (body_assumptions.find(sym) == body_assumptions.end()) {
-                    body_assumptions.insert({sym, symbolic::Assumption(sym)});
-                    body_assumptions[sym].lower_bound(global_assumptions[sym].lower_bound());
-                    body_assumptions[sym].upper_bound(global_assumptions[sym].upper_bound());
-                }
-            }
-        }
-    }
-
-    for (auto& entry : dimensions) {
-        auto& dim = entry.first;
-        auto& init = entry.second;
-        body_assumptions[dim].lower_bound(symbolic::lower_bound_analysis(init, body_assumptions));
-        body_assumptions[dim].upper_bound(symbolic::upper_bound_analysis(init, body_assumptions));
-    }
-
-    body_assumptions[kernel->blockIdx_x()].lower_bound(symbolic::zero());
-    body_assumptions[kernel->blockIdx_y()].lower_bound(symbolic::zero());
-    body_assumptions[kernel->blockIdx_z()].lower_bound(symbolic::zero());
-
-    body_assumptions[kernel->blockIdx_x()].upper_bound(
-        symbolic::sub(kernel->gridDim_x(), symbolic::integer(1)));
-    body_assumptions[kernel->blockIdx_y()].upper_bound(
-        symbolic::sub(kernel->gridDim_y(), symbolic::integer(1)));
-    body_assumptions[kernel->blockIdx_z()].upper_bound(
-        symbolic::sub(kernel->gridDim_z(), symbolic::integer(1)));
-
-    body_assumptions[kernel->threadIdx_x()].lower_bound(symbolic::zero());
-    body_assumptions[kernel->threadIdx_y()].lower_bound(symbolic::zero());
-    body_assumptions[kernel->threadIdx_z()].lower_bound(symbolic::zero());
-
-    body_assumptions[kernel->threadIdx_x()].upper_bound(
-        symbolic::sub(kernel->blockDim_x(), symbolic::integer(1)));
-    body_assumptions[kernel->threadIdx_y()].upper_bound(
-        symbolic::sub(kernel->blockDim_y(), symbolic::integer(1)));
-    body_assumptions[kernel->threadIdx_z()].upper_bound(
-        symbolic::sub(kernel->blockDim_z(), symbolic::integer(1)));
 }
 
 void AssumptionsAnalysis::run(analysis::AnalysisManager& analysis_manager) {

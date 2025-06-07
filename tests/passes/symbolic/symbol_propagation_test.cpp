@@ -7,7 +7,7 @@
 using namespace sdfg;
 
 TEST(SymbolPropagationTest, Transition2Transition_Constant) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -41,7 +41,7 @@ TEST(SymbolPropagationTest, Transition2Transition_Constant) {
 }
 
 TEST(SymbolPropagationTest, Transition2Transition_Symbol) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("N", desc, true);
@@ -77,7 +77,7 @@ TEST(SymbolPropagationTest, Transition2Transition_Symbol) {
 }
 
 TEST(SymbolPropagationTest, Transition2Transition_DataRace) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("N", desc, true);
@@ -118,7 +118,7 @@ TEST(SymbolPropagationTest, Transition2Transition_DataRace) {
 }
 
 TEST(SymbolPropagationTest, Transition2Memlet_Constant) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     types::Array array(desc, symbolic::integer(10));
@@ -156,7 +156,7 @@ TEST(SymbolPropagationTest, Transition2Memlet_Constant) {
 }
 
 TEST(SymbolPropagationTest, Transition2Memlet_Argument) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     types::Array array(desc, symbolic::integer(10));
@@ -194,7 +194,7 @@ TEST(SymbolPropagationTest, Transition2Memlet_Argument) {
 }
 
 TEST(SymbolPropagationTest, Transition2IfElse_Constant) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -239,7 +239,7 @@ TEST(SymbolPropagationTest, Transition2IfElse_Constant) {
 }
 
 TEST(SymbolPropagationTest, Transition2IfElse_Argument) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -287,7 +287,7 @@ TEST(SymbolPropagationTest, Transition2IfElse_Argument) {
 }
 
 TEST(SymbolPropagationTest, Transition2IfElse_Negative) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -325,7 +325,7 @@ TEST(SymbolPropagationTest, Transition2IfElse_Negative) {
 }
 
 TEST(SymbolPropagationTest, Transition2For_Init) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -351,7 +351,7 @@ TEST(SymbolPropagationTest, Transition2For_Init) {
 }
 
 TEST(SymbolPropagationTest, Transition2For_Condition) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -379,7 +379,7 @@ TEST(SymbolPropagationTest, Transition2For_Condition) {
 }
 
 TEST(SymbolPropagationTest, Transition2For_Update) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -406,7 +406,7 @@ TEST(SymbolPropagationTest, Transition2For_Update) {
 }
 
 TEST(SymbolPropagationTest, Transition2While_In) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);

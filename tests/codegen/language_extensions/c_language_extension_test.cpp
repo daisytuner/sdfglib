@@ -88,7 +88,7 @@ TEST(CLanguageExtensionTest, Declaration_Pointer) {
     codegen::CLanguageExtension generator;
     auto result =
         generator.declaration("var", types::Pointer(types::Scalar(types::PrimitiveType::Int32)));
-    EXPECT_EQ(result, "int (*var)");
+    EXPECT_EQ(result, "int *var");
 }
 
 TEST(CLanguageExtensionTest, Declaration_Array) {
@@ -119,67 +119,15 @@ TEST(CLanguageExtensionTest, Declaration_PointerToArray) {
     EXPECT_EQ(result, "int (*var)[10]");
 }
 
-TEST(CLanguageExtensionTest, Allocation_Scalar) {
-    codegen::CLanguageExtension generator;
-    auto result = generator.allocation("var", types::Scalar(types::PrimitiveType::Int32));
-    EXPECT_EQ(result, "int var");
-}
-
-TEST(CLanguageExtensionTest, Allocation_Array) {
-    codegen::CLanguageExtension generator;
-    auto result = generator.allocation(
-        "var", types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)));
-    EXPECT_EQ(result, "int var[10] __attribute__((aligned(1)))");
-}
-
-TEST(CLanguageExtensionTest, Allocation_Pointer) {
-    codegen::CLanguageExtension generator;
-    auto result =
-        generator.allocation("var", types::Pointer(types::Scalar(types::PrimitiveType::Float)));
-    EXPECT_EQ(result, "float (*var) = (float (*)) malloc(1 * sizeof(float ))");
-}
-
-TEST(CLanguageExtensionTest, Allocation_Struct) {
-    codegen::CLanguageExtension generator;
-    auto result = generator.allocation("var", types::Structure("MyStruct"));
-    EXPECT_EQ(result, "MyStruct var");
-}
-
-TEST(CLanguageExtensionTest, Deallocation_Scalar) {
-    codegen::CLanguageExtension generator;
-    auto result = generator.deallocation("var", types::Scalar(types::PrimitiveType::Int32));
-    EXPECT_EQ(result, "");
-}
-
-TEST(CLanguageExtensionTest, Deallocation_Array) {
-    codegen::CLanguageExtension generator;
-    auto result = generator.deallocation(
-        "var", types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)));
-    EXPECT_EQ(result, "");
-}
-
-TEST(CLanguageExtensionTest, Deallocation_Pointer) {
-    codegen::CLanguageExtension generator;
-    auto result =
-        generator.deallocation("var", types::Pointer(types::Scalar(types::PrimitiveType::Float)));
-    EXPECT_EQ(result, "free(var)");
-}
-
-TEST(CLanguageExtensionTest, Deallocation_Struct) {
-    codegen::CLanguageExtension generator;
-    auto result = generator.deallocation("var", types::Structure("MyStruct"));
-    EXPECT_EQ(result, "");
-}
-
 TEST(CLanguageExtensionTest, Typecast) {
     codegen::CLanguageExtension generator;
     auto result =
         generator.type_cast("var", types::Pointer(types::Scalar(types::PrimitiveType::Float)));
-    EXPECT_EQ(result, "(float (*)) var");
+    EXPECT_EQ(result, "(float *) var");
 }
 
 TEST(CLanguageExtensionTest, SubsetToCpp_Scalar) {
-    builder::SDFGBuilder builder("sdfg");
+    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     codegen::CLanguageExtension generator;
@@ -189,7 +137,7 @@ TEST(CLanguageExtensionTest, SubsetToCpp_Scalar) {
 }
 
 TEST(CLanguageExtensionTest, SubsetToCpp_Array) {
-    builder::SDFGBuilder builder("sdfg");
+    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     codegen::CLanguageExtension generator;
@@ -200,7 +148,7 @@ TEST(CLanguageExtensionTest, SubsetToCpp_Array) {
 }
 
 TEST(CLanguageExtensionTest, SubsetToCpp_Struct) {
-    builder::SDFGBuilder builder("sdfg");
+    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     auto& struct_def = builder.add_structure("MyStruct", false);

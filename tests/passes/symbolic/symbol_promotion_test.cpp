@@ -10,7 +10,7 @@
 using namespace sdfg;
 
 TEST(SymbolPromotionTest, as_symbol_int) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -29,7 +29,7 @@ TEST(SymbolPromotionTest, as_symbol_int) {
 }
 
 TEST(SymbolPromotionTest, as_symbol_long) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -48,7 +48,7 @@ TEST(SymbolPromotionTest, as_symbol_long) {
 }
 
 TEST(SymbolPromotionTest, as_symbol_input) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -70,7 +70,7 @@ TEST(SymbolPromotionTest, as_symbol_input) {
 }
 
 TEST(SymbolPromotionTest, Assignment1) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -111,7 +111,7 @@ TEST(SymbolPromotionTest, Assignment1) {
 }
 
 TEST(SymbolPromotionTest, Assignment2) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -156,7 +156,7 @@ TEST(SymbolPromotionTest, Assignment2) {
 }
 
 TEST(SymbolPromotionTest, Add1) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -197,7 +197,7 @@ TEST(SymbolPromotionTest, Add1) {
 }
 
 TEST(SymbolPromotionTest, Add2) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -243,7 +243,7 @@ TEST(SymbolPromotionTest, Add2) {
 }
 
 TEST(SymbolPromotionTest, Sub1) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -284,7 +284,7 @@ TEST(SymbolPromotionTest, Sub1) {
 }
 
 TEST(SymbolPromotionTest, Sub2) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -330,7 +330,7 @@ TEST(SymbolPromotionTest, Sub2) {
 }
 
 TEST(SymbolPromotionTest, Mul1) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -371,7 +371,7 @@ TEST(SymbolPromotionTest, Mul1) {
 }
 
 TEST(SymbolPromotionTest, Mul2) {
-    builder::StructuredSDFGBuilder builder("sdfg");
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);

@@ -1,5 +1,8 @@
 #include "sdfg/analysis/data_parallelism_analysis.h"
 
+#include <regex>
+
+
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/users.h"
 #include "sdfg/codegen/language_extensions/cpp_language_extension.h"
@@ -661,6 +664,10 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
     }
     map_2 += "] : " + helpers::join(constraints, " and ") + " }";
 
+    // Replace NV symbols with names without .
+    map_1 = std::regex_replace(map_1, std::regex("\\."), "_");
+    map_2 = std::regex_replace(map_2, std::regex("\\."), "_");
+
     isl_map* index_map_1 = isl_map_read_from_str(ctx, map_1.c_str());
     if (!index_map_1) {
         isl_ctx_free(ctx);
@@ -946,11 +953,6 @@ void DataParallelismAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                        dynamic_cast<const structured_control_flow::StructuredLoop*>(current)) {
             this->loops_.insert(sloop_stmt);
             queue.push_back(&sloop_stmt->root());
-        } else if (auto kern_stmt = dynamic_cast<const structured_control_flow::Kernel*>(current)) {
-            // this->loops_.insert(kern_stmt);
-            queue.push_back(&kern_stmt->root());
-        } else if (auto map_stmt = dynamic_cast<const structured_control_flow::Map*>(current)) {
-            queue.push_back(&map_stmt->root());
         }
     }
 

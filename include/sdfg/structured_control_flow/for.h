@@ -26,8 +26,8 @@ class For : public StructuredLoop {
 
     std::unique_ptr<Sequence> root_;
 
-    For(size_t element_id, const DebugInfo& debug_info, symbolic::Symbol indvar,
-        symbolic::Expression init, symbolic::Expression update, symbolic::Condition condition);
+    For(const DebugInfo& debug_info, symbolic::Symbol indvar, symbolic::Expression init,
+        symbolic::Expression update, symbolic::Condition condition);
 
    public:
     For(const For& node) = delete;

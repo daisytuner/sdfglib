@@ -52,6 +52,7 @@ set(SOURCE_FILES
     src/analysis/data_parallelism_analysis.cpp
     src/analysis/happens_before_analysis.cpp
     src/analysis/loop_tree_analysis.cpp
+    src/analysis/scope_tree_analysis.cpp
     src/analysis/users.cpp
     src/builder/function_builder.cpp
     src/builder/sdfg_builder.cpp
@@ -70,7 +71,6 @@ set(SOURCE_FILES
     src/codegen/dispatchers/for_dispatcher.cpp
     src/codegen/dispatchers/map_dispatcher.cpp
     src/codegen/dispatchers/while_dispatcher.cpp
-    src/codegen/dispatchers/kernel_dispatcher.cpp
     src/codegen/dispatchers/schedules/highway_dispatcher.cpp
     src/codegen/dispatchers/schedules/openmp_dispatcher.cpp
     src/codegen/instrumentation/outermost_loops_instrumentation.cpp
@@ -95,7 +95,6 @@ set(SOURCE_FILES
     src/passes/dataflow/redundant_array_elimination.cpp
     src/passes/dataflow/trivial_array_elimination.cpp
     src/passes/dataflow/view_propagation.cpp
-    src/passes/schedule/allocation_inference.cpp
     src/passes/symbolic/symbol_propagation.cpp
     src/passes/symbolic/symbol_promotion.cpp
     src/passes/symbolic/condition_propagation.cpp
@@ -112,7 +111,6 @@ set(SOURCE_FILES
     src/structured_control_flow/control_flow_node.cpp
     src/structured_control_flow/for.cpp
     src/structured_control_flow/if_else.cpp
-    src/structured_control_flow/kernel.cpp
     src/structured_control_flow/map.cpp
     src/structured_control_flow/return.cpp
     src/structured_control_flow/sequence.cpp

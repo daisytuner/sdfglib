@@ -8,7 +8,6 @@
 #include "sdfg/passes/structured_control_flow/dead_cfg_elimination.h"
 #include "sdfg/passes/structured_control_flow/sequence_fusion.h"
 #include "sdfg/structured_control_flow/if_else.h"
-#include "sdfg/structured_control_flow/kernel.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/symbolic.h"
@@ -32,17 +31,14 @@ KernelLocalStorage::KernelLocalStorage(structured_control_flow::Sequence& parent
 
 std::string KernelLocalStorage::name() { return "KernelLocalStorage"; };
 
-bool KernelLocalStorage::reads_container(std::string container, const Sequence& sequence,
-                                         analysis::UsersView& body_users) {
+bool KernelLocalStorage::reads_container(std::string container, analysis::UsersView& body_users) {
     if (body_users.reads(container).size() == 1) {
         return true;
     }
     return false;
 }
 
-bool KernelLocalStorage::uses_inner_indvar(const structured_control_flow::Kernel* kernel,
-                                           const structured_control_flow::Sequence& body,
-                                           analysis::UsersView& body_users) {
+bool KernelLocalStorage::uses_inner_indvar(analysis::UsersView& body_users) {
     bool result = false;
     for (auto& user : body_users.reads(this->container_)) {
         auto& subsets = user->subsets();
@@ -56,18 +52,18 @@ bool KernelLocalStorage::uses_inner_indvar(const structured_control_flow::Kernel
 };
 
 std::tuple<symbolic::Integer, symbolic::Integer, symbolic::Integer> KernelLocalStorage::dim_size(
-    const structured_control_flow::Kernel* kernel, symbolic::Assumptions& assumptions) {
+    symbolic::Assumptions& assumptions) {
     symbolic::Integer x_dim_size = SymEngine::null;
     symbolic::Integer y_dim_size = SymEngine::null;
     symbolic::Integer z_dim_size = SymEngine::null;
 
-    auto x_ub = assumptions[kernel->blockDim_x()].upper_bound();
+    auto x_ub = assumptions[symbolic::blockDim_x()].upper_bound();
     x_dim_size = SymEngine::rcp_static_cast<const SymEngine::Integer>(x_ub);
 
-    auto y_ub = assumptions[kernel->blockDim_y()].upper_bound();
+    auto y_ub = assumptions[symbolic::blockDim_y()].upper_bound();
     y_dim_size = SymEngine::rcp_static_cast<const SymEngine::Integer>(y_ub);
 
-    auto z_ub = assumptions[kernel->blockDim_z()].upper_bound();
+    auto z_ub = assumptions[symbolic::blockDim_z()].upper_bound();
     z_dim_size = SymEngine::rcp_static_cast<const SymEngine::Integer>(z_ub);
 
     return std::make_tuple(x_dim_size, y_dim_size, z_dim_size);
@@ -78,17 +74,11 @@ bool KernelLocalStorage::can_be_applied(Schedule& schedule) {
     auto& builder = schedule.builder();
 
     auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
-    auto& inner_body = this->inner_loop_.root();
+    if (sdfg.type() != FunctionType_NV_GLOBAL) {
+        return false;
+    }
 
-    // Criterion: Check if parent is a kernel
-    if (root.size() != 1) {
-        return false;
-    }
-    auto kernel = dynamic_cast<const sdfg::structured_control_flow::Kernel*>(&root.at(0).first);
-    if (!kernel) {
-        return false;
-    }
+    auto& inner_body = this->inner_loop_.root();
 
     // Criterion: Container is pointer to scalar type
     auto& type = sdfg.type(this->container_);
@@ -109,17 +99,18 @@ bool KernelLocalStorage::can_be_applied(Schedule& schedule) {
     }
 
     // Criterion: All block dimensions are known and an Integer
-    auto x_ub = assumptions[kernel->blockDim_x()].upper_bound();
-    auto x_lb = assumptions[kernel->blockDim_x()].lower_bound();
+    auto x_ub = assumptions[symbolic::blockDim_x()].upper_bound();
+    auto x_lb = assumptions[symbolic::blockDim_x()].lower_bound();
     if (!symbolic::eq(x_ub, x_lb)) {
+        std::cout << "x_ub: " << x_ub->__str__() << " x_lb: " << x_lb->__str__() << std::endl;
         return false;
     }
     if (!SymEngine::is_a<SymEngine::Integer>(*x_ub)) {
         return false;
     }
 
-    auto y_ub = assumptions[kernel->blockDim_y()].upper_bound();
-    auto y_lb = assumptions[kernel->blockDim_y()].lower_bound();
+    auto y_ub = assumptions[symbolic::blockDim_y()].upper_bound();
+    auto y_lb = assumptions[symbolic::blockDim_y()].lower_bound();
     if (!symbolic::eq(y_ub, y_lb)) {
         return false;
     }
@@ -127,8 +118,8 @@ bool KernelLocalStorage::can_be_applied(Schedule& schedule) {
         return false;
     }
 
-    auto z_ub = assumptions[kernel->blockDim_z()].upper_bound();
-    auto z_lb = assumptions[kernel->blockDim_z()].lower_bound();
+    auto z_ub = assumptions[symbolic::blockDim_z()].upper_bound();
+    auto z_lb = assumptions[symbolic::blockDim_z()].lower_bound();
     if (!symbolic::eq(z_ub, z_lb)) {
         return false;
     }
@@ -187,12 +178,12 @@ bool KernelLocalStorage::can_be_applied(Schedule& schedule) {
     // Criterion: Memory access is polynomial of
     // c_0 * a + c_1 * b + c_2 * c + c_3 * k, where a, b, c are x-threads, y-threads, z-threads
     // and k is the inner loop index
-    auto a = symbolic::add(kernel->threadIdx_x(),
-                           symbolic::mul(kernel->blockIdx_x(), kernel->blockDim_x()));
-    auto b = symbolic::add(kernel->threadIdx_y(),
-                           symbolic::mul(kernel->blockIdx_y(), kernel->blockDim_y()));
-    auto c = symbolic::add(kernel->threadIdx_z(),
-                           symbolic::mul(kernel->blockIdx_z(), kernel->blockDim_z()));
+    auto a = symbolic::add(symbolic::threadIdx_x(),
+                           symbolic::mul(symbolic::symbol("blockIdx.x"), symbolic::blockDim_x()));
+    auto b = symbolic::add(symbolic::threadIdx_y(),
+                           symbolic::mul(symbolic::symbol("blockIdx.y"), symbolic::blockDim_y()));
+    auto c = symbolic::add(symbolic::threadIdx_z(),
+                           symbolic::mul(symbolic::symbol("blockIdx.z"), symbolic::blockDim_z()));
 
     auto access = subset.at(0);
     access = symbolic::subs(access, a, symbolic::symbol("a"));
@@ -220,13 +211,9 @@ void KernelLocalStorage::apply(Schedule& schedule) {
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
     auto assumptions = assumptions_analysis.get(inner_body);
 
-    const sdfg::structured_control_flow::Kernel* kernel =
-        dynamic_cast<const sdfg::structured_control_flow::Kernel*>(
-            &schedule.sdfg().root().at(0).first);
-
     symbolic::Integer iteration_count = get_iteration_count(inner_loop_);
 
-    auto [x_dim_size, y_dim_size, z_dim_size] = dim_size(kernel, assumptions);
+    auto [x_dim_size, y_dim_size, z_dim_size] = dim_size(assumptions);
 
     // calculate shared memory shape
     std::tuple<symbolic::Integer, symbolic::Integer, symbolic::Integer, symbolic::Integer>
@@ -238,53 +225,28 @@ void KernelLocalStorage::apply(Schedule& schedule) {
     const types::Scalar* base_type =
         static_cast<const types::Scalar*>(&pointer->pointee_type());  // must be scalar or struct
 
-    const types::Scalar type(base_type->primitive_type(), types::DeviceLocation::nvptx, 3);
+    const types::Scalar type(types::StorageType_NV_Shared, base_type->alignment(), "",
+                             base_type->primitive_type());
 
     // Allocate shared memory before the outer loop, starting from z, y, x, iteration_count
-    types::Array shared_memory(type, std::get<0>(shared_memory_shape), types::DeviceLocation::nvptx,
-                               3);
-    types::Array shared_memory_x(shared_memory, std::get<1>(shared_memory_shape),
-                                 types::DeviceLocation::nvptx, 3);
-    types::Array shared_memory_y(shared_memory_x, std::get<2>(shared_memory_shape),
-                                 types::DeviceLocation::nvptx, 3);
-    types::Array shared_memory_z(shared_memory_y, std::get<3>(shared_memory_shape),
-                                 types::DeviceLocation::nvptx, 3);
+    types::Array shared_memory(types::StorageType_NV_Shared, type.alignment(), "", type,
+                               std::get<0>(shared_memory_shape));
+    types::Array shared_memory_x(types::StorageType_NV_Shared, type.alignment(), "", shared_memory,
+                                 std::get<1>(shared_memory_shape));
+    types::Array shared_memory_y(types::StorageType_NV_Shared, type.alignment(), "",
+                                 shared_memory_x, std::get<2>(shared_memory_shape));
+    types::Array shared_memory_z(types::StorageType_NV_Shared, type.alignment(), "",
+                                 shared_memory_y, std::get<3>(shared_memory_shape));
 
     builder.add_container("__daisy_share_" + this->container_, shared_memory_z);
-
-    bool has_tid_x = false;
-    bool has_tid_y = false;
-    bool has_tid_z = false;
-    for (auto container : sdfg.containers()) {
-        if (container == kernel->threadIdx_x()->get_name()) {
-            has_tid_x = true;
-        }
-        if (container == kernel->threadIdx_y()->get_name()) {
-            has_tid_y = true;
-        }
-        if (container == kernel->threadIdx_z()->get_name()) {
-            has_tid_z = true;
-        }
-    }
-    if (!has_tid_x) {
-        builder.add_container(kernel->threadIdx_x()->get_name(),
-                              types::Scalar(types::PrimitiveType::Int32));
-    }
-    if (!has_tid_y) {
-        builder.add_container(kernel->threadIdx_y()->get_name(),
-                              types::Scalar(types::PrimitiveType::Int32));
-    }
-    if (!has_tid_z) {
-        builder.add_container(kernel->threadIdx_z()->get_name(),
-                              types::Scalar(types::PrimitiveType::Int32));
-    }
 
     // Deconstrunct array accesses into dimensions
     // Read from global memory to shared memory. Ensure the data access bounds are correct
     auto& outer_body = this->outer_loop_.root();
 
-    builder.add_container("__daisy_shared_indvar_" + this->container_,
-                          types::Scalar(types::Scalar(types::PrimitiveType::Int32)));
+    builder.add_container(
+        "__daisy_shared_indvar_" + this->container_,
+        types::Scalar(types::StorageType_NV_Generic, 0, "", types::PrimitiveType::Int32));
 
     symbolic::Symbol indvar = symbolic::symbol("__daisy_shared_indvar_" + this->container_);
     symbolic::Expression init_expr =
@@ -315,8 +277,8 @@ void KernelLocalStorage::apply(Schedule& schedule) {
     std::tuple<symbolic::Expression, symbolic::Expression, symbolic::Expression,
                symbolic::Expression>
         shared_access_scheme_write =
-            std::make_tuple(kernel->threadIdx_z(), kernel->threadIdx_y(), kernel->threadIdx_x(),
-                            symbolic::sub(indvar, outer_loop_.indvar()));
+            std::make_tuple(symbolic::threadIdx_z(), symbolic::threadIdx_y(),
+                            symbolic::threadIdx_x(), symbolic::sub(indvar, outer_loop_.indvar()));
     builder.add_memlet(
         copyin_block, tasklet_copy_in, "_out", access_node_out, "void",
         {std::get<0>(shared_access_scheme_write), std::get<1>(shared_access_scheme_write),
@@ -338,9 +300,9 @@ void KernelLocalStorage::apply(Schedule& schedule) {
 
     std::tuple<symbolic::Expression, symbolic::Expression, symbolic::Expression,
                symbolic::Expression>
-        shared_access_scheme_read =
-            std::make_tuple(kernel->threadIdx_z(), kernel->threadIdx_y(), kernel->threadIdx_x(),
-                            symbolic::sub(inner_loop_.indvar(), outer_loop_.indvar()));
+        shared_access_scheme_read = std::make_tuple(
+            symbolic::threadIdx_z(), symbolic::threadIdx_y(), symbolic::threadIdx_x(),
+            symbolic::sub(inner_loop_.indvar(), outer_loop_.indvar()));
 
     builder.add_memlet(
         read_block, read_node_in, "void", tasklet_read, "_in",
@@ -350,7 +312,7 @@ void KernelLocalStorage::apply(Schedule& schedule) {
     builder.add_memlet(read_block, tasklet_read, "_out", read_node_out, "void", {});
 
     auto& sync_block = builder.add_block_before(outer_body, this->inner_loop_).first;
-    builder.add_library_node(sync_block, data_flow::LibraryNodeType::LocalBarrier, {}, {}, true);
+    builder.add_library_node(sync_block, data_flow::LibraryNodeCode::barrier_local, {}, {}, true);
 
     // End of transformation
 

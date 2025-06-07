@@ -377,7 +377,7 @@ std::string CUDALanguageExtension::primitive_type(const types::PrimitiveType pri
         case types::PrimitiveType::Double:
             return "double";
         case types::PrimitiveType::X86_FP80:
-            return "__float80";
+            return "long double";
         case types::PrimitiveType::FP128:
             return "__float128";
         case types::PrimitiveType::PPC_FP128:
@@ -388,13 +388,13 @@ std::string CUDALanguageExtension::primitive_type(const types::PrimitiveType pri
 };
 
 std::string CUDALanguageExtension::declaration(const std::string& name, const types::IType& type,
-                                               bool use_initializer) {
+                                               bool use_initializer, bool use_alignment) {
     std::stringstream val;
 
     if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
-        if (type.address_space() == 3) {
+        if (scalar_type->storage_type() == types::StorageType_NV_Shared) {
             val << "__shared__ ";
-        } else if (type.address_space() == 4) {
+        } else if (scalar_type->storage_type() == types::StorageType_NV_Constant) {
             val << "__constant__ ";
         }
         val << primitive_type(scalar_type->primitive_type());
@@ -405,39 +405,45 @@ std::string CUDALanguageExtension::declaration(const std::string& name, const ty
         val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
                            element_type);
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
-        auto& pointee_type = pointer_type->pointee_type();
-        val << declaration("(*" + name + ")", pointee_type);
+        const types::IType& pointee = pointer_type->pointee_type();
+
+        const bool pointee_is_function_or_array = dynamic_cast<const types::Function*>(&pointee) ||
+                                                  dynamic_cast<const types::Array*>(&pointee);
+
+        // Parenthesise *only* when it is needed to bind tighter than [] or ()
+        std::string decorated = pointee_is_function_or_array ? "(*" + name + ")" : "*" + name;
+
+        val << declaration(decorated, pointee);
     } else if (auto ref_type = dynamic_cast<const Reference*>(&type)) {
         val << declaration("&" + name, ref_type->reference_type());
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
-        if (type.address_space() == 3) {
+        if (structure_type->storage_type() == types::StorageType_NV_Shared) {
             val << "__shared__ ";
-        } else if (type.address_space() == 4) {
+        } else if (structure_type->storage_type() == types::StorageType_NV_Constant) {
             val << "__constant__ ";
         }
         val << structure_type->name();
         val << " ";
         val << name;
     } else if (auto function_type = dynamic_cast<const types::Function*>(&type)) {
-        val << declaration("", function_type->return_type());
-        val << " ";
-        val << name;
-        val << "(";
+        std::stringstream params;
         for (size_t i = 0; i < function_type->num_params(); ++i) {
-            val << declaration("", function_type->param_type(symbolic::integer(i)));
-            if (i < function_type->num_params() - 1) {
-                val << ", ";
-            }
+            params << declaration("", function_type->param_type(symbolic::integer(i)));
+            if (i + 1 < function_type->num_params()) params << ", ";
         }
         if (function_type->is_var_arg()) {
-            if (function_type->num_params() > 0) {
-                val << ", ";
-            }
-            val << "...";
+            if (function_type->num_params() > 0) params << ", ";
+            params << "...";
         }
-        val << ")";
+
+        const std::string fun_name = name + "(" + params.str() + ")";
+        val << declaration(fun_name, function_type->return_type());
     } else {
         throw std::runtime_error("Unknown declaration type");
+    }
+
+    if (use_alignment && type.alignment() > 0) {
+        val << " __attribute__((aligned(" << type.alignment() << ")))";
     }
 
     if (use_initializer && !type.initializer().empty()) {
@@ -445,37 +451,6 @@ std::string CUDALanguageExtension::declaration(const std::string& name, const ty
     }
 
     return val.str();
-};
-
-std::string CUDALanguageExtension::allocation(const std::string& name, const types::IType& type) {
-    std::stringstream val;
-
-    if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
-        val << declaration(name, *scalar_type);
-    } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
-        val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
-                           array_type->element_type());
-        val << " __attribute__((aligned(" << array_type->alignment() << ")))";
-    } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
-        std::string pointee_name = name + "__daisy_nvptx_internal_";
-        val << declaration(pointee_name, pointer_type->pointee_type());
-        val << ";";
-        val << std::endl;
-
-        val << declaration(name, type);
-        val << " = ";
-        val << "&" << pointee_name;
-    } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
-        val << declaration(name, *structure_type);
-    } else {
-        throw std::runtime_error("Unknown allocation type");
-    }
-
-    return val.str();
-};
-
-std::string CUDALanguageExtension::deallocation(const std::string& name, const types::IType& type) {
-    return "";
 };
 
 std::string CUDALanguageExtension::type_cast(const std::string& name, const types::IType& type) {
@@ -568,9 +543,9 @@ std::string CUDALanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
 };
 
 std::string CUDALanguageExtension::library_node(const data_flow::LibraryNode& libnode) {
-    data_flow::LibraryNodeType lib_node_type = libnode.call();
+    data_flow::LibraryNodeCode lib_node_type = libnode.code();
     switch (lib_node_type) {
-        case sdfg::data_flow::LibraryNodeType::LocalBarrier:
+        case sdfg::data_flow::LibraryNodeCode::barrier_local:
             return "__syncthreads();";
         default:
             throw std::runtime_error("Unsupported library node type");

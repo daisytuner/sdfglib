@@ -316,23 +316,6 @@ bool Vectorization::can_be_applied(Schedule& schedule) {
 };
 
 void Vectorization::apply(Schedule& schedule) {
-    // Set allocation lifetime of loop-local variables
-    auto& analysis_manager = schedule.analysis_manager();
-
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
-    auto& dependencies = analysis.get(this->loop_);
-    for (auto& dep : dependencies) {
-        auto& container = dep.first;
-        auto& dep_type = dep.second;
-
-        if (dep_type == analysis::Parallelism::PRIVATE) {
-            schedule.allocation_lifetime(container, &this->loop_.root());
-        }
-    }
-
-    std::string indvar = this->loop_.indvar()->get_name();
-    schedule.allocation_lifetime(indvar, &this->loop_);
-
     schedule.loop_schedule(&this->loop_, LoopSchedule::VECTORIZATION);
 };
 

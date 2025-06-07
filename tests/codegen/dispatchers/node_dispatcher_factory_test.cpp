@@ -9,7 +9,7 @@
 using namespace sdfg;
 
 TEST(NodeDispatcherFactoryTest, CreateDispatch_Block) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -21,13 +21,13 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Block) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), block, instrumentation);
+    auto dispatcher = codegen::create_dispatcher(language_extension, schedule.schedule(0), block,
+                                                 instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::BlockDispatcher*>(dispatcher.get()));
 }
 
 TEST(NodeDispatcherFactoryTest, CreateDispatch_Sequence) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -39,13 +39,13 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Sequence) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), sequence, instrumentation);
+    auto dispatcher = codegen::create_dispatcher(language_extension, schedule.schedule(0), sequence,
+                                                 instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::SequenceDispatcher*>(dispatcher.get()));
 }
 
 TEST(NodeDispatcherFactoryTest, CreateDispatch_IfElse) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -57,13 +57,13 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_IfElse) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), if_else, instrumentation);
+    auto dispatcher = codegen::create_dispatcher(language_extension, schedule.schedule(0), if_else,
+                                                 instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::IfElseDispatcher*>(dispatcher.get()));
 }
 
 TEST(NodeDispatcherFactoryTest, CreateDispatch_While) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -75,13 +75,13 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_While) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), while_loop, instrumentation);
+    auto dispatcher = codegen::create_dispatcher(language_extension, schedule.schedule(0),
+                                                 while_loop, instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::WhileDispatcher*>(dispatcher.get()));
 }
 
 TEST(NodeDispatcherFactoryTest, CreateDispatch_For) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -103,7 +103,7 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_For) {
 }
 
 TEST(NodeDispatcherFactoryTest, CreateDispatch_Return) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -115,13 +115,13 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Return) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), return_node, instrumentation);
+    auto dispatcher = codegen::create_dispatcher(language_extension, schedule.schedule(0),
+                                                 return_node, instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::ReturnDispatcher*>(dispatcher.get()));
 }
 
 TEST(NodeDispatcherFactoryTest, CreateDispatch_Break) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -134,13 +134,13 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Break) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), break_node, instrumentation);
+    auto dispatcher = codegen::create_dispatcher(language_extension, schedule.schedule(0),
+                                                 break_node, instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::BreakDispatcher*>(dispatcher.get()));
 }
 
 TEST(NodeDispatcherFactoryTest, CreateDispatch_Continue) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -153,25 +153,7 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Continue) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(schedule.schedule(0));
-    auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), continue_node, instrumentation);
+    auto dispatcher = codegen::create_dispatcher(language_extension, schedule.schedule(0),
+                                                 continue_node, instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::ContinueDispatcher*>(dispatcher.get()));
-}
-
-TEST(NodeDispatcherFactoryTest, CreateDispatch_Kernel) {
-    builder::StructuredSDFGBuilder builder("sdfg_a");
-    auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
-
-    auto& kernel_node = builder.add_kernel(root, "__daisy_generated_kernel");
-
-    auto final_sdfg = builder.move();
-
-    ConditionalSchedule schedule(final_sdfg);
-
-    codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(schedule.schedule(0));
-    auto dispatcher =
-        codegen::create_dispatcher(language_extension, schedule.schedule(0), kernel_node, instrumentation);
-    EXPECT_TRUE(dynamic_cast<codegen::KernelDispatcher*>(dispatcher.get()));
 }

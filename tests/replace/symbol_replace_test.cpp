@@ -7,7 +7,7 @@
 using namespace sdfg;
 
 TEST(SymbolReplaceTest, AccessNodeTest) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     builder.add_container("scalar_1", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("scalar_2", types::Scalar(types::PrimitiveType::Int32));
 
@@ -26,7 +26,7 @@ TEST(SymbolReplaceTest, AccessNodeTest) {
 
 /*
 TEST(SymbolReplaceTest, TaskletTest) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     types::Scalar desc(types::PrimitiveType::Int32);
     builder.add_container("scalar_1", desc);
     builder.add_container("scalar_2", desc);
@@ -65,7 +65,7 @@ TEST(SymbolReplaceTest, TaskletTest) {
 }
 
 TEST(SymbolReplaceTest, LibraryNodeTest) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     auto& block = builder.add_block(sdfg.root());
@@ -90,7 +90,7 @@ TEST(SymbolReplaceTest, LibraryNodeTest) {
                                           {write_expr, write_expr2});
 
     auto& library_node =
-        builder.add_library_node(block, data_flow::LibraryNodeType::LocalBarrier, {}, {});
+        builder.add_library_node(block, data_flow::LibraryNodeCode::barrier_local, {}, {});
 
     library_node.replace(symbolic::symbol("scalar_1"), symbolic::symbol("scalar_42"));
 
@@ -102,7 +102,7 @@ TEST(SymbolReplaceTest, LibraryNodeTest) {
 }
 
 TEST(SymbolReplaceTest, MemletTest) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     auto& block = builder.add_block(sdfg.root());
@@ -140,7 +140,7 @@ TEST(SymbolReplaceTest, MemletTest) {
 }
 
 TEST(SymbolReplaceTest, BlockNodeTest) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     auto& block = builder.add_block(sdfg.root());
@@ -155,7 +155,7 @@ TEST(SymbolReplaceTest, BlockNodeTest) {
 }
 
 TEST(SymbolReplaceTest, BlockWithMemletTest) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     auto& block = builder.add_block(sdfg.root());
@@ -193,7 +193,7 @@ TEST(SymbolReplaceTest, BlockWithMemletTest) {
 }
 
 TEST(SymbolReplaceTest, SDFGTest) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     auto& block = builder.add_block(sdfg.root());
@@ -235,7 +235,7 @@ TEST(SymbolReplaceTest, SDFGTest) {
 }
 
 TEST(SymbolReplaceTest, ForLoopTest) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     symbolic::Symbol indvar = symbolic::symbol("indvar");
@@ -290,7 +290,7 @@ TEST(SymbolReplaceTest, ForLoopTest) {
 }
 
 TEST(SymbolReplaceTest, SequenceTest) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     auto& block = builder.add_block(sdfg.root());
@@ -328,7 +328,7 @@ TEST(SymbolReplaceTest, SequenceTest) {
 }
 
 TEST(SymbolReplaceTest, IfElseTest) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     auto& if_else = builder.add_if_else(sdfg.root());
@@ -379,7 +379,7 @@ TEST(SymbolReplaceTest, IfElseTest) {
 }
 
 TEST(SymbolReplaceTest, WhileTest) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     auto& while_loop = builder.add_while(sdfg.root());
@@ -418,7 +418,7 @@ TEST(SymbolReplaceTest, WhileTest) {
 }
 
 TEST(SymbolReplaceTest, KernelConversionTest) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     auto& while_loop = builder.add_while(sdfg.root());
@@ -435,11 +435,11 @@ TEST(SymbolReplaceTest, KernelConversionTest) {
                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
 
-    symbolic::Expression read_expr = symbolic::symbol("threadIdx.x");
+    symbolic::Expression read_expr = symbolic::threadIdx_x();
     auto& memlet_in =
         builder.add_memlet(block, access_node_in, "void", tasklet, "_in", {read_expr});
 
-    symbolic::Expression write_expr = symbolic::symbol("threadIdx.y");
+    symbolic::Expression write_expr = symbolic::threadIdx_y();
     symbolic::Expression write_expr2 = symbolic::symbol("blockIdx.y");
     auto& memlet_out = builder.add_memlet(block, access_node_out, "_out", tasklet, "void",
                                           {write_expr, write_expr2});

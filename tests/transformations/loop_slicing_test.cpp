@@ -8,7 +8,7 @@
 using namespace sdfg;
 
 TEST(LoopSlicingTest, FirstIteration) {
-    builder::StructuredSDFGBuilder builder("sdfg_test");
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();

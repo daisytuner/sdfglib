@@ -12,10 +12,9 @@
 
 namespace sdfg {
 
-StructuredSDFG::StructuredSDFG(const std::string& name) : Function(name) {
-    size_t element_id = 0;
+StructuredSDFG::StructuredSDFG(const std::string& name, FunctionType type) : Function(name, type) {
     this->root_ = std::unique_ptr<structured_control_flow::Sequence>(
-        new structured_control_flow::Sequence(element_id, DebugInfo()));
+        new structured_control_flow::Sequence(DebugInfo()));
 };
 
 const structured_control_flow::Sequence& StructuredSDFG::root() const { return *this->root_; };
@@ -23,7 +22,7 @@ const structured_control_flow::Sequence& StructuredSDFG::root() const { return *
 structured_control_flow::Sequence& StructuredSDFG::root() { return *this->root_; };
 
 std::unique_ptr<StructuredSDFG> StructuredSDFG::clone() const {
-    builder::StructuredSDFGBuilder builder(this->name_);
+    builder::StructuredSDFGBuilder builder(this->name_, this->type_);
     auto& new_sdfg = builder.subject();
 
     for (auto& structure : this->structures_) {
@@ -80,9 +79,6 @@ size_t StructuredSDFG::num_nodes() const {
             for (size_t i = 0; i < sequence_node->size(); i++) {
                 to_visit.insert(&sequence_node->at(i).first);
             }
-        } else if (auto kernel_node =
-                       dynamic_cast<const structured_control_flow::Kernel*>(current)) {
-            to_visit.insert(&kernel_node->root());
         } else if (dynamic_cast<const structured_control_flow::Return*>(current)) {
             continue;
         } else if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(current)) {
@@ -128,10 +124,6 @@ const DebugInfo StructuredSDFG::debug_info() const {
                 to_visit.insert(&sequence_node->at(i).first);
                 info = DebugInfo::merge(info, sequence_node->at(i).second.debug_info());
             }
-        } else if (auto kernel_node =
-                       dynamic_cast<const structured_control_flow::Kernel*>(current)) {
-            info = DebugInfo::merge(info, kernel_node->debug_info());
-            to_visit.insert(&kernel_node->root());
         } else if (auto return_node =
                        dynamic_cast<const structured_control_flow::Return*>(current)) {
             info = DebugInfo::merge(info, return_node->debug_info());

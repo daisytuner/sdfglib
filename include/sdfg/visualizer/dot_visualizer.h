@@ -6,7 +6,6 @@
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
-#include "sdfg/structured_control_flow/kernel.h"
 #include "sdfg/structured_control_flow/return.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
@@ -34,8 +33,6 @@ class DotVisualizer : public Visualizer {
                                 structured_control_flow::Break& break_node) override;
     virtual void visualizeContinue(Schedule& schedule,
                                    structured_control_flow::Continue& continue_node) override;
-    virtual void visualizeKernel(Schedule& schedule,
-                                 structured_control_flow::Kernel& kernel_node) override;
     virtual void visualizeMap(Schedule& schedule, structured_control_flow::Map& map_node) override;
 
    public:

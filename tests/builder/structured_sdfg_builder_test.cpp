@@ -10,7 +10,7 @@
 using namespace sdfg;
 
 TEST(StructuredSDFGBuilderTest, Empty) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto sdfg = builder.move();
 
@@ -19,7 +19,7 @@ TEST(StructuredSDFGBuilderTest, Empty) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddBlock) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("N", desc);
@@ -39,7 +39,7 @@ TEST(StructuredSDFGBuilderTest, AddBlock) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddBlockBefore) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("N", desc);
@@ -60,7 +60,7 @@ TEST(StructuredSDFGBuilderTest, AddBlockBefore) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddBlockAfter) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("N", desc);
@@ -83,7 +83,7 @@ TEST(StructuredSDFGBuilderTest, AddBlockAfter) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("N", desc);
@@ -93,7 +93,7 @@ TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
         root, symbolic::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
 
     auto& lib_node =
-        builder.add_library_node(block, data_flow::LibraryNodeType::LocalBarrier, {}, {}, false);
+        builder.add_library_node(block, data_flow::LibraryNodeCode::barrier_local, {}, {}, false);
 
     auto sdfg = builder.move();
 
@@ -107,11 +107,11 @@ TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
     EXPECT_EQ(block.dataflow().nodes().size(), 1);
     EXPECT_EQ(block.dataflow().edges().size(), 0);
     EXPECT_EQ(&(*block.dataflow().nodes().begin()), &lib_node);
-    EXPECT_EQ(lib_node.call(), data_flow::LibraryNodeType::LocalBarrier);
+    EXPECT_EQ(lib_node.code(), data_flow::LibraryNodeCode::barrier_local);
 }
 
 TEST(StructuredSDFGBuilderTest, AddIfElse) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& root = builder.subject().root();
     auto& if_else = builder.add_if_else(root);
@@ -134,7 +134,7 @@ TEST(StructuredSDFGBuilderTest, AddIfElse) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddIfElseBefore) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& root = builder.subject().root();
     auto& block_base = builder.add_block(
@@ -159,7 +159,7 @@ TEST(StructuredSDFGBuilderTest, AddIfElseBefore) {
 }
 
 TEST(StructuredSDFGBuilderTest, addWhile) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& root = builder.subject().root();
     auto& scope = builder.add_while(root);
@@ -177,7 +177,7 @@ TEST(StructuredSDFGBuilderTest, addWhile) {
 }
 
 TEST(StructuredSDFGBuilderTest, addFor) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& root = builder.subject().root();
     auto& scope = builder.add_for(
@@ -196,7 +196,7 @@ TEST(StructuredSDFGBuilderTest, addFor) {
 }
 
 TEST(StructuredSDFGBuilderTest, addMap) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& root = builder.subject().root();
     auto& scope = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10));
@@ -216,7 +216,7 @@ TEST(StructuredSDFGBuilderTest, addMap) {
 }
 
 TEST(StructuredSDFGBuilderTest, addForBefore) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& root = builder.subject().root();
     auto& block_base = builder.add_block(
@@ -240,7 +240,7 @@ TEST(StructuredSDFGBuilderTest, addForBefore) {
 }
 
 TEST(StructuredSDFGBuilderTest, addForAfter) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& root = builder.subject().root();
     auto& block_base = builder.add_block(
@@ -265,74 +265,8 @@ TEST(StructuredSDFGBuilderTest, addForAfter) {
     EXPECT_EQ(scope.root().size(), 1);
 }
 
-TEST(StructuredSDFGBuilderTest, addKernel) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
-
-    auto& root = builder.subject().root();
-
-    auto& scope =
-        builder.add_kernel(root, DebugInfo().filename(), DebugInfo(), symbolic::symbol("100"),
-                           symbolic::symbol("0"), symbolic::symbol("0"), symbolic::symbol("128"),
-                           symbolic::symbol("0"), symbolic::symbol("0"));
-
-    auto& body = builder.add_block(scope.root());
-
-    auto sdfg = builder.move();
-
-    EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->root().size(), 1);
-
-    auto child = sdfg->root().at(0);
-    EXPECT_EQ(&child.first, &scope);
-    EXPECT_EQ(scope.root().size(), 1);
-
-    EXPECT_TRUE(symbolic::eq(scope.gridDim_x_init(), symbolic::symbol("100")));
-    EXPECT_TRUE(symbolic::eq(scope.gridDim_y_init(), symbolic::symbol("0")));
-    EXPECT_TRUE(symbolic::eq(scope.gridDim_z_init(), symbolic::symbol("0")));
-
-    EXPECT_TRUE(symbolic::eq(scope.blockDim_x_init(), symbolic::symbol("128")));
-    EXPECT_TRUE(symbolic::eq(scope.blockDim_y_init(), symbolic::symbol("0")));
-    EXPECT_TRUE(symbolic::eq(scope.blockDim_z_init(), symbolic::symbol("0")));
-
-    EXPECT_TRUE(symbolic::eq(scope.blockIdx_x_init(), symbolic::symbol("blockIdx.x")));
-    EXPECT_TRUE(symbolic::eq(scope.blockIdx_y_init(), symbolic::symbol("blockIdx.y")));
-    EXPECT_TRUE(symbolic::eq(scope.blockIdx_z_init(), symbolic::symbol("blockIdx.z")));
-
-    EXPECT_TRUE(symbolic::eq(scope.threadIdx_x_init(), symbolic::symbol("threadIdx.x")));
-    EXPECT_TRUE(symbolic::eq(scope.threadIdx_y_init(), symbolic::symbol("threadIdx.y")));
-    EXPECT_TRUE(symbolic::eq(scope.threadIdx_z_init(), symbolic::symbol("threadIdx.z")));
-
-    EXPECT_TRUE(symbolic::eq(scope.gridDim_x(),
-                             symbolic::symbol("__daisy_gridDim_x_" + DebugInfo().filename())));
-    EXPECT_TRUE(symbolic::eq(scope.gridDim_y(),
-                             symbolic::symbol("__daisy_gridDim_y_" + DebugInfo().filename())));
-    EXPECT_TRUE(symbolic::eq(scope.gridDim_z(),
-                             symbolic::symbol("__daisy_gridDim_z_" + DebugInfo().filename())));
-
-    EXPECT_TRUE(symbolic::eq(scope.blockDim_x(),
-                             symbolic::symbol("__daisy_blockDim_x_" + DebugInfo().filename())));
-    EXPECT_TRUE(symbolic::eq(scope.blockDim_y(),
-                             symbolic::symbol("__daisy_blockDim_y_" + DebugInfo().filename())));
-    EXPECT_TRUE(symbolic::eq(scope.blockDim_z(),
-                             symbolic::symbol("__daisy_blockDim_z_" + DebugInfo().filename())));
-
-    EXPECT_TRUE(symbolic::eq(scope.blockIdx_x(),
-                             symbolic::symbol("__daisy_blockIdx_x_" + DebugInfo().filename())));
-    EXPECT_TRUE(symbolic::eq(scope.blockIdx_y(),
-                             symbolic::symbol("__daisy_blockIdx_y_" + DebugInfo().filename())));
-    EXPECT_TRUE(symbolic::eq(scope.blockIdx_z(),
-                             symbolic::symbol("__daisy_blockIdx_z_" + DebugInfo().filename())));
-
-    EXPECT_TRUE(symbolic::eq(scope.threadIdx_x(),
-                             symbolic::symbol("__daisy_threadIdx_x_" + DebugInfo().filename())));
-    EXPECT_TRUE(symbolic::eq(scope.threadIdx_y(),
-                             symbolic::symbol("__daisy_threadIdx_y_" + DebugInfo().filename())));
-    EXPECT_TRUE(symbolic::eq(scope.threadIdx_z(),
-                             symbolic::symbol("__daisy_threadIdx_z_" + DebugInfo().filename())));
-}
-
 TEST(SDFG2StructuredSDFGTest, Function_Definition) {
-    builder::SDFGBuilder builder("sdfg_1");
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& start_state = builder.add_state(true);
 
     types::Scalar desc1(types::PrimitiveType::Double);
@@ -378,7 +312,7 @@ TEST(SDFG2StructuredSDFGTest, Function_Definition) {
 }
 
 TEST(SDFG2StructuredSDFGTest, Sequence) {
-    builder::SDFGBuilder builder("sdfg_1");
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& state1 = builder.add_state(true);
     auto& state2 = builder.add_state_after(state1);
     auto& state3 = builder.add_state_after(state2);
@@ -409,7 +343,7 @@ TEST(SDFG2StructuredSDFGTest, Sequence) {
 }
 
 TEST(SDFG2StructuredSDFGTest, IfElse) {
-    builder::SDFGBuilder builder("sdfg_1");
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("i", desc);
@@ -489,7 +423,7 @@ TEST(SDFG2StructuredSDFGTest, IfElse) {
 }
 
 TEST(SDFG2StructuredSDFGTest, While) {
-    builder::SDFGBuilder builder("sdfg_1");
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("i", desc);

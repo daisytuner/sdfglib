@@ -6,14 +6,14 @@
 namespace sdfg {
 namespace structured_control_flow {
 
-For::For(size_t element_id, const DebugInfo& debug_info, symbolic::Symbol indvar,
+For::For(const DebugInfo& debug_info, symbolic::Symbol indvar,
          symbolic::Expression init, symbolic::Expression update, symbolic::Condition condition)
-    : StructuredLoop(element_id, debug_info),
+    : StructuredLoop(debug_info),
       indvar_(indvar),
       init_(init),
       update_(update),
       condition_(condition) {
-    this->root_ = std::unique_ptr<Sequence>(new Sequence(++element_id, debug_info));
+    this->root_ = std::unique_ptr<Sequence>(new Sequence(debug_info));
 };
 
 const symbolic::Symbol& For::indvar() const { return this->indvar_; };

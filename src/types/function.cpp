@@ -3,13 +3,14 @@
 namespace sdfg {
 namespace types {
 
-Function::Function(const IType& return_type, bool is_var_arg, DeviceLocation device_location,
-                   uint address_space, const std::string& initializer)
-    : return_type_(return_type.clone()),
-      is_var_arg_(is_var_arg),
-      device_location_(device_location),
-      address_space_(address_space),
-      initializer_(initializer) {}
+Function::Function(const IType& return_type, bool is_var_arg)
+    : return_type_(return_type.clone()), is_var_arg_(is_var_arg) {};
+
+Function::Function(StorageType storage_type, size_t alignment, const std::string& initializer,
+                   const IType& return_type, bool is_var_arg)
+    : IType(storage_type, alignment, initializer),
+      return_type_(return_type.clone()),
+      is_var_arg_(is_var_arg) {};
 
 PrimitiveType Function::primitive_type() const { return PrimitiveType::Void; }
 
@@ -37,6 +38,10 @@ bool Function::operator==(const IType& other) const {
         return false;
     }
 
+    if (this->alignment_ != other_function->alignment_) {
+        return false;
+    }
+
     if (*this->return_type_ == *other_function->return_type_) {
         // Do nothing
     } else {
@@ -60,19 +65,29 @@ bool Function::operator==(const IType& other) const {
 
 std::unique_ptr<IType> Function::clone() const {
     auto new_function =
-        std::make_unique<Function>(*this->return_type_, this->is_var_arg_, this->device_location_,
-                                   this->address_space_, this->initializer_);
+        std::make_unique<Function>(this->storage_type(), this->alignment(), this->initializer(),
+                                   *this->return_type_, this->is_var_arg_);
     for (const auto& param : this->params_) {
         new_function->add_param(*param);
     }
     return new_function;
 }
 
-DeviceLocation Function::device_location() const { return this->device_location_; }
-
-uint Function::address_space() const { return this->address_space_; }
-
-std::string Function::initializer() const { return this->initializer_; }
+std::string Function::print() const {
+    std::string params = "";
+    for (size_t i = 0; i < this->params_.size(); i++) {
+        params += this->params_[i]->print();
+        if (i != this->params_.size() - 1) {
+            params += ", ";
+        }
+    }
+    if (this->is_var_arg_) {
+        params += ", ...)";
+    } else {
+        params += ")";
+    }
+    return "Function(" + this->return_type_->print() + ", " + params + ")";
+};
 
 }  // namespace types
 }  // namespace sdfg

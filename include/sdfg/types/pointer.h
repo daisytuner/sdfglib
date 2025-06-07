@@ -9,13 +9,12 @@ namespace types {
 class Pointer : public IType {
    private:
     std::unique_ptr<IType> pointee_type_;
-    DeviceLocation device_location_;
-    uint address_space_;
-    std::string initializer_;
 
    public:
-    Pointer(const IType& pointee_type, DeviceLocation device_location = DeviceLocation::x86,
-            uint address_space = 0, const std::string& initializer = "");
+    Pointer(const IType& pointee_type);
+
+    Pointer(StorageType storage_type, size_t alignment, const std::string& initializer,
+            const IType& pointee_type);
 
     virtual std::unique_ptr<IType> clone() const override;
 
@@ -27,11 +26,7 @@ class Pointer : public IType {
 
     virtual bool operator==(const IType& other) const override;
 
-    virtual DeviceLocation device_location() const override;
-
-    virtual uint address_space() const override;
-
-    virtual std::string initializer() const override;
+    virtual std::string print() const override;
 };
 }  // namespace types
 }  // namespace sdfg

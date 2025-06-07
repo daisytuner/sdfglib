@@ -3,12 +3,11 @@
 namespace sdfg {
 namespace types {
 
-Structure::Structure(const std::string& name, DeviceLocation device_location, uint address_space,
-                     const std::string& initializer)
-    : name_(name),
-      device_location_(device_location),
-      address_space_(address_space),
-      initializer_(initializer) {};
+Structure::Structure(const std::string& name) : name_(name) {};
+
+Structure::Structure(StorageType storage_type, size_t alignment, const std::string& initializer,
+                     const std::string& name)
+    : IType(storage_type, alignment, initializer), name_(name) {};
 
 PrimitiveType Structure::primitive_type() const { return PrimitiveType::Void; };
 
@@ -18,22 +17,18 @@ const std::string& Structure::name() const { return this->name_; };
 
 bool Structure::operator==(const IType& other) const {
     if (auto structure_ = dynamic_cast<const Structure*>(&other)) {
-        return this->name_ == structure_->name_;
+        return this->name_ == structure_->name_ && this->alignment_ == structure_->alignment_;
     } else {
         return false;
     }
 };
 
 std::unique_ptr<IType> Structure::clone() const {
-    return std::make_unique<Structure>(this->name_, this->device_location_, this->address_space_,
-                                       this->initializer_);
+    return std::make_unique<Structure>(this->storage_type(), this->alignment(), this->initializer(),
+                                       this->name_);
 };
 
-uint Structure::address_space() const { return this->address_space_; };
-
-DeviceLocation Structure::device_location() const { return this->device_location_; };
-
-std::string Structure::initializer() const { return this->initializer_; };
+std::string Structure::print() const { return "Structure(" + this->name_ + ")"; };
 
 StructureDefinition::StructureDefinition(const std::string& name, bool is_packed)
     : name_(name), is_packed_(is_packed), members_() {};

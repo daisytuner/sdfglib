@@ -369,7 +369,7 @@ std::string CLanguageExtension::primitive_type(const types::PrimitiveType prim_t
         case types::PrimitiveType::Double:
             return "double";
         case types::PrimitiveType::X86_FP80:
-            return "__float80";
+            return "long double";
         case types::PrimitiveType::FP128:
             return "__float128";
         case types::PrimitiveType::PPC_FP128:
@@ -380,7 +380,7 @@ std::string CLanguageExtension::primitive_type(const types::PrimitiveType prim_t
 };
 
 std::string CLanguageExtension::declaration(const std::string& name, const types::IType& type,
-                                            bool use_initializer) {
+                                            bool use_initializer, bool use_alignment) {
     std::stringstream val;
 
     if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
@@ -392,8 +392,15 @@ std::string CLanguageExtension::declaration(const std::string& name, const types
         val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
                            element_type);
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
-        auto& pointee_type = pointer_type->pointee_type();
-        val << declaration("(*" + name + ")", pointee_type);
+        const types::IType& pointee = pointer_type->pointee_type();
+
+        const bool pointee_is_function_or_array = dynamic_cast<const types::Function*>(&pointee) ||
+                                                  dynamic_cast<const types::Array*>(&pointee);
+
+        // Parenthesise *only* when it is needed to bind tighter than [] or ()
+        std::string decorated = pointee_is_function_or_array ? "(*" + name + ")" : "*" + name;
+
+        val << declaration(decorated, pointee);
     } else if (auto ref_type = dynamic_cast<const Reference*>(&type)) {
         val << declaration("&" + name, ref_type->reference_type());
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
@@ -401,86 +408,28 @@ std::string CLanguageExtension::declaration(const std::string& name, const types
         val << " ";
         val << name;
     } else if (auto function_type = dynamic_cast<const types::Function*>(&type)) {
-        val << declaration("", function_type->return_type());
-        val << " ";
-        val << name;
-        val << "(";
+        std::stringstream params;
         for (size_t i = 0; i < function_type->num_params(); ++i) {
-            val << declaration("", function_type->param_type(symbolic::integer(i)));
-            if (i < function_type->num_params() - 1) {
-                val << ", ";
-            }
+            params << declaration("", function_type->param_type(symbolic::integer(i)));
+            if (i + 1 < function_type->num_params()) params << ", ";
         }
         if (function_type->is_var_arg()) {
-            if (function_type->num_params() > 0) {
-                val << ", ";
-            }
-            val << "...";
+            if (function_type->num_params() > 0) params << ", ";
+            params << "...";
         }
-        val << ")";
+
+        const std::string fun_name = name + "(" + params.str() + ")";
+        val << declaration(fun_name, function_type->return_type());
     } else {
         throw std::runtime_error("Unknown declaration type");
     }
 
+    if (use_alignment && type.alignment() > 0) {
+        val << " __attribute__((aligned(" << type.alignment() << ")))";
+    }
+
     if (use_initializer && !type.initializer().empty()) {
         val << " = " << type.initializer();
-    }
-
-    return val.str();
-};
-
-std::string CLanguageExtension::allocation(const std::string& name, const types::IType& type) {
-    std::stringstream val;
-
-    if (dynamic_cast<const types::Scalar*>(&type)) {
-        val << declaration(name, type);
-    } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
-        val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
-                           array_type->element_type());
-        val << " __attribute__((aligned(" << array_type->alignment() << ")))";
-    } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
-        val << declaration(name, type);
-        val << " = (" << declaration("", type) << ") ";
-        if (auto array_type = dynamic_cast<const types::Array*>(&pointer_type->pointee_type())) {
-            auto alignment = array_type->alignment();
-            auto num_elements = this->expression(array_type->num_elements());
-            auto& element_type = array_type->element_type();
-            val << "aligned_alloc(";
-            val << alignment;
-            val << ", ";
-            val << num_elements;
-            val << " * sizeof(";
-            val << declaration("", element_type);
-            val << "))";
-        } else {
-            val << "malloc(";
-            val << "1";
-            val << " * sizeof(";
-            val << declaration("", pointer_type->pointee_type());
-            val << "))";
-        }
-    } else if (dynamic_cast<const types::Structure*>(&type)) {
-        val << declaration(name, type);
-    } else {
-        throw std::runtime_error("Unknown allocation type");
-    }
-
-    return val.str();
-};
-
-std::string CLanguageExtension::deallocation(const std::string& name, const types::IType& type) {
-    std::stringstream val;
-
-    if (dynamic_cast<const types::Scalar*>(&type)) {
-        // Do nothing
-    } else if (dynamic_cast<const types::Array*>(&type)) {
-        // Do nothing
-    } else if (dynamic_cast<const types::Pointer*>(&type)) {
-        val << "free(" << name << ")";
-    } else if (dynamic_cast<const types::Structure*>(&type)) {
-        // Do nothing
-    } else {
-        throw std::runtime_error("Unknown deallocation type");
     }
 
     return val.str();
@@ -575,7 +524,7 @@ std::string CLanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
 };
 
 std::string CLanguageExtension::library_node(const data_flow::LibraryNode& libnode) {
-    data_flow::LibraryNodeType lib_node_type = libnode.call();
+    data_flow::LibraryNodeCode lib_node_type = libnode.code();
     switch (lib_node_type) {
         default:
             throw std::runtime_error("Unsupported library node type");

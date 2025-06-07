@@ -6,7 +6,7 @@ namespace sdfg {
 namespace passes {
 
 SymbolPropagation::SymbolPropagation()
-    : Pass(){
+    : Pass() {
 
       };
 
@@ -158,7 +158,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                 bool nvptx = false;
                 for (auto& atom : symbolic::atoms(rhs_modified)) {
                     auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom);
-                    if (symbolic::is_nvptx(sym)) {
+                    if (symbolic::is_nv(sym)) {
                         nvptx = true;
                         break;
                     }

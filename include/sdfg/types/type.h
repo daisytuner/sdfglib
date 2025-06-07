@@ -8,6 +8,7 @@
 #include <string_view>
 #include <type_traits>
 
+#include "sdfg/exceptions.h"
 #include "sdfg/symbolic/symbolic.h"
 
 using json = nlohmann::json;
@@ -38,7 +39,13 @@ enum PrimitiveType {
     PPC_FP128
 };
 
-enum DeviceLocation { x86, nvptx };
+typedef StringEnum StorageType;
+inline constexpr StorageType StorageType_CPU_Stack{"CPU_Stack"};
+inline constexpr StorageType StorageType_CPU_Heap{"CPU_Heap"};
+inline constexpr StorageType StorageType_NV_Generic{"NV_Generic"};
+inline constexpr StorageType StorageType_NV_Shared{"NV_Shared"};
+inline constexpr StorageType StorageType_NV_Global{"NV_Global"};
+inline constexpr StorageType StorageType_NV_Constant{"NV_Constant"};
 
 constexpr const char* primitive_type_to_string(PrimitiveType e) {
     switch (e) {
@@ -267,14 +274,25 @@ constexpr PrimitiveType as_unsigned(PrimitiveType e) noexcept {
 };
 
 class IType {
+   protected:
+    StorageType storage_type_;
+    size_t alignment_;
+    std::string initializer_;
+
    public:
+    IType(StorageType storage_type = StorageType_CPU_Stack, size_t alignment = 0,
+          const std::string& initializer = "")
+        : storage_type_(storage_type), alignment_(alignment), initializer_(initializer) {};
+
     virtual ~IType() = default;
 
+    StorageType storage_type() const { return storage_type_; };
+
+    size_t alignment() const { return alignment_; };
+
+    std::string initializer() const { return initializer_; };
+
     virtual PrimitiveType primitive_type() const = 0;
-
-    virtual DeviceLocation device_location() const = 0;
-
-    virtual uint address_space() const = 0;
 
     virtual bool is_symbol() const = 0;
 
@@ -282,7 +300,12 @@ class IType {
 
     virtual std::unique_ptr<IType> clone() const = 0;
 
-    virtual std::string initializer() const = 0;
+    virtual std::string print() const = 0;
+
+    friend std::ostream& operator<<(std::ostream& os, const IType& type) {
+        os << type.print();
+        return os;
+    };
 };
 
 }  // namespace types

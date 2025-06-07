@@ -3,15 +3,14 @@
 namespace sdfg {
 namespace types {
 
-Array::Array(const IType& element_type, const symbolic::Expression& num_elements,
-             DeviceLocation device_location, uint address_space, const std::string& initializer,
-             size_t alignment)
-    : element_type_(element_type.clone()),
-      num_elements_(num_elements),
-      device_location_(device_location),
-      address_space_(address_space),
-      initializer_(initializer),
-      alignment_(alignment) {};
+Array::Array(const IType& element_type, const symbolic::Expression& num_elements)
+    : element_type_(element_type.clone()), num_elements_(num_elements) {};
+
+Array::Array(StorageType storage_type, size_t alignment, const std::string& initializer,
+             const IType& element_type, const symbolic::Expression& num_elements)
+    : IType(storage_type, alignment, initializer),
+      element_type_(element_type.clone()),
+      num_elements_(num_elements) {};
 
 PrimitiveType Array::primitive_type() const { return this->element_type_->primitive_type(); };
 
@@ -20,8 +19,6 @@ bool Array::is_symbol() const { return false; };
 const IType& Array::element_type() const { return *this->element_type_; };
 
 const symbolic::Expression& Array::num_elements() const { return this->num_elements_; };
-
-size_t Array::alignment() const { return this->alignment_; };
 
 bool Array::operator==(const IType& other) const {
     if (auto array_type = dynamic_cast<const Array*>(&other)) {
@@ -34,16 +31,11 @@ bool Array::operator==(const IType& other) const {
 };
 
 std::unique_ptr<IType> Array::clone() const {
-    return std::make_unique<Array>(*this->element_type_, this->num_elements_,
-                                   this->device_location_, this->address_space_, this->initializer_,
-                                   this->alignment_);
+    return std::make_unique<Array>(this->storage_type(), this->alignment(), this->initializer(),
+                                   *this->element_type_, this->num_elements_);
 };
 
-uint Array::address_space() const { return this->address_space_; };
-
-DeviceLocation Array::device_location() const { return this->device_location_; };
-
-std::string Array::initializer() const { return this->initializer_; };
+std::string Array::print() const { return "Array(" + this->element_type_->print() + ")"; };
 
 }  // namespace types
 }  // namespace sdfg

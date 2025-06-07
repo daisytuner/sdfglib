@@ -59,7 +59,7 @@ bool is_memory_address(const Symbol& symbol);
 
 bool is_pointer(const Symbol& symbol);
 
-bool is_nvptx(const Symbol& symbol);
+bool is_nv(const Symbol& symbol);
 
 /***** Logical Expressions *****/
 
@@ -150,6 +150,32 @@ Condition simplify(const Condition& expr);
 Expression simplify(const Expression& expr);
 
 Condition rearrange_simple_condition(const Condition& inequality, const Symbol& target_symbol);
+
+/***** NV Symbols *****/
+
+Symbol threadIdx_x();
+
+Symbol threadIdx_y();
+
+Symbol threadIdx_z();
+
+Symbol blockDim_x();
+
+Symbol blockDim_y();
+
+Symbol blockDim_z();
+
+Symbol blockIdx_x();
+
+Symbol blockIdx_y();
+
+Symbol blockIdx_z();
+
+Symbol gridDim_x();
+
+Symbol gridDim_y();
+
+Symbol gridDim_z();
 
 }  // namespace symbolic
 }  // namespace sdfg

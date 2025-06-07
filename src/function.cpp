@@ -1,5 +1,7 @@
 #include "sdfg/function.h"
 
+#include "sdfg/symbolic/symbolic.h"
+
 using json = nlohmann::json;
 
 namespace sdfg {
@@ -9,21 +11,46 @@ const std::unique_ptr<types::Scalar> Function::NVPTX_SYMBOL_TYPE =
 const std::unique_ptr<types::Pointer> Function::CONST_POINTER_TYPE =
     std::make_unique<types::Pointer>(types::Scalar(types::PrimitiveType::Void));
 
-Function::Function(const std::string& name)
-    : name_(name) {
-
-      };
+Function::Function(const std::string& name, FunctionType type) : name_(name), type_(type) {
+    if (this->type_ == FunctionType_NV_GLOBAL) {
+        this->assumptions_[symbolic::threadIdx_x()] =
+            symbolic::Assumption::create(symbolic::threadIdx_x(), *NVPTX_SYMBOL_TYPE);
+        this->assumptions_[symbolic::threadIdx_y()] =
+            symbolic::Assumption::create(symbolic::threadIdx_y(), *NVPTX_SYMBOL_TYPE);
+        this->assumptions_[symbolic::threadIdx_z()] =
+            symbolic::Assumption::create(symbolic::threadIdx_z(), *NVPTX_SYMBOL_TYPE);
+        this->assumptions_[symbolic::blockIdx_x()] =
+            symbolic::Assumption::create(symbolic::blockIdx_x(), *NVPTX_SYMBOL_TYPE);
+        this->assumptions_[symbolic::blockIdx_y()] =
+            symbolic::Assumption::create(symbolic::blockIdx_y(), *NVPTX_SYMBOL_TYPE);
+        this->assumptions_[symbolic::blockIdx_z()] =
+            symbolic::Assumption::create(symbolic::blockIdx_z(), *NVPTX_SYMBOL_TYPE);
+        this->assumptions_[symbolic::blockDim_x()] =
+            symbolic::Assumption::create(symbolic::blockDim_x(), *NVPTX_SYMBOL_TYPE);
+        this->assumptions_[symbolic::blockDim_y()] =
+            symbolic::Assumption::create(symbolic::blockDim_y(), *NVPTX_SYMBOL_TYPE);
+        this->assumptions_[symbolic::blockDim_z()] =
+            symbolic::Assumption::create(symbolic::blockDim_z(), *NVPTX_SYMBOL_TYPE);
+        this->assumptions_[symbolic::gridDim_x()] =
+            symbolic::Assumption::create(symbolic::gridDim_x(), *NVPTX_SYMBOL_TYPE);
+        this->assumptions_[symbolic::gridDim_y()] =
+            symbolic::Assumption::create(symbolic::gridDim_y(), *NVPTX_SYMBOL_TYPE);
+        this->assumptions_[symbolic::gridDim_z()] =
+            symbolic::Assumption::create(symbolic::gridDim_z(), *NVPTX_SYMBOL_TYPE);
+    }
+};
 
 std::string Function::name() const { return this->name_; };
 
+FunctionType Function::type() const { return this->type_; };
+
 bool Function::exists(const std::string& name) const {
     return this->containers_.find(name) != this->containers_.end() ||
-           symbolic::is_pointer(symbolic::symbol(name)) ||
-           symbolic::is_nvptx(symbolic::symbol(name));
+           symbolic::is_pointer(symbolic::symbol(name)) || symbolic::is_nv(symbolic::symbol(name));
 };
 
 const types::IType& Function::type(const std::string& name) const {
-    if (symbolic::is_nvptx(symbolic::symbol(name))) {
+    if (symbolic::is_nv(symbolic::symbol(name))) {
         return *NVPTX_SYMBOL_TYPE;
     }
     if (symbolic::is_pointer(symbolic::symbol(name))) {

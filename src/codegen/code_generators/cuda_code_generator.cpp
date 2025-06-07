@@ -1,7 +1,6 @@
 #include "sdfg/codegen/code_generators/cuda_code_generator.h"
 
 #include "sdfg/codegen/dispatchers/node_dispatcher_factory.h"
-
 #include "sdfg/codegen/instrumentation/instrumentation.h"
 #include "sdfg/codegen/instrumentation/outermost_loops_instrumentation.h"
 
@@ -9,14 +8,19 @@ namespace sdfg {
 namespace codegen {
 
 CUDACodeGenerator::CUDACodeGenerator(ConditionalSchedule& schedule)
-    : CodeGenerator(schedule, InstrumentationStrategy::NONE){
+    : CodeGenerator(schedule, InstrumentationStrategy::NONE) {
+    if (schedule.schedule(0).sdfg().type() != FunctionType_NV_GLOBAL) {
+        throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
+    }
+};
 
-      };
-
-CUDACodeGenerator::CUDACodeGenerator(ConditionalSchedule& schedule, InstrumentationStrategy instrumentation_strategy)
-    : CodeGenerator(schedule, instrumentation_strategy){
-
-      };
+CUDACodeGenerator::CUDACodeGenerator(ConditionalSchedule& schedule,
+                                     InstrumentationStrategy instrumentation_strategy)
+    : CodeGenerator(schedule, instrumentation_strategy) {
+    if (schedule.schedule(0).sdfg().type() != FunctionType_NV_GLOBAL) {
+        throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
+    }
+};
 
 bool CUDACodeGenerator::generate() {
     this->dispatch_includes();
@@ -90,7 +94,8 @@ void CUDACodeGenerator::dispatch_includes() {
                            << "__DAISY_NVVM__" << std::endl;
     this->includes_stream_ << "#include "
                            << "\"daisyrtl.h\"" << std::endl;
-    if (instrumentation_strategy_ != InstrumentationStrategy::NONE) this->includes_stream_ << "#include <daisy_rtl.h>" << std::endl;
+    if (instrumentation_strategy_ != InstrumentationStrategy::NONE)
+        this->includes_stream_ << "#include <daisy_rtl.h>" << std::endl;
 
     this->includes_stream_ << "#define __daisy_min(a,b) ((a)<(b)?(a):(b))" << std::endl;
     this->includes_stream_ << "#define __daisy_max(a,b) ((a)>(b)?(a):(b))" << std::endl;
@@ -153,7 +158,7 @@ void CUDACodeGenerator::dispatch_structures() {
                 this->classes_stream_ << "struct ";
             }
             this->classes_stream_ << language_extension_.declaration("member_" + std::to_string(i),
-                                                                     member_type);
+                                                                     member_type, false, true);
             this->classes_stream_ << ";" << std::endl;
         }
 
@@ -165,11 +170,11 @@ void CUDACodeGenerator::dispatch_globals() {
     auto& function = schedule_.schedule(0).sdfg();
     for (auto& container : function.externals()) {
         auto& type = function.type(container);
-        if (type.address_space() != 3 && type.address_space() != 4) {
+        if (type.storage_type() == types::StorageType_NV_Global) {
             this->globals_stream_ << "extern " << language_extension_.declaration(container, type)
                                   << ";" << std::endl;
         }
-        if (type.address_space() == 4) {
+        if (type.storage_type() == types::StorageType_NV_Constant) {
             assert(type.initializer().empty());
             this->globals_stream_ << "__constant__ "
                                   << language_extension_.declaration(container, type, true) << ";"
@@ -184,7 +189,7 @@ void CUDACodeGenerator::dispatch_schedule() {
     // Declare shared memory
     for (auto& container : function.externals()) {
         auto& type = function.type(container);
-        if (type.address_space() == 3) {
+        if (type.storage_type() == types::StorageType_NV_Shared) {
             this->main_stream_ << language_extension_.declaration(container,
                                                                   function.type(container))
                                << ";" << std::endl;
@@ -205,10 +210,24 @@ void CUDACodeGenerator::dispatch_schedule() {
         this->main_stream_ << ";" << std::endl;
     }
 
+    // Declare transient containers
+    for (auto& container : function.containers()) {
+        if (!function.is_transient(container)) {
+            continue;
+        }
+
+        std::string val =
+            this->language_extension_.declaration(container, function.type(container), false, true);
+        if (!val.empty()) {
+            this->main_stream_ << val;
+            this->main_stream_ << ";" << std::endl;
+        }
+    }
+
     for (size_t i = 0; i < schedule_.size(); i++) {
         auto& schedule = schedule_.schedule(i);
         auto condition = schedule_.condition(i);
-        
+
         // Add instrumentation
         auto instrumentation = create_instrumentation(instrumentation_strategy_, schedule);
 
@@ -216,12 +235,11 @@ void CUDACodeGenerator::dispatch_schedule() {
             this->main_stream_ << "else ";
         }
 
-        this->main_stream_ << "if (" << language_extension_.expression(condition)
-                               << ") {\n";
+        this->main_stream_ << "if (" << language_extension_.expression(condition) << ") {\n";
 
         auto& function_i = schedule.builder().subject();
-        auto dispatcher = create_dispatcher(language_extension_, schedule,
-                                            function_i.root(), *instrumentation);
+        auto dispatcher =
+            create_dispatcher(language_extension_, schedule, function_i.root(), *instrumentation);
         dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_stream_);
 
         this->main_stream_ << "}\n";

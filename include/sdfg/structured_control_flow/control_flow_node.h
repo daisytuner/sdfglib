@@ -19,15 +19,13 @@ class ControlFlowNode : public Element {
     friend class builder::StructuredSDFGBuilder;
 
    protected:
-    ControlFlowNode(size_t element_id, const DebugInfo& debug_info);
+    ControlFlowNode(const DebugInfo& debug_info);
 
    public:
     virtual ~ControlFlowNode() = default;
 
     ControlFlowNode(const ControlFlowNode& node) = delete;
     ControlFlowNode& operator=(const ControlFlowNode&) = delete;
-
-    std::string name() const;
 };
 
 }  // namespace structured_control_flow

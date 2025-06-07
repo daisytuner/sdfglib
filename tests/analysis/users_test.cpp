@@ -7,7 +7,7 @@
 using namespace sdfg;
 
 TEST(UsersTest, Block_WAR) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
 
@@ -49,7 +49,7 @@ TEST(UsersTest, Block_WAR) {
 }
 
 TEST(UsersTest, Block_WAW) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
 
@@ -100,7 +100,7 @@ TEST(UsersTest, Block_WAW) {
 }
 
 TEST(UsersTest, Block_RAW) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -148,7 +148,7 @@ TEST(UsersTest, Block_RAW) {
 }
 
 TEST(UsersTest, Sequence_WAR) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     auto sym1 = symbolic::symbol("A");
@@ -186,7 +186,7 @@ TEST(UsersTest, Sequence_WAR) {
 }
 
 TEST(UsersTest, Sequence_WAW) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     auto sym1 = symbolic::symbol("A");
@@ -230,7 +230,7 @@ TEST(UsersTest, Sequence_WAW) {
 }
 
 TEST(UsersTest, Sequence_RAW) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -272,7 +272,7 @@ TEST(UsersTest, Sequence_RAW) {
 }
 
 TEST(UsersTest, For_Definition) {
-    builder::StructuredSDFGBuilder builder("sdfg_1");
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
