@@ -50,25 +50,6 @@ bool Pipeline::run(builder::StructuredSDFGBuilder& builder,
     return applied;
 };
 
-bool Pipeline::run(Schedule& schedule) {
-    auto& builder = schedule.builder();
-    auto& analysis_manager = schedule.analysis_manager();
-    return this->run(builder, analysis_manager);
-};
-
-bool Pipeline::run(ConditionalSchedule& schedule) {
-    bool applied = false;
-    for (size_t i = 0; i < schedule.size(); i++) {
-        auto& s = schedule.schedule(i);
-        bool applied_pass = false;
-        do {
-            applied_pass = this->run(s);
-            applied |= applied_pass;
-        } while (applied_pass);
-    }
-    return applied;
-};
-
 Pipeline Pipeline::expression_combine() {
     Pipeline p("ExpressionCombine");
 

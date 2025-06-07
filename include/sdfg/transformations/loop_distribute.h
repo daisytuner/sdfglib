@@ -16,9 +16,11 @@ class LoopDistribute : public Transformation {
 
     virtual std::string name() override;
 
-    virtual bool can_be_applied(Schedule& schedule) override;
+    virtual bool can_be_applied(builder::StructuredSDFGBuilder& builder,
+                                analysis::AnalysisManager& analysis_manager) override;
 
-    virtual void apply(Schedule& schedule) override;
+    virtual void apply(builder::StructuredSDFGBuilder& builder,
+                       analysis::AnalysisManager& analysis_manager) override;
 };
 
 }  // namespace transformations

@@ -4,7 +4,6 @@
 
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
-#include "sdfg/conditional_schedule.h"
 
 using namespace sdfg;
 
@@ -20,12 +19,9 @@ TEST(ForDispatcherTest, DispatchNode) {
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::ForDispatcher dispatcher(language_extension, schedule.schedule(0), loop,
-                                      instrumentation);
+    codegen::Instrumentation instrumentation(*final_sdfg);
+    codegen::ForDispatcher dispatcher(language_extension, *final_sdfg, loop, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

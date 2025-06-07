@@ -71,8 +71,6 @@ set(SOURCE_FILES
     src/codegen/dispatchers/for_dispatcher.cpp
     src/codegen/dispatchers/map_dispatcher.cpp
     src/codegen/dispatchers/while_dispatcher.cpp
-    src/codegen/dispatchers/schedules/highway_dispatcher.cpp
-    src/codegen/dispatchers/schedules/openmp_dispatcher.cpp
     src/codegen/instrumentation/outermost_loops_instrumentation.cpp
     src/control_flow/interstate_edge.cpp
     src/control_flow/state.cpp
@@ -129,7 +127,6 @@ set(SOURCE_FILES
     src/transformations/out_local_storage.cpp
     src/transformations/transformation.cpp
     src/transformations/utils.cpp
-    src/transformations/vectorization.cpp
     src/types/array.cpp
     src/types/function.cpp
     src/types/pointer.cpp
@@ -142,8 +139,6 @@ set(SOURCE_FILES
     src/function.cpp
     src/sdfg.cpp
     src/structured_sdfg.cpp
-    src/schedule.cpp
-    src/conditional_schedule.cpp
 )
 
 # Original Library

@@ -14,8 +14,8 @@ LoopDistribute::LoopDistribute(structured_control_flow::Sequence& parent,
 
 std::string LoopDistribute::name() { return "LoopDistribute"; };
 
-bool LoopDistribute::can_be_applied(Schedule& schedule) {
-    auto& builder = schedule.builder();
+bool LoopDistribute::can_be_applied(builder::StructuredSDFGBuilder& builder,
+                                    analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
     auto indvar = this->loop_.indvar();
 
@@ -29,7 +29,6 @@ bool LoopDistribute::can_be_applied(Schedule& schedule) {
         return false;
     }
 
-    auto& analysis_manager = schedule.analysis_manager();
     auto& users = analysis_manager.get<analysis::Users>();
 
     // Determine block-related containers
@@ -112,8 +111,8 @@ bool LoopDistribute::can_be_applied(Schedule& schedule) {
     return true;
 };
 
-void LoopDistribute::apply(Schedule& schedule) {
-    auto& builder = schedule.builder();
+void LoopDistribute::apply(builder::StructuredSDFGBuilder& builder,
+                           analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
 
     auto indvar = this->loop_.indvar();
@@ -126,7 +125,6 @@ void LoopDistribute::apply(Schedule& schedule) {
 
     // We might need to extend containers to loop dimension
 
-    auto& analysis_manager = schedule.analysis_manager();
     auto& users = analysis_manager.get<analysis::Users>();
     auto body_locals = users.locals(sdfg, body);
 

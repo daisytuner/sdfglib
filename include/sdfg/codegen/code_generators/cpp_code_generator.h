@@ -20,8 +20,8 @@ class CPPCodeGenerator : public CodeGenerator {
     void dispatch_schedule();
 
    public:
-    CPPCodeGenerator(ConditionalSchedule& schedule);
-    CPPCodeGenerator(ConditionalSchedule& schedule, InstrumentationStrategy instrumentation_strategy);
+    CPPCodeGenerator(StructuredSDFG& sdfg);
+    CPPCodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy);
 
     bool generate() override;
 

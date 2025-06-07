@@ -20,13 +20,14 @@ LoopTiling::LoopTiling(structured_control_flow::Sequence& parent,
 
 std::string LoopTiling::name() { return "LoopTiling"; };
 
-bool LoopTiling::can_be_applied(Schedule& schedule) {
+bool LoopTiling::can_be_applied(builder::StructuredSDFGBuilder& builder,
+                                analysis::AnalysisManager& analysis_manager) {
     // Criterion contiguous loop
     return analysis::DataParallelismAnalysis::is_contiguous(this->loop_);
 };
 
-void LoopTiling::apply(Schedule& schedule) {
-    auto& builder = schedule.builder();
+void LoopTiling::apply(builder::StructuredSDFGBuilder& builder,
+                       analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
 
     auto indvar = loop_.indvar();
@@ -67,7 +68,6 @@ void LoopTiling::apply(Schedule& schedule) {
     builder.remove_child(parent_, tmp_root);
     builder.remove_child(parent_, loop_);
 
-    auto& analysis_manager = schedule.analysis_manager();
     analysis_manager.invalidate_all();
 
     passes::SequenceFusion sf_pass;
@@ -75,8 +75,8 @@ void LoopTiling::apply(Schedule& schedule) {
     bool applies = false;
     do {
         applies = false;
-        applies |= dce_pass.run(schedule.builder(), analysis_manager);
-        applies |= sf_pass.run(schedule.builder(), analysis_manager);
+        applies |= dce_pass.run(builder, analysis_manager);
+        applies |= sf_pass.run(builder, analysis_manager);
     } while (applies);
 };
 

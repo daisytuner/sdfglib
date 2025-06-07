@@ -5,10 +5,6 @@
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
 #include "sdfg/element.h"
-#include "sdfg/structured_control_flow/control_flow_node.h"
-#include "sdfg/structured_control_flow/for.h"
-#include "sdfg/structured_control_flow/sequence.h"
-#include "sdfg/structured_control_flow/structured_loop.h"
 
 namespace sdfg {
 

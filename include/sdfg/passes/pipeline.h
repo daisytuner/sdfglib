@@ -36,10 +36,6 @@ class Pipeline : public Pass {
     virtual bool run(builder::StructuredSDFGBuilder& builder,
                      analysis::AnalysisManager& analysis_manager);
 
-    virtual bool run(Schedule& schedule);
-
-    virtual bool run(ConditionalSchedule& schedule);
-
     template <class T>
     void register_pass() {
         this->passes_.push_back(std::make_unique<T>());

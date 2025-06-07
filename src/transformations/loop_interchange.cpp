@@ -15,7 +15,8 @@ LoopInterchange::LoopInterchange(structured_control_flow::Sequence& parent,
 
 std::string LoopInterchange::name() { return "LoopInterchange"; };
 
-bool LoopInterchange::can_be_applied(Schedule& schedule) {
+bool LoopInterchange::can_be_applied(builder::StructuredSDFGBuilder& builder,
+                                     analysis::AnalysisManager& analysis_manager) {
     auto& outer_indvar = this->outer_loop_.indvar();
 
     // Criterion: Inner loop must not depend on outer loop
@@ -39,7 +40,6 @@ bool LoopInterchange::can_be_applied(Schedule& schedule) {
         return false;
     }
     // Criterion: Any of both loops is a map
-    auto& analysis_manager = schedule.analysis_manager();
     auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
 
     auto& outer_dependencies = analysis.get(this->outer_loop_);
@@ -74,9 +74,8 @@ bool LoopInterchange::can_be_applied(Schedule& schedule) {
     return false;
 };
 
-void LoopInterchange::apply(Schedule& schedule) {
-    auto& builder = schedule.builder();
-
+void LoopInterchange::apply(builder::StructuredSDFGBuilder& builder,
+                            analysis::AnalysisManager& analysis_manager) {
     auto new_inner_loop = builder.add_for_after(
         builder.parent(inner_loop_), this->inner_loop_, this->outer_loop_.indvar(),
         this->outer_loop_.condition(), this->outer_loop_.init(), this->outer_loop_.update());
@@ -93,7 +92,6 @@ void LoopInterchange::apply(Schedule& schedule) {
     builder.remove_child(builder.parent(inner_loop_), this->inner_loop_);
     builder.remove_child(builder.parent(outer_loop_), this->outer_loop_);
 
-    auto& analysis_manager = schedule.analysis_manager();
     analysis_manager.invalidate_all();
 };
 

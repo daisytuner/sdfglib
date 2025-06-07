@@ -6,7 +6,6 @@
 
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/memlet.h"
-#include "sdfg/schedule.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_sdfg.h"
@@ -14,7 +13,7 @@
 namespace sdfg {
 namespace visualizer {
 
-void DotVisualizer::visualizeBlock(Schedule& schedule, structured_control_flow::Block& block) {
+void DotVisualizer::visualizeBlock(StructuredSDFG& sdfg, structured_control_flow::Block& block) {
     this->stream_ << "subgraph cluster_" << block.element_id() << " {" << std::endl;
     this->stream_.setIndent(this->stream_.indent() + 4);
     this->stream_ << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl;
@@ -41,18 +40,18 @@ void DotVisualizer::visualizeBlock(Schedule& schedule, structured_control_flow::
                 this->stream_ << src.element_id() << " -> " << tasklet->element_id()
                               << " [label=\"   " << iedge.dst_conn() << " = " << src.data();
                 if (!symbolic::is_nv(symbolic::symbol(src.data()))) {
-                    types::IType const& type = schedule.sdfg().type(src.data());
-                    this->visualizeSubset(schedule.sdfg(), type, iedge.subset());
+                    types::IType const& type = sdfg.type(src.data());
+                    this->visualizeSubset(sdfg, type, iedge.subset());
                 }
                 this->stream_ << "   \"];" << std::endl;
             }
             for (data_flow::Memlet& oedge : block.dataflow().out_edges(*tasklet)) {
                 data_flow::AccessNode const& dst =
                     dynamic_cast<data_flow::AccessNode const&>(oedge.dst());
-                types::IType const& type = schedule.sdfg().type(dst.data());
+                types::IType const& type = sdfg.type(dst.data());
                 this->stream_ << tasklet->element_id() << " -> " << dst.element_id()
                               << " [label=\"   " << dst.data();
-                this->visualizeSubset(schedule.sdfg(), type, oedge.subset());
+                this->visualizeSubset(sdfg, type, oedge.subset());
                 this->stream_ << " = " << oedge.src_conn() << "   \"];" << std::endl;
             }
             if (this->last_comp_name_.empty()) this->last_comp_name_ = tasklet->element_id();
@@ -67,9 +66,8 @@ void DotVisualizer::visualizeBlock(Schedule& schedule, structured_control_flow::
             }
             if (!source && !sink) continue;
             this->stream_ << access_node->element_id() << " [";
-            if (!schedule.sdfg().is_internal(access_node->data())) this->stream_ << "penwidth=3.0,";
-            if (schedule.sdfg().is_transient(access_node->data()))
-                this->stream_ << "style=\"dashed,filled\",";
+            if (!sdfg.is_internal(access_node->data())) this->stream_ << "penwidth=3.0,";
+            if (sdfg.is_transient(access_node->data())) this->stream_ << "style=\"dashed,filled\",";
             this->stream_ << "label=\"" << access_node->data() << "\"];" << std::endl;
         } else if (const data_flow::LibraryNode* libnode =
                        dynamic_cast<data_flow::LibraryNode*>(node)) {
@@ -83,12 +81,13 @@ void DotVisualizer::visualizeBlock(Schedule& schedule, structured_control_flow::
     this->stream_ << "}" << std::endl;
 }
 
-void DotVisualizer::visualizeSequence(Schedule& schedule,
+void DotVisualizer::visualizeSequence(StructuredSDFG& sdfg,
                                       structured_control_flow::Sequence& sequence) {
     std::string last_comp_name_tmp, last_comp_name_cluster_tmp;
     for (size_t i = 0; i < sequence.size(); ++i) {
-        std::pair<ControlFlowNode&, Transition&> child = sequence.at(i);
-        this->visualizeNode(schedule, child.first);
+        std::pair<structured_control_flow::ControlFlowNode&, structured_control_flow::Transition&>
+            child = sequence.at(i);
+        this->visualizeNode(sdfg, child.first);
         if ((i > 0) && !last_comp_name_tmp.empty() && !this->last_comp_name_.empty()) {
             this->stream_ << last_comp_name_tmp << " -> " << this->last_comp_name_ << " [";
             if (!last_comp_name_cluster_tmp.empty())
@@ -105,7 +104,8 @@ void DotVisualizer::visualizeSequence(Schedule& schedule,
     }
 }
 
-void DotVisualizer::visualizeIfElse(Schedule& schedule, structured_control_flow::IfElse& if_else) {
+void DotVisualizer::visualizeIfElse(StructuredSDFG& sdfg,
+                                    structured_control_flow::IfElse& if_else) {
     this->stream_ << "subgraph cluster_" << if_else.element_id() << " {" << std::endl;
     this->stream_.setIndent(this->stream_.indent() + 4);
     this->stream_ << "style=filled;shape=box;fillcolor=white;color=black;label=\"if:\";"
@@ -117,7 +117,7 @@ void DotVisualizer::visualizeIfElse(Schedule& schedule, structured_control_flow:
         this->stream_.setIndent(this->stream_.indent() + 4);
         this->stream_ << "style=filled;shape=box;fillcolor=white;color=black;label=\""
                       << this->expression(if_else.at(i).second->__str__()) << "\";" << std::endl;
-        this->visualizeSequence(schedule, if_else.at(i).first);
+        this->visualizeSequence(sdfg, if_else.at(i).first);
         this->stream_.setIndent(this->stream_.indent() - 4);
         this->stream_ << "}" << std::endl;
     }
@@ -127,50 +127,49 @@ void DotVisualizer::visualizeIfElse(Schedule& schedule, structured_control_flow:
     this->last_comp_name_cluster_ = "cluster_" + if_else.element_id();
 }
 
-void DotVisualizer::visualizeWhile(Schedule& schedule, structured_control_flow::While& while_loop) {
+void DotVisualizer::visualizeWhile(StructuredSDFG& sdfg,
+                                   structured_control_flow::While& while_loop) {
     this->stream_ << "subgraph cluster_" << while_loop.element_id() << " {" << std::endl;
     this->stream_.setIndent(this->stream_.indent() + 4);
     this->stream_ << "style=filled;shape=box;fillcolor=white;color=black;label=\"while:\";"
                   << std::endl
                   << while_loop.element_id() << " [shape=point,style=invis,label=\"\"];"
                   << std::endl;
-    this->visualizeSequence(schedule, while_loop.root());
+    this->visualizeSequence(sdfg, while_loop.root());
     this->stream_.setIndent(this->stream_.indent() - 4);
     this->stream_ << "}" << std::endl;
     this->last_comp_name_ = while_loop.element_id();
     this->last_comp_name_cluster_ = "cluster_" + while_loop.element_id();
 }
 
-void DotVisualizer::visualizeFor(Schedule& schedule, structured_control_flow::For& loop) {
+void DotVisualizer::visualizeFor(StructuredSDFG& sdfg, structured_control_flow::For& loop) {
     this->stream_ << "subgraph cluster_" << loop.element_id() << " {" << std::endl;
     this->stream_.setIndent(this->stream_.indent() + 4);
     this->stream_ << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: ";
     this->visualizeForBounds(loop.indvar(), loop.init(), loop.condition(), loop.update());
-    LoopSchedule loop_schedule = schedule.loop_schedule(&loop);
-    if (loop_schedule == LoopSchedule::VECTORIZATION) this->stream_ << " (vectorized)";
-    if (loop_schedule == LoopSchedule::MULTICORE) this->stream_ << " (parallelized)";
     this->stream_ << "\";" << std::endl
                   << loop.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl;
-    this->visualizeSequence(schedule, loop.root());
+    this->visualizeSequence(sdfg, loop.root());
     this->stream_.setIndent(this->stream_.indent() - 4);
     this->stream_ << "}" << std::endl;
     this->last_comp_name_ = loop.element_id();
     this->last_comp_name_cluster_ = "cluster_" + loop.element_id();
 }
 
-void DotVisualizer::visualizeReturn(Schedule& schedule,
+void DotVisualizer::visualizeReturn(StructuredSDFG& sdfg,
                                     structured_control_flow::Return& return_node) {
     this->stream_ << return_node.element_id() << " [shape=cds,label=\" return  \"];" << std::endl;
     this->last_comp_name_ = return_node.element_id();
     this->last_comp_name_cluster_.clear();
 }
-void DotVisualizer::visualizeBreak(Schedule& schedule, structured_control_flow::Break& break_node) {
+void DotVisualizer::visualizeBreak(StructuredSDFG& sdfg,
+                                   structured_control_flow::Break& break_node) {
     this->stream_ << break_node.element_id() << " [shape=cds,label=\" break  \"];" << std::endl;
     this->last_comp_name_ = break_node.element_id();
     this->last_comp_name_cluster_.clear();
 }
 
-void DotVisualizer::visualizeContinue(Schedule& schedule,
+void DotVisualizer::visualizeContinue(StructuredSDFG& sdfg,
                                       structured_control_flow::Continue& continue_node) {
     this->stream_ << continue_node.element_id() << " [shape=cds,label=\" continue  \"];"
                   << std::endl;
@@ -178,18 +177,15 @@ void DotVisualizer::visualizeContinue(Schedule& schedule,
     this->last_comp_name_cluster_.clear();
 }
 
-void DotVisualizer::visualizeMap(Schedule& schedule, structured_control_flow::Map& map_node) {
+void DotVisualizer::visualizeMap(StructuredSDFG& sdfg, structured_control_flow::Map& map_node) {
     this->stream_ << "subgraph cluster_" << map_node.element_id() << " {" << std::endl;
     this->stream_.setIndent(this->stream_.indent() + 4);
     this->stream_ << "style=filled;shape=box;fillcolor=white;color=black;label=\"map: ";
     this->stream_ << map_node.indvar()->get_name() << "[0:";
     this->stream_ << map_node.num_iterations()->__str__() << "];";
-    LoopSchedule loop_schedule = schedule.loop_schedule(&map_node);
-    if (loop_schedule == LoopSchedule::VECTORIZATION) this->stream_ << " (vectorized)";
-    if (loop_schedule == LoopSchedule::MULTICORE) this->stream_ << " (parallelized)";
     this->stream_ << "\";" << std::endl
                   << map_node.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl;
-    this->visualizeSequence(schedule, map_node.root());
+    this->visualizeSequence(sdfg, map_node.root());
     this->stream_.setIndent(this->stream_.indent() - 4);
     this->stream_ << "}" << std::endl;
     this->last_comp_name_ = map_node.element_id();
@@ -198,23 +194,16 @@ void DotVisualizer::visualizeMap(Schedule& schedule, structured_control_flow::Ma
 
 void DotVisualizer::visualize() {
     this->stream_.clear();
-    this->stream_ << "digraph " << this->schedule_.name() << " {" << std::endl;
+    this->stream_ << "digraph " << this->sdfg_.name() << " {" << std::endl;
     this->stream_.setIndent(4);
     this->stream_ << "graph [compound=true];" << std::endl;
-    for (size_t i = 0; i < schedule_.size(); ++i) {
-        StructuredSDFG const& sdfg = this->schedule_.schedule(i).sdfg();
-        StructuredSDFG& function = this->schedule_.schedule(i).builder().subject();
-        this->stream_ << "subgraph cluster_" << sdfg.name() << " {" << std::endl;
-        this->stream_.setIndent(8);
-        this->stream_ << "node [style=filled,fillcolor=white];" << std::endl
-                      << "style=filled;color=lightblue;label=\"";
-        std::string condition = this->expression(this->schedule_.condition(i)->__str__());
-        if (condition != "True") this->stream_ << condition;
-        this->stream_ << "\";" << std::endl;
-        this->visualizeSequence(this->schedule_.schedule(i), function.root());
-        this->stream_.setIndent(4);
-        this->stream_ << "}" << std::endl;
-    }
+    this->stream_ << "subgraph cluster_" << this->sdfg_.name() << " {" << std::endl;
+    this->stream_.setIndent(8);
+    this->stream_ << "node [style=filled,fillcolor=white];" << std::endl
+                  << "style=filled;color=lightblue;label=\"\";" << std::endl;
+    this->visualizeSequence(this->sdfg_, this->sdfg_.root());
+    this->stream_.setIndent(4);
+    this->stream_ << "}" << std::endl;
     this->stream_.setIndent(0);
     this->stream_ << "}" << std::endl;
 }

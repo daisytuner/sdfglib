@@ -2,12 +2,13 @@
 
 #include <gtest/gtest.h>
 
+#include "sdfg/analysis/analysis.h"
+#include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/element.h"
 #include "sdfg/passes/structured_control_flow/dead_cfg_elimination.h"
 #include "sdfg/passes/structured_control_flow/sequence_fusion.h"
-#include "sdfg/schedule.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/transformations/loop_tiling.h"
 #include "sdfg/types/pointer.h"
@@ -64,14 +65,13 @@ TEST(KernelLocalStorageTest, Basic) {
 
     auto structured_sdfg = builder.move();
 
-    auto schedule = std::make_unique<Schedule>(structured_sdfg);
-    auto& analysis_manager = schedule->analysis_manager();
-    auto& builder_opt = schedule->builder();
+    builder::StructuredSDFGBuilder builder_opt(structured_sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
-    transformations::LoopTiling transformation(sdfg.root(), orig_loop, 32);
-    EXPECT_TRUE(transformation.can_be_applied(*schedule));
-    transformation.apply(*schedule);
+    transformations::LoopTiling transformation(builder_opt.subject().root(), orig_loop, 32);
+    EXPECT_TRUE(transformation.can_be_applied(builder_opt, analysis_manager));
+    transformation.apply(builder_opt, analysis_manager);
 
     // Cleanup
     bool applies = false;
@@ -155,8 +155,8 @@ TEST(KernelLocalStorageTest, Basic) {
     builder_opt.add_memlet(inner_block, inner_tasklet, "_out", ywrite, "void", {subset_y});
 
     transformations::KernelLocalStorage transformation2(sdfg_opt.root(), loop, *inner_loop, "x");
-    EXPECT_TRUE(transformation2.can_be_applied(*schedule));
-    transformation2.apply(*schedule);
+    EXPECT_TRUE(transformation2.can_be_applied(builder_opt, analysis_manager));
+    transformation2.apply(builder_opt, analysis_manager);
 
     // Check
     EXPECT_EQ(loop.root().size(), 3);

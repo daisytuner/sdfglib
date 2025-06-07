@@ -32,7 +32,7 @@ class BlockDispatcher : public NodeDispatcher {
     const structured_control_flow::Block& node_;
 
    public:
-    BlockDispatcher(LanguageExtension& language_extension, Schedule& schedule,
+    BlockDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
                     structured_control_flow::Block& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,

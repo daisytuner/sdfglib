@@ -6,6 +6,7 @@
 
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/data_flow_node.h"
+#include "sdfg/data_flow/library_node.h"
 #include "sdfg/data_flow/memlet.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/graph/graph.h"
@@ -30,8 +31,11 @@ class DataFlowGraph {
    private:
     // Remark: Exclusive resource
     graph::Graph graph_;
-    std::unordered_map<graph::Vertex, std::unique_ptr<data_flow::DataFlowNode>, boost::hash<graph::Vertex>> nodes_;
-    std::unordered_map<graph::Edge, std::unique_ptr<data_flow::Memlet>, boost::hash<graph::Edge>> edges_;
+    std::unordered_map<graph::Vertex, std::unique_ptr<data_flow::DataFlowNode>,
+                       boost::hash<graph::Vertex>>
+        nodes_;
+    std::unordered_map<graph::Edge, std::unique_ptr<data_flow::Memlet>, boost::hash<graph::Edge>>
+        edges_;
 
     Element* parent_;
 

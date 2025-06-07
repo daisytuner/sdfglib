@@ -24,12 +24,11 @@ LoopToKernelDim::LoopToKernelDim(structured_control_flow::Sequence& parent,
 
 std::string LoopToKernelDim::name() { return "LoopToKernelDim"; };
 
-bool LoopToKernelDim::can_be_applied(Schedule& schedule) {
-    auto& analysis_manager = schedule.analysis_manager();
+bool LoopToKernelDim::can_be_applied(builder::StructuredSDFGBuilder& builder,
+                                     analysis::AnalysisManager& analysis_manager) {
     sdfg::passes::Pipeline expression_combine = sdfg::passes::Pipeline::expression_combine();
     sdfg::passes::Pipeline memlet_combine = sdfg::passes::Pipeline::memlet_combine();
-    memlet_combine.run(schedule.builder(), analysis_manager);
-    auto& builder = schedule.builder();
+    memlet_combine.run(builder, analysis_manager);
 
     auto& sdfg = builder.subject();
     if (sdfg.type() != FunctionType_NV_GLOBAL) {
@@ -130,10 +129,8 @@ bool LoopToKernelDim::can_be_applied(Schedule& schedule) {
     return true;
 };
 
-void LoopToKernelDim::apply(Schedule& schedule) {
-    auto& analysis_manager = schedule.analysis_manager();
-    auto& builder = schedule.builder();
-
+void LoopToKernelDim::apply(builder::StructuredSDFGBuilder& builder,
+                            analysis::AnalysisManager& analysis_manager) {
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
     auto assumptions = assumptions_analysis.get(loop_.root());
     auto x_dim_size = assumptions[symbolic::blockDim_x()].integer_value();
@@ -195,8 +192,8 @@ void LoopToKernelDim::apply(Schedule& schedule) {
     bool applies = false;
     do {
         applies = false;
-        applies |= dce_pass.run(schedule.builder(), analysis_manager);
-        applies |= sf_pass.run(schedule.builder(), analysis_manager);
+        applies |= dce_pass.run(builder, analysis_manager);
+        applies |= sf_pass.run(builder, analysis_manager);
     } while (applies);
 };
 

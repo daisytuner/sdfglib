@@ -10,7 +10,7 @@ class IfElseDispatcher : public NodeDispatcher {
     structured_control_flow::IfElse& node_;
 
    public:
-    IfElseDispatcher(LanguageExtension& language_extension, Schedule& schedule,
+    IfElseDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
                      structured_control_flow::IfElse& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,

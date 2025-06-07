@@ -21,9 +21,8 @@ OutLocalStorage::OutLocalStorage(structured_control_flow::Sequence& parent,
 
 std::string OutLocalStorage::name() { return "OutLocalStorage"; };
 
-bool OutLocalStorage::can_be_applied(Schedule& schedule) {
-    auto& analysis_manager = schedule.analysis_manager();
-
+bool OutLocalStorage::can_be_applied(builder::StructuredSDFGBuilder& builder,
+                                     analysis::AnalysisManager& analysis_manager) {
     auto& body = this->loop_.root();
     this->requires_array_ = false;
 
@@ -104,16 +103,16 @@ bool OutLocalStorage::can_be_applied(Schedule& schedule) {
     return true;
 };
 
-void OutLocalStorage::apply(Schedule& schedule) {
+void OutLocalStorage::apply(builder::StructuredSDFGBuilder& builder,
+                            analysis::AnalysisManager& analysis_manager) {
     if (requires_array_) {
-        apply_array(schedule);
+        apply_array(builder, analysis_manager);
     } else {
-        apply_scalar(schedule);
+        apply_scalar(builder, analysis_manager);
     }
 
     // End of transformation
 
-    auto& analysis_manager = schedule.analysis_manager();
     analysis_manager.invalidate_all();
 
     passes::SequenceFusion sf_pass;
@@ -121,14 +120,13 @@ void OutLocalStorage::apply(Schedule& schedule) {
     bool applies = false;
     do {
         applies = false;
-        applies |= dce_pass.run(schedule.builder(), analysis_manager);
-        applies |= sf_pass.run(schedule.builder(), analysis_manager);
+        applies |= dce_pass.run(builder, analysis_manager);
+        applies |= sf_pass.run(builder, analysis_manager);
     } while (applies);
 };
 
-void OutLocalStorage::apply_array(Schedule& schedule) {
-    auto& analysis_manager = schedule.analysis_manager();
-    auto& builder = schedule.builder();
+void OutLocalStorage::apply_array(builder::StructuredSDFGBuilder& builder,
+                                  analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
     auto& users = analysis_manager.get<analysis::Users>();
     auto& parent = builder.parent(loop_);
@@ -186,9 +184,8 @@ void OutLocalStorage::apply_array(Schedule& schedule) {
     loop_.replace(symbolic::symbol(this->container_), symbolic::symbol(replacement_name));
 };
 
-void OutLocalStorage::apply_scalar(Schedule& schedule) {
-    auto& analysis_manager = schedule.analysis_manager();
-    auto& builder = schedule.builder();
+void OutLocalStorage::apply_scalar(builder::StructuredSDFGBuilder& builder,
+                                   analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
     auto& users = analysis_manager.get<analysis::Users>();
     auto& parent = builder.parent(loop_);

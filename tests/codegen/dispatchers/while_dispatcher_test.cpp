@@ -4,7 +4,6 @@
 
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
-#include "sdfg/conditional_schedule.h"
 
 using namespace sdfg;
 
@@ -17,12 +16,9 @@ TEST(WhileDispatcherTest, DispatchNode) {
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::WhileDispatcher dispatcher(language_extension, schedule.schedule(0), loop,
-                                        instrumentation);
+    codegen::Instrumentation instrumentation(*final_sdfg);
+    codegen::WhileDispatcher dispatcher(language_extension, *final_sdfg, loop, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -44,11 +40,9 @@ TEST(BreakDispatcherTest, DispatchNode) {
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::BreakDispatcher dispatcher(language_extension, schedule.schedule(0), break_node,
+    codegen::Instrumentation instrumentation(*final_sdfg);
+    codegen::BreakDispatcher dispatcher(language_extension, *final_sdfg, break_node,
                                         instrumentation);
 
     codegen::PrettyPrinter main_stream;
@@ -71,11 +65,9 @@ TEST(ContinueDispatcherTest, DispatchNode) {
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::ContinueDispatcher dispatcher(language_extension, schedule.schedule(0), continue_node,
+    codegen::Instrumentation instrumentation(*final_sdfg);
+    codegen::ContinueDispatcher dispatcher(language_extension, *final_sdfg, continue_node,
                                            instrumentation);
 
     codegen::PrettyPrinter main_stream;
@@ -97,11 +89,9 @@ TEST(ReturnDispatcherTest, DispatchNode) {
 
     auto final_sdfg = builder.move();
 
-    ConditionalSchedule schedule(final_sdfg);
-
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(schedule.schedule(0));
-    codegen::ReturnDispatcher dispatcher(language_extension, schedule.schedule(0), return_node,
+    codegen::Instrumentation instrumentation(*final_sdfg);
+    codegen::ReturnDispatcher dispatcher(language_extension, *final_sdfg, return_node,
                                          instrumentation);
 
     codegen::PrettyPrinter main_stream;

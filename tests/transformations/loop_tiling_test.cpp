@@ -2,9 +2,10 @@
 
 #include <gtest/gtest.h>
 
+#include "sdfg/analysis/analysis.h"
+#include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/passes/structured_control_flow/dead_cfg_elimination.h"
 #include "sdfg/passes/structured_control_flow/sequence_fusion.h"
-#include "sdfg/schedule.h"
 
 using namespace sdfg;
 
@@ -44,14 +45,13 @@ TEST(LoopTilingTest, Basic) {
 
     auto structured_sdfg = builder.move();
 
-    auto schedule = std::make_unique<Schedule>(structured_sdfg);
-    auto& analysis_manager = schedule->analysis_manager();
-    auto& builder_opt = schedule->builder();
+    builder::StructuredSDFGBuilder builder_opt(structured_sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
     transformations::LoopTiling transformation(root, orig_loop, 32);
-    EXPECT_TRUE(transformation.can_be_applied(*schedule));
-    transformation.apply(*schedule);
+    EXPECT_TRUE(transformation.can_be_applied(builder_opt, analysis_manager));
+    transformation.apply(builder_opt, analysis_manager);
 
     // Cleanup
     bool applies = false;

@@ -6,20 +6,17 @@
 namespace sdfg {
 namespace codegen {
 
-enum InstrumentationStrategy {
-    NONE,
-    OUTERMOST_LOOPS
-};
+enum InstrumentationStrategy { NONE, OUTERMOST_LOOPS };
 
-inline std::unique_ptr<Instrumentation> create_instrumentation(InstrumentationStrategy strategy, Schedule& schedule)
-{
+inline std::unique_ptr<Instrumentation> create_instrumentation(InstrumentationStrategy strategy,
+                                                               StructuredSDFG& sdfg) {
     switch (strategy) {
         case InstrumentationStrategy::NONE:
-            return std::make_unique<Instrumentation>(schedule);
+            return std::make_unique<Instrumentation>(sdfg);
         case InstrumentationStrategy::OUTERMOST_LOOPS:
-            return std::make_unique<OutermostLoopsInstrumentation>(schedule);
+            return std::make_unique<OutermostLoopsInstrumentation>(sdfg);
     }
 }
 
-}
-}
+}  // namespace codegen
+}  // namespace sdfg

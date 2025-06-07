@@ -11,12 +11,11 @@ class WhileDispatcher : public NodeDispatcher {
     structured_control_flow::While& node_;
 
    public:
-    WhileDispatcher(LanguageExtension& language_extension, Schedule& schedule,
+    WhileDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
                     structured_control_flow::While& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                        PrettyPrinter& library_stream) override;
-
 };
 
 class BreakDispatcher : public NodeDispatcher {
@@ -24,7 +23,7 @@ class BreakDispatcher : public NodeDispatcher {
     structured_control_flow::Break& node_;
 
    public:
-    BreakDispatcher(LanguageExtension& language_extension, Schedule& schedule,
+    BreakDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
                     structured_control_flow::Break& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
@@ -36,7 +35,7 @@ class ContinueDispatcher : public NodeDispatcher {
     structured_control_flow::Continue& node_;
 
    public:
-    ContinueDispatcher(LanguageExtension& language_extension, Schedule& schedule,
+    ContinueDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
                        structured_control_flow::Continue& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
@@ -48,7 +47,7 @@ class ReturnDispatcher : public NodeDispatcher {
     structured_control_flow::Return& node_;
 
    public:
-    ReturnDispatcher(LanguageExtension& language_extension, Schedule& schedule,
+    ReturnDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
                      structured_control_flow::Return& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,

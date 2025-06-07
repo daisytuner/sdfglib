@@ -2,8 +2,6 @@
 
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher.h"
-#include "sdfg/codegen/dispatchers/schedules/highway_dispatcher.h"
-#include "sdfg/codegen/dispatchers/schedules/openmp_dispatcher.h"
 #include "sdfg/codegen/dispatchers/sequence_dispatcher.h"
 
 namespace sdfg {
@@ -14,7 +12,7 @@ class ForDispatcher : public NodeDispatcher {
     structured_control_flow::For& node_;
 
    public:
-    ForDispatcher(LanguageExtension& language_extension, Schedule& schedule,
+    ForDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
                   structured_control_flow::For& node, Instrumentation& instrumentation);
 
     void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
