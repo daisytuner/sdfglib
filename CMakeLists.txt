@@ -71,8 +71,6 @@ set(SOURCE_FILES
     src/codegen/dispatchers/for_dispatcher.cpp
     src/codegen/dispatchers/map_dispatcher.cpp
     src/codegen/dispatchers/while_dispatcher.cpp
-    src/codegen/dispatchers/schedules/highway_dispatcher.cpp
-    src/codegen/dispatchers/schedules/openmp_dispatcher.cpp
     src/codegen/instrumentation/outermost_loops_instrumentation.cpp
     src/control_flow/interstate_edge.cpp
     src/control_flow/state.cpp

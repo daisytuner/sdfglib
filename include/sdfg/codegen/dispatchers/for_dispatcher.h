@@ -2,8 +2,6 @@
 
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher.h"
-#include "sdfg/codegen/dispatchers/schedules/highway_dispatcher.h"
-#include "sdfg/codegen/dispatchers/schedules/openmp_dispatcher.h"
 #include "sdfg/codegen/dispatchers/sequence_dispatcher.h"
 
 namespace sdfg {
