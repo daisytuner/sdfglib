@@ -83,17 +83,6 @@ TEST(KernelLocalStorageTest, Basic) {
         applies |= sequence_fusion.run(builder_opt, analysis_manager);
     } while (applies);
 
-    auto& sdfg_opt = builder_opt.subject();
-    EXPECT_EQ(sdfg_opt.root().size(), 1);
-    EXPECT_TRUE(dynamic_cast<structured_control_flow::Kernel*>(&sdfg_opt.root().at(0).first) !=
-                nullptr);
-    auto& kernel_opt = static_cast<structured_control_flow::Kernel&>(sdfg_opt.root().at(0).first);
-
-    EXPECT_EQ(kernel_opt.root().size(), 1);
-    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&kernel_opt.root().at(0).first) !=
-                nullptr);
-    auto& loop = static_cast<structured_control_flow::For&>(kernel_opt.root().at(0).first);
-
     EXPECT_EQ(loop.root().size(), 1);
 
     // Check

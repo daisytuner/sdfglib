@@ -16,7 +16,7 @@ class StructuredLoop : public ControlFlowNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
    protected:
-    StructuredLoop(size_t element_id, const DebugInfo& debug_info);
+    StructuredLoop(const DebugInfo& debug_info);
 
    public:
     virtual ~StructuredLoop() = default;

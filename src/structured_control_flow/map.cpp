@@ -5,9 +5,8 @@
 namespace sdfg {
 namespace structured_control_flow {
 
-Map::Map(const DebugInfo& debug_info, symbolic::Symbol indvar,
-         symbolic::Expression num_iterations)
-    : StructuredLoop(element_id, debug_info), indvar_(indvar), num_iterations_(num_iterations) {
+Map::Map(const DebugInfo& debug_info, symbolic::Symbol indvar, symbolic::Expression num_iterations)
+    : StructuredLoop(debug_info), indvar_(indvar), num_iterations_(num_iterations) {
     this->root_ = std::unique_ptr<Sequence>(new Sequence(debug_info));
     this->init_ = symbolic::zero();
     this->update_ = symbolic::add(indvar_, symbolic::one());
