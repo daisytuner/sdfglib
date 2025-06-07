@@ -9,6 +9,7 @@
 #include "sdfg/passes/structured_control_flow/sequence_fusion.h"
 #include "sdfg/structured_control_flow/if_else.h"
 #include "sdfg/structured_control_flow/sequence.h"
+#include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/transformations/utils.h"
 #include "sdfg/types/array.h"
@@ -23,8 +24,8 @@ namespace sdfg {
 namespace transformations {
 
 KernelLocalStorage::KernelLocalStorage(structured_control_flow::Sequence& parent,
-                                       structured_control_flow::For& outer_loop,
-                                       structured_control_flow::For& inner_loop,
+                                       structured_control_flow::StructuredLoop& outer_loop,
+                                       structured_control_flow::StructuredLoop& inner_loop,
                                        std::string container)
     : parent_(parent), outer_loop_(outer_loop), inner_loop_(inner_loop), container_(container) {};
 

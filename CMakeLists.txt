@@ -114,6 +114,7 @@ set(SOURCE_FILES
     src/structured_control_flow/map.cpp
     src/structured_control_flow/return.cpp
     src/structured_control_flow/sequence.cpp
+    src/structured_control_flow/structured_loop.cpp
     src/structured_control_flow/while.cpp
     src/symbolic/analysis.cpp
     src/symbolic/assumptions.cpp

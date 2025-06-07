@@ -1,5 +1,7 @@
 #include "sdfg/passes/structured_control_flow/dead_cfg_elimination.h"
 
+#include "sdfg/structured_control_flow/structured_loop.h"
+
 namespace sdfg {
 namespace passes {
 
@@ -127,8 +129,8 @@ bool DeadCFGElimination::run_pass(builder::StructuredSDFGBuilder& builder,
         } else if (auto loop_stmt = dynamic_cast<structured_control_flow::While*>(curr)) {
             auto& root = loop_stmt->root();
             queue.push_back(&root);
-        } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(curr)) {
-            auto& root = for_stmt->root();
+        } else if (auto sloop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(curr)) {
+            auto& root = sloop_stmt->root();
             queue.push_back(&root);
         } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(curr)) {
             auto& root = map_stmt->root();

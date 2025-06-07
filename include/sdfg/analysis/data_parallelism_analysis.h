@@ -5,12 +5,11 @@
 #include <isl/set.h>
 #include <isl/space.h>
 
-#include <set>
 #include <unordered_map>
 #include <vector>
 
-#include "sdfg/analysis/assumptions_analysis.h"
-#include "sdfg/analysis/users.h"
+#include "sdfg/analysis/analysis.h"
+#include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/structured_sdfg.h"
 
 namespace sdfg {
@@ -30,15 +29,17 @@ typedef std::unordered_map<std::string, Parallelism> DataParallelismAnalysisResu
 
 class DataParallelismAnalysis : public Analysis {
    private:
-    std::unordered_set<const structured_control_flow::For*> loops_;
-    std::unordered_map<const structured_control_flow::For*, DataParallelismAnalysisResult> results_;
+    std::unordered_set<const structured_control_flow::StructuredLoop*> loops_;
+    std::unordered_map<const structured_control_flow::StructuredLoop*,
+                       DataParallelismAnalysisResult>
+        results_;
 
     bool disjoint(const data_flow::Subset& subset1, const data_flow::Subset& subset2,
                   const std::string& indvar, const std::unordered_set<std::string>& moving_symbols,
                   const symbolic::Assumptions& assumptions);
 
     void classify(analysis::AnalysisManager& analysis_manager,
-                  const structured_control_flow::For* loop);
+                  const structured_control_flow::StructuredLoop* loop);
 
    protected:
     void run(analysis::AnalysisManager& analysis_manager) override;
@@ -46,13 +47,14 @@ class DataParallelismAnalysis : public Analysis {
    public:
     DataParallelismAnalysis(StructuredSDFG& sdfg);
 
-    const DataParallelismAnalysisResult& get(const structured_control_flow::For& loop) const;
+    const DataParallelismAnalysisResult& get(
+        const structured_control_flow::StructuredLoop& loop) const;
 
-    static bool is_contiguous(const structured_control_flow::For& loop);
+    static bool is_contiguous(const structured_control_flow::StructuredLoop& loop);
 
-    static bool is_strictly_monotonic(const structured_control_flow::For& loop);
+    static bool is_strictly_monotonic(const structured_control_flow::StructuredLoop& loop);
 
-    static symbolic::Expression bound(const structured_control_flow::For& loop);
+    static symbolic::Expression bound(const structured_control_flow::StructuredLoop& loop);
 
     static std::pair<data_flow::Subset, data_flow::Subset> substitution(
         const data_flow::Subset& subset1, const data_flow::Subset& subset2,

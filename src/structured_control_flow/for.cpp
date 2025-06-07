@@ -1,5 +1,6 @@
 #include "sdfg/structured_control_flow/for.h"
 
+#include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
@@ -7,7 +8,7 @@ namespace structured_control_flow {
 
 For::For(const DebugInfo& debug_info, symbolic::Symbol indvar, symbolic::Expression init,
          symbolic::Expression update, symbolic::Condition condition)
-    : ControlFlowNode(debug_info),
+    : StructuredLoop(debug_info),
       indvar_(indvar),
       init_(init),
       update_(update),

@@ -5,12 +5,13 @@
 #include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
 #include "sdfg/passes/structured_control_flow/dead_cfg_elimination.h"
 #include "sdfg/passes/structured_control_flow/sequence_fusion.h"
+#include "sdfg/structured_control_flow/structured_loop.h"
 
 namespace sdfg {
 namespace transformations {
 
 LoopTiling::LoopTiling(structured_control_flow::Sequence& parent,
-                       structured_control_flow::For& loop, size_t tile_size)
+                       structured_control_flow::StructuredLoop& loop, size_t tile_size)
     : parent_(parent), loop_(loop), tile_size_(tile_size) {
     if (tile_size <= 1) {
         throw InvalidSDFGException("LoopTiling: Tile size must be greater than 1");
@@ -35,12 +36,13 @@ void LoopTiling::apply(Schedule& schedule) {
 
     auto tile_size = symbolic::integer(this->tile_size_);
 
-    auto& outer_body = loop_.root();
+    auto condition = symbolic::subs(loop_.condition(), indvar, outer_indvar);
+    auto update = symbolic::add(outer_indvar, tile_size);
 
-    loop_.indvar() = outer_indvar;
-    loop_.condition() = symbolic::subs(loop_.condition(), indvar, outer_indvar);
-    loop_.update() = symbolic::subs(loop_.update(), indvar, outer_indvar);
-    loop_.update() = symbolic::add(outer_indvar, tile_size);
+    auto& outer_loop =
+        builder.add_for_before(parent_, loop_, outer_indvar, condition, loop_.init(), update).first;
+
+    auto& outer_body = outer_loop.root();
 
     auto inner_indvar = indvar;
     auto inner_init = outer_indvar;
@@ -54,7 +56,7 @@ void LoopTiling::apply(Schedule& schedule) {
     auto& inner_loop =
         builder.add_for(tmp_root, inner_indvar, inner_condition, inner_init, inner_update);
 
-    deepcopy::StructuredSDFGDeepCopy copies(builder, inner_loop.root(), outer_body);
+    deepcopy::StructuredSDFGDeepCopy copies(builder, inner_loop.root(), loop_.root());
     copies.copy();
 
     builder.clear_sequence(outer_body);
@@ -63,6 +65,7 @@ void LoopTiling::apply(Schedule& schedule) {
     copies2.copy();
 
     builder.remove_child(parent_, tmp_root);
+    builder.remove_child(parent_, loop_);
 
     auto& analysis_manager = schedule.analysis_manager();
     analysis_manager.invalidate_all();

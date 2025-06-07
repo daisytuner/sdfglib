@@ -2,6 +2,7 @@
 
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
+#include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/transformations/utils.h"
 
@@ -9,7 +10,7 @@ namespace sdfg {
 namespace transformations {
 
 LoopUnroll::LoopUnroll(structured_control_flow::Sequence& parent,
-                       structured_control_flow::For& loop)
+                       structured_control_flow::StructuredLoop& loop)
     : parent_(parent), loop_(loop) {
 
       };

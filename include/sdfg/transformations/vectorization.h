@@ -1,6 +1,5 @@
 #pragma once
 
-#include "sdfg/analysis/data_parallelism_analysis.h"
 #include "sdfg/transformations/transformation.h"
 
 namespace sdfg {
@@ -9,12 +8,13 @@ namespace transformations {
 enum AccessType { CONSTANT, CONTIGUOUS, INDIRECTION, UNKNOWN };
 
 class Vectorization : public Transformation {
-    structured_control_flow::For& loop_;
+    structured_control_flow::StructuredLoop& loop_;
 
     static bool tasklet_supported(data_flow::TaskletCode c);
 
    public:
-    Vectorization(structured_control_flow::Sequence& parent, structured_control_flow::For& loop);
+    Vectorization(structured_control_flow::Sequence& parent,
+                  structured_control_flow::StructuredLoop& loop);
 
     virtual std::string name() override;
 

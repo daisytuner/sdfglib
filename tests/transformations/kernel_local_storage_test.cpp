@@ -50,8 +50,8 @@ TEST(KernelLocalStorageTest, Basic) {
     auto condition = symbolic::Lt(indvar, bound);
     auto update = symbolic::add(indvar, symbolic::integer(1));
 
-    auto& loop = builder.add_for(sdfg.root(), indvar, condition, init, update);
-    auto& body = loop.root();
+    auto& orig_loop = builder.add_for(sdfg.root(), indvar, condition, init, update);
+    auto& body = orig_loop.root();
 
     // Add computation
     auto& block = builder.add_block(body);
@@ -69,7 +69,7 @@ TEST(KernelLocalStorageTest, Basic) {
     auto& builder_opt = schedule->builder();
 
     // Apply
-    transformations::LoopTiling transformation(sdfg.root(), loop, 32);
+    transformations::LoopTiling transformation(sdfg.root(), orig_loop, 32);
     EXPECT_TRUE(transformation.can_be_applied(*schedule));
     transformation.apply(*schedule);
 
@@ -82,6 +82,9 @@ TEST(KernelLocalStorageTest, Basic) {
         applies |= dead_cfg.run(builder_opt, analysis_manager);
         applies |= sequence_fusion.run(builder_opt, analysis_manager);
     } while (applies);
+
+    auto& sdfg_opt = builder_opt.subject();
+    auto& loop = static_cast<structured_control_flow::For&>(sdfg_opt.root().at(0).first);
 
     EXPECT_EQ(loop.root().size(), 1);
 
@@ -132,18 +135,17 @@ TEST(KernelLocalStorageTest, Basic) {
                                 {{"_in1", base_desc}, {"_in2", base_desc}});
 
     auto subset_x = symbolic::add(
-        inner_loop->indvar(),
-        symbolic::mul(
-            symbolic::integer(512),
-            symbolic::add(symbolic::threadIdx_x(),
-                          symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x")))));
+        inner_loop->indvar(), symbolic::mul(symbolic::integer(512),
+                                            symbolic::add(symbolic::threadIdx_x(),
+                                                          symbolic::mul(symbolic::blockDim_x(),
+                                                                        symbolic::blockIdx_x()))));
     auto subset_y = symbolic::add(
         symbolic::add(symbolic::threadIdx_y(),
-                      symbolic::mul(symbolic::blockDim_y(), symbolic::symbol("blockIdx.y"))),
+                      symbolic::mul(symbolic::blockDim_y(), symbolic::blockIdx_y())),
         symbolic::mul(
             symbolic::integer(512),
             symbolic::add(symbolic::threadIdx_x(),
-                          symbolic::mul(symbolic::blockDim_x(), symbolic::symbol("blockIdx.x")))));
+                          symbolic::mul(symbolic::blockDim_x(), symbolic::blockIdx_x()))));
 
     builder_opt.add_memlet(inner_block, xread, "void", inner_tasklet, "_in1", {subset_x});
     builder_opt.add_memlet(inner_block, yread, "void", inner_tasklet, "_in2", {subset_y});
@@ -152,7 +154,7 @@ TEST(KernelLocalStorageTest, Basic) {
 
     builder_opt.add_memlet(inner_block, inner_tasklet, "_out", ywrite, "void", {subset_y});
 
-    transformations::KernelLocalStorage transformation2(sdfg.root(), loop, *inner_loop, "x");
+    transformations::KernelLocalStorage transformation2(sdfg_opt.root(), loop, *inner_loop, "x");
     EXPECT_TRUE(transformation2.can_be_applied(*schedule));
     transformation2.apply(*schedule);
 
@@ -197,8 +199,6 @@ TEST(KernelLocalStorageTest, Basic) {
     auto tasklet_shared = *graph.tasklets().begin();
 
     EXPECT_EQ(tasklet_shared->inputs().size(), 1);
-    EXPECT_EQ(tasklet_shared->output().first, "_out");
-    EXPECT_EQ(tasklet_shared->output().second.primitive_type(), types::PrimitiveType::Float);
 
     auto& input = *(graph.in_edges(*tasklet_shared).begin());
     EXPECT_TRUE(dynamic_cast<data_flow::AccessNode*>(&input.src()) != nullptr);

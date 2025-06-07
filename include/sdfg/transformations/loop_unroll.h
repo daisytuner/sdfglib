@@ -7,10 +7,11 @@ namespace transformations {
 
 class LoopUnroll : public Transformation {
     structured_control_flow::Sequence& parent_;
-    structured_control_flow::For& loop_;
+    structured_control_flow::StructuredLoop& loop_;
 
    public:
-    LoopUnroll(structured_control_flow::Sequence& parent, structured_control_flow::For& loop);
+    LoopUnroll(structured_control_flow::Sequence& parent,
+               structured_control_flow::StructuredLoop& loop);
 
     virtual std::string name() override;
 

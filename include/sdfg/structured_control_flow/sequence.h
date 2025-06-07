@@ -1,6 +1,5 @@
 #pragma once
 
-#include <list>
 #include <memory>
 
 #include "sdfg/structured_control_flow/control_flow_node.h"

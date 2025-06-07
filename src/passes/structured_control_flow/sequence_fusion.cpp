@@ -1,5 +1,7 @@
 #include "sdfg/passes/structured_control_flow/sequence_fusion.h"
 
+#include "sdfg/structured_control_flow/structured_loop.h"
+
 namespace sdfg {
 namespace passes {
 
@@ -47,10 +49,9 @@ bool SequenceFusion::run_pass(builder::StructuredSDFGBuilder& builder,
             }
         } else if (auto loop_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
             queue.push_back(&loop_stmt->root());
-        } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(current)) {
-            queue.push_back(&for_stmt->root());
-        } else if (auto map_stmt = dynamic_cast<const structured_control_flow::Map*>(current)) {
-            queue.push_back(&map_stmt->root());
+        } else if (auto sloop_stmt =
+                       dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
+            queue.push_back(&sloop_stmt->root());
         }
     }
 
