@@ -1,6 +1,6 @@
 #include "sdfg/codegen/code_generators/c_code_generator.h"
 
-#include "sdfg/codegen/dispatchers/node_dispatcher_factory.h"
+#include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 #include "sdfg/codegen/instrumentation/instrumentation.h"
 #include "sdfg/codegen/instrumentation/outermost_loops_instrumentation.h"
 

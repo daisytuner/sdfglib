@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sdfg/codegen/dispatchers/node_dispatcher.h"
+#include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/types/utils.h"

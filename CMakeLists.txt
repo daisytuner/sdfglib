@@ -65,6 +65,7 @@ set(SOURCE_FILES
     src/codegen/code_generators/cpp_code_generator.cpp
     src/codegen/code_generators/cuda_code_generator.cpp
     src/codegen/dispatchers/node_dispatcher.cpp
+    src/codegen/dispatchers/node_dispatcher_registry.cpp
     src/codegen/dispatchers/block_dispatcher.cpp
     src/codegen/dispatchers/if_else_dispatcher.cpp
     src/codegen/dispatchers/sequence_dispatcher.cpp
