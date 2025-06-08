@@ -356,21 +356,5 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
     return dynamic_cast<data_flow::Memlet&>(*(res.first->second));
 };
 
-data_flow::LibraryNode& SDFGBuilder::add_library_node(control_flow::State& state,
-                                                      const data_flow::LibraryNodeCode code,
-                                                      const std::vector<std::string>& outputs,
-                                                      const std::vector<std::string>& inputs,
-                                                      const bool side_effect,
-                                                      const DebugInfo& debug_info) {
-    auto& dataflow = state.dataflow();
-
-    auto vertex = boost::add_vertex(dataflow.graph_);
-    auto res = dataflow.nodes_.insert(
-        {vertex, std::unique_ptr<data_flow::LibraryNode>(new data_flow::LibraryNode(
-                     debug_info, vertex, dataflow, code, outputs, inputs, side_effect))});
-
-    return dynamic_cast<data_flow::LibraryNode&>(*(res.first->second));
-}
-
 }  // namespace builder
 }  // namespace sdfg

@@ -1016,18 +1016,6 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
     return dynamic_cast<data_flow::Memlet&>(*(res.first->second));
 };
 
-data_flow::LibraryNode& StructuredSDFGBuilder::add_library_node(
-    structured_control_flow::Block& block, const data_flow::LibraryNodeCode code,
-    const std::vector<std::string>& outputs, const std::vector<std::string>& inputs,
-    const bool side_effect, const DebugInfo& debug_info) {
-    auto vertex = boost::add_vertex(block.dataflow_->graph_);
-    auto res = block.dataflow_->nodes_.insert(
-        {vertex, std::unique_ptr<data_flow::LibraryNode>(new data_flow::LibraryNode(
-                     debug_info, vertex, block.dataflow(), code, outputs, inputs, side_effect))});
-
-    return dynamic_cast<data_flow::LibraryNode&>(*(res.first->second));
-}
-
 void StructuredSDFGBuilder::remove_memlet(structured_control_flow::Block& block,
                                           const data_flow::Memlet& edge) {
     auto& graph = block.dataflow();

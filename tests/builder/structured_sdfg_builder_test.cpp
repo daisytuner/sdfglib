@@ -82,6 +82,29 @@ TEST(StructuredSDFGBuilderTest, AddBlockAfter) {
     EXPECT_EQ(child.second.size(), 0);
 }
 
+inline constexpr data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
+class BarrierLocalLibraryNode : public data_flow::LibraryNode {
+   public:
+    BarrierLocalLibraryNode(const DebugInfo& debug_info, const graph::Vertex vertex,
+                            data_flow::DataFlowGraph& parent,
+                            const data_flow::LibraryNodeCode& code,
+                            const std::vector<std::string>& outputs,
+                            const std::vector<std::string>& inputs, const bool side_effect)
+        : data_flow::LibraryNode(debug_info, vertex, parent, code, outputs, inputs, side_effect) {}
+
+    virtual std::unique_ptr<data_flow::DataFlowNode> clone(
+        const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override {
+        return std::make_unique<BarrierLocalLibraryNode>(this->debug_info(), vertex, parent,
+                                                         this->code(), this->outputs(),
+                                                         this->inputs(), this->side_effect());
+    }
+
+    virtual void replace(const symbolic::Expression& old_expression,
+                         const symbolic::Expression& new_expression) override {
+        // Do nothing
+    }
+};
+
 TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
@@ -93,7 +116,7 @@ TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
         root, symbolic::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
 
     auto& lib_node =
-        builder.add_library_node(block, data_flow::LibraryNodeCode{"barrier_local"}, {}, {}, false);
+        builder.add_library_node<BarrierLocalLibraryNode>(block, BARRIER_LOCAL, {}, {}, false);
 
     auto sdfg = builder.move();
 
@@ -107,7 +130,8 @@ TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
     EXPECT_EQ(block.dataflow().nodes().size(), 1);
     EXPECT_EQ(block.dataflow().edges().size(), 0);
     EXPECT_EQ(&(*block.dataflow().nodes().begin()), &lib_node);
-    EXPECT_EQ(lib_node.code(), data_flow::LibraryNodeCode{"barrier_local"});
+    EXPECT_EQ(lib_node.code(), BARRIER_LOCAL);
+    EXPECT_TRUE(dynamic_cast<BarrierLocalLibraryNode*>(&lib_node));
 }
 
 TEST(StructuredSDFGBuilderTest, AddIfElse) {
@@ -354,9 +378,9 @@ TEST(SDFG2StructuredSDFGTest, IfElse) {
     auto& else_state = builder.add_state();
     auto& end_state = builder.add_state();
     builder.add_edge(init_state, if_state, {{symbolic::symbol("i"), symbolic::integer(0)}},
-                     symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)), sdfg::DebugInfo());
+                     symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)), DebugInfo());
     builder.add_edge(init_state, else_state, {{symbolic::symbol("i"), symbolic::integer(1)}},
-                     symbolic::Ge(symbolic::symbol("i"), symbolic::integer(10)), sdfg::DebugInfo());
+                     symbolic::Ge(symbolic::symbol("i"), symbolic::integer(10)), DebugInfo());
     builder.add_edge(if_state, end_state);
     builder.add_edge(else_state, end_state);
 

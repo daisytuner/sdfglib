@@ -120,7 +120,7 @@ TEST(SDFGBuilderTest, addEdgeWithCondition) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64));
-    symbolic::Symbol iter_sym = sdfg::symbolic::symbol("i");
+    symbolic::Symbol iter_sym = symbolic::symbol("i");
 
     auto cond = symbolic::Eq(iter_sym, SymEngine::integer(0));
 
@@ -144,7 +144,7 @@ TEST(SDFGBuilderTest, addEdgeWithAssignments) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64));
-    symbolic::Symbol iter_sym = sdfg::symbolic::symbol("i");
+    symbolic::Symbol iter_sym = symbolic::symbol("i");
 
     auto& state_1 = builder.add_state();
     auto& state_2 = builder.add_state();
@@ -203,12 +203,35 @@ TEST(SDFGBuilderTest, AddTasklet) {
     EXPECT_EQ(tasklet.code(), data_flow::TaskletCode::assign);
 }
 
+inline constexpr data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
+class BarrierLocalLibraryNode : public data_flow::LibraryNode {
+   public:
+    BarrierLocalLibraryNode(const DebugInfo& debug_info, const graph::Vertex vertex,
+                            data_flow::DataFlowGraph& parent,
+                            const data_flow::LibraryNodeCode& code,
+                            const std::vector<std::string>& outputs,
+                            const std::vector<std::string>& inputs, const bool side_effect)
+        : data_flow::LibraryNode(debug_info, vertex, parent, code, outputs, inputs, side_effect) {}
+
+    virtual std::unique_ptr<data_flow::DataFlowNode> clone(
+        const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override {
+        return std::make_unique<BarrierLocalLibraryNode>(this->debug_info(), vertex, parent,
+                                                         this->code(), this->outputs(),
+                                                         this->inputs(), this->side_effect());
+    }
+
+    virtual void replace(const symbolic::Expression& old_expression,
+                         const symbolic::Expression& new_expression) override {
+        // Do nothing
+    }
+};
+
 TEST(SDFGBuilderTest, AddLibnode) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state = builder.add_state(true);
 
-    builder.add_library_node(state, data_flow::LibraryNodeCode{"barrier_local"}, {}, {}, false);
+    builder.add_library_node<BarrierLocalLibraryNode>(state, BARRIER_LOCAL, {}, {}, false);
 
     auto sdfg = builder.move();
     auto states = sdfg->states();

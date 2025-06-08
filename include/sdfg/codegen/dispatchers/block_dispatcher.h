@@ -93,7 +93,5 @@ class LibraryNodeDispatcherRegistry {
     size_t size() const { return factory_map_.size(); }
 };
 
-inline void register_default_library_node_dispatchers() {};
-
 }  // namespace codegen
 }  // namespace sdfg

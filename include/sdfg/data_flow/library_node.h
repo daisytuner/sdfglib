@@ -21,7 +21,7 @@ class LibraryNode : public CodeNode {
     friend class sdfg::builder::SDFGBuilder;
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-   private:
+   protected:
     LibraryNodeCode code_;
     std::vector<std::string> outputs_;
     std::vector<std::string> inputs_;
@@ -34,6 +34,8 @@ class LibraryNode : public CodeNode {
    public:
     LibraryNode(const LibraryNode& data_node) = delete;
     LibraryNode& operator=(const LibraryNode&) = delete;
+
+    virtual ~LibraryNode() = default;
 
     const LibraryNodeCode& code() const;
 
@@ -48,12 +50,6 @@ class LibraryNode : public CodeNode {
     bool side_effect() const;
 
     bool needs_connector(size_t index) const override;
-
-    virtual std::unique_ptr<DataFlowNode> clone(const graph::Vertex vertex,
-                                                DataFlowGraph& parent) const override;
-
-    void replace(const symbolic::Expression& old_expression,
-                 const symbolic::Expression& new_expression) override;
 };
 
 }  // namespace data_flow

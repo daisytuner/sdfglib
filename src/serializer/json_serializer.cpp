@@ -110,17 +110,16 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
             //     node_json["condition"] = dumps_expression(tasklet->condition());
             // }
         } else if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
-            node_json["type"] = "library_node";
-            node_json["code"] = std::string(lib_node->code().value());
-            node_json["side_effect"] = lib_node->side_effect();
-            node_json["inputs"] = nlohmann::json::array();
-            for (auto& input : lib_node->inputs()) {
-                node_json["inputs"].push_back(input);
+            auto serializer_fn =
+                LibraryNodeSerializerRegistry::instance().get_library_node_serializer(
+                    lib_node->code().value());
+            if (serializer_fn == nullptr) {
+                throw std::runtime_error("Unknown library node code: " +
+                                         std::string(lib_node->code().value()));
             }
-            node_json["outputs"] = nlohmann::json::array();
-            for (auto& output : lib_node->outputs()) {
-                node_json["outputs"].push_back(output);
-            }
+            auto serializer = serializer_fn();
+            auto lib_node_json = serializer->serialize(*lib_node);
+            node_json.merge_patch(lib_node_json);
         } else if (auto code_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
             node_json["type"] = "access_node";
             node_json["data"] = code_node->data();
@@ -535,20 +534,15 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
             assert(node["inputs"].is_array());
             assert(node.contains("outputs"));
             assert(node["outputs"].is_array());
-            std::vector<std::string> outputs;
-            for (const auto& output : node["outputs"]) {
-                assert(output.is_string());
-                outputs.push_back(output);
-            }
-            std::vector<std::string> inputs;
-            for (const auto& input : node["inputs"]) {
-                assert(input.is_string());
-                inputs.push_back(input);
-            }
             data_flow::LibraryNodeCode code(node["code"].get<std::string_view>());
-            auto& lib_node =
-                builder.add_library_node(parent, code, outputs, inputs, node["side_effect"],
-                                         json_to_debug_info(node["debug_info"]));
+
+            auto serializer_fn =
+                LibraryNodeSerializerRegistry::instance().get_library_node_serializer(code.value());
+            if (serializer_fn == nullptr) {
+                throw std::runtime_error("Unknown library node code: " + std::string(code.value()));
+            }
+            auto serializer = serializer_fn();
+            auto& lib_node = serializer->deserialize(node, builder, parent);
             lib_node.element_id_ = node["element_id"];
             nodes_map.insert({node["element_id"], lib_node});
         } else if (type == "access_node") {
