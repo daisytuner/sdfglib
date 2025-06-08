@@ -76,7 +76,5 @@ class MapDispatcherRegistry {
     size_t size() const { return factory_map_.size(); }
 };
 
-void register_default_map_dispatchers();
-
 }  // namespace codegen
 }  // namespace sdfg

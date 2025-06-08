@@ -37,15 +37,5 @@ bool LibraryNode::needs_connector(size_t index) const {
     return false;
 };
 
-std::unique_ptr<DataFlowNode> LibraryNode::clone(const graph::Vertex vertex,
-                                                 DataFlowGraph& parent) const {
-    return std::unique_ptr<LibraryNode>(new LibraryNode(this->debug_info_, vertex, parent,
-                                                        this->code_, this->outputs_, this->inputs_,
-                                                        this->side_effect_));
-};
-
-void LibraryNode::replace(const symbolic::Expression& old_expression,
-                          const symbolic::Expression& new_expression) {};
-
 }  // namespace data_flow
 }  // namespace sdfg
