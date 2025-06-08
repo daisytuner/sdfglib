@@ -15,7 +15,7 @@ class StructuredSDFGBuilder;
 
 namespace data_flow {
 
-enum LibraryNodeCode { barrier_local };
+typedef StringEnum LibraryNodeCode;
 
 class LibraryNode : public CodeNode {
     friend class sdfg::builder::SDFGBuilder;

@@ -97,6 +97,7 @@ void register_default_dispatchers() {
         });
 
     register_default_map_dispatchers();
+    register_default_library_node_dispatchers();
 }
 
 }  // namespace codegen

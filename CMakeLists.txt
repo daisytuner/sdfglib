@@ -118,12 +118,10 @@ set(SOURCE_FILES
     src/symbolic/analysis.cpp
     src/symbolic/assumptions.cpp
     src/symbolic/symbolic.cpp
-    src/transformations/kernel_local_storage.cpp
     src/transformations/loop_distribute.cpp
     src/transformations/loop_interchange.cpp
     src/transformations/loop_slicing.cpp
     src/transformations/loop_tiling.cpp
-    src/transformations/loop_to_kernel_dim.cpp
     src/transformations/loop_unroll.cpp
     src/transformations/out_local_storage.cpp
     src/transformations/transformation.cpp

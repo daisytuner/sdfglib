@@ -523,14 +523,6 @@ std::string CLanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
     }
 };
 
-std::string CLanguageExtension::library_node(const data_flow::LibraryNode& libnode) {
-    data_flow::LibraryNodeCode lib_node_type = libnode.code();
-    switch (lib_node_type) {
-        default:
-            throw std::runtime_error("Unsupported library node type");
-    }
-}
-
 void CSymbolicPrinter::bvisit(const SymEngine::Infty& x) {
     if (x.is_negative_infinity())
         str_ = "-INFINITY";

@@ -1017,7 +1017,7 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
 };
 
 data_flow::LibraryNode& StructuredSDFGBuilder::add_library_node(
-    structured_control_flow::Block& block, const data_flow::LibraryNodeCode& code,
+    structured_control_flow::Block& block, const data_flow::LibraryNodeCode code,
     const std::vector<std::string>& outputs, const std::vector<std::string>& inputs,
     const bool side_effect, const DebugInfo& debug_info) {
     auto vertex = boost::add_vertex(block.dataflow_->graph_);

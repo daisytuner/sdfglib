@@ -23,8 +23,6 @@ class CPPLanguageExtension : public LanguageExtension {
     std::string expression(const symbolic::Expression& expr) override;
 
     std::string tasklet(const data_flow::Tasklet& tasklet) override;
-
-    std::string library_node(const data_flow::LibraryNode& libnode) override;
 };
 
 class CPPSymbolicPrinter
