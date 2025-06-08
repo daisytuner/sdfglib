@@ -303,7 +303,8 @@ TEST(StructuredSDFGDeepCopy, Map) {
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
-    auto& map = builder_source.add_map(root_source, symbolic::symbol("i"), symbolic::integer(10));
+    auto& map = builder_source.add_map(root_source, symbolic::symbol("i"), symbolic::integer(10),
+                                       structured_control_flow::ScheduleType_Sequential);
 
     builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();

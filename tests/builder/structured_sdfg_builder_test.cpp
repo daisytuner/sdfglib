@@ -199,7 +199,8 @@ TEST(StructuredSDFGBuilderTest, addMap) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& root = builder.subject().root();
-    auto& scope = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10));
+    auto& scope = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10),
+                                  structured_control_flow::ScheduleType_Sequential);
     auto& body = builder.add_block(scope.root());
 
     auto sdfg = builder.move();

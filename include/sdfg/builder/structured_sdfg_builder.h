@@ -145,7 +145,7 @@ class StructuredSDFGBuilder : public FunctionBuilder {
                      const DebugInfo& debug_info = DebugInfo());
 
     Map& add_map(Sequence& parent, const symbolic::Symbol& indvar,
-                 const symbolic::Expression& num_iterations,
+                 const symbolic::Expression& num_iterations, const ScheduleType& schedule_type,
                  const sdfg::symbolic::Assignments& assignments = {},
                  const DebugInfo& debug_info = DebugInfo());
 

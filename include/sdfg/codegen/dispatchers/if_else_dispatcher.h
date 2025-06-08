@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sdfg/codegen/dispatchers/node_dispatcher.h"
+#include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 
 namespace sdfg {
 namespace codegen {

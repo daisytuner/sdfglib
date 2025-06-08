@@ -5,8 +5,12 @@
 namespace sdfg {
 namespace structured_control_flow {
 
-Map::Map(const DebugInfo& debug_info, symbolic::Symbol indvar, symbolic::Expression num_iterations)
-    : StructuredLoop(debug_info), indvar_(indvar), num_iterations_(num_iterations) {
+Map::Map(const DebugInfo& debug_info, symbolic::Symbol indvar, symbolic::Expression num_iterations,
+         ScheduleType schedule_type)
+    : StructuredLoop(debug_info),
+      indvar_(indvar),
+      num_iterations_(num_iterations),
+      schedule_type_(schedule_type) {
     this->root_ = std::unique_ptr<Sequence>(new Sequence(debug_info));
     this->init_ = symbolic::zero();
     this->update_ = symbolic::add(indvar_, symbolic::one());
@@ -26,6 +30,8 @@ const symbolic::Condition& Map::condition() const { return this->condition_; };
 const symbolic::Expression& Map::num_iterations() const { return this->num_iterations_; };
 
 symbolic::Expression& Map::num_iterations() { return this->num_iterations_; };
+
+ScheduleType Map::schedule_type() const { return this->schedule_type_; };
 
 Sequence& Map::root() const { return *this->root_; };
 

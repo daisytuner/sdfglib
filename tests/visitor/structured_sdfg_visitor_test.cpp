@@ -662,7 +662,8 @@ TEST(StructuredSDFGVisitorTest, Map) {
 
     auto& root = builder.subject().root();
 
-    auto& kernel = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10));
+    auto& kernel = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10),
+                                   structured_control_flow::ScheduleType_Sequential);
 
     MapVisitor visitor(builder, analysis_manager);
     EXPECT_TRUE(visitor.visit());

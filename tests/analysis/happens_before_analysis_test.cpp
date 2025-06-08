@@ -443,7 +443,8 @@ TEST(HappensBeforeAnalysisTest, visit_map) {
 
     auto& root = builder.subject().root();
 
-    auto& map = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10));
+    auto& map = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10),
+                                structured_control_flow::ScheduleType_Sequential);
 
     auto& block = builder.add_block(map.root());
     auto& input_node = builder.add_access(block, "i");

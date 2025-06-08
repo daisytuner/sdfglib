@@ -13,7 +13,8 @@ TEST(MapDispatcherTest, DispatchNode) {
     auto& root = sdfg.root();
 
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
-    auto& loop = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10));
+    auto& loop = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10),
+                                 structured_control_flow::ScheduleType_Sequential);
 
     auto final_sdfg = builder.move();
 

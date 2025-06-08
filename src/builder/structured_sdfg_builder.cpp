@@ -733,9 +733,11 @@ Return& StructuredSDFGBuilder::add_return(Sequence& parent,
 
 Map& StructuredSDFGBuilder::add_map(Sequence& parent, const symbolic::Symbol& indvar,
                                     const symbolic::Expression& num_iterations,
+                                    const ScheduleType& schedule_type,
                                     const sdfg::symbolic::Assignments& assignments,
                                     const DebugInfo& debug_info) {
-    parent.children_.push_back(std::unique_ptr<Map>(new Map(debug_info, indvar, num_iterations)));
+    parent.children_.push_back(
+        std::unique_ptr<Map>(new Map(debug_info, indvar, num_iterations, schedule_type)));
 
     parent.transitions_.push_back(
         std::unique_ptr<Transition>(new Transition(debug_info, assignments)));
@@ -782,7 +784,8 @@ Map& StructuredSDFGBuilder::convert_for(Sequence& parent, For& loop,
     }
     auto iter = parent.children_.begin() + index;
     auto& new_iter = *parent.children_.insert(
-        iter + 1, std::unique_ptr<Map>(new Map(loop.debug_info(), loop.indvar(), num_iterations)));
+        iter + 1, std::unique_ptr<Map>(new Map(loop.debug_info(), loop.indvar(), num_iterations,
+                                               ScheduleType_Sequential)));
 
     auto& map = dynamic_cast<Map&>(*new_iter);
     this->insert_children(map.root(), loop.root(), 0);

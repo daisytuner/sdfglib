@@ -241,6 +241,8 @@ void JSONSerializer::map_to_json(nlohmann::json& j, const structured_control_flo
 
     j["indvar"] = expression(map_node.indvar());
     j["num_iterations"] = expression(map_node.num_iterations());
+    j["schedule_type"] = std::string(map_node.schedule_type().value());
+
     nlohmann::json body_json;
     sequence_to_json(body_json, map_node.root());
     j["root"] = body_json;
@@ -802,10 +804,13 @@ void JSONSerializer::json_to_map_node(const nlohmann::json& j,
     assert(j["num_iterations"].is_string());
     assert(j.contains("root"));
     assert(j["root"].is_object());
+    assert(j.contains("schedule_type"));
+    assert(j["schedule_type"].is_string());
+    structured_control_flow::ScheduleType schedule_type{j["schedule_type"].get<std::string_view>()};
     symbolic::Symbol indvar = symbolic::symbol(j["indvar"]);
     SymEngine::Expression num_iterations(j["num_iterations"]);
 
-    auto& map_node = builder.add_map(parent, indvar, num_iterations, assignments,
+    auto& map_node = builder.add_map(parent, indvar, num_iterations, schedule_type, assignments,
                                      json_to_debug_info(j["debug_info"]));
     map_node.element_id_ = j["element_id"];
 

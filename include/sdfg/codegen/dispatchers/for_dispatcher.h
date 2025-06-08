@@ -1,7 +1,7 @@
 #pragma once
 
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
-#include "sdfg/codegen/dispatchers/node_dispatcher.h"
+#include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 #include "sdfg/codegen/dispatchers/sequence_dispatcher.h"
 
 namespace sdfg {

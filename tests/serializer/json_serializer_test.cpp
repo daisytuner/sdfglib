@@ -503,7 +503,8 @@ TEST(JSONSerializerTest, MapToJSON) {
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
 
-    auto& map = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10));
+    auto& map = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10),
+                                structured_control_flow::ScheduleType_Sequential);
     auto& body = builder.add_block(map.root());
 
     // Create a JSONSerializer object
@@ -1594,7 +1595,8 @@ TEST(JSONSerializerTest, SerializeDeserialize_Map) {
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU);
     auto& root = builder.subject().root();
 
-    auto& map = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10));
+    auto& map = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10),
+                                structured_control_flow::ScheduleType_Sequential);
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";

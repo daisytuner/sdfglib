@@ -1,8 +1,12 @@
-#include "sdfg/codegen/dispatchers/node_dispatcher_factory.h"
-
 #include <gtest/gtest.h>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/codegen/dispatchers/block_dispatcher.h"
+#include "sdfg/codegen/dispatchers/for_dispatcher.h"
+#include "sdfg/codegen/dispatchers/if_else_dispatcher.h"
+#include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
+#include "sdfg/codegen/dispatchers/sequence_dispatcher.h"
+#include "sdfg/codegen/dispatchers/while_dispatcher.h"
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
 
 using namespace sdfg;
