@@ -95,6 +95,8 @@ void register_default_dispatchers() {
                 language_extension, sdfg, static_cast<structured_control_flow::Continue&>(node),
                 instrumentation);
         });
+
+    register_default_map_dispatchers();
 }
 
 }  // namespace codegen
