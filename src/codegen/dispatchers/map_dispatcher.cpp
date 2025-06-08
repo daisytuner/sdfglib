@@ -13,6 +13,10 @@ MapDispatcher::MapDispatcher(LanguageExtension& language_extension, StructuredSD
 
 void MapDispatcher::dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
                                   PrettyPrinter& library_stream) {
+    if (node_.schedule_type() == structured_control_flow::ScheduleType_CPU_Parallel) {
+        main_stream << "#pragma omp parallel for" << std::endl;
+    }
+
     main_stream << "for";
     main_stream << "(";
     main_stream << node_.indvar()->get_name();

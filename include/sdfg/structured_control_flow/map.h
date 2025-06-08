@@ -15,6 +15,10 @@ class StructuredSDFGBuilder;
 
 namespace structured_control_flow {
 
+typedef StringEnum ScheduleType;
+inline constexpr ScheduleType ScheduleType_Sequential{"SEQUENTIAL"};
+inline constexpr ScheduleType ScheduleType_CPU_Parallel{"CPU_PARALLEL"};
+
 class Map : public StructuredLoop {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
@@ -22,13 +26,16 @@ class Map : public StructuredLoop {
     symbolic::Symbol indvar_;
     symbolic::Expression num_iterations_;
 
+    ScheduleType schedule_type_;
+
     symbolic::Expression init_;
     symbolic::Expression update_;
     symbolic::Condition condition_;
 
     std::unique_ptr<Sequence> root_;
 
-    Map(const DebugInfo& debug_info, symbolic::Symbol indvar, symbolic::Expression num_iterations);
+    Map(const DebugInfo& debug_info, symbolic::Symbol indvar, symbolic::Expression num_iterations,
+        ScheduleType schedule_type);
 
    public:
     Map(const Map& node) = delete;
@@ -47,6 +54,8 @@ class Map : public StructuredLoop {
     const symbolic::Expression& num_iterations() const;
 
     symbolic::Expression& num_iterations();
+
+    ScheduleType schedule_type() const;
 
     Sequence& root() const override;
 
