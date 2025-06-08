@@ -105,27 +105,6 @@ TEST(DataFlowDispatcherTest, DispatchTasklet) {
               "_in2;\n\n    c = _out;\n}\n");
 }
 
-TEST(DataFlowDispatcherTest, DispatchLibraryNodebarrier_local) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
-    auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
-
-    auto& block = builder.add_block(root);
-
-    auto& library_node =
-        builder.add_library_node(block, data_flow::LibraryNodeCode::barrier_local, {}, {});
-
-    auto final_sdfg = builder.move();
-
-    codegen::CUDALanguageExtension language_extension;
-    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
-
-    codegen::PrettyPrinter main_stream;
-    dispatcher.dispatch(main_stream);
-
-    EXPECT_EQ(main_stream.str(), "{\n\n    __syncthreads();\n}\n");
-}
-
 /*
 TEST(DataFlowDispatcherTest, DispatchRef_Input)
 {

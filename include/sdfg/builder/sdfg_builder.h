@@ -92,7 +92,7 @@ class SDFGBuilder : public FunctionBuilder {
                                   const DebugInfo& debug_info = DebugInfo());
 
     data_flow::LibraryNode& add_library_node(control_flow::State& state,
-                                             const data_flow::LibraryNodeCode& code,
+                                             const data_flow::LibraryNodeCode code,
                                              const std::vector<std::string>& outputs,
                                              const std::vector<std::string>& inputs,
                                              const bool side_effect = true,

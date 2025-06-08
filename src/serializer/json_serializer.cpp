@@ -111,7 +111,7 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
             // }
         } else if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
             node_json["type"] = "library_node";
-            node_json["code"] = lib_node->code();
+            node_json["code"] = std::string(lib_node->code().value());
             node_json["side_effect"] = lib_node->side_effect();
             node_json["inputs"] = nlohmann::json::array();
             for (auto& input : lib_node->inputs()) {
@@ -545,8 +545,9 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
                 assert(input.is_string());
                 inputs.push_back(input);
             }
+            data_flow::LibraryNodeCode code(node["code"].get<std::string_view>());
             auto& lib_node =
-                builder.add_library_node(parent, node["code"], outputs, inputs, node["side_effect"],
+                builder.add_library_node(parent, code, outputs, inputs, node["side_effect"],
                                          json_to_debug_info(node["debug_info"]));
             lib_node.element_id_ = node["element_id"];
             nodes_map.insert({node["element_id"], lib_node});

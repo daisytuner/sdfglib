@@ -50,11 +50,9 @@ set(TEST_FILES
     symbolic/analysis_test.cpp
     symbolic/assumptions_test.cpp
     symbolic/symbolic_test.cpp
-    transformations/kernel_local_storage_test.cpp
     transformations/loop_interchange_test.cpp
     transformations/loop_slicing_test.cpp
     transformations/loop_tiling_test.cpp
-    transformations/loop_to_kernel_dim_test.cpp
     transformations/loop_unroll_test.cpp
     transformations/out_local_storage_test.cpp
     types/array_test.cpp

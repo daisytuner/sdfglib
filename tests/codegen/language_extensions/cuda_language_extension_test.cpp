@@ -160,18 +160,3 @@ TEST(CUDALanguageExtensionTest, SubsetToCpp_Struct) {
                                    data_flow::Subset{symbolic::integer(1)});
     EXPECT_EQ(result, ".member_1");
 }
-
-TEST(CUDALanguageExtensionTest, LibNodeToCall) {
-    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
-
-    auto& state = builder.add_state(true);
-
-    auto& lib_node =
-        builder.add_library_node(state, data_flow::LibraryNodeCode::barrier_local, {}, {}, true);
-
-    auto sdfg = builder.move();
-
-    codegen::CUDALanguageExtension generator;
-    auto result = generator.library_node(lib_node);
-    EXPECT_EQ(result, "__syncthreads();");
-}

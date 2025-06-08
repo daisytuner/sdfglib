@@ -490,13 +490,7 @@ void Visualizer::visualizeForBounds(symbolic::Symbol const& indvar,
 }
 
 void Visualizer::visualizeLibraryNode(const data_flow::LibraryNodeCode libnode_type) {
-    switch (libnode_type) {
-        case data_flow::LibraryNodeCode::barrier_local:
-            this->stream_ << "Local Barrier";
-            break;
-        default:
-            throw std::runtime_error("Unsupported library node type");
-    }
+    this->stream_ << libnode_type.value();
 }
 
 void Visualizer::visualizeSubset(Function const& function, types::IType const& type,
