@@ -40,7 +40,7 @@ class DataFlowDispatcher {
 };
 
 class LibraryNodeDispatcher {
-   private:
+   protected:
     LanguageExtension& language_extension_;
     const Function& function_;
     const data_flow::DataFlowGraph& data_flow_graph_;
