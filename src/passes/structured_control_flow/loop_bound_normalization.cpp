@@ -1,7 +1,5 @@
 #include "sdfg/passes/structured_control_flow/loop_bound_normalization.h"
 
-#include "sdfg/structured_control_flow/structured_loop.h"
-
 namespace sdfg {
 namespace passes {
 

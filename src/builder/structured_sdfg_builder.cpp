@@ -1,6 +1,6 @@
 #include "sdfg/builder/structured_sdfg_builder.h"
 
-#include "sdfg/analysis/scope_tree_analysis.h"
+#include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/codegen/language_extensions/cpp_language_extension.h"
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/structured_control_flow/map.h"
@@ -326,7 +326,7 @@ std::unique_ptr<StructuredSDFG> StructuredSDFGBuilder::move() {
 };
 
 Sequence& StructuredSDFGBuilder::add_sequence(Sequence& parent,
-                                              const sdfg::symbolic::Assignments& assignments,
+                                              const sdfg::control_flow::Assignments& assignments,
                                               const DebugInfo& debug_info) {
     parent.children_.push_back(std::unique_ptr<Sequence>(new Sequence(debug_info)));
 
@@ -392,7 +392,7 @@ void StructuredSDFGBuilder::insert_children(Sequence& parent, Sequence& other, s
 };
 
 Block& StructuredSDFGBuilder::add_block(Sequence& parent,
-                                        const sdfg::symbolic::Assignments& assignments,
+                                        const sdfg::control_flow::Assignments& assignments,
                                         const DebugInfo& debug_info) {
     parent.children_.push_back(std::unique_ptr<Block>(new Block(debug_info)));
 
@@ -407,7 +407,7 @@ Block& StructuredSDFGBuilder::add_block(Sequence& parent,
 
 Block& StructuredSDFGBuilder::add_block(Sequence& parent,
                                         const data_flow::DataFlowGraph& data_flow_graph,
-                                        const sdfg::symbolic::Assignments& assignments,
+                                        const sdfg::control_flow::Assignments& assignments,
                                         const DebugInfo& debug_info) {
     parent.children_.push_back(std::unique_ptr<Block>(new Block(debug_info, data_flow_graph)));
 
@@ -526,7 +526,7 @@ For& StructuredSDFGBuilder::add_for(Sequence& parent, const symbolic::Symbol& in
                                     const symbolic::Condition& condition,
                                     const symbolic::Expression& init,
                                     const symbolic::Expression& update,
-                                    const sdfg::symbolic::Assignments& assignments,
+                                    const sdfg::control_flow::Assignments& assignments,
                                     const DebugInfo& debug_info) {
     parent.children_.push_back(
         std::unique_ptr<For>(new For(debug_info, indvar, init, update, condition)));
@@ -592,11 +592,11 @@ std::pair<For&, Transition&> StructuredSDFGBuilder::add_for_after(
 };
 
 IfElse& StructuredSDFGBuilder::add_if_else(Sequence& parent, const DebugInfo& debug_info) {
-    return this->add_if_else(parent, symbolic::Assignments{}, debug_info);
+    return this->add_if_else(parent, control_flow::Assignments{}, debug_info);
 };
 
 IfElse& StructuredSDFGBuilder::add_if_else(Sequence& parent,
-                                           const sdfg::symbolic::Assignments& assignments,
+                                           const sdfg::control_flow::Assignments& assignments,
                                            const DebugInfo& debug_info) {
     parent.children_.push_back(std::unique_ptr<IfElse>(new IfElse(debug_info)));
 
@@ -644,7 +644,7 @@ void StructuredSDFGBuilder::remove_case(IfElse& scope, size_t i, const DebugInfo
 };
 
 While& StructuredSDFGBuilder::add_while(Sequence& parent,
-                                        const sdfg::symbolic::Assignments& assignments,
+                                        const sdfg::control_flow::Assignments& assignments,
                                         const DebugInfo& debug_info) {
     parent.children_.push_back(std::unique_ptr<While>(new While(debug_info)));
 
@@ -655,15 +655,15 @@ While& StructuredSDFGBuilder::add_while(Sequence& parent,
 };
 
 Continue& StructuredSDFGBuilder::add_continue(Sequence& parent, const DebugInfo& debug_info) {
-    return this->add_continue(parent, symbolic::Assignments{}, debug_info);
+    return this->add_continue(parent, control_flow::Assignments{}, debug_info);
 };
 
 Continue& StructuredSDFGBuilder::add_continue(Sequence& parent,
-                                              const sdfg::symbolic::Assignments& assignments,
+                                              const sdfg::control_flow::Assignments& assignments,
                                               const DebugInfo& debug_info) {
     // Check if continue is in a loop
     analysis::AnalysisManager analysis_manager(this->subject());
-    auto& scope_tree_analysis = analysis_manager.get<analysis::ScopeTreeAnalysis>();
+    auto& scope_tree_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto current_scope = scope_tree_analysis.parent_scope(&parent);
     bool in_loop = false;
     while (current_scope != nullptr) {
@@ -688,15 +688,15 @@ Continue& StructuredSDFGBuilder::add_continue(Sequence& parent,
 };
 
 Break& StructuredSDFGBuilder::add_break(Sequence& parent, const DebugInfo& debug_info) {
-    return this->add_break(parent, symbolic::Assignments{}, debug_info);
+    return this->add_break(parent, control_flow::Assignments{}, debug_info);
 };
 
 Break& StructuredSDFGBuilder::add_break(Sequence& parent,
-                                        const sdfg::symbolic::Assignments& assignments,
+                                        const sdfg::control_flow::Assignments& assignments,
                                         const DebugInfo& debug_info) {
     // Check if break is in a loop
     analysis::AnalysisManager analysis_manager(this->subject());
-    auto& scope_tree_analysis = analysis_manager.get<analysis::ScopeTreeAnalysis>();
+    auto& scope_tree_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto current_scope = scope_tree_analysis.parent_scope(&parent);
     bool in_loop = false;
     while (current_scope != nullptr) {
@@ -721,7 +721,7 @@ Break& StructuredSDFGBuilder::add_break(Sequence& parent,
 };
 
 Return& StructuredSDFGBuilder::add_return(Sequence& parent,
-                                          const sdfg::symbolic::Assignments& assignments,
+                                          const sdfg::control_flow::Assignments& assignments,
                                           const DebugInfo& debug_info) {
     parent.children_.push_back(std::unique_ptr<Return>(new Return(debug_info)));
 
@@ -734,7 +734,7 @@ Return& StructuredSDFGBuilder::add_return(Sequence& parent,
 Map& StructuredSDFGBuilder::add_map(Sequence& parent, const symbolic::Symbol& indvar,
                                     const symbolic::Expression& num_iterations,
                                     const ScheduleType& schedule_type,
-                                    const sdfg::symbolic::Assignments& assignments,
+                                    const sdfg::control_flow::Assignments& assignments,
                                     const DebugInfo& debug_info) {
     parent.children_.push_back(
         std::unique_ptr<Map>(new Map(debug_info, indvar, num_iterations, schedule_type)));

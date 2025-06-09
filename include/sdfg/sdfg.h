@@ -23,7 +23,6 @@
 #include "sdfg/function.h"
 #include "sdfg/graph/graph.h"
 #include "sdfg/helpers/helpers.h"
-#include "sdfg/symbolic/symbolic.h"
 #include "sdfg/types/array.h"
 #include "sdfg/types/pointer.h"
 #include "sdfg/types/scalar.h"

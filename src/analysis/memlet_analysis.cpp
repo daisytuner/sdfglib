@@ -1,4 +1,4 @@
-#include "sdfg/analysis/data_parallelism_analysis.h"
+#include "sdfg/analysis/memlet_analysis.h"
 
 #include <regex>
 
@@ -10,9 +10,9 @@
 namespace sdfg {
 namespace analysis {
 
-std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::substitution(
+std::pair<data_flow::Subset, data_flow::Subset> MemletAnalysis::substitution(
     const data_flow::Subset& subset1, const data_flow::Subset& subset2, const std::string& indvar,
-    const std::unordered_set<std::string>& moving_symbols, symbolic::SymbolicMap& replacements,
+    const std::unordered_set<std::string>& moving_symbols, symbolic::SymbolMap& replacements,
     std::vector<std::string>& substitions) {
     data_flow::Subset subset1_new;
     for (auto& dim : subset1) {
@@ -23,8 +23,7 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::substit
                 !SymEngine::is_a<SymEngine::Integer>(*arg)) {
                 bool is_moving = false;
                 for (auto& atom : symbolic::atoms(arg)) {
-                    auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom);
-                    if (moving_symbols.find(sym->get_name()) != moving_symbols.end()) {
+                    if (moving_symbols.find(atom->get_name()) != moving_symbols.end()) {
                         is_moving = true;
                         break;
                     }
@@ -53,8 +52,7 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::substit
                 !SymEngine::is_a<SymEngine::Integer>(*arg)) {
                 bool is_moving = false;
                 for (auto& atom : symbolic::atoms(arg)) {
-                    auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom);
-                    if (moving_symbols.find(sym->get_name()) != moving_symbols.end()) {
+                    if (moving_symbols.find(atom->get_name()) != moving_symbols.end()) {
                         is_moving = true;
                         break;
                     }
@@ -77,7 +75,7 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::substit
     return {subset1_new, subset2_new};
 };
 
-std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::delinearization(
+std::pair<data_flow::Subset, data_flow::Subset> MemletAnalysis::delinearization(
     const data_flow::Subset& subset1, const data_flow::Subset& subset2,
     const std::unordered_set<std::string>& moving_symbols,
     const symbolic::Assumptions& assumptions) {
@@ -148,7 +146,7 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::delinea
         }
 
         bool is_nonnegative = false;
-        symbolic::SymbolicSet lbs_off;
+        symbolic::SymbolSet lbs_off;
         symbolic::lower_bounds(off, assumptions, lbs_off);
         for (auto& lb : lbs_off) {
             if (SymEngine::is_a<SymEngine::Integer>(*lb)) {
@@ -165,7 +163,7 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::delinea
         }
 
         bool success = false;
-        symbolic::SymbolicSet ubs_off;
+        symbolic::SymbolSet ubs_off;
         symbolic::upper_bounds(off, assumptions, ubs_off);
         for (auto& ub_off : ubs_off) {
             if (symbolic::eq(mul, symbolic::add(ub_off, symbolic::one()))) {
@@ -243,7 +241,7 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::delinea
         }
 
         bool is_nonnegative = false;
-        symbolic::SymbolicSet lbs_off;
+        symbolic::SymbolSet lbs_off;
         symbolic::lower_bounds(off, assumptions, lbs_off);
         for (auto& lb : lbs_off) {
             if (SymEngine::is_a<SymEngine::Integer>(*lb)) {
@@ -260,7 +258,7 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::delinea
         }
 
         bool success = false;
-        symbolic::SymbolicSet ubs_off;
+        symbolic::SymbolSet ubs_off;
         symbolic::upper_bounds(off, assumptions, ubs_off);
         for (auto& ub_off : ubs_off) {
             if (symbolic::eq(mul, symbolic::add(ub_off, symbolic::one()))) {
@@ -280,10 +278,10 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::delinea
     return {subset1_new, subset2_new};
 };
 
-bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
-                                       const data_flow::Subset& subset2, const std::string& indvar,
-                                       const std::unordered_set<std::string>& moving_symbols,
-                                       const symbolic::Assumptions& assumptions) {
+bool MemletAnalysis::disjoint(const data_flow::Subset& subset1, const data_flow::Subset& subset2,
+                              const std::string& indvar,
+                              const std::unordered_set<std::string>& moving_symbols,
+                              const symbolic::Assumptions& assumptions) {
     if (subset1.size() != subset2.size()) {
         return false;
     }
@@ -291,14 +289,14 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
     codegen::CPPLanguageExtension language_extension;
 
     // Attempt to substitute complex constant expressions by parameters
-    symbolic::SymbolicMap replacements;
+    symbolic::SymbolMap replacements;
     std::vector<std::string> substitions;
-    auto [subset1_, subset2_] = DataParallelismAnalysis::substitution(
+    auto [subset1_, subset2_] = MemletAnalysis::substitution(
         subset1, subset2, indvar, moving_symbols, replacements, substitions);
 
     // Attempt to delinearize subsets
     auto [subset1_2, subset2_2] =
-        DataParallelismAnalysis::delinearization(subset1_, subset2_, moving_symbols, assumptions);
+        MemletAnalysis::delinearization(subset1_, subset2_, moving_symbols, assumptions);
 
     // Overapproximate multiplications with parameters
     data_flow::Subset subset1_new;
@@ -353,37 +351,35 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
     std::unordered_set<std::string> parameters_;
     for (auto& dim : subset1_new) {
         for (auto& atom : symbolic::atoms(dim)) {
-            auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom);
-            if (sym->get_name() == indvar) {
+            if (atom->get_name() == indvar) {
                 continue;
             }
 
-            if (std::find(substitions.begin(), substitions.end(), sym->get_name()) !=
+            if (std::find(substitions.begin(), substitions.end(), atom->get_name()) !=
                 substitions.end()) {
                 continue;
             }
-            if (moving_symbols.find(sym->get_name()) == moving_symbols.end()) {
-                parameters_.insert(sym->get_name());
+            if (moving_symbols.find(atom->get_name()) == moving_symbols.end()) {
+                parameters_.insert(atom->get_name());
             } else {
-                dimensions_.insert(sym->get_name());
+                dimensions_.insert(atom->get_name());
             }
         }
     }
     for (auto& dim : subset2_new) {
         for (auto& atom : symbolic::atoms(dim)) {
-            auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom);
-            if (sym->get_name() == indvar) {
+            if (atom->get_name() == indvar) {
                 continue;
             }
 
-            if (std::find(substitions.begin(), substitions.end(), sym->get_name()) !=
+            if (std::find(substitions.begin(), substitions.end(), atom->get_name()) !=
                 substitions.end()) {
                 continue;
             }
-            if (moving_symbols.find(sym->get_name()) == moving_symbols.end()) {
-                parameters_.insert(sym->get_name());
+            if (moving_symbols.find(atom->get_name()) == moving_symbols.end()) {
+                parameters_.insert(atom->get_name());
             } else {
-                dimensions_.insert(sym->get_name());
+                dimensions_.insert(atom->get_name());
             }
         }
     }
@@ -419,21 +415,19 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
         // Collect lb and ub
         auto lb1 = assumptions.at(symbolic::symbol(dim)).lower_bound();
         for (auto atom : symbolic::atoms(lb1)) {
-            auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom);
-            if (moving_symbols.find(sym->get_name()) == moving_symbols.end()) {
-                if (parameters_.find(sym->get_name()) == parameters_.end()) {
-                    parameters_.insert(sym->get_name());
-                    parameters.push_back(sym->get_name());
+            if (moving_symbols.find(atom->get_name()) == moving_symbols.end()) {
+                if (parameters_.find(atom->get_name()) == parameters_.end()) {
+                    parameters_.insert(atom->get_name());
+                    parameters.push_back(atom->get_name());
                 }
             }
         }
         auto ub1 = assumptions.at(symbolic::symbol(dim)).upper_bound();
         for (auto atom : symbolic::atoms(ub1)) {
-            auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom);
-            if (moving_symbols.find(sym->get_name()) == moving_symbols.end()) {
-                if (parameters_.find(sym->get_name()) == parameters_.end()) {
-                    parameters_.insert(sym->get_name());
-                    parameters.push_back(sym->get_name());
+            if (moving_symbols.find(atom->get_name()) == moving_symbols.end()) {
+                if (parameters_.find(atom->get_name()) == parameters_.end()) {
+                    parameters_.insert(atom->get_name());
+                    parameters.push_back(atom->get_name());
                 }
             }
         }
@@ -544,21 +538,19 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
             auto param = parameters[i];
             auto lb = assumptions.at(symbolic::symbol(param)).lower_bound();
             for (auto& atom : symbolic::atoms(lb)) {
-                auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom);
-                if (moving_symbols.find(sym->get_name()) == moving_symbols.end()) {
-                    if (parameters_.find(sym->get_name()) == parameters_.end()) {
-                        parameters_.insert(sym->get_name());
-                        parameters.push_back(sym->get_name());
+                if (moving_symbols.find(atom->get_name()) == moving_symbols.end()) {
+                    if (parameters_.find(atom->get_name()) == parameters_.end()) {
+                        parameters_.insert(atom->get_name());
+                        parameters.push_back(atom->get_name());
                     }
                 }
             }
             auto ub = assumptions.at(symbolic::symbol(param)).upper_bound();
             for (auto& atom : symbolic::atoms(ub)) {
-                auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom);
-                if (moving_symbols.find(sym->get_name()) == moving_symbols.end()) {
-                    if (parameters_.find(sym->get_name()) == parameters_.end()) {
-                        parameters_.insert(sym->get_name());
-                        parameters.push_back(sym->get_name());
+                if (moving_symbols.find(atom->get_name()) == moving_symbols.end()) {
+                    if (parameters_.find(atom->get_name()) == parameters_.end()) {
+                        parameters_.insert(atom->get_name());
+                        parameters.push_back(atom->get_name());
                     }
                 }
             }
@@ -696,26 +688,26 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
     return disjoint;
 };
 
-void DataParallelismAnalysis::classify(analysis::AnalysisManager& analysis_manager,
-                                       const structured_control_flow::StructuredLoop* loop) {
-    // Strictly monotonic update
-    auto& indvar = loop->indvar();
-    auto& update = loop->update();
-    if (symbolic::strict_monotonicity(update, indvar) != symbolic::Sign::POSITIVE) {
-        this->results_.insert({loop, DataParallelismAnalysisResult()});
+void MemletAnalysis::classify(analysis::AnalysisManager& analysis_manager,
+                              const structured_control_flow::StructuredLoop* loop) {
+    // Require strictly monotonic update
+    if (!loop->is_contiguous()) {
+        this->results_.insert({loop, MemletAnalysisResult()});
         return;
     }
+
+    auto indvar = loop->indvar();
 
     // Users analysis
     auto& body = loop->root();
     auto& users = analysis_manager.get<analysis::Users>();
     analysis::UsersView body_users(users, body);
     if (!body_users.views().empty() || !body_users.moves().empty()) {
-        this->results_.insert({loop, DataParallelismAnalysisResult()});
+        this->results_.insert({loop, MemletAnalysisResult()});
         return;
     }
 
-    this->results_.insert({loop, DataParallelismAnalysisResult()});
+    this->results_.insert({loop, MemletAnalysisResult()});
     auto& result = this->results_.at(loop);
 
     // Assumptions analysis
@@ -927,75 +919,25 @@ void DataParallelismAnalysis::classify(analysis::AnalysisManager& analysis_manag
     }
 };
 
-void DataParallelismAnalysis::run(analysis::AnalysisManager& analysis_manager) {
+void MemletAnalysis::run(analysis::AnalysisManager& analysis_manager) {
     this->loops_.clear();
     this->results_.clear();
 
-    // Collect all for loops
-    std::list<const structured_control_flow::ControlFlowNode*> queue = {&sdfg_.root()};
-    while (!queue.empty()) {
-        auto current = queue.front();
-        queue.pop_front();
-
-        if (auto sequence_stmt = dynamic_cast<const structured_control_flow::Sequence*>(current)) {
-            for (size_t i = 0; i < sequence_stmt->size(); i++) {
-                queue.push_back(&sequence_stmt->at(i).first);
-            }
-        } else if (auto if_else_stmt =
-                       dynamic_cast<const structured_control_flow::IfElse*>(current)) {
-            for (size_t i = 0; i < if_else_stmt->size(); i++) {
-                queue.push_back(&if_else_stmt->at(i).first);
-            }
-        } else if (auto while_stmt = dynamic_cast<const structured_control_flow::While*>(current)) {
-            queue.push_back(&while_stmt->root());
-        } else if (auto sloop_stmt =
-                       dynamic_cast<const structured_control_flow::StructuredLoop*>(current)) {
-            this->loops_.insert(sloop_stmt);
-            queue.push_back(&sloop_stmt->root());
+    auto& loops_analsis = analysis_manager.get<analysis::LoopAnalysis>();
+    for (auto& loop : this->loops_) {
+        if (auto for_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(loop)) {
+            this->classify(analysis_manager, for_stmt);
         }
-    }
-
-    // Classify each loop
-    for (auto& entry : this->loops_) {
-        this->classify(analysis_manager, entry);
     }
 };
 
-DataParallelismAnalysis::DataParallelismAnalysis(StructuredSDFG& sdfg)
+MemletAnalysis::MemletAnalysis(StructuredSDFG& sdfg)
     : Analysis(sdfg) {
 
       };
 
-const DataParallelismAnalysisResult& DataParallelismAnalysis::get(
-    const structured_control_flow::StructuredLoop& loop) const {
+const MemletAnalysisResult& MemletAnalysis::get(const structured_control_flow::For& loop) const {
     return this->results_.at(&loop);
-};
-
-bool DataParallelismAnalysis::is_contiguous(const structured_control_flow::StructuredLoop& loop) {
-    return symbolic::contiguity(loop.update(), loop.indvar());
-};
-
-bool DataParallelismAnalysis::is_strictly_monotonic(
-    const structured_control_flow::StructuredLoop& loop) {
-    return symbolic::strict_monotonicity(loop.update(), loop.indvar()) == symbolic::Sign::POSITIVE;
-};
-
-symbolic::Expression DataParallelismAnalysis::bound(
-    const structured_control_flow::StructuredLoop& loop) {
-    auto& indvar = loop.indvar();
-    auto& condition = loop.condition();
-    auto args = condition->get_args();
-    if (args.size() != 2) {
-        return SymEngine::null;
-    }
-    auto& arg0 = args[0];
-    auto& arg1 = args[1];
-    if (SymEngine::eq(*arg0, *indvar)) {
-        return arg1;
-    } else if (SymEngine::eq(*arg1, *indvar)) {
-        return arg0;
-    }
-    return SymEngine::null;
 };
 
 }  // namespace analysis

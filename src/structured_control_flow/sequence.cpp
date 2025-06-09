@@ -8,14 +8,14 @@ Transition::Transition(const DebugInfo& debug_info)
 
       };
 
-Transition::Transition(const DebugInfo& debug_info, const symbolic::Assignments& assignments)
+Transition::Transition(const DebugInfo& debug_info, const control_flow::Assignments& assignments)
     : Element(debug_info), assignments_(assignments) {
 
       };
 
-const symbolic::Assignments& Transition::assignments() const { return this->assignments_; };
+const control_flow::Assignments& Transition::assignments() const { return this->assignments_; };
 
-symbolic::Assignments& Transition::assignments() { return this->assignments_; };
+control_flow::Assignments& Transition::assignments() { return this->assignments_; };
 
 bool Transition::empty() const { return this->assignments_.empty(); };
 

@@ -15,7 +15,6 @@
 #include "sdfg/element.h"
 #include "sdfg/exceptions.h"
 #include "sdfg/helpers/helpers.h"
-#include "sdfg/symbolic/analysis.h"
 #include "sdfg/symbolic/assumptions.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/types/array.h"

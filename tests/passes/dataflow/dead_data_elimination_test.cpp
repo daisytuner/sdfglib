@@ -226,7 +226,7 @@ TEST(DeadDataEliminationTest, WriteAfterWrite_OpenBranches) {
     auto& case1 = builder.add_case(if_else, symbolic::__true__());
     auto& case2 = builder.add_case(if_else, symbolic::__false__());
     auto& block1 = builder.add_block(case1, {{sym, symbolic::integer(0)}});
-    auto& block2 = builder.add_block(case2, symbolic::Assignments{});
+    auto& block2 = builder.add_block(case2, control_flow::Assignments{});
 
     auto& after = builder.add_block(root, {{symN, sym}});
 

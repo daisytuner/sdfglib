@@ -1,5 +1,8 @@
 #include "sdfg/passes/dataflow/memlet_propagation.h"
 
+#include "sdfg/analysis/users.h"
+#include "sdfg/types/utils.h"
+
 namespace sdfg {
 namespace passes {
 

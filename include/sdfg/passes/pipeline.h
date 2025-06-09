@@ -1,20 +1,18 @@
 #pragma once
 
-#include <sdfg/passes/dataflow/dead_data_elimination.h>
-#include <sdfg/passes/dataflow/dead_reference_elimination.h>
-#include <sdfg/passes/dataflow/memlet_propagation.h>
-#include <sdfg/passes/dataflow/redundant_array_elimination.h>
-#include <sdfg/passes/dataflow/trivial_array_elimination.h>
-#include <sdfg/passes/dataflow/view_propagation.h>
-#include <sdfg/passes/structured_control_flow/block_fusion.h>
-#include <sdfg/passes/structured_control_flow/common_assignment_elimination.h>
-#include <sdfg/passes/structured_control_flow/dead_cfg_elimination.h>
-#include <sdfg/passes/structured_control_flow/sequence_fusion.h>
-#include <sdfg/passes/symbolic/condition_propagation.h>
-#include <sdfg/passes/symbolic/symbol_propagation.h>
-
-#include "sdfg/builder/sdfg_builder.h"
-#include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/passes/dataflow/dead_data_elimination.h"
+#include "sdfg/passes/dataflow/dead_reference_elimination.h"
+#include "sdfg/passes/dataflow/memlet_propagation.h"
+#include "sdfg/passes/dataflow/redundant_array_elimination.h"
+#include "sdfg/passes/dataflow/trivial_array_elimination.h"
+#include "sdfg/passes/dataflow/view_propagation.h"
+#include "sdfg/passes/pass.h"
+#include "sdfg/passes/structured_control_flow/block_fusion.h"
+#include "sdfg/passes/structured_control_flow/common_assignment_elimination.h"
+#include "sdfg/passes/structured_control_flow/dead_cfg_elimination.h"
+#include "sdfg/passes/structured_control_flow/sequence_fusion.h"
+#include "sdfg/passes/symbolic/condition_propagation.h"
+#include "sdfg/passes/symbolic/symbol_propagation.h"
 
 namespace sdfg {
 namespace passes {

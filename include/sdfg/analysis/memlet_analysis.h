@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "sdfg/analysis/analysis.h"
-#include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/structured_sdfg.h"
 
 namespace sdfg {
@@ -25,13 +24,13 @@ namespace analysis {
  */
 enum Parallelism { DEPENDENT, REDUCTION, PARALLEL, PRIVATE, READONLY };
 
-typedef std::unordered_map<std::string, Parallelism> DataParallelismAnalysisResult;
+typedef std::unordered_map<std::string, Parallelism> MemletAnalysisResult;
 
-class DataParallelismAnalysis : public Analysis {
+class MemletAnalysis : public Analysis {
    private:
     std::unordered_set<const structured_control_flow::StructuredLoop*> loops_;
     std::unordered_map<const structured_control_flow::StructuredLoop*,
-                       DataParallelismAnalysisResult>
+                       MemletAnalysisResult>
         results_;
 
     bool disjoint(const data_flow::Subset& subset1, const data_flow::Subset& subset2,
@@ -45,21 +44,15 @@ class DataParallelismAnalysis : public Analysis {
     void run(analysis::AnalysisManager& analysis_manager) override;
 
    public:
-    DataParallelismAnalysis(StructuredSDFG& sdfg);
+    MemletAnalysis(StructuredSDFG& sdfg);
 
-    const DataParallelismAnalysisResult& get(
+    const MemletAnalysisResult& get(
         const structured_control_flow::StructuredLoop& loop) const;
-
-    static bool is_contiguous(const structured_control_flow::StructuredLoop& loop);
-
-    static bool is_strictly_monotonic(const structured_control_flow::StructuredLoop& loop);
-
-    static symbolic::Expression bound(const structured_control_flow::StructuredLoop& loop);
 
     static std::pair<data_flow::Subset, data_flow::Subset> substitution(
         const data_flow::Subset& subset1, const data_flow::Subset& subset2,
         const std::string& indvar, const std::unordered_set<std::string>& moving_symbols,
-        symbolic::SymbolicMap& replacements, std::vector<std::string>& substitions);
+        symbolic::SymbolMap& replacements, std::vector<std::string>& substitions);
 
     static std::pair<data_flow::Subset, data_flow::Subset> delinearization(
         const data_flow::Subset& subset1, const data_flow::Subset& subset2,

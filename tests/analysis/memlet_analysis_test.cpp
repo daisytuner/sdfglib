@@ -1,4 +1,4 @@
-#include "sdfg/analysis/data_parallelism_analysis.h"
+#include "sdfg/analysis/memlet_analysis.h"
 
 #include <gtest/gtest.h>
 
@@ -10,10 +10,10 @@
 
 using namespace sdfg;
 
-TEST(TestDataParallelism, Substitution_Affine) {
-    symbolic::SymbolicMap replacements;
+TEST(TestMemletAnalysis, Substitution_Affine) {
+    symbolic::SymbolMap replacements;
     std::vector<std::string> substitutions;
-    auto res = analysis::DataParallelismAnalysis::substitution(
+    auto res = analysis::MemletAnalysis::substitution(
         {symbolic::add(symbolic::mul(symbolic::symbol("N"), symbolic::symbol("i")),
                        symbolic::symbol("j"))},
         {symbolic::add(symbolic::mul(symbolic::symbol("N"), symbolic::symbol("i")),
@@ -33,7 +33,7 @@ TEST(TestDataParallelism, Substitution_Affine) {
                              symbolic::add(symbolic::symbol("c_0"), symbolic::symbol("j"))));
 }
 
-TEST(TestDataParallelism, Delinearization_Basic) {
+TEST(TestMemletAnalysis, Delinearization_Basic) {
     symbolic::Assumptions assumptions;
 
     symbolic::Assumption a1(symbolic::symbol("N"));
@@ -56,7 +56,7 @@ TEST(TestDataParallelism, Delinearization_Basic) {
     a4.upper_bound(symbolic::sub(symbolic::symbol("N"), symbolic::integer(1)));
     assumptions.insert({a4.symbol(), a4});
 
-    auto res = analysis::DataParallelismAnalysis::delinearization(
+    auto res = analysis::MemletAnalysis::delinearization(
         {symbolic::add(symbolic::mul(symbolic::symbol("N"), symbolic::symbol("i")),
                        symbolic::symbol("j"))},
         {symbolic::add(symbolic::mul(symbolic::symbol("N"), symbolic::symbol("i")),
@@ -71,7 +71,7 @@ TEST(TestDataParallelism, Delinearization_Basic) {
     EXPECT_TRUE(symbolic::eq(res.second.at(1), symbolic::symbol("j")));
 }
 
-TEST(TestDataParallelism, Delinearization_Equality) {
+TEST(TestMemletAnalysis, Delinearization_Equality) {
     symbolic::Assumptions assumptions;
 
     symbolic::Assumption a1(symbolic::symbol("N"));
@@ -94,7 +94,7 @@ TEST(TestDataParallelism, Delinearization_Equality) {
     a4.upper_bound(symbolic::symbol("N"));
     assumptions.insert({a4.symbol(), a4});
 
-    auto res = analysis::DataParallelismAnalysis::delinearization(
+    auto res = analysis::MemletAnalysis::delinearization(
         {symbolic::add(symbolic::mul(symbolic::symbol("N"), symbolic::symbol("i")),
                        symbolic::symbol("j"))},
         {symbolic::add(symbolic::mul(symbolic::symbol("N"), symbolic::symbol("i")),
@@ -105,7 +105,7 @@ TEST(TestDataParallelism, Delinearization_Equality) {
     EXPECT_EQ(res.second.size(), 1);
 }
 
-TEST(TestDataParallelism, Delinearization_Negative) {
+TEST(TestMemletAnalysis, Delinearization_Negative) {
     symbolic::Assumptions assumptions;
 
     symbolic::Assumption a1(symbolic::symbol("N"));
@@ -128,7 +128,7 @@ TEST(TestDataParallelism, Delinearization_Negative) {
     a4.upper_bound(symbolic::sub(symbolic::symbol("N"), symbolic::integer(1)));
     assumptions.insert({a4.symbol(), a4});
 
-    auto res = analysis::DataParallelismAnalysis::delinearization(
+    auto res = analysis::MemletAnalysis::delinearization(
         {symbolic::add(symbolic::mul(symbolic::symbol("N"), symbolic::symbol("i")),
                        symbolic::symbol("j"))},
         {symbolic::add(symbolic::mul(symbolic::symbol("N"), symbolic::symbol("i")),
@@ -139,7 +139,7 @@ TEST(TestDataParallelism, Delinearization_Negative) {
     EXPECT_EQ(res.second.size(), 1);
 }
 
-TEST(TestDataParallelism, Trivial_1D_Identity) {
+TEST(TestMemletAnalysis, Trivial_1D_Identity) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -175,7 +175,7 @@ TEST(TestDataParallelism, Trivial_1D_Identity) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(loop);
 
     // Check
@@ -183,7 +183,7 @@ TEST(TestDataParallelism, Trivial_1D_Identity) {
     EXPECT_EQ(dependencies.at("A"), analysis::Parallelism::REDUCTION);
 }
 
-TEST(TestDataParallelism, Reduction) {
+TEST(TestMemletAnalysis, Reduction) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -223,7 +223,7 @@ TEST(TestDataParallelism, Reduction) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(loop);
 
     // Check
@@ -231,7 +231,7 @@ TEST(TestDataParallelism, Reduction) {
     EXPECT_EQ(dependencies.at("A"), analysis::Parallelism::REDUCTION);
 }
 
-TEST(TestDataParallelism, Map_1D_WriteOnly) {
+TEST(TestMemletAnalysis, Map_1D_WriteOnly) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -269,7 +269,7 @@ TEST(TestDataParallelism, Map_1D_WriteOnly) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(loop);
 
     // Check
@@ -277,7 +277,7 @@ TEST(TestDataParallelism, Map_1D_WriteOnly) {
     EXPECT_EQ(dependencies.at("A"), analysis::Parallelism::PARALLEL);
 }
 
-TEST(TestDataParallelism, Map_1D_Scalar) {
+TEST(TestMemletAnalysis, Map_1D_Scalar) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -318,7 +318,7 @@ TEST(TestDataParallelism, Map_1D_Scalar) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(loop);
 
     // Check
@@ -327,7 +327,7 @@ TEST(TestDataParallelism, Map_1D_Scalar) {
     EXPECT_EQ(dependencies.at("A"), analysis::Parallelism::PARALLEL);
 }
 
-TEST(TestDataParallelism, Map_1D_Identity) {
+TEST(TestMemletAnalysis, Map_1D_Identity) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -367,7 +367,7 @@ TEST(TestDataParallelism, Map_1D_Identity) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(loop);
 
     // Check
@@ -375,7 +375,7 @@ TEST(TestDataParallelism, Map_1D_Identity) {
     EXPECT_EQ(dependencies.at("A"), analysis::Parallelism::PARALLEL);
 }
 
-TEST(TestDataParallelism, Map_1D_Copy) {
+TEST(TestMemletAnalysis, Map_1D_Copy) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -416,7 +416,7 @@ TEST(TestDataParallelism, Map_1D_Copy) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(loop);
 
     // Check
@@ -425,7 +425,7 @@ TEST(TestDataParallelism, Map_1D_Copy) {
     EXPECT_EQ(dependencies.at("B"), analysis::Parallelism::PARALLEL);
 }
 
-TEST(TestDataParallelism, Reduction_1D) {
+TEST(TestMemletAnalysis, Reduction_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -466,7 +466,7 @@ TEST(TestDataParallelism, Reduction_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(loop);
 
     // Check
@@ -475,7 +475,7 @@ TEST(TestDataParallelism, Reduction_1D) {
     EXPECT_EQ(dependencies.at("b"), analysis::Parallelism::REDUCTION);
 }
 
-TEST(TestDataParallelism, Sequential_Left_Shift_1D) {
+TEST(TestMemletAnalysis, Sequential_Left_Shift_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -516,7 +516,7 @@ TEST(TestDataParallelism, Sequential_Left_Shift_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(loop);
 
     // Check
@@ -524,7 +524,7 @@ TEST(TestDataParallelism, Sequential_Left_Shift_1D) {
     EXPECT_EQ(dependencies.at("A"), analysis::Parallelism::DEPENDENT);
 }
 
-TEST(TestDataParallelism, Sequential_Partial_Sum_1D) {
+TEST(TestMemletAnalysis, Sequential_Partial_Sum_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -567,7 +567,7 @@ TEST(TestDataParallelism, Sequential_Partial_Sum_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(loop);
 
     // Check
@@ -575,7 +575,7 @@ TEST(TestDataParallelism, Sequential_Partial_Sum_1D) {
     EXPECT_EQ(dependencies.at("A"), analysis::Parallelism::DEPENDENT);
 }
 
-TEST(TestDataParallelism, Stencil_1D) {
+TEST(TestMemletAnalysis, Stencil_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -623,7 +623,7 @@ TEST(TestDataParallelism, Stencil_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(loop);
 
     // Check
@@ -632,7 +632,7 @@ TEST(TestDataParallelism, Stencil_1D) {
     EXPECT_EQ(dependencies.at("B"), analysis::Parallelism::PARALLEL);
 }
 
-TEST(TestDataParallelism, Gather_1D) {
+TEST(TestMemletAnalysis, Gather_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -684,7 +684,7 @@ TEST(TestDataParallelism, Gather_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(loop);
 
     // Check
@@ -695,7 +695,7 @@ TEST(TestDataParallelism, Gather_1D) {
     EXPECT_EQ(dependencies.at("C"), analysis::Parallelism::PARALLEL);
 }
 
-TEST(TestDataParallelism, Scatter_1D) {
+TEST(TestMemletAnalysis, Scatter_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -746,7 +746,7 @@ TEST(TestDataParallelism, Scatter_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(loop);
 
     // Check
@@ -756,7 +756,7 @@ TEST(TestDataParallelism, Scatter_1D) {
     EXPECT_EQ(dependencies.at("B"), analysis::Parallelism::DEPENDENT);
 }
 
-TEST(TestDataParallelism, Map_2D_Copy) {
+TEST(TestMemletAnalysis, Map_2D_Copy) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -808,7 +808,7 @@ TEST(TestDataParallelism, Map_2D_Copy) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies1 = analysis.get(loop1);
     auto& dependencies2 = analysis.get(loop2);
 
@@ -825,7 +825,7 @@ TEST(TestDataParallelism, Map_2D_Copy) {
     EXPECT_EQ(dependencies2.at("B"), analysis::Parallelism::PARALLEL);
 }
 
-TEST(TestDataParallelism, Map_2D_Transpose) {
+TEST(TestMemletAnalysis, Map_2D_Transpose) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -877,7 +877,7 @@ TEST(TestDataParallelism, Map_2D_Transpose) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies1 = analysis.get(loop1);
     auto& dependencies2 = analysis.get(loop2);
 
@@ -894,7 +894,7 @@ TEST(TestDataParallelism, Map_2D_Transpose) {
     EXPECT_EQ(dependencies2.at("B"), analysis::Parallelism::PARALLEL);
 }
 
-TEST(TestDataParallelism, Sequential_2D_Transpose) {
+TEST(TestMemletAnalysis, Sequential_2D_Transpose) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -945,7 +945,7 @@ TEST(TestDataParallelism, Sequential_2D_Transpose) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies1 = analysis.get(loop1);
     auto& dependencies2 = analysis.get(loop2);
 
@@ -960,7 +960,7 @@ TEST(TestDataParallelism, Sequential_2D_Transpose) {
     EXPECT_EQ(dependencies2.at("A"), analysis::Parallelism::PARALLEL);
 }
 
-TEST(TestDataParallelism, Reduction_2D_Inner) {
+TEST(TestMemletAnalysis, Reduction_2D_Inner) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -1014,7 +1014,7 @@ TEST(TestDataParallelism, Reduction_2D_Inner) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies1 = analysis.get(loop1);
     auto& dependencies2 = analysis.get(loop2);
 
@@ -1031,7 +1031,7 @@ TEST(TestDataParallelism, Reduction_2D_Inner) {
     EXPECT_EQ(dependencies2.at("B"), analysis::Parallelism::REDUCTION);
 }
 
-TEST(TestDataParallelism, Reduction_2D_Outer) {
+TEST(TestMemletAnalysis, Reduction_2D_Outer) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -1085,7 +1085,7 @@ TEST(TestDataParallelism, Reduction_2D_Outer) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies1 = analysis.get(loop1);
     auto& dependencies2 = analysis.get(loop2);
 
@@ -1102,7 +1102,7 @@ TEST(TestDataParallelism, Reduction_2D_Outer) {
     EXPECT_EQ(dependencies2.at("B"), analysis::Parallelism::PARALLEL);
 }
 
-TEST(TestDataParallelism, Intervals_Disjoint_1D) {
+TEST(TestMemletAnalysis, Intervals_Disjoint_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -1142,7 +1142,7 @@ TEST(TestDataParallelism, Intervals_Disjoint_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies1 = analysis.get(loop1);
 
     // Check
@@ -1151,7 +1151,7 @@ TEST(TestDataParallelism, Intervals_Disjoint_1D) {
     EXPECT_EQ(dependencies1.at("A"), analysis::Parallelism::PARALLEL);
 }
 
-TEST(TestDataParallelism, Triangle_2D) {
+TEST(TestMemletAnalysis, Triangle_2D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -1201,7 +1201,7 @@ TEST(TestDataParallelism, Triangle_2D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies1 = analysis.get(loop1);
     auto& dependencies2 = analysis.get(loop2);
 
@@ -1216,7 +1216,7 @@ TEST(TestDataParallelism, Triangle_2D) {
     EXPECT_EQ(dependencies2.at("A"), analysis::Parallelism::PARALLEL);
 }
 
-TEST(TestDataParallelism, Triangle_2D_2) {
+TEST(TestMemletAnalysis, Triangle_2D_2) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -1266,7 +1266,7 @@ TEST(TestDataParallelism, Triangle_2D_2) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies1 = analysis.get(loop1);
     auto& dependencies2 = analysis.get(loop2);
 
@@ -1281,7 +1281,7 @@ TEST(TestDataParallelism, Triangle_2D_2) {
     EXPECT_EQ(dependencies2.at("A"), analysis::Parallelism::PARALLEL);
 }
 
-TEST(TestDataParallelism, Temporal_Loop_1D) {
+TEST(TestMemletAnalysis, Temporal_Loop_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -1342,7 +1342,7 @@ TEST(TestDataParallelism, Temporal_Loop_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies1 = analysis.get(loop1);
     auto& dependencies2 = analysis.get(loop2);
     auto& dependencies3 = analysis.get(loop3);
@@ -1364,7 +1364,7 @@ TEST(TestDataParallelism, Temporal_Loop_1D) {
     EXPECT_EQ(dependencies3.at("A"), analysis::Parallelism::PARALLEL);
 }
 
-TEST(TestDataParallelism, Conditional_Tasklets_Readonly) {
+TEST(TestMemletAnalysis, Conditional_Tasklets_Readonly) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -1403,14 +1403,14 @@ TEST(TestDataParallelism, Conditional_Tasklets_Readonly) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies1 = analysis.get(loop1);
     EXPECT_EQ(dependencies1.size(), 2);
     EXPECT_EQ(dependencies1.at("j"), analysis::Parallelism::READONLY);
     EXPECT_EQ(dependencies1.at("A"), analysis::Parallelism::PARALLEL);
 }
 
-TEST(TestDataParallelism, Conditional_Tasklets_Private) {
+TEST(TestMemletAnalysis, Conditional_Tasklets_Private) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -1457,7 +1457,7 @@ TEST(TestDataParallelism, Conditional_Tasklets_Private) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies1 = analysis.get(loop1);
     EXPECT_EQ(dependencies1.size(), 3);
     EXPECT_EQ(dependencies1.at("j"), analysis::Parallelism::PRIVATE);
@@ -1465,7 +1465,7 @@ TEST(TestDataParallelism, Conditional_Tasklets_Private) {
     EXPECT_EQ(dependencies1.at("B"), analysis::Parallelism::READONLY);
 }
 
-TEST(TestDataParallelism, Conditional_Tasklets_Dependent) {
+TEST(TestMemletAnalysis, Conditional_Tasklets_Dependent) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -1513,12 +1513,12 @@ TEST(TestDataParallelism, Conditional_Tasklets_Dependent) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies1 = analysis.get(loop1);
     EXPECT_EQ(dependencies1.size(), 0);
 }
 
-TEST(TestDataParallelism, AffineParameters) {
+TEST(TestMemletAnalysis, AffineParameters) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -1560,7 +1560,7 @@ TEST(TestDataParallelism, AffineParameters) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(loop);
 
     // Check
@@ -1570,7 +1570,7 @@ TEST(TestDataParallelism, AffineParameters) {
     EXPECT_EQ(dependencies.at("b"), analysis::Parallelism::READONLY);
 }
 
-TEST(TestDataParallelism, Map_2D_Linearized) {
+TEST(TestMemletAnalysis, Map_2D_Linearized) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -1618,7 +1618,7 @@ TEST(TestDataParallelism, Map_2D_Linearized) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
 
     // Check
     auto& dependencies = analysis.get(loop);
@@ -1634,7 +1634,7 @@ TEST(TestDataParallelism, Map_2D_Linearized) {
     EXPECT_EQ(dependencies_2.at("M"), analysis::Parallelism::READONLY);
 }
 
-TEST(TestDataParallelism, KernelTestBasic) {
+TEST(TestMemletAnalysis, KernelTestBasic) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_NV_GLOBAL);
 
     auto& sdfg = builder.subject();
@@ -1680,7 +1680,7 @@ TEST(TestDataParallelism, KernelTestBasic) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
 
     // Check
     auto& dependencies = analysis.get(loop);
@@ -1689,7 +1689,7 @@ TEST(TestDataParallelism, KernelTestBasic) {
     EXPECT_EQ(dependencies.at("A"), analysis::Parallelism::READONLY);
 }
 
-TEST(TestDataParallelism, KernelTest) {
+TEST(TestMemletAnalysis, KernelTest) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_NV_GLOBAL);
 
     auto& sdfg = builder.subject();
@@ -1741,7 +1741,7 @@ TEST(TestDataParallelism, KernelTest) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
 
     // Check
     auto& dependencies = analysis.get(loop);
@@ -1750,7 +1750,7 @@ TEST(TestDataParallelism, KernelTest) {
     EXPECT_EQ(dependencies.at("A"), analysis::Parallelism::READONLY);
 }
 
-TEST(TestDataParallelism, KernelTestMult) {
+TEST(TestMemletAnalysis, KernelTestMult) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_NV_GLOBAL);
 
     auto& sdfg = builder.subject();
@@ -1801,7 +1801,7 @@ TEST(TestDataParallelism, KernelTestMult) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
 
     // Check
     auto& dependencies = analysis.get(loop);
@@ -1810,7 +1810,7 @@ TEST(TestDataParallelism, KernelTestMult) {
     EXPECT_EQ(dependencies.at("A"), analysis::Parallelism::READONLY);
 }
 
-TEST(TestDataParallelism, Rodinia_SRAD) {
+TEST(TestMemletAnalysis, Rodinia_SRAD) {
     /**
             for (int i = 0 ; i < rows ; i++) {
                 for (int j = 0; j < cols; j++) {
@@ -2220,7 +2220,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(*sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
 
     auto& dependencies1 = analysis.get(loop_i);
     EXPECT_EQ(dependencies1.size(), 22);

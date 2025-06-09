@@ -162,10 +162,9 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
             if (tasklet->is_conditional()) {
                 auto& condition = tasklet->condition();
                 for (auto& atom : symbolic::atoms(condition)) {
-                    auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
                     auto v = boost::add_vertex(this->graph_);
                     this->add_user(
-                        std::make_unique<User>(v, sym->get_name(), tasklet, &dataflow, Use::READ));
+                        std::make_unique<User>(v, atom->get_name(), tasklet, &dataflow, Use::READ));
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
                         boost::add_edge(last, v, this->graph_);
                     } else {
@@ -180,15 +179,14 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
             std::unordered_set<std::string> used;
             for (auto dim : oedge.subset()) {
                 for (auto atom : symbolic::atoms(dim)) {
-                    auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
-                    if (used.find(sym->get_name()) != used.end()) {
+                    if (used.find(atom->get_name()) != used.end()) {
                         continue;
                     }
-                    used.insert(sym->get_name());
+                    used.insert(atom->get_name());
 
                     auto v = boost::add_vertex(this->graph_);
                     this->add_user(
-                        std::make_unique<User>(v, sym->get_name(), &oedge, &dataflow, Use::READ));
+                        std::make_unique<User>(v, atom->get_name(), &oedge, &dataflow, Use::READ));
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
                         boost::add_edge(last, v, this->graph_);
                     } else {
@@ -245,18 +243,17 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
             std::unordered_set<std::string> used;
             for (auto& entry : child.second.assignments()) {
                 for (auto atom : symbolic::atoms(entry.second)) {
-                    auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
-                    if (symbolic::is_pointer(sym)) {
+                    if (symbolic::is_pointer(atom)) {
                         continue;
                     }
-                    if (used.find(sym->get_name()) != used.end()) {
+                    if (used.find(atom->get_name()) != used.end()) {
                         continue;
                     }
-                    used.insert(sym->get_name());
+                    used.insert(atom->get_name());
 
                     auto v = boost::add_vertex(this->graph_);
                     this->add_user(
-                        std::make_unique<User>(v, sym->get_name(), &child.second, Use::READ));
+                        std::make_unique<User>(v, atom->get_name(), &child.second, Use::READ));
 
                     boost::add_edge(current, v, this->graph_);
                     current = v;
@@ -296,15 +293,15 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
         for (size_t i = 0; i < if_else_stmt->size(); i++) {
             auto& condition = if_else_stmt->at(i).second;
             for (auto atom : symbolic::atoms(condition)) {
-                auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
-                if (used.find(sym->get_name()) != used.end()) {
+                if (used.find(atom->get_name()) != used.end()) {
                     continue;
                 }
-                used.insert(sym->get_name());
+                used.insert(atom->get_name());
 
                 auto v = boost::add_vertex(this->graph_);
 
-                this->add_user(std::make_unique<User>(v, sym->get_name(), if_else_stmt, Use::READ));
+                this->add_user(
+                    std::make_unique<User>(v, atom->get_name(), if_else_stmt, Use::READ));
 
                 boost::add_edge(last, v, this->graph_);
                 last = v;
@@ -369,9 +366,8 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
 
         // Init
         for (auto atom : symbolic::atoms(for_stmt->init())) {
-            auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
             auto v = boost::add_vertex(this->graph_);
-            this->add_user(std::make_unique<ForUser>(v, sym->get_name(), for_stmt, Use::READ, true,
+            this->add_user(std::make_unique<ForUser>(v, atom->get_name(), for_stmt, Use::READ, true,
                                                      false, false));
             boost::add_edge(last, v, this->graph_);
             last = v;
@@ -386,10 +382,9 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
 
         // Condition
         for (auto atom : symbolic::atoms(for_stmt->condition())) {
-            auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
             auto v = boost::add_vertex(this->graph_);
-            this->add_user(std::make_unique<ForUser>(v, sym->get_name(), for_stmt, Use::READ, false,
-                                                     true, false));
+            this->add_user(std::make_unique<ForUser>(v, atom->get_name(), for_stmt, Use::READ,
+                                                     false, true, false));
 
             boost::add_edge(last, v, this->graph_);
             boost::add_edge(v, t, this->graph_);
@@ -402,10 +397,9 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
         // Update
         auto end = subgraph.second;
         for (auto atom : symbolic::atoms(for_stmt->update())) {
-            auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
             auto v = boost::add_vertex(this->graph_);
-            this->add_user(std::make_unique<ForUser>(v, sym->get_name(), for_stmt, Use::READ, false,
-                                                     false, true));
+            this->add_user(std::make_unique<ForUser>(v, atom->get_name(), for_stmt, Use::READ,
+                                                     false, false, true));
             boost::add_edge(end, v, this->graph_);
             end = v;
         }

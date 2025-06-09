@@ -17,23 +17,22 @@ namespace sdfg {
 
 namespace symbolic {
 
-// Atoms
+/**** Basic Definitions ****/
 typedef SymEngine::RCP<const SymEngine::Symbol> Symbol;
+typedef SymEngine::RCP<const SymEngine::Number> Number;
 typedef SymEngine::RCP<const SymEngine::Integer> Integer;
 typedef SymEngine::RCP<const SymEngine::Infty> Infty;
-
-// Expressions
 typedef SymEngine::RCP<const SymEngine::Basic> Expression;
 typedef SymEngine::RCP<const SymEngine::Boolean> Condition;
 
 // Datastructures
-typedef std::unordered_map<Symbol, Expression, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq>
-    Assignments;
-typedef std::vector<SymEngine::RCP<const SymEngine::Symbol>> SymbolicVector;
-typedef std::set<SymEngine::RCP<const SymEngine::Basic>, SymEngine::RCPBasicKeyLess> SymbolicSet;
-typedef std::unordered_map<Expression, Expression, SymEngine::RCPBasicHash,
-                           SymEngine::RCPBasicKeyEq>
-    SymbolicMap;
+typedef std::vector<Symbol> SymbolVec;
+typedef std::set<Symbol, SymEngine::RCPBasicKeyLess> SymbolSet;
+typedef std::unordered_map<Symbol, Expression, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq> SymbolMap;
+
+typedef std::vector<Symbol> ExpressionVec;
+typedef std::set<Expression, SymEngine::RCPBasicKeyLess> ExpressionSet;
+typedef std::unordered_map<Expression, Expression, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq> ExpressionMap;
 
 /***** Special Symbols *****/
 
@@ -137,17 +136,13 @@ bool uses(const Expression& expr, const Symbol& sym);
 
 bool uses(const Expression& expr, const std::string& name);
 
-SymbolicSet atoms(const Expression& expr);
+SymbolSet atoms(const Expression& expr);
 
-SymbolicSet muls(const Expression& expr);
+ExpressionSet muls(const Expression& expr);
 
 Expression subs(const Expression& expr, const Expression& old_expr, const Expression& new_expr);
 
 Condition subs(const Condition& expr, const Expression& old_expr, const Expression& new_expr);
-
-Condition simplify(const Condition& expr);
-
-Expression simplify(const Expression& expr);
 
 Condition rearrange_simple_condition(const Condition& inequality, const Symbol& target_symbol);
 

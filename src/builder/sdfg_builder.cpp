@@ -90,26 +90,26 @@ control_flow::State& SDFGBuilder::add_state_after(const control_flow::State& sta
 control_flow::InterstateEdge& SDFGBuilder::add_edge(const control_flow::State& src,
                                                     const control_flow::State& dst,
                                                     const DebugInfo& debug_info) {
-    return this->add_edge(src, dst, symbolic::Assignments{}, SymEngine::boolTrue, debug_info);
+    return this->add_edge(src, dst, control_flow::Assignments{}, SymEngine::boolTrue, debug_info);
 };
 
 control_flow::InterstateEdge& SDFGBuilder::add_edge(const control_flow::State& src,
                                                     const control_flow::State& dst,
                                                     const symbolic::Condition condition,
                                                     const DebugInfo& debug_info) {
-    return this->add_edge(src, dst, symbolic::Assignments{}, condition, debug_info);
+    return this->add_edge(src, dst, control_flow::Assignments{}, condition, debug_info);
 };
 
 control_flow::InterstateEdge& SDFGBuilder::add_edge(const control_flow::State& src,
                                                     const control_flow::State& dst,
-                                                    const symbolic::Assignments& assignments,
+                                                    const control_flow::Assignments& assignments,
                                                     const DebugInfo& debug_info) {
     return this->add_edge(src, dst, assignments, SymEngine::boolTrue, debug_info);
 };
 
 control_flow::InterstateEdge& SDFGBuilder::add_edge(const control_flow::State& src,
                                                     const control_flow::State& dst,
-                                                    const symbolic::Assignments& assignments,
+                                                    const control_flow::Assignments& assignments,
                                                     const symbolic::Condition condition,
                                                     const DebugInfo& debug_info) {
     auto edge = boost::add_edge(src.vertex_, dst.vertex_, this->sdfg_->graph_);

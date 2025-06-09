@@ -6,7 +6,7 @@ namespace control_flow {
 InterstateEdge::InterstateEdge(const DebugInfo& debug_info, const graph::Edge& edge,
                                const control_flow::State& src, const control_flow::State& dst,
                                const symbolic::Condition& condition,
-                               const sdfg::symbolic::Assignments& assignments)
+                               const sdfg::control_flow::Assignments& assignments)
     : Element(debug_info),
       edge_(edge),
       src_(src),
@@ -26,7 +26,7 @@ const symbolic::Condition& InterstateEdge::condition() const { return this->cond
 
 bool InterstateEdge::is_unconditional() const { return symbolic::is_true(this->condition_); };
 
-const sdfg::symbolic::Assignments& InterstateEdge::assignments() const {
+const sdfg::control_flow::Assignments& InterstateEdge::assignments() const {
     return this->assignments_;
 };
 

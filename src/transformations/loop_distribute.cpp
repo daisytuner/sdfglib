@@ -1,6 +1,6 @@
 #include "sdfg/transformations/loop_distribute.h"
 
-#include "sdfg/analysis/data_parallelism_analysis.h"
+#include "sdfg/analysis/memlet_analysis.h"
 #include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
 
 namespace sdfg {
@@ -39,7 +39,7 @@ bool LoopDistribute::can_be_applied(builder::StructuredSDFGBuilder& builder,
     }
 
     // Criterion: loop is data-parallel w.r.t containers
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(loop_);
     if (dependencies.size() == 0) {
         return false;
@@ -98,7 +98,7 @@ bool LoopDistribute::can_be_applied(builder::StructuredSDFGBuilder& builder,
         }
 
         // Criterion: Bound must be integer
-        auto bound = analysis::DataParallelismAnalysis::bound(this->loop_);
+        auto bound = analysis::MemletAnalysis::bound(this->loop_);
         if (bound == SymEngine::null || !SymEngine::is_a<SymEngine::Integer>(*bound)) {
             can_be_distributed = false;
             break;
@@ -140,7 +140,7 @@ void LoopDistribute::apply(builder::StructuredSDFGBuilder& builder,
     }
 
     std::unordered_set<std::string> shared_containers;
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(loop_);
     for (auto& dep : dependencies) {
         auto& container = dep.first;
@@ -161,7 +161,7 @@ void LoopDistribute::apply(builder::StructuredSDFGBuilder& builder,
     }
 
     if (!shared_containers.empty()) {
-        auto bound = analysis::DataParallelismAnalysis::bound(this->loop_);
+        auto bound = analysis::MemletAnalysis::bound(this->loop_);
         for (auto& shared_container : shared_containers) {
             auto& type = sdfg.type(shared_container);
 

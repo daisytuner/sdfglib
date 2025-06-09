@@ -1,8 +1,6 @@
 #pragma once
 
-#include "sdfg/analysis/users.h"
 #include "sdfg/passes/pass.h"
-#include "sdfg/types/utils.h"
 
 namespace sdfg {
 namespace passes {

@@ -26,7 +26,7 @@ TEST(StructuredSDFGBuilderTest, AddBlock) {
 
     auto& root = builder.subject().root();
     auto& block = builder.add_block(
-        root, symbolic::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
 
     auto sdfg = builder.move();
 
@@ -46,7 +46,7 @@ TEST(StructuredSDFGBuilderTest, AddBlockBefore) {
 
     auto& root = builder.subject().root();
     auto& block_base = builder.add_block(
-        root, symbolic::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     auto& block = builder.add_block_before(root, block_base).first;
 
     auto sdfg = builder.move();
@@ -67,9 +67,9 @@ TEST(StructuredSDFGBuilderTest, AddBlockAfter) {
 
     auto& root = builder.subject().root();
     auto& block_base = builder.add_block(
-        root, symbolic::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     auto& block_base2 = builder.add_block(
-        root, symbolic::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     auto& block = builder.add_block_after(root, block_base).first;
 
     auto sdfg = builder.move();
@@ -113,7 +113,7 @@ TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
 
     auto& root = builder.subject().root();
     auto& block = builder.add_block(
-        root, symbolic::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
 
     auto& lib_node =
         builder.add_library_node<BarrierLocalLibraryNode>(block, BARRIER_LOCAL, {}, {}, false);
@@ -162,7 +162,7 @@ TEST(StructuredSDFGBuilderTest, AddIfElseBefore) {
 
     auto& root = builder.subject().root();
     auto& block_base = builder.add_block(
-        root, symbolic::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     auto& if_else = builder.add_if_else_before(root, block_base).first;
     auto& true_case = builder.add_case(if_else, symbolic::__true__());
     auto& false_case = builder.add_case(if_else, symbolic::__false__());
@@ -245,7 +245,7 @@ TEST(StructuredSDFGBuilderTest, addForBefore) {
 
     auto& root = builder.subject().root();
     auto& block_base = builder.add_block(
-        root, symbolic::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     auto& scope = builder
                       .add_for_before(root, block_base, symbolic::symbol("i"),
                                       symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
@@ -269,9 +269,9 @@ TEST(StructuredSDFGBuilderTest, addForAfter) {
 
     auto& root = builder.subject().root();
     auto& block_base = builder.add_block(
-        root, symbolic::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     auto& block_base2 = builder.add_block(
-        root, symbolic::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     auto& scope = builder
                       .add_for_after(root, block_base, symbolic::symbol("i"),
                                      symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
