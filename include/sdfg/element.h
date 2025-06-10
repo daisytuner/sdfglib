@@ -22,6 +22,7 @@ class JSONSerializer;
 class DebugInfo {
    private:
     std::string filename_;
+    std::string functionname_;
     size_t start_line_;
     size_t start_column_;
     size_t end_line_;

@@ -7,7 +7,13 @@ namespace sdfg {
 boost::uuids::random_generator thread_local Element::UUID_GENERATOR;
 
 DebugInfo::DebugInfo()
-    : filename_(), start_line_(0), start_column_(0), end_line_(0), end_column_(0), has_(false) {
+    : filename_(),
+      functionname_(),
+      start_line_(0),
+      start_column_(0),
+      end_line_(0),
+      end_column_(0),
+      has_(false) {
 
       };
 
