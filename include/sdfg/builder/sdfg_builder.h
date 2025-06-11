@@ -98,7 +98,7 @@ class SDFGBuilder : public FunctionBuilder {
                                              const std::vector<std::string>& inputs,
                                              const bool side_effect = true,
                                              const DebugInfo& debug_info = DebugInfo(),
-                                            Args... arguments) {
+                                             Args... arguments) {
         static_assert(std::is_base_of<data_flow::LibraryNode, T>::value,
                       "T must be a subclass of data_flow::LibraryNode");
 

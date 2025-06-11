@@ -1,10 +1,10 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "sdfg/data_flow/code_node.h"
 #include "sdfg/graph/graph.h"
-#include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
 
@@ -50,6 +50,8 @@ class LibraryNode : public CodeNode {
     bool side_effect() const;
 
     bool needs_connector(size_t index) const override;
+
+    virtual std::string toStr() const;
 };
 
 }  // namespace data_flow
