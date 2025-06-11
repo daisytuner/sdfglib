@@ -6,7 +6,7 @@
 
 using namespace sdfg;
 
-TEST(SymbolsTest, Init_bool) {
+TEST(AssumptionsAnalysisTest, Init_bool) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -28,7 +28,7 @@ TEST(SymbolsTest, Init_bool) {
         SymEngine::eq(*assumptions.at(symbolic::symbol("N")).upper_bound(), *symbolic::integer(1)));
 }
 
-TEST(SymbolsTest, Init_i8) {
+TEST(AssumptionsAnalysisTest, Init_i8) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -56,7 +56,7 @@ TEST(SymbolsTest, Init_i8) {
                               *symbolic::integer(127)));
 }
 
-TEST(SymbolsTest, Init_i16) {
+TEST(AssumptionsAnalysisTest, Init_i16) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -84,7 +84,7 @@ TEST(SymbolsTest, Init_i16) {
                               *symbolic::integer(32767)));
 }
 
-TEST(SymbolsTest, Init_i32) {
+TEST(AssumptionsAnalysisTest, Init_i32) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -112,7 +112,7 @@ TEST(SymbolsTest, Init_i32) {
                               *symbolic::integer(2147483647)));
 }
 
-TEST(SymbolsTest, Init_i64) {
+TEST(AssumptionsAnalysisTest, Init_i64) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -140,7 +140,7 @@ TEST(SymbolsTest, Init_i64) {
         SymEngine::eq(*assumptions.at(symbolic::symbol("M")).upper_bound(), *symbolic::infty(1)));
 }
 
-TEST(SymbolsTest, Iteration_Rectangle_1D) {
+TEST(AssumptionsAnalysisTest, Iteration_Rectangle_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -177,7 +177,7 @@ TEST(SymbolsTest, Iteration_Rectangle_1D) {
                               *symbolic::sub(symbolic::symbol("N"), symbolic::integer(1))));
 }
 
-TEST(SymbolsTest, Iteration_Rectangle_1D_And) {
+TEST(AssumptionsAnalysisTest, Iteration_Rectangle_1D_And) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -220,7 +220,7 @@ TEST(SymbolsTest, Iteration_Rectangle_1D_And) {
                               *symbolic::min(symbolic::symbol("N"), symbolic::symbol("M"))));
 }
 
-TEST(SymbolsTest, Iteration_Triangle_2D) {
+TEST(AssumptionsAnalysisTest, Iteration_Triangle_2D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();

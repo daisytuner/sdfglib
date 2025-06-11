@@ -138,7 +138,7 @@ Expression upper_bound(const CNF& cnf, const Symbol& indvar) {
                 auto lt = SymEngine::rcp_static_cast<const SymEngine::StrictLessThan>(literal);
                 if (symbolic::eq(lt->get_arg1(), indvar) && !uses(lt->get_arg2(), indvar)) {
                     auto ub = symbolic::sub(lt->get_arg2(), symbolic::one());
-                    candidates.push_back(lt->get_arg2());
+                    candidates.push_back(ub);
                 }
             }
             // Comparison: indvar <= expr

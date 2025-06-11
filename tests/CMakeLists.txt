@@ -7,7 +7,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 set(TEST_FILES
-    #analysis/assumptions_analysis_test.cpp
+    analysis/assumptions_analysis_test.cpp
     #analysis/memlet_analysis_test.cpp
     analysis/happens_before_analysis_test.cpp
     #analysis/loop_analysis_test.cpp
