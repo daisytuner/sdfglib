@@ -1,6 +1,10 @@
 #pragma once
 
+#include <memory>
+#include <vector>
+
 #include "sdfg/codegen/code_generator.h"
+#include "sdfg/codegen/instrumentation/capture_var_plan.h"
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
 
 namespace sdfg {
@@ -19,9 +23,12 @@ class CCodeGenerator : public CodeGenerator {
 
     void dispatch_schedule();
 
+    void emit_capture_context_init(std::ostream& ofs_source) const;
+
+    void emit_arg_captures(std::ostream& ofs_source, const std::vector<CaptureVarPlan>& plan, bool after);
+
    public:
-    CCodeGenerator(StructuredSDFG& sdfg);
-    CCodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy);
+    CCodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy = InstrumentationStrategy::NONE, bool capture_args_results = true);
 
     bool generate() override;
 
