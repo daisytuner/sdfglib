@@ -140,7 +140,7 @@ TEST(AssumptionsAnalysisTest, Init_i64) {
         SymEngine::eq(*assumptions.at(symbolic::symbol("M")).upper_bound(), *symbolic::infty(1)));
 }
 
-TEST(AssumptionsAnalysisTest, Iteration_Rectangle_1D) {
+TEST(AssumptionsAnalysisTest, For_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -177,7 +177,7 @@ TEST(AssumptionsAnalysisTest, Iteration_Rectangle_1D) {
                               *symbolic::sub(symbolic::symbol("N"), symbolic::integer(1))));
 }
 
-TEST(AssumptionsAnalysisTest, Iteration_Rectangle_1D_And) {
+TEST(AssumptionsAnalysisTest, For_1D_And) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -220,7 +220,7 @@ TEST(AssumptionsAnalysisTest, Iteration_Rectangle_1D_And) {
                               *symbolic::min(symbolic::symbol("N"), symbolic::symbol("M"))));
 }
 
-TEST(AssumptionsAnalysisTest, Iteration_Triangle_2D) {
+TEST(AssumptionsAnalysisTest, For_2D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -268,4 +268,93 @@ TEST(AssumptionsAnalysisTest, Iteration_Triangle_2D) {
                               *symbolic::add(indvar, symbolic::integer(1))));
     EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("j")).upper_bound(),
                               *symbolic::sub(symbolic::symbol("N"), symbolic::integer(1))));
+}
+
+TEST(AssumptionsAnalysisTest, IfElse_Lt) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar desc_unsigned(types::PrimitiveType::UInt64);
+    types::Scalar desc_signed(types::PrimitiveType::Int64);
+    builder.add_container("N", desc_unsigned, true);
+    builder.add_container("i", desc_signed);
+
+    // Define loop
+    auto& if_else = builder.add_if_else(root);
+    auto& scope1 =
+        builder.add_case(if_else, symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")));
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    auto& assumptions = analysis.get(scope1);
+
+    // Check
+    EXPECT_TRUE(
+        symbolic::eq(assumptions.at(symbolic::symbol("i")).lower_bound(), symbolic::infty(-1)));
+    EXPECT_TRUE(
+        symbolic::eq(assumptions.at(symbolic::symbol("i")).upper_bound(), symbolic::symbol("N")));
+}
+
+TEST(AssumptionsAnalysisTest, IfElse_Eq) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar desc_unsigned(types::PrimitiveType::UInt64);
+    types::Scalar desc_signed(types::PrimitiveType::Int64);
+    builder.add_container("N", desc_unsigned, true);
+    builder.add_container("i", desc_signed);
+
+    // Define loop
+    auto& if_else = builder.add_if_else(root);
+    auto& scope1 =
+        builder.add_case(if_else, symbolic::Eq(symbolic::symbol("i"), symbolic::symbol("N")));
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    auto& assumptions = analysis.get(scope1);
+
+    // Check
+    EXPECT_TRUE(
+        symbolic::eq(assumptions.at(symbolic::symbol("i")).lower_bound(), symbolic::symbol("N")));
+    EXPECT_TRUE(
+        symbolic::eq(assumptions.at(symbolic::symbol("i")).upper_bound(), symbolic::symbol("N")));
+}
+
+TEST(AssumptionsAnalysisTest, IfElse_And) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar desc_unsigned(types::PrimitiveType::UInt64);
+    types::Scalar desc_signed(types::PrimitiveType::Int64);
+    builder.add_container("N", desc_unsigned, true);
+    builder.add_container("M", desc_unsigned, true);
+    builder.add_container("i", desc_signed);
+
+    // Define loop
+    auto& if_else = builder.add_if_else(root);
+    auto& scope1 = builder.add_case(
+        if_else, symbolic::And(symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
+                               symbolic::Gt(symbolic::symbol("i"), symbolic::symbol("M"))));
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    auto& assumptions = analysis.get(scope1);
+
+    // Check
+    EXPECT_TRUE(
+        symbolic::eq(assumptions.at(symbolic::symbol("i")).lower_bound(), symbolic::symbol("M")));
+    EXPECT_TRUE(
+        symbolic::eq(assumptions.at(symbolic::symbol("i")).upper_bound(), symbolic::symbol("N")));
 }

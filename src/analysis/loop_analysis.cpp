@@ -63,7 +63,7 @@ const std::unordered_set<structured_control_flow::ControlFlowNode*> LoopAnalysis
     return this->loops_;
 }
 
-bool LoopAnalysis::is_monotonic(const structured_control_flow::StructuredLoop* loop) const {
+bool LoopAnalysis::is_monotonic(structured_control_flow::StructuredLoop* loop) const {
     AnalysisManager manager(this->sdfg_);
     auto& assums_analysis = manager.get<AssumptionsAnalysis>();
     auto assums = assums_analysis.get(*loop);
@@ -71,7 +71,7 @@ bool LoopAnalysis::is_monotonic(const structured_control_flow::StructuredLoop* l
     return symbolic::is_monotonic(loop->update(), loop->indvar(), assums);
 }
 
-bool LoopAnalysis::is_contiguous(const structured_control_flow::StructuredLoop* loop) const {
+bool LoopAnalysis::is_contiguous(structured_control_flow::StructuredLoop* loop) const {
     AnalysisManager manager(this->sdfg_);
     auto& assums_analysis = manager.get<AssumptionsAnalysis>();
     auto assums = assums_analysis.get(*loop);

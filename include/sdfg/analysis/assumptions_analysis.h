@@ -13,22 +13,28 @@ namespace analysis {
 
 class AssumptionsAnalysis : public Analysis {
    private:
-    std::unordered_map<const structured_control_flow::ControlFlowNode*, symbolic::Assumptions>
+    std::unordered_map<structured_control_flow::ControlFlowNode*, symbolic::Assumptions>
         assumptions_;
 
-    void traverse(const structured_control_flow::Sequence& root);
+    void traverse(structured_control_flow::Sequence& root,
+                  analysis::AnalysisManager& analysis_manager);
 
-    void visit_block(const structured_control_flow::Block* block);
+    void visit_block(structured_control_flow::Block* block,
+                     analysis::AnalysisManager& analysis_manager);
 
-    void visit_sequence(const structured_control_flow::Sequence* sequence);
+    void visit_sequence(structured_control_flow::Sequence* sequence,
+                        analysis::AnalysisManager& analysis_manager);
 
-    void visit_if_else(const structured_control_flow::IfElse* if_else);
+    void visit_if_else(structured_control_flow::IfElse* if_else,
+                       analysis::AnalysisManager& analysis_manager);
 
-    void visit_while(const structured_control_flow::While* while_loop);
+    void visit_while(structured_control_flow::While* while_loop,
+                     analysis::AnalysisManager& analysis_manager);
 
-    void visit_for(const structured_control_flow::For* for_loop);
+    void visit_for(structured_control_flow::For* for_loop,
+                   analysis::AnalysisManager& analysis_manager);
 
-    void visit_map(const structured_control_flow::Map* map);
+    void visit_map(structured_control_flow::Map* map, analysis::AnalysisManager& analysis_manager);
 
    protected:
     void run(analysis::AnalysisManager& analysis_manager) override;
@@ -36,7 +42,7 @@ class AssumptionsAnalysis : public Analysis {
    public:
     AssumptionsAnalysis(StructuredSDFG& sdfg);
 
-    const symbolic::Assumptions get(const structured_control_flow::ControlFlowNode& node);
+    const symbolic::Assumptions get(structured_control_flow::ControlFlowNode& node);
 };
 
 }  // namespace analysis

@@ -32,9 +32,9 @@ class LoopAnalysis : public Analysis {
 
     const std::vector<structured_control_flow::ControlFlowNode*> outermost_loops() const;
 
-    bool is_monotonic(const structured_control_flow::StructuredLoop* loop) const;
+    bool is_monotonic(structured_control_flow::StructuredLoop* loop) const;
 
-    bool is_contiguous(const structured_control_flow::StructuredLoop* loop) const;
+    bool is_contiguous(structured_control_flow::StructuredLoop* loop) const;
 };
 
 }  // namespace analysis
