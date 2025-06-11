@@ -9,9 +9,9 @@ FetchContent_MakeAvailable(googletest)
 set(TEST_FILES
     #analysis/assumptions_analysis_test.cpp
     #analysis/memlet_analysis_test.cpp
-    #analysis/happens_before_analysis_test.cpp
+    analysis/happens_before_analysis_test.cpp
     #analysis/loop_analysis_test.cpp
-    #analysis/users_test.cpp
+    analysis/users_test.cpp
     builder/function_builder_test.cpp
     builder/sdfg_builder_test.cpp
     builder/structured_sdfg_builder_test.cpp
