@@ -7,6 +7,8 @@
 #include "sdfg/codegen/instrumentation/instrumentation_strategy.h"
 #include "sdfg/codegen/utils.h"
 #include "sdfg/structured_sdfg.h"
+#include "sdfg/codegen/instrumentation/capture_var_plan.h"
+#include "sdfg/types/type.h"
 
 namespace sdfg {
 namespace codegen {
@@ -40,9 +42,18 @@ class CodeGenerator {
     /// @brief Main stream
     PrettyPrinter main_stream_;
 
+    /// @brief Emit instrumenetation code to capture runtime contents of inputs and outputs
+    bool capture_args_results_;
+
+    std::tuple<int, types::PrimitiveType> analyze_type_rec(symbolic::Expression* currDim, int maxDim, int dimIdx, const types::IType& type, int argIdx);
+
+    std::unique_ptr<std::vector<CaptureVarPlan>> create_capture_plans();
+
+    void add_capture_plan(const std::string& name, int argIdx, bool isExternal, std::vector<CaptureVarPlan>& plan);
+
    public:
-    CodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy)
-        : sdfg_(sdfg), instrumentation_strategy_(instrumentation_strategy) {};
+    CodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy, bool capture_args_results = false)
+        : sdfg_(sdfg), instrumentation_strategy_(instrumentation_strategy), capture_args_results_(capture_args_results) {};
 
     virtual ~CodeGenerator() = default;
 

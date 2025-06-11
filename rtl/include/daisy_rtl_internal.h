@@ -1,5 +1,4 @@
-#ifndef __DAISY_RTL_INTERNAL_
-#define __DAISY_RTL_INTERNAL_
+#pragma once
 
 #include <string>
 #include <vector>
@@ -34,4 +33,3 @@ class Instrumentation_PAPI {
                                                const char* features_file);
 };
 
-#endif  // __DAISY_RTL_INTERNAL_
