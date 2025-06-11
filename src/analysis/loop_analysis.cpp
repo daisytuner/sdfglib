@@ -76,7 +76,7 @@ bool LoopAnalysis::is_contiguous(const structured_control_flow::StructuredLoop* 
     auto& assums_analysis = manager.get<AssumptionsAnalysis>();
     auto assums = assums_analysis.get(*loop);
 
-    return symbolic::is_contiguous(loop->condition(), loop->indvar(), assums);
+    return symbolic::is_contiguous(loop->update(), loop->indvar(), assums);
 }
 
 const std::unordered_map<structured_control_flow::ControlFlowNode*,

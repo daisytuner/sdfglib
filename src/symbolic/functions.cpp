@@ -62,10 +62,10 @@ bool is_contiguous(const Expression& expr, const Symbol& sym, const Assumptions&
     auto mul_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(mul);
     auto offset_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(offset);
     if (mul_int->as_int() == 1 && offset_int->as_int() == 1) {
-        return false;
+        return true;
     }
 
-    return true;
+    return false;
 }
 
 }  // namespace symbolic
