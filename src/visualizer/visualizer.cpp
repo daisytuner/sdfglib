@@ -488,34 +488,32 @@ void Visualizer::visualizeForBounds(symbolic::Symbol const& indvar,
     }
 }
 
-void Visualizer::visualizeSubset(Function const& function, types::IType const& type,
-                                 data_flow::Subset const& sub) {
-    if (sub.empty()) return;
-    if (dynamic_cast<const types::Scalar*>(&type)) {
+/// @brief If known, use the type to better visualize structures. Then track the type as far as it goes.
+void Visualizer::visualizeSubset(Function const& function, data_flow::Subset const& sub, types::IType const* type, int subIdx) {
+    if (static_cast<int>(sub.size()) <= subIdx) {
         return;
-    } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
-        this->stream_ << "[" << this->expression(sub.at(0)->__str__()) << "]";
-        if (sub.size() > 1) {
-            data_flow::Subset element_subset(sub.begin() + 1, sub.end());
-            types::IType const& element_type = array_type->element_type();
-            this->visualizeSubset(function, element_type, element_subset);
-        }
-    } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
-        this->stream_ << "[" << this->expression(sub.at(0)->__str__()) << "]";
-        data_flow::Subset element_subset(sub.begin() + 1, sub.end());
-        types::IType const& pointee_type = pointer_type->pointee_type();
-        this->visualizeSubset(function, pointee_type, element_subset);
-    } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
+    }
+    if (auto structure_type = dynamic_cast<const types::Structure*>(type)) {
         types::StructureDefinition const& definition = function.structure(structure_type->name());
-        this->stream_ << ".member_" << this->expression(sub.at(0)->__str__());
-        if (sub.size() > 1) {
-            auto member = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(sub.at(0));
-            types::IType const& member_type = definition.member_type(member);
-            data_flow::Subset element_subset(sub.begin() + 1, sub.end());
-            this->visualizeSubset(function, member_type, element_subset);
-        }
+        this->stream_ << ".member_" << this->expression(sub.at(subIdx)->__str__());
+        auto member = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(sub.at(0));
+        types::IType const& member_type = definition.member_type(member);
+        this->visualizeSubset(function, sub, &member_type, subIdx+1);
+    } else if (auto array_type = dynamic_cast<const types::Array*>(type)) {
+        this->stream_ << "[" << this->expression(sub.at(subIdx)->__str__()) << "]";
+        data_flow::Subset element_subset(sub.begin() + 1, sub.end());
+        types::IType const& element_type = array_type->element_type();
+        this->visualizeSubset(function, sub, &element_type,  subIdx+1);
+    } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(type)) {
+        this->stream_ << "[" << this->expression(sub.at(subIdx)->__str__()) << "]";
+        types::IType const& pointee_type = pointer_type->pointee_type();
+        this->visualizeSubset(function, sub, &pointee_type,  subIdx+1);
     } else {
-        throw InvalidSDFGException("visualizeSubset: Unsupported type");
+        if (type != nullptr) {
+            this->stream_ << "(rogue)";
+        }
+        this->stream_ << "[" << this->expression(sub.at(subIdx)->__str__()) << "]";
+        visualizeSubset(function, sub, nullptr, subIdx+1);
     }
 }
 

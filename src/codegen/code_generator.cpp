@@ -68,7 +68,6 @@ std::unique_ptr<std::vector<CaptureVarPlan>> CodeGenerator::create_capture_plans
     analysis::AnalysisManager analysis_manager(sdfg_);
     const auto& args = sdfg_.arguments();
     auto& exts = sdfg_.externals();
-    const auto& users = analysis_manager.get<analysis::Users>();
 
     auto plan = std::make_unique<std::vector<CaptureVarPlan>>();
     
