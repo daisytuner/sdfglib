@@ -4,7 +4,6 @@
 
 #include "sdfg/data_flow/code_node.h"
 #include "sdfg/graph/graph.h"
-#include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
 
