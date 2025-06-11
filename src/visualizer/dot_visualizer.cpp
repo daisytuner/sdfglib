@@ -41,53 +41,63 @@ void DotVisualizer::visualizeBlock(StructuredSDFG& sdfg, structured_control_flow
     this->last_comp_name_.clear();
     std::list<data_flow::DataFlowNode*> nodes = block.dataflow().topological_sort();
     for (data_flow::DataFlowNode* node : nodes) {
+        auto nodeId = escapeDotId(node->element_id(), "n_");
+        if (this->last_comp_name_.empty()) this->last_comp_name_ = nodeId;
         if (const data_flow::Tasklet* tasklet = dynamic_cast<data_flow::Tasklet*>(node)) {
-            auto taskletId = escapeDotId(tasklet->element_id(), "tasklet_");
-            this->stream_ << taskletId << " [shape=octagon,label=\""
+            
+            this->stream_ << nodeId << " [shape=octagon,label=\""
                           << tasklet->output().first << " = ";
             this->visualizeTasklet(*tasklet);
             this->stream_ << "\"];" << std::endl;
-            for (data_flow::Memlet& iedge : block.dataflow().in_edges(*tasklet)) {
-                data_flow::AccessNode const& src =
-                    dynamic_cast<data_flow::AccessNode const&>(iedge.src());
-                this->stream_ << escapeDotId(src.element_id(), "n_") << " -> " << taskletId
-                              << " [label=\"   " << iedge.dst_conn() << " = " << src.data();
-                if (!symbolic::is_nv(symbolic::symbol(src.data()))) {
-                    types::IType const& type = sdfg.type(src.data());
-                    this->visualizeSubset(sdfg, type, iedge.subset());
-                }
-                this->stream_ << "   \"];" << std::endl;
-            }
-            for (data_flow::Memlet& oedge : block.dataflow().out_edges(*tasklet)) {
-                data_flow::AccessNode const& dst =
-                    dynamic_cast<data_flow::AccessNode const&>(oedge.dst());
-                types::IType const& type = sdfg.type(dst.data());
-                this->stream_ << taskletId << " -> " << escapeDotId(dst.element_id(), "n_")
-                              << " [label=\"   " << dst.data();
-                this->visualizeSubset(sdfg, type, oedge.subset());
-                this->stream_ << " = " << oedge.src_conn() << "   \"];" << std::endl;
-            }
-            if (this->last_comp_name_.empty()) this->last_comp_name_ = taskletId;
-        } else if (const data_flow::AccessNode* access_node =
-                       dynamic_cast<data_flow::AccessNode*>(node)) {
-            bool source = false, sink = false;
-            for (data_flow::Memlet& edge : block.dataflow().out_edges(*access_node)) {
-                if ((source = (edge.src_conn() == "void"))) break;
-            }
-            for (data_flow::Memlet& edge : block.dataflow().in_edges(*access_node)) {
-                if ((sink = (edge.dst_conn() == "void"))) break;
-            }
-            if (!source && !sink) continue;
-            this->stream_ << escapeDotId(access_node->element_id(), "n_") << " [";
+        } else if (const data_flow::AccessNode* access_node = dynamic_cast<data_flow::AccessNode*>(node)) {
+            this->stream_ << nodeId << " [";
             if (!sdfg.is_internal(access_node->data())) this->stream_ << "penwidth=3.0,";
             if (sdfg.is_transient(access_node->data())) this->stream_ << "style=\"dashed,filled\",";
             this->stream_ << "label=\"" << access_node->data() << "\"];" << std::endl;
-        } else if (const data_flow::LibraryNode* libnode =
-                       dynamic_cast<data_flow::LibraryNode*>(node)) {
-            auto id = escapeDotId(libnode->element_id(), "lib_");
-            this->stream_ << id << " [shape=doubleoctagon,label=\""
-                          << libnode->toStr() << "\"];" << std::endl;
-            if (this->last_comp_name_.empty()) this->last_comp_name_ = id;
+        } else if (const data_flow::LibraryNode* libnode = dynamic_cast<data_flow::LibraryNode*>(node)) {
+            this->stream_ << nodeId << " [shape=doubleoctagon,label=\""
+                << libnode->toStr() << "\"];" << std::endl;
+            this->stream_ << "\"];" << std::endl;
+        }
+        for (data_flow::Memlet& iedge : block.dataflow().in_edges(*node)) {
+            auto& src = iedge.src();
+
+            this->stream_ << escapeDotId(src.element_id(), "n_") << " -> " << nodeId
+                            << " [label=\"   ";
+            auto& dst_conn = iedge.dst_conn();
+            bool dstIsVoid = dst_conn == "void";
+            bool dstIsRef = dst_conn == "refs";
+            auto& src_conn = iedge.src_conn();
+            bool srcIsVoid = src_conn == "void";
+            bool srcIsRef = src_conn == "refs";
+
+            if (dstIsVoid || dstIsRef) {
+                auto& dstVar = dynamic_cast<data_flow::AccessNode const&>(iedge.dst()).data();
+                this->stream_ << dstVar;
+                if (dstIsVoid) {
+                    types::IType const* dstTypePtr = sdfg.exists(dstVar)? &sdfg.type(dstVar) : nullptr;
+                    this->visualizeSubset(sdfg, iedge.subset(), dstTypePtr);
+                }
+            } else {
+                this->stream_ << dst_conn;
+            }
+            
+            this->stream_ << " = ";
+
+            if (srcIsVoid) {
+                auto& srcVar = dynamic_cast<data_flow::AccessNode const&>(src).data();
+                if (srcIsRef || dstIsRef) {
+                    this->stream_ << "&";
+                }
+                this->stream_ << srcVar;
+                if (srcIsVoid) {
+                    types::IType const* srcTypePtr = sdfg.exists(srcVar)? &sdfg.type(srcVar) : nullptr;
+                    this->visualizeSubset(sdfg, iedge.subset(), srcTypePtr);
+                }
+            } else {
+                this->stream_ << src_conn;
+            }
+            this->stream_ << "   \"];" << std::endl;
         }
     }
     this->stream_.setIndent(this->stream_.indent() - 4);
