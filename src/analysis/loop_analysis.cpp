@@ -2,7 +2,7 @@
 
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
-#include "sdfg/symbolic/functions.h"
+#include "sdfg/symbolic/series.h"
 
 namespace sdfg {
 namespace analysis {

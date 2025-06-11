@@ -8,8 +8,8 @@
 #include "sdfg/symbolic/assumptions.h"
 #include "sdfg/symbolic/conjunctive_normal_form.h"
 #include "sdfg/symbolic/extreme_values.h"
-#include "sdfg/symbolic/functions.h"
 #include "sdfg/symbolic/polynomials.h"
+#include "sdfg/symbolic/series.h"
 
 namespace sdfg {
 namespace analysis {

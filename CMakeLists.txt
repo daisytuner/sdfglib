@@ -118,7 +118,7 @@ set(SOURCE_FILES
     src/symbolic/assumptions.cpp
     src/symbolic/conjunctive_normal_form.cpp
     src/symbolic/extreme_values.cpp
-    src/symbolic/functions.cpp
+    src/symbolic/series.cpp
     src/symbolic/polynomials.cpp
     src/symbolic/sets.cpp
     src/symbolic/symbolic.cpp

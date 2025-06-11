@@ -1,4 +1,4 @@
-#include "sdfg/symbolic/functions.h"
+#include "sdfg/symbolic/series.h"
 
 #include "sdfg/symbolic/extreme_values.h"
 #include "sdfg/symbolic/polynomials.h"
