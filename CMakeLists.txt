@@ -178,8 +178,12 @@ install(TARGETS sdfglib
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
-install(FILES
-    include/export/daisyrtl.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+install(DIRECTORY
+    ${CMAKE_SOURCE_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+add_custom_command(TARGET sdfglib PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/include/ $<TARGET_FILE_DIR:sdfglib>/include/
 )
 
 add_subdirectory(tests)
