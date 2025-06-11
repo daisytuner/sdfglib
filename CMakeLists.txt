@@ -185,5 +185,8 @@ install(DIRECTORY
 add_custom_command(TARGET sdfglib PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/include/ $<TARGET_FILE_DIR:sdfglib>/include/
 )
+add_custom_command(TARGET sdfglib PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/3rdParty/symengine/symengine/ $<TARGET_FILE_DIR:sdfglib>/include/symengine/
+)
 
 add_subdirectory(tests)
