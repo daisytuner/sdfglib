@@ -43,7 +43,7 @@ set(TEST_FILES
     passes/structured_control_flow/block_fusion_test.cpp
     #passes/structured_control_flow/for2map_test.cpp
     passes/symbolic/symbol_promotion_test.cpp
-    #passes/symbolic/symbol_propagation_test.cpp
+    passes/symbolic/symbol_propagation_test.cpp
     replace/symbol_replace_test.cpp
     sdfg_test.cpp
     serializer/json_serializer_test.cpp
@@ -56,7 +56,6 @@ set(TEST_FILES
     #transformations/loop_interchange_test.cpp
     #transformations/loop_slicing_test.cpp
     #transformations/loop_tiling_test.cpp
-    #transformations/loop_unroll_test.cpp
     #transformations/out_local_storage_test.cpp
     types/array_test.cpp
     types/function_test.cpp
