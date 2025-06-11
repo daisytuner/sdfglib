@@ -35,14 +35,14 @@ set(TEST_FILES
     element_test.cpp
     graph/graph_algorithms_test.cpp
     helpers/helpers_test.cpp
-    #passes/dataflow/dead_data_elimination_test.cpp
+    passes/dataflow/dead_data_elimination_test.cpp
     #passes/dataflow/redundant_array_elimination_test.cpp
     #passes/dataflow/trivial_array_elimination_test.cpp
     #passes/dataflow/view_propagation_test.cpp
     #passes/pipeline_test.cpp
-    #passes/structured_control_flow/block_fusion_test.cpp
+    passes/structured_control_flow/block_fusion_test.cpp
     #passes/structured_control_flow/for2map_test.cpp
-    #passes/symbolic/symbol_promotion_test.cpp
+    passes/symbolic/symbol_promotion_test.cpp
     #passes/symbolic/symbol_propagation_test.cpp
     replace/symbol_replace_test.cpp
     sdfg_test.cpp

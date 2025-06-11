@@ -88,23 +88,23 @@ set(SOURCE_FILES
     src/passes/pass.cpp
     src/passes/pipeline.cpp
     src/passes/canonicalize_cfg.cpp
-    #src/passes/dataflow/dead_data_elimination.cpp
+    src/passes/dataflow/dead_data_elimination.cpp
     #src/passes/dataflow/dead_reference_elimination.cpp
     #src/passes/dataflow/memlet_propagation.cpp
     #src/passes/dataflow/redundant_array_elimination.cpp
     #src/passes/dataflow/trivial_array_elimination.cpp
     #src/passes/dataflow/view_propagation.cpp
     #src/passes/symbolic/symbol_propagation.cpp
-    #src/passes/symbolic/symbol_promotion.cpp
+    src/passes/symbolic/symbol_promotion.cpp
     #src/passes/symbolic/condition_propagation.cpp
-    #src/passes/structured_control_flow/block_fusion.cpp
+    src/passes/structured_control_flow/block_fusion.cpp
     #src/passes/structured_control_flow/common_assignment_elimination.cpp
-    #src/passes/structured_control_flow/dead_cfg_elimination.cpp
+    src/passes/structured_control_flow/dead_cfg_elimination.cpp
     #src/passes/structured_control_flow/for2map.cpp
     #src/passes/structured_control_flow/loop_bound_normalization.cpp
     #src/passes/structured_control_flow/loop_dependent_symbol_elimination.cpp
-    #src/passes/structured_control_flow/sequence_fusion.cpp
-    #src/passes/structured_control_flow/while_to_for_conversion.cpp
+    src/passes/structured_control_flow/sequence_fusion.cpp
+    src/passes/structured_control_flow/while_to_for_conversion.cpp
     src/serializer/json_serializer.cpp
     src/structured_control_flow/block.cpp
     src/structured_control_flow/control_flow_node.cpp
