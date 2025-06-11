@@ -89,7 +89,7 @@ TEST(LoopInterchangeTest, Map_2D_Tiled) {
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
-    transformations::LoopInterchange transformation(body1, loop1_tile, loop2);
+    transformations::LoopInterchange transformation(loop1_tile, loop2);
     EXPECT_TRUE(transformation.can_be_applied(builder_opt, analysis_manager));
     transformation.apply(builder_opt, analysis_manager);
 
@@ -202,7 +202,7 @@ TEST(LoopInterchangeTest, Reduction_2D_Tiled) {
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
-    transformations::LoopInterchange transformation(body1, loop1_tile, loop2);
+    transformations::LoopInterchange transformation(loop1_tile, loop2);
     EXPECT_TRUE(transformation.can_be_applied(builder_opt, analysis_manager));
     transformation.apply(builder_opt, analysis_manager);
 

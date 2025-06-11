@@ -1,18 +1,18 @@
 #include "sdfg/transformations/loop_distribute.h"
 
 #include "sdfg/analysis/data_parallelism_analysis.h"
+#include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
 
 namespace sdfg {
 namespace transformations {
 
-LoopDistribute::LoopDistribute(structured_control_flow::Sequence& parent,
-                               structured_control_flow::StructuredLoop& loop)
-    : parent_(parent), loop_(loop) {
+LoopDistribute::LoopDistribute(structured_control_flow::StructuredLoop& loop)
+    : loop_(loop) {
 
       };
 
-std::string LoopDistribute::name() { return "LoopDistribute"; };
+std::string LoopDistribute::name() const { return "LoopDistribute"; };
 
 bool LoopDistribute::can_be_applied(builder::StructuredSDFGBuilder& builder,
                                     analysis::AnalysisManager& analysis_manager) {
@@ -192,9 +192,13 @@ void LoopDistribute::apply(builder::StructuredSDFGBuilder& builder,
         }
     }
 
+    auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+    auto parent =
+        static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&loop_));
+
     // Copy loop
     auto& new_loop =
-        builder.add_for_before(parent_, this->loop_, indvar, condition, init, update).first;
+        builder.add_for_before(*parent, this->loop_, indvar, condition, init, update).first;
 
     auto& new_body = new_loop.root();
     deepcopy::StructuredSDFGDeepCopy copies(builder, new_body, block);
@@ -209,6 +213,27 @@ void LoopDistribute::apply(builder::StructuredSDFGBuilder& builder,
     builder.remove_child(body, block);
 
     analysis_manager.invalidate_all();
+};
+
+void LoopDistribute::to_json(nlohmann::json& j) const {
+    std::cout << "Serializing LoopTiling transformation to JSON" << std::endl;
+    std::cout << "Writing transformation type: " << this->name() << std::endl;
+    j["transformation_type"] = this->name();
+    std::cout << "Writing loop element ID " << std::endl;
+    j["loop_element_id"] = loop_.element_id();
+};
+
+LoopDistribute LoopDistribute::from_json(builder::StructuredSDFGBuilder& builder,
+                                         const nlohmann::json& desc) {
+    auto loop_id = desc["loop_element_id"].get<size_t>();
+    auto element = builder.find_element_by_id(loop_id);
+    if (!element) {
+        throw InvalidTransformationDescriptionException("Element with ID " +
+                                                        std::to_string(loop_id) + " not found.");
+    }
+    auto loop = dynamic_cast<structured_control_flow::For*>(element);
+
+    return LoopDistribute(*loop);
 };
 
 }  // namespace transformations
