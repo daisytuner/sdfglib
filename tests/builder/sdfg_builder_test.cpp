@@ -149,7 +149,7 @@ TEST(SDFGBuilderTest, addEdgeWithAssignments) {
     auto& state_1 = builder.add_state();
     auto& state_2 = builder.add_state();
     auto& edge = builder.add_edge(state_1, state_2,
-                                  symbolic::Assignments{{iter_sym, SymEngine::integer(0)}});
+                                  control_flow::Assignments{{iter_sym, SymEngine::integer(0)}});
 
     EXPECT_EQ(&edge.src(), &state_1);
     EXPECT_EQ(&edge.dst(), &state_2);

@@ -66,7 +66,7 @@ const std::vector<data_flow::Subset> User::subsets() const {
     }
 
     // Use of symbol
-    return {{sdfg::symbolic::integer(0)}};
+    return {{}};
 };
 
 ForUser::ForUser(graph::Vertex vertex, const std::string& container, Element* element, Use use,
@@ -162,10 +162,9 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
             if (tasklet->is_conditional()) {
                 auto& condition = tasklet->condition();
                 for (auto& atom : symbolic::atoms(condition)) {
-                    auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
                     auto v = boost::add_vertex(this->graph_);
                     this->add_user(
-                        std::make_unique<User>(v, sym->get_name(), tasklet, &dataflow, Use::READ));
+                        std::make_unique<User>(v, atom->get_name(), tasklet, &dataflow, Use::READ));
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
                         boost::add_edge(last, v, this->graph_);
                     } else {
@@ -180,15 +179,14 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
             std::unordered_set<std::string> used;
             for (auto dim : oedge.subset()) {
                 for (auto atom : symbolic::atoms(dim)) {
-                    auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
-                    if (used.find(sym->get_name()) != used.end()) {
+                    if (used.find(atom->get_name()) != used.end()) {
                         continue;
                     }
-                    used.insert(sym->get_name());
+                    used.insert(atom->get_name());
 
                     auto v = boost::add_vertex(this->graph_);
                     this->add_user(
-                        std::make_unique<User>(v, sym->get_name(), &oedge, &dataflow, Use::READ));
+                        std::make_unique<User>(v, atom->get_name(), &oedge, &dataflow, Use::READ));
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
                         boost::add_edge(last, v, this->graph_);
                     } else {
@@ -245,18 +243,17 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
             std::unordered_set<std::string> used;
             for (auto& entry : child.second.assignments()) {
                 for (auto atom : symbolic::atoms(entry.second)) {
-                    auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
-                    if (symbolic::is_pointer(sym)) {
+                    if (symbolic::is_pointer(atom)) {
                         continue;
                     }
-                    if (used.find(sym->get_name()) != used.end()) {
+                    if (used.find(atom->get_name()) != used.end()) {
                         continue;
                     }
-                    used.insert(sym->get_name());
+                    used.insert(atom->get_name());
 
                     auto v = boost::add_vertex(this->graph_);
                     this->add_user(
-                        std::make_unique<User>(v, sym->get_name(), &child.second, Use::READ));
+                        std::make_unique<User>(v, atom->get_name(), &child.second, Use::READ));
 
                     boost::add_edge(current, v, this->graph_);
                     current = v;
@@ -296,15 +293,15 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
         for (size_t i = 0; i < if_else_stmt->size(); i++) {
             auto& condition = if_else_stmt->at(i).second;
             for (auto atom : symbolic::atoms(condition)) {
-                auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
-                if (used.find(sym->get_name()) != used.end()) {
+                if (used.find(atom->get_name()) != used.end()) {
                     continue;
                 }
-                used.insert(sym->get_name());
+                used.insert(atom->get_name());
 
                 auto v = boost::add_vertex(this->graph_);
 
-                this->add_user(std::make_unique<User>(v, sym->get_name(), if_else_stmt, Use::READ));
+                this->add_user(
+                    std::make_unique<User>(v, atom->get_name(), if_else_stmt, Use::READ));
 
                 boost::add_edge(last, v, this->graph_);
                 last = v;
@@ -369,9 +366,8 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
 
         // Init
         for (auto atom : symbolic::atoms(for_stmt->init())) {
-            auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
             auto v = boost::add_vertex(this->graph_);
-            this->add_user(std::make_unique<ForUser>(v, sym->get_name(), for_stmt, Use::READ, true,
+            this->add_user(std::make_unique<ForUser>(v, atom->get_name(), for_stmt, Use::READ, true,
                                                      false, false));
             boost::add_edge(last, v, this->graph_);
             last = v;
@@ -386,10 +382,9 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
 
         // Condition
         for (auto atom : symbolic::atoms(for_stmt->condition())) {
-            auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
             auto v = boost::add_vertex(this->graph_);
-            this->add_user(std::make_unique<ForUser>(v, sym->get_name(), for_stmt, Use::READ, false,
-                                                     true, false));
+            this->add_user(std::make_unique<ForUser>(v, atom->get_name(), for_stmt, Use::READ,
+                                                     false, true, false));
 
             boost::add_edge(last, v, this->graph_);
             boost::add_edge(v, t, this->graph_);
@@ -402,10 +397,9 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
         // Update
         auto end = subgraph.second;
         for (auto atom : symbolic::atoms(for_stmt->update())) {
-            auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
             auto v = boost::add_vertex(this->graph_);
-            this->add_user(std::make_unique<ForUser>(v, sym->get_name(), for_stmt, Use::READ, false,
-                                                     false, true));
+            this->add_user(std::make_unique<ForUser>(v, atom->get_name(), for_stmt, Use::READ,
+                                                     false, false, true));
             boost::add_edge(end, v, this->graph_);
             end = v;
         }
@@ -694,13 +688,6 @@ std::vector<User*> Users::moves(const std::string& container) const {
 
 /****** Domination Analysis ******/
 
-const std::unordered_map<User*, User*>& Users::dominator_tree() {
-    if (this->dom_tree_.empty()) {
-        this->init_dom_tree();
-    }
-    return this->dom_tree_;
-};
-
 bool Users::dominates(User& user1, User& user) {
     if (this->dom_tree_.empty()) {
         this->init_dom_tree();
@@ -713,13 +700,6 @@ bool Users::dominates(User& user1, User& user) {
         dominator = this->dom_tree_.at(dominator);
     }
     return false;
-};
-
-const std::unordered_map<User*, User*>& Users::post_dominator_tree() {
-    if (this->pdom_tree_.empty()) {
-        this->init_dom_tree();
-    }
-    return this->pdom_tree_;
 };
 
 bool Users::post_dominates(User& user1, User& user) {
@@ -736,10 +716,75 @@ bool Users::post_dominates(User& user1, User& user) {
     return false;
 };
 
-const std::unordered_set<User*> Users::all_uses_between(User& user1, User& user) {
+bool Users::is_dominated_by(User& user, Use use) {
+    auto dominator = this->dom_tree_.at(&user);
+    while (dominator != nullptr) {
+        if (dominator->use() != use) {
+            dominator = this->dom_tree_.at(dominator);
+            continue;
+        }
+        if (dominator->container() != user.container()) {
+            dominator = this->dom_tree_.at(dominator);
+            continue;
+        }
+
+        // Compare subsets
+        auto& subsets = user.subsets();
+
+        // Collect all relevant symbols
+        std::unordered_set<std::string> symbols;
+        for (auto& subset : subsets) {
+            for (auto& dim : subset) {
+                auto atoms = symbolic::atoms(dim);
+                for (auto& atom : atoms) {
+                    symbols.insert(atom->get_name());
+                }
+            }
+        }
+        // If symbols are not constant, we cannot compare the subsets
+        if (!this->is_constant(symbols, *dominator, user)) {
+            dominator = this->dom_tree_.at(dominator);
+            continue;
+        }
+
+        // Now find for every subset of user, if there is a subset of dominator that is the same
+        auto& subsets_dominator = dominator->subsets();
+        bool all_subsets_dominated = true;
+        for (auto& subset : subsets) {
+            bool subset_dominated = false;
+            for (auto& subset_dominator : subsets_dominator) {
+                if (subset.size() != subset_dominator.size()) {
+                    continue;
+                }
+                bool dominated = true;
+                for (size_t i = 0; i < subset.size(); i++) {
+                    if (!symbolic::eq(subset[i], subset_dominator[i])) {
+                        dominated = false;
+                        break;
+                    }
+                }
+                if (dominated) {
+                    subset_dominated = true;
+                    break;
+                }
+            }
+            if (!subset_dominated) {
+                all_subsets_dominated = false;
+                break;
+            }
+        }
+        if (all_subsets_dominated) {
+            return true;
+        }
+        dominator = this->dom_tree_.at(dominator);
+    }
+    return false;
+}
+
+const std::unordered_set<User*> Users::all_uses_between(User& user1, User& user2) {
     std::unordered_set<User*> uses;
     std::unordered_set<User*> visited;
-    std::list<User*> queue = {&user};
+    std::list<User*> queue = {&user2};
     while (!queue.empty()) {
         auto current = queue.front();
         queue.pop_front();
@@ -754,7 +799,7 @@ const std::unordered_set<User*> Users::all_uses_between(User& user1, User& user)
         }
         visited.insert(current);
 
-        if (current != &user1 && current != &user && current->use() != Use::NOP) {
+        if (current != &user1 && current != &user2 && current->use() != Use::NOP) {
             uses.insert(current);
         }
 
@@ -771,10 +816,10 @@ const std::unordered_set<User*> Users::all_uses_between(User& user1, User& user)
     return uses;
 };
 
-const std::unordered_set<User*> Users::all_uses_after(User& user1) {
+const std::unordered_set<User*> Users::all_uses_after(User& user) {
     std::unordered_set<User*> uses;
     std::unordered_set<User*> visited;
-    std::list<User*> queue = {&user1};
+    std::list<User*> queue = {&user};
     while (!queue.empty()) {
         auto current = queue.front();
         queue.pop_front();
@@ -783,7 +828,7 @@ const std::unordered_set<User*> Users::all_uses_after(User& user1) {
         }
         visited.insert(current);
 
-        if (current != &user1 && current->use() != Use::NOP) {
+        if (current != &user && current->use() != Use::NOP) {
             uses.insert(current);
         }
 
@@ -799,121 +844,17 @@ const std::unordered_set<User*> Users::all_uses_after(User& user1) {
     return uses;
 };
 
-const std::unordered_set<User*> Users::sources(const std::string& container) const {
-    auto source = this->source_;
-
-    std::unordered_set<User*> sources;
-    std::unordered_set<User*> visited;
-    std::list<User*> queue = {source};
-    while (!queue.empty()) {
-        auto current = queue.front();
-        queue.pop_front();
-        if (visited.find(current) != visited.end()) {
-            continue;
-        }
-        visited.insert(current);
-
-        if (current->container() == container && current->use() != Use::NOP) {
-            sources.insert(current);
-            continue;
-        }
-
-        // Extend search
-        auto [eb, ee] = boost::out_edges(current->vertex_, this->graph_);
-        auto edges = std::ranges::subrange(eb, ee);
-        for (auto edge : edges) {
-            auto v = boost::target(edge, this->graph_);
-            queue.push_back(this->users_.at(v).get());
+bool Users::is_constant(const std::unordered_set<std::string>& containers, User& user1,
+                        User& user2) {
+    for (auto& user : this->all_uses_between(user1, user2)) {
+        if (user->use() == Use::WRITE || user->use() == Use::MOVE) {
+            if (containers.find(user->container()) != containers.end()) {
+                return false;
+            }
         }
     }
-
-    return sources;
-};
-
-/****** Happens-Before Analysis ******/
-
-std::unordered_map<std::string, std::vector<data_flow::Subset>> Users::read_subsets() {
-    std::unordered_map<std::string, std::vector<data_flow::Subset>> readset;
-    for (auto& read : this->users_) {
-        if (read.second->use() != Use::READ) {
-            continue;
-        }
-
-        auto& data = read.second->container();
-        if (readset.find(data) == readset.end()) {
-            readset[data] = std::vector<data_flow::Subset>();
-        }
-        auto& subsets = read.second->subsets();
-        for (auto& subset : subsets) {
-            readset[data].push_back(subset);
-        }
-    }
-    return readset;
-};
-
-std::unordered_map<std::string, std::vector<data_flow::Subset>> Users::write_subsets() {
-    std::unordered_map<std::string, std::vector<data_flow::Subset>> writeset;
-    for (auto& write : this->users_) {
-        if (write.second->use() != Use::WRITE) {
-            continue;
-        }
-
-        auto& data = write.second->container();
-        if (writeset.find(data) == writeset.end()) {
-            writeset[data] = std::vector<data_flow::Subset>();
-        }
-        auto& subsets = write.second->subsets();
-        for (auto& subset : subsets) {
-            writeset[data].push_back(subset);
-        }
-    }
-    return writeset;
-};
-
-std::unordered_set<std::string> Users::locals(StructuredSDFG& sdfg,
-                                              structured_control_flow::ControlFlowNode& node) {
-    // Collect all node elements
-    Users local_users(sdfg, node);
-    analysis::AnalysisManager analysis_manager(sdfg_);
-    local_users.run(analysis_manager);
-    std::unordered_map<std::string, std::unordered_set<Element*>> elements;
-    for (auto& entry : local_users.users_) {
-        if (entry.second->use() == Use::NOP) {
-            continue;
-        }
-        if (!sdfg.is_transient(entry.second->container())) {
-            continue;
-        }
-
-        if (elements.find(entry.second->container()) == elements.end()) {
-            elements[entry.second->container()] = {};
-        }
-        elements[entry.second->container()].insert(entry.second->element());
-    }
-
-    // Determine locals
-    for (auto& entry : this->users_) {
-        if (entry.second->use() == Use::NOP) {
-            continue;
-        }
-
-        auto& container = entry.second->container();
-        auto element = entry.second->element();
-        if (elements.find(container) == elements.end()) {
-            continue;
-        }
-        // used outside of node
-        if (elements[container].find(element) == elements[container].end()) {
-            elements.erase(container);
-        }
-    }
-
-    std::unordered_set<std::string> locals;
-    for (auto& entry : elements) {
-        locals.insert(entry.first);
-    }
-    return locals;
-};
+    return true;
+}
 
 UsersView::UsersView(Users& users, structured_control_flow::ControlFlowNode& node) : users_(users) {
     auto& entry = users.entries_.at(&node);
@@ -921,6 +862,25 @@ UsersView::UsersView(Users& users, structured_control_flow::ControlFlowNode& nod
     this->entry_ = entry;
     this->exit_ = exit;
     this->sub_users_ = users.all_uses_between(*entry, *exit);
+
+    if (this->users_.dom_tree_.empty()) {
+        this->users_.init_dom_tree();
+    }
+    auto& dom_tree = this->users_.dom_tree_;
+
+    for (auto& user : this->sub_users_) {
+        this->sub_dom_tree_[user] = dom_tree[user];
+    }
+    this->sub_dom_tree_[this->entry_] = nullptr;
+
+    if (this->users_.pdom_tree_.empty()) {
+        this->users_.init_dom_tree();
+    }
+    auto& pdom_tree = this->users_.pdom_tree_;
+    for (auto& user : this->sub_users_) {
+        this->sub_pdom_tree_[user] = pdom_tree[user];
+    }
+    this->sub_pdom_tree_[this->exit_] = nullptr;
 };
 
 std::vector<User*> UsersView::uses() const {
@@ -1058,61 +1018,96 @@ std::vector<User*> UsersView::moves(const std::string& container) const {
     return us;
 };
 
-std::unordered_map<User*, User*> UsersView::dominator_tree() {
-    if (!this->sub_dom_tree_.empty()) {
-        return this->sub_dom_tree_;
-    }
-
-    auto dom_tree = this->users_.dominator_tree();
-    std::unordered_map<User*, User*> sub_dom_tree;
-    for (auto& entry : this->sub_users_) {
-        sub_dom_tree[entry] = dom_tree[entry];
-    }
-    sub_dom_tree[this->entry_] = nullptr;
-    return sub_dom_tree;
-};
-
 bool UsersView::dominates(User& user1, User& user) {
-    auto dom_tree = this->dominator_tree();
-    auto dominator = dom_tree[&user];
+    auto dominator = this->sub_dom_tree_[&user];
     while (dominator != nullptr) {
         if (dominator == &user1) {
             return true;
         }
-        dominator = dom_tree[dominator];
+        dominator = this->sub_dom_tree_[dominator];
     }
     return false;
-};
-
-std::unordered_map<User*, User*> UsersView::post_dominator_tree() {
-    if (!this->sub_pdom_tree_.empty()) {
-        return this->sub_pdom_tree_;
-    }
-
-    auto pdom_tree = this->users_.post_dominator_tree();
-    std::unordered_map<User*, User*> sub_pdom_tree;
-    for (auto& entry : this->sub_users_) {
-        sub_pdom_tree[entry] = pdom_tree[entry];
-    }
-    sub_pdom_tree[this->exit_] = nullptr;
-    return sub_pdom_tree;
 };
 
 bool UsersView::post_dominates(User& user1, User& user) {
-    auto pdom_tree = this->post_dominator_tree();
-    auto dominator = pdom_tree[&user];
+    auto dominator = this->sub_pdom_tree_[&user];
     while (dominator != nullptr) {
         if (dominator == &user1) {
             return true;
         }
-        dominator = pdom_tree[dominator];
+        dominator = this->sub_pdom_tree_[dominator];
     }
     return false;
 };
 
-std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user) {
+bool UsersView::is_dominated_by(User& user, Use use) {
+    auto dominator = this->sub_dom_tree_.at(&user);
+    while (dominator != nullptr) {
+        if (dominator->use() != use) {
+            dominator = this->sub_dom_tree_.at(dominator);
+            continue;
+        }
+        if (dominator->container() != user.container()) {
+            dominator = this->sub_dom_tree_.at(dominator);
+            continue;
+        }
+
+        // Compare subsets
+        auto& subsets = user.subsets();
+
+        // Collect all relevant symbols
+        std::unordered_set<std::string> symbols;
+        for (auto& subset : subsets) {
+            for (auto& dim : subset) {
+                auto atoms = symbolic::atoms(dim);
+                for (auto& atom : atoms) {
+                    symbols.insert(atom->get_name());
+                }
+            }
+        }
+        // If symbols are not constant, we cannot compare the subsets
+        if (!this->is_constant(symbols, *dominator, user)) {
+            dominator = this->sub_dom_tree_.at(dominator);
+            continue;
+        }
+
+        // Now find for every subset of user, if there is a subset of dominator that is the same
+        auto& subsets_dominator = dominator->subsets();
+        bool all_subsets_dominated = true;
+        for (auto& subset : subsets) {
+            bool subset_dominated = false;
+            for (auto& subset_dominator : subsets_dominator) {
+                if (subset.size() != subset_dominator.size()) {
+                    continue;
+                }
+                bool dominated = true;
+                for (size_t i = 0; i < subset.size(); i++) {
+                    if (!symbolic::eq(subset[i], subset_dominator[i])) {
+                        dominated = false;
+                        break;
+                    }
+                }
+                if (dominated) {
+                    subset_dominated = true;
+                    break;
+                }
+            }
+            if (!subset_dominated) {
+                all_subsets_dominated = false;
+                break;
+            }
+        }
+        if (all_subsets_dominated) {
+            return true;
+        }
+        dominator = this->sub_dom_tree_.at(dominator);
+    }
+    return false;
+}
+
+std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user2) {
     assert(this->sub_users_.find(&user1) != this->sub_users_.end());
-    assert(this->sub_users_.find(&user) != this->sub_users_.end());
+    assert(this->sub_users_.find(&user2) != this->sub_users_.end());
 
     std::unordered_set<User*> uses;
     std::unordered_set<User*> visited;
@@ -1125,7 +1120,7 @@ std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user) {
         }
         visited.insert(current);
 
-        if (current != &user1 && current != &user && current->use() != Use::NOP) {
+        if (current != &user1 && current != &user2 && current->use() != Use::NOP) {
             uses.insert(current);
         }
 
@@ -1134,7 +1129,7 @@ std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user) {
             continue;
         }
 
-        if (current == &user) {
+        if (current == &user2) {
             continue;
         }
 
@@ -1150,12 +1145,12 @@ std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user) {
     return uses;
 };
 
-std::unordered_set<User*> UsersView::all_uses_after(User& user1) {
-    assert(this->sub_users_.find(&user1) != this->sub_users_.end());
+std::unordered_set<User*> UsersView::all_uses_after(User& user) {
+    assert(this->sub_users_.find(&user) != this->sub_users_.end());
 
     std::unordered_set<User*> uses;
     std::unordered_set<User*> visited;
-    std::list<User*> queue = {&user1};
+    std::list<User*> queue = {&user};
     while (!queue.empty()) {
         auto current = queue.front();
         queue.pop_front();
@@ -1164,7 +1159,7 @@ std::unordered_set<User*> UsersView::all_uses_after(User& user1) {
         }
         visited.insert(current);
 
-        if (current != &user1 && current->use() != Use::NOP) {
+        if (current != &user && current->use() != Use::NOP) {
             uses.insert(current);
         }
 
@@ -1184,88 +1179,17 @@ std::unordered_set<User*> UsersView::all_uses_after(User& user1) {
     return uses;
 };
 
-std::unordered_map<std::string, std::vector<data_flow::Subset>> UsersView::read_subsets() {
-    std::unordered_map<std::string, std::vector<data_flow::Subset>> readset;
-    for (auto& read : this->sub_users_) {
-        if (read->use() != Use::READ) {
-            continue;
-        }
-
-        auto& data = read->container();
-        if (readset.find(data) == readset.end()) {
-            readset[data] = std::vector<data_flow::Subset>();
-        }
-        auto& subsets = read->subsets();
-        for (auto& subset : subsets) {
-            readset[data].push_back(subset);
+bool UsersView::is_constant(const std::unordered_set<std::string>& containers, User& user1,
+                            User& user2) {
+    for (auto& user : this->all_uses_between(user1, user2)) {
+        if (user->use() == Use::WRITE || user->use() == Use::MOVE) {
+            if (containers.find(user->container()) != containers.end()) {
+                return false;
+            }
         }
     }
-    return readset;
-};
-
-std::unordered_map<std::string, std::vector<data_flow::Subset>> UsersView::write_subsets() {
-    std::unordered_map<std::string, std::vector<data_flow::Subset>> writeset;
-    for (auto& write : this->sub_users_) {
-        if (write->use() != Use::WRITE) {
-            continue;
-        }
-
-        auto& data = write->container();
-        if (writeset.find(data) == writeset.end()) {
-            writeset[data] = std::vector<data_flow::Subset>();
-        }
-        auto& subsets = write->subsets();
-        for (auto& subset : subsets) {
-            writeset[data].push_back(subset);
-        }
-    }
-    return writeset;
-};
-
-std::unordered_set<std::string> UsersView::locals(StructuredSDFG& sdfg,
-                                                  structured_control_flow::ControlFlowNode& node) {
-    // Collect all node elements
-    Users local_users(sdfg, node);
-    analysis::AnalysisManager analysis_manager(users_.sdfg_);
-    local_users.run(analysis_manager);
-    std::unordered_map<std::string, std::unordered_set<Element*>> elements;
-    for (auto& entry : local_users.users_) {
-        if (entry.second->use() == Use::NOP) {
-            continue;
-        }
-        if (!sdfg.is_transient(entry.second->container())) {
-            continue;
-        }
-
-        if (elements.find(entry.second->container()) == elements.end()) {
-            elements[entry.second->container()] = {};
-        }
-        elements[entry.second->container()].insert(entry.second->element());
-    }
-
-    // Determine locals
-    for (auto& entry : this->sub_users_) {
-        if (entry->use() == Use::NOP) {
-            continue;
-        }
-
-        auto& container = entry->container();
-        auto element = entry->element();
-        if (elements.find(container) == elements.end()) {
-            continue;
-        }
-        // used outside of node
-        if (elements[container].find(element) == elements[container].end()) {
-            elements.erase(container);
-        }
-    }
-
-    std::unordered_set<std::string> locals;
-    for (auto& entry : elements) {
-        locals.insert(entry.first);
-    }
-    return locals;
-};
+    return true;
+}
 
 User* Users::get_user(const std::string& container, Element* element, Use use, bool is_init,
                       bool is_condition, bool is_update) {
@@ -1316,6 +1240,96 @@ void Users::add_user(std::unique_ptr<User> user) {
         .at(user_ptr->element())
         .insert({user_ptr->use(), user_ptr});
 }
+
+std::unordered_set<std::string> Users::locals(StructuredSDFG& sdfg,
+                                              structured_control_flow::ControlFlowNode& node) {
+    // Collect all node elements
+    Users local_users(sdfg, node);
+    analysis::AnalysisManager analysis_manager(sdfg_);
+    local_users.run(analysis_manager);
+    std::unordered_map<std::string, std::unordered_set<Element*>> elements;
+    for (auto& entry : local_users.users_) {
+        if (entry.second->use() == Use::NOP) {
+            continue;
+        }
+        if (!sdfg.is_transient(entry.second->container())) {
+            continue;
+        }
+
+        if (elements.find(entry.second->container()) == elements.end()) {
+            elements[entry.second->container()] = {};
+        }
+        elements[entry.second->container()].insert(entry.second->element());
+    }
+
+    // Determine locals
+    for (auto& entry : this->users_) {
+        if (entry.second->use() == Use::NOP) {
+            continue;
+        }
+
+        auto& container = entry.second->container();
+        auto element = entry.second->element();
+        if (elements.find(container) == elements.end()) {
+            continue;
+        }
+        // used outside of node
+        if (elements[container].find(element) == elements[container].end()) {
+            elements.erase(container);
+        }
+    }
+
+    std::unordered_set<std::string> locals;
+    for (auto& entry : elements) {
+        locals.insert(entry.first);
+    }
+    return locals;
+};
+
+std::unordered_set<std::string> UsersView::locals(StructuredSDFG& sdfg,
+                                                  structured_control_flow::ControlFlowNode& node) {
+    // Collect all node elements
+    Users local_users(sdfg, node);
+    analysis::AnalysisManager analysis_manager(users_.sdfg_);
+    local_users.run(analysis_manager);
+    std::unordered_map<std::string, std::unordered_set<Element*>> elements;
+    for (auto& entry : local_users.users_) {
+        if (entry.second->use() == Use::NOP) {
+            continue;
+        }
+        if (!sdfg.is_transient(entry.second->container())) {
+            continue;
+        }
+
+        if (elements.find(entry.second->container()) == elements.end()) {
+            elements[entry.second->container()] = {};
+        }
+        elements[entry.second->container()].insert(entry.second->element());
+    }
+
+    // Determine locals
+    for (auto& entry : this->sub_users_) {
+        if (entry->use() == Use::NOP) {
+            continue;
+        }
+
+        auto& container = entry->container();
+        auto element = entry->element();
+        if (elements.find(container) == elements.end()) {
+            continue;
+        }
+        // used outside of node
+        if (elements[container].find(element) == elements[container].end()) {
+            elements.erase(container);
+        }
+    }
+
+    std::unordered_set<std::string> locals;
+    for (auto& entry : elements) {
+        locals.insert(entry.first);
+    }
+    return locals;
+};
 
 }  // namespace analysis
 }  // namespace sdfg

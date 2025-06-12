@@ -1,6 +1,6 @@
 #include "sdfg/symbolic/assumptions.h"
 
-#include "sdfg/symbolic/symbolic.h"
+#include "sdfg/types/scalar.h"
 
 namespace sdfg {
 namespace symbolic {
@@ -34,24 +34,11 @@ const Symbol& Assumption::symbol() const { return symbol_; };
 
 const Expression& Assumption::lower_bound() const { return lower_bound_; };
 
-void Assumption::lower_bound(const Expression& lower_bound) {
-    lower_bound_ = symbolic::simplify(lower_bound);
-};
+void Assumption::lower_bound(const Expression& lower_bound) { lower_bound_ = lower_bound; };
 
 const Expression& Assumption::upper_bound() const { return upper_bound_; };
 
-void Assumption::upper_bound(const Expression& upper_bound) {
-    upper_bound_ = symbolic::simplify(upper_bound);
-};
-
-const Integer Assumption::integer_value() const {
-    if (eq(upper_bound_, lower_bound_)) {
-        if (is_a<SymEngine::Integer>(*upper_bound_)) {
-            return rcp_static_cast<const SymEngine::Integer>(upper_bound_);
-        }
-    }
-    return SymEngine::null;
-};
+void Assumption::upper_bound(const Expression& upper_bound) { upper_bound_ = upper_bound; };
 
 const Expression& Assumption::map() const { return map_; };
 
@@ -60,47 +47,7 @@ void Assumption::map(const Expression& map) {
         map_ = map;
         return;
     }
-    map_ = symbolic::simplify(map);
-};
-
-bool Assumption::is_positive() const {
-    if (SymEngine::is_a<SymEngine::Integer>(*lower_bound_)) {
-        auto lower_bound = SymEngine::rcp_static_cast<const SymEngine::Integer>(lower_bound_);
-        if (lower_bound->as_int() > 0) {
-            return true;
-        }
-    }
-    return false;
-};
-
-bool Assumption::is_negative() const {
-    if (SymEngine::is_a<SymEngine::Integer>(*upper_bound_)) {
-        auto upper_bound = SymEngine::rcp_static_cast<const SymEngine::Integer>(upper_bound_);
-        if (upper_bound->as_int() < 0) {
-            return true;
-        }
-    }
-    return false;
-};
-
-bool Assumption::is_nonnegative() const {
-    if (SymEngine::is_a<SymEngine::Integer>(*lower_bound_)) {
-        auto upper_bound = SymEngine::rcp_static_cast<const SymEngine::Integer>(lower_bound_);
-        if (upper_bound->as_int() >= 0) {
-            return true;
-        }
-    }
-    return false;
-};
-
-bool Assumption::is_nonpositive() const {
-    if (SymEngine::is_a<SymEngine::Integer>(*upper_bound_)) {
-        auto upper_bound = SymEngine::rcp_static_cast<const SymEngine::Integer>(upper_bound_);
-        if (upper_bound->as_int() <= 0) {
-            return true;
-        }
-    }
-    return false;
+    map_ = map;
 };
 
 Assumption Assumption::create(const symbolic::Symbol& symbol, const types::IType& type) {
@@ -176,7 +123,7 @@ Assumption Assumption::create(const symbolic::Symbol& symbol, const types::IType
 };
 
 void upper_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
-                  symbolic::SymbolicSet& ubs, symbolic::SymbolicSet& visited) {
+                  symbolic::ExpressionSet& ubs, symbolic::ExpressionSet& visited) {
     if (visited.find(sym) != visited.end()) {
         return;
     }
@@ -210,13 +157,13 @@ void upper_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
 };
 
 void upper_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
-                  symbolic::SymbolicSet& ubs) {
-    symbolic::SymbolicSet visited;
+                  symbolic::ExpressionSet& ubs) {
+    symbolic::ExpressionSet visited;
     upper_bounds(sym, assumptions, ubs, visited);
 };
 
 void lower_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
-                  symbolic::SymbolicSet& lbs, symbolic::SymbolicSet& visited) {
+                  symbolic::ExpressionSet& lbs, symbolic::ExpressionSet& visited) {
     if (visited.find(sym) != visited.end()) {
         return;
     }
@@ -250,8 +197,8 @@ void lower_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
 };
 
 void lower_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
-                  symbolic::SymbolicSet& lbs) {
-    symbolic::SymbolicSet visited;
+                  symbolic::ExpressionSet& lbs) {
+    symbolic::ExpressionSet visited;
     lower_bounds(sym, assumptions, lbs, visited);
 };
 

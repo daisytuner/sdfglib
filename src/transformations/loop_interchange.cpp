@@ -1,6 +1,6 @@
 #include "sdfg/transformations/loop_interchange.h"
 
-#include "sdfg/analysis/data_parallelism_analysis.h"
+#include "sdfg/analysis/memlet_analysis.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 
 namespace sdfg {
@@ -40,7 +40,7 @@ bool LoopInterchange::can_be_applied(builder::StructuredSDFGBuilder& builder,
         return false;
     }
     // Criterion: Any of both loops is a map
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
 
     auto& outer_dependencies = analysis.get(this->outer_loop_);
     if (outer_dependencies.size() > 0) {

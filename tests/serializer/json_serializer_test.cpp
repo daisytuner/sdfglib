@@ -935,7 +935,7 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
     des_builder.add_container("A", pointer_type);
     des_builder.add_container("C", base_desc);
 
-    symbolic::Assignments assignments;
+    control_flow::Assignments assignments;
 
     serializer.json_to_block_node(j, des_builder, des_builder.subject().root(), assignments);
     auto des_sdfg = des_builder.move();
@@ -1341,7 +1341,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_forloop) {
     des_builder.add_container("i", base_desc);
     des_builder.add_container("N", base_desc);
 
-    symbolic::Assignments assignments;
+    control_flow::Assignments assignments;
 
     serializer.json_to_for_node(j, des_builder, des_builder.subject().root(), assignments);
     auto des_sdfg = des_builder.move();
@@ -1390,7 +1390,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_ifelse) {
     // Deserialize the JSON back into an IfElse node
     auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU);
     des_builder.add_container("i", sym_desc);
-    symbolic::Assignments assignments;
+    control_flow::Assignments assignments;
     serializer.json_to_if_else_node(j, des_builder, des_builder.subject().root(), assignments);
     auto des_sdfg = des_builder.move();
 
@@ -1489,7 +1489,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_while) {
     auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU);
     des_builder.add_container("i", sym_desc);
 
-    symbolic::Assignments assignments;
+    control_flow::Assignments assignments;
 
     serializer.json_to_while_node(j, des_builder, des_builder.subject().root(), assignments);
     auto des_sdfg = des_builder.move();
@@ -1530,7 +1530,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_while_break) {
     auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU);
     des_builder.add_container("i", sym_desc);
 
-    symbolic::Assignments assignments;
+    control_flow::Assignments assignments;
 
     serializer.json_to_while_node(j, des_builder, des_builder.subject().root(), assignments);
     auto des_sdfg = des_builder.move();
@@ -1573,7 +1573,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_while_continue) {
     auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU);
     des_builder.add_container("i", sym_desc);
 
-    symbolic::Assignments assignments;
+    control_flow::Assignments assignments;
 
     serializer.json_to_while_node(j, des_builder, des_builder.subject().root(), assignments);
     auto des_sdfg = des_builder.move();
@@ -1610,7 +1610,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_Map) {
     // Deserialize the JSON back into a Sequence node
     auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU);
 
-    symbolic::Assignments assignments;
+    control_flow::Assignments assignments;
 
     serializer.json_to_map_node(j, des_builder, des_builder.subject().root(), assignments);
     auto des_sdfg = des_builder.move();
@@ -1645,7 +1645,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_return) {
     // Deserialize the JSON back into a Sequence node
     auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU);
 
-    symbolic::Assignments assignments;
+    control_flow::Assignments assignments;
 
     serializer.json_to_return_node(j, des_builder, des_builder.subject().root(), assignments);
     auto des_sdfg = des_builder.move();

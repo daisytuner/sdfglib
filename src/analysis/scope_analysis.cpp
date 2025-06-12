@@ -1,12 +1,12 @@
-#include "sdfg/analysis/scope_tree_analysis.h"
+#include "sdfg/analysis/scope_analysis.h"
 
 namespace sdfg {
 namespace analysis {
 
-ScopeTreeAnalysis::ScopeTreeAnalysis(StructuredSDFG& sdfg) : Analysis(sdfg) {}
+ScopeAnalysis::ScopeAnalysis(StructuredSDFG& sdfg) : Analysis(sdfg) {}
 
-void ScopeTreeAnalysis::run(structured_control_flow::ControlFlowNode* current,
-                            structured_control_flow::ControlFlowNode* parent_scope) {
+void ScopeAnalysis::run(structured_control_flow::ControlFlowNode* current,
+                        structured_control_flow::ControlFlowNode* parent_scope) {
     if (dynamic_cast<structured_control_flow::Block*>(current)) {
         this->scope_tree_[current] = parent_scope;
     } else if (auto sequence_stmt = dynamic_cast<structured_control_flow::Sequence*>(current)) {
@@ -36,21 +36,21 @@ void ScopeTreeAnalysis::run(structured_control_flow::ControlFlowNode* current,
     }
 }
 
-void ScopeTreeAnalysis::run(AnalysisManager& analysis_manager) {
+void ScopeAnalysis::run(AnalysisManager& analysis_manager) {
     this->scope_tree_.clear();
 
     this->scope_tree_[&this->sdfg_.root()] = nullptr;
     this->run(&this->sdfg_.root(), nullptr);
 }
 
-const std::unordered_map<structured_control_flow::ControlFlowNode*,
+const std::unordered_map<const structured_control_flow::ControlFlowNode*,
                          structured_control_flow::ControlFlowNode*>&
-ScopeTreeAnalysis::scope_tree() const {
+ScopeAnalysis::scope_tree() const {
     return this->scope_tree_;
 }
 
-structured_control_flow::ControlFlowNode* ScopeTreeAnalysis::parent_scope(
-    structured_control_flow::ControlFlowNode* scope) const {
+structured_control_flow::ControlFlowNode* ScopeAnalysis::parent_scope(
+    const structured_control_flow::ControlFlowNode* scope) const {
     return this->scope_tree_.at(scope);
 }
 

@@ -5,12 +5,13 @@
 namespace sdfg {
 namespace passes {
 
-class LoopBoundNormalization : public Pass {
+class LoopNormalization : public Pass {
    private:
-    bool apply(builder::StructuredSDFGBuilder& builder, structured_control_flow::For& loop);
+    bool apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager,
+               structured_control_flow::For& loop);
 
    public:
-    LoopBoundNormalization();
+    LoopNormalization();
 
     std::string name() override;
 

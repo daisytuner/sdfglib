@@ -1,6 +1,6 @@
 #include "sdfg/transformations/loop_tiling.h"
 
-#include "sdfg/analysis/data_parallelism_analysis.h"
+#include "sdfg/analysis/memlet_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
 #include "sdfg/passes/structured_control_flow/dead_cfg_elimination.h"
@@ -23,7 +23,7 @@ std::string LoopTiling::name() { return "LoopTiling"; };
 bool LoopTiling::can_be_applied(builder::StructuredSDFGBuilder& builder,
                                 analysis::AnalysisManager& analysis_manager) {
     // Criterion contiguous loop
-    return analysis::DataParallelismAnalysis::is_contiguous(this->loop_);
+    return this->loop_.is_contiguous();
 };
 
 void LoopTiling::apply(builder::StructuredSDFGBuilder& builder,

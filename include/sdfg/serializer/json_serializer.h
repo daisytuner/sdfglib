@@ -57,30 +57,30 @@ class JSONSerializer {
                           sdfg::structured_control_flow::Sequence& sequence);
     void json_to_block_node(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
                             sdfg::structured_control_flow::Sequence& parent,
-                            symbolic::Assignments& assignments);
+                            control_flow::Assignments& assignments);
     void json_to_for_node(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
                           sdfg::structured_control_flow::Sequence& parent,
-                          symbolic::Assignments& assignments);
+                          control_flow::Assignments& assignments);
     void json_to_if_else_node(const nlohmann::json& j,
                               sdfg::builder::StructuredSDFGBuilder& builder,
                               sdfg::structured_control_flow::Sequence& parent,
-                              symbolic::Assignments& assignments);
+                              control_flow::Assignments& assignments);
     void json_to_while_node(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
                             sdfg::structured_control_flow::Sequence& parent,
-                            symbolic::Assignments& assignments);
+                            control_flow::Assignments& assignments);
     void json_to_break_node(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
                             sdfg::structured_control_flow::Sequence& parent,
-                            symbolic::Assignments& assignments);
+                            control_flow::Assignments& assignments);
     void json_to_continue_node(const nlohmann::json& j,
                                sdfg::builder::StructuredSDFGBuilder& builder,
                                sdfg::structured_control_flow::Sequence& parent,
-                               symbolic::Assignments& assignments);
+                               control_flow::Assignments& assignments);
     void json_to_return_node(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
                              sdfg::structured_control_flow::Sequence& parent,
-                             symbolic::Assignments& assignments);
+                             control_flow::Assignments& assignments);
     void json_to_map_node(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
                           sdfg::structured_control_flow::Sequence& parent,
-                          symbolic::Assignments& assignments);
+                          control_flow::Assignments& assignments);
     std::unique_ptr<sdfg::types::IType> json_to_type(const nlohmann::json& j);
     std::vector<std::pair<std::string, types::Scalar>> json_to_arguments(const nlohmann::json& j);
     DebugInfo json_to_debug_info(const nlohmann::json& j);
