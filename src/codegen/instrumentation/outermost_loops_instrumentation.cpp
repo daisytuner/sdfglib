@@ -40,7 +40,9 @@ void OutermostLoopsInstrumentation::end_instrumentation(
 
     stream << "\"" << region_name << "\", ";
     stream << "\"" << node.debug_info().filename() << "\", ";
-    stream << "\"" << sdfg_.metadata("function") << "\", ";
+    if (sdfg_.metadata().find("function") != sdfg_.metadata().end()) {
+        stream << "\"" << sdfg_.metadata("function") << "\", ";
+    }
     stream << node.debug_info().start_line() << ", ";
     stream << node.debug_info().end_line() << ", ";
     stream << node.debug_info().start_column() << ", ";
