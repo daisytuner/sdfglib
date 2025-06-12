@@ -98,20 +98,10 @@ void register_default_dispatchers() {
         });
 
     /* Map dispatchers */
-    MapDispatcherRegistry::instance().register_map_dispatcher(
-        structured_control_flow::ScheduleType_Sequential.value(),
-        [](LanguageExtension& language_extension, StructuredSDFG& sdfg,
-           structured_control_flow::Map& node, Instrumentation& instrumentation) {
-            return std::make_unique<SequentialMapDispatcher>(language_extension, sdfg, node,
-                                                             instrumentation);
-        });
-    MapDispatcherRegistry::instance().register_map_dispatcher(
-        structured_control_flow::ScheduleType_CPU_Parallel.value(),
-        [](LanguageExtension& language_extension, StructuredSDFG& sdfg,
-           structured_control_flow::Map& node, Instrumentation& instrumentation) {
-            return std::make_unique<CPUParallelMapDispatcher>(language_extension, sdfg, node,
-                                                              instrumentation);
-        });
+    register_default_map_dispatchers();
+
+    /* Librarynode dispatchers */
+    register_default_library_node_dispatchers();
 }
 
 }  // namespace codegen

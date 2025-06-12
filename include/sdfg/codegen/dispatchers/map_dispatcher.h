@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
+#include "sdfg/codegen/dispatchers/node_dispatcher.h"
 #include "sdfg/structured_control_flow/map.h"
 
 namespace sdfg {
@@ -75,6 +75,8 @@ class MapDispatcherRegistry {
 
     size_t size() const { return factory_map_.size(); }
 };
+
+void register_default_map_dispatchers();
 
 }  // namespace codegen
 }  // namespace sdfg

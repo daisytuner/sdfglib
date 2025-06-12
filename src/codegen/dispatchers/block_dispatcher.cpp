@@ -171,7 +171,7 @@ void DataFlowDispatcher::dispatch_library_node(PrettyPrinter& stream,
     }
 };
 
-void LibraryNodeDispatcherRegistry::register_default_library_node_dispatchers() {
+void register_default_library_node_dispatchers() {
     LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
         data_flow::LibraryNodeCode{"barrier_local"}.value(),
         [](LanguageExtension& language_extension, const Function& function,
