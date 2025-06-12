@@ -13,19 +13,19 @@ class StructuredSDFGBuilder;
 
 namespace data_flow {
 
-class ThreadBarrierNode : public LibraryNode {
+class BarrierLocalNode : public LibraryNode {
     friend class sdfg::builder::SDFGBuilder;
     friend class sdfg::builder::StructuredSDFGBuilder;
 
    protected:
-    ThreadBarrierNode(const DebugInfo& debug_info, const graph::Vertex vertex,
-                      DataFlowGraph& parent);
+    BarrierLocalNode(const DebugInfo& debug_info, const graph::Vertex vertex,
+                     DataFlowGraph& parent);
 
    public:
-    ThreadBarrierNode(const ThreadBarrierNode& data_node) = delete;
-    ThreadBarrierNode& operator=(const ThreadBarrierNode&) = delete;
+    BarrierLocalNode(const BarrierLocalNode& data_node) = delete;
+    BarrierLocalNode& operator=(const BarrierLocalNode&) = delete;
 
-    virtual ~ThreadBarrierNode() = default;
+    virtual ~BarrierLocalNode() = default;
 
     const LibraryNodeCode& code() const;
 
@@ -40,6 +40,12 @@ class ThreadBarrierNode : public LibraryNode {
     bool side_effect() const;
 
     bool needs_connector(size_t index) const override;
+
+    std::unique_ptr<DataFlowNode> clone(const graph::Vertex vertex,
+                                        DataFlowGraph& parent) const override;
+
+    void replace(const symbolic::Expression& old_expression,
+                 const symbolic::Expression& new_expression) override;
 };
 
 }  // namespace data_flow

@@ -178,7 +178,7 @@ void LibraryNodeDispatcherRegistry::register_default_library_node_dispatchers() 
            const data_flow::DataFlowGraph& data_flow_graph, const data_flow::LibraryNode& node) {
             return std::make_unique<ThreadBarrierDispatcher>(
                 language_extension, function, data_flow_graph,
-                dynamic_cast<const data_flow::ThreadBarrierNode&>(node));
+                dynamic_cast<const data_flow::BarrierLocalNode&>(node));
         });
 };
 
