@@ -61,16 +61,16 @@ class Function {
     // Metadata
     std::unordered_map<std::string, std::string> metadata_;
 
-    // Static types for reserved symbols
-    static const std::unique_ptr<types::Scalar> NVPTX_SYMBOL_TYPE;
-    static const std::unique_ptr<types::Pointer> CONST_POINTER_TYPE;
-
     Function(const std::string& name, FunctionType type);
 
    public:
     Function(const Function& function) = delete;
 
     virtual ~Function() = default;
+
+    // Static types for reserved symbols
+    static const std::unique_ptr<types::Scalar> NVPTX_SYMBOL_TYPE;
+    static const std::unique_ptr<types::Pointer> CONST_POINTER_TYPE;
 
     /***** Section: Definition *****/
 
