@@ -169,7 +169,7 @@ void DotVisualizer::visualizeWhile(StructuredSDFG& sdfg,
 }
 
 void DotVisualizer::visualizeFor(StructuredSDFG& sdfg, structured_control_flow::For& loop) {
-    auto id = escapeDotId(loop.element_id(), "loop_");
+    auto id = escapeDotId(loop.element_id(), "for_");
     this->stream_ << "subgraph cluster_" << id << " {" << std::endl;
     this->stream_.setIndent(this->stream_.indent() + 4);
     this->stream_ << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: ";
