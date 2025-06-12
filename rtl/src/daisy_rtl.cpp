@@ -16,24 +16,21 @@ extern "C" {
 void __daisy_instrument_init() { instrumentation = Instrumentation_PAPI(); }
 void __daisy_instrument_finalize() {}
 void __daisy_instrument_enter() { instrumentation.__daisy_instrument_enter(); }
-void __daisy_instrument_exit(const char* region_name, const char* file_name, long line_begin,
-                             long line_end, long column_begin, long column_end) {
-    instrumentation.__daisy_instrument_exit(region_name, file_name, line_begin, line_end,
-                                            column_begin, column_end);
+void __daisy_instrument_exit(const char* region_name, const char* file_name,
+                             const char* function_name, long line_begin, long line_end,
+                             long column_begin, long column_end) {
+    instrumentation.__daisy_instrument_exit(region_name, file_name, function_name, line_begin,
+                                            line_end, column_begin, column_end);
 }
 
-void __daisy_instrument_exit_with_metadata(
-    const char* region_name,
-    const char* dbg_file_name,
-    long dbg_line_begin,
-    long dbg_line_end,
-    long dbg_column_begin,
-    long dbg_column_end,
-    const char* source_file,
-    const char* features_file
-) {
-    instrumentation.__daisy_instrument_exit_with_metadata(region_name, dbg_file_name, dbg_line_begin, dbg_line_end,
-                                            dbg_column_begin, dbg_column_end, source_file, features_file);
+void __daisy_instrument_exit_with_metadata(const char* region_name, const char* dbg_file_name,
+                                           const char* dbg_function_name, long dbg_line_begin,
+                                           long dbg_line_end, long dbg_column_begin,
+                                           long dbg_column_end, const char* source_file,
+                                           const char* features_file) {
+    instrumentation.__daisy_instrument_exit_with_metadata(
+        region_name, dbg_file_name, dbg_function_name, dbg_line_begin, dbg_line_end,
+        dbg_column_begin, dbg_column_end, source_file, features_file);
 }
 
 #ifdef __cplusplus
@@ -160,8 +157,9 @@ void Instrumentation_PAPI::__daisy_instrument_enter() {
 }
 
 void Instrumentation_PAPI::__daisy_instrument_exit(const char* region_name, const char* file_name,
-                                                   long line_begin, long line_end,
-                                                   long column_begin, long column_end) {
+                                                   const char* function_name, long line_begin,
+                                                   long line_end, long column_begin,
+                                                   long column_end) {
     if (output_file == nullptr || event_names.empty()) return;
 
     long long count[event_names.size()];
@@ -182,24 +180,19 @@ void Instrumentation_PAPI::__daisy_instrument_exit(const char* region_name, cons
     }
 
     for (size_t i = 0; i < event_names.size(); ++i) {
-        fprintf(f, "%s,%s,%ld,%ld,%ld,%ld,%s,%lld,%ld\n", region_name, file_name, line_begin, line_end,
-            column_begin, column_end, event_names.at(i).c_str(), count[i], std::time(nullptr));
+        fprintf(f, "%s,%s,%s,%ld,%ld,%ld,%ld,%s,%lld,%ld\n", region_name, file_name, function_name,
+                line_begin, line_end, column_begin, column_end, event_names.at(i).c_str(), count[i],
+                std::time(nullptr));
     }
 
     fclose(f);
 }
 
 void Instrumentation_PAPI::__daisy_instrument_exit_with_metadata(
-    const char* region_name,
-    const char* dbg_file_name,
-    long dbg_line_begin,
-    long dbg_line_end,
-    long dbg_column_begin,
-    long dbg_column_end,
-    const char* source_file,
-    const char* features_file
-) {
-if (output_file == nullptr || event_names.empty()) return;
+    const char* region_name, const char* dbg_file_name, const char* dbg_function_name,
+    long dbg_line_begin, long dbg_line_end, long dbg_column_begin, long dbg_column_end,
+    const char* source_file, const char* features_file) {
+    if (output_file == nullptr || event_names.empty()) return;
 
     long long count[event_names.size()];
     if (runtime) {
@@ -219,8 +212,10 @@ if (output_file == nullptr || event_names.empty()) return;
     }
 
     for (size_t i = 0; i < event_names.size(); ++i) {
-        fprintf(f, "%s,%s,%ld,%ld,%ld,%ld,%s,%s,%s,%lld,%ld\n", region_name, dbg_file_name, dbg_line_begin, dbg_line_end,
-            dbg_column_begin, dbg_column_end, source_file, features_file, event_names.at(i).c_str(), count[i], std::time(nullptr));
+        fprintf(f, "%s,%s,%s,%ld,%ld,%ld,%ld,%s,%s,%s,%lld,%ld\n", region_name, dbg_file_name,
+                dbg_function_name, dbg_line_begin, dbg_line_end, dbg_column_begin, dbg_column_end,
+                source_file, features_file, event_names.at(i).c_str(), count[i],
+                std::time(nullptr));
     }
 
     fclose(f);
