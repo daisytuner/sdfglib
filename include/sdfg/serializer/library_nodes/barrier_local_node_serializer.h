@@ -7,7 +7,6 @@
 
 namespace sdfg {
 namespace serializer {
-inline constexpr data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
 class BarrierLocalNodeSerializer : public serializer::LibraryNodeSerializer {
    public:
     nlohmann::json serialize(const sdfg::data_flow::LibraryNode& library_node) override;

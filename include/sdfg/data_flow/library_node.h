@@ -51,5 +51,12 @@ class LibraryNode : public CodeNode {
     bool needs_connector(size_t index) const override;
 };
 
+/*
+ * List of predefiened library node codes.
+ *
+ */
+
+inline constexpr data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
+
 }  // namespace data_flow
 }  // namespace sdfg

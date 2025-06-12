@@ -7,7 +7,8 @@
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/barrier_local_node.h"
 #include "sdfg/element.h"
-#include "sdfg/serializer/library_nodes/barrier_local_node_serializer.h"
+#include "sdfg/serializer/json_serializer.h"
+#include "sdfg/serializer/library_node_serializer_registry.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
@@ -1725,11 +1726,6 @@ TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
     auto& block = builder.add_block(root);
     auto& lib_node =
         builder.add_library_node<data_flow::BarrierLocalNode>(block, BARRIER_LOCAL, {}, {}, false);
-
-    // Register the library node serializer
-    serializer::LibraryNodeSerializerRegistry::instance().register_library_node_serializer(
-        BARRIER_LOCAL.value(),
-        []() { return std::make_unique<serializer::BarrierLocalNodeSerializer>(); });
 
     // Get the library node serializer
     auto lib_node_serializer_fn =
