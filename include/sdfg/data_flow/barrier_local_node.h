@@ -18,8 +18,9 @@ class BarrierLocalNode : public LibraryNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
    protected:
-    BarrierLocalNode(const DebugInfo& debug_info, const graph::Vertex vertex,
-                     DataFlowGraph& parent);
+    BarrierLocalNode(const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent,
+                     const data_flow::LibraryNodeCode code, const std::vector<std::string>& outputs,
+                     const std::vector<std::string>& inputs, const bool side_effect = true);
 
    public:
     BarrierLocalNode(const BarrierLocalNode& data_node) = delete;

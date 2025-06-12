@@ -6,8 +6,10 @@ namespace sdfg {
 namespace data_flow {
 
 BarrierLocalNode::BarrierLocalNode(const DebugInfo& debug_info, const graph::Vertex vertex,
-                                   DataFlowGraph& parent)
-    : LibraryNode(debug_info, vertex, parent, LibraryNodeCode{"barrier_local"}, {}, {}, true) {
+                                   DataFlowGraph& parent, const data_flow::LibraryNodeCode code,
+                                   const std::vector<std::string>& outputs,
+                                   const std::vector<std::string>& inputs, const bool side_effect)
+    : LibraryNode(debug_info, vertex, parent, code, outputs, inputs, side_effect) {
 
       };
 
@@ -34,7 +36,8 @@ bool BarrierLocalNode::needs_connector(size_t index) const {
 std::unique_ptr<DataFlowNode> BarrierLocalNode::clone(const graph::Vertex vertex,
                                                       DataFlowGraph& parent) const {
     return std::unique_ptr<BarrierLocalNode>(
-        new BarrierLocalNode(this->debug_info_, vertex, parent));
+        new BarrierLocalNode(this->debug_info_, vertex, parent, this->code_, this->outputs_,
+                             this->inputs_, this->side_effect_));
 };
 
 void BarrierLocalNode::replace(const symbolic::Expression& old_expression,
