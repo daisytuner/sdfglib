@@ -688,13 +688,6 @@ std::vector<User*> Users::moves(const std::string& container) const {
 
 /****** Domination Analysis ******/
 
-const std::unordered_map<User*, User*>& Users::dominator_tree() {
-    if (this->dom_tree_.empty()) {
-        this->init_dom_tree();
-    }
-    return this->dom_tree_;
-};
-
 bool Users::dominates(User& user1, User& user) {
     if (this->dom_tree_.empty()) {
         this->init_dom_tree();
@@ -707,13 +700,6 @@ bool Users::dominates(User& user1, User& user) {
         dominator = this->dom_tree_.at(dominator);
     }
     return false;
-};
-
-const std::unordered_map<User*, User*>& Users::post_dominator_tree() {
-    if (this->pdom_tree_.empty()) {
-        this->init_dom_tree();
-    }
-    return this->pdom_tree_;
 };
 
 bool Users::post_dominates(User& user1, User& user) {
@@ -793,128 +779,31 @@ const std::unordered_set<User*> Users::all_uses_after(User& user1) {
     return uses;
 };
 
-const std::unordered_set<User*> Users::sources(const std::string& container) const {
-    auto source = this->source_;
-
-    std::unordered_set<User*> sources;
-    std::unordered_set<User*> visited;
-    std::list<User*> queue = {source};
-    while (!queue.empty()) {
-        auto current = queue.front();
-        queue.pop_front();
-        if (visited.find(current) != visited.end()) {
-            continue;
-        }
-        visited.insert(current);
-
-        if (current->container() == container && current->use() != Use::NOP) {
-            sources.insert(current);
-            continue;
-        }
-
-        // Extend search
-        auto [eb, ee] = boost::out_edges(current->vertex_, this->graph_);
-        auto edges = std::ranges::subrange(eb, ee);
-        for (auto edge : edges) {
-            auto v = boost::target(edge, this->graph_);
-            queue.push_back(this->users_.at(v).get());
-        }
-    }
-
-    return sources;
-};
-
-/****** Happens-Before Analysis ******/
-
-std::unordered_map<std::string, std::vector<data_flow::Subset>> Users::read_subsets() {
-    std::unordered_map<std::string, std::vector<data_flow::Subset>> readset;
-    for (auto& read : this->users_) {
-        if (read.second->use() != Use::READ) {
-            continue;
-        }
-
-        auto& data = read.second->container();
-        if (readset.find(data) == readset.end()) {
-            readset[data] = std::vector<data_flow::Subset>();
-        }
-        auto& subsets = read.second->subsets();
-        for (auto& subset : subsets) {
-            readset[data].push_back(subset);
-        }
-    }
-    return readset;
-};
-
-std::unordered_map<std::string, std::vector<data_flow::Subset>> Users::write_subsets() {
-    std::unordered_map<std::string, std::vector<data_flow::Subset>> writeset;
-    for (auto& write : this->users_) {
-        if (write.second->use() != Use::WRITE) {
-            continue;
-        }
-
-        auto& data = write.second->container();
-        if (writeset.find(data) == writeset.end()) {
-            writeset[data] = std::vector<data_flow::Subset>();
-        }
-        auto& subsets = write.second->subsets();
-        for (auto& subset : subsets) {
-            writeset[data].push_back(subset);
-        }
-    }
-    return writeset;
-};
-
-std::unordered_set<std::string> Users::locals(StructuredSDFG& sdfg,
-                                              structured_control_flow::ControlFlowNode& node) {
-    // Collect all node elements
-    Users local_users(sdfg, node);
-    analysis::AnalysisManager analysis_manager(sdfg_);
-    local_users.run(analysis_manager);
-    std::unordered_map<std::string, std::unordered_set<Element*>> elements;
-    for (auto& entry : local_users.users_) {
-        if (entry.second->use() == Use::NOP) {
-            continue;
-        }
-        if (!sdfg.is_transient(entry.second->container())) {
-            continue;
-        }
-
-        if (elements.find(entry.second->container()) == elements.end()) {
-            elements[entry.second->container()] = {};
-        }
-        elements[entry.second->container()].insert(entry.second->element());
-    }
-
-    // Determine locals
-    for (auto& entry : this->users_) {
-        if (entry.second->use() == Use::NOP) {
-            continue;
-        }
-
-        auto& container = entry.second->container();
-        auto element = entry.second->element();
-        if (elements.find(container) == elements.end()) {
-            continue;
-        }
-        // used outside of node
-        if (elements[container].find(element) == elements[container].end()) {
-            elements.erase(container);
-        }
-    }
-
-    std::unordered_set<std::string> locals;
-    for (auto& entry : elements) {
-        locals.insert(entry.first);
-    }
-    return locals;
-};
-
 UsersView::UsersView(Users& users, structured_control_flow::ControlFlowNode& node) : users_(users) {
     auto& entry = users.entries_.at(&node);
     auto& exit = users.exits_.at(&node);
     this->entry_ = entry;
     this->exit_ = exit;
     this->sub_users_ = users.all_uses_between(*entry, *exit);
+
+    if (this->users_.dom_tree_.empty()) {
+        this->users_.init_dom_tree();
+    }
+    auto& dom_tree = this->users_.dom_tree_;
+
+    for (auto& user : this->sub_users_) {
+        this->sub_dom_tree_[user] = dom_tree[user];
+    }
+    this->sub_dom_tree_[this->entry_] = nullptr;
+
+    if (this->users_.pdom_tree_.empty()) {
+        this->users_.init_dom_tree();
+    }
+    auto& pdom_tree = this->users_.pdom_tree_;
+    for (auto& user : this->sub_users_) {
+        this->sub_pdom_tree_[user] = pdom_tree[user];
+    }
+    this->sub_pdom_tree_[this->exit_] = nullptr;
 };
 
 std::vector<User*> UsersView::uses() const {
@@ -1052,54 +941,24 @@ std::vector<User*> UsersView::moves(const std::string& container) const {
     return us;
 };
 
-std::unordered_map<User*, User*> UsersView::dominator_tree() {
-    if (!this->sub_dom_tree_.empty()) {
-        return this->sub_dom_tree_;
-    }
-
-    auto dom_tree = this->users_.dominator_tree();
-    std::unordered_map<User*, User*> sub_dom_tree;
-    for (auto& entry : this->sub_users_) {
-        sub_dom_tree[entry] = dom_tree[entry];
-    }
-    sub_dom_tree[this->entry_] = nullptr;
-    return sub_dom_tree;
-};
-
 bool UsersView::dominates(User& user1, User& user) {
-    auto dom_tree = this->dominator_tree();
-    auto dominator = dom_tree[&user];
+    auto dominator = this->sub_dom_tree_[&user];
     while (dominator != nullptr) {
         if (dominator == &user1) {
             return true;
         }
-        dominator = dom_tree[dominator];
+        dominator = this->sub_dom_tree_[dominator];
     }
     return false;
 };
 
-std::unordered_map<User*, User*> UsersView::post_dominator_tree() {
-    if (!this->sub_pdom_tree_.empty()) {
-        return this->sub_pdom_tree_;
-    }
-
-    auto pdom_tree = this->users_.post_dominator_tree();
-    std::unordered_map<User*, User*> sub_pdom_tree;
-    for (auto& entry : this->sub_users_) {
-        sub_pdom_tree[entry] = pdom_tree[entry];
-    }
-    sub_pdom_tree[this->exit_] = nullptr;
-    return sub_pdom_tree;
-};
-
 bool UsersView::post_dominates(User& user1, User& user) {
-    auto pdom_tree = this->post_dominator_tree();
-    auto dominator = pdom_tree[&user];
+    auto dominator = this->sub_pdom_tree_[&user];
     while (dominator != nullptr) {
         if (dominator == &user1) {
             return true;
         }
-        dominator = pdom_tree[dominator];
+        dominator = this->sub_pdom_tree_[dominator];
     }
     return false;
 };
@@ -1176,89 +1035,6 @@ std::unordered_set<User*> UsersView::all_uses_after(User& user1) {
     }
 
     return uses;
-};
-
-std::unordered_map<std::string, std::vector<data_flow::Subset>> UsersView::read_subsets() {
-    std::unordered_map<std::string, std::vector<data_flow::Subset>> readset;
-    for (auto& read : this->sub_users_) {
-        if (read->use() != Use::READ) {
-            continue;
-        }
-
-        auto& data = read->container();
-        if (readset.find(data) == readset.end()) {
-            readset[data] = std::vector<data_flow::Subset>();
-        }
-        auto& subsets = read->subsets();
-        for (auto& subset : subsets) {
-            readset[data].push_back(subset);
-        }
-    }
-    return readset;
-};
-
-std::unordered_map<std::string, std::vector<data_flow::Subset>> UsersView::write_subsets() {
-    std::unordered_map<std::string, std::vector<data_flow::Subset>> writeset;
-    for (auto& write : this->sub_users_) {
-        if (write->use() != Use::WRITE) {
-            continue;
-        }
-
-        auto& data = write->container();
-        if (writeset.find(data) == writeset.end()) {
-            writeset[data] = std::vector<data_flow::Subset>();
-        }
-        auto& subsets = write->subsets();
-        for (auto& subset : subsets) {
-            writeset[data].push_back(subset);
-        }
-    }
-    return writeset;
-};
-
-std::unordered_set<std::string> UsersView::locals(StructuredSDFG& sdfg,
-                                                  structured_control_flow::ControlFlowNode& node) {
-    // Collect all node elements
-    Users local_users(sdfg, node);
-    analysis::AnalysisManager analysis_manager(users_.sdfg_);
-    local_users.run(analysis_manager);
-    std::unordered_map<std::string, std::unordered_set<Element*>> elements;
-    for (auto& entry : local_users.users_) {
-        if (entry.second->use() == Use::NOP) {
-            continue;
-        }
-        if (!sdfg.is_transient(entry.second->container())) {
-            continue;
-        }
-
-        if (elements.find(entry.second->container()) == elements.end()) {
-            elements[entry.second->container()] = {};
-        }
-        elements[entry.second->container()].insert(entry.second->element());
-    }
-
-    // Determine locals
-    for (auto& entry : this->sub_users_) {
-        if (entry->use() == Use::NOP) {
-            continue;
-        }
-
-        auto& container = entry->container();
-        auto element = entry->element();
-        if (elements.find(container) == elements.end()) {
-            continue;
-        }
-        // used outside of node
-        if (elements[container].find(element) == elements[container].end()) {
-            elements.erase(container);
-        }
-    }
-
-    std::unordered_set<std::string> locals;
-    for (auto& entry : elements) {
-        locals.insert(entry.first);
-    }
-    return locals;
 };
 
 User* Users::get_user(const std::string& container, Element* element, Use use, bool is_init,
