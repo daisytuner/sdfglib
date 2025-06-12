@@ -1,9 +1,8 @@
 #pragma once
 
-#include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
+#include "sdfg/codegen/dispatchers/library_nodes/library_node_dispatcher.h"
+#include "sdfg/codegen/dispatchers/node_dispatcher.h"
 #include "sdfg/data_flow/library_node.h"
-#include "sdfg/symbolic/symbolic.h"
-#include "sdfg/types/utils.h"
 
 namespace sdfg {
 namespace codegen {
@@ -37,23 +36,6 @@ class DataFlowDispatcher {
                        const data_flow::DataFlowGraph& data_flow_graph);
 
     void dispatch(PrettyPrinter& stream);
-};
-
-class LibraryNodeDispatcher {
-   protected:
-    LanguageExtension& language_extension_;
-    const Function& function_;
-    const data_flow::DataFlowGraph& data_flow_graph_;
-    const data_flow::LibraryNode& node_;
-
-   public:
-    LibraryNodeDispatcher(LanguageExtension& language_extension, const Function& function,
-                          const data_flow::DataFlowGraph& data_flow_graph,
-                          const data_flow::LibraryNode& node);
-
-    virtual ~LibraryNodeDispatcher() = default;
-
-    virtual void dispatch(PrettyPrinter& stream) = 0;
 };
 
 using LibraryNodeDispatcherFn = std::function<std::unique_ptr<LibraryNodeDispatcher>(
@@ -92,6 +74,8 @@ class LibraryNodeDispatcherRegistry {
 
     size_t size() const { return factory_map_.size(); }
 };
+
+void register_default_library_node_dispatchers();
 
 }  // namespace codegen
 }  // namespace sdfg

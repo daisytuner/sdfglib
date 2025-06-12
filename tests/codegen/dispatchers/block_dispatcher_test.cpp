@@ -5,6 +5,7 @@
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
 #include "sdfg/codegen/language_extensions/cuda_language_extension.h"
+#include "sdfg/data_flow/barrier_local_node.h"
 #include "sdfg/data_flow/library_node.h"
 
 using namespace sdfg;
@@ -103,6 +104,30 @@ TEST(DataFlowDispatcherTest, DispatchTasklet) {
     EXPECT_EQ(main_stream.str(),
               "{\n    int _in1 = a;\n    int _in2 = b;\n    int _out;\n\n    _out = _in1 + "
               "_in2;\n\n    c = _out;\n}\n");
+}
+
+TEST(DataFlowDispatcherTest, BarrierLocalNodeSimple) {
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    builder.add_container("a", types::Scalar(types::PrimitiveType::Int32));
+    builder.add_container("b", types::Scalar(types::PrimitiveType::Int32));
+    builder.add_container("c", types::Scalar(types::PrimitiveType::Int32));
+
+    auto& block = builder.add_block(root);
+    builder.add_library_node<sdfg::data_flow::BarrierLocalNode>(block, data_flow::BARRIER_LOCAL, {},
+                                                                {}, true);
+
+    auto final_sdfg = builder.move();
+
+    codegen::CUDALanguageExtension language_extension;
+    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
+
+    codegen::PrettyPrinter main_stream;
+    dispatcher.dispatch(main_stream);
+
+    EXPECT_EQ(main_stream.str(), "__syncthreads();\n");
 }
 
 /*

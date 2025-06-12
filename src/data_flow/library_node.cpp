@@ -1,7 +1,5 @@
 #include "sdfg/data_flow/library_node.h"
 
-#include "sdfg/symbolic/symbolic.h"
-
 namespace sdfg {
 namespace data_flow {
 

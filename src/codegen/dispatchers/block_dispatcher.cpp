@@ -1,12 +1,14 @@
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 
+#include "sdfg/codegen/dispatchers/library_nodes/barrier_local_dispatcher.h"
+
 namespace sdfg {
 namespace codegen {
 
 BlockDispatcher::BlockDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
                                  structured_control_flow::Block& node,
                                  Instrumentation& instrumentation)
-    : NodeDispatcher(language_extension, sdfg, node, instrumentation), node_(node) {
+    : sdfg::codegen::NodeDispatcher(language_extension, sdfg, node, instrumentation), node_(node) {
 
       };
 
@@ -167,6 +169,17 @@ void DataFlowDispatcher::dispatch_library_node(PrettyPrinter& stream,
         throw std::runtime_error("No library node dispatcher found for library node code: " +
                                  std::string(libnode.code().value()));
     }
+};
+
+void register_default_library_node_dispatchers() {
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        data_flow::LibraryNodeCode{"barrier_local"}.value(),
+        [](LanguageExtension& language_extension, const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph, const data_flow::LibraryNode& node) {
+            return std::make_unique<ThreadBarrierDispatcher>(
+                language_extension, function, data_flow_graph,
+                dynamic_cast<const data_flow::BarrierLocalNode&>(node));
+        });
 };
 
 LibraryNodeDispatcher::LibraryNodeDispatcher(LanguageExtension& language_extension,
