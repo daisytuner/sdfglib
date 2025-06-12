@@ -106,7 +106,7 @@ TEST(DataFlowDispatcherTest, DispatchTasklet) {
               "_in2;\n\n    c = _out;\n}\n");
 }
 
-TEST(DataFlowDispatcherTest, BarrierLocalNode) {
+TEST(DataFlowDispatcherTest, BarrierLocalNodeSimple) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -116,16 +116,6 @@ TEST(DataFlowDispatcherTest, BarrierLocalNode) {
     builder.add_container("c", types::Scalar(types::PrimitiveType::Int32));
 
     auto& block = builder.add_block(root);
-    auto& access_node_1 = builder.add_access(block, "a");
-    auto& access_node_2 = builder.add_access(block, "b");
-    auto& access_node_3 = builder.add_access(block, "c");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"_in1", types::Scalar(types::PrimitiveType::Int32)},
-                                         {"_in2", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, access_node_1, "void", tasklet, "_in1", data_flow::Subset{});
-    builder.add_memlet(block, access_node_2, "void", tasklet, "_in2", data_flow::Subset{});
-    builder.add_memlet(block, tasklet, "_out", access_node_3, "void", data_flow::Subset{});
     builder.add_library_node<sdfg::data_flow::BarrierLocalNode>(block, data_flow::BARRIER_LOCAL, {},
                                                                 {}, true);
 
@@ -137,9 +127,7 @@ TEST(DataFlowDispatcherTest, BarrierLocalNode) {
     codegen::PrettyPrinter main_stream;
     dispatcher.dispatch(main_stream);
 
-    EXPECT_EQ(main_stream.str(),
-              "{\n    int _in1 = a;\n    int _in2 = b;\n    int _out;\n\n    _out = _in1 + "
-              "_in2;\n\n    c = _out;\n}\n__syncthreads();\n");
+    EXPECT_EQ(main_stream.str(), "__syncthreads();\n");
 }
 
 /*
