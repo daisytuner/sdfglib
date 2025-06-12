@@ -469,7 +469,7 @@ TEST(UsersTest, AccessNode_Subsets_NotDominates_Unsafe) {
     auto sym_i = symbolic::symbol("i");
 
     auto& root = builder.subject().root();
-    auto& block = builder.add_block(root);
+    auto& block = builder.add_block(root, {{sym_i, symbolic::integer(0)}});
     auto& input_node = builder.add_access(block, "A");
     auto& output_node = builder.add_access(block, "B");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
@@ -478,14 +478,14 @@ TEST(UsersTest, AccessNode_Subsets_NotDominates_Unsafe) {
     auto& memlet_out = builder.add_memlet(block, tasklet, "_out", output_node, "void", {sym_i});
     auto& memlet_in = builder.add_memlet(block, input_node, "void", tasklet, "_in", {sym_i});
 
-    auto& block2 = builder.add_block(root, {{sym_i, symbolic::integer(0)}});
+    auto& block2 = builder.add_block(root);
     auto& input_node2 = builder.add_access(block2, "B");
     auto& output_node2 = builder.add_access(block2, "A");
     auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
                                          {"_out", types::Scalar(types::PrimitiveType::Int32)},
                                          {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
     builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {sym_i});
-    builder.add_memlet(block2, tasklet2, "_in", input_node2, "void", {sym_i});
+    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {sym_i});
 
     auto sdfg = builder.move();
 

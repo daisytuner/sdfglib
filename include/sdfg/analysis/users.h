@@ -162,6 +162,11 @@ class Users : public Analysis {
     const std::unordered_set<User*> all_uses_after(User& user);
 
     bool is_constant(const std::unordered_set<std::string>& containers, User& user1, User& user2);
+
+    /**** Deprecated ****/
+
+    std::unordered_set<std::string> locals(StructuredSDFG& sdfg,
+                                           structured_control_flow::ControlFlowNode& node);
 };
 
 class UsersView {
@@ -213,6 +218,11 @@ class UsersView {
     std::unordered_set<User*> all_uses_after(User& user);
 
     bool is_constant(const std::unordered_set<std::string>& containers, User& user1, User& user2);
+
+    /*** Deprecated ***/
+
+    std::unordered_set<std::string> locals(StructuredSDFG& sdfg,
+                                           structured_control_flow::ControlFlowNode& node);
 };
 
 }  // namespace analysis

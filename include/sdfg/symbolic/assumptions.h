@@ -13,6 +13,7 @@ class Assumption {
     Symbol symbol_;
     Expression lower_bound_;
     Expression upper_bound_;
+    Expression map_;
 
    public:
     Assumption();
@@ -33,10 +34,21 @@ class Assumption {
 
     void upper_bound(const Expression& upper_bound);
 
+    const Expression& map() const;
+
+    void map(const Expression& map);
+
     static Assumption create(const symbolic::Symbol& symbol, const types::IType& type);
 };
 
-typedef std::unordered_map<Symbol, Assumption, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq> Assumptions;
+typedef std::unordered_map<Symbol, Assumption, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq>
+    Assumptions;
+
+void upper_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
+                  symbolic::ExpressionSet& ubs);
+
+void lower_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
+                  symbolic::ExpressionSet& lbs);
 
 }  // namespace symbolic
 }  // namespace sdfg
