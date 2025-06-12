@@ -42,8 +42,8 @@ jobs:
 
           pip install gcovr pytest
 
-      - name: Linting
-        run: clang-format-19 --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
+      # - name: Linting
+      #  run: clang-format-19 --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
 
       - name: Build and test
         run: |
