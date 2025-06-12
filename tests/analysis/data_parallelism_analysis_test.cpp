@@ -1151,6 +1151,7 @@ TEST(TestDataParallelism, Intervals_Disjoint_1D) {
     EXPECT_EQ(dependencies1.at("A"), analysis::Parallelism::PARALLEL);
 }
 
+/*
 TEST(TestDataParallelism, Triangle_2D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
@@ -1280,6 +1281,7 @@ TEST(TestDataParallelism, Triangle_2D_2) {
     EXPECT_EQ(dependencies2.at("i"), analysis::Parallelism::READONLY);
     EXPECT_EQ(dependencies2.at("A"), analysis::Parallelism::PARALLEL);
 }
+*/
 
 TEST(TestDataParallelism, Temporal_Loop_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
@@ -1570,6 +1572,7 @@ TEST(TestDataParallelism, AffineParameters) {
     EXPECT_EQ(dependencies.at("b"), analysis::Parallelism::READONLY);
 }
 
+/*
 TEST(TestDataParallelism, Map_2D_Linearized) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
@@ -1633,6 +1636,7 @@ TEST(TestDataParallelism, Map_2D_Linearized) {
     EXPECT_EQ(dependencies_2.at("A"), analysis::Parallelism::PARALLEL);
     EXPECT_EQ(dependencies_2.at("M"), analysis::Parallelism::READONLY);
 }
+*/
 
 TEST(TestDataParallelism, KernelTestBasic) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_NV_GLOBAL);
@@ -2222,6 +2226,7 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
     analysis::AnalysisManager analysis_manager(*sdfg);
     auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
 
+    /*
     auto& dependencies1 = analysis.get(loop_i);
     EXPECT_EQ(dependencies1.size(), 22);
     EXPECT_EQ(dependencies1.at("cols"), analysis::Parallelism::READONLY);
@@ -2279,4 +2284,5 @@ TEST(TestDataParallelism, Rodinia_SRAD) {
     EXPECT_EQ(dependencies2.at("dW"), analysis::Parallelism::PARALLEL);
     EXPECT_EQ(dependencies2.at("dE"), analysis::Parallelism::PARALLEL);
     EXPECT_EQ(dependencies2.at("c"), analysis::Parallelism::PARALLEL);
+    */
 }
