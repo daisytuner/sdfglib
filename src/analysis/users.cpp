@@ -15,6 +15,7 @@
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_sdfg.h"
+#include "sdfg/symbolic/sets.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
@@ -716,7 +717,7 @@ bool Users::post_dominates(User& user1, User& user) {
     return false;
 };
 
-bool Users::is_dominated_by(User& user, Use use) {
+bool Users::is_dominated_by(User& user, Use use, const symbolic::Assumptions& assums) {
     auto dominator = this->dom_tree_.at(&user);
     while (dominator != nullptr) {
         if (dominator->use() != use) {
@@ -753,16 +754,7 @@ bool Users::is_dominated_by(User& user, Use use) {
         for (auto& subset : subsets) {
             bool subset_dominated = false;
             for (auto& subset_dominator : subsets_dominator) {
-                if (subset.size() != subset_dominator.size()) {
-                    continue;
-                }
-                bool dominated = true;
-                for (size_t i = 0; i < subset.size(); i++) {
-                    if (!symbolic::eq(subset[i], subset_dominator[i])) {
-                        dominated = false;
-                        break;
-                    }
-                }
+                bool dominated = symbolic::is_equivalent(subset, subset_dominator, {}, assums);
                 if (dominated) {
                     subset_dominated = true;
                     break;
@@ -1040,7 +1032,7 @@ bool UsersView::post_dominates(User& user1, User& user) {
     return false;
 };
 
-bool UsersView::is_dominated_by(User& user, Use use) {
+bool UsersView::is_dominated_by(User& user, Use use, const symbolic::Assumptions& assums) {
     auto dominator = this->sub_dom_tree_.at(&user);
     while (dominator != nullptr) {
         if (dominator->use() != use) {
@@ -1077,16 +1069,7 @@ bool UsersView::is_dominated_by(User& user, Use use) {
         for (auto& subset : subsets) {
             bool subset_dominated = false;
             for (auto& subset_dominator : subsets_dominator) {
-                if (subset.size() != subset_dominator.size()) {
-                    continue;
-                }
-                bool dominated = true;
-                for (size_t i = 0; i < subset.size(); i++) {
-                    if (!symbolic::eq(subset[i], subset_dominator[i])) {
-                        dominated = false;
-                        break;
-                    }
-                }
+                bool dominated = symbolic::is_equivalent(subset, subset_dominator, {}, assums);
                 if (dominated) {
                     subset_dominated = true;
                     break;
