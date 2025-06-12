@@ -1,6 +1,7 @@
 #include "sdfg/transformations/loop_slicing.h"
 
-#include "sdfg/analysis/memlet_analysis.h"
+#include "sdfg/analysis/data_parallelism_analysis.h"
+#include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 
@@ -21,7 +22,8 @@ bool LoopSlicing::can_be_applied(builder::StructuredSDFGBuilder& builder,
                                  analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
 
-    if (!this->loop_.is_contiguous()) {
+    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    if (!loop_analysis.is_contiguous(&loop_)) {
         return false;
     }
 
@@ -69,7 +71,7 @@ bool LoopSlicing::can_be_applied(builder::StructuredSDFGBuilder& builder,
                     return false;
                 }
             }
-            auto bound = analysis::MemletAnalysis::bound(loop_);
+            auto bound = analysis::DataParallelismAnalysis::bound(loop_);
             if (bound == SymEngine::null) {
                 return false;
             }
@@ -131,7 +133,7 @@ void LoopSlicing::apply(builder::StructuredSDFGBuilder& builder,
 
     auto branch_1 = if_else->at(0);
     auto condition_1 = branch_1.second;
-    auto bound = analysis::MemletAnalysis::bound(loop_);
+    auto bound = analysis::DataParallelismAnalysis::bound(loop_);
 
     LoopSlicingType slice_type = LoopSlicingType::Init;
     if (symbolic::eq(condition_1, symbolic::Eq(indvar, loop_.init()))) {

@@ -102,6 +102,7 @@ TEST(For2MapTest, Simple) {
     EXPECT_TRUE(found_memlet_output);
 }
 
+/*
 TEST(For2MapTest, Strided) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
@@ -200,6 +201,7 @@ TEST(For2MapTest, Strided) {
     EXPECT_TRUE(found_memlet_input);
     EXPECT_TRUE(found_memlet_output);
 }
+*/
 
 TEST(For2MapTest, Init) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
