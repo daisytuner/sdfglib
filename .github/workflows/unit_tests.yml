@@ -42,9 +42,6 @@ jobs:
 
           pip install gcovr pytest
 
-      # - name: Linting
-      #  run: clang-format-19 --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
-
       - name: Build and test
         run: |
           mkdir build
@@ -57,3 +54,6 @@ jobs:
 
       - name: Coveralls
         uses: coverallsapp/github-action@v2
+
+      - name: Linting
+        run: clang-format-19 --dry-run src/**/*.cpp tests/**/*.cpp include/**/*.h
