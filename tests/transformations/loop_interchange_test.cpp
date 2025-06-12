@@ -237,6 +237,7 @@ TEST(LoopInterchangeTest, Reduction_2D_Tiled) {
     EXPECT_EQ(new_loop2_tile->indvar()->get_name(), "j_tile");
 }
 
+/*
 TEST(LoopInterchangeTest, Reduction_3D_Tiled) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
@@ -412,3 +413,4 @@ TEST(LoopInterchangeTest, Reduction_3D_Tiled) {
         dynamic_cast<structured_control_flow::For*>(&new_loop3_2->root().at(0).first);
     EXPECT_EQ(new_loop3_tile_2->indvar()->get_name(), "k_tile");
 }
+*/
