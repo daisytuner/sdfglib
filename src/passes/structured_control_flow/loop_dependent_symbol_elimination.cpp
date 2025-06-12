@@ -1,7 +1,6 @@
 #include "sdfg/passes/structured_control_flow/loop_dependent_symbol_elimination.h"
 
-#include "sdfg/analysis/data_parallelism_analysis.h"
-#include "sdfg/structured_control_flow/structured_loop.h"
+#include "sdfg/analysis/memlet_analysis.h"
 
 namespace sdfg {
 namespace passes {
@@ -33,7 +32,7 @@ bool LoopDependentSymbolElimination::eliminate_symbols(
         !SymEngine::eq(*match.second, *symbolic::integer(1))) {
         return false;
     }
-    auto bound = analysis::DataParallelismAnalysis::bound(loop);
+    auto bound = analysis::MemletAnalysis::bound(loop);
     if (bound == SymEngine::null || !SymEngine::is_a<SymEngine::StrictLessThan>(*condition)) {
         return false;
     }

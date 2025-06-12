@@ -1,14 +1,16 @@
-#include "sdfg/analysis/loop_tree_analysis.h"
+#include "sdfg/analysis/loop_analysis.h"
 
+#include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
+#include "sdfg/symbolic/series.h"
 
 namespace sdfg {
 namespace analysis {
 
-LoopTreeAnalysis::LoopTreeAnalysis(StructuredSDFG& sdfg) : Analysis(sdfg) {}
+LoopAnalysis::LoopAnalysis(StructuredSDFG& sdfg) : Analysis(sdfg) {}
 
-void LoopTreeAnalysis::run(structured_control_flow::ControlFlowNode& scope,
-                           structured_control_flow::ControlFlowNode* parent_loop) {
+void LoopAnalysis::run(structured_control_flow::ControlFlowNode& scope,
+                       structured_control_flow::ControlFlowNode* parent_loop) {
     std::list<structured_control_flow::ControlFlowNode*> queue = {&scope};
     while (!queue.empty()) {
         auto current = queue.front();
@@ -16,10 +18,12 @@ void LoopTreeAnalysis::run(structured_control_flow::ControlFlowNode& scope,
 
         // Loop detected
         if (auto while_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
+            this->loops_.insert(while_stmt);
             this->loop_tree_[while_stmt] = parent_loop;
-        } else if (auto for_stmt =
+        } else if (auto loop_stmt =
                        dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
-            this->loop_tree_[for_stmt] = parent_loop;
+            this->loops_.insert(loop_stmt);
+            this->loop_tree_[loop_stmt] = parent_loop;
         }
 
         if (dynamic_cast<structured_control_flow::Block*>(current)) {
@@ -49,24 +53,44 @@ void LoopTreeAnalysis::run(structured_control_flow::ControlFlowNode& scope,
     }
 }
 
-void LoopTreeAnalysis::run(AnalysisManager& analysis_manager) {
+void LoopAnalysis::run(AnalysisManager& analysis_manager) {
+    this->loops_.clear();
     this->loop_tree_.clear();
     this->run(this->sdfg_.root(), nullptr);
 }
 
+const std::unordered_set<structured_control_flow::ControlFlowNode*> LoopAnalysis::loops() const {
+    return this->loops_;
+}
+
+bool LoopAnalysis::is_monotonic(structured_control_flow::StructuredLoop* loop) const {
+    AnalysisManager manager(this->sdfg_);
+    auto& assums_analysis = manager.get<AssumptionsAnalysis>();
+    auto assums = assums_analysis.get(*loop);
+
+    return symbolic::is_monotonic(loop->update(), loop->indvar(), assums);
+}
+
+bool LoopAnalysis::is_contiguous(structured_control_flow::StructuredLoop* loop) const {
+    AnalysisManager manager(this->sdfg_);
+    auto& assums_analysis = manager.get<AssumptionsAnalysis>();
+    auto assums = assums_analysis.get(*loop);
+
+    return symbolic::is_contiguous(loop->update(), loop->indvar(), assums);
+}
+
 const std::unordered_map<structured_control_flow::ControlFlowNode*,
                          structured_control_flow::ControlFlowNode*>&
-LoopTreeAnalysis::loop_tree() const {
+LoopAnalysis::loop_tree() const {
     return this->loop_tree_;
 }
 
-structured_control_flow::ControlFlowNode* LoopTreeAnalysis::parent_loop(
+structured_control_flow::ControlFlowNode* LoopAnalysis::parent_loop(
     structured_control_flow::ControlFlowNode* loop) const {
     return this->loop_tree_.at(loop);
 }
 
-const std::vector<structured_control_flow::ControlFlowNode*> LoopTreeAnalysis::outermost_loops()
-    const {
+const std::vector<structured_control_flow::ControlFlowNode*> LoopAnalysis::outermost_loops() const {
     std::vector<structured_control_flow::ControlFlowNode*> outermost_loops_;
     for (const auto& [loop, parent] : this->loop_tree_) {
         if (parent == nullptr) {

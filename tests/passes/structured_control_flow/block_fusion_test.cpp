@@ -17,7 +17,7 @@ TEST(BlockFusionTest, Chain) {
     builder.add_container("A", desc_array);
 
     auto& root = builder.subject().root();
-    auto& block1 = builder.add_block(root, symbolic::Assignments{});
+    auto& block1 = builder.add_block(root, control_flow::Assignments{});
 
     auto& node1_1 = builder.add_access(block1, "A");
     auto& node2_1 = builder.add_access(block1, "A");
@@ -27,7 +27,7 @@ TEST(BlockFusionTest, Chain) {
     builder.add_memlet(block1, node1_1, "void", tasklet_1, "_in", {symbolic::integer(0)});
     builder.add_memlet(block1, tasklet_1, "_out", node2_1, "void", {symbolic::integer(0)});
 
-    auto& block2 = builder.add_block(root, symbolic::Assignments{});
+    auto& block2 = builder.add_block(root, control_flow::Assignments{});
 
     auto& node1_2 = builder.add_access(block2, "A");
     auto& node2_2 = builder.add_access(block2, "A");
@@ -65,7 +65,7 @@ TEST(BlockFusionTest, Independent) {
     builder.add_container("B", desc_array);
 
     auto& root = builder.subject().root();
-    auto& block1 = builder.add_block(root, symbolic::Assignments{});
+    auto& block1 = builder.add_block(root, control_flow::Assignments{});
 
     auto& node1_1 = builder.add_access(block1, "A");
     auto& node2_1 = builder.add_access(block1, "A");
@@ -75,7 +75,7 @@ TEST(BlockFusionTest, Independent) {
     builder.add_memlet(block1, node1_1, "void", tasklet_1, "_in", {symbolic::integer(0)});
     builder.add_memlet(block1, tasklet_1, "_out", node2_1, "void", {symbolic::integer(0)});
 
-    auto& block2 = builder.add_block(root, symbolic::Assignments{});
+    auto& block2 = builder.add_block(root, control_flow::Assignments{});
 
     auto& node1_2 = builder.add_access(block2, "B");
     auto& node2_2 = builder.add_access(block2, "B");

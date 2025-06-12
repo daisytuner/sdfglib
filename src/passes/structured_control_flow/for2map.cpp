@@ -1,14 +1,6 @@
 #include "sdfg/passes/structured_control_flow/for2map.h"
 
-#include "sdfg/analysis/data_parallelism_analysis.h"
-#include "sdfg/structured_control_flow/for.h"
-#include "sdfg/structured_control_flow/map.h"
-#include "sdfg/structured_control_flow/sequence.h"
-#include "sdfg/symbolic/symbolic.h"
-#include "sdfg/visitor/structured_sdfg_visitor.h"
-#include "symengine/basic.h"
-#include "symengine/logic.h"
-#include "symengine/symengine_rcp.h"
+#include "sdfg/analysis/memlet_analysis.h"
 
 namespace sdfg {
 namespace passes {
@@ -22,7 +14,7 @@ For2Map::For2Map(builder::StructuredSDFGBuilder& builder,
 bool For2Map::can_be_applied(const structured_control_flow::For& for_stmt,
                              analysis::AnalysisManager& analysis_manager) {
     // Criterion: loop must be data-parallel w.r.t containers
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::MemletAnalysis>();
     auto& dependencies = analysis.get(for_stmt);
     if (dependencies.size() == 0) {
         return false;

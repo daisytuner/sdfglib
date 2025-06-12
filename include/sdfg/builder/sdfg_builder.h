@@ -59,12 +59,12 @@ class SDFGBuilder : public FunctionBuilder {
 
     control_flow::InterstateEdge& add_edge(const control_flow::State& src,
                                            const control_flow::State& dst,
-                                           const symbolic::Assignments& assignments,
+                                           const control_flow::Assignments& assignments,
                                            const DebugInfo& debug_info = DebugInfo());
 
     control_flow::InterstateEdge& add_edge(const control_flow::State& src,
                                            const control_flow::State& dst,
-                                           const symbolic::Assignments& assignments,
+                                           const control_flow::Assignments& assignments,
                                            const symbolic::Condition condition,
                                            const DebugInfo& debug_info = DebugInfo());
 

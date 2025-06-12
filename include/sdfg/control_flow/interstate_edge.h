@@ -21,6 +21,8 @@ class SDFGBuilder;
 
 namespace control_flow {
 
+typedef symbolic::SymbolMap Assignments;
+
 class InterstateEdge : public Element {
     friend class builder::SDFGBuilder;
 
@@ -32,11 +34,11 @@ class InterstateEdge : public Element {
     const control_flow::State& dst_;
 
     symbolic::Condition condition_;
-    symbolic::Assignments assignments_;
+    control_flow::Assignments assignments_;
 
     InterstateEdge(const DebugInfo& debug_info, const graph::Edge& edge,
                    const control_flow::State& src, const control_flow::State& dst,
-                   const symbolic::Condition& condition, const symbolic::Assignments& assignments);
+                   const symbolic::Condition& condition, const control_flow::Assignments& assignments);
 
    public:
     // Remark: Exclusive resource
@@ -53,7 +55,7 @@ class InterstateEdge : public Element {
 
     bool is_unconditional() const;
 
-    const symbolic::Assignments& assignments() const;
+    const control_flow::Assignments& assignments() const;
 
     void replace(const symbolic::Expression& old_expression,
                  const symbolic::Expression& new_expression) override;

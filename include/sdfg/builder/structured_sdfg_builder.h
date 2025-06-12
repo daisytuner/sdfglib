@@ -65,7 +65,7 @@ class StructuredSDFGBuilder : public FunctionBuilder {
 
     std::unique_ptr<StructuredSDFG> move();
 
-    Sequence& add_sequence(Sequence& parent, const sdfg::symbolic::Assignments& assignments = {},
+    Sequence& add_sequence(Sequence& parent, const sdfg::control_flow::Assignments& assignments = {},
                            const DebugInfo& debug_info = DebugInfo());
 
     std::pair<Sequence&, Transition&> add_sequence_before(
@@ -77,11 +77,11 @@ class StructuredSDFGBuilder : public FunctionBuilder {
 
     void insert_children(Sequence& parent, Sequence& other, size_t i);
 
-    Block& add_block(Sequence& parent, const sdfg::symbolic::Assignments& assignments = {},
+    Block& add_block(Sequence& parent, const sdfg::control_flow::Assignments& assignments = {},
                      const DebugInfo& debug_info = DebugInfo());
 
     Block& add_block(Sequence& parent, const data_flow::DataFlowGraph& data_flow_graph,
-                     const sdfg::symbolic::Assignments& assignments = {},
+                     const sdfg::control_flow::Assignments& assignments = {},
                      const DebugInfo& debug_info = DebugInfo());
 
     std::pair<Block&, Transition&> add_block_before(Sequence& parent, ControlFlowNode& block,
@@ -101,7 +101,7 @@ class StructuredSDFGBuilder : public FunctionBuilder {
     For& add_for(Sequence& parent, const symbolic::Symbol& indvar,
                  const symbolic::Condition& condition, const symbolic::Expression& init,
                  const symbolic::Expression& update,
-                 const sdfg::symbolic::Assignments& assignments = {},
+                 const sdfg::control_flow::Assignments& assignments = {},
                  const DebugInfo& debug_info = DebugInfo());
 
     std::pair<For&, Transition&> add_for_before(Sequence& parent, ControlFlowNode& block,
@@ -120,7 +120,7 @@ class StructuredSDFGBuilder : public FunctionBuilder {
 
     IfElse& add_if_else(Sequence& parent, const DebugInfo& debug_info = DebugInfo());
 
-    IfElse& add_if_else(Sequence& parent, const sdfg::symbolic::Assignments& assignments,
+    IfElse& add_if_else(Sequence& parent, const sdfg::control_flow::Assignments& assignments,
                         const DebugInfo& debug_info = DebugInfo());
 
     std::pair<IfElse&, Transition&> add_if_else_before(Sequence& parent, ControlFlowNode& block,
@@ -131,25 +131,25 @@ class StructuredSDFGBuilder : public FunctionBuilder {
 
     void remove_case(IfElse& scope, size_t i, const DebugInfo& debug_info = DebugInfo());
 
-    While& add_while(Sequence& parent, const sdfg::symbolic::Assignments& assignments = {},
+    While& add_while(Sequence& parent, const sdfg::control_flow::Assignments& assignments = {},
                      const DebugInfo& debug_info = DebugInfo());
 
     Continue& add_continue(Sequence& parent, const DebugInfo& debug_info = DebugInfo());
 
-    Continue& add_continue(Sequence& parent, const sdfg::symbolic::Assignments& assignments,
+    Continue& add_continue(Sequence& parent, const sdfg::control_flow::Assignments& assignments,
                            const DebugInfo& debug_info = DebugInfo());
 
     Break& add_break(Sequence& parent, const DebugInfo& debug_info = DebugInfo());
 
-    Break& add_break(Sequence& parent, const sdfg::symbolic::Assignments& assignments,
+    Break& add_break(Sequence& parent, const sdfg::control_flow::Assignments& assignments,
                      const DebugInfo& debug_info = DebugInfo());
 
     Map& add_map(Sequence& parent, const symbolic::Symbol& indvar,
                  const symbolic::Expression& num_iterations, const ScheduleType& schedule_type,
-                 const sdfg::symbolic::Assignments& assignments = {},
+                 const sdfg::control_flow::Assignments& assignments = {},
                  const DebugInfo& debug_info = DebugInfo());
 
-    Return& add_return(Sequence& parent, const sdfg::symbolic::Assignments& assignments = {},
+    Return& add_return(Sequence& parent, const sdfg::control_flow::Assignments& assignments = {},
                        const DebugInfo& debug_info = DebugInfo());
 
     For& convert_while(Sequence& parent, While& loop, const symbolic::Symbol& indvar,

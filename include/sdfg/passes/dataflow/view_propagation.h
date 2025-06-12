@@ -1,10 +1,6 @@
 #pragma once
 
-#include "sdfg/analysis/assumptions_analysis.h"
-#include "sdfg/analysis/data_parallelism_analysis.h"
-#include "sdfg/analysis/users.h"
 #include "sdfg/passes/pass.h"
-#include "sdfg/types/utils.h"
 
 namespace sdfg {
 namespace passes {

@@ -149,37 +149,6 @@ TEST(SymbolicTest, subs) {
     EXPECT_EQ(new_expr->__str__(), "y + z");
 }
 
-TEST(SymbolicTest, simplify) {
-    auto x = symbolic::symbol("x");
-    auto y = symbolic::symbol("y");
-
-    auto double_eq = symbolic::Eq(symbolic::__false__(), symbolic::Eq(x, y));
-    auto simplified = symbolic::simplify(double_eq);
-    EXPECT_EQ(simplified->__str__(), "x != y");
-
-    auto x1 = symbolic::symbol("x1");
-    auto x2 = symbolic::symbol("x2");
-
-    auto le1 = symbolic::Le(x1, x2);
-    auto le2 = symbolic::Le(x2, x1);
-    auto and_expr = symbolic::And(le1, le2);
-    simplified = symbolic::simplify(and_expr);
-    EXPECT_EQ(simplified->__str__(), "x1 == x2");
-
-    auto le3 = symbolic::Le(x, x1);
-    and_expr = symbolic::And(le1, le3);
-    simplified = symbolic::simplify(and_expr);
-    bool eq = simplified->__str__() == "And(x1 <= x2, x <= x1)";
-    bool eq2 = simplified->__str__() == "And(x <= x1, x1 <= x2)";
-    EXPECT_TRUE(eq || eq2);
-
-    auto or_expr = symbolic::Or(le1, le3);
-    simplified = symbolic::simplify(or_expr);
-    eq = simplified->__str__() == "Or(x1 <= x2, x <= x1)";
-    eq2 = simplified->__str__() == "Or(x <= x1, x1 <= x2)";
-    EXPECT_TRUE(eq || eq2);
-}
-
 TEST(SymbolicTest, rearrange_simple_condition) {
     auto x = symbolic::symbol("x");
     auto y = symbolic::symbol("y");

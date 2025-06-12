@@ -17,7 +17,7 @@ TEST(StructuredSDFGTest, Clone) {
 
     auto& root = builder.subject().root();
     auto& block = builder.add_block(
-        root, symbolic::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
 
     auto sdfg = builder.move();
 

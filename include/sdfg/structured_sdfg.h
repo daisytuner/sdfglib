@@ -19,8 +19,6 @@
 #include "sdfg/structured_control_flow/return.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
-#include "sdfg/symbolic/analysis.h"
-#include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
 

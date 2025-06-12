@@ -5,9 +5,9 @@
 namespace sdfg {
 namespace analysis {
 
-class ScopeTreeAnalysis : public Analysis {
+class ScopeAnalysis : public Analysis {
    private:
-    std::unordered_map<structured_control_flow::ControlFlowNode*,
+    std::unordered_map<const structured_control_flow::ControlFlowNode*,
                        structured_control_flow::ControlFlowNode*>
         scope_tree_;
 
@@ -18,14 +18,14 @@ class ScopeTreeAnalysis : public Analysis {
     void run(analysis::AnalysisManager& analysis_manager) override;
 
    public:
-    ScopeTreeAnalysis(StructuredSDFG& sdfg);
+    ScopeAnalysis(StructuredSDFG& sdfg);
 
-    const std::unordered_map<structured_control_flow::ControlFlowNode*,
+    const std::unordered_map<const structured_control_flow::ControlFlowNode*,
                              structured_control_flow::ControlFlowNode*>&
     scope_tree() const;
 
     structured_control_flow::ControlFlowNode* parent_scope(
-        structured_control_flow::ControlFlowNode* scope) const;
+        const structured_control_flow::ControlFlowNode* scope) const;
 };
 
 }  // namespace analysis

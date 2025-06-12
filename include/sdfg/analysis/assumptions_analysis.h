@@ -5,33 +5,36 @@
 #include <vector>
 
 #include "sdfg/analysis/analysis.h"
-#include "sdfg/structured_control_flow/map.h"
-#include "sdfg/symbolic/analysis.h"
+#include "sdfg/structured_sdfg.h"
 #include "sdfg/symbolic/assumptions.h"
-#include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
 namespace analysis {
 
 class AssumptionsAnalysis : public Analysis {
    private:
-    std::vector<std::string> iterators_;
     std::unordered_map<structured_control_flow::ControlFlowNode*, symbolic::Assumptions>
         assumptions_;
 
-    void traverse(structured_control_flow::Sequence& root);
+    void traverse(structured_control_flow::Sequence& root,
+                  analysis::AnalysisManager& analysis_manager);
 
-    void visit_block(structured_control_flow::Block* block);
+    void visit_block(structured_control_flow::Block* block,
+                     analysis::AnalysisManager& analysis_manager);
 
-    void visit_sequence(structured_control_flow::Sequence* sequence);
+    void visit_sequence(structured_control_flow::Sequence* sequence,
+                        analysis::AnalysisManager& analysis_manager);
 
-    void visit_if_else(structured_control_flow::IfElse* if_else);
+    void visit_if_else(structured_control_flow::IfElse* if_else,
+                       analysis::AnalysisManager& analysis_manager);
 
-    void visit_while(structured_control_flow::While* while_loop);
+    void visit_while(structured_control_flow::While* while_loop,
+                     analysis::AnalysisManager& analysis_manager);
 
-    void visit_for(structured_control_flow::For* for_loop);
+    void visit_for(structured_control_flow::For* for_loop,
+                   analysis::AnalysisManager& analysis_manager);
 
-    void visit_map(const structured_control_flow::Map* map);
+    void visit_map(structured_control_flow::Map* map, analysis::AnalysisManager& analysis_manager);
 
    protected:
     void run(analysis::AnalysisManager& analysis_manager) override;

@@ -1,8 +1,6 @@
 #pragma once
 
 #include "sdfg/passes/pass.h"
-#include "sdfg/structured_control_flow/for.h"
-#include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {

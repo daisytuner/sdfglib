@@ -51,8 +51,8 @@ set(SOURCE_FILES
     src/analysis/assumptions_analysis.cpp
     src/analysis/data_parallelism_analysis.cpp
     src/analysis/happens_before_analysis.cpp
-    src/analysis/loop_tree_analysis.cpp
-    src/analysis/scope_tree_analysis.cpp
+    src/analysis/loop_analysis.cpp
+    src/analysis/scope_analysis.cpp
     src/analysis/users.cpp
     src/builder/function_builder.cpp
     src/builder/sdfg_builder.cpp
@@ -100,9 +100,9 @@ set(SOURCE_FILES
     src/passes/structured_control_flow/block_fusion.cpp
     src/passes/structured_control_flow/common_assignment_elimination.cpp
     src/passes/structured_control_flow/dead_cfg_elimination.cpp
-    src/passes/structured_control_flow/for2map.cpp
-    src/passes/structured_control_flow/loop_bound_normalization.cpp
-    src/passes/structured_control_flow/loop_dependent_symbol_elimination.cpp
+    #src/passes/structured_control_flow/for2map.cpp
+    src/passes/structured_control_flow/loop_normalization.cpp
+    #src/passes/structured_control_flow/loop_dependent_symbol_elimination.cpp
     src/passes/structured_control_flow/sequence_fusion.cpp
     src/passes/structured_control_flow/while_to_for_conversion.cpp
     src/serializer/json_serializer.cpp
@@ -115,17 +115,20 @@ set(SOURCE_FILES
     src/structured_control_flow/sequence.cpp
     src/structured_control_flow/structured_loop.cpp
     src/structured_control_flow/while.cpp
-    src/symbolic/analysis.cpp
     src/symbolic/assumptions.cpp
+    src/symbolic/conjunctive_normal_form.cpp
+    src/symbolic/extreme_values.cpp
+    src/symbolic/series.cpp
+    src/symbolic/polynomials.cpp
+    src/symbolic/sets.cpp
     src/symbolic/symbolic.cpp
-    src/transformations/loop_distribute.cpp
-    src/transformations/loop_interchange.cpp
-    src/transformations/loop_slicing.cpp
-    src/transformations/loop_tiling.cpp
-    src/transformations/loop_unroll.cpp
-    src/transformations/out_local_storage.cpp
-    src/transformations/transformation.cpp
-    src/transformations/utils.cpp
+    #src/transformations/loop_distribute.cpp
+    #src/transformations/loop_interchange.cpp
+    #src/transformations/loop_slicing.cpp
+    #src/transformations/loop_tiling.cpp
+    #src/transformations/out_local_storage.cpp
+    #src/transformations/transformation.cpp
+    #src/transformations/utils.cpp
     src/types/array.cpp
     src/types/function.cpp
     src/types/pointer.cpp
