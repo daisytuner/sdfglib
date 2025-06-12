@@ -66,7 +66,7 @@ const std::vector<data_flow::Subset> User::subsets() const {
     }
 
     // Use of symbol
-    return {{sdfg::symbolic::integer(0)}};
+    return {{}};
 };
 
 ForUser::ForUser(graph::Vertex vertex, const std::string& container, Element* element, Use use,
