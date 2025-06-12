@@ -39,9 +39,9 @@ set(TEST_FILES
     passes/dataflow/redundant_array_elimination_test.cpp
     passes/dataflow/trivial_array_elimination_test.cpp
     passes/dataflow/view_propagation_test.cpp
-    #passes/pipeline_test.cpp
+    passes/pipeline_test.cpp
     passes/structured_control_flow/block_fusion_test.cpp
-    #passes/structured_control_flow/for2map_test.cpp
+    passes/structured_control_flow/for2map_test.cpp
     passes/structured_control_flow/loop_normalization_test.cpp
     passes/symbolic/symbol_promotion_test.cpp
     passes/symbolic/symbol_propagation_test.cpp
@@ -54,10 +54,10 @@ set(TEST_FILES
     symbolic/extreme_values_test.cpp
     symbolic/polynomials_test.cpp
     symbolic/symbolic_test.cpp
-    #transformations/loop_interchange_test.cpp
-    #transformations/loop_slicing_test.cpp
-    #transformations/loop_tiling_test.cpp
-    #transformations/out_local_storage_test.cpp
+    transformations/loop_interchange_test.cpp
+    transformations/loop_slicing_test.cpp
+    transformations/loop_tiling_test.cpp
+    transformations/out_local_storage_test.cpp
     types/array_test.cpp
     types/function_test.cpp
     types/pointer_test.cpp

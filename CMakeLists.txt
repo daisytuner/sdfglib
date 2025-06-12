@@ -72,6 +72,7 @@ set(SOURCE_FILES
     src/codegen/dispatchers/for_dispatcher.cpp
     src/codegen/dispatchers/map_dispatcher.cpp
     src/codegen/dispatchers/while_dispatcher.cpp
+    src/codegen/dispatchers/library_nodes/barrier_local_dispatcher.cpp
     src/codegen/instrumentation/outermost_loops_instrumentation.cpp
     src/control_flow/interstate_edge.cpp
     src/control_flow/state.cpp
@@ -82,6 +83,7 @@ set(SOURCE_FILES
     src/data_flow/library_node.cpp
     src/data_flow/memlet.cpp
     src/data_flow/tasklet.cpp
+    src/data_flow/barrier_local_node.cpp
     src/deepcopy/structured_sdfg_deep_copy.cpp
     src/graph/graph.cpp
     src/visitor/structured_sdfg_visitor.cpp
@@ -100,12 +102,14 @@ set(SOURCE_FILES
     src/passes/structured_control_flow/block_fusion.cpp
     src/passes/structured_control_flow/common_assignment_elimination.cpp
     src/passes/structured_control_flow/dead_cfg_elimination.cpp
-    #src/passes/structured_control_flow/for2map.cpp
+    src/passes/structured_control_flow/for2map.cpp
     src/passes/structured_control_flow/loop_normalization.cpp
-    #src/passes/structured_control_flow/loop_dependent_symbol_elimination.cpp
+    src/passes/structured_control_flow/loop_dependent_symbol_elimination.cpp
     src/passes/structured_control_flow/sequence_fusion.cpp
     src/passes/structured_control_flow/while_to_for_conversion.cpp
     src/serializer/json_serializer.cpp
+    src/serializer/library_node_serializer_registry.cpp
+    src/serializer/library_nodes/barrier_local_node_serializer.cpp
     src/structured_control_flow/block.cpp
     src/structured_control_flow/control_flow_node.cpp
     src/structured_control_flow/for.cpp
@@ -122,13 +126,13 @@ set(SOURCE_FILES
     src/symbolic/polynomials.cpp
     src/symbolic/sets.cpp
     src/symbolic/symbolic.cpp
-    #src/transformations/loop_distribute.cpp
-    #src/transformations/loop_interchange.cpp
-    #src/transformations/loop_slicing.cpp
-    #src/transformations/loop_tiling.cpp
-    #src/transformations/out_local_storage.cpp
-    #src/transformations/transformation.cpp
-    #src/transformations/utils.cpp
+    src/transformations/loop_distribute.cpp
+    src/transformations/loop_interchange.cpp
+    src/transformations/loop_slicing.cpp
+    src/transformations/loop_tiling.cpp
+    src/transformations/out_local_storage.cpp
+    src/transformations/transformation.cpp
+    src/transformations/utils.cpp
     src/types/array.cpp
     src/types/function.cpp
     src/types/pointer.cpp

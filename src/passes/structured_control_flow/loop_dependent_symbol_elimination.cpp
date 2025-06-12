@@ -1,6 +1,10 @@
 #include "sdfg/passes/structured_control_flow/loop_dependent_symbol_elimination.h"
 
-#include "sdfg/analysis/memlet_analysis.h"
+#include "sdfg/analysis/assumptions_analysis.h"
+#include "sdfg/analysis/data_parallelism_analysis.h"
+#include "sdfg/analysis/loop_analysis.h"
+#include "sdfg/analysis/users.h"
+#include "sdfg/symbolic/series.h"
 
 namespace sdfg {
 namespace passes {
@@ -20,19 +24,18 @@ bool LoopDependentSymbolElimination::eliminate_symbols(
     auto init = loop.init();
     auto condition = loop.condition();
 
+    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    auto assumptions = assumptions_analysis.get(loop.root());
+
     // Assume simple loops: i = 0; i < N; i++
     if (!SymEngine::eq(*init, *symbolic::integer(0))) {
         return false;
     }
-    auto match = symbolic::affine(update, indvar);
-    if (match.first == SymEngine::null) {
+    if (!loop_analysis.is_contiguous(&loop)) {
         return false;
     }
-    if (!SymEngine::eq(*match.first, *symbolic::integer(1)) ||
-        !SymEngine::eq(*match.second, *symbolic::integer(1))) {
-        return false;
-    }
-    auto bound = analysis::MemletAnalysis::bound(loop);
+    auto bound = analysis::DataParallelismAnalysis::bound(loop);
     if (bound == SymEngine::null || !SymEngine::is_a<SymEngine::StrictLessThan>(*condition)) {
         return false;
     }
@@ -50,13 +53,8 @@ bool LoopDependentSymbolElimination::eliminate_symbols(
     for (auto& entry : last_assignments) {
         auto& sym = entry.first;
         auto& assign = entry.second;
-        auto sym_match = symbolic::affine(assign, sym);
-        if (sym_match.first == SymEngine::null) {
+        if (!symbolic::is_contiguous(assign, sym, assumptions)) {
             continue;
-        }
-        if (!SymEngine::eq(*sym_match.first, *symbolic::integer(1)) ||
-            !SymEngine::eq(*sym_match.second, *symbolic::integer(1))) {
-            return false;
         }
         loop_dependent_symbols.insert(sym->get_name());
     }
