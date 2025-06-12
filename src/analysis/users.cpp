@@ -727,8 +727,56 @@ bool Users::is_dominated_by(User& user, Use use) {
             dominator = this->dom_tree_.at(dominator);
             continue;
         }
-        // TODO: add subsets check
-        return true;
+
+        // Compare subsets
+        auto& subsets = user.subsets();
+
+        // Collect all relevant symbols
+        std::unordered_set<std::string> symbols;
+        for (auto& subset : subsets) {
+            for (auto& dim : subset) {
+                auto atoms = symbolic::atoms(dim);
+                for (auto& atom : atoms) {
+                    symbols.insert(atom->get_name());
+                }
+            }
+        }
+        // If symbols are not constant, we cannot compare the subsets
+        if (!this->is_constant(symbols, *dominator, user)) {
+            dominator = this->dom_tree_.at(dominator);
+            continue;
+        }
+
+        // Now find for every subset of user, if there is a subset of dominator that is the same
+        auto& subsets_dominator = dominator->subsets();
+        bool all_subsets_dominated = true;
+        for (auto& subset : subsets) {
+            bool subset_dominated = false;
+            for (auto& subset_dominator : subsets_dominator) {
+                if (subset.size() != subset_dominator.size()) {
+                    continue;
+                }
+                bool dominated = true;
+                for (size_t i = 0; i < subset.size(); i++) {
+                    if (!symbolic::eq(subset[i], subset_dominator[i])) {
+                        dominated = false;
+                        break;
+                    }
+                }
+                if (dominated) {
+                    subset_dominated = true;
+                    break;
+                }
+            }
+            if (!subset_dominated) {
+                all_subsets_dominated = false;
+                break;
+            }
+        }
+        if (all_subsets_dominated) {
+            return true;
+        }
+        dominator = this->dom_tree_.at(dominator);
     }
     return false;
 }
@@ -799,7 +847,7 @@ const std::unordered_set<User*> Users::all_uses_after(User& user) {
 bool Users::is_constant(const std::unordered_set<std::string>& containers, User& user1,
                         User& user2) {
     for (auto& user : this->all_uses_between(user1, user2)) {
-        if (user->use() == Use::WRITE) {
+        if (user->use() == Use::WRITE || user->use() == Use::MOVE) {
             if (containers.find(user->container()) != containers.end()) {
                 return false;
             }
@@ -1003,8 +1051,56 @@ bool UsersView::is_dominated_by(User& user, Use use) {
             dominator = this->sub_dom_tree_.at(dominator);
             continue;
         }
-        // TODO: add subsets check
-        return true;
+
+        // Compare subsets
+        auto& subsets = user.subsets();
+
+        // Collect all relevant symbols
+        std::unordered_set<std::string> symbols;
+        for (auto& subset : subsets) {
+            for (auto& dim : subset) {
+                auto atoms = symbolic::atoms(dim);
+                for (auto& atom : atoms) {
+                    symbols.insert(atom->get_name());
+                }
+            }
+        }
+        // If symbols are not constant, we cannot compare the subsets
+        if (!this->is_constant(symbols, *dominator, user)) {
+            dominator = this->sub_dom_tree_.at(dominator);
+            continue;
+        }
+
+        // Now find for every subset of user, if there is a subset of dominator that is the same
+        auto& subsets_dominator = dominator->subsets();
+        bool all_subsets_dominated = true;
+        for (auto& subset : subsets) {
+            bool subset_dominated = false;
+            for (auto& subset_dominator : subsets_dominator) {
+                if (subset.size() != subset_dominator.size()) {
+                    continue;
+                }
+                bool dominated = true;
+                for (size_t i = 0; i < subset.size(); i++) {
+                    if (!symbolic::eq(subset[i], subset_dominator[i])) {
+                        dominated = false;
+                        break;
+                    }
+                }
+                if (dominated) {
+                    subset_dominated = true;
+                    break;
+                }
+            }
+            if (!subset_dominated) {
+                all_subsets_dominated = false;
+                break;
+            }
+        }
+        if (all_subsets_dominated) {
+            return true;
+        }
+        dominator = this->sub_dom_tree_.at(dominator);
     }
     return false;
 }
@@ -1086,7 +1182,7 @@ std::unordered_set<User*> UsersView::all_uses_after(User& user) {
 bool UsersView::is_constant(const std::unordered_set<std::string>& containers, User& user1,
                             User& user2) {
     for (auto& user : this->all_uses_between(user1, user2)) {
-        if (user->use() == Use::WRITE) {
+        if (user->use() == Use::WRITE || user->use() == Use::MOVE) {
             if (containers.find(user->container()) != containers.end()) {
                 return false;
             }
