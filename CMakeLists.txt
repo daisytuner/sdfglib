@@ -72,7 +72,7 @@ set(SOURCE_FILES
     src/codegen/dispatchers/for_dispatcher.cpp
     src/codegen/dispatchers/map_dispatcher.cpp
     src/codegen/dispatchers/while_dispatcher.cpp
-    src/codegen/dispatchers/library_nodes/thread_barrier_dispatcher.cpp
+    src/codegen/dispatchers/library_nodes/barrier_local_dispatcher.cpp
     src/codegen/instrumentation/outermost_loops_instrumentation.cpp
     src/control_flow/interstate_edge.cpp
     src/control_flow/state.cpp
@@ -108,6 +108,7 @@ set(SOURCE_FILES
     src/passes/structured_control_flow/sequence_fusion.cpp
     src/passes/structured_control_flow/while_to_for_conversion.cpp
     src/serializer/json_serializer.cpp
+    src/serializer/library_nodes/barrier_local_node_serializer.cpp
     src/structured_control_flow/block.cpp
     src/structured_control_flow/control_flow_node.cpp
     src/structured_control_flow/for.cpp

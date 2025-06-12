@@ -1,4 +1,4 @@
-#include "sdfg/codegen/dispatchers/library_nodes/thread_barrier_dispatcher.h"
+#include "sdfg/codegen/dispatchers/library_nodes/barrier_local_dispatcher.h"
 
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
 #include "sdfg/codegen/language_extensions/cpp_language_extension.h"

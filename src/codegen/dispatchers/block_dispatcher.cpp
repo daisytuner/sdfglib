@@ -1,6 +1,6 @@
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 
-#include "sdfg/codegen/dispatchers/library_nodes/thread_barrier_dispatcher.h"
+#include "sdfg/codegen/dispatchers/library_nodes/barrier_local_dispatcher.h"
 
 namespace sdfg {
 namespace codegen {

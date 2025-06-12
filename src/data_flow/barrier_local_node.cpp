@@ -38,7 +38,9 @@ std::unique_ptr<DataFlowNode> BarrierLocalNode::clone(const graph::Vertex vertex
 };
 
 void BarrierLocalNode::replace(const symbolic::Expression& old_expression,
-                               const symbolic::Expression& new_expression) {};
+                               const symbolic::Expression& new_expression) {
+    // Do nothing
+};
 
 }  // namespace data_flow
 }  // namespace sdfg

@@ -5,7 +5,9 @@
 #include <nlohmann/json.hpp>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/data_flow/barrier_local_node.h"
 #include "sdfg/element.h"
+#include "sdfg/serializer/library_nodes/barrier_local_node_serializer.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
@@ -1716,63 +1718,18 @@ TEST(JSONSerializerTest, SerializeDeserialize_Arguments) {
 }
 
 inline constexpr data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
-class BarrierLocalLibraryNode : public data_flow::LibraryNode {
-   public:
-    BarrierLocalLibraryNode(const DebugInfo& debug_info, const graph::Vertex vertex,
-                            data_flow::DataFlowGraph& parent,
-                            const data_flow::LibraryNodeCode& code,
-                            const std::vector<std::string>& outputs,
-                            const std::vector<std::string>& inputs, const bool side_effect)
-        : data_flow::LibraryNode(debug_info, vertex, parent, code, outputs, inputs, side_effect) {}
-
-    virtual std::unique_ptr<data_flow::DataFlowNode> clone(
-        const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override {
-        return std::make_unique<BarrierLocalLibraryNode>(this->debug_info(), vertex, parent,
-                                                         this->code(), this->outputs(),
-                                                         this->inputs(), this->side_effect());
-    }
-
-    virtual void replace(const symbolic::Expression& old_expression,
-                         const symbolic::Expression& new_expression) override {
-        // Do nothing
-    }
-};
-
-class BarrierLocalLibraryNodeSerializer : public serializer::LibraryNodeSerializer {
-   public:
-    nlohmann::json serialize(const sdfg::data_flow::LibraryNode& library_node) override {
-        if (library_node.code() != BARRIER_LOCAL) {
-            throw std::runtime_error("Invalid library node code");
-        }
-        nlohmann::json j;
-        j["code"] = std::string(library_node.code().value());
-        return j;
-    }
-
-    data_flow::LibraryNode& deserialize(const nlohmann::json& j,
-                                        sdfg::builder::StructuredSDFGBuilder& builder,
-                                        sdfg::structured_control_flow::Block& parent) override {
-        auto code = j["code"].get<std::string_view>();
-        if (code != BARRIER_LOCAL.value()) {
-            throw std::runtime_error("Invalid library node code");
-        }
-        return builder.add_library_node<BarrierLocalLibraryNode>(parent, BARRIER_LOCAL, {}, {},
-                                                                 false);
-    };
-};
-
 TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU);
     auto& root = builder.subject().root();
 
     auto& block = builder.add_block(root);
     auto& lib_node =
-        builder.add_library_node<BarrierLocalLibraryNode>(block, BARRIER_LOCAL, {}, {}, false);
+        builder.add_library_node<data_flow::BarrierLocalNode>(block, BARRIER_LOCAL, {}, {}, false);
 
     // Register the library node serializer
     serializer::LibraryNodeSerializerRegistry::instance().register_library_node_serializer(
         BARRIER_LOCAL.value(),
-        []() { return std::make_unique<BarrierLocalLibraryNodeSerializer>(); });
+        []() { return std::make_unique<serializer::BarrierLocalNodeSerializer>(); });
 
     // Get the library node serializer
     auto lib_node_serializer_fn =
@@ -1793,6 +1750,6 @@ TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
     EXPECT_EQ(lib_node_new.outputs(), lib_node.outputs());
     EXPECT_EQ(lib_node_new.inputs(), lib_node.inputs());
 
-    EXPECT_TRUE(dynamic_cast<BarrierLocalLibraryNode*>(&lib_node_new));
-    auto barrier_local_node = dynamic_cast<BarrierLocalLibraryNode*>(&lib_node_new);
+    EXPECT_TRUE(dynamic_cast<data_flow::BarrierLocalNode*>(&lib_node_new));
+    auto barrier_local_node = dynamic_cast<data_flow::BarrierLocalNode*>(&lib_node_new);
 }
