@@ -733,10 +733,10 @@ bool Users::is_dominated_by(User& user, Use use) {
     return false;
 }
 
-const std::unordered_set<User*> Users::all_uses_between(User& user1, User& user) {
+const std::unordered_set<User*> Users::all_uses_between(User& user1, User& user2) {
     std::unordered_set<User*> uses;
     std::unordered_set<User*> visited;
-    std::list<User*> queue = {&user};
+    std::list<User*> queue = {&user2};
     while (!queue.empty()) {
         auto current = queue.front();
         queue.pop_front();
@@ -751,7 +751,7 @@ const std::unordered_set<User*> Users::all_uses_between(User& user1, User& user)
         }
         visited.insert(current);
 
-        if (current != &user1 && current != &user && current->use() != Use::NOP) {
+        if (current != &user1 && current != &user2 && current->use() != Use::NOP) {
             uses.insert(current);
         }
 
@@ -768,10 +768,10 @@ const std::unordered_set<User*> Users::all_uses_between(User& user1, User& user)
     return uses;
 };
 
-const std::unordered_set<User*> Users::all_uses_after(User& user1) {
+const std::unordered_set<User*> Users::all_uses_after(User& user) {
     std::unordered_set<User*> uses;
     std::unordered_set<User*> visited;
-    std::list<User*> queue = {&user1};
+    std::list<User*> queue = {&user};
     while (!queue.empty()) {
         auto current = queue.front();
         queue.pop_front();
@@ -780,7 +780,7 @@ const std::unordered_set<User*> Users::all_uses_after(User& user1) {
         }
         visited.insert(current);
 
-        if (current != &user1 && current->use() != Use::NOP) {
+        if (current != &user && current->use() != Use::NOP) {
             uses.insert(current);
         }
 
@@ -795,6 +795,18 @@ const std::unordered_set<User*> Users::all_uses_after(User& user1) {
 
     return uses;
 };
+
+bool Users::is_constant(const std::unordered_set<std::string>& containers, User& user1,
+                        User& user2) {
+    for (auto& user : this->all_uses_between(user1, user2)) {
+        if (user->use() == Use::WRITE) {
+            if (containers.find(user->container()) != containers.end()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
 
 UsersView::UsersView(Users& users, structured_control_flow::ControlFlowNode& node) : users_(users) {
     auto& entry = users.entries_.at(&node);
@@ -997,9 +1009,9 @@ bool UsersView::is_dominated_by(User& user, Use use) {
     return false;
 }
 
-std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user) {
+std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user2) {
     assert(this->sub_users_.find(&user1) != this->sub_users_.end());
-    assert(this->sub_users_.find(&user) != this->sub_users_.end());
+    assert(this->sub_users_.find(&user2) != this->sub_users_.end());
 
     std::unordered_set<User*> uses;
     std::unordered_set<User*> visited;
@@ -1012,7 +1024,7 @@ std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user) {
         }
         visited.insert(current);
 
-        if (current != &user1 && current != &user && current->use() != Use::NOP) {
+        if (current != &user1 && current != &user2 && current->use() != Use::NOP) {
             uses.insert(current);
         }
 
@@ -1021,7 +1033,7 @@ std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user) {
             continue;
         }
 
-        if (current == &user) {
+        if (current == &user2) {
             continue;
         }
 
@@ -1037,12 +1049,12 @@ std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user) {
     return uses;
 };
 
-std::unordered_set<User*> UsersView::all_uses_after(User& user1) {
-    assert(this->sub_users_.find(&user1) != this->sub_users_.end());
+std::unordered_set<User*> UsersView::all_uses_after(User& user) {
+    assert(this->sub_users_.find(&user) != this->sub_users_.end());
 
     std::unordered_set<User*> uses;
     std::unordered_set<User*> visited;
-    std::list<User*> queue = {&user1};
+    std::list<User*> queue = {&user};
     while (!queue.empty()) {
         auto current = queue.front();
         queue.pop_front();
@@ -1051,7 +1063,7 @@ std::unordered_set<User*> UsersView::all_uses_after(User& user1) {
         }
         visited.insert(current);
 
-        if (current != &user1 && current->use() != Use::NOP) {
+        if (current != &user && current->use() != Use::NOP) {
             uses.insert(current);
         }
 
@@ -1070,6 +1082,18 @@ std::unordered_set<User*> UsersView::all_uses_after(User& user1) {
 
     return uses;
 };
+
+bool UsersView::is_constant(const std::unordered_set<std::string>& containers, User& user1,
+                            User& user2) {
+    for (auto& user : this->all_uses_between(user1, user2)) {
+        if (user->use() == Use::WRITE) {
+            if (containers.find(user->container()) != containers.end()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
 
 User* Users::get_user(const std::string& container, Element* element, Use use, bool is_init,
                       bool is_condition, bool is_update) {
