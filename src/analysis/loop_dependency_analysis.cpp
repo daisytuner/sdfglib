@@ -118,16 +118,17 @@ void LoopDependencyAnalysis::analyze(analysis::AnalysisManager& analysis_manager
 }
 
 bool LoopDependencyAnalysis::intersects(User* first, User* second) const {
+    /*
     for (auto& subset : first->subsets()) {
         for (auto& subset_other : second->subsets()) {
-            // TODO: Implement symbolic intersection
-            // if (symbolic::intersect(subset, subset_other)) {
-            //    return true;
-            //}
-            return true;
+            if (symbolic::intersect(subset, subset_other)) {
+                return true;
+            }
         }
     }
     return false;
+    */
+    return true;
 }
 
 }  // namespace analysis

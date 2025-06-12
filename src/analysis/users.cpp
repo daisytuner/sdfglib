@@ -716,6 +716,23 @@ bool Users::post_dominates(User& user1, User& user) {
     return false;
 };
 
+bool Users::is_dominated_by(User& user, Use use) {
+    auto dominator = this->dom_tree_.at(&user);
+    while (dominator != nullptr) {
+        if (dominator->use() != use) {
+            dominator = this->dom_tree_.at(dominator);
+            continue;
+        }
+        if (dominator->container() != user.container()) {
+            dominator = this->dom_tree_.at(dominator);
+            continue;
+        }
+        // TODO: add subsets check
+        return true;
+    }
+    return false;
+}
+
 const std::unordered_set<User*> Users::all_uses_between(User& user1, User& user) {
     std::unordered_set<User*> uses;
     std::unordered_set<User*> visited;
@@ -962,6 +979,23 @@ bool UsersView::post_dominates(User& user1, User& user) {
     }
     return false;
 };
+
+bool UsersView::is_dominated_by(User& user, Use use) {
+    auto dominator = this->sub_dom_tree_.at(&user);
+    while (dominator != nullptr) {
+        if (dominator->use() != use) {
+            dominator = this->sub_dom_tree_.at(dominator);
+            continue;
+        }
+        if (dominator->container() != user.container()) {
+            dominator = this->sub_dom_tree_.at(dominator);
+            continue;
+        }
+        // TODO: add subsets check
+        return true;
+    }
+    return false;
+}
 
 std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user) {
     assert(this->sub_users_.find(&user1) != this->sub_users_.end());

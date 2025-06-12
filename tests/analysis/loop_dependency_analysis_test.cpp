@@ -1,5 +1,5 @@
-#include <gtest/gtest.h>
+#include "sdfg/analysis/loop_dependency_analysis.h"
 
-#include "sdfg/analysis/loop_dependencies_analysis.h"
+#include <gtest/gtest.h>
 
 using namespace sdfg;

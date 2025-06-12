@@ -46,6 +46,8 @@ TEST(UsersTest, Block_WAR) {
     EXPECT_EQ(write->element(), &output_node);
     EXPECT_TRUE(users.dominates(*read, *write));
     EXPECT_TRUE(users.post_dominates(*write, *read));
+    EXPECT_TRUE(users.is_dominated_by(*write, analysis::Use::READ));
+    EXPECT_FALSE(users.is_dominated_by(*read, analysis::Use::WRITE));
 }
 
 TEST(UsersTest, Block_WAW) {
@@ -97,6 +99,10 @@ TEST(UsersTest, Block_WAW) {
     EXPECT_EQ(write2->element(), &output_node2);
     EXPECT_TRUE(users.dominates(*write1, *write2));
     EXPECT_TRUE(users.post_dominates(*write2, *write1));
+    EXPECT_FALSE(users.is_dominated_by(*write1, analysis::Use::READ));
+    EXPECT_FALSE(users.is_dominated_by(*write2, analysis::Use::READ));
+    EXPECT_FALSE(users.is_dominated_by(*write1, analysis::Use::WRITE));
+    EXPECT_TRUE(users.is_dominated_by(*write2, analysis::Use::WRITE));
 }
 
 TEST(UsersTest, Block_RAW) {
