@@ -1,7 +1,7 @@
 #include "sdfg/passes/symbolic/condition_propagation.h"
 
+#include "sdfg/analysis/users.h"
 #include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
-#include "sdfg/structured_control_flow/structured_loop.h"
 
 namespace sdfg {
 namespace passes {

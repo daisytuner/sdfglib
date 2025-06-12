@@ -136,11 +136,17 @@ bool uses(const Expression& expr, const std::string& name) {
     return symbolic::uses(expr, symbol(name));
 };
 
-SymbolicSet atoms(const Expression& expr) {
-    return SymEngine::atoms<const SymEngine::Symbol>(*expr);
+SymbolSet atoms(const Expression& expr) {
+    SymbolSet atoms;
+    for (auto& atom : SymEngine::atoms<const SymEngine::Basic>(*expr)) {
+        if (SymEngine::is_a<SymEngine::Symbol>(*atom)) {
+            atoms.insert(SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom));
+        }
+    }
+    return atoms;
 };
 
-SymbolicSet muls(const Expression& expr) { return SymEngine::atoms<const SymEngine::Mul>(*expr); };
+ExpressionSet muls(const Expression& expr) { return SymEngine::atoms<const SymEngine::Mul>(*expr); };
 
 Expression subs(const Expression& expr, const Expression& old_expr, const Expression& new_expr) {
     SymEngine::map_basic_basic d;
@@ -154,105 +160,6 @@ Condition subs(const Condition& expr, const Expression& old_expr, const Expressi
     d[old_expr] = new_expr;
 
     return SymEngine::rcp_static_cast<const SymEngine::Boolean>(expr->subs(d));
-};
-
-Condition simplify(const Condition& expr) {
-    auto true_expr = symbolic::__true__();
-    auto false_expr = symbolic::__false__();
-    if (SymEngine::is_a<SymEngine::Equality>(*expr)) {
-        auto args = expr->get_args();
-        if (!SymEngine::is_a_Boolean(*args[0]) || !SymEngine::is_a_Boolean(*args[1])) {
-            return expr;
-        }
-        auto arg0 = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(args[0]);
-        auto arg1 = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(args[1]);
-
-        if (SymEngine::eq(*arg0, *false_expr)) {
-            return symbolic::Not(arg1);
-        } else if (SymEngine::eq(*arg1, *false_expr)) {
-            return symbolic::Not(arg0);
-        } else if (SymEngine::eq(*arg0, *true_expr)) {
-            return arg1;
-        } else if (SymEngine::eq(*arg1, *true_expr)) {
-            return arg0;
-        }
-    } else if (SymEngine::is_a<SymEngine::Unequality>(*expr)) {
-        auto args = expr->get_args();
-        if (!SymEngine::is_a_Boolean(*args[0]) || !SymEngine::is_a_Boolean(*args[1])) {
-            return expr;
-        }
-        auto arg0 = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(args[0]);
-        auto arg1 = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(args[1]);
-
-        if (SymEngine::eq(*arg0, *false_expr)) {
-            return arg1;
-        } else if (SymEngine::eq(*arg1, *false_expr)) {
-            return arg0;
-        } else if (SymEngine::eq(*arg0, *true_expr)) {
-            return symbolic::Not(arg1);
-        } else if (SymEngine::eq(*arg1, *true_expr)) {
-            return symbolic::Not(arg0);
-        }
-    } else if (SymEngine::is_a<SymEngine::And>(*expr)) {
-        auto elements = expr->get_args();
-        std::vector<Condition> simplified;
-        for (auto& element : elements) {
-            bool found = false;
-            if (SymEngine::is_a<SymEngine::LessThan>(*element)) {
-                auto args = element->get_args();
-                for (auto& mirror : elements) {
-                    if (SymEngine::is_a<SymEngine::LessThan>(*mirror)) {
-                        auto mirror_args = mirror->get_args();
-                        if (symbolic::eq(args[0], mirror_args[1]) &&
-                            symbolic::eq(args[1], mirror_args[0])) {
-                            auto arg0 = args[0];
-                            auto arg1 = args[1];
-                            simplified.push_back(symbolic::Eq(arg0, arg1));
-                            found = true;
-                            continue;
-                        }
-                    }
-                }
-            }
-            if (!found) {
-                simplified.push_back(
-                    SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(element));
-            }
-        }
-        Condition result = symbolic::__true__();
-        for (auto& element : simplified) {
-            result = symbolic::And(result, element);
-        }
-        return result;
-    }
-    return expr;
-};
-
-Expression simplify(const Expression& expr) {
-    if (SymEngine::is_a_Boolean(*expr)) {
-        return symbolic::simplify(SymEngine::rcp_static_cast<const SymEngine::Boolean>(expr));
-    } else if (SymEngine::is_a<SymEngine::Min>(*expr)) {
-        auto args = expr->get_args();
-        if (symbolic::eq(args[0], args[1])) {
-            return symbolic::simplify(args[0]);
-        } else if (symbolic::eq(args[0], symbolic::infty(1))) {
-            return symbolic::simplify(args[1]);
-        } else if (symbolic::eq(args[1], symbolic::infty(1))) {
-            return symbolic::simplify(args[0]);
-        }
-        return symbolic::min(symbolic::simplify(args[0]), symbolic::simplify(args[1]));
-    } else if (SymEngine::is_a<SymEngine::Max>(*expr)) {
-        auto args = expr->get_args();
-        if (symbolic::eq(args[0], args[1])) {
-            return symbolic::simplify(args[0]);
-        } else if (symbolic::eq(args[0], symbolic::infty(-1))) {
-            return symbolic::simplify(args[1]);
-        } else if (symbolic::eq(args[1], symbolic::infty(-1))) {
-            return symbolic::simplify(args[0]);
-        }
-    }
-
-    return SymEngine::simplify(expr);
 };
 
 Condition rearrange_simple_condition(const Condition& inequality, const Symbol& target_symbol) {

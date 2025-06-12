@@ -115,12 +115,11 @@ void HappensBeforeAnalysis::visit_block(
             if (tasklet->is_conditional()) {
                 auto& condition = tasklet->condition();
                 for (auto& atom : symbolic::atoms(condition)) {
-                    auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
-                    auto current_user = users.get_user(sym->get_name(), tasklet, Use::READ);
+                    auto current_user = users.get_user(atom->get_name(), tasklet, Use::READ);
                     {
                         bool found = false;
                         for (auto& user : open_reads_after_writes) {
-                            if (user.first->container() == sym->get_name()) {
+                            if (user.first->container() == atom->get_name()) {
                                 user.second.insert(current_user);
                                 found = true;
                             }
@@ -137,17 +136,16 @@ void HappensBeforeAnalysis::visit_block(
             std::unordered_set<std::string> used;
             for (auto& dim : oedge.subset()) {
                 for (auto atom : symbolic::atoms(dim)) {
-                    auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
-                    used.insert(sym->get_name());
+                    used.insert(atom->get_name());
                 }
             }
-            for (auto& sym : used) {
-                auto current_user = users.get_user(sym, &oedge, Use::READ);
+            for (auto& atom : used) {
+                auto current_user = users.get_user(atom, &oedge, Use::READ);
 
                 {
                     bool found = false;
                     for (auto& user : open_reads_after_writes) {
-                        if (user.first->container() == sym) {
+                        if (user.first->container() == atom) {
                             user.second.insert(current_user);
                             found = true;
                         }
@@ -168,12 +166,11 @@ void HappensBeforeAnalysis::visit_for(
     std::unordered_map<User*, std::unordered_set<User*>>& closed_reads_after_write) {
     // Read Init
     for (auto atom : symbolic::atoms(for_loop.init())) {
-        auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
-        auto current_user = users.get_user(sym->get_name(), &for_loop, Use::READ, true);
+        auto current_user = users.get_user(atom->get_name(), &for_loop, Use::READ, true);
 
         bool found = false;
         for (auto& user : open_reads_after_writes) {
-            if (user.first->container() == sym->get_name()) {
+            if (user.first->container() == atom->get_name()) {
                 user.second.insert(current_user);
                 found = true;
             }
@@ -209,12 +206,11 @@ void HappensBeforeAnalysis::visit_for(
 
     // Read Condition - Never written in body
     for (auto atom : symbolic::atoms(for_loop.condition())) {
-        auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
-        auto current_user = users.get_user(sym->get_name(), &for_loop, Use::READ, false, true);
+        auto current_user = users.get_user(atom->get_name(), &for_loop, Use::READ, false, true);
 
         bool found = false;
         for (auto& user : open_reads_after_writes) {
-            if (user.first->container() == sym->get_name()) {
+            if (user.first->container() == atom->get_name()) {
                 user.second.insert(current_user);
                 found = true;
             }
@@ -237,13 +233,12 @@ void HappensBeforeAnalysis::visit_for(
 
     // Read Update
     for (auto atom : symbolic::atoms(for_loop.update())) {
-        auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
         auto current_user =
-            users.get_user(sym->get_name(), &for_loop, Use::READ, false, false, true);
+            users.get_user(atom->get_name(), &for_loop, Use::READ, false, false, true);
 
         // Add for body
         for (auto& user : open_reads_after_writes_for) {
-            if (user.first->container() == sym->get_name()) {
+            if (user.first->container() == atom->get_name()) {
                 user.second.insert(current_user);
             }
         }
@@ -251,7 +246,7 @@ void HappensBeforeAnalysis::visit_for(
         // Add to outside
         bool found = false;
         for (auto& user : open_reads_after_writes) {
-            if (user.first->container() == sym->get_name()) {
+            if (user.first->container() == atom->get_name()) {
                 user.second.insert(current_user);
                 found = true;
             }
@@ -297,12 +292,11 @@ void HappensBeforeAnalysis::visit_if_else(
     for (size_t i = 0; i < if_else.size(); i++) {
         auto child = if_else.at(i).second;
         for (auto atom : symbolic::atoms(child)) {
-            auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
-            auto current_user = users.get_user(sym->get_name(), &if_else, Use::READ);
+            auto current_user = users.get_user(atom->get_name(), &if_else, Use::READ);
 
             bool found = false;
             for (auto& user : open_reads_after_writes) {
-                if (user.first->container() == sym->get_name()) {
+                if (user.first->container() == atom->get_name()) {
                     user.second.insert(current_user);
                     found = true;
                 }
@@ -533,15 +527,14 @@ void HappensBeforeAnalysis::visit_sequence(
         // handle transitions read
         for (auto& entry : child.second.assignments()) {
             for (auto& atom : symbolic::atoms(entry.second)) {
-                auto sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(atom);
-                if (symbolic::is_pointer(sym)) {
+                if (symbolic::is_pointer(atom)) {
                     continue;
                 }
-                auto current_user = users.get_user(sym->get_name(), &child.second, Use::READ);
+                auto current_user = users.get_user(atom->get_name(), &child.second, Use::READ);
 
                 bool found = false;
                 for (auto& user : open_reads_after_writes) {
-                    if (user.first->container() == sym->get_name()) {
+                    if (user.first->container() == atom->get_name()) {
                         user.second.insert(current_user);
                         found = true;
                     }

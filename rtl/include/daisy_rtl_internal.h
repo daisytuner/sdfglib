@@ -1,10 +1,10 @@
 #ifndef __DAISY_RTL_INTERNAL_
 #define __DAISY_RTL_INTERNAL_
 
-#include "daisy_rtl.h"
-
-#include <vector>
 #include <string>
+#include <vector>
+
+#include "daisy_rtl.h"
 
 class Instrumentation_PAPI {
    private:
@@ -23,19 +23,15 @@ class Instrumentation_PAPI {
     void __daisy_instrument_enter();
 
     // Deprecated
-    void __daisy_instrument_exit(const char* region_name, const char* file_name, long line_begin,
-                                 long line_end, long column_begin, long column_end);
+    void __daisy_instrument_exit(const char* region_name, const char* file_name,
+                                 const char* function_name, long line_begin, long line_end,
+                                 long column_begin, long column_end);
 
-    void __daisy_instrument_exit_with_metadata(
-        const char* region_name,
-        const char* dbg_file_name,
-        long dbg_line_begin,
-        long dbg_line_end,
-        long dbg_column_begin,
-        long dbg_column_end,
-        const char* source_file,
-        const char* features_file
-    );
+    void __daisy_instrument_exit_with_metadata(const char* region_name, const char* dbg_file_name,
+                                               const char* dbg_function_name, long dbg_line_begin,
+                                               long dbg_line_end, long dbg_column_begin,
+                                               long dbg_column_end, const char* source_file,
+                                               const char* features_file);
 };
 
 #endif  // __DAISY_RTL_INTERNAL_

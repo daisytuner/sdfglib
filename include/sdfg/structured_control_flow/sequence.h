@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "sdfg/structured_control_flow/control_flow_node.h"
-#include "sdfg/symbolic/symbolic.h"
+#include "sdfg/control_flow/interstate_edge.h"
 
 namespace sdfg {
 
@@ -23,19 +23,19 @@ class Transition : public Element {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
    private:
-    symbolic::Assignments assignments_;
+    control_flow::Assignments assignments_;
 
     Transition(const DebugInfo& debug_info);
 
-    Transition(const DebugInfo& debug_info, const symbolic::Assignments& assignments);
+    Transition(const DebugInfo& debug_info, const control_flow::Assignments& assignments);
 
    public:
     Transition(const Transition& node) = delete;
     Transition& operator=(const Transition&) = delete;
 
-    const symbolic::Assignments& assignments() const;
+    const control_flow::Assignments& assignments() const;
 
-    symbolic::Assignments& assignments();
+    control_flow::Assignments& assignments();
 
     bool empty() const;
 

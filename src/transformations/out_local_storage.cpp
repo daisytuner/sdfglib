@@ -58,7 +58,7 @@ bool OutLocalStorage::can_be_applied(builder::StructuredSDFGBuilder& builder,
 
     // Criterion: Check if accesses do not depend on containers written in the loop
     auto writes = body_users.writes();
-    symbolic::SymbolicSet written_containers;
+    symbolic::SymbolSet written_containers;
     for (auto write : writes) {
         written_containers.insert(symbolic::symbol(write->container()));
     }

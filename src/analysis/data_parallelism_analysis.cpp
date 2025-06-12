@@ -3,6 +3,7 @@
 #include <regex>
 
 #include "sdfg/analysis/assumptions_analysis.h"
+#include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/users.h"
 #include "sdfg/codegen/language_extensions/cpp_language_extension.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
@@ -12,7 +13,7 @@ namespace analysis {
 
 std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::substitution(
     const data_flow::Subset& subset1, const data_flow::Subset& subset2, const std::string& indvar,
-    const std::unordered_set<std::string>& moving_symbols, symbolic::SymbolicMap& replacements,
+    const std::unordered_set<std::string>& moving_symbols, symbolic::ExpressionMap& replacements,
     std::vector<std::string>& substitions) {
     data_flow::Subset subset1_new;
     for (auto& dim : subset1) {
@@ -148,7 +149,7 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::delinea
         }
 
         bool is_nonnegative = false;
-        symbolic::SymbolicSet lbs_off;
+        symbolic::ExpressionSet lbs_off;
         symbolic::lower_bounds(off, assumptions, lbs_off);
         for (auto& lb : lbs_off) {
             if (SymEngine::is_a<SymEngine::Integer>(*lb)) {
@@ -165,7 +166,7 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::delinea
         }
 
         bool success = false;
-        symbolic::SymbolicSet ubs_off;
+        symbolic::ExpressionSet ubs_off;
         symbolic::upper_bounds(off, assumptions, ubs_off);
         for (auto& ub_off : ubs_off) {
             if (symbolic::eq(mul, symbolic::add(ub_off, symbolic::one()))) {
@@ -243,7 +244,7 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::delinea
         }
 
         bool is_nonnegative = false;
-        symbolic::SymbolicSet lbs_off;
+        symbolic::ExpressionSet lbs_off;
         symbolic::lower_bounds(off, assumptions, lbs_off);
         for (auto& lb : lbs_off) {
             if (SymEngine::is_a<SymEngine::Integer>(*lb)) {
@@ -260,7 +261,7 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::delinea
         }
 
         bool success = false;
-        symbolic::SymbolicSet ubs_off;
+        symbolic::ExpressionSet ubs_off;
         symbolic::upper_bounds(off, assumptions, ubs_off);
         for (auto& ub_off : ubs_off) {
             if (symbolic::eq(mul, symbolic::add(ub_off, symbolic::one()))) {
@@ -291,7 +292,7 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
     codegen::CPPLanguageExtension language_extension;
 
     // Attempt to substitute complex constant expressions by parameters
-    symbolic::SymbolicMap replacements;
+    symbolic::ExpressionMap replacements;
     std::vector<std::string> substitions;
     auto [subset1_, subset2_] = DataParallelismAnalysis::substitution(
         subset1, subset2, indvar, moving_symbols, replacements, substitions);
@@ -697,11 +698,12 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
 };
 
 void DataParallelismAnalysis::classify(analysis::AnalysisManager& analysis_manager,
-                                       const structured_control_flow::StructuredLoop* loop) {
+                                       structured_control_flow::StructuredLoop* loop) {
+    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+
     // Strictly monotonic update
     auto& indvar = loop->indvar();
-    auto& update = loop->update();
-    if (symbolic::strict_monotonicity(update, indvar) != symbolic::Sign::POSITIVE) {
+    if (!loop_analysis.is_monotonic(loop)) {
         this->results_.insert({loop, DataParallelismAnalysisResult()});
         return;
     }
@@ -928,36 +930,13 @@ void DataParallelismAnalysis::classify(analysis::AnalysisManager& analysis_manag
 };
 
 void DataParallelismAnalysis::run(analysis::AnalysisManager& analysis_manager) {
-    this->loops_.clear();
     this->results_.clear();
 
-    // Collect all for loops
-    std::list<const structured_control_flow::ControlFlowNode*> queue = {&sdfg_.root()};
-    while (!queue.empty()) {
-        auto current = queue.front();
-        queue.pop_front();
-
-        if (auto sequence_stmt = dynamic_cast<const structured_control_flow::Sequence*>(current)) {
-            for (size_t i = 0; i < sequence_stmt->size(); i++) {
-                queue.push_back(&sequence_stmt->at(i).first);
-            }
-        } else if (auto if_else_stmt =
-                       dynamic_cast<const structured_control_flow::IfElse*>(current)) {
-            for (size_t i = 0; i < if_else_stmt->size(); i++) {
-                queue.push_back(&if_else_stmt->at(i).first);
-            }
-        } else if (auto while_stmt = dynamic_cast<const structured_control_flow::While*>(current)) {
-            queue.push_back(&while_stmt->root());
-        } else if (auto sloop_stmt =
-                       dynamic_cast<const structured_control_flow::StructuredLoop*>(current)) {
-            this->loops_.insert(sloop_stmt);
-            queue.push_back(&sloop_stmt->root());
+    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    for (auto& loop : loop_analysis.loops()) {
+        if (auto sloop = dynamic_cast<structured_control_flow::StructuredLoop*>(loop)) {
+            this->classify(analysis_manager, sloop);
         }
-    }
-
-    // Classify each loop
-    for (auto& entry : this->loops_) {
-        this->classify(analysis_manager, entry);
     }
 };
 
@@ -969,15 +948,6 @@ DataParallelismAnalysis::DataParallelismAnalysis(StructuredSDFG& sdfg)
 const DataParallelismAnalysisResult& DataParallelismAnalysis::get(
     const structured_control_flow::StructuredLoop& loop) const {
     return this->results_.at(&loop);
-};
-
-bool DataParallelismAnalysis::is_contiguous(const structured_control_flow::StructuredLoop& loop) {
-    return symbolic::contiguity(loop.update(), loop.indvar());
-};
-
-bool DataParallelismAnalysis::is_strictly_monotonic(
-    const structured_control_flow::StructuredLoop& loop) {
-    return symbolic::strict_monotonicity(loop.update(), loop.indvar()) == symbolic::Sign::POSITIVE;
 };
 
 symbolic::Expression DataParallelismAnalysis::bound(

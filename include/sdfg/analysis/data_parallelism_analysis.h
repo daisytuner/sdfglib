@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "sdfg/analysis/analysis.h"
-#include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/structured_sdfg.h"
 
 namespace sdfg {
@@ -29,7 +28,6 @@ typedef std::unordered_map<std::string, Parallelism> DataParallelismAnalysisResu
 
 class DataParallelismAnalysis : public Analysis {
    private:
-    std::unordered_set<const structured_control_flow::StructuredLoop*> loops_;
     std::unordered_map<const structured_control_flow::StructuredLoop*,
                        DataParallelismAnalysisResult>
         results_;
@@ -39,7 +37,7 @@ class DataParallelismAnalysis : public Analysis {
                   const symbolic::Assumptions& assumptions);
 
     void classify(analysis::AnalysisManager& analysis_manager,
-                  const structured_control_flow::StructuredLoop* loop);
+                  structured_control_flow::StructuredLoop* loop);
 
    protected:
     void run(analysis::AnalysisManager& analysis_manager) override;
@@ -50,16 +48,12 @@ class DataParallelismAnalysis : public Analysis {
     const DataParallelismAnalysisResult& get(
         const structured_control_flow::StructuredLoop& loop) const;
 
-    static bool is_contiguous(const structured_control_flow::StructuredLoop& loop);
-
-    static bool is_strictly_monotonic(const structured_control_flow::StructuredLoop& loop);
-
     static symbolic::Expression bound(const structured_control_flow::StructuredLoop& loop);
 
     static std::pair<data_flow::Subset, data_flow::Subset> substitution(
         const data_flow::Subset& subset1, const data_flow::Subset& subset2,
         const std::string& indvar, const std::unordered_set<std::string>& moving_symbols,
-        symbolic::SymbolicMap& replacements, std::vector<std::string>& substitions);
+        symbolic::ExpressionMap& replacements, std::vector<std::string>& substitions);
 
     static std::pair<data_flow::Subset, data_flow::Subset> delinearization(
         const data_flow::Subset& subset1, const data_flow::Subset& subset2,

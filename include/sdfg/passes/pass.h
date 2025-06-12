@@ -1,8 +1,6 @@
 #pragma once
 
-#include <sdfg/analysis/analysis.h>
-
-#include "sdfg/analysis/users.h"
+#include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/sdfg_builder.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 

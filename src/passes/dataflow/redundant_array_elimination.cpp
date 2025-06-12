@@ -1,20 +1,13 @@
 #include "sdfg/passes/dataflow/redundant_array_elimination.h"
 
-#include <cassert>
-
-#include "sdfg/data_flow/access_node.h"
-#include "sdfg/structured_control_flow/for.h"
-#include "sdfg/symbolic/symbolic.h"
-#include "sdfg/types/array.h"
-#include "sdfg/types/type.h"
+#include "sdfg/analysis/users.h"
 #include "sdfg/types/utils.h"
-#include "symengine/symbol.h"
 
 namespace sdfg {
 namespace passes {
 
 RedundantArrayElimination::RedundantArrayElimination()
-    : Pass(){
+    : Pass() {
 
       };
 

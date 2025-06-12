@@ -127,7 +127,7 @@ class Users : public Analysis {
     User* get_user(const std::string& container, Element* element, Use use, bool is_init = false,
                    bool is_condition = false, bool is_update = false);
 
-    /**** User API ****/
+    /**** Users ****/
 
     std::vector<User*> uses() const;
 
@@ -151,25 +151,19 @@ class Users : public Analysis {
 
     /****** Domination Analysis ******/
 
-    const std::unordered_set<User*> sources(const std::string& container) const;
-
-    const std::unordered_map<User*, User*>& dominator_tree();
-
     bool dominates(User& user1, User& user);
-
-    const std::unordered_map<User*, User*>& post_dominator_tree();
 
     bool post_dominates(User& user1, User& user);
 
-    const std::unordered_set<User*> all_uses_between(User& user1, User& user);
+    bool is_dominated_by(User& user, Use use);
 
-    const std::unordered_set<User*> all_uses_after(User& user1);
+    const std::unordered_set<User*> all_uses_between(User& user1, User& user2);
 
-    /****** Locals ******/
+    const std::unordered_set<User*> all_uses_after(User& user);
 
-    std::unordered_map<std::string, std::vector<data_flow::Subset>> read_subsets();
+    bool is_constant(const std::unordered_set<std::string>& containers, User& user1, User& user2);
 
-    std::unordered_map<std::string, std::vector<data_flow::Subset>> write_subsets();
+    /**** Deprecated ****/
 
     std::unordered_set<std::string> locals(StructuredSDFG& sdfg,
                                            structured_control_flow::ControlFlowNode& node);
@@ -188,6 +182,8 @@ class UsersView {
 
    public:
     UsersView(Users& users, structured_control_flow::ControlFlowNode& node);
+
+    /**** Users ****/
 
     std::vector<User*> uses() const;
 
@@ -209,21 +205,21 @@ class UsersView {
 
     std::vector<User*> moves(const std::string& container) const;
 
-    std::unordered_map<User*, User*> dominator_tree();
+    /****** Domination Analysis ******/
 
     bool dominates(User& user1, User& user);
 
-    std::unordered_map<User*, User*> post_dominator_tree();
-
     bool post_dominates(User& user1, User& user);
 
-    std::unordered_set<User*> all_uses_between(User& user1, User& user);
+    bool is_dominated_by(User& user, Use use);
 
-    std::unordered_set<User*> all_uses_after(User& user1);
+    std::unordered_set<User*> all_uses_between(User& user1, User& user2);
 
-    std::unordered_map<std::string, std::vector<data_flow::Subset>> read_subsets();
+    std::unordered_set<User*> all_uses_after(User& user);
 
-    std::unordered_map<std::string, std::vector<data_flow::Subset>> write_subsets();
+    bool is_constant(const std::unordered_set<std::string>& containers, User& user1, User& user2);
+
+    /*** Deprecated ***/
 
     std::unordered_set<std::string> locals(StructuredSDFG& sdfg,
                                            structured_control_flow::ControlFlowNode& node);

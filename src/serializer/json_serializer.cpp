@@ -617,7 +617,7 @@ void JSONSerializer::json_to_sequence(const nlohmann::json& j,
             assert(transition["type"].is_string());
             assert(transition.contains("assignments"));
             assert(transition["assignments"].is_array());
-            symbolic::Assignments assignments;
+            control_flow::Assignments assignments;
             for (const auto& assignment : transition["assignments"]) {
                 assert(assignment.contains("symbol"));
                 assert(assignment["symbol"].is_string());
@@ -662,7 +662,7 @@ void JSONSerializer::json_to_sequence(const nlohmann::json& j,
 void JSONSerializer::json_to_block_node(const nlohmann::json& j,
                                         builder::StructuredSDFGBuilder& builder,
                                         structured_control_flow::Sequence& parent,
-                                        symbolic::Assignments& assignments) {
+                                        control_flow::Assignments& assignments) {
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j.contains("dataflow"));
@@ -682,7 +682,7 @@ void JSONSerializer::json_to_block_node(const nlohmann::json& j,
 void JSONSerializer::json_to_for_node(const nlohmann::json& j,
                                       builder::StructuredSDFGBuilder& builder,
                                       structured_control_flow::Sequence& parent,
-                                      symbolic::Assignments& assignments) {
+                                      control_flow::Assignments& assignments) {
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j.contains("indvar"));
@@ -717,7 +717,7 @@ void JSONSerializer::json_to_for_node(const nlohmann::json& j,
 void JSONSerializer::json_to_if_else_node(const nlohmann::json& j,
                                           builder::StructuredSDFGBuilder& builder,
                                           structured_control_flow::Sequence& parent,
-                                          symbolic::Assignments& assignments) {
+                                          control_flow::Assignments& assignments) {
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "if_else");
@@ -751,7 +751,7 @@ void JSONSerializer::json_to_if_else_node(const nlohmann::json& j,
 void JSONSerializer::json_to_while_node(const nlohmann::json& j,
                                         builder::StructuredSDFGBuilder& builder,
                                         structured_control_flow::Sequence& parent,
-                                        symbolic::Assignments& assignments) {
+                                        control_flow::Assignments& assignments) {
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "while");
@@ -768,7 +768,7 @@ void JSONSerializer::json_to_while_node(const nlohmann::json& j,
 void JSONSerializer::json_to_break_node(const nlohmann::json& j,
                                         builder::StructuredSDFGBuilder& builder,
                                         structured_control_flow::Sequence& parent,
-                                        symbolic::Assignments& assignments) {
+                                        control_flow::Assignments& assignments) {
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "break");
@@ -779,7 +779,7 @@ void JSONSerializer::json_to_break_node(const nlohmann::json& j,
 void JSONSerializer::json_to_continue_node(const nlohmann::json& j,
                                            builder::StructuredSDFGBuilder& builder,
                                            structured_control_flow::Sequence& parent,
-                                           symbolic::Assignments& assignments) {
+                                           control_flow::Assignments& assignments) {
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "continue");
@@ -790,7 +790,7 @@ void JSONSerializer::json_to_continue_node(const nlohmann::json& j,
 void JSONSerializer::json_to_map_node(const nlohmann::json& j,
                                       builder::StructuredSDFGBuilder& builder,
                                       structured_control_flow::Sequence& parent,
-                                      symbolic::Assignments& assignments) {
+                                      control_flow::Assignments& assignments) {
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "map");
@@ -819,7 +819,7 @@ void JSONSerializer::json_to_map_node(const nlohmann::json& j,
 void JSONSerializer::json_to_return_node(const nlohmann::json& j,
                                          builder::StructuredSDFGBuilder& builder,
                                          structured_control_flow::Sequence& parent,
-                                         symbolic::Assignments& assignments) {
+                                         control_flow::Assignments& assignments) {
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "return");

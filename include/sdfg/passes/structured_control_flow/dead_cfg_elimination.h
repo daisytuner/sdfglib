@@ -1,6 +1,5 @@
 #pragma once
 
-#include "sdfg/analysis/data_parallelism_analysis.h"
 #include "sdfg/passes/pass.h"
 
 namespace sdfg {

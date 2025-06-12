@@ -1,5 +1,7 @@
 #include "sdfg/passes/dataflow/dead_reference_elimination.h"
 
+#include "sdfg/analysis/users.h"
+
 namespace sdfg {
 namespace passes {
 

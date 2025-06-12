@@ -1,6 +1,6 @@
 #include "sdfg/codegen/instrumentation/outermost_loops_instrumentation.h"
 
-#include "sdfg/analysis/loop_tree_analysis.h"
+#include "sdfg/analysis/loop_analysis.h"
 
 namespace sdfg {
 namespace codegen {
@@ -8,7 +8,7 @@ namespace codegen {
 OutermostLoopsInstrumentation::OutermostLoopsInstrumentation(StructuredSDFG& sdfg)
     : Instrumentation(sdfg) {
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& loop_tree_analysis = analysis_manager.get<analysis::LoopTreeAnalysis>();
+    auto& loop_tree_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto ols = loop_tree_analysis.outermost_loops();
     for (auto loop : ols) {
         this->outermost_loops_.insert(loop);
@@ -40,6 +40,11 @@ void OutermostLoopsInstrumentation::end_instrumentation(
 
     stream << "\"" << region_name << "\", ";
     stream << "\"" << node.debug_info().filename() << "\", ";
+    if (sdfg_.metadata().find("function") != sdfg_.metadata().end()) {
+        stream << "\"" << sdfg_.metadata("function") << "\", ";
+    } else {
+        stream << "\"\", ";
+    }
     stream << node.debug_info().start_line() << ", ";
     stream << node.debug_info().end_line() << ", ";
     stream << node.debug_info().start_column() << ", ";

@@ -8,9 +8,9 @@ BlockFusion::BlockFusion(builder::StructuredSDFGBuilder& builder,
     : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
 
 bool BlockFusion::can_be_applied(data_flow::DataFlowGraph& first_graph,
-                                 symbolic::Assignments& first_assignments,
+                                 control_flow::Assignments& first_assignments,
                                  data_flow::DataFlowGraph& second_graph,
-                                 symbolic::Assignments& second_assignments) {
+                                 control_flow::Assignments& second_assignments) {
     // Criterion: no pointer ref fusions
     for (auto& edge : first_graph.edges()) {
         if (edge.src_conn() == "refs" || edge.dst_conn() == "refs") {
@@ -68,9 +68,9 @@ bool BlockFusion::can_be_applied(data_flow::DataFlowGraph& first_graph,
 };
 
 void BlockFusion::apply(structured_control_flow::Block& first_block,
-                        symbolic::Assignments& first_assignments,
+                        control_flow::Assignments& first_assignments,
                         structured_control_flow::Block& second_block,
-                        symbolic::Assignments& second_assignments) {
+                        control_flow::Assignments& second_assignments) {
     data_flow::DataFlowGraph& first_graph = first_block.dataflow();
     data_flow::DataFlowGraph& second_graph = second_block.dataflow();
 
