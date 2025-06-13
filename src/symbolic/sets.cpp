@@ -24,20 +24,46 @@ ExpressionSet generate_constraints(SymbolSet& syms, const Assumptions& assums, S
         auto ub = assums.at(sym).upper_bound();
         auto lb = assums.at(sym).lower_bound();
         if (!symbolic::eq(ub, symbolic::infty(1))) {
-            auto con = symbolic::Le(sym, ub);
-            auto con_syms = symbolic::atoms(con);
-            constraints.insert(con);
+            if (SymEngine::is_a<SymEngine::Min>(*ub)) {
+                auto min = SymEngine::rcp_static_cast<const SymEngine::Min>(ub);
+                auto args = min->get_args();
+                for (auto& arg : args) {
+                    auto con = symbolic::Le(sym, arg);
+                    auto con_syms = symbolic::atoms(con);
+                    constraints.insert(con);
 
-            auto con_cons = generate_constraints(con_syms, assums, seen);
-            constraints.insert(con_cons.begin(), con_cons.end());
+                    auto con_cons = generate_constraints(con_syms, assums, seen);
+                    constraints.insert(con_cons.begin(), con_cons.end());
+                }
+            } else {
+                auto con = symbolic::Le(sym, ub);
+                auto con_syms = symbolic::atoms(con);
+                constraints.insert(con);
+
+                auto con_cons = generate_constraints(con_syms, assums, seen);
+                constraints.insert(con_cons.begin(), con_cons.end());
+            }
         }
         if (!symbolic::eq(lb, symbolic::infty(-1))) {
-            auto con = symbolic::Le(sym, lb);
-            auto con_syms = symbolic::atoms(con);
-            constraints.insert(con);
+            if (SymEngine::is_a<SymEngine::Max>(*lb)) {
+                auto max = SymEngine::rcp_static_cast<const SymEngine::Max>(lb);
+                auto args = max->get_args();
+                for (auto& arg : args) {
+                    auto con = symbolic::Ge(sym, arg);
+                    auto con_syms = symbolic::atoms(con);
+                    constraints.insert(con);
 
-            auto con_cons = generate_constraints(con_syms, assums, seen);
-            constraints.insert(con_cons.begin(), con_cons.end());
+                    auto con_cons = generate_constraints(con_syms, assums, seen);
+                    constraints.insert(con_cons.begin(), con_cons.end());
+                }
+            } else {
+                auto con = symbolic::Ge(sym, lb);
+                auto con_syms = symbolic::atoms(con);
+                constraints.insert(con);
+
+                auto con_cons = generate_constraints(con_syms, assums, seen);
+                constraints.insert(con_cons.begin(), con_cons.end());
+            }
         }
     }
     return constraints;

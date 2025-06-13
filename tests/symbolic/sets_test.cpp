@@ -85,3 +85,29 @@ TEST(SetsTest, is_equivalent_1d_recursive_assumptions) {
 
     EXPECT_TRUE(symbolic::is_equivalent({expr1}, {expr2}, {}, assums));
 }
+
+TEST(SetsTest, is_equivalent_1d_minmax_assumptions) {
+    auto x = symbolic::symbol("x");
+    auto y = symbolic::symbol("y");
+    auto N = symbolic::symbol("N");
+    auto M = symbolic::symbol("M");
+    auto K = symbolic::symbol("K");
+    types::Scalar desc(types::PrimitiveType::UInt8);
+
+    auto assum_x = symbolic::Assumption::create(x, desc);
+    assum_x.lower_bound(symbolic::max(N, M));
+    assum_x.upper_bound(symbolic::min(M, K));
+
+    auto assum_y = symbolic::Assumption::create(y, desc);
+    assum_y.lower_bound(symbolic::max(N, M));
+    assum_y.upper_bound(symbolic::min(M, K));
+
+    symbolic::Assumptions assums;
+    assums.insert({x, assum_x});
+    assums.insert({y, assum_y});
+
+    auto expr1 = symbolic::add(x, symbolic::integer(1));
+    auto expr2 = symbolic::add(y, symbolic::integer(1));
+
+    EXPECT_TRUE(symbolic::is_equivalent({expr1}, {expr2}, {}, assums));
+}
