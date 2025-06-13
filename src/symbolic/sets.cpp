@@ -5,6 +5,8 @@
 #include <isl/set.h>
 #include <isl/space.h>
 
+#include <regex>
+
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
 
 namespace sdfg {
@@ -97,13 +99,18 @@ std::string constraint_to_isl_str(const Expression& con) {
     return "";
 }
 
-std::string expression_to_isl_map_str(const MultiExpression& expr, const SymbolSet& params,
-                                      const Assumptions& assums) {
+std::tuple<std::string, std::string, std::string> expressions_to_intersection_map_str(
+    const MultiExpression& expr1, const MultiExpression& expr2, const SymbolSet& params,
+    const Assumptions& assums) {
     codegen::CLanguageExtension language_extension;
 
     // Get all symbols
     symbolic::SymbolSet syms;
-    for (auto& expr : expr) {
+    for (auto& expr : expr1) {
+        auto syms_expr = symbolic::atoms(expr);
+        syms.insert(syms_expr.begin(), syms_expr.end());
+    }
+    for (auto& expr : expr2) {
         auto syms_expr = symbolic::atoms(expr);
         syms.insert(syms_expr.begin(), syms_expr.end());
     }
@@ -115,9 +122,15 @@ std::string expression_to_isl_map_str(const MultiExpression& expr, const SymbolS
     SymbolSet parameters_syms;
     for (auto& sym : syms) {
         if (params.find(sym) != params.end()) {
+            if (parameters_syms.find(sym) != parameters_syms.end()) {
+                continue;
+            }
             parameters.push_back(sym->get_name());
             parameters_syms.insert(sym);
         } else {
+            if (dimensions_syms.find(sym) != dimensions_syms.end()) {
+                continue;
+            }
             dimensions.push_back(sym->get_name());
             dimensions_syms.insert(sym);
         }
@@ -126,52 +139,132 @@ std::string expression_to_isl_map_str(const MultiExpression& expr, const SymbolS
     // Generate constraints
     SymbolSet seen;
     auto constraints_syms = generate_constraints(syms, assums, seen);
+
     // Extend parameters with additional symbols from constraints
     for (auto& con : constraints_syms) {
         auto con_syms = symbolic::atoms(con);
         for (auto& con_sym : con_syms) {
             if (dimensions_syms.find(con_sym) == dimensions_syms.end()) {
+                if (parameters_syms.find(con_sym) != parameters_syms.end()) {
+                    continue;
+                }
                 parameters.push_back(con_sym->get_name());
                 parameters_syms.insert(con_sym);
             }
         }
     }
 
-    // Define map
-    std::string map;
+    // Define two maps
+    std::string map_1;
+    std::string map_2;
     if (!parameters.empty()) {
-        map += "[";
-        map += helpers::join(parameters, ", ");
-        map += "] -> ";
+        map_1 += "[";
+        map_1 += helpers::join(parameters, ", ");
+        map_1 += "] -> ";
+        map_2 += "[";
+        map_2 += helpers::join(parameters, ", ");
+        map_2 += "] -> ";
     }
-    map += "{ [" + helpers::join(dimensions, ", ") + "] -> [";
-    for (size_t i = 0; i < expr.size(); i++) {
-        auto dim = expr[i];
-        map += language_extension.expression(dim);
-        if (i < expr.size() - 1) {
-            map += ", ";
+    map_1 += "{ [";
+    map_2 += "{ [";
+    for (size_t i = 0; i < dimensions.size(); i++) {
+        map_1 += dimensions[i] + "_1";
+        map_2 += dimensions[i] + "_2";
+        if (i < dimensions.size() - 1) {
+            map_1 += ", ";
+            map_2 += ", ";
         }
     }
-    map += "] ";
+    map_1 += "] -> [";
+    map_2 += "] -> [";
+    for (size_t i = 0; i < expr1.size(); i++) {
+        auto dim = expr1[i];
+        for (auto& iter : dimensions) {
+            dim = symbolic::subs(dim, symbolic::symbol(iter), symbolic::symbol(iter + "_1"));
+        }
+        map_1 += language_extension.expression(dim);
+        if (i < expr1.size() - 1) {
+            map_1 += ", ";
+        }
+    }
+    for (size_t i = 0; i < expr2.size(); i++) {
+        auto dim = expr2[i];
+        for (auto& iter : dimensions) {
+            dim = symbolic::subs(dim, symbolic::symbol(iter), symbolic::symbol(iter + "_2"));
+        }
+        map_2 += language_extension.expression(dim);
+        if (i < expr2.size() - 1) {
+            map_2 += ", ";
+        }
+    }
+    map_1 += "] ";
+    map_2 += "] ";
 
-    std::vector<std::string> constraints;
+    std::vector<std::string> constraints_1;
+    std::vector<std::string> constraints_2;
+    // Add bounds
     for (auto& con : constraints_syms) {
-        auto con_str = constraint_to_isl_str(con);
-        if (!con_str.empty()) {
-            constraints.push_back(con_str);
+        auto con_1 = con;
+        auto con_2 = con;
+        for (auto& iter : dimensions) {
+            con_1 = symbolic::subs(con_1, symbolic::symbol(iter), symbolic::symbol(iter + "_1"));
+            con_2 = symbolic::subs(con_2, symbolic::symbol(iter), symbolic::symbol(iter + "_2"));
+        }
+        auto con_str_1 = constraint_to_isl_str(con_1);
+        if (con_str_1.empty()) {
+            continue;
+        }
+        auto con_str_2 = constraint_to_isl_str(con_2);
+        if (!con_str_1.empty()) {
+            constraints_1.push_back(con_str_1);
+            constraints_2.push_back(con_str_2);
         }
     }
-    if (!constraints.empty()) {
-        map += " : ";
-        map += helpers::join(constraints, " and ");
+    if (!constraints_1.empty()) {
+        map_1 += " : ";
+        map_1 += helpers::join(constraints_1, " and ");
     }
-    map += " }";
+    map_1 += " }";
 
-    return map;
+    if (!constraints_2.empty()) {
+        map_2 += " : ";
+        map_2 += helpers::join(constraints_2, " and ");
+    }
+    map_2 += " }";
+
+    std::string map_3 = "{ [";
+    for (size_t i = 0; i < dimensions.size(); i++) {
+        map_3 += dimensions[i] + "_2";
+        if (i < dimensions.size() - 1) {
+            map_3 += ", ";
+        }
+    }
+    map_3 += "] -> [";
+    for (size_t i = 0; i < dimensions.size(); i++) {
+        map_3 += dimensions[i] + "_1";
+        if (i < dimensions.size() - 1) {
+            map_3 += ", ";
+        }
+    }
+    map_3 += "] : ";
+    for (size_t i = 0; i < dimensions.size(); i++) {
+        map_3 += dimensions[i] + "_1 != " + dimensions[i] + "_2";
+        if (i < dimensions.size() - 1) {
+            map_3 += " and ";
+        }
+    }
+    map_3 += " }";
+
+    map_1 = std::regex_replace(map_1, std::regex("\\."), "_");
+    map_2 = std::regex_replace(map_2, std::regex("\\."), "_");
+    map_3 = std::regex_replace(map_3, std::regex("\\."), "_");
+
+    return {map_1, map_2, map_3};
 }
 
-std::string expressions_to_isl_map_str(const MultiExpression& expr1, const MultiExpression& expr2,
-                                       const SymbolSet& params, const Assumptions& assums) {
+std::string expressions_to_diagonal_map_str(const MultiExpression& expr1,
+                                            const MultiExpression& expr2, const SymbolSet& params,
+                                            const Assumptions& assums) {
     codegen::CLanguageExtension language_extension;
 
     // Get all symbols
@@ -260,12 +353,81 @@ std::string expressions_to_isl_map_str(const MultiExpression& expr1, const Multi
 
     map += " }";
 
+    map = std::regex_replace(map, std::regex("\\."), "_");
     return map;
 }
 
-bool intersect(const MultiExpression& expr1, const SymbolSet& params1, const MultiExpression& expr2,
-               const SymbolSet& params2, const Assumptions& assums) {
-    return false;
+bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
+                 const SymbolSet& params, const Assumptions& assums) {
+    if (expr1.size() != expr2.size()) {
+        return false;
+    }
+
+    isl_ctx* ctx = isl_ctx_alloc();
+
+    // Transform both expressions into two maps with separate dimensions
+    auto maps = expressions_to_intersection_map_str(expr1, expr2, params, assums);
+    isl_map* map_1 = isl_map_read_from_str(ctx, std::get<0>(maps).c_str());
+    isl_map* map_2 = isl_map_read_from_str(ctx, std::get<1>(maps).c_str());
+    isl_map* map_3 = isl_map_read_from_str(ctx, std::get<2>(maps).c_str());
+    if (!map_1 || !map_2 || !map_3) {
+        if (map_1) {
+            isl_map_free(map_1);
+        }
+        if (map_2) {
+            isl_map_free(map_2);
+        }
+        if (map_3) {
+            isl_map_free(map_3);
+        }
+        isl_ctx_free(ctx);
+        return false;
+    }
+
+    // Find aliasing pairs under the constraint that dimensions are different
+
+    // (consumes map_1)
+    isl_map* rev_map1 = isl_map_reverse(map_1);
+    if (!rev_map1) {
+        if (map_1) {
+            isl_map_free(map_1);
+        }
+        isl_map_free(map_2);
+        isl_map_free(map_3);
+        isl_ctx_free(ctx);
+        return false;
+    }
+
+    // (consumes rev_map1 and map_2)
+    isl_map* alias_pairs = isl_map_apply_range(rev_map1, map_2);
+    if (!alias_pairs) {
+        if (rev_map1) {
+            isl_map_free(rev_map1);
+        }
+        if (map_2) {
+            isl_map_free(map_2);
+        }
+        isl_map_free(map_3);
+        isl_ctx_free(ctx);
+        return false;
+    }
+    isl_map* alias_pairs_2 = isl_map_intersect(alias_pairs, map_3);
+    if (!alias_pairs_2) {
+        if (alias_pairs) {
+            isl_map_free(alias_pairs);
+        }
+        if (map_3) {
+            isl_map_free(map_3);
+        }
+        isl_ctx_free(ctx);
+        return false;
+    }
+
+    bool disjoint = isl_map_is_empty(alias_pairs_2);
+    isl_map_free(alias_pairs_2);
+    isl_ctx_free(ctx);
+
+    return disjoint;
 }
 
 bool is_equivalent(const MultiExpression& expr1, const MultiExpression& expr2,
@@ -289,7 +451,7 @@ bool is_equivalent(const MultiExpression& expr1, const MultiExpression& expr2,
     // Check for set equivalence
     isl_ctx* ctx = isl_ctx_alloc();
     // Builds { [params] -> [expr1..., expr2...] : assumptions }
-    std::string map_str = expressions_to_isl_map_str(expr1, expr2, params, assums);
+    std::string map_str = expressions_to_diagonal_map_str(expr1, expr2, params, assums);
 
     isl_map* pair_map = isl_map_read_from_str(ctx, map_str.c_str());
     if (!pair_map) {

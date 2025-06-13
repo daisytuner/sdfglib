@@ -6,7 +6,7 @@
 
 using namespace sdfg;
 
-TEST(SetsTest, is_equivalent_1d_identity) {
+TEST(SetsTest, is_equivalent_1d_equivalent) {
     auto x = symbolic::symbol("x");
     types::Scalar desc(types::PrimitiveType::UInt8);
 
@@ -20,7 +20,7 @@ TEST(SetsTest, is_equivalent_1d_identity) {
     EXPECT_TRUE(symbolic::is_equivalent({expr1}, {expr2}, {}, assums));
 }
 
-TEST(SetsTest, is_equivalent_1d_disjoint) {
+TEST(SetsTest, is_equivalent_1d_not_equivalent) {
     auto x = symbolic::symbol("x");
     types::Scalar desc(types::PrimitiveType::UInt8);
 
@@ -34,7 +34,7 @@ TEST(SetsTest, is_equivalent_1d_disjoint) {
     EXPECT_FALSE(symbolic::is_equivalent({expr1}, {expr2}, {}, assums));
 }
 
-TEST(SetsTest, is_equivalent_1d_rename) {
+TEST(SetsTest, is_equivalent_1d_equivalent_rename) {
     auto x = symbolic::symbol("x");
     auto y = symbolic::symbol("y");
     types::Scalar desc(types::PrimitiveType::UInt8);
@@ -57,7 +57,7 @@ TEST(SetsTest, is_equivalent_1d_rename) {
     EXPECT_TRUE(symbolic::is_equivalent({expr1}, {expr2}, {}, assums));
 }
 
-TEST(SetsTest, is_equivalent_1d_recursive_assumptions) {
+TEST(SetsTest, is_equivalent_1d_equivalent_recursive_assumptions) {
     auto x = symbolic::symbol("x");
     auto y = symbolic::symbol("y");
     auto z = symbolic::symbol("z");
@@ -110,4 +110,32 @@ TEST(SetsTest, is_equivalent_1d_minmax_assumptions) {
     auto expr2 = symbolic::add(y, symbolic::integer(1));
 
     EXPECT_TRUE(symbolic::is_equivalent({expr1}, {expr2}, {}, assums));
+}
+
+TEST(SetsTest, is_disjoint_1d_disjoint) {
+    auto x = symbolic::symbol("x");
+    types::Scalar desc(types::PrimitiveType::UInt8);
+
+    auto assum_x = symbolic::Assumption::create(x, desc);
+    symbolic::Assumptions assums;
+    assums.insert({x, assum_x});
+
+    auto expr1 = symbolic::add(x, symbolic::integer(1));
+    auto expr2 = symbolic::add(x, symbolic::integer(1));
+
+    EXPECT_TRUE(symbolic::is_disjoint({expr1}, {expr2}, {}, assums));
+}
+
+TEST(SetsTest, is_disjoint_1d_not_disjoint) {
+    auto x = symbolic::symbol("x");
+    types::Scalar desc(types::PrimitiveType::UInt8);
+
+    auto assum_x = symbolic::Assumption::create(x, desc);
+    symbolic::Assumptions assums;
+    assums.insert({x, assum_x});
+
+    auto expr1 = symbolic::add(x, symbolic::integer(1));
+    auto expr2 = symbolic::add(x, symbolic::integer(2));
+
+    EXPECT_FALSE(symbolic::is_disjoint({expr1}, {expr2}, {}, assums));
 }
