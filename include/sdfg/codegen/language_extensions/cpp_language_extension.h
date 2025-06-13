@@ -2,8 +2,11 @@
 
 #include <symengine/printers/codegen.h>
 
+#include <string>
+
 #include "sdfg/codegen/language_extension.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/types/type.h"
 
 namespace sdfg {
 namespace codegen {
@@ -23,6 +26,8 @@ class CPPLanguageExtension : public LanguageExtension {
     std::string expression(const symbolic::Expression& expr) override;
 
     std::string tasklet(const data_flow::Tasklet& tasklet) override;
+
+    std::string zero(const types::PrimitiveType prim_type) override;
 };
 
 class CPPSymbolicPrinter
