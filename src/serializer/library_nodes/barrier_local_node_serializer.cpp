@@ -1,6 +1,6 @@
 #include "sdfg/serializer/library_nodes/barrier_local_node_serializer.h"
 
-#include "sdfg/data_flow/barrier_local_node.h"
+#include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 
 namespace sdfg {
 namespace serializer {

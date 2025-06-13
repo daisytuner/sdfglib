@@ -5,7 +5,7 @@
 #include <nlohmann/json.hpp>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/data_flow/barrier_local_node.h"
+#include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 #include "sdfg/element.h"
 #include "sdfg/serializer/json_serializer.h"
 #include "sdfg/serializer/library_node_serializer_registry.h"
