@@ -155,7 +155,7 @@ class Users : public Analysis {
 
     bool post_dominates(User& user1, User& user);
 
-    bool is_dominated_by(User& user, Use use);
+    bool is_dominated_by(User& user, Use use, const symbolic::Assumptions& assums);
 
     const std::unordered_set<User*> all_uses_between(User& user1, User& user2);
 
@@ -211,7 +211,7 @@ class UsersView {
 
     bool post_dominates(User& user1, User& user);
 
-    bool is_dominated_by(User& user, Use use);
+    bool is_dominated_by(User& user, Use use, const symbolic::Assumptions& assums);
 
     std::unordered_set<User*> all_uses_between(User& user1, User& user2);
 

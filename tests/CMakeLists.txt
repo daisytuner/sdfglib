@@ -54,6 +54,7 @@ set(TEST_FILES
     symbolic/extreme_values_test.cpp
     symbolic/polynomials_test.cpp
     symbolic/symbolic_test.cpp
+    symbolic/sets_test.cpp
     transformations/loop_interchange_test.cpp
     transformations/loop_slicing_test.cpp
     transformations/loop_tiling_test.cpp
