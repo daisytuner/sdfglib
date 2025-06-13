@@ -523,6 +523,49 @@ std::string CPPLanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
     }
 };
 
+std::string CPPLanguageExtension::zero(const types::PrimitiveType prim_type) {
+    switch (prim_type) {
+        case types::Void:
+            throw InvalidSDFGException("No zero for void type possible");
+        case types::Bool:
+            return "false";
+        case types::Int8:
+            return "0";
+        case types::Int16:
+            return "0";
+        case types::Int32:
+            return "0";
+        case types::Int64:
+            return "0ll";
+        case types::Int128:
+            return "0";
+        case types::UInt8:
+            return "0u";
+        case types::UInt16:
+            return "0u";
+        case types::UInt32:
+            return "0u";
+        case types::UInt64:
+            return "0ull";
+        case types::UInt128:
+            return "0u";
+        case types::Half:
+            throw InvalidSDFGException("Currently unsupported");
+        case types::BFloat:
+            throw InvalidSDFGException("Currently unsupported");
+        case types::Float:
+            return "0.0f";
+        case types::Double:
+            return "0.0";
+        case types::X86_FP80:
+            return "0.0l";
+        case types::FP128:
+            throw InvalidSDFGException("Currently unsupported");
+        case types::PPC_FP128:
+            throw InvalidSDFGException("Currently unsupported");
+    }
+}
+
 void CPPSymbolicPrinter::bvisit(const SymEngine::Infty& x) {
     if (x.is_negative_infinity())
         str_ = "-INFINITY";

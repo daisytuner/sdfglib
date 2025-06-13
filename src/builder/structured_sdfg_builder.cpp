@@ -961,7 +961,6 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
         }
     } else if (dynamic_cast<data_flow::AccessNode*>(&src) &&
                dynamic_cast<data_flow::LibraryNode*>(&dst)) {
-        auto& src_node = dynamic_cast<data_flow::AccessNode&>(src);
         auto& dst_node = dynamic_cast<data_flow::LibraryNode&>(dst);
         if (src_conn != "void") {
             throw InvalidSDFGException("src_conn must be void. Found: " + src_conn);
@@ -975,11 +974,6 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
         }
         if (!found) {
             throw InvalidSDFGException("dst_conn not found in library node: " + dst_conn);
-        }
-
-        auto& element_type = types::infer_type(function_, function_.type(src_node.data()), subset);
-        if (!dynamic_cast<const types::Scalar*>(&element_type)) {
-            throw InvalidSDFGException("Library node inputs must be scalars");
         }
     } else if (dynamic_cast<data_flow::LibraryNode*>(&src) &&
                dynamic_cast<data_flow::AccessNode*>(&dst)) {
