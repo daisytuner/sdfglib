@@ -103,7 +103,7 @@ std::string constraint_to_isl_str(const Expression& con) {
 
 std::tuple<std::string, std::string, std::string> expressions_to_intersection_map_str(
     const MultiExpression& expr1, const MultiExpression& expr2, const SymbolSet& params,
-    const Assumptions& assums) {
+    const SymbolSet& monotonics, const Assumptions& assums) {
     codegen::CLanguageExtension language_extension;
 
     // Get all symbols
@@ -248,12 +248,18 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
             map_3 += ", ";
         }
     }
-    map_3 += "] : ";
+    map_3 += "]";
+    std::vector<std::string> monotonicity_constraints;
+    // Monotonicity constraints
     for (size_t i = 0; i < dimensions.size(); i++) {
-        map_3 += dimensions[i] + "_1 != " + dimensions[i] + "_2";
-        if (i < dimensions.size() - 1) {
-            map_3 += " and ";
+        if (monotonics.find(symbolic::symbol(dimensions[i])) == monotonics.end()) {
+            continue;
         }
+        monotonicity_constraints.push_back(dimensions[i] + "_1 != " + dimensions[i] + "_2");
+    }
+    if (!monotonics.empty()) {
+        map_3 += " : ";
+        map_3 += helpers::join(monotonicity_constraints, " and ");
     }
     map_3 += " }";
 
@@ -360,7 +366,7 @@ std::string expressions_to_diagonal_map_str(const MultiExpression& expr1,
 }
 
 bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
-                 const SymbolSet& params, const Assumptions& assums) {
+                 const SymbolSet& params, const SymbolSet& monotonics, const Assumptions& assums) {
     if (expr1.size() != expr2.size()) {
         return false;
     }
@@ -370,10 +376,13 @@ bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
     // Transform both expressions into two maps with separate dimensions
     auto expr1_delinearized = delinearize(expr1, params, assums);
     auto expr2_delinearized = delinearize(expr2, params, assums);
-    auto maps =
-        expressions_to_intersection_map_str(expr1_delinearized, expr2_delinearized, params, assums);
+    auto maps = expressions_to_intersection_map_str(expr1_delinearized, expr2_delinearized, params,
+                                                    monotonics, assums);
+    std::cout << "map_1: " << std::get<0>(maps) << std::endl;
     isl_map* map_1 = isl_map_read_from_str(ctx, std::get<0>(maps).c_str());
+    std::cout << "map_2: " << std::get<1>(maps) << std::endl;
     isl_map* map_2 = isl_map_read_from_str(ctx, std::get<1>(maps).c_str());
+    std::cout << "map_3: " << std::get<2>(maps) << std::endl;
     isl_map* map_3 = isl_map_read_from_str(ctx, std::get<2>(maps).c_str());
     if (!map_1 || !map_2 || !map_3) {
         if (map_1) {
