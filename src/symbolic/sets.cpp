@@ -10,6 +10,7 @@
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
 #include "sdfg/symbolic/extreme_values.h"
 #include "sdfg/symbolic/polynomials.h"
+#include "sdfg/symbolic/series.h"
 
 namespace sdfg {
 namespace symbolic {
@@ -103,7 +104,7 @@ std::string constraint_to_isl_str(const Expression& con) {
 
 std::tuple<std::string, std::string, std::string> expressions_to_intersection_map_str(
     const MultiExpression& expr1, const MultiExpression& expr2, const SymbolSet& params,
-    const Assumptions& assums) {
+    const SymbolSet& monotonics, const Assumptions& assums) {
     codegen::CLanguageExtension language_extension;
 
     // Get all symbols
@@ -248,12 +249,18 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
             map_3 += ", ";
         }
     }
-    map_3 += "] : ";
+    map_3 += "]";
+    std::vector<std::string> monotonicity_constraints;
+    // Monotonicity constraints
     for (size_t i = 0; i < dimensions.size(); i++) {
-        map_3 += dimensions[i] + "_1 != " + dimensions[i] + "_2";
-        if (i < dimensions.size() - 1) {
-            map_3 += " and ";
+        if (monotonics.find(symbolic::symbol(dimensions[i])) == monotonics.end()) {
+            continue;
         }
+        monotonicity_constraints.push_back(dimensions[i] + "_1 != " + dimensions[i] + "_2");
+    }
+    if (!monotonics.empty()) {
+        map_3 += " : ";
+        map_3 += helpers::join(monotonicity_constraints, " and ");
     }
     map_3 += " }";
 
@@ -359,8 +366,9 @@ std::string expressions_to_diagonal_map_str(const MultiExpression& expr1,
     return map;
 }
 
-bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
-                 const SymbolSet& params, const Assumptions& assums) {
+bool is_disjoint_isl(const MultiExpression& expr1, const MultiExpression& expr2,
+                     const SymbolSet& params, const SymbolSet& monotonics,
+                     const Assumptions& assums) {
     if (expr1.size() != expr2.size()) {
         return false;
     }
@@ -370,8 +378,7 @@ bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
     // Transform both expressions into two maps with separate dimensions
     auto expr1_delinearized = delinearize(expr1, params, assums);
     auto expr2_delinearized = delinearize(expr2, params, assums);
-    auto maps =
-        expressions_to_intersection_map_str(expr1_delinearized, expr2_delinearized, params, assums);
+    auto maps = expressions_to_intersection_map_str(expr1, expr2, params, monotonics, assums);
     isl_map* map_1 = isl_map_read_from_str(ctx, std::get<0>(maps).c_str());
     isl_map* map_2 = isl_map_read_from_str(ctx, std::get<1>(maps).c_str());
     isl_map* map_3 = isl_map_read_from_str(ctx, std::get<2>(maps).c_str());
@@ -391,35 +398,11 @@ bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
 
     // Find aliasing pairs under the constraint that dimensions are different
 
-    // (consumes map_1)
-    isl_map* rev_map1 = isl_map_reverse(map_1);
-    if (!rev_map1) {
-        if (map_1) {
-            isl_map_free(map_1);
-        }
-        isl_map_free(map_2);
-        isl_map_free(map_3);
-        isl_ctx_free(ctx);
-        return false;
-    }
-
-    // (consumes rev_map1 and map_2)
-    isl_map* alias_pairs = isl_map_apply_range(rev_map1, map_2);
-    if (!alias_pairs) {
-        if (rev_map1) {
-            isl_map_free(rev_map1);
-        }
+    isl_map* composed = isl_map_apply_domain(map_2, map_3);
+    if (!composed) {
+        isl_map_free(map_1);
         if (map_2) {
             isl_map_free(map_2);
-        }
-        isl_map_free(map_3);
-        isl_ctx_free(ctx);
-        return false;
-    }
-    isl_map* alias_pairs_2 = isl_map_intersect(alias_pairs, map_3);
-    if (!alias_pairs_2) {
-        if (alias_pairs) {
-            isl_map_free(alias_pairs);
         }
         if (map_3) {
             isl_map_free(map_3);
@@ -427,12 +410,91 @@ bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
         isl_ctx_free(ctx);
         return false;
     }
+    isl_map* alias_pairs = isl_map_intersect(composed, map_1);
+    if (!alias_pairs) {
+        if (composed) {
+            isl_map_free(composed);
+        }
+        if (map_1) {
+            isl_map_free(map_1);
+        }
+        isl_ctx_free(ctx);
+        return false;
+    }
 
-    bool disjoint = isl_map_is_empty(alias_pairs_2);
-    isl_map_free(alias_pairs_2);
+    bool disjoint = isl_map_is_empty(alias_pairs);
+    isl_map_free(alias_pairs);
     isl_ctx_free(ctx);
 
     return disjoint;
+}
+
+bool is_disjoint_monotonic(const MultiExpression& expr1, const MultiExpression& expr2,
+                           const SymbolSet& params, const SymbolSet& monotonics,
+                           const Assumptions& assums) {
+    for (size_t i = 0; i < expr1.size(); i++) {
+        auto& dim1 = expr1[i];
+        if (expr2.size() <= i) {
+            continue;
+        }
+        auto& dim2 = expr2[i];
+        if (!symbolic::eq(dim1, dim2)) {
+            continue;
+        }
+
+        // Collect all symbols
+        symbolic::SymbolSet syms;
+        for (auto& sym : symbolic::atoms(dim1)) {
+            syms.insert(sym);
+        }
+
+        // Collect all non-constant symbols
+        symbolic::SymbolSet generators;
+        for (auto& sym : syms) {
+            if (params.find(sym) == params.end()) {
+                generators.insert(sym);
+            }
+        }
+        if (generators.empty()) {
+            continue;
+        }
+
+        // Check if all non-constant symbols are monotonics
+        bool can_analyze = true;
+        for (auto& sym : generators) {
+            if (monotonics.find(sym) == monotonics.end()) {
+                can_analyze = false;
+                break;
+            }
+        }
+        if (!can_analyze) {
+            continue;
+        }
+
+        // Check if both dimensions are monotonic in non-constant symbols
+        bool monotonic_dimension = true;
+        for (auto& sym : generators) {
+            if (!symbolic::is_monotonic(dim1, sym, assums)) {
+                monotonic_dimension = false;
+                break;
+            }
+        }
+        if (!monotonic_dimension) {
+            continue;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
+                 const SymbolSet& params, const SymbolSet& monotonics, const Assumptions& assums) {
+    if (is_disjoint_monotonic(expr1, expr2, params, monotonics, assums)) {
+        return true;
+    }
+    return is_disjoint_isl(expr1, expr2, params, monotonics, assums);
 }
 
 bool is_equivalent(const MultiExpression& expr1, const MultiExpression& expr2,
