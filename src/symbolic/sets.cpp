@@ -8,6 +8,8 @@
 #include <regex>
 
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
+#include "sdfg/symbolic/extreme_values.h"
+#include "sdfg/symbolic/polynomials.h"
 
 namespace sdfg {
 namespace symbolic {
@@ -366,7 +368,10 @@ bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
     isl_ctx* ctx = isl_ctx_alloc();
 
     // Transform both expressions into two maps with separate dimensions
-    auto maps = expressions_to_intersection_map_str(expr1, expr2, params, assums);
+    auto expr1_delinearized = delinearize(expr1, params, assums);
+    auto expr2_delinearized = delinearize(expr2, params, assums);
+    auto maps =
+        expressions_to_intersection_map_str(expr1_delinearized, expr2_delinearized, params, assums);
     isl_map* map_1 = isl_map_read_from_str(ctx, std::get<0>(maps).c_str());
     isl_map* map_2 = isl_map_read_from_str(ctx, std::get<1>(maps).c_str());
     isl_map* map_3 = isl_map_read_from_str(ctx, std::get<2>(maps).c_str());
@@ -451,7 +456,10 @@ bool is_equivalent(const MultiExpression& expr1, const MultiExpression& expr2,
     // Check for set equivalence
     isl_ctx* ctx = isl_ctx_alloc();
     // Builds { [params] -> [expr1..., expr2...] : assumptions }
-    std::string map_str = expressions_to_diagonal_map_str(expr1, expr2, params, assums);
+    auto expr1_delinearized = delinearize(expr1, params, assums);
+    auto expr2_delinearized = delinearize(expr2, params, assums);
+    std::string map_str =
+        expressions_to_diagonal_map_str(expr1_delinearized, expr2_delinearized, params, assums);
 
     isl_map* pair_map = isl_map_read_from_str(ctx, map_str.c_str());
     if (!pair_map) {
@@ -487,6 +495,117 @@ bool is_equivalent(const MultiExpression& expr1, const MultiExpression& expr2,
     isl_ctx_free(ctx);
 
     return equivalent;
+}
+
+MultiExpression delinearize(const MultiExpression& expr, const SymbolSet& params,
+                            const Assumptions& assums) {
+    MultiExpression delinearized;
+    for (auto& dim : expr) {
+        // Step 1: Convert expression into an affine polynomial
+        SymbolVec symbols;
+        for (auto& sym : atoms(dim)) {
+            if (params.find(sym) == params.end()) {
+                symbols.push_back(sym);
+            }
+        }
+        if (symbols.empty()) {
+            delinearized.push_back(dim);
+            continue;
+        }
+
+        auto poly = polynomial(dim, symbols);
+        if (poly == SymEngine::null) {
+            delinearized.push_back(dim);
+            continue;
+        }
+
+        auto aff_coeffs = affine_coefficients(poly, symbols);
+        if (aff_coeffs.empty()) {
+            delinearized.push_back(dim);
+            continue;
+        }
+
+        // Step 2: Peel-off dimensions
+        bool success = true;
+        Expression remaining = dim;
+        std::vector<Expression> peeled_dims;
+        while (aff_coeffs.size() > 1) {
+            // Find the symbol with largest stride (= largest atom count)
+            Symbol new_dim = symbolic::symbol("");
+            size_t max_atom_count = 0;
+            for (const auto& [sym, coeff] : aff_coeffs) {
+                if (sym->get_name() == "__daisy_constant__") {
+                    continue;
+                }
+                size_t atom_count = symbolic::atoms(coeff).size();
+                if (atom_count > max_atom_count || new_dim->get_name() == "") {
+                    max_atom_count = atom_count;
+                    new_dim = sym;
+                }
+            }
+            if (new_dim->get_name() == "") {
+                break;
+            }
+
+            // Symbol must be nonnegative
+            auto sym_lb = minimum(new_dim, assums);
+            auto sym_cond = symbolic::Ge(sym_lb, symbolic::zero());
+            if (!symbolic::is_true(sym_cond)) {
+                success = false;
+                break;
+            }
+
+            // Stride must be positive
+            Expression stride = aff_coeffs.at(new_dim);
+            auto stride_lb = minimum(stride, assums);
+            if (!symbolic::is_true(symbolic::Ge(stride_lb, symbolic::one()))) {
+                success = false;
+                break;
+            }
+
+            // Peel off the dimension
+            remaining = symbolic::sub(remaining, symbolic::mul(stride, new_dim));
+
+            // Check if remainder is within bounds
+
+            // remaining must be nonnegative
+            auto rem_lb = minimum(remaining, assums);
+            auto cond_zero = symbolic::Ge(rem_lb, symbolic::zero());
+            if (!symbolic::is_true(cond_zero)) {
+                success = false;
+                break;
+            }
+
+            // remaining must be less than stride
+            auto rem = symbolic::sub(stride, remaining);
+            rem = minimum(rem, assums);
+
+            auto cond_stride = symbolic::Ge(rem, symbolic::one());
+            if (!symbolic::is_true(cond_stride)) {
+                success = false;
+                break;
+            }
+
+            // Add the peeled dimension to the list
+            peeled_dims.push_back(new_dim);
+            aff_coeffs.erase(new_dim);
+        }
+        if (!success) {
+            delinearized.push_back(dim);
+            continue;
+        }
+
+        for (auto& peeled_dim : peeled_dims) {
+            delinearized.push_back(peeled_dim);
+        }
+
+        // If remaining is not zero, then add the constant term
+        if (!symbolic::eq(remaining, symbolic::zero()) && success) {
+            delinearized.push_back(remaining);
+        }
+    }
+
+    return delinearized;
 }
 
 }  // namespace symbolic
