@@ -149,6 +149,8 @@ class Users : public Analysis {
 
     std::vector<User*> moves(const std::string& container) const;
 
+    static structured_control_flow::ControlFlowNode* scope(User* user);
+
     /****** Domination Analysis ******/
 
     bool dominates(User& user1, User& user);

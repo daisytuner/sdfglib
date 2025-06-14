@@ -5,8 +5,14 @@
 namespace sdfg {
 namespace symbolic {
 
-Expression minimum(const Expression& expr, const Assumptions& assumptions) {
+size_t MAX_DEPTH = 100;
+
+Expression minimum(const Expression& expr, const Assumptions& assumptions, const size_t depth) {
     // Base Cases
+    if (depth > MAX_DEPTH) {
+        return expr;
+    }
+
     if (SymEngine::is_a<SymEngine::Integer>(*expr)) {
         return expr;
     } else if (SymEngine::is_a<SymEngine::Infty>(*expr)) {
@@ -17,7 +23,7 @@ Expression minimum(const Expression& expr, const Assumptions& assumptions) {
         auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Max>(expr)->get_args();
         Expression lbs = symbolic::infty(1);
         for (const auto& arg : args) {
-            auto lb = minimum(arg, assumptions);
+            auto lb = minimum(arg, assumptions, depth + 1);
             if (lb == SymEngine::null) {
                 return SymEngine::null;
             }
@@ -28,7 +34,7 @@ Expression minimum(const Expression& expr, const Assumptions& assumptions) {
         auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Min>(expr)->get_args();
         Expression lbs = symbolic::infty(1);
         for (const auto& arg : args) {
-            auto lb = minimum(arg, assumptions);
+            auto lb = minimum(arg, assumptions, depth + 1);
             if (lb == SymEngine::null) {
                 return SymEngine::null;
             }
@@ -40,7 +46,10 @@ Expression minimum(const Expression& expr, const Assumptions& assumptions) {
     // Symbol
     if (SymEngine::is_a<SymEngine::Symbol>(*expr)) {
         auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(expr);
-        return minimum(assumptions.at(sym).lower_bound(), assumptions);
+        if (assumptions.find(sym) != assumptions.end()) {
+            return minimum(assumptions.at(sym).lower_bound(), assumptions, depth + 1);
+        }
+        return symbolic::infty(-1);
     }
 
     // Expression
@@ -60,17 +69,17 @@ Expression minimum(const Expression& expr, const Assumptions& assumptions) {
 
     Expression lb = symbolic::zero();
     for (const auto& symbol : symbols) {
-        auto lb_coeff = minimum(coeffs[symbol], assumptions);
+        auto lb_coeff = minimum(coeffs[symbol], assumptions, depth + 1);
         if (lb_coeff == SymEngine::null) {
             return SymEngine::null;
         }
-        auto lb_symbol = minimum(symbol, assumptions);
+        auto lb_symbol = minimum(symbol, assumptions, depth + 1);
         if (lb_symbol == SymEngine::null) {
             return SymEngine::null;
         }
         lb = symbolic::add(lb, symbolic::mul(lb_coeff, lb_symbol));
     }
-    auto lb_const = minimum(coeffs[symbolic::symbol("__daisy_constant__")], assumptions);
+    auto lb_const = minimum(coeffs[symbolic::symbol("__daisy_constant__")], assumptions, depth + 1);
     if (lb_const == SymEngine::null) {
         return SymEngine::null;
     }
@@ -78,7 +87,11 @@ Expression minimum(const Expression& expr, const Assumptions& assumptions) {
     return lb;
 }
 
-Expression maximum(const Expression& expr, const Assumptions& assumptions) {
+Expression maximum(const Expression& expr, const Assumptions& assumptions, const size_t depth) {
+    if (depth > MAX_DEPTH) {
+        return expr;
+    }
+
     // Base Cases
     if (SymEngine::is_a<SymEngine::Integer>(*expr)) {
         return expr;
@@ -90,7 +103,7 @@ Expression maximum(const Expression& expr, const Assumptions& assumptions) {
         auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Max>(expr)->get_args();
         Expression ubs = symbolic::infty(-1);
         for (const auto& arg : args) {
-            auto ub = maximum(arg, assumptions);
+            auto ub = maximum(arg, assumptions, depth + 1);
             if (ub == SymEngine::null) {
                 return SymEngine::null;
             }
@@ -101,7 +114,7 @@ Expression maximum(const Expression& expr, const Assumptions& assumptions) {
         auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Min>(expr)->get_args();
         Expression ubs = symbolic::infty(-1);
         for (const auto& arg : args) {
-            auto ub = maximum(arg, assumptions);
+            auto ub = maximum(arg, assumptions, depth + 1);
             if (ub == SymEngine::null) {
                 return SymEngine::null;
             }
@@ -113,7 +126,10 @@ Expression maximum(const Expression& expr, const Assumptions& assumptions) {
     // Symbol
     if (SymEngine::is_a<SymEngine::Symbol>(*expr)) {
         auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(expr);
-        return maximum(assumptions.at(sym).upper_bound(), assumptions);
+        if (assumptions.find(sym) != assumptions.end()) {
+            return maximum(assumptions.at(sym).upper_bound(), assumptions, depth + 1);
+        }
+        return symbolic::infty(1);
     }
 
     // Expression
@@ -133,21 +149,37 @@ Expression maximum(const Expression& expr, const Assumptions& assumptions) {
 
     Expression ub = symbolic::zero();
     for (const auto& symbol : symbols) {
-        auto ub_coeff = maximum(coeffs[symbol], assumptions);
+        auto ub_coeff = maximum(coeffs[symbol], assumptions, depth + 1);
         if (ub_coeff == SymEngine::null) {
             return SymEngine::null;
         }
-        auto ub_symbol = maximum(symbol, assumptions);
+        auto ub_symbol = maximum(symbol, assumptions, depth + 1);
         if (ub_symbol == SymEngine::null) {
             return SymEngine::null;
         }
         ub = symbolic::add(ub, symbolic::mul(ub_coeff, ub_symbol));
     }
-    auto ub_const = maximum(coeffs[symbolic::symbol("__daisy_constant__")], assumptions);
+    auto ub_const = maximum(coeffs[symbolic::symbol("__daisy_constant__")], assumptions, depth + 1);
     if (ub_const == SymEngine::null) {
         return SymEngine::null;
     }
     ub = symbolic::add(ub, ub_const);
+    return ub;
+}
+
+Expression minimum(const Expression& expr, const Assumptions& assumptions) {
+    auto lb = minimum(expr, assumptions, 0);
+    if (lb == SymEngine::null) {
+        return symbolic::infty(-1);
+    }
+    return lb;
+}
+
+Expression maximum(const Expression& expr, const Assumptions& assumptions) {
+    auto ub = maximum(expr, assumptions, 0);
+    if (ub == SymEngine::null) {
+        return symbolic::infty(1);
+    }
     return ub;
 }
 

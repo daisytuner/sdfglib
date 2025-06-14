@@ -7,9 +7,7 @@ namespace sdfg {
 namespace symbolic {
 
 /**
- * @brief Compute the minimum of an expression given a set of assumptions.
- *
- * The function applies fixed-point iteration until convergence to a number.
+ * @brief Compute the minimum of an expression as max of candidates given a set of assumptions.
  *
  * @param expr The expression to compute the minimum of.
  * @param assumptions The assumptions to use.
@@ -18,9 +16,7 @@ namespace symbolic {
 Expression minimum(const Expression& expr, const Assumptions& assumptions);
 
 /**
- * @brief Compute the maximum of an expression given a set of assumptions.
- *
- * The function applies fixed-point iteration until convergence to a number.
+ * @brief Compute the maximum of an expression as min of candidates given a set of assumptions.
  *
  * @param expr The expression to compute the maximum of.
  * @param assumptions The assumptions to use.

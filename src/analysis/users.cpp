@@ -578,6 +578,8 @@ void Users::run(analysis::AnalysisManager& analysis_manager) {
                 break;
         }
     }
+
+    this->init_dom_tree();
 };
 
 std::vector<User*> Users::uses() const {
@@ -687,12 +689,20 @@ std::vector<User*> Users::moves(const std::string& container) const {
     }
 };
 
+structured_control_flow::ControlFlowNode* Users::scope(User* user) {
+    if (auto data_node = dynamic_cast<data_flow::DataFlowNode*>(user->element())) {
+        return static_cast<structured_control_flow::Block*>(data_node->get_parent().get_parent());
+    } else if (auto transition =
+                   dynamic_cast<structured_control_flow::Transition*>(user->element())) {
+        return &transition->parent();
+    } else {
+        return dynamic_cast<structured_control_flow::ControlFlowNode*>(user->element());
+    }
+}
+
 /****** Domination Analysis ******/
 
 bool Users::dominates(User& user1, User& user) {
-    if (this->dom_tree_.empty()) {
-        this->init_dom_tree();
-    }
     auto dominator = this->dom_tree_.at(&user);
     while (dominator != nullptr) {
         if (dominator == &user1) {
@@ -704,9 +714,6 @@ bool Users::dominates(User& user1, User& user) {
 };
 
 bool Users::post_dominates(User& user1, User& user) {
-    if (this->pdom_tree_.empty()) {
-        this->init_dom_tree();
-    }
     auto dominator = this->pdom_tree_.at(&user);
     while (dominator != nullptr) {
         if (dominator == &user1) {
@@ -849,15 +856,39 @@ bool Users::is_constant(const std::unordered_set<std::string>& containers, User&
 }
 
 UsersView::UsersView(Users& users, structured_control_flow::ControlFlowNode& node) : users_(users) {
-    auto& entry = users.entries_.at(&node);
-    auto& exit = users.exits_.at(&node);
-    this->entry_ = entry;
-    this->exit_ = exit;
-    this->sub_users_ = users.all_uses_between(*entry, *exit);
+    this->entry_ = users.entries_.at(&node);
+    this->exit_ = users.exits_.at(&node);
 
-    if (this->users_.dom_tree_.empty()) {
-        this->users_.init_dom_tree();
+    // Collect sub users
+    std::unordered_set<User*> visited;
+    std::list<User*> queue = {this->exit_};
+    while (!queue.empty()) {
+        auto current = queue.front();
+        queue.pop_front();
+
+        // Stop conditions
+        if (current == this->entry_) {
+            continue;
+        }
+
+        if (visited.find(current) != visited.end()) {
+            continue;
+        }
+        visited.insert(current);
+
+        this->sub_users_.insert(current);
+
+        // Extend search
+        // Backward search to utilize domination user1 over user
+        auto [eb, ee] = boost::in_edges(current->vertex_, users.graph_);
+        auto edges = std::ranges::subrange(eb, ee);
+        for (auto edge : edges) {
+            auto v = boost::source(edge, users.graph_);
+            queue.push_back(users.users_.at(v).get());
+        }
     }
+
+    // Collect sub dom tree
     auto& dom_tree = this->users_.dom_tree_;
 
     for (auto& user : this->sub_users_) {
@@ -865,9 +896,7 @@ UsersView::UsersView(Users& users, structured_control_flow::ControlFlowNode& nod
     }
     this->sub_dom_tree_[this->entry_] = nullptr;
 
-    if (this->users_.pdom_tree_.empty()) {
-        this->users_.init_dom_tree();
-    }
+    // Collect sub post dom tree
     auto& pdom_tree = this->users_.pdom_tree_;
     for (auto& user : this->sub_users_) {
         this->sub_pdom_tree_[user] = pdom_tree[user];

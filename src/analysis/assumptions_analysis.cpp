@@ -80,11 +80,11 @@ void AssumptionsAnalysis::visit_if_else(structured_control_flow::IfElse* if_else
                         auto eq = SymEngine::rcp_dynamic_cast<const SymEngine::Equality>(literal);
                         auto lhs = eq->get_args()[0];
                         auto rhs = eq->get_args()[1];
-                        if (SymEngine::eq(*lhs, *sym)) {
+                        if (SymEngine::eq(*lhs, *sym) && !symbolic::uses(rhs, sym)) {
                             ub = rhs;
                             lb = rhs;
                             break;
-                        } else if (SymEngine::eq(*rhs, *sym)) {
+                        } else if (SymEngine::eq(*rhs, *sym) && !symbolic::uses(lhs, sym)) {
                             ub = lhs;
                             lb = lhs;
                             break;
@@ -94,13 +94,13 @@ void AssumptionsAnalysis::visit_if_else(structured_control_flow::IfElse* if_else
                             SymEngine::rcp_dynamic_cast<const SymEngine::StrictLessThan>(literal);
                         auto lhs = lt->get_args()[0];
                         auto rhs = lt->get_args()[1];
-                        if (SymEngine::eq(*lhs, *sym)) {
+                        if (SymEngine::eq(*lhs, *sym) && !symbolic::uses(rhs, sym)) {
                             if (symbolic::eq(ub, symbolic::infty(1))) {
                                 ub = rhs;
                             } else {
                                 ub = symbolic::min(ub, rhs);
                             }
-                        } else if (SymEngine::eq(*rhs, *sym)) {
+                        } else if (SymEngine::eq(*rhs, *sym) && !symbolic::uses(lhs, sym)) {
                             if (symbolic::eq(lb, symbolic::infty(-1))) {
                                 lb = lhs;
                             } else {
@@ -111,13 +111,13 @@ void AssumptionsAnalysis::visit_if_else(structured_control_flow::IfElse* if_else
                         auto lt = SymEngine::rcp_dynamic_cast<const SymEngine::LessThan>(literal);
                         auto lhs = lt->get_args()[0];
                         auto rhs = lt->get_args()[1];
-                        if (SymEngine::eq(*lhs, *sym)) {
+                        if (SymEngine::eq(*lhs, *sym) && !symbolic::uses(rhs, sym)) {
                             if (symbolic::eq(ub, symbolic::infty(1))) {
                                 ub = rhs;
                             } else {
                                 ub = symbolic::min(ub, rhs);
                             }
-                        } else if (SymEngine::eq(*rhs, *sym)) {
+                        } else if (SymEngine::eq(*rhs, *sym) && !symbolic::uses(lhs, sym)) {
                             if (symbolic::eq(lb, symbolic::infty(-1))) {
                                 lb = lhs;
                             } else {
