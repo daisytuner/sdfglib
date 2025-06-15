@@ -5,7 +5,12 @@
 #include <isl/set.h>
 #include <isl/space.h>
 
+#include <regex>
+
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
+#include "sdfg/symbolic/extreme_values.h"
+#include "sdfg/symbolic/polynomials.h"
+#include "sdfg/symbolic/series.h"
 
 namespace sdfg {
 namespace symbolic {
@@ -97,13 +102,18 @@ std::string constraint_to_isl_str(const Expression& con) {
     return "";
 }
 
-std::string expression_to_isl_map_str(const MultiExpression& expr, const SymbolSet& params,
-                                      const Assumptions& assums) {
+std::tuple<std::string, std::string, std::string> expressions_to_intersection_map_str(
+    const MultiExpression& expr1, const MultiExpression& expr2, const SymbolSet& params,
+    const SymbolSet& monotonics, const Assumptions& assums) {
     codegen::CLanguageExtension language_extension;
 
     // Get all symbols
     symbolic::SymbolSet syms;
-    for (auto& expr : expr) {
+    for (auto& expr : expr1) {
+        auto syms_expr = symbolic::atoms(expr);
+        syms.insert(syms_expr.begin(), syms_expr.end());
+    }
+    for (auto& expr : expr2) {
         auto syms_expr = symbolic::atoms(expr);
         syms.insert(syms_expr.begin(), syms_expr.end());
     }
@@ -115,9 +125,15 @@ std::string expression_to_isl_map_str(const MultiExpression& expr, const SymbolS
     SymbolSet parameters_syms;
     for (auto& sym : syms) {
         if (params.find(sym) != params.end()) {
+            if (parameters_syms.find(sym) != parameters_syms.end()) {
+                continue;
+            }
             parameters.push_back(sym->get_name());
             parameters_syms.insert(sym);
         } else {
+            if (dimensions_syms.find(sym) != dimensions_syms.end()) {
+                continue;
+            }
             dimensions.push_back(sym->get_name());
             dimensions_syms.insert(sym);
         }
@@ -126,52 +142,138 @@ std::string expression_to_isl_map_str(const MultiExpression& expr, const SymbolS
     // Generate constraints
     SymbolSet seen;
     auto constraints_syms = generate_constraints(syms, assums, seen);
+
     // Extend parameters with additional symbols from constraints
     for (auto& con : constraints_syms) {
         auto con_syms = symbolic::atoms(con);
         for (auto& con_sym : con_syms) {
             if (dimensions_syms.find(con_sym) == dimensions_syms.end()) {
+                if (parameters_syms.find(con_sym) != parameters_syms.end()) {
+                    continue;
+                }
                 parameters.push_back(con_sym->get_name());
                 parameters_syms.insert(con_sym);
             }
         }
     }
 
-    // Define map
-    std::string map;
+    // Define two maps
+    std::string map_1;
+    std::string map_2;
     if (!parameters.empty()) {
-        map += "[";
-        map += helpers::join(parameters, ", ");
-        map += "] -> ";
+        map_1 += "[";
+        map_1 += helpers::join(parameters, ", ");
+        map_1 += "] -> ";
+        map_2 += "[";
+        map_2 += helpers::join(parameters, ", ");
+        map_2 += "] -> ";
     }
-    map += "{ [" + helpers::join(dimensions, ", ") + "] -> [";
-    for (size_t i = 0; i < expr.size(); i++) {
-        auto dim = expr[i];
-        map += language_extension.expression(dim);
-        if (i < expr.size() - 1) {
-            map += ", ";
+    map_1 += "{ [";
+    map_2 += "{ [";
+    for (size_t i = 0; i < dimensions.size(); i++) {
+        map_1 += dimensions[i] + "_1";
+        map_2 += dimensions[i] + "_2";
+        if (i < dimensions.size() - 1) {
+            map_1 += ", ";
+            map_2 += ", ";
         }
     }
-    map += "] ";
+    map_1 += "] -> [";
+    map_2 += "] -> [";
+    for (size_t i = 0; i < expr1.size(); i++) {
+        auto dim = expr1[i];
+        for (auto& iter : dimensions) {
+            dim = symbolic::subs(dim, symbolic::symbol(iter), symbolic::symbol(iter + "_1"));
+        }
+        map_1 += language_extension.expression(dim);
+        if (i < expr1.size() - 1) {
+            map_1 += ", ";
+        }
+    }
+    for (size_t i = 0; i < expr2.size(); i++) {
+        auto dim = expr2[i];
+        for (auto& iter : dimensions) {
+            dim = symbolic::subs(dim, symbolic::symbol(iter), symbolic::symbol(iter + "_2"));
+        }
+        map_2 += language_extension.expression(dim);
+        if (i < expr2.size() - 1) {
+            map_2 += ", ";
+        }
+    }
+    map_1 += "] ";
+    map_2 += "] ";
 
-    std::vector<std::string> constraints;
+    std::vector<std::string> constraints_1;
+    std::vector<std::string> constraints_2;
+    // Add bounds
     for (auto& con : constraints_syms) {
-        auto con_str = constraint_to_isl_str(con);
-        if (!con_str.empty()) {
-            constraints.push_back(con_str);
+        auto con_1 = con;
+        auto con_2 = con;
+        for (auto& iter : dimensions) {
+            con_1 = symbolic::subs(con_1, symbolic::symbol(iter), symbolic::symbol(iter + "_1"));
+            con_2 = symbolic::subs(con_2, symbolic::symbol(iter), symbolic::symbol(iter + "_2"));
+        }
+        auto con_str_1 = constraint_to_isl_str(con_1);
+        if (con_str_1.empty()) {
+            continue;
+        }
+        auto con_str_2 = constraint_to_isl_str(con_2);
+        if (!con_str_1.empty()) {
+            constraints_1.push_back(con_str_1);
+            constraints_2.push_back(con_str_2);
         }
     }
-    if (!constraints.empty()) {
-        map += " : ";
-        map += helpers::join(constraints, " and ");
+    if (!constraints_1.empty()) {
+        map_1 += " : ";
+        map_1 += helpers::join(constraints_1, " and ");
     }
-    map += " }";
+    map_1 += " }";
 
-    return map;
+    if (!constraints_2.empty()) {
+        map_2 += " : ";
+        map_2 += helpers::join(constraints_2, " and ");
+    }
+    map_2 += " }";
+
+    std::string map_3 = "{ [";
+    for (size_t i = 0; i < dimensions.size(); i++) {
+        map_3 += dimensions[i] + "_2";
+        if (i < dimensions.size() - 1) {
+            map_3 += ", ";
+        }
+    }
+    map_3 += "] -> [";
+    for (size_t i = 0; i < dimensions.size(); i++) {
+        map_3 += dimensions[i] + "_1";
+        if (i < dimensions.size() - 1) {
+            map_3 += ", ";
+        }
+    }
+    map_3 += "]";
+    std::vector<std::string> monotonicity_constraints;
+    // Monotonicity constraints
+    for (size_t i = 0; i < dimensions.size(); i++) {
+        if (monotonics.find(symbolic::symbol(dimensions[i])) == monotonics.end()) {
+            continue;
+        }
+        monotonicity_constraints.push_back(dimensions[i] + "_1 != " + dimensions[i] + "_2");
+    }
+    if (!monotonics.empty()) {
+        map_3 += " : ";
+        map_3 += helpers::join(monotonicity_constraints, " and ");
+    }
+    map_3 += " }";
+
+    map_1 = std::regex_replace(map_1, std::regex("\\."), "_");
+    map_2 = std::regex_replace(map_2, std::regex("\\."), "_");
+    map_3 = std::regex_replace(map_3, std::regex("\\."), "_");
+
+    return {map_1, map_2, map_3};
 }
 
-std::string expressions_to_isl_map_str(const MultiExpression& expr1, const MultiExpression& expr2,
-                                       const SymbolSet& params, const Assumptions& assums) {
+std::string expressions_to_diagonal_map_str(const MultiExpression& expr1,
+                                            const MultiExpression& expr2, const SymbolSet& params,
+                                            const Assumptions& assums) {
     codegen::CLanguageExtension language_extension;
 
     // Get all symbols
@@ -260,12 +362,139 @@ std::string expressions_to_isl_map_str(const MultiExpression& expr1, const Multi
 
     map += " }";
 
+    map = std::regex_replace(map, std::regex("\\."), "_");
     return map;
 }
 
-bool intersect(const MultiExpression& expr1, const SymbolSet& params1, const MultiExpression& expr2,
-               const SymbolSet& params2, const Assumptions& assums) {
+bool is_disjoint_isl(const MultiExpression& expr1, const MultiExpression& expr2,
+                     const SymbolSet& params, const SymbolSet& monotonics,
+                     const Assumptions& assums) {
+    if (expr1.size() != expr2.size()) {
+        return false;
+    }
+
+    isl_ctx* ctx = isl_ctx_alloc();
+
+    // Transform both expressions into two maps with separate dimensions
+    auto expr1_delinearized = delinearize(expr1, params, assums);
+    auto expr2_delinearized = delinearize(expr2, params, assums);
+    auto maps = expressions_to_intersection_map_str(expr1, expr2, params, monotonics, assums);
+    isl_map* map_1 = isl_map_read_from_str(ctx, std::get<0>(maps).c_str());
+    isl_map* map_2 = isl_map_read_from_str(ctx, std::get<1>(maps).c_str());
+    isl_map* map_3 = isl_map_read_from_str(ctx, std::get<2>(maps).c_str());
+    if (!map_1 || !map_2 || !map_3) {
+        if (map_1) {
+            isl_map_free(map_1);
+        }
+        if (map_2) {
+            isl_map_free(map_2);
+        }
+        if (map_3) {
+            isl_map_free(map_3);
+        }
+        isl_ctx_free(ctx);
+        return false;
+    }
+
+    // Find aliasing pairs under the constraint that dimensions are different
+
+    isl_map* composed = isl_map_apply_domain(map_2, map_3);
+    if (!composed) {
+        isl_map_free(map_1);
+        if (map_2) {
+            isl_map_free(map_2);
+        }
+        if (map_3) {
+            isl_map_free(map_3);
+        }
+        isl_ctx_free(ctx);
+        return false;
+    }
+    isl_map* alias_pairs = isl_map_intersect(composed, map_1);
+    if (!alias_pairs) {
+        if (composed) {
+            isl_map_free(composed);
+        }
+        if (map_1) {
+            isl_map_free(map_1);
+        }
+        isl_ctx_free(ctx);
+        return false;
+    }
+
+    bool disjoint = isl_map_is_empty(alias_pairs);
+    isl_map_free(alias_pairs);
+    isl_ctx_free(ctx);
+
+    return disjoint;
+}
+
+bool is_disjoint_monotonic(const MultiExpression& expr1, const MultiExpression& expr2,
+                           const SymbolSet& params, const SymbolSet& monotonics,
+                           const Assumptions& assums) {
+    for (size_t i = 0; i < expr1.size(); i++) {
+        auto& dim1 = expr1[i];
+        if (expr2.size() <= i) {
+            continue;
+        }
+        auto& dim2 = expr2[i];
+        if (!symbolic::eq(dim1, dim2)) {
+            continue;
+        }
+
+        // Collect all symbols
+        symbolic::SymbolSet syms;
+        for (auto& sym : symbolic::atoms(dim1)) {
+            syms.insert(sym);
+        }
+
+        // Collect all non-constant symbols
+        symbolic::SymbolSet generators;
+        for (auto& sym : syms) {
+            if (params.find(sym) == params.end()) {
+                generators.insert(sym);
+            }
+        }
+        if (generators.empty()) {
+            continue;
+        }
+
+        // Check if all non-constant symbols are monotonics
+        bool can_analyze = true;
+        for (auto& sym : generators) {
+            if (monotonics.find(sym) == monotonics.end()) {
+                can_analyze = false;
+                break;
+            }
+        }
+        if (!can_analyze) {
+            continue;
+        }
+
+        // Check if both dimensions are monotonic in non-constant symbols
+        bool monotonic_dimension = true;
+        for (auto& sym : generators) {
+            if (!symbolic::is_monotonic(dim1, sym, assums)) {
+                monotonic_dimension = false;
+                break;
+            }
+        }
+        if (!monotonic_dimension) {
+            continue;
+        }
+
+        return true;
+    }
+
     return false;
+}
+
+bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
+                 const SymbolSet& params, const SymbolSet& monotonics, const Assumptions& assums) {
+    if (is_disjoint_monotonic(expr1, expr2, params, monotonics, assums)) {
+        return true;
+    }
+    return is_disjoint_isl(expr1, expr2, params, monotonics, assums);
 }
 
 bool is_equivalent(const MultiExpression& expr1, const MultiExpression& expr2,
@@ -289,7 +518,10 @@ bool is_equivalent(const MultiExpression& expr1, const MultiExpression& expr2,
     // Check for set equivalence
     isl_ctx* ctx = isl_ctx_alloc();
     // Builds { [params] -> [expr1..., expr2...] : assumptions }
-    std::string map_str = expressions_to_isl_map_str(expr1, expr2, params, assums);
+    auto expr1_delinearized = delinearize(expr1, params, assums);
+    auto expr2_delinearized = delinearize(expr2, params, assums);
+    std::string map_str =
+        expressions_to_diagonal_map_str(expr1_delinearized, expr2_delinearized, params, assums);
 
     isl_map* pair_map = isl_map_read_from_str(ctx, map_str.c_str());
     if (!pair_map) {
@@ -325,6 +557,117 @@ bool is_equivalent(const MultiExpression& expr1, const MultiExpression& expr2,
     isl_ctx_free(ctx);
 
     return equivalent;
+}
+
+MultiExpression delinearize(const MultiExpression& expr, const SymbolSet& params,
+                            const Assumptions& assums) {
+    MultiExpression delinearized;
+    for (auto& dim : expr) {
+        // Step 1: Convert expression into an affine polynomial
+        SymbolVec symbols;
+        for (auto& sym : atoms(dim)) {
+            if (params.find(sym) == params.end()) {
+                symbols.push_back(sym);
+            }
+        }
+        if (symbols.empty()) {
+            delinearized.push_back(dim);
+            continue;
+        }
+
+        auto poly = polynomial(dim, symbols);
+        if (poly == SymEngine::null) {
+            delinearized.push_back(dim);
+            continue;
+        }
+
+        auto aff_coeffs = affine_coefficients(poly, symbols);
+        if (aff_coeffs.empty()) {
+            delinearized.push_back(dim);
+            continue;
+        }
+
+        // Step 2: Peel-off dimensions
+        bool success = true;
+        Expression remaining = dim;
+        std::vector<Expression> peeled_dims;
+        while (aff_coeffs.size() > 1) {
+            // Find the symbol with largest stride (= largest atom count)
+            Symbol new_dim = symbolic::symbol("");
+            size_t max_atom_count = 0;
+            for (const auto& [sym, coeff] : aff_coeffs) {
+                if (sym->get_name() == "__daisy_constant__") {
+                    continue;
+                }
+                size_t atom_count = symbolic::atoms(coeff).size();
+                if (atom_count > max_atom_count || new_dim->get_name() == "") {
+                    max_atom_count = atom_count;
+                    new_dim = sym;
+                }
+            }
+            if (new_dim->get_name() == "") {
+                break;
+            }
+
+            // Symbol must be nonnegative
+            auto sym_lb = minimum(new_dim, assums);
+            auto sym_cond = symbolic::Ge(sym_lb, symbolic::zero());
+            if (!symbolic::is_true(sym_cond)) {
+                success = false;
+                break;
+            }
+
+            // Stride must be positive
+            Expression stride = aff_coeffs.at(new_dim);
+            auto stride_lb = minimum(stride, assums);
+            if (!symbolic::is_true(symbolic::Ge(stride_lb, symbolic::one()))) {
+                success = false;
+                break;
+            }
+
+            // Peel off the dimension
+            remaining = symbolic::sub(remaining, symbolic::mul(stride, new_dim));
+
+            // Check if remainder is within bounds
+
+            // remaining must be nonnegative
+            auto rem_lb = minimum(remaining, assums);
+            auto cond_zero = symbolic::Ge(rem_lb, symbolic::zero());
+            if (!symbolic::is_true(cond_zero)) {
+                success = false;
+                break;
+            }
+
+            // remaining must be less than stride
+            auto rem = symbolic::sub(stride, remaining);
+            rem = minimum(rem, assums);
+
+            auto cond_stride = symbolic::Ge(rem, symbolic::one());
+            if (!symbolic::is_true(cond_stride)) {
+                success = false;
+                break;
+            }
+
+            // Add the peeled dimension to the list
+            peeled_dims.push_back(new_dim);
+            aff_coeffs.erase(new_dim);
+        }
+        if (!success) {
+            delinearized.push_back(dim);
+            continue;
+        }
+
+        for (auto& peeled_dim : peeled_dims) {
+            delinearized.push_back(peeled_dim);
+        }
+
+        // If remaining is not zero, then add the constant term
+        if (!symbolic::eq(remaining, symbolic::zero()) && success) {
+            delinearized.push_back(remaining);
+        }
+    }
+
+    return delinearized;
 }
 
 }  // namespace symbolic
