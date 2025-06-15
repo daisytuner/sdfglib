@@ -59,6 +59,8 @@ set(SOURCE_FILES
     src/builder/sdfg_builder.cpp
     src/builder/structured_sdfg_builder.cpp
     src/codegen/utils.cpp
+    src/codegen/code_generator.cpp
+    src/codegen/instrumentation/capture_var_plan.cpp
     src/codegen/language_extensions/c_language_extension.cpp
     src/codegen/language_extensions/cpp_language_extension.cpp
     src/codegen/language_extensions/cuda_language_extension.cpp
@@ -163,7 +165,7 @@ target_include_directories(sdfglib
         ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/symengine/symengine/utilities/cereal/include
         ${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine/symengine/utilities/cereal/include
 )
-target_compile_options(sdfglib PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -Wno-unused-private-field -Wno-switch -Wno-deprecated-declarations)
+target_compile_options(sdfglib PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-private-field -Wno-switch -Wno-deprecated-declarations)
 
 if(SDFGLIB_ENABLE_SANITIZER)
   target_compile_options(sdfglib PUBLIC ${_SAN_COMPILE_OPTS})

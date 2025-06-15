@@ -55,8 +55,7 @@ class Visualizer {
                                     symbolic::Condition const& condition,
                                     symbolic::Expression const& update);
     virtual void visualizeLibraryNode(const data_flow::LibraryNodeCode libnode_type);
-    virtual void visualizeSubset(Function const& function, types::IType const& type,
-                                 data_flow::Subset const& sub);
+    virtual void visualizeSubset(Function const& function, data_flow::Subset const& sub, types::IType const* type = nullptr, int subIdx = 0);
 
    public:
     Visualizer(StructuredSDFG& sdfg) : stream_{}, sdfg_{sdfg}, replacements_{} {};
