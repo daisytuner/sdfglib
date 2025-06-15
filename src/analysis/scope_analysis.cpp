@@ -22,7 +22,7 @@ void ScopeAnalysis::run(structured_control_flow::ControlFlowNode* current,
     } else if (auto while_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
         this->scope_tree_[current] = parent_scope;
         this->run(&while_stmt->root(), current);
-    } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(current)) {
+    } else if (auto for_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
         this->scope_tree_[current] = parent_scope;
         this->run(&for_stmt->root(), current);
     } else if (dynamic_cast<structured_control_flow::Break*>(current)) {
