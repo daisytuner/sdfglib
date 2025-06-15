@@ -38,10 +38,6 @@ bool Function::operator==(const IType& other) const {
         return false;
     }
 
-    if (this->alignment_ != other_function->alignment_) {
-        return false;
-    }
-
     if (*this->return_type_ == *other_function->return_type_) {
         // Do nothing
     } else {

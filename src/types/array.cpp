@@ -23,8 +23,7 @@ const symbolic::Expression& Array::num_elements() const { return this->num_eleme
 bool Array::operator==(const IType& other) const {
     if (auto array_type = dynamic_cast<const Array*>(&other)) {
         return symbolic::eq(this->num_elements_, array_type->num_elements_) &&
-               *(this->element_type_) == *array_type->element_type_ &&
-               this->alignment_ == array_type->alignment_;
+               *(this->element_type_) == *array_type->element_type_;
     } else {
         return false;
     }

@@ -22,8 +22,7 @@ const IType& Pointer::pointee_type() const { return *this->pointee_type_; };
 
 bool Pointer::operator==(const IType& other) const {
     if (auto pointer_type = dynamic_cast<const Pointer*>(&other)) {
-        return *(this->pointee_type_) == *pointer_type->pointee_type_ &&
-               this->alignment_ == pointer_type->alignment_;
+        return *(this->pointee_type_) == *pointer_type->pointee_type_;
     } else {
         return false;
     }
