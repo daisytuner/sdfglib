@@ -31,7 +31,9 @@ const symbolic::Expression& Map::num_iterations() const { return this->num_itera
 
 symbolic::Expression& Map::num_iterations() { return this->num_iterations_; };
 
-ScheduleType Map::schedule_type() const { return this->schedule_type_; };
+ScheduleType& Map::schedule_type() { return this->schedule_type_; };
+
+const ScheduleType& Map::schedule_type() const { return this->schedule_type_; };
 
 Sequence& Map::root() const { return *this->root_; };
 

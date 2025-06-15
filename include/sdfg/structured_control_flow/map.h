@@ -55,7 +55,9 @@ class Map : public StructuredLoop {
 
     symbolic::Expression& num_iterations();
 
-    ScheduleType schedule_type() const;
+    ScheduleType& schedule_type();
+
+    const ScheduleType& schedule_type() const;
 
     Sequence& root() const override;
 
