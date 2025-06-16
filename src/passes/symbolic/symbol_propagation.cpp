@@ -5,6 +5,44 @@
 namespace sdfg {
 namespace passes {
 
+symbolic::Expression inverse(const symbolic::Symbol& lhs, const symbolic::Expression& rhs) {
+    if (!symbolic::uses(rhs, lhs)) {
+        return SymEngine::null;
+    }
+
+    if (SymEngine::is_a<SymEngine::Add>(*rhs)) {
+        auto add = SymEngine::rcp_static_cast<const SymEngine::Add>(rhs);
+        auto arg_0 = add->get_args()[0];
+        auto arg_1 = add->get_args()[1];
+        if (!symbolic::eq(arg_0, lhs)) {
+            std::swap(arg_0, arg_1);
+        }
+        if (!symbolic::eq(arg_0, lhs)) {
+            return SymEngine::null;
+        }
+        if (!SymEngine::is_a<SymEngine::Integer>(*arg_1)) {
+            return SymEngine::null;
+        }
+        return symbolic::sub(lhs, arg_1);
+    } else if (SymEngine::is_a<SymEngine::Mul>(*rhs)) {
+        auto mul = SymEngine::rcp_static_cast<const SymEngine::Mul>(rhs);
+        auto arg_0 = mul->get_args()[0];
+        auto arg_1 = mul->get_args()[1];
+        if (!symbolic::eq(arg_0, lhs)) {
+            std::swap(arg_0, arg_1);
+        }
+        if (!symbolic::eq(arg_0, lhs)) {
+            return SymEngine::null;
+        }
+        if (!SymEngine::is_a<SymEngine::Integer>(*arg_1)) {
+            return SymEngine::null;
+        }
+        return symbolic::div(lhs, arg_1);
+    }
+
+    return SymEngine::null;
+};
+
 SymbolPropagation::SymbolPropagation()
     : Pass() {
 
@@ -79,6 +117,9 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
             // RHS' symbols may be written between write and read
             // We attempt to create the new RHS
             bool success = true;
+            auto rhs_modified = rhs;
+            std::unordered_set<std::string> modified_symbols;
+
             auto middle_users = users.all_uses_between(*write, *read);
             for (auto& user : middle_users) {
                 if (user->use() != analysis::Use::WRITE) {
@@ -88,8 +129,53 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                     continue;
                 }
 
-                success = false;
-                break;
+                // Criterion: Symbol is only modified once
+                if (modified_symbols.find(user->container()) != modified_symbols.end()) {
+                    success = false;
+                    break;
+                }
+
+                // Criterion: RHS must dominate modification
+                if (!users.dominates(*write, *user)) {
+                    success = false;
+                    break;
+                }
+
+                // Criterion: Modification must dominate read
+                if (!users.dominates(*user, *read)) {
+                    success = false;
+                    break;
+                }
+
+                // Criterion: Only transitions
+                if (!dynamic_cast<structured_control_flow::Transition*>(user->element())) {
+                    success = false;
+                    break;
+                }
+                auto sym_transition =
+                    dynamic_cast<structured_control_flow::Transition*>(user->element());
+                auto sym_lhs = symbolic::symbol(user->container());
+                auto sym_rhs = sym_transition->assignments().at(sym_lhs);
+
+                // Limited to constants
+                for (auto& atom : symbolic::atoms(sym_rhs)) {
+                    if (!symbolic::eq(atom, sym_lhs)) {
+                        success = false;
+                        break;
+                    }
+                }
+                if (!success) {
+                    break;
+                }
+
+                auto inv = inverse(sym_lhs, sym_rhs);
+                if (inv == SymEngine::null) {
+                    success = false;
+                    break;
+                }
+
+                rhs_modified = symbolic::subs(rhs_modified, sym_lhs, inv);
+                modified_symbols.insert(user->container());
             }
             if (!success) {
                 continue;
@@ -100,7 +186,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                 auto& assignments = transition_stmt->assignments();
                 for (auto& entry : assignments) {
                     if (symbolic::uses(entry.second, lhs)) {
-                        entry.second = symbolic::subs(entry.second, lhs, rhs);
+                        entry.second = symbolic::subs(entry.second, lhs, rhs_modified);
                         applied = true;
                     }
                 }
@@ -108,9 +194,8 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                            dynamic_cast<structured_control_flow::IfElse*>(read->element())) {
                 // Criterion: RHS does not use nvptx symbols
                 bool nvptx = false;
-                for (auto& atom : symbolic::atoms(rhs)) {
-                    auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom);
-                    if (symbolic::is_nv(sym)) {
+                for (auto& atom : symbolic::atoms(rhs_modified)) {
+                    if (symbolic::is_nv(atom)) {
                         nvptx = true;
                         break;
                     }
@@ -122,7 +207,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                 for (size_t i = 0; i < if_else_stmt->size(); i++) {
                     auto child = if_else_stmt->at(i);
                     if (symbolic::uses(child.second, lhs)) {
-                        child.second = symbolic::subs(child.second, lhs, rhs);
+                        child.second = symbolic::subs(child.second, lhs, rhs_modified);
                         applied = true;
                     }
                 }
@@ -130,7 +215,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                 bool used = false;
                 for (auto& dim : memlet->subset()) {
                     if (symbolic::uses(dim, lhs)) {
-                        dim = symbolic::subs(dim, lhs, rhs);
+                        dim = symbolic::subs(dim, lhs, rhs_modified);
                         used = true;
                     }
                 }
@@ -140,20 +225,21 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
             } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(read->element())) {
                 auto& condition = tasklet->condition();
                 if (symbolic::uses(condition, lhs)) {
-                    tasklet->condition() = symbolic::subs(condition, lhs, rhs);
+                    tasklet->condition() = symbolic::subs(condition, lhs, rhs_modified);
                     applied = true;
                 }
             } else if (auto for_loop =
                            dynamic_cast<structured_control_flow::For*>(read->element())) {
                 auto for_user = dynamic_cast<analysis::ForUser*>(read);
                 if (for_user->is_init() && symbolic::uses(for_loop->init(), lhs)) {
-                    for_loop->init() = symbolic::subs(for_loop->init(), lhs, rhs);
+                    for_loop->init() = symbolic::subs(for_loop->init(), lhs, rhs_modified);
                     applied = true;
                 } else if (for_user->is_condition() && symbolic::uses(for_loop->condition(), lhs)) {
-                    for_loop->condition() = symbolic::subs(for_loop->condition(), lhs, rhs);
+                    for_loop->condition() =
+                        symbolic::subs(for_loop->condition(), lhs, rhs_modified);
                     applied = true;
                 } else if (for_user->is_update() && symbolic::uses(for_loop->update(), lhs)) {
-                    for_loop->update() = symbolic::subs(for_loop->update(), lhs, rhs);
+                    for_loop->update() = symbolic::subs(for_loop->update(), lhs, rhs_modified);
                     applied = true;
                 }
             }

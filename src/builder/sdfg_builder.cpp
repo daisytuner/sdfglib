@@ -318,7 +318,6 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
     } else if (dynamic_cast<data_flow::LibraryNode*>(&src) &&
                dynamic_cast<data_flow::AccessNode*>(&dst)) {
         auto& src_node = dynamic_cast<data_flow::LibraryNode&>(src);
-        auto& dst_node = dynamic_cast<data_flow::AccessNode&>(dst);
         if (dst_conn != "void") {
             throw InvalidSDFGException("dst_conn must be void. Found: " + dst_conn);
         }
@@ -331,11 +330,6 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
         }
         if (!found) {
             throw InvalidSDFGException("src_conn not found in library node: " + src_conn);
-        }
-
-        auto& element_type = types::infer_type(function_, function_.type(dst_node.data()), subset);
-        if (!dynamic_cast<const types::Pointer*>(&element_type)) {
-            throw InvalidSDFGException("Access node must be a pointer");
         }
     } else {
         throw InvalidSDFGException("Invalid src or dst node type");
