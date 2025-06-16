@@ -589,7 +589,7 @@ TEST(UsersTest, AccessNode_Subsets_Dominates_IFElse) {
     EXPECT_FALSE(users.post_dominates(*write, *read));
     EXPECT_FALSE(users.post_dominates(*read, *write));
 
-    auto assums = analysis_manager.get<analysis::AssumptionsAnalysis>().get(branch);
+    auto assums = analysis_manager.get<analysis::AssumptionsAnalysis>().get(branch, true);
     EXPECT_TRUE(users.is_dominated_by(*write, analysis::Use::READ, assums));
     EXPECT_FALSE(users.is_dominated_by(*read, analysis::Use::WRITE, assums));
 }

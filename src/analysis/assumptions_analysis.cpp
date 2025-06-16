@@ -246,9 +246,6 @@ void AssumptionsAnalysis::run(analysis::AnalysisManager& analysis_manager) {
 
     // Add sdfg assumptions
     this->assumptions_.insert({&sdfg_.root(), symbolic::Assumptions()});
-    for (auto& entry : sdfg_.assumptions()) {
-        this->assumptions_[&sdfg_.root()][entry.first] = entry.second;
-    }
 
     // Add additional assumptions
     for (auto& entry : this->additional_assumptions_) {
@@ -259,8 +256,8 @@ void AssumptionsAnalysis::run(analysis::AnalysisManager& analysis_manager) {
     this->traverse(sdfg_.root(), analysis_manager);
 };
 
-const symbolic::Assumptions AssumptionsAnalysis::get(
-    structured_control_flow::ControlFlowNode& node) {
+const symbolic::Assumptions AssumptionsAnalysis::get(structured_control_flow::ControlFlowNode& node,
+                                                     bool include_trivial_bounds) {
     // Compute assumptions on the fly
 
     // Node-level assumptions
@@ -285,6 +282,14 @@ const symbolic::Assumptions AssumptionsAnalysis::get(
             }
         }
         scope = scope_analysis.parent_scope(scope);
+    }
+
+    if (include_trivial_bounds) {
+        for (auto& entry : sdfg_.assumptions()) {
+            if (assums.find(entry.first) == assums.end()) {
+                assums.insert({entry.first, entry.second});
+            }
+        }
     }
 
     return assums;

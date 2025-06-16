@@ -4,7 +4,7 @@
 
 using namespace sdfg;
 
-TEST(ExtremeValuesTest, Symbol) {
+TEST(ExtremeValuesTest, Symbol_Integral) {
     auto a = symbolic::symbol("a");
 
     auto lb = symbolic::integer(1);
@@ -17,14 +17,33 @@ TEST(ExtremeValuesTest, Symbol) {
     symbolic::Assumptions assums;
     assums.insert({a, assum});
 
-    auto min = symbolic::minimum(a, assums);
+    auto min = symbolic::minimum(a, {}, assums);
     EXPECT_TRUE(symbolic::eq(min, lb));
 
-    auto max = symbolic::maximum(a, assums);
+    auto max = symbolic::maximum(a, {}, assums);
     EXPECT_TRUE(symbolic::eq(max, ub));
 }
 
-TEST(ExtremeValuesTest, Linear) {
+TEST(ExtremeValuesTest, Symbol_Symbolic) {
+    auto a = symbolic::symbol("a");
+    auto N = symbolic::symbol("N");
+    auto M = symbolic::symbol("M");
+
+    symbolic::Assumption assum_a = symbolic::Assumption(a);
+    assum_a.lower_bound(N);
+    assum_a.upper_bound(M);
+
+    symbolic::Assumptions assums;
+    assums.insert({a, assum_a});
+
+    auto min = symbolic::minimum(a, {N, M}, assums);
+    EXPECT_TRUE(symbolic::eq(min, N));
+
+    auto max = symbolic::maximum(a, {N, M}, assums);
+    EXPECT_TRUE(symbolic::eq(max, M));
+}
+
+TEST(ExtremeValuesTest, Linear_Integral) {
     auto a = symbolic::symbol("a");
 
     auto lb = symbolic::integer(1);
@@ -39,47 +58,41 @@ TEST(ExtremeValuesTest, Linear) {
 
     auto expr = symbolic::add(symbolic::mul(symbolic::integer(4), a), symbolic::integer(5));
 
-    auto min = symbolic::minimum(expr, assums);
+    auto min = symbolic::minimum(expr, {}, assums);
     EXPECT_TRUE(symbolic::eq(min, symbolic::integer(9)));
 
-    auto max = symbolic::maximum(expr, assums);
+    auto max = symbolic::maximum(expr, {}, assums);
     EXPECT_TRUE(symbolic::eq(max, symbolic::integer(13)));
 }
 
-TEST(ExtremeValuesTest, Max) {
+TEST(ExtremeValuesTest, Linear_Symbolic) {
     auto a = symbolic::symbol("a");
-    auto b = symbolic::symbol("b");
+    auto N = symbolic::symbol("N");
+    auto M = symbolic::symbol("M");
 
-    auto lb_a = symbolic::integer(1);
-    auto ub_a = symbolic::integer(2);
-
-    auto lb_b = symbolic::integer(3);
-    auto ub_b = symbolic::integer(4);
-
-    symbolic::Assumption assum_a = symbolic::Assumption(a);
-    assum_a.lower_bound(lb_a);
-    assum_a.upper_bound(ub_a);
-
-    symbolic::Assumption assum_b = symbolic::Assumption(b);
-    assum_b.lower_bound(lb_b);
-    assum_b.upper_bound(ub_b);
+    symbolic::Assumption assum = symbolic::Assumption(a);
+    assum.lower_bound(N);
+    assum.upper_bound(M);
 
     symbolic::Assumptions assums;
-    assums.insert({a, assum_a});
-    assums.insert({b, assum_b});
+    assums.insert({a, assum});
 
-    auto expr =
-        symbolic::max(symbolic::add(symbolic::mul(symbolic::integer(4), a), symbolic::integer(5)),
-                      symbolic::add(symbolic::mul(symbolic::integer(6), b), symbolic::integer(7)));
+    auto expr = symbolic::add(symbolic::mul(symbolic::integer(4), a), symbolic::integer(5));
 
-    auto min = symbolic::minimum(expr, assums);
-    EXPECT_TRUE(symbolic::eq(min, symbolic::integer(9)));
+    auto min = symbolic::minimum(expr, {N, M}, assums);
+    auto expr_lb = symbolic::add(symbolic::min(symbolic::mul(symbolic::integer(4), M),
+                                               symbolic::mul(symbolic::integer(4), N)),
+                                 symbolic::integer(5));
+    EXPECT_TRUE(symbolic::eq(min, expr_lb));
 
-    auto max = symbolic::maximum(expr, assums);
-    EXPECT_TRUE(symbolic::eq(max, symbolic::integer(31)));
+    auto max = symbolic::maximum(expr, {N, M}, assums);
+    auto expr_ub = symbolic::add(symbolic::max(symbolic::mul(symbolic::integer(4), M),
+                                               symbolic::mul(symbolic::integer(4), N)),
+                                 symbolic::integer(5));
+    EXPECT_TRUE(symbolic::eq(max, expr_ub));
 }
 
-TEST(ExtremeValuesTest, Min) {
+TEST(ExtremeValuesTest, Max_Integral) {
     auto a = symbolic::symbol("a");
     auto b = symbolic::symbol("b");
 
@@ -101,13 +114,112 @@ TEST(ExtremeValuesTest, Min) {
     assums.insert({a, assum_a});
     assums.insert({b, assum_b});
 
-    auto expr =
-        symbolic::min(symbolic::add(symbolic::mul(symbolic::integer(4), a), symbolic::integer(5)),
-                      symbolic::add(symbolic::mul(symbolic::integer(6), b), symbolic::integer(7)));
+    auto expr = symbolic::max(a, b);
 
-    auto min = symbolic::minimum(expr, assums);
-    EXPECT_TRUE(symbolic::eq(min, symbolic::integer(9)));
+    auto min = symbolic::minimum(expr, {}, assums);
+    EXPECT_TRUE(symbolic::eq(min, symbolic::integer(1)));
 
-    auto max = symbolic::maximum(expr, assums);
-    EXPECT_TRUE(symbolic::eq(max, symbolic::integer(31)));
+    auto max = symbolic::maximum(expr, {}, assums);
+    EXPECT_TRUE(symbolic::eq(max, symbolic::integer(4)));
+}
+
+TEST(ExtremeValuesTest, Max_Symbolic) {
+    auto a = symbolic::symbol("a");
+    auto b = symbolic::symbol("b");
+    auto N = symbolic::symbol("N");
+    auto M = symbolic::symbol("M");
+    auto N_ = symbolic::symbol("N_");
+    auto M_ = symbolic::symbol("M_");
+
+    auto lb_a = symbolic::symbol("N");
+    auto ub_a = symbolic::symbol("M");
+
+    auto lb_b = symbolic::symbol("N_");
+    auto ub_b = symbolic::symbol("M_");
+
+    symbolic::Assumption assum_a = symbolic::Assumption(a);
+    assum_a.lower_bound(lb_a);
+    assum_a.upper_bound(ub_a);
+
+    symbolic::Assumption assum_b = symbolic::Assumption(b);
+    assum_b.lower_bound(lb_b);
+    assum_b.upper_bound(ub_b);
+
+    symbolic::Assumptions assums;
+    assums.insert({a, assum_a});
+    assums.insert({b, assum_b});
+
+    auto expr = symbolic::max(a, b);
+
+    auto min = symbolic::minimum(expr, {N, M, N_, M_}, assums);
+    EXPECT_TRUE(symbolic::eq(min, symbolic::min(N, N_)));
+
+    auto max = symbolic::maximum(expr, {N, M, N_, M_}, assums);
+    EXPECT_TRUE(symbolic::eq(max, symbolic::max(M, M_)));
+}
+
+TEST(ExtremeValuesTest, Min_Integral) {
+    auto a = symbolic::symbol("a");
+    auto b = symbolic::symbol("b");
+
+    auto lb_a = symbolic::integer(1);
+    auto ub_a = symbolic::integer(2);
+
+    auto lb_b = symbolic::integer(3);
+    auto ub_b = symbolic::integer(4);
+
+    symbolic::Assumption assum_a = symbolic::Assumption(a);
+    assum_a.lower_bound(lb_a);
+    assum_a.upper_bound(ub_a);
+
+    symbolic::Assumption assum_b = symbolic::Assumption(b);
+    assum_b.lower_bound(lb_b);
+    assum_b.upper_bound(ub_b);
+
+    symbolic::Assumptions assums;
+    assums.insert({a, assum_a});
+    assums.insert({b, assum_b});
+
+    auto expr = symbolic::min(a, b);
+
+    auto min = symbolic::minimum(expr, {}, assums);
+    EXPECT_TRUE(symbolic::eq(min, symbolic::integer(1)));
+
+    auto max = symbolic::maximum(expr, {}, assums);
+    EXPECT_TRUE(symbolic::eq(max, symbolic::integer(4)));
+}
+
+TEST(ExtremeValuesTest, Min_Symbolic) {
+    auto a = symbolic::symbol("a");
+    auto b = symbolic::symbol("b");
+    auto N = symbolic::symbol("N");
+    auto M = symbolic::symbol("M");
+    auto N_ = symbolic::symbol("N_");
+    auto M_ = symbolic::symbol("M_");
+
+    auto lb_a = symbolic::symbol("N");
+    auto ub_a = symbolic::symbol("M");
+
+    auto lb_b = symbolic::symbol("N_");
+    auto ub_b = symbolic::symbol("M_");
+
+    symbolic::Assumption assum_a = symbolic::Assumption(a);
+    assum_a.lower_bound(lb_a);
+    assum_a.upper_bound(ub_a);
+
+    symbolic::Assumption assum_b = symbolic::Assumption(b);
+    assum_b.lower_bound(lb_b);
+    assum_b.upper_bound(ub_b);
+
+    symbolic::Assumptions assums;
+    assums.insert({a, assum_a});
+    assums.insert({b, assum_b});
+
+    auto expr = symbolic::min(a, b);
+
+    auto min = symbolic::minimum(expr, {N, M, N_, M_}, assums);
+    EXPECT_TRUE(symbolic::eq(min, symbolic::min(N, N_)));
+
+    auto max = symbolic::maximum(expr, {N, M, N_, M_}, assums);
+    EXPECT_TRUE(symbolic::eq(max, symbolic::max(M, M_)));
 }
