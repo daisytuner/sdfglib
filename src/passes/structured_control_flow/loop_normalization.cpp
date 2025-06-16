@@ -21,9 +21,6 @@ bool LoopNormalization::apply(builder::StructuredSDFGBuilder& builder,
     auto indvar = loop.indvar();
     auto condition = loop.condition();
 
-    auto& assumptions = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& assums = assumptions.get(loop);
-
     bool applied = false;
     try {
         auto cnf = symbolic::conjunctive_normal_form(condition);

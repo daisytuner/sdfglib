@@ -7,26 +7,26 @@ namespace sdfg {
 namespace symbolic {
 
 /**
- * @brief Compute the minimum of an expression given a set of assumptions.
- *
- * The function applies fixed-point iteration until convergence to a number.
+ * @brief Compute the minimum of an expression.
  *
  * @param expr The expression to compute the minimum of.
- * @param assumptions The assumptions to use.
- * @return The minimum of the expression.
+ * @param parameters A set of symbols to treat as parameters.
+ * @param assumptions A set of assumptions about bounds of symbols.
+ * @return The minimum of the expression, or null if the expression is not bounded.
  */
-Expression minimum(const Expression& expr, const Assumptions& assumptions);
+Expression minimum(const Expression& expr, const SymbolSet& parameters,
+                   const Assumptions& assumptions);
 
 /**
- * @brief Compute the maximum of an expression given a set of assumptions.
- *
- * The function applies fixed-point iteration until convergence to a number.
+ * @brief Compute the maximum of an expression.
  *
  * @param expr The expression to compute the maximum of.
- * @param assumptions The assumptions to use.
- * @return The maximum of the expression.
+ * @param parameters A set of symbols to treat as parameters.
+ * @param assumptions A set of assumptions about bounds of symbols.
+ * @return The maximum of the expression, or null if the expression is not bounded.
  */
-Expression maximum(const Expression& expr, const Assumptions& assumptions);
+Expression maximum(const Expression& expr, const SymbolSet& parameters,
+                   const Assumptions& assumptions);
 
 }  // namespace symbolic
 }  // namespace sdfg

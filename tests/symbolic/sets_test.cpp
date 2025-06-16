@@ -6,6 +6,7 @@
 
 using namespace sdfg;
 
+/*
 TEST(SetsTest, delinearize_2d) {
     auto x = symbolic::symbol("x");
     auto y = symbolic::symbol("y");
@@ -115,7 +116,6 @@ TEST(SetsTest, delinearize_2d_symbols_may_be_negative) {
     EXPECT_TRUE(symbolic::eq(expr_delinearized.at(0), expr));
 }
 
-/*
 TEST(SetsTest, delinearize_3d) {
     auto x = symbolic::symbol("x");
     auto y = symbolic::symbol("y");

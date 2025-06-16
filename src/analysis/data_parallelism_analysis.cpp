@@ -722,7 +722,7 @@ void DataParallelismAnalysis::classify(analysis::AnalysisManager& analysis_manag
 
     // Assumptions analysis
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto assumptions = assumptions_analysis.get(body);
+    auto assumptions = assumptions_analysis.get(body, true);
 
     // For each container, we now classify the access pattern
 
