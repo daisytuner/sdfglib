@@ -52,6 +52,7 @@ set(SOURCE_FILES
     src/analysis/data_parallelism_analysis.cpp
     src/analysis/data_dependency_analysis.cpp
     src/analysis/loop_analysis.cpp
+    src/analysis/mem_access_range_analysis.cpp
     src/analysis/scope_analysis.cpp
     src/analysis/users.cpp
     src/builder/function_builder.cpp

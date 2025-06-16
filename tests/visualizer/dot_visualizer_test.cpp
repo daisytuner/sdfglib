@@ -25,6 +25,10 @@ static std::string escapeDotId(const std::string& id, const std::string& prefix 
     return prefix + std::regex_replace(id, dotIdBadChars, "_");
 }
 
+static std::string escapeDotId(size_t id, const std::string& prefix = "_") {
+    return prefix + std::to_string(id);
+}
+
 TEST(DotVisualizerTest, transpose) {
     builder::StructuredSDFGBuilder builder("transpose", FunctionType_CPU);
 

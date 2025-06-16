@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 
+#include "sdfg/analysis/mem_access_range_analysis.h"
 #include "sdfg/codegen/instrumentation/instrumentation_strategy.h"
 #include "sdfg/codegen/utils.h"
 #include "sdfg/structured_sdfg.h"
@@ -45,11 +46,18 @@ class CodeGenerator {
     /// @brief Emit instrumenetation code to capture runtime contents of inputs and outputs
     bool capture_args_results_;
 
-    std::tuple<int, types::PrimitiveType> analyze_type_rec(symbolic::Expression* currDim, int maxDim, int dimIdx, const types::IType& type, int argIdx);
+    std::tuple<int, types::PrimitiveType> analyze_type_rec(
+        symbolic::Expression* curr_dim,
+        int max_dim,
+        int dim_idx,
+        const types::IType& type,
+        int arg_idx,
+        const analysis::MemAccessRange* range
+    );
 
     std::unique_ptr<std::vector<CaptureVarPlan>> create_capture_plans();
 
-    void add_capture_plan(const std::string& name, int argIdx, bool isExternal, std::vector<CaptureVarPlan>& plan);
+    void add_capture_plan(const std::string& name, int argIdx, bool isExternal, std::vector<CaptureVarPlan>& plan, const analysis::MemAccessRanges& ranges);
 
    public:
     CodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy, bool capture_args_results = false)
