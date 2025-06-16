@@ -387,8 +387,8 @@ TEST(LoopDependencyAnalysisTest, MapParameterized_1D) {
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
     builder.add_container("N", sym_desc, true);
     builder.add_container("i", sym_desc);
-    builder.add_container("m", sym_desc, true);
-    builder.add_container("b", sym_desc, true);
+    builder.add_container("m", sym_desc);
+    builder.add_container("b", sym_desc);
 
     auto& assums_m = sdfg.assumption(symbolic::symbol("m"));
     assums_m.lower_bound(symbolic::integer(1));
@@ -424,6 +424,10 @@ TEST(LoopDependencyAnalysisTest, MapParameterized_1D) {
     auto dependencies = analysis.get(loop);
 
     // Check
+    std::cout << dependencies.size() << std::endl;
+    for (auto& dependency : dependencies) {
+        std::cout << dependency.first << " " << dependency.second << std::endl;
+    }
     EXPECT_EQ(dependencies.size(), 0);
 }
 

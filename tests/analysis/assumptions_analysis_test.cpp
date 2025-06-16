@@ -14,7 +14,7 @@ TEST(AssumptionsAnalysisTest, Init_bool) {
 
     // Add containers
     types::Scalar desc(types::PrimitiveType::Bool);
-    builder.add_container("N", desc, true);
+    builder.add_container("N", desc);
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -37,8 +37,8 @@ TEST(AssumptionsAnalysisTest, Init_i8) {
     // Add containers
     types::Scalar desc_unsigned(types::PrimitiveType::UInt8);
     types::Scalar desc_signed(types::PrimitiveType::Int8);
-    builder.add_container("N", desc_unsigned, true);
-    builder.add_container("M", desc_signed, true);
+    builder.add_container("N", desc_unsigned);
+    builder.add_container("M", desc_signed);
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -65,8 +65,8 @@ TEST(AssumptionsAnalysisTest, Init_i16) {
     // Add containers
     types::Scalar desc_unsigned(types::PrimitiveType::UInt16);
     types::Scalar desc_signed(types::PrimitiveType::Int16);
-    builder.add_container("N", desc_unsigned, true);
-    builder.add_container("M", desc_signed, true);
+    builder.add_container("N", desc_unsigned);
+    builder.add_container("M", desc_signed);
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -93,8 +93,8 @@ TEST(AssumptionsAnalysisTest, Init_i32) {
     // Add containers
     types::Scalar desc_unsigned(types::PrimitiveType::UInt32);
     types::Scalar desc_signed(types::PrimitiveType::Int32);
-    builder.add_container("N", desc_unsigned, true);
-    builder.add_container("M", desc_signed, true);
+    builder.add_container("N", desc_unsigned);
+    builder.add_container("M", desc_signed);
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -121,8 +121,8 @@ TEST(AssumptionsAnalysisTest, Init_i64) {
     // Add containers
     types::Scalar desc_unsigned(types::PrimitiveType::UInt64);
     types::Scalar desc_signed(types::PrimitiveType::Int64);
-    builder.add_container("N", desc_unsigned, true);
-    builder.add_container("M", desc_signed, true);
+    builder.add_container("N", desc_unsigned);
+    builder.add_container("M", desc_signed);
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -140,7 +140,28 @@ TEST(AssumptionsAnalysisTest, Init_i64) {
         SymEngine::eq(*assumptions.at(symbolic::symbol("M")).upper_bound(), *symbolic::infty(1)));
 }
 
-TEST(AssumptionsAnalysisTest, For_1D) {
+TEST(AssumptionsAnalysisTest, Init_external) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar desc_unsigned(types::PrimitiveType::UInt64);
+    types::Scalar desc_signed(types::PrimitiveType::Int64);
+    builder.add_container("N", desc_unsigned, false, true);
+    builder.add_container("M", desc_signed, false, true);
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    auto& assumptions = analysis.get(root);
+
+    EXPECT_EQ(assumptions.find(symbolic::symbol("N")), assumptions.end());
+    EXPECT_EQ(assumptions.find(symbolic::symbol("M")), assumptions.end());
+}
+
+TEST(AssumptionsAnalysisTest, Init_argument) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -150,6 +171,26 @@ TEST(AssumptionsAnalysisTest, For_1D) {
     types::Scalar desc_unsigned(types::PrimitiveType::UInt64);
     types::Scalar desc_signed(types::PrimitiveType::Int64);
     builder.add_container("N", desc_unsigned, true);
+    builder.add_container("M", desc_signed, true);
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    auto& assumptions = analysis.get(root);
+
+    EXPECT_EQ(assumptions.find(symbolic::symbol("N")), assumptions.end());
+    EXPECT_EQ(assumptions.find(symbolic::symbol("M")), assumptions.end());
+}
+
+TEST(AssumptionsAnalysisTest, For_1D) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar desc_signed(types::PrimitiveType::Int64);
+    builder.add_container("N", desc_signed, true);
     builder.add_container("i", desc_signed);
 
     // Define loop
@@ -168,10 +209,6 @@ TEST(AssumptionsAnalysisTest, For_1D) {
 
     // Check
     EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("N")).lower_bound(), *symbolic::integer(0)));
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("N")).upper_bound(), *symbolic::infty(1)));
-    EXPECT_TRUE(
         SymEngine::eq(*assumptions.at(symbolic::symbol("i")).lower_bound(), *symbolic::integer(0)));
     EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("i")).upper_bound(),
                               *symbolic::sub(symbolic::symbol("N"), symbolic::integer(1))));
@@ -184,10 +221,9 @@ TEST(AssumptionsAnalysisTest, For_1D_And) {
     auto& root = sdfg.root();
 
     // Add containers
-    types::Scalar desc_unsigned(types::PrimitiveType::UInt64);
     types::Scalar desc_signed(types::PrimitiveType::Int64);
-    builder.add_container("N", desc_unsigned, true);
-    builder.add_container("M", desc_unsigned, true);
+    builder.add_container("N", desc_signed, true);
+    builder.add_container("M", desc_signed, true);
     builder.add_container("i", desc_signed);
 
     // Define loop
@@ -207,14 +243,6 @@ TEST(AssumptionsAnalysisTest, For_1D_And) {
 
     // Check
     EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("N")).lower_bound(), *symbolic::integer(0)));
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("N")).upper_bound(), *symbolic::infty(1)));
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("M")).lower_bound(), *symbolic::integer(0)));
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("M")).upper_bound(), *symbolic::infty(1)));
-    EXPECT_TRUE(
         SymEngine::eq(*assumptions.at(symbolic::symbol("i")).lower_bound(), *symbolic::integer(0)));
     EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("i")).upper_bound(),
                               *symbolic::min(symbolic::symbol("N"), symbolic::symbol("M"))));
@@ -227,9 +255,8 @@ TEST(AssumptionsAnalysisTest, For_2D) {
     auto& root = sdfg.root();
 
     // Add containers
-    types::Scalar desc_unsigned(types::PrimitiveType::UInt64);
     types::Scalar desc_signed(types::PrimitiveType::Int64);
-    builder.add_container("N", desc_unsigned, true);
+    builder.add_container("N", desc_signed, true);
     builder.add_container("i", desc_signed);
     builder.add_container("j", desc_signed);
 
@@ -256,10 +283,6 @@ TEST(AssumptionsAnalysisTest, For_2D) {
     auto& assumptions = analysis.get(loop2.root());
 
     // Check
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("N")).lower_bound(), *symbolic::integer(0)));
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("N")).upper_bound(), *symbolic::infty(1)));
     EXPECT_TRUE(
         SymEngine::eq(*assumptions.at(symbolic::symbol("i")).lower_bound(), *symbolic::integer(0)));
     EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("i")).upper_bound(),
