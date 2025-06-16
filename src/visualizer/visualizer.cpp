@@ -457,35 +457,9 @@ void Visualizer::visualizeForBounds(symbolic::Symbol const& indvar,
                                     symbolic::Expression const& init,
                                     symbolic::Condition const& condition,
                                     symbolic::Expression const& update) {
-    if ((init->get_type_code() == SymEngine::TypeID::SYMENGINE_INTEGER ||
-         init->get_type_code() == SymEngine::TypeID::SYMENGINE_SYMBOL) &&
-        (condition->get_type_code() == SymEngine::TypeID::SYMENGINE_STRICTLESSTHAN ||
-         condition->get_type_code() == SymEngine::TypeID::SYMENGINE_LESSTHAN) &&
-        condition->get_args().size() == 2 &&
-        condition->get_args().at(0)->__str__() == indvar->__str__() &&
-        (condition->get_args().at(1)->get_type_code() == SymEngine::TypeID::SYMENGINE_INTEGER ||
-         condition->get_args().at(1)->get_type_code() == SymEngine::TypeID::SYMENGINE_SYMBOL) &&
-        update->get_type_code() == SymEngine::TypeID::SYMENGINE_ADD &&
-        update->get_args().size() == 2 &&
-        (update->get_args().at(0)->__str__() == indvar->__str__() ||
-         update->get_args().at(1)->__str__() == indvar->__str__()) &&
-        (update->get_args().at(0)->get_type_code() == SymEngine::TypeID::SYMENGINE_INTEGER ||
-         update->get_args().at(0)->get_type_code() == SymEngine::TypeID::SYMENGINE_SYMBOL ||
-         update->get_args().at(1)->get_type_code() == SymEngine::TypeID::SYMENGINE_INTEGER ||
-         update->get_args().at(1)->get_type_code() == SymEngine::TypeID::SYMENGINE_SYMBOL)) {
-        this->stream_ << indvar->get_name() << " = " << init->__str__() << ":";
-        if (condition->get_type_code() == SymEngine::TypeID::SYMENGINE_STRICTLESSTHAN)
-            this->stream_ << "(" << condition->get_args().at(1)->__str__() << "-1)";
-        else
-            this->stream_ << condition->get_args().at(1)->__str__();
-        size_t i = (update->get_args().at(0).get() == indvar.get()) ? 1 : 0;
-        if (update->get_args().at(i)->__str__() != "1")
-            this->stream_ << ":" << update->get_args().at(i)->__str__();
-    } else {
-        this->stream_ << indvar->get_name() << " = " << this->expression(init->__str__()) << "; "
-                      << this->expression(condition->__str__()) << "; " << indvar->get_name()
-                      << " = " << this->expression(update->__str__());
-    }
+    this->stream_ << indvar->get_name() << " = " << this->expression(init->__str__()) << "; "
+                    << this->expression(condition->__str__()) << "; " << indvar->get_name()
+                    << " = " << this->expression(update->__str__());
 }
 
 /// @brief If known, use the type to better visualize structures. Then track the type as far as it goes.

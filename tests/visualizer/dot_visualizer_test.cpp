@@ -84,12 +84,12 @@ TEST(DotVisualizerTest, transpose) {
         << "style=filled;color=lightblue;label=\"\";" << std::endl
         << "subgraph cluster_" << escapeDotId(loop1.element_id(), "for_") << " {" << std::endl;
     exp.setIndent(12);
-    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: i = 0:(M-1)\";"
+    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: i = 0; i < M; i = 1 + i\";"
         << std::endl
         << escapeDotId(loop1.element_id(), "for_") << " [shape=point,style=invis,label=\"\"];" << std::endl
         << "subgraph cluster_" << escapeDotId(loop2.element_id(), "for_") << " {" << std::endl;
     exp.setIndent(16);
-    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: j = 0:(N-1)\";"
+    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: j = 0; j < N; j = 1 + j\";"
         << std::endl
         << escapeDotId(loop2.element_id(), "for_") << " [shape=point,style=invis,label=\"\"];" << std::endl
         << "subgraph cluster_" << escapeDotId(block.element_id(), "block_") << " {" << std::endl;
@@ -205,12 +205,12 @@ TEST(DotVisualizerTest, syrk) {
         << "style=filled;color=lightblue;label=\"\";" << std::endl
         << "subgraph cluster_" << escapeDotId(loop_i.element_id(), "for_") << " {" << std::endl;
     exp.setIndent(12);
-    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: i = 0:(N-1)\";"
+    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: i = 0; i < N; i = 1 + i\";"
         << std::endl
         << escapeDotId(loop_i.element_id(), "for_") << " [shape=point,style=invis,label=\"\"];" << std::endl
         << "subgraph cluster_" << escapeDotId(loop_j_1.element_id(), "for_") << " {" << std::endl;
     exp.setIndent(16); //TODO matching the exact NODE ID is HORRIBLE, especially because those UUIDs are not valid graphviz identifiers
-    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: j_1 = 0:i\";" 
+    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: j_1 = 0; j_1 <= i; j_1 = 1 + j_1\";" 
         << std::endl
         << escapeDotId(loop_j_1.element_id(), "for_") << " [shape=point,style=invis,label=\"\"];" << std::endl
         << "subgraph cluster_" << escapeDotId(block1.element_id(), "block_") << " {" << std::endl;
@@ -231,12 +231,12 @@ TEST(DotVisualizerTest, syrk) {
     exp.setIndent(12);
     exp << "}" << std::endl << "subgraph cluster_" << escapeDotId(loop_k.element_id(), "for_") << " {" << std::endl;
     exp.setIndent(16);
-    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: k = 0:(M-1)\";"
+    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: k = 0; k < M; k = 1 + k\";"
         << std::endl
         << escapeDotId(loop_k.element_id(), "for_") << " [shape=point,style=invis,label=\"\"];" << std::endl
         << "subgraph cluster_" << escapeDotId(loop_j_2.element_id(), "for_") << " {" << std::endl;
     exp.setIndent(20);
-    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: j_2 = 0:i\";"
+    exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"for: j_2 = 0; j_2 <= i; j_2 = 1 + j_2\";"
         << std::endl
         << escapeDotId(loop_j_2.element_id() , "for_") << " [shape=point,style=invis,label=\"\"];" << std::endl
         << "subgraph cluster_" << escapeDotId(block2.element_id(), "block_") << " {" << std::endl;
