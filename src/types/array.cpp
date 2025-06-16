@@ -20,6 +20,8 @@ const IType& Array::element_type() const { return *this->element_type_; };
 
 const symbolic::Expression& Array::num_elements() const { return this->num_elements_; };
 
+TypeID Array::type_id() const { return TypeID::Array; };
+
 bool Array::operator==(const IType& other) const {
     if (auto array_type = dynamic_cast<const Array*>(&other)) {
         return symbolic::eq(this->num_elements_, array_type->num_elements_) &&

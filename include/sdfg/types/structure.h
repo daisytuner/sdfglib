@@ -22,6 +22,8 @@ class Structure : public IType {
 
     virtual PrimitiveType primitive_type() const override;
 
+    virtual TypeID type_id() const override;
+
     virtual bool is_symbol() const override;
 
     const std::string& name() const;
