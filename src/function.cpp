@@ -96,6 +96,27 @@ bool Function::is_transient(const std::string& name) const {
     return !this->is_argument(name) && !this->is_external(name) && !this->is_internal(name);
 };
 
+symbolic::SymbolSet Function::parameters() const {
+    symbolic::SymbolSet params;
+    for (auto& arg : this->arguments_) { 
+        auto& arg_type = this->type(arg);
+        if (auto scalar_type = dynamic_cast<const types::Scalar*>(&arg_type)) {
+            if (scalar_type->is_symbol()) {
+                params.insert(symbolic::symbol(arg));
+            }
+        }
+    }
+    for (auto& ext : this->externals_) { 
+        auto& ext_type = this->type(ext);
+        if (auto scalar_type = dynamic_cast<const types::Scalar*>(&ext_type)) {
+            if (scalar_type->is_symbol()) {
+                params.insert(symbolic::symbol(ext));
+            }
+        }
+    }
+    return params;
+};
+
 bool Function::has_assumption(const symbolic::Symbol& symbol) const {
     return this->assumptions_.find(symbol) != this->assumptions_.end();
 };

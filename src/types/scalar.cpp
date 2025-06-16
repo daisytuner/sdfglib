@@ -13,6 +13,8 @@ PrimitiveType Scalar::primitive_type() const { return this->primitive_type_; };
 
 bool Scalar::is_symbol() const { return types::is_integer(this->primitive_type_); };
 
+TypeID Scalar::type_id() const { return TypeID::Scalar; };
+
 bool Scalar::operator==(const IType& other) const {
     if (auto scalar_type = dynamic_cast<const Scalar*>(&other)) {
         return this->primitive_type_ == scalar_type->primitive_type_;

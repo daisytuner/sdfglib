@@ -26,6 +26,8 @@ void Function::add_param(const IType& param) { this->params_.push_back(param.clo
 
 const IType& Function::return_type() const { return *this->return_type_; }
 
+TypeID Function::type_id() const { return TypeID::Function; };
+
 bool Function::is_var_arg() const { return this->is_var_arg_; }
 
 bool Function::operator==(const IType& other) const {

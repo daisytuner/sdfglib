@@ -18,6 +18,8 @@ class Pointer : public IType {
 
     virtual std::unique_ptr<IType> clone() const override;
 
+    virtual TypeID type_id() const override;
+
     virtual PrimitiveType primitive_type() const override;
 
     virtual bool is_symbol() const override;
