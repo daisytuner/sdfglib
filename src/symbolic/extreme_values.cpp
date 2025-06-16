@@ -21,24 +21,32 @@ Expression minimum(const Expression& expr, const Assumptions& assumptions, const
         return expr;
     } else if (SymEngine::is_a<SymEngine::Max>(*expr)) {
         auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Max>(expr)->get_args();
-        Expression lbs = symbolic::infty(1);
+        Expression lbs = SymEngine::null;
         for (const auto& arg : args) {
             auto lb = minimum(arg, assumptions, depth + 1);
             if (lb == SymEngine::null) {
                 return SymEngine::null;
             }
-            lbs = symbolic::min(lbs, lb);
+            if (lbs == SymEngine::null) {
+                lbs = lb;
+            } else {
+                lbs = symbolic::min(lbs, lb);
+            }
         }
         return lbs;
     } else if (SymEngine::is_a<SymEngine::Min>(*expr)) {
         auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Min>(expr)->get_args();
-        Expression lbs = symbolic::infty(1);
+        Expression lbs = SymEngine::null;
         for (const auto& arg : args) {
             auto lb = minimum(arg, assumptions, depth + 1);
             if (lb == SymEngine::null) {
                 return SymEngine::null;
             }
-            lbs = symbolic::min(lbs, lb);
+            if (lbs == SymEngine::null) {
+                lbs = lb;
+            } else {
+                lbs = symbolic::min(lbs, lb);
+            }
         }
         return lbs;
     }
@@ -49,7 +57,7 @@ Expression minimum(const Expression& expr, const Assumptions& assumptions, const
         if (assumptions.find(sym) != assumptions.end()) {
             return minimum(assumptions.at(sym).lower_bound(), assumptions, depth + 1);
         }
-        return symbolic::infty(-1);
+        return sym;
     }
 
     // Expression
@@ -101,24 +109,32 @@ Expression maximum(const Expression& expr, const Assumptions& assumptions, const
         return expr;
     } else if (SymEngine::is_a<SymEngine::Max>(*expr)) {
         auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Max>(expr)->get_args();
-        Expression ubs = symbolic::infty(-1);
+        Expression ubs = SymEngine::null;
         for (const auto& arg : args) {
             auto ub = maximum(arg, assumptions, depth + 1);
             if (ub == SymEngine::null) {
                 return SymEngine::null;
             }
-            ubs = symbolic::max(ubs, ub);
+            if (ubs == SymEngine::null) {
+                ubs = ub;
+            } else {
+                ubs = symbolic::max(ubs, ub);
+            }
         }
         return ubs;
     } else if (SymEngine::is_a<SymEngine::Min>(*expr)) {
         auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Min>(expr)->get_args();
-        Expression ubs = symbolic::infty(-1);
+        Expression ubs = SymEngine::null;
         for (const auto& arg : args) {
             auto ub = maximum(arg, assumptions, depth + 1);
             if (ub == SymEngine::null) {
                 return SymEngine::null;
             }
-            ubs = symbolic::max(ubs, ub);
+            if (ubs == SymEngine::null) {
+                ubs = ub;
+            } else {
+                ubs = symbolic::max(ubs, ub);
+            }
         }
         return ubs;
     }
@@ -129,7 +145,7 @@ Expression maximum(const Expression& expr, const Assumptions& assumptions, const
         if (assumptions.find(sym) != assumptions.end()) {
             return maximum(assumptions.at(sym).upper_bound(), assumptions, depth + 1);
         }
-        return symbolic::infty(1);
+        return sym;
     }
 
     // Expression
