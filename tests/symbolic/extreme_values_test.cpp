@@ -80,11 +80,15 @@ TEST(ExtremeValuesTest, Linear_Symbolic) {
     auto expr = symbolic::add(symbolic::mul(symbolic::integer(4), a), symbolic::integer(5));
 
     auto min = symbolic::minimum(expr, assums);
-    auto expr_lb = symbolic::add(symbolic::mul(symbolic::integer(4), N), symbolic::integer(5));
+    auto expr_lb = symbolic::add(symbolic::min(symbolic::mul(symbolic::integer(4), M),
+                                               symbolic::mul(symbolic::integer(4), N)),
+                                 symbolic::integer(5));
     EXPECT_TRUE(symbolic::eq(min, expr_lb));
 
     auto max = symbolic::maximum(expr, assums);
-    auto expr_ub = symbolic::add(symbolic::mul(symbolic::integer(4), M), symbolic::integer(5));
+    auto expr_ub = symbolic::add(symbolic::max(symbolic::mul(symbolic::integer(4), M),
+                                               symbolic::mul(symbolic::integer(4), N)),
+                                 symbolic::integer(5));
     EXPECT_TRUE(symbolic::eq(max, expr_ub));
 }
 
