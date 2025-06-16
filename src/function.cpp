@@ -11,34 +11,7 @@ const std::unique_ptr<types::Scalar> Function::NVPTX_SYMBOL_TYPE =
 const std::unique_ptr<types::Pointer> Function::CONST_POINTER_TYPE =
     std::make_unique<types::Pointer>(types::Scalar(types::PrimitiveType::Void));
 
-Function::Function(const std::string& name, FunctionType type) : name_(name), type_(type) {
-    if (this->type_ == FunctionType_NV_GLOBAL) {
-        this->assumptions_[symbolic::threadIdx_x()] =
-            symbolic::Assumption::create(symbolic::threadIdx_x(), *NVPTX_SYMBOL_TYPE);
-        this->assumptions_[symbolic::threadIdx_y()] =
-            symbolic::Assumption::create(symbolic::threadIdx_y(), *NVPTX_SYMBOL_TYPE);
-        this->assumptions_[symbolic::threadIdx_z()] =
-            symbolic::Assumption::create(symbolic::threadIdx_z(), *NVPTX_SYMBOL_TYPE);
-        this->assumptions_[symbolic::blockIdx_x()] =
-            symbolic::Assumption::create(symbolic::blockIdx_x(), *NVPTX_SYMBOL_TYPE);
-        this->assumptions_[symbolic::blockIdx_y()] =
-            symbolic::Assumption::create(symbolic::blockIdx_y(), *NVPTX_SYMBOL_TYPE);
-        this->assumptions_[symbolic::blockIdx_z()] =
-            symbolic::Assumption::create(symbolic::blockIdx_z(), *NVPTX_SYMBOL_TYPE);
-        this->assumptions_[symbolic::blockDim_x()] =
-            symbolic::Assumption::create(symbolic::blockDim_x(), *NVPTX_SYMBOL_TYPE);
-        this->assumptions_[symbolic::blockDim_y()] =
-            symbolic::Assumption::create(symbolic::blockDim_y(), *NVPTX_SYMBOL_TYPE);
-        this->assumptions_[symbolic::blockDim_z()] =
-            symbolic::Assumption::create(symbolic::blockDim_z(), *NVPTX_SYMBOL_TYPE);
-        this->assumptions_[symbolic::gridDim_x()] =
-            symbolic::Assumption::create(symbolic::gridDim_x(), *NVPTX_SYMBOL_TYPE);
-        this->assumptions_[symbolic::gridDim_y()] =
-            symbolic::Assumption::create(symbolic::gridDim_y(), *NVPTX_SYMBOL_TYPE);
-        this->assumptions_[symbolic::gridDim_z()] =
-            symbolic::Assumption::create(symbolic::gridDim_z(), *NVPTX_SYMBOL_TYPE);
-    }
-};
+Function::Function(const std::string& name, FunctionType type) : name_(name), type_(type) {};
 
 std::string Function::name() const { return this->name_; };
 
@@ -93,6 +66,23 @@ bool Function::is_internal(const std::string& name) const {
 
 bool Function::is_transient(const std::string& name) const {
     return !this->is_argument(name) && !this->is_external(name) && !this->is_internal(name);
+};
+
+symbolic::SymbolSet Function::parameters() const {
+    symbolic::SymbolSet parameters;
+    for (auto& argument : this->arguments_) {
+        auto& type = this->type(argument);
+        if (dynamic_cast<const types::Scalar*>(&type) && type.is_symbol()) {
+            parameters.insert(symbolic::symbol(argument));
+        }
+    }
+    for (auto& external : this->externals_) {
+        auto& type = this->type(external);
+        if (dynamic_cast<const types::Scalar*>(&type) && type.is_symbol()) {
+            parameters.insert(symbolic::symbol(external));
+        }
+    }
+    return parameters;
 };
 
 bool Function::has_assumption(const symbolic::Symbol& symbol) const {

@@ -101,6 +101,8 @@ class Function {
 
     bool is_transient(const std::string& name) const;
 
+    symbolic::SymbolSet parameters() const;
+
     bool has_assumption(const symbolic::Symbol& symbol) const;
 
     const symbolic::Assumption& assumption(const symbolic::Symbol& symbol) const;

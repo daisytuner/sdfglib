@@ -6,7 +6,8 @@
 namespace sdfg {
 namespace symbolic {
 
-bool is_monotonic_affine(const Expression& expr, const Symbol& sym, const Assumptions& assums) {
+bool is_monotonic_affine(const Expression& expr, const Symbol& sym, const SymbolSet& parameters,
+                         const Assumptions& assums) {
     SymbolVec symbols = {sym};
     auto poly = polynomial(expr, symbols);
     if (poly == SymEngine::null) {
@@ -16,11 +17,11 @@ bool is_monotonic_affine(const Expression& expr, const Symbol& sym, const Assump
     if (coeffs.empty()) {
         return false;
     }
-    auto mul = minimum(coeffs[sym], assums);
+    auto mul = minimum(coeffs[sym], parameters, assums);
     if (mul == SymEngine::null) {
         return false;
     }
-    auto offset = minimum(coeffs[symbol("__daisy_constant__")], assums);
+    auto offset = minimum(coeffs[symbol("__daisy_constant__")], parameters, assums);
     if (offset == SymEngine::null) {
         return false;
     }
@@ -37,7 +38,8 @@ bool is_monotonic_affine(const Expression& expr, const Symbol& sym, const Assump
     return true;
 }
 
-bool is_monotonic_pow(const Expression& expr, const Symbol& sym, const Assumptions& assums) {
+bool is_monotonic_pow(const Expression& expr, const Symbol& sym, const SymbolSet& parameters,
+                      const Assumptions& assums) {
     if (SymEngine::is_a<SymEngine::Pow>(*expr)) {
         auto pow = SymEngine::rcp_dynamic_cast<const SymEngine::Pow>(expr);
         auto base = pow->get_base();
@@ -49,7 +51,7 @@ bool is_monotonic_pow(const Expression& expr, const Symbol& sym, const Assumptio
                 return false;
             }
             auto base_sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(base);
-            auto ub_sym = minimum(base_sym, assums);
+            auto ub_sym = minimum(base_sym, parameters, assums);
             if (ub_sym == SymEngine::null) {
                 return false;
             }
@@ -61,14 +63,16 @@ bool is_monotonic_pow(const Expression& expr, const Symbol& sym, const Assumptio
     return false;
 }
 
-bool is_monotonic(const Expression& expr, const Symbol& sym, const Assumptions& assums) {
-    if (is_monotonic_affine(expr, sym, assums)) {
+bool is_monotonic(const Expression& expr, const Symbol& sym, const SymbolSet& parameters,
+                  const Assumptions& assums) {
+    if (is_monotonic_affine(expr, sym, parameters, assums)) {
         return true;
     }
-    return is_monotonic_pow(expr, sym, assums);
+    return is_monotonic_pow(expr, sym, parameters, assums);
 }
 
-bool is_contiguous(const Expression& expr, const Symbol& sym, const Assumptions& assums) {
+bool is_contiguous(const Expression& expr, const Symbol& sym, const SymbolSet& parameters,
+                   const Assumptions& assums) {
     SymbolVec symbols = {sym};
     auto poly = polynomial(expr, symbols);
     if (poly == SymEngine::null) {
@@ -78,11 +82,11 @@ bool is_contiguous(const Expression& expr, const Symbol& sym, const Assumptions&
     if (coeffs.empty()) {
         return false;
     }
-    auto mul = minimum(coeffs[sym], assums);
+    auto mul = minimum(coeffs[sym], parameters, assums);
     if (mul == SymEngine::null) {
         return false;
     }
-    auto offset = minimum(coeffs[symbol("__daisy_constant__")], assums);
+    auto offset = minimum(coeffs[symbol("__daisy_constant__")], parameters, assums);
     if (offset == SymEngine::null) {
         return false;
     }

@@ -27,6 +27,7 @@ TEST(FunctionBuilderTest, AddTransient) {
     EXPECT_FALSE(sdfg->is_argument("i"));
     EXPECT_FALSE(sdfg->is_external("i"));
     EXPECT_TRUE(sdfg->is_transient("i"));
+    EXPECT_EQ(sdfg->parameters().size(), 0);
 }
 
 TEST(FunctionBuilderTest, AddArgument) {
@@ -42,6 +43,7 @@ TEST(FunctionBuilderTest, AddArgument) {
     EXPECT_TRUE(sdfg->is_argument("i"));
     EXPECT_FALSE(sdfg->is_external("i"));
     EXPECT_FALSE(sdfg->is_transient("i"));
+    EXPECT_EQ(sdfg->parameters().size(), 1);
 }
 
 TEST(FunctionBuilderTest, AddExternal) {
@@ -58,6 +60,7 @@ TEST(FunctionBuilderTest, AddExternal) {
     EXPECT_FALSE(sdfg->is_argument("i"));
     EXPECT_TRUE(sdfg->is_external("i"));
     EXPECT_FALSE(sdfg->is_transient("i"));
+    EXPECT_EQ(sdfg->parameters().size(), 1);
 }
 
 TEST(FunctionBuilderTest, RemoveTransient) {
@@ -131,17 +134,4 @@ TEST(FunctionBuilderTest, FindNewName) {
     auto new_name = builder.find_new_name("i");
 
     EXPECT_EQ(new_name, "i0");
-}
-
-TEST(FunctionBuilderTest, Assumptions) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt8));
-    auto sdfg = builder.move();
-
-    auto symbol = symbolic::symbol("i");
-    EXPECT_EQ(sdfg->has_assumption(symbol), true);
-
-    auto assumption = sdfg->assumption(symbol);
-    EXPECT_EQ(assumption.symbol()->get_name(), symbol->get_name());
 }

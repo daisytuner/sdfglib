@@ -68,7 +68,7 @@ bool LoopAnalysis::is_monotonic(structured_control_flow::StructuredLoop* loop) c
     auto& assums_analysis = manager.get<AssumptionsAnalysis>();
     auto assums = assums_analysis.get(*loop);
 
-    return symbolic::is_monotonic(loop->update(), loop->indvar(), assums);
+    return symbolic::is_monotonic(loop->update(), loop->indvar(), this->sdfg_.parameters(), assums);
 }
 
 bool LoopAnalysis::is_contiguous(structured_control_flow::StructuredLoop* loop) const {
@@ -76,7 +76,8 @@ bool LoopAnalysis::is_contiguous(structured_control_flow::StructuredLoop* loop) 
     auto& assums_analysis = manager.get<AssumptionsAnalysis>();
     auto assums = assums_analysis.get(*loop);
 
-    return symbolic::is_contiguous(loop->update(), loop->indvar(), assums);
+    return symbolic::is_contiguous(loop->update(), loop->indvar(), this->sdfg_.parameters(),
+                                   assums);
 }
 
 const std::unordered_map<structured_control_flow::ControlFlowNode*,

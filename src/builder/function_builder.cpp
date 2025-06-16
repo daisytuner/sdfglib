@@ -69,15 +69,6 @@ const types::IType& FunctionBuilder::add_container(const std::string& name,
         this->function().externals_.push_back(name);
     }
 
-    // When evaluating expressions, external symbols should be treated as parameters
-    // and not be evaluated by their type-specific bounds.
-    if (!is_argument && !is_external) {
-        if (type.is_symbol() && dynamic_cast<const types::Scalar*>(&type)) {
-            auto sym = symbolic::symbol(name);
-            this->function().assumptions_.insert({sym, symbolic::Assumption::create(sym, type)});
-        }
-    }
-
     return *(*res.first).second;
 };
 

@@ -6,10 +6,13 @@ namespace sdfg {
 namespace symbolic {
 
 size_t MAX_DEPTH = 100;
-Expression minimum(const Expression& expr, const Assumptions& assumptions, const size_t depth);
-Expression maximum(const Expression& expr, const Assumptions& assumptions, const size_t depth);
+Expression minimum(const Expression& expr, const SymbolSet& parameters,
+                   const Assumptions& assumptions, const size_t depth);
+Expression maximum(const Expression& expr, const SymbolSet& parameters,
+                   const Assumptions& assumptions, const size_t depth);
 
-Expression minimum(const Expression& expr, const Assumptions& assumptions, const size_t depth) {
+Expression minimum(const Expression& expr, const SymbolSet& parameters,
+                   const Assumptions& assumptions, const size_t depth) {
     // Base Cases
     if (depth > MAX_DEPTH) {
         return expr;
@@ -27,7 +30,7 @@ Expression minimum(const Expression& expr, const Assumptions& assumptions, const
         auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Max>(expr)->get_args();
         Expression lbs = SymEngine::null;
         for (const auto& arg : args) {
-            auto lb = minimum(arg, assumptions, depth + 1);
+            auto lb = minimum(arg, parameters, assumptions, depth + 1);
             if (lb == SymEngine::null) {
                 return SymEngine::null;
             }
@@ -42,7 +45,7 @@ Expression minimum(const Expression& expr, const Assumptions& assumptions, const
         auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Min>(expr)->get_args();
         Expression lbs = SymEngine::null;
         for (const auto& arg : args) {
-            auto lb = minimum(arg, assumptions, depth + 1);
+            auto lb = minimum(arg, parameters, assumptions, depth + 1);
             if (lb == SymEngine::null) {
                 return SymEngine::null;
             }
@@ -58,10 +61,13 @@ Expression minimum(const Expression& expr, const Assumptions& assumptions, const
     // Symbol
     if (SymEngine::is_a<SymEngine::Symbol>(*expr)) {
         auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(expr);
+        if (parameters.find(sym) != parameters.end()) {
+            return sym;
+        }
         if (assumptions.find(sym) != assumptions.end()) {
             return assumptions.at(sym).lower_bound();
         }
-        return sym;
+        return SymEngine::null;
     }
 
     // Mul
@@ -76,10 +82,10 @@ Expression minimum(const Expression& expr, const Assumptions& assumptions, const
         Expression a = args[0];
         Expression b = args[1];
 
-        Expression a_min = minimum(a, assumptions, depth + 1);
-        Expression a_max = maximum(a, assumptions, depth + 1);
-        Expression b_min = minimum(b, assumptions, depth + 1);
-        Expression b_max = maximum(b, assumptions, depth + 1);
+        Expression a_min = minimum(a, parameters, assumptions, depth + 1);
+        Expression a_max = maximum(a, parameters, assumptions, depth + 1);
+        Expression b_min = minimum(b, parameters, assumptions, depth + 1);
+        Expression b_max = maximum(b, parameters, assumptions, depth + 1);
 
         if (a_min == SymEngine::null || a_max == SymEngine::null || b_min == SymEngine::null ||
             b_max == SymEngine::null) {
@@ -102,7 +108,7 @@ Expression minimum(const Expression& expr, const Assumptions& assumptions, const
         const auto& args = add->get_args();
         Expression lbs = SymEngine::null;
         for (const auto& arg : args) {
-            auto lb = minimum(arg, assumptions, depth + 1);
+            auto lb = minimum(arg, parameters, assumptions, depth + 1);
             if (lb == SymEngine::null) {
                 return SymEngine::null;
             }
@@ -118,7 +124,8 @@ Expression minimum(const Expression& expr, const Assumptions& assumptions, const
     return SymEngine::null;
 }
 
-Expression maximum(const Expression& expr, const Assumptions& assumptions, const size_t depth) {
+Expression maximum(const Expression& expr, const SymbolSet& parameters,
+                   const Assumptions& assumptions, const size_t depth) {
     if (depth > MAX_DEPTH) {
         return expr;
     }
@@ -136,7 +143,7 @@ Expression maximum(const Expression& expr, const Assumptions& assumptions, const
         auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Max>(expr)->get_args();
         Expression ubs = SymEngine::null;
         for (const auto& arg : args) {
-            auto ub = maximum(arg, assumptions, depth + 1);
+            auto ub = maximum(arg, parameters, assumptions, depth + 1);
             if (ub == SymEngine::null) {
                 return SymEngine::null;
             }
@@ -151,7 +158,7 @@ Expression maximum(const Expression& expr, const Assumptions& assumptions, const
         auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Min>(expr)->get_args();
         Expression ubs = SymEngine::null;
         for (const auto& arg : args) {
-            auto ub = maximum(arg, assumptions, depth + 1);
+            auto ub = maximum(arg, parameters, assumptions, depth + 1);
             if (ub == SymEngine::null) {
                 return SymEngine::null;
             }
@@ -167,10 +174,13 @@ Expression maximum(const Expression& expr, const Assumptions& assumptions, const
     // Symbol
     if (SymEngine::is_a<SymEngine::Symbol>(*expr)) {
         auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(expr);
+        if (parameters.find(sym) != parameters.end()) {
+            return sym;
+        }
         if (assumptions.find(sym) != assumptions.end()) {
             return assumptions.at(sym).upper_bound();
         }
-        return sym;
+        return SymEngine::null;
     }
 
     // Mul
@@ -185,10 +195,10 @@ Expression maximum(const Expression& expr, const Assumptions& assumptions, const
         Expression a = args[0];
         Expression b = args[1];
 
-        Expression a_min = minimum(a, assumptions, depth + 1);
-        Expression a_max = maximum(a, assumptions, depth + 1);
-        Expression b_min = minimum(b, assumptions, depth + 1);
-        Expression b_max = maximum(b, assumptions, depth + 1);
+        Expression a_min = minimum(a, parameters, assumptions, depth + 1);
+        Expression a_max = maximum(a, parameters, assumptions, depth + 1);
+        Expression b_min = minimum(b, parameters, assumptions, depth + 1);
+        Expression b_max = maximum(b, parameters, assumptions, depth + 1);
 
         if (a_min == SymEngine::null || a_max == SymEngine::null || b_min == SymEngine::null ||
             b_max == SymEngine::null) {
@@ -211,7 +221,7 @@ Expression maximum(const Expression& expr, const Assumptions& assumptions, const
         const auto& args = add->get_args();
         Expression ubs = SymEngine::null;
         for (const auto& arg : args) {
-            auto ub = maximum(arg, assumptions, depth + 1);
+            auto ub = maximum(arg, parameters, assumptions, depth + 1);
             if (ub == SymEngine::null) {
                 return SymEngine::null;
             }
@@ -227,12 +237,14 @@ Expression maximum(const Expression& expr, const Assumptions& assumptions, const
     return SymEngine::null;
 }
 
-Expression minimum(const Expression& expr, const Assumptions& assumptions) {
-    return minimum(expr, assumptions, 0);
+Expression minimum(const Expression& expr, const SymbolSet& parameters,
+                   const Assumptions& assumptions) {
+    return minimum(expr, parameters, assumptions, 0);
 }
 
-Expression maximum(const Expression& expr, const Assumptions& assumptions) {
-    return maximum(expr, assumptions, 0);
+Expression maximum(const Expression& expr, const SymbolSet& parameters,
+                   const Assumptions& assumptions) {
+    return maximum(expr, parameters, assumptions, 0);
 }
 
 }  // namespace symbolic

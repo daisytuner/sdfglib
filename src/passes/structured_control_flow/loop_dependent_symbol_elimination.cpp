@@ -53,7 +53,7 @@ bool LoopDependentSymbolElimination::eliminate_symbols(
     for (auto& entry : last_assignments) {
         auto& sym = entry.first;
         auto& assign = entry.second;
-        if (!symbolic::is_contiguous(assign, sym, assumptions)) {
+        if (!symbolic::is_contiguous(assign, sym, builder.subject().parameters(), assumptions)) {
             continue;
         }
         loop_dependent_symbols.insert(sym->get_name());

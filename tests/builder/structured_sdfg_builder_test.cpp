@@ -303,7 +303,7 @@ TEST(SDFG2StructuredSDFGTest, Function_Definition) {
     builder.add_container("transient_2", desc2);
 
     auto sdfg = builder.move();
-    EXPECT_EQ(sdfg->assumptions().size(), 1);
+    EXPECT_EQ(sdfg->assumptions().size(), 0);
 
     sdfg->add_metadata("key", "value");
     sdfg->add_metadata("key2", "value2");
@@ -330,7 +330,7 @@ TEST(SDFG2StructuredSDFGTest, Function_Definition) {
         EXPECT_EQ(structured_sdfg->type(name), sdfg->type(name));
     }
 
-    EXPECT_EQ(structured_sdfg->assumptions().size(), 1);
+    EXPECT_EQ(structured_sdfg->assumptions().size(), 0);
 
     EXPECT_EQ(structured_sdfg->metadata("key"), "value");
     EXPECT_EQ(structured_sdfg->metadata("key2"), "value2");

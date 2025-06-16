@@ -8,9 +8,29 @@
 namespace sdfg {
 namespace symbolic {
 
-bool is_monotonic(const Expression& expr, const Symbol& sym, const Assumptions& assums);
+/**
+ * @brief Check if an expression is monotonic w.r.t. a symbol.
+ *
+ * @param expr The expression to check.
+ * @param sym The symbol to check.
+ * @param parameters A set of symbols to treat as parameters (not simplified).
+ * @param assums A set of assumptions about bounds of symbols.
+ * @return True if the expression is monotonic w.r.t. the symbol, false otherwise.
+ */
+bool is_monotonic(const Expression& expr, const Symbol& sym, const SymbolSet& parameters,
+                  const Assumptions& assums);
 
-bool is_contiguous(const Expression& expr, const Symbol& sym, const Assumptions& assums);
+/**
+ * @brief Check if an expression is contiguous w.r.t. a symbol.
+ *
+ * @param expr The expression to check.
+ * @param sym The symbol to check.
+ * @param parameters A set of symbols to treat as parameters (not simplified).
+ * @param assums A set of assumptions about bounds of symbols.
+ * @return True if the expression is contiguous w.r.t. the symbol, false otherwise.
+ */
+bool is_contiguous(const Expression& expr, const Symbol& sym, const SymbolSet& parameters,
+                   const Assumptions& assums);
 
 }  // namespace symbolic
 }  // namespace sdfg

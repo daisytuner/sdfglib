@@ -165,7 +165,7 @@ void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop,
     // Prove that update is monotonic
     auto indvar = for_loop->indvar();
     auto update = for_loop->update();
-    if (!symbolic::is_monotonic(update, indvar, assums)) {
+    if (!symbolic::is_monotonic(update, indvar, this->sdfg_.parameters(), assums)) {
         return;
     }
 

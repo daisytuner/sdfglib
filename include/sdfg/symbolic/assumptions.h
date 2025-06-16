@@ -37,8 +37,6 @@ class Assumption {
     const Expression& map() const;
 
     void map(const Expression& map);
-
-    static Assumption create(const symbolic::Symbol& symbol, const types::IType& type);
 };
 
 typedef std::unordered_map<Symbol, Assumption, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq>
