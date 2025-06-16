@@ -1,4 +1,5 @@
 #include "sdfg/symbolic/conjunctive_normal_form.h"
+
 #include <symengine/logic.h>
 
 #include "sdfg/symbolic/extreme_values.h"
@@ -22,32 +23,43 @@ CNF conjunctive_normal_form(const Condition& cond) {
     // Goal: Convert a condition into ANDs of ORs
 
     // Case: Comparison with boolean literals
-    if (SymEngine::is_a<SymEngine::Equality>(*cond) || SymEngine::is_a<SymEngine::Unequality>(*cond)) {
+    if (SymEngine::is_a<SymEngine::Equality>(*cond) ||
+        SymEngine::is_a<SymEngine::Unequality>(*cond)) {
         auto expr = SymEngine::rcp_static_cast<const SymEngine::Relational>(cond);
         auto arg1 = expr->get_arg1();
         auto arg2 = expr->get_arg2();
+        if (!SymEngine::is_a_Relational(*arg1) && !SymEngine::is_a_Relational(*arg2)) {
+            return {{cond}};
+        }
+
         if (SymEngine::is_a<SymEngine::Equality>(*expr)) {
             if (symbolic::is_true(arg1)) {
-                return conjunctive_normal_form(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2));
+                return conjunctive_normal_form(
+                    SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2));
             } else if (symbolic::is_true(arg2)) {
-                return conjunctive_normal_form(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1));
+                return conjunctive_normal_form(
+                    SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1));
             } else if (symbolic::is_false(arg1)) {
-                return conjunctive_normal_form(symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2)));
+                return conjunctive_normal_form(
+                    symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2)));
             } else if (symbolic::is_false(arg2)) {
-                return conjunctive_normal_form(symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1)));
+                return conjunctive_normal_form(
+                    symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1)));
             }
-            return {{expr}};
         } else if (SymEngine::is_a<SymEngine::Unequality>(*expr)) {
             if (symbolic::is_true(arg1)) {
-                return conjunctive_normal_form(symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2)));
+                return conjunctive_normal_form(
+                    symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2)));
             } else if (symbolic::is_true(arg2)) {
-                return conjunctive_normal_form(symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1)));
+                return conjunctive_normal_form(
+                    symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1)));
             } else if (symbolic::is_false(arg1)) {
-                return conjunctive_normal_form(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2));
+                return conjunctive_normal_form(
+                    SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2));
             } else if (symbolic::is_false(arg2)) {
-                return conjunctive_normal_form(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1));
+                return conjunctive_normal_form(
+                    SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1));
             }
-            return {{expr}};
         }
 
         return {{cond}};  // Return the condition as a single clause
