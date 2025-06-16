@@ -62,40 +62,40 @@ void CCodeGenerator::emit_arg_captures(std::ostream& ofs_source, const std::vect
     auto afterBoolStr = after ? "true" : "false";
 
     for (auto& varPlan : plan) {
-        auto argIdx = varPlan.argIdx;
+        auto argIdx = varPlan.arg_idx;
 
         if ((!after && varPlan.capture_input) || (after && varPlan.capture_output)) {
             switch (varPlan.type) {
-                case CAPTURE_RAW: {
+                case CaptureVarType::CapRaw: {
                     ofs_source << "\t__daisy_capture_raw(" <<
                         "__capture_ctx, " <<
                         argIdx << ", " <<
                         "&" << args[argIdx] << ", " <<
                         "sizeof(" << args[argIdx] << "), " <<
-                        varPlan.innerType << ", " <<
+                        varPlan.inner_type << ", " <<
                         afterBoolStr <<
                         ");" << std::endl;
                     break;
                 }
-                case CAPTURE_1D: {
+                case CaptureVarType::Cap1D: {
                     ofs_source << "\t__daisy_capture_1d(" <<
                         "__capture_ctx, " <<
                         argIdx << ", " <<
                         args[argIdx] << ", " <<
-                        "sizeof(" << language_extension_.primitive_type(varPlan.innerType) << "), " <<
-                        varPlan.innerType << ", " <<
+                        "sizeof(" << language_extension_.primitive_type(varPlan.inner_type) << "), " <<
+                        varPlan.inner_type << ", " <<
                         language_extension_.expression(varPlan.dim1) << ", " <<
                         afterBoolStr <<
                         ");" << std::endl;
                     break;
                 }
-                case CAPTURE_2D: {
+                case CaptureVarType::Cap2D: {
                     ofs_source << "\t__daisy_capture_2d(" <<
                         "__capture_ctx, " <<
                         argIdx << ", " <<
                         args[argIdx] << ", " <<
-                        "sizeof(" << language_extension_.primitive_type(varPlan.innerType) <<"), " <<
-                        varPlan.innerType << ", " <<
+                        "sizeof(" << language_extension_.primitive_type(varPlan.inner_type) <<"), " <<
+                        varPlan.inner_type << ", " <<
                         language_extension_.expression(varPlan.dim1) << ", " <<
                         language_extension_.expression(varPlan.dim2) << ", " <<
                         afterBoolStr <<
@@ -103,7 +103,7 @@ void CCodeGenerator::emit_arg_captures(std::ostream& ofs_source, const std::vect
                     break;
                 }
                 default:
-                    std::cerr << "Unknown capture type " << varPlan.type << " for arg " << argIdx << " at " << (after? "result" : "input") << " time" << std::endl;
+                    std::cerr << "Unknown capture type " << static_cast<int>(varPlan.type) << " for arg " << argIdx << " at " << (after? "result" : "input") << " time" << std::endl;
                     break;
             }
         }
