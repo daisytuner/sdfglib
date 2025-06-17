@@ -3,11 +3,11 @@
 namespace sdfg {
 namespace control_flow {
 
-InterstateEdge::InterstateEdge(const DebugInfo& debug_info, const graph::Edge& edge,
-                               const control_flow::State& src, const control_flow::State& dst,
-                               const symbolic::Condition& condition,
+InterstateEdge::InterstateEdge(size_t element_id, const DebugInfo& debug_info,
+                               const graph::Edge& edge, const control_flow::State& src,
+                               const control_flow::State& dst, const symbolic::Condition& condition,
                                const sdfg::control_flow::Assignments& assignments)
-    : Element(debug_info),
+    : Element(element_id, debug_info),
       edge_(edge),
       src_(src),
       dst_(dst),

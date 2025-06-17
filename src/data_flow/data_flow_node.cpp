@@ -5,9 +5,9 @@ using json = nlohmann::json;
 namespace sdfg {
 namespace data_flow {
 
-DataFlowNode::DataFlowNode(const DebugInfo& debug_info, const graph::Vertex vertex,
-                           DataFlowGraph& parent)
-    : Element(debug_info), vertex_(vertex), parent_(&parent) {
+DataFlowNode::DataFlowNode(size_t element_id, const DebugInfo& debug_info,
+                           const graph::Vertex vertex, DataFlowGraph& parent)
+    : Element(element_id, debug_info), vertex_(vertex), parent_(&parent) {
 
       };
 

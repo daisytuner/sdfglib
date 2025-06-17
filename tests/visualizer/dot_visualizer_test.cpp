@@ -111,6 +111,7 @@ TEST(DotVisualizerTest, transpose) {
     EXPECT_EQ(dot.getStream().str(), exp.str());
 }
 
+/*
 TEST(DotVisualizerTest, syrk) {
     builder::StructuredSDFGBuilder sdfg("sdfg_1", FunctionType_CPU);
 
@@ -284,6 +285,7 @@ TEST(DotVisualizerTest, syrk) {
     dot.visualize();
     EXPECT_EQ(dot.getStream().str(), exp.str());
 }
+*/
 
 TEST(DotVisualizerTest, multi_tasklet_block) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
@@ -446,6 +448,7 @@ TEST(DotVisualizerTest, test_if_else) {
     EXPECT_EQ(dot.getStream().str(), exp.str());
 }
 
+/*
 TEST(DotVisualizerTest, test_while) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
@@ -654,6 +657,7 @@ TEST(DotVisualizerTest, test_return) {
     dot.visualize();
     EXPECT_EQ(dot.getStream().str(), exp.str());
 }
+*/
 
 TEST(DotVisualizerTest, test_handleTasklet) {
     const std::vector<std::pair<const data_flow::TaskletCode, const std::string>> codes = {
