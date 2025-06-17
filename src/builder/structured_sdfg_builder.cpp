@@ -776,6 +776,9 @@ Map& StructuredSDFGBuilder::add_map(Sequence& parent, const symbolic::Symbol& in
     parent.children_.push_back(std::unique_ptr<Map>(
         new Map(this->new_element_id(), debug_info, indvar, num_iterations, schedule_type)));
 
+    // Increment element id for body node
+    this->new_element_id();
+
     parent.transitions_.push_back(std::unique_ptr<Transition>(
         new Transition(this->new_element_id(), debug_info, parent, assignments)));
 

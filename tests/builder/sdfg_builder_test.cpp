@@ -19,6 +19,7 @@ TEST(SDFGBuilderTest, AddState) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state = builder.add_state();
+    EXPECT_EQ(state.element_id(), 1);
 
     auto sdfg = builder.move();
 
@@ -34,6 +35,7 @@ TEST(SDFGBuilderTest, AddStartState) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state = builder.add_state(true);
+    EXPECT_EQ(state.element_id(), 1);
 
     auto sdfg = builder.move();
 
@@ -51,10 +53,16 @@ TEST(SDFGBuilderTest, AddStateBefore) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state_1 = builder.add_state();
+    EXPECT_EQ(state_1.element_id(), 1);
+
     auto& state_2 = builder.add_state();
+    EXPECT_EQ(state_2.element_id(), 2);
+
     auto& edge_1 = builder.add_edge(state_1, state_2);
+    EXPECT_EQ(edge_1.element_id(), 3);
 
     auto& state_3 = builder.add_state_before(state_2);
+    EXPECT_EQ(state_3.element_id(), 4);
 
     auto sdfg = builder.move();
 
@@ -73,10 +81,16 @@ TEST(SDFGBuilderTest, AddStateAfter) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state_1 = builder.add_state();
+    EXPECT_EQ(state_1.element_id(), 1);
+
     auto& state_2 = builder.add_state();
+    EXPECT_EQ(state_2.element_id(), 2);
+
     auto& edge_1 = builder.add_edge(state_1, state_2);
+    EXPECT_EQ(edge_1.element_id(), 3);
 
     auto& state_3 = builder.add_state_after(state_1);
+    EXPECT_EQ(state_3.element_id(), 4);
 
     auto sdfg = builder.move();
 
@@ -95,8 +109,14 @@ TEST(SDFGBuilderTest, AddEdge) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state_1 = builder.add_state();
+    EXPECT_EQ(state_1.element_id(), 1);
+
     auto& state_2 = builder.add_state();
+    EXPECT_EQ(state_2.element_id(), 2);
+
     auto& edge = builder.add_edge(state_1, state_2);
+    EXPECT_EQ(edge.element_id(), 3);
+
     EXPECT_EQ(&edge.src(), &state_1);
     EXPECT_EQ(&edge.dst(), &state_2);
     EXPECT_TRUE(symbolic::is_true(edge.condition()));
@@ -125,10 +145,19 @@ TEST(SDFGBuilderTest, addEdgeWithCondition) {
     auto cond = symbolic::Eq(iter_sym, SymEngine::integer(0));
 
     auto& state_guard = builder.add_state();
+    EXPECT_EQ(state_guard.element_id(), 1);
+
     auto& state_if = builder.add_state();
+    EXPECT_EQ(state_if.element_id(), 2);
+
     auto& state_else = builder.add_state();
+    EXPECT_EQ(state_else.element_id(), 3);
+
     auto& edge_if = builder.add_edge(state_guard, state_if, cond);
+    EXPECT_EQ(edge_if.element_id(), 4);
+
     auto& edge_else = builder.add_edge(state_guard, state_else, symbolic::Not(cond));
+    EXPECT_EQ(edge_else.element_id(), 5);
 
     EXPECT_EQ(&edge_if.src(), &state_guard);
     EXPECT_EQ(&edge_if.dst(), &state_if);
@@ -147,9 +176,14 @@ TEST(SDFGBuilderTest, addEdgeWithAssignments) {
     symbolic::Symbol iter_sym = symbolic::symbol("i");
 
     auto& state_1 = builder.add_state();
+    EXPECT_EQ(state_1.element_id(), 1);
+
     auto& state_2 = builder.add_state();
+    EXPECT_EQ(state_2.element_id(), 2);
+
     auto& edge = builder.add_edge(state_1, state_2,
                                   control_flow::Assignments{{iter_sym, SymEngine::integer(0)}});
+    EXPECT_EQ(edge.element_id(), 3);
 
     EXPECT_EQ(&edge.src(), &state_1);
     EXPECT_EQ(&edge.dst(), &state_2);
@@ -167,11 +201,13 @@ TEST(SDFGBuilderTest, AddAccessNode) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state = builder.add_state();
+    EXPECT_EQ(state.element_id(), 1);
 
     types::Scalar desc(types::PrimitiveType::Double);
     builder.add_container("scalar_1", desc);
 
     auto& access_node = builder.add_access(state, "scalar_1");
+    EXPECT_EQ(access_node.element_id(), 2);
 
     auto sdfg = builder.move();
 
@@ -184,17 +220,26 @@ TEST(SDFGBuilderTest, AddTasklet) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state = builder.add_state();
+    EXPECT_EQ(state.element_id(), 1);
 
     types::Scalar desc(types::PrimitiveType::Double);
     builder.add_container("scalar_1", desc);
 
     auto& access_node_in = builder.add_access(state, "scalar_1");
+    EXPECT_EQ(access_node_in.element_id(), 2);
+
     auto& access_node_out = builder.add_access(state, "scalar_1");
+    EXPECT_EQ(access_node_out.element_id(), 3);
+
     auto& tasklet =
         builder.add_tasklet(state, data_flow::TaskletCode::assign, {"_out", desc}, {{"_in", desc}});
+    EXPECT_EQ(tasklet.element_id(), 4);
 
-    builder.add_memlet(state, access_node_in, "void", tasklet, "_in", {});
-    builder.add_memlet(state, tasklet, "_out", access_node_out, "void", {});
+    auto& memlet_in = builder.add_memlet(state, access_node_in, "void", tasklet, "_in", {});
+    EXPECT_EQ(memlet_in.element_id(), 5);
+
+    auto& memlet_out = builder.add_memlet(state, tasklet, "_out", access_node_out, "void", {});
+    EXPECT_EQ(memlet_out.element_id(), 6);
 
     auto sdfg = builder.move();
 
@@ -232,8 +277,11 @@ TEST(SDFGBuilderTest, AddLibnode) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state = builder.add_state(true);
+    EXPECT_EQ(state.element_id(), 1);
 
-    builder.add_library_node<BarrierLocalLibraryNode>(state, BARRIER_LOCAL, {}, {}, false);
+    auto& library_node =
+        builder.add_library_node<BarrierLocalLibraryNode>(state, BARRIER_LOCAL, {}, {}, false);
+    EXPECT_EQ(library_node.element_id(), 2);
 
     auto sdfg = builder.move();
     auto states = sdfg->states();
