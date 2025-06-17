@@ -4,6 +4,7 @@
 # cmake
 build/
 .cache/
+_deps/
 
 # Prerequisites
 *.d

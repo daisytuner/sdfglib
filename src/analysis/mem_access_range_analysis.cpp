@@ -51,8 +51,11 @@ void MemAccessRanges::run(analysis::AnalysisManager& analysis_manager) {
     }
 
     // Iterate over all variables and their users
-    for (auto* workItem : worklist) {
+    while (!worklist.empty()) {
+        auto* workItem = worklist.front();
         builder.process_workItem(workItem);
+        worklist.pop_front();
+        delete workItem;
     }
 
     this->ranges_ = std::move(builder.ranges_);
