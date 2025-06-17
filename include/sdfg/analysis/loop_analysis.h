@@ -35,6 +35,16 @@ class LoopAnalysis : public Analysis {
     bool is_monotonic(structured_control_flow::StructuredLoop* loop) const;
 
     bool is_contiguous(structured_control_flow::StructuredLoop* loop) const;
+
+    /**
+     * @brief Describes the bound of a loop as a closed-form expression for contiguous loops.
+     *
+     * Example: i <= N && i < M -> i < min(N + 1, M)
+     *
+     * @param loop The loop to describe the bound of.
+     * @return The bound of the loop as a closed-form expression, otherwise null.
+     */
+    symbolic::Expression canonical_bound(structured_control_flow::StructuredLoop* loop) const;
 };
 
 }  // namespace analysis
