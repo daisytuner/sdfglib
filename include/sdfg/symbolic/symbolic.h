@@ -28,11 +28,14 @@ typedef SymEngine::RCP<const SymEngine::Boolean> Condition;
 // Datastructures
 typedef std::vector<Symbol> SymbolVec;
 typedef std::set<Symbol, SymEngine::RCPBasicKeyLess> SymbolSet;
-typedef std::unordered_map<Symbol, Expression, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq> SymbolMap;
+typedef std::unordered_map<Symbol, Expression, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq>
+    SymbolMap;
 
 typedef std::vector<Symbol> ExpressionVec;
 typedef std::set<Expression, SymEngine::RCPBasicKeyLess> ExpressionSet;
-typedef std::unordered_map<Expression, Expression, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq> ExpressionMap;
+typedef std::unordered_map<Expression, Expression, SymEngine::RCPBasicHash,
+                           SymEngine::RCPBasicKeyEq>
+    ExpressionMap;
 
 /***** Special Symbols *****/
 
@@ -143,8 +146,6 @@ ExpressionSet muls(const Expression& expr);
 Expression subs(const Expression& expr, const Expression& old_expr, const Expression& new_expr);
 
 Condition subs(const Condition& expr, const Expression& old_expr, const Expression& new_expr);
-
-Condition rearrange_simple_condition(const Condition& inequality, const Symbol& target_symbol);
 
 /***** NV Symbols *****/
 
