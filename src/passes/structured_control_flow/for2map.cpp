@@ -21,7 +21,6 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt,
     if (!loop_analysis.is_contiguous(&for_stmt)) {
         return false;
     }
-    std::cout << "Contiguous" << std::endl;
 
     // Criterion: loop condition can be written as a closed-form expression.
     // Closed-form: i < expression_no_i
@@ -30,12 +29,10 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt,
     if (bound == SymEngine::null) {
         return false;
     }
-    std::cout << "Canonical bound" << std::endl;
 
     // Criterion: loop must be data-parallel w.r.t containers
     auto& loop_dependency_analysis = analysis_manager.get<analysis::LoopDependencyAnalysis>();
     auto dependencies = loop_dependency_analysis.get(for_stmt);
-    std::cout << "Dependencies: " << dependencies.size() << std::endl;
 
     // a. No true dependencies (RAW) between iterations
     for (auto& dep : dependencies) {
