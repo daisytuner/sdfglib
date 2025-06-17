@@ -65,7 +65,8 @@ class StructuredSDFGBuilder : public FunctionBuilder {
 
     std::unique_ptr<StructuredSDFG> move();
 
-    Sequence& add_sequence(Sequence& parent, const sdfg::control_flow::Assignments& assignments = {},
+    Sequence& add_sequence(Sequence& parent,
+                           const sdfg::control_flow::Assignments& assignments = {},
                            const DebugInfo& debug_info = DebugInfo());
 
     std::pair<Sequence&, Transition&> add_sequence_before(
@@ -192,8 +193,8 @@ class StructuredSDFGBuilder : public FunctionBuilder {
 
         auto& dataflow = block.dataflow();
         auto vertex = boost::add_vertex(dataflow.graph_);
-        auto node = std::unique_ptr<T>(
-            new T(debug_info, vertex, dataflow, code, outputs, inputs, side_effect));
+        auto node = std::unique_ptr<T>(new T(this->new_element_id(), debug_info, vertex, dataflow,
+                                             code, outputs, inputs, side_effect));
         auto res = dataflow.nodes_.insert({vertex, std::move(node)});
 
         return static_cast<data_flow::LibraryNode&>(*(res.first->second));

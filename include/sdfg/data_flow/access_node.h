@@ -19,8 +19,8 @@ class AccessNode : public DataFlowNode {
    private:
     std::string data_;
 
-    AccessNode(const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent,
-               const std::string& data);
+    AccessNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
+               DataFlowGraph& parent, const std::string& data);
 
    public:
     AccessNode(const AccessNode& data_node) = delete;

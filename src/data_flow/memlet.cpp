@@ -5,10 +5,10 @@
 namespace sdfg {
 namespace data_flow {
 
-Memlet::Memlet(const DebugInfo& debug_info, const graph::Edge& edge, const DataFlowGraph& parent,
-               DataFlowNode& src, const std::string& src_conn, DataFlowNode& dst,
-               const std::string& dst_conn, const Subset& subset)
-    : Element(debug_info),
+Memlet::Memlet(size_t element_id, const DebugInfo& debug_info, const graph::Edge& edge,
+               const DataFlowGraph& parent, DataFlowNode& src, const std::string& src_conn,
+               DataFlowNode& dst, const std::string& dst_conn, const Subset& subset)
+    : Element(element_id, debug_info),
       edge_(edge),
       parent_(&parent),
       src_(src),
@@ -41,8 +41,9 @@ Subset& Memlet::subset() { return this->subset_; };
 
 std::unique_ptr<Memlet> Memlet::clone(const graph::Edge& edge, const DataFlowGraph& parent,
                                       DataFlowNode& src, DataFlowNode& dst) const {
-    return std::unique_ptr<Memlet>(new Memlet(this->debug_info_, edge, parent, src, this->src_conn_,
-                                              dst, this->dst_conn_, this->subset_));
+    return std::unique_ptr<Memlet>(new Memlet(this->element_id_, this->debug_info_, edge, parent,
+                                              src, this->src_conn_, dst, this->dst_conn_,
+                                              this->subset_));
 };
 
 void Memlet::replace(const symbolic::Expression& old_expression,

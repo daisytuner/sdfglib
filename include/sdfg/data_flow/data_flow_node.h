@@ -30,7 +30,8 @@ class DataFlowNode : public Element {
     DataFlowGraph* parent_;
 
    protected:
-    DataFlowNode(const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent);
+    DataFlowNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
+                 DataFlowGraph& parent);
 
    public:
     // Remark: Exclusive resource

@@ -35,9 +35,9 @@ class Memlet : public Element {
     std::string dst_conn_;
     Subset subset_;
 
-    Memlet(const DebugInfo& debug_info, const graph::Edge& edge, const DataFlowGraph& parent,
-           DataFlowNode& src, const std::string& src_conn, DataFlowNode& dst,
-           const std::string& dst_conn, const Subset& subset);
+    Memlet(size_t element_id, const DebugInfo& debug_info, const graph::Edge& edge,
+           const DataFlowGraph& parent, DataFlowNode& src, const std::string& src_conn,
+           DataFlowNode& dst, const std::string& dst_conn, const Subset& subset);
 
    public:
     // Remark: Exclusive resource

@@ -18,7 +18,8 @@ class CodeNode : public DataFlowNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
    protected:
-    CodeNode(const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent);
+    CodeNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
+             DataFlowGraph& parent);
 
    public:
     CodeNode(const CodeNode& data_node) = delete;

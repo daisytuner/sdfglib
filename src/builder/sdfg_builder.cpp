@@ -26,8 +26,8 @@ std::unique_ptr<SDFG> SDFGBuilder::move() { return std::move(this->sdfg_); };
 control_flow::State& SDFGBuilder::add_state(bool is_start_state, const DebugInfo& debug_info) {
     auto vertex = boost::add_vertex(this->sdfg_->graph_);
     auto res = this->sdfg_->states_.insert(
-        {vertex,
-         std::unique_ptr<control_flow::State>(new control_flow::State(debug_info, vertex))});
+        {vertex, std::unique_ptr<control_flow::State>(
+                     new control_flow::State(this->new_element_id(), debug_info, vertex))});
 
     assert(res.second);
     (*res.first).second->dataflow_->parent_ = (*res.first).second.get();
@@ -116,8 +116,9 @@ control_flow::InterstateEdge& SDFGBuilder::add_edge(const control_flow::State& s
     assert(edge.second);
 
     auto res = this->sdfg_->edges_.insert(
-        {edge.first, std::unique_ptr<control_flow::InterstateEdge>(new control_flow::InterstateEdge(
-                         debug_info, edge.first, src, dst, condition, assignments))});
+        {edge.first,
+         std::unique_ptr<control_flow::InterstateEdge>(new control_flow::InterstateEdge(
+             this->new_element_id(), debug_info, edge.first, src, dst, condition, assignments))});
 
     assert(res.second);
 
@@ -178,8 +179,8 @@ data_flow::AccessNode& SDFGBuilder::add_access(control_flow::State& state, const
     auto& dataflow = state.dataflow();
     auto vertex = boost::add_vertex(dataflow.graph_);
     auto res = dataflow.nodes_.insert(
-        {vertex, std::unique_ptr<data_flow::AccessNode>(
-                     new data_flow::AccessNode(debug_info, vertex, dataflow, data))});
+        {vertex, std::unique_ptr<data_flow::AccessNode>(new data_flow::AccessNode(
+                     this->new_element_id(), debug_info, vertex, dataflow, data))});
 
     return dynamic_cast<data_flow::AccessNode&>(*(res.first->second));
 };
@@ -203,9 +204,10 @@ data_flow::Tasklet& SDFGBuilder::add_tasklet(
 
     auto& dataflow = state.dataflow();
     auto vertex = boost::add_vertex(dataflow.graph_);
-    auto res = dataflow.nodes_.insert(
-        {vertex, std::unique_ptr<data_flow::Tasklet>(new data_flow::Tasklet(
-                     debug_info, vertex, dataflow, code, output, inputs, symbolic::__true__()))});
+    auto res =
+        dataflow.nodes_.insert({vertex, std::unique_ptr<data_flow::Tasklet>(new data_flow::Tasklet(
+                                            this->new_element_id(), debug_info, vertex, dataflow,
+                                            code, output, inputs, symbolic::__true__()))});
 
     return dynamic_cast<data_flow::Tasklet&>(*(res.first->second));
 };
@@ -338,8 +340,9 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
     auto& dataflow = state.dataflow();
     auto edge = boost::add_edge(src.vertex_, dst.vertex_, dataflow.graph_);
     auto res = dataflow.edges_.insert(
-        {edge.first, std::unique_ptr<data_flow::Memlet>(new data_flow::Memlet(
-                         debug_info, edge.first, dataflow, src, src_conn, dst, dst_conn, subset))});
+        {edge.first, std::unique_ptr<data_flow::Memlet>(
+                         new data_flow::Memlet(this->new_element_id(), debug_info, edge.first,
+                                               dataflow, src, src_conn, dst, dst_conn, subset))});
 
     return dynamic_cast<data_flow::Memlet&>(*(res.first->second));
 };
