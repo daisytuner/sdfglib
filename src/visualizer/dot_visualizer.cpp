@@ -24,7 +24,7 @@ static std::string escapeDotId(const std::string& id, const std::string& prefix 
     return prefix + std::regex_replace(id, dotIdBadChars, "_");
 }
 
-void DotVisualizer::visualizeBlock(StructuredSDFG& sdfg, structured_control_flow::Block& block) {
+void DotVisualizer::visualizeBlock(const StructuredSDFG& sdfg, const structured_control_flow::Block& block) {
     auto id = escapeDotId(block.element_id(), "block_");
     this->stream_ << "subgraph cluster_" << id << " {" << std::endl;
     this->stream_.setIndent(this->stream_.indent() + 4);
@@ -39,27 +39,27 @@ void DotVisualizer::visualizeBlock(StructuredSDFG& sdfg, structured_control_flow
         return;
     }
     this->last_comp_name_.clear();
-    std::list<data_flow::DataFlowNode*> nodes = block.dataflow().topological_sort();
-    for (data_flow::DataFlowNode* node : nodes) {
+    std::list<const data_flow::DataFlowNode*> nodes = block.dataflow().topological_sort();
+    for (const data_flow::DataFlowNode* node : nodes) {
         auto nodeId = escapeDotId(node->element_id(), "n_");
         if (this->last_comp_name_.empty()) this->last_comp_name_ = nodeId;
-        if (const data_flow::Tasklet* tasklet = dynamic_cast<data_flow::Tasklet*>(node)) {
+        if (const data_flow::Tasklet* tasklet = dynamic_cast<const data_flow::Tasklet*>(node)) {
             
             this->stream_ << nodeId << " [shape=octagon,label=\""
                           << tasklet->output().first << " = ";
             this->visualizeTasklet(*tasklet);
             this->stream_ << "\"];" << std::endl;
-        } else if (const data_flow::AccessNode* access_node = dynamic_cast<data_flow::AccessNode*>(node)) {
+        } else if (const data_flow::AccessNode* access_node = dynamic_cast<const data_flow::AccessNode*>(node)) {
             this->stream_ << nodeId << " [";
             if (!sdfg.is_internal(access_node->data())) this->stream_ << "penwidth=3.0,";
             if (sdfg.is_transient(access_node->data())) this->stream_ << "style=\"dashed,filled\",";
             this->stream_ << "label=\"" << access_node->data() << "\"];" << std::endl;
-        } else if (const data_flow::LibraryNode* libnode = dynamic_cast<data_flow::LibraryNode*>(node)) {
+        } else if (const data_flow::LibraryNode* libnode = dynamic_cast<const data_flow::LibraryNode*>(node)) {
             this->stream_ << nodeId << " [shape=doubleoctagon,label=\""
                 << libnode->toStr() << "\"];" << std::endl;
             this->stream_ << "\"];" << std::endl;
         }
-        for (data_flow::Memlet& iedge : block.dataflow().in_edges(*node)) {
+        for (const data_flow::Memlet& iedge : block.dataflow().in_edges(*node)) {
             auto& src = iedge.src();
 
             this->stream_ << escapeDotId(src.element_id(), "n_") << " -> " << nodeId
@@ -104,11 +104,11 @@ void DotVisualizer::visualizeBlock(StructuredSDFG& sdfg, structured_control_flow
     this->stream_ << "}" << std::endl;
 }
 
-void DotVisualizer::visualizeSequence(StructuredSDFG& sdfg,
-                                      structured_control_flow::Sequence& sequence) {
+void DotVisualizer::visualizeSequence(const StructuredSDFG& sdfg,
+                                      const structured_control_flow::Sequence& sequence) {
     std::string last_comp_name_tmp, last_comp_name_cluster_tmp;
     for (size_t i = 0; i < sequence.size(); ++i) {
-        std::pair<structured_control_flow::ControlFlowNode&, structured_control_flow::Transition&>
+        std::pair<const structured_control_flow::ControlFlowNode&, const structured_control_flow::Transition&>
             child = sequence.at(i);
         this->visualizeNode(sdfg, child.first);
         if ((i > 0) && !last_comp_name_tmp.empty() && !this->last_comp_name_.empty()) {
@@ -127,8 +127,8 @@ void DotVisualizer::visualizeSequence(StructuredSDFG& sdfg,
     }
 }
 
-void DotVisualizer::visualizeIfElse(StructuredSDFG& sdfg,
-                                    structured_control_flow::IfElse& if_else) {
+void DotVisualizer::visualizeIfElse(const StructuredSDFG& sdfg,
+                                    const structured_control_flow::IfElse& if_else) {
     auto id = escapeDotId(if_else.element_id(), "if_");
     this->stream_ << "subgraph cluster_" << id << " {" << std::endl;
     this->stream_.setIndent(this->stream_.indent() + 4);
@@ -151,8 +151,8 @@ void DotVisualizer::visualizeIfElse(StructuredSDFG& sdfg,
     this->last_comp_name_cluster_ = "cluster_" + id;
 }
 
-void DotVisualizer::visualizeWhile(StructuredSDFG& sdfg,
-                                   structured_control_flow::While& while_loop) {
+void DotVisualizer::visualizeWhile(const StructuredSDFG& sdfg,
+                                   const structured_control_flow::While& while_loop) {
 
     auto id = escapeDotId(while_loop.element_id(), "while_");
     this->stream_ << "subgraph cluster_" << id << " {" << std::endl;
@@ -168,7 +168,7 @@ void DotVisualizer::visualizeWhile(StructuredSDFG& sdfg,
     this->last_comp_name_cluster_ = "cluster_" + id;
 }
 
-void DotVisualizer::visualizeFor(StructuredSDFG& sdfg, structured_control_flow::For& loop) {
+void DotVisualizer::visualizeFor(const StructuredSDFG& sdfg, const structured_control_flow::For& loop) {
     auto id = escapeDotId(loop.element_id(), "for_");
     this->stream_ << "subgraph cluster_" << id << " {" << std::endl;
     this->stream_.setIndent(this->stream_.indent() + 4);
@@ -183,23 +183,23 @@ void DotVisualizer::visualizeFor(StructuredSDFG& sdfg, structured_control_flow::
     this->last_comp_name_cluster_ = "cluster_" + id;
 }
 
-void DotVisualizer::visualizeReturn(StructuredSDFG& sdfg,
-                                    structured_control_flow::Return& return_node) {
+void DotVisualizer::visualizeReturn(const StructuredSDFG& sdfg,
+                                    const structured_control_flow::Return& return_node) {
     auto id = escapeDotId(return_node.element_id(), "return_");
     this->stream_ << id << " [shape=cds,label=\" return  \"];" << std::endl;
     this->last_comp_name_ = id;
     this->last_comp_name_cluster_.clear();
 }
-void DotVisualizer::visualizeBreak(StructuredSDFG& sdfg,
-                                   structured_control_flow::Break& break_node) {
+void DotVisualizer::visualizeBreak(const StructuredSDFG& sdfg,
+                                   const structured_control_flow::Break& break_node) {
     auto id = escapeDotId(break_node.element_id(), "break_");
     this->stream_ << id << " [shape=cds,label=\" break  \"];" << std::endl;
     this->last_comp_name_ = id;
     this->last_comp_name_cluster_.clear();
 }
 
-void DotVisualizer::visualizeContinue(StructuredSDFG& sdfg,
-                                      structured_control_flow::Continue& continue_node) {
+void DotVisualizer::visualizeContinue(const StructuredSDFG& sdfg,
+                                      const structured_control_flow::Continue& continue_node) {
     auto id = escapeDotId(continue_node.element_id(), "cont_");
     this->stream_ << id << " [shape=cds,label=\" continue  \"];"
                   << std::endl;
@@ -207,7 +207,7 @@ void DotVisualizer::visualizeContinue(StructuredSDFG& sdfg,
     this->last_comp_name_cluster_.clear();
 }
 
-void DotVisualizer::visualizeMap(StructuredSDFG& sdfg, structured_control_flow::Map& map_node) {
+void DotVisualizer::visualizeMap(const StructuredSDFG& sdfg, const structured_control_flow::Map& map_node) {
     auto id = escapeDotId(map_node.element_id(), "map_");
     this->stream_ << "subgraph cluster_" << id << " {" << std::endl;
     this->stream_.setIndent(this->stream_.indent() + 4);
