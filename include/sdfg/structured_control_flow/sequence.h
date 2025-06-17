@@ -27,9 +27,9 @@ class Transition : public Element {
     Sequence& parent_;
     control_flow::Assignments assignments_;
 
-    Transition(const DebugInfo& debug_info, Sequence& parent);
+    Transition(size_t element_id, const DebugInfo& debug_info, Sequence& parent);
 
-    Transition(const DebugInfo& debug_info, Sequence& parent,
+    Transition(size_t element_id, const DebugInfo& debug_info, Sequence& parent,
                const control_flow::Assignments& assignments);
 
    public:
@@ -65,7 +65,7 @@ class Sequence : public ControlFlowNode {
     std::vector<std::unique_ptr<ControlFlowNode>> children_;
     std::vector<std::unique_ptr<Transition>> transitions_;
 
-    Sequence(const DebugInfo& debug_info);
+    Sequence(size_t element_id, const DebugInfo& debug_info);
 
    public:
     Sequence(const Sequence& node) = delete;

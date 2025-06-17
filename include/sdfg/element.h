@@ -1,7 +1,5 @@
 #pragma once
 
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
 #include <cassert>
 #include <string>
 
@@ -55,18 +53,16 @@ class Element {
     friend class builder::StructuredSDFGBuilder;
     friend class serializer::JSONSerializer;
 
-    static thread_local boost::uuids::random_generator UUID_GENERATOR;
-
    protected:
-    std::string element_id_;
+    size_t element_id_;
     DebugInfo debug_info_;
 
    public:
-    Element(const DebugInfo& debug_info);
+    Element(size_t element_id, const DebugInfo& debug_info);
 
     virtual ~Element() = default;
 
-    std::string element_id() const;
+    size_t element_id() const;
 
     const DebugInfo& debug_info() const;
 

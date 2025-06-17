@@ -35,9 +35,9 @@ class Memlet : public Element {
     std::string dst_conn_;
     Subset subset_;
 
-    Memlet(const DebugInfo& debug_info, const graph::Edge& edge, const DataFlowGraph& parent,
-           DataFlowNode& src, const std::string& src_conn, DataFlowNode& dst,
-           const std::string& dst_conn, const Subset& subset);
+    Memlet(size_t element_id, const DebugInfo& debug_info, const graph::Edge& edge,
+           const DataFlowGraph& parent, DataFlowNode& src, const std::string& src_conn,
+           DataFlowNode& dst, const std::string& dst_conn, const Subset& subset);
 
    public:
     // Remark: Exclusive resource
@@ -64,8 +64,9 @@ class Memlet : public Element {
 
     Subset& subset();
 
-    std::unique_ptr<Memlet> clone(const graph::Edge& edge, const DataFlowGraph& parent,
-                                  DataFlowNode& src, DataFlowNode& dst) const;
+    std::unique_ptr<Memlet> clone(size_t element_id, const graph::Edge& edge,
+                                  const DataFlowGraph& parent, DataFlowNode& src,
+                                  DataFlowNode& dst) const;
 
     void replace(const symbolic::Expression& old_expression,
                  const symbolic::Expression& new_expression) override;

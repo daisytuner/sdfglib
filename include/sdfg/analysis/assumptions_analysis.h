@@ -42,7 +42,8 @@ class AssumptionsAnalysis : public Analysis {
    public:
     AssumptionsAnalysis(StructuredSDFG& sdfg);
 
-    const symbolic::Assumptions get(structured_control_flow::ControlFlowNode& node);
+    const symbolic::Assumptions get(structured_control_flow::ControlFlowNode& node,
+                                    bool include_trivial_bounds = false);
 };
 
 }  // namespace analysis

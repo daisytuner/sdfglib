@@ -21,9 +21,7 @@ class Block : public ControlFlowNode {
    private:
     std::unique_ptr<data_flow::DataFlowGraph> dataflow_;
 
-    Block(const DebugInfo& debug_info);
-
-    Block(const DebugInfo& debug_info, const data_flow::DataFlowGraph& dataflow);
+    Block(size_t element_id, const DebugInfo& debug_info);
 
    public:
     Block(const Block& block) = delete;

@@ -5,13 +5,9 @@
 namespace sdfg {
 namespace structured_control_flow {
 
-Block::Block(const DebugInfo& debug_info) : ControlFlowNode(debug_info) {
+Block::Block(size_t element_id, const DebugInfo& debug_info)
+    : ControlFlowNode(element_id, debug_info) {
     this->dataflow_ = std::make_unique<data_flow::DataFlowGraph>();
-};
-
-Block::Block(const DebugInfo& debug_info, const data_flow::DataFlowGraph& dataflow)
-    : ControlFlowNode(debug_info) {
-    this->dataflow_ = dataflow.clone();
 };
 
 const data_flow::DataFlowGraph& Block::dataflow() const { return *this->dataflow_; };

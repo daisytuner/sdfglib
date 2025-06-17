@@ -51,6 +51,8 @@ class StructuredSDFGBuilder : public FunctionBuilder {
         const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree,
         std::unordered_set<const control_flow::State*>& visited);
 
+    void add_dataflow(const data_flow::DataFlowGraph& from, Block& to);
+
    protected:
     Function& function() const override;
 
@@ -65,7 +67,8 @@ class StructuredSDFGBuilder : public FunctionBuilder {
 
     std::unique_ptr<StructuredSDFG> move();
 
-    Sequence& add_sequence(Sequence& parent, const sdfg::control_flow::Assignments& assignments = {},
+    Sequence& add_sequence(Sequence& parent,
+                           const sdfg::control_flow::Assignments& assignments = {},
                            const DebugInfo& debug_info = DebugInfo());
 
     std::pair<Sequence&, Transition&> add_sequence_before(
@@ -193,8 +196,8 @@ class StructuredSDFGBuilder : public FunctionBuilder {
 
         auto& dataflow = block.dataflow();
         auto vertex = boost::add_vertex(dataflow.graph_);
-        auto node = std::unique_ptr<T>(
-            new T(debug_info, vertex, dataflow, code, outputs, inputs, side_effect, arguments...));
+        auto node = std::unique_ptr<T>(new T(this->new_element_id(), debug_info, vertex, dataflow,
+                                             code, outputs, inputs, side_effect, arguments...));
         auto res = dataflow.nodes_.insert({vertex, std::move(node)});
 
         return static_cast<data_flow::LibraryNode&>(*(res.first->second));

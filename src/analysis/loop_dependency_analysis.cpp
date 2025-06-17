@@ -52,7 +52,7 @@ void LoopDependencyAnalysis::analyze(analysis::AnalysisManager& analysis_manager
 
     // Step 0: Get assumptions
     auto& assumptions = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto body_assums = assumptions.get(body);
+    auto body_assums = assumptions.get(body, true);
 
     // Step 1: For loop-carried dependency, the container must be written
     std::unordered_set<std::string> written_containers;
@@ -136,7 +136,7 @@ bool LoopDependencyAnalysis::intersects(User* first, User* second,
         scope_first = &loop.root();
     }
     auto& assumptions = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto scope_assums = assumptions.get(*scope_first);
+    auto scope_assums = assumptions.get(*scope_first, true);
 
     for (auto& subset : first->subsets()) {
         // Collect all symbols of the subset;

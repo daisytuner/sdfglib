@@ -12,6 +12,8 @@ class FunctionBuilder {
    protected:
     virtual Function& function() const = 0;
 
+    size_t new_element_id() const;
+
    public:
     virtual ~FunctionBuilder() = default;
 

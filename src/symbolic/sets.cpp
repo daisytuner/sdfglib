@@ -522,7 +522,6 @@ bool is_equivalent(const MultiExpression& expr1, const MultiExpression& expr2,
     auto expr2_delinearized = delinearize(expr2, params, assums);
     std::string map_str =
         expressions_to_diagonal_map_str(expr1_delinearized, expr2_delinearized, params, assums);
-
     isl_map* pair_map = isl_map_read_from_str(ctx, map_str.c_str());
     if (!pair_map) {
         isl_ctx_free(ctx);
@@ -610,7 +609,11 @@ MultiExpression delinearize(const MultiExpression& expr, const SymbolSet& params
             }
 
             // Symbol must be nonnegative
-            auto sym_lb = minimum(new_dim, assums);
+            auto sym_lb = minimum(new_dim, {}, assums);
+            if (sym_lb == SymEngine::null) {
+                success = false;
+                break;
+            }
             auto sym_cond = symbolic::Ge(sym_lb, symbolic::zero());
             if (!symbolic::is_true(sym_cond)) {
                 success = false;
@@ -619,8 +622,13 @@ MultiExpression delinearize(const MultiExpression& expr, const SymbolSet& params
 
             // Stride must be positive
             Expression stride = aff_coeffs.at(new_dim);
-            auto stride_lb = minimum(stride, assums);
-            if (!symbolic::is_true(symbolic::Ge(stride_lb, symbolic::one()))) {
+            auto stride_lb = minimum(stride, {}, assums);
+            if (stride_lb == SymEngine::null) {
+                success = false;
+                break;
+            }
+            auto stride_cond = symbolic::Ge(stride_lb, symbolic::one());
+            if (!symbolic::is_true(stride_cond)) {
                 success = false;
                 break;
             }
@@ -631,7 +639,11 @@ MultiExpression delinearize(const MultiExpression& expr, const SymbolSet& params
             // Check if remainder is within bounds
 
             // remaining must be nonnegative
-            auto rem_lb = minimum(remaining, assums);
+            auto rem_lb = minimum(remaining, {}, assums);
+            if (rem_lb == SymEngine::null) {
+                success = false;
+                break;
+            }
             auto cond_zero = symbolic::Ge(rem_lb, symbolic::zero());
             if (!symbolic::is_true(cond_zero)) {
                 success = false;
@@ -640,7 +652,11 @@ MultiExpression delinearize(const MultiExpression& expr, const SymbolSet& params
 
             // remaining must be less than stride
             auto rem = symbolic::sub(stride, remaining);
-            rem = minimum(rem, assums);
+            rem = minimum(rem, {}, assums);
+            if (rem == SymEngine::null) {
+                success = false;
+                break;
+            }
 
             auto cond_stride = symbolic::Ge(rem, symbolic::one());
             if (!symbolic::is_true(cond_stride)) {

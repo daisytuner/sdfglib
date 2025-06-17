@@ -27,7 +27,7 @@ void OutermostLoopsInstrumentation::begin_instrumentation(
 
 void OutermostLoopsInstrumentation::end_instrumentation(
     const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream) const {
-    std::string region_name = sdfg_.name() + "_" + node.element_id();
+    std::string region_name = sdfg_.name() + "_" + std::to_string(node.element_id());
 
     bool has_metadata = sdfg_.metadata().find("source_file") != sdfg_.metadata().end() &&
                         sdfg_.metadata().find("features_path") != sdfg_.metadata().end();

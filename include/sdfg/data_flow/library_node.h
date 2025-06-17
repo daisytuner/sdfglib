@@ -27,9 +27,10 @@ class LibraryNode : public CodeNode {
     std::vector<std::string> inputs_;
     bool side_effect_;
 
-    LibraryNode(const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent,
-                const LibraryNodeCode& code, const std::vector<std::string>& outputs,
-                const std::vector<std::string>& inputs, const bool side_effect);
+    LibraryNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
+                DataFlowGraph& parent, const LibraryNodeCode& code,
+                const std::vector<std::string>& outputs, const std::vector<std::string>& inputs,
+                const bool side_effect);
 
    public:
     LibraryNode(const LibraryNode& data_node) = delete;

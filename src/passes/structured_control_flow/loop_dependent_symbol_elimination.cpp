@@ -26,7 +26,7 @@ bool LoopDependentSymbolElimination::eliminate_symbols(
 
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto assumptions = assumptions_analysis.get(loop.root());
+    auto assumptions = assumptions_analysis.get(loop.root(), true);
 
     // Assume simple loops: i = 0; i < N; i++
     if (!SymEngine::eq(*init, *symbolic::integer(0))) {

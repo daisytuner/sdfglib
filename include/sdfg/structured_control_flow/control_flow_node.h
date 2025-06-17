@@ -19,7 +19,7 @@ class ControlFlowNode : public Element {
     friend class builder::StructuredSDFGBuilder;
 
    protected:
-    ControlFlowNode(const DebugInfo& debug_info);
+    ControlFlowNode(size_t element_id, const DebugInfo& debug_info);
 
    public:
     virtual ~ControlFlowNode() = default;

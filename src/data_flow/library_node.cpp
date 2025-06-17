@@ -5,11 +5,11 @@
 namespace sdfg {
 namespace data_flow {
 
-LibraryNode::LibraryNode(const DebugInfo& debug_info, const graph::Vertex vertex,
+LibraryNode::LibraryNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
                          DataFlowGraph& parent, const LibraryNodeCode& code,
                          const std::vector<std::string>& outputs,
                          const std::vector<std::string>& inputs, const bool side_effect)
-    : CodeNode(debug_info, vertex, parent),
+    : CodeNode(element_id, debug_info, vertex, parent),
       code_(code),
       outputs_(outputs),
       inputs_(inputs),
