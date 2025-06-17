@@ -189,5 +189,7 @@ install(TARGETS sdfglib
 install(FILES
     include/export/daisyrtl.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+install(DIRECTORY include/sdfg DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
+set(INSTALL_GTEST OFF)
 add_subdirectory(tests)
