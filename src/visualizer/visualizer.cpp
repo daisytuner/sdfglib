@@ -377,41 +377,41 @@ std::string Visualizer::expression(const std::string expr) {
     return res;
 }
 
-void Visualizer::visualizeNode(StructuredSDFG& sdfg,
-                               structured_control_flow::ControlFlowNode& node) {
-    if (auto block = dynamic_cast<structured_control_flow::Block*>(&node)) {
+void Visualizer::visualizeNode(const StructuredSDFG& sdfg,
+                               const structured_control_flow::ControlFlowNode& node) {
+    if (auto block = dynamic_cast<const structured_control_flow::Block*>(&node)) {
         this->visualizeBlock(sdfg, *block);
         return;
     }
-    if (auto sequence = dynamic_cast<structured_control_flow::Sequence*>(&node)) {
+    if (auto sequence = dynamic_cast<const structured_control_flow::Sequence*>(&node)) {
         this->visualizeSequence(sdfg, *sequence);
         return;
     }
-    if (auto if_else = dynamic_cast<structured_control_flow::IfElse*>(&node)) {
+    if (auto if_else = dynamic_cast<const structured_control_flow::IfElse*>(&node)) {
         this->visualizeIfElse(sdfg, *if_else);
         return;
     }
-    if (auto while_loop = dynamic_cast<structured_control_flow::While*>(&node)) {
+    if (auto while_loop = dynamic_cast<const structured_control_flow::While*>(&node)) {
         this->visualizeWhile(sdfg, *while_loop);
         return;
     }
-    if (auto loop = dynamic_cast<structured_control_flow::For*>(&node)) {
+    if (auto loop = dynamic_cast<const structured_control_flow::For*>(&node)) {
         this->visualizeFor(sdfg, *loop);
         return;
     }
-    if (auto return_node = dynamic_cast<structured_control_flow::Return*>(&node)) {
+    if (auto return_node = dynamic_cast<const structured_control_flow::Return*>(&node)) {
         this->visualizeReturn(sdfg, *return_node);
         return;
     }
-    if (auto break_node = dynamic_cast<structured_control_flow::Break*>(&node)) {
+    if (auto break_node = dynamic_cast<const structured_control_flow::Break*>(&node)) {
         this->visualizeBreak(sdfg, *break_node);
         return;
     }
-    if (auto continue_node = dynamic_cast<structured_control_flow::Continue*>(&node)) {
+    if (auto continue_node = dynamic_cast<const structured_control_flow::Continue*>(&node)) {
         this->visualizeContinue(sdfg, *continue_node);
         return;
     }
-    if (auto map_node = dynamic_cast<structured_control_flow::Map*>(&node)) {
+    if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(&node)) {
         this->visualizeMap(sdfg, *map_node);
         return;
     }
