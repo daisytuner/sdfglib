@@ -113,7 +113,7 @@ void LoopSlicing::apply(builder::StructuredSDFGBuilder& builder,
 
     // Collect loop locals
     auto& users = analysis_manager.get<analysis::Users>();
-    auto locals = users.locals(sdfg, body);
+    auto locals = users.locals(body);
 
     // Find the if-else that slices the loop
     structured_control_flow::IfElse* if_else = nullptr;

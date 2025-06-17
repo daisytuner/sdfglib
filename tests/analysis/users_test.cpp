@@ -654,3 +654,86 @@ TEST(UsersTest, For_Definition) {
 
     EXPECT_TRUE(users.dominates(*read2, *write2));
 }
+
+TEST(UsersTest, Locals_Argument) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    builder.add_container("a", types::Scalar(types::PrimitiveType::Int32), true);
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root, {{symbolic::symbol("a"), symbolic::integer(0)}});
+
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    auto& users = analysis_manager.get<analysis::Users>();
+
+    auto locals = users.locals(root);
+    EXPECT_EQ(locals.size(), 0);
+}
+
+TEST(UsersTest, Locals_External) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    builder.add_container("a", types::Scalar(types::PrimitiveType::Int32), false, true);
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root, {{symbolic::symbol("a"), symbolic::integer(0)}});
+
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    auto& users = analysis_manager.get<analysis::Users>();
+
+    auto locals = users.locals(root);
+    EXPECT_EQ(locals.size(), 0);
+}
+
+TEST(UsersTest, Locals_Transient) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    builder.add_container("a", types::Scalar(types::PrimitiveType::Int32));
+
+    auto& root = builder.subject().root();
+
+    auto& sequence_1 = builder.add_sequence(root);
+    auto& sequence_2 = builder.add_sequence(root);
+    auto& block_1 = builder.add_block(sequence_1);
+    auto& block_2 = builder.add_block(sequence_2, {{symbolic::symbol("a"), symbolic::integer(0)}});
+
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    auto& users = analysis_manager.get<analysis::Users>();
+
+    auto sequence_1_locals = users.locals(sequence_1);
+    EXPECT_EQ(sequence_1_locals.size(), 0);
+
+    auto sequence_2_locals = users.locals(sequence_2);
+    EXPECT_EQ(sequence_2_locals.size(), 1);
+    EXPECT_TRUE(sequence_2_locals.find("a") != sequence_2_locals.end());
+
+    auto root_locals = users.locals(root);
+    EXPECT_EQ(root_locals.size(), 1);
+    EXPECT_TRUE(root_locals.find("a") != root_locals.end());
+}
+
+TEST(UsersTest, Locals_Transient2) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    builder.add_container("a", types::Scalar(types::PrimitiveType::Int32));
+
+    auto& root = builder.subject().root();
+
+    auto& sequence_1 = builder.add_sequence(root);
+    auto& sequence_2 = builder.add_sequence(root);
+    auto& block_1 = builder.add_block(sequence_1, {{symbolic::symbol("a"), symbolic::integer(0)}});
+    auto& block_2 = builder.add_block(sequence_2, {{symbolic::symbol("a"), symbolic::integer(0)}});
+
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    auto& users = analysis_manager.get<analysis::Users>();
+
+    auto sequence_1_locals = users.locals(sequence_1);
+    EXPECT_EQ(sequence_1_locals.size(), 0);
+
+    auto sequence_2_locals = users.locals(sequence_2);
+    EXPECT_EQ(sequence_2_locals.size(), 0);
+
+    auto root_locals = users.locals(root);
+    EXPECT_EQ(root_locals.size(), 1);
+    EXPECT_TRUE(root_locals.find("a") != root_locals.end());
+}

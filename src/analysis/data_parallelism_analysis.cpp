@@ -727,7 +727,7 @@ void DataParallelismAnalysis::classify(analysis::AnalysisManager& analysis_manag
     // For each container, we now classify the access pattern
 
     // 1. Identify private containers
-    auto locals = users.locals(sdfg_, body);
+    auto locals = users.locals(body);
     for (auto& local : locals) {
         result.insert({local, Parallelism::PRIVATE});
     }
