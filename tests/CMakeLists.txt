@@ -12,6 +12,7 @@ set(TEST_FILES
     analysis/happens_before_analysis_test.cpp
     analysis/loop_analysis_test.cpp
     analysis/loop_dependency_analysis_test.cpp
+    analysis/mem_access_range_analysis_test.cpp
     analysis/users_test.cpp
     builder/function_builder_test.cpp
     builder/sdfg_builder_test.cpp
