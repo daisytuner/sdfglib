@@ -154,15 +154,14 @@ add_library(sdfglib
 )
 target_include_directories(sdfglib
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/symengine>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/symengine/symengine/utilities/cereal/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine/symengine/utilities/cereal/include>
 )
-target_include_directories(sdfglib
-    SYSTEM PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/symengine
-        ${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine
-        ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/symengine/symengine/utilities/cereal/include
-        ${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine/symengine/utilities/cereal/include
-)
+
 target_compile_options(sdfglib PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -Wno-unused-private-field -Wno-switch -Wno-deprecated-declarations)
 
 if(SDFGLIB_ENABLE_SANITIZER)
@@ -182,12 +181,47 @@ set_target_properties(sdfglib PROPERTIES
     SOVERSION ${PROJECT_VERSION_MAJOR}
 )
 
+## INSTALLATION
+
 install(TARGETS sdfglib
+    EXPORT sdfglibTargets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 install(FILES
     include/export/daisyrtl.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+install(DIRECTORY include/sdfg DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
+## CMAKE CONFIGURATION
+
+install(EXPORT sdfglibTargets
+    NAMESPACE sdfglib::
+    FILE sdfglibTargets.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfglib
+)
+
+include(CMakePackageConfigHelpers)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/sdfglibConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+configure_package_config_file(
+    ${CMAKE_CURRENT_LIST_DIR}/cmake/sdfglibConfig.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/sdfglibConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfglib
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/sdfglibConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/sdfglibConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfglib
+)
+
+set(INSTALL_GTEST OFF)
 add_subdirectory(tests)
