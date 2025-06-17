@@ -10,7 +10,7 @@ namespace sdfg {
 
 StructuredSDFG::StructuredSDFG(const std::string& name, FunctionType type) : Function(name, type) {
     this->root_ = std::unique_ptr<structured_control_flow::Sequence>(
-        new structured_control_flow::Sequence(DebugInfo()));
+        new structured_control_flow::Sequence(this->element_counter_, DebugInfo()));
 };
 
 const structured_control_flow::Sequence& StructuredSDFG::root() const { return *this->root_; };
