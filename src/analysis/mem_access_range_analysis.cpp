@@ -29,23 +29,8 @@ MemAccessRanges::MemAccessRanges(StructuredSDFG& sdfg)
 
 void MemAccessRanges::run(analysis::AnalysisManager& analysis_manager) {
 
-
-    // std::cout << "Running MemAccessRanges analysis on node: " << sdfg_.name() << std::endl;
-    // Initialize the graph for this nod
-
     auto& users = analysis_manager.get<Users>();
     auto& assumptions_analysis = analysis_manager.get<AssumptionsAnalysis>();
-
-    // visualizer::DotVisualizer viz(sdfg_);
-    // viz.visualize();
-
-    // std::string filename = sdfg_.name() + ".dot";
-
-    // std::ofstream dotOutput(filename, std::ofstream::out);
-
-    // dotOutput << viz.getStream().str();
-    // dotOutput.close();
-    // std::cout << "Wrote graph to : " << filename << std::endl;
 
     auto builder = MemAccessRangesBuilder(sdfg_, users, assumptions_analysis);
 
@@ -109,7 +94,6 @@ const std::vector<std::pair<symbolic::Expression, symbolic::Expression>>& MemAcc
     return dims_;
 }
 
-
 void MemAccessRangesBuilder::process_workItem(WorkItem* item) {
     const auto* varName = item->var_name;
     const auto& type = sdfg_.type(*varName);
@@ -138,17 +122,21 @@ void MemAccessRangesBuilder::process_workItem(WorkItem* item) {
         finalDims.reserve(item->dims.size());
 
         for (auto& dim: item->dims) {
-            symbolic::Expression lb = !dim.first.empty()? SymEngine::min(dim.first) : SymEngine::RCP<const SymEngine::Basic>();
-            symbolic::Expression ub = !dim.second.empty()? SymEngine::max(dim.second) : SymEngine::RCP<const SymEngine::Basic>();
+            auto& lowerExprs = std::get<0>(dim);
+            bool isLowerUndefined = std::get<1>(dim);
+            symbolic::Expression lb = (!lowerExprs.empty() && !isLowerUndefined)? SymEngine::min(lowerExprs) : SymEngine::RCP<const SymEngine::Basic>();
+            auto& upperExprs = std::get<2>(dim);
+            bool isUpperUndefined = std::get<3>(dim);
+            symbolic::Expression ub = (!upperExprs.empty() && !isUpperUndefined)? SymEngine::max(upperExprs) : SymEngine::RCP<const SymEngine::Basic>();
 
-            if (lb == SymEngine::null || ub == SymEngine::null) {
+            if (lb.is_null() || ub.is_null()) {
                 item->undefined = true;
             }
-            if (SymEngine::is_a<SymEngine::Infty>(*lb)) {
+            if (!lb.is_null() && SymEngine::is_a<SymEngine::Infty>(*lb)) {
                 lb = SymEngine::null;
                 item->undefined = true;
             }
-            if (SymEngine::is_a<SymEngine::Infty>(*ub)) {
+            if (!ub.is_null() && SymEngine::is_a<SymEngine::Infty>(*ub)) {
                 ub = SymEngine::null;
                 item->undefined = true;
             }
@@ -161,8 +149,8 @@ void MemAccessRangesBuilder::process_workItem(WorkItem* item) {
         //           << ", " << finalDims.size() << "D: [\n";
         // for (size_t i = 0; i < finalDims.size(); ++i) {
         //     const auto& dim = finalDims[i];
-        //     std::cout << "\t(" << (dim.first != SymEngine::null? dim.first->__str__() : "null") 
-        //               << " .. " << (dim.second != SymEngine::null? dim.second->__str__() : "null") << ")";
+        //     std::cout << "\t(" << (!dim.first.is_null()? dim.first->__str__() : "null") 
+        //               << " .. " << (!dim.second.is_null()? dim.second->__str__() : "null") << ")";
         //     std::cout << "\n";
         // }
         // std::cout << "]" << std::endl;
@@ -192,15 +180,23 @@ void MemAccessRangesBuilder::process_direct_users(WorkItem* item, const std::str
             auto subsetDims = subset.size();
             item->dims.reserve(subsetDims);
             for (size_t i = item->dims.size(); i < subsetDims; ++i) {
-                item->dims.emplace_back(std::pair<std::vector<symbolic::Expression>, std::vector<symbolic::Expression>>());
+                item->dims.emplace_back(std::make_tuple<std::vector<symbolic::Expression>, bool, std::vector<symbolic::Expression>, bool>({}, false, {}, false));
             }
             int dimIdx = 0;
             for (auto& dim : subset) {
                 auto lb = symbolic::minimum(dim, params, assums);
                 auto ub = symbolic::maximum(dim, params, assums);
 
-                item->dims[dimIdx].first.push_back(lb);
-                item->dims[dimIdx].second.push_back(ub);
+                if (lb.is_null()) {
+                    std::get<1>(item->dims[dimIdx]) = true;
+                } else {
+                    std::get<0>(item->dims[dimIdx]).push_back(lb);
+                }
+                if (ub.is_null()) {
+                    std::get<3>(item->dims[dimIdx]) = true;
+                } else {
+                    std::get<2>(item->dims[dimIdx]).push_back(ub);
+                }
 
                 ++dimIdx;
             }

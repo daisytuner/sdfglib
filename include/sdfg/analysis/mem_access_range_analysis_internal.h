@@ -20,7 +20,7 @@ struct WorkItem {
     bool saw_write = false;
     bool undefined = false;
     WorkItem* will_complete;
-    std::vector<std::pair<std::vector<symbolic::Expression>, std::vector<symbolic::Expression>>> dims;
+    std::vector<std::tuple<std::vector<symbolic::Expression>, bool, std::vector<symbolic::Expression>, bool>> dims;
 
     WorkItem(const std::string* var_name)
         : var_name(var_name), will_complete(nullptr) {}

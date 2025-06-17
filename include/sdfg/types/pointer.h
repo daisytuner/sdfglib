@@ -11,6 +11,11 @@ class Pointer : public IType {
     std::unique_ptr<IType> pointee_type_;
 
    public:
+    /**
+     * WARNING: This is less specific than the COPY-constructor, which still EXISTS and behaves differently!
+     *
+     * @param pointee_type The type of the object pointed to by this pointer.
+    */
     Pointer(const IType& pointee_type);
 
     Pointer(StorageType storage_type, size_t alignment, const std::string& initializer,
