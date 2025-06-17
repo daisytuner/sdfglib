@@ -152,6 +152,7 @@ set(SOURCE_FILES
 add_library(sdfglib
     ${SOURCE_FILES}
 )
+add_library(sdfglib::sdfglib ALIAS sdfglib)
 target_include_directories(sdfglib
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
