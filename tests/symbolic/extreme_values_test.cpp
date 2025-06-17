@@ -1,6 +1,8 @@
 #include "sdfg/symbolic/extreme_values.h"
 
 #include <gtest/gtest.h>
+#include <iostream>
+#include "sdfg/symbolic/symbolic.h"
 
 using namespace sdfg;
 
@@ -222,4 +224,50 @@ TEST(ExtremeValuesTest, Min_Symbolic) {
 
     auto max = symbolic::maximum(expr, {N, M, N_, M_}, assums);
     EXPECT_TRUE(symbolic::eq(max, symbolic::max(M, M_)));
+}
+
+TEST(ExtremeValuesTest, Recursive_Assumptions) {
+    auto i = symbolic::symbol("i");
+    auto i_init = symbolic::symbol("i_init");
+    auto i_end_ex = symbolic::symbol("i_end_ex");
+    auto j = symbolic::symbol("j");
+    auto j_init = symbolic::symbol("j_init");
+
+    auto lb_i = symbolic::symbol("i_init");
+    auto ub_i = symbolic::symbol("i_end_ex");
+
+    auto lb_i_init = symbolic::integer(0);
+    auto ub_i_init = symbolic::integer(0);
+
+    auto lb_j = symbolic::symbol("j_init");
+    auto ub_j = symbolic::symbol("j_end_ex");
+
+    symbolic::Assumption assum_i = symbolic::Assumption(i);
+    assum_i.lower_bound(lb_i);
+    assum_i.upper_bound(ub_i);
+
+    symbolic::Assumption assum_i_init = symbolic::Assumption(i_init);
+    assum_i_init.lower_bound(lb_i_init);
+    assum_i_init.upper_bound(ub_i_init);
+
+    symbolic::Assumption assum_j = symbolic::Assumption(j);
+    assum_j.lower_bound(lb_j);
+    assum_j.upper_bound(ub_j);
+
+    auto assumptions = symbolic::Assumptions {
+        {i, assum_i},
+        {i_init, assum_i_init},
+        {j, assum_j}
+    };
+
+    auto parameters = symbolic::SymbolSet { i_end_ex };
+
+    auto i_min = symbolic::minimum(i, parameters, assumptions);
+    EXPECT_TRUE(symbolic::eq(i_min, symbolic::integer(0)));
+    auto i_max = symbolic::maximum(i, parameters, assumptions);
+    std::cout << "i_max: " << i_max->__str__() << std::endl;
+    EXPECT_TRUE(symbolic::eq(i_max, i_end_ex));
+
+    auto j_min = symbolic::minimum(j, parameters, assumptions);
+    EXPECT_TRUE(j_min.is_null());
 }
