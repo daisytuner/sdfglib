@@ -103,8 +103,8 @@ class SDFGBuilder : public FunctionBuilder {
 
         auto& dataflow = state.dataflow();
         auto vertex = boost::add_vertex(dataflow.graph_);
-        auto node = std::unique_ptr<T>(
-            new T(debug_info, vertex, dataflow, code, outputs, inputs, side_effect));
+        auto node = std::unique_ptr<T>(new T(this->new_element_id(), debug_info, vertex, dataflow,
+                                             code, outputs, inputs, side_effect));
         auto res = dataflow.nodes_.insert({vertex, std::move(node)});
 
         return static_cast<data_flow::LibraryNode&>(*(res.first->second));

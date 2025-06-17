@@ -499,7 +499,7 @@ std::vector<std::pair<std::string, types::Scalar>> JSONSerializer::json_to_argum
 void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
                                       builder::StructuredSDFGBuilder& builder,
                                       structured_control_flow::Block& parent) {
-    std::unordered_map<std::string, data_flow::DataFlowNode&> nodes_map;
+    std::unordered_map<size_t, data_flow::DataFlowNode&> nodes_map;
 
     assert(j.contains("nodes"));
     assert(j["nodes"].is_array());
@@ -507,7 +507,7 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
         assert(node.contains("type"));
         assert(node["type"].is_string());
         assert(node.contains("element_id"));
-        assert(node["element_id"].is_string());
+        assert(node["element_id"].is_number_integer());
         std::string type = node["type"];
         if (type == "tasklet") {
             assert(node.contains("code"));
@@ -561,9 +561,9 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
     assert(j["edges"].is_array());
     for (const auto& edge : j["edges"]) {
         assert(edge.contains("src"));
-        assert(edge["src"].is_string());
+        assert(edge["src"].is_number_integer());
         assert(edge.contains("dst"));
-        assert(edge["dst"].is_string());
+        assert(edge["dst"].is_number_integer());
         assert(edge.contains("src_conn"));
         assert(edge["src_conn"].is_string());
         assert(edge.contains("dst_conn"));
