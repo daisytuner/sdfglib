@@ -174,10 +174,6 @@ class DataFlowGraph {
 
     const std::pair<size_t, const std::unordered_map<const data_flow::DataFlowNode*, size_t>>
     weakly_connected_components() const;
-
-    /***** Section: Serialization *****/
-
-    std::unique_ptr<DataFlowGraph> clone() const;
 };
 
 }  // namespace data_flow

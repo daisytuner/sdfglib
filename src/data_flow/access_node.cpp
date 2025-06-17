@@ -13,10 +13,10 @@ const std::string& AccessNode::data() const { return this->data_; };
 
 std::string& AccessNode::data() { return this->data_; };
 
-std::unique_ptr<DataFlowNode> AccessNode::clone(const graph::Vertex vertex,
+std::unique_ptr<DataFlowNode> AccessNode::clone(size_t element_id, const graph::Vertex vertex,
                                                 DataFlowGraph& parent) const {
     return std::unique_ptr<AccessNode>(
-        new AccessNode(this->element_id_, this->debug_info_, vertex, parent, this->data_));
+        new AccessNode(element_id, this->debug_info_, vertex, parent, this->data_));
 };
 
 void AccessNode::replace(const symbolic::Expression& old_expression,

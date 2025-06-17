@@ -23,8 +23,6 @@ class Block : public ControlFlowNode {
 
     Block(size_t element_id, const DebugInfo& debug_info);
 
-    Block(size_t element_id, const DebugInfo& debug_info, const data_flow::DataFlowGraph& dataflow);
-
    public:
     Block(const Block& block) = delete;
     Block& operator=(const Block&) = delete;

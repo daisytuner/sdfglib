@@ -10,12 +10,6 @@ Block::Block(size_t element_id, const DebugInfo& debug_info)
     this->dataflow_ = std::make_unique<data_flow::DataFlowGraph>();
 };
 
-Block::Block(size_t element_id, const DebugInfo& debug_info,
-             const data_flow::DataFlowGraph& dataflow)
-    : ControlFlowNode(element_id, debug_info) {
-    this->dataflow_ = dataflow.clone();
-};
-
 const data_flow::DataFlowGraph& Block::dataflow() const { return *this->dataflow_; };
 
 data_flow::DataFlowGraph& Block::dataflow() { return *this->dataflow_; };

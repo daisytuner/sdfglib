@@ -51,6 +51,8 @@ class StructuredSDFGBuilder : public FunctionBuilder {
         const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree,
         std::unordered_set<const control_flow::State*>& visited);
 
+    void add_dataflow(const data_flow::DataFlowGraph& from, Block& to);
+
    protected:
     Function& function() const override;
 

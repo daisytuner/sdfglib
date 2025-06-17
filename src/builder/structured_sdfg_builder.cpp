@@ -413,15 +413,16 @@ Block& StructuredSDFGBuilder::add_block(Sequence& parent,
                                         const data_flow::DataFlowGraph& data_flow_graph,
                                         const sdfg::control_flow::Assignments& assignments,
                                         const DebugInfo& debug_info) {
-    // TODO: DataFlowGraph clone destroys element ids
     parent.children_.push_back(
-        std::unique_ptr<Block>(new Block(this->new_element_id(), debug_info, data_flow_graph)));
+        std::unique_ptr<Block>(new Block(this->new_element_id(), debug_info)));
 
     parent.transitions_.push_back(std::unique_ptr<Transition>(
         new Transition(this->new_element_id(), debug_info, parent, assignments)));
 
     auto& new_block = dynamic_cast<structured_control_flow::Block&>(*parent.children_.back().get());
     (*new_block.dataflow_).parent_ = &new_block;
+
+    this->add_dataflow(data_flow_graph, new_block);
 
     return new_block;
 };
@@ -465,9 +466,8 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_before(
     }
     assert(index > -1);
 
-    parent.children_.insert(
-        parent.children_.begin() + index,
-        std::unique_ptr<Block>(new Block(this->new_element_id(), debug_info, data_flow_graph)));
+    parent.children_.insert(parent.children_.begin() + index,
+                            std::unique_ptr<Block>(new Block(this->new_element_id(), debug_info)));
 
     parent.transitions_.insert(
         parent.transitions_.begin() + index,
@@ -476,6 +476,8 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_before(
     auto new_entry = parent.at(index);
     auto& new_block = dynamic_cast<structured_control_flow::Block&>(new_entry.first);
     (*new_block.dataflow_).parent_ = &new_block;
+
+    this->add_dataflow(data_flow_graph, new_block);
 
     return {new_block, new_entry.second};
 };
@@ -519,9 +521,8 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_after(
     }
     assert(index > -1);
 
-    parent.children_.insert(
-        parent.children_.begin() + index + 1,
-        std::unique_ptr<Block>(new Block(this->new_element_id(), debug_info, data_flow_graph)));
+    parent.children_.insert(parent.children_.begin() + index + 1,
+                            std::unique_ptr<Block>(new Block(this->new_element_id(), debug_info)));
 
     parent.transitions_.insert(
         parent.transitions_.begin() + index + 1,
@@ -530,6 +531,8 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_after(
     auto new_entry = parent.at(index + 1);
     auto& new_block = dynamic_cast<structured_control_flow::Block&>(new_entry.first);
     (*new_block.dataflow_).parent_ = &new_block;
+
+    this->add_dataflow(data_flow_graph, new_block);
 
     return {new_block, new_entry.second};
 };
@@ -1261,6 +1264,29 @@ data_flow::AccessNode& StructuredSDFGBuilder::symbolic_expression_to_dataflow(
         return output_node;
     } else {
         throw std::runtime_error("Unsupported expression type");
+    }
+};
+
+void StructuredSDFGBuilder::add_dataflow(const data_flow::DataFlowGraph& from, Block& to) {
+    auto& to_dataflow = to.dataflow();
+
+    std::unordered_map<graph::Vertex, graph::Vertex> node_mapping;
+    for (auto& entry : from.nodes_) {
+        auto vertex = boost::add_vertex(to_dataflow.graph_);
+        to_dataflow.nodes_.insert(
+            {vertex, entry.second->clone(this->new_element_id(), vertex, to_dataflow)});
+        node_mapping.insert({entry.first, vertex});
+    }
+
+    for (auto& entry : from.edges_) {
+        auto src = node_mapping[entry.second->src().vertex()];
+        auto dst = node_mapping[entry.second->dst().vertex()];
+
+        auto edge = boost::add_edge(src, dst, to_dataflow.graph_);
+
+        to_dataflow.edges_.insert(
+            {edge.first, entry.second->clone(this->new_element_id(), edge.first, to_dataflow,
+                                             *to_dataflow.nodes_[src], *to_dataflow.nodes_[dst])});
     }
 };
 

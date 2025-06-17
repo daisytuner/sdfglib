@@ -43,7 +43,7 @@ class BarrierLocalNode : public LibraryNode {
 
     bool needs_connector(size_t index) const override;
 
-    std::unique_ptr<DataFlowNode> clone(const graph::Vertex vertex,
+    std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex,
                                         DataFlowGraph& parent) const override;
 
     void replace(const symbolic::Expression& old_expression,

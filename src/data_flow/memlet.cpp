@@ -39,10 +39,11 @@ const Subset Memlet::subset() const { return this->subset_; };
 
 Subset& Memlet::subset() { return this->subset_; };
 
-std::unique_ptr<Memlet> Memlet::clone(const graph::Edge& edge, const DataFlowGraph& parent,
-                                      DataFlowNode& src, DataFlowNode& dst) const {
-    return std::unique_ptr<Memlet>(new Memlet(this->element_id_, this->debug_info_, edge, parent,
-                                              src, this->src_conn_, dst, this->dst_conn_,
+std::unique_ptr<Memlet> Memlet::clone(size_t element_id, const graph::Edge& edge,
+                                      const DataFlowGraph& parent, DataFlowNode& src,
+                                      DataFlowNode& dst) const {
+    return std::unique_ptr<Memlet>(new Memlet(element_id, this->debug_info_, edge, parent, src,
+                                              this->src_conn_, dst, this->dst_conn_,
                                               this->subset_));
 };
 

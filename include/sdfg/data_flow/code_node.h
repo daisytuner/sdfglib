@@ -27,7 +27,7 @@ class CodeNode : public DataFlowNode {
 
     virtual bool needs_connector(size_t index) const = 0;
 
-    virtual std::unique_ptr<DataFlowNode> clone(const graph::Vertex vertex,
+    virtual std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex,
                                                 DataFlowGraph& parent) const = 0;
 };
 }  // namespace data_flow

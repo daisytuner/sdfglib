@@ -34,10 +34,10 @@ bool BarrierLocalNode::needs_connector(size_t index) const {
     return false;
 };
 
-std::unique_ptr<DataFlowNode> BarrierLocalNode::clone(const graph::Vertex vertex,
+std::unique_ptr<DataFlowNode> BarrierLocalNode::clone(size_t element_id, const graph::Vertex vertex,
                                                       DataFlowGraph& parent) const {
     return std::unique_ptr<BarrierLocalNode>(
-        new BarrierLocalNode(this->element_id_, this->debug_info_, vertex, parent, this->code_,
+        new BarrierLocalNode(element_id, this->debug_info_, vertex, parent, this->code_,
                              this->outputs_, this->inputs_, this->side_effect_));
 };
 

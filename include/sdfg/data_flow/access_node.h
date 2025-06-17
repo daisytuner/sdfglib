@@ -30,7 +30,7 @@ class AccessNode : public DataFlowNode {
 
     std::string& data();
 
-    virtual std::unique_ptr<DataFlowNode> clone(const graph::Vertex vertex,
+    virtual std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex,
                                                 DataFlowGraph& parent) const override;
 
     void replace(const symbolic::Expression& old_expression,
