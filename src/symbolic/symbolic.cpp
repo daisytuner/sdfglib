@@ -146,7 +146,9 @@ SymbolSet atoms(const Expression& expr) {
     return atoms;
 };
 
-ExpressionSet muls(const Expression& expr) { return SymEngine::atoms<const SymEngine::Mul>(*expr); };
+ExpressionSet muls(const Expression& expr) {
+    return SymEngine::atoms<const SymEngine::Mul>(*expr);
+};
 
 Expression subs(const Expression& expr, const Expression& old_expr, const Expression& new_expr) {
     SymEngine::map_basic_basic d;
@@ -161,62 +163,6 @@ Condition subs(const Condition& expr, const Expression& old_expr, const Expressi
 
     return SymEngine::rcp_static_cast<const SymEngine::Boolean>(expr->subs(d));
 };
-
-Condition rearrange_simple_condition(const Condition& inequality, const Symbol& target_symbol) {
-    Expression lhs;
-    Expression rhs;
-
-    // Check if the inequality is a StrictLessThan
-    if (SymEngine::is_a<SymEngine::StrictLessThan>(*inequality)) {
-        auto lt_expr = SymEngine::rcp_dynamic_cast<const SymEngine::StrictLessThan>(inequality);
-        lhs = lt_expr->get_arg1();
-        rhs = lt_expr->get_arg2();
-    } else if (SymEngine::is_a<SymEngine::LessThan>(*inequality)) {
-        auto lt_expr = SymEngine::rcp_dynamic_cast<const SymEngine::LessThan>(inequality);
-        lhs = lt_expr->get_arg1();
-        rhs = lt_expr->get_arg2();
-    } else if (SymEngine::is_a<SymEngine::Equality>(*inequality)) {
-        auto gt_expr = SymEngine::rcp_dynamic_cast<const SymEngine::Equality>(inequality);
-        lhs = gt_expr->get_arg1();
-        rhs = gt_expr->get_arg2();
-    } else {
-        return inequality;  // Return original if not a strict less than
-    }
-
-    // Check if the target_symbol is part of an Add on the LHS
-    if (SymEngine::is_a<SymEngine::Add>(*lhs)) {
-        Expression add_expr = SymEngine::rcp_static_cast<const SymEngine::Add>(lhs);
-
-        bool term_with_exactly_one_symbol = false;
-
-        for (auto& term : add_expr->get_args()) {
-            if (SymEngine::is_a<SymEngine::Symbol>(*term)) {
-                auto symbol_term = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(term);
-                if (eq(symbol_term, target_symbol) && !term_with_exactly_one_symbol) {
-                    term_with_exactly_one_symbol = true;
-                } else if (eq(symbol_term, target_symbol) && term_with_exactly_one_symbol) {
-                    return inequality;  // More than one symbol in the term
-                }
-            }
-        }
-
-        if (SymEngine::is_a<SymEngine::StrictLessThan>(*inequality)) {
-            return symbolic::Lt(target_symbol,
-                                symbolic::sub(rhs, subs(lhs, target_symbol, zero())));
-        } else if (SymEngine::is_a<SymEngine::LessThan>(*inequality)) {
-            return symbolic::Le(target_symbol,
-                                symbolic::sub(rhs, subs(lhs, target_symbol, zero())));
-        } else if (SymEngine::is_a<SymEngine::Equality>(*inequality)) {
-            return symbolic::Eq(target_symbol,
-                                symbolic::sub(rhs, subs(lhs, target_symbol, zero())));
-        }
-    }
-    // More complex cases (multiplication, division, other functions) would need more logic here
-    // e.g., if lhs is Mul(2, i) < N => i < N/2
-    //       if lhs is Mul(-1, i) < N => i > -N (reverse inequality)
-
-    return inequality;  // Return original if rearrangement is not handled
-}
 
 /***** NV Symbols *****/
 

@@ -7,465 +7,308 @@
 
 using namespace sdfg;
 
-TEST(For2MapTest, Simple) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+TEST(For2MapTest, Basic) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
-    types::Scalar desc_element(types::PrimitiveType::Double);
-    types::Scalar desc_element2(types::PrimitiveType::Int32);
-    types::Array desc_array(desc_element, symbolic::integer(10));
-    builder.add_container("A", desc_array);
-    builder.add_container("B", desc_element);
-    builder.add_container("i", desc_element2);
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
 
-    auto& loop = builder.add_for(builder.subject().root(), symbolic::symbol("i"),
-                                 symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-                                 symbolic::integer(0),
-                                 symbolic::add(symbolic::symbol("i"), symbolic::integer(1)));
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+    builder.add_container("A", desc, true);
+    builder.add_container("B", desc, true);
 
-    auto& block = builder.add_block(loop.root());
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", desc_element}, {{"_in", desc_element}});
-    auto& input_node = builder.add_access(block, "B");
-    auto& output_node = builder.add_access(block, "A");
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::symbol("i")});
+    // Define loop
+    auto bound = symbolic::symbol("N");
+    auto indvar = symbolic::symbol("i");
+    auto init = symbolic::integer(0);
+    auto condition = symbolic::Lt(indvar, bound);
+    auto update = symbolic::add(indvar, symbolic::integer(1));
 
-    auto sdfg = builder.move();
+    auto& loop = builder.add_for(root, indvar, condition, init, update);
+    auto& body = loop.root();
 
-    EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->root().size(), 1);
+    // Add computation
+    auto& block = builder.add_block(body);
+    auto& a = builder.add_access(block, "A");
+    auto& b = builder.add_access(block, "B");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
+                                        {{"_in", base_desc}});
+    builder.add_memlet(block, a, "void", tasklet, "_in", {indvar});
+    builder.add_memlet(block, tasklet, "_out", b, "void", {indvar});
 
-    // Fusion
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    // Analysis
+    auto sdfg_opt = builder.move();
+    builder::StructuredSDFGBuilder builder_opt(sdfg_opt);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
     passes::For2MapPass conversion_pass;
     EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
 
-    sdfg = builder_opt.move();
-    EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->root().size(), 2);
+    auto& sdfg_map = builder_opt.subject();
 
-    EXPECT_TRUE(dynamic_cast<const structured_control_flow::Map*>(&sdfg->root().at(0).first) !=
-                nullptr);
-    auto map = dynamic_cast<const structured_control_flow::Map*>(&sdfg->root().at(0).first);
-    EXPECT_TRUE(symbolic::eq(map->num_iterations(), symbolic::integer(10)));
+    // Check
+    auto map = dynamic_cast<const structured_control_flow::Map*>(&sdfg_map.root().at(0).first);
+    EXPECT_TRUE(map != nullptr);
+    EXPECT_TRUE(symbolic::eq(map->num_iterations(), symbolic::symbol("N")));
     EXPECT_TRUE(symbolic::eq(map->indvar(), symbolic::symbol("i")));
-
-    EXPECT_EQ(map->root().size(), 1);
-    EXPECT_TRUE(dynamic_cast<const structured_control_flow::Block*>(&map->root().at(0).first) !=
-                nullptr);
-    auto block2 = dynamic_cast<const structured_control_flow::Block*>(&map->root().at(0).first);
-    EXPECT_EQ(block2->dataflow().nodes().size(), 3);
-    EXPECT_EQ(block2->dataflow().edges().size(), 2);
-
-    bool found_input = false;
-    bool found_output = false;
-    bool found_tasklet = false;
-    for (const auto& node : block2->dataflow().nodes()) {
-        if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
-            if (access_node->data() == "A") {
-                found_input = true;
-            } else if (access_node->data() == "B") {
-                found_output = true;
-            }
-        } else if (auto tasklet_node = dynamic_cast<const data_flow::Tasklet*>(&node)) {
-            EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::assign);
-            found_tasklet = true;
-        }
-    }
-    EXPECT_TRUE(found_input);
-    EXPECT_TRUE(found_output);
-    EXPECT_TRUE(found_tasklet);
-
-    // Check the memlets
-    bool found_memlet_input = false;
-    bool found_memlet_output = false;
-    for (const auto& edge : block2->dataflow().edges()) {
-        if (edge.src_conn() == "void" && edge.dst_conn() == "_in") {
-            found_memlet_input = true;
-            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.src()) != nullptr);
-            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.src());
-            EXPECT_EQ(access_node->data(), "B");
-            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.dst()) != nullptr);
-        } else if (edge.src_conn() == "_out" && edge.dst_conn() == "void") {
-            found_memlet_output = true;
-            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.dst()) != nullptr);
-            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.dst());
-            EXPECT_EQ(access_node->data(), "A");
-            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.src()) != nullptr);
-            EXPECT_EQ(edge.subset().size(), 1);
-            EXPECT_TRUE(symbolic::eq(edge.subset().at(0), symbolic::symbol("i")));
-        }
-    }
-    EXPECT_TRUE(found_memlet_input);
-    EXPECT_TRUE(found_memlet_output);
 }
 
-/*
-TEST(For2MapTest, Strided) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+TEST(For2MapTest, MultiBound) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
-    types::Scalar desc_element(types::PrimitiveType::Double);
-    types::Scalar desc_element2(types::PrimitiveType::Int32);
-    types::Array desc_array(desc_element, symbolic::integer(10));
-    builder.add_container("A", desc_array);
-    builder.add_container("B", desc_element);
-    builder.add_container("i", desc_element2);
-    builder.add_container("n", desc_element2);
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
 
-    auto& loop = builder.add_for(builder.subject().root(), symbolic::symbol("i"),
-                                 symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-                                 symbolic::integer(0),
-                                 symbolic::add(symbolic::symbol("i"), symbolic::symbol("n")));
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+    builder.add_container("A", desc, true);
+    builder.add_container("B", desc, true);
 
-    auto& block = builder.add_block(loop.root());
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("M", sym_desc, true);
+    builder.add_container("i", sym_desc);
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", desc_element}, {{"_in", desc_element}});
-    auto& input_node = builder.add_access(block, "B");
-    auto& output_node = builder.add_access(block, "A");
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::symbol("i")});
+    // Define loop
+    auto bound = symbolic::symbol("N");
+    auto indvar = symbolic::symbol("i");
+    auto init = symbolic::integer(0);
+    auto condition =
+        symbolic::And(symbolic::Lt(indvar, bound), symbolic::Le(indvar, symbolic::symbol("M")));
+    auto update = symbolic::add(indvar, symbolic::integer(1));
 
-    auto sdfg = builder.move();
+    auto& loop = builder.add_for(root, indvar, condition, init, update);
+    auto& body = loop.root();
 
-    EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->root().size(), 1);
+    // Add computation
+    auto& block = builder.add_block(body);
+    auto& a = builder.add_access(block, "A");
+    auto& b = builder.add_access(block, "B");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
+                                        {{"_in", base_desc}});
+    builder.add_memlet(block, a, "void", tasklet, "_in", {indvar});
+    builder.add_memlet(block, tasklet, "_out", b, "void", {indvar});
 
-    // Fusion
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    // Analysis
+    auto sdfg_opt = builder.move();
+    builder::StructuredSDFGBuilder builder_opt(sdfg_opt);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
     passes::For2MapPass conversion_pass;
     EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
 
-    sdfg = builder_opt.move();
-    EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->root().size(), 2);
+    auto& sdfg_map = builder_opt.subject();
 
-    EXPECT_TRUE(dynamic_cast<const structured_control_flow::Map*>(&sdfg->root().at(0).first) !=
-                nullptr);
-    auto map = dynamic_cast<const structured_control_flow::Map*>(&sdfg->root().at(0).first);
-    EXPECT_TRUE(
-        symbolic::eq(map->num_iterations(),
-                     symbolic::ceil(symbolic::div(symbolic::integer(10), symbolic::symbol("n")))));
-    EXPECT_TRUE(symbolic::eq(map->indvar(), symbolic::symbol("i")));
-
-    EXPECT_EQ(map->root().size(), 1);
-    EXPECT_TRUE(dynamic_cast<const structured_control_flow::Block*>(&map->root().at(0).first) !=
-                nullptr);
-    auto block2 = dynamic_cast<const structured_control_flow::Block*>(&map->root().at(0).first);
-    EXPECT_EQ(block2->dataflow().nodes().size(), 3);
-    EXPECT_EQ(block2->dataflow().edges().size(), 2);
-
-    bool found_input = false;
-    bool found_output = false;
-    bool found_tasklet = false;
-    for (const auto& node : block2->dataflow().nodes()) {
-        if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
-            if (access_node->data() == "A") {
-                found_input = true;
-            } else if (access_node->data() == "B") {
-                found_output = true;
-            }
-        } else if (auto tasklet_node = dynamic_cast<const data_flow::Tasklet*>(&node)) {
-            EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::assign);
-            found_tasklet = true;
-        }
-    }
-    EXPECT_TRUE(found_input);
-    EXPECT_TRUE(found_output);
-    EXPECT_TRUE(found_tasklet);
-
-    // Check the memlets
-    bool found_memlet_input = false;
-    bool found_memlet_output = false;
-    for (const auto& edge : block2->dataflow().edges()) {
-        if (edge.src_conn() == "void" && edge.dst_conn() == "_in") {
-            found_memlet_input = true;
-            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.src()) != nullptr);
-            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.src());
-            EXPECT_EQ(access_node->data(), "B");
-            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.dst()) != nullptr);
-        } else if (edge.src_conn() == "_out" && edge.dst_conn() == "void") {
-            found_memlet_output = true;
-            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.dst()) != nullptr);
-            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.dst());
-            EXPECT_EQ(access_node->data(), "A");
-            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.src()) != nullptr);
-            EXPECT_EQ(edge.subset().size(), 1);
-            EXPECT_TRUE(symbolic::eq(edge.subset().at(0),
-                                     symbolic::mul(symbolic::symbol("n"), symbolic::symbol("i"))));
-        }
-    }
-    EXPECT_TRUE(found_memlet_input);
-    EXPECT_TRUE(found_memlet_output);
-}
-*/
-
-TEST(For2MapTest, Init) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    types::Scalar desc_element(types::PrimitiveType::Double);
-    types::Scalar desc_element2(types::PrimitiveType::Int32);
-    types::Array desc_array(desc_element, symbolic::integer(10));
-    builder.add_container("A", desc_array);
-    builder.add_container("B", desc_element);
-    builder.add_container("i", desc_element2);
-
-    auto& loop = builder.add_for(builder.subject().root(), symbolic::symbol("i"),
-                                 symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-                                 symbolic::integer(2),
-                                 symbolic::add(symbolic::symbol("i"), symbolic::integer(1)));
-
-    auto& block = builder.add_block(loop.root());
-
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", desc_element}, {{"_in", desc_element}});
-    auto& input_node = builder.add_access(block, "B");
-    auto& output_node = builder.add_access(block, "A");
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::symbol("i")});
-
-    auto sdfg = builder.move();
-
-    EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->root().size(), 1);
-
-    // Fusion
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::For2MapPass conversion_pass;
-    EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
-
-    sdfg = builder_opt.move();
-    EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->root().size(), 2);
-
-    EXPECT_TRUE(dynamic_cast<const structured_control_flow::Map*>(&sdfg->root().at(0).first) !=
-                nullptr);
-    auto map = dynamic_cast<const structured_control_flow::Map*>(&sdfg->root().at(0).first);
-    EXPECT_TRUE(symbolic::eq(map->num_iterations(), symbolic::integer(8)));
-    EXPECT_TRUE(symbolic::eq(map->indvar(), symbolic::symbol("i")));
-
-    EXPECT_EQ(map->root().size(), 1);
-    EXPECT_TRUE(dynamic_cast<const structured_control_flow::Block*>(&map->root().at(0).first) !=
-                nullptr);
-    auto block2 = dynamic_cast<const structured_control_flow::Block*>(&map->root().at(0).first);
-    EXPECT_EQ(block2->dataflow().nodes().size(), 3);
-    EXPECT_EQ(block2->dataflow().edges().size(), 2);
-
-    bool found_input = false;
-    bool found_output = false;
-    bool found_tasklet = false;
-    for (const auto& node : block2->dataflow().nodes()) {
-        if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
-            if (access_node->data() == "A") {
-                found_input = true;
-            } else if (access_node->data() == "B") {
-                found_output = true;
-            }
-        } else if (auto tasklet_node = dynamic_cast<const data_flow::Tasklet*>(&node)) {
-            EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::assign);
-            found_tasklet = true;
-        }
-    }
-    EXPECT_TRUE(found_input);
-    EXPECT_TRUE(found_output);
-    EXPECT_TRUE(found_tasklet);
-
-    // Check the memlets
-    bool found_memlet_input = false;
-    bool found_memlet_output = false;
-    for (const auto& edge : block2->dataflow().edges()) {
-        if (edge.src_conn() == "void" && edge.dst_conn() == "_in") {
-            found_memlet_input = true;
-            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.src()) != nullptr);
-            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.src());
-            EXPECT_EQ(access_node->data(), "B");
-            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.dst()) != nullptr);
-        } else if (edge.src_conn() == "_out" && edge.dst_conn() == "void") {
-            found_memlet_output = true;
-            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.dst()) != nullptr);
-            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.dst());
-            EXPECT_EQ(access_node->data(), "A");
-            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.src()) != nullptr);
-            EXPECT_EQ(edge.subset().size(), 1);
-            EXPECT_TRUE(symbolic::eq(edge.subset().at(0),
-                                     symbolic::add(symbolic::integer(2), symbolic::symbol("i"))));
-        }
-    }
-    EXPECT_TRUE(found_memlet_input);
-    EXPECT_TRUE(found_memlet_output);
-}
-
-TEST(For2MapTest, Bound) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    types::Scalar desc_element(types::PrimitiveType::Double);
-    types::Scalar desc_element2(types::PrimitiveType::Int32);
-    types::Array desc_array(desc_element, symbolic::integer(10));
-    builder.add_container("A", desc_array);
-    builder.add_container("B", desc_element);
-    builder.add_container("i", desc_element2);
-    builder.add_container("n", desc_element2);
-
-    auto& loop = builder.add_for(
-        builder.subject().root(), symbolic::symbol("i"),
-        symbolic::Lt(symbolic::add(symbolic::symbol("i"), symbolic::symbol("n")),
-                     symbolic::integer(10)),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)));
-
-    auto& block = builder.add_block(loop.root());
-
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", desc_element}, {{"_in", desc_element}});
-    auto& input_node = builder.add_access(block, "B");
-    auto& output_node = builder.add_access(block, "A");
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::symbol("i")});
-
-    auto sdfg = builder.move();
-
-    EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->root().size(), 1);
-
-    // Fusion
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::For2MapPass conversion_pass;
-    EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
-
-    sdfg = builder_opt.move();
-    EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->root().size(), 2);
-
-    EXPECT_TRUE(dynamic_cast<const structured_control_flow::Map*>(&sdfg->root().at(0).first) !=
-                nullptr);
-    auto map = dynamic_cast<const structured_control_flow::Map*>(&sdfg->root().at(0).first);
+    // Check
+    auto map = dynamic_cast<const structured_control_flow::Map*>(&sdfg_map.root().at(0).first);
+    EXPECT_TRUE(map != nullptr);
     EXPECT_TRUE(symbolic::eq(map->num_iterations(),
-                             symbolic::sub(symbolic::integer(10), symbolic::symbol("n"))));
+                             symbolic::min(symbolic::symbol("N"),
+                                           symbolic::add(symbolic::symbol("M"), symbolic::one()))));
+    EXPECT_TRUE(symbolic::eq(map->indvar(), symbolic::symbol("i")));
+}
+
+TEST(For2MapTest, NonContiguous) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+    builder.add_container("A", desc, true);
+    builder.add_container("B", desc, true);
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+
+    // Define loop
+    auto bound = symbolic::symbol("N");
+    auto indvar = symbolic::symbol("i");
+    auto init = symbolic::integer(0);
+    auto condition = symbolic::Lt(indvar, bound);
+    auto update = symbolic::add(indvar, symbolic::integer(2));
+
+    auto& loop = builder.add_for(root, indvar, condition, init, update);
+    auto& body = loop.root();
+
+    // Add computation
+    auto& block = builder.add_block(body);
+    auto& a = builder.add_access(block, "A");
+    auto& b = builder.add_access(block, "B");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
+                                        {{"_in", base_desc}});
+    builder.add_memlet(block, a, "void", tasklet, "_in", {indvar});
+    builder.add_memlet(block, tasklet, "_out", b, "void", {indvar});
+
+    // Analysis
+    auto sdfg_opt = builder.move();
+    builder::StructuredSDFGBuilder builder_opt(sdfg_opt);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::For2MapPass conversion_pass;
+    EXPECT_FALSE(conversion_pass.run(builder_opt, analysis_manager));
+}
+
+TEST(For2MapTest, NonCanonicalBound) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+    builder.add_container("A", desc, true);
+    builder.add_container("B", desc, true);
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+
+    // Define loop
+    auto bound = symbolic::symbol("N");
+    auto indvar = symbolic::symbol("i");
+    auto init = symbolic::integer(0);
+    auto condition = symbolic::Ge(indvar, bound);
+    auto update = symbolic::add(indvar, symbolic::integer(1));
+
+    auto& loop = builder.add_for(root, indvar, condition, init, update);
+    auto& body = loop.root();
+
+    // Add computation
+    auto& block = builder.add_block(body);
+    auto& a = builder.add_access(block, "A");
+    auto& b = builder.add_access(block, "B");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
+                                        {{"_in", base_desc}});
+    builder.add_memlet(block, a, "void", tasklet, "_in", {indvar});
+    builder.add_memlet(block, tasklet, "_out", b, "void", {indvar});
+
+    // Analysis
+    auto sdfg_opt = builder.move();
+    builder::StructuredSDFGBuilder builder_opt(sdfg_opt);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::For2MapPass conversion_pass;
+    EXPECT_FALSE(conversion_pass.run(builder_opt, analysis_manager));
+}
+
+TEST(For2MapTest, Shift) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+    builder.add_container("A", desc, true);
+    builder.add_container("B", desc, true);
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+
+    // Define loop
+    auto bound = symbolic::symbol("N");
+    auto indvar = symbolic::symbol("i");
+    auto init = symbolic::one();
+    auto condition = symbolic::Lt(indvar, bound);
+    auto update = symbolic::add(indvar, symbolic::integer(1));
+
+    auto& loop = builder.add_for(root, indvar, condition, init, update);
+    auto& body = loop.root();
+
+    // Add computation
+    auto& block = builder.add_block(body);
+    auto& a = builder.add_access(block, "A");
+    auto& b = builder.add_access(block, "B");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
+                                        {{"_in", base_desc}});
+    auto& memlet_1 = builder.add_memlet(block, a, "void", tasklet, "_in", {indvar});
+    auto& memlet_2 = builder.add_memlet(block, tasklet, "_out", b, "void", {indvar});
+
+    // Analysis
+    auto sdfg_opt = builder.move();
+    builder::StructuredSDFGBuilder builder_opt(sdfg_opt);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::For2MapPass conversion_pass;
+    EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
+
+    auto& sdfg_map = builder_opt.subject();
+
+    // Check
+    auto map = dynamic_cast<const structured_control_flow::Map*>(&sdfg_map.root().at(0).first);
+    EXPECT_TRUE(map != nullptr);
+    EXPECT_TRUE(
+        symbolic::eq(map->num_iterations(), symbolic::sub(symbolic::symbol("N"), symbolic::one())));
     EXPECT_TRUE(symbolic::eq(map->indvar(), symbolic::symbol("i")));
 
-    EXPECT_EQ(map->root().size(), 1);
-    EXPECT_TRUE(dynamic_cast<const structured_control_flow::Block*>(&map->root().at(0).first) !=
-                nullptr);
-    auto block2 = dynamic_cast<const structured_control_flow::Block*>(&map->root().at(0).first);
-    EXPECT_EQ(block2->dataflow().nodes().size(), 3);
-    EXPECT_EQ(block2->dataflow().edges().size(), 2);
-
-    bool found_input = false;
-    bool found_output = false;
-    bool found_tasklet = false;
-    for (const auto& node : block2->dataflow().nodes()) {
-        if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
-            if (access_node->data() == "A") {
-                found_input = true;
-            } else if (access_node->data() == "B") {
-                found_output = true;
-            }
-        } else if (auto tasklet_node = dynamic_cast<const data_flow::Tasklet*>(&node)) {
-            EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::assign);
-            found_tasklet = true;
-        }
-    }
-    EXPECT_TRUE(found_input);
-    EXPECT_TRUE(found_output);
-    EXPECT_TRUE(found_tasklet);
-
-    // Check the memlets
-    bool found_memlet_input = false;
-    bool found_memlet_output = false;
-    for (const auto& edge : block2->dataflow().edges()) {
-        if (edge.src_conn() == "void" && edge.dst_conn() == "_in") {
-            found_memlet_input = true;
-            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.src()) != nullptr);
-            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.src());
-            EXPECT_EQ(access_node->data(), "B");
-            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.dst()) != nullptr);
-        } else if (edge.src_conn() == "_out" && edge.dst_conn() == "void") {
-            found_memlet_output = true;
-            EXPECT_TRUE(dynamic_cast<const data_flow::AccessNode*>(&edge.dst()) != nullptr);
-            auto access_node = dynamic_cast<const data_flow::AccessNode*>(&edge.dst());
-            EXPECT_EQ(access_node->data(), "A");
-            EXPECT_TRUE(dynamic_cast<const data_flow::Tasklet*>(&edge.src()) != nullptr);
-            EXPECT_EQ(edge.subset().size(), 1);
-            EXPECT_TRUE(symbolic::eq(edge.subset().at(0), symbolic::symbol("i")));
-        }
-    }
-    EXPECT_TRUE(found_memlet_input);
-    EXPECT_TRUE(found_memlet_output);
+    EXPECT_TRUE(symbolic::eq(memlet_1.subset().at(0),
+                             symbolic::add(symbolic::symbol("i"), symbolic::one())));
+    EXPECT_TRUE(symbolic::eq(memlet_2.subset().at(0),
+                             symbolic::add(symbolic::symbol("i"), symbolic::one())));
 }
 
-TEST(For2MapTest, Failed_update) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+TEST(For2MapTest, LastValue) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
-    types::Scalar desc_element(types::PrimitiveType::Double);
-    types::Scalar desc_element2(types::PrimitiveType::Int32);
-    types::Array desc_array(desc_element, symbolic::integer(10));
-    builder.add_container("A", desc_array);
-    builder.add_container("B", desc_element);
-    builder.add_container("i", desc_element2);
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
 
-    auto& loop = builder.add_for(builder.subject().root(), symbolic::symbol("i"),
-                                 symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-                                 symbolic::integer(0),
-                                 symbolic::mul(symbolic::symbol("i"), symbolic::integer(2)));
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+    builder.add_container("A", desc, true);
+    builder.add_container("B", desc, true);
 
-    auto& block = builder.add_block(loop.root());
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", desc_element}, {{"_in", desc_element}});
-    auto& input_node = builder.add_access(block, "B");
-    auto& output_node = builder.add_access(block, "A");
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::symbol("i")});
+    // Define loop
+    auto bound = symbolic::symbol("N");
+    auto indvar = symbolic::symbol("i");
+    auto init = symbolic::one();
+    auto condition = symbolic::Lt(indvar, bound);
+    auto update = symbolic::add(indvar, symbolic::integer(1));
 
-    auto sdfg = builder.move();
+    auto& loop = builder.add_for(root, indvar, condition, init, update);
+    auto& body = loop.root();
 
-    EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->root().size(), 1);
+    // Add computation
+    auto& block = builder.add_block(body);
+    auto& a = builder.add_access(block, "A");
+    auto& b = builder.add_access(block, "B");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
+                                        {{"_in", base_desc}});
+    auto& memlet_1 = builder.add_memlet(block, a, "void", tasklet, "_in", {indvar});
+    auto& memlet_2 = builder.add_memlet(block, tasklet, "_out", b, "void", {indvar});
 
-    // Fusion
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    // Analysis
+    auto sdfg_opt = builder.move();
+    builder::StructuredSDFGBuilder builder_opt(sdfg_opt);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
     passes::For2MapPass conversion_pass;
-    EXPECT_FALSE(conversion_pass.run(builder_opt, analysis_manager));
-}
+    EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
 
-TEST(For2MapTest, Failed_bound) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    auto& sdfg_map = builder_opt.subject();
 
-    types::Scalar desc_element(types::PrimitiveType::Double);
-    types::Scalar desc_element2(types::PrimitiveType::Int32);
-    types::Array desc_array(desc_element, symbolic::integer(10));
-    builder.add_container("A", desc_array);
-    builder.add_container("B", desc_element);
-    builder.add_container("i", desc_element2);
+    // Check
+    auto map = dynamic_cast<const structured_control_flow::Map*>(&sdfg_map.root().at(0).first);
+    EXPECT_TRUE(map != nullptr);
+    EXPECT_TRUE(
+        symbolic::eq(map->num_iterations(), symbolic::sub(symbolic::symbol("N"), symbolic::one())));
+    EXPECT_TRUE(symbolic::eq(map->indvar(), symbolic::symbol("i")));
 
-    auto& loop = builder.add_for(
-        builder.subject().root(), symbolic::symbol("i"),
-        symbolic::Lt(symbolic::mul(symbolic::symbol("i"), symbolic::integer(2)),
-                     symbolic::integer(10)),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(2)));
-
-    auto& block = builder.add_block(loop.root());
-
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", desc_element}, {{"_in", desc_element}});
-    auto& input_node = builder.add_access(block, "B");
-    auto& output_node = builder.add_access(block, "A");
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::symbol("i")});
-
-    auto sdfg = builder.move();
-
-    EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->root().size(), 1);
-
-    // Fusion
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::For2MapPass conversion_pass;
-    EXPECT_FALSE(conversion_pass.run(builder_opt, analysis_manager));
+    auto& transition = sdfg_map.root().at(1).second;
+    EXPECT_TRUE(transition.assignments().size() == 1);
+    EXPECT_TRUE(transition.assignments().find(indvar) != transition.assignments().end());
+    EXPECT_TRUE(symbolic::eq(transition.assignments().at(indvar), symbolic::symbol("N")));
 }

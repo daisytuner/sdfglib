@@ -14,9 +14,7 @@ class For2Map : public visitor::StructuredSDFGVisitor {
                 structured_control_flow::For& node) override;
 
    private:
-    symbolic::Expression num_iterations(const structured_control_flow::For& for_stmt,
-                                        analysis::AnalysisManager& analysis_manager) const;
-    bool can_be_applied(const structured_control_flow::For& for_stmt,
+    bool can_be_applied(structured_control_flow::For& for_stmt,
                         analysis::AnalysisManager& analysis_manager);
     void apply(structured_control_flow::For& for_stmt, builder::StructuredSDFGBuilder& builder,
                analysis::AnalysisManager& analysis_manager);

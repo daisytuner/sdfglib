@@ -16,7 +16,6 @@ std::string LoopDistribute::name() { return "LoopDistribute"; };
 
 bool LoopDistribute::can_be_applied(builder::StructuredSDFGBuilder& builder,
                                     analysis::AnalysisManager& analysis_manager) {
-    auto& sdfg = builder.subject();
     auto indvar = this->loop_.indvar();
 
     // Criterion: Block -> Loop
@@ -46,10 +45,10 @@ bool LoopDistribute::can_be_applied(builder::StructuredSDFGBuilder& builder,
     }
 
     // Determine body- and block-local variables
-    auto body_locals = users.locals(sdfg, body);
+    auto body_locals = users.locals(body);
+    auto block_locals = users.locals(block);
 
     analysis::UsersView body_users(users, body);
-    auto block_locals = body_users.locals(sdfg, block);
 
     // Check if all dependencies can be resolved
     bool can_be_distributed = true;
@@ -126,11 +125,10 @@ void LoopDistribute::apply(builder::StructuredSDFGBuilder& builder,
     // We might need to extend containers to loop dimension
 
     auto& users = analysis_manager.get<analysis::Users>();
-    auto body_locals = users.locals(sdfg, body);
+    auto body_locals = users.locals(body);
+    auto block_locals = users.locals(block);
 
     analysis::UsersView body_users(users, body);
-    auto block_locals = body_users.locals(sdfg, block);
-
     analysis::UsersView block_users(users, block);
 
     // Determine block-related containers
