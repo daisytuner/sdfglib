@@ -29,5 +29,5 @@ TEST(MapDispatcherTest, DispatchNode) {
 
     EXPECT_EQ(globals_stream.str(), "");
     EXPECT_EQ(library_stream.str(), "");
-    EXPECT_EQ(main_stream.str(), "for(i = 0; i < 10; i++)\n{\n}\n");
+    EXPECT_EQ(main_stream.str(), "// Map\nfor(i = 0; i < 10; i++)\n{\n}\n");
 }

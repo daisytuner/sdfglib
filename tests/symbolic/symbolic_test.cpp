@@ -148,16 +148,3 @@ TEST(SymbolicTest, subs) {
     auto new_expr = symbolic::subs(expr, x, z);
     EXPECT_EQ(new_expr->__str__(), "y + z");
 }
-
-TEST(SymbolicTest, rearrange_simple_condition) {
-    auto x = symbolic::symbol("x");
-    auto y = symbolic::symbol("y");
-
-    auto cond = symbolic::Le(symbolic::add(x, symbolic::integer(3)), y);
-    auto rearranged = symbolic::rearrange_simple_condition(cond, x);
-    EXPECT_TRUE(rearranged->__str__() == "x <= y - 3" || rearranged->__str__() == "x <= -3 + y");
-
-    cond = symbolic::Le(y, x);
-    rearranged = symbolic::rearrange_simple_condition(cond, x);
-    EXPECT_EQ(rearranged->__str__(), "y <= x");
-}

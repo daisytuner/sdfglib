@@ -1253,93 +1253,23 @@ void Users::add_user(std::unique_ptr<User> user) {
         .insert({user_ptr->use(), user_ptr});
 }
 
-std::unordered_set<std::string> Users::locals(StructuredSDFG& sdfg,
-                                              structured_control_flow::ControlFlowNode& node) {
-    // Collect all node elements
-    Users local_users(sdfg, node);
-    analysis::AnalysisManager analysis_manager(sdfg_);
-    local_users.run(analysis_manager);
-    std::unordered_map<std::string, std::unordered_set<Element*>> elements;
-    for (auto& entry : local_users.users_) {
-        if (entry.second->use() == Use::NOP) {
-            continue;
-        }
-        if (!sdfg.is_transient(entry.second->container())) {
-            continue;
-        }
+std::unordered_set<std::string> Users::locals(structured_control_flow::ControlFlowNode& node) {
+    auto& sdfg = this->sdfg_;
 
-        if (elements.find(entry.second->container()) == elements.end()) {
-            elements[entry.second->container()] = {};
-        }
-        elements[entry.second->container()].insert(entry.second->element());
-    }
-
-    // Determine locals
-    for (auto& entry : this->users_) {
-        if (entry.second->use() == Use::NOP) {
-            continue;
-        }
-
-        auto& container = entry.second->container();
-        auto element = entry.second->element();
-        if (elements.find(container) == elements.end()) {
-            continue;
-        }
-        // used outside of node
-        if (elements[container].find(element) == elements[container].end()) {
-            elements.erase(container);
-        }
-    }
-
+    // Locals have no uses outside of the node
+    // We can check this by comparing the number of uses of the container in the view and the total
+    // number of uses of the container in the users map.
     std::unordered_set<std::string> locals;
-    for (auto& entry : elements) {
-        locals.insert(entry.first);
-    }
-    return locals;
-};
-
-std::unordered_set<std::string> UsersView::locals(StructuredSDFG& sdfg,
-                                                  structured_control_flow::ControlFlowNode& node) {
-    // Collect all node elements
-    Users local_users(sdfg, node);
-    analysis::AnalysisManager analysis_manager(users_.sdfg_);
-    local_users.run(analysis_manager);
-    std::unordered_map<std::string, std::unordered_set<Element*>> elements;
-    for (auto& entry : local_users.users_) {
-        if (entry.second->use() == Use::NOP) {
+    UsersView view(*this, node);
+    for (auto& user : view.uses()) {
+        if (!sdfg.is_transient(user->container())) {
             continue;
         }
-        if (!sdfg.is_transient(entry.second->container())) {
-            continue;
-        }
-
-        if (elements.find(entry.second->container()) == elements.end()) {
-            elements[entry.second->container()] = {};
-        }
-        elements[entry.second->container()].insert(entry.second->element());
-    }
-
-    // Determine locals
-    for (auto& entry : this->sub_users_) {
-        if (entry->use() == Use::NOP) {
-            continue;
-        }
-
-        auto& container = entry->container();
-        auto element = entry->element();
-        if (elements.find(container) == elements.end()) {
-            continue;
-        }
-        // used outside of node
-        if (elements[container].find(element) == elements[container].end()) {
-            elements.erase(container);
+        if (view.uses(user->container()).size() == this->uses(user->container()).size()) {
+            locals.insert(user->container());
         }
     }
 
-    std::unordered_set<std::string> locals;
-    for (auto& entry : elements) {
-        locals.insert(entry.first);
-    }
     return locals;
 };
 

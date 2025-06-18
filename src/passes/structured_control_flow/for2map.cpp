@@ -1,14 +1,8 @@
 #include "sdfg/passes/structured_control_flow/for2map.h"
 
-#include "sdfg/analysis/data_parallelism_analysis.h"
-#include "sdfg/structured_control_flow/for.h"
-#include "sdfg/structured_control_flow/map.h"
-#include "sdfg/structured_control_flow/sequence.h"
-#include "sdfg/symbolic/symbolic.h"
-#include "sdfg/visitor/structured_sdfg_visitor.h"
-#include "symengine/basic.h"
-#include "symengine/logic.h"
-#include "symengine/symengine_rcp.h"
+#include "sdfg/analysis/loop_analysis.h"
+#include "sdfg/analysis/loop_dependency_analysis.h"
+#include "sdfg/analysis/scope_analysis.h"
 
 namespace sdfg {
 namespace passes {
@@ -19,141 +13,70 @@ For2Map::For2Map(builder::StructuredSDFGBuilder& builder,
 
       };
 
-bool For2Map::can_be_applied(const structured_control_flow::For& for_stmt,
+bool For2Map::can_be_applied(structured_control_flow::For& for_stmt,
                              analysis::AnalysisManager& analysis_manager) {
+    // Criterion: loop must be contiguous
+    // Simplification to reason about memory offsets and bounds
+    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    if (!loop_analysis.is_contiguous(&for_stmt)) {
+        return false;
+    }
+
+    // Criterion: loop condition can be written as a closed-form expression.
+    // Closed-form: i < expression_no_i
+    // Example: i < N && i < M -> i < min(N, M)
+    auto bound = loop_analysis.canonical_bound(&for_stmt);
+    if (bound == SymEngine::null) {
+        return false;
+    }
+
     // Criterion: loop must be data-parallel w.r.t containers
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
-    auto& dependencies = analysis.get(for_stmt);
-    if (dependencies.size() == 0) {
-        return false;
+    auto& loop_dependency_analysis = analysis_manager.get<analysis::LoopDependencyAnalysis>();
+    auto dependencies = loop_dependency_analysis.get(for_stmt);
+
+    // a. No true dependencies (RAW) between iterations
+    for (auto& dep : dependencies) {
+        if (dep.second == analysis::LoopCarriedDependency::RAW) {
+            return false;
+        }
     }
 
-    // Criterion: update must be normalizable (i.e., it may not be involved in anything but an
-    // addition during the update)
-    auto& index_var = for_stmt.indvar();
-    auto& update = for_stmt.update();
-
-    bool normalizable_update = symbolic::eq(
-        symbolic::subs(update, index_var, symbolic::one()),
-        symbolic::add(symbolic::subs(update, index_var, symbolic::zero()), symbolic::one()));
-
-    if (!normalizable_update) {
-        return false;
-    }
-
-    auto stride = symbolic::subs(update, index_var, symbolic::zero());
-
-    // Criterion: loop bound must be simple, less than or equal statement (e.g., i < N)
-
-    auto condition = symbolic::rearrange_simple_condition(for_stmt.condition(), index_var);
-
-    symbolic::Expression bound;
-    symbolic::Expression lhs;
-    symbolic::Expression rhs;
-    if (SymEngine::is_a<SymEngine::LessThan>(*condition)) {
-        auto condition_LE = SymEngine::rcp_dynamic_cast<const SymEngine::LessThan>(condition);
-        lhs = condition_LE->get_arg1();
-        rhs = condition_LE->get_arg2();
-    } else if (SymEngine::is_a<SymEngine::StrictLessThan>(*condition)) {
-        auto condition_LT = SymEngine::rcp_dynamic_cast<const SymEngine::StrictLessThan>(condition);
-        lhs = condition_LT->get_arg1();
-        rhs = condition_LT->get_arg2();
-    } else {
-        return false;
-    }
-
-    if (!symbolic::eq(lhs, index_var)) {
-        return false;
+    // b. False dependencies (WAW) are limited to loop-local variables
+    auto& users = analysis_manager.get<analysis::Users>();
+    auto locals = users.locals(for_stmt.root());
+    for (auto& dep : dependencies) {
+        auto& container = dep.first;
+        if (locals.find(container) == locals.end()) {
+            return false;
+        }
     }
 
     return true;
 }
 
-symbolic::Expression For2Map::num_iterations(const structured_control_flow::For& for_stmt,
-                                             analysis::AnalysisManager& analysis_manager) const {
-    // Criterion: update must be normalizable (i.e., it may not be involved in anything but an
-    // addition during the update)
-    auto& index_var = for_stmt.indvar();
-    auto& update = for_stmt.update();
-    auto& init = for_stmt.init();
-
-    bool normalizable_update = symbolic::eq(
-        symbolic::subs(update, index_var, symbolic::one()),
-        symbolic::add(symbolic::subs(update, index_var, symbolic::zero()), symbolic::one()));
-
-    if (!normalizable_update) {
-        return symbolic::zero();
-    }
-
-    auto stride = symbolic::subs(update, index_var, symbolic::zero());
-
-    // Criterion: loop bound must be simple, less than or equal statement (e.g., i < N)
-
-    auto condition = symbolic::rearrange_simple_condition(for_stmt.condition(), index_var);
-
-    symbolic::Expression bound;
-    bool is_strict = false;
-    symbolic::Expression lhs;
-    symbolic::Expression rhs;
-    if (SymEngine::is_a<SymEngine::LessThan>(*condition)) {
-        auto condition_LE = SymEngine::rcp_dynamic_cast<const SymEngine::LessThan>(condition);
-        lhs = condition_LE->get_arg1();
-        rhs = condition_LE->get_arg2();
-    } else if (SymEngine::is_a<SymEngine::StrictLessThan>(*condition)) {
-        auto condition_LT = SymEngine::rcp_dynamic_cast<const SymEngine::StrictLessThan>(condition);
-        lhs = condition_LT->get_arg1();
-        rhs = condition_LT->get_arg2();
-        is_strict = true;
-    } else {
-        return symbolic::zero();
-    }
-
-    if (symbolic::eq(lhs, index_var)) {
-        bound = rhs;
-    } else {
-        return symbolic::zero();
-    }
-
-    if (!is_strict) {
-        bound = symbolic::add(bound, symbolic::one());
-    }
-
-    // subtract the init value from the bound
-    bound = symbolic::sub(bound, init);
-
-    symbolic::Expression num_iterations;
-
-    if (symbolic::eq(stride, symbolic::one())) {
-        num_iterations = bound;
-    } else if (symbolic::eq(stride, symbolic::zero())) {
-        throw std::runtime_error("Stride is zero");
-    } else {
-        num_iterations = symbolic::ceil(symbolic::div(bound, stride));
-    }
-
-    return num_iterations;
-}
-
 void For2Map::apply(structured_control_flow::For& for_stmt, builder::StructuredSDFGBuilder& builder,
                     analysis::AnalysisManager& analysis_manager) {
-    auto num_iterations = this->num_iterations(for_stmt, analysis_manager);
-
+    // Contiguous and canonical bound -> we can compute the number of iterations
+    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto init = for_stmt.init();
-    auto indvar = for_stmt.indvar();
-    auto update = for_stmt.update();
+    auto num_iterations = symbolic::sub(loop_analysis.canonical_bound(&for_stmt), init);
 
-    auto& parent = builder.parent(for_stmt);
+    auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+    auto parent =
+        static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&for_stmt));
 
-    // Create map
-    auto& map = builder.convert_for(parent, for_stmt, num_iterations);
-    auto& root = map.root();
-    auto stride = symbolic::subs(update, indvar, symbolic::zero());
+    // convert for to map
+    auto& map = builder.convert_for(*parent, for_stmt, num_iterations);
+    auto& indvar = map.indvar();
 
-    auto replacement = symbolic::add(symbolic::mul(map.indvar(), stride), init);
-    root.replace(map.indvar(), replacement);
+    // Shift indvar by init in body
+    auto shift = symbolic::add(indvar, init);
+    map.root().replace(indvar, shift);
 
-    auto successor = builder.add_block_after(parent, map);
-    successor.second.assignments().insert({indvar, num_iterations});
+    // set indvar to last value of a sequential loop
+    auto successor = builder.add_block_after(*parent, map);
+    auto last_value = symbolic::add(init, num_iterations);
+    successor.second.assignments().insert({indvar, last_value});
 }
 
 bool For2Map::accept(structured_control_flow::Sequence& parent,

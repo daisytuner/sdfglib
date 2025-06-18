@@ -35,6 +35,7 @@ SequentialMapDispatcher::SequentialMapDispatcher(LanguageExtension& language_ext
 void SequentialMapDispatcher::dispatch_node(PrettyPrinter& main_stream,
                                             PrettyPrinter& globals_stream,
                                             PrettyPrinter& library_stream) {
+    main_stream << "// Map" << std::endl;
     main_stream << "for";
     main_stream << "(";
     main_stream << node_.indvar()->get_name();
