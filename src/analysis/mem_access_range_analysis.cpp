@@ -109,7 +109,9 @@ void MemAccessRangesBuilder::process_workItem(WorkItem* item) {
 
     const auto& views = users_.views(*varName);
     if (!views.empty()) {
+        #ifndef NDEBUG
         std::cerr << "Found views for " << *varName << " => not rangeable!" << std::endl;
+        #endif
         item->undefined = true;
     }
 

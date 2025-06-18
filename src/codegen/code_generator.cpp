@@ -48,20 +48,20 @@ std::tuple<int, types::PrimitiveType> CodeGenerator::analyze_type_rec(
 
                 return analyze_type_rec(dims, maxDim, dimIdx+1, inner, argIdx, range);
             } else {
-                std::cerr << "In '" << sdfg_.name() << "', arg" << argIdx << " dim" << dimIdx << ": has upper bound " << dim.second->__str__() << ", but does not start at 0"  << std::endl;
-                return std::make_tuple(-1, types::Void);
+                std::cerr << "In '" << sdfg_.name() << "', arg" << argIdx << " dim" << dimIdx << ": has upper bound " << dim.second->__str__() << ", but does not start at 0, cannot capture"  << std::endl;
+                return std::make_tuple(-2, types::Void);
             }
         } else {
-            std::cerr << "In '" << sdfg_.name() << "', arg" << argIdx << " dim" << dimIdx << ": missing range!" << std::endl;
-            return std::make_tuple(-1, types::Void);
+            std::cerr << "In '" << sdfg_.name() << "', arg" << argIdx << " dim" << dimIdx << ": missing range, cannot capture!" << std::endl;
+            return std::make_tuple(-2, types::Void);
         }
     } else {
-        std::cerr << "In '" << sdfg_.name() << "', arg" << argIdx << " unsupported type " << type.print() << " for capture. Skipping!" << std::endl;
+        std::cerr << "In '" << sdfg_.name() << "', arg" << argIdx << ": unsupported type " << type.print() << ", cannot capture!" << std::endl;
         return std::make_tuple(-1, types::Void);
     }
 }
 
-void CodeGenerator::add_capture_plan(
+bool CodeGenerator::add_capture_plan(
     const std::string& varName,
     int argIdx,
     bool isExternal,
@@ -84,15 +84,18 @@ void CodeGenerator::add_capture_plan(
         std::tie(dimCount, innerPrim) = analyze_type_rec(dims, 3, 0, type, argIdx, range);
 
         if (dimCount == 0) {
-            plan.emplace_back(isRead, isWritten, CaptureVarType::CapRaw, argIdx, isExternal, innerPrim, SymEngine::RCP<const SymEngine::Basic>(), SymEngine::RCP<const SymEngine::Basic>());
+            plan.emplace_back(isRead, isWritten, CaptureVarType::CapRaw, argIdx, isExternal, innerPrim);
         } else if (dimCount == 1) {
-            plan.emplace_back(isRead, isWritten, CaptureVarType::Cap1D, argIdx, isExternal, innerPrim, dims[0], SymEngine::RCP<const SymEngine::Basic>());
+            plan.emplace_back(isRead, isWritten, CaptureVarType::Cap1D, argIdx, isExternal, innerPrim, dims[0]);
         } else if (dimCount == 2) {
             plan.emplace_back(isRead, isWritten, CaptureVarType::Cap2D, argIdx, isExternal, innerPrim, dims[0], dims[1]);
+        } else if (dimCount == 3) {
+            plan.emplace_back(isRead, isWritten, CaptureVarType::Cap3D, argIdx, isExternal, innerPrim, dims[0], dims[1], dims[2]);
         } else {
-            std::cerr << "In '" << varName << "', arg" << argIdx << " unsupported type " << type.print() << " for capture. Skipping!" << std::endl;
-
+            return false;
         }
+
+        return true;
 }
 
 std::unique_ptr<std::vector<CaptureVarPlan>> CodeGenerator::create_capture_plans() {
@@ -105,18 +108,19 @@ std::unique_ptr<std::vector<CaptureVarPlan>> CodeGenerator::create_capture_plans
 
     auto plan = std::make_unique<std::vector<CaptureVarPlan>>();
     
+    bool working = true;
 
     int argIdx = -1;
     for (auto& argName : args) {
         ++argIdx;
 
-        add_capture_plan(argName, argIdx, false, *plan.get(), ranges);
+        working &= add_capture_plan(argName, argIdx, false, *plan.get(), ranges);
     }
 
     for (auto& argName : exts) {
         ++argIdx;
 
-        add_capture_plan(argName, argIdx, true, *plan.get(), ranges);
+        working &= add_capture_plan(argName, argIdx, true, *plan.get(), ranges);
     }
 
     return plan;

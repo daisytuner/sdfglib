@@ -36,6 +36,9 @@ void __daisy_capture_1d(__daisy_capture_t* context, int arg_idx, const void* dat
 void __daisy_capture_2d(__daisy_capture_t* context, int arg_idx, const void* data, size_t size, int primitive_type,
                             size_t num_rows, size_t num_cols, bool after);
 
+void __daisy_capture_3d(__daisy_capture_t* context, int arg_idx, const void* data, size_t size, int primitive_type,
+                            size_t num_x, size_t num_y, size_t num_z, bool after);
+
 
 
 #ifdef __cplusplus

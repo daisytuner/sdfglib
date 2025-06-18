@@ -57,7 +57,7 @@ class CodeGenerator {
 
     std::unique_ptr<std::vector<CaptureVarPlan>> create_capture_plans();
 
-    void add_capture_plan(const std::string& name, int argIdx, bool isExternal, std::vector<CaptureVarPlan>& plan, const analysis::MemAccessRanges& ranges);
+    bool add_capture_plan(const std::string& name, int argIdx, bool isExternal, std::vector<CaptureVarPlan>& plan, const analysis::MemAccessRanges& ranges);
 
    public:
     CodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy, bool capture_args_results = false)
