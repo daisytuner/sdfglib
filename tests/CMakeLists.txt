@@ -36,6 +36,7 @@ set(TEST_FILES
     element_test.cpp
     graph/graph_algorithms_test.cpp
     helpers/helpers_test.cpp
+    optimizations/optimizer_test.cpp
     passes/dataflow/dead_data_elimination_test.cpp
     passes/dataflow/redundant_array_elimination_test.cpp
     passes/dataflow/trivial_array_elimination_test.cpp
