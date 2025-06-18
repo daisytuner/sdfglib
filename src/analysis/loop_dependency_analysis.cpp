@@ -168,7 +168,7 @@ bool LoopDependencyAnalysis::intersects(User* first, User* second,
             // Determine which symbols are readonly -> params
             symbolic::SymbolSet params;
             for (auto& symbol : symbols) {
-                if (symbol == loop.indvar()) {
+                if (symbolic::eq(symbol, loop.indvar())) {
                     continue;
                 }
                 if (body_users.writes(symbol->get_name()).empty()) {
