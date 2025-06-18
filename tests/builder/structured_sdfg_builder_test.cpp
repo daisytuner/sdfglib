@@ -568,3 +568,24 @@ TEST(SDFG2StructuredSDFGTest, While) {
     EXPECT_TRUE(dynamic_cast<const structured_control_flow::Return*>(&child5.first));
     EXPECT_EQ(child5.second.size(), 0);
 }
+
+TEST(StructuredSDFGBuilderTest, FindElementById_Root) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& root = builder.subject().root();
+
+    // Test
+
+    EXPECT_EQ(builder.find_element_by_id(root.element_id()), &root);
+}
+
+TEST(StructuredSDFGBuilderTest, FindElementById_Block) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+
+    // Test
+
+    EXPECT_EQ(builder.find_element_by_id(block.element_id()), &block);
+}

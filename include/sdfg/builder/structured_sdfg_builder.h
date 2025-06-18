@@ -67,6 +67,8 @@ class StructuredSDFGBuilder : public FunctionBuilder {
 
     std::unique_ptr<StructuredSDFG> move();
 
+    Element* find_element_by_id(const size_t& element_id) const;
+
     Sequence& add_sequence(Sequence& parent,
                            const sdfg::control_flow::Assignments& assignments = {},
                            const DebugInfo& debug_info = DebugInfo());

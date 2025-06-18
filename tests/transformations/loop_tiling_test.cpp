@@ -49,7 +49,7 @@ TEST(LoopTilingTest, Basic) {
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
-    transformations::LoopTiling transformation(root, orig_loop, 32);
+    transformations::LoopTiling transformation(orig_loop, 32);
     EXPECT_TRUE(transformation.can_be_applied(builder_opt, analysis_manager));
     transformation.apply(builder_opt, analysis_manager);
 

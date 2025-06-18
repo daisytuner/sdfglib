@@ -2,6 +2,7 @@
 
 #include "sdfg/analysis/data_parallelism_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
+#include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 
@@ -10,13 +11,12 @@ namespace transformations {
 
 enum class LoopSlicingType { Init, Bound, Split_Lt, Split_Le };
 
-LoopSlicing::LoopSlicing(structured_control_flow::Sequence& parent,
-                         structured_control_flow::StructuredLoop& loop)
-    : parent_(parent), loop_(loop) {
+LoopSlicing::LoopSlicing(structured_control_flow::StructuredLoop& loop)
+    : loop_(loop) {
 
       };
 
-std::string LoopSlicing::name() { return "LoopSlicing"; };
+std::string LoopSlicing::name() const { return "LoopSlicing"; };
 
 bool LoopSlicing::can_be_applied(builder::StructuredSDFGBuilder& builder,
                                  analysis::AnalysisManager& analysis_manager) {
@@ -147,6 +147,10 @@ void LoopSlicing::apply(builder::StructuredSDFGBuilder& builder,
         slice_type = LoopSlicingType::Split_Le;
     }
 
+    auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+    auto parent =
+        static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&loop_));
+
     // Slice loop
     auto indvar_slice_str = builder.find_new_name(indvar->get_name());
     builder.add_container(indvar_slice_str, sdfg.type(indvar->get_name()));
@@ -160,12 +164,12 @@ void LoopSlicing::apply(builder::StructuredSDFGBuilder& builder,
                 symbolic::Lt(indvar_slice, symbolic::add(loop_.init(), symbolic::one()));
             auto increment_slice = symbolic::add(indvar_slice, symbolic::one());
             loop_slice = &builder
-                              .add_for_before(parent_, loop_, indvar_slice, condition_slice,
+                              .add_for_before(*parent, loop_, indvar_slice, condition_slice,
                                               init_slice, increment_slice)
                               .first;
             loop_slice_2 =
                 &builder
-                     .add_for_after(parent_, loop_, loop_.indvar(), loop_.condition(),
+                     .add_for_after(*parent, loop_, loop_.indvar(), loop_.condition(),
                                     symbolic::add(loop_.init(), symbolic::one()), loop_.update())
                      .first;
             break;
@@ -175,12 +179,12 @@ void LoopSlicing::apply(builder::StructuredSDFGBuilder& builder,
             auto condition_slice = symbolic::subs(loop_.condition(), loop_.indvar(), indvar_slice);
             auto increment_slice = symbolic::add(indvar_slice, symbolic::one());
             loop_slice = &builder
-                              .add_for_after(parent_, loop_, indvar_slice, condition_slice,
+                              .add_for_after(*parent, loop_, indvar_slice, condition_slice,
                                              init_slice, increment_slice)
                               .first;
             loop_slice_2 = &builder
                                 .add_for_before(
-                                    parent_, loop_, loop_.indvar(),
+                                    *parent, loop_, loop_.indvar(),
                                     symbolic::Lt(loop_.indvar(),
                                                  symbolic::sub(loop_.condition(), symbolic::one())),
                                     loop_.init(), loop_.update())
@@ -194,7 +198,7 @@ void LoopSlicing::apply(builder::StructuredSDFGBuilder& builder,
                               symbolic::subs(loop_.condition(), indvar, indvar_slice));
             auto increment_slice = symbolic::add(indvar_slice, symbolic::one());
             loop_slice = &builder
-                              .add_for_before(parent_, loop_, indvar_slice, condition_slice,
+                              .add_for_before(*parent, loop_, indvar_slice, condition_slice,
                                               init_slice, increment_slice)
                               .first;
 
@@ -207,7 +211,7 @@ void LoopSlicing::apply(builder::StructuredSDFGBuilder& builder,
             }
 
             loop_slice_2 = &builder
-                                .add_for_after(parent_, loop_, loop_.indvar(), loop_.condition(),
+                                .add_for_after(*parent, loop_, loop_.indvar(), loop_.condition(),
                                                condition_bound_args_bound, loop_.update())
                                 .first;
             break;
@@ -219,7 +223,7 @@ void LoopSlicing::apply(builder::StructuredSDFGBuilder& builder,
                               symbolic::subs(loop_.condition(), indvar, indvar_slice));
             auto increment_slice = symbolic::add(indvar_slice, symbolic::one());
             loop_slice = &builder
-                              .add_for_before(parent_, loop_, indvar_slice, condition_slice,
+                              .add_for_before(*parent, loop_, indvar_slice, condition_slice,
                                               init_slice, increment_slice)
                               .first;
 
@@ -233,7 +237,7 @@ void LoopSlicing::apply(builder::StructuredSDFGBuilder& builder,
 
             loop_slice_2 =
                 &builder
-                     .add_for_after(parent_, loop_, loop_.indvar(), loop_.condition(),
+                     .add_for_after(*parent, loop_, loop_.indvar(), loop_.condition(),
                                     symbolic::add(condition_bound_args_bound, symbolic::one()),
                                     loop_.update())
                      .first;
@@ -278,9 +282,27 @@ void LoopSlicing::apply(builder::StructuredSDFGBuilder& builder,
 
     // Move loop locals to the new loop
     builder.insert_children(loop_slice_2->root(), loop_.root(), 0);
-    builder.remove_child(parent_, loop_);
+    builder.remove_child(*parent, loop_);
 
     analysis_manager.invalidate_all();
+};
+
+void LoopSlicing::to_json(nlohmann::json& j) const {
+    j["transformation_type"] = this->name();
+    j["loop_element_id"] = loop_.element_id();
+};
+
+LoopSlicing LoopSlicing::from_json(builder::StructuredSDFGBuilder& builder,
+                                   const nlohmann::json& desc) {
+    auto loop_id = desc["loop_element_id"].get<size_t>();
+    auto element = builder.find_element_by_id(loop_id);
+    if (!element) {
+        throw InvalidTransformationDescriptionException("Element with ID " +
+                                                        std::to_string(loop_id) + " not found.");
+    }
+    auto loop = dynamic_cast<structured_control_flow::For*>(element);
+
+    return LoopSlicing(*loop);
 };
 
 }  // namespace transformations

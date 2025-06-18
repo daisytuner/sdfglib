@@ -6,14 +6,13 @@
 namespace sdfg {
 namespace transformations {
 
-LoopInterchange::LoopInterchange(structured_control_flow::Sequence& parent,
-                                 structured_control_flow::StructuredLoop& outer_loop,
+LoopInterchange::LoopInterchange(structured_control_flow::StructuredLoop& outer_loop,
                                  structured_control_flow::StructuredLoop& inner_loop)
     : outer_loop_(outer_loop), inner_loop_(inner_loop) {
 
       };
 
-std::string LoopInterchange::name() { return "LoopInterchange"; };
+std::string LoopInterchange::name() const { return "LoopInterchange"; };
 
 bool LoopInterchange::can_be_applied(builder::StructuredSDFGBuilder& builder,
                                      analysis::AnalysisManager& analysis_manager) {
@@ -93,6 +92,32 @@ void LoopInterchange::apply(builder::StructuredSDFGBuilder& builder,
     builder.remove_child(builder.parent(outer_loop_), this->outer_loop_);
 
     analysis_manager.invalidate_all();
+};
+
+void LoopInterchange::to_json(nlohmann::json& j) const {
+    j["transformation_type"] = this->name();
+    j["outer_loop_element_id"] = this->outer_loop_.element_id();
+    j["inner_loop_element_id"] = this->inner_loop_.element_id();
+};
+
+LoopInterchange LoopInterchange::from_json(builder::StructuredSDFGBuilder& builder,
+                                           const nlohmann::json& desc) {
+    auto outer_loop_id = desc["outer_loop_element_id"].get<size_t>();
+    auto inner_loop_id = desc["inner_loop_element_id"].get<size_t>();
+    auto outer_element = builder.find_element_by_id(outer_loop_id);
+    auto inner_element = builder.find_element_by_id(inner_loop_id);
+    if (!outer_element) {
+        throw InvalidTransformationDescriptionException(
+            "Element with ID " + std::to_string(outer_loop_id) + " not found.");
+    }
+    if (!inner_element) {
+        throw InvalidTransformationDescriptionException(
+            "Element with ID " + std::to_string(inner_loop_id) + " not found.");
+    }
+    auto outer_loop = dynamic_cast<structured_control_flow::For*>(outer_element);
+    auto inner_loop = dynamic_cast<structured_control_flow::For*>(inner_element);
+
+    return LoopInterchange(*outer_loop, *inner_loop);
 };
 
 }  // namespace transformations

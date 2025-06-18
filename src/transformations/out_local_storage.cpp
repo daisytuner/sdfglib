@@ -1,11 +1,14 @@
 #include "sdfg/transformations/out_local_storage.h"
 
+#include <cassert>
+#include <cstddef>
 #include <string>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/memlet.h"
 #include "sdfg/passes/structured_control_flow/dead_cfg_elimination.h"
 #include "sdfg/passes/structured_control_flow/sequence_fusion.h"
+#include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/transformations/utils.h"
 #include "sdfg/types/array.h"
@@ -14,12 +17,11 @@
 namespace sdfg {
 namespace transformations {
 
-OutLocalStorage::OutLocalStorage(structured_control_flow::Sequence& parent,
-                                 structured_control_flow::StructuredLoop& loop,
+OutLocalStorage::OutLocalStorage(structured_control_flow::StructuredLoop& loop,
                                  std::string container)
-    : parent_(parent), loop_(loop), container_(container) {};
+    : loop_(loop), container_(container) {};
 
-std::string OutLocalStorage::name() { return "OutLocalStorage"; };
+std::string OutLocalStorage::name() const { return "OutLocalStorage"; };
 
 bool OutLocalStorage::can_be_applied(builder::StructuredSDFGBuilder& builder,
                                      analysis::AnalysisManager& analysis_manager) {
@@ -216,6 +218,26 @@ void OutLocalStorage::apply_scalar(builder::StructuredSDFGBuilder& builder,
                        first_subset);
 
     this->loop_.replace(symbolic::symbol(this->container_), symbolic::symbol(replacement_name));
+};
+
+void OutLocalStorage::to_json(nlohmann::json& j) const {
+    j["transformation_type"] = this->name();
+    j["loop_element_id"] = loop_.element_id();
+    j["container"] = container_;
+};
+
+OutLocalStorage OutLocalStorage::from_json(builder::StructuredSDFGBuilder& builder,
+                                           const nlohmann::json& desc) {
+    auto loop_id = desc["loop_element_id"].get<size_t>();
+    std::string container = desc["container"].get<std::string>();
+    auto element = builder.find_element_by_id(loop_id);
+    if (!element) {
+        throw InvalidTransformationDescriptionException("Element with ID " +
+                                                        std::to_string(loop_id) + " not found.");
+    }
+    auto loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element);
+
+    return OutLocalStorage(*loop, container);
 };
 
 }  // namespace transformations

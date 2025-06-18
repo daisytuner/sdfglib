@@ -44,7 +44,7 @@ TEST(LoopSlicingTest, FirstIteration) {
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
-    transformations::LoopSlicing transformation(root, loop);
+    transformations::LoopSlicing transformation(loop);
     EXPECT_TRUE(transformation.can_be_applied(builder_opt, analysis_manager));
     transformation.apply(builder_opt, analysis_manager);
 
