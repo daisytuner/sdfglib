@@ -216,10 +216,7 @@ void LoopDistribute::apply(builder::StructuredSDFGBuilder& builder,
 };
 
 void LoopDistribute::to_json(nlohmann::json& j) const {
-    std::cout << "Serializing LoopTiling transformation to JSON" << std::endl;
-    std::cout << "Writing transformation type: " << this->name() << std::endl;
     j["transformation_type"] = this->name();
-    std::cout << "Writing loop element ID " << std::endl;
     j["loop_element_id"] = loop_.element_id();
 };
 

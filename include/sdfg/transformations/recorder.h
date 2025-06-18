@@ -33,15 +33,10 @@ class Recorder {
 
         nlohmann::json desc;
         transformation.to_json(desc);
-        std::cout << "Serializing transformation: " << transformation.name() << std::endl;
         std::cout << desc.dump(4) << std::endl;
         history_.push_back(desc);
 
-        std::cout << "Transformation " << transformation.name() << " serialized to JSON"
-                  << std::endl;
-
         transformation.apply(builder, analysis_manager);
-        std::cout << "Applied" << transformation.name() << std::endl;
     };
 
     void replay(builder::StructuredSDFGBuilder& builder,

@@ -95,12 +95,8 @@ void LoopInterchange::apply(builder::StructuredSDFGBuilder& builder,
 };
 
 void LoopInterchange::to_json(nlohmann::json& j) const {
-    std::cout << "Serializing LoopTiling transformation to JSON" << std::endl;
-    std::cout << "Writing transformation type: " << this->name() << std::endl;
     j["transformation_type"] = this->name();
-    std::cout << "Writing parent element ID " << std::endl;
     j["outer_loop_element_id"] = this->outer_loop_.element_id();
-    std::cout << "Writing loop element ID " << std::endl;
     j["inner_loop_element_id"] = this->inner_loop_.element_id();
 };
 

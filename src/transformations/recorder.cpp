@@ -13,14 +13,8 @@ Recorder::Recorder() : history_(nlohmann::json::array()) {}
 void Recorder::replay(builder::StructuredSDFGBuilder& builder,
                       analysis::AnalysisManager& analysis_manager,
                       const nlohmann::json& transformation_data) {
-    std::cout << "Replaying transformations..." << std::endl;
-    std::cout << "Transformation data: " << transformation_data.dump(4) << std::endl;
-
     for (const auto& desc : transformation_data) {
-        std::cout << "Processing transformation description: " << std::endl;
         auto transformation_name = desc["transformation_type"];
-        std::cout << "Applying transformation: " << transformation_name.get<std::string>()
-                  << std::endl;
 
         if (transformation_name == "LoopTiling") {
             this->apply<transformations::LoopTiling>(builder, analysis_manager, desc);
@@ -45,9 +39,7 @@ void Recorder::save(std::filesystem::path path) const {
         throw std::runtime_error("Failed to open file for saving transformations: " +
                                  path.string());
     }
-    std::cout << "Saving transformations to " << path.string() << std::endl;
-    std::cout << history_.dump(4) << std::endl;  // Pretty print with an indent of 4 spaces
-    file << history_.dump(4);                    // Pretty print with an indent of 4 spaces
+    file << history_.dump(4);  // Pretty print with an indent of 4 spaces
     file.close();
 }
 
