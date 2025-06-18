@@ -123,6 +123,10 @@ void CCodeGenerator::emit_arg_captures(std::ostream& ofs_source, const std::vect
         }
     }
 
+    if (after) {
+        ofs_source << "\t__daisy_capture_end(__capture_ctx);" << std::endl;
+    }
+
     ofs_source << "}" << std::endl;
 };
 
