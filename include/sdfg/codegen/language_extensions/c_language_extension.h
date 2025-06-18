@@ -4,6 +4,7 @@
 
 #include "sdfg/codegen/language_extension.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/types/type.h"
 
 namespace sdfg {
 namespace codegen {
@@ -23,6 +24,8 @@ class CLanguageExtension : public LanguageExtension {
     std::string expression(const symbolic::Expression& expr) override;
 
     std::string tasklet(const data_flow::Tasklet& tasklet) override;
+
+    std::string zero(const types::PrimitiveType prim_type) override;
 };
 
 class CSymbolicPrinter : public SymEngine::BaseVisitor<CSymbolicPrinter, SymEngine::CodePrinter> {

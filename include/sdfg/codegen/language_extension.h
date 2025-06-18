@@ -33,6 +33,8 @@ class LanguageExtension {
     virtual std::string expression(const symbolic::Expression& expr) = 0;
 
     virtual std::string tasklet(const data_flow::Tasklet& tasklet) = 0;
+
+    virtual std::string zero(const types::PrimitiveType prim_type) = 0;
 };
 
 }  // namespace codegen
