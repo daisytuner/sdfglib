@@ -183,21 +183,20 @@ class StructuredSDFGBuilder : public FunctionBuilder {
                                   const data_flow::Subset& subset,
                                   const DebugInfo& debug_info = DebugInfo());
 
-    template <typename T, typename... Args>
+    template <typename T>
     data_flow::LibraryNode& add_library_node(structured_control_flow::Block& block,
                                              const data_flow::LibraryNodeCode code,
                                              const std::vector<std::string>& outputs,
                                              const std::vector<std::string>& inputs,
                                              const bool side_effect = true,
-                                             const DebugInfo& debug_info = DebugInfo(),
-                                             Args... arguments) {
+                                             const DebugInfo& debug_info = DebugInfo()) {
         static_assert(std::is_base_of<data_flow::LibraryNode, T>::value,
                       "T must be a subclass of data_flow::LibraryNode");
 
         auto& dataflow = block.dataflow();
         auto vertex = boost::add_vertex(dataflow.graph_);
         auto node = std::unique_ptr<T>(new T(this->new_element_id(), debug_info, vertex, dataflow,
-                                             code, outputs, inputs, side_effect, arguments...));
+                                             code, outputs, inputs, side_effect));
         auto res = dataflow.nodes_.insert({vertex, std::move(node)});
 
         return static_cast<data_flow::LibraryNode&>(*(res.first->second));

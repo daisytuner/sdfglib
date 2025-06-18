@@ -542,48 +542,5 @@ std::string CUDALanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
     }
 };
 
-std::string CUDALanguageExtension::zero(const types::PrimitiveType prim_type) {
-    switch (prim_type) {
-        case types::Void:
-            throw InvalidSDFGException("No zero for void type possible");
-        case types::Bool:
-            return "false";
-        case types::Int8:
-            return "0";
-        case types::Int16:
-            return "0";
-        case types::Int32:
-            return "0";
-        case types::Int64:
-            return "0ll";
-        case types::Int128:
-            return "0";
-        case types::UInt8:
-            return "0u";
-        case types::UInt16:
-            return "0u";
-        case types::UInt32:
-            return "0u";
-        case types::UInt64:
-            return "0ull";
-        case types::UInt128:
-            return "0";
-        case types::Half:
-            return "CUDART_ZERO_FP16";
-        case types::BFloat:
-            return "CUDART_ZERO_BF16";
-        case types::Float:
-            return "0.0f";
-        case types::Double:
-            return "0.0";
-        case types::X86_FP80:
-            return "0.0l";
-        case types::FP128:
-            return "0.0";
-        case types::PPC_FP128:
-            return "0.0";
-    }
-}
-
 }  // namespace codegen
 }  // namespace sdfg

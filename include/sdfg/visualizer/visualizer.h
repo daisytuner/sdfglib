@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "sdfg/codegen/utils.h"
+#include "sdfg/data_flow/library_node.h"
 #include "sdfg/data_flow/memlet.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/function.h"
@@ -53,6 +54,7 @@ class Visualizer {
                                     symbolic::Expression const& init,
                                     symbolic::Condition const& condition,
                                     symbolic::Expression const& update);
+    virtual void visualizeLibraryNode(const data_flow::LibraryNodeCode libnode_type);
     virtual void visualizeSubset(Function const& function, types::IType const& type,
                                  data_flow::Subset const& sub);
 

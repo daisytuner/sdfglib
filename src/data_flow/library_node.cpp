@@ -1,7 +1,5 @@
 #include "sdfg/data_flow/library_node.h"
 
-#include <string>
-
 namespace sdfg {
 namespace data_flow {
 
@@ -36,8 +34,6 @@ bool LibraryNode::needs_connector(size_t index) const {
     }
     return false;
 };
-
-std::string LibraryNode::toStr() const { return std::string(this->code_.value()); }
 
 }  // namespace data_flow
 }  // namespace sdfg

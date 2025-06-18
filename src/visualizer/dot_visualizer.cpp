@@ -71,8 +71,9 @@ void DotVisualizer::visualizeBlock(StructuredSDFG& sdfg, structured_control_flow
             this->stream_ << "label=\"" << access_node->data() << "\"];" << std::endl;
         } else if (const data_flow::LibraryNode* libnode =
                        dynamic_cast<data_flow::LibraryNode*>(node)) {
-            this->stream_ << libnode->element_id() << " [shape=doubleoctagon,label=\""
-                          << libnode->toStr() << "\"];" << std::endl;
+            this->stream_ << libnode->element_id() << " [shape=doubleoctagon,label=\"";
+            this->visualizeLibraryNode(libnode->code());
+            this->stream_ << "\"];" << std::endl;
             if (this->last_comp_name_.empty()) this->last_comp_name_ = libnode->element_id();
         }
     }

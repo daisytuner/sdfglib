@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
 #include <vector>
 
 #include "sdfg/data_flow/code_node.h"
@@ -51,8 +50,6 @@ class LibraryNode : public CodeNode {
     bool side_effect() const;
 
     bool needs_connector(size_t index) const override;
-
-    virtual std::string toStr() const;
 };
 
 /*
