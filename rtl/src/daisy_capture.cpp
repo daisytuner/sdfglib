@@ -82,6 +82,7 @@ class DaisyCapture {
     void capture_raw(int arg_idx, const void* data, size_t size, int primitive_type, bool after);
     void capture_1d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_elements, bool after);
     void capture_2d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_rows, size_t num_cols, bool after);
+    void capture_3d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_x, size_t num_y, size_t num_z, bool after);
     void exit();
 
     std::filesystem::path generate_output_path(int arg_idx, bool after) const;
@@ -204,6 +205,36 @@ void DaisyCapture::capture_2d(int arg_idx, const void* data, size_t size, int pr
     current_captures_[key].ext_file = std::move(path);
 }
 
+void DaisyCapture::capture_3d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_x, size_t num_y, size_t num_z, bool after) {
+    auto capType = after? "result" : "input";
+
+    if (DEBUG_LOG) {
+        std::cout << "Capturing 3D arg" << arg_idx << " as " << capType << ": type "
+            << primitive_type_names[primitive_type] << ": 0x" << std::hex << data << std::dec << " "
+            << num_x << "*" << num_y << "*" << num_z << "*" << size << " bytes" << std::endl;
+    }
+
+    auto key = std::make_pair(arg_idx, after);
+
+    current_captures_.emplace(
+        key,
+        ArgCapture(arg_idx, after, primitive_type, {size, num_x, num_y, num_z})
+    );
+
+    auto path = std::make_shared<std::filesystem::path>(generate_output_path(arg_idx, after));
+
+    std::ofstream ofs(*path, std::ofstream::binary | std::ofstream::out);
+    if (!ofs.is_open()) {
+        throw std::runtime_error("Failed to open file for dumping arg" + std::to_string(arg_idx) + ": " + path->string());
+    }
+    
+    ofs.write(reinterpret_cast<const char*>(data), size * num_x * num_y * num_z);
+
+    ofs.close();
+
+    current_captures_[key].ext_file = std::move(path);
+}
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -238,6 +269,13 @@ void __daisy_capture_2d(__daisy_capture_t* context, int arg_idx, const void* dat
                             size_t num_rows, size_t num_cols, bool after) {
     if (context) {
         ((DaisyCapture*)context)->capture_2d(arg_idx, data, size, primitive_type, num_rows, num_cols, after);
+    }
+}
+
+void __daisy_capture_3d(__daisy_capture_t* context, int arg_idx, const void* data, size_t size, int primitive_type,
+                            size_t num_x, size_t num_y, size_t num_z, bool after) {
+    if (context) {
+        ((DaisyCapture*)context)->capture_3d(arg_idx, data, size, primitive_type, num_x, num_y, num_z, after);
     }
 }
 

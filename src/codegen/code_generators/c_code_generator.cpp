@@ -102,6 +102,20 @@ void CCodeGenerator::emit_arg_captures(std::ostream& ofs_source, const std::vect
                         ");" << std::endl;
                     break;
                 }
+                case CaptureVarType::Cap3D: {
+                    ofs_source << "\t__daisy_capture_3d(" <<
+                        "__capture_ctx, " <<
+                        argIdx << ", " <<
+                        args[argIdx] << ", " <<
+                        "sizeof(" << language_extension_.primitive_type(varPlan.inner_type) << "), " <<
+                        varPlan.inner_type << ", " <<
+                        language_extension_.expression(varPlan.dim1) << ", " <<
+                        language_extension_.expression(varPlan.dim2) << ", " <<
+                        language_extension_.expression(varPlan.dim3) << ", " <<
+                        afterBoolStr <<
+                        ");" << std::endl;
+                    break;
+                }
                 default:
                     std::cerr << "Unknown capture type " << static_cast<int>(varPlan.type) << " for arg " << argIdx << " at " << (after? "result" : "input") << " time" << std::endl;
                     break;
@@ -138,8 +152,14 @@ bool CCodeGenerator::as_source(const std::filesystem::path& header_path,
     ofs_source << "#include \"" << header_path.filename().string() << "\"" << std::endl;
     ofs_source << this->globals_stream_.str() << std::endl;
 
+    std::unique_ptr<std::vector<CaptureVarPlan>> capturePlan;
     if (capture_args_results_) {
-        this->emit_capture_context_init(ofs_source);
+        capturePlan = create_capture_plans();
+        if (capturePlan) {
+            this->emit_capture_context_init(ofs_source);
+        } else {
+            std::cerr << "Cannot capture all args for SDFG '" << sdfg_.name() << "'. Skpping capture instrumentation!" << std::endl;
+        }
     }
 
     ofs_source << this->function_definition() << std::endl;
@@ -149,15 +169,13 @@ bool CCodeGenerator::as_source(const std::filesystem::path& header_path,
         ofs_source << "__daisy_instrument_init();" << std::endl;
     }
 
-    std::unique_ptr<std::vector<CaptureVarPlan>> capturePlan;
-    if (capture_args_results_) {
-        capturePlan = create_capture_plans();
+    if (capturePlan) {
         this->emit_arg_captures(ofs_source, *capturePlan, false);
     }
 
     ofs_source << this->main_stream_.str() << std::endl;
 
-    if (capture_args_results_) {
+    if (capturePlan) {
         this->emit_arg_captures(ofs_source, *capturePlan, true);
     }
 
