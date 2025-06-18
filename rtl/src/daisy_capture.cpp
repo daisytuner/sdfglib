@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -73,7 +74,6 @@ class DaisyCapture {
    private:
     std::string name_;
     int32_t invokes_ = -1;
-    bool debug_ = true;
     std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash> current_captures_;
 
    public:
@@ -86,22 +86,51 @@ class DaisyCapture {
     void exit();
 
     std::filesystem::path generate_output_path(int arg_idx, bool after) const;
+    bool write_capture_to_file(ArgCapture& capture, const void* data);
 };
 
 
 bool DaisyCapture::enter() {
     ++invokes_;
 
-    if (debug_) {
+    if (DEBUG_LOG) {
         std::cout << "Invoking '" << name_ << "' (" << invokes_ << ")" << std::endl;
     }
 
     return true;
 }
 
+void DaisyCapture::exit() {
+    if (DEBUG_LOG) {
+        std::cout << "Finalizing capture of '" << name_ << std::endl;
+    }
+}
+
 std::filesystem::path DaisyCapture::generate_output_path(int arg_idx, bool after) const {
     std::string capType = after? "out" : "in";
     return "arg_capture/" + name_ + "_inv" + std::to_string(invokes_) +  "_arg" + std::to_string(arg_idx) + "_" + capType + ".bin";
+}
+
+bool DaisyCapture::write_capture_to_file(ArgCapture& capture, const void* data) {
+    auto path = generate_output_path(capture.arg_idx, capture.after);
+
+    std::filesystem::create_directories(path.parent_path());
+    
+
+    std::ofstream ofs(path, std::ofstream::binary | std::ofstream::out);
+    if (!ofs.is_open()) {
+        throw std::runtime_error("Failed to open file for dumping arg" + std::to_string(capture.arg_idx) + ": " + path.string());
+    }
+
+    auto totalSize = std::accumulate(capture.dims.begin(), capture.dims.end(), 1, std::multiplies<size_t>());
+    
+    ofs.write(reinterpret_cast<const char*>(data), totalSize);
+
+    ofs.close();
+
+    capture.ext_file = std::make_shared<std::filesystem::path>(path);
+
+    return !ofs.bad();
 }
 
 void DaisyCapture::capture_raw(int arg_idx, const void* data, size_t size, int primitive_type, bool after) {
@@ -156,22 +185,16 @@ void DaisyCapture::capture_1d(int arg_idx, const void* data, size_t size, int pr
 
     auto dims = std::vector<size_t>{size, num_elements};
 
-    current_captures_.emplace(
-        std::make_pair(key, ArgCapture(arg_idx, after, primitive_type, dims))
+    auto it = current_captures_.emplace(
+        std::make_pair(arg_idx, after),
+        ArgCapture(arg_idx, after, primitive_type, dims)
     );
 
-    auto path = std::make_shared<std::filesystem::path>(generate_output_path(arg_idx, after));
+    auto& cap = it.first->second;
 
-    std::ofstream ofs(*path, std::ofstream::binary | std::ofstream::out);
-    if (!ofs.is_open()) {
-        throw std::runtime_error("Failed to open file for dumping arg" + std::to_string(arg_idx) + ": " + path->string());
+    if (!write_capture_to_file(cap, data)) {
+        throw std::runtime_error("Failed to write capture for arg" + std::to_string(arg_idx) + " to file");
     }
-    
-    ofs.write(reinterpret_cast<const char*>(data), size * num_elements);
-
-    ofs.close();
-
-    current_captures_[key].ext_file = std::move(path);
 }
 
 
@@ -184,25 +207,16 @@ void DaisyCapture::capture_2d(int arg_idx, const void* data, size_t size, int pr
             << num_rows << "*" << num_cols << "*" << size << " bytes" << std::endl;
     }
 
-    auto key = std::make_pair(arg_idx, after);
-
-    current_captures_.emplace(
-        key,
+    auto it = current_captures_.emplace(
+        std::make_pair(arg_idx, after),
         ArgCapture(arg_idx, after, primitive_type, {size, num_rows, num_cols})
     );
 
-    auto path = std::make_shared<std::filesystem::path>(generate_output_path(arg_idx, after));
+    auto& cap = it.first->second;
 
-    std::ofstream ofs(*path, std::ofstream::binary | std::ofstream::out);
-    if (!ofs.is_open()) {
-        throw std::runtime_error("Failed to open file for dumping arg" + std::to_string(arg_idx) + ": " + path->string());
+    if (!write_capture_to_file(cap, data)) {
+        throw std::runtime_error("Failed to write capture for arg" + std::to_string(arg_idx) + " to file");
     }
-    
-    ofs.write(reinterpret_cast<const char*>(data), size * num_rows * num_cols);
-
-    ofs.close();
-
-    current_captures_[key].ext_file = std::move(path);
 }
 
 void DaisyCapture::capture_3d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_x, size_t num_y, size_t num_z, bool after) {
@@ -214,25 +228,16 @@ void DaisyCapture::capture_3d(int arg_idx, const void* data, size_t size, int pr
             << num_x << "*" << num_y << "*" << num_z << "*" << size << " bytes" << std::endl;
     }
 
-    auto key = std::make_pair(arg_idx, after);
-
-    current_captures_.emplace(
-        key,
+    auto it = current_captures_.emplace(
+        std::make_pair(arg_idx, after),
         ArgCapture(arg_idx, after, primitive_type, {size, num_x, num_y, num_z})
     );
 
-    auto path = std::make_shared<std::filesystem::path>(generate_output_path(arg_idx, after));
+    auto& cap = it.first->second;
 
-    std::ofstream ofs(*path, std::ofstream::binary | std::ofstream::out);
-    if (!ofs.is_open()) {
-        throw std::runtime_error("Failed to open file for dumping arg" + std::to_string(arg_idx) + ": " + path->string());
+    if (!write_capture_to_file(cap, data)) {
+        throw std::runtime_error("Failed to write capture for arg" + std::to_string(arg_idx) + " to file");
     }
-    
-    ofs.write(reinterpret_cast<const char*>(data), size * num_x * num_y * num_z);
-
-    ofs.close();
-
-    current_captures_[key].ext_file = std::move(path);
 }
 
 #ifdef __cplusplus
@@ -279,7 +284,7 @@ void __daisy_capture_3d(__daisy_capture_t* context, int arg_idx, const void* dat
     }
 }
 
-void __daisy_capture_exit(__daisy_capture_t* context) {
+void __daisy_capture_end(__daisy_capture_t* context) {
     if (context) {
         ((DaisyCapture*)context)->exit();
     }

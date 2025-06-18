@@ -27,6 +27,7 @@ typedef struct __daisy_capture __daisy_capture_t;
 __daisy_capture_t* __daisy_capture_init(const char* name);
 
 bool __daisy_capture_enter(__daisy_capture_t* context);
+void __daisy_capture_end(__daisy_capture_t* context);
 
 void __daisy_capture_raw(__daisy_capture_t* context, int arg_idx, const void* data, size_t size, int primitive_type, bool after);
 
