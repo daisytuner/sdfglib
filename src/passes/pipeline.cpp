@@ -80,5 +80,13 @@ Pipeline Pipeline::controlflow_simplification() {
     return p;
 };
 
+Pipeline Pipeline::data_parallelism() {
+    Pipeline p("DataParallelism");
+
+    p.register_pass<For2MapPass>();
+
+    return p;
+};
+
 }  // namespace passes
 }  // namespace sdfg
