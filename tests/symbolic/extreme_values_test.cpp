@@ -265,7 +265,6 @@ TEST(ExtremeValuesTest, Recursive_Assumptions) {
     auto i_min = symbolic::minimum(i, parameters, assumptions);
     EXPECT_TRUE(symbolic::eq(i_min, symbolic::integer(0)));
     auto i_max = symbolic::maximum(i, parameters, assumptions);
-    std::cout << "i_max: " << i_max->__str__() << std::endl;
     EXPECT_TRUE(symbolic::eq(i_max, i_end_ex));
 
     auto j_min = symbolic::minimum(j, parameters, assumptions);
