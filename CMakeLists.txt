@@ -84,7 +84,7 @@ set(SOURCE_FILES
     src/data_flow/library_node.cpp
     src/data_flow/memlet.cpp
     src/data_flow/tasklet.cpp
-    src/data_flow/barrier_local_node.cpp
+    src/data_flow/library_nodes/barrier_local_node.cpp
     src/deepcopy/structured_sdfg_deep_copy.cpp
     src/graph/graph.cpp
     src/visitor/structured_sdfg_visitor.cpp
