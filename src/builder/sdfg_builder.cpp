@@ -26,8 +26,8 @@ std::unique_ptr<SDFG> SDFGBuilder::move() { return std::move(this->sdfg_); };
 control_flow::State& SDFGBuilder::add_state(bool is_start_state, const DebugInfo& debug_info) {
     auto vertex = boost::add_vertex(this->sdfg_->graph_);
     auto res = this->sdfg_->states_.insert(
-        {vertex,
-         std::unique_ptr<control_flow::State>(new control_flow::State(debug_info, vertex))});
+        {vertex, std::unique_ptr<control_flow::State>(
+                     new control_flow::State(this->new_element_id(), debug_info, vertex))});
 
     assert(res.second);
     (*res.first).second->dataflow_->parent_ = (*res.first).second.get();
@@ -116,8 +116,9 @@ control_flow::InterstateEdge& SDFGBuilder::add_edge(const control_flow::State& s
     assert(edge.second);
 
     auto res = this->sdfg_->edges_.insert(
-        {edge.first, std::unique_ptr<control_flow::InterstateEdge>(new control_flow::InterstateEdge(
-                         debug_info, edge.first, src, dst, condition, assignments))});
+        {edge.first,
+         std::unique_ptr<control_flow::InterstateEdge>(new control_flow::InterstateEdge(
+             this->new_element_id(), debug_info, edge.first, src, dst, condition, assignments))});
 
     assert(res.second);
 
@@ -178,8 +179,8 @@ data_flow::AccessNode& SDFGBuilder::add_access(control_flow::State& state, const
     auto& dataflow = state.dataflow();
     auto vertex = boost::add_vertex(dataflow.graph_);
     auto res = dataflow.nodes_.insert(
-        {vertex, std::unique_ptr<data_flow::AccessNode>(
-                     new data_flow::AccessNode(debug_info, vertex, dataflow, data))});
+        {vertex, std::unique_ptr<data_flow::AccessNode>(new data_flow::AccessNode(
+                     this->new_element_id(), debug_info, vertex, dataflow, data))});
 
     return dynamic_cast<data_flow::AccessNode&>(*(res.first->second));
 };
@@ -203,9 +204,10 @@ data_flow::Tasklet& SDFGBuilder::add_tasklet(
 
     auto& dataflow = state.dataflow();
     auto vertex = boost::add_vertex(dataflow.graph_);
-    auto res = dataflow.nodes_.insert(
-        {vertex, std::unique_ptr<data_flow::Tasklet>(new data_flow::Tasklet(
-                     debug_info, vertex, dataflow, code, output, inputs, symbolic::__true__()))});
+    auto res =
+        dataflow.nodes_.insert({vertex, std::unique_ptr<data_flow::Tasklet>(new data_flow::Tasklet(
+                                            this->new_element_id(), debug_info, vertex, dataflow,
+                                            code, output, inputs, symbolic::__true__()))});
 
     return dynamic_cast<data_flow::Tasklet&>(*(res.first->second));
 };
@@ -301,7 +303,6 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
         }
     } else if (dynamic_cast<data_flow::AccessNode*>(&src) &&
                dynamic_cast<data_flow::LibraryNode*>(&dst)) {
-        auto& src_node = dynamic_cast<data_flow::AccessNode&>(src);
         auto& dst_node = dynamic_cast<data_flow::LibraryNode&>(dst);
         if (src_conn != "void") {
             throw InvalidSDFGException("src_conn must be void. Found: " + src_conn);
@@ -316,15 +317,9 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
         if (!found) {
             throw InvalidSDFGException("dst_conn not found in library node: " + dst_conn);
         }
-
-        auto& element_type = types::infer_type(function_, function_.type(src_node.data()), subset);
-        if (!dynamic_cast<const types::Scalar*>(&element_type)) {
-            throw InvalidSDFGException("Library node inputs must be scalars");
-        }
     } else if (dynamic_cast<data_flow::LibraryNode*>(&src) &&
                dynamic_cast<data_flow::AccessNode*>(&dst)) {
         auto& src_node = dynamic_cast<data_flow::LibraryNode&>(src);
-        auto& dst_node = dynamic_cast<data_flow::AccessNode&>(dst);
         if (dst_conn != "void") {
             throw InvalidSDFGException("dst_conn must be void. Found: " + dst_conn);
         }
@@ -338,11 +333,6 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
         if (!found) {
             throw InvalidSDFGException("src_conn not found in library node: " + src_conn);
         }
-
-        auto& element_type = types::infer_type(function_, function_.type(dst_node.data()), subset);
-        if (!dynamic_cast<const types::Pointer*>(&element_type)) {
-            throw InvalidSDFGException("Access node must be a pointer");
-        }
     } else {
         throw InvalidSDFGException("Invalid src or dst node type");
     }
@@ -350,8 +340,9 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
     auto& dataflow = state.dataflow();
     auto edge = boost::add_edge(src.vertex_, dst.vertex_, dataflow.graph_);
     auto res = dataflow.edges_.insert(
-        {edge.first, std::unique_ptr<data_flow::Memlet>(new data_flow::Memlet(
-                         debug_info, edge.first, dataflow, src, src_conn, dst, dst_conn, subset))});
+        {edge.first, std::unique_ptr<data_flow::Memlet>(
+                         new data_flow::Memlet(this->new_element_id(), debug_info, edge.first,
+                                               dataflow, src, src_conn, dst, dst_conn, subset))});
 
     return dynamic_cast<data_flow::Memlet&>(*(res.first->second));
 };

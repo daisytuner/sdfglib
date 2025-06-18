@@ -3,6 +3,8 @@
 namespace sdfg {
 namespace builder {
 
+size_t FunctionBuilder::new_element_id() const { return ++this->function().element_counter_; };
+
 const types::IType& FunctionBuilder::add_container(const std::string& name,
                                                    const types::IType& type, bool is_argument,
                                                    bool is_external) const {

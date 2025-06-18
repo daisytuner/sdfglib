@@ -26,7 +26,7 @@ class State : public Element {
     const graph::Vertex vertex_;
     std::unique_ptr<data_flow::DataFlowGraph> dataflow_;
 
-    State(const DebugInfo& debug_info, const graph::Vertex vertex);
+    State(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex);
 
    public:
     // Remark: Exclusive resource

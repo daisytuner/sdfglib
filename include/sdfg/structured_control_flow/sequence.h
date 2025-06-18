@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/control_flow/interstate_edge.h"
+#include "sdfg/structured_control_flow/control_flow_node.h"
 
 namespace sdfg {
 
@@ -18,16 +18,19 @@ namespace structured_control_flow {
 class While;
 class For;
 class Map;
+class Sequence;
 
 class Transition : public Element {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
    private:
+    Sequence& parent_;
     control_flow::Assignments assignments_;
 
-    Transition(const DebugInfo& debug_info);
+    Transition(size_t element_id, const DebugInfo& debug_info, Sequence& parent);
 
-    Transition(const DebugInfo& debug_info, const control_flow::Assignments& assignments);
+    Transition(size_t element_id, const DebugInfo& debug_info, Sequence& parent,
+               const control_flow::Assignments& assignments);
 
    public:
     Transition(const Transition& node) = delete;
@@ -36,6 +39,10 @@ class Transition : public Element {
     const control_flow::Assignments& assignments() const;
 
     control_flow::Assignments& assignments();
+
+    Sequence& parent();
+
+    const Sequence& parent() const;
 
     bool empty() const;
 
@@ -58,7 +65,7 @@ class Sequence : public ControlFlowNode {
     std::vector<std::unique_ptr<ControlFlowNode>> children_;
     std::vector<std::unique_ptr<Transition>> transitions_;
 
-    Sequence(const DebugInfo& debug_info);
+    Sequence(size_t element_id, const DebugInfo& debug_info);
 
    public:
     Sequence(const Sequence& node) = delete;

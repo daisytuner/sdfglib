@@ -17,7 +17,7 @@ void DotVisualizer::visualizeBlock(StructuredSDFG& sdfg, structured_control_flow
     this->stream_ << "subgraph cluster_" << block.element_id() << " {" << std::endl;
     this->stream_.setIndent(this->stream_.indent() + 4);
     this->stream_ << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl;
-    this->last_comp_name_cluster_ = "cluster_" + block.element_id();
+    this->last_comp_name_cluster_ = "cluster_" + std::to_string(block.element_id());
     if (block.dataflow().nodes().empty()) {
         this->stream_ << block.element_id() << " [shape=point,style=invis,label=\"\"];"
                       << std::endl;
@@ -71,9 +71,8 @@ void DotVisualizer::visualizeBlock(StructuredSDFG& sdfg, structured_control_flow
             this->stream_ << "label=\"" << access_node->data() << "\"];" << std::endl;
         } else if (const data_flow::LibraryNode* libnode =
                        dynamic_cast<data_flow::LibraryNode*>(node)) {
-            this->stream_ << libnode->element_id() << " [shape=doubleoctagon,label=\"";
-            this->visualizeLibraryNode(libnode->code());
-            this->stream_ << "\"];" << std::endl;
+            this->stream_ << libnode->element_id() << " [shape=doubleoctagon,label=\""
+                          << libnode->toStr() << "\"];" << std::endl;
             if (this->last_comp_name_.empty()) this->last_comp_name_ = libnode->element_id();
         }
     }
@@ -124,7 +123,7 @@ void DotVisualizer::visualizeIfElse(StructuredSDFG& sdfg,
     this->stream_.setIndent(this->stream_.indent() - 4);
     this->stream_ << "}" << std::endl;
     this->last_comp_name_ = if_else.element_id();
-    this->last_comp_name_cluster_ = "cluster_" + if_else.element_id();
+    this->last_comp_name_cluster_ = "cluster_" + std::to_string(if_else.element_id());
 }
 
 void DotVisualizer::visualizeWhile(StructuredSDFG& sdfg,
@@ -139,7 +138,7 @@ void DotVisualizer::visualizeWhile(StructuredSDFG& sdfg,
     this->stream_.setIndent(this->stream_.indent() - 4);
     this->stream_ << "}" << std::endl;
     this->last_comp_name_ = while_loop.element_id();
-    this->last_comp_name_cluster_ = "cluster_" + while_loop.element_id();
+    this->last_comp_name_cluster_ = "cluster_" + std::to_string(while_loop.element_id());
 }
 
 void DotVisualizer::visualizeFor(StructuredSDFG& sdfg, structured_control_flow::For& loop) {
@@ -153,7 +152,7 @@ void DotVisualizer::visualizeFor(StructuredSDFG& sdfg, structured_control_flow::
     this->stream_.setIndent(this->stream_.indent() - 4);
     this->stream_ << "}" << std::endl;
     this->last_comp_name_ = loop.element_id();
-    this->last_comp_name_cluster_ = "cluster_" + loop.element_id();
+    this->last_comp_name_cluster_ = "cluster_" + std::to_string(loop.element_id());
 }
 
 void DotVisualizer::visualizeReturn(StructuredSDFG& sdfg,
@@ -189,7 +188,7 @@ void DotVisualizer::visualizeMap(StructuredSDFG& sdfg, structured_control_flow::
     this->stream_.setIndent(this->stream_.indent() - 4);
     this->stream_ << "}" << std::endl;
     this->last_comp_name_ = map_node.element_id();
-    this->last_comp_name_cluster_ = "cluster_" + map_node.element_id();
+    this->last_comp_name_cluster_ = "cluster_" + std::to_string(map_node.element_id());
 }
 
 void DotVisualizer::visualize() {

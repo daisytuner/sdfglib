@@ -42,6 +42,8 @@ class Function {
     friend class sdfg::builder::FunctionBuilder;
 
    protected:
+    size_t element_counter_;
+
     // Name
     std::string name_;
     FunctionType type_;

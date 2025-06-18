@@ -722,12 +722,12 @@ void DataParallelismAnalysis::classify(analysis::AnalysisManager& analysis_manag
 
     // Assumptions analysis
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto assumptions = assumptions_analysis.get(body);
+    auto assumptions = assumptions_analysis.get(body, true);
 
     // For each container, we now classify the access pattern
 
     // 1. Identify private containers
-    auto locals = users.locals(sdfg_, body);
+    auto locals = users.locals(body);
     for (auto& local : locals) {
         result.insert({local, Parallelism::PRIVATE});
     }

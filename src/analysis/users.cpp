@@ -578,6 +578,8 @@ void Users::run(analysis::AnalysisManager& analysis_manager) {
                 break;
         }
     }
+
+    this->init_dom_tree();
 };
 
 std::vector<User*> Users::uses() const {
@@ -687,12 +689,20 @@ std::vector<User*> Users::moves(const std::string& container) const {
     }
 };
 
+structured_control_flow::ControlFlowNode* Users::scope(User* user) {
+    if (auto data_node = dynamic_cast<data_flow::DataFlowNode*>(user->element())) {
+        return static_cast<structured_control_flow::Block*>(data_node->get_parent().get_parent());
+    } else if (auto transition =
+                   dynamic_cast<structured_control_flow::Transition*>(user->element())) {
+        return &transition->parent();
+    } else {
+        return dynamic_cast<structured_control_flow::ControlFlowNode*>(user->element());
+    }
+}
+
 /****** Domination Analysis ******/
 
 bool Users::dominates(User& user1, User& user) {
-    if (this->dom_tree_.empty()) {
-        this->init_dom_tree();
-    }
     auto dominator = this->dom_tree_.at(&user);
     while (dominator != nullptr) {
         if (dominator == &user1) {
@@ -704,9 +714,6 @@ bool Users::dominates(User& user1, User& user) {
 };
 
 bool Users::post_dominates(User& user1, User& user) {
-    if (this->pdom_tree_.empty()) {
-        this->init_dom_tree();
-    }
     auto dominator = this->pdom_tree_.at(&user);
     while (dominator != nullptr) {
         if (dominator == &user1) {
@@ -849,15 +856,39 @@ bool Users::is_constant(const std::unordered_set<std::string>& containers, User&
 }
 
 UsersView::UsersView(Users& users, structured_control_flow::ControlFlowNode& node) : users_(users) {
-    auto& entry = users.entries_.at(&node);
-    auto& exit = users.exits_.at(&node);
-    this->entry_ = entry;
-    this->exit_ = exit;
-    this->sub_users_ = users.all_uses_between(*entry, *exit);
+    this->entry_ = users.entries_.at(&node);
+    this->exit_ = users.exits_.at(&node);
 
-    if (this->users_.dom_tree_.empty()) {
-        this->users_.init_dom_tree();
+    // Collect sub users
+    std::unordered_set<User*> visited;
+    std::list<User*> queue = {this->exit_};
+    while (!queue.empty()) {
+        auto current = queue.front();
+        queue.pop_front();
+
+        // Stop conditions
+        if (current == this->entry_) {
+            continue;
+        }
+
+        if (visited.find(current) != visited.end()) {
+            continue;
+        }
+        visited.insert(current);
+
+        this->sub_users_.insert(current);
+
+        // Extend search
+        // Backward search to utilize domination user1 over user
+        auto [eb, ee] = boost::in_edges(current->vertex_, users.graph_);
+        auto edges = std::ranges::subrange(eb, ee);
+        for (auto edge : edges) {
+            auto v = boost::source(edge, users.graph_);
+            queue.push_back(users.users_.at(v).get());
+        }
     }
+
+    // Collect sub dom tree
     auto& dom_tree = this->users_.dom_tree_;
 
     for (auto& user : this->sub_users_) {
@@ -865,9 +896,7 @@ UsersView::UsersView(Users& users, structured_control_flow::ControlFlowNode& nod
     }
     this->sub_dom_tree_[this->entry_] = nullptr;
 
-    if (this->users_.pdom_tree_.empty()) {
-        this->users_.init_dom_tree();
-    }
+    // Collect sub post dom tree
     auto& pdom_tree = this->users_.pdom_tree_;
     for (auto& user : this->sub_users_) {
         this->sub_pdom_tree_[user] = pdom_tree[user];
@@ -1224,93 +1253,23 @@ void Users::add_user(std::unique_ptr<User> user) {
         .insert({user_ptr->use(), user_ptr});
 }
 
-std::unordered_set<std::string> Users::locals(StructuredSDFG& sdfg,
-                                              structured_control_flow::ControlFlowNode& node) {
-    // Collect all node elements
-    Users local_users(sdfg, node);
-    analysis::AnalysisManager analysis_manager(sdfg_);
-    local_users.run(analysis_manager);
-    std::unordered_map<std::string, std::unordered_set<Element*>> elements;
-    for (auto& entry : local_users.users_) {
-        if (entry.second->use() == Use::NOP) {
-            continue;
-        }
-        if (!sdfg.is_transient(entry.second->container())) {
-            continue;
-        }
+std::unordered_set<std::string> Users::locals(structured_control_flow::ControlFlowNode& node) {
+    auto& sdfg = this->sdfg_;
 
-        if (elements.find(entry.second->container()) == elements.end()) {
-            elements[entry.second->container()] = {};
-        }
-        elements[entry.second->container()].insert(entry.second->element());
-    }
-
-    // Determine locals
-    for (auto& entry : this->users_) {
-        if (entry.second->use() == Use::NOP) {
-            continue;
-        }
-
-        auto& container = entry.second->container();
-        auto element = entry.second->element();
-        if (elements.find(container) == elements.end()) {
-            continue;
-        }
-        // used outside of node
-        if (elements[container].find(element) == elements[container].end()) {
-            elements.erase(container);
-        }
-    }
-
+    // Locals have no uses outside of the node
+    // We can check this by comparing the number of uses of the container in the view and the total
+    // number of uses of the container in the users map.
     std::unordered_set<std::string> locals;
-    for (auto& entry : elements) {
-        locals.insert(entry.first);
-    }
-    return locals;
-};
-
-std::unordered_set<std::string> UsersView::locals(StructuredSDFG& sdfg,
-                                                  structured_control_flow::ControlFlowNode& node) {
-    // Collect all node elements
-    Users local_users(sdfg, node);
-    analysis::AnalysisManager analysis_manager(users_.sdfg_);
-    local_users.run(analysis_manager);
-    std::unordered_map<std::string, std::unordered_set<Element*>> elements;
-    for (auto& entry : local_users.users_) {
-        if (entry.second->use() == Use::NOP) {
+    UsersView view(*this, node);
+    for (auto& user : view.uses()) {
+        if (!sdfg.is_transient(user->container())) {
             continue;
         }
-        if (!sdfg.is_transient(entry.second->container())) {
-            continue;
-        }
-
-        if (elements.find(entry.second->container()) == elements.end()) {
-            elements[entry.second->container()] = {};
-        }
-        elements[entry.second->container()].insert(entry.second->element());
-    }
-
-    // Determine locals
-    for (auto& entry : this->sub_users_) {
-        if (entry->use() == Use::NOP) {
-            continue;
-        }
-
-        auto& container = entry->container();
-        auto element = entry->element();
-        if (elements.find(container) == elements.end()) {
-            continue;
-        }
-        // used outside of node
-        if (elements[container].find(element) == elements[container].end()) {
-            elements.erase(container);
+        if (view.uses(user->container()).size() == this->uses(user->container()).size()) {
+            locals.insert(user->container());
         }
     }
 
-    std::unordered_set<std::string> locals;
-    for (auto& entry : elements) {
-        locals.insert(entry.first);
-    }
     return locals;
 };
 

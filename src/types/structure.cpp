@@ -17,7 +17,7 @@ const std::string& Structure::name() const { return this->name_; };
 
 bool Structure::operator==(const IType& other) const {
     if (auto structure_ = dynamic_cast<const Structure*>(&other)) {
-        return this->name_ == structure_->name_ && this->alignment_ == structure_->alignment_;
+        return this->name_ == structure_->name_;
     } else {
         return false;
     }

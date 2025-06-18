@@ -20,7 +20,7 @@ class IfElse : public ControlFlowNode {
     std::vector<std::unique_ptr<Sequence>> cases_;
     std::vector<symbolic::Condition> conditions_;
 
-    IfElse(const DebugInfo& debug_info);
+    IfElse(size_t element_id, const DebugInfo& debug_info);
 
    public:
     IfElse(const IfElse& node) = delete;

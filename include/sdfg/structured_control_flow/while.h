@@ -20,7 +20,7 @@ class While : public ControlFlowNode {
    private:
     std::unique_ptr<Sequence> root_;
 
-    While(const DebugInfo& debug_info);
+    While(size_t element_id, const DebugInfo& debug_info);
 
    public:
     While(const While& node) = delete;
@@ -38,7 +38,7 @@ class Break : public ControlFlowNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
    private:
-    Break(const DebugInfo& debug_info);
+    Break(size_t element_id, const DebugInfo& debug_info);
 
    public:
     void replace(const symbolic::Expression& old_expression,
@@ -49,7 +49,7 @@ class Continue : public ControlFlowNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
    private:
-    Continue(const DebugInfo& debug_info);
+    Continue(size_t element_id, const DebugInfo& debug_info);
 
    public:
     void replace(const symbolic::Expression& old_expression,

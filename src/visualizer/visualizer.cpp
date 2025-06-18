@@ -7,7 +7,6 @@
 #include <utility>
 #include <vector>
 
-#include "sdfg/data_flow/library_node.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/helpers/helpers.h"
 #include "sdfg/structured_control_flow/block.h"
@@ -487,10 +486,6 @@ void Visualizer::visualizeForBounds(symbolic::Symbol const& indvar,
                       << this->expression(condition->__str__()) << "; " << indvar->get_name()
                       << " = " << this->expression(update->__str__());
     }
-}
-
-void Visualizer::visualizeLibraryNode(const data_flow::LibraryNodeCode libnode_type) {
-    this->stream_ << libnode_type.value();
 }
 
 void Visualizer::visualizeSubset(Function const& function, types::IType const& type,

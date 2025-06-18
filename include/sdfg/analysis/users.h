@@ -149,6 +149,12 @@ class Users : public Analysis {
 
     std::vector<User*> moves(const std::string& container) const;
 
+    static structured_control_flow::ControlFlowNode* scope(User* user);
+
+    /**** Scope ****/
+
+    std::unordered_set<std::string> locals(structured_control_flow::ControlFlowNode& node);
+
     /****** Domination Analysis ******/
 
     bool dominates(User& user1, User& user);
@@ -162,11 +168,6 @@ class Users : public Analysis {
     const std::unordered_set<User*> all_uses_after(User& user);
 
     bool is_constant(const std::unordered_set<std::string>& containers, User& user1, User& user2);
-
-    /**** Deprecated ****/
-
-    std::unordered_set<std::string> locals(StructuredSDFG& sdfg,
-                                           structured_control_flow::ControlFlowNode& node);
 };
 
 class UsersView {
@@ -218,11 +219,6 @@ class UsersView {
     std::unordered_set<User*> all_uses_after(User& user);
 
     bool is_constant(const std::unordered_set<std::string>& containers, User& user1, User& user2);
-
-    /*** Deprecated ***/
-
-    std::unordered_set<std::string> locals(StructuredSDFG& sdfg,
-                                           structured_control_flow::ControlFlowNode& node);
 };
 
 }  // namespace analysis

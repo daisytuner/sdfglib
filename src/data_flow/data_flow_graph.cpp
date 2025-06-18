@@ -238,31 +238,5 @@ DataFlowGraph::weakly_connected_components() const {
     return {ccs_vertex.first, ccs};
 };
 
-/***** Section: Serialization *****/
-
-std::unique_ptr<DataFlowGraph> DataFlowGraph::clone() const {
-    auto new_graph = std::make_unique<DataFlowGraph>();
-
-    std::unordered_map<graph::Vertex, graph::Vertex> node_mapping;
-    for (auto& entry : this->nodes_) {
-        auto vertex = boost::add_vertex(new_graph->graph_);
-        new_graph->nodes_.insert({vertex, entry.second->clone(vertex, *new_graph)});
-        node_mapping.insert({entry.first, vertex});
-    }
-
-    for (auto& entry : this->edges_) {
-        auto src = node_mapping[entry.second->src().vertex()];
-        auto dst = node_mapping[entry.second->dst().vertex()];
-
-        auto edge = boost::add_edge(src, dst, new_graph->graph_);
-
-        new_graph->edges_.insert(
-            {edge.first, entry.second->clone(edge.first, *new_graph, *new_graph->nodes_[src],
-                                             *new_graph->nodes_[dst])});
-    }
-
-    return new_graph;
-};
-
 }  // namespace data_flow
 }  // namespace sdfg

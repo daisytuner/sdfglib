@@ -2,6 +2,7 @@
 
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
+#include "sdfg/symbolic/conjunctive_normal_form.h"
 #include "sdfg/symbolic/series.h"
 
 namespace sdfg {
@@ -66,7 +67,7 @@ const std::unordered_set<structured_control_flow::ControlFlowNode*> LoopAnalysis
 bool LoopAnalysis::is_monotonic(structured_control_flow::StructuredLoop* loop) const {
     AnalysisManager manager(this->sdfg_);
     auto& assums_analysis = manager.get<AssumptionsAnalysis>();
-    auto assums = assums_analysis.get(*loop);
+    auto assums = assums_analysis.get(*loop, true);
 
     return symbolic::is_monotonic(loop->update(), loop->indvar(), assums);
 }
@@ -74,9 +75,72 @@ bool LoopAnalysis::is_monotonic(structured_control_flow::StructuredLoop* loop) c
 bool LoopAnalysis::is_contiguous(structured_control_flow::StructuredLoop* loop) const {
     AnalysisManager manager(this->sdfg_);
     auto& assums_analysis = manager.get<AssumptionsAnalysis>();
-    auto assums = assums_analysis.get(*loop);
+    auto assums = assums_analysis.get(*loop, true);
 
     return symbolic::is_contiguous(loop->update(), loop->indvar(), assums);
+}
+
+symbolic::Expression LoopAnalysis::canonical_bound(
+    structured_control_flow::StructuredLoop* loop) const {
+    if (!this->is_contiguous(loop)) {
+        return SymEngine::null;
+    }
+
+    symbolic::CNF cnf;
+    try {
+        cnf = symbolic::conjunctive_normal_form(loop->condition());
+    } catch (const std::runtime_error& e) {
+        return SymEngine::null;
+    }
+
+    bool has_complex_clauses = false;
+    for (auto& clause : cnf) {
+        if (clause.size() > 1) {
+            has_complex_clauses = true;
+            break;
+        }
+    }
+    if (has_complex_clauses) {
+        return SymEngine::null;
+    }
+
+    auto indvar = loop->indvar();
+    symbolic::Expression bound = SymEngine::null;
+    for (auto& clause : cnf) {
+        for (auto& literal : clause) {
+            if (SymEngine::is_a<SymEngine::StrictLessThan>(*literal)) {
+                auto lt = SymEngine::rcp_dynamic_cast<const SymEngine::StrictLessThan>(literal);
+                auto lhs = lt->get_args()[0];
+                auto rhs = lt->get_args()[1];
+                if (SymEngine::eq(*lhs, *indvar)) {
+                    if (bound == SymEngine::null) {
+                        bound = rhs;
+                    } else {
+                        bound = symbolic::min(bound, rhs);
+                    }
+                } else {
+                    return SymEngine::null;
+                }
+            } else if (SymEngine::is_a<SymEngine::LessThan>(*literal)) {
+                auto le = SymEngine::rcp_dynamic_cast<const SymEngine::LessThan>(literal);
+                auto lhs = le->get_args()[0];
+                auto rhs = le->get_args()[1];
+                if (SymEngine::eq(*lhs, *indvar)) {
+                    if (bound == SymEngine::null) {
+                        bound = symbolic::add(rhs, symbolic::one());
+                    } else {
+                        bound = symbolic::min(bound, symbolic::add(rhs, symbolic::one()));
+                    }
+                } else {
+                    return SymEngine::null;
+                }
+            } else {
+                return SymEngine::null;
+            }
+        }
+    }
+
+    return bound;
 }
 
 const std::unordered_map<structured_control_flow::ControlFlowNode*,

@@ -36,9 +36,10 @@ class InterstateEdge : public Element {
     symbolic::Condition condition_;
     control_flow::Assignments assignments_;
 
-    InterstateEdge(const DebugInfo& debug_info, const graph::Edge& edge,
+    InterstateEdge(size_t element_id, const DebugInfo& debug_info, const graph::Edge& edge,
                    const control_flow::State& src, const control_flow::State& dst,
-                   const symbolic::Condition& condition, const control_flow::Assignments& assignments);
+                   const symbolic::Condition& condition,
+                   const control_flow::Assignments& assignments);
 
    public:
     // Remark: Exclusive resource

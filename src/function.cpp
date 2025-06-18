@@ -11,7 +11,8 @@ const std::unique_ptr<types::Scalar> Function::NVPTX_SYMBOL_TYPE =
 const std::unique_ptr<types::Pointer> Function::CONST_POINTER_TYPE =
     std::make_unique<types::Pointer>(types::Scalar(types::PrimitiveType::Void));
 
-Function::Function(const std::string& name, FunctionType type) : name_(name), type_(type) {
+Function::Function(const std::string& name, FunctionType type)
+    : element_counter_(0), name_(name), type_(type) {
     if (this->type_ == FunctionType_NV_GLOBAL) {
         this->assumptions_[symbolic::threadIdx_x()] =
             symbolic::Assumption::create(symbolic::threadIdx_x(), *NVPTX_SYMBOL_TYPE);
