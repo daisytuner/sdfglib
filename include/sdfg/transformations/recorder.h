@@ -8,17 +8,17 @@
 #include <nlohmann/json.hpp>
 
 namespace sdfg {
-namespace optimizations {
+namespace transformations {
 
 template <typename T>
 concept transformation_concept = std::derived_from<T, sdfg::transformations::Transformation>;
 
-class Optimizer {
+class Recorder {
    private:
     nlohmann::json history_;
 
    public:
-    Optimizer();
+    Recorder();
 
     template <typename T, typename... Args>
         requires transformation_concept<T>
@@ -62,5 +62,5 @@ class Optimizer {
     void save(std::filesystem::path path) const;
 };
 
-}  // namespace optimizations
+}  // namespace transformations
 }  // namespace sdfg

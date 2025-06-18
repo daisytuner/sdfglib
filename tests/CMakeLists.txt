@@ -36,7 +36,6 @@ set(TEST_FILES
     element_test.cpp
     graph/graph_algorithms_test.cpp
     helpers/helpers_test.cpp
-    optimizations/optimizer_test.cpp
     passes/dataflow/dead_data_elimination_test.cpp
     passes/dataflow/redundant_array_elimination_test.cpp
     passes/dataflow/trivial_array_elimination_test.cpp
@@ -61,6 +60,7 @@ set(TEST_FILES
     transformations/loop_slicing_test.cpp
     transformations/loop_tiling_test.cpp
     transformations/out_local_storage_test.cpp
+    transformations/recorder_test.cpp
     types/array_test.cpp
     types/function_test.cpp
     types/pointer_test.cpp

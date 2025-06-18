@@ -1,18 +1,18 @@
-#include <sdfg/optimizations/optimizer.h>
 #include <sdfg/transformations/loop_distribute.h>
 #include <sdfg/transformations/loop_interchange.h>
 #include <sdfg/transformations/loop_slicing.h>
 #include <sdfg/transformations/loop_tiling.h>
 #include <sdfg/transformations/out_local_storage.h>
+#include <sdfg/transformations/recorder.h>
 
 namespace sdfg {
-namespace optimizations {
+namespace transformations {
 
-Optimizer::Optimizer() : history_(nlohmann::json::array()) {}
+Recorder::Recorder() : history_(nlohmann::json::array()) {}
 
-void Optimizer::replay(builder::StructuredSDFGBuilder& builder,
-                       analysis::AnalysisManager& analysis_manager,
-                       const nlohmann::json& transformation_data) {
+void Recorder::replay(builder::StructuredSDFGBuilder& builder,
+                      analysis::AnalysisManager& analysis_manager,
+                      const nlohmann::json& transformation_data) {
     std::cout << "Replaying transformations..." << std::endl;
     std::cout << "Transformation data: " << transformation_data.dump(4) << std::endl;
 
@@ -39,7 +39,7 @@ void Optimizer::replay(builder::StructuredSDFGBuilder& builder,
     }
 }
 
-void Optimizer::save(std::filesystem::path path) const {
+void Recorder::save(std::filesystem::path path) const {
     std::ofstream file(path);
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open file for saving transformations: " +
@@ -51,5 +51,5 @@ void Optimizer::save(std::filesystem::path path) const {
     file.close();
 }
 
-}  // namespace optimizations
+}  // namespace transformations
 }  // namespace sdfg

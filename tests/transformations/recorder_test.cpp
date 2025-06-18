@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <sdfg/optimizations/optimizer.h>
+#include <sdfg/transformations/recorder.h>
 
 #include <fstream>
 #include <iostream>
@@ -16,7 +16,7 @@
 
 using namespace sdfg;
 
-class OptimizerLoopTilingTest : public ::testing::Test {
+class RecorderLoopTilingTest : public ::testing::Test {
    protected:
     std::unique_ptr<builder::StructuredSDFGBuilder> builder_;
     std::unique_ptr<analysis::AnalysisManager> analysis_manager_;
@@ -62,35 +62,35 @@ class OptimizerLoopTilingTest : public ::testing::Test {
     };
 };
 
-TEST_F(OptimizerLoopTilingTest, Apply_LoopTiling) {
-    optimizations::Optimizer optimizer;
+TEST_F(RecorderLoopTilingTest, Apply_LoopTiling) {
+    transformations::Recorder recorder;
 
     EXPECT_TRUE(loop_ != nullptr);
     EXPECT_TRUE(analysis_manager_ != nullptr);
     EXPECT_NO_THROW(
-        optimizer.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_, 32));
+        recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_, 32));
 }
 
-TEST_F(OptimizerLoopTilingTest, Apply_InvalidTransformation) {
-    optimizations::Optimizer optimizer;
+TEST_F(RecorderLoopTilingTest, Apply_InvalidTransformation) {
+    transformations::Recorder recorder;
 
     EXPECT_THROW(
-        optimizer.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_, 0),
+        recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_, 0),
         transformations::InvalidTransformationException);
 }
 
-TEST_F(OptimizerLoopTilingTest, Save_SingleTransformation) {
-    optimizations::Optimizer optimizer;
+TEST_F(RecorderLoopTilingTest, Save_SingleTransformation) {
+    transformations::Recorder recorder;
 
     size_t loop_id = loop_->element_id();
 
     EXPECT_NO_THROW(
-        optimizer.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_, 32));
+        recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_, 32));
 
     // Use temporary file to save the transformation
     std::filesystem::path tmp_file =
         std::filesystem::temp_directory_path() / "Save_SingleTransformation.json";
-    EXPECT_NO_THROW(optimizer.save(tmp_file));
+    EXPECT_NO_THROW(recorder.save(tmp_file));
     EXPECT_TRUE(std::filesystem::exists(tmp_file));
 
     std::ifstream file(tmp_file);
@@ -107,18 +107,18 @@ TEST_F(OptimizerLoopTilingTest, Save_SingleTransformation) {
     EXPECT_EQ(j[0]["loop_element_id"], loop_id);
 }
 
-TEST_F(OptimizerLoopTilingTest, Replay_Transformations) {
+TEST_F(RecorderLoopTilingTest, Replay_Transformations) {
     builder::StructuredSDFGBuilder replay_builder("sdfg_test", FunctionType_CPU);
 
-    optimizations::Optimizer optimizer;
+    transformations::Recorder recorder;
 
     nlohmann::json j = nlohmann::json::array();
     j.push_back({{"loop_element_id", 1}, {"tile_size", 32}, {"transformation_type", "LoopTiling"}});
 
-    EXPECT_NO_THROW(optimizer.replay(*builder_, *analysis_manager_, j));
+    EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j));
 }
 
-class OptimizerLoopSlicingTest : public ::testing::Test {
+class RecorderLoopSlicingTest : public ::testing::Test {
    protected:
     std::unique_ptr<builder::StructuredSDFGBuilder> builder_;
     std::unique_ptr<analysis::AnalysisManager> analysis_manager_;
@@ -160,25 +160,25 @@ class OptimizerLoopSlicingTest : public ::testing::Test {
     };
 };
 
-TEST_F(OptimizerLoopSlicingTest, Apply_LoopSlicing) {
-    optimizations::Optimizer optimizer;
+TEST_F(RecorderLoopSlicingTest, Apply_LoopSlicing) {
+    transformations::Recorder recorder;
 
     EXPECT_NO_THROW(
-        optimizer.apply<transformations::LoopSlicing>(*builder_, *analysis_manager_, *loop_));
+        recorder.apply<transformations::LoopSlicing>(*builder_, *analysis_manager_, *loop_));
 }
 
-TEST_F(OptimizerLoopSlicingTest, Save_SingleTransformation) {
-    optimizations::Optimizer optimizer;
+TEST_F(RecorderLoopSlicingTest, Save_SingleTransformation) {
+    transformations::Recorder recorder;
 
     size_t loop_id = loop_->element_id();
 
     EXPECT_NO_THROW(
-        optimizer.apply<transformations::LoopSlicing>(*builder_, *analysis_manager_, *loop_));
+        recorder.apply<transformations::LoopSlicing>(*builder_, *analysis_manager_, *loop_));
 
     // Use temporary file to save the transformation
     std::filesystem::path tmp_file =
         std::filesystem::temp_directory_path() / "Save_LoopSlicingTransformation.json";
-    EXPECT_NO_THROW(optimizer.save(tmp_file));
+    EXPECT_NO_THROW(recorder.save(tmp_file));
     EXPECT_TRUE(std::filesystem::exists(tmp_file));
 
     std::ifstream file(tmp_file);
@@ -194,24 +194,24 @@ TEST_F(OptimizerLoopSlicingTest, Save_SingleTransformation) {
     EXPECT_EQ(j[0]["loop_element_id"], loop_id);
 }
 
-TEST_F(OptimizerLoopSlicingTest, Replay_Transformations) {
+TEST_F(RecorderLoopSlicingTest, Replay_Transformations) {
     builder::StructuredSDFGBuilder replay_builder("sdfg_test", FunctionType_CPU);
 
-    optimizations::Optimizer optimizer;
+    transformations::Recorder recorder;
 
     nlohmann::json j = nlohmann::json::array();
     j.push_back({{"loop_element_id", loop_->element_id()}, {"transformation_type", "LoopSlicing"}});
 
-    EXPECT_NO_THROW(optimizer.replay(*builder_, *analysis_manager_, j));
+    EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j));
 }
 
-class OptimizerMultiTransformationTest : public ::testing::Test {
+class RecorderMultiTransformationTest : public ::testing::Test {
    protected:
     std::unique_ptr<builder::StructuredSDFGBuilder> builder_;
     std::unique_ptr<analysis::AnalysisManager> analysis_manager_;
 
     void SetUp() override {
-        std::cout << "Starting setup for OptimizerMultiTransformationTest" << std::endl;
+        std::cout << "Starting setup for RecorderMultiTransformationTest" << std::endl;
 
         builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU);
 
@@ -277,8 +277,8 @@ class OptimizerMultiTransformationTest : public ::testing::Test {
     void TearDown() override { analysis_manager_->invalidate<analysis::LoopAnalysis>(); };
 };
 
-TEST_F(OptimizerMultiTransformationTest, Apply_LoopInterchange) {
-    optimizations::Optimizer optimizer;
+TEST_F(RecorderMultiTransformationTest, Apply_LoopInterchange) {
+    transformations::Recorder recorder;
 
     auto& loop_analysis = analysis_manager_->get<analysis::LoopAnalysis>();
     structured_control_flow::For* loop_1_ = nullptr;
@@ -293,11 +293,11 @@ TEST_F(OptimizerMultiTransformationTest, Apply_LoopInterchange) {
     }
     EXPECT_TRUE((loop_1_ != nullptr && loop_2_ != nullptr));
 
-    EXPECT_NO_THROW(optimizer.apply<transformations::LoopInterchange>(*builder_, *analysis_manager_,
-                                                                      *loop_1_, *loop_2_));
+    EXPECT_NO_THROW(recorder.apply<transformations::LoopInterchange>(*builder_, *analysis_manager_,
+                                                                     *loop_1_, *loop_2_));
 }
 
-TEST_F(OptimizerMultiTransformationTest, Apply_Transformations) {
+TEST_F(RecorderMultiTransformationTest, Apply_Transformations) {
     /**
      * for (i = 0; i < N; i = i + 32)
      *   for (j = 0; j < M; j = j + 16)
@@ -306,7 +306,7 @@ TEST_F(OptimizerMultiTransformationTest, Apply_Transformations) {
      *         A[i_tile][j_tile] = A[i_tile][j_tile] + 1;
      */
 
-    optimizations::Optimizer optimizer;
+    transformations::Recorder recorder;
 
     auto& loop_analysis_1 = analysis_manager_->get<analysis::LoopAnalysis>();
     structured_control_flow::For* loop_1_ = nullptr;
@@ -317,7 +317,7 @@ TEST_F(OptimizerMultiTransformationTest, Apply_Transformations) {
         }
     }
     EXPECT_TRUE(loop_1_ != nullptr);
-    optimizer.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_1_, 32);
+    recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_1_, 32);
 
     analysis_manager_->invalidate_all();
 
@@ -330,7 +330,7 @@ TEST_F(OptimizerMultiTransformationTest, Apply_Transformations) {
         }
     }
     EXPECT_TRUE(loop_2_ != nullptr);
-    optimizer.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_2_, 16);
+    recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_2_, 16);
 
     analysis_manager_->invalidate_all();
 
@@ -354,14 +354,14 @@ TEST_F(OptimizerMultiTransformationTest, Apply_Transformations) {
     EXPECT_TRUE(loop_i_tile_id != 0);
     EXPECT_TRUE(loop_j_outer_id != 0);
 
-    EXPECT_NO_THROW(optimizer.apply<transformations::LoopInterchange>(*builder_, *analysis_manager_,
-                                                                      *loop_i_tile, *loop_j_outer));
+    EXPECT_NO_THROW(recorder.apply<transformations::LoopInterchange>(*builder_, *analysis_manager_,
+                                                                     *loop_i_tile, *loop_j_outer));
 
     /**** Save ****/
 
     std::filesystem::path tmp_file =
         std::filesystem::temp_directory_path() / "Replay_Transformations.json";
-    EXPECT_NO_THROW(optimizer.save(tmp_file));
+    EXPECT_NO_THROW(recorder.save(tmp_file));
     EXPECT_TRUE(std::filesystem::exists(tmp_file));
 
     std::ifstream file(tmp_file);
@@ -386,8 +386,8 @@ TEST_F(OptimizerMultiTransformationTest, Apply_Transformations) {
     EXPECT_EQ(j[2]["inner_loop_element_id"], 51);
 }
 
-TEST_F(OptimizerMultiTransformationTest, Replay_Transformations) {
-    optimizations::Optimizer optimizer;
+TEST_F(RecorderMultiTransformationTest, Replay_Transformations) {
+    transformations::Recorder recorder;
 
     nlohmann::json j = nlohmann::json::array();
     j.push_back({{"loop_element_id", 1}, {"tile_size", 32}, {"transformation_type", "LoopTiling"}});
@@ -397,5 +397,5 @@ TEST_F(OptimizerMultiTransformationTest, Replay_Transformations) {
                  {"outer_loop_element_id", 36},
                  {"transformation_type", "LoopInterchange"}});
 
-    EXPECT_NO_THROW(optimizer.replay(*builder_, *analysis_manager_, j));
+    EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j));
 }

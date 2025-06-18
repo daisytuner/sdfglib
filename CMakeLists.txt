@@ -88,7 +88,6 @@ set(SOURCE_FILES
     src/deepcopy/structured_sdfg_deep_copy.cpp
     src/graph/graph.cpp
     src/visitor/structured_sdfg_visitor.cpp
-    src/optimizations/optimizer.cpp
     src/passes/pass.cpp
     src/passes/pipeline.cpp
     src/passes/canonicalize_cfg.cpp
@@ -133,6 +132,7 @@ set(SOURCE_FILES
     src/transformations/loop_slicing.cpp
     src/transformations/loop_tiling.cpp
     src/transformations/out_local_storage.cpp
+    src/transformations/recorder.cpp
     src/transformations/utils.cpp
     src/types/array.cpp
     src/types/function.cpp
