@@ -377,41 +377,41 @@ std::string Visualizer::expression(const std::string expr) {
     return res;
 }
 
-void Visualizer::visualizeNode(StructuredSDFG& sdfg,
-                               structured_control_flow::ControlFlowNode& node) {
-    if (auto block = dynamic_cast<structured_control_flow::Block*>(&node)) {
+void Visualizer::visualizeNode(const StructuredSDFG& sdfg,
+                               const structured_control_flow::ControlFlowNode& node) {
+    if (auto block = dynamic_cast<const structured_control_flow::Block*>(&node)) {
         this->visualizeBlock(sdfg, *block);
         return;
     }
-    if (auto sequence = dynamic_cast<structured_control_flow::Sequence*>(&node)) {
+    if (auto sequence = dynamic_cast<const structured_control_flow::Sequence*>(&node)) {
         this->visualizeSequence(sdfg, *sequence);
         return;
     }
-    if (auto if_else = dynamic_cast<structured_control_flow::IfElse*>(&node)) {
+    if (auto if_else = dynamic_cast<const structured_control_flow::IfElse*>(&node)) {
         this->visualizeIfElse(sdfg, *if_else);
         return;
     }
-    if (auto while_loop = dynamic_cast<structured_control_flow::While*>(&node)) {
+    if (auto while_loop = dynamic_cast<const structured_control_flow::While*>(&node)) {
         this->visualizeWhile(sdfg, *while_loop);
         return;
     }
-    if (auto loop = dynamic_cast<structured_control_flow::For*>(&node)) {
+    if (auto loop = dynamic_cast<const structured_control_flow::For*>(&node)) {
         this->visualizeFor(sdfg, *loop);
         return;
     }
-    if (auto return_node = dynamic_cast<structured_control_flow::Return*>(&node)) {
+    if (auto return_node = dynamic_cast<const structured_control_flow::Return*>(&node)) {
         this->visualizeReturn(sdfg, *return_node);
         return;
     }
-    if (auto break_node = dynamic_cast<structured_control_flow::Break*>(&node)) {
+    if (auto break_node = dynamic_cast<const structured_control_flow::Break*>(&node)) {
         this->visualizeBreak(sdfg, *break_node);
         return;
     }
-    if (auto continue_node = dynamic_cast<structured_control_flow::Continue*>(&node)) {
+    if (auto continue_node = dynamic_cast<const structured_control_flow::Continue*>(&node)) {
         this->visualizeContinue(sdfg, *continue_node);
         return;
     }
-    if (auto map_node = dynamic_cast<structured_control_flow::Map*>(&node)) {
+    if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(&node)) {
         this->visualizeMap(sdfg, *map_node);
         return;
     }
@@ -457,65 +457,37 @@ void Visualizer::visualizeForBounds(symbolic::Symbol const& indvar,
                                     symbolic::Expression const& init,
                                     symbolic::Condition const& condition,
                                     symbolic::Expression const& update) {
-    if ((init->get_type_code() == SymEngine::TypeID::SYMENGINE_INTEGER ||
-         init->get_type_code() == SymEngine::TypeID::SYMENGINE_SYMBOL) &&
-        (condition->get_type_code() == SymEngine::TypeID::SYMENGINE_STRICTLESSTHAN ||
-         condition->get_type_code() == SymEngine::TypeID::SYMENGINE_LESSTHAN) &&
-        condition->get_args().size() == 2 &&
-        condition->get_args().at(0)->__str__() == indvar->__str__() &&
-        (condition->get_args().at(1)->get_type_code() == SymEngine::TypeID::SYMENGINE_INTEGER ||
-         condition->get_args().at(1)->get_type_code() == SymEngine::TypeID::SYMENGINE_SYMBOL) &&
-        update->get_type_code() == SymEngine::TypeID::SYMENGINE_ADD &&
-        update->get_args().size() == 2 &&
-        (update->get_args().at(0)->__str__() == indvar->__str__() ||
-         update->get_args().at(1)->__str__() == indvar->__str__()) &&
-        (update->get_args().at(0)->get_type_code() == SymEngine::TypeID::SYMENGINE_INTEGER ||
-         update->get_args().at(0)->get_type_code() == SymEngine::TypeID::SYMENGINE_SYMBOL ||
-         update->get_args().at(1)->get_type_code() == SymEngine::TypeID::SYMENGINE_INTEGER ||
-         update->get_args().at(1)->get_type_code() == SymEngine::TypeID::SYMENGINE_SYMBOL)) {
-        this->stream_ << indvar->get_name() << " = " << init->__str__() << ":";
-        if (condition->get_type_code() == SymEngine::TypeID::SYMENGINE_STRICTLESSTHAN)
-            this->stream_ << "(" << condition->get_args().at(1)->__str__() << "-1)";
-        else
-            this->stream_ << condition->get_args().at(1)->__str__();
-        size_t i = (update->get_args().at(0).get() == indvar.get()) ? 1 : 0;
-        if (update->get_args().at(i)->__str__() != "1")
-            this->stream_ << ":" << update->get_args().at(i)->__str__();
-    } else {
-        this->stream_ << indvar->get_name() << " = " << this->expression(init->__str__()) << "; "
-                      << this->expression(condition->__str__()) << "; " << indvar->get_name()
-                      << " = " << this->expression(update->__str__());
-    }
+    this->stream_ << indvar->get_name() << " = " << this->expression(init->__str__()) << "; "
+                    << this->expression(condition->__str__()) << "; " << indvar->get_name()
+                    << " = " << this->expression(update->__str__());
 }
 
-void Visualizer::visualizeSubset(Function const& function, types::IType const& type,
-                                 data_flow::Subset const& sub) {
-    if (sub.empty()) return;
-    if (dynamic_cast<const types::Scalar*>(&type)) {
+/// @brief If known, use the type to better visualize structures. Then track the type as far as it goes.
+void Visualizer::visualizeSubset(Function const& function, data_flow::Subset const& sub, types::IType const* type, int subIdx) {
+    if (static_cast<int>(sub.size()) <= subIdx) {
         return;
-    } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
-        this->stream_ << "[" << this->expression(sub.at(0)->__str__()) << "]";
-        if (sub.size() > 1) {
-            data_flow::Subset element_subset(sub.begin() + 1, sub.end());
-            types::IType const& element_type = array_type->element_type();
-            this->visualizeSubset(function, element_type, element_subset);
-        }
-    } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
-        this->stream_ << "[" << this->expression(sub.at(0)->__str__()) << "]";
-        data_flow::Subset element_subset(sub.begin() + 1, sub.end());
-        types::IType const& pointee_type = pointer_type->pointee_type();
-        this->visualizeSubset(function, pointee_type, element_subset);
-    } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
+    }
+    if (auto structure_type = dynamic_cast<const types::Structure*>(type)) {
         types::StructureDefinition const& definition = function.structure(structure_type->name());
-        this->stream_ << ".member_" << this->expression(sub.at(0)->__str__());
-        if (sub.size() > 1) {
-            auto member = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(sub.at(0));
-            types::IType const& member_type = definition.member_type(member);
-            data_flow::Subset element_subset(sub.begin() + 1, sub.end());
-            this->visualizeSubset(function, member_type, element_subset);
-        }
+        this->stream_ << ".member_" << this->expression(sub.at(subIdx)->__str__());
+        auto member = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(sub.at(0));
+        types::IType const& member_type = definition.member_type(member);
+        this->visualizeSubset(function, sub, &member_type, subIdx+1);
+    } else if (auto array_type = dynamic_cast<const types::Array*>(type)) {
+        this->stream_ << "[" << this->expression(sub.at(subIdx)->__str__()) << "]";
+        data_flow::Subset element_subset(sub.begin() + 1, sub.end());
+        types::IType const& element_type = array_type->element_type();
+        this->visualizeSubset(function, sub, &element_type,  subIdx+1);
+    } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(type)) {
+        this->stream_ << "[" << this->expression(sub.at(subIdx)->__str__()) << "]";
+        types::IType const& pointee_type = pointer_type->pointee_type();
+        this->visualizeSubset(function, sub, &pointee_type,  subIdx+1);
     } else {
-        throw InvalidSDFGException("visualizeSubset: Unsupported type");
+        if (type != nullptr) {
+            this->stream_ << "(rogue)";
+        }
+        this->stream_ << "[" << this->expression(sub.at(subIdx)->__str__()) << "]";
+        visualizeSubset(function, sub, nullptr, subIdx+1);
     }
 }
 

@@ -55,6 +55,8 @@ std::unique_ptr<types::IType> Reference::clone() const {
                                        *this->reference_);
 };
 
+types::TypeID Reference::type_id() const { return types::TypeID::Reference; };
+
 types::PrimitiveType Reference::primitive_type() const {
     return this->reference_->primitive_type();
 };

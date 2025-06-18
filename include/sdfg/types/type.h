@@ -273,6 +273,15 @@ constexpr PrimitiveType as_unsigned(PrimitiveType e) noexcept {
     }
 };
 
+enum class TypeID {
+    Scalar,
+    Array,
+    Structure,
+    Pointer,
+    Reference,
+    Function,
+};
+
 class IType {
    protected:
     StorageType storage_type_;
@@ -285,6 +294,8 @@ class IType {
         : storage_type_(storage_type), alignment_(alignment), initializer_(initializer) {};
 
     virtual ~IType() = default;
+
+    virtual TypeID type_id() const = 0;
 
     StorageType storage_type() const { return storage_type_; };
 

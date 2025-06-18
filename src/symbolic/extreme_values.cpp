@@ -35,7 +35,8 @@ Expression minimum(const Expression& expr, const SymbolSet& parameters,
             return sym;
         }
         if (assumptions.find(sym) != assumptions.end()) {
-            return assumptions.at(sym).lower_bound();
+            auto& assumption = assumptions.at(sym).lower_bound();
+            return minimum(assumption, parameters, assumptions, depth + 1);
         }
         return SymEngine::null;
     }
@@ -154,7 +155,8 @@ Expression maximum(const Expression& expr, const SymbolSet& parameters,
             return sym;
         }
         if (assumptions.find(sym) != assumptions.end()) {
-            return assumptions.at(sym).upper_bound();
+            auto& assumption = assumptions.at(sym).upper_bound();
+            return maximum(assumption, parameters, assumptions, depth + 1);
         }
         return SymEngine::null;
     }

@@ -53,12 +53,15 @@ set(SOURCE_FILES
     src/analysis/happens_before_analysis.cpp
     src/analysis/loop_analysis.cpp
     src/analysis/loop_dependency_analysis.cpp
+    src/analysis/mem_access_range_analysis.cpp
     src/analysis/scope_analysis.cpp
     src/analysis/users.cpp
     src/builder/function_builder.cpp
     src/builder/sdfg_builder.cpp
     src/builder/structured_sdfg_builder.cpp
     src/codegen/utils.cpp
+    src/codegen/code_generator.cpp
+    src/codegen/instrumentation/capture_var_plan.cpp
     src/codegen/language_extensions/c_language_extension.cpp
     src/codegen/language_extensions/cpp_language_extension.cpp
     src/codegen/language_extensions/cuda_language_extension.cpp
@@ -163,7 +166,7 @@ target_include_directories(sdfglib
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine/symengine/utilities/cereal/include>
 )
 
-target_compile_options(sdfglib PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -Wno-unused-private-field -Wno-switch -Wno-deprecated-declarations)
+target_compile_options(sdfglib PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-private-field -Wno-switch -Wno-deprecated-declarations)
 
 if(SDFGLIB_ENABLE_SANITIZER)
   target_compile_options(sdfglib PUBLIC ${_SAN_COMPILE_OPTS})

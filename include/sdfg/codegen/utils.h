@@ -60,6 +60,8 @@ class Reference : public types::IType {
 
     std::unique_ptr<types::IType> clone() const override;
 
+    virtual types::TypeID type_id() const override;
+
     types::PrimitiveType primitive_type() const override;
 
     bool is_symbol() const override;

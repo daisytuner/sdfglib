@@ -14,6 +14,8 @@ std::unique_ptr<IType> Pointer::clone() const {
                                      *this->pointee_type_);
 };
 
+TypeID Pointer::type_id() const { return TypeID::Pointer; };
+
 PrimitiveType Pointer::primitive_type() const { return this->pointee_type_->primitive_type(); };
 
 bool Pointer::is_symbol() const { return true; };

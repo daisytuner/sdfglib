@@ -6,7 +6,7 @@ namespace sdfg {
 namespace data_flow {
 
 Memlet::Memlet(size_t element_id, const DebugInfo& debug_info, const graph::Edge& edge,
-               const DataFlowGraph& parent, DataFlowNode& src, const std::string& src_conn,
+               DataFlowGraph& parent, DataFlowNode& src, const std::string& src_conn,
                DataFlowNode& dst, const std::string& dst_conn, const Subset& subset)
     : Element(element_id, debug_info),
       edge_(edge),
@@ -22,6 +22,8 @@ Memlet::Memlet(size_t element_id, const DebugInfo& debug_info, const graph::Edge
 const graph::Edge Memlet::edge() const { return this->edge_; };
 
 const DataFlowGraph& Memlet::get_parent() const { return *this->parent_; };
+
+DataFlowGraph& Memlet::get_parent() { return *this->parent_; };
 
 const DataFlowNode& Memlet::src() const { return this->src_; };
 
@@ -40,7 +42,7 @@ const Subset Memlet::subset() const { return this->subset_; };
 Subset& Memlet::subset() { return this->subset_; };
 
 std::unique_ptr<Memlet> Memlet::clone(size_t element_id, const graph::Edge& edge,
-                                      const DataFlowGraph& parent, DataFlowNode& src,
+                                      DataFlowGraph& parent, DataFlowNode& src,
                                       DataFlowNode& dst) const {
     return std::unique_ptr<Memlet>(new Memlet(element_id, this->debug_info_, edge, parent, src,
                                               this->src_conn_, dst, this->dst_conn_,
