@@ -316,8 +316,8 @@ TEST(LoopDependencyAnalysisTest, Copy_1D) {
     auto& b = builder.add_access(block, "B");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"_in", base_desc}});
-    builder.add_memlet(block, a, "void", tasklet, "_in", {indvar});
-    builder.add_memlet(block, tasklet, "_out", b, "void", {indvar});
+    builder.add_memlet(block, a, "void", tasklet, "_in", {symbolic::symbol("i")});
+    builder.add_memlet(block, tasklet, "_out", b, "void", {symbolic::symbol("i")});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -360,9 +360,9 @@ TEST(LoopDependencyAnalysisTest, Map_1D) {
     auto& a_out = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
                                         {{"_in1", base_desc}, {"_in2", sym_desc}});
-    builder.add_memlet(block, a_in, "void", tasklet, "_in1", {indvar});
+    builder.add_memlet(block, a_in, "void", tasklet, "_in1", {symbolic::symbol("i")});
     builder.add_memlet(block, i, "void", tasklet, "_in2", {});
-    builder.add_memlet(block, tasklet, "_out", a_out, "void", {indvar});
+    builder.add_memlet(block, tasklet, "_out", a_out, "void", {symbolic::symbol("i")});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -411,12 +411,12 @@ TEST(LoopDependencyAnalysisTest, MapParameterized_1D) {
     auto& A_out = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"_in1", base_desc}});
-    builder.add_memlet(
-        block, A_in, "void", tasklet, "_in1",
-        {symbolic::add(symbolic::mul(symbolic::symbol("m"), indvar), symbolic::symbol("b"))});
-    builder.add_memlet(
-        block, tasklet, "_out", A_out, "void",
-        {symbolic::add(symbolic::mul(symbolic::symbol("m"), indvar), symbolic::symbol("b"))});
+    builder.add_memlet(block, A_in, "void", tasklet, "_in1",
+                       {symbolic::add(symbolic::mul(symbolic::symbol("m"), symbolic::symbol("i")),
+                                      symbolic::symbol("b"))});
+    builder.add_memlet(block, tasklet, "_out", A_out, "void",
+                       {symbolic::add(symbolic::mul(symbolic::symbol("m"), symbolic::symbol("i")),
+                                      symbolic::symbol("b"))});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -463,11 +463,11 @@ TEST(LoopDependencyAnalysisTest, Stencil_1D) {
         builder.add_tasklet(block, data_flow::TaskletCode::fma, {"_out", base_desc},
                             {{"_in1", base_desc}, {"_in2", base_desc}, {"_in3", base_desc}});
     builder.add_memlet(block, A1, "void", tasklet, "_in1",
-                       {symbolic::sub(indvar, symbolic::integer(1))});
-    builder.add_memlet(block, A2, "void", tasklet, "_in2", {indvar});
+                       {symbolic::sub(symbolic::symbol("i"), symbolic::integer(1))});
+    builder.add_memlet(block, A2, "void", tasklet, "_in2", {symbolic::symbol("i")});
     builder.add_memlet(block, A3, "void", tasklet, "_in3",
-                       {symbolic::add(indvar, symbolic::integer(1))});
-    builder.add_memlet(block, tasklet, "_out", B, "void", {indvar});
+                       {symbolic::add(symbolic::symbol("i"), symbolic::integer(1))});
+    builder.add_memlet(block, tasklet, "_out", B, "void", {symbolic::symbol("i")});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -523,7 +523,7 @@ TEST(LoopDependencyAnalysisTest, Gather_1D) {
     auto& tasklet = builder.add_tasklet(block_2, data_flow::TaskletCode::assign,
                                         {"_out", base_desc}, {{"_in", base_desc}});
     builder.add_memlet(block_2, B, "void", tasklet, "_in", {symbolic::symbol("b")});
-    builder.add_memlet(block_2, tasklet, "_out", C, "void", {indvar});
+    builder.add_memlet(block_2, tasklet, "_out", C, "void", {symbolic::symbol("i")});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -569,7 +569,7 @@ TEST(LoopDependencyAnalysisTest, Scatter_1D) {
     auto& b = builder.add_access(block_1, "b");
     auto& tasklet1 = builder.add_tasklet(block_1, data_flow::TaskletCode::assign,
                                          {"_out", base_desc}, {{"_in", base_desc}});
-    builder.add_memlet(block_1, A, "void", tasklet1, "_in", {indvar});
+    builder.add_memlet(block_1, A, "void", tasklet1, "_in", {symbolic::symbol("i")});
     builder.add_memlet(block_1, tasklet1, "_out", b, "void", {});
 
     auto& block_2 = builder.add_block(body);
@@ -577,7 +577,7 @@ TEST(LoopDependencyAnalysisTest, Scatter_1D) {
     auto& C = builder.add_access(block_2, "C");
     auto& tasklet = builder.add_tasklet(block_2, data_flow::TaskletCode::assign,
                                         {"_out", base_desc}, {{"_in", base_desc}});
-    builder.add_memlet(block_2, B, "void", tasklet, "_in", {indvar});
+    builder.add_memlet(block_2, B, "void", tasklet, "_in", {symbolic::symbol("i")});
     builder.add_memlet(block_2, tasklet, "_out", C, "void", {symbolic::symbol("b")});
 
     // Analysis
@@ -621,7 +621,8 @@ TEST(LoopDependencyAnalysisTest, MapDeg2_1D) {
     auto& A = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"0", base_desc}});
-    builder.add_memlet(block, tasklet, "_out", A, "void", {symbolic::mul(indvar, indvar)});
+    builder.add_memlet(block, tasklet, "_out", A, "void",
+                       {symbolic::mul(symbolic::symbol("i"), symbolic::symbol("i"))});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -677,9 +678,11 @@ TEST(LoopDependencyAnalysisTest, Map_2D) {
     auto& a_out = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
                                         {{"_in1", base_desc}, {"_in2", sym_desc}});
-    builder.add_memlet(block, a_in, "void", tasklet, "_in1", {indvar, indvar_2});
+    builder.add_memlet(block, a_in, "void", tasklet, "_in1",
+                       {symbolic::symbol("i"), symbolic::symbol("j")});
     builder.add_memlet(block, i, "void", tasklet, "_in2", {});
-    builder.add_memlet(block, tasklet, "_out", a_out, "void", {indvar, indvar_2});
+    builder.add_memlet(block, tasklet, "_out", a_out, "void",
+                       {symbolic::symbol("i"), symbolic::symbol("j")});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -739,9 +742,10 @@ TEST(LoopDependencyAnalysisTest, PartialSumInner_2D) {
     auto& B2 = builder.add_access(block, "B");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
                                         {{"_in1", base_desc}, {"_in2", base_desc}});
-    builder.add_memlet(block, A, "void", tasklet, "_in1", {indvar1, indvar2});
-    builder.add_memlet(block, B1, "void", tasklet, "_in2", {indvar1});
-    builder.add_memlet(block, tasklet, "_out", B2, "void", {indvar1});
+    builder.add_memlet(block, A, "void", tasklet, "_in1",
+                       {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_memlet(block, B1, "void", tasklet, "_in2", {symbolic::symbol("i")});
+    builder.add_memlet(block, tasklet, "_out", B2, "void", {symbolic::symbol("i")});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -863,8 +867,10 @@ TEST(LoopDependencyAnalysisTest, Transpose_2D) {
     auto& B = builder.add_access(block, "B");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"_in", base_desc}});
-    builder.add_memlet(block, A, "void", tasklet, "_in", {indvar1, indvar2});
-    builder.add_memlet(block, tasklet, "_out", B, "void", {indvar2, indvar1});
+    builder.add_memlet(block, A, "void", tasklet, "_in",
+                       {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_memlet(block, tasklet, "_out", B, "void",
+                       {symbolic::symbol("j"), symbolic::symbol("i")});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -918,8 +924,10 @@ TEST(LoopDependencyAnalysisTest, TransposeTriangle_2D) {
     auto& A_out = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"_in", base_desc}});
-    builder.add_memlet(block, A_in, "void", tasklet, "_in", {indvar1, indvar2});
-    builder.add_memlet(block, tasklet, "_out", A_out, "void", {indvar2, indvar1});
+    builder.add_memlet(block, A_in, "void", tasklet, "_in",
+                       {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_memlet(block, tasklet, "_out", A_out, "void",
+                       {symbolic::symbol("j"), symbolic::symbol("i")});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -973,8 +981,10 @@ TEST(LoopDependencyAnalysisTest, TransposeTriangleWithDiagonal_2D) {
     auto& A_out = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
                                         {{"_in", base_desc}});
-    builder.add_memlet(block, A_in, "void", tasklet, "_in", {indvar1, indvar2});
-    builder.add_memlet(block, tasklet, "_out", A_out, "void", {indvar2, indvar1});
+    builder.add_memlet(block, A_in, "void", tasklet, "_in",
+                       {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_memlet(block, tasklet, "_out", A_out, "void",
+                       {symbolic::symbol("j"), symbolic::symbol("i")});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);

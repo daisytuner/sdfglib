@@ -372,6 +372,9 @@ bool is_disjoint_isl(const MultiExpression& expr1, const MultiExpression& expr2,
     if (expr1.size() != expr2.size()) {
         return false;
     }
+    if (expr1.empty()) {
+        return false;
+    }
 
     isl_ctx* ctx = isl_ctx_alloc();
 
