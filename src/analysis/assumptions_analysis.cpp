@@ -295,5 +295,20 @@ const symbolic::Assumptions AssumptionsAnalysis::get(structured_control_flow::Co
     return assums;
 };
 
+void AssumptionsAnalysis::add(symbolic::Assumptions& assums,
+                              structured_control_flow::ControlFlowNode& node) {
+    if (this->assumptions_.find(&node) == this->assumptions_.end()) {
+        return;
+    }
+
+    for (auto& entry : this->assumptions_[&node]) {
+        if (assums.find(entry.first) == assums.end()) {
+            assums.insert({entry.first, entry.second});
+        } else {
+            assums[entry.first] = entry.second;
+        }
+    }
+}
+
 }  // namespace analysis
 }  // namespace sdfg

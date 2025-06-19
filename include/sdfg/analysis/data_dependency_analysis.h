@@ -4,13 +4,8 @@
 #include <unordered_set>
 
 #include "sdfg/analysis/analysis.h"
+#include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/users.h"
-#include "sdfg/structured_control_flow/for.h"
-#include "sdfg/structured_control_flow/if_else.h"
-#include "sdfg/structured_control_flow/map.h"
-#include "sdfg/structured_control_flow/return.h"
-#include "sdfg/structured_control_flow/sequence.h"
-#include "sdfg/structured_control_flow/while.h"
 #include "sdfg/structured_sdfg.h"
 
 namespace sdfg {
@@ -32,37 +27,46 @@ class DataDependencyAnalysis : public Analysis {
 
     /****** Visitor API ******/
 
-    void visit_block(analysis::Users& users, structured_control_flow::Block& block,
+    void visit_block(analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
+                     symbolic::Assumptions& assumptions, structured_control_flow::Block& block,
                      std::unordered_set<User*>& undefined,
                      std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
                      std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
 
-    void visit_for(analysis::Users& users, structured_control_flow::For& for_loop,
+    void visit_for(analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
+                   symbolic::Assumptions& assumptions, structured_control_flow::For& for_loop,
                    std::unordered_set<User*>& undefined,
                    std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
                    std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
 
-    void visit_if_else(analysis::Users& users, structured_control_flow::IfElse& if_loop,
+    void visit_if_else(analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
+                       symbolic::Assumptions& assumptions, structured_control_flow::IfElse& if_loop,
                        std::unordered_set<User*>& undefined,
                        std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
                        std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
 
-    void visit_while(analysis::Users& users, structured_control_flow::While& while_loop,
+    void visit_while(analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
+                     symbolic::Assumptions& assumptions, structured_control_flow::While& while_loop,
                      std::unordered_set<User*>& undefined,
                      std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
                      std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
 
-    void visit_return(analysis::Users& users, structured_control_flow::Return& return_statement,
+    void visit_return(analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
+                      symbolic::Assumptions& assumptions,
+                      structured_control_flow::Return& return_statement,
                       std::unordered_set<User*>& undefined,
                       std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
                       std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
 
-    void visit_sequence(analysis::Users& users, structured_control_flow::Sequence& sequence,
+    void visit_sequence(analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
+                        symbolic::Assumptions& assumptions,
+                        structured_control_flow::Sequence& sequence,
                         std::unordered_set<User*>& undefined,
                         std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
                         std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
 
-    void visit_map(analysis::Users& users, structured_control_flow::Map& map,
+    void visit_map(analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
+                   symbolic::Assumptions& assumptions, structured_control_flow::Map& map,
                    std::unordered_set<User*>& undefined,
                    std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
                    std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);

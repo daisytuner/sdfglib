@@ -40,7 +40,10 @@ TEST(DataDependencyAnalysisTest, VisitBlock_WAR) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_block(users, block, undefined, open_definitions, closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions = assumptions_analysis.get(block, true);
+    analysis.visit_block(users, assumptions_analysis, assumptions, block, undefined,
+                         open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -95,7 +98,10 @@ TEST(DataDependencyAnalysisTest, VisitBlock_RAW) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_block(users, block, undefined, open_definitions, closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions = assumptions_analysis.get(block, true);
+    analysis.visit_block(users, assumptions_analysis, assumptions, block, undefined,
+                         open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -179,7 +185,10 @@ TEST(DataDependencyAnalysisTest, VisitBlock_WAW) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_block(users, block, undefined, open_definitions, closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions = assumptions_analysis.get(block, true);
+    analysis.visit_block(users, assumptions_analysis, assumptions, block, undefined,
+                         open_definitions, closed_definitions);
 
     // Check result
 
@@ -256,7 +265,10 @@ TEST(DataDependencyAnalysisTest, VisitBlock_SingleMemlet) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_block(users, block, undefined, open_definitions, closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions = assumptions_analysis.get(block, true);
+    analysis.visit_block(users, assumptions_analysis, assumptions, block, undefined,
+                         open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -309,7 +321,10 @@ TEST(DataDependencyAnalysisTest, VisitBlock_MultiMemlet) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_block(users, block, undefined, open_definitions, closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions = assumptions_analysis.get(block, true);
+    analysis.visit_block(users, assumptions_analysis, assumptions, block, undefined,
+                         open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 4);
@@ -387,7 +402,10 @@ TEST(DataDependencyAnalysisTest, visit_for) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_for(users, for_loop, undefined, open_definitions, closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions = assumptions_analysis.get(for_loop, true);
+    analysis.visit_for(users, assumptions_analysis, assumptions, for_loop, undefined,
+                       open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -449,7 +467,10 @@ TEST(DataDependencyAnalysisTest, visit_map) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_map(users, map, undefined, open_definitions, closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions = assumptions_analysis.get(map, true);
+    analysis.visit_map(users, assumptions_analysis, assumptions, map, undefined, open_definitions,
+                       closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -517,7 +538,10 @@ TEST(DataDependencyAnalysisTest, visit_while) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_while(users, while_loop, undefined, open_definitions, closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions = assumptions_analysis.get(while_loop, true);
+    analysis.visit_while(users, assumptions_analysis, assumptions, while_loop, undefined,
+                         open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -595,7 +619,10 @@ TEST(DataDependencyAnalysisTest, visit_if_else_complete) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_if_else(users, if_else, undefined, open_definitions, closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions = assumptions_analysis.get(if_else, true);
+    analysis.visit_if_else(users, assumptions_analysis, assumptions, if_else, undefined,
+                           open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 3);
@@ -752,8 +779,11 @@ TEST(DataDependencyAnalysisTest, visit_sequence_blocks_RAW) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
-                            closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions =
+        assumptions_analysis.get(builder_opt.subject().root(), true);
+    analysis.visit_sequence(users, assumptions_analysis, assumptions, builder_opt.subject().root(),
+                            undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -827,8 +857,11 @@ TEST(DataDependencyAnalysisTest, visit_sequence_blocks_WAR) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
-                            closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions =
+        assumptions_analysis.get(builder_opt.subject().root(), true);
+    analysis.visit_sequence(users, assumptions_analysis, assumptions, builder_opt.subject().root(),
+                            undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 2);
@@ -914,8 +947,11 @@ TEST(DataDependencyAnalysisTest, visit_sequence_blocks_WAW) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
-                            closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions =
+        assumptions_analysis.get(builder_opt.subject().root(), true);
+    analysis.visit_sequence(users, assumptions_analysis, assumptions, builder_opt.subject().root(),
+                            undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 2);
@@ -998,8 +1034,11 @@ TEST(DataDependencyAnalysisTest, visit_sequence_for_loop) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
-                            closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions =
+        assumptions_analysis.get(builder_opt.subject().root(), true);
+    analysis.visit_sequence(users, assumptions_analysis, assumptions, builder_opt.subject().root(),
+                            undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -1082,8 +1121,11 @@ TEST(DataDependencyAnalysisTest, visit_sequence_while_loop) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
-                            closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions =
+        assumptions_analysis.get(builder_opt.subject().root(), true);
+    analysis.visit_sequence(users, assumptions_analysis, assumptions, builder_opt.subject().root(),
+                            undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -1174,8 +1216,11 @@ TEST(DataDependencyAnalysisTest, visit_sequence_if_else_complete) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
-                            closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions =
+        assumptions_analysis.get(builder_opt.subject().root(), true);
+    analysis.visit_sequence(users, assumptions_analysis, assumptions, builder_opt.subject().root(),
+                            undefined, open_definitions, closed_definitions);
 
     // Check result
 
@@ -1302,8 +1347,11 @@ TEST(DataDependencyAnalysisTest, visit_sequence_if_else_incomplete) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
-                            closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions =
+        assumptions_analysis.get(builder_opt.subject().root(), true);
+    analysis.visit_sequence(users, assumptions_analysis, assumptions, builder_opt.subject().root(),
+                            undefined, open_definitions, closed_definitions);
 
     // Check result
 
@@ -1411,8 +1459,11 @@ TEST(DataDependencyAnalysisTest, visit_sequence_transition) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
-                            closed_definitions);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions =
+        assumptions_analysis.get(builder_opt.subject().root(), true);
+    analysis.visit_sequence(users, assumptions_analysis, assumptions, builder_opt.subject().root(),
+                            undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 2);
