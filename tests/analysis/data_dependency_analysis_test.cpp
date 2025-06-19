@@ -1,4 +1,4 @@
-#include "sdfg/analysis/happens_before_analysis.h"
+#include "sdfg/analysis/data_dependency_analysis.h"
 
 #include <gtest/gtest.h>
 
@@ -12,7 +12,7 @@
 
 using namespace sdfg;
 
-TEST(HappensBeforeAnalysisTest, VisitBlock_WAR) {
+TEST(DataDependencyAnalysisTest, VisitBlock_WAR) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
@@ -33,25 +33,22 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_WAR) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_block(users, block, open_reads, open_reads_after_writes,
-                         closed_reads_after_write);
+    analysis.visit_block(users, block, undefined, open_definitions, closed_definitions);
 
     // Check result
-    EXPECT_EQ(open_reads.size(), 1);
-    EXPECT_EQ(open_reads_after_writes.size(), 1);
-    EXPECT_EQ(closed_reads_after_write.size(), 0);
+    EXPECT_EQ(undefined.size(), 1);
+    EXPECT_EQ(open_definitions.size(), 1);
+    EXPECT_EQ(closed_definitions.size(), 0);
 
-    auto read = *open_reads.begin();
-    auto write = *open_reads_after_writes.begin();
+    auto read = *undefined.begin();
+    auto write = *open_definitions.begin();
 
     EXPECT_EQ(read->use(), analysis::Use::READ);
     EXPECT_EQ(read->container(), "A");
@@ -62,7 +59,7 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_WAR) {
     EXPECT_EQ(write.second.size(), 0);
 }
 
-TEST(HappensBeforeAnalysisTest, VisitBlock_RAW) {
+TEST(DataDependencyAnalysisTest, VisitBlock_RAW) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
@@ -91,24 +88,21 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_RAW) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_block(users, block, open_reads, open_reads_after_writes,
-                         closed_reads_after_write);
+    analysis.visit_block(users, block, undefined, open_definitions, closed_definitions);
 
     // Check result
-    EXPECT_EQ(open_reads.size(), 1);
-    EXPECT_EQ(open_reads_after_writes.size(), 2);
-    EXPECT_EQ(closed_reads_after_write.size(), 0);
+    EXPECT_EQ(undefined.size(), 1);
+    EXPECT_EQ(open_definitions.size(), 2);
+    EXPECT_EQ(closed_definitions.size(), 0);
 
-    auto read = *open_reads.begin();
+    auto read = *undefined.begin();
 
     EXPECT_EQ(read->use(), analysis::Use::READ);
     EXPECT_EQ(read->container(), "A");
@@ -117,7 +111,7 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_RAW) {
     bool foundB = false;
     bool foundC = false;
 
-    for (auto entry : open_reads_after_writes) {
+    for (auto entry : open_definitions) {
         if (entry.first->container() == "B") {
             foundB = true;
             EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
@@ -140,7 +134,7 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_RAW) {
     EXPECT_TRUE(foundB && foundC);
 }
 
-TEST(HappensBeforeAnalysisTest, VisitBlock_WAW) {
+TEST(DataDependencyAnalysisTest, VisitBlock_WAW) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
@@ -178,32 +172,29 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_WAW) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_block(users, block, open_reads, open_reads_after_writes,
-                         closed_reads_after_write);
+    analysis.visit_block(users, block, undefined, open_definitions, closed_definitions);
 
     // Check result
 
     // Open Reads
-    EXPECT_EQ(open_reads.size(), 1);
+    EXPECT_EQ(undefined.size(), 1);
 
-    auto read = *open_reads.begin();
+    auto read = *undefined.begin();
     EXPECT_EQ(read->use(), analysis::Use::READ);
     EXPECT_EQ(read->container(), "A");
     EXPECT_EQ(read->element(), &input_node);
 
     // Closed Writes
-    EXPECT_EQ(closed_reads_after_write.size(), 1);
+    EXPECT_EQ(closed_definitions.size(), 1);
 
-    auto write = *closed_reads_after_write.begin();
+    auto write = *closed_definitions.begin();
     EXPECT_EQ(write.first->use(), analysis::Use::WRITE);
     EXPECT_EQ(write.first->container(), "B");
     EXPECT_EQ(write.first->element(), &output_node);
@@ -213,11 +204,11 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_WAW) {
     EXPECT_EQ(raw->element(), &input_node3);
 
     // Open Reads after Writes
-    EXPECT_EQ(open_reads_after_writes.size(), 2);
+    EXPECT_EQ(open_definitions.size(), 2);
 
     bool foundB = false;
     bool foundC = false;
-    for (auto entry : open_reads_after_writes) {
+    for (auto entry : open_definitions) {
         if (entry.first->container() == "B") {
             foundB = true;
             EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
@@ -237,7 +228,7 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_WAW) {
     EXPECT_TRUE(foundB && foundC);
 }
 
-TEST(HappensBeforeAnalysisTest, VisitBlock_SingleMemlet) {
+TEST(DataDependencyAnalysisTest, VisitBlock_SingleMemlet) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::Int32);
@@ -258,37 +249,34 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_SingleMemlet) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_block(users, block, open_reads, open_reads_after_writes,
-                         closed_reads_after_write);
+    analysis.visit_block(users, block, undefined, open_definitions, closed_definitions);
 
     // Check result
-    EXPECT_EQ(open_reads.size(), 1);
-    EXPECT_EQ(open_reads_after_writes.size(), 1);
-    EXPECT_EQ(closed_reads_after_write.size(), 0);
+    EXPECT_EQ(undefined.size(), 1);
+    EXPECT_EQ(open_definitions.size(), 1);
+    EXPECT_EQ(closed_definitions.size(), 0);
 
     bool foundA = false;
-    auto& read = *open_reads.begin();
+    auto& read = *undefined.begin();
     EXPECT_EQ(read->use(), analysis::Use::READ);
     EXPECT_EQ(read->container(), "i");
     EXPECT_EQ(read->element(), &edge);
 
-    auto& entry = *open_reads_after_writes.begin();
+    auto& entry = *open_definitions.begin();
     EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
     EXPECT_EQ(entry.first->container(), "A");
     EXPECT_EQ(entry.first->element(), &output_node);
     EXPECT_EQ(entry.second.size(), 0);
 }
 
-TEST(HappensBeforeAnalysisTest, VisitBlock_MultiMemlet) {
+TEST(DataDependencyAnalysisTest, VisitBlock_MultiMemlet) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::Int32);
@@ -314,28 +302,25 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_MultiMemlet) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_block(users, block, open_reads, open_reads_after_writes,
-                         closed_reads_after_write);
+    analysis.visit_block(users, block, undefined, open_definitions, closed_definitions);
 
     // Check result
-    EXPECT_EQ(open_reads.size(), 4);
-    EXPECT_EQ(open_reads_after_writes.size(), 1);
-    EXPECT_EQ(closed_reads_after_write.size(), 0);
+    EXPECT_EQ(undefined.size(), 4);
+    EXPECT_EQ(open_definitions.size(), 1);
+    EXPECT_EQ(closed_definitions.size(), 0);
 
     bool foundi1 = false;
     bool foundi2 = false;
     bool foundi3 = false;
     bool foundA = false;
-    for (auto read : open_reads) {
+    for (auto read : undefined) {
         if (read->container() == "i") {
             if (read->element() == &iedge1) {
                 foundi1 = true;
@@ -362,14 +347,14 @@ TEST(HappensBeforeAnalysisTest, VisitBlock_MultiMemlet) {
     }
     EXPECT_TRUE(foundi1 && foundi2 && foundi3 && foundA);
 
-    auto& entry = *open_reads_after_writes.begin();
+    auto& entry = *open_definitions.begin();
     EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
     EXPECT_EQ(entry.first->container(), "A");
     EXPECT_EQ(entry.first->element(), &output_node);
     EXPECT_EQ(entry.second.size(), 0);
 }
 
-TEST(HappensBeforeAnalysisTest, visit_for) {
+TEST(DataDependencyAnalysisTest, visit_for) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -395,27 +380,24 @@ TEST(HappensBeforeAnalysisTest, visit_for) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_for(users, for_loop, open_reads, open_reads_after_writes,
-                       closed_reads_after_write);
+    analysis.visit_for(users, for_loop, undefined, open_definitions, closed_definitions);
 
     // Check result
-    EXPECT_EQ(open_reads.size(), 0);
-    EXPECT_EQ(open_reads_after_writes.size(), 3);
-    EXPECT_EQ(closed_reads_after_write.size(), 0);
+    EXPECT_EQ(undefined.size(), 0);
+    EXPECT_EQ(open_definitions.size(), 3);
+    EXPECT_EQ(closed_definitions.size(), 0);
 
     bool foundB = false;
     int both_i = 0;
 
-    for (auto entry : open_reads_after_writes) {
+    for (auto entry : open_definitions) {
         if (entry.first->container() == "B") {
             foundB = true;
             EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
@@ -435,7 +417,7 @@ TEST(HappensBeforeAnalysisTest, visit_for) {
     EXPECT_EQ(both_i, 2);
 }
 
-TEST(HappensBeforeAnalysisTest, visit_map) {
+TEST(DataDependencyAnalysisTest, visit_map) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -460,26 +442,24 @@ TEST(HappensBeforeAnalysisTest, visit_map) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_map(users, map, open_reads, open_reads_after_writes, closed_reads_after_write);
+    analysis.visit_map(users, map, undefined, open_definitions, closed_definitions);
 
     // Check result
-    EXPECT_EQ(open_reads.size(), 0);
-    EXPECT_EQ(open_reads_after_writes.size(), 2);
-    EXPECT_EQ(closed_reads_after_write.size(), 0);
+    EXPECT_EQ(undefined.size(), 0);
+    EXPECT_EQ(open_definitions.size(), 2);
+    EXPECT_EQ(closed_definitions.size(), 0);
 
     bool foundB = false;
     bool foundi = false;
 
-    for (auto entry : open_reads_after_writes) {
+    for (auto entry : open_definitions) {
         if (entry.first->container() == "B") {
             foundB = true;
             EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
@@ -499,7 +479,7 @@ TEST(HappensBeforeAnalysisTest, visit_map) {
     EXPECT_TRUE(foundi);
 }
 
-TEST(HappensBeforeAnalysisTest, visit_while) {
+TEST(DataDependencyAnalysisTest, visit_while) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
@@ -530,32 +510,29 @@ TEST(HappensBeforeAnalysisTest, visit_while) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_while(users, while_loop, open_reads, open_reads_after_writes,
-                         closed_reads_after_write);
+    analysis.visit_while(users, while_loop, undefined, open_definitions, closed_definitions);
 
     // Check result
-    EXPECT_EQ(open_reads.size(), 1);
-    auto& oread = *open_reads.begin();
+    EXPECT_EQ(undefined.size(), 1);
+    auto& oread = *undefined.begin();
     EXPECT_EQ(oread->use(), analysis::Use::READ);
     EXPECT_EQ(oread->container(), "A");
     EXPECT_EQ(oread->element(), &input_node);
 
-    EXPECT_EQ(open_reads_after_writes.size(), 2);
-    EXPECT_EQ(closed_reads_after_write.size(), 0);
+    EXPECT_EQ(open_definitions.size(), 2);
+    EXPECT_EQ(closed_definitions.size(), 0);
 
     bool foundA = false;
     bool foundB = false;
 
-    for (auto entry : open_reads_after_writes) {
+    for (auto entry : open_definitions) {
         if (entry.first->container() == "A") {
             foundA = true;
             EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
@@ -574,7 +551,7 @@ TEST(HappensBeforeAnalysisTest, visit_while) {
     }
 }
 
-TEST(HappensBeforeAnalysisTest, visit_if_else_complete) {
+TEST(DataDependencyAnalysisTest, visit_if_else_complete) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
@@ -611,27 +588,24 @@ TEST(HappensBeforeAnalysisTest, visit_if_else_complete) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_if_else(users, if_else, open_reads, open_reads_after_writes,
-                           closed_reads_after_write);
+    analysis.visit_if_else(users, if_else, undefined, open_definitions, closed_definitions);
 
     // Check result
-    EXPECT_EQ(open_reads.size(), 3);
-    EXPECT_EQ(open_reads_after_writes.size(), 2);
-    EXPECT_EQ(closed_reads_after_write.size(), 0);
+    EXPECT_EQ(undefined.size(), 3);
+    EXPECT_EQ(open_definitions.size(), 2);
+    EXPECT_EQ(closed_definitions.size(), 0);
 
     bool foundA = false;
     bool foundB = false;
 
-    for (auto entry : open_reads_after_writes) {
+    for (auto entry : open_definitions) {
         if (entry.first->container() == "A") {
             foundA = true;
             EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
@@ -653,7 +627,7 @@ TEST(HappensBeforeAnalysisTest, visit_if_else_complete) {
     foundA = false;
     foundB = false;
 
-    for (auto entry : open_reads) {
+    for (auto entry : undefined) {
         if (entry->container() == "A") {
             EXPECT_EQ(entry->use(), analysis::Use::READ);
             EXPECT_EQ(entry->container(), "A");
@@ -676,7 +650,7 @@ TEST(HappensBeforeAnalysisTest, visit_if_else_complete) {
 }
 
 /*
-TEST(HappensBeforeAnalysisTest, visit_kernel) {
+TEST(DataDependencyAnalysisTest, visit_kernel) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -699,25 +673,25 @@ TEST(HappensBeforeAnalysisTest, visit_kernel) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
+    std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
+        open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+        closed_definitions;
 
-    analysis.visit_kernel(users, kernel, open_reads, open_reads_after_writes,
-                          closed_reads_after_write);
+    analysis.visit_kernel(users, kernel, undefined, open_definitions,
+                          closed_definitions);
 
     // Check result
-    EXPECT_EQ(open_reads.size(), 1);
-    EXPECT_EQ(open_reads_after_writes.size(), 1);
-    EXPECT_EQ(closed_reads_after_write.size(), 0);
+    EXPECT_EQ(undefined.size(), 1);
+    EXPECT_EQ(open_definitions.size(), 1);
+    EXPECT_EQ(closed_definitions.size(), 0);
 
-    if (open_reads.size() == 1) {
-        auto read = *open_reads.begin();
+    if (undefined.size() == 1) {
+        auto read = *undefined.begin();
         EXPECT_EQ(read->use(), analysis::Use::READ);
         EXPECT_EQ(read->container(), kernel.threadIdx_x()->get_name());
         EXPECT_EQ(read->element(), &input_node);
@@ -725,7 +699,7 @@ TEST(HappensBeforeAnalysisTest, visit_kernel) {
 
     bool foundB = false;
 
-    for (auto entry : open_reads_after_writes) {
+    for (auto entry : open_definitions) {
         if (entry.first->container() == "B") {
             foundB = true;
             EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
@@ -739,7 +713,7 @@ TEST(HappensBeforeAnalysisTest, visit_kernel) {
 }
 */
 
-TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_RAW) {
+TEST(DataDependencyAnalysisTest, visit_sequence_blocks_RAW) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
@@ -771,24 +745,22 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_RAW) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), open_reads,
-                            open_reads_after_writes, closed_reads_after_write);
+    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
+                            closed_definitions);
 
     // Check result
-    EXPECT_EQ(open_reads.size(), 1);
-    EXPECT_EQ(open_reads_after_writes.size(), 2);
-    EXPECT_EQ(closed_reads_after_write.size(), 0);
+    EXPECT_EQ(undefined.size(), 1);
+    EXPECT_EQ(open_definitions.size(), 2);
+    EXPECT_EQ(closed_definitions.size(), 0);
 
-    auto read = *open_reads.begin();
+    auto read = *undefined.begin();
 
     EXPECT_EQ(read->use(), analysis::Use::READ);
     EXPECT_EQ(read->container(), "A");
@@ -797,7 +769,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_RAW) {
     bool foundB = false;
     bool foundC = false;
 
-    for (auto entry : open_reads_after_writes) {
+    for (auto entry : open_definitions) {
         if (entry.first->container() == "B") {
             foundB = true;
             EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
@@ -817,7 +789,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_RAW) {
     EXPECT_TRUE(foundB && foundC);
 }
 
-TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAR) {
+TEST(DataDependencyAnalysisTest, visit_sequence_blocks_WAR) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
@@ -848,27 +820,25 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAR) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), open_reads,
-                            open_reads_after_writes, closed_reads_after_write);
+    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
+                            closed_definitions);
 
     // Check result
-    EXPECT_EQ(open_reads.size(), 2);
-    EXPECT_EQ(open_reads_after_writes.size(), 2);
-    EXPECT_EQ(closed_reads_after_write.size(), 0);
+    EXPECT_EQ(undefined.size(), 2);
+    EXPECT_EQ(open_definitions.size(), 2);
+    EXPECT_EQ(closed_definitions.size(), 0);
 
     bool foundA = false;
     bool foundC = false;
 
-    for (auto entry : open_reads) {
+    for (auto entry : undefined) {
         if (entry->container() == "A") {
             foundA = true;
             EXPECT_EQ(entry->use(), analysis::Use::READ);
@@ -887,7 +857,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAR) {
     foundA = false;
     bool foundB = false;
 
-    for (auto entry : open_reads_after_writes) {
+    for (auto entry : open_definitions) {
         if (entry.first->container() == "A") {
             foundA = true;
             EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
@@ -906,7 +876,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAR) {
     EXPECT_TRUE(foundA && foundB);
 }
 
-TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAW) {
+TEST(DataDependencyAnalysisTest, visit_sequence_blocks_WAW) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
@@ -937,27 +907,25 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAW) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), open_reads,
-                            open_reads_after_writes, closed_reads_after_write);
+    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
+                            closed_definitions);
 
     // Check result
-    EXPECT_EQ(open_reads.size(), 2);
-    EXPECT_EQ(open_reads_after_writes.size(), 1);
-    EXPECT_EQ(closed_reads_after_write.size(), 1);
+    EXPECT_EQ(undefined.size(), 2);
+    EXPECT_EQ(open_definitions.size(), 1);
+    EXPECT_EQ(closed_definitions.size(), 1);
 
     bool foundB = false;
     bool foundC = false;
 
-    for (auto entry : open_reads) {
+    for (auto entry : undefined) {
         if (entry->container() == "B") {
             foundB = true;
             EXPECT_EQ(entry->use(), analysis::Use::READ);
@@ -973,8 +941,8 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAW) {
 
     EXPECT_TRUE(foundB && foundC);
 
-    auto write = *open_reads_after_writes.begin();
-    auto closed = *closed_reads_after_write.begin();
+    auto write = *open_definitions.begin();
+    auto closed = *closed_definitions.begin();
 
     EXPECT_EQ(write.first->use(), analysis::Use::WRITE);
     EXPECT_EQ(write.first->container(), "A");
@@ -987,7 +955,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_blocks_WAW) {
     EXPECT_EQ(closed.second.size(), 0);
 }
 
-TEST(HappensBeforeAnalysisTest, visit_sequence_for_loop) {
+TEST(DataDependencyAnalysisTest, visit_sequence_for_loop) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
@@ -1023,24 +991,22 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_for_loop) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), open_reads,
-                            open_reads_after_writes, closed_reads_after_write);
+    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
+                            closed_definitions);
 
     // Check result
-    EXPECT_EQ(open_reads.size(), 1);
-    EXPECT_EQ(open_reads_after_writes.size(), 4);
-    EXPECT_EQ(closed_reads_after_write.size(), 0);
+    EXPECT_EQ(undefined.size(), 1);
+    EXPECT_EQ(open_definitions.size(), 4);
+    EXPECT_EQ(closed_definitions.size(), 0);
 
-    auto read = *open_reads.begin();
+    auto read = *undefined.begin();
 
     EXPECT_EQ(read->use(), analysis::Use::READ);
     EXPECT_EQ(read->container(), "A");
@@ -1050,7 +1016,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_for_loop) {
     bool foundA = false;
     int both_i = 0;
 
-    for (auto entry : open_reads_after_writes) {
+    for (auto entry : open_definitions) {
         if (entry.first->container() == "B") {
             foundB = true;
             EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
@@ -1076,7 +1042,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_for_loop) {
     EXPECT_EQ(both_i, 2);
 }
 
-TEST(HappensBeforeAnalysisTest, visit_sequence_while_loop) {
+TEST(DataDependencyAnalysisTest, visit_sequence_while_loop) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
@@ -1109,24 +1075,22 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_while_loop) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), open_reads,
-                            open_reads_after_writes, closed_reads_after_write);
+    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
+                            closed_definitions);
 
     // Check result
-    EXPECT_EQ(open_reads.size(), 1);
-    EXPECT_EQ(open_reads_after_writes.size(), 2);
-    EXPECT_EQ(closed_reads_after_write.size(), 0);
+    EXPECT_EQ(undefined.size(), 1);
+    EXPECT_EQ(open_definitions.size(), 2);
+    EXPECT_EQ(closed_definitions.size(), 0);
 
-    auto read = *open_reads.begin();
+    auto read = *undefined.begin();
 
     EXPECT_EQ(read->use(), analysis::Use::READ);
     EXPECT_EQ(read->container(), "A");
@@ -1135,7 +1099,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_while_loop) {
     bool foundB = false;
     bool foundA = false;
 
-    for (auto entry : open_reads_after_writes) {
+    for (auto entry : open_definitions) {
         if (entry.first->container() == "B") {
             foundB = true;
             EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
@@ -1155,7 +1119,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_while_loop) {
     EXPECT_TRUE(foundB && foundA);
 }
 
-TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_complete) {
+TEST(DataDependencyAnalysisTest, visit_sequence_if_else_complete) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
@@ -1203,25 +1167,23 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_complete) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), open_reads,
-                            open_reads_after_writes, closed_reads_after_write);
+    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
+                            closed_definitions);
 
     // Check result
 
-    EXPECT_EQ(open_reads.size(), 1);
-    EXPECT_EQ(open_reads_after_writes.size(), 3);
-    EXPECT_EQ(closed_reads_after_write.size(), 1);
+    EXPECT_EQ(undefined.size(), 1);
+    EXPECT_EQ(open_definitions.size(), 3);
+    EXPECT_EQ(closed_definitions.size(), 1);
 
-    auto read = *open_reads.begin();
+    auto read = *undefined.begin();
 
     EXPECT_EQ(read->use(), analysis::Use::READ);
     EXPECT_EQ(read->container(), "A");
@@ -1235,7 +1197,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_complete) {
     bool foundC_left = false;
     bool foundC_right = false;
 
-    for (auto entry : open_reads_after_writes) {
+    for (auto entry : open_definitions) {
         if (entry.first->container() == "B") {
             foundB = true;
             EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
@@ -1277,7 +1239,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_complete) {
     EXPECT_TRUE(foundB && foundB_left && foundB_right && foundB_trans);
     EXPECT_TRUE(foundC_left && foundC_right);
 
-    auto closed = *closed_reads_after_write.begin();
+    auto closed = *closed_definitions.begin();
 
     EXPECT_EQ(closed.first->use(), analysis::Use::WRITE);
     EXPECT_EQ(closed.first->container(), "C");
@@ -1285,7 +1247,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_complete) {
     EXPECT_EQ(closed.second.size(), 0);
 }
 
-TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_incomplete) {
+TEST(DataDependencyAnalysisTest, visit_sequence_if_else_incomplete) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
@@ -1333,25 +1295,23 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_incomplete) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), open_reads,
-                            open_reads_after_writes, closed_reads_after_write);
+    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
+                            closed_definitions);
 
     // Check result
 
-    EXPECT_EQ(open_reads.size(), 1);
-    EXPECT_EQ(open_reads_after_writes.size(), 4);
-    EXPECT_EQ(closed_reads_after_write.size(), 0);
+    EXPECT_EQ(undefined.size(), 1);
+    EXPECT_EQ(open_definitions.size(), 4);
+    EXPECT_EQ(closed_definitions.size(), 0);
 
-    auto read = *open_reads.begin();
+    auto read = *undefined.begin();
 
     EXPECT_EQ(read->use(), analysis::Use::READ);
     EXPECT_EQ(read->container(), "A");
@@ -1366,7 +1326,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_incomplete) {
     bool foundC_left = false;
     bool foundC_right = false;
 
-    for (auto entry : open_reads_after_writes) {
+    for (auto entry : open_definitions) {
         if (entry.first->container() == "B") {
             foundB = true;
             EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
@@ -1412,7 +1372,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_if_else_incomplete) {
     EXPECT_TRUE(foundC_left && foundC_right);
 }
 
-TEST(HappensBeforeAnalysisTest, visit_sequence_transition) {
+TEST(DataDependencyAnalysisTest, visit_sequence_transition) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
@@ -1444,27 +1404,25 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_transition) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
-    std::unordered_set<analysis::User*> open_reads;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        open_reads_after_writes;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>>
-        closed_reads_after_write;
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
-    analysis.visit_sequence(users, builder_opt.subject().root(), open_reads,
-                            open_reads_after_writes, closed_reads_after_write);
+    analysis.visit_sequence(users, builder_opt.subject().root(), undefined, open_definitions,
+                            closed_definitions);
 
     // Check result
-    EXPECT_EQ(open_reads.size(), 2);
-    EXPECT_EQ(open_reads_after_writes.size(), 3);
-    EXPECT_EQ(closed_reads_after_write.size(), 0);
+    EXPECT_EQ(undefined.size(), 2);
+    EXPECT_EQ(open_definitions.size(), 3);
+    EXPECT_EQ(closed_definitions.size(), 0);
 
     bool foundA = false;
     bool foundC = false;
 
-    for (auto entry : open_reads) {
+    for (auto entry : undefined) {
         if (entry->container() == "A") {
             foundA = true;
             EXPECT_EQ(entry->use(), analysis::Use::READ);
@@ -1484,7 +1442,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_transition) {
     bool foundB = false;
     foundC = false;
 
-    for (auto entry : open_reads_after_writes) {
+    for (auto entry : open_definitions) {
         if (entry.first->container() == "B") {
             foundB = true;
             EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
@@ -1510,7 +1468,7 @@ TEST(HappensBeforeAnalysisTest, visit_sequence_transition) {
     EXPECT_TRUE(foundA && foundB && foundC);
 }
 
-TEST(HappensBeforeAnalysisTest, visit_sdfg) {
+TEST(DataDependencyAnalysisTest, visit_sdfg) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
@@ -1548,16 +1506,16 @@ TEST(HappensBeforeAnalysisTest, visit_sdfg) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
     // Check result
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> reads_after_writes_A =
-        analysis.reads_after_writes("A");
+        analysis.definitions("A");
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> reads_after_writes_B =
-        analysis.reads_after_writes("B");
+        analysis.definitions("B");
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> reads_after_writes_C =
-        analysis.reads_after_writes("C");
+        analysis.definitions("C");
 
     EXPECT_EQ(reads_after_writes_A.size(), 0);
     EXPECT_EQ(reads_after_writes_B.size(), 2);
@@ -1595,7 +1553,7 @@ TEST(HappensBeforeAnalysisTest, visit_sdfg) {
     EXPECT_TRUE(foundB_first && foundB_second && foundC);
 }
 
-TEST(HappensBeforeAnalysisTest, propagate_open_read_out_of_while) {
+TEST(DataDependencyAnalysisTest, propagate_open_read_out_of_while) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("_0", types::Pointer(types::Scalar(types::PrimitiveType::Double)), true);
@@ -1636,12 +1594,12 @@ TEST(HappensBeforeAnalysisTest, propagate_open_read_out_of_while) {
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto& users = analysis_manager.get<analysis::Users>();
 
     // Check result
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> reads_after_writes_4 =
-        analysis.reads_after_writes("_4");
+        analysis.definitions("_4");
 
     EXPECT_EQ(reads_after_writes_4.size(), 2);
     for (auto& entry : reads_after_writes_4) {

@@ -1,6 +1,6 @@
 #include "sdfg/passes/symbolic/symbol_propagation.h"
 
-#include "sdfg/analysis/happens_before_analysis.h"
+#include "sdfg/analysis/data_dependency_analysis.h"
 
 namespace sdfg {
 namespace passes {
@@ -56,7 +56,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
 
     auto& sdfg = builder.subject();
     auto& users = analysis_manager.get<analysis::Users>();
-    auto& happens_before = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& data_dependency_analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     for (auto& name : sdfg.containers()) {
         // Criterion: Only transients
         if (!sdfg.is_transient(name)) {
@@ -74,7 +74,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
         auto lhs = symbolic::symbol(name);
 
         // Collect all reads of the symbol w.r.t to their writes
-        auto raw_groups = happens_before.reads_after_write_groups(name);
+        auto raw_groups = data_dependency_analysis.defined_by(name);
         for (auto& entry : raw_groups) {
             // If not exclusive write, skip
             if (entry.second.size() != 1) {

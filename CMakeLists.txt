@@ -50,7 +50,7 @@ set(SOURCE_FILES
     src/analysis/analysis.cpp
     src/analysis/assumptions_analysis.cpp
     src/analysis/data_parallelism_analysis.cpp
-    src/analysis/happens_before_analysis.cpp
+    src/analysis/data_dependency_analysis.cpp
     src/analysis/loop_analysis.cpp
     src/analysis/loop_dependency_analysis.cpp
     src/analysis/scope_analysis.cpp
