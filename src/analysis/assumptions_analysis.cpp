@@ -5,15 +5,60 @@
 
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/analysis/users.h"
-#include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/symbolic/assumptions.h"
-#include "sdfg/symbolic/conjunctive_normal_form.h"
 #include "sdfg/symbolic/extreme_values.h"
 #include "sdfg/symbolic/polynomials.h"
 #include "sdfg/symbolic/series.h"
 
 namespace sdfg {
 namespace analysis {
+
+symbolic::Expression AssumptionsAnalysis::cnf_to_upper_bound(const symbolic::CNF& cnf,
+                                                             const symbolic::Symbol& indvar) {
+    std::vector<symbolic::Expression> candidates;
+
+    for (const auto& clause : cnf) {
+        for (const auto& literal : clause) {
+            // Comparison: indvar < expr
+            if (SymEngine::is_a<SymEngine::StrictLessThan>(*literal)) {
+                auto lt = SymEngine::rcp_static_cast<const SymEngine::StrictLessThan>(literal);
+                if (symbolic::eq(lt->get_arg1(), indvar) &&
+                    !symbolic::uses(lt->get_arg2(), indvar)) {
+                    auto ub = symbolic::sub(lt->get_arg2(), symbolic::one());
+                    candidates.push_back(ub);
+                }
+            }
+            // Comparison: indvar <= expr
+            else if (SymEngine::is_a<SymEngine::LessThan>(*literal)) {
+                auto le = SymEngine::rcp_static_cast<const SymEngine::LessThan>(literal);
+                if (symbolic::eq(le->get_arg1(), indvar) &&
+                    !symbolic::uses(le->get_arg2(), indvar)) {
+                    candidates.push_back(le->get_arg2());
+                }
+            }
+            // Comparison: indvar == expr
+            else if (SymEngine::is_a<SymEngine::Equality>(*literal)) {
+                auto eq = SymEngine::rcp_static_cast<const SymEngine::Equality>(literal);
+                if (symbolic::eq(eq->get_arg1(), indvar) &&
+                    !symbolic::uses(eq->get_arg2(), indvar)) {
+                    candidates.push_back(eq->get_arg2());
+                }
+            }
+        }
+    }
+
+    if (candidates.empty()) {
+        return SymEngine::null;
+    }
+
+    // Return the smallest upper bound across all candidate constraints
+    symbolic::Expression result = candidates[0];
+    for (size_t i = 1; i < candidates.size(); ++i) {
+        result = symbolic::min(result, candidates[i]);
+    }
+
+    return result;
+}
 
 AssumptionsAnalysis::AssumptionsAnalysis(StructuredSDFG& sdfg)
     : Analysis(sdfg) {
@@ -160,14 +205,8 @@ void AssumptionsAnalysis::visit_while(structured_control_flow::While* while_loop
 
 void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop,
                                     analysis::AnalysisManager& analysis_manager) {
-    auto& assums = this->get(*for_loop);
-
-    // Prove that update is monotonic
     auto indvar = for_loop->indvar();
     auto update = for_loop->update();
-    if (!symbolic::is_monotonic(update, indvar, assums)) {
-        return;
-    }
 
     // Add new assumptions
     auto& body = for_loop->root();
@@ -179,14 +218,24 @@ void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop,
         body_assumptions.insert({indvar, symbolic::Assumption(indvar)});
     }
 
-    // monotonic => init is lower bound
+    // Assumption 1: indvar moves according to update
+    body_assumptions[indvar].map(update);
+
+    // Prove that update is monotonic -> assume bounds
+    auto& assums = this->get(*for_loop);
+    if (!symbolic::is_monotonic(update, indvar, assums)) {
+        return;
+    }
+
+    // Assumption 2: init is lower bound
     body_assumptions[indvar].lower_bound(for_loop->init());
     try {
         auto cnf = symbolic::conjunctive_normal_form(for_loop->condition());
-        auto ub = symbolic::upper_bound(cnf, indvar);
+        auto ub = cnf_to_upper_bound(cnf, indvar);
         if (ub == SymEngine::null) {
             return;
         }
+        // Assumption 3: ub is upper bound
         body_assumptions[indvar].upper_bound(ub);
     } catch (const symbolic::CNFException& e) {
         return;
@@ -207,6 +256,7 @@ void AssumptionsAnalysis::visit_map(structured_control_flow::Map* map,
     }
     body_assumptions[indvar].lower_bound(symbolic::zero());
     body_assumptions[indvar].upper_bound(symbolic::sub(map->num_iterations(), symbolic::one()));
+    body_assumptions[indvar].map(map->update());
 };
 
 void AssumptionsAnalysis::traverse(structured_control_flow::Sequence& root,
