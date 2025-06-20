@@ -9,8 +9,6 @@
 namespace sdfg {
 namespace symbolic {
 
-typedef std::vector<Expression> MultiExpression;
-
 /**
  * @brief Interprets the expressions as integer sets and checks if expr1 is a subset of expr2.
  *

@@ -3,7 +3,7 @@
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/conjunctive_normal_form.h"
-#include "sdfg/symbolic/series.h"
+#include "sdfg/symbolic/maps.h"
 
 namespace sdfg {
 namespace analysis {
@@ -64,25 +64,23 @@ const std::unordered_set<structured_control_flow::ControlFlowNode*> LoopAnalysis
     return this->loops_;
 }
 
-bool LoopAnalysis::is_monotonic(structured_control_flow::StructuredLoop* loop) const {
-    AnalysisManager manager(this->sdfg_);
-    auto& assums_analysis = manager.get<AssumptionsAnalysis>();
-    auto assums = assums_analysis.get(*loop, true);
+bool LoopAnalysis::is_monotonic(structured_control_flow::StructuredLoop* loop,
+                                AssumptionsAnalysis& assumptions_analysis) {
+    auto assums = assumptions_analysis.get(*loop, true);
 
     return symbolic::is_monotonic(loop->update(), loop->indvar(), assums);
 }
 
-bool LoopAnalysis::is_contiguous(structured_control_flow::StructuredLoop* loop) const {
-    AnalysisManager manager(this->sdfg_);
-    auto& assums_analysis = manager.get<AssumptionsAnalysis>();
-    auto assums = assums_analysis.get(*loop, true);
+bool LoopAnalysis::is_contiguous(structured_control_flow::StructuredLoop* loop,
+                                 AssumptionsAnalysis& assumptions_analysis) {
+    auto assums = assumptions_analysis.get(*loop, true);
 
     return symbolic::is_contiguous(loop->update(), loop->indvar(), assums);
 }
 
-symbolic::Expression LoopAnalysis::canonical_bound(
-    structured_control_flow::StructuredLoop* loop) const {
-    if (!this->is_contiguous(loop)) {
+symbolic::Expression LoopAnalysis::canonical_bound(structured_control_flow::StructuredLoop* loop,
+                                                   AssumptionsAnalysis& assumptions_analysis) {
+    if (!LoopAnalysis::is_contiguous(loop, assumptions_analysis)) {
         return SymEngine::null;
     }
 

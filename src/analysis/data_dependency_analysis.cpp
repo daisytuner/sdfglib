@@ -7,7 +7,9 @@
 #include <vector>
 
 #include "sdfg/analysis/analysis.h"
+#include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/structured_sdfg.h"
+#include "sdfg/symbolic/maps.h"
 #include "sdfg/symbolic/sets.h"
 
 namespace sdfg {
@@ -74,7 +76,7 @@ void DataDependencyAnalysis::visit_block(
                     if (use == Use::WRITE) {
                         std::unordered_map<User*, std::unordered_set<User*>> to_close;
                         for (auto& user : open_definitions) {
-                            if (overwrites(*user.first, *current_user, assumptions_analysis)) {
+                            if (supersedes(*user.first, *current_user, assumptions_analysis)) {
                                 to_close.insert(user);
                             }
                         }
@@ -99,7 +101,7 @@ void DataDependencyAnalysis::visit_block(
                     if (use == Use::READ) {
                         bool found = false;
                         for (auto& user : open_definitions) {
-                            if (reads(*user.first, *current_user, assumptions_analysis)) {
+                            if (intersects(*user.first, *current_user, assumptions_analysis)) {
                                 user.second.insert(current_user);
                                 found = true;
                             }
@@ -118,7 +120,7 @@ void DataDependencyAnalysis::visit_block(
                     {
                         bool found = false;
                         for (auto& user : open_definitions) {
-                            if (reads(*user.first, *current_user, assumptions_analysis)) {
+                            if (intersects(*user.first, *current_user, assumptions_analysis)) {
                                 user.second.insert(current_user);
                                 found = true;
                             }
@@ -144,7 +146,7 @@ void DataDependencyAnalysis::visit_block(
                 {
                     bool found = false;
                     for (auto& user : open_definitions) {
-                        if (reads(*user.first, *current_user, assumptions_analysis)) {
+                        if (intersects(*user.first, *current_user, assumptions_analysis)) {
                             user.second.insert(current_user);
                             found = true;
                         }
@@ -187,7 +189,7 @@ void DataDependencyAnalysis::visit_for(
 
         std::unordered_set<User*> to_close;
         for (auto& user : open_definitions) {
-            if (overwrites(*user.first, *current_user, assumptions_analysis)) {
+            if (supersedes(*user.first, *current_user, assumptions_analysis)) {
                 to_close.insert(user.first);
             }
         }
@@ -255,23 +257,16 @@ void DataDependencyAnalysis::visit_for(
 
     // Merge for with outside
 
-    // Closed definitions are scope-local
+    // Closed definitions are simply merged
     for (auto& entry : closed_definitions_for) {
         closed_definitions.insert(entry);
     }
 
-    // Handle open reads of for
+    // Undefined reads are matched or forwarded
     for (auto open_read : undefined_for) {
-        // Adds artificial loop-carried dependencies
-        for (auto& user : open_definitions_for) {
-            if (user.first->container() == open_read->container()) {
-                user.second.insert(open_read);
-            }
-        }
-
         bool found = false;
         for (auto& entry : open_definitions) {
-            if (entry.first->container() == open_read->container()) {
+            if (intersects(*entry.first, *open_read, assumptions_analysis)) {
                 entry.second.insert(open_read);
                 found = true;
             }
@@ -281,18 +276,85 @@ void DataDependencyAnalysis::visit_for(
         }
     }
 
-    // Close outside open definitions after loop
+    // Open definitions may close outside open definitions after loop
     std::unordered_set<User*> to_close;
-    for (auto& user : open_definitions_for) {
-        for (auto& previous : open_definitions) {
-            if (overwrites(*previous.first, *user.first, assumptions_analysis)) {
+    for (auto& previous : open_definitions) {
+        for (auto& user : open_definitions_for) {
+            if (supersedes(*previous.first, *user.first, assumptions_analysis)) {
                 to_close.insert(previous.first);
+                break;
             }
         }
     }
     for (auto& user : to_close) {
         closed_definitions.insert({user, open_definitions.at(user)});
         open_definitions.erase(user);
+    }
+
+    // Add loop-carried dependencies
+
+    // Criterion 1: Loop is monotonic -> indvar never takes the same value twice
+    bool is_monotonic = LoopAnalysis::is_monotonic(&for_loop, assumptions_analysis);
+    if (is_monotonic) {
+        // Case: Can analyze
+        this->loop_carried_dependencies_.insert({&for_loop, {}});
+        auto& dependencies = this->loop_carried_dependencies_.at(&for_loop);
+
+        // We can focus on written containers
+
+        // Case 1: Read-Write between iterations
+        for (auto& read : undefined_for) {
+            for (auto& write : open_definitions_for) {
+                if (loop_depends(*write.first, *read, assumptions_analysis, for_loop.indvar())) {
+                    if (dependencies.find(read->container()) == dependencies.end()) {
+                        std::cout << "Adding read-write dependency for " << read->container()
+                                  << std::endl;
+                        dependencies.insert(
+                            {read->container(), LOOP_CARRIED_DEPENDENCY_READ_WRITE});
+                    }
+                    write.second.insert(read);
+                }
+            }
+        }
+
+        // Case 2: Write-Write between iterations
+        for (auto& write : open_definitions_for) {
+            if (dependencies.find(write.first->container()) != dependencies.end()) {
+                continue;
+            }
+            for (auto& write_2 : open_definitions_for) {
+                if (loop_depends(*write.first, *write_2.first, assumptions_analysis,
+                                 for_loop.indvar())) {
+                    std::cout << "Adding write-write dependency for " << write.first->container()
+                              << std::endl;
+                    dependencies.insert(
+                        {write.first->container(), LOOP_CARRIED_DEPENDENCY_WRITE_WRITE});
+                    break;
+                }
+            }
+        }
+    } else {
+        // Case: Cannot analyze
+        this->loop_carried_dependencies_.insert({&for_loop, {}});
+        auto& dependencies = this->loop_carried_dependencies_.at(&for_loop);
+
+        // Over-Approximation:
+        // Add loop-carried dependencies for all open reads to all open writes
+        for (auto& read : undefined_for) {
+            for (auto& write : open_definitions_for) {
+                if (intersects(*write.first, *read, assumptions_analysis)) {
+                    write.second.insert(read);
+                    dependencies.insert({read->container(), LOOP_CARRIED_DEPENDENCY_READ_WRITE});
+                }
+            }
+        }
+        // Add loop-carried dependencies for writes
+        for (auto& write : open_definitions_for) {
+            if (dependencies.find(write.first->container()) == dependencies.end()) {
+                dependencies.insert(
+                    {write.first->container(), LOOP_CARRIED_DEPENDENCY_WRITE_WRITE});
+            }
+        }
     }
 
     // Add open definitions from for to outside
@@ -416,26 +478,26 @@ void DataDependencyAnalysis::visit_while(
     std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions) {
     std::unordered_map<User*, std::unordered_set<User*>> open_definitions_while;
-    std::unordered_map<User*, std::unordered_set<User*>> closed_definitionss_while;
+    std::unordered_map<User*, std::unordered_set<User*>> closed_definitions_while;
     std::unordered_set<User*> undefined_while;
 
-    // Add assumptions for body
     visit_sequence(users, assumptions_analysis, while_loop.root(), undefined_while,
-                   open_definitions_while, closed_definitionss_while);
+                   open_definitions_while, closed_definitions_while);
 
-    for (auto& entry : closed_definitionss_while) {
+    // Scope-local closed definitions
+    for (auto& entry : closed_definitions_while) {
         closed_definitions.insert(entry);
     }
 
     for (auto open_read : undefined_while) {
-        // Add recursively to loop
+        // Over-Approximation: Add loop-carried dependencies for all open reads
         for (auto& entry : open_definitions_while) {
             if (entry.first->container() == open_read->container()) {
                 entry.second.insert(open_read);
             }
         }
 
-        // Add to outside
+        // Connect to outside
         bool found = false;
         for (auto& entry : open_definitions) {
             if (entry.first->container() == open_read->container()) {
@@ -448,7 +510,7 @@ void DataDependencyAnalysis::visit_while(
         }
     }
 
-    // Keep open reads_after_writes open after loop
+    // Add open definitions from while to outside
     for (auto& entry : open_definitions_while) {
         open_definitions.insert(entry);
     }
@@ -586,7 +648,34 @@ void DataDependencyAnalysis::visit_sequence(
     }
 }
 
-bool DataDependencyAnalysis::overwrites(User& previous, User& current,
+bool DataDependencyAnalysis::loop_depends(User& previous, User& current,
+                                          analysis::AssumptionsAnalysis& assumptions_analysis,
+                                          symbolic::Symbol& indvar) {
+    if (previous.container() != current.container()) {
+        return false;
+    }
+    auto& previous_subsets = previous.subsets();
+    auto& current_subsets = current.subsets();
+
+    auto previous_scope = Users::scope(&previous);
+    auto previous_assumptions = assumptions_analysis.get(*previous_scope, true);
+    auto current_scope = Users::scope(&current);
+    auto current_assumptions = assumptions_analysis.get(*current_scope, true);
+
+    // Check if previous subset is subset of any current subset
+    for (auto& previous_subset : previous_subsets) {
+        for (auto& current_subset : current_subsets) {
+            if (symbolic::intersects(previous_subset, current_subset, indvar, previous_assumptions,
+                                     current_assumptions)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool DataDependencyAnalysis::supersedes(User& previous, User& current,
                                         analysis::AssumptionsAnalysis& assumptions_analysis) {
     if (previous.use() != Use::WRITE || current.use() != Use::WRITE) {
         return false;
@@ -620,8 +709,8 @@ bool DataDependencyAnalysis::overwrites(User& previous, User& current,
     return true;
 }
 
-bool DataDependencyAnalysis::reads(User& previous, User& current,
-                                   analysis::AssumptionsAnalysis& assumptions_analysis) {
+bool DataDependencyAnalysis::intersects(User& previous, User& current,
+                                        analysis::AssumptionsAnalysis& assumptions_analysis) {
     if (previous.use() != Use::WRITE || current.use() != Use::READ) {
         return false;
     }

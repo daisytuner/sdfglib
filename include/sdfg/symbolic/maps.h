@@ -8,6 +8,9 @@
 namespace sdfg {
 namespace symbolic {
 
+bool intersects(const MultiExpression& expr1, const MultiExpression& expr2, const Symbol& indvar,
+                const Assumptions& assums1, const Assumptions& assums2);
+
 bool is_monotonic(const Expression& expr, const Symbol& sym, const Assumptions& assums);
 
 bool is_contiguous(const Expression& expr, const Symbol& sym, const Assumptions& assums);

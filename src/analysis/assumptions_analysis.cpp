@@ -7,8 +7,8 @@
 #include "sdfg/analysis/users.h"
 #include "sdfg/symbolic/assumptions.h"
 #include "sdfg/symbolic/extreme_values.h"
+#include "sdfg/symbolic/maps.h"
 #include "sdfg/symbolic/polynomials.h"
-#include "sdfg/symbolic/series.h"
 
 namespace sdfg {
 namespace analysis {

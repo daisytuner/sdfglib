@@ -1,5 +1,6 @@
 #include "sdfg/transformations/loop_tiling.h"
 
+#include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
@@ -22,8 +23,8 @@ bool LoopTiling::can_be_applied(builder::StructuredSDFGBuilder& builder,
         return false;
     }
     // Criterion contiguous loop
-    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
-    return loop_analysis.is_contiguous(&loop_);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    return analysis::LoopAnalysis::is_contiguous(&loop_, assumptions_analysis);
 };
 
 void LoopTiling::apply(builder::StructuredSDFGBuilder& builder,

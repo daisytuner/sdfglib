@@ -699,11 +699,11 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
 
 void DataParallelismAnalysis::classify(analysis::AnalysisManager& analysis_manager,
                                        structured_control_flow::StructuredLoop* loop) {
-    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
 
     // Strictly monotonic update
     auto& indvar = loop->indvar();
-    if (!loop_analysis.is_monotonic(loop)) {
+    if (!LoopAnalysis::is_monotonic(loop, assumptions_analysis)) {
         this->results_.insert({loop, DataParallelismAnalysisResult()});
         return;
     }
@@ -721,7 +721,6 @@ void DataParallelismAnalysis::classify(analysis::AnalysisManager& analysis_manag
     auto& result = this->results_.at(loop);
 
     // Assumptions analysis
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
     auto assumptions = assumptions_analysis.get(body, true);
 
     // For each container, we now classify the access pattern

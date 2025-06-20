@@ -11,6 +11,11 @@
 namespace sdfg {
 namespace analysis {
 
+enum LoopCarriedDependency {
+    LOOP_CARRIED_DEPENDENCY_READ_WRITE,
+    LOOP_CARRIED_DEPENDENCY_WRITE_WRITE,
+};
+
 class DataDependencyAnalysis : public Analysis {
     friend class AnalysisManager;
 
@@ -18,10 +23,19 @@ class DataDependencyAnalysis : public Analysis {
     structured_control_flow::Sequence& node_;
     std::unordered_map<std::string, std::unordered_map<User*, std::unordered_set<User*>>> results_;
 
-    bool overwrites(User& previous, User& current,
+    std::unordered_map<structured_control_flow::StructuredLoop*,
+                       std::unordered_map<std::string, LoopCarriedDependency>>
+        loop_carried_dependencies_;
+
+    bool loop_depends(User& previous, User& current,
+                      analysis::AssumptionsAnalysis& assumptions_analysis,
+                      symbolic::Symbol& indvar);
+
+    bool supersedes(User& previous, User& current,
                     analysis::AssumptionsAnalysis& assumptions_analysis);
 
-    bool reads(User& previous, User& current, analysis::AssumptionsAnalysis& assumptions_analysis);
+    bool intersects(User& previous, User& current,
+                    analysis::AssumptionsAnalysis& assumptions_analysis);
 
    public:
     DataDependencyAnalysis(StructuredSDFG& sdfg);
@@ -71,7 +85,7 @@ class DataDependencyAnalysis : public Analysis {
                    std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
                    std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
 
-    /****** Public API ******/
+    /****** Defines & Use ******/
 
     /**
      * @brief Get the users (reads) of a definition (write).
@@ -104,6 +118,13 @@ class DataDependencyAnalysis : public Analysis {
      * @return The definitions (writes) of the user.
      */
     std::unordered_set<User*> defined_by(User& read);
+
+    /****** Loop-carried dependencies ******/
+
+    bool available(structured_control_flow::StructuredLoop& loop) const;
+
+    const std::unordered_map<std::string, LoopCarriedDependency>& dependencies(
+        structured_control_flow::StructuredLoop& loop) const;
 };
 
 }  // namespace analysis

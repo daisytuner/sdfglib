@@ -122,10 +122,11 @@ set(SOURCE_FILES
     src/symbolic/assumptions.cpp
     src/symbolic/conjunctive_normal_form.cpp
     src/symbolic/extreme_values.cpp
-    src/symbolic/series.cpp
+    src/symbolic/maps.cpp
     src/symbolic/polynomials.cpp
     src/symbolic/sets.cpp
     src/symbolic/symbolic.cpp
+    src/symbolic/utils.cpp
     src/transformations/loop_distribute.cpp
     src/transformations/loop_interchange.cpp
     src/transformations/loop_slicing.cpp

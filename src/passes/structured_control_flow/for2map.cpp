@@ -1,5 +1,6 @@
 #include "sdfg/passes/structured_control_flow/for2map.h"
 
+#include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
 
@@ -18,8 +19,8 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt,
 
     // Criterion: loop must be contiguous
     // Simplification to reason about memory offsets and bounds
-    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
-    if (!loop_analysis.is_contiguous(&for_stmt)) {
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    if (!analysis::LoopAnalysis::is_contiguous(&for_stmt, assumptions_analysis)) {
         std::cout << "Loop is not contiguous" << std::endl;
         return false;
     }
@@ -27,7 +28,7 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt,
     // Criterion: loop condition can be written as a closed-form expression.
     // Closed-form: i < expression_no_i
     // Example: i < N && i < M -> i < min(N, M)
-    auto bound = loop_analysis.canonical_bound(&for_stmt);
+    auto bound = analysis::LoopAnalysis::canonical_bound(&for_stmt, assumptions_analysis);
     if (bound == SymEngine::null) {
         std::cout << "Loop has no canonical bound" << std::endl;
         return false;
@@ -67,9 +68,10 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt,
 void For2Map::apply(structured_control_flow::For& for_stmt, builder::StructuredSDFGBuilder& builder,
                     analysis::AnalysisManager& analysis_manager) {
     // Contiguous and canonical bound -> we can compute the number of iterations
-    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto init = for_stmt.init();
-    auto num_iterations = symbolic::sub(loop_analysis.canonical_bound(&for_stmt), init);
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    auto num_iterations = symbolic::sub(
+        analysis::LoopAnalysis::canonical_bound(&for_stmt, assumptions_analysis), init);
 
     auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto parent =

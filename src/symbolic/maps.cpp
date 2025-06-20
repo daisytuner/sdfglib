@@ -1,7 +1,12 @@
-#include "sdfg/symbolic/series.h"
+#include "sdfg/symbolic/maps.h"
+
+#include <isl/ctx.h>
+#include <isl/set.h>
+#include <isl/space.h>
 
 #include "sdfg/symbolic/extreme_values.h"
 #include "sdfg/symbolic/polynomials.h"
+#include "sdfg/symbolic/utils.h"
 
 namespace sdfg {
 namespace symbolic {
@@ -97,6 +102,11 @@ bool is_contiguous(const Expression& expr, const Symbol& sym, const Assumptions&
     }
 
     return false;
+}
+
+bool intersects(const MultiExpression& expr1, const MultiExpression& expr2, const Symbol& indvar,
+                const Assumptions& assums1, const Assumptions& assums2) {
+    return true;
 }
 
 }  // namespace symbolic
