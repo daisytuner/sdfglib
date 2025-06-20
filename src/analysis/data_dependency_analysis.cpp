@@ -166,7 +166,7 @@ void DataDependencyAnalysis::visit_for(
     std::unordered_set<User*>& undefined,
     std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions) {
-    // Read Init
+    // Init - Read
     for (auto atom : symbolic::atoms(for_loop.init())) {
         auto current_user = users.get_user(atom->get_name(), &for_loop, Use::READ, true);
 
@@ -182,6 +182,7 @@ void DataDependencyAnalysis::visit_for(
         }
     }
 
+    // Init - Write
     {
         // Write Induction Variable
         auto current_user =
@@ -189,7 +190,7 @@ void DataDependencyAnalysis::visit_for(
 
         std::unordered_set<User*> to_close;
         for (auto& user : open_definitions) {
-            if (user.first->container() == for_loop.indvar()->get_name()) {
+            if (overwrites(*user.first, *current_user, assumptions)) {
                 to_close.insert(user.first);
             }
         }
@@ -198,15 +199,23 @@ void DataDependencyAnalysis::visit_for(
             open_definitions.erase(user);
         }
         open_definitions.insert({current_user, {}});
+
+        // Improve: If loop is executed at least once, we can close the init's definition
+        // TODO: Implement this
     }
+
+    // Update - Write
     {
-        // Write Update
+        // Exists after loop and inside body
         auto current_user = users.get_user(for_loop.indvar()->get_name(), &for_loop, Use::WRITE,
                                            false, false, true);
         open_definitions.insert({current_user, {}});
+
+        // Improve: If loop is executed at least once, we can close the init's definition
+        // TODO: Implement this
     }
 
-    // Read Condition - Never written in body
+    // Condition - Read
     for (auto atom : symbolic::atoms(for_loop.condition())) {
         auto current_user = users.get_user(atom->get_name(), &for_loop, Use::READ, false, true);
 
@@ -223,47 +232,42 @@ void DataDependencyAnalysis::visit_for(
     }
 
     std::unordered_map<User*, std::unordered_set<User*>> open_definitions_for;
-    std::unordered_map<User*, std::unordered_set<User*>> closed_definitionss_for;
+    std::unordered_map<User*, std::unordered_set<User*>> closed_definitions_for;
     std::unordered_set<User*> undefined_for;
 
     // Add assumptions for body
     symbolic::Assumptions body_assumptions = assumptions;
     assumptions_analysis.add(body_assumptions, for_loop.root());
     visit_sequence(users, assumptions_analysis, body_assumptions, for_loop.root(), undefined_for,
-                   open_definitions_for, closed_definitionss_for);
+                   open_definitions_for, closed_definitions_for);
 
-    for (auto& entry : closed_definitionss_for) {
-        closed_definitions.insert(entry);
-    }
-
-    // Read Update
+    // Update - Read
     for (auto atom : symbolic::atoms(for_loop.update())) {
         auto current_user =
             users.get_user(atom->get_name(), &for_loop, Use::READ, false, false, true);
 
-        // Add for body
-        for (auto& user : open_definitions_for) {
-            if (user.first->container() == atom->get_name()) {
-                user.second.insert(current_user);
-            }
-        }
-
-        // Add to outside
         bool found = false;
-        for (auto& user : open_definitions) {
+        for (auto& user : open_definitions_for) {
             if (user.first->container() == atom->get_name()) {
                 user.second.insert(current_user);
                 found = true;
             }
         }
         if (!found) {
-            undefined.insert(current_user);
+            undefined_for.insert(current_user);
         }
+    }
+
+    // Merge for with outside
+
+    // Closed definitions are scope-local
+    for (auto& entry : closed_definitions_for) {
+        closed_definitions.insert(entry);
     }
 
     // Handle open reads of for
     for (auto open_read : undefined_for) {
-        // Add recursive
+        // Adds artificial loop-carried dependencies
         for (auto& user : open_definitions_for) {
             if (user.first->container() == open_read->container()) {
                 user.second.insert(open_read);
