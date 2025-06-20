@@ -31,19 +31,11 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
     std::vector<std::string> parameters;
     SymbolSet parameters_syms;
     for (auto& sym : syms) {
-        if (is_parameter(sym, assums)) {
-            if (parameters_syms.find(sym) != parameters_syms.end()) {
-                continue;
-            }
-            parameters.push_back(sym->get_name());
-            parameters_syms.insert(sym);
-        } else {
-            if (dimensions_syms.find(sym) != dimensions_syms.end()) {
-                continue;
-            }
-            dimensions.push_back(sym->get_name());
-            dimensions_syms.insert(sym);
+        if (dimensions_syms.find(sym) != dimensions_syms.end()) {
+            continue;
         }
+        dimensions.push_back(sym->get_name());
+        dimensions_syms.insert(sym);
     }
 
     // Generate constraints
@@ -98,6 +90,172 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
 
     map = std::regex_replace(map, std::regex("\\."), "_");
     return map;
+}
+
+std::tuple<std::string, std::string, std::string> expressions_to_intersection_map_str(
+    const MultiExpression& expr1, const MultiExpression& expr2, const Symbol& indvar,
+    const Assumptions& assums1, const Assumptions& assums2) {
+    codegen::CLanguageExtension language_extension;
+
+    // Get all symbols
+    symbolic::SymbolSet syms;
+    for (auto& expr : expr1) {
+        auto syms_expr = symbolic::atoms(expr);
+        syms.insert(syms_expr.begin(), syms_expr.end());
+    }
+    for (auto& expr : expr2) {
+        auto syms_expr = symbolic::atoms(expr);
+        syms.insert(syms_expr.begin(), syms_expr.end());
+    }
+
+    // Distinguish between dimensions and parameters
+    std::vector<std::string> dimensions;
+    SymbolSet dimensions_syms;
+    std::vector<std::string> parameters;
+    SymbolSet parameters_syms;
+    for (auto& sym : syms) {
+        if (sym->get_name() != indvar->get_name() && is_parameter(sym, assums1)) {
+            if (parameters_syms.find(sym) != parameters_syms.end()) {
+                continue;
+            }
+            parameters.push_back(sym->get_name());
+            parameters_syms.insert(sym);
+        } else {
+            if (dimensions_syms.find(sym) != dimensions_syms.end()) {
+                continue;
+            }
+            dimensions.push_back(sym->get_name());
+            dimensions_syms.insert(sym);
+        }
+    }
+
+    // Generate constraints
+    SymbolSet seen;
+    auto constraints_syms = generate_constraints(syms, assums1, seen);
+
+    // Extend parameters with additional symbols from constraints
+    for (auto& con : constraints_syms) {
+        auto con_syms = symbolic::atoms(con);
+        for (auto& con_sym : con_syms) {
+            if (dimensions_syms.find(con_sym) == dimensions_syms.end()) {
+                if (parameters_syms.find(con_sym) != parameters_syms.end()) {
+                    continue;
+                }
+                parameters.push_back(con_sym->get_name());
+                parameters_syms.insert(con_sym);
+            }
+        }
+    }
+
+    // Define two maps
+    std::string map_1;
+    std::string map_2;
+    if (!parameters.empty()) {
+        map_1 += "[";
+        map_1 += helpers::join(parameters, ", ");
+        map_1 += "] -> ";
+        map_2 += "[";
+        map_2 += helpers::join(parameters, ", ");
+        map_2 += "] -> ";
+    }
+    map_1 += "{ [";
+    map_2 += "{ [";
+    for (size_t i = 0; i < dimensions.size(); i++) {
+        map_1 += dimensions[i] + "_1";
+        map_2 += dimensions[i] + "_2";
+        if (i < dimensions.size() - 1) {
+            map_1 += ", ";
+            map_2 += ", ";
+        }
+    }
+    map_1 += "] -> [";
+    map_2 += "] -> [";
+    for (size_t i = 0; i < expr1.size(); i++) {
+        auto dim = expr1[i];
+        for (auto& iter : dimensions) {
+            dim = symbolic::subs(dim, symbolic::symbol(iter), symbolic::symbol(iter + "_1"));
+        }
+        map_1 += language_extension.expression(dim);
+        if (i < expr1.size() - 1) {
+            map_1 += ", ";
+        }
+    }
+    for (size_t i = 0; i < expr2.size(); i++) {
+        auto dim = expr2[i];
+        for (auto& iter : dimensions) {
+            dim = symbolic::subs(dim, symbolic::symbol(iter), symbolic::symbol(iter + "_2"));
+        }
+        map_2 += language_extension.expression(dim);
+        if (i < expr2.size() - 1) {
+            map_2 += ", ";
+        }
+    }
+    map_1 += "] ";
+    map_2 += "] ";
+
+    std::vector<std::string> constraints_1;
+    std::vector<std::string> constraints_2;
+    // Add bounds
+    for (auto& con : constraints_syms) {
+        auto con_1 = con;
+        auto con_2 = con;
+        for (auto& iter : dimensions) {
+            con_1 = symbolic::subs(con_1, symbolic::symbol(iter), symbolic::symbol(iter + "_1"));
+            con_2 = symbolic::subs(con_2, symbolic::symbol(iter), symbolic::symbol(iter + "_2"));
+        }
+        auto con_str_1 = constraint_to_isl_str(con_1);
+        if (con_str_1.empty()) {
+            continue;
+        }
+        auto con_str_2 = constraint_to_isl_str(con_2);
+        if (!con_str_1.empty()) {
+            constraints_1.push_back(con_str_1);
+            constraints_2.push_back(con_str_2);
+        }
+    }
+    if (!constraints_1.empty()) {
+        map_1 += " : ";
+        map_1 += helpers::join(constraints_1, " and ");
+    }
+    map_1 += " }";
+
+    if (!constraints_2.empty()) {
+        map_2 += " : ";
+        map_2 += helpers::join(constraints_2, " and ");
+    }
+    map_2 += " }";
+
+    std::string map_3 = "{ [";
+    for (size_t i = 0; i < dimensions.size(); i++) {
+        map_3 += dimensions[i] + "_2";
+        if (i < dimensions.size() - 1) {
+            map_3 += ", ";
+        }
+    }
+    map_3 += "] -> [";
+    for (size_t i = 0; i < dimensions.size(); i++) {
+        map_3 += dimensions[i] + "_1";
+        if (i < dimensions.size() - 1) {
+            map_3 += ", ";
+        }
+    }
+    map_3 += "]";
+    std::vector<std::string> monotonicity_constraints;
+    if (dimensions_syms.find(indvar) != dimensions_syms.end()) {
+        monotonicity_constraints.push_back(indvar->get_name() + "_1 != " + indvar->get_name() +
+                                           "_2");
+    }
+    if (!monotonicity_constraints.empty()) {
+        map_3 += " : ";
+        map_3 += helpers::join(monotonicity_constraints, " and ");
+    }
+    map_3 += " }";
+
+    map_1 = std::regex_replace(map_1, std::regex("\\."), "_");
+    map_2 = std::regex_replace(map_2, std::regex("\\."), "_");
+    map_3 = std::regex_replace(map_3, std::regex("\\."), "_");
+
+    return {map_1, map_2, map_3};
 }
 
 ExpressionSet generate_constraints(SymbolSet& syms, const Assumptions& assums, SymbolSet& seen) {

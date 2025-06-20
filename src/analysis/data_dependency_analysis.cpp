@@ -307,8 +307,6 @@ void DataDependencyAnalysis::visit_for(
             for (auto& write : open_definitions_for) {
                 if (loop_depends(*write.first, *read, assumptions_analysis, for_loop.indvar())) {
                     if (dependencies.find(read->container()) == dependencies.end()) {
-                        std::cout << "Adding read-write dependency for " << read->container()
-                                  << std::endl;
                         dependencies.insert(
                             {read->container(), LOOP_CARRIED_DEPENDENCY_READ_WRITE});
                     }
@@ -325,8 +323,6 @@ void DataDependencyAnalysis::visit_for(
             for (auto& write_2 : open_definitions_for) {
                 if (loop_depends(*write.first, *write_2.first, assumptions_analysis,
                                  for_loop.indvar())) {
-                    std::cout << "Adding write-write dependency for " << write.first->container()
-                              << std::endl;
                     dependencies.insert(
                         {write.first->container(), LOOP_CARRIED_DEPENDENCY_WRITE_WRITE});
                     break;
@@ -800,6 +796,15 @@ std::unordered_set<User*> DataDependencyAnalysis::defined_by(User& read) {
         }
     }
     return writes;
+};
+
+bool DataDependencyAnalysis::available(structured_control_flow::StructuredLoop& loop) const {
+    return this->loop_carried_dependencies_.find(&loop) != this->loop_carried_dependencies_.end();
+};
+
+const std::unordered_map<std::string, LoopCarriedDependency>& DataDependencyAnalysis::dependencies(
+    structured_control_flow::StructuredLoop& loop) const {
+    return this->loop_carried_dependencies_.at(&loop);
 };
 
 }  // namespace analysis

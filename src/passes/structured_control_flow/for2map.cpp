@@ -1,8 +1,10 @@
 #include "sdfg/passes/structured_control_flow/for2map.h"
 
 #include "sdfg/analysis/assumptions_analysis.h"
+#include "sdfg/analysis/data_dependency_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
+#include "sdfg/analysis/users.h"
 
 namespace sdfg {
 namespace passes {
@@ -15,13 +17,10 @@ For2Map::For2Map(builder::StructuredSDFGBuilder& builder,
 
 bool For2Map::can_be_applied(structured_control_flow::For& for_stmt,
                              analysis::AnalysisManager& analysis_manager) {
-    std::cout << "For2Map: " << for_stmt.indvar()->get_name() << std::endl;
-
     // Criterion: loop must be contiguous
     // Simplification to reason about memory offsets and bounds
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
     if (!analysis::LoopAnalysis::is_contiguous(&for_stmt, assumptions_analysis)) {
-        std::cout << "Loop is not contiguous" << std::endl;
         return false;
     }
 
@@ -30,21 +29,16 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt,
     // Example: i < N && i < M -> i < min(N, M)
     auto bound = analysis::LoopAnalysis::canonical_bound(&for_stmt, assumptions_analysis);
     if (bound == SymEngine::null) {
-        std::cout << "Loop has no canonical bound" << std::endl;
         return false;
     }
 
     // Criterion: loop must be data-parallel w.r.t containers
-    return false;
-
-    /*
-    auto& loop_dependency_analysis = analysis_manager.get<analysis::LoopDependencyAnalysis>();
-    auto dependencies = loop_dependency_analysis.get(for_stmt);
+    auto& data_dependency_analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    auto dependencies = data_dependency_analysis.dependencies(for_stmt);
 
     // a. No true dependencies (RAW) between iterations
     for (auto& dep : dependencies) {
-        if (dep.second == analysis::LoopCarriedDependency::RAW) {
-            std::cout << "Loop has true dependency: " << dep.first << std::endl;
+        if (dep.second == analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE) {
             return false;
         }
     }
@@ -55,12 +49,9 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt,
     for (auto& dep : dependencies) {
         auto& container = dep.first;
         if (locals.find(container) == locals.end()) {
-            std::cout << "Loop has false dependency: " << container << " is a local variable"
-                      << std::endl;
             return false;
         }
     }
-    */
 
     return true;
 }

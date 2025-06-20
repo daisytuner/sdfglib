@@ -58,20 +58,6 @@ inline bool is_parameter(const Symbol& sym, const Assumptions& assums) {
     return false;
 }
 
-inline bool is_monotonic(const Symbol& sym, const Assumptions& assums) {
-    if (assums.find(sym) == assums.end()) {
-        return false;
-    }
-    auto& ass = assums.at(sym);
-    if (ass.map() == SymEngine::null) {
-        return false;
-    }
-    if (symbolic::eq(ass.map(), symbolic::add(sym, symbolic::one()))) {
-        return true;
-    }
-    return false;
-}
-
 void upper_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
                   symbolic::ExpressionSet& ubs);
 
