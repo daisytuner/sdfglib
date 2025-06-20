@@ -653,6 +653,343 @@ TEST(DataDependencyAnalysisTest, Sequence_Define_Array_Subsets) {
     EXPECT_EQ(definition_A_2.size(), 0);
 }
 
+TEST(DataDependencyAnalysisTest, IfElse_Undefined_Scalar) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Scalar base_desc(types::PrimitiveType::Int32);
+    builder.add_container("A", base_desc);
+
+    auto& root = builder.subject().root();
+    auto& if_else = builder.add_if_else(root);
+    auto& branch1 =
+        builder.add_case(if_else, symbolic::Eq(symbolic::symbol("A"), symbolic::integer(0)));
+
+    // Run analysis
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    auto& users = analysis_manager.get<analysis::Users>();
+
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
+
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions = assumptions_analysis.get(root, true);
+    analysis.visit_sequence(users, assumptions_analysis, assumptions, root, undefined,
+                            open_definitions, closed_definitions);
+
+    // Check result
+    EXPECT_EQ(undefined.size(), 1);
+    EXPECT_EQ(open_definitions.size(), 0);
+    EXPECT_EQ(closed_definitions.size(), 0);
+
+    auto read_A = users.get_user("A", &if_else, analysis::Use::READ);
+    auto undefined_A = undefined.find(read_A);
+    EXPECT_NE(undefined_A, undefined.end());
+}
+
+TEST(DataDependencyAnalysisTest, IfElse_Use_Scalar) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Scalar base_desc(types::PrimitiveType::Int32);
+    builder.add_container("A", base_desc);
+
+    auto& root = builder.subject().root();
+    auto& block1 = builder.add_block(root, {{symbolic::symbol("A"), symbolic::integer(0)}});
+    auto& if_else = builder.add_if_else(root);
+    auto& branch1 =
+        builder.add_case(if_else, symbolic::Eq(symbolic::symbol("A"), symbolic::integer(0)));
+
+    // Run analysis
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    auto& users = analysis_manager.get<analysis::Users>();
+
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
+
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions = assumptions_analysis.get(root, true);
+    analysis.visit_sequence(users, assumptions_analysis, assumptions, root, undefined,
+                            open_definitions, closed_definitions);
+
+    // Check result
+    EXPECT_EQ(undefined.size(), 0);
+    EXPECT_EQ(open_definitions.size(), 1);
+    EXPECT_EQ(closed_definitions.size(), 0);
+
+    auto& transition1 = root.at(0).second;
+
+    auto write_A = users.get_user("A", &transition1, analysis::Use::WRITE);
+    auto& definition_A = open_definitions.at(write_A);
+    EXPECT_EQ(definition_A.size(), 1);
+    EXPECT_EQ((*definition_A.begin())->use(), analysis::Use::READ);
+    EXPECT_EQ((*definition_A.begin())->container(), "A");
+    EXPECT_EQ((*definition_A.begin())->element(), &if_else);
+}
+
+TEST(DataDependencyAnalysisTest, IfElse_Define_Scalar) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Scalar base_desc(types::PrimitiveType::Int32);
+    builder.add_container("A", base_desc);
+
+    auto& root = builder.subject().root();
+    auto& if_else = builder.add_if_else(root);
+    auto& branch1 = builder.add_case(if_else, symbolic::__true__());
+    auto& block1 = builder.add_block(branch1, {{symbolic::symbol("A"), symbolic::integer(0)}});
+    auto& branch2 = builder.add_case(if_else, symbolic::__false__());
+    auto& block2 = builder.add_block(branch2, {{symbolic::symbol("A"), symbolic::integer(1)}});
+    auto& block3 = builder.add_block(root, {{symbolic::symbol("A"), symbolic::integer(2)}});
+
+    // Run analysis
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    auto& users = analysis_manager.get<analysis::Users>();
+
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
+
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions = assumptions_analysis.get(root, true);
+    analysis.visit_sequence(users, assumptions_analysis, assumptions, root, undefined,
+                            open_definitions, closed_definitions);
+
+    // Check result
+    EXPECT_EQ(undefined.size(), 0);
+    EXPECT_EQ(open_definitions.size(), 1);
+    EXPECT_EQ(closed_definitions.size(), 2);
+
+    auto& transition1 = branch1.at(0).second;
+    auto& transition2 = branch2.at(0).second;
+    auto& transition3 = root.at(1).second;
+
+    auto write_A_1 = users.get_user("A", &transition1, analysis::Use::WRITE);
+    auto write_A_2 = users.get_user("A", &transition2, analysis::Use::WRITE);
+    auto write_A_3 = users.get_user("A", &transition3, analysis::Use::WRITE);
+
+    auto& definition_A_1 = closed_definitions.at(write_A_1);
+    EXPECT_EQ(definition_A_1.size(), 0);
+
+    auto& definition_A_2 = closed_definitions.at(write_A_2);
+    EXPECT_EQ(definition_A_2.size(), 0);
+
+    auto& definition_A_3 = open_definitions.at(write_A_3);
+    EXPECT_EQ(definition_A_3.size(), 0);
+}
+
+TEST(DataDependencyAnalysisTest, IfElse_Define_Array) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Scalar base_desc(types::PrimitiveType::Int32);
+    types::Array array_desc(base_desc, symbolic::integer(2));
+    builder.add_container("A", array_desc);
+
+    auto& root = builder.subject().root();
+    auto& if_else = builder.add_if_else(root);
+
+    auto& branch1 = builder.add_case(if_else, symbolic::__true__());
+    auto& block1 = builder.add_block(branch1);
+    auto& output_node = builder.add_access(block1, "A");
+    auto& tasklet = builder.add_tasklet(block1, data_flow::TaskletCode::assign,
+                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    builder.add_memlet(block1, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+
+    auto& branch2 = builder.add_case(if_else, symbolic::__false__());
+    auto& block2 = builder.add_block(branch2);
+    auto& output_node2 = builder.add_access(block2, "A");
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
+                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
+                                         {{"1", types::Scalar(types::PrimitiveType::Int32)}});
+    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
+
+    auto& block3 = builder.add_block(root);
+    auto& output_node3 = builder.add_access(block3, "A");
+    auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::assign,
+                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
+                                         {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    builder.add_memlet(block3, tasklet3, "_out", output_node3, "void", {symbolic::integer(0)});
+
+    // Run analysis
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    auto& users = analysis_manager.get<analysis::Users>();
+
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
+
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions = assumptions_analysis.get(root, true);
+    analysis.visit_sequence(users, assumptions_analysis, assumptions, root, undefined,
+                            open_definitions, closed_definitions);
+
+    // Check result
+    EXPECT_EQ(undefined.size(), 0);
+    EXPECT_EQ(open_definitions.size(), 1);
+    EXPECT_EQ(closed_definitions.size(), 2);
+
+    auto& transition1 = branch1.at(0).second;
+    auto& transition2 = branch2.at(0).second;
+    auto& transition3 = root.at(1).second;
+
+    auto write_A_1 = users.get_user("A", &output_node, analysis::Use::WRITE);
+    auto write_A_2 = users.get_user("A", &output_node2, analysis::Use::WRITE);
+    auto write_A_3 = users.get_user("A", &output_node3, analysis::Use::WRITE);
+
+    auto& definition_A_1 = closed_definitions.at(write_A_1);
+    EXPECT_EQ(definition_A_1.size(), 0);
+
+    auto& definition_A_2 = closed_definitions.at(write_A_2);
+    EXPECT_EQ(definition_A_2.size(), 0);
+
+    auto& definition_A_3 = open_definitions.at(write_A_3);
+    EXPECT_EQ(definition_A_3.size(), 0);
+}
+
+TEST(DataDependencyAnalysisTest, IfElse_Define_Array_Subsets) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Scalar base_desc(types::PrimitiveType::Int32);
+    types::Array array_desc(base_desc, symbolic::integer(2));
+    builder.add_container("A", array_desc);
+
+    auto& root = builder.subject().root();
+    auto& if_else = builder.add_if_else(root);
+
+    auto& branch1 = builder.add_case(if_else, symbolic::__true__());
+    auto& block1 = builder.add_block(branch1);
+    auto& output_node = builder.add_access(block1, "A");
+    auto& tasklet = builder.add_tasklet(block1, data_flow::TaskletCode::assign,
+                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    builder.add_memlet(block1, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+
+    auto& branch2 = builder.add_case(if_else, symbolic::__false__());
+    auto& block2 = builder.add_block(branch2);
+    auto& output_node2 = builder.add_access(block2, "A");
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
+                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
+                                         {{"1", types::Scalar(types::PrimitiveType::Int32)}});
+    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
+
+    auto& block3 = builder.add_block(root);
+    auto& output_node3 = builder.add_access(block3, "A");
+    auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::assign,
+                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
+                                         {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    builder.add_memlet(block3, tasklet3, "_out", output_node3, "void", {symbolic::integer(1)});
+
+    // Run analysis
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    auto& users = analysis_manager.get<analysis::Users>();
+
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
+
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions = assumptions_analysis.get(root, true);
+    analysis.visit_sequence(users, assumptions_analysis, assumptions, root, undefined,
+                            open_definitions, closed_definitions);
+
+    // Check result
+    EXPECT_EQ(undefined.size(), 0);
+    EXPECT_EQ(open_definitions.size(), 3);
+    EXPECT_EQ(closed_definitions.size(), 0);
+
+    auto& transition1 = branch1.at(0).second;
+    auto& transition2 = branch2.at(0).second;
+    auto& transition3 = root.at(1).second;
+
+    auto write_A_1 = users.get_user("A", &output_node, analysis::Use::WRITE);
+    auto write_A_2 = users.get_user("A", &output_node2, analysis::Use::WRITE);
+    auto write_A_3 = users.get_user("A", &output_node3, analysis::Use::WRITE);
+
+    auto& definition_A_1 = open_definitions.at(write_A_1);
+    EXPECT_EQ(definition_A_1.size(), 0);
+
+    auto& definition_A_2 = open_definitions.at(write_A_2);
+    EXPECT_EQ(definition_A_2.size(), 0);
+
+    auto& definition_A_3 = open_definitions.at(write_A_3);
+    EXPECT_EQ(definition_A_3.size(), 0);
+}
+
+TEST(DataDependencyAnalysisTest, IfElse_Close_Array) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Scalar base_desc(types::PrimitiveType::Int32);
+    types::Array array_desc(base_desc, symbolic::integer(2));
+    builder.add_container("A", array_desc);
+
+    auto& root = builder.subject().root();
+    auto& if_else = builder.add_if_else(root);
+
+    auto& branch1 = builder.add_case(if_else, symbolic::__true__());
+    auto& block1 = builder.add_block(branch1);
+    auto& output_node = builder.add_access(block1, "A");
+    auto& tasklet = builder.add_tasklet(block1, data_flow::TaskletCode::assign,
+                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    builder.add_memlet(block1, tasklet, "_out", output_node, "void", {symbolic::integer(1)});
+
+    auto& branch2 = builder.add_case(if_else, symbolic::__false__());
+    auto& block2 = builder.add_block(branch2);
+    auto& output_node2 = builder.add_access(block2, "A");
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
+                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
+                                         {{"1", types::Scalar(types::PrimitiveType::Int32)}});
+    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
+
+    auto& block3 = builder.add_block(root);
+    auto& output_node3 = builder.add_access(block3, "A");
+    auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::assign,
+                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
+                                         {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    builder.add_memlet(block3, tasklet3, "_out", output_node3, "void", {symbolic::integer(1)});
+
+    // Run analysis
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    auto& users = analysis_manager.get<analysis::Users>();
+
+    std::unordered_set<analysis::User*> undefined;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
+    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
+
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    symbolic::Assumptions assumptions = assumptions_analysis.get(root, true);
+    analysis.visit_sequence(users, assumptions_analysis, assumptions, root, undefined,
+                            open_definitions, closed_definitions);
+
+    // Check result
+    EXPECT_EQ(undefined.size(), 0);
+    EXPECT_EQ(open_definitions.size(), 2);
+    EXPECT_EQ(closed_definitions.size(), 1);
+
+    auto& transition1 = branch1.at(0).second;
+    auto& transition2 = branch2.at(0).second;
+    auto& transition3 = root.at(1).second;
+
+    auto write_A_1 = users.get_user("A", &output_node, analysis::Use::WRITE);
+    auto write_A_2 = users.get_user("A", &output_node2, analysis::Use::WRITE);
+    auto write_A_3 = users.get_user("A", &output_node3, analysis::Use::WRITE);
+
+    auto& definition_A_1 = closed_definitions.at(write_A_1);
+    EXPECT_EQ(definition_A_1.size(), 0);
+
+    auto& definition_A_2 = open_definitions.at(write_A_2);
+    EXPECT_EQ(definition_A_2.size(), 0);
+
+    auto& definition_A_3 = open_definitions.at(write_A_3);
+    EXPECT_EQ(definition_A_3.size(), 0);
+}
+
 /*
 
 TEST(DataDependencyAnalysisTest, visit_for) {
@@ -859,107 +1196,6 @@ TEST(DataDependencyAnalysisTest, visit_while) {
             EXPECT_EQ((*entry.second.begin())->element(), &output_node);
         }
     }
-}
-
-TEST(DataDependencyAnalysisTest, visit_if_else_complete) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
-
-    auto& root = builder.subject().root();
-
-    auto& if_else = builder.add_if_else(root);
-    auto& true_case =
-        builder.add_case(if_else, symbolic::Le(symbolic::symbol("A"), symbolic::integer(0)));
-    auto& false_case =
-        builder.add_case(if_else, symbolic::Gt(symbolic::symbol("A"), symbolic::integer(0)));
-
-    auto& block = builder.add_block(true_case);
-    auto& input_node = builder.add_access(block, "A");
-    auto& output_node = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
-
-    auto& block2 = builder.add_block(false_case);
-    auto& input_node2 = builder.add_access(block2, "B");
-    auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
-    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {});
-
-    auto sdfg = builder.move();
-
-    // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
-    auto& users = analysis_manager.get<analysis::Users>();
-
-    std::unordered_set<analysis::User*> undefined;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    symbolic::Assumptions assumptions = assumptions_analysis.get(if_else, true);
-    analysis.visit_if_else(users, assumptions_analysis, assumptions, if_else, undefined,
-                           open_definitions, closed_definitions);
-
-    // Check result
-    EXPECT_EQ(undefined.size(), 3);
-    EXPECT_EQ(open_definitions.size(), 2);
-    EXPECT_EQ(closed_definitions.size(), 0);
-
-    bool foundA = false;
-    bool foundB = false;
-
-    for (auto entry : open_definitions) {
-        if (entry.first->container() == "A") {
-            foundA = true;
-            EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
-            EXPECT_EQ(entry.first->container(), "A");
-            EXPECT_EQ(entry.first->element(), &output_node2);
-            EXPECT_EQ(entry.second.size(), 0);
-        } else if (entry.first->container() == "B") {
-            foundB = true;
-            EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
-            EXPECT_EQ(entry.first->container(), "B");
-            EXPECT_EQ(entry.first->element(), &output_node);
-            EXPECT_EQ(entry.second.size(), 0);
-        }
-    }
-
-    EXPECT_TRUE(foundA && foundB);
-
-    int A_count = 0;
-    foundA = false;
-    foundB = false;
-
-    for (auto entry : undefined) {
-        if (entry->container() == "A") {
-            EXPECT_EQ(entry->use(), analysis::Use::READ);
-            EXPECT_EQ(entry->container(), "A");
-            if (entry->element() == &input_node) {
-                foundA = true;
-            } else {
-                EXPECT_EQ(entry->element(), &if_else);
-                A_count++;
-            }
-        } else if (entry->container() == "B") {
-            EXPECT_EQ(entry->use(), analysis::Use::READ);
-            EXPECT_EQ(entry->container(), "B");
-            EXPECT_EQ(entry->element(), &input_node2);
-            foundB = true;
-        }
-    }
-
-    EXPECT_EQ(A_count, 1);
-    EXPECT_TRUE(foundA && foundB);
 }
 
 TEST(DataDependencyAnalysisTest, visit_sequence_for_loop) {
