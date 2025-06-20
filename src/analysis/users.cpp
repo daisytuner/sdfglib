@@ -692,6 +692,8 @@ std::vector<User*> Users::moves(const std::string& container) const {
 structured_control_flow::ControlFlowNode* Users::scope(User* user) {
     if (auto data_node = dynamic_cast<data_flow::DataFlowNode*>(user->element())) {
         return static_cast<structured_control_flow::Block*>(data_node->get_parent().get_parent());
+    } else if (auto memlet = dynamic_cast<data_flow::Memlet*>(user->element())) {
+        return static_cast<structured_control_flow::Block*>(memlet->get_parent().get_parent());
     } else if (auto transition =
                    dynamic_cast<structured_control_flow::Transition*>(user->element())) {
         return &transition->parent();
