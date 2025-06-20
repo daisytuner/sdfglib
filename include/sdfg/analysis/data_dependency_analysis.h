@@ -18,6 +18,10 @@ class DataDependencyAnalysis : public Analysis {
     structured_control_flow::Sequence& node_;
     std::unordered_map<std::string, std::unordered_map<User*, std::unordered_set<User*>>> results_;
 
+    bool overwrites(User& previous, User& current, symbolic::Assumptions& assumptions);
+
+    bool reads(User& previous, User& current, symbolic::Assumptions& assumptions);
+
    public:
     DataDependencyAnalysis(StructuredSDFG& sdfg);
 

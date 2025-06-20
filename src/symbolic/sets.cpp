@@ -689,5 +689,64 @@ MultiExpression delinearize(const MultiExpression& expr, const SymbolSet& params
     return delinearized;
 }
 
+bool is_subset(const MultiExpression& expr1, const MultiExpression& expr2,
+               const Assumptions& assums) {
+    if (expr1.size() == 0 && expr2.size() == 0) {
+        return true;
+    }
+
+    SymbolSet params;
+    SymbolSet monotonics;
+    for (auto& entry : assums) {
+        auto& ass = entry.second;
+
+        // No knowledge about the symbol's changes
+        if (ass.map() == SymEngine::null) {
+            continue;
+        }
+
+        // The symbol is constant
+        if (symbolic::eq(ass.map(), symbolic::zero())) {
+            params.insert(entry.first);
+        }
+
+        // The symbol is monotonic
+        if (symbolic::is_monotonic(ass.map(), entry.first, assums)) {
+            monotonics.insert(entry.first);
+        }
+    }
+    return is_disjoint(expr1, expr2, params, monotonics, assums);
+}
+
+bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
+                 const Assumptions& assums) {
+    if (expr1.size() == 0 && expr2.size() == 0) {
+        return false;
+    }
+
+    SymbolSet params;
+    SymbolSet monotonics;
+    for (auto& entry : assums) {
+        auto& ass = entry.second;
+
+        // No knowledge about the symbol's changes
+        if (ass.map() == SymEngine::null) {
+            continue;
+        }
+
+        // The symbol is constant
+        if (symbolic::eq(ass.map(), symbolic::zero())) {
+            params.insert(entry.first);
+        }
+
+        // The symbol is monotonic
+        if (symbolic::is_monotonic(ass.map(), entry.first, assums)) {
+            monotonics.insert(entry.first);
+        }
+    }
+
+    return is_disjoint(expr1, expr2, params, monotonics, assums);
+}
+
 }  // namespace symbolic
 }  // namespace sdfg

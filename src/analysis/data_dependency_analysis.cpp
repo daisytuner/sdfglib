@@ -7,11 +7,8 @@
 #include <vector>
 
 #include "sdfg/analysis/analysis.h"
-#include "sdfg/data_flow/memlet.h"
-#include "sdfg/structured_control_flow/for.h"
-#include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_sdfg.h"
-#include "sdfg/symbolic/symbolic.h"
+#include "sdfg/symbolic/sets.h"
 
 namespace sdfg {
 namespace analysis {
@@ -79,7 +76,7 @@ void DataDependencyAnalysis::visit_block(
                     if (use == Use::WRITE) {
                         std::unordered_map<User*, std::unordered_set<User*>> to_close;
                         for (auto& user : open_definitions) {
-                            if (user.first->container() == access_node->data()) {
+                            if (overwrites(*user.first, *current_user, assumptions)) {
                                 to_close.insert(user);
                             }
                         }
@@ -104,7 +101,7 @@ void DataDependencyAnalysis::visit_block(
                     if (use == Use::READ) {
                         bool found = false;
                         for (auto& user : open_definitions) {
-                            if (user.first->container() == access_node->data()) {
+                            if (reads(*user.first, *current_user, assumptions)) {
                                 user.second.insert(current_user);
                                 found = true;
                             }
@@ -123,7 +120,7 @@ void DataDependencyAnalysis::visit_block(
                     {
                         bool found = false;
                         for (auto& user : open_definitions) {
-                            if (user.first->container() == atom->get_name()) {
+                            if (reads(*user.first, *current_user, assumptions)) {
                                 user.second.insert(current_user);
                                 found = true;
                             }
@@ -149,7 +146,7 @@ void DataDependencyAnalysis::visit_block(
                 {
                     bool found = false;
                     for (auto& user : open_definitions) {
-                        if (user.first->container() == atom) {
+                        if (reads(*user.first, *current_user, assumptions)) {
                             user.second.insert(current_user);
                             found = true;
                         }
@@ -592,6 +589,64 @@ void DataDependencyAnalysis::visit_sequence(
         }
     }
 }
+
+bool DataDependencyAnalysis::overwrites(User& previous, User& current,
+                                        symbolic::Assumptions& assumptions) {
+    if (previous.use() != Use::WRITE || current.use() != Use::WRITE) {
+        return false;
+    }
+    if (previous.container() != current.container()) {
+        return false;
+    }
+    auto& previous_subsets = previous.subsets();
+    auto& current_subsets = current.subsets();
+
+    // Check if previous subset is subset of any current subset
+    for (auto& previous_subset : previous_subsets) {
+        bool found = false;
+        for (auto& current_subset : current_subsets) {
+            if (symbolic::is_subset(previous_subset, current_subset, assumptions)) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool DataDependencyAnalysis::reads(User& previous, User& current,
+                                   symbolic::Assumptions& assumptions) {
+    if (previous.use() != Use::WRITE || current.use() != Use::READ) {
+        return false;
+    }
+    if (previous.container() != current.container()) {
+        return false;
+    }
+    auto& previous_subsets = previous.subsets();
+    auto& current_subsets = current.subsets();
+
+    // Check if any current subset intersects with any previous subset
+    bool found = false;
+    for (auto& current_subset : current_subsets) {
+        for (auto& previous_subset : previous_subsets) {
+            if (!symbolic::is_disjoint(current_subset, previous_subset, assumptions)) {
+                found = true;
+                break;
+            }
+        }
+        if (found) {
+            break;
+        }
+    }
+
+    return found;
+}
+
+/****** Public API ******/
 
 std::unordered_set<User*> DataDependencyAnalysis::defines(User& write) {
     assert(write.use() == Use::WRITE);
