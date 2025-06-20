@@ -31,10 +31,9 @@ void DataDependencyAnalysis::run(analysis::AnalysisManager& analysis_manager) {
     std::unordered_map<User*, std::unordered_set<User*>> open_definitions;
     std::unordered_map<User*, std::unordered_set<User*>> closed_definitions;
 
-    auto& users = analysis_manager.get<Users>();
     auto& assumptions_analysis = analysis_manager.get<AssumptionsAnalysis>();
-    symbolic::Assumptions assumptions = assumptions_analysis.get(node_, true);
-    visit_sequence(users, assumptions_analysis, assumptions, node_, undefined, open_definitions,
+    auto& users = analysis_manager.get<Users>();
+    visit_sequence(users, assumptions_analysis, node_, undefined, open_definitions,
                    closed_definitions);
 
     for (auto& entry : open_definitions) {
@@ -53,8 +52,7 @@ void DataDependencyAnalysis::run(analysis::AnalysisManager& analysis_manager) {
 
 void DataDependencyAnalysis::visit_block(
     analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-    symbolic::Assumptions& assumptions, structured_control_flow::Block& block,
-    std::unordered_set<User*>& undefined,
+    structured_control_flow::Block& block, std::unordered_set<User*>& undefined,
     std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions) {
     auto& dataflow = block.dataflow();
@@ -76,7 +74,7 @@ void DataDependencyAnalysis::visit_block(
                     if (use == Use::WRITE) {
                         std::unordered_map<User*, std::unordered_set<User*>> to_close;
                         for (auto& user : open_definitions) {
-                            if (overwrites(*user.first, *current_user, assumptions)) {
+                            if (overwrites(*user.first, *current_user, assumptions_analysis)) {
                                 to_close.insert(user);
                             }
                         }
@@ -101,7 +99,7 @@ void DataDependencyAnalysis::visit_block(
                     if (use == Use::READ) {
                         bool found = false;
                         for (auto& user : open_definitions) {
-                            if (reads(*user.first, *current_user, assumptions)) {
+                            if (reads(*user.first, *current_user, assumptions_analysis)) {
                                 user.second.insert(current_user);
                                 found = true;
                             }
@@ -120,7 +118,7 @@ void DataDependencyAnalysis::visit_block(
                     {
                         bool found = false;
                         for (auto& user : open_definitions) {
-                            if (reads(*user.first, *current_user, assumptions)) {
+                            if (reads(*user.first, *current_user, assumptions_analysis)) {
                                 user.second.insert(current_user);
                                 found = true;
                             }
@@ -146,7 +144,7 @@ void DataDependencyAnalysis::visit_block(
                 {
                     bool found = false;
                     for (auto& user : open_definitions) {
-                        if (reads(*user.first, *current_user, assumptions)) {
+                        if (reads(*user.first, *current_user, assumptions_analysis)) {
                             user.second.insert(current_user);
                             found = true;
                         }
@@ -162,8 +160,7 @@ void DataDependencyAnalysis::visit_block(
 
 void DataDependencyAnalysis::visit_for(
     analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-    symbolic::Assumptions& assumptions, structured_control_flow::For& for_loop,
-    std::unordered_set<User*>& undefined,
+    structured_control_flow::For& for_loop, std::unordered_set<User*>& undefined,
     std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions) {
     // Init - Read
@@ -190,7 +187,7 @@ void DataDependencyAnalysis::visit_for(
 
         std::unordered_set<User*> to_close;
         for (auto& user : open_definitions) {
-            if (overwrites(*user.first, *current_user, assumptions)) {
+            if (overwrites(*user.first, *current_user, assumptions_analysis)) {
                 to_close.insert(user.first);
             }
         }
@@ -236,9 +233,7 @@ void DataDependencyAnalysis::visit_for(
     std::unordered_set<User*> undefined_for;
 
     // Add assumptions for body
-    symbolic::Assumptions body_assumptions = assumptions;
-    assumptions_analysis.add(body_assumptions, for_loop.root());
-    visit_sequence(users, assumptions_analysis, body_assumptions, for_loop.root(), undefined_for,
+    visit_sequence(users, assumptions_analysis, for_loop.root(), undefined_for,
                    open_definitions_for, closed_definitions_for);
 
     // Update - Read
@@ -286,7 +281,21 @@ void DataDependencyAnalysis::visit_for(
         }
     }
 
-    // Merge open reads_after_writes
+    // Close outside open definitions after loop
+    std::unordered_set<User*> to_close;
+    for (auto& user : open_definitions_for) {
+        for (auto& previous : open_definitions) {
+            if (overwrites(*previous.first, *user.first, assumptions_analysis)) {
+                to_close.insert(previous.first);
+            }
+        }
+    }
+    for (auto& user : to_close) {
+        closed_definitions.insert({user, open_definitions.at(user)});
+        open_definitions.erase(user);
+    }
+
+    // Add open definitions from for to outside
     for (auto& entry : open_definitions_for) {
         open_definitions.insert(entry);
     }
@@ -294,8 +303,7 @@ void DataDependencyAnalysis::visit_for(
 
 void DataDependencyAnalysis::visit_if_else(
     analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-    symbolic::Assumptions& assumptions, structured_control_flow::IfElse& if_else,
-    std::unordered_set<User*>& undefined,
+    structured_control_flow::IfElse& if_else, std::unordered_set<User*>& undefined,
     std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions) {
     // Read Conditions
@@ -326,11 +334,8 @@ void DataDependencyAnalysis::visit_if_else(
         auto& child = if_else.at(i).first;
 
         // Add assumptions for child
-        symbolic::Assumptions child_assumptions = assumptions;
-        assumptions_analysis.add(child_assumptions, child);
-        visit_sequence(users, assumptions_analysis, child_assumptions, child,
-                       undefined_branches.at(i), open_definitions_branches.at(i),
-                       closed_definitionss_branches.at(i));
+        visit_sequence(users, assumptions_analysis, child, undefined_branches.at(i),
+                       open_definitions_branches.at(i), closed_definitionss_branches.at(i));
     }
 
     // merge partial open reads
@@ -407,8 +412,7 @@ void DataDependencyAnalysis::visit_if_else(
 
 void DataDependencyAnalysis::visit_while(
     analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-    symbolic::Assumptions& assumptions, structured_control_flow::While& while_loop,
-    std::unordered_set<User*>& undefined,
+    structured_control_flow::While& while_loop, std::unordered_set<User*>& undefined,
     std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions) {
     std::unordered_map<User*, std::unordered_set<User*>> open_definitions_while;
@@ -416,10 +420,8 @@ void DataDependencyAnalysis::visit_while(
     std::unordered_set<User*> undefined_while;
 
     // Add assumptions for body
-    symbolic::Assumptions body_assumptions = assumptions;
-    assumptions_analysis.add(body_assumptions, while_loop.root());
-    visit_sequence(users, assumptions_analysis, body_assumptions, while_loop.root(),
-                   undefined_while, open_definitions_while, closed_definitionss_while);
+    visit_sequence(users, assumptions_analysis, while_loop.root(), undefined_while,
+                   open_definitions_while, closed_definitionss_while);
 
     for (auto& entry : closed_definitionss_while) {
         closed_definitions.insert(entry);
@@ -454,8 +456,7 @@ void DataDependencyAnalysis::visit_while(
 
 void DataDependencyAnalysis::visit_return(
     analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-    symbolic::Assumptions& assumptions, structured_control_flow::Return& return_statement,
-    std::unordered_set<User*>& undefined,
+    structured_control_flow::Return& return_statement, std::unordered_set<User*>& undefined,
     std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions) {
     // close all open reads_after_writes
@@ -467,8 +468,7 @@ void DataDependencyAnalysis::visit_return(
 
 void DataDependencyAnalysis::visit_map(
     analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-    symbolic::Assumptions& assumptions, structured_control_flow::Map& map,
-    std::unordered_set<User*>& undefined,
+    structured_control_flow::Map& map, std::unordered_set<User*>& undefined,
     std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions) {
     // write Init
@@ -481,10 +481,8 @@ void DataDependencyAnalysis::visit_map(
     std::unordered_set<User*> undefined_map;
 
     // Add assumptions for body
-    symbolic::Assumptions body_assumptions = assumptions;
-    assumptions_analysis.add(body_assumptions, map.root());
-    visit_sequence(users, assumptions_analysis, body_assumptions, map.root(), undefined_map,
-                   open_definitions_map, closed_definitionss_map);
+    visit_sequence(users, assumptions_analysis, map.root(), undefined_map, open_definitions_map,
+                   closed_definitionss_map);
 
     for (auto& entry : closed_definitionss_map) {
         closed_definitions.insert(entry);
@@ -519,39 +517,33 @@ void DataDependencyAnalysis::visit_map(
 
 void DataDependencyAnalysis::visit_sequence(
     analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-    symbolic::Assumptions& assumptions, structured_control_flow::Sequence& sequence,
-    std::unordered_set<User*>& undefined,
+    structured_control_flow::Sequence& sequence, std::unordered_set<User*>& undefined,
     std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions) {
     for (size_t i = 0; i < sequence.size(); i++) {
         auto child = sequence.at(i);
-
-        // Add assumptions for child
-        symbolic::Assumptions child_assumptions = assumptions;
-        assumptions_analysis.add(child_assumptions, child.first);
-
         if (auto block = dynamic_cast<structured_control_flow::Block*>(&child.first)) {
-            visit_block(users, assumptions_analysis, child_assumptions, *block, undefined,
-                        open_definitions, closed_definitions);
+            visit_block(users, assumptions_analysis, *block, undefined, open_definitions,
+                        closed_definitions);
         } else if (auto for_loop = dynamic_cast<structured_control_flow::For*>(&child.first)) {
-            visit_for(users, assumptions_analysis, child_assumptions, *for_loop, undefined,
-                      open_definitions, closed_definitions);
+            visit_for(users, assumptions_analysis, *for_loop, undefined, open_definitions,
+                      closed_definitions);
         } else if (auto if_else = dynamic_cast<structured_control_flow::IfElse*>(&child.first)) {
-            visit_if_else(users, assumptions_analysis, child_assumptions, *if_else, undefined,
-                          open_definitions, closed_definitions);
+            visit_if_else(users, assumptions_analysis, *if_else, undefined, open_definitions,
+                          closed_definitions);
         } else if (auto while_loop = dynamic_cast<structured_control_flow::While*>(&child.first)) {
-            visit_while(users, assumptions_analysis, child_assumptions, *while_loop, undefined,
-                        open_definitions, closed_definitions);
+            visit_while(users, assumptions_analysis, *while_loop, undefined, open_definitions,
+                        closed_definitions);
         } else if (auto return_statement =
                        dynamic_cast<structured_control_flow::Return*>(&child.first)) {
-            visit_return(users, assumptions_analysis, child_assumptions, *return_statement,
-                         undefined, open_definitions, closed_definitions);
+            visit_return(users, assumptions_analysis, *return_statement, undefined,
+                         open_definitions, closed_definitions);
         } else if (auto sequence = dynamic_cast<structured_control_flow::Sequence*>(&child.first)) {
-            visit_sequence(users, assumptions_analysis, child_assumptions, *sequence, undefined,
-                           open_definitions, closed_definitions);
+            visit_sequence(users, assumptions_analysis, *sequence, undefined, open_definitions,
+                           closed_definitions);
         } else if (auto map = dynamic_cast<structured_control_flow::Map*>(&child.first)) {
-            visit_map(users, assumptions_analysis, child_assumptions, *map, undefined,
-                      open_definitions, closed_definitions);
+            visit_map(users, assumptions_analysis, *map, undefined, open_definitions,
+                      closed_definitions);
         }
 
         // handle transitions read
@@ -595,7 +587,7 @@ void DataDependencyAnalysis::visit_sequence(
 }
 
 bool DataDependencyAnalysis::overwrites(User& previous, User& current,
-                                        symbolic::Assumptions& assumptions) {
+                                        analysis::AssumptionsAnalysis& assumptions_analysis) {
     if (previous.use() != Use::WRITE || current.use() != Use::WRITE) {
         return false;
     }
@@ -605,11 +597,17 @@ bool DataDependencyAnalysis::overwrites(User& previous, User& current,
     auto& previous_subsets = previous.subsets();
     auto& current_subsets = current.subsets();
 
+    auto previous_scope = Users::scope(&previous);
+    auto previous_assumptions = assumptions_analysis.get(*previous_scope, true);
+    auto current_scope = Users::scope(&current);
+    auto current_assumptions = assumptions_analysis.get(*current_scope, true);
+
     // Check if previous subset is subset of any current subset
     for (auto& previous_subset : previous_subsets) {
         bool found = false;
         for (auto& current_subset : current_subsets) {
-            if (symbolic::is_subset(previous_subset, current_subset, assumptions)) {
+            if (symbolic::is_subset(previous_subset, current_subset, previous_assumptions,
+                                    current_assumptions)) {
                 found = true;
                 break;
             }
@@ -623,7 +621,7 @@ bool DataDependencyAnalysis::overwrites(User& previous, User& current,
 }
 
 bool DataDependencyAnalysis::reads(User& previous, User& current,
-                                   symbolic::Assumptions& assumptions) {
+                                   analysis::AssumptionsAnalysis& assumptions_analysis) {
     if (previous.use() != Use::WRITE || current.use() != Use::READ) {
         return false;
     }
@@ -633,11 +631,35 @@ bool DataDependencyAnalysis::reads(User& previous, User& current,
     auto& previous_subsets = previous.subsets();
     auto& current_subsets = current.subsets();
 
+    auto previous_scope = Users::scope(&previous);
+    auto previous_assumptions = assumptions_analysis.get(*previous_scope, true);
+    auto current_scope = Users::scope(&current);
+    auto current_assumptions = assumptions_analysis.get(*current_scope, true);
+
+    // TODO: Merge assumptions
+    symbolic::Assumptions merged_assumptions = previous_assumptions;
+    for (auto& entry : current_assumptions) {
+        if (merged_assumptions.find(entry.first) == merged_assumptions.end()) {
+            merged_assumptions.insert(entry);
+        } else {
+            auto& assumption = merged_assumptions.at(entry.first);
+            auto new_ub = symbolic::min(assumption.upper_bound(), entry.second.upper_bound());
+            auto new_lb = symbolic::max(assumption.lower_bound(), entry.second.lower_bound());
+            assumption.lower_bound(new_lb);
+            assumption.upper_bound(new_ub);
+
+            auto map = assumption.map();
+            if (map == SymEngine::null) {
+                assumption.map(entry.second.map());
+            }
+        }
+    }
+
     // Check if any current subset intersects with any previous subset
     bool found = false;
     for (auto& current_subset : current_subsets) {
         for (auto& previous_subset : previous_subsets) {
-            if (!symbolic::is_disjoint(current_subset, previous_subset, assumptions)) {
+            if (!symbolic::is_disjoint(current_subset, previous_subset, merged_assumptions)) {
                 found = true;
                 break;
             }

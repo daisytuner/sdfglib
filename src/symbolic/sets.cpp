@@ -689,35 +689,6 @@ MultiExpression delinearize(const MultiExpression& expr, const SymbolSet& params
     return delinearized;
 }
 
-bool is_subset(const MultiExpression& expr1, const MultiExpression& expr2,
-               const Assumptions& assums) {
-    if (expr1.size() == 0 && expr2.size() == 0) {
-        return true;
-    }
-
-    SymbolSet params;
-    SymbolSet monotonics;
-    for (auto& entry : assums) {
-        auto& ass = entry.second;
-
-        // No knowledge about the symbol's changes
-        if (ass.map() == SymEngine::null) {
-            continue;
-        }
-
-        // The symbol is constant
-        if (symbolic::eq(ass.map(), symbolic::zero())) {
-            params.insert(entry.first);
-        }
-
-        // The symbol is monotonic
-        if (symbolic::is_monotonic(ass.map(), entry.first, assums)) {
-            monotonics.insert(entry.first);
-        }
-    }
-    return is_equivalent(expr1, expr2, params, assums);
-}
-
 bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
                  const Assumptions& assums) {
     if (expr1.size() == 0 && expr2.size() == 0) {
@@ -746,6 +717,169 @@ bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
     }
 
     return is_disjoint(expr1, expr2, params, monotonics, assums);
+}
+
+std::string expression_to_map_str(const MultiExpression& expr, const SymbolSet& params,
+                                  const SymbolSet& monotonics, const Assumptions& assums) {
+    codegen::CLanguageExtension language_extension;
+
+    // Get all symbols
+    symbolic::SymbolSet syms;
+    for (auto& expr : expr) {
+        auto syms_expr = symbolic::atoms(expr);
+        syms.insert(syms_expr.begin(), syms_expr.end());
+    }
+
+    // Distinguish between dimensions and parameters
+    std::vector<std::string> dimensions;
+    SymbolSet dimensions_syms;
+    std::vector<std::string> parameters;
+    SymbolSet parameters_syms;
+    for (auto& sym : syms) {
+        if (params.find(sym) != params.end()) {
+            if (parameters_syms.find(sym) != parameters_syms.end()) {
+                continue;
+            }
+            parameters.push_back(sym->get_name());
+            parameters_syms.insert(sym);
+        } else {
+            if (dimensions_syms.find(sym) != dimensions_syms.end()) {
+                continue;
+            }
+            dimensions.push_back(sym->get_name());
+            dimensions_syms.insert(sym);
+        }
+    }
+
+    // Generate constraints
+    SymbolSet seen;
+    auto constraints_syms = generate_constraints(syms, assums, seen);
+
+    // Extend parameters with additional symbols from constraints
+    for (auto& con : constraints_syms) {
+        auto con_syms = symbolic::atoms(con);
+        for (auto& con_sym : con_syms) {
+            if (dimensions_syms.find(con_sym) == dimensions_syms.end()) {
+                if (parameters_syms.find(con_sym) != parameters_syms.end()) {
+                    continue;
+                }
+                parameters.push_back(con_sym->get_name());
+                parameters_syms.insert(con_sym);
+            }
+        }
+    }
+
+    // Define map
+    std::string map;
+    if (!parameters.empty()) {
+        map += "[";
+        map += helpers::join(parameters, ", ");
+        map += "] -> ";
+    }
+    map += "{ [" + helpers::join(dimensions, ", ") + "] -> [";
+    for (size_t i = 0; i < expr.size(); i++) {
+        auto dim = expr[i];
+        map += language_extension.expression(dim);
+        if (i < expr.size() - 1) {
+            map += ", ";
+        }
+    }
+    map += "] ";
+
+    std::vector<std::string> constraints;
+    for (auto& con : constraints_syms) {
+        auto con_str = constraint_to_isl_str(con);
+        if (!con_str.empty()) {
+            constraints.push_back(con_str);
+        }
+    }
+    if (!constraints.empty()) {
+        map += " : ";
+        map += helpers::join(constraints, " and ");
+    }
+
+    map += " }";
+
+    map = std::regex_replace(map, std::regex("\\."), "_");
+    return map;
+}
+
+bool is_subset(const MultiExpression& expr1, const MultiExpression& expr2,
+               const Assumptions& assums1, const Assumptions& assums2) {
+    if (expr1.size() == 0 && expr2.size() == 0) {
+        return true;
+    }
+
+    SymbolSet params1;
+    SymbolSet monotonics1;
+    for (auto& entry : assums1) {
+        auto& ass = entry.second;
+
+        // No knowledge about the symbol's changes
+        if (ass.map() == SymEngine::null) {
+            continue;
+        }
+
+        // The symbol is constant
+        if (symbolic::eq(ass.map(), symbolic::zero())) {
+            params1.insert(entry.first);
+        }
+
+        // The symbol is monotonic
+        if (symbolic::is_monotonic(ass.map(), entry.first, assums1)) {
+            monotonics1.insert(entry.first);
+        }
+    }
+
+    SymbolSet params2;
+    SymbolSet monotonics2;
+    for (auto& entry : assums2) {
+        auto& ass = entry.second;
+
+        // No knowledge about the symbol's changes
+        if (ass.map() == SymEngine::null) {
+            continue;
+        }
+
+        // The symbol is constant
+        if (symbolic::eq(ass.map(), symbolic::zero())) {
+            params2.insert(entry.first);
+        }
+
+        // The symbol is monotonic
+        if (symbolic::is_monotonic(ass.map(), entry.first, assums2)) {
+            monotonics2.insert(entry.first);
+        }
+    }
+
+    auto expr1_delinearized = delinearize(expr1, params1, assums1);
+    auto expr2_delinearized = delinearize(expr2, params2, assums2);
+
+    std::string map_1_str =
+        expression_to_map_str(expr1_delinearized, params1, monotonics1, assums1);
+    std::string map_2_str =
+        expression_to_map_str(expr2_delinearized, params2, monotonics2, assums2);
+
+    isl_ctx* ctx = isl_ctx_alloc();
+    isl_map* map_1 = isl_map_read_from_str(ctx, map_1_str.c_str());
+    isl_map* map_2 = isl_map_read_from_str(ctx, map_2_str.c_str());
+    if (!map_1 || !map_2) {
+        if (map_1) {
+            isl_map_free(map_1);
+        }
+        if (map_2) {
+            isl_map_free(map_2);
+        }
+        isl_ctx_free(ctx);
+        return false;
+    }
+
+    bool subset = isl_map_is_subset(map_1, map_2) == 1;
+    isl_map_free(map_1);
+    isl_map_free(map_2);
+    isl_ctx_free(ctx);
+
+    return subset;
 }
 
 }  // namespace symbolic

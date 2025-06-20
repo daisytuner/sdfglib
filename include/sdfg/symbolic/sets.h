@@ -12,7 +12,10 @@ namespace symbolic {
 typedef std::vector<Expression> MultiExpression;
 
 bool is_subset(const MultiExpression& expr1, const MultiExpression& expr2,
-               const Assumptions& assums);
+               const Assumptions& assums1, const Assumptions& assums2);
+
+std::string expression_to_map_str(const MultiExpression& expr, const SymbolSet& params,
+                                  const SymbolSet& monotonics, const Assumptions& assums);
 
 bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
                  const Assumptions& assums);
