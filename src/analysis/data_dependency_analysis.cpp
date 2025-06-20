@@ -636,30 +636,12 @@ bool DataDependencyAnalysis::reads(User& previous, User& current,
     auto current_scope = Users::scope(&current);
     auto current_assumptions = assumptions_analysis.get(*current_scope, true);
 
-    // TODO: Merge assumptions
-    symbolic::Assumptions merged_assumptions = previous_assumptions;
-    for (auto& entry : current_assumptions) {
-        if (merged_assumptions.find(entry.first) == merged_assumptions.end()) {
-            merged_assumptions.insert(entry);
-        } else {
-            auto& assumption = merged_assumptions.at(entry.first);
-            auto new_ub = symbolic::min(assumption.upper_bound(), entry.second.upper_bound());
-            auto new_lb = symbolic::max(assumption.lower_bound(), entry.second.lower_bound());
-            assumption.lower_bound(new_lb);
-            assumption.upper_bound(new_ub);
-
-            auto map = assumption.map();
-            if (map == SymEngine::null) {
-                assumption.map(entry.second.map());
-            }
-        }
-    }
-
     // Check if any current subset intersects with any previous subset
     bool found = false;
     for (auto& current_subset : current_subsets) {
         for (auto& previous_subset : previous_subsets) {
-            if (!symbolic::is_disjoint(current_subset, previous_subset, merged_assumptions)) {
+            if (!symbolic::is_disjoint(current_subset, previous_subset, current_assumptions,
+                                       previous_assumptions)) {
                 found = true;
                 break;
             }

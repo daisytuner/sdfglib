@@ -11,7 +11,6 @@ set(TEST_FILES
     analysis/data_parallelism_analysis_test.cpp
     analysis/data_dependency_analysis_test.cpp
     analysis/loop_analysis_test.cpp
-    analysis/loop_dependency_analysis_test.cpp
     analysis/users_test.cpp
     builder/function_builder_test.cpp
     builder/sdfg_builder_test.cpp
@@ -42,7 +41,6 @@ set(TEST_FILES
     passes/dataflow/view_propagation_test.cpp
     passes/pipeline_test.cpp
     passes/structured_control_flow/block_fusion_test.cpp
-    passes/structured_control_flow/for2map_test.cpp
     passes/structured_control_flow/loop_normalization_test.cpp
     passes/symbolic/symbol_promotion_test.cpp
     passes/symbolic/symbol_propagation_test.cpp

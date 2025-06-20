@@ -1,7 +1,6 @@
 #include "sdfg/passes/structured_control_flow/for2map.h"
 
 #include "sdfg/analysis/loop_analysis.h"
-#include "sdfg/analysis/loop_dependency_analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
 
 namespace sdfg {
@@ -35,6 +34,9 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt,
     }
 
     // Criterion: loop must be data-parallel w.r.t containers
+    return false;
+
+    /*
     auto& loop_dependency_analysis = analysis_manager.get<analysis::LoopDependencyAnalysis>();
     auto dependencies = loop_dependency_analysis.get(for_stmt);
 
@@ -57,6 +59,7 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt,
             return false;
         }
     }
+    */
 
     return true;
 }

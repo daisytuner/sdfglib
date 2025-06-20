@@ -161,13 +161,9 @@ class Users : public Analysis {
 
     bool post_dominates(User& user1, User& user);
 
-    bool is_dominated_by(User& user, Use use, const symbolic::Assumptions& assums);
-
     const std::unordered_set<User*> all_uses_between(User& user1, User& user2);
 
     const std::unordered_set<User*> all_uses_after(User& user);
-
-    bool is_constant(const std::unordered_set<std::string>& containers, User& user1, User& user2);
 };
 
 class UsersView {
@@ -212,13 +208,9 @@ class UsersView {
 
     bool post_dominates(User& user1, User& user);
 
-    bool is_dominated_by(User& user, Use use, const symbolic::Assumptions& assums);
-
     std::unordered_set<User*> all_uses_between(User& user1, User& user2);
 
     std::unordered_set<User*> all_uses_after(User& user);
-
-    bool is_constant(const std::unordered_set<std::string>& containers, User& user1, User& user2);
 };
 
 }  // namespace analysis

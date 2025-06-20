@@ -11,35 +11,29 @@ namespace symbolic {
 
 typedef std::vector<Expression> MultiExpression;
 
+/**
+ * @brief Interprets the expressions as integer sets and checks if expr1 is a subset of expr2.
+ *
+ * @param expr1 The first expression to check.
+ * @param expr2 The second expression to check.
+ * @param assums1 The assumptions for the first expression.
+ * @param assums2 The assumptions for the second expression.
+ * @return true if expr1 is a subset of expr2, false otherwise.
+ */
 bool is_subset(const MultiExpression& expr1, const MultiExpression& expr2,
                const Assumptions& assums1, const Assumptions& assums2);
 
-std::string expression_to_map_str(const MultiExpression& expr, const SymbolSet& params,
-                                  const SymbolSet& monotonics, const Assumptions& assums);
-
+/**
+ * @brief Interprets the expressions as integer sets and checks if expr1 is disjoint from expr2.
+ *
+ * @param expr1 The first expression to check.
+ * @param expr2 The second expression to check.
+ * @param assums1 The assumptions for the first expression.
+ * @param assums2 The assumptions for the second expression.
+ * @return true if expr1 is disjoint from expr2, false otherwise.
+ */
 bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
-                 const Assumptions& assums);
-
-bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
-                 const SymbolSet& params, const SymbolSet& monotonics, const Assumptions& assums);
-
-bool is_equivalent(const MultiExpression& expr1, const MultiExpression& expr2,
-                   const SymbolSet& params, const Assumptions& assums);
-
-MultiExpression delinearize(const MultiExpression& expr, const SymbolSet& params,
-                            const Assumptions& assums);
-
-std::tuple<std::string, std::string, std::string> expressions_to_intersection_map_str(
-    const MultiExpression& expr1, const MultiExpression& expr2, const SymbolSet& params,
-    const SymbolSet& monotonics, const Assumptions& assums);
-
-std::string expressions_to_diagonal_map_str(const MultiExpression& expr1,
-                                            const MultiExpression& expr2, const SymbolSet& params,
-                                            const Assumptions& assums);
-
-ExpressionSet generate_constraints(SymbolSet& syms, const Assumptions& assums, SymbolSet& seen);
-
-std::string constraint_to_isl_str(const Expression& con);
+                 const Assumptions& assums1, const Assumptions& assums2);
 
 }  // namespace symbolic
 }  // namespace sdfg

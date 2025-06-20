@@ -168,7 +168,7 @@ TEST(SetsTest, delinearize_3d) {
 }
 */
 
-TEST(SetsTest, is_equivalent_1d_equivalent) {
+TEST(SetsTest, is_subset_1d_equivalent) {
     auto x = symbolic::symbol("x");
     types::Scalar desc(types::PrimitiveType::UInt8);
 
@@ -179,10 +179,10 @@ TEST(SetsTest, is_equivalent_1d_equivalent) {
     auto expr1 = symbolic::add(x, symbolic::integer(1));
     auto expr2 = symbolic::add(x, symbolic::integer(1));
 
-    EXPECT_TRUE(symbolic::is_equivalent({expr1}, {expr2}, {}, assums));
+    EXPECT_TRUE(symbolic::is_subset({expr1}, {expr2}, assums, assums));
 }
 
-TEST(SetsTest, is_equivalent_1d_not_equivalent) {
+TEST(SetsTest, is_subset_1d_not_equivalent) {
     auto x = symbolic::symbol("x");
     types::Scalar desc(types::PrimitiveType::UInt8);
 
@@ -193,10 +193,10 @@ TEST(SetsTest, is_equivalent_1d_not_equivalent) {
     auto expr1 = symbolic::add(x, symbolic::integer(1));
     auto expr2 = symbolic::add(x, symbolic::integer(2));
 
-    EXPECT_FALSE(symbolic::is_equivalent({expr1}, {expr2}, {}, assums));
+    EXPECT_FALSE(symbolic::is_subset({expr1}, {expr2}, assums, assums));
 }
 
-TEST(SetsTest, is_equivalent_1d_equivalent_rename) {
+TEST(SetsTest, is_subset_1d_equivalent_rename) {
     auto x = symbolic::symbol("x");
     auto y = symbolic::symbol("y");
     types::Scalar desc(types::PrimitiveType::UInt8);
@@ -216,10 +216,10 @@ TEST(SetsTest, is_equivalent_1d_equivalent_rename) {
     auto expr1 = symbolic::add(x, symbolic::integer(1));
     auto expr2 = symbolic::add(y, symbolic::integer(1));
 
-    EXPECT_TRUE(symbolic::is_equivalent({expr1}, {expr2}, {}, assums));
+    EXPECT_TRUE(symbolic::is_subset({expr1}, {expr2}, assums, assums));
 }
 
-TEST(SetsTest, is_equivalent_1d_equivalent_recursive_assumptions) {
+TEST(SetsTest, is_subset_1d_equivalent_recursive_assumptions) {
     auto x = symbolic::symbol("x");
     auto y = symbolic::symbol("y");
     auto z = symbolic::symbol("z");
@@ -245,10 +245,10 @@ TEST(SetsTest, is_equivalent_1d_equivalent_recursive_assumptions) {
     auto expr1 = symbolic::add(x, symbolic::integer(1));
     auto expr2 = symbolic::add(y, symbolic::integer(1));
 
-    EXPECT_TRUE(symbolic::is_equivalent({expr1}, {expr2}, {}, assums));
+    EXPECT_TRUE(symbolic::is_subset({expr1}, {expr2}, assums, assums));
 }
 
-TEST(SetsTest, is_equivalent_1d_minmax_assumptions) {
+TEST(SetsTest, is_subset_1d_minmax_assumptions) {
     auto x = symbolic::symbol("x");
     auto y = symbolic::symbol("y");
     auto N = symbolic::symbol("N");
@@ -271,7 +271,7 @@ TEST(SetsTest, is_equivalent_1d_minmax_assumptions) {
     auto expr1 = symbolic::add(x, symbolic::integer(1));
     auto expr2 = symbolic::add(y, symbolic::integer(1));
 
-    EXPECT_TRUE(symbolic::is_equivalent({expr1}, {expr2}, {}, assums));
+    EXPECT_TRUE(symbolic::is_subset({expr1}, {expr2}, assums, assums));
 }
 
 TEST(SetsTest, is_disjoint_1d_disjoint) {
@@ -285,7 +285,7 @@ TEST(SetsTest, is_disjoint_1d_disjoint) {
     auto expr1 = symbolic::add(x, symbolic::integer(1));
     auto expr2 = symbolic::add(x, symbolic::integer(1));
 
-    EXPECT_TRUE(symbolic::is_disjoint({expr1}, {expr2}, {}, {x}, assums));
+    EXPECT_FALSE(symbolic::is_disjoint({expr1}, {expr2}, assums, assums));
 }
 
 TEST(SetsTest, is_disjoint_1d_not_disjoint) {
@@ -299,42 +299,5 @@ TEST(SetsTest, is_disjoint_1d_not_disjoint) {
     auto expr1 = symbolic::add(x, symbolic::integer(1));
     auto expr2 = symbolic::add(x, symbolic::integer(2));
 
-    EXPECT_FALSE(symbolic::is_disjoint({expr1}, {expr2}, {}, {x}, assums));
+    EXPECT_FALSE(symbolic::is_disjoint({expr1}, {expr2}, assums, assums));
 }
-
-/*
-TEST(SetsTest, is_disjoint_1d_disjoint_linearized_2d) {
-    auto x = symbolic::symbol("x");
-    auto y = symbolic::symbol("y");
-    auto N = symbolic::symbol("N");
-    auto M = symbolic::symbol("M");
-    types::Scalar desc(types::PrimitiveType::UInt8);
-
-    auto assum_x = symbolic::Assumption::create(x, desc);
-    assum_x.lower_bound(symbolic::zero());
-    assum_x.upper_bound(symbolic::sub(N, symbolic::integer(1)));
-
-    auto assum_y = symbolic::Assumption::create(y, desc);
-    assum_y.lower_bound(symbolic::zero());
-    assum_y.upper_bound(symbolic::sub(M, symbolic::integer(1)));
-
-    auto assum_N = symbolic::Assumption::create(N, desc);
-    assum_N.lower_bound(symbolic::integer(1));
-    assum_N.upper_bound(symbolic::integer(10));
-
-    auto assum_M = symbolic::Assumption::create(M, desc);
-    assum_M.lower_bound(symbolic::integer(1));
-    assum_M.upper_bound(symbolic::integer(20));
-
-    symbolic::Assumptions assums;
-    assums.insert({x, assum_x});
-    assums.insert({y, assum_y});
-    assums.insert({N, assum_N});
-    assums.insert({M, assum_M});
-
-    auto expr1 = symbolic::add(symbolic::mul(x, M), y);
-    auto expr2 = symbolic::add(symbolic::mul(x, M), y);
-
-    EXPECT_TRUE(symbolic::is_disjoint({expr1}, {expr2}, {N, M}, {x}, assums));
-}
-*/
