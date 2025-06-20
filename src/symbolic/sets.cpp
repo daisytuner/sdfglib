@@ -715,7 +715,7 @@ bool is_subset(const MultiExpression& expr1, const MultiExpression& expr2,
             monotonics.insert(entry.first);
         }
     }
-    return is_disjoint(expr1, expr2, params, monotonics, assums);
+    return is_equivalent(expr1, expr2, params, assums);
 }
 
 bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
