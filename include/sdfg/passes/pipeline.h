@@ -10,6 +10,7 @@
 #include "sdfg/passes/structured_control_flow/block_fusion.h"
 #include "sdfg/passes/structured_control_flow/common_assignment_elimination.h"
 #include "sdfg/passes/structured_control_flow/dead_cfg_elimination.h"
+#include "sdfg/passes/structured_control_flow/for2map.h"
 #include "sdfg/passes/structured_control_flow/sequence_fusion.h"
 #include "sdfg/passes/symbolic/condition_propagation.h"
 #include "sdfg/passes/symbolic/symbol_propagation.h"
@@ -44,6 +45,8 @@ class Pipeline : public Pass {
     static Pipeline memlet_combine();
 
     static Pipeline controlflow_simplification();
+
+    static Pipeline data_parallelism();
 };
 
 }  // namespace passes

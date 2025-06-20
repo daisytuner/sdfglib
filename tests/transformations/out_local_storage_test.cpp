@@ -58,7 +58,7 @@ TEST(OutLocalStorage, Scalar) {
 
     auto& new_root = builder_opt.subject().root();
     // Apply
-    transformations::OutLocalStorage transformation(new_root, loop, "C");
+    transformations::OutLocalStorage transformation(loop, "C");
     EXPECT_TRUE(transformation.can_be_applied(builder_opt, analysis_manager));
     transformation.apply(builder_opt, analysis_manager);
 
@@ -198,7 +198,7 @@ TEST(OutLocalStorage, Array) {
 
     auto& new_root = builder_opt.subject().root();
     // Apply
-    transformations::OutLocalStorage transformation(new_root, loop, "C");
+    transformations::OutLocalStorage transformation(loop, "C");
     EXPECT_TRUE(transformation.can_be_applied(builder_opt, analysis_manager));
     transformation.apply(builder_opt, analysis_manager);
 
@@ -363,6 +363,6 @@ TEST(OutLocalStorage, Fail) {
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
 
     // Apply
-    transformations::OutLocalStorage transformation(root, loop, "C");
+    transformations::OutLocalStorage transformation(loop, "C");
     EXPECT_FALSE(transformation.can_be_applied(builder_opt, analysis_manager));
 }

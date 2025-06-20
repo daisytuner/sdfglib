@@ -1,5 +1,7 @@
 #include "sdfg/builder/structured_sdfg_builder.h"
 
+#include <cstddef>
+
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/codegen/language_extensions/cpp_language_extension.h"
 #include "sdfg/data_flow/library_node.h"
@@ -323,6 +325,52 @@ StructuredSDFG& StructuredSDFGBuilder::subject() const { return *this->structure
 
 std::unique_ptr<StructuredSDFG> StructuredSDFGBuilder::move() {
     return std::move(this->structured_sdfg_);
+};
+
+Element* StructuredSDFGBuilder::find_element_by_id(const size_t& element_id) const {
+    auto& sdfg = this->subject();
+    std::list<Element*> queue = {&sdfg.root()};
+    while (!queue.empty()) {
+        auto current = queue.front();
+        queue.pop_front();
+
+        if (current->element_id() == element_id) {
+            return current;
+        }
+
+        if (auto block_stmt = dynamic_cast<structured_control_flow::Block*>(current)) {
+            auto& dataflow = block_stmt->dataflow();
+            for (auto& node : dataflow.nodes()) {
+                queue.push_back(&node);
+            }
+            for (auto& edge : dataflow.edges()) {
+                queue.push_back(&edge);
+            }
+        } else if (auto sequence_stmt = dynamic_cast<structured_control_flow::Sequence*>(current)) {
+            for (size_t i = 0; i < sequence_stmt->size(); i++) {
+                queue.push_back(&sequence_stmt->at(i).first);
+                queue.push_back(&sequence_stmt->at(i).second);
+            }
+        } else if (dynamic_cast<structured_control_flow::Return*>(current)) {
+            // Do nothing
+        } else if (auto if_else_stmt = dynamic_cast<structured_control_flow::IfElse*>(current)) {
+            for (size_t i = 0; i < if_else_stmt->size(); i++) {
+                queue.push_back(&if_else_stmt->at(i).first);
+            }
+        } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(current)) {
+            queue.push_back(&for_stmt->root());
+        } else if (auto while_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
+            queue.push_back(&while_stmt->root());
+        } else if (dynamic_cast<structured_control_flow::Continue*>(current)) {
+            // Do nothing
+        } else if (dynamic_cast<structured_control_flow::Break*>(current)) {
+            // Do nothing
+        } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(current)) {
+            queue.push_back(&map_stmt->root());
+        }
+    }
+
+    return nullptr;
 };
 
 Sequence& StructuredSDFGBuilder::add_sequence(Sequence& parent,
