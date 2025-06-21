@@ -6,7 +6,7 @@ namespace sdfg {
 namespace structured_control_flow {
 
 Map::Map(size_t element_id, const DebugInfo& debug_info, symbolic::Symbol indvar,
-         symbolic::Expression num_iterations, ScheduleType schedule_type)
+         symbolic::Expression num_iterations, const ScheduleType& schedule_type)
     : StructuredLoop(element_id, debug_info),
       indvar_(indvar),
       num_iterations_(num_iterations),
