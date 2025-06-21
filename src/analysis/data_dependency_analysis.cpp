@@ -305,7 +305,7 @@ void DataDependencyAnalysis::visit_for(
         // Case 1: Read-Write between iterations
         for (auto& read : undefined_for) {
             for (auto& write : open_definitions_for) {
-                if (loop_depends(*write.first, *read, assumptions_analysis, for_loop.indvar())) {
+                if (loop_depends(*write.first, *read, assumptions_analysis, for_loop)) {
                     if (dependencies.find(read->container()) == dependencies.end()) {
                         dependencies.insert(
                             {read->container(), LOOP_CARRIED_DEPENDENCY_READ_WRITE});
@@ -321,8 +321,7 @@ void DataDependencyAnalysis::visit_for(
                 continue;
             }
             for (auto& write_2 : open_definitions_for) {
-                if (loop_depends(*write.first, *write_2.first, assumptions_analysis,
-                                 for_loop.indvar())) {
+                if (loop_depends(*write.first, *write_2.first, assumptions_analysis, for_loop)) {
                     dependencies.insert(
                         {write.first->container(), LOOP_CARRIED_DEPENDENCY_WRITE_WRITE});
                     break;
@@ -661,7 +660,7 @@ void DataDependencyAnalysis::visit_sequence(
 
 bool DataDependencyAnalysis::loop_depends(User& previous, User& current,
                                           analysis::AssumptionsAnalysis& assumptions_analysis,
-                                          symbolic::Symbol& indvar) {
+                                          structured_control_flow::StructuredLoop& loop) {
     if (previous.container() != current.container()) {
         return false;
     }
@@ -675,15 +674,15 @@ bool DataDependencyAnalysis::loop_depends(User& previous, User& current,
     auto& current_subsets = current.subsets();
 
     auto previous_scope = Users::scope(&previous);
-    auto previous_assumptions = assumptions_analysis.get(*previous_scope, true);
+    auto previous_assumptions = assumptions_analysis.get(loop.root(), *previous_scope, true);
     auto current_scope = Users::scope(&current);
-    auto current_assumptions = assumptions_analysis.get(*current_scope, true);
+    auto current_assumptions = assumptions_analysis.get(loop.root(), *current_scope, true);
 
     // Check if previous subset is subset of any current subset
     for (auto& previous_subset : previous_subsets) {
         for (auto& current_subset : current_subsets) {
-            if (symbolic::intersects(previous_subset, current_subset, indvar, previous_assumptions,
-                                     current_assumptions)) {
+            if (symbolic::intersects(previous_subset, current_subset, loop.indvar(),
+                                     previous_assumptions, current_assumptions)) {
                 return true;
             }
         }

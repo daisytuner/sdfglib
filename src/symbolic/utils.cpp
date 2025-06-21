@@ -31,11 +31,19 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
     std::vector<std::string> parameters;
     SymbolSet parameters_syms;
     for (auto& sym : syms) {
-        if (dimensions_syms.find(sym) != dimensions_syms.end()) {
-            continue;
+        if (assums.find(sym) == assums.end() && assums.at(sym).constant()) {
+            if (parameters_syms.find(sym) != parameters_syms.end()) {
+                continue;
+            }
+            parameters.push_back(sym->get_name());
+            parameters_syms.insert(sym);
+        } else {
+            if (dimensions_syms.find(sym) != dimensions_syms.end()) {
+                continue;
+            }
+            dimensions.push_back(sym->get_name());
+            dimensions_syms.insert(sym);
         }
-        dimensions.push_back(sym->get_name());
-        dimensions_syms.insert(sym);
     }
 
     // Generate constraints
@@ -114,7 +122,7 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     std::vector<std::string> parameters;
     SymbolSet parameters_syms;
     for (auto& sym : syms) {
-        if (sym->get_name() != indvar->get_name() && is_parameter(sym, assums1)) {
+        if (sym->get_name() != indvar->get_name() && assums1.at(sym).constant()) {
             if (parameters_syms.find(sym) != parameters_syms.end()) {
                 continue;
             }
@@ -367,7 +375,7 @@ MultiExpression delinearize(const MultiExpression& expr, const Assumptions& assu
         // Step 1: Convert expression into an affine polynomial
         SymbolVec symbols;
         for (auto& sym : atoms(dim)) {
-            if (!is_parameter(sym, assums)) {
+            if (!assums.at(sym).constant()) {
                 symbols.push_back(sym);
             }
         }
