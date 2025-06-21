@@ -2234,6 +2234,110 @@ TEST(LoopDependencyAnalysisTest, LoopLocal_1D) {
               analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 }
 
+TEST(LoopDependencyAnalysisTest, LoopLocal_Conditional) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+    builder.add_container("tmp", sym_desc);
+
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+    builder.add_container("A", desc, true);
+
+    // Define loop
+    auto bound1 = symbolic::symbol("N");
+    auto indvar1 = symbolic::symbol("i");
+    auto init1 = symbolic::integer(0);
+    auto condition1 = symbolic::Lt(indvar1, bound1);
+    auto update1 = symbolic::add(indvar1, symbolic::integer(1));
+
+    auto& loop1 = builder.add_for(root, indvar1, condition1, init1, update1);
+    auto& body1 = loop1.root();
+
+    auto& ifelse = builder.add_if_else(body1);
+    auto& branch1 = builder.add_case(ifelse, symbolic::Eq(indvar1, symbolic::integer(0)));
+    auto& block1 = builder.add_block(branch1, {{symbolic::symbol("tmp"), symbolic::zero()}});
+    auto& branch2 = builder.add_case(ifelse, symbolic::Ne(indvar1, symbolic::integer(0)));
+    auto& block2 = builder.add_block(branch2, {{symbolic::symbol("tmp"), symbolic::one()}});
+
+    // Add computation
+    auto& block = builder.add_block(body1);
+    auto& A_in = builder.add_access(block, "tmp");
+    auto& A_out = builder.add_access(block, "A");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
+                                        {{"_in", base_desc}});
+    builder.add_memlet(block, A_in, "void", tasklet, "_in", {});
+    builder.add_memlet(block, tasklet, "_out", A_out, "void", {indvar1});
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    auto& dependencies = analysis.dependencies(loop1);
+
+    // Check
+    EXPECT_EQ(dependencies.size(), 1);
+    EXPECT_EQ(dependencies.at("tmp"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+}
+
+/*
+TEST(LoopDependencyAnalysisTest, LoopLocal_Conditional_Incomplete) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+    builder.add_container("tmp", sym_desc);
+
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+    builder.add_container("A", desc, true);
+
+    // Define loop
+    auto bound1 = symbolic::symbol("N");
+    auto indvar1 = symbolic::symbol("i");
+    auto init1 = symbolic::integer(0);
+    auto condition1 = symbolic::Lt(indvar1, bound1);
+    auto update1 = symbolic::add(indvar1, symbolic::integer(1));
+
+    auto& loop1 = builder.add_for(root, indvar1, condition1, init1, update1);
+    auto& body1 = loop1.root();
+
+    auto& ifelse = builder.add_if_else(body1);
+    auto& branch1 = builder.add_case(ifelse, symbolic::Eq(indvar1, symbolic::integer(0)));
+    auto& block1 = builder.add_block(branch1, {{symbolic::symbol("tmp"), symbolic::zero()}});
+
+    // Add computation
+    auto& block = builder.add_block(body1);
+    auto& A_in = builder.add_access(block, "tmp");
+    auto& A_out = builder.add_access(block, "A");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
+                                        {{"_in", base_desc}});
+    builder.add_memlet(block, A_in, "void", tasklet, "_in", {});
+    builder.add_memlet(block, tasklet, "_out", A_out, "void", {indvar1});
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    auto& dependencies = analysis.dependencies(loop1);
+
+    // Check
+    EXPECT_EQ(dependencies.size(), 1);
+    EXPECT_EQ(dependencies.at("tmp"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+}
+*/
+
 TEST(LoopDependencyAnalysisTest, Store_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 

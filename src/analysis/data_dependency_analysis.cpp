@@ -390,8 +390,6 @@ void DataDependencyAnalysis::visit_if_else(
         if_else.size());
     for (size_t i = 0; i < if_else.size(); i++) {
         auto& child = if_else.at(i).first;
-
-        // Add assumptions for child
         visit_sequence(users, assumptions_analysis, child, undefined_branches.at(i),
                        open_definitions_branches.at(i), closed_definitionss_branches.at(i));
     }
@@ -650,6 +648,12 @@ bool DataDependencyAnalysis::loop_depends(User& previous, User& current,
     if (previous.container() != current.container()) {
         return false;
     }
+    // Shortcut for scalars
+    auto& type = this->sdfg_.type(previous.container());
+    if (dynamic_cast<const types::Scalar*>(&type)) {
+        return true;
+    }
+
     auto& previous_subsets = previous.subsets();
     auto& current_subsets = current.subsets();
 
@@ -673,15 +677,17 @@ bool DataDependencyAnalysis::loop_depends(User& previous, User& current,
 
 bool DataDependencyAnalysis::supersedes(User& previous, User& current,
                                         analysis::AssumptionsAnalysis& assumptions_analysis) {
-    if (previous.use() != Use::WRITE || current.use() != Use::WRITE) {
-        return false;
-    }
     if (previous.container() != current.container()) {
         return false;
     }
+    // Shortcut for scalars
+    auto& type = this->sdfg_.type(previous.container());
+    if (dynamic_cast<const types::Scalar*>(&type)) {
+        return true;
+    }
+
     auto& previous_subsets = previous.subsets();
     auto& current_subsets = current.subsets();
-
     auto previous_scope = Users::scope(&previous);
     auto previous_assumptions = assumptions_analysis.get(*previous_scope, true);
     auto current_scope = Users::scope(&current);
@@ -707,12 +713,15 @@ bool DataDependencyAnalysis::supersedes(User& previous, User& current,
 
 bool DataDependencyAnalysis::intersects(User& previous, User& current,
                                         analysis::AssumptionsAnalysis& assumptions_analysis) {
-    if (previous.use() != Use::WRITE || current.use() != Use::READ) {
-        return false;
-    }
     if (previous.container() != current.container()) {
         return false;
     }
+    // Shortcut for scalars
+    auto& type = this->sdfg_.type(previous.container());
+    if (dynamic_cast<const types::Scalar*>(&type)) {
+        return true;
+    }
+
     auto& previous_subsets = previous.subsets();
     auto& current_subsets = current.subsets();
 

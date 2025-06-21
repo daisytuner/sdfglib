@@ -38,8 +38,6 @@ void ScopeAnalysis::run(structured_control_flow::ControlFlowNode* current,
 
 void ScopeAnalysis::run(AnalysisManager& analysis_manager) {
     this->scope_tree_.clear();
-
-    this->scope_tree_[&this->sdfg_.root()] = nullptr;
     this->run(&this->sdfg_.root(), nullptr);
 }
 
