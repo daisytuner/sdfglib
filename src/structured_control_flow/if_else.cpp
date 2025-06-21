@@ -21,10 +21,6 @@ std::pair<Sequence&, symbolic::Condition&> IfElse::at(size_t i) {
 };
 
 bool IfElse::is_complete() {
-    if (this->conditions_.size() == 2) {
-        return symbolic::eq(this->conditions_.at(0), this->conditions_.at(1)->logical_not());
-    }
-
     auto condition = symbolic::__false__();
     for (auto& entry : this->conditions_) {
         condition = symbolic::Or(condition, entry);

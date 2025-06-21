@@ -80,6 +80,9 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
             if (entry.second.size() != 1) {
                 continue;
             }
+            if (entry.first->use() != analysis::Use::READ) {
+                continue;
+            }
 
             // Criterion: Cannot propagate symbolic expression into an access node
             auto read = entry.first;
