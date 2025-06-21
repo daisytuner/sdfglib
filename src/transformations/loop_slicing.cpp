@@ -1,5 +1,6 @@
 #include "sdfg/transformations/loop_slicing.h"
 
+#include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/data_parallelism_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
@@ -22,8 +23,8 @@ bool LoopSlicing::can_be_applied(builder::StructuredSDFGBuilder& builder,
                                  analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
 
-    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
-    if (!loop_analysis.is_contiguous(&loop_)) {
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    if (!analysis::LoopAnalysis::is_contiguous(&loop_, assumptions_analysis)) {
         return false;
     }
 

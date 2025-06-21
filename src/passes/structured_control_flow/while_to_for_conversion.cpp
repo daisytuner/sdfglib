@@ -1,6 +1,6 @@
 #include "sdfg/passes/structured_control_flow/while_to_for_conversion.h"
 
-#include "sdfg/analysis/happens_before_analysis.h"
+#include "sdfg/analysis/data_dependency_analysis.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 
 namespace sdfg {
@@ -203,10 +203,10 @@ void WhileToForConversion::apply(builder::StructuredSDFGBuilder& builder,
     auto update = update_element->assignments().at(indvar);
 
     // All usages after increment of indvar must be updated
-    analysis::HappensBeforeAnalysis body_happens_before(sdfg, body);
-    body_happens_before.run(analysis_manager);
+    analysis::DataDependencyAnalysis data_dependency_analysis(sdfg, body);
+    data_dependency_analysis.run(analysis_manager);
 
-    auto users_after = body_happens_before.reads_after_write(*write_to_indvar);
+    auto users_after = data_dependency_analysis.defines(*write_to_indvar);
     for (auto use : users_after) {
         if (use->container() != indvar->get_name()) {
             continue;

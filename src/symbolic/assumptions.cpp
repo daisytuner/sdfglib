@@ -8,17 +8,21 @@ namespace symbolic {
 Assumption::Assumption()
     : symbol_(symbolic::symbol("")),
       lower_bound_(symbolic::infty(-1)),
-      upper_bound_(symbolic::infty(1)) {
+      upper_bound_(symbolic::infty(1)),
+      map_(SymEngine::null) {
 
       };
 
 Assumption::Assumption(const Symbol& symbol)
-    : symbol_(symbol), lower_bound_(symbolic::infty(-1)), upper_bound_(symbolic::infty(1)) {
+    : symbol_(symbol),
+      lower_bound_(symbolic::infty(-1)),
+      upper_bound_(symbolic::infty(1)),
+      map_(SymEngine::null) {
 
       };
 
 Assumption::Assumption(const Assumption& a)
-    : symbol_(a.symbol_), lower_bound_(a.lower_bound_), upper_bound_(a.upper_bound_) {
+    : symbol_(a.symbol_), lower_bound_(a.lower_bound_), upper_bound_(a.upper_bound_), map_(a.map_) {
 
       };
 
@@ -42,18 +46,11 @@ void Assumption::upper_bound(const Expression& upper_bound) { upper_bound_ = upp
 
 const Expression& Assumption::map() const { return map_; };
 
-void Assumption::map(const Expression& map) {
-    if (map == SymEngine::null) {
-        map_ = map;
-        return;
-    }
-    map_ = map;
-};
+void Assumption::map(const Expression& map) { map_ = map; };
 
 Assumption Assumption::create(const symbolic::Symbol& symbol, const types::IType& type) {
     if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
         auto assum = Assumption(symbol);
-        assum.map(SymEngine::null);
 
         types::PrimitiveType primitive_type = scalar_type->primitive_type();
         switch (primitive_type) {

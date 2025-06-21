@@ -4,7 +4,7 @@
 #include "sdfg/analysis/data_parallelism_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/users.h"
-#include "sdfg/symbolic/series.h"
+#include "sdfg/symbolic/maps.h"
 
 namespace sdfg {
 namespace passes {
@@ -24,7 +24,6 @@ bool LoopDependentSymbolElimination::eliminate_symbols(
     auto init = loop.init();
     auto condition = loop.condition();
 
-    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
     auto assumptions = assumptions_analysis.get(loop.root(), true);
 
@@ -32,7 +31,7 @@ bool LoopDependentSymbolElimination::eliminate_symbols(
     if (!SymEngine::eq(*init, *symbolic::integer(0))) {
         return false;
     }
-    if (!loop_analysis.is_contiguous(&loop)) {
+    if (!analysis::LoopAnalysis::is_contiguous(&loop, assumptions_analysis)) {
         return false;
     }
     auto bound = analysis::DataParallelismAnalysis::bound(loop);

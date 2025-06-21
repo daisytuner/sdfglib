@@ -3,7 +3,7 @@
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/symbolic/conjunctive_normal_form.h"
-#include "sdfg/symbolic/series.h"
+#include "sdfg/symbolic/maps.h"
 
 namespace sdfg {
 namespace passes {
@@ -11,8 +11,8 @@ namespace passes {
 bool LoopNormalization::apply(builder::StructuredSDFGBuilder& builder,
                               analysis::AnalysisManager& analysis_manager,
                               structured_control_flow::For& loop) {
-    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
-    if (!loop_analysis.is_contiguous(&loop)) {
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    if (!analysis::LoopAnalysis::is_contiguous(&loop, assumptions_analysis)) {
         return false;
     }
 

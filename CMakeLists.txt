@@ -50,9 +50,8 @@ set(SOURCE_FILES
     src/analysis/analysis.cpp
     src/analysis/assumptions_analysis.cpp
     src/analysis/data_parallelism_analysis.cpp
-    src/analysis/happens_before_analysis.cpp
+    src/analysis/data_dependency_analysis.cpp
     src/analysis/loop_analysis.cpp
-    src/analysis/loop_dependency_analysis.cpp
     src/analysis/scope_analysis.cpp
     src/analysis/users.cpp
     src/builder/function_builder.cpp
@@ -123,10 +122,11 @@ set(SOURCE_FILES
     src/symbolic/assumptions.cpp
     src/symbolic/conjunctive_normal_form.cpp
     src/symbolic/extreme_values.cpp
-    src/symbolic/series.cpp
+    src/symbolic/maps.cpp
     src/symbolic/polynomials.cpp
     src/symbolic/sets.cpp
     src/symbolic/symbolic.cpp
+    src/symbolic/utils.cpp
     src/transformations/loop_distribute.cpp
     src/transformations/loop_interchange.cpp
     src/transformations/loop_slicing.cpp

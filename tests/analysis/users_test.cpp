@@ -50,10 +50,6 @@ TEST(UsersTest, Transition_WAR) {
     EXPECT_FALSE(users.dominates(*write, *read));
     EXPECT_TRUE(users.post_dominates(*write, *read));
     EXPECT_FALSE(users.post_dominates(*read, *write));
-
-    symbolic::Assumptions assums;
-    EXPECT_TRUE(users.is_dominated_by(*write, analysis::Use::READ, assums));
-    EXPECT_FALSE(users.is_dominated_by(*read, analysis::Use::WRITE, assums));
 }
 
 TEST(UsersTest, Transition_WAW) {
@@ -105,12 +101,6 @@ TEST(UsersTest, Transition_WAW) {
     EXPECT_FALSE(users.dominates(*write2, *write1));
     EXPECT_TRUE(users.post_dominates(*write2, *write1));
     EXPECT_FALSE(users.post_dominates(*write1, *write2));
-
-    symbolic::Assumptions assums;
-    EXPECT_FALSE(users.is_dominated_by(*write1, analysis::Use::READ, assums));
-    EXPECT_FALSE(users.is_dominated_by(*write2, analysis::Use::READ, assums));
-    EXPECT_FALSE(users.is_dominated_by(*write1, analysis::Use::WRITE, assums));
-    EXPECT_TRUE(users.is_dominated_by(*write2, analysis::Use::WRITE, assums));
 }
 
 TEST(UsersTest, Transition_RAW) {
@@ -160,12 +150,6 @@ TEST(UsersTest, Transition_RAW) {
     EXPECT_FALSE(users.dominates(*read, *write));
     EXPECT_TRUE(users.post_dominates(*read, *write));
     EXPECT_FALSE(users.post_dominates(*write, *read));
-
-    symbolic::Assumptions assums;
-    EXPECT_TRUE(users.is_dominated_by(*read, analysis::Use::WRITE, assums));
-    EXPECT_FALSE(users.is_dominated_by(*write, analysis::Use::READ, assums));
-    EXPECT_FALSE(users.is_dominated_by(*read, analysis::Use::READ, assums));
-    EXPECT_FALSE(users.is_dominated_by(*write, analysis::Use::WRITE, assums));
 }
 
 TEST(UsersTest, AccessNode_Scalar_WAR) {
@@ -218,10 +202,6 @@ TEST(UsersTest, AccessNode_Scalar_WAR) {
     EXPECT_FALSE(users.dominates(*write, *read));
     EXPECT_TRUE(users.post_dominates(*write, *read));
     EXPECT_FALSE(users.post_dominates(*read, *write));
-
-    symbolic::Assumptions assums;
-    EXPECT_TRUE(users.is_dominated_by(*write, analysis::Use::READ, assums));
-    EXPECT_FALSE(users.is_dominated_by(*read, analysis::Use::WRITE, assums));
 }
 
 TEST(UsersTest, AccessNode_Scalar_WAW) {
@@ -280,12 +260,6 @@ TEST(UsersTest, AccessNode_Scalar_WAW) {
     EXPECT_FALSE(users.dominates(*write2, *write1));
     EXPECT_TRUE(users.post_dominates(*write2, *write1));
     EXPECT_FALSE(users.post_dominates(*write1, *write2));
-
-    symbolic::Assumptions assums;
-    EXPECT_FALSE(users.is_dominated_by(*write1, analysis::Use::READ, assums));
-    EXPECT_FALSE(users.is_dominated_by(*write2, analysis::Use::READ, assums));
-    EXPECT_FALSE(users.is_dominated_by(*write1, analysis::Use::WRITE, assums));
-    EXPECT_TRUE(users.is_dominated_by(*write2, analysis::Use::WRITE, assums));
 }
 
 TEST(UsersTest, AccessNode_Scalar_RAW) {
@@ -341,257 +315,6 @@ TEST(UsersTest, AccessNode_Scalar_RAW) {
     EXPECT_FALSE(users.dominates(*read, *write));
     EXPECT_TRUE(users.post_dominates(*read, *write));
     EXPECT_FALSE(users.post_dominates(*write, *read));
-
-    symbolic::Assumptions assums;
-    EXPECT_FALSE(users.is_dominated_by(*write, analysis::Use::READ, assums));
-    EXPECT_TRUE(users.is_dominated_by(*read, analysis::Use::WRITE, assums));
-    EXPECT_FALSE(users.is_dominated_by(*write, analysis::Use::WRITE, assums));
-    EXPECT_FALSE(users.is_dominated_by(*read, analysis::Use::READ, assums));
-}
-
-TEST(UsersTest, AccessNode_Subsets_Dominates) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    builder.add_container("A", types::Pointer(types::Scalar(types::PrimitiveType::Float)), true);
-    builder.add_container("i", types::Scalar(types::PrimitiveType::UInt32), true);
-    auto sym_i = symbolic::symbol("i");
-
-    auto& root = builder.subject().root();
-    auto& block = builder.add_block(root);
-    auto& input_node = builder.add_access(block, "A");
-    auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", output_node, "void", {sym_i});
-    auto& memlet_in = builder.add_memlet(block, input_node, "void", tasklet, "_in", {sym_i});
-
-    auto sdfg = builder.move();
-
-    // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& users = analysis_manager.get<analysis::Users>();
-
-    auto reads_i = users.reads("i");
-    EXPECT_EQ(reads_i.size(), 2);
-
-    auto reads = users.reads("A");
-    EXPECT_EQ(reads.size(), 1);
-
-    auto& read = reads.at(0);
-    EXPECT_EQ(read->container(), "A");
-    EXPECT_EQ(read->use(), analysis::Use::READ);
-    EXPECT_EQ(read->element(), &input_node);
-
-    auto& read_subsets = read->subsets();
-    EXPECT_EQ(read_subsets.size(), 1);
-    EXPECT_EQ(read_subsets.at(0).size(), 1);
-    EXPECT_TRUE(symbolic::eq(read_subsets.at(0).at(0), sym_i));
-
-    auto writes = users.writes("A");
-    EXPECT_EQ(writes.size(), 1);
-
-    auto& write = writes.at(0);
-    EXPECT_EQ(write->container(), "A");
-    EXPECT_EQ(write->use(), analysis::Use::WRITE);
-    EXPECT_EQ(write->element(), &output_node);
-
-    EXPECT_TRUE(users.dominates(*read, *write));
-    EXPECT_FALSE(users.dominates(*write, *read));
-    EXPECT_TRUE(users.post_dominates(*write, *read));
-    EXPECT_FALSE(users.post_dominates(*read, *write));
-
-    symbolic::Assumptions assums;
-    EXPECT_TRUE(users.is_dominated_by(*write, analysis::Use::READ, assums));
-    EXPECT_FALSE(users.is_dominated_by(*read, analysis::Use::WRITE, assums));
-}
-
-TEST(UsersTest, AccessNode_Subsets_NotDominates) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    builder.add_container("A", types::Pointer(types::Scalar(types::PrimitiveType::Float)), true);
-    builder.add_container("i", types::Scalar(types::PrimitiveType::UInt32), true);
-    auto sym_i = symbolic::symbol("i");
-
-    auto& root = builder.subject().root();
-    auto& block = builder.add_block(root);
-    auto& input_node = builder.add_access(block, "A");
-    auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    auto& memlet_out =
-        builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
-    auto& memlet_in = builder.add_memlet(block, input_node, "void", tasklet, "_in", {sym_i});
-
-    auto sdfg = builder.move();
-
-    // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& users = analysis_manager.get<analysis::Users>();
-
-    auto reads_i = users.reads("i");
-    EXPECT_EQ(reads_i.size(), 1);
-    EXPECT_EQ(reads_i.at(0)->container(), "i");
-    EXPECT_EQ(reads_i.at(0)->use(), analysis::Use::READ);
-    EXPECT_EQ(reads_i.at(0)->element(), &memlet_in);
-
-    auto reads = users.reads("A");
-    EXPECT_EQ(reads.size(), 1);
-
-    auto& read = reads.at(0);
-    EXPECT_EQ(read->container(), "A");
-    EXPECT_EQ(read->use(), analysis::Use::READ);
-    EXPECT_EQ(read->element(), &input_node);
-
-    auto& read_subsets = read->subsets();
-    EXPECT_EQ(read_subsets.size(), 1);
-    EXPECT_EQ(read_subsets.at(0).size(), 1);
-    EXPECT_TRUE(symbolic::eq(read_subsets.at(0).at(0), sym_i));
-
-    auto writes = users.writes("A");
-    EXPECT_EQ(writes.size(), 1);
-
-    auto& write = writes.at(0);
-    EXPECT_EQ(write->container(), "A");
-    EXPECT_EQ(write->use(), analysis::Use::WRITE);
-    EXPECT_EQ(write->element(), &output_node);
-
-    EXPECT_TRUE(users.dominates(*read, *write));
-    EXPECT_FALSE(users.dominates(*write, *read));
-    EXPECT_TRUE(users.post_dominates(*write, *read));
-    EXPECT_FALSE(users.post_dominates(*read, *write));
-
-    symbolic::Assumptions assums;
-    EXPECT_FALSE(users.is_dominated_by(*write, analysis::Use::READ, assums));
-    EXPECT_FALSE(users.is_dominated_by(*read, analysis::Use::WRITE, assums));
-}
-
-TEST(UsersTest, AccessNode_Subsets_NotDominates_Unsafe) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    builder.add_container("A", types::Pointer(types::Scalar(types::PrimitiveType::Float)), true);
-    builder.add_container("B", types::Pointer(types::Scalar(types::PrimitiveType::Float)), true);
-    builder.add_container("i", types::Scalar(types::PrimitiveType::UInt32), true);
-    auto sym_i = symbolic::symbol("i");
-
-    auto& root = builder.subject().root();
-    auto& block = builder.add_block(root, {{sym_i, symbolic::integer(0)}});
-    auto& input_node = builder.add_access(block, "A");
-    auto& output_node = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", output_node, "void", {sym_i});
-    auto& memlet_in = builder.add_memlet(block, input_node, "void", tasklet, "_in", {sym_i});
-
-    auto& block2 = builder.add_block(root);
-    auto& input_node2 = builder.add_access(block2, "B");
-    auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {sym_i});
-    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {sym_i});
-
-    auto sdfg = builder.move();
-
-    // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& users = analysis_manager.get<analysis::Users>();
-
-    auto reads = users.reads("A");
-    EXPECT_EQ(reads.size(), 1);
-
-    auto& read = reads.at(0);
-    EXPECT_EQ(read->container(), "A");
-    EXPECT_EQ(read->use(), analysis::Use::READ);
-    EXPECT_EQ(read->element(), &input_node);
-
-    auto writes = users.writes("A");
-    EXPECT_EQ(writes.size(), 1);
-
-    auto& write = writes.at(0);
-    EXPECT_EQ(write->container(), "A");
-    EXPECT_EQ(write->use(), analysis::Use::WRITE);
-    EXPECT_EQ(write->element(), &output_node2);
-
-    EXPECT_TRUE(users.dominates(*read, *write));
-    EXPECT_FALSE(users.dominates(*write, *read));
-    EXPECT_TRUE(users.post_dominates(*write, *read));
-    EXPECT_FALSE(users.post_dominates(*read, *write));
-
-    symbolic::Assumptions assums;
-    EXPECT_FALSE(users.is_dominated_by(*write, analysis::Use::READ, assums));
-    EXPECT_FALSE(users.is_dominated_by(*read, analysis::Use::WRITE, assums));
-}
-
-TEST(UsersTest, AccessNode_Subsets_Dominates_IFElse) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    builder.add_container("A", types::Pointer(types::Scalar(types::PrimitiveType::Float)), true);
-    builder.add_container("B", types::Pointer(types::Scalar(types::PrimitiveType::Float)), true);
-    builder.add_container("i", types::Scalar(types::PrimitiveType::UInt32), true);
-    builder.add_container("j", types::Scalar(types::PrimitiveType::UInt32), true);
-    auto sym_i = symbolic::symbol("i");
-    auto sym_j = symbolic::symbol("j");
-
-    auto& root = builder.subject().root();
-    auto& block = builder.add_block(root);
-    auto& input_node = builder.add_access(block, "A");
-    auto& output_node = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", output_node, "void", {sym_i});
-    auto& memlet_in = builder.add_memlet(block, input_node, "void", tasklet, "_in", {sym_i});
-
-    auto& if_else = builder.add_if_else(root);
-    auto& branch = builder.add_case(if_else, symbolic::Eq(sym_i, sym_j));
-
-    auto& block2 = builder.add_block(branch);
-    auto& input_node2 = builder.add_access(block2, "B");
-    auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {sym_j});
-    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {sym_j});
-
-    auto sdfg = builder.move();
-
-    // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& users = analysis_manager.get<analysis::Users>();
-
-    auto reads = users.reads("A");
-    EXPECT_EQ(reads.size(), 1);
-
-    auto& read = reads.at(0);
-    EXPECT_EQ(read->container(), "A");
-    EXPECT_EQ(read->use(), analysis::Use::READ);
-    EXPECT_EQ(read->element(), &input_node);
-
-    auto writes = users.writes("A");
-    EXPECT_EQ(writes.size(), 1);
-
-    auto& write = writes.at(0);
-    EXPECT_EQ(write->container(), "A");
-    EXPECT_EQ(write->use(), analysis::Use::WRITE);
-    EXPECT_EQ(write->element(), &output_node2);
-
-    EXPECT_TRUE(users.dominates(*read, *write));
-    EXPECT_FALSE(users.dominates(*write, *read));
-    EXPECT_FALSE(users.post_dominates(*write, *read));
-    EXPECT_FALSE(users.post_dominates(*read, *write));
-
-    auto assums = analysis_manager.get<analysis::AssumptionsAnalysis>().get(branch, true);
-    EXPECT_TRUE(users.is_dominated_by(*write, analysis::Use::READ, assums));
-    EXPECT_FALSE(users.is_dominated_by(*read, analysis::Use::WRITE, assums));
 }
 
 TEST(UsersTest, For_Definition) {
