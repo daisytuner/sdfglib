@@ -497,7 +497,7 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
         }
 
         // Add map constraints
-        auto map = assumptions.at(symbolic::symbol(dim)).map();
+        symbolic::Expression map = SymEngine::null;
         if (map == SymEngine::null) {
             continue;
         }

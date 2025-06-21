@@ -192,7 +192,7 @@ bool is_disjoint_monotonic(const MultiExpression& expr1, const MultiExpression& 
         // Collect all non-constant symbols
         bool can_analyze = true;
         for (auto& sym : syms) {
-            if (!is_parameter(sym, assums1)) {
+            if (!assums1.at(sym).constant()) {
                 if (sym->get_name() != indvar->get_name()) {
                     can_analyze = false;
                     break;

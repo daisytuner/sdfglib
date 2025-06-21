@@ -2270,7 +2270,6 @@ TEST(LoopDependencyAnalysisTest, Map_1D) {
     EXPECT_EQ(dependencies.size(), 0);
 }
 
-/*
 TEST(LoopDependencyAnalysisTest, MapParameterized_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
@@ -2290,8 +2289,10 @@ TEST(LoopDependencyAnalysisTest, MapParameterized_1D) {
 
     auto& assums_m = sdfg.assumption(symbolic::symbol("m"));
     assums_m.lower_bound(symbolic::integer(1));
+    assums_m.constant(true);
     auto& assums_b = sdfg.assumption(symbolic::symbol("b"));
     assums_b.lower_bound(symbolic::integer(1));
+    assums_b.constant(true);
 
     // Define loop
     auto bound = symbolic::symbol("N");
@@ -2324,7 +2325,6 @@ TEST(LoopDependencyAnalysisTest, MapParameterized_1D) {
     // Check
     EXPECT_EQ(dependencies.size(), 0);
 }
-*/
 
 TEST(LoopDependencyAnalysisTest, Stencil_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
@@ -2908,7 +2908,6 @@ TEST(LoopDependencyAnalysisTest, TransposeTriangleWithDiagonal_2D) {
     EXPECT_EQ(dependencies2.size(), 0);
 }
 
-/*
 TEST(LoopDependencyAnalysisTest, TransposeSquare_2D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
@@ -2964,8 +2963,7 @@ TEST(LoopDependencyAnalysisTest, TransposeSquare_2D) {
     EXPECT_EQ(dependencies2.size(), 0);
     EXPECT_EQ(dependencies1.size(), 2);
     EXPECT_EQ(dependencies1.at("A"),
-analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
     EXPECT_EQ(dependencies1.at("j"),
-analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 }
-*/

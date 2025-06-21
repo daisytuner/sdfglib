@@ -29,7 +29,7 @@ class DataDependencyAnalysis : public Analysis {
 
     bool loop_depends(User& previous, User& current,
                       analysis::AssumptionsAnalysis& assumptions_analysis,
-                      symbolic::Symbol& indvar);
+                      structured_control_flow::StructuredLoop& loop);
 
     bool supersedes(User& previous, User& current,
                     analysis::AssumptionsAnalysis& assumptions_analysis);
