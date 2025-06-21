@@ -185,6 +185,7 @@ void AssumptionsAnalysis::visit_if_else(structured_control_flow::IfElse* if_else
                     scope_assumptions.insert({sym, symbolic::Assumption(sym)});
                 }
 
+                scope_assumptions[sym].constant(true);
                 if (!symbolic::eq(ub, symbolic::infty(1))) {
                     scope_assumptions[sym].upper_bound(ub);
                 }
@@ -219,7 +220,7 @@ void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop,
     }
 
     // Assumption 1: indvar moves according to update
-    body_assumptions[indvar].map(update);
+    body_assumptions[indvar].constant(true);
 
     // Prove that update is monotonic -> assume bounds
     auto& assums = this->get(*for_loop);
@@ -256,7 +257,7 @@ void AssumptionsAnalysis::visit_map(structured_control_flow::Map* map,
     }
     body_assumptions[indvar].lower_bound(symbolic::zero());
     body_assumptions[indvar].upper_bound(symbolic::sub(map->num_iterations(), symbolic::one()));
-    body_assumptions[indvar].map(map->update());
+    body_assumptions[indvar].constant(true);
 };
 
 void AssumptionsAnalysis::traverse(structured_control_flow::Sequence& root,
@@ -344,6 +345,29 @@ const symbolic::Assumptions AssumptionsAnalysis::get(structured_control_flow::Co
 
     return assums;
 };
+
+const symbolic::Assumptions AssumptionsAnalysis::get(structured_control_flow::ControlFlowNode& from,
+                                                     structured_control_flow::ControlFlowNode& to,
+                                                     bool include_trivial_bounds) {
+    auto assums_from = this->get(from, include_trivial_bounds);
+    auto assums_to = this->get(to, include_trivial_bounds);
+
+    // Add lower scope assumptions to outer
+    // ignore constants assumption
+    for (auto& entry : assums_from) {
+        if (assums_to.find(entry.first) == assums_to.end()) {
+            auto assums_safe = assums_to;
+            assums_safe.at(entry.first).constant(false);
+            assums_to.insert({entry.first, assums_safe.at(entry.first)});
+        } else {
+            auto assums_safe = assums_to;
+            assums_safe.at(entry.first).constant(entry.second.constant());
+            assums_to[entry.first] = assums_safe.at(entry.first);
+        }
+    }
+
+    return assums_to;
+}
 
 void AssumptionsAnalysis::add(symbolic::Assumptions& assums,
                               structured_control_flow::ControlFlowNode& node) {
