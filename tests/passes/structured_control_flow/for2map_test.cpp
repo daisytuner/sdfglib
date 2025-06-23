@@ -54,7 +54,6 @@ TEST(For2MapTest, Basic) {
     // Check
     auto map = dynamic_cast<const structured_control_flow::Map*>(&sdfg_map.root().at(0).first);
     EXPECT_TRUE(map != nullptr);
-    EXPECT_TRUE(symbolic::eq(map->num_iterations(), symbolic::symbol("N")));
     EXPECT_TRUE(symbolic::eq(map->indvar(), symbolic::symbol("i")));
 }
 
@@ -107,9 +106,6 @@ TEST(For2MapTest, MultiBound) {
     // Check
     auto map = dynamic_cast<const structured_control_flow::Map*>(&sdfg_map.root().at(0).first);
     EXPECT_TRUE(map != nullptr);
-    EXPECT_TRUE(symbolic::eq(map->num_iterations(),
-                             symbolic::min(symbolic::symbol("N"),
-                                           symbolic::add(symbolic::symbol("M"), symbolic::one()))));
     EXPECT_TRUE(symbolic::eq(map->indvar(), symbolic::symbol("i")));
 }
 
@@ -153,7 +149,14 @@ TEST(For2MapTest, NonContiguous) {
     builder::StructuredSDFGBuilder builder_opt(sdfg_opt);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
     passes::For2MapPass conversion_pass;
-    EXPECT_FALSE(conversion_pass.run(builder_opt, analysis_manager));
+    EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
+
+    auto& sdfg_map = builder_opt.subject();
+
+    // Check
+    auto map = dynamic_cast<const structured_control_flow::Map*>(&sdfg_map.root().at(0).first);
+    EXPECT_TRUE(map != nullptr);
+    EXPECT_TRUE(symbolic::eq(map->indvar(), symbolic::symbol("i")));
 }
 
 TEST(For2MapTest, NonCanonicalBound) {
@@ -196,7 +199,14 @@ TEST(For2MapTest, NonCanonicalBound) {
     builder::StructuredSDFGBuilder builder_opt(sdfg_opt);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
     passes::For2MapPass conversion_pass;
-    EXPECT_FALSE(conversion_pass.run(builder_opt, analysis_manager));
+    EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
+
+    auto& sdfg_map = builder_opt.subject();
+
+    // Check
+    auto map = dynamic_cast<const structured_control_flow::Map*>(&sdfg_map.root().at(0).first);
+    EXPECT_TRUE(map != nullptr);
+    EXPECT_TRUE(symbolic::eq(map->indvar(), symbolic::symbol("i")));
 }
 
 TEST(For2MapTest, Shift) {
@@ -246,14 +256,7 @@ TEST(For2MapTest, Shift) {
     // Check
     auto map = dynamic_cast<const structured_control_flow::Map*>(&sdfg_map.root().at(0).first);
     EXPECT_TRUE(map != nullptr);
-    EXPECT_TRUE(
-        symbolic::eq(map->num_iterations(), symbolic::sub(symbolic::symbol("N"), symbolic::one())));
     EXPECT_TRUE(symbolic::eq(map->indvar(), symbolic::symbol("i")));
-
-    EXPECT_TRUE(symbolic::eq(memlet_1.subset().at(0),
-                             symbolic::add(symbolic::symbol("i"), symbolic::one())));
-    EXPECT_TRUE(symbolic::eq(memlet_2.subset().at(0),
-                             symbolic::add(symbolic::symbol("i"), symbolic::one())));
 }
 
 TEST(For2MapTest, LastValue) {
@@ -303,12 +306,75 @@ TEST(For2MapTest, LastValue) {
     // Check
     auto map = dynamic_cast<const structured_control_flow::Map*>(&sdfg_map.root().at(0).first);
     EXPECT_TRUE(map != nullptr);
-    EXPECT_TRUE(
-        symbolic::eq(map->num_iterations(), symbolic::sub(symbolic::symbol("N"), symbolic::one())));
     EXPECT_TRUE(symbolic::eq(map->indvar(), symbolic::symbol("i")));
+}
 
-    auto& transition = sdfg_map.root().at(1).second;
-    EXPECT_TRUE(transition.assignments().size() == 1);
-    EXPECT_TRUE(transition.assignments().find(indvar) != transition.assignments().end());
-    EXPECT_TRUE(symbolic::eq(transition.assignments().at(indvar), symbolic::symbol("N")));
+TEST(For2MapTest, Tiled) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+    builder.add_container("A", desc, true);
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+    builder.add_container("i_tile", sym_desc);
+
+    // Define loop
+    auto bound = symbolic::symbol("N");
+    auto indvar = symbolic::symbol("i_tile");
+    auto init = symbolic::integer(0);
+    auto condition = symbolic::Lt(indvar, bound);
+    auto tile_size = symbolic::integer(8);
+    auto update = symbolic::add(indvar, tile_size);
+
+    auto& loop_outer = builder.add_for(root, indvar, condition, init, update);
+    auto& body = loop_outer.root();
+
+    auto indvar_tile = symbolic::symbol("i");
+    auto init_tile = indvar;
+    auto condition_tile =
+        symbolic::And(symbolic::Lt(indvar_tile, symbolic::symbol("N")),
+                      symbolic::Lt(indvar_tile, symbolic::add(indvar, tile_size)));
+    auto update_tile = symbolic::add(indvar_tile, symbolic::one());
+
+    auto& loop_inner = builder.add_for(body, indvar_tile, condition_tile, init_tile, update_tile);
+    auto& body_inner = loop_inner.root();
+
+    // Add computation
+    auto& block = builder.add_block(body_inner);
+    auto& a_in = builder.add_access(block, "A");
+    auto& i = builder.add_access(block, "i");
+    auto& a_out = builder.add_access(block, "A");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
+                                        {{"_in1", base_desc}, {"_in2", sym_desc}});
+    builder.add_memlet(block, a_in, "void", tasklet, "_in1", {symbolic::symbol("i")});
+    builder.add_memlet(block, i, "void", tasklet, "_in2", {});
+    builder.add_memlet(block, tasklet, "_out", a_out, "void", {symbolic::symbol("i")});
+
+    // Analysis
+    auto sdfg_opt = builder.move();
+    builder::StructuredSDFGBuilder builder_opt(sdfg_opt);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::For2MapPass conversion_pass;
+    EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
+    EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
+
+    auto& sdfg_map = builder_opt.subject();
+
+    // Check
+    auto map_outer =
+        dynamic_cast<const structured_control_flow::Map*>(&sdfg_map.root().at(0).first);
+    EXPECT_TRUE(map_outer != nullptr);
+    EXPECT_TRUE(symbolic::eq(map_outer->indvar(), symbolic::symbol("i_tile")));
+
+    auto map_inner =
+        dynamic_cast<const structured_control_flow::Map*>(&map_outer->root().at(0).first);
+    EXPECT_TRUE(map_inner != nullptr);
+    EXPECT_TRUE(symbolic::eq(map_inner->indvar(), symbolic::symbol("i")));
 }

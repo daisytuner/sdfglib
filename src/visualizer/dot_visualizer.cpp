@@ -180,8 +180,8 @@ void DotVisualizer::visualizeMap(StructuredSDFG& sdfg, structured_control_flow::
     this->stream_ << "subgraph cluster_" << map_node.element_id() << " {" << std::endl;
     this->stream_.setIndent(this->stream_.indent() + 4);
     this->stream_ << "style=filled;shape=box;fillcolor=white;color=black;label=\"map: ";
-    this->stream_ << map_node.indvar()->get_name() << "[0:";
-    this->stream_ << map_node.num_iterations()->__str__() << "];";
+    this->visualizeForBounds(map_node.indvar(), map_node.init(), map_node.condition(),
+                             map_node.update());
     this->stream_ << "\";" << std::endl
                   << map_node.element_id() << " [shape=point,style=invis,label=\"\"];" << std::endl;
     this->visualizeSequence(sdfg, map_node.root());

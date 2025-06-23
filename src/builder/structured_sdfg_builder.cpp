@@ -817,12 +817,14 @@ Return& StructuredSDFGBuilder::add_return(Sequence& parent,
 };
 
 Map& StructuredSDFGBuilder::add_map(Sequence& parent, const symbolic::Symbol& indvar,
-                                    const symbolic::Expression& num_iterations,
+                                    const symbolic::Condition& condition,
+                                    const symbolic::Expression& init,
+                                    const symbolic::Expression& update,
                                     const ScheduleType& schedule_type,
                                     const sdfg::control_flow::Assignments& assignments,
                                     const DebugInfo& debug_info) {
-    parent.children_.push_back(std::unique_ptr<Map>(
-        new Map(this->new_element_id(), debug_info, indvar, num_iterations, schedule_type)));
+    parent.children_.push_back(std::unique_ptr<Map>(new Map(
+        this->new_element_id(), debug_info, indvar, init, update, condition, schedule_type)));
 
     // Increment element id for body node
     this->new_element_id();
@@ -831,6 +833,70 @@ Map& StructuredSDFGBuilder::add_map(Sequence& parent, const symbolic::Symbol& in
         new Transition(this->new_element_id(), debug_info, parent, assignments)));
 
     return static_cast<Map&>(*parent.children_.back().get());
+};
+
+std::pair<Map&, Transition&> StructuredSDFGBuilder::add_map_before(
+    Sequence& parent, ControlFlowNode& block, const symbolic::Symbol& indvar,
+    const symbolic::Condition& condition, const symbolic::Expression& init,
+    const symbolic::Expression& update, const ScheduleType& schedule_type,
+    const sdfg::control_flow::Assignments& assignments, const DebugInfo& debug_info) {
+    // Insert block before current block
+    int index = -1;
+    for (size_t i = 0; i < parent.children_.size(); i++) {
+        if (parent.children_.at(i).get() == &block) {
+            index = i;
+            break;
+        }
+    }
+    assert(index > -1);
+
+    parent.children_.insert(parent.children_.begin() + index,
+                            std::unique_ptr<Map>(new Map(this->new_element_id(), debug_info, indvar,
+                                                         init, update, condition, schedule_type)));
+
+    // Increment element id for body node
+    this->new_element_id();
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent)));
+
+    auto new_entry = parent.at(index);
+    auto& new_block = dynamic_cast<structured_control_flow::Map&>(new_entry.first);
+
+    return {new_block, new_entry.second};
+};
+
+std::pair<Map&, Transition&> StructuredSDFGBuilder::add_map_after(
+    Sequence& parent, ControlFlowNode& block, const symbolic::Symbol& indvar,
+    const symbolic::Condition& condition, const symbolic::Expression& init,
+    const symbolic::Expression& update, const ScheduleType& schedule_type,
+    const sdfg::control_flow::Assignments& assignments, const DebugInfo& debug_info) {
+    // Insert block before current block
+    int index = -1;
+    for (size_t i = 0; i < parent.children_.size(); i++) {
+        if (parent.children_.at(i).get() == &block) {
+            index = i;
+            break;
+        }
+    }
+    assert(index > -1);
+
+    parent.children_.insert(parent.children_.begin() + index + 1,
+                            std::unique_ptr<Map>(new Map(this->new_element_id(), debug_info, indvar,
+                                                         init, update, condition, schedule_type)));
+
+    // Increment element id for body node
+    this->new_element_id();
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index + 1,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent)));
+
+    auto new_entry = parent.at(index + 1);
+    auto& new_block = dynamic_cast<structured_control_flow::Map&>(new_entry.first);
+
+    return {new_block, new_entry.second};
 };
 
 For& StructuredSDFGBuilder::convert_while(Sequence& parent, While& loop,
@@ -863,8 +929,7 @@ For& StructuredSDFGBuilder::convert_while(Sequence& parent, While& loop,
     return for_loop;
 };
 
-Map& StructuredSDFGBuilder::convert_for(Sequence& parent, For& loop,
-                                        const symbolic::Expression& num_iterations) {
+Map& StructuredSDFGBuilder::convert_for(Sequence& parent, For& loop) {
     // Insert for loop
     size_t index = 0;
     for (auto& entry : parent.children_) {
@@ -875,9 +940,9 @@ Map& StructuredSDFGBuilder::convert_for(Sequence& parent, For& loop,
     }
     auto iter = parent.children_.begin() + index;
     auto& new_iter = *parent.children_.insert(
-        iter + 1,
-        std::unique_ptr<Map>(new Map(this->new_element_id(), loop.debug_info(), loop.indvar(),
-                                     num_iterations, ScheduleType_Sequential)));
+        iter + 1, std::unique_ptr<Map>(new Map(this->new_element_id(), loop.debug_info(),
+                                               loop.indvar(), loop.init(), loop.update(),
+                                               loop.condition(), ScheduleType_Sequential)));
 
     // Increment element id for body node
     this->new_element_id();

@@ -84,6 +84,8 @@ Pipeline Pipeline::data_parallelism() {
     Pipeline p("DataParallelism");
 
     p.register_pass<For2MapPass>();
+    p.register_pass<SymbolPropagation>();
+    p.register_pass<DeadDataElimination>();
 
     return p;
 };

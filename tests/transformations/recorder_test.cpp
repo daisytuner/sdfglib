@@ -240,21 +240,19 @@ class RecorderMultiTransformationTest : public ::testing::Test {
         // Define loop 1
         auto bound1 = symbolic::symbol("N");
         auto indvar1 = symbolic::symbol("i");
-        auto init1 = symbolic::integer(0);
-        auto condition1 = symbolic::Lt(indvar1, bound1);
-        auto update1 = symbolic::add(indvar1, symbolic::one());
-
-        auto& loop_1 = builder_->add_for(root, indvar1, condition1, init1, update1);
+        auto& loop_1 =
+            builder_->add_map(root, indvar1, symbolic::Lt(indvar1, bound1), symbolic::integer(0),
+                              symbolic::add(indvar1, symbolic::integer(1)),
+                              structured_control_flow::ScheduleType_Sequential);
         auto& body1 = loop_1.root();
 
         // Define loop 2
         auto bound2 = symbolic::symbol("M");
         auto indvar2 = symbolic::symbol("j");
-        auto init2 = symbolic::integer(0);
-        auto condition2 = symbolic::Lt(indvar2, bound2);
-        auto update2 = symbolic::add(indvar2, symbolic::one());
-
-        auto& loop_2 = builder_->add_for(body1, indvar2, condition2, init2, update2);
+        auto& loop_2 =
+            builder_->add_map(body1, indvar2, symbolic::Lt(indvar2, bound2), symbolic::integer(0),
+                              symbolic::add(indvar2, symbolic::integer(1)),
+                              structured_control_flow::ScheduleType_Sequential);
         auto& body2 = loop_2.root();
 
         // Add computation
@@ -281,10 +279,10 @@ TEST_F(RecorderMultiTransformationTest, Apply_LoopInterchange) {
     transformations::Recorder recorder;
 
     auto& loop_analysis = analysis_manager_->get<analysis::LoopAnalysis>();
-    structured_control_flow::For* loop_1_ = nullptr;
-    structured_control_flow::For* loop_2_ = nullptr;
+    structured_control_flow::Map* loop_1_ = nullptr;
+    structured_control_flow::Map* loop_2_ = nullptr;
     for (auto& loop : loop_analysis.loops()) {
-        auto* structured_loop = dynamic_cast<structured_control_flow::For*>(loop);
+        auto* structured_loop = dynamic_cast<structured_control_flow::Map*>(loop);
         if (structured_loop->indvar()->get_name() == "i") {
             loop_1_ = structured_loop;
         } else if (structured_loop->indvar()->get_name() == "j") {
@@ -309,9 +307,9 @@ TEST_F(RecorderMultiTransformationTest, Apply_Transformations) {
     transformations::Recorder recorder;
 
     auto& loop_analysis_1 = analysis_manager_->get<analysis::LoopAnalysis>();
-    structured_control_flow::For* loop_1_ = nullptr;
+    structured_control_flow::Map* loop_1_ = nullptr;
     for (auto& loop : loop_analysis_1.loops()) {
-        auto* structured_loop = dynamic_cast<structured_control_flow::For*>(loop);
+        auto* structured_loop = dynamic_cast<structured_control_flow::Map*>(loop);
         if (structured_loop->indvar()->get_name() == "i") {
             loop_1_ = structured_loop;
         }
@@ -322,23 +320,24 @@ TEST_F(RecorderMultiTransformationTest, Apply_Transformations) {
     analysis_manager_->invalidate_all();
 
     auto& loop_analysis_2 = analysis_manager_->get<analysis::LoopAnalysis>();
-    structured_control_flow::For* loop_2_ = nullptr;
+    structured_control_flow::Map* loop_2_ = nullptr;
     for (auto& loop : loop_analysis_2.loops()) {
-        auto* structured_loop = dynamic_cast<structured_control_flow::For*>(loop);
+        auto* structured_loop = dynamic_cast<structured_control_flow::Map*>(loop);
         if (structured_loop->indvar()->get_name() == "j") {
             loop_2_ = structured_loop;
         }
     }
+
     EXPECT_TRUE(loop_2_ != nullptr);
     recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_2_, 16);
 
     analysis_manager_->invalidate_all();
 
     auto& loop_analysis_3 = analysis_manager_->get<analysis::LoopAnalysis>();
-    structured_control_flow::For* loop_j_outer = nullptr;
-    structured_control_flow::For* loop_i_tile = nullptr;
+    structured_control_flow::Map* loop_j_outer = nullptr;
+    structured_control_flow::Map* loop_i_tile = nullptr;
     for (auto& loop : loop_analysis_3.loops()) {
-        auto* structured_loop = dynamic_cast<structured_control_flow::For*>(loop);
+        auto* structured_loop = dynamic_cast<structured_control_flow::Map*>(loop);
         if (structured_loop->indvar()->get_name() == "i") {
             loop_i_tile = structured_loop;
         } else if (structured_loop->indvar()->get_name() == "j_tile0") {

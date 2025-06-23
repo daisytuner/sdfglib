@@ -96,7 +96,13 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
 
     map += " }";
 
+    // NV Symbols, e.g., threadIdx.x
     map = std::regex_replace(map, std::regex("\\."), "_");
+
+    // min, max
+    map = std::regex_replace(map, std::regex("__daisy_min"), "min_");
+    map = std::regex_replace(map, std::regex("__daisy_max"), "max_");
+
     return map;
 }
 
@@ -262,6 +268,13 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     map_1 = std::regex_replace(map_1, std::regex("\\."), "_");
     map_2 = std::regex_replace(map_2, std::regex("\\."), "_");
     map_3 = std::regex_replace(map_3, std::regex("\\."), "_");
+
+    map_1 = std::regex_replace(map_1, std::regex("__daisy_min"), "min");
+    map_1 = std::regex_replace(map_1, std::regex("__daisy_max"), "max");
+    map_2 = std::regex_replace(map_2, std::regex("__daisy_min"), "min");
+    map_2 = std::regex_replace(map_2, std::regex("__daisy_max"), "max");
+    map_3 = std::regex_replace(map_3, std::regex("__daisy_min"), "min");
+    map_3 = std::regex_replace(map_3, std::regex("__daisy_max"), "max");
 
     return {map_1, map_2, map_3};
 }

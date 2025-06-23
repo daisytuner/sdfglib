@@ -66,6 +66,14 @@ class LoopAnalysis : public Analysis {
     static symbolic::Expression canonical_bound(
         structured_control_flow::StructuredLoop* loop,
         analysis::AssumptionsAnalysis& assumptions_analysis);
+
+    /**
+     * @brief Describes the stride of a loop's update as a constant.
+     *
+     * @param loop The loop to describe the stride of.
+     * @return The stride of the loop's update as a constant, otherwise null.
+     */
+    static symbolic::Integer stride(structured_control_flow::StructuredLoop* loop);
 };
 
 }  // namespace analysis

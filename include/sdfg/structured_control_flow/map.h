@@ -35,7 +35,8 @@ class Map : public StructuredLoop {
     std::unique_ptr<Sequence> root_;
 
     Map(size_t element_id, const DebugInfo& debug_info, symbolic::Symbol indvar,
-        symbolic::Expression num_iterations, const ScheduleType& schedule_type);
+        symbolic::Expression init, symbolic::Expression update, symbolic::Condition condition,
+        const ScheduleType& schedule_type);
 
    public:
     Map(const Map& node) = delete;
@@ -50,10 +51,6 @@ class Map : public StructuredLoop {
     const symbolic::Expression& update() const override;
 
     const symbolic::Condition& condition() const override;
-
-    const symbolic::Expression& num_iterations() const;
-
-    symbolic::Expression& num_iterations();
 
     ScheduleType& schedule_type();
 

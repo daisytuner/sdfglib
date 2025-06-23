@@ -56,9 +56,10 @@ void StructuredSDFGDeepCopy::append(structured_control_flow::Sequence& root,
             this->node_mapping[for_stmt] = &new_scope;
             this->append(new_scope.root(), for_stmt->root());
         } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&node)) {
-            auto& new_scope = this->builder_.add_map(
-                root, map_stmt->indvar(), map_stmt->num_iterations(), map_stmt->schedule_type(),
-                trans.assignments(), map_stmt->debug_info());
+            auto& new_scope = this->builder_.add_map(root, map_stmt->indvar(),
+                                                     map_stmt->condition(), map_stmt->init(),
+                                                     map_stmt->update(), map_stmt->schedule_type(),
+                                                     trans.assignments(), map_stmt->debug_info());
             this->node_mapping[map_stmt] = &new_scope;
             this->append(new_scope.root(), map_stmt->root());
         } else {
@@ -107,9 +108,9 @@ void StructuredSDFGDeepCopy::insert(structured_control_flow::Sequence& root,
         auto& new_ret = this->builder_.add_return(root, {}, ret_stmt->debug_info());
         this->node_mapping[ret_stmt] = &new_ret;
     } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&source)) {
-        auto& new_scope =
-            this->builder_.add_map(root, map_stmt->indvar(), map_stmt->num_iterations(),
-                                   map_stmt->schedule_type(), {}, map_stmt->debug_info());
+        auto& new_scope = this->builder_.add_map(
+            root, map_stmt->indvar(), map_stmt->condition(), map_stmt->init(), map_stmt->update(),
+            map_stmt->schedule_type(), {}, map_stmt->debug_info());
         this->node_mapping[map_stmt] = &new_scope;
         this->append(new_scope.root(), map_stmt->root());
     } else {

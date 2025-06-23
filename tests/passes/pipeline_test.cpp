@@ -34,5 +34,5 @@ TEST(PipelineTest, ControlFlowSimplification) {
 TEST(PipelineTest, DataParallelism) {
     passes::Pipeline data_parallelism = passes::Pipeline::data_parallelism();
     EXPECT_EQ(data_parallelism.name(), "DataParallelism");
-    EXPECT_EQ(data_parallelism.size(), 1);
+    EXPECT_EQ(data_parallelism.size(), 3);
 }
