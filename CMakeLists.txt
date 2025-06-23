@@ -96,6 +96,7 @@ set(SOURCE_FILES
     src/passes/dataflow/redundant_array_elimination.cpp
     src/passes/dataflow/trivial_array_elimination.cpp
     src/passes/dataflow/view_propagation.cpp
+    src/passes/schedules/parallelization_pass.cpp
     src/passes/symbolic/symbol_propagation.cpp
     src/passes/symbolic/symbol_promotion.cpp
     src/passes/symbolic/condition_propagation.cpp
@@ -133,6 +134,7 @@ set(SOURCE_FILES
     src/transformations/loop_slicing.cpp
     src/transformations/loop_tiling.cpp
     src/transformations/out_local_storage.cpp
+    src/transformations/parallelization.cpp
     src/transformations/recorder.cpp
     src/transformations/utils.cpp
     src/types/array.cpp
