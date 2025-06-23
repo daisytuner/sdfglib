@@ -7,18 +7,15 @@
 namespace sdfg {
 namespace codegen {
 
-CUDACodeGenerator::CUDACodeGenerator(StructuredSDFG& sdfg)
-    : CodeGenerator(sdfg, InstrumentationStrategy::NONE) {
+CUDACodeGenerator::CUDACodeGenerator(StructuredSDFG& sdfg,
+                                     InstrumentationStrategy instrumentation_strategy,
+                                     bool capture_args_results)
+    : CodeGenerator(sdfg, instrumentation_strategy, capture_args_results) {
     if (sdfg.type() != FunctionType_NV_GLOBAL) {
         throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
     }
-};
-
-CUDACodeGenerator::CUDACodeGenerator(StructuredSDFG& sdfg,
-                                     InstrumentationStrategy instrumentation_strategy)
-    : CodeGenerator(sdfg, instrumentation_strategy) {
-    if (sdfg.type() != FunctionType_NV_GLOBAL) {
-        throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
+    if (capture_args_results) {
+        std::cerr << "CUDACodeGenerator does not support capturing args/results!";
     }
 };
 

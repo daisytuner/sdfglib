@@ -4,27 +4,28 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(daisy_rtl SHARED
-    src/daisy_rtl.cpp
-    src/daisy_capture.cpp
+add_library(arg_capture_io STATIC
+    src/arg_capture_io.cpp
 )
 
-target_include_directories(daisy_rtl PUBLIC
+add_library(sdfglib::arg_capture_io ALIAS arg_capture_io)
+
+target_include_directories(arg_capture_io PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-# Don't link against PAPI!
-# Just link against the dynamic linker
-target_link_libraries(daisy_rtl PRIVATE dl sdfglib::arg_capture_io)
+find_package(nlohmann_json REQUIRED)
 
-set_target_properties(daisy_rtl PROPERTIES
+target_link_libraries(arg_capture_io PRIVATE nlohmann_json::nlohmann_json)
+
+set_target_properties(arg_capture_io PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
-    PUBLIC_HEADER "include/daisy_rtl.h" # Set this to the main public header
+    PUBLIC_HEADER "include/capture_io.h" # Set this to the main public header
 )
 
-install(TARGETS daisy_rtl
+install(TARGETS arg_capture_io
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}

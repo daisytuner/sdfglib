@@ -74,18 +74,17 @@ bool CodeGenerator::add_capture_plan(
 
         const auto* range = ranges.get(varName);
 
-
-        bool isRead = range? range->saw_read() : true;
-        bool isWritten = range? range->saw_write() : true;
-
         symbolic::Expression dims[3];
 
         int dimCount;
         types::PrimitiveType innerPrim;
         std::tie(dimCount, innerPrim) = analyze_type_rec(dims, 3, 0, type, argIdx, range);
 
+        bool isRead = range? range->saw_read() : true;
+        bool isWritten = range? range->saw_write() : true;
+
         if (dimCount == 0) {
-            plan.emplace_back(isRead, isWritten, CaptureVarType::CapRaw, argIdx, isExternal, innerPrim);
+            plan.emplace_back(isRead, false, CaptureVarType::CapRaw, argIdx, isExternal, innerPrim);
         } else if (dimCount == 1) {
             plan.emplace_back(isRead, isWritten, CaptureVarType::Cap1D, argIdx, isExternal, innerPrim, dims[0]);
         } else if (dimCount == 2) {

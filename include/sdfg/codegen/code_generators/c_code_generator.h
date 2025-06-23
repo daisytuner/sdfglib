@@ -28,7 +28,7 @@ class CCodeGenerator : public CodeGenerator {
     void emit_arg_captures(std::ostream& ofs_source, const std::vector<CaptureVarPlan>& plan, bool after);
 
    public:
-    CCodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy = InstrumentationStrategy::NONE, bool capture_args_results = true);
+    CCodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy = InstrumentationStrategy::NONE, bool capture_args_results = false);
 
     bool generate() override;
 

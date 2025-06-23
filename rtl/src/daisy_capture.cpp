@@ -1,3 +1,6 @@
+#include "daisy_rtl.h"
+#include "arg_capture_io.h"
+#include "primitive_types.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -5,92 +8,38 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <filesystem>
-#include <fstream>
 #include <iostream>
-#include <memory>
-#include <numeric>
 #include <string>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-
-#include "daisy_rtl.h"
-#include "primitive_types.h"
 
 #ifndef DEBUG_LOG
 #define DEBUG_LOG false
 #endif
 
-struct ArgCapture {
-    int32_t arg_idx;
-    bool after;
-    const std::vector<size_t> dims {0};
-    int primitive_type;
-    std::shared_ptr<const std::filesystem::path> ext_file;
-    std::shared_ptr<const uint8_t[]> data;
+using namespace arg_capture;
 
-
-    ArgCapture() = default;
-
-    ArgCapture(
-        int32_t idx,
-        bool after,
-        int primitive_type,
-        const std::vector<size_t> dims
-    ) :
-        arg_idx(idx),
-        after(after),
-        primitive_type(primitive_type),
-        dims(dims)
-    {}
-
-    ArgCapture(const ArgCapture& other)
-        : arg_idx(other.arg_idx),
-          after(other.after),
-          dims(other.dims),
-          primitive_type(other.primitive_type),
-          ext_file(other.ext_file),
-          data(other.data)
-    {}
-
-    ArgCapture(const ArgCapture&& other) noexcept
-        : arg_idx(other.arg_idx),
-          after(other.after),
-          dims(std::move(other.dims)),
-          primitive_type(other.primitive_type),
-          ext_file(std::move(other.ext_file)),
-          data(std::move(other.data))
-    {}
-};
-
-struct MyHash {
-    std::size_t operator()(const std::pair<int32_t, bool>& p) const {
-        return std::hash<int32_t>()(p.first) ^ p.second? 0x40000000 : 0;
-    }
-};
-
-class DaisyCapture {
-   private:
-    std::string name_;
-    int32_t invokes_ = -1;
-    std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash> current_captures_;
+class DaisyRtlCapture : public ArgCaptureIO {
 
    public:
-    explicit DaisyCapture(const char* name): name_(name) {}
+    explicit DaisyRtlCapture(const char* name): ArgCaptureIO(name, "arg_captures") {}
     bool enter();
+
     void capture_raw(int arg_idx, const void* data, size_t size, int primitive_type, bool after);
     void capture_1d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_elements, bool after);
     void capture_2d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_rows, size_t num_cols, bool after);
     void capture_3d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_x, size_t num_y, size_t num_z, bool after);
+
     void exit();
 
-    std::filesystem::path generate_output_path(int arg_idx, bool after) const;
+   protected:
     bool write_capture_to_file(ArgCapture& capture, const void* data);
+    std::filesystem::path generate_arg_capture_output_filename(int arg_idx, bool after) const;
+
 };
 
 
-bool DaisyCapture::enter() {
+bool DaisyRtlCapture::enter() {
+    clear();
+
     ++invokes_;
 
     if (DEBUG_LOG) {
@@ -100,158 +49,72 @@ bool DaisyCapture::enter() {
     return true;
 }
 
-void DaisyCapture::exit() {
+void DaisyRtlCapture::capture_raw(int arg_idx, const void* data, size_t size, int primitive_type, bool after) {
+
+    create_and_capture_inline(arg_idx, after, primitive_type, {size}, data);
+}
+
+void DaisyRtlCapture::capture_1d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_elements, bool after) {
+
+    auto file = generate_arg_capture_output_filename(arg_idx, after);
+
+    if (!create_and_capture_to_file(arg_idx, after, primitive_type, {size, num_elements}, file, data)) {
+        throw std::runtime_error("Failed to write capture for arg" + std::to_string(arg_idx) + " to file");
+    }
+}
+
+
+void DaisyRtlCapture::capture_2d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_rows, size_t num_cols, bool after) {
+
+    auto file = generate_arg_capture_output_filename(arg_idx, after);
+
+    if (!create_and_capture_to_file(arg_idx, after, primitive_type, {size, num_rows, num_cols}, file, data)) {
+        throw std::runtime_error("Failed to write capture for arg" + std::to_string(arg_idx) + " to file");
+    }
+}
+
+void DaisyRtlCapture::capture_3d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_x, size_t num_y, size_t num_z, bool after) {
+
+    auto file = generate_arg_capture_output_filename(arg_idx, after);
+
+    if (!create_and_capture_to_file(arg_idx, after, primitive_type, {size, num_x, num_y, num_z}, file, data)) {
+        throw std::runtime_error("Failed to write capture for arg" + std::to_string(arg_idx) + " to file");
+    }
+}
+
+bool DaisyRtlCapture::write_capture_to_file(arg_capture::ArgCapture& capture, const void* data) {
+    auto file = generate_arg_capture_output_filename(capture.arg_idx, capture.after);
+    return ArgCaptureIO::write_capture_to_file(capture, file, data);
+}
+
+void DaisyRtlCapture::exit() {
     if (DEBUG_LOG) {
         std::cout << "Finalizing capture of '" << name_ << std::endl;
     }
+    if (!current_captures_.empty()) {
+        auto path = output_dir_ / (name_ + "_inv" + std::to_string(invokes_) + ".index.json");
+        write_index(path);
+    }
 }
 
-std::filesystem::path DaisyCapture::generate_output_path(int arg_idx, bool after) const {
+std::filesystem::path DaisyRtlCapture::generate_arg_capture_output_filename(int arg_idx, bool after) const {
     std::string capType = after? "out" : "in";
-    return "arg_capture/" + name_ + "_inv" + std::to_string(invokes_) +  "_arg" + std::to_string(arg_idx) + "_" + capType + ".bin";
+    return output_dir_ / (name_ + "_inv" + std::to_string(invokes_) + "_arg" + std::to_string(arg_idx) + "_" + capType + ".bin");
 }
 
-bool DaisyCapture::write_capture_to_file(ArgCapture& capture, const void* data) {
-    auto path = generate_output_path(capture.arg_idx, capture.after);
-
-    std::filesystem::create_directories(path.parent_path());
-    
-
-    std::ofstream ofs(path, std::ofstream::binary | std::ofstream::out);
-    if (!ofs.is_open()) {
-        throw std::runtime_error("Failed to open file for dumping arg" + std::to_string(capture.arg_idx) + ": " + path.string());
-    }
-
-    auto totalSize = std::accumulate(capture.dims.begin(), capture.dims.end(), 1, std::multiplies<size_t>());
-    
-    ofs.write(reinterpret_cast<const char*>(data), totalSize);
-
-    ofs.close();
-
-    capture.ext_file = std::make_shared<std::filesystem::path>(path);
-
-    return !ofs.bad();
-}
-
-void DaisyCapture::capture_raw(int arg_idx, const void* data, size_t size, int primitive_type, bool after) {
-
-    if (DEBUG_LOG) {
-        auto capType = after? "result" : "input";
-
-        std::cout << "Capturing scalar arg" << arg_idx << " as " << capType << ": type "
-            << primitive_type_names[primitive_type] << ": 0x" << std::hex;
-    
-
-        int perGroup = 0;
-        for (int i = 0; i < size; ++i) {
-            if (perGroup == 4) {
-                perGroup = 0;
-                std::cout << " ";
-            } else {
-                perGroup += 1;
-            }
-
-            const uint8_t* ptr = static_cast<const uint8_t*>(data) + i;
-            uint8_t byte = *ptr;
-            std::cout << byte;
-        }
-
-        std::cout << std::dec << std::endl;
-    }
-
-    auto key = std::make_pair(arg_idx, after);
-
-    current_captures_.emplace(
-        key,
-        ArgCapture(arg_idx, after, primitive_type, {size})
-    );
-
-    auto capturedData = std::make_shared<uint8_t[]>(size);
-    std::memcpy(capturedData.get(), data, size);
-
-    current_captures_[key].data = std::move(capturedData);
-}
-
-void DaisyCapture::capture_1d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_elements, bool after) {
-    auto capType = after? "result" : "input";
-
-    if (DEBUG_LOG) {
-        std::cout << "Capturing 1D arg" << arg_idx << " as " << capType << ": type "
-            << primitive_type_names[primitive_type] << ": 0x" << std::hex << data << std::dec << " "
-            << num_elements << "*" << size << " bytes" << std::endl;
-    }
-
-    auto key = std::make_pair(arg_idx, after);
-
-    auto dims = std::vector<size_t>{size, num_elements};
-
-    auto it = current_captures_.emplace(
-        std::make_pair(arg_idx, after),
-        ArgCapture(arg_idx, after, primitive_type, dims)
-    );
-
-    auto& cap = it.first->second;
-
-    if (!write_capture_to_file(cap, data)) {
-        throw std::runtime_error("Failed to write capture for arg" + std::to_string(arg_idx) + " to file");
-    }
-}
-
-
-void DaisyCapture::capture_2d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_rows, size_t num_cols, bool after) {
-    auto capType = after? "result" : "input";
-
-    if (DEBUG_LOG) {
-        std::cout << "Capturing 2D arg" << arg_idx << " as " << capType << ": type "
-            << primitive_type_names[primitive_type] << ": 0x" << std::hex << data << std::dec << " "
-            << num_rows << "*" << num_cols << "*" << size << " bytes" << std::endl;
-    }
-
-    auto it = current_captures_.emplace(
-        std::make_pair(arg_idx, after),
-        ArgCapture(arg_idx, after, primitive_type, {size, num_rows, num_cols})
-    );
-
-    auto& cap = it.first->second;
-
-    if (!write_capture_to_file(cap, data)) {
-        throw std::runtime_error("Failed to write capture for arg" + std::to_string(arg_idx) + " to file");
-    }
-}
-
-void DaisyCapture::capture_3d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_x, size_t num_y, size_t num_z, bool after) {
-    auto capType = after? "result" : "input";
-
-    if (DEBUG_LOG) {
-        std::cout << "Capturing 3D arg" << arg_idx << " as " << capType << ": type "
-            << primitive_type_names[primitive_type] << ": 0x" << std::hex << data << std::dec << " "
-            << num_x << "*" << num_y << "*" << num_z << "*" << size << " bytes" << std::endl;
-    }
-
-    auto it = current_captures_.emplace(
-        std::make_pair(arg_idx, after),
-        ArgCapture(arg_idx, after, primitive_type, {size, num_x, num_y, num_z})
-    );
-
-    auto& cap = it.first->second;
-
-    if (!write_capture_to_file(cap, data)) {
-        throw std::runtime_error("Failed to write capture for arg" + std::to_string(arg_idx) + " to file");
-    }
-}
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 struct __daisy_capture* __daisy_capture_init(const char* name) {
-    DaisyCapture* ctx = new DaisyCapture(name);
+    DaisyRtlCapture* ctx = new DaisyRtlCapture(name);
     return (__daisy_capture_t*)ctx;
 }
 
 bool __daisy_capture_enter(__daisy_capture_t* context) {
     if (context) {
-        return ((DaisyCapture*)context)->enter();
+        return ((DaisyRtlCapture*)context)->enter();
     } else {
         return false;
     }
@@ -259,34 +122,34 @@ bool __daisy_capture_enter(__daisy_capture_t* context) {
 
 void __daisy_capture_raw(__daisy_capture_t* context, int arg_idx, const void* data, size_t size, int primitive_type, bool after) {
     if (context) {
-        ((DaisyCapture*)context)->capture_raw(arg_idx, data, size, primitive_type, after);
+        ((DaisyRtlCapture*)context)->capture_raw(arg_idx, data, size, primitive_type, after);
     }
 }
 
 void __daisy_capture_1d(__daisy_capture_t* context, int arg_idx, const void* data, size_t size, int primitive_type,
                             size_t num_elements, bool after) {
     if (context) {
-        ((DaisyCapture*)context)->capture_1d(arg_idx, data, size, primitive_type, num_elements, after);
+        ((DaisyRtlCapture*)context)->capture_1d(arg_idx, data, size, primitive_type, num_elements, after);
     }
 }
 
 void __daisy_capture_2d(__daisy_capture_t* context, int arg_idx, const void* data, size_t size, int primitive_type,
                             size_t num_rows, size_t num_cols, bool after) {
     if (context) {
-        ((DaisyCapture*)context)->capture_2d(arg_idx, data, size, primitive_type, num_rows, num_cols, after);
+        ((DaisyRtlCapture*)context)->capture_2d(arg_idx, data, size, primitive_type, num_rows, num_cols, after);
     }
 }
 
 void __daisy_capture_3d(__daisy_capture_t* context, int arg_idx, const void* data, size_t size, int primitive_type,
                             size_t num_x, size_t num_y, size_t num_z, bool after) {
     if (context) {
-        ((DaisyCapture*)context)->capture_3d(arg_idx, data, size, primitive_type, num_x, num_y, num_z, after);
+        ((DaisyRtlCapture*)context)->capture_3d(arg_idx, data, size, primitive_type, num_x, num_y, num_z, after);
     }
 }
 
 void __daisy_capture_end(__daisy_capture_t* context) {
     if (context) {
-        ((DaisyCapture*)context)->exit();
+        ((DaisyRtlCapture*)context)->exit();
     }
 }
 

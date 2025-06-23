@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sdfg/codegen/code_generator.h"
+#include "sdfg/codegen/instrumentation/instrumentation_strategy.h"
 #include "sdfg/codegen/language_extensions/cpp_language_extension.h"
 
 namespace sdfg {
@@ -20,8 +21,7 @@ class CPPCodeGenerator : public CodeGenerator {
     void dispatch_schedule();
 
    public:
-    CPPCodeGenerator(StructuredSDFG& sdfg);
-    CPPCodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy);
+    CPPCodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy = InstrumentationStrategy::NONE, bool capture_args_results = false);
 
     bool generate() override;
 
