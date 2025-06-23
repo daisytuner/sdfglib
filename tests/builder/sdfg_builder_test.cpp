@@ -248,7 +248,7 @@ TEST(SDFGBuilderTest, AddTasklet) {
     EXPECT_EQ(tasklet.code(), data_flow::TaskletCode::assign);
 }
 
-inline constexpr data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
+inline data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
 class BarrierLocalLibraryNode : public data_flow::LibraryNode {
    public:
     BarrierLocalLibraryNode(size_t element_id, const DebugInfo& debug_info,

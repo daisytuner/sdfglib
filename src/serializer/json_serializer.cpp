@@ -33,9 +33,9 @@ FunctionType function_type_from_string(const std::string& str) {
         return FunctionType_CPU;
     } else if (str == FunctionType_NV_GLOBAL.value()) {
         return FunctionType_NV_GLOBAL;
-    } else {
-        throw std::runtime_error("Unknown function type");
     }
+
+    return FunctionType(str);
 }
 
 types::StorageType storage_type_from_string(const std::string& str) {
@@ -51,9 +51,9 @@ types::StorageType storage_type_from_string(const std::string& str) {
         return types::StorageType_NV_Constant;
     } else if (str == types::StorageType_NV_Generic.value()) {
         return types::StorageType_NV_Generic;
-    } else {
-        throw std::runtime_error("Unknown storage type");
     }
+
+    return types::StorageType(str);
 }
 
 structured_control_flow::ScheduleType schedule_type_from_string(const std::string& str) {
@@ -61,9 +61,9 @@ structured_control_flow::ScheduleType schedule_type_from_string(const std::strin
         return structured_control_flow::ScheduleType_Sequential;
     } else if (str == structured_control_flow::ScheduleType_CPU_Parallel.value()) {
         return structured_control_flow::ScheduleType_CPU_Parallel;
-    } else {
-        throw std::runtime_error("Unknown schedule type");
     }
+
+    return structured_control_flow::ScheduleType(str);
 }
 
 /*
@@ -569,7 +569,7 @@ void JSONSerializer::json_to_dataflow(const nlohmann::json& j,
             assert(node["inputs"].is_array());
             assert(node.contains("outputs"));
             assert(node["outputs"].is_array());
-            data_flow::LibraryNodeCode code(node["code"].get<std::string_view>());
+            data_flow::LibraryNodeCode code(node["code"].get<std::string>());
 
             auto serializer_fn =
                 LibraryNodeSerializerRegistry::instance().get_library_node_serializer(code.value());

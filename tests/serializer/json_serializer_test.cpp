@@ -44,7 +44,7 @@ TEST(JSONSerializerTest, DatatypeToJSON_Scalar) {
     EXPECT_TRUE(j.contains("primitive_type"));
     EXPECT_EQ(j["primitive_type"], scalar_type.primitive_type());
     EXPECT_TRUE(j.contains("storage_type"));
-    EXPECT_EQ(j["storage_type"].get<std::string_view>(), scalar_type.storage_type().value());
+    EXPECT_EQ(j["storage_type"].get<std::string>(), scalar_type.storage_type().value());
     EXPECT_TRUE(j.contains("alignment"));
     EXPECT_EQ(j["alignment"], scalar_type.alignment());
     EXPECT_TRUE(j.contains("initializer"));
@@ -73,7 +73,7 @@ TEST(JSONSerializerTest, DatatypeToJSON_Pointer) {
     EXPECT_EQ(j["pointee_type"]["type"], "scalar");
     EXPECT_EQ(j["pointee_type"]["primitive_type"], base_desc.primitive_type());
     EXPECT_TRUE(j.contains("storage_type"));
-    EXPECT_EQ(j["storage_type"].get<std::string_view>(), pointer_type.storage_type().value());
+    EXPECT_EQ(j["storage_type"].get<std::string>(), pointer_type.storage_type().value());
     EXPECT_TRUE(j.contains("alignment"));
     EXPECT_EQ(j["alignment"], pointer_type.alignment());
     EXPECT_TRUE(j.contains("initializer"));
@@ -101,7 +101,7 @@ TEST(JSONSerializerTest, DatatypeToJSON_Structure) {
     EXPECT_TRUE(j.contains("name"));
     EXPECT_EQ(j["name"], "MyStruct");
     EXPECT_TRUE(j.contains("storage_type"));
-    EXPECT_EQ(j["storage_type"].get<std::string_view>(), structure_type.storage_type().value());
+    EXPECT_EQ(j["storage_type"].get<std::string>(), structure_type.storage_type().value());
     EXPECT_TRUE(j.contains("alignment"));
     EXPECT_EQ(j["alignment"], structure_type.alignment());
     EXPECT_TRUE(j.contains("initializer"));
@@ -132,7 +132,7 @@ TEST(JSONSerializerTest, DatatypeToJSON_Array) {
     EXPECT_TRUE(j.contains("num_elements"));
     EXPECT_TRUE(symbolic::eq(SymEngine::Expression(j["num_elements"]), symbolic::symbol("N")));
     EXPECT_TRUE(j.contains("storage_type"));
-    EXPECT_EQ(j["storage_type"].get<std::string_view>(), array_type.storage_type().value());
+    EXPECT_EQ(j["storage_type"].get<std::string>(), array_type.storage_type().value());
     EXPECT_TRUE(j.contains("alignment"));
     EXPECT_EQ(j["alignment"], array_type.alignment());
     EXPECT_TRUE(j.contains("initializer"));
@@ -168,7 +168,7 @@ TEST(JSONSerializerTest, DatatypeToJSON_Function) {
     EXPECT_TRUE(j.contains("is_var_arg"));
     EXPECT_EQ(j["is_var_arg"], function_type.is_var_arg());
     EXPECT_TRUE(j.contains("storage_type"));
-    EXPECT_EQ(j["storage_type"].get<std::string_view>(), scalar_type.storage_type().value());
+    EXPECT_EQ(j["storage_type"].get<std::string>(), scalar_type.storage_type().value());
     EXPECT_TRUE(j.contains("alignment"));
     EXPECT_EQ(j["alignment"], scalar_type.alignment());
     EXPECT_TRUE(j.contains("initializer"));
@@ -1732,7 +1732,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_Arguments) {
     EXPECT_EQ(sdfg_new->root().size(), 0);
 }
 
-inline constexpr data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
+data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
 TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU);
     auto& root = builder.subject().root();

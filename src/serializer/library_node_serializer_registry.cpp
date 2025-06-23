@@ -8,8 +8,8 @@
 namespace sdfg {
 namespace serializer {
 
-void LibraryNodeSerializerRegistry::register_library_node_serializer(
-    std::string_view library_node_code, LibraryNodeSerializerFn fn) {
+void LibraryNodeSerializerRegistry::register_library_node_serializer(std::string library_node_code,
+                                                                     LibraryNodeSerializerFn fn) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (factory_map_.find(library_node_code) != factory_map_.end()) {
         throw std::runtime_error(
@@ -20,7 +20,7 @@ void LibraryNodeSerializerRegistry::register_library_node_serializer(
 }
 
 LibraryNodeSerializerFn LibraryNodeSerializerRegistry::get_library_node_serializer(
-    std::string_view library_node_code) {
+    std::string library_node_code) {
     auto it = factory_map_.find(library_node_code);
     if (it != factory_map_.end()) {
         return it->second;

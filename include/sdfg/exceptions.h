@@ -2,7 +2,6 @@
 
 #include <exception>
 #include <string>
-#include <string_view>
 
 namespace sdfg {
 
@@ -23,16 +22,28 @@ class UnstructuredControlFlowException : public std::exception {
 
 class StringEnum {
    public:
-    constexpr explicit StringEnum(std::string_view value) : value_(value) {}
+    StringEnum(const std::string& value) : value_(value) {}
+    StringEnum(const StringEnum& other) : value_(other.value_) {}
+    StringEnum(StringEnum&& other) noexcept : value_(std::move(other.value_)) {}
 
-    constexpr std::string_view value() const { return value_; }
+    StringEnum& operator=(const StringEnum& other) {
+        value_ = other.value_;
+        return *this;
+    }
 
-    constexpr bool operator==(const StringEnum& other) const { return value_ == other.value_; }
+    StringEnum& operator=(StringEnum&& other) noexcept {
+        value_ = std::move(other.value_);
+        return *this;
+    }
 
-    constexpr bool operator!=(const StringEnum& other) const { return !(*this == other); }
+    std::string value() const { return value_; }
+
+    bool operator==(const StringEnum& other) const { return value_ == other.value_; }
+
+    bool operator!=(const StringEnum& other) const { return !(*this == other); }
 
    private:
-    std::string_view value_;
+    std::string value_;
 };
 
 }  // namespace sdfg

@@ -40,12 +40,12 @@ enum PrimitiveType {
 };
 
 typedef StringEnum StorageType;
-inline constexpr StorageType StorageType_CPU_Stack{"CPU_Stack"};
-inline constexpr StorageType StorageType_CPU_Heap{"CPU_Heap"};
-inline constexpr StorageType StorageType_NV_Generic{"NV_Generic"};
-inline constexpr StorageType StorageType_NV_Shared{"NV_Shared"};
-inline constexpr StorageType StorageType_NV_Global{"NV_Global"};
-inline constexpr StorageType StorageType_NV_Constant{"NV_Constant"};
+inline StorageType StorageType_CPU_Stack{"CPU_Stack"};
+inline StorageType StorageType_CPU_Heap{"CPU_Heap"};
+inline StorageType StorageType_NV_Generic{"NV_Generic"};
+inline StorageType StorageType_NV_Shared{"NV_Shared"};
+inline StorageType StorageType_NV_Global{"NV_Global"};
+inline StorageType StorageType_NV_Constant{"NV_Constant"};
 
 constexpr const char* primitive_type_to_string(PrimitiveType e) {
     switch (e) {
