@@ -40,6 +40,7 @@ set(TEST_FILES
     passes/dataflow/trivial_array_elimination_test.cpp
     passes/dataflow/view_propagation_test.cpp
     passes/pipeline_test.cpp
+    passes/schedules/parallelization_pass_test.cpp
     passes/structured_control_flow/block_fusion_test.cpp
     passes/structured_control_flow/for2map_test.cpp
     passes/structured_control_flow/loop_normalization_test.cpp
