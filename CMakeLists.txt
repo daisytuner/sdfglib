@@ -124,6 +124,7 @@ set(SOURCE_FILES
     src/symbolic/extreme_values.cpp
     src/symbolic/maps.cpp
     src/symbolic/polynomials.cpp
+    src/symbolic/series.cpp
     src/symbolic/sets.cpp
     src/symbolic/symbolic.cpp
     src/symbolic/utils.cpp

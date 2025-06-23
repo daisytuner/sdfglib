@@ -3,7 +3,7 @@
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/symbolic/conjunctive_normal_form.h"
-#include "sdfg/symbolic/maps.h"
+#include "sdfg/symbolic/series.h"
 
 namespace sdfg {
 namespace passes {
