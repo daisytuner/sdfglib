@@ -4,7 +4,7 @@
 #include "sdfg/analysis/data_parallelism_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/users.h"
-#include "sdfg/symbolic/maps.h"
+#include "sdfg/symbolic/series.h"
 
 namespace sdfg {
 namespace passes {
@@ -52,7 +52,7 @@ bool LoopDependentSymbolElimination::eliminate_symbols(
     for (auto& entry : last_assignments) {
         auto& sym = entry.first;
         auto& assign = entry.second;
-        if (!symbolic::is_contiguous(assign, sym, assumptions)) {
+        if (!symbolic::series::is_contiguous(assign, sym, assumptions)) {
             continue;
         }
         loop_dependent_symbols.insert(sym->get_name());

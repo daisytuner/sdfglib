@@ -379,7 +379,7 @@ MultiExpression delinearize(const MultiExpression& expr, const Assumptions& assu
                 symbols.push_back(sym);
             }
         }
-        if (symbols.empty()) {
+        if (symbols.empty() || symbols.size() <= 1) {
             delinearized.push_back(dim);
             continue;
         }
@@ -461,14 +461,9 @@ MultiExpression delinearize(const MultiExpression& expr, const Assumptions& assu
             }
 
             // remaining must be less than stride
-            auto rem = symbolic::sub(stride, remaining);
-            rem = minimum(rem, {}, assums);
-            if (rem == SymEngine::null) {
-                success = false;
-                break;
-            }
-
-            auto cond_stride = symbolic::Ge(rem, symbolic::one());
+            auto ub_stride = maximum(stride, {}, assums);
+            auto ub_remaining = maximum(remaining, {}, assums);
+            auto cond_stride = symbolic::Ge(ub_stride, ub_remaining);
             if (!symbolic::is_true(cond_stride)) {
                 success = false;
                 break;

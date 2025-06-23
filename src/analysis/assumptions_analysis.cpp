@@ -7,8 +7,8 @@
 #include "sdfg/analysis/users.h"
 #include "sdfg/symbolic/assumptions.h"
 #include "sdfg/symbolic/extreme_values.h"
-#include "sdfg/symbolic/maps.h"
 #include "sdfg/symbolic/polynomials.h"
+#include "sdfg/symbolic/series.h"
 
 namespace sdfg {
 namespace analysis {
@@ -215,16 +215,24 @@ void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop,
         this->assumptions_.insert({&body, symbolic::Assumptions()});
     }
     auto& body_assumptions = this->assumptions_[&body];
-    if (body_assumptions.find(indvar) == body_assumptions.end()) {
-        body_assumptions.insert({indvar, symbolic::Assumption(indvar)});
+
+    // By definition: indvar and condition symbols are constant
+    symbolic::SymbolSet syms = {indvar};
+    for (auto& sym : symbolic::atoms(for_loop->condition())) {
+        syms.insert(sym);
+    }
+    for (auto& sym : syms) {
+        if (body_assumptions.find(sym) == body_assumptions.end()) {
+            body_assumptions.insert({sym, symbolic::Assumption(sym)});
+        }
+        body_assumptions[sym].constant(true);
     }
 
-    // Assumption 1: indvar moves according to update
-    body_assumptions[indvar].constant(true);
+    // Bounds of indvar
 
     // Prove that update is monotonic -> assume bounds
     auto& assums = this->get(*for_loop);
-    if (!symbolic::is_monotonic(update, indvar, assums)) {
+    if (!symbolic::series::is_monotonic(update, indvar, assums)) {
         return;
     }
 
@@ -238,6 +246,11 @@ void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop,
         }
         // Assumption 3: ub is upper bound
         body_assumptions[indvar].upper_bound(ub);
+
+        // Assumption 4: any ub symbol is at least init
+        for (auto& sym : symbolic::atoms(ub)) {
+            body_assumptions[sym].lower_bound(symbolic::add(for_loop->init(), symbolic::one()));
+        }
     } catch (const symbolic::CNFException& e) {
         return;
     }
@@ -252,12 +265,23 @@ void AssumptionsAnalysis::visit_map(structured_control_flow::Map* map,
         this->assumptions_.insert({&body, symbolic::Assumptions()});
     }
     auto& body_assumptions = this->assumptions_[&body];
-    if (body_assumptions.find(indvar) == body_assumptions.end()) {
-        body_assumptions.insert({indvar, symbolic::Assumption(indvar)});
+
+    // By definition: indvar and num_iterations symbols are constant
+
+    symbolic::SymbolSet syms = {indvar};
+    for (auto& sym : symbolic::atoms(map->num_iterations())) {
+        syms.insert(sym);
     }
+    for (auto& sym : syms) {
+        if (body_assumptions.find(sym) == body_assumptions.end()) {
+            body_assumptions.insert({sym, symbolic::Assumption(sym)});
+        }
+        body_assumptions[sym].constant(true);
+    }
+
+    // Bounds of indvar
     body_assumptions[indvar].lower_bound(symbolic::zero());
     body_assumptions[indvar].upper_bound(symbolic::sub(map->num_iterations(), symbolic::one()));
-    body_assumptions[indvar].constant(true);
 };
 
 void AssumptionsAnalysis::traverse(structured_control_flow::Sequence& root,

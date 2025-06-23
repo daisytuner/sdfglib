@@ -10,6 +10,7 @@
 
 namespace sdfg {
 namespace symbolic {
+namespace maps {
 
 bool is_monotonic_affine(const Expression& expr, const Symbol& sym, const Assumptions& assums) {
     SymbolVec symbols = {sym};
@@ -25,17 +26,11 @@ bool is_monotonic_affine(const Expression& expr, const Symbol& sym, const Assump
     if (mul == SymEngine::null) {
         return false;
     }
-    auto offset = minimum(coeffs[symbol("__daisy_constant__")], {}, assums);
-    if (offset == SymEngine::null) {
-        return false;
-    }
-    if (!SymEngine::is_a<SymEngine::Integer>(*mul) ||
-        !SymEngine::is_a<SymEngine::Integer>(*offset)) {
+    if (!SymEngine::is_a<SymEngine::Integer>(*mul)) {
         return false;
     }
     auto mul_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(mul);
-    auto offset_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(offset);
-    if (mul_int->as_int() <= 0 || offset_int->as_int() <= 0) {
+    if (mul_int->as_int() <= 0) {
         return false;
     }
 
@@ -71,37 +66,6 @@ bool is_monotonic(const Expression& expr, const Symbol& sym, const Assumptions& 
         return true;
     }
     return is_monotonic_pow(expr, sym, assums);
-}
-
-bool is_contiguous(const Expression& expr, const Symbol& sym, const Assumptions& assums) {
-    SymbolVec symbols = {sym};
-    auto poly = polynomial(expr, symbols);
-    if (poly == SymEngine::null) {
-        return false;
-    }
-    auto coeffs = affine_coefficients(poly, symbols);
-    if (coeffs.empty()) {
-        return false;
-    }
-    auto mul = minimum(coeffs[sym], {}, assums);
-    if (mul == SymEngine::null) {
-        return false;
-    }
-    auto offset = minimum(coeffs[symbol("__daisy_constant__")], {}, assums);
-    if (offset == SymEngine::null) {
-        return false;
-    }
-    if (!SymEngine::is_a<SymEngine::Integer>(*mul) ||
-        !SymEngine::is_a<SymEngine::Integer>(*offset)) {
-        return false;
-    }
-    auto mul_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(mul);
-    auto offset_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(offset);
-    if (mul_int->as_int() == 1 && offset_int->as_int() == 1) {
-        return true;
-    }
-
-    return false;
 }
 
 bool is_disjoint_isl(const MultiExpression& expr1, const MultiExpression& expr2,
@@ -204,7 +168,7 @@ bool is_disjoint_monotonic(const MultiExpression& expr1, const MultiExpression& 
         }
 
         // Check if both dimensions are monotonic in non-constant symbols
-        if (symbolic::is_monotonic(dim1, indvar, assums1)) {
+        if (is_monotonic(dim1, indvar, assums1)) {
             return true;
         }
     }
@@ -220,5 +184,6 @@ bool intersects(const MultiExpression& expr1, const MultiExpression& expr2, cons
     return !is_disjoint_isl(expr1, expr2, indvar, assums1, assums2);
 }
 
+}  // namespace maps
 }  // namespace symbolic
 }  // namespace sdfg

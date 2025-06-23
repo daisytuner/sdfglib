@@ -681,8 +681,8 @@ bool DataDependencyAnalysis::loop_depends(User& previous, User& current,
     // Check if previous subset is subset of any current subset
     for (auto& previous_subset : previous_subsets) {
         for (auto& current_subset : current_subsets) {
-            if (symbolic::intersects(previous_subset, current_subset, loop.indvar(),
-                                     previous_assumptions, current_assumptions)) {
+            if (symbolic::maps::intersects(previous_subset, current_subset, loop.indvar(),
+                                           previous_assumptions, current_assumptions)) {
                 return true;
             }
         }
