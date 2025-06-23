@@ -64,25 +64,23 @@ const std::unordered_set<structured_control_flow::ControlFlowNode*> LoopAnalysis
     return this->loops_;
 }
 
-bool LoopAnalysis::is_monotonic(structured_control_flow::StructuredLoop* loop) const {
-    AnalysisManager manager(this->sdfg_);
-    auto& assums_analysis = manager.get<AssumptionsAnalysis>();
-    auto assums = assums_analysis.get(*loop, true);
+bool LoopAnalysis::is_monotonic(structured_control_flow::StructuredLoop* loop,
+                                AssumptionsAnalysis& assumptions_analysis) {
+    auto assums = assumptions_analysis.get(*loop, true);
 
-    return symbolic::is_monotonic(loop->update(), loop->indvar(), assums);
+    return symbolic::series::is_monotonic(loop->update(), loop->indvar(), assums);
 }
 
-bool LoopAnalysis::is_contiguous(structured_control_flow::StructuredLoop* loop) const {
-    AnalysisManager manager(this->sdfg_);
-    auto& assums_analysis = manager.get<AssumptionsAnalysis>();
-    auto assums = assums_analysis.get(*loop, true);
+bool LoopAnalysis::is_contiguous(structured_control_flow::StructuredLoop* loop,
+                                 AssumptionsAnalysis& assumptions_analysis) {
+    auto assums = assumptions_analysis.get(*loop, true);
 
-    return symbolic::is_contiguous(loop->update(), loop->indvar(), assums);
+    return symbolic::series::is_contiguous(loop->update(), loop->indvar(), assums);
 }
 
-symbolic::Expression LoopAnalysis::canonical_bound(
-    structured_control_flow::StructuredLoop* loop) const {
-    if (!this->is_contiguous(loop)) {
+symbolic::Expression LoopAnalysis::canonical_bound(structured_control_flow::StructuredLoop* loop,
+                                                   AssumptionsAnalysis& assumptions_analysis) {
+    if (!LoopAnalysis::is_monotonic(loop, assumptions_analysis)) {
         return SymEngine::null;
     }
 
@@ -141,6 +139,31 @@ symbolic::Expression LoopAnalysis::canonical_bound(
     }
 
     return bound;
+}
+
+symbolic::Integer LoopAnalysis::stride(structured_control_flow::StructuredLoop* loop) {
+    auto expr = loop->update();
+    auto indvar = loop->indvar();
+
+    if (SymEngine::is_a<SymEngine::Add>(*expr)) {
+        auto add_expr = SymEngine::rcp_static_cast<const SymEngine::Add>(expr);
+        if (add_expr->get_args().size() != 2) {
+            return SymEngine::null;
+        }
+        auto arg1 = add_expr->get_args()[0];
+        auto arg2 = add_expr->get_args()[1];
+        if (symbolic::eq(arg1, indvar)) {
+            if (SymEngine::is_a<SymEngine::Integer>(*arg2)) {
+                return SymEngine::rcp_static_cast<const SymEngine::Integer>(arg2);
+            }
+        }
+        if (symbolic::eq(arg2, indvar)) {
+            if (SymEngine::is_a<SymEngine::Integer>(*arg1)) {
+                return SymEngine::rcp_static_cast<const SymEngine::Integer>(arg1);
+            }
+        }
+    }
+    return SymEngine::null;
 }
 
 const std::unordered_map<structured_control_flow::ControlFlowNode*,

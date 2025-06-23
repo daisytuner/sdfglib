@@ -5,15 +5,60 @@
 
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/analysis/users.h"
-#include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/symbolic/assumptions.h"
-#include "sdfg/symbolic/conjunctive_normal_form.h"
 #include "sdfg/symbolic/extreme_values.h"
 #include "sdfg/symbolic/polynomials.h"
 #include "sdfg/symbolic/series.h"
 
 namespace sdfg {
 namespace analysis {
+
+symbolic::Expression AssumptionsAnalysis::cnf_to_upper_bound(const symbolic::CNF& cnf,
+                                                             const symbolic::Symbol& indvar) {
+    std::vector<symbolic::Expression> candidates;
+
+    for (const auto& clause : cnf) {
+        for (const auto& literal : clause) {
+            // Comparison: indvar < expr
+            if (SymEngine::is_a<SymEngine::StrictLessThan>(*literal)) {
+                auto lt = SymEngine::rcp_static_cast<const SymEngine::StrictLessThan>(literal);
+                if (symbolic::eq(lt->get_arg1(), indvar) &&
+                    !symbolic::uses(lt->get_arg2(), indvar)) {
+                    auto ub = symbolic::sub(lt->get_arg2(), symbolic::one());
+                    candidates.push_back(ub);
+                }
+            }
+            // Comparison: indvar <= expr
+            else if (SymEngine::is_a<SymEngine::LessThan>(*literal)) {
+                auto le = SymEngine::rcp_static_cast<const SymEngine::LessThan>(literal);
+                if (symbolic::eq(le->get_arg1(), indvar) &&
+                    !symbolic::uses(le->get_arg2(), indvar)) {
+                    candidates.push_back(le->get_arg2());
+                }
+            }
+            // Comparison: indvar == expr
+            else if (SymEngine::is_a<SymEngine::Equality>(*literal)) {
+                auto eq = SymEngine::rcp_static_cast<const SymEngine::Equality>(literal);
+                if (symbolic::eq(eq->get_arg1(), indvar) &&
+                    !symbolic::uses(eq->get_arg2(), indvar)) {
+                    candidates.push_back(eq->get_arg2());
+                }
+            }
+        }
+    }
+
+    if (candidates.empty()) {
+        return SymEngine::null;
+    }
+
+    // Return the smallest upper bound across all candidate constraints
+    symbolic::Expression result = candidates[0];
+    for (size_t i = 1; i < candidates.size(); ++i) {
+        result = symbolic::min(result, candidates[i]);
+    }
+
+    return result;
+}
 
 AssumptionsAnalysis::AssumptionsAnalysis(StructuredSDFG& sdfg)
     : Analysis(sdfg) {
@@ -140,6 +185,7 @@ void AssumptionsAnalysis::visit_if_else(structured_control_flow::IfElse* if_else
                     scope_assumptions.insert({sym, symbolic::Assumption(sym)});
                 }
 
+                scope_assumptions[sym].constant(true);
                 if (!symbolic::eq(ub, symbolic::infty(1))) {
                     scope_assumptions[sym].upper_bound(ub);
                 }
@@ -160,14 +206,8 @@ void AssumptionsAnalysis::visit_while(structured_control_flow::While* while_loop
 
 void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop,
                                     analysis::AnalysisManager& analysis_manager) {
-    auto& assums = this->get(*for_loop);
-
-    // Prove that update is monotonic
     auto indvar = for_loop->indvar();
     auto update = for_loop->update();
-    if (!symbolic::is_monotonic(update, indvar, assums)) {
-        return;
-    }
 
     // Add new assumptions
     auto& body = for_loop->root();
@@ -175,19 +215,42 @@ void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop,
         this->assumptions_.insert({&body, symbolic::Assumptions()});
     }
     auto& body_assumptions = this->assumptions_[&body];
-    if (body_assumptions.find(indvar) == body_assumptions.end()) {
-        body_assumptions.insert({indvar, symbolic::Assumption(indvar)});
+
+    // By definition: indvar and condition symbols are constant
+    symbolic::SymbolSet syms = {indvar};
+    for (auto& sym : symbolic::atoms(for_loop->condition())) {
+        syms.insert(sym);
+    }
+    for (auto& sym : syms) {
+        if (body_assumptions.find(sym) == body_assumptions.end()) {
+            body_assumptions.insert({sym, symbolic::Assumption(sym)});
+        }
+        body_assumptions[sym].constant(true);
     }
 
-    // monotonic => init is lower bound
+    // Bounds of indvar
+
+    // Prove that update is monotonic -> assume bounds
+    auto& assums = this->get(*for_loop);
+    if (!symbolic::series::is_monotonic(update, indvar, assums)) {
+        return;
+    }
+
+    // Assumption 2: init is lower bound
     body_assumptions[indvar].lower_bound(for_loop->init());
     try {
         auto cnf = symbolic::conjunctive_normal_form(for_loop->condition());
-        auto ub = symbolic::upper_bound(cnf, indvar);
+        auto ub = cnf_to_upper_bound(cnf, indvar);
         if (ub == SymEngine::null) {
             return;
         }
+        // Assumption 3: ub is upper bound
         body_assumptions[indvar].upper_bound(ub);
+
+        // Assumption 4: any ub symbol is at least init
+        for (auto& sym : symbolic::atoms(ub)) {
+            body_assumptions[sym].lower_bound(symbolic::add(for_loop->init(), symbolic::one()));
+        }
     } catch (const symbolic::CNFException& e) {
         return;
     }
@@ -196,17 +259,53 @@ void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop,
 void AssumptionsAnalysis::visit_map(structured_control_flow::Map* map,
                                     analysis::AnalysisManager& analysis_manager) {
     auto indvar = map->indvar();
+    auto update = map->update();
 
+    // Add new assumptions
     auto& body = map->root();
     if (this->assumptions_.find(&body) == this->assumptions_.end()) {
         this->assumptions_.insert({&body, symbolic::Assumptions()});
     }
     auto& body_assumptions = this->assumptions_[&body];
-    if (body_assumptions.find(indvar) == body_assumptions.end()) {
-        body_assumptions.insert({indvar, symbolic::Assumption(indvar)});
+
+    // By definition: indvar and condition symbols are constant
+    symbolic::SymbolSet syms = {indvar};
+    for (auto& sym : symbolic::atoms(map->condition())) {
+        syms.insert(sym);
     }
-    body_assumptions[indvar].lower_bound(symbolic::zero());
-    body_assumptions[indvar].upper_bound(symbolic::sub(map->num_iterations(), symbolic::one()));
+    for (auto& sym : syms) {
+        if (body_assumptions.find(sym) == body_assumptions.end()) {
+            body_assumptions.insert({sym, symbolic::Assumption(sym)});
+        }
+        body_assumptions[sym].constant(true);
+    }
+
+    // Bounds of indvar
+
+    // Prove that update is monotonic -> assume bounds
+    auto& assums = this->get(*map);
+    if (!symbolic::series::is_monotonic(update, indvar, assums)) {
+        return;
+    }
+
+    // Assumption 2: init is lower bound
+    body_assumptions[indvar].lower_bound(map->init());
+    try {
+        auto cnf = symbolic::conjunctive_normal_form(map->condition());
+        auto ub = cnf_to_upper_bound(cnf, indvar);
+        if (ub == SymEngine::null) {
+            return;
+        }
+        // Assumption 3: ub is upper bound
+        body_assumptions[indvar].upper_bound(ub);
+
+        // Assumption 4: any ub symbol is at least init
+        for (auto& sym : symbolic::atoms(ub)) {
+            body_assumptions[sym].lower_bound(symbolic::add(map->init(), symbolic::one()));
+        }
+    } catch (const symbolic::CNFException& e) {
+        return;
+    }
 };
 
 void AssumptionsAnalysis::traverse(structured_control_flow::Sequence& root,
@@ -294,6 +393,44 @@ const symbolic::Assumptions AssumptionsAnalysis::get(structured_control_flow::Co
 
     return assums;
 };
+
+const symbolic::Assumptions AssumptionsAnalysis::get(structured_control_flow::ControlFlowNode& from,
+                                                     structured_control_flow::ControlFlowNode& to,
+                                                     bool include_trivial_bounds) {
+    auto assums_from = this->get(from, include_trivial_bounds);
+    auto assums_to = this->get(to, include_trivial_bounds);
+
+    // Add lower scope assumptions to outer
+    // ignore constants assumption
+    for (auto& entry : assums_from) {
+        if (assums_to.find(entry.first) == assums_to.end()) {
+            auto assums_safe = assums_to;
+            assums_safe.at(entry.first).constant(false);
+            assums_to.insert({entry.first, assums_safe.at(entry.first)});
+        } else {
+            auto assums_safe = assums_to;
+            assums_safe.at(entry.first).constant(entry.second.constant());
+            assums_to[entry.first] = assums_safe.at(entry.first);
+        }
+    }
+
+    return assums_to;
+}
+
+void AssumptionsAnalysis::add(symbolic::Assumptions& assums,
+                              structured_control_flow::ControlFlowNode& node) {
+    if (this->assumptions_.find(&node) == this->assumptions_.end()) {
+        return;
+    }
+
+    for (auto& entry : this->assumptions_[&node]) {
+        if (assums.find(entry.first) == assums.end()) {
+            assums.insert({entry.first, entry.second});
+        } else {
+            assums[entry.first] = entry.second;
+        }
+    }
+}
 
 }  // namespace analysis
 }  // namespace sdfg

@@ -174,48 +174,5 @@ CNF conjunctive_normal_form(const Condition& cond) {
     return {{cond}};
 }
 
-Expression upper_bound(const CNF& cnf, const Symbol& indvar) {
-    std::vector<Expression> candidates;
-
-    for (const auto& clause : cnf) {
-        for (const auto& literal : clause) {
-            // Comparison: indvar < expr
-            if (SymEngine::is_a<SymEngine::StrictLessThan>(*literal)) {
-                auto lt = SymEngine::rcp_static_cast<const SymEngine::StrictLessThan>(literal);
-                if (symbolic::eq(lt->get_arg1(), indvar) && !uses(lt->get_arg2(), indvar)) {
-                    auto ub = symbolic::sub(lt->get_arg2(), symbolic::one());
-                    candidates.push_back(ub);
-                }
-            }
-            // Comparison: indvar <= expr
-            else if (SymEngine::is_a<SymEngine::LessThan>(*literal)) {
-                auto le = SymEngine::rcp_static_cast<const SymEngine::LessThan>(literal);
-                if (symbolic::eq(le->get_arg1(), indvar) && !uses(le->get_arg2(), indvar)) {
-                    candidates.push_back(le->get_arg2());
-                }
-            }
-            // Comparison: indvar == expr
-            else if (SymEngine::is_a<SymEngine::Equality>(*literal)) {
-                auto eq = SymEngine::rcp_static_cast<const SymEngine::Equality>(literal);
-                if (symbolic::eq(eq->get_arg1(), indvar) && !uses(eq->get_arg2(), indvar)) {
-                    candidates.push_back(eq->get_arg2());
-                }
-            }
-        }
-    }
-
-    if (candidates.empty()) {
-        return SymEngine::null;
-    }
-
-    // Return the smallest upper bound across all candidate constraints
-    Expression result = candidates[0];
-    for (size_t i = 1; i < candidates.size(); ++i) {
-        result = symbolic::min(result, candidates[i]);
-    }
-
-    return result;
-}
-
 }  // namespace symbolic
 }  // namespace sdfg

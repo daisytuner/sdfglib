@@ -1,5 +1,6 @@
 #include "sdfg/codegen/dispatchers/map_dispatcher.h"
 
+#include "sdfg/analysis/users.h"
 #include "sdfg/codegen/dispatchers/sequence_dispatcher.h"
 
 namespace sdfg {
@@ -39,13 +40,15 @@ void SequentialMapDispatcher::dispatch_node(PrettyPrinter& main_stream,
     main_stream << "for";
     main_stream << "(";
     main_stream << node_.indvar()->get_name();
-    main_stream << " = 0; ";
+    main_stream << " = ";
+    main_stream << language_extension_.expression(node_.init());
+    main_stream << ";";
+    main_stream << language_extension_.expression(node_.condition());
+    main_stream << ";";
     main_stream << node_.indvar()->get_name();
-    main_stream << " < ";
-    main_stream << language_extension_.expression(node_.num_iterations());
-    main_stream << "; ";
-    main_stream << node_.indvar()->get_name();
-    main_stream << "++)" << std::endl;
+    main_stream << " = ";
+    main_stream << language_extension_.expression(node_.update());
+    main_stream << ")" << std::endl;
     main_stream << "{" << std::endl;
 
     main_stream.setIndent(main_stream.indent() + 4);
@@ -67,7 +70,25 @@ CPUParallelMapDispatcher::CPUParallelMapDispatcher(LanguageExtension& language_e
 void CPUParallelMapDispatcher::dispatch_node(PrettyPrinter& main_stream,
                                              PrettyPrinter& globals_stream,
                                              PrettyPrinter& library_stream) {
-    main_stream << "#pragma omp parallel for" << std::endl;
+    // Mark written locals as private
+    analysis::AnalysisManager analysis_manager(sdfg_);
+    auto& users = analysis_manager.get<analysis::Users>();
+    analysis::UsersView users_view(users, node_.root());
+
+    std::vector<std::string> locals;
+    for (auto& entry : users.locals(node_.root())) {
+        if (users_view.writes(entry).size() > 0) {
+            locals.push_back(entry);
+        }
+    }
+
+    // Generate code
+    main_stream << "#pragma omp parallel for";
+    if (locals.size() > 0) {
+        main_stream << " private(" << helpers::join(locals, ", ") << ")";
+    }
+    main_stream << std::endl;
+
     SequentialMapDispatcher dispatcher(language_extension_, sdfg_, node_, instrumentation_);
     dispatcher.dispatch(main_stream, globals_stream, library_stream);
 };

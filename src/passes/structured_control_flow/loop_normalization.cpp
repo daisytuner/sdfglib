@@ -11,8 +11,8 @@ namespace passes {
 bool LoopNormalization::apply(builder::StructuredSDFGBuilder& builder,
                               analysis::AnalysisManager& analysis_manager,
                               structured_control_flow::For& loop) {
-    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
-    if (!loop_analysis.is_contiguous(&loop)) {
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    if (!analysis::LoopAnalysis::is_contiguous(&loop, assumptions_analysis)) {
         return false;
     }
 

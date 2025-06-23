@@ -1,11 +1,11 @@
 #include "sdfg/passes/dataflow/dead_data_elimination.h"
 
-#include "sdfg/analysis/happens_before_analysis.h"
+#include "sdfg/analysis/data_dependency_analysis.h"
 
 namespace sdfg {
 namespace passes {
 
-DeadDataElimination::DeadDataElimination() : Pass(){};
+DeadDataElimination::DeadDataElimination() : Pass() {};
 
 std::string DeadDataElimination::name() { return "DeadDataElimination"; };
 
@@ -15,7 +15,7 @@ bool DeadDataElimination::run_pass(builder::StructuredSDFGBuilder& builder,
 
     auto& sdfg = builder.subject();
     auto& users = analysis_manager.get<analysis::Users>();
-    auto& happens_before = analysis_manager.get<analysis::HappensBeforeAnalysis>();
+    auto& data_dependency_analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
 
     // Eliminate dead code, i.e., never read
     std::unordered_set<std::string> dead;
@@ -37,7 +37,7 @@ bool DeadDataElimination::run_pass(builder::StructuredSDFGBuilder& builder,
         }
 
         // Writes without reads
-        auto raws = happens_before.reads_after_writes(name);
+        auto raws = data_dependency_analysis.definitions(name);
         for (auto set : raws) {
             if (set.second.size() > 0) {
                 continue;

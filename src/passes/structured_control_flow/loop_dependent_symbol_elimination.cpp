@@ -24,7 +24,6 @@ bool LoopDependentSymbolElimination::eliminate_symbols(
     auto init = loop.init();
     auto condition = loop.condition();
 
-    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
     auto assumptions = assumptions_analysis.get(loop.root(), true);
 
@@ -32,7 +31,7 @@ bool LoopDependentSymbolElimination::eliminate_symbols(
     if (!SymEngine::eq(*init, *symbolic::integer(0))) {
         return false;
     }
-    if (!loop_analysis.is_contiguous(&loop)) {
+    if (!analysis::LoopAnalysis::is_contiguous(&loop, assumptions_analysis)) {
         return false;
     }
     auto bound = analysis::DataParallelismAnalysis::bound(loop);
@@ -53,7 +52,7 @@ bool LoopDependentSymbolElimination::eliminate_symbols(
     for (auto& entry : last_assignments) {
         auto& sym = entry.first;
         auto& assign = entry.second;
-        if (!symbolic::is_contiguous(assign, sym, assumptions)) {
+        if (!symbolic::series::is_contiguous(assign, sym, assumptions)) {
             continue;
         }
         loop_dependent_symbols.insert(sym->get_name());

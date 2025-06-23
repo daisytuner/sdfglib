@@ -25,6 +25,8 @@ typedef SymEngine::RCP<const SymEngine::Infty> Infty;
 typedef SymEngine::RCP<const SymEngine::Basic> Expression;
 typedef SymEngine::RCP<const SymEngine::Boolean> Condition;
 
+typedef std::vector<Expression> MultiExpression;
+
 // Datastructures
 typedef std::vector<Symbol> SymbolVec;
 typedef std::set<Symbol, SymEngine::RCPBasicKeyLess> SymbolSet;

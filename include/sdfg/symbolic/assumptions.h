@@ -13,7 +13,7 @@ class Assumption {
     Symbol symbol_;
     Expression lower_bound_;
     Expression upper_bound_;
-    Expression map_;
+    bool constant_;
 
    public:
     Assumption();
@@ -34,9 +34,9 @@ class Assumption {
 
     void upper_bound(const Expression& upper_bound);
 
-    const Expression& map() const;
+    bool constant() const;
 
-    void map(const Expression& map);
+    void constant(bool constant);
 
     static Assumption create(const symbolic::Symbol& symbol, const types::IType& type);
 };

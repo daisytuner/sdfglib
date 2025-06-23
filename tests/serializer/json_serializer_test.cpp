@@ -506,8 +506,10 @@ TEST(JSONSerializerTest, MapToJSON) {
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
 
-    auto& map = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10),
-                                structured_control_flow::ScheduleType_Sequential);
+    auto& map = builder.add_map(
+        root, symbolic::symbol("i"), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential);
     auto& body = builder.add_block(map.root());
 
     // Create a JSONSerializer object
@@ -524,8 +526,13 @@ TEST(JSONSerializerTest, MapToJSON) {
     EXPECT_EQ(j["type"], "map");
     EXPECT_TRUE(j.contains("indvar"));
     EXPECT_EQ(j["indvar"], "i");
-    EXPECT_TRUE(j.contains("num_iterations"));
-    EXPECT_EQ(j["num_iterations"], "10");
+    EXPECT_TRUE(j.contains("init"));
+    EXPECT_EQ(j["init"], "0");
+    EXPECT_TRUE(j.contains("update"));
+    EXPECT_TRUE(symbolic::eq(SymEngine::Expression(j["update"]),
+                             symbolic::add(symbolic::symbol("i"), symbolic::integer(1))));
+    EXPECT_TRUE(j.contains("condition"));
+    EXPECT_EQ(j["condition"], "(i < 10)");
     EXPECT_TRUE(j.contains("root"));
     EXPECT_EQ(j["root"]["type"], "sequence");
     EXPECT_EQ(j["root"]["children"].size(), 1);
@@ -1598,8 +1605,10 @@ TEST(JSONSerializerTest, SerializeDeserialize_Map) {
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU);
     auto& root = builder.subject().root();
 
-    auto& map = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10),
-                                structured_control_flow::ScheduleType_Sequential);
+    auto& map = builder.add_map(
+        root, symbolic::symbol("i"), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential);
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
@@ -1625,7 +1634,12 @@ TEST(JSONSerializerTest, SerializeDeserialize_Map) {
                 nullptr);
     auto& des_map = dynamic_cast<sdfg::structured_control_flow::Map&>(des_sdfg->root().at(0).first);
     EXPECT_TRUE(symbolic::eq(des_map.indvar(), symbolic::symbol("i")));
-    EXPECT_TRUE(symbolic::eq(des_map.num_iterations(), symbolic::integer(10)));
+    EXPECT_TRUE(symbolic::eq(des_map.condition(),
+                             symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10))));
+    EXPECT_TRUE(symbolic::eq(des_map.init(), symbolic::integer(0)));
+    EXPECT_TRUE(
+        symbolic::eq(des_map.update(), symbolic::add(symbolic::symbol("i"), symbolic::integer(1))));
+    EXPECT_EQ(des_map.schedule_type(), structured_control_flow::ScheduleType_Sequential);
 
     EXPECT_EQ(des_map.root().size(), 0);
 }

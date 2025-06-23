@@ -692,6 +692,8 @@ std::vector<User*> Users::moves(const std::string& container) const {
 structured_control_flow::ControlFlowNode* Users::scope(User* user) {
     if (auto data_node = dynamic_cast<data_flow::DataFlowNode*>(user->element())) {
         return static_cast<structured_control_flow::Block*>(data_node->get_parent().get_parent());
+    } else if (auto memlet = dynamic_cast<data_flow::Memlet*>(user->element())) {
+        return static_cast<structured_control_flow::Block*>(memlet->get_parent().get_parent());
     } else if (auto transition =
                    dynamic_cast<structured_control_flow::Transition*>(user->element())) {
         return &transition->parent();
@@ -723,62 +725,6 @@ bool Users::post_dominates(User& user1, User& user) {
     }
     return false;
 };
-
-bool Users::is_dominated_by(User& user, Use use, const symbolic::Assumptions& assums) {
-    auto dominator = this->dom_tree_.at(&user);
-    while (dominator != nullptr) {
-        if (dominator->use() != use) {
-            dominator = this->dom_tree_.at(dominator);
-            continue;
-        }
-        if (dominator->container() != user.container()) {
-            dominator = this->dom_tree_.at(dominator);
-            continue;
-        }
-
-        // Compare subsets
-        auto& subsets = user.subsets();
-
-        // Collect all relevant symbols
-        std::unordered_set<std::string> symbols;
-        for (auto& subset : subsets) {
-            for (auto& dim : subset) {
-                auto atoms = symbolic::atoms(dim);
-                for (auto& atom : atoms) {
-                    symbols.insert(atom->get_name());
-                }
-            }
-        }
-        // If symbols are not constant, we cannot compare the subsets
-        if (!this->is_constant(symbols, *dominator, user)) {
-            dominator = this->dom_tree_.at(dominator);
-            continue;
-        }
-
-        // Now find for every subset of user, if there is a subset of dominator that is the same
-        auto& subsets_dominator = dominator->subsets();
-        bool all_subsets_dominated = true;
-        for (auto& subset : subsets) {
-            bool subset_dominated = false;
-            for (auto& subset_dominator : subsets_dominator) {
-                bool dominated = symbolic::is_equivalent(subset, subset_dominator, {}, assums);
-                if (dominated) {
-                    subset_dominated = true;
-                    break;
-                }
-            }
-            if (!subset_dominated) {
-                all_subsets_dominated = false;
-                break;
-            }
-        }
-        if (all_subsets_dominated) {
-            return true;
-        }
-        dominator = this->dom_tree_.at(dominator);
-    }
-    return false;
-}
 
 const std::unordered_set<User*> Users::all_uses_between(User& user1, User& user2) {
     std::unordered_set<User*> uses;
@@ -842,18 +788,6 @@ const std::unordered_set<User*> Users::all_uses_after(User& user) {
 
     return uses;
 };
-
-bool Users::is_constant(const std::unordered_set<std::string>& containers, User& user1,
-                        User& user2) {
-    for (auto& user : this->all_uses_between(user1, user2)) {
-        if (user->use() == Use::WRITE || user->use() == Use::MOVE) {
-            if (containers.find(user->container()) != containers.end()) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
 
 UsersView::UsersView(Users& users, structured_control_flow::ControlFlowNode& node) : users_(users) {
     this->entry_ = users.entries_.at(&node);
@@ -1061,62 +995,6 @@ bool UsersView::post_dominates(User& user1, User& user) {
     return false;
 };
 
-bool UsersView::is_dominated_by(User& user, Use use, const symbolic::Assumptions& assums) {
-    auto dominator = this->sub_dom_tree_.at(&user);
-    while (dominator != nullptr) {
-        if (dominator->use() != use) {
-            dominator = this->sub_dom_tree_.at(dominator);
-            continue;
-        }
-        if (dominator->container() != user.container()) {
-            dominator = this->sub_dom_tree_.at(dominator);
-            continue;
-        }
-
-        // Compare subsets
-        auto& subsets = user.subsets();
-
-        // Collect all relevant symbols
-        std::unordered_set<std::string> symbols;
-        for (auto& subset : subsets) {
-            for (auto& dim : subset) {
-                auto atoms = symbolic::atoms(dim);
-                for (auto& atom : atoms) {
-                    symbols.insert(atom->get_name());
-                }
-            }
-        }
-        // If symbols are not constant, we cannot compare the subsets
-        if (!this->is_constant(symbols, *dominator, user)) {
-            dominator = this->sub_dom_tree_.at(dominator);
-            continue;
-        }
-
-        // Now find for every subset of user, if there is a subset of dominator that is the same
-        auto& subsets_dominator = dominator->subsets();
-        bool all_subsets_dominated = true;
-        for (auto& subset : subsets) {
-            bool subset_dominated = false;
-            for (auto& subset_dominator : subsets_dominator) {
-                bool dominated = symbolic::is_equivalent(subset, subset_dominator, {}, assums);
-                if (dominated) {
-                    subset_dominated = true;
-                    break;
-                }
-            }
-            if (!subset_dominated) {
-                all_subsets_dominated = false;
-                break;
-            }
-        }
-        if (all_subsets_dominated) {
-            return true;
-        }
-        dominator = this->sub_dom_tree_.at(dominator);
-    }
-    return false;
-}
-
 std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user2) {
     assert(this->sub_users_.find(&user1) != this->sub_users_.end());
     assert(this->sub_users_.find(&user2) != this->sub_users_.end());
@@ -1190,18 +1068,6 @@ std::unordered_set<User*> UsersView::all_uses_after(User& user) {
 
     return uses;
 };
-
-bool UsersView::is_constant(const std::unordered_set<std::string>& containers, User& user1,
-                            User& user2) {
-    for (auto& user : this->all_uses_between(user1, user2)) {
-        if (user->use() == Use::WRITE || user->use() == Use::MOVE) {
-            if (containers.find(user->container()) != containers.end()) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
 
 User* Users::get_user(const std::string& container, Element* element, Use use, bool is_init,
                       bool is_condition, bool is_update) {

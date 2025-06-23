@@ -277,8 +277,10 @@ TEST(StructuredSDFGBuilderTest, addMap) {
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
 
-    auto& scope = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10),
-                                  structured_control_flow::ScheduleType_Sequential);
+    auto& scope = builder.add_map(
+        root, symbolic::symbol("i"), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential);
     EXPECT_EQ(scope.element_id(), 1);
     EXPECT_EQ(scope.root().element_id(), 2);
     EXPECT_EQ(root.at(0).second.element_id(), 3);

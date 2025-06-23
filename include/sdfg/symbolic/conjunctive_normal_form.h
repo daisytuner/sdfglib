@@ -27,17 +27,5 @@ typedef std::vector<std::vector<Condition>> CNF;
  */
 CNF conjunctive_normal_form(const Condition& cond);
 
-/**
- * @brief Compute an upper bound for a symbol from a conjunctive normal form.
- *
- * The bound may not be tight.
- *
- * @param cnf The conjunctive normal form.
- * @param sym The symbol to derive a bound for.
- * @return The closed form of the conjunctive normal form, SymEngine::null if the CNF is not
- *         closed.
- */
-Expression upper_bound(const CNF& cnf, const Symbol& sym);
-
 }  // namespace symbolic
 }  // namespace sdfg

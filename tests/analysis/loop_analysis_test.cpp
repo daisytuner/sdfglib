@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 
 using namespace sdfg;
@@ -22,10 +23,10 @@ TEST(LoopAnalysisTest, Monotonic) {
     auto& loop = builder.add_for(root, indvar, condition, init, update);
 
     analysis::AnalysisManager manager(sdfg);
-    auto& analysis = manager.get<analysis::LoopAnalysis>();
+    auto& assumptions_analysis = manager.get<analysis::AssumptionsAnalysis>();
 
-    EXPECT_TRUE(analysis.is_monotonic(&loop));
-    EXPECT_FALSE(analysis.is_contiguous(&loop));
+    EXPECT_TRUE(analysis::LoopAnalysis::is_monotonic(&loop, assumptions_analysis));
+    EXPECT_FALSE(analysis::LoopAnalysis::is_contiguous(&loop, assumptions_analysis));
 }
 
 TEST(LoopAnalysisTest, Contiguous) {
@@ -44,10 +45,10 @@ TEST(LoopAnalysisTest, Contiguous) {
     auto& loop = builder.add_for(root, indvar, condition, init, update);
 
     analysis::AnalysisManager manager(sdfg);
-    auto& analysis = manager.get<analysis::LoopAnalysis>();
+    auto& assumptions_analysis = manager.get<analysis::AssumptionsAnalysis>();
 
-    EXPECT_TRUE(analysis.is_monotonic(&loop));
-    EXPECT_TRUE(analysis.is_contiguous(&loop));
+    EXPECT_TRUE(analysis::LoopAnalysis::is_monotonic(&loop, assumptions_analysis));
+    EXPECT_TRUE(analysis::LoopAnalysis::is_contiguous(&loop, assumptions_analysis));
 }
 
 TEST(LoopAnalysisTest, CanonicalBound_Lt) {
@@ -65,9 +66,9 @@ TEST(LoopAnalysisTest, CanonicalBound_Lt) {
     auto& loop = builder.add_for(root, indvar, condition, init, update);
 
     analysis::AnalysisManager manager(sdfg);
-    auto& analysis = manager.get<analysis::LoopAnalysis>();
+    auto& assumptions_analysis = manager.get<analysis::AssumptionsAnalysis>();
 
-    auto bound = analysis.canonical_bound(&loop);
+    auto bound = analysis::LoopAnalysis::canonical_bound(&loop, assumptions_analysis);
     EXPECT_TRUE(symbolic::eq(bound, symbolic::symbol("N")));
 }
 
@@ -88,9 +89,9 @@ TEST(LoopAnalysisTest, CanonicalBound_Lt_And) {
     auto& loop = builder.add_for(root, indvar, condition, init, update);
 
     analysis::AnalysisManager manager(sdfg);
-    auto& analysis = manager.get<analysis::LoopAnalysis>();
+    auto& assumptions_analysis = manager.get<analysis::AssumptionsAnalysis>();
 
-    auto bound = analysis.canonical_bound(&loop);
+    auto bound = analysis::LoopAnalysis::canonical_bound(&loop, assumptions_analysis);
     EXPECT_TRUE(symbolic::eq(bound, symbolic::min(symbolic::symbol("N"), symbolic::symbol("M"))));
 }
 
@@ -111,9 +112,9 @@ TEST(LoopAnalysisTest, CanonicalBound_Le_And) {
     auto& loop = builder.add_for(root, indvar, condition, init, update);
 
     analysis::AnalysisManager manager(sdfg);
-    auto& analysis = manager.get<analysis::LoopAnalysis>();
+    auto& assumptions_analysis = manager.get<analysis::AssumptionsAnalysis>();
 
-    auto bound = analysis.canonical_bound(&loop);
+    auto bound = analysis::LoopAnalysis::canonical_bound(&loop, assumptions_analysis);
     EXPECT_TRUE(
         symbolic::eq(bound, symbolic::min(symbolic::add(symbolic::symbol("N"), symbolic::one()),
                                           symbolic::add(symbolic::symbol("M"), symbolic::one()))));

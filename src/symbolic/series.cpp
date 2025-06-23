@@ -5,6 +5,7 @@
 
 namespace sdfg {
 namespace symbolic {
+namespace series {
 
 bool is_monotonic_affine(const Expression& expr, const Symbol& sym, const Assumptions& assums) {
     SymbolVec symbols = {sym};
@@ -99,5 +100,6 @@ bool is_contiguous(const Expression& expr, const Symbol& sym, const Assumptions&
     return false;
 }
 
+}  // namespace series
 }  // namespace symbolic
 }  // namespace sdfg

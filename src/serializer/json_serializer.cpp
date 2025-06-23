@@ -28,6 +28,44 @@
 namespace sdfg {
 namespace serializer {
 
+FunctionType function_type_from_string(const std::string& str) {
+    if (str == FunctionType_CPU.value()) {
+        return FunctionType_CPU;
+    } else if (str == FunctionType_NV_GLOBAL.value()) {
+        return FunctionType_NV_GLOBAL;
+    } else {
+        throw std::runtime_error("Unknown function type");
+    }
+}
+
+types::StorageType storage_type_from_string(const std::string& str) {
+    if (str == types::StorageType_CPU_Heap.value()) {
+        return types::StorageType_CPU_Heap;
+    } else if (str == types::StorageType_CPU_Stack.value()) {
+        return types::StorageType_CPU_Stack;
+    } else if (str == types::StorageType_NV_Global.value()) {
+        return types::StorageType_NV_Global;
+    } else if (str == types::StorageType_NV_Shared.value()) {
+        return types::StorageType_NV_Shared;
+    } else if (str == types::StorageType_NV_Constant.value()) {
+        return types::StorageType_NV_Constant;
+    } else if (str == types::StorageType_NV_Generic.value()) {
+        return types::StorageType_NV_Generic;
+    } else {
+        throw std::runtime_error("Unknown storage type");
+    }
+}
+
+structured_control_flow::ScheduleType schedule_type_from_string(const std::string& str) {
+    if (str == structured_control_flow::ScheduleType_Sequential.value()) {
+        return structured_control_flow::ScheduleType_Sequential;
+    } else if (str == structured_control_flow::ScheduleType_CPU_Parallel.value()) {
+        return structured_control_flow::ScheduleType_CPU_Parallel;
+    } else {
+        throw std::runtime_error("Unknown schedule type");
+    }
+}
+
 /*
  * * JSONSerializer class
  * * Serialization logic
@@ -240,7 +278,10 @@ void JSONSerializer::map_to_json(nlohmann::json& j, const structured_control_flo
     debug_info_to_json(j["debug_info"], map_node.debug_info());
 
     j["indvar"] = expression(map_node.indvar());
-    j["num_iterations"] = expression(map_node.num_iterations());
+    j["init"] = expression(map_node.init());
+    j["condition"] = expression(map_node.condition());
+    j["update"] = expression(map_node.update());
+
     j["schedule_type"] = std::string(map_node.schedule_type().value());
 
     nlohmann::json body_json;
@@ -402,15 +443,8 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
     assert(j.contains("type"));
     assert(j["type"].is_string());
 
-    FunctionType type{"Unknown"};
-    if (j["type"] == FunctionType_CPU.value()) {
-        type = FunctionType_CPU;
-    } else if (j["type"] == FunctionType_NV_GLOBAL.value()) {
-        type = FunctionType_NV_GLOBAL;
-    } else {
-        throw std::runtime_error("Unknown function type");
-    }
-    builder::StructuredSDFGBuilder builder(j["name"], type);
+    FunctionType function_type = function_type_from_string(j["type"].get<std::string>());
+    builder::StructuredSDFGBuilder builder(j["name"], function_type);
 
     // deserialize structures
     assert(j.contains("structures"));
@@ -796,18 +830,31 @@ void JSONSerializer::json_to_map_node(const nlohmann::json& j,
     assert(j["type"] == "map");
     assert(j.contains("indvar"));
     assert(j["indvar"].is_string());
-    assert(j.contains("num_iterations"));
-    assert(j["num_iterations"].is_string());
+    assert(j.contains("init"));
+    assert(j["init"].is_string());
+    assert(j.contains("condition"));
+    assert(j["condition"].is_string());
+    assert(j.contains("update"));
+    assert(j["update"].is_string());
     assert(j.contains("root"));
     assert(j["root"].is_object());
     assert(j.contains("schedule_type"));
     assert(j["schedule_type"].is_string());
-    structured_control_flow::ScheduleType schedule_type{j["schedule_type"].get<std::string_view>()};
-    symbolic::Symbol indvar = symbolic::symbol(j["indvar"]);
-    SymEngine::Expression num_iterations(j["num_iterations"]);
 
-    auto& map_node = builder.add_map(parent, indvar, num_iterations, schedule_type, assignments,
-                                     json_to_debug_info(j["debug_info"]));
+    structured_control_flow::ScheduleType schedule_type =
+        schedule_type_from_string(j["schedule_type"].get<std::string>());
+
+    symbolic::Symbol indvar = symbolic::symbol(j["indvar"]);
+    SymEngine::Expression init(j["init"]);
+    SymEngine::Expression condition_expr(j["condition"]);
+    assert(!SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic())
+                .is_null());
+    symbolic::Condition condition =
+        SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic());
+    SymEngine::Expression update(j["update"]);
+
+    auto& map_node = builder.add_map(parent, indvar, condition, init, update, schedule_type,
+                                     assignments, json_to_debug_info(j["debug_info"]));
     map_node.element_id_ = j["element_id"];
 
     assert(j["root"].contains("type"));
@@ -835,7 +882,8 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             assert(j.contains("primitive_type"));
             types::PrimitiveType primitive_type = j["primitive_type"];
             assert(j.contains("storage_type"));
-            types::StorageType storage_type{j["storage_type"].get<std::string_view>()};
+            types::StorageType storage_type =
+                storage_type_from_string(j["storage_type"].get<std::string>());
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
@@ -851,7 +899,8 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             // Convert num_elements_str to symbolic::Expression
             SymEngine::Expression num_elements(num_elements_str);
             assert(j.contains("storage_type"));
-            types::StorageType storage_type{j["storage_type"].get<std::string_view>()};
+            types::StorageType storage_type =
+                storage_type_from_string(j["storage_type"].get<std::string>());
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
@@ -863,7 +912,8 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             assert(j.contains("pointee_type"));
             std::unique_ptr<types::IType> pointee_type = json_to_type(j["pointee_type"]);
             assert(j.contains("storage_type"));
-            types::StorageType storage_type{j["storage_type"].get<std::string_view>()};
+            types::StorageType storage_type =
+                storage_type_from_string(j["storage_type"].get<std::string>());
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
@@ -875,7 +925,8 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             assert(j.contains("name"));
             std::string name = j["name"];
             assert(j.contains("storage_type"));
-            types::StorageType storage_type{j["storage_type"].get<std::string_view>()};
+            types::StorageType storage_type =
+                storage_type_from_string(j["storage_type"].get<std::string>());
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
@@ -893,7 +944,8 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             assert(j.contains("is_var_arg"));
             bool is_var_arg = j["is_var_arg"];
             assert(j.contains("storage_type"));
-            types::StorageType storage_type{j["storage_type"].get<std::string_view>()};
+            types::StorageType storage_type =
+                storage_type_from_string(j["storage_type"].get<std::string>());
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
