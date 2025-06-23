@@ -259,17 +259,18 @@ void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop,
 void AssumptionsAnalysis::visit_map(structured_control_flow::Map* map,
                                     analysis::AnalysisManager& analysis_manager) {
     auto indvar = map->indvar();
+    auto update = map->update();
 
+    // Add new assumptions
     auto& body = map->root();
     if (this->assumptions_.find(&body) == this->assumptions_.end()) {
         this->assumptions_.insert({&body, symbolic::Assumptions()});
     }
     auto& body_assumptions = this->assumptions_[&body];
 
-    // By definition: indvar and num_iterations symbols are constant
-
+    // By definition: indvar and condition symbols are constant
     symbolic::SymbolSet syms = {indvar};
-    for (auto& sym : symbolic::atoms(map->num_iterations())) {
+    for (auto& sym : symbolic::atoms(map->condition())) {
         syms.insert(sym);
     }
     for (auto& sym : syms) {
@@ -280,8 +281,31 @@ void AssumptionsAnalysis::visit_map(structured_control_flow::Map* map,
     }
 
     // Bounds of indvar
-    body_assumptions[indvar].lower_bound(symbolic::zero());
-    body_assumptions[indvar].upper_bound(symbolic::sub(map->num_iterations(), symbolic::one()));
+
+    // Prove that update is monotonic -> assume bounds
+    auto& assums = this->get(*map);
+    if (!symbolic::series::is_monotonic(update, indvar, assums)) {
+        return;
+    }
+
+    // Assumption 2: init is lower bound
+    body_assumptions[indvar].lower_bound(map->init());
+    try {
+        auto cnf = symbolic::conjunctive_normal_form(map->condition());
+        auto ub = cnf_to_upper_bound(cnf, indvar);
+        if (ub == SymEngine::null) {
+            return;
+        }
+        // Assumption 3: ub is upper bound
+        body_assumptions[indvar].upper_bound(ub);
+
+        // Assumption 4: any ub symbol is at least init
+        for (auto& sym : symbolic::atoms(ub)) {
+            body_assumptions[sym].lower_bound(symbolic::add(map->init(), symbolic::one()));
+        }
+    } catch (const symbolic::CNFException& e) {
+        return;
+    }
 };
 
 void AssumptionsAnalysis::traverse(structured_control_flow::Sequence& root,

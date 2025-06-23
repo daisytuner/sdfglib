@@ -278,7 +278,10 @@ void JSONSerializer::map_to_json(nlohmann::json& j, const structured_control_flo
     debug_info_to_json(j["debug_info"], map_node.debug_info());
 
     j["indvar"] = expression(map_node.indvar());
-    j["num_iterations"] = expression(map_node.num_iterations());
+    j["init"] = expression(map_node.init());
+    j["condition"] = expression(map_node.condition());
+    j["update"] = expression(map_node.update());
+
     j["schedule_type"] = std::string(map_node.schedule_type().value());
 
     nlohmann::json body_json;
@@ -827,8 +830,12 @@ void JSONSerializer::json_to_map_node(const nlohmann::json& j,
     assert(j["type"] == "map");
     assert(j.contains("indvar"));
     assert(j["indvar"].is_string());
-    assert(j.contains("num_iterations"));
-    assert(j["num_iterations"].is_string());
+    assert(j.contains("init"));
+    assert(j["init"].is_string());
+    assert(j.contains("condition"));
+    assert(j["condition"].is_string());
+    assert(j.contains("update"));
+    assert(j["update"].is_string());
     assert(j.contains("root"));
     assert(j["root"].is_object());
     assert(j.contains("schedule_type"));
@@ -838,10 +845,16 @@ void JSONSerializer::json_to_map_node(const nlohmann::json& j,
         schedule_type_from_string(j["schedule_type"].get<std::string>());
 
     symbolic::Symbol indvar = symbolic::symbol(j["indvar"]);
-    SymEngine::Expression num_iterations(j["num_iterations"]);
+    SymEngine::Expression init(j["init"]);
+    SymEngine::Expression condition_expr(j["condition"]);
+    assert(!SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic())
+                .is_null());
+    symbolic::Condition condition =
+        SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic());
+    SymEngine::Expression update(j["update"]);
 
-    auto& map_node = builder.add_map(parent, indvar, num_iterations, schedule_type, assignments,
-                                     json_to_debug_info(j["debug_info"]));
+    auto& map_node = builder.add_map(parent, indvar, condition, init, update, schedule_type,
+                                     assignments, json_to_debug_info(j["debug_info"]));
     map_node.element_id_ = j["element_id"];
 
     assert(j["root"].contains("type"));

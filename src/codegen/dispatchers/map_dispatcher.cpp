@@ -39,13 +39,15 @@ void SequentialMapDispatcher::dispatch_node(PrettyPrinter& main_stream,
     main_stream << "for";
     main_stream << "(";
     main_stream << node_.indvar()->get_name();
-    main_stream << " = 0; ";
+    main_stream << " = ";
+    main_stream << language_extension_.expression(node_.init());
+    main_stream << ";";
+    main_stream << language_extension_.expression(node_.condition());
+    main_stream << ";";
     main_stream << node_.indvar()->get_name();
-    main_stream << " < ";
-    main_stream << language_extension_.expression(node_.num_iterations());
-    main_stream << "; ";
-    main_stream << node_.indvar()->get_name();
-    main_stream << "++)" << std::endl;
+    main_stream << " = ";
+    main_stream << language_extension_.expression(node_.update());
+    main_stream << ")" << std::endl;
     main_stream << "{" << std::endl;
 
     main_stream.setIndent(main_stream.indent() + 4);

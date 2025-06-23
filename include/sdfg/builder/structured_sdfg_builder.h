@@ -150,9 +150,24 @@ class StructuredSDFGBuilder : public FunctionBuilder {
                      const DebugInfo& debug_info = DebugInfo());
 
     Map& add_map(Sequence& parent, const symbolic::Symbol& indvar,
-                 const symbolic::Expression& num_iterations, const ScheduleType& schedule_type,
+                 const symbolic::Condition& condition, const symbolic::Expression& init,
+                 const symbolic::Expression& update, const ScheduleType& schedule_type,
                  const sdfg::control_flow::Assignments& assignments = {},
                  const DebugInfo& debug_info = DebugInfo());
+
+    std::pair<Map&, Transition&> add_map_after(
+        Sequence& parent, ControlFlowNode& block, const symbolic::Symbol& indvar,
+        const symbolic::Condition& condition, const symbolic::Expression& init,
+        const symbolic::Expression& update, const ScheduleType& schedule_type,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfo& debug_info = DebugInfo());
+
+    std::pair<Map&, Transition&> add_map_before(
+        Sequence& parent, ControlFlowNode& block, const symbolic::Symbol& indvar,
+        const symbolic::Condition& condition, const symbolic::Expression& init,
+        const symbolic::Expression& update, const ScheduleType& schedule_type,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfo& debug_info = DebugInfo());
 
     Return& add_return(Sequence& parent, const sdfg::control_flow::Assignments& assignments = {},
                        const DebugInfo& debug_info = DebugInfo());
@@ -161,7 +176,7 @@ class StructuredSDFGBuilder : public FunctionBuilder {
                        const symbolic::Condition& condition, const symbolic::Expression& init,
                        const symbolic::Expression& update);
 
-    Map& convert_for(Sequence& parent, For& loop, const symbolic::Expression& num_iterations);
+    Map& convert_for(Sequence& parent, For& loop);
 
     void clear_sequence(Sequence& parent);
 

@@ -2270,6 +2270,67 @@ TEST(LoopDependencyAnalysisTest, Map_1D) {
     EXPECT_EQ(dependencies.size(), 0);
 }
 
+TEST(LoopDependencyAnalysisTest, Map_1D_Tiled) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+    builder.add_container("A", desc, true);
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+    builder.add_container("i_tile", sym_desc);
+
+    // Define loop
+    auto bound = symbolic::symbol("N");
+    auto indvar = symbolic::symbol("i_tile");
+    auto init = symbolic::integer(0);
+    auto condition = symbolic::Lt(indvar, bound);
+    auto tile_size = symbolic::integer(8);
+    auto update = symbolic::add(indvar, tile_size);
+
+    auto& loop_outer = builder.add_for(root, indvar, condition, init, update);
+    auto& body = loop_outer.root();
+
+    auto indvar_tile = symbolic::symbol("i");
+    auto init_tile = indvar;
+    auto condition_tile =
+        symbolic::And(symbolic::Lt(indvar_tile, symbolic::symbol("N")),
+                      symbolic::Lt(indvar_tile, symbolic::add(indvar, tile_size)));
+    auto update_tile = symbolic::add(indvar_tile, symbolic::one());
+
+    auto& loop_inner = builder.add_for(body, indvar_tile, condition_tile, init_tile, update_tile);
+    auto& body_inner = loop_inner.root();
+
+    // Add computation
+    auto& block = builder.add_block(body_inner);
+    auto& a_in = builder.add_access(block, "A");
+    auto& i = builder.add_access(block, "i");
+    auto& a_out = builder.add_access(block, "A");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
+                                        {{"_in1", base_desc}, {"_in2", sym_desc}});
+    builder.add_memlet(block, a_in, "void", tasklet, "_in1", {symbolic::symbol("i")});
+    builder.add_memlet(block, i, "void", tasklet, "_in2", {});
+    builder.add_memlet(block, tasklet, "_out", a_out, "void", {symbolic::symbol("i")});
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    auto& dependencies1 = analysis.dependencies(loop_outer);
+    auto& dependencies2 = analysis.dependencies(loop_inner);
+
+    // Check
+    EXPECT_EQ(dependencies1.size(), 1);
+    EXPECT_EQ(dependencies1.at("i"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies2.size(), 0);
+}
+
 TEST(LoopDependencyAnalysisTest, MapParameterized_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 

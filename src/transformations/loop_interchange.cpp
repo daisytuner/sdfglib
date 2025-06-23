@@ -1,6 +1,6 @@
 #include "sdfg/transformations/loop_interchange.h"
 
-#include "sdfg/analysis/data_parallelism_analysis.h"
+#include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 
 namespace sdfg {
@@ -39,35 +39,9 @@ bool LoopInterchange::can_be_applied(builder::StructuredSDFGBuilder& builder,
         return false;
     }
     // Criterion: Any of both loops is a map
-    auto& analysis = analysis_manager.get<analysis::DataParallelismAnalysis>();
-
-    auto& outer_dependencies = analysis.get(this->outer_loop_);
-    if (outer_dependencies.size() > 0) {
-        bool is_map = true;
-        for (auto& dep : outer_dependencies) {
-            auto& dep_type = dep.second;
-            if (dep_type < analysis::Parallelism::PARALLEL) {
-                is_map = false;
-                break;
-            }
-        }
-        if (is_map) {
-            return true;
-        }
-    }
-    auto& inner_dependencies = analysis.get(this->inner_loop_);
-    if (inner_dependencies.size() > 0) {
-        bool is_map = true;
-        for (auto& dep : inner_dependencies) {
-            auto& dep_type = dep.second;
-            if (dep_type < analysis::Parallelism::PARALLEL) {
-                is_map = false;
-                break;
-            }
-        }
-        if (is_map) {
-            return true;
-        }
+    if (dynamic_cast<structured_control_flow::Map*>(&outer_loop_) ||
+        dynamic_cast<structured_control_flow::Map*>(&inner_loop_)) {
+        return true;
     }
 
     return false;
@@ -75,21 +49,57 @@ bool LoopInterchange::can_be_applied(builder::StructuredSDFGBuilder& builder,
 
 void LoopInterchange::apply(builder::StructuredSDFGBuilder& builder,
                             analysis::AnalysisManager& analysis_manager) {
-    auto new_inner_loop = builder.add_for_after(
-        builder.parent(inner_loop_), this->inner_loop_, this->outer_loop_.indvar(),
-        this->outer_loop_.condition(), this->outer_loop_.init(), this->outer_loop_.update());
+    auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+    auto& outer_scope =
+        static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&outer_loop_));
+    auto& inner_scope =
+        static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&inner_loop_));
+
+    // Add new outer loop behind current outer loop
+    structured_control_flow::StructuredLoop* new_outer_loop = nullptr;
+    if (auto inner_map = dynamic_cast<structured_control_flow::Map*>(&inner_loop_)) {
+        new_outer_loop = &builder
+                              .add_map_after(outer_scope, this->outer_loop_, inner_map->indvar(),
+                                             inner_map->condition(), inner_map->init(),
+                                             inner_map->update(), inner_map->schedule_type())
+                              .first;
+    } else {
+        new_outer_loop =
+            &builder
+                 .add_for_after(outer_scope, this->outer_loop_, this->inner_loop_.indvar(),
+                                this->inner_loop_.condition(), this->inner_loop_.init(),
+                                this->inner_loop_.update())
+                 .first;
+    }
+
+    // Add new inner loop behind current inner loop
+    structured_control_flow::StructuredLoop* new_inner_loop = nullptr;
+    if (auto outer_map = dynamic_cast<structured_control_flow::Map*>(&outer_loop_)) {
+        new_inner_loop = &builder
+                              .add_map_after(inner_scope, this->inner_loop_, outer_map->indvar(),
+                                             outer_map->condition(), outer_map->init(),
+                                             outer_map->update(), outer_map->schedule_type())
+                              .first;
+    } else {
+        new_inner_loop =
+            &builder
+                 .add_for_after(inner_scope, this->inner_loop_, this->outer_loop_.indvar(),
+                                this->outer_loop_.condition(), this->outer_loop_.init(),
+                                this->outer_loop_.update())
+                 .first;
+    }
+
+    // Insert inner loop body into new inner loop
     auto& inner_body = this->inner_loop_.root();
+    builder.insert_children(new_inner_loop->root(), inner_body, 0);
 
-    builder.insert_children(new_inner_loop.first.root(), inner_body, 0);
-
-    auto new_outer_loop = builder.add_for_after(
-        builder.parent(outer_loop_), this->outer_loop_, this->inner_loop_.indvar(),
-        this->inner_loop_.condition(), this->inner_loop_.init(), this->inner_loop_.update());
-
+    // Insert outer loop body into new outer loop
     auto& outer_body = this->outer_loop_.root();
-    builder.insert_children(new_outer_loop.first.root(), outer_body, 0);
-    builder.remove_child(builder.parent(inner_loop_), this->inner_loop_);
-    builder.remove_child(builder.parent(outer_loop_), this->outer_loop_);
+    builder.insert_children(new_outer_loop->root(), outer_body, 0);
+
+    // Remove old loops
+    builder.remove_child(new_outer_loop->root(), this->inner_loop_);
+    builder.remove_child(outer_scope, this->outer_loop_);
 
     analysis_manager.invalidate_all();
 };
@@ -114,8 +124,8 @@ LoopInterchange LoopInterchange::from_json(builder::StructuredSDFGBuilder& build
         throw InvalidTransformationDescriptionException(
             "Element with ID " + std::to_string(inner_loop_id) + " not found.");
     }
-    auto outer_loop = dynamic_cast<structured_control_flow::For*>(outer_element);
-    auto inner_loop = dynamic_cast<structured_control_flow::For*>(inner_element);
+    auto outer_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(outer_element);
+    auto inner_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(inner_element);
 
     return LoopInterchange(*outer_loop, *inner_loop);
 };

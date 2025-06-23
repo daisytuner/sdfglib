@@ -45,10 +45,19 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder,
     auto condition = symbolic::subs(loop_.condition(), indvar, outer_indvar);
     auto update = symbolic::add(outer_indvar, tile_size);
 
-    auto& outer_loop =
-        builder.add_for_before(*parent, loop_, outer_indvar, condition, loop_.init(), update).first;
+    structured_control_flow::StructuredLoop* outer_loop = nullptr;
+    if (auto map = dynamic_cast<structured_control_flow::Map*>(&loop_)) {
+        outer_loop = &builder
+                          .add_map_before(*parent, loop_, outer_indvar, condition, loop_.init(),
+                                          update, map->schedule_type())
+                          .first;
+    } else {
+        outer_loop =
+            &builder.add_for_before(*parent, loop_, outer_indvar, condition, loop_.init(), update)
+                 .first;
+    }
 
-    auto& outer_body = outer_loop.root();
+    auto& outer_body = outer_loop->root();
 
     auto inner_indvar = indvar;
     auto inner_init = outer_indvar;
@@ -59,10 +68,17 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder,
 
     // Add new loop with original body
     auto& tmp_root = builder.add_sequence_before(*parent, loop_).first;
-    auto& inner_loop =
-        builder.add_for(tmp_root, inner_indvar, inner_condition, inner_init, inner_update);
+    structured_control_flow::StructuredLoop* inner_loop = nullptr;
+    if (dynamic_cast<structured_control_flow::Map*>(&loop_)) {
+        inner_loop =
+            &builder.add_map(tmp_root, inner_indvar, inner_condition, inner_init, inner_update,
+                             structured_control_flow::ScheduleType_Sequential);
+    } else {
+        inner_loop =
+            &builder.add_for(tmp_root, inner_indvar, inner_condition, inner_init, inner_update);
+    }
 
-    deepcopy::StructuredSDFGDeepCopy copies(builder, inner_loop.root(), loop_.root());
+    deepcopy::StructuredSDFGDeepCopy copies(builder, inner_loop->root(), loop_.root());
     copies.copy();
 
     builder.clear_sequence(outer_body);
@@ -100,7 +116,7 @@ LoopTiling LoopTiling::from_json(builder::StructuredSDFGBuilder& builder,
         throw InvalidTransformationDescriptionException("Element with ID " +
                                                         std::to_string(loop_id) + " not found.");
     }
-    auto loop = dynamic_cast<structured_control_flow::For*>(element);
+    auto loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element);
 
     return LoopTiling(*loop, tile_size);
 };
