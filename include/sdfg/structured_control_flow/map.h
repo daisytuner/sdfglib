@@ -23,16 +23,7 @@ class Map : public StructuredLoop {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
    private:
-    symbolic::Symbol indvar_;
-    symbolic::Expression num_iterations_;
-
     ScheduleType schedule_type_;
-
-    symbolic::Expression init_;
-    symbolic::Expression update_;
-    symbolic::Condition condition_;
-
-    std::unique_ptr<Sequence> root_;
 
     Map(size_t element_id, const DebugInfo& debug_info, symbolic::Symbol indvar,
         symbolic::Expression init, symbolic::Expression update, symbolic::Condition condition,
@@ -42,24 +33,9 @@ class Map : public StructuredLoop {
     Map(const Map& node) = delete;
     Map& operator=(const Map&) = delete;
 
-    const symbolic::Symbol& indvar() const override;
-
-    symbolic::Symbol& indvar();
-
-    const symbolic::Expression& init() const override;
-
-    const symbolic::Expression& update() const override;
-
-    const symbolic::Condition& condition() const override;
-
     ScheduleType& schedule_type();
 
     const ScheduleType& schedule_type() const;
-
-    Sequence& root() const override;
-
-    void replace(const symbolic::Expression& old_expression,
-                 const symbolic::Expression& new_expression) override;
 };
 
 }  // namespace structured_control_flow

@@ -231,8 +231,8 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                     tasklet->condition() = symbolic::subs(condition, lhs, rhs_modified);
                     applied = true;
                 }
-            } else if (auto for_loop =
-                           dynamic_cast<structured_control_flow::For*>(read->element())) {
+            } else if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(
+                           read->element())) {
                 auto for_user = dynamic_cast<analysis::ForUser*>(read);
                 if (for_user->is_init() && symbolic::uses(for_loop->init(), lhs)) {
                     for_loop->init() = symbolic::subs(for_loop->init(), lhs, rhs_modified);
