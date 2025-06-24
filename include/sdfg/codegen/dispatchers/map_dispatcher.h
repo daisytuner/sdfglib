@@ -48,7 +48,7 @@ using MapDispatcherFn = std::function<std::unique_ptr<NodeDispatcher>(
 class MapDispatcherRegistry {
    private:
     mutable std::mutex mutex_;
-    std::unordered_map<std::string_view, MapDispatcherFn> factory_map_;
+    std::unordered_map<std::string, MapDispatcherFn> factory_map_;
 
    public:
     static MapDispatcherRegistry& instance() {
@@ -56,7 +56,7 @@ class MapDispatcherRegistry {
         return registry;
     }
 
-    void register_map_dispatcher(std::string_view schedule_type, MapDispatcherFn fn) {
+    void register_map_dispatcher(std::string schedule_type, MapDispatcherFn fn) {
         std::lock_guard<std::mutex> lock(mutex_);
         if (factory_map_.find(schedule_type) != factory_map_.end()) {
             throw std::runtime_error("Map dispatcher already registered for schedule type: " +
@@ -65,7 +65,7 @@ class MapDispatcherRegistry {
         factory_map_[schedule_type] = std::move(fn);
     }
 
-    MapDispatcherFn get_map_dispatcher(std::string_view schedule_type) const {
+    MapDispatcherFn get_map_dispatcher(std::string schedule_type) const {
         auto it = factory_map_.find(schedule_type);
         if (it != factory_map_.end()) {
             return it->second;

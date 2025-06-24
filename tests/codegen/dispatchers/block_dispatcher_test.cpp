@@ -5,8 +5,8 @@
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
 #include "sdfg/codegen/language_extensions/cuda_language_extension.h"
-#include "sdfg/data_flow/barrier_local_node.h"
 #include "sdfg/data_flow/library_node.h"
+#include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 
 using namespace sdfg;
 

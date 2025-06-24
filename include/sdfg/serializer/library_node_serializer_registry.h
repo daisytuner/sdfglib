@@ -14,7 +14,7 @@ using LibraryNodeSerializerFn = std::function<std::unique_ptr<LibraryNodeSeriali
 class LibraryNodeSerializerRegistry {
    private:
     mutable std::mutex mutex_;
-    std::unordered_map<std::string_view, LibraryNodeSerializerFn> factory_map_;
+    std::unordered_map<std::string, LibraryNodeSerializerFn> factory_map_;
 
    public:
     static LibraryNodeSerializerRegistry& instance() {
@@ -22,10 +22,10 @@ class LibraryNodeSerializerRegistry {
         return registry;
     }
 
-    void register_library_node_serializer(std::string_view library_node_code,
+    void register_library_node_serializer(std::string library_node_code,
                                           LibraryNodeSerializerFn fn);
 
-    LibraryNodeSerializerFn get_library_node_serializer(std::string_view library_node_code);
+    LibraryNodeSerializerFn get_library_node_serializer(std::string library_node_code);
 
     size_t size() const;
 };

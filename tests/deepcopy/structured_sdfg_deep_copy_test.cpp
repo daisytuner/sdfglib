@@ -59,7 +59,7 @@ TEST(StructuredSDFGDeepCopy, Block_WithAssignments) {
     EXPECT_EQ(inserted_root->at(0).second.size(), 1);
 }
 
-inline constexpr data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
+inline data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
 class BarrierLocalLibraryNode : public data_flow::LibraryNode {
    public:
     BarrierLocalLibraryNode(size_t element_id, const DebugInfo& debug_info,

@@ -1,6 +1,6 @@
 #include "sdfg/serializer/library_nodes/barrier_local_node_serializer.h"
 
-#include "sdfg/data_flow/barrier_local_node.h"
+#include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 
 namespace sdfg {
 namespace serializer {
@@ -18,7 +18,7 @@ nlohmann::json BarrierLocalNodeSerializer::serialize(
 data_flow::LibraryNode& BarrierLocalNodeSerializer::deserialize(
     const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder,
     sdfg::structured_control_flow::Block& parent) {
-    auto code = j["code"].get<std::string_view>();
+    auto code = j["code"].get<std::string>();
     if (code != data_flow::BARRIER_LOCAL.value()) {
         throw std::runtime_error("Invalid library node code");
     }

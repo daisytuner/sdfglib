@@ -92,13 +92,6 @@ bool CPPCodeGenerator::as_source(const std::filesystem::path& header_path,
     ofs_library << "#include \"" << header_path.filename().string() << "\"" << std::endl;
     ofs_library << std::endl;
 
-    ofs_library << "#undef HWY_TARGET_INCLUDE" << std::endl;
-    ofs_library << "#define HWY_TARGET_INCLUDE " << library_path.filename() << std::endl;
-    ofs_library << "#include <hwy/foreach_target.h>" << std::endl;
-    ofs_library << "#include <hwy/highway.h>" << std::endl;
-    ofs_library << "#include <hwy/contrib/math/math-inl.h>" << std::endl;
-    ofs_library << std::endl;
-
     ofs_library << library_content << std::endl;
     ofs_library.close();
 

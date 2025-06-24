@@ -45,7 +45,7 @@ using LibraryNodeDispatcherFn = std::function<std::unique_ptr<LibraryNodeDispatc
 class LibraryNodeDispatcherRegistry {
    private:
     mutable std::mutex mutex_;
-    std::unordered_map<std::string_view, LibraryNodeDispatcherFn> factory_map_;
+    std::unordered_map<std::string, LibraryNodeDispatcherFn> factory_map_;
 
    public:
     static LibraryNodeDispatcherRegistry& instance() {
@@ -53,7 +53,7 @@ class LibraryNodeDispatcherRegistry {
         return registry;
     }
 
-    void register_library_node_dispatcher(std::string_view library_node_code,
+    void register_library_node_dispatcher(std::string library_node_code,
                                           LibraryNodeDispatcherFn fn) {
         std::lock_guard<std::mutex> lock(mutex_);
         if (factory_map_.find(library_node_code) != factory_map_.end()) {
@@ -64,7 +64,7 @@ class LibraryNodeDispatcherRegistry {
         factory_map_[library_node_code] = std::move(fn);
     }
 
-    LibraryNodeDispatcherFn get_library_node_dispatcher(std::string_view library_node_code) const {
+    LibraryNodeDispatcherFn get_library_node_dispatcher(std::string library_node_code) const {
         auto it = factory_map_.find(library_node_code);
         if (it != factory_map_.end()) {
             return it->second;

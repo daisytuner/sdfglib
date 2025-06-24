@@ -35,8 +35,8 @@ class FunctionBuilder;
 static std::string external_suffix = "__daisy__internal__";
 
 typedef StringEnum FunctionType;
-inline constexpr FunctionType FunctionType_CPU{"CPU"};
-inline constexpr FunctionType FunctionType_NV_GLOBAL{"NV_GLOBAL"};
+inline FunctionType FunctionType_CPU{"CPU"};
+inline FunctionType FunctionType_NV_GLOBAL{"NV_GLOBAL"};
 
 class Function {
     friend class sdfg::builder::FunctionBuilder;

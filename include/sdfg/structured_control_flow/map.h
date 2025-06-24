@@ -16,8 +16,8 @@ class StructuredSDFGBuilder;
 namespace structured_control_flow {
 
 typedef StringEnum ScheduleType;
-inline constexpr ScheduleType ScheduleType_Sequential{"SEQUENTIAL"};
-inline constexpr ScheduleType ScheduleType_CPU_Parallel{"CPU_PARALLEL"};
+inline ScheduleType ScheduleType_Sequential{"SEQUENTIAL"};
+inline ScheduleType ScheduleType_CPU_Parallel{"CPU_PARALLEL"};
 
 class Map : public StructuredLoop {
     friend class sdfg::builder::StructuredSDFGBuilder;

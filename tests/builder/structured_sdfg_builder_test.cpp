@@ -103,7 +103,7 @@ TEST(StructuredSDFGBuilderTest, AddBlockAfter) {
     EXPECT_EQ(child.second.size(), 0);
 }
 
-inline constexpr data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
+inline data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
 class BarrierLocalLibraryNode : public data_flow::LibraryNode {
    public:
     BarrierLocalLibraryNode(size_t element_id, const DebugInfo& debug_info,

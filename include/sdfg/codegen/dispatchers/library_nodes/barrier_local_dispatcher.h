@@ -1,7 +1,7 @@
 #pragma once
 
 #include "sdfg/codegen/dispatchers/library_nodes/library_node_dispatcher.h"
-#include "sdfg/data_flow/barrier_local_node.h"
+#include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 
 namespace sdfg {
 namespace codegen {
