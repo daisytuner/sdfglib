@@ -353,7 +353,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
         boost::add_edge(t, s, this->graph_);
 
         return {s, t};
-    } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(&node)) {
+    } else if (auto for_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(&node)) {
         // NOP
         auto s = boost::add_vertex(this->graph_);
         this->users_.insert({s, std::make_unique<User>(s, "", for_stmt, Use::NOP)});
@@ -442,32 +442,6 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
         this->entries_.insert({ret_stmt, this->users_.at(v).get()});
         this->exits_.insert({ret_stmt, this->users_.at(v).get()});
         return {v, boost::graph_traits<graph::Graph>::null_vertex()};
-    } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&node)) {
-        // NOP
-        auto s = boost::add_vertex(this->graph_);
-        this->users_.insert({s, std::make_unique<User>(s, "", map_stmt, Use::NOP)});
-        auto last = s;
-        this->entries_.insert({map_stmt, this->users_.at(s).get()});
-
-        // Indvar
-        auto v = boost::add_vertex(this->graph_);
-        this->add_user(
-            std::make_unique<User>(v, map_stmt->indvar()->get_name(), map_stmt, Use::WRITE));
-        boost::add_edge(last, v, this->graph_);
-        last = v;
-
-        // Root
-        auto subgraph = this->traverse(map_stmt->root());
-        boost::add_edge(last, subgraph.first, this->graph_);
-
-        // NOP
-        auto t = boost::add_vertex(this->graph_);
-        this->users_.insert({t, std::make_unique<User>(t, "", map_stmt, Use::NOP)});
-        last = t;
-        boost::add_edge(subgraph.second, last, this->graph_);
-        this->exits_.insert({map_stmt, this->users_.at(t).get()});
-
-        return {s, t};
     }
 
     throw std::invalid_argument("Invalid control flow node type");
@@ -1071,7 +1045,7 @@ std::unordered_set<User*> UsersView::all_uses_after(User& user) {
 
 User* Users::get_user(const std::string& container, Element* element, Use use, bool is_init,
                       bool is_condition, bool is_update) {
-    if (auto for_loop = dynamic_cast<structured_control_flow::For*>(element)) {
+    if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element)) {
         if (is_init) {
             auto tmp = users_by_sdfg_loop_init_.at(container).at(for_loop).at(use);
             return tmp;
@@ -1092,7 +1066,7 @@ void Users::add_user(std::unique_ptr<User> user) {
     auto user_ptr = this->users_.at(vertex).get();
     auto* target_structure = &users_by_sdfg_;
     if (auto for_user = dynamic_cast<ForUser*>(user_ptr)) {
-        auto for_loop = dynamic_cast<structured_control_flow::For*>(user_ptr->element());
+        auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(user_ptr->element());
         if (for_loop == nullptr) {
             throw std::invalid_argument("Invalid user type");
         }

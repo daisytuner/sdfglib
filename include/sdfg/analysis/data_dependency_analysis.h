@@ -52,7 +52,8 @@ class DataDependencyAnalysis : public Analysis {
                      std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
 
     void visit_for(analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-                   structured_control_flow::For& for_loop, std::unordered_set<User*>& undefined,
+                   structured_control_flow::StructuredLoop& for_loop,
+                   std::unordered_set<User*>& undefined,
                    std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
                    std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
 
@@ -79,11 +80,6 @@ class DataDependencyAnalysis : public Analysis {
                         std::unordered_set<User*>& undefined,
                         std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
                         std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
-
-    void visit_map(analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-                   structured_control_flow::Map& map, std::unordered_set<User*>& undefined,
-                   std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
-                   std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
 
     /****** Defines & Use ******/
 

@@ -162,7 +162,7 @@ void DataDependencyAnalysis::visit_block(
 
 void DataDependencyAnalysis::visit_for(
     analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-    structured_control_flow::For& for_loop, std::unordered_set<User*>& undefined,
+    structured_control_flow::StructuredLoop& for_loop, std::unordered_set<User*>& undefined,
     std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions) {
     // Init - Read
@@ -538,55 +538,6 @@ void DataDependencyAnalysis::visit_return(
     open_definitions.clear();
 }
 
-void DataDependencyAnalysis::visit_map(
-    analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-    structured_control_flow::Map& map, std::unordered_set<User*>& undefined,
-    std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
-    std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions) {
-    // write Init
-    auto current_user = users.get_user(map.indvar()->get_name(), &map, Use::WRITE);
-
-    open_definitions.insert({current_user, {}});
-
-    std::unordered_map<User*, std::unordered_set<User*>> open_definitions_map;
-    std::unordered_map<User*, std::unordered_set<User*>> closed_definitionss_map;
-    std::unordered_set<User*> undefined_map;
-
-    // Add assumptions for body
-    visit_sequence(users, assumptions_analysis, map.root(), undefined_map, open_definitions_map,
-                   closed_definitionss_map);
-
-    for (auto& entry : closed_definitionss_map) {
-        closed_definitions.insert(entry);
-    }
-
-    // Handle open reads of for
-    for (auto open_read : undefined_map) {
-        // Add recursive
-        for (auto& user : open_definitions_map) {
-            if (user.first->container() == open_read->container()) {
-                user.second.insert(open_read);
-            }
-        }
-
-        bool found = false;
-        for (auto& entry : open_definitions) {
-            if (entry.first->container() == open_read->container()) {
-                entry.second.insert(open_read);
-                found = true;
-            }
-        }
-        if (!found) {
-            undefined.insert(open_read);
-        }
-    }
-
-    // Merge open reads_after_writes
-    for (auto& entry : open_definitions_map) {
-        open_definitions.insert(entry);
-    }
-}
-
 void DataDependencyAnalysis::visit_sequence(
     analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
     structured_control_flow::Sequence& sequence, std::unordered_set<User*>& undefined,
@@ -597,7 +548,8 @@ void DataDependencyAnalysis::visit_sequence(
         if (auto block = dynamic_cast<structured_control_flow::Block*>(&child.first)) {
             visit_block(users, assumptions_analysis, *block, undefined, open_definitions,
                         closed_definitions);
-        } else if (auto for_loop = dynamic_cast<structured_control_flow::For*>(&child.first)) {
+        } else if (auto for_loop =
+                       dynamic_cast<structured_control_flow::StructuredLoop*>(&child.first)) {
             visit_for(users, assumptions_analysis, *for_loop, undefined, open_definitions,
                       closed_definitions);
         } else if (auto if_else = dynamic_cast<structured_control_flow::IfElse*>(&child.first)) {
@@ -613,9 +565,6 @@ void DataDependencyAnalysis::visit_sequence(
         } else if (auto sequence = dynamic_cast<structured_control_flow::Sequence*>(&child.first)) {
             visit_sequence(users, assumptions_analysis, *sequence, undefined, open_definitions,
                            closed_definitions);
-        } else if (auto map = dynamic_cast<structured_control_flow::Map*>(&child.first)) {
-            visit_map(users, assumptions_analysis, *map, undefined, open_definitions,
-                      closed_definitions);
         }
 
         // handle transitions read
