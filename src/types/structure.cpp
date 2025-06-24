@@ -13,6 +13,8 @@ PrimitiveType Structure::primitive_type() const { return PrimitiveType::Void; };
 
 bool Structure::is_symbol() const { return false; };
 
+TypeID Structure::type_id() const { return TypeID::Structure; };
+
 const std::string& Structure::name() const { return this->name_; };
 
 bool Structure::operator==(const IType& other) const {

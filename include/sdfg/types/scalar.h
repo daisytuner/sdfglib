@@ -16,6 +16,8 @@ class Scalar : public IType {
     Scalar(StorageType storage_type, size_t alignment, const std::string& initializer,
            PrimitiveType primitive_type);
 
+    virtual TypeID type_id() const override;
+
     virtual PrimitiveType primitive_type() const override;
 
     virtual bool is_symbol() const override;

@@ -31,6 +31,10 @@ TEST(StructureTest, Clone) {
     auto s2_ = dynamic_cast<types::Structure*>(s2.get());
     EXPECT_EQ(s.name(), s2_->name());
 }
+TEST(StructureTest, TypeId) {
+    types::Structure s("test");
+    EXPECT_EQ(s.type_id(), types::TypeID::Structure);
+}
 
 TEST(StructureTest, StructureDefinition) {
     types::StructureDefinition s("test", false);

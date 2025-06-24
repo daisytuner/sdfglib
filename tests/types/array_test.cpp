@@ -24,6 +24,14 @@ TEST(ArrayTest, Symbol) {
     EXPECT_FALSE(a.is_symbol());
 }
 
+TEST(ArrayTest, TypeId) {
+    types::Scalar s(types::PrimitiveType::Float);
+    symbolic::Expression e = symbolic::integer(10);
+
+    types::Array a(s, e);
+    EXPECT_EQ(a.type_id(), types::TypeID::Array);
+}
+
 TEST(ArrayTest, Equal) {
     types::Scalar s(types::PrimitiveType::UInt32);
     symbolic::Expression e = symbolic::integer(10);

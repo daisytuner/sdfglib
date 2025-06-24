@@ -1,22 +1,18 @@
 #include "sdfg/codegen/code_generators/c_code_generator.h"
 
+#include "sdfg/analysis/analysis.h"
+#include "sdfg/analysis/users.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
+#include "sdfg/codegen/instrumentation/capture_var_plan.h"
 #include "sdfg/codegen/instrumentation/instrumentation.h"
 #include "sdfg/codegen/instrumentation/outermost_loops_instrumentation.h"
 
 namespace sdfg {
 namespace codegen {
 
-CCodeGenerator::CCodeGenerator(StructuredSDFG& sdfg)
-    : CodeGenerator(sdfg, InstrumentationStrategy::NONE) {
-    if (sdfg.type() != FunctionType_CPU) {
-        throw std::runtime_error("CCodeGenerator can only be used for CPU SDFGs");
-    }
-};
-
 CCodeGenerator::CCodeGenerator(StructuredSDFG& sdfg,
-                               InstrumentationStrategy instrumentation_strategy)
-    : CodeGenerator(sdfg, instrumentation_strategy) {
+                               InstrumentationStrategy instrumentation_strategy, bool capture_args_results)
+    : CodeGenerator(sdfg, instrumentation_strategy, capture_args_results) {
     if (sdfg.type() != FunctionType_CPU) {
         throw std::runtime_error("CCodeGenerator can only be used for CPU SDFGs");
     }
@@ -40,6 +36,100 @@ std::string CCodeGenerator::function_definition() {
     arglist << sdfg::helpers::join(args, ", ");
 
     return "extern void " + sdfg_.name() + "(" + arglist.str() + ")";
+};
+
+void CCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const {
+    std::string name = sdfg_.name();
+
+    ofs_source << "static void* __capture_ctx;" << std::endl;
+    ofs_source << "static void __attribute__((constructor(1000))) __capture_ctx_init(void) {" << std::endl;
+    ofs_source << "\t__capture_ctx = __daisy_capture_init(\"" << name << "\");" << std::endl;
+    ofs_source << "}" << std::endl;
+    ofs_source << std::endl;
+}
+
+void CCodeGenerator::emit_arg_captures(std::ostream& ofs_source, const std::vector<CaptureVarPlan>& plan, bool after) {
+    std::string name = sdfg_.name();
+
+    if (!after) {
+        ofs_source << "const bool __daisy_cap_en = __daisy_capture_enter(__capture_ctx);" << std::endl;
+    }
+
+    const auto& args = sdfg_.arguments();
+    const auto& exts = sdfg_.externals();
+
+    ofs_source << "if (__daisy_cap_en) {" << std::endl;
+
+    auto afterBoolStr = after ? "true" : "false";
+
+    for (auto& varPlan : plan) {
+        auto argIdx = varPlan.arg_idx;
+        auto argName = varPlan.is_external ? exts[argIdx-args.size()] : args[argIdx];
+
+        if ((!after && varPlan.capture_input) || (after && varPlan.capture_output)) {
+            switch (varPlan.type) {
+                case CaptureVarType::CapRaw: {
+                    ofs_source << "\t__daisy_capture_raw(" <<
+                        "__capture_ctx, " <<
+                        argIdx << ", " <<
+                        "&" << argName << ", " <<
+                        "sizeof(" << argName << "), " <<
+                        varPlan.inner_type << ", " <<
+                        afterBoolStr <<
+                        ");" << std::endl;
+                    break;
+                }
+                case CaptureVarType::Cap1D: {
+                    ofs_source << "\t__daisy_capture_1d(" <<
+                        "__capture_ctx, " <<
+                        argIdx << ", " <<
+                        argName << ", " <<
+                        "sizeof(" << language_extension_.primitive_type(varPlan.inner_type) << "), " <<
+                        varPlan.inner_type << ", " <<
+                        language_extension_.expression(varPlan.dim1) << ", " <<
+                        afterBoolStr <<
+                        ");" << std::endl;
+                    break;
+                }
+                case CaptureVarType::Cap2D: {
+                    ofs_source << "\t__daisy_capture_2d(" <<
+                        "__capture_ctx, " <<
+                        argIdx << ", " <<
+                        argName << ", " <<
+                        "sizeof(" << language_extension_.primitive_type(varPlan.inner_type) <<"), " <<
+                        varPlan.inner_type << ", " <<
+                        language_extension_.expression(varPlan.dim1) << ", " <<
+                        language_extension_.expression(varPlan.dim2) << ", " <<
+                        afterBoolStr <<
+                        ");" << std::endl;
+                    break;
+                }
+                case CaptureVarType::Cap3D: {
+                    ofs_source << "\t__daisy_capture_3d(" <<
+                        "__capture_ctx, " <<
+                        argIdx << ", " <<
+                        argName << ", " <<
+                        "sizeof(" << language_extension_.primitive_type(varPlan.inner_type) << "), " <<
+                        varPlan.inner_type << ", " <<
+                        language_extension_.expression(varPlan.dim1) << ", " <<
+                        language_extension_.expression(varPlan.dim2) << ", " <<
+                        language_extension_.expression(varPlan.dim3) << ", " <<
+                        afterBoolStr <<
+                        ");" << std::endl;
+                    break;
+                }
+                default:
+                    std::cerr << "Unknown capture type " << static_cast<int>(varPlan.type) << " for arg " << argIdx << " at " << (after? "result" : "input") << " time" << std::endl;
+                    break;
+            }
+        }
+    }
+
+    if (after) {
+        ofs_source << "\t__daisy_capture_end(__capture_ctx);" << std::endl;
+    }
+
+    ofs_source << "}" << std::endl;
 };
 
 bool CCodeGenerator::as_source(const std::filesystem::path& header_path,
@@ -67,6 +157,17 @@ bool CCodeGenerator::as_source(const std::filesystem::path& header_path,
 
     ofs_source << "#include \"" << header_path.filename().string() << "\"" << std::endl;
     ofs_source << this->globals_stream_.str() << std::endl;
+
+    std::unique_ptr<std::vector<CaptureVarPlan>> capturePlan;
+    if (capture_args_results_) {
+        capturePlan = create_capture_plans();
+        if (capturePlan) {
+            this->emit_capture_context_init(ofs_source);
+        } else {
+            std::cerr << "Cannot capture all args for SDFG '" << sdfg_.name() << "'. Skpping capture instrumentation!" << std::endl;
+        }
+    }
+
     ofs_source << this->function_definition() << std::endl;
     ofs_source << "{" << std::endl;
 
@@ -74,7 +175,15 @@ bool CCodeGenerator::as_source(const std::filesystem::path& header_path,
         ofs_source << "__daisy_instrument_init();" << std::endl;
     }
 
+    if (capturePlan) {
+        this->emit_arg_captures(ofs_source, *capturePlan, false);
+    }
+
     ofs_source << this->main_stream_.str() << std::endl;
+
+    if (capturePlan) {
+        this->emit_arg_captures(ofs_source, *capturePlan, true);
+    }
 
     if (instrumentation_strategy_ != InstrumentationStrategy::NONE) {
         ofs_source << "__daisy_instrument_finalize();" << std::endl;

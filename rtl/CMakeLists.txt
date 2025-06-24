@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(daisy_rtl SHARED
     src/daisy_rtl.cpp
+    src/daisy_capture.cpp
 )
 
 target_include_directories(daisy_rtl PUBLIC
@@ -15,7 +16,7 @@ target_include_directories(daisy_rtl PUBLIC
 
 # Don't link against PAPI!
 # Just link against the dynamic linker
-target_link_libraries(daisy_rtl PRIVATE dl)
+target_link_libraries(daisy_rtl PRIVATE dl sdfglib::arg_capture_io)
 
 set_target_properties(daisy_rtl PROPERTIES
     VERSION ${PROJECT_VERSION}

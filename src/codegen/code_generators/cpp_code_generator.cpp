@@ -7,18 +7,15 @@
 namespace sdfg {
 namespace codegen {
 
-CPPCodeGenerator::CPPCodeGenerator(StructuredSDFG& sdfg)
-    : CodeGenerator(sdfg, InstrumentationStrategy::NONE) {
-    if (sdfg.type() != FunctionType_CPU) {
-        throw std::runtime_error("CPPCodeGenerator can only be used for CPU SDFGs");
-    }
-};
-
 CPPCodeGenerator::CPPCodeGenerator(StructuredSDFG& sdfg,
-                                   InstrumentationStrategy instrumentation_strategy)
+                                   InstrumentationStrategy instrumentation_strategy,
+                                   bool capture_args_results)
     : CodeGenerator(sdfg, instrumentation_strategy) {
     if (sdfg.type() != FunctionType_CPU) {
         throw std::runtime_error("CPPCodeGenerator can only be used for CPU SDFGs");
+    }
+    if (capture_args_results) {
+        std::cerr << "CPPCodeGenerator does not support capturing args/results!";
     }
 };
 

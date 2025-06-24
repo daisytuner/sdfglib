@@ -9,8 +9,8 @@ FetchContent_MakeAvailable(googletest)
 set(TEST_FILES
     analysis/assumptions_analysis_test.cpp
     analysis/data_parallelism_analysis_test.cpp
-    analysis/data_dependency_analysis_test.cpp
     analysis/loop_analysis_test.cpp
+    analysis/mem_access_range_analysis_test.cpp
     analysis/users_test.cpp
     builder/function_builder_test.cpp
     builder/sdfg_builder_test.cpp
@@ -66,6 +66,7 @@ set(TEST_FILES
     types/function_test.cpp
     types/pointer_test.cpp
     types/primitive_type_test.cpp
+    types/reference_test.cpp
     types/scalar_test.cpp
     types/structure_test.cpp
     types/utils_test.cpp

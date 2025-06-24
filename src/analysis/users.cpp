@@ -672,7 +672,10 @@ structured_control_flow::ControlFlowNode* Users::scope(User* user) {
                    dynamic_cast<structured_control_flow::Transition*>(user->element())) {
         return &transition->parent();
     } else {
-        return dynamic_cast<structured_control_flow::ControlFlowNode*>(user->element());
+        auto user_element = dynamic_cast<structured_control_flow::ControlFlowNode*>(user->element());
+        assert(user_element != nullptr &&
+               "Users::scope: User element is not a ControlFlowNode");
+        return user_element;
     }
 }
 

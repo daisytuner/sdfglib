@@ -25,6 +25,11 @@ TEST(ScalarTest, Equal) {
     EXPECT_NE(s, s3);
 }
 
+TEST(ScalarTest, TypeId) {
+    types::Scalar s(types::PrimitiveType::Float);
+    EXPECT_EQ(s.type_id(), types::TypeID::Scalar);
+}
+
 TEST(ScalarTest, Clone) {
     types::Scalar s(types::PrimitiveType::Float);
     auto s2 = s.clone();

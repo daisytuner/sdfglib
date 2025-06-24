@@ -28,6 +28,12 @@ TEST(PointerTest, Equal) {
     EXPECT_NE(p, p3);
 }
 
+TEST(PointerTest, TypeId) {
+    types::Pointer p{types::Scalar(types::PrimitiveType::UInt32)};
+    
+    EXPECT_EQ(p.type_id(), types::TypeID::Pointer);
+}
+
 TEST(PointerTest, Clone) {
     types::Pointer p{types::Scalar(types::PrimitiveType::Float)};
     auto p2 = p.clone();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sdfg/codegen/code_generator.h"
+#include "sdfg/codegen/instrumentation/instrumentation_strategy.h"
 #include "sdfg/codegen/language_extensions/cuda_language_extension.h"
 
 namespace sdfg {
@@ -20,8 +21,7 @@ class CUDACodeGenerator : public CodeGenerator {
     void dispatch_schedule();
 
    public:
-    CUDACodeGenerator(StructuredSDFG& sdfg);
-    CUDACodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy);
+    CUDACodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy = InstrumentationStrategy::NONE, bool capture_args_results = false);
 
     bool generate() override;
 

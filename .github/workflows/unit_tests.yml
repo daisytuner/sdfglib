@@ -42,9 +42,6 @@ jobs:
 
           pip install gcovr pytest
 
-      # - name: Linting
-      #  run: clang-format-19 --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
-
       - name: Build and test
         run: |
           mkdir build
@@ -55,5 +52,13 @@ jobs:
           ./tests/sdfglib_test
           gcovr --gcov-executable "llvm-cov-19 gcov" --filter ../include/ --filter ../src/ --coveralls coveralls.json -r ../
 
+      - name: Test Arg-Capture-IO
+        run: |
+          cd build
+          ./arg-capture-io/tests/capture_io_test
+
       - name: Coveralls
         uses: coverallsapp/github-action@v2
+
+      - name: Linting
+        run: clang-format-19 --dry-run src/**/*.cpp tests/**/*.cpp include/**/*.h
