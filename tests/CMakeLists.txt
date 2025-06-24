@@ -66,6 +66,7 @@ set(TEST_FILES
     types/function_test.cpp
     types/pointer_test.cpp
     types/primitive_type_test.cpp
+    types/reference_test.cpp
     types/scalar_test.cpp
     types/structure_test.cpp
     types/utils_test.cpp

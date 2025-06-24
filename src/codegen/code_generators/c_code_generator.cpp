@@ -56,6 +56,7 @@ void CCodeGenerator::emit_arg_captures(std::ostream& ofs_source, const std::vect
     }
 
     const auto& args = sdfg_.arguments();
+    const auto& exts = sdfg_.externals();
 
     ofs_source << "if (__daisy_cap_en) {" << std::endl;
 
@@ -63,6 +64,7 @@ void CCodeGenerator::emit_arg_captures(std::ostream& ofs_source, const std::vect
 
     for (auto& varPlan : plan) {
         auto argIdx = varPlan.arg_idx;
+        auto argName = varPlan.is_external ? exts[argIdx-args.size()] : args[argIdx];
 
         if ((!after && varPlan.capture_input) || (after && varPlan.capture_output)) {
             switch (varPlan.type) {
@@ -70,8 +72,8 @@ void CCodeGenerator::emit_arg_captures(std::ostream& ofs_source, const std::vect
                     ofs_source << "\t__daisy_capture_raw(" <<
                         "__capture_ctx, " <<
                         argIdx << ", " <<
-                        "&" << args[argIdx] << ", " <<
-                        "sizeof(" << args[argIdx] << "), " <<
+                        "&" << argName << ", " <<
+                        "sizeof(" << argName << "), " <<
                         varPlan.inner_type << ", " <<
                         afterBoolStr <<
                         ");" << std::endl;
@@ -81,7 +83,7 @@ void CCodeGenerator::emit_arg_captures(std::ostream& ofs_source, const std::vect
                     ofs_source << "\t__daisy_capture_1d(" <<
                         "__capture_ctx, " <<
                         argIdx << ", " <<
-                        args[argIdx] << ", " <<
+                        argName << ", " <<
                         "sizeof(" << language_extension_.primitive_type(varPlan.inner_type) << "), " <<
                         varPlan.inner_type << ", " <<
                         language_extension_.expression(varPlan.dim1) << ", " <<
@@ -93,7 +95,7 @@ void CCodeGenerator::emit_arg_captures(std::ostream& ofs_source, const std::vect
                     ofs_source << "\t__daisy_capture_2d(" <<
                         "__capture_ctx, " <<
                         argIdx << ", " <<
-                        args[argIdx] << ", " <<
+                        argName << ", " <<
                         "sizeof(" << language_extension_.primitive_type(varPlan.inner_type) <<"), " <<
                         varPlan.inner_type << ", " <<
                         language_extension_.expression(varPlan.dim1) << ", " <<
@@ -106,7 +108,7 @@ void CCodeGenerator::emit_arg_captures(std::ostream& ofs_source, const std::vect
                     ofs_source << "\t__daisy_capture_3d(" <<
                         "__capture_ctx, " <<
                         argIdx << ", " <<
-                        args[argIdx] << ", " <<
+                        argName << ", " <<
                         "sizeof(" << language_extension_.primitive_type(varPlan.inner_type) << "), " <<
                         varPlan.inner_type << ", " <<
                         language_extension_.expression(varPlan.dim1) << ", " <<

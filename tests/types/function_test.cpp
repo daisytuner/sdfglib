@@ -20,6 +20,11 @@ TEST(FunctionTest, Params) {
     EXPECT_EQ(f.param_type(symbolic::integer(1)), types::Scalar(types::PrimitiveType::Int32));
 }
 
+TEST(FunctionTest, TypeId) {
+    types::Function f{types::Scalar(types::PrimitiveType::Int32)};
+    EXPECT_EQ(f.type_id(), types::TypeID::Function);
+}
+
 TEST(FunctionTest, IsVarArg) {
     types::Function f{types::Scalar(types::PrimitiveType::Int32)};
     EXPECT_FALSE(f.is_var_arg());

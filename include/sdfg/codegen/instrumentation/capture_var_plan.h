@@ -2,6 +2,10 @@
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/types/type.h"
 
+namespace sdfg{
+namespace codegen {
+
+
 enum class CaptureVarType { None, CapRaw, Cap1D, Cap2D, Cap3D };
 
 class CaptureVarPlan {
@@ -25,4 +29,5 @@ class CaptureVarPlan {
 
 
 
-
+}  // namespace codegen
+}  // namespace sdfg

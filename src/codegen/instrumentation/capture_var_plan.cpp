@@ -1,5 +1,7 @@
 #include "sdfg/codegen/instrumentation/capture_var_plan.h"
 
+namespace sdfg{
+namespace codegen {
 
 CaptureVarPlan::CaptureVarPlan(bool capture_input, bool capture_output, CaptureVarType type, int argIdx, bool isExternal,
                                sdfg::types::PrimitiveType innerType, const sdfg::symbolic::Expression dim1,
@@ -9,3 +11,5 @@ CaptureVarPlan::CaptureVarPlan(bool capture_input, bool capture_output, CaptureV
 {
 }
 
+}  // namespace codegen
+}  // namespace sdfg

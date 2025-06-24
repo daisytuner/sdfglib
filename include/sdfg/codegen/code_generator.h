@@ -55,8 +55,6 @@ class CodeGenerator {
         const analysis::MemAccessRange* range
     );
 
-    std::unique_ptr<std::vector<CaptureVarPlan>> create_capture_plans();
-
     bool add_capture_plan(const std::string& name, int argIdx, bool isExternal, std::vector<CaptureVarPlan>& plan, const analysis::MemAccessRanges& ranges);
 
    public:
@@ -94,6 +92,8 @@ class CodeGenerator {
 
     /// @brief Get the main stream
     const PrettyPrinter& main() const { return this->main_stream_; };
+
+    std::unique_ptr<std::vector<CaptureVarPlan>> create_capture_plans();
 };
 
 }  // namespace codegen
