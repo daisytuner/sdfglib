@@ -27,8 +27,7 @@ class Recorder {
         T transformation(std::forward<Args>(args)...);
 
         if (!transformation.can_be_applied(builder, analysis_manager)) {
-            throw transformations::InvalidTransformationException(
-                "Transformation " + transformation.name() + " cannot be applied.");
+            return;
         }
 
         nlohmann::json desc;
@@ -46,12 +45,12 @@ class Recorder {
         requires transformation_concept<T>
     void apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager,
                const nlohmann::json& desc) {
-        auto transformation = std::make_unique<T>(T::from_json(builder, desc));
-        if (!transformation->can_be_applied(builder, analysis_manager)) {
-            throw transformations::InvalidTransformationException(
-                "Transformation " + transformation->name() + " cannot be applied.");
+        T transformation(T::from_json(builder, desc));
+        if (!transformation.can_be_applied(builder, analysis_manager)) {
+            std::cout << "Cannot apply transformation: " << transformation.name() << std::endl;
+            return;
         }
-        transformation->apply(builder, analysis_manager);
+        transformation.apply(builder, analysis_manager);
     };
 
     void save(std::filesystem::path path) const;
