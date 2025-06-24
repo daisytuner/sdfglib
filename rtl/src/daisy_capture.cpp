@@ -19,8 +19,15 @@ using namespace arg_capture;
 
 class DaisyRtlCapture : public ArgCaptureIO {
 
+   protected:
+    std::filesystem::path output_dir_;
+
    public:
-    explicit DaisyRtlCapture(const char* name): ArgCaptureIO(name, "arg_captures") {}
+    explicit DaisyRtlCapture(const char* name, std::filesystem::path base_dir = "arg_captures"):
+        ArgCaptureIO(name), output_dir_(base_dir) {}
+
+    const std::filesystem::path& get_output_dir() const;
+
     bool enter();
 
     void capture_raw(int arg_idx, const void* data, size_t size, int primitive_type, bool after);
@@ -37,14 +44,14 @@ class DaisyRtlCapture : public ArgCaptureIO {
 };
 
 
+const std::filesystem::path& DaisyRtlCapture::get_output_dir() const {
+    return output_dir_;
+}
+
 bool DaisyRtlCapture::enter() {
     clear();
 
-    ++invokes_;
-
-    if (DEBUG_LOG) {
-        std::cout << "Invoking '" << name_ << "' (" << invokes_ << ")" << std::endl;
-    }
+    invocation();
 
     return true;
 }

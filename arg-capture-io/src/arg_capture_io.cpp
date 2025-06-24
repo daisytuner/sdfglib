@@ -1,4 +1,5 @@
 #include "arg_capture_io.h"
+#include <cstdint>
 #include <cstring>
 #include <filesystem>
 #include <iostream>
@@ -8,63 +9,13 @@
 #include <utility>
 
 #include "primitive_types.h"
+#include "base64.h"
 
 #ifndef DEBUG_LOG
-#define DEBUG_LOG true
+#define DEBUG_LOG false
 #endif
 
 namespace arg_capture {
-
-// copilot generated
-std::string base64_encode(const uint8_t* data, size_t len) {
-    static const char table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    std::string encoded;
-    encoded.reserve(((len + 2) / 3) * 4);
-
-    for (size_t i = 0; i < len; i += 3) {
-        uint32_t octet_a = i < len ? data[i] : 0;
-        uint32_t octet_b = (i + 1) < len ? data[i + 1] : 0;
-        uint32_t octet_c = (i + 2) < len ? data[i + 2] : 0;
-
-        uint32_t triple = (octet_a << 16) | (octet_b << 8) | octet_c;
-
-        encoded.push_back(table[(triple >> 18) & 0x3F]);
-        encoded.push_back(table[(triple >> 12) & 0x3F]);
-        encoded.push_back(i + 1 < len ? table[(triple >> 6) & 0x3F] : '=');
-        encoded.push_back(i + 2 < len ? table[triple & 0x3F] : '=');
-    }
-    return encoded;
-}
-
-// copilot generated
-std::vector<uint8_t> base64_decode(const std::string& input) {
-    static const uint8_t table[] = {
-        64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
-        64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
-        64,64,64,64,64,64,64,64,64,64,64,62,64,64,64,63,
-        52,53,54,55,56,57,58,59,60,61,64,64,64, 0,64,64,
-        64, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,
-        15,16,17,18,19,20,21,22,23,24,25,64,64,64,64,64,
-        64,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,
-        41,42,43,44,45,46,47,48,49,50,51,64,64,64,64,64
-    };
-    std::vector<uint8_t> decoded;
-    size_t len = input.size();
-    int val = 0, valb = -8;
-    for (size_t i = 0; i < len; ++i) {
-        uint8_t c = input[i];
-        if (c > 127) break;
-        uint8_t d = table[c];
-        if (d == 64) continue;
-        val = (val << 6) | d;
-        valb += 6;
-        if (valb >= 0) {
-            decoded.push_back(uint8_t((val >> valb) & 0xFF));
-            valb -= 8;
-        }
-    }
-    return decoded;
-}
 
 void ArgCapture::serialize_into(nlohmann::json& j) const {
     nlohmann::json entry;
@@ -89,8 +40,47 @@ void ArgCapture::serialize_into(nlohmann::json& j) const {
     j.push_back(entry);
 }
 
+void ArgCapture::parse_from(const nlohmann::json& entry, std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash>& map) {
+    ArgCapture capture(
+        entry["arg_idx"].get<int>(),
+        entry["after"].get<bool>(),
+        entry["primitive_type"].get<int>(),
+        entry["dims"].get<std::vector<size_t>>()
+    );
+
+    if (entry.contains("data")) {
+        auto data = base64_decode(entry["data"].get<std::string>());
+
+        capture.data = std::make_shared<std::vector<uint8_t>>(std::move(data));
+    } else if (entry.contains("ext_file")) {
+        capture.ext_file = std::make_shared<std::filesystem::path>(entry["ext_file"].get<std::string>());
+    }
+
+    map.emplace(std::make_pair(capture.arg_idx, capture.after), std::move(capture));
+}
+
+const std::string& ArgCaptureIO::get_name() const {
+    return name_;
+}
+
+uint32_t ArgCaptureIO::get_current_invocation() const {
+    return invokes_;
+}
+
+void ArgCaptureIO::invocation() {
+    ++invokes_;
+
+    if (DEBUG_LOG) {
+        std::cout << "Invoking '" << name_ << "' (" << invokes_ << ")" << std::endl;
+    }
+}
+
 void ArgCaptureIO::clear() {
     current_captures_.clear();
+}
+
+const std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash>& ArgCaptureIO::get_captures() const {
+    return current_captures_;
 }
 
 bool ArgCaptureIO::create_and_capture_inline(int arg_idx, bool after, int primitive_type, const std::vector<size_t>& dims, const void* data) {
@@ -121,21 +111,22 @@ bool ArgCaptureIO::capture_inline(ArgCapture& capture, const void* data) {
     if (DEBUG_LOG) {
         auto capType = capture.after? "result" : "input";
 
-        std::cout << "Capturing arg" << capture.arg_idx << " as " << capType << ": type "
+        std::cout << "Capturing " << (capture.dims.size()-1) << "D arg" << capture.arg_idx << " as " << capType << ": type "
             << primitive_type_names[capture.primitive_type] << "(" << size << " bytes): 0x" << std::hex;
 
         int perGroup = 0;
         for (int i = 0; i < size; ++i) {
-            if (perGroup == 4) {
-                perGroup = 0;
-                std::cout << " ";
-            } else {
-                perGroup += 1;
-            }
-
             const uint8_t* ptr = static_cast<const uint8_t*>(data) + i;
             uint32_t byte = *ptr;
             std::cout << byte;
+
+            ++perGroup;
+            if (perGroup == 16) {
+                perGroup = 0;
+                std::cout << "\n\t";
+            } else if (perGroup % 4 == 0) {
+                std::cout << " ";
+            }
         }
 
         std::cout << std::dec << std::endl;
@@ -194,7 +185,7 @@ void ArgCaptureIO::write_index(std::filesystem::path file) {
     }
 
     nlohmann::json j;
-    j["format"] = 0x00000001;
+    j["format"] = INDEX_FORMAT_VERSION;
     j["target"] = name_;
     j["invocation"] = invokes_;
 
@@ -215,5 +206,6 @@ void ArgCaptureIO::write_index(std::filesystem::path file) {
         std::cout << "Wrote capture index to " << file.string() << std::endl;
     }
 }
+
 
 }
