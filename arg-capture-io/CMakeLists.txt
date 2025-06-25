@@ -28,6 +28,9 @@ endif()
 find_package(nlohmann_json REQUIRED)
 
 target_link_libraries(arg_capture_io PRIVATE nlohmann_json::nlohmann_json)
+target_compile_options(arg_capture_io PRIVATE
+    -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-private-field -Wno-switch -Wno-deprecated-declarations
+)
 
 set_target_properties(arg_capture_io PROPERTIES
     VERSION ${PROJECT_VERSION}
