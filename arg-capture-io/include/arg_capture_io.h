@@ -42,8 +42,8 @@ struct ArgCapture {
     ) :
         arg_idx(idx),
         after(after),
-        primitive_type(primitive_type),
-        dims(dims)
+        dims(dims),
+        primitive_type(primitive_type)
     {}
 
     ArgCapture(const ArgCapture& other)
