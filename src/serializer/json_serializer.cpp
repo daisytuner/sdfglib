@@ -149,6 +149,7 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
             //     node_json["condition"] = dumps_expression(tasklet->condition());
             // }
         } else if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
+            node_json["type"] = "library_node";
             auto serializer_fn =
                 LibraryNodeSerializerRegistry::instance().get_library_node_serializer(
                     lib_node->code().value());
