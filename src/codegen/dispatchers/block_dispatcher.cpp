@@ -86,14 +86,20 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
         allocated_src_type = true;
         final_src_type = new types::Pointer(*dereferenced_type);
     } else {
-        if (symbolic::is_pointer(symbolic::symbol(src.data()))) {
+        if (symbolic::is_nullptr(symbolic::symbol(src.data()))) {
+            // nullptr
             rhs += this->language_extension_.expression(symbolic::symbol(src.data()));
+        } else if (helpers::is_number(src.data())) {
+            // Integer: Raw memory address
+            rhs += this->language_extension_.type_cast(src.data(), *final_dst_type);
         } else {
+            // Pointer
             rhs += src.data();
         }
     }
 
-    if (*final_dst_type == *final_src_type || symbolic::is_pointer(symbolic::symbol(src.data()))) {
+    if (*final_dst_type == *final_src_type || symbolic::is_pointer(symbolic::symbol(src.data())) ||
+        helpers::is_number(src.data())) {
         stream << rhs;
     } else {
         stream << this->language_extension_.type_cast(rhs, *final_dst_type);

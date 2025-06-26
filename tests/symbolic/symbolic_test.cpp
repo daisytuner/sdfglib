@@ -41,8 +41,8 @@ TEST(SymbolicTest, Pointers) {
     auto ptr = symbolic::__nullptr__();
     EXPECT_TRUE(symbolic::is_pointer(ptr));
 
-    auto intptr = symbolic::symbol("reinterpret_cast<float*>(123)");
-    EXPECT_TRUE(symbolic::is_pointer(intptr));
+    auto intptr = symbolic::symbol("123");
+    EXPECT_TRUE(!symbolic::is_pointer(intptr));
 }
 
 TEST(SymbolicTest, LogicalExpressions) {

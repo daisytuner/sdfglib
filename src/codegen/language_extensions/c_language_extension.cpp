@@ -586,10 +586,6 @@ void CSymbolicPrinter::bvisit(const SymEngine::Symbol& x) {
     if (symbolic::is_nullptr(symbolic::symbol(x.get_name()))) {
         str_ = "NULL";
         return;
-    } else if (symbolic::is_memory_address(symbolic::symbol(x.get_name()))) {
-        // symbol of form reinterpret_cast<T*>(0x1234)
-        str_ = x.get_name();
-        return;
     }
     str_ = x.get_name();
 };

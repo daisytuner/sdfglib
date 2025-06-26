@@ -23,6 +23,15 @@ inline const T& add_const(T& s) {
 };
 
 // string operations
+
+inline bool is_number(const std::string& s) {
+    std::string::const_iterator it = s.begin();
+    while (it != s.end() && std::isdigit(*it)) ++it;
+    return !s.empty() && it == s.end();
+};
+
+inline uint64_t parse_number(const std::string& s) { return std::stoull(s); };
+
 inline bool endswith(std::string const& value, std::string const& ending) {
     if (ending.size() > value.size()) return false;
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
