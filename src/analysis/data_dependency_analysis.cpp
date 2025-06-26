@@ -131,6 +131,22 @@ void DataDependencyAnalysis::visit_block(
                     }
                 }
             }
+        } else if (auto library_node = dynamic_cast<data_flow::LibraryNode*>(node)) {
+            for (auto& symbol : library_node->symbols()) {
+                auto current_user = users.get_user(symbol->get_name(), library_node, Use::READ);
+                {
+                    bool found = false;
+                    for (auto& user : open_definitions) {
+                        if (intersects(*user.first, *current_user, assumptions_analysis)) {
+                            user.second.insert(current_user);
+                            found = true;
+                        }
+                    }
+                    if (!found) {
+                        undefined.insert(current_user);
+                    }
+                }
+            }
         }
 
         for (auto& oedge : dataflow.out_edges(*node)) {

@@ -26,6 +26,8 @@ const std::string& BarrierLocalNode::output(size_t index) const { return this->o
 
 bool BarrierLocalNode::side_effect() const { return this->side_effect_; };
 
+symbolic::SymbolSet BarrierLocalNode::symbols() const { return {}; };
+
 bool BarrierLocalNode::needs_connector(size_t index) const {
     // Is non-constant, if starts with _in prefix
     if (this->inputs_[index].compare(0, 3, "_in") == 0) {

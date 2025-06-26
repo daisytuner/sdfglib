@@ -41,6 +41,8 @@ class BarrierLocalNode : public LibraryNode {
 
     bool side_effect() const;
 
+    symbolic::SymbolSet symbols() const override;
+
     bool needs_connector(size_t index) const override;
 
     std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex,

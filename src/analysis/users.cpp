@@ -174,6 +174,18 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
                     last = v;
                 }
             }
+        } else if (auto library_node = dynamic_cast<data_flow::LibraryNode*>(node)) {
+            for (auto& symbol : library_node->symbols()) {
+                auto v = boost::add_vertex(this->graph_);
+                this->add_user(std::make_unique<User>(v, symbol->get_name(), library_node,
+                                                      &dataflow, Use::READ));
+                if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
+                    boost::add_edge(last, v, this->graph_);
+                } else {
+                    first = v;
+                }
+                last = v;
+            }
         }
 
         for (auto& oedge : dataflow.out_edges(*node)) {
@@ -672,9 +684,9 @@ structured_control_flow::ControlFlowNode* Users::scope(User* user) {
                    dynamic_cast<structured_control_flow::Transition*>(user->element())) {
         return &transition->parent();
     } else {
-        auto user_element = dynamic_cast<structured_control_flow::ControlFlowNode*>(user->element());
-        assert(user_element != nullptr &&
-               "Users::scope: User element is not a ControlFlowNode");
+        auto user_element =
+            dynamic_cast<structured_control_flow::ControlFlowNode*>(user->element());
+        assert(user_element != nullptr && "Users::scope: User element is not a ControlFlowNode");
         return user_element;
     }
 }

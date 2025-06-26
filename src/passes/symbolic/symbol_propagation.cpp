@@ -231,6 +231,13 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                     tasklet->condition() = symbolic::subs(condition, lhs, rhs_modified);
                     applied = true;
                 }
+            } else if (auto library_node = dynamic_cast<data_flow::LibraryNode*>(read->element())) {
+                for (auto& symbol : library_node->symbols()) {
+                    if (symbolic::eq(symbol, lhs)) {
+                        library_node->replace(symbol, rhs_modified);
+                        applied = true;
+                    }
+                }
             } else if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(
                            read->element())) {
                 auto for_user = dynamic_cast<analysis::ForUser*>(read);
