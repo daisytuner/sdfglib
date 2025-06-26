@@ -1,8 +1,11 @@
 #pragma once
 
+#include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "sdfg/analysis/analysis.h"
+#include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_sdfg.h"
 #include "sdfg/symbolic/symbolic.h"
@@ -12,21 +15,17 @@ namespace analysis {
 
 class MemAccessRange {
     friend class MemAccessRangesBuilder;
-private:
+
+   private:
     const std::string name_;
     bool saw_read_;
     bool saw_write_;
     bool undefined_;
     std::vector<std::pair<symbolic::Expression, symbolic::Expression>> dims_;
 
-public:
-    MemAccessRange(
-        const std::string& name,
-        bool saw_read,
-        bool saw_write,
-        bool undefined,
-        const std::vector<std::pair<symbolic::Expression, symbolic::Expression>>&& dims
-    );
+   public:
+    MemAccessRange(const std::string& name, bool saw_read, bool saw_write, bool undefined,
+                   const std::vector<std::pair<symbolic::Expression, symbolic::Expression>>&& dims);
 
     MemAccessRange(const MemAccessRange& other)
         : name_(other.name_),
@@ -55,14 +54,18 @@ class MemAccessRanges : public Analysis {
     friend class AnalysisManager;
 
    private:
-    structured_control_flow::ControlFlowNode& node_;
-
     // Graph representation
     graph::Graph graph_;
 
-    std::unordered_map<std::string, MemAccessRange> ranges_;
+    std::unordered_map<structured_control_flow::ControlFlowNode*,
+                       std::unordered_map<std::string, MemAccessRange>>
+        ranges_;
 
-    
+    analysis::AnalysisManager* analysis_manager_;
+
+    void run(structured_control_flow::ControlFlowNode& node,
+             std::unordered_set<std::string> target_nodes);
+
    protected:
     void run(analysis::AnalysisManager& analysis_manager) override;
 
@@ -71,6 +74,9 @@ class MemAccessRanges : public Analysis {
 
     const MemAccessRange* get(const std::string& varName) const;
 
+    const MemAccessRange* get(const std::string& varName,
+                              structured_control_flow::ControlFlowNode& node,
+                              std::unordered_set<std::string> target_nodes);
 };
 
 }  // namespace analysis
