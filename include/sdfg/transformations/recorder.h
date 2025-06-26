@@ -23,10 +23,13 @@ class Recorder {
     template <typename T, typename... Args>
         requires transformation_concept<T>
     void apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager,
-               Args&&... args) {
+               bool skip_if_not_applicable, Args&&... args) {
         T transformation(std::forward<Args>(args)...);
 
         if (!transformation.can_be_applied(builder, analysis_manager)) {
+            if (!skip_if_not_applicable) {
+                throw std::runtime_error("Cannot apply transformation: " + transformation.name());
+            }
             return;
         }
 
