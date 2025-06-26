@@ -2270,6 +2270,52 @@ TEST(LoopDependencyAnalysisTest, Map_1D) {
     EXPECT_EQ(dependencies.size(), 0);
 }
 
+TEST(LoopDependencyAnalysisTest, Map_1D_Disjoint) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+    builder.add_container("A", desc, true);
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+
+    // Define loop
+    auto bound = symbolic::symbol("N");
+    auto indvar = symbolic::symbol("i");
+    auto init = symbolic::integer(0);
+    auto condition = symbolic::Lt(indvar, bound);
+    auto update = symbolic::add(indvar, symbolic::integer(1));
+
+    auto& loop = builder.add_for(root, indvar, condition, init, update);
+    auto& body = loop.root();
+
+    // Add computation
+    auto& block = builder.add_block(body);
+    auto& a_in = builder.add_access(block, "A");
+    auto& i = builder.add_access(block, "i");
+    auto& a_out = builder.add_access(block, "A");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
+                                        {{"_in1", base_desc}, {"_in2", sym_desc}});
+    builder.add_memlet(block, a_in, "void", tasklet, "_in1", {symbolic::zero()});
+    builder.add_memlet(block, i, "void", tasklet, "_in2", {});
+    builder.add_memlet(block, tasklet, "_out", a_out, "void",
+                       {symbolic::add(symbolic::symbol("i"), symbolic::one())});
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    auto& dependencies = analysis.dependencies(loop);
+
+    // Check
+    EXPECT_EQ(dependencies.size(), 0);
+}
+
 TEST(LoopDependencyAnalysisTest, Map_1D_Tiled) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 

@@ -345,22 +345,38 @@ std::string constraint_to_isl_str(const Expression& con) {
         auto le = SymEngine::rcp_static_cast<const SymEngine::StrictLessThan>(con);
         auto lhs = le->get_arg1();
         auto rhs = le->get_arg2();
-        return language_extension.expression(lhs) + " < " + language_extension.expression(rhs);
+        auto res = language_extension.expression(lhs) + " < " + language_extension.expression(rhs);
+        res = std::regex_replace(res, std::regex("\\."), "_");
+        res = std::regex_replace(res, std::regex("__daisy_min"), "min");
+        res = std::regex_replace(res, std::regex("__daisy_max"), "max");
+        return res;
     } else if (SymEngine::is_a<SymEngine::LessThan>(*con)) {
         auto le = SymEngine::rcp_static_cast<const SymEngine::LessThan>(con);
         auto lhs = le->get_arg1();
         auto rhs = le->get_arg2();
-        return language_extension.expression(lhs) + " <= " + language_extension.expression(rhs);
+        auto res = language_extension.expression(lhs) + " <= " + language_extension.expression(rhs);
+        res = std::regex_replace(res, std::regex("\\."), "_");
+        res = std::regex_replace(res, std::regex("__daisy_min"), "min");
+        res = std::regex_replace(res, std::regex("__daisy_max"), "max");
+        return res;
     } else if (SymEngine::is_a<SymEngine::Equality>(*con)) {
         auto eq = SymEngine::rcp_static_cast<const SymEngine::Equality>(con);
         auto lhs = eq->get_arg1();
         auto rhs = eq->get_arg2();
-        return language_extension.expression(lhs) + " == " + language_extension.expression(rhs);
+        auto res = language_extension.expression(lhs) + " == " + language_extension.expression(rhs);
+        res = std::regex_replace(res, std::regex("\\."), "_");
+        res = std::regex_replace(res, std::regex("__daisy_min"), "min");
+        res = std::regex_replace(res, std::regex("__daisy_max"), "max");
+        return res;
     } else if (SymEngine::is_a<SymEngine::Unequality>(*con)) {
         auto ne = SymEngine::rcp_static_cast<const SymEngine::Unequality>(con);
         auto lhs = ne->get_arg1();
         auto rhs = ne->get_arg2();
-        return language_extension.expression(lhs) + " != " + language_extension.expression(rhs);
+        auto res = language_extension.expression(lhs) + " != " + language_extension.expression(rhs);
+        res = std::regex_replace(res, std::regex("\\."), "_");
+        res = std::regex_replace(res, std::regex("__daisy_min"), "min");
+        res = std::regex_replace(res, std::regex("__daisy_max"), "max");
+        return res;
     }
 
     return "";
