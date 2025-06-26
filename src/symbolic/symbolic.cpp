@@ -35,13 +35,9 @@ Condition __true__() { return SymEngine::boolean(true); };
 
 Symbol __nullptr__() { return SymEngine::symbol("__daisy_nullptr"); };
 
-bool is_memory_address(const Symbol& symbol) {
-    return symbol->get_name().starts_with("reinterpret_cast");
-};
-
 bool is_nullptr(const Symbol& symbol) { return symbol->get_name() == "__daisy_nullptr"; };
 
-bool is_pointer(const Symbol& symbol) { return is_memory_address(symbol) || is_nullptr(symbol); };
+bool is_pointer(const Symbol& symbol) { return is_nullptr(symbol); };
 
 bool is_nv(const Symbol& symbol) {
     if (symbol == threadIdx_x() || symbol == threadIdx_y() || symbol == threadIdx_z() ||

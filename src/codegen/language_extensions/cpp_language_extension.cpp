@@ -581,9 +581,6 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::Symbol& x) {
     if (symbolic::is_nullptr(symbolic::symbol(x.get_name()))) {
         str_ = "nullptr";
         return;
-    } else if (symbolic::is_memory_address(symbolic::symbol(x.get_name()))) {
-        str_ = x.get_name();
-        return;
     }
     str_ = x.get_name();
 };

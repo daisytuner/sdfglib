@@ -247,7 +247,8 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
                 throw InvalidSDFGException("Invalid dst connector: " + dst_conn);
             }
 
-            if (symbolic::is_pointer(symbolic::symbol(src_node.data()))) {
+            if (symbolic::is_pointer(symbolic::symbol(src_node.data())) ||
+                helpers::is_number(src_node.data())) {
                 throw InvalidSDFGException("src_conn is void: src cannot be a raw pointer");
             }
 

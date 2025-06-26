@@ -47,14 +47,15 @@ FunctionType Function::type() const { return this->type_; };
 
 bool Function::exists(const std::string& name) const {
     return this->containers_.find(name) != this->containers_.end() ||
-           symbolic::is_pointer(symbolic::symbol(name)) || symbolic::is_nv(symbolic::symbol(name));
+           symbolic::is_pointer(symbolic::symbol(name)) || helpers::is_number(name) ||
+           symbolic::is_nv(symbolic::symbol(name));
 };
 
 const types::IType& Function::type(const std::string& name) const {
     if (symbolic::is_nv(symbolic::symbol(name))) {
         return *NVPTX_SYMBOL_TYPE;
     }
-    if (symbolic::is_pointer(symbolic::symbol(name))) {
+    if (symbolic::is_pointer(symbolic::symbol(name)) || helpers::is_number(name)) {
         return *CONST_POINTER_TYPE;
     }
 
@@ -98,7 +99,7 @@ bool Function::is_transient(const std::string& name) const {
 
 symbolic::SymbolSet Function::parameters() const {
     symbolic::SymbolSet params;
-    for (auto& arg : this->arguments_) { 
+    for (auto& arg : this->arguments_) {
         auto& arg_type = this->type(arg);
         if (auto scalar_type = dynamic_cast<const types::Scalar*>(&arg_type)) {
             if (scalar_type->is_symbol()) {
@@ -106,7 +107,7 @@ symbolic::SymbolSet Function::parameters() const {
             }
         }
     }
-    for (auto& ext : this->externals_) { 
+    for (auto& ext : this->externals_) {
         auto& ext_type = this->type(ext);
         if (auto scalar_type = dynamic_cast<const types::Scalar*>(&ext_type)) {
             if (scalar_type->is_symbol()) {

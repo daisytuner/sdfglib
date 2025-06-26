@@ -59,8 +59,6 @@ Symbol __nullptr__();
 
 bool is_nullptr(const Symbol& symbol);
 
-bool is_memory_address(const Symbol& symbol);
-
 bool is_pointer(const Symbol& symbol);
 
 bool is_nv(const Symbol& symbol);
