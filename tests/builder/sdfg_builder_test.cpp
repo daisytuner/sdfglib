@@ -267,6 +267,8 @@ class BarrierLocalLibraryNode : public data_flow::LibraryNode {
                                                          this->inputs(), this->side_effect());
     }
 
+    virtual symbolic::SymbolSet symbols() const override { return {}; }
+
     virtual void replace(const symbolic::Expression& old_expression,
                          const symbolic::Expression& new_expression) override {
         // Do nothing
