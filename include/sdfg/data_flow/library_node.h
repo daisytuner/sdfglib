@@ -53,6 +53,8 @@ class LibraryNode : public CodeNode {
     bool needs_connector(size_t index) const override;
 
     virtual std::string toStr() const;
+
+    virtual symbolic::SymbolSet symbols() const = 0;
 };
 
 /*
