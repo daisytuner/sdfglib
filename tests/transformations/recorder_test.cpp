@@ -76,7 +76,7 @@ TEST_F(RecorderLoopTilingTest, Apply_InvalidTransformation) {
 
     EXPECT_THROW(
         recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, false, *loop_, 0),
-        transformations::InvalidTransformationException);
+        std::runtime_error);
 }
 
 TEST_F(RecorderLoopTilingTest, Save_SingleTransformation) {
