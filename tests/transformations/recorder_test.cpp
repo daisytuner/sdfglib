@@ -75,7 +75,7 @@ TEST_F(RecorderLoopTilingTest, Apply_InvalidTransformation) {
     transformations::Recorder recorder;
 
     EXPECT_THROW(
-        recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, true, *loop_, 0),
+        recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, false, *loop_, 0),
         transformations::InvalidTransformationException);
 }
 
