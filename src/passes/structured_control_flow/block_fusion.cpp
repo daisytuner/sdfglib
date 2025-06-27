@@ -23,18 +23,29 @@ bool BlockFusion::can_be_applied(data_flow::DataFlowGraph& first_graph,
         }
     }
 
-    // Criterion: No conditional tasklets
-    for (auto& tasklet : first_graph.tasklets()) {
-        if (tasklet->is_conditional()) {
-            return false;
+    // Criterion: No side-effect nodes
+    for (auto& node : first_graph.nodes()) {
+        if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
+            if (lib_node->side_effect()) {
+                return false;
+            }
+        } else if (auto tasklet = dynamic_cast<const data_flow::Tasklet*>(&node)) {
+            if (tasklet->is_conditional()) {
+                return false;
+            }
         }
     }
-    for (auto& tasklet : second_graph.tasklets()) {
-        if (tasklet->is_conditional()) {
-            return false;
+    for (auto& node : second_graph.nodes()) {
+        if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
+            if (lib_node->side_effect()) {
+                return false;
+            }
+        } else if (auto tasklet = dynamic_cast<const data_flow::Tasklet*>(&node)) {
+            if (tasklet->is_conditional()) {
+                return false;
+            }
         }
     }
-
     // Criterion: No data races cause by transition
     if (!first_assignments.empty()) {
         return false;
