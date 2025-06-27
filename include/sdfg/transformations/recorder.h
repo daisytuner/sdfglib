@@ -28,7 +28,8 @@ class Recorder {
 
         if (!transformation.can_be_applied(builder, analysis_manager)) {
             if (!skip_if_not_applicable) {
-                throw std::runtime_error("Cannot apply transformation: " + transformation.name());
+                throw transformations::InvalidTransformationException(
+                    "Transformation " + transformation.name() + " cannot be applied.");
             }
             return;
         }
@@ -42,15 +43,19 @@ class Recorder {
     };
 
     void replay(builder::StructuredSDFGBuilder& builder,
-                analysis::AnalysisManager& analysis_manager, const nlohmann::json& desc);
+                analysis::AnalysisManager& analysis_manager, const nlohmann::json& desc,
+                bool skip_if_not_applicable = true);
 
     template <typename T>
         requires transformation_concept<T>
     void apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager,
-               const nlohmann::json& desc) {
+               const nlohmann::json& desc, bool skip_if_not_applicable = true) {
         T transformation(T::from_json(builder, desc));
         if (!transformation.can_be_applied(builder, analysis_manager)) {
-            std::cout << "Cannot apply transformation: " << transformation.name() << std::endl;
+            if (!skip_if_not_applicable) {
+                throw transformations::InvalidTransformationException(
+                    "Transformation " + transformation.name() + " cannot be applied.");
+            }
             return;
         }
         transformation.apply(builder, analysis_manager);

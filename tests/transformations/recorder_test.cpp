@@ -74,9 +74,9 @@ TEST_F(RecorderLoopTilingTest, Apply_LoopTiling) {
 TEST_F(RecorderLoopTilingTest, Apply_InvalidTransformation) {
     transformations::Recorder recorder;
 
-    EXPECT_THROW(
-        recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, true, *loop_, 0),
-        transformations::InvalidTransformationException);
+    EXPECT_THROW(recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, false,
+                                                             *loop_, 0),
+                 transformations::InvalidTransformationException);
 }
 
 TEST_F(RecorderLoopTilingTest, Save_SingleTransformation) {
@@ -397,4 +397,14 @@ TEST_F(RecorderMultiTransformationTest, Replay_Transformations) {
                  {"transformation_type", "LoopInterchange"}});
 
     EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j));
+}
+
+TEST_F(RecorderMultiTransformationTest, Replay_InvalidTransformation) {
+    nlohmann::json j = nlohmann::json::array();
+    j.push_back({{"loop_element_id", 1}, {"tile_size", 0}, {"transformation_type", "LoopTiling"}});
+
+    transformations::Recorder recorder;
+
+    EXPECT_THROW(recorder.replay(*builder_, *analysis_manager_, j, false),
+                 transformations::InvalidTransformationException);
 }
