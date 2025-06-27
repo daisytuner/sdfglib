@@ -75,7 +75,9 @@ class Function {
 
     /***** Section: Definition *****/
 
-    std::string name() const;
+    const std::string& name() const;
+
+    std::string& name();
 
     FunctionType type() const;
 
