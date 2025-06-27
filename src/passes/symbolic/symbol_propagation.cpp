@@ -58,11 +58,6 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
     auto& users = analysis_manager.get<analysis::Users>();
     auto& data_dependency_analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     for (auto& name : sdfg.containers()) {
-        // Criterion: Only transients
-        if (!sdfg.is_transient(name)) {
-            continue;
-        }
-
         // Criterion: Only integers
         auto& type = builder.subject().type(name);
         auto scalar = dynamic_cast<const types::Scalar*>(&type);

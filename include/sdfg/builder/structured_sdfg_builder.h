@@ -182,6 +182,8 @@ class StructuredSDFGBuilder : public FunctionBuilder {
 
     Sequence& parent(const ControlFlowNode& node);
 
+    void add_global_condition(const symbolic::SymbolSetMap& aliases);
+
     /***** Section: Dataflow Graph *****/
 
     data_flow::AccessNode& add_access(structured_control_flow::Block& block,

@@ -39,6 +39,11 @@ typedef std::unordered_map<Expression, Expression, SymEngine::RCPBasicHash,
                            SymEngine::RCPBasicKeyEq>
     ExpressionMap;
 
+typedef std::vector<Condition> ConditionVec;
+
+typedef std::unordered_map<Symbol, SymbolSet, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq>
+    SymbolSetMap;
+
 /***** Special Symbols *****/
 
 Symbol symbol(const std::string& name);

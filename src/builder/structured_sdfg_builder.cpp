@@ -5,6 +5,7 @@
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/codegen/language_extensions/cpp_language_extension.h"
 #include "sdfg/data_flow/library_node.h"
+#include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/types/utils.h"
@@ -987,6 +988,34 @@ Sequence& StructuredSDFGBuilder::parent(const ControlFlowNode& node) {
 
     return this->structured_sdfg_->root();
 };
+
+void StructuredSDFGBuilder::add_global_condition(const symbolic::SymbolSetMap& aliases) {
+    auto old_root = std::move(this->structured_sdfg_->root_);
+    this->structured_sdfg_->root_ = std::unique_ptr<structured_control_flow::Sequence>(
+        new structured_control_flow::Sequence(this->new_element_id(), old_root->debug_info()));
+
+    auto& root = this->structured_sdfg_->root();
+    auto& global_if_else = this->add_if_else(root);
+
+    auto condition = symbolic::__true__();
+    for (auto& symbol : aliases) {
+        for (auto& alias : symbol.second) {
+            condition = symbolic::And(condition, symbolic::Eq(symbol.first, alias));
+        }
+    }
+    auto& branch = this->add_case(global_if_else, condition);
+    deepcopy::StructuredSDFGDeepCopy copier(*this, branch, *old_root);
+    copier.insert();
+
+    for (auto& symbol : aliases) {
+        for (auto& alias : symbol.second) {
+            branch.replace(alias, symbol.first);
+        }
+    }
+
+    global_if_else.cases_.push_back(std::move(old_root));
+    global_if_else.conditions_.push_back(symbolic::__true__());
+}
 
 /***** Section: Dataflow Graph *****/
 
