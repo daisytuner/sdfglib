@@ -11,18 +11,6 @@ bool BlockFusion::can_be_applied(data_flow::DataFlowGraph& first_graph,
                                  control_flow::Assignments& first_assignments,
                                  data_flow::DataFlowGraph& second_graph,
                                  control_flow::Assignments& second_assignments) {
-    // Criterion: no pointer ref fusions
-    for (auto& edge : first_graph.edges()) {
-        if (edge.src_conn() == "refs" || edge.dst_conn() == "refs") {
-            return false;
-        }
-    }
-    for (auto& edge : second_graph.edges()) {
-        if (edge.src_conn() == "refs" || edge.dst_conn() == "refs") {
-            return false;
-        }
-    }
-
     // Criterion: No side-effect nodes
     for (auto& node : first_graph.nodes()) {
         if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
@@ -53,26 +41,26 @@ bool BlockFusion::can_be_applied(data_flow::DataFlowGraph& first_graph,
 
     // Numerical stability: Unique order of nodes
     auto pdoms = first_graph.post_dominators();
-    bool has_connector = false;
-    for (auto& node : second_graph.sources()) {
+    std::unordered_map<std::string, const data_flow::AccessNode*> connectors;
+    for (auto& node : second_graph.topological_sort()) {
         if (!dynamic_cast<const data_flow::AccessNode*>(node)) {
-            return false;
-        }
-        auto access_node = static_cast<const data_flow::AccessNode*>(node);
-        auto data = access_node->data();
-
-        // Connects to first block
-        if (pdoms.find(data) == pdoms.end()) {
             continue;
         }
-        has_connector = true;
-        // Is unique successor in first block
-        if (first_graph.out_degree(*pdoms.at(data)) > 0) {
+        auto access_node = static_cast<const data_flow::AccessNode*>(node);
+
+        // Already connected
+        if (connectors.find(access_node->data()) != connectors.end()) {
+            continue;
+        }
+        // Write-after-write
+        if (second_graph.in_degree(*access_node) > 0) {
             return false;
         }
-    }
-    if (!has_connector) {
-        return false;
+
+        if (pdoms.find(access_node->data()) == pdoms.end()) {
+            continue;
+        }
+        connectors[access_node->data()] = pdoms.at(access_node->data());
     }
 
     return true;
@@ -90,20 +78,30 @@ void BlockFusion::apply(structured_control_flow::Block& first_block,
         first_assignments[entry.first] = entry.second;
     }
 
-    // Collect nodes to connect to,
-    // i.e., last access node for each container
+    // Collect nodes to connect to
     auto pdoms = first_graph.post_dominators();
-
-    // Collect nodes which need to be connected,
-    // i.e., sources of the second graph
-    std::unordered_map<data_flow::DataFlowNode*, std::unordered_set<data_flow::DataFlowNode*>>
-        connectors;
-    for (auto& node : second_graph.sources()) {
-        if (auto access_node = dynamic_cast<data_flow::AccessNode*>(node)) {
-            if (pdoms.find(access_node->data()) != pdoms.end()) {
-                connectors.insert({node, {pdoms[access_node->data()]}});
-            }
+    std::unordered_set<std::string> already_connected;
+    std::unordered_map<data_flow::AccessNode*, data_flow::AccessNode*> connectors;
+    for (auto& node : second_graph.topological_sort()) {
+        if (!dynamic_cast<data_flow::AccessNode*>(node)) {
+            continue;
         }
+        auto access_node = static_cast<data_flow::AccessNode*>(node);
+
+        // Already connected
+        if (already_connected.find(access_node->data()) != already_connected.end()) {
+            continue;
+        }
+        // Write-after-write
+        if (second_graph.in_degree(*access_node) > 0) {
+            throw InvalidSDFGException("BlockFusion: Write-after-write");
+        }
+
+        if (pdoms.find(access_node->data()) == pdoms.end()) {
+            continue;
+        }
+        connectors[access_node] = pdoms.at(access_node->data());
+        already_connected.insert(access_node->data());
     }
 
     // Copy nodes from second to first
@@ -111,11 +109,8 @@ void BlockFusion::apply(structured_control_flow::Block& first_block,
     for (auto& node : second_graph.nodes()) {
         if (auto access_node = dynamic_cast<data_flow::AccessNode*>(&node)) {
             if (connectors.find(access_node) != connectors.end()) {
-                if (connectors[access_node].size() != 1) {
-                    throw InvalidSDFGException("BlockFusion: Expected exactly one connector");
-                }
                 // Connect by replacement
-                node_mapping[access_node] = *connectors[access_node].begin();
+                node_mapping[access_node] = connectors[access_node];
             } else {
                 // Add new
                 node_mapping[access_node] = &builder_.add_access(first_block, access_node->data());
@@ -123,6 +118,10 @@ void BlockFusion::apply(structured_control_flow::Block& first_block,
         } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(&node)) {
             node_mapping[tasklet] = &builder_.add_tasklet(first_block, tasklet->code(),
                                                           tasklet->output(), tasklet->inputs());
+        } else if (auto library_node = dynamic_cast<data_flow::LibraryNode*>(&node)) {
+            node_mapping[library_node] = &builder_.add_library_node(first_block, *library_node);
+        } else {
+            throw InvalidSDFGException("BlockFusion: Unknown node type");
         }
     }
 
