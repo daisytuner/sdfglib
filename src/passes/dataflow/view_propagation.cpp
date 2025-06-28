@@ -19,147 +19,194 @@ bool ViewPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
 
     auto& sdfg = builder.subject();
 
-    // Replaces all views by their original pointers
+    // Replaces all views
     auto& users = analysis_manager.get<analysis::Users>();
     std::unordered_set<std::string> reduced;
     for (auto& container : sdfg.containers()) {
         if (reduced.find(container) != reduced.end()) {
             continue;
         }
-        auto& type = sdfg.type(container);
-        if (!dynamic_cast<const types::Pointer*>(&type)) {
-            continue;
-        }
         if (sdfg.is_external(container)) {
             continue;
         }
 
-        // Collect all moves of the pointer
-        auto moves = users.moves(container);
-        if (moves.empty() || !users.views(container).empty()) {
+        // By definition, a view is a pointer
+        auto& type = sdfg.type(container);
+        if (!dynamic_cast<const types::Pointer*>(&type)) {
             continue;
         }
+
+        // Criterion: Must have at least one move
+        auto moves = users.moves(container);
+        if (moves.empty()) {
+            continue;
+        }
+
+        // Criterion: No sub-views (will be eliminated iteratively)
+        if (users.views(container).size() > 0) {
+            continue;
+        }
+
+        // Eliminate views
         auto uses = users.uses(container);
         for (auto& move : moves) {
             // Location of where the view is created
             auto& access_node = dynamic_cast<data_flow::AccessNode&>(*move->element());
-            auto& graph = *move->parent();
-            auto& edge = *graph.in_edges(access_node).begin();
+            auto& dataflow = *move->parent();
+            auto& move_edge = *dataflow.in_edges(access_node).begin();
+            auto& move_subset = move_edge.subset();
 
-            // The original pointer
-            auto& viewed_node = dynamic_cast<const data_flow::AccessNode&>(edge.src());
+            // Retrieve underlying container
+            auto& viewed_node = dynamic_cast<const data_flow::AccessNode&>(move_edge.src());
             auto& viewed_container = viewed_node.data();
-            auto& viewed_subset = edge.subset();
-            if (viewed_subset.empty()) {
-                continue;
-            }
-            if (edge.src_conn() != "void") {
-                continue;
-            }
-            if (symbolic::is_pointer(symbolic::symbol(viewed_container))) {
-                continue;
-            }
-            types::Pointer viewed_type(
-                types::infer_type(sdfg, sdfg.type(viewed_container), viewed_subset));
-            if (viewed_type != type) {
+
+            // Criterion: Must not be raw memory address
+            if (helpers::is_number(viewed_container) ||
+                symbolic::is_nullptr(symbolic::symbol(viewed_container))) {
                 continue;
             }
 
-            // Iterate over all uses of the viewing container
-            // Replace the view by the original pointer if possible
+            // Criterion: Must not be nested pointer
+            if (move_edge.dst_conn() == "void" && !move_subset.empty()) {
+                continue;
+            }
+
+            // Criterion: Must not be reinterpret cast
+            auto viewed_type = &sdfg.type(viewed_container);
+            if (move_edge.src_conn() == "void") {
+                viewed_type = &types::infer_type(sdfg, *viewed_type, move_subset);
+            }
+            types::Pointer final_type(*viewed_type);
+            if (type != final_type) {
+                continue;
+            }
+
+            // Replace all uses of the view by the original container
             for (auto& user : uses) {
-                if (user->use() == analysis::Use::MOVE || user->use() == analysis::Use::VIEW) {
+                // Criterion: Must be read or write
+                if (user->use() != analysis::Use::READ && user->use() != analysis::Use::WRITE) {
                     continue;
                 }
-                // Criterion: The assignment of the view must dominate the use of the view
+                // Criterion: Must be dominated by the move
                 if (!users.dominates(*move, *user)) {
                     continue;
                 }
-                // Criterion: No pointer operations between the assignment and the use
+                // Criterion: Safety - View is not reassigned between the move and the user
                 auto uses_between = users.all_uses_between(*move, *user);
-                bool moving_pointers = false;
+                bool unsafe = false;
                 for (auto& use : uses_between) {
                     if (use->use() != analysis::Use::MOVE) {
                         continue;
                     }
-                    // Viewed container is not constant
+                    // View is not constant
                     if (use->container() == viewed_container) {
-                        moving_pointers = true;
+                        unsafe = true;
                         break;
                     }
-                    // Moved container is not constant
+                    // Another alias of the view
                     if (use->container() == container) {
-                        moving_pointers = true;
+                        unsafe = true;
                         break;
                     }
 
-                    // Unsafe pointer operations
-                    auto& move_node = dynamic_cast<data_flow::AccessNode&>(*use->element());
-                    auto& move_graph = *use->parent();
-                    auto& move_edge = *move_graph.in_edges(move_node).begin();
-                    auto& view_node = dynamic_cast<data_flow::AccessNode&>(move_edge.src());
-                    if (move_edge.dst_conn() == "void" ||
-                        symbolic::is_pointer(symbolic::symbol(view_node.data()))) {
-                        moving_pointers = true;
+                    // Raw memory access
+                    auto& use_node = dynamic_cast<data_flow::AccessNode&>(*use->element());
+                    auto& use_graph = *use->parent();
+                    auto& use_edge = *use_graph.in_edges(use_node).begin();
+                    auto& src_node = dynamic_cast<data_flow::AccessNode&>(use_edge.src());
+                    if (helpers::is_number(src_node.data())) {
+                        unsafe = true;
                         break;
                     }
                 }
-                if (moving_pointers) {
+                if (unsafe) {
                     continue;
                 }
 
-                // Replace the view by the original pointer
-                if (auto use_node = dynamic_cast<data_flow::AccessNode*>(user->element())) {
-                    auto use_graph = user->parent();
-                    use_node->data() = viewed_container;
-
-                    // Update subsets
-                    for (auto& oedge : use_graph->out_edges(*use_node)) {
-                        auto& old_subset = oedge.subset();
-
-                        // Add leading dimensions
-                        data_flow::Subset new_subset(viewed_subset.begin(),
-                                                     viewed_subset.end() - 1);
-
-                        // Accumulate overlapping dimension
-                        auto& dim = old_subset[0];
-                        auto& alias_dim = viewed_subset.back();
-                        auto new_dim = symbolic::add(alias_dim, dim);
-                        new_subset.push_back(new_dim);
-
-                        // Add trailing dimensions
-                        for (size_t i = 1; i < old_subset.size(); i++) {
-                            auto& old_dim = old_subset[i];
-                            new_subset.push_back(old_dim);
-                        }
-
-                        oedge.subset() = new_subset;
-                    }
-                    for (auto& iedge : use_graph->in_edges(*use_node)) {
-                        auto& old_subset = iedge.subset();
-
-                        // Add leading dimensions
-                        data_flow::Subset new_subset(viewed_subset.begin(),
-                                                     viewed_subset.end() - 1);
-
-                        // Accumulate overlapping dimension
-                        auto& dim = old_subset[0];
-                        auto& alias_dim = viewed_subset.back();
-                        auto new_dim = symbolic::add(alias_dim, dim);
-                        new_subset.push_back(new_dim);
-
-                        // Add trailing dimensions
-                        for (size_t i = 1; i < old_subset.size(); i++) {
-                            auto& old_dim = old_subset[i];
-                            new_subset.push_back(old_dim);
-                        }
-
-                        iedge.subset() = new_subset;
-                    }
-
-                    applied = true;
-                    reduced.insert(viewed_container);
+                // Can only replace access nodes
+                if (!dynamic_cast<data_flow::AccessNode*>(user->element())) {
+                    continue;
                 }
+                auto& use_node = static_cast<data_flow::AccessNode&>(*user->element());
+
+                // Step 1: Replace container
+                use_node.data() = viewed_container;
+
+                // Step 2: Update edges
+                auto use_graph = user->parent();
+                for (auto& oedge : use_graph->out_edges(use_node)) {
+                    // Compute new subset
+                    data_flow::Subset new_subset;
+
+                    // Add leading dimensions from move
+                    if (move_edge.src_conn() == "void") {
+                        for (size_t i = 0; i < move_subset.size(); i++) {
+                            new_subset.push_back(move_subset[i]);
+                        }
+                    }
+
+                    auto& old_subset = oedge.subset();
+
+                    // Handle first trailing dimensions
+                    if (new_subset.empty()) {
+                        auto& trail_dim = old_subset.front();
+                        if (!symbolic::eq(trail_dim, symbolic::zero())) {
+                            throw std::runtime_error(
+                                "View propagation not implemented for non-void source connection");
+                        }
+                        old_subset.erase(old_subset.begin());
+                    } else {
+                        auto& trail_dim = old_subset.front();
+                        auto& current_dim = new_subset.back();
+                        auto new_dim = symbolic::add(current_dim, trail_dim);
+                        new_subset.back() = new_dim;
+                        old_subset.erase(old_subset.begin());
+                    }
+
+                    // Add remaining trailing dimensions
+                    for (auto& dim : old_subset) {
+                        new_subset.push_back(dim);
+                    }
+                    oedge.subset() = new_subset;
+                }
+                for (auto& iedge : use_graph->in_edges(use_node)) {
+                    // Compute new subset
+                    data_flow::Subset new_subset;
+
+                    // Add leading dimensions from move
+                    if (move_edge.src_conn() == "void") {
+                        for (size_t i = 0; i < move_subset.size(); i++) {
+                            new_subset.push_back(move_subset[i]);
+                        }
+                    }
+
+                    auto& old_subset = iedge.subset();
+
+                    // Handle first trailing dimensions
+                    if (new_subset.empty()) {
+                        auto& trail_dim = old_subset.front();
+                        if (!symbolic::eq(trail_dim, symbolic::zero())) {
+                            throw std::runtime_error(
+                                "View propagation not implemented for non-void source connection");
+                        }
+                        old_subset.erase(old_subset.begin());
+                    } else {
+                        auto& trail_dim = old_subset.front();
+                        auto& current_dim = new_subset.back();
+                        auto new_dim = symbolic::add(current_dim, trail_dim);
+                        new_subset.back() = new_dim;
+                        old_subset.erase(old_subset.begin());
+                    }
+
+                    // Add remaining trailing dimensions
+                    for (auto& dim : old_subset) {
+                        new_subset.push_back(dim);
+                    }
+                    iedge.subset() = new_subset;
+                }
+
+                applied = true;
+                reduced.insert(viewed_container);
             }
         }
     }
