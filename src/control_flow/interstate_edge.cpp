@@ -34,12 +34,10 @@ void InterstateEdge::replace(const symbolic::Expression& old_expression,
                              const symbolic::Expression& new_expression) {
     symbolic::subs(this->condition_, old_expression, new_expression);
 
-    if (SymEngine::is_a<SymEngine::Symbol>(*old_expression)) {
+    if (SymEngine::is_a<SymEngine::Symbol>(*old_expression) &&
+        SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
         auto old_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(old_expression);
         if (this->assignments_.find(old_symbol) != this->assignments_.end()) {
-            if (!SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
-                throw InvalidSDFGException("Assigments do not support complex expressions on LHS");
-            }
             auto new_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(new_expression);
             this->assignments_[new_symbol] = this->assignments_[old_symbol];
             this->assignments_.erase(old_symbol);
