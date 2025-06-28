@@ -31,12 +31,9 @@ bool SymbolPromotion::can_be_applied(builder::StructuredSDFGBuilder& builder,
     if (dataflow.tasklets().size() != 1) {
         return false;
     }
-
-    // Criterion: Tasklet has single output
     auto tasklet = *dataflow.tasklets().begin();
-    if (dataflow.out_degree(*tasklet) > 1) {
-        return false;
-    }
+
+    // Criterion: No references in graph
     for (auto& edge : dataflow.edges()) {
         if (edge.src_conn() == "refs" || edge.dst_conn() == "refs") {
             return false;
@@ -44,28 +41,33 @@ bool SymbolPromotion::can_be_applied(builder::StructuredSDFGBuilder& builder,
     }
 
     // Criterion: Tasklet has only scalar integer inputs and outputs
-    for (auto& iedge : dataflow.in_edges(*tasklet)) {
-        auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
-        auto& type = builder.subject().type(src.data());
-        auto scalar = dynamic_cast<const types::Scalar*>(&type);
-        if (!scalar || !types::is_integer(scalar->primitive_type())) {
-            return false;
-        }
-
-        if (dataflow.in_degree(src) > 0) {
+    for (auto& input : tasklet->inputs()) {
+        auto& type = input.second;
+        if (!types::is_integer(type.primitive_type())) {
             return false;
         }
     }
-
-    for (auto& oedge : dataflow.out_edges(*tasklet)) {
-        auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
-        auto& type = builder.subject().type(dst.data());
-        auto scalar = dynamic_cast<const types::Scalar*>(&type);
-        if (!scalar || !types::is_integer(scalar->primitive_type())) {
+    auto& output_type = tasklet->output().second;
+    if (!types::is_integer(output_type.primitive_type())) {
+        return false;
+    }
+    for (auto& iedge : dataflow.in_edges(*tasklet)) {
+        // scalar input
+        if (iedge.subset().size() > 0) {
             return false;
         }
-
-        if (dataflow.out_degree(dst) > 0) {
+        // isolated input
+        if (dataflow.in_degree(iedge.src()) > 0) {
+            return false;
+        }
+    }
+    for (auto& oedge : dataflow.out_edges(*tasklet)) {
+        // scalar output
+        if (oedge.subset().size() > 0) {
+            return false;
+        }
+        // isolated output
+        if (dataflow.out_degree(oedge.dst()) > 0) {
             return false;
         }
     }
@@ -76,9 +78,12 @@ bool SymbolPromotion::can_be_applied(builder::StructuredSDFGBuilder& builder,
         case data_flow::TaskletCode::add:
         case data_flow::TaskletCode::sub:
         case data_flow::TaskletCode::mul:
+        // case data_flow::TaskletCode::div:
+        // case data_flow::TaskletCode::mod:
         case data_flow::TaskletCode::max:
         case data_flow::TaskletCode::min:
             return true;
+        // case data_flow::TaskletCode::shift_right:
         case data_flow::TaskletCode::shift_left: {
             // Shift is constant
             return !tasklet->needs_connector(1);
@@ -89,21 +94,15 @@ bool SymbolPromotion::can_be_applied(builder::StructuredSDFGBuilder& builder,
         case data_flow::TaskletCode::bitwise_not: {
             // Bitwise operation is constant for boolean inputs
             auto& sdfg = builder.subject();
-            for (auto& edge : dataflow.in_edges(*tasklet)) {
-                auto& src = dynamic_cast<const data_flow::AccessNode&>(edge.src());
-                auto& type = sdfg.type(src.data());
-                auto scalar = dynamic_cast<const types::Scalar*>(&type);
-                if (scalar && scalar->primitive_type() != types::PrimitiveType::Bool) {
+            for (auto& input : tasklet->inputs()) {
+                auto& type = input.second;
+                if (type.primitive_type() != types::PrimitiveType::Bool) {
                     return false;
                 }
             }
-            for (auto& edge : dataflow.out_edges(*tasklet)) {
-                auto& dst = dynamic_cast<const data_flow::AccessNode&>(edge.dst());
-                auto& type = sdfg.type(dst.data());
-                auto scalar = dynamic_cast<const types::Scalar*>(&type);
-                if (scalar && scalar->primitive_type() != types::PrimitiveType::Bool) {
-                    return false;
-                }
+            auto& output_type = tasklet->output().second;
+            if (output_type.primitive_type() != types::PrimitiveType::Bool) {
+                return false;
             }
             return true;
         }
@@ -145,6 +144,18 @@ void SymbolPromotion::apply(builder::StructuredSDFGBuilder& builder,
                                 as_symbol(dataflow, *tasklet, tasklet->input(1).first));
             break;
         }
+        case data_flow::TaskletCode::div: {
+            rhs = symbolic::div(as_symbol(dataflow, *tasklet, tasklet->input(0).first),
+                                as_symbol(dataflow, *tasklet, tasklet->input(1).first));
+            break;
+        }
+        case data_flow::TaskletCode::mod: {
+            auto op_1 = as_symbol(dataflow, *tasklet, tasklet->input(0).first);
+            auto op_2 = as_symbol(dataflow, *tasklet, tasklet->input(1).first);
+            rhs = symbolic::mul(symbolic::sub(op_1, op_2),
+                                symbolic::floor(symbolic::div(op_1, op_2)));
+            break;
+        }
         case data_flow::TaskletCode::max: {
             rhs = symbolic::max(as_symbol(dataflow, *tasklet, tasklet->input(0).first),
                                 as_symbol(dataflow, *tasklet, tasklet->input(1).first));
@@ -153,6 +164,13 @@ void SymbolPromotion::apply(builder::StructuredSDFGBuilder& builder,
         case data_flow::TaskletCode::min: {
             rhs = symbolic::min(as_symbol(dataflow, *tasklet, tasklet->input(0).first),
                                 as_symbol(dataflow, *tasklet, tasklet->input(1).first));
+            break;
+        }
+        case data_flow::TaskletCode::shift_right: {
+            rhs = symbolic::div(
+                as_symbol(dataflow, *tasklet, tasklet->input(0).first),
+                symbolic::pow(symbolic::integer(2),
+                              as_symbol(dataflow, *tasklet, tasklet->input(1).first)));
             break;
         }
         case data_flow::TaskletCode::shift_left: {
