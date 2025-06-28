@@ -52,24 +52,20 @@ void Sequence::replace(const symbolic::Expression& old_expression,
         child->replace(old_expression, new_expression);
     }
 
-    if (SymEngine::is_a<SymEngine::Symbol>(*old_expression)) {
-        auto old_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(old_expression);
+    for (auto& trans : this->transitions_) {
+        if (SymEngine::is_a<SymEngine::Symbol>(*old_expression) &&
+            SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
+            auto old_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(old_expression);
+            auto new_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(new_expression);
 
-        for (auto& trans : this->transitions_) {
             if (trans->assignments().find(old_symbol) != trans->assignments().end()) {
-                if (!SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
-                    throw InvalidSDFGException(
-                        "Sequence: Assigments do not support complex expressions on LHS");
-                }
-                auto new_symbol =
-                    SymEngine::rcp_static_cast<const SymEngine::Symbol>(new_expression);
                 trans->assignments()[new_symbol] = trans->assignments()[old_symbol];
                 trans->assignments().erase(old_symbol);
             }
+        }
 
-            for (auto& entry : trans->assignments()) {
-                entry.second = symbolic::subs(entry.second, old_expression, new_expression);
-            }
+        for (auto& entry : trans->assignments()) {
+            entry.second = symbolic::subs(entry.second, old_expression, new_expression);
         }
     }
 };

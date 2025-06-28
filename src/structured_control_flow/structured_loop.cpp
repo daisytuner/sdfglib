@@ -34,10 +34,8 @@ Sequence& StructuredLoop::root() const { return *this->root_; };
 
 void StructuredLoop::replace(const symbolic::Expression& old_expression,
                              const symbolic::Expression& new_expression) {
-    if (symbolic::eq(this->indvar_, old_expression)) {
-        if (!SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
-            throw InvalidSDFGException("New Indvar must be a symbol");
-        }
+    if (symbolic::eq(this->indvar_, old_expression) &&
+        SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
         this->indvar_ = SymEngine::rcp_static_cast<const SymEngine::Symbol>(new_expression);
     }
     this->init_ = symbolic::subs(this->init_, old_expression, new_expression);
