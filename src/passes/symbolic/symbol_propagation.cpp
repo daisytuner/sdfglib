@@ -83,12 +83,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
             if (entry.first->use() != analysis::Use::READ) {
                 continue;
             }
-
-            // Criterion: Cannot propagate symbolic expression into an access node
             auto read = entry.first;
-            if (dynamic_cast<data_flow::AccessNode*>(read->element())) {
-                continue;
-            }
 
             // Criterion: Write must be a transition
             auto write = *entry.second.begin();
@@ -223,6 +218,13 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                     }
                 }
                 if (used) {
+                    applied = true;
+                }
+            } else if (auto access_node = dynamic_cast<data_flow::AccessNode*>(read->element())) {
+                if (SymEngine::is_a<SymEngine::Symbol>(*rhs_modified)) {
+                    auto new_symbol =
+                        SymEngine::rcp_static_cast<const SymEngine::Symbol>(rhs_modified);
+                    access_node->data() = new_symbol->get_name();
                     applied = true;
                 }
             } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(read->element())) {

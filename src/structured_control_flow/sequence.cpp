@@ -28,7 +28,20 @@ size_t Transition::size() const { return this->assignments_.size(); };
 
 void Transition::replace(const symbolic::Expression& old_expression,
                          const symbolic::Expression& new_expression) {
+    if (SymEngine::is_a<SymEngine::Symbol>(*old_expression) &&
+        SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
+        auto old_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(old_expression);
+        auto new_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(new_expression);
 
+        if (this->assignments().find(old_symbol) != this->assignments().end()) {
+            this->assignments()[new_symbol] = this->assignments()[old_symbol];
+            this->assignments().erase(old_symbol);
+        }
+    }
+
+    for (auto& entry : this->assignments()) {
+        entry.second = symbolic::subs(entry.second, old_expression, new_expression);
+    }
 };
 
 Sequence::Sequence(size_t element_id, const DebugInfo& debug_info)
@@ -53,20 +66,7 @@ void Sequence::replace(const symbolic::Expression& old_expression,
     }
 
     for (auto& trans : this->transitions_) {
-        if (SymEngine::is_a<SymEngine::Symbol>(*old_expression) &&
-            SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
-            auto old_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(old_expression);
-            auto new_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(new_expression);
-
-            if (trans->assignments().find(old_symbol) != trans->assignments().end()) {
-                trans->assignments()[new_symbol] = trans->assignments()[old_symbol];
-                trans->assignments().erase(old_symbol);
-            }
-        }
-
-        for (auto& entry : trans->assignments()) {
-            entry.second = symbolic::subs(entry.second, old_expression, new_expression);
-        }
+        trans->replace(old_expression, new_expression);
     }
 };
 

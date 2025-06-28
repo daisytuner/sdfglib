@@ -11,17 +11,40 @@ namespace passes {
 bool LoopNormalization::apply(builder::StructuredSDFGBuilder& builder,
                               analysis::AnalysisManager& analysis_manager,
                               structured_control_flow::For& loop) {
+    auto condition = loop.condition();
+
+    bool applied = false;
+
+    // Step 1: Normalize condition
+    try {
+        auto cnf = symbolic::conjunctive_normal_form(condition);
+        symbolic::Condition new_condition = symbolic::__true__();
+        for (auto& clause : cnf) {
+            symbolic::Condition new_clause = symbolic::__false__();
+            for (auto& literal : clause) {
+                new_clause = symbolic::Or(new_clause, literal);
+            }
+            new_condition = symbolic::And(new_condition, new_clause);
+        }
+        if (!symbolic::eq(new_condition, condition)) {
+            loop.condition() = new_condition;
+            applied = true;
+        }
+
+        condition = new_condition;
+    } catch (const symbolic::CNFException e) {
+        return false;
+    }
+
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
     if (!analysis::LoopAnalysis::is_contiguous(&loop, assumptions_analysis)) {
-        return false;
+        return applied;
     }
 
     // Section: Condition
     // Turn inequalities into strict less than
     auto indvar = loop.indvar();
-    auto condition = loop.condition();
 
-    bool applied = false;
     try {
         auto cnf = symbolic::conjunctive_normal_form(condition);
         symbolic::CNF new_cnf;
@@ -35,10 +58,8 @@ bool LoopNormalization::apply(builder::StructuredSDFGBuilder& builder,
                     auto rhs = eq_args.at(1);
                     if (SymEngine::eq(*lhs, *indvar) && !symbolic::uses(rhs, indvar)) {
                         new_clause.push_back(symbolic::Lt(lhs, rhs));
-                        applied = true;
                     } else if (SymEngine::eq(*rhs, *indvar) && !symbolic::uses(lhs, indvar)) {
                         new_clause.push_back(symbolic::Lt(rhs, lhs));
-                        applied = true;
                     } else {
                         new_clause.push_back(literal);
                     }
@@ -57,7 +78,11 @@ bool LoopNormalization::apply(builder::StructuredSDFGBuilder& builder,
             }
             new_condition = symbolic::And(new_condition, new_clause);
         }
-        loop.condition() = new_condition;
+        if (!symbolic::eq(new_condition, condition)) {
+            loop.condition() = new_condition;
+            applied = true;
+        }
+        condition = new_condition;
     } catch (const symbolic::CNFException e) {
     }
 
