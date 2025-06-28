@@ -102,36 +102,20 @@ bool WhileToForConversion::can_be_applied(builder::StructuredSDFGBuilder& builde
         dynamic_cast<structured_control_flow::Transition*>(update_write->element());
     ;
     auto update = update_element->assignments().at(indvar);
-    std::unordered_set<std::string> indvar_symbols;
+
+    std::unordered_set<std::string> update_symbols;
     for (auto atom : symbolic::atoms(update)) {
         auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom);
-        indvar_symbols.insert(sym->get_name());
+        update_symbols.insert(sym->get_name());
     }
 
     // Check that we can replace all post-usages of iterator (after increment)
     auto users_after = body_users.all_uses_after(*update_write);
     for (auto use : users_after) {
         if (use->use() == analysis::Use::WRITE &&
-            indvar_symbols.find(use->container()) != indvar_symbols.end()) {
+            update_symbols.find(use->container()) != update_symbols.end()) {
             return false;
         }
-
-        if (use->container() != indvar->get_name()) {
-            continue;
-        }
-        if (use->element() == if_else_stmt) {
-            continue;
-        }
-        if (use->element() == update_write->element()) {
-            continue;
-        }
-        if (dynamic_cast<structured_control_flow::Transition*>(use->element())) {
-            continue;
-        }
-        if (dynamic_cast<data_flow::Memlet*>(use->element())) {
-            continue;
-        }
-        return false;
     }
 
     // No other continue, break or return inside loop body
@@ -176,11 +160,11 @@ void WhileToForConversion::apply(builder::StructuredSDFGBuilder& builder,
     auto last_element = body.at(body.size() - 1);
     auto if_else_stmt = dynamic_cast<structured_control_flow::IfElse*>(&last_element.first);
 
-    auto& first_condition = if_else_stmt->at(0).second;
+    auto first_condition = if_else_stmt->at(0).second;
 
     bool second_is_break = false;
     auto& second_branch = if_else_stmt->at(1).first;
-    auto& second_condition = if_else_stmt->at(1).second;
+    auto second_condition = if_else_stmt->at(1).second;
     if (dynamic_cast<structured_control_flow::Break*>(&second_branch.at(0).first)) {
         second_is_break = true;
     }
@@ -202,46 +186,29 @@ void WhileToForConversion::apply(builder::StructuredSDFGBuilder& builder,
     auto indvar = symbolic::symbol(write_to_indvar->container());
     auto update = update_element->assignments().at(indvar);
 
-    // All usages after increment of indvar must be updated
-    analysis::DataDependencyAnalysis data_dependency_analysis(sdfg, body);
-    data_dependency_analysis.run(analysis_manager);
+    // Add temporary symbol for uses after increment
+    auto pseudo_indvar = symbolic::symbol(builder.find_new_name(indvar->get_name()));
+    builder.add_container(pseudo_indvar->get_name(), sdfg.type(indvar->get_name()));
 
-    auto users_after = data_dependency_analysis.defines(*write_to_indvar);
+    // All usages after increment of indvar must be replaced with pseudo_indvar
+    auto users_after = body_users.all_uses_after(*write_to_indvar);
     for (auto use : users_after) {
         if (use->container() != indvar->get_name()) {
             continue;
         }
-        if (use->element() == if_else_stmt) {
-            continue;
-        }
-        if (use->element() == write_to_indvar->element()) {
-            continue;
-        }
 
-        if (auto transition = dynamic_cast<structured_control_flow::Transition*>(use->element())) {
-            for (auto& entry : transition->assignments()) {
-                if (symbolic::uses(entry.second, indvar->get_name())) {
-                    entry.second = symbolic::subs(entry.second, indvar, update);
-                }
-            }
-        } else if (auto memlet = dynamic_cast<data_flow::Memlet*>(use->element())) {
-            for (auto& dim : memlet->subset()) {
-                if (symbolic::uses(dim, indvar->get_name())) {
-                    dim = symbolic::subs(dim, indvar, update);
-                }
-            }
-        } else {
-            throw InvalidSDFGException("WhileToForConversion: Expected Transition or Memlet");
-        }
+        use->element()->replace(indvar, pseudo_indvar);
     }
 
+    // Remove update from transition
+    update_element->assignments().erase(indvar);
+    update_element->assignments()[pseudo_indvar] = update;
+
     if (second_is_break) {
-        update_element->assignments().erase(indvar);
         auto& for_loop =
             builder.convert_while(parent, loop, indvar, first_condition, indvar, update);
         builder.remove_child(for_loop.root(), for_loop.root().size() - 1);
     } else {
-        update_element->assignments().erase(indvar);
         auto& for_loop =
             builder.convert_while(parent, loop, indvar, second_condition, indvar, update);
         builder.remove_child(for_loop.root(), for_loop.root().size() - 1);
