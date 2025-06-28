@@ -41,7 +41,9 @@ Function::Function(const std::string& name, FunctionType type)
     }
 };
 
-std::string Function::name() const { return this->name_; };
+const std::string& Function::name() const { return this->name_; };
+
+std::string& Function::name() { return this->name_; };
 
 FunctionType Function::type() const { return this->type_; };
 
