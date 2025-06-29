@@ -13,6 +13,7 @@
 #include "sdfg/passes/structured_control_flow/for2map.h"
 #include "sdfg/passes/structured_control_flow/sequence_fusion.h"
 #include "sdfg/passes/symbolic/condition_propagation.h"
+#include "sdfg/passes/symbolic/symbol_evolution.h"
 #include "sdfg/passes/symbolic/symbol_propagation.h"
 
 namespace sdfg {
