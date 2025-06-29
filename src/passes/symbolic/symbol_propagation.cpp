@@ -178,6 +178,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
             if (!success) {
                 continue;
             }
+            rhs_modified = symbolic::simplify(rhs_modified);
 
             if (auto transition_stmt =
                     dynamic_cast<structured_control_flow::Transition*>(read->element())) {
