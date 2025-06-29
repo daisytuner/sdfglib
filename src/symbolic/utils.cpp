@@ -345,6 +345,9 @@ std::string constraint_to_isl_str(const Expression& con) {
         auto le = SymEngine::rcp_static_cast<const SymEngine::StrictLessThan>(con);
         auto lhs = le->get_arg1();
         auto rhs = le->get_arg2();
+        if (SymEngine::is_a<SymEngine::Infty>(*lhs) || SymEngine::is_a<SymEngine::Infty>(*rhs)) {
+            return "";
+        }
         auto res = language_extension.expression(lhs) + " < " + language_extension.expression(rhs);
         res = std::regex_replace(res, std::regex("\\."), "_");
         res = std::regex_replace(res, std::regex("__daisy_min"), "min");
@@ -354,6 +357,9 @@ std::string constraint_to_isl_str(const Expression& con) {
         auto le = SymEngine::rcp_static_cast<const SymEngine::LessThan>(con);
         auto lhs = le->get_arg1();
         auto rhs = le->get_arg2();
+        if (SymEngine::is_a<SymEngine::Infty>(*lhs) || SymEngine::is_a<SymEngine::Infty>(*rhs)) {
+            return "";
+        }
         auto res = language_extension.expression(lhs) + " <= " + language_extension.expression(rhs);
         res = std::regex_replace(res, std::regex("\\."), "_");
         res = std::regex_replace(res, std::regex("__daisy_min"), "min");
@@ -363,6 +369,9 @@ std::string constraint_to_isl_str(const Expression& con) {
         auto eq = SymEngine::rcp_static_cast<const SymEngine::Equality>(con);
         auto lhs = eq->get_arg1();
         auto rhs = eq->get_arg2();
+        if (SymEngine::is_a<SymEngine::Infty>(*lhs) || SymEngine::is_a<SymEngine::Infty>(*rhs)) {
+            return "";
+        }
         auto res = language_extension.expression(lhs) + " == " + language_extension.expression(rhs);
         res = std::regex_replace(res, std::regex("\\."), "_");
         res = std::regex_replace(res, std::regex("__daisy_min"), "min");
@@ -372,6 +381,9 @@ std::string constraint_to_isl_str(const Expression& con) {
         auto ne = SymEngine::rcp_static_cast<const SymEngine::Unequality>(con);
         auto lhs = ne->get_arg1();
         auto rhs = ne->get_arg2();
+        if (SymEngine::is_a<SymEngine::Infty>(*lhs) || SymEngine::is_a<SymEngine::Infty>(*rhs)) {
+            return "";
+        }
         auto res = language_extension.expression(lhs) + " != " + language_extension.expression(rhs);
         res = std::regex_replace(res, std::regex("\\."), "_");
         res = std::regex_replace(res, std::regex("__daisy_min"), "min");
@@ -404,9 +416,10 @@ MultiExpression delinearize(const MultiExpression& expr, const Assumptions& assu
         // Step 1: Convert expression into an affine polynomial
         SymbolVec symbols;
         for (auto& sym : atoms(dim)) {
-            if (!assums.at(sym).constant()) {
-                symbols.push_back(sym);
+            if (assums.at(sym).constant() && assums.at(sym).map() == SymEngine::null) {
+                continue;
             }
+            symbols.push_back(sym);
         }
         if (symbols.empty() || symbols.size() <= 1) {
             delinearized.push_back(dim);
@@ -474,6 +487,7 @@ MultiExpression delinearize(const MultiExpression& expr, const Assumptions& assu
 
             // Peel off the dimension
             remaining = symbolic::sub(remaining, symbolic::mul(stride, new_dim));
+            remaining = symbolic::simplify(remaining);
 
             // Check if remainder is within bounds
 

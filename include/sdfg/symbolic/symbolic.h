@@ -109,6 +109,8 @@ Condition Ge(const Expression& lhs, const Expression& rhs);
 
 /***** Modification *****/
 
+Expression simplify(const Expression& expr);
+
 bool eq(const Expression& lhs, const Expression& rhs);
 
 bool uses(const Expression& expr, const Symbol& sym);

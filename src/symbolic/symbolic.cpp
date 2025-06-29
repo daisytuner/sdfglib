@@ -109,6 +109,12 @@ Condition Ge(const Expression& lhs, const Expression& rhs) { return SymEngine::G
 
 /***** Modification *****/
 
+Expression simplify(const Expression& expr) {
+    auto new_expr = SymEngine::expand(expr);
+    new_expr = SymEngine::simplify(new_expr);
+    return new_expr;
+};
+
 bool eq(const Expression& lhs, const Expression& rhs) { return SymEngine::eq(*lhs, *rhs); };
 
 bool uses(const Expression& expr, const Symbol& sym) { return SymEngine::has_symbol(*expr, *sym); };
