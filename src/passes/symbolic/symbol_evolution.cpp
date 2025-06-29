@@ -41,9 +41,6 @@ symbolic::Expression scalar_evolution(symbolic::Symbol indvar, symbolic::Express
     }
 
     // Pattern 3: Affine update
-    if (!symbolic::eq(indvar_init, symbolic::zero())) {
-        return SymEngine::null;
-    }
     if (!symbolic::series::is_contiguous(indvar_update, indvar, {})) {
         return SymEngine::null;
     }
@@ -60,7 +57,7 @@ symbolic::Expression scalar_evolution(symbolic::Symbol indvar, symbolic::Express
     }
     auto offset = coeffs.at(symbolic::symbol("__daisy_constant__"));
 
-    auto inv = symbolic::add(symbolic::mul(indvar, offset), sym_init);
+    auto inv = symbolic::add(symbolic::mul(symbolic::sub(indvar, indvar_init), offset), sym_init);
     return inv;
 }
 
