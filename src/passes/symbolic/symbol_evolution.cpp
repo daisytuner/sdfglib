@@ -3,6 +3,7 @@
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/data_parallelism_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
+#include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/analysis/users.h"
 #include "sdfg/symbolic/polynomials.h"
 #include "sdfg/symbolic/series.h"
@@ -10,7 +11,8 @@
 namespace sdfg {
 namespace passes {
 
-symbolic::Expression scalar_evolution(symbolic::Symbol indvar, symbolic::Expression indvar_update,
+symbolic::Expression scalar_evolution(structured_control_flow::StructuredLoop& loop,
+                                      symbolic::Symbol indvar, symbolic::Expression indvar_update,
                                       symbolic::Expression indvar_init, symbolic::Symbol sym,
                                       symbolic::Expression sym_update,
                                       symbolic::Expression sym_init,
@@ -40,10 +42,8 @@ symbolic::Expression scalar_evolution(symbolic::Symbol indvar, symbolic::Express
     }
 
     // Pattern 3: Affine update
-    if (!symbolic::eq(indvar_init, symbolic::zero())) {
-        return SymEngine::null;
-    }
-    if (!symbolic::series::is_contiguous(indvar_update, indvar, {})) {
+    auto stride = analysis::LoopAnalysis::stride(&loop);
+    if (stride == SymEngine::null) {
         return SymEngine::null;
     }
 
@@ -59,7 +59,8 @@ symbolic::Expression scalar_evolution(symbolic::Symbol indvar, symbolic::Express
     }
     auto offset = coeffs.at(symbolic::symbol("__daisy_constant__"));
 
-    auto inv = symbolic::add(symbolic::mul(indvar, offset), sym_init);
+    auto iter = symbolic::div(symbolic::sub(indvar, indvar_init), stride);
+    auto inv = symbolic::add(symbolic::mul(iter, offset), sym_init);
     return inv;
 }
 
@@ -110,10 +111,25 @@ bool SymbolEvolution::eliminate_symbols(builder::StructuredSDFGBuilder& builder,
         }
         auto& update_transition =
             static_cast<structured_control_flow::Transition&>(*update_write_element);
-        if (&update_transition.parent() != &loop.root()) {
+        auto update_sym = update_transition.assignments().at(symbolic::symbol(sym));
+
+        // Criterion: Not in a nested loop
+        bool nested_loop = false;
+        auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+        structured_control_flow::ControlFlowNode* scope = &update_transition.parent();
+        while (scope != nullptr && scope != &loop.root()) {
+            if (auto loop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(scope)) {
+                nested_loop = true;
+                break;
+            } else if (auto while_stmt = dynamic_cast<structured_control_flow::While*>(scope)) {
+                nested_loop = true;
+                break;
+            }
+            scope = scope_analysis.parent_scope(scope);
+        }
+        if (nested_loop) {
             continue;
         }
-        auto update_sym = update_transition.assignments().at(symbolic::symbol(sym));
 
         // Criterion: Candidate is not read after the update
         auto uses = body_users.all_uses_after(*update_write);
@@ -148,8 +164,8 @@ bool SymbolEvolution::eliminate_symbols(builder::StructuredSDFGBuilder& builder,
         auto init_sym = init_transition.assignments().at(symbolic::symbol(sym));
 
         // Criterion: Infer scalar evolution
-        auto evolution = scalar_evolution(indvar, update, init, symbolic::symbol(sym), update_sym,
-                                          init_sym, candidates);
+        auto evolution = scalar_evolution(loop, indvar, update, init, symbolic::symbol(sym),
+                                          update_sym, init_sym, candidates);
         if (evolution == SymEngine::null) {
             continue;
         }
