@@ -22,6 +22,10 @@ const std::vector<std::pair<std::string, sdfg::types::Scalar>>& Tasklet::inputs(
     return this->inputs_;
 };
 
+std::vector<std::pair<std::string, sdfg::types::Scalar>>& Tasklet::inputs() {
+    return this->inputs_;
+};
+
 const std::pair<std::string, sdfg::types::Scalar>& Tasklet::output() const {
     return this->output_;
 };
