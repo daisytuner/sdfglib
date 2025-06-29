@@ -49,6 +49,7 @@ class CSymbolicPrinter : public SymEngine::BaseVisitor<CSymbolicPrinter, SymEngi
     // Functions
     void bvisit(const SymEngine::Min& x);
     void bvisit(const SymEngine::Max& x);
+    void bvisit(const SymEngine::FunctionSymbol& x);
 
     void _print_pow(std::ostringstream& o, const SymEngine::RCP<const SymEngine::Basic>& a,
                     const SymEngine::RCP<const SymEngine::Basic>& b) override;

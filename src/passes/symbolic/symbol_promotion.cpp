@@ -78,12 +78,12 @@ bool SymbolPromotion::can_be_applied(builder::StructuredSDFGBuilder& builder,
         case data_flow::TaskletCode::add:
         case data_flow::TaskletCode::sub:
         case data_flow::TaskletCode::mul:
-        // case data_flow::TaskletCode::div:
-        // case data_flow::TaskletCode::mod:
+        case data_flow::TaskletCode::div:
+        case data_flow::TaskletCode::mod:
         case data_flow::TaskletCode::max:
         case data_flow::TaskletCode::min:
             return true;
-        // case data_flow::TaskletCode::shift_right:
+        case data_flow::TaskletCode::shift_right:
         case data_flow::TaskletCode::shift_left: {
             // Shift is constant
             return !tasklet->needs_connector(1);
@@ -152,8 +152,7 @@ void SymbolPromotion::apply(builder::StructuredSDFGBuilder& builder,
         case data_flow::TaskletCode::mod: {
             auto op_1 = as_symbol(dataflow, *tasklet, tasklet->input(0).first);
             auto op_2 = as_symbol(dataflow, *tasklet, tasklet->input(1).first);
-            rhs = symbolic::mul(symbolic::sub(op_1, op_2),
-                                symbolic::floor(symbolic::div(op_1, op_2)));
+            rhs = symbolic::mod(op_1, op_2);
             break;
         }
         case data_flow::TaskletCode::max: {

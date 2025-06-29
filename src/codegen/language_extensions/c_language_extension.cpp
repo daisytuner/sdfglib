@@ -671,6 +671,16 @@ void CSymbolicPrinter::bvisit(const SymEngine::Max& x) {
     str_ = s.str();
 };
 
+void CSymbolicPrinter::bvisit(const SymEngine::FunctionSymbol& x) {
+    if (x.get_name() == "idiv") {
+        str_ = "((" + apply(x.get_args()[0]) + ") / (" + apply(x.get_args()[1]) + "))";
+    } else if (x.get_name() == "imod") {
+        str_ = "((" + apply(x.get_args()[0]) + ") % (" + apply(x.get_args()[1]) + "))";
+    } else {
+        throw std::runtime_error("Unsupported function symbol: " + x.get_name());
+    }
+};
+
 void CSymbolicPrinter::_print_pow(std::ostringstream& o,
                                   const SymEngine::RCP<const SymEngine::Basic>& a,
                                   const SymEngine::RCP<const SymEngine::Basic>& b) {
