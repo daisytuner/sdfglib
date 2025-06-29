@@ -3,6 +3,7 @@
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/data_parallelism_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
+#include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/analysis/users.h"
 #include "sdfg/symbolic/polynomials.h"
 #include "sdfg/symbolic/series.h"
@@ -110,10 +111,25 @@ bool SymbolEvolution::eliminate_symbols(builder::StructuredSDFGBuilder& builder,
         }
         auto& update_transition =
             static_cast<structured_control_flow::Transition&>(*update_write_element);
-        if (&update_transition.parent() != &loop.root()) {
+        auto update_sym = update_transition.assignments().at(symbolic::symbol(sym));
+
+        // Criterion: Not in a nested loop
+        bool nested_loop = false;
+        auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+        structured_control_flow::ControlFlowNode* scope = &update_transition.parent();
+        while (scope != nullptr && scope != &loop.root()) {
+            if (auto loop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(scope)) {
+                nested_loop = true;
+                break;
+            } else if (auto while_stmt = dynamic_cast<structured_control_flow::While*>(scope)) {
+                nested_loop = true;
+                break;
+            }
+            scope = scope_analysis.parent_scope(scope);
+        }
+        if (nested_loop) {
             continue;
         }
-        auto update_sym = update_transition.assignments().at(symbolic::symbol(sym));
 
         // Criterion: Candidate is not read after the update
         auto uses = body_users.all_uses_after(*update_write);

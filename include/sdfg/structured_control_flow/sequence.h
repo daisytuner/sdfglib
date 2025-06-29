@@ -23,7 +23,7 @@ class Transition : public Element {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
    private:
-    Sequence& parent_;
+    Sequence* parent_;
     control_flow::Assignments assignments_;
 
     Transition(size_t element_id, const DebugInfo& debug_info, Sequence& parent);

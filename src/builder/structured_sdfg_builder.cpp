@@ -438,6 +438,9 @@ void StructuredSDFGBuilder::insert_children(Sequence& parent, Sequence& other, s
     parent.transitions_.insert(parent.transitions_.begin() + i,
                                std::make_move_iterator(other.transitions_.begin()),
                                std::make_move_iterator(other.transitions_.end()));
+    for (auto& trans : parent.transitions_) {
+        trans->parent_ = &parent;
+    }
     other.children_.clear();
     other.transitions_.clear();
 };
