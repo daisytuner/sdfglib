@@ -487,6 +487,7 @@ MultiExpression delinearize(const MultiExpression& expr, const Assumptions& assu
 
             // Peel off the dimension
             remaining = symbolic::sub(remaining, symbolic::mul(stride, new_dim));
+            remaining = symbolic::expand(remaining);
             remaining = symbolic::simplify(remaining);
 
             // Check if remainder is within bounds

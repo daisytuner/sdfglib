@@ -109,9 +109,13 @@ Condition Ge(const Expression& lhs, const Expression& rhs) { return SymEngine::G
 
 /***** Modification *****/
 
-Expression simplify(const Expression& expr) {
+Expression expand(const Expression& expr) {
     auto new_expr = SymEngine::expand(expr);
-    new_expr = SymEngine::simplify(new_expr);
+    return new_expr;
+};
+
+Expression simplify(const Expression& expr) {
+    auto new_expr = SymEngine::simplify(expr);
     return new_expr;
 };
 
