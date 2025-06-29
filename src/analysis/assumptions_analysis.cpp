@@ -228,6 +228,9 @@ void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop,
         body_assumptions[sym].constant(true);
     }
 
+    // Map of indvar
+    body_assumptions[indvar].map(update);
+
     // Bounds of indvar
 
     // Prove that update is monotonic -> assume bounds
@@ -279,6 +282,9 @@ void AssumptionsAnalysis::visit_map(structured_control_flow::Map* map,
         }
         body_assumptions[sym].constant(true);
     }
+
+    // Map of indvar
+    body_assumptions[indvar].map(update);
 
     // Bounds of indvar
 
@@ -372,11 +378,27 @@ const symbolic::Assumptions AssumptionsAnalysis::get(structured_control_flow::Co
 
     auto scope = scope_analysis.parent_scope(&node);
     while (scope != nullptr) {
-        // Don't overwrite lower scopes' assumptions
         if (this->assumptions_.find(scope) != this->assumptions_.end()) {
             for (auto& entry : this->assumptions_[scope]) {
                 if (assums.find(entry.first) == assums.end()) {
+                    // New assumption
                     assums.insert({entry.first, entry.second});
+                } else {
+                    // Merge assumptions from lower scopes
+                    auto& lower_assum = assums[entry.first];
+                    auto lower_ub = lower_assum.upper_bound();
+                    auto lower_lb = lower_assum.lower_bound();
+                    auto new_ub = symbolic::min(entry.second.upper_bound(), lower_ub);
+                    auto new_lb = symbolic::max(entry.second.lower_bound(), lower_lb);
+                    lower_assum.upper_bound(new_ub);
+                    lower_assum.lower_bound(new_lb);
+
+                    if (lower_assum.map() == SymEngine::null) {
+                        lower_assum.map(entry.second.map());
+                    }
+                    if (!lower_assum.constant()) {
+                        lower_assum.constant(entry.second.constant());
+                    }
                 }
             }
         }
