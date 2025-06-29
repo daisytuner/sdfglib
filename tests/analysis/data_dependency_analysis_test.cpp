@@ -3074,3 +3074,155 @@ TEST(LoopDependencyAnalysisTest, TransposeSquare_2D) {
     EXPECT_EQ(dependencies1.at("j"),
               analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 }
+
+TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::Int32);
+    builder.add_container("_0", sym_desc, true);
+
+    types::Scalar sym_desc2(types::PrimitiveType::Int64);
+    builder.add_container("_11", sym_desc2);
+    builder.add_container("_19", sym_desc2);
+    builder.add_container("_244", sym_desc2);
+    builder.add_container("_303", sym_desc2);
+    builder.add_container("_260", sym_desc2);
+    builder.add_container("_267", sym_desc2);
+
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+    builder.add_container("_1", desc, true);
+    builder.add_container("_330", base_desc);
+
+    // Loop _11
+    auto bound_11 = symbolic::sub(symbolic::symbol("_0"), symbolic::integer(16));
+    auto indvar_11 = symbolic::symbol("_11");
+    auto init_11 = symbolic::integer(0);
+    auto condition_11 = symbolic::Lt(indvar_11, bound_11);
+    auto update_11 = symbolic::add(indvar_11, symbolic::integer(16));
+
+    auto& loop_11 = builder.add_for(root, indvar_11, condition_11, init_11, update_11);
+    auto& body_11 = loop_11.root();
+
+    // Loop _19
+    auto bound_19 = symbolic::integer(16);
+    auto indvar_19 = symbolic::symbol("_19");
+    auto init_19 = symbolic::integer(0);
+    auto condition_19 = symbolic::Lt(indvar_19, bound_19);
+    auto update_19 = symbolic::add(indvar_19, symbolic::integer(1));
+
+    auto& loop_19 = builder.add_for(body_11, indvar_19, condition_19, init_19, update_19);
+    auto& body_19 = loop_19.root();
+
+    // Loop _244
+    auto bound_244 = symbolic::integer(16);
+    auto indvar_244 = symbolic::symbol("_244");
+    auto init_244 = indvar_19;
+    auto condition_244 = symbolic::Lt(indvar_244, bound_244);
+    auto update_244 = symbolic::add(indvar_244, symbolic::integer(1));
+
+    auto& loop_244 = builder.add_for(body_19, indvar_244, condition_244, init_244, update_244);
+    auto& body_244 = loop_244.root();
+
+    // Loop _303
+    auto bound_303 = indvar_19;
+    auto indvar_303 = symbolic::symbol("_303");
+    auto init_303 = symbolic::integer(0);
+    auto condition_303 = symbolic::Lt(indvar_303, bound_303);
+    auto update_303 = symbolic::add(indvar_303, symbolic::integer(1));
+
+    auto& loop_303 = builder.add_for(body_244, indvar_303, condition_303, init_303, update_303);
+    auto& body_303 = loop_303.root();
+
+    // 303_block
+    {
+        auto subset_in = symbolic::add(
+            indvar_11,
+            symbolic::add(
+                indvar_303,
+                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_19")))));
+
+        auto& block_303_1 = builder.add_block(body_303);
+        auto& _1_in = builder.add_access(block_303_1, "_1");
+        auto& _330_out = builder.add_access(block_303_1, "_330");
+        auto& tasklet = builder.add_tasklet(block_303_1, data_flow::TaskletCode::neg,
+                                            {"_out", base_desc}, {{"_in", base_desc}});
+        builder.add_memlet(block_303_1, _1_in, "void", tasklet, "_in", {subset_in});
+        builder.add_memlet(block_303_1, tasklet, "_out", _330_out, "void", {});
+
+        auto subset_in_2 = symbolic::add(
+            indvar_11,
+            symbolic::add(
+                indvar_244,
+                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_303")))));
+
+        auto subset_out = symbolic::add(
+            indvar_11,
+            symbolic::add(
+                indvar_244,
+                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_19")))));
+
+        auto& block_303_2 = builder.add_block(body_303);
+        auto& _1_in_2 = builder.add_access(block_303_2, "_1");
+        auto& _1_in_3 = builder.add_access(block_303_2, "_1");
+        auto& _330_in_2 = builder.add_access(block_303_2, "_330");
+        auto& _1_out_2 = builder.add_access(block_303_2, "_1");
+        auto& tasklet_2 =
+            builder.add_tasklet(block_303_2, data_flow::TaskletCode::fma, {"_out", base_desc},
+                                {{"_in0", base_desc}, {"_in1", base_desc}, {"_in2", base_desc}});
+        builder.add_memlet(block_303_2, _1_in_2, "void", tasklet_2, "_in0", {subset_in_2});
+        builder.add_memlet(block_303_2, _1_in_3, "void", tasklet_2, "_in1", {subset_out});
+        builder.add_memlet(block_303_2, _330_in_2, "void", tasklet_2, "_in2", {});
+        builder.add_memlet(block_303_2, tasklet_2, "_out", _1_out_2, "void", {subset_out});
+    }
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    auto& dependencies_11 = analysis.dependencies(loop_11);
+    auto& dependencies_19 = analysis.dependencies(loop_19);
+    auto& dependencies_244 = analysis.dependencies(loop_244);
+    auto& dependencies_303 = analysis.dependencies(loop_303);
+
+    // Check
+    EXPECT_EQ(dependencies_11.size(), 5);
+    EXPECT_EQ(dependencies_11.at("_1"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies_11.at("_330"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_11.at("_19"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_11.at("_244"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_11.at("_303"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+
+    EXPECT_EQ(dependencies_19.size(), 4);
+    EXPECT_EQ(dependencies_19.at("_1"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies_19.at("_330"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_19.at("_244"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_19.at("_303"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+
+    EXPECT_EQ(dependencies_244.size(), 2);
+    EXPECT_EQ(dependencies_244.at("_330"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_244.at("_303"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+
+    EXPECT_EQ(dependencies_303.size(), 2);
+    EXPECT_EQ(dependencies_303.at("_1"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies_303.at("_330"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+}

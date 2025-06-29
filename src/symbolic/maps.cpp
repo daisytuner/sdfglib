@@ -82,6 +82,9 @@ bool is_disjoint_isl(const MultiExpression& expr1, const MultiExpression& expr2,
     // Transform both expressions into two maps with separate dimensions
     auto expr1_delinearized = delinearize(expr1, assums1);
     auto expr2_delinearized = delinearize(expr2, assums2);
+    if (expr1_delinearized.size() != expr2_delinearized.size()) {
+        return false;
+    }
     auto maps = expressions_to_intersection_map_str(expr1_delinearized, expr2_delinearized, indvar,
                                                     assums1, assums2);
     isl_map* map_1 = isl_map_read_from_str(ctx, std::get<0>(maps).c_str());

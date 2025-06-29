@@ -9,7 +9,8 @@ Assumption::Assumption()
     : symbol_(symbolic::symbol("")),
       lower_bound_(symbolic::infty(-1)),
       upper_bound_(symbolic::infty(1)),
-      constant_(false) {
+      constant_(false),
+      map_(SymEngine::null) {
 
       };
 
@@ -17,7 +18,8 @@ Assumption::Assumption(const Symbol& symbol)
     : symbol_(symbol),
       lower_bound_(symbolic::infty(-1)),
       upper_bound_(symbolic::infty(1)),
-      constant_(false) {
+      constant_(false),
+      map_(SymEngine::null) {
 
       };
 
@@ -25,7 +27,8 @@ Assumption::Assumption(const Assumption& a)
     : symbol_(a.symbol_),
       lower_bound_(a.lower_bound_),
       upper_bound_(a.upper_bound_),
-      constant_(a.constant_) {
+      constant_(a.constant_),
+      map_(a.map_) {
 
       };
 
@@ -34,6 +37,7 @@ Assumption& Assumption::operator=(const Assumption& a) {
     lower_bound_ = a.lower_bound_;
     upper_bound_ = a.upper_bound_;
     constant_ = a.constant_;
+    map_ = a.map_;
     return *this;
 };
 
@@ -50,6 +54,10 @@ void Assumption::upper_bound(const Expression& upper_bound) { upper_bound_ = upp
 bool Assumption::constant() const { return constant_; };
 
 void Assumption::constant(bool constant) { constant_ = constant; };
+
+const Expression& Assumption::map() const { return map_; };
+
+void Assumption::map(const Expression& map) { map_ = map; };
 
 Assumption Assumption::create(const symbolic::Symbol& symbol, const types::IType& type) {
     if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {

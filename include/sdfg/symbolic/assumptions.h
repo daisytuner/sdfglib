@@ -14,6 +14,7 @@ class Assumption {
     Expression lower_bound_;
     Expression upper_bound_;
     bool constant_;
+    Expression map_;
 
    public:
     Assumption();
@@ -37,6 +38,10 @@ class Assumption {
     bool constant() const;
 
     void constant(bool constant);
+
+    const Expression& map() const;
+
+    void map(const Expression& map);
 
     static Assumption create(const symbolic::Symbol& symbol, const types::IType& type);
 };

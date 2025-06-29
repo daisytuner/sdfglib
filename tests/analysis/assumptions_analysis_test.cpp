@@ -273,8 +273,10 @@ TEST(AssumptionsAnalysisTest, For_2D) {
     EXPECT_TRUE(assumptions.at(symbolic::symbol("j")).constant());
     std::cout << assumptions.at(symbolic::symbol("N")).lower_bound()->__str__() << std::endl;
     std::cout << assumptions.at(symbolic::symbol("N")).upper_bound()->__str__() << std::endl;
-    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("N")).lower_bound(),
-                             symbolic::add(symbolic::symbol("i"), symbolic::integer(2))));
+    EXPECT_TRUE(
+        symbolic::eq(assumptions.at(symbolic::symbol("N")).lower_bound(),
+                     symbolic::max(symbolic::add(symbolic::symbol("i"), symbolic::integer(2)),
+                                   symbolic::one())));
     EXPECT_TRUE(
         symbolic::eq(assumptions.at(symbolic::symbol("N")).upper_bound(), symbolic::infty(1)));
     EXPECT_TRUE(assumptions.at(symbolic::symbol("N")).constant());
