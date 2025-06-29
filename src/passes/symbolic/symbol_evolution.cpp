@@ -11,7 +11,8 @@
 namespace sdfg {
 namespace passes {
 
-symbolic::Expression scalar_evolution(symbolic::Symbol indvar, symbolic::Expression indvar_update,
+symbolic::Expression scalar_evolution(structured_control_flow::StructuredLoop& loop,
+                                      symbolic::Symbol indvar, symbolic::Expression indvar_update,
                                       symbolic::Expression indvar_init, symbolic::Symbol sym,
                                       symbolic::Expression sym_update,
                                       symbolic::Expression sym_init,
@@ -41,7 +42,8 @@ symbolic::Expression scalar_evolution(symbolic::Symbol indvar, symbolic::Express
     }
 
     // Pattern 3: Affine update
-    if (!symbolic::series::is_contiguous(indvar_update, indvar, {})) {
+    auto stride = analysis::LoopAnalysis::stride(&loop);
+    if (stride == SymEngine::null) {
         return SymEngine::null;
     }
 
@@ -57,7 +59,8 @@ symbolic::Expression scalar_evolution(symbolic::Symbol indvar, symbolic::Express
     }
     auto offset = coeffs.at(symbolic::symbol("__daisy_constant__"));
 
-    auto inv = symbolic::add(symbolic::mul(symbolic::sub(indvar, indvar_init), offset), sym_init);
+    auto iter = symbolic::div(symbolic::sub(indvar, indvar_init), stride);
+    auto inv = symbolic::add(symbolic::mul(iter, offset), sym_init);
     return inv;
 }
 
@@ -161,8 +164,8 @@ bool SymbolEvolution::eliminate_symbols(builder::StructuredSDFGBuilder& builder,
         auto init_sym = init_transition.assignments().at(symbolic::symbol(sym));
 
         // Criterion: Infer scalar evolution
-        auto evolution = scalar_evolution(indvar, update, init, symbolic::symbol(sym), update_sym,
-                                          init_sym, candidates);
+        auto evolution = scalar_evolution(loop, indvar, update, init, symbolic::symbol(sym),
+                                          update_sym, init_sym, candidates);
         if (evolution == SymEngine::null) {
             continue;
         }
