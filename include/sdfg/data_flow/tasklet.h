@@ -580,6 +580,8 @@ class Tasklet : public CodeNode {
 
     const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs() const;
 
+    std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs();
+
     const std::pair<std::string, sdfg::types::Scalar>& output() const;
 
     const std::pair<std::string, sdfg::types::Scalar>& input(size_t index) const;

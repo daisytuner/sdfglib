@@ -101,6 +101,7 @@ set(SOURCE_FILES
     src/passes/dataflow/trivial_array_elimination.cpp
     src/passes/dataflow/view_propagation.cpp
     src/passes/schedules/parallelization_pass.cpp
+    src/passes/symbolic/symbol_evolution.cpp
     src/passes/symbolic/symbol_propagation.cpp
     src/passes/symbolic/symbol_promotion.cpp
     src/passes/symbolic/condition_propagation.cpp
@@ -109,7 +110,6 @@ set(SOURCE_FILES
     src/passes/structured_control_flow/dead_cfg_elimination.cpp
     src/passes/structured_control_flow/for2map.cpp
     src/passes/structured_control_flow/loop_normalization.cpp
-    src/passes/structured_control_flow/loop_dependent_symbol_elimination.cpp
     src/passes/structured_control_flow/sequence_fusion.cpp
     src/passes/structured_control_flow/while_to_for_conversion.cpp
     src/serializer/json_serializer.cpp

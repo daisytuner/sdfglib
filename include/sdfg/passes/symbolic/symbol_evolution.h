@@ -5,7 +5,7 @@
 namespace sdfg {
 namespace passes {
 
-class LoopDependentSymbolElimination : public Pass {
+class SymbolEvolution : public Pass {
    private:
     bool eliminate_symbols(builder::StructuredSDFGBuilder& builder,
                            analysis::AnalysisManager& analysis_manager,
@@ -13,7 +13,7 @@ class LoopDependentSymbolElimination : public Pass {
                            structured_control_flow::Transition& transition);
 
    public:
-    LoopDependentSymbolElimination();
+    SymbolEvolution();
 
     std::string name() override;
 

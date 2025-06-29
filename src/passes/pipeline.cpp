@@ -55,6 +55,7 @@ Pipeline Pipeline::expression_combine() {
 
     p.register_pass<SymbolPropagation>();
     p.register_pass<DeadDataElimination>();
+    p.register_pass<SymbolEvolution>();
 
     return p;
 };

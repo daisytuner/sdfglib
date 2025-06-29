@@ -226,6 +226,32 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                         SymEngine::rcp_static_cast<const SymEngine::Symbol>(rhs_modified);
                     access_node->data() = new_symbol->get_name();
                     applied = true;
+                } else if (SymEngine::is_a<SymEngine::Integer>(*rhs_modified)) {
+                    auto new_int =
+                        SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs_modified);
+                    auto graph = read->parent();
+                    auto block = static_cast<structured_control_flow::Block*>(graph->get_parent());
+
+                    std::unordered_set<data_flow::Memlet*> to_remove;
+                    for (auto& oedge : graph->out_edges(*access_node)) {
+                        auto& dst = oedge.dst();
+                        if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(&dst)) {
+                            for (auto& entry : tasklet->inputs()) {
+                                if (entry.first == oedge.dst_conn()) {
+                                    entry.first = std::to_string(new_int->as_int());
+                                    to_remove.insert(&oedge);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    for (auto& edge : to_remove) {
+                        builder.remove_memlet(*block, *edge);
+                    }
+                    if (graph->in_degree(*access_node) == 0 &&
+                        graph->out_degree(*access_node) == 0) {
+                        builder.remove_node(*block, *access_node);
+                    }
                 }
             } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(read->element())) {
                 auto& condition = tasklet->condition();

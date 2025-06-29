@@ -49,6 +49,9 @@ ScopeAnalysis::scope_tree() const {
 
 structured_control_flow::ControlFlowNode* ScopeAnalysis::parent_scope(
     const structured_control_flow::ControlFlowNode* scope) const {
+    if (this->scope_tree_.find(scope) == this->scope_tree_.end()) {
+        return nullptr;
+    }
     return this->scope_tree_.at(scope);
 }
 
