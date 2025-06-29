@@ -75,7 +75,7 @@ bool is_true(const Expression& expr);
 
 bool is_false(const Expression& expr);
 
-/***** Arithmetic Expressions *****/
+/***** Integer Functions *****/
 
 Expression add(const Expression& lhs, const Expression& rhs);
 
@@ -89,33 +89,9 @@ Expression min(const Expression& lhs, const Expression& rhs);
 
 Expression max(const Expression& lhs, const Expression& rhs);
 
-/***** Trigonometric Expressions *****/
-
-Expression sin(const Expression& expr);
-
-Expression cos(const Expression& expr);
-
-Expression tan(const Expression& expr);
-
-Expression cot(const Expression& expr);
-
-/***** Logarithmic Expressions  *****/
-
-Expression log(const Expression& expr);
-
-/***** Power Expressions  *****/
+Expression mod(const Expression& lhs, const Expression& rhs);
 
 Expression pow(const Expression& base, const Expression& exp);
-
-Expression exp(const Expression& expr);
-
-Expression sqrt(const Expression& expr);
-
-/***** Rounding Expressions *****/
-
-Expression floor(const Expression& expr);
-
-Expression ceil(const Expression& expr);
 
 /***** Comparisions *****/
 

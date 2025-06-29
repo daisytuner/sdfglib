@@ -103,6 +103,11 @@ bool SymbolEvolution::eliminate_symbols(builder::StructuredSDFGBuilder& builder,
         if (body_users.writes(sym).size() != 1) {
             continue;
         }
+        // Criterion: Must be read to avoid infinite loop
+        if (body_users.reads(sym).size() == 0) {
+            continue;
+        }
+
         // Criterion: Write must be a symbolic assignment
         auto update_write = body_users.writes(sym).at(0);
         auto update_write_element = update_write->element();

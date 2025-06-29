@@ -73,7 +73,7 @@ TEST(SymbolicTest, ArithmeticExpressions) {
     EXPECT_EQ(expr->__str__(), "x*y");
 
     expr = symbolic::div(x, y);
-    EXPECT_EQ(expr->__str__(), "x/y");
+    EXPECT_EQ(expr->__str__(), "idiv(x, y)");
 
     expr = symbolic::min(x, y);
     EXPECT_EQ(expr->__str__(), "min(x, y)");
@@ -83,27 +83,6 @@ TEST(SymbolicTest, ArithmeticExpressions) {
 
     expr = symbolic::pow(x, y);
     EXPECT_EQ(expr->__str__(), "x**y");
-
-    expr = symbolic::exp(x);
-    EXPECT_EQ(expr->__str__(), "exp(x)");
-
-    expr = symbolic::sqrt(x);
-    EXPECT_EQ(expr->__str__(), "sqrt(x)");
-
-    expr = symbolic::log(x);
-    EXPECT_EQ(expr->__str__(), "log(x)");
-
-    expr = symbolic::sin(x);
-    EXPECT_EQ(expr->__str__(), "sin(x)");
-
-    expr = symbolic::cos(x);
-    EXPECT_EQ(expr->__str__(), "cos(x)");
-
-    expr = symbolic::tan(x);
-    EXPECT_EQ(expr->__str__(), "tan(x)");
-
-    expr = symbolic::cot(x);
-    EXPECT_EQ(expr->__str__(), "cot(x)");
 }
 
 TEST(SymbolicTest, eq) {

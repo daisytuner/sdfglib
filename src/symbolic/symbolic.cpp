@@ -66,7 +66,7 @@ bool is_true(const Expression& expr) { return SymEngine::eq(*SymEngine::boolTrue
 
 bool is_false(const Expression& expr) { return SymEngine::eq(*SymEngine::boolFalse, *expr); };
 
-/***** Arithmetic Expressions *****/
+/***** Integer Functions *****/
 
 Expression add(const Expression& lhs, const Expression& rhs) { return SymEngine::add(lhs, rhs); };
 
@@ -74,33 +74,24 @@ Expression sub(const Expression& lhs, const Expression& rhs) { return SymEngine:
 
 Expression mul(const Expression& lhs, const Expression& rhs) { return SymEngine::mul(lhs, rhs); };
 
-Expression div(const Expression& lhs, const Expression& rhs) { return SymEngine::div(lhs, rhs); };
+Expression div(const Expression& lhs, const Expression& rhs) {
+    if (eq(rhs, integer(1))) {
+        return lhs;
+    }
+    auto idiv = SymEngine::function_symbol("idiv", {lhs, rhs});
+    return idiv;
+};
 
 Expression min(const Expression& lhs, const Expression& rhs) { return SymEngine::min({lhs, rhs}); };
 
 Expression max(const Expression& lhs, const Expression& rhs) { return SymEngine::max({lhs, rhs}); };
 
-/***** Trigonometric Expressions *****/
-
-Expression sin(const Expression& expr) { return SymEngine::sin(expr); };
-
-Expression cos(const Expression& expr) { return SymEngine::cos(expr); };
-
-Expression tan(const Expression& expr) { return SymEngine::tan(expr); };
-
-Expression cot(const Expression& expr) { return SymEngine::cot(expr); };
-
-/***** Logarithmic Expressions  *****/
-
-Expression log(const Expression& expr) { return SymEngine::log(expr); };
-
-/***** Power Expressions  *****/
+Expression mod(const Expression& lhs, const Expression& rhs) {
+    auto imod = SymEngine::function_symbol("imod", {lhs, rhs});
+    return imod;
+};
 
 Expression pow(const Expression& base, const Expression& exp) { return SymEngine::pow(base, exp); };
-
-Expression exp(const Expression& expr) { return SymEngine::exp(expr); };
-
-Expression sqrt(const Expression& expr) { return SymEngine::sqrt(expr); };
 
 /***** Comparisions *****/
 
@@ -115,12 +106,6 @@ Condition Gt(const Expression& lhs, const Expression& rhs) { return SymEngine::G
 Condition Le(const Expression& lhs, const Expression& rhs) { return SymEngine::Le(lhs, rhs); };
 
 Condition Ge(const Expression& lhs, const Expression& rhs) { return SymEngine::Ge(lhs, rhs); };
-
-/***** Rounding Expressions *****/
-
-Expression floor(const Expression& expr) { return SymEngine::floor(expr); };
-
-Expression ceil(const Expression& expr) { return SymEngine::ceiling(expr); };
 
 /***** Modification *****/
 
