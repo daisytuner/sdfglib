@@ -44,32 +44,40 @@ Expression minimum(const Expression& expr, const SymbolSet& parameters,
     if (SymEngine::is_a<SymEngine::Mul>(*expr)) {
         auto mul = SymEngine::rcp_static_cast<const SymEngine::Mul>(expr);
         const auto& args = mul->get_args();
-        if (args.size() != 2) {
-            // Extend to N-ary multiplication if needed
-            return SymEngine::null;
+        size_t n = args.size();
+
+        std::vector<std::pair<Expression, Expression>> bounds;
+        bounds.reserve(n);
+
+        for (const auto& arg : args) {
+            Expression min_val = minimum(arg, parameters, assumptions, depth + 1);
+            Expression max_val = maximum(arg, parameters, assumptions, depth + 1);
+
+            if (min_val == SymEngine::null || max_val == SymEngine::null) {
+                return SymEngine::null;
+            }
+            bounds.emplace_back(min_val, max_val);
         }
 
-        Expression a = args[0];
-        Expression b = args[1];
+        // Iterate over 2^n combinations
+        Expression min_product = SymEngine::null;
+        const size_t total_combinations = 1ULL << n;
 
-        Expression a_min = minimum(a, parameters, assumptions, depth + 1);
-        Expression a_max = maximum(a, parameters, assumptions, depth + 1);
-        Expression b_min = minimum(b, parameters, assumptions, depth + 1);
-        Expression b_max = maximum(b, parameters, assumptions, depth + 1);
-
-        if (a_min == SymEngine::null || a_max == SymEngine::null || b_min == SymEngine::null ||
-            b_max == SymEngine::null) {
-            return SymEngine::null;
+        for (size_t mask = 0; mask < total_combinations; ++mask) {
+            Expression product = SymEngine::integer(1);
+            for (size_t i = 0; i < n; ++i) {
+                const auto& bound = bounds[i];
+                Expression val = (mask & (1ULL << i)) ? bound.second : bound.first;
+                product = symbolic::mul(product, val);
+            }
+            if (min_product == SymEngine::null) {
+                min_product = product;
+            } else {
+                min_product = symbolic::min(min_product, product);
+            }
         }
 
-        // Compute all 4 combinations
-        Expression p1 = symbolic::mul(a_min, b_min);
-        Expression p2 = symbolic::mul(a_min, b_max);
-        Expression p3 = symbolic::mul(a_max, b_min);
-        Expression p4 = symbolic::mul(a_max, b_max);
-
-        // Return minimum of all products
-        return symbolic::min(symbolic::min(p1, p2), symbolic::min(p3, p4));
+        return min_product;
     }
 
     // Add
@@ -163,32 +171,40 @@ Expression maximum(const Expression& expr, const SymbolSet& parameters,
     if (SymEngine::is_a<SymEngine::Mul>(*expr)) {
         auto mul = SymEngine::rcp_static_cast<const SymEngine::Mul>(expr);
         const auto& args = mul->get_args();
-        if (args.size() != 2) {
-            // Extend to N-ary multiplication if needed
-            return SymEngine::null;
+        size_t n = args.size();
+
+        std::vector<std::pair<Expression, Expression>> bounds;
+        bounds.reserve(n);
+
+        for (const auto& arg : args) {
+            Expression min_val = minimum(arg, parameters, assumptions, depth + 1);
+            Expression max_val = maximum(arg, parameters, assumptions, depth + 1);
+
+            if (min_val == SymEngine::null || max_val == SymEngine::null) {
+                return SymEngine::null;
+            }
+            bounds.emplace_back(min_val, max_val);
         }
 
-        Expression a = args[0];
-        Expression b = args[1];
+        // Iterate over 2^n combinations
+        Expression max_product = SymEngine::null;
+        const size_t total_combinations = 1ULL << n;
 
-        Expression a_min = minimum(a, parameters, assumptions, depth + 1);
-        Expression a_max = maximum(a, parameters, assumptions, depth + 1);
-        Expression b_min = minimum(b, parameters, assumptions, depth + 1);
-        Expression b_max = maximum(b, parameters, assumptions, depth + 1);
-
-        if (a_min == SymEngine::null || a_max == SymEngine::null || b_min == SymEngine::null ||
-            b_max == SymEngine::null) {
-            return SymEngine::null;
+        for (size_t mask = 0; mask < total_combinations; ++mask) {
+            Expression product = SymEngine::integer(1);
+            for (size_t i = 0; i < n; ++i) {
+                const auto& bound = bounds[i];
+                Expression val = (mask & (1ULL << i)) ? bound.second : bound.first;
+                product = symbolic::mul(product, val);
+            }
+            if (max_product == SymEngine::null) {
+                max_product = product;
+            } else {
+                max_product = symbolic::max(max_product, product);
+            }
         }
 
-        // Compute all 4 combinations
-        Expression p1 = symbolic::mul(a_min, b_min);
-        Expression p2 = symbolic::mul(a_min, b_max);
-        Expression p3 = symbolic::mul(a_max, b_min);
-        Expression p4 = symbolic::mul(a_max, b_max);
-
-        // Return maximum of all products
-        return symbolic::max(symbolic::max(p1, p2), symbolic::max(p3, p4));
+        return max_product;
     }
 
     // Add
