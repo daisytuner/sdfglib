@@ -89,6 +89,45 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
             constraints.push_back(con_str);
         }
     }
+    for (auto& dim : dimensions) {
+        auto sym = symbolic::symbol(dim);
+        auto map = assums.at(sym).map();
+        if (map == SymEngine::null) {
+            continue;
+        }
+        if (!SymEngine::is_a<SymEngine::Add>(*map)) {
+            continue;
+        }
+        auto args = SymEngine::rcp_static_cast<const SymEngine::Add>(map)->get_args();
+        if (args.size() != 2) {
+            continue;
+        }
+        auto arg0 = args[0];
+        auto arg1 = args[1];
+        if (!symbolic::eq(arg0, symbolic::symbol(dim))) {
+            arg0 = args[1];
+            arg1 = args[0];
+        }
+        if (!symbolic::eq(arg0, symbolic::symbol(dim))) {
+            continue;
+        }
+        if (!SymEngine::is_a<SymEngine::Integer>(*arg1)) {
+            continue;
+        }
+        if (symbolic::eq(arg1, symbolic::one())) {
+            continue;
+        }
+        auto lb = assums.at(sym).lower_bound();
+        if (!SymEngine::is_a<SymEngine::Integer>(*lb)) {
+            continue;
+        }
+
+        std::string iter = "__daisy_iterator_" + dim;
+        std::string con = "exists " + iter + " : " + dim + " = " +
+                          language_extension.expression(lb) + " + " + iter + " * " +
+                          language_extension.expression(arg1);
+        constraints.push_back(con);
+    }
     if (!constraints.empty()) {
         map += " : ";
         map += helpers::join(constraints, " and ");
@@ -235,6 +274,46 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
         }
         constraints_1.push_back(con_str_1);
     }
+    for (auto& dim : dimensions) {
+        auto sym = symbolic::symbol(dim);
+        auto map = assums1.at(sym).map();
+        if (map == SymEngine::null) {
+            continue;
+        }
+        if (!SymEngine::is_a<SymEngine::Add>(*map)) {
+            continue;
+        }
+        auto args = SymEngine::rcp_static_cast<const SymEngine::Add>(map)->get_args();
+        if (args.size() != 2) {
+            continue;
+        }
+        auto arg0 = args[0];
+        auto arg1 = args[1];
+        if (!symbolic::eq(arg0, symbolic::symbol(dim))) {
+            arg0 = args[1];
+            arg1 = args[0];
+        }
+        if (!symbolic::eq(arg0, symbolic::symbol(dim))) {
+            continue;
+        }
+        if (!SymEngine::is_a<SymEngine::Integer>(*arg1)) {
+            continue;
+        }
+        if (symbolic::eq(arg1, symbolic::one())) {
+            continue;
+        }
+        auto lb = assums2.at(sym).lower_bound();
+        if (!SymEngine::is_a<SymEngine::Integer>(*lb)) {
+            continue;
+        }
+
+        std::string dim1 = dim + "_1";
+        std::string iter = "__daisy_iterator_" + dim1;
+        std::string con = "exists " + iter + " : " + dim1 + " = " +
+                          language_extension.expression(lb) + " + " + iter + " * " +
+                          language_extension.expression(arg1);
+        constraints_1.push_back(con);
+    }
     if (!constraints_1.empty()) {
         map_1 += " : ";
         map_1 += helpers::join(constraints_1, " and ");
@@ -252,6 +331,46 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
             continue;
         }
         constraints_2.push_back(con_str_2);
+    }
+    for (auto& dim : dimensions) {
+        auto sym = symbolic::symbol(dim);
+        auto map = assums2.at(sym).map();
+        if (map == SymEngine::null) {
+            continue;
+        }
+        if (!SymEngine::is_a<SymEngine::Add>(*map)) {
+            continue;
+        }
+        auto args = SymEngine::rcp_static_cast<const SymEngine::Add>(map)->get_args();
+        if (args.size() != 2) {
+            continue;
+        }
+        auto arg0 = args[0];
+        auto arg1 = args[1];
+        if (!symbolic::eq(arg0, symbolic::symbol(dim))) {
+            arg0 = args[1];
+            arg1 = args[0];
+        }
+        if (!symbolic::eq(arg0, symbolic::symbol(dim))) {
+            continue;
+        }
+        if (!SymEngine::is_a<SymEngine::Integer>(*arg1)) {
+            continue;
+        }
+        if (symbolic::eq(arg1, symbolic::one())) {
+            continue;
+        }
+        auto lb = assums2.at(sym).lower_bound();
+        if (!SymEngine::is_a<SymEngine::Integer>(*lb)) {
+            continue;
+        }
+
+        std::string dim2 = dim + "_2";
+        std::string iter = "__daisy_iterator_" + dim2;
+        std::string con = "exists " + iter + " : " + dim2 + " = " +
+                          language_extension.expression(lb) + " + " + iter + " * " +
+                          language_extension.expression(arg1);
+        constraints_2.push_back(con);
     }
     if (!constraints_2.empty()) {
         map_2 += " : ";
