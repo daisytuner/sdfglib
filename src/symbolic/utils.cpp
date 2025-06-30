@@ -128,7 +128,8 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     std::vector<std::string> parameters;
     SymbolSet parameters_syms;
     for (auto& sym : syms) {
-        if (sym->get_name() != indvar->get_name() && assums1.at(sym).constant()) {
+        if (sym->get_name() != indvar->get_name() && assums1.at(sym).constant() &&
+            assums2.at(sym).constant()) {
             if (parameters_syms.find(sym) != parameters_syms.end()) {
                 continue;
             }
@@ -145,10 +146,24 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
 
     // Generate constraints
     SymbolSet seen;
-    auto constraints_syms = generate_constraints(syms, assums1, seen);
+    auto constraints_syms_1 = generate_constraints(syms, assums1, seen);
+    seen.clear();
+    auto constraints_syms_2 = generate_constraints(syms, assums2, seen);
 
     // Extend parameters with additional symbols from constraints
-    for (auto& con : constraints_syms) {
+    for (auto& con : constraints_syms_1) {
+        auto con_syms = symbolic::atoms(con);
+        for (auto& con_sym : con_syms) {
+            if (dimensions_syms.find(con_sym) == dimensions_syms.end()) {
+                if (parameters_syms.find(con_sym) != parameters_syms.end()) {
+                    continue;
+                }
+                parameters.push_back(con_sym->get_name());
+                parameters_syms.insert(con_sym);
+            }
+        }
+    }
+    for (auto& con : constraints_syms_2) {
         auto con_syms = symbolic::atoms(con);
         for (auto& con_sym : con_syms) {
             if (dimensions_syms.find(con_sym) == dimensions_syms.end()) {
@@ -208,24 +223,17 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     map_2 += "] ";
 
     std::vector<std::string> constraints_1;
-    std::vector<std::string> constraints_2;
     // Add bounds
-    for (auto& con : constraints_syms) {
+    for (auto& con : constraints_syms_1) {
         auto con_1 = con;
-        auto con_2 = con;
         for (auto& iter : dimensions) {
             con_1 = symbolic::subs(con_1, symbolic::symbol(iter), symbolic::symbol(iter + "_1"));
-            con_2 = symbolic::subs(con_2, symbolic::symbol(iter), symbolic::symbol(iter + "_2"));
         }
         auto con_str_1 = constraint_to_isl_str(con_1);
         if (con_str_1.empty()) {
             continue;
         }
-        auto con_str_2 = constraint_to_isl_str(con_2);
-        if (!con_str_1.empty()) {
-            constraints_1.push_back(con_str_1);
-            constraints_2.push_back(con_str_2);
-        }
+        constraints_1.push_back(con_str_1);
     }
     if (!constraints_1.empty()) {
         map_1 += " : ";
@@ -233,6 +241,18 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     }
     map_1 += " }";
 
+    std::vector<std::string> constraints_2;
+    for (auto& con : constraints_syms_2) {
+        auto con_2 = con;
+        for (auto& iter : dimensions) {
+            con_2 = symbolic::subs(con_2, symbolic::symbol(iter), symbolic::symbol(iter + "_2"));
+        }
+        auto con_str_2 = constraint_to_isl_str(con_2);
+        if (con_str_2.empty()) {
+            continue;
+        }
+        constraints_2.push_back(con_str_2);
+    }
     if (!constraints_2.empty()) {
         map_2 += " : ";
         map_2 += helpers::join(constraints_2, " and ");

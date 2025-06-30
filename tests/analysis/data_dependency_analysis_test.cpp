@@ -3097,6 +3097,8 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
     types::Pointer desc(base_desc);
     builder.add_container("_1", desc, true);
     builder.add_container("_330", base_desc);
+    builder.add_container("_258", base_desc);
+    builder.add_container("_298", base_desc);
 
     // Loop _11
     auto bound_11 = symbolic::sub(symbolic::symbol("_0"), symbolic::integer(16));
@@ -3183,6 +3185,111 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
         builder.add_memlet(block_303_2, tasklet_2, "_out", _1_out_2, "void", {subset_out});
     }
 
+    // block _19
+    {
+        auto subset = symbolic::add(
+            indvar_11,
+            symbolic::add(
+                indvar_19,
+                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_19")))));
+
+        auto& block_19 = builder.add_block(body_19);
+        auto& _1_in = builder.add_access(block_19, "_1");
+        auto& _258_out = builder.add_access(block_19, "_258");
+        auto& tasklet =
+            builder.add_tasklet(block_19, data_flow::TaskletCode::mul, {"_out", base_desc},
+                                {{"1.0f", base_desc}, {"_in1", base_desc}});
+        builder.add_memlet(block_19, _1_in, "void", tasklet, "_in1", {subset});
+        builder.add_memlet(block_19, tasklet, "_out", _258_out, "void", {});
+    }
+
+    // _260 loop
+    auto bound_260 = symbolic::integer(16);
+    auto indvar_260 = symbolic::symbol("_260");
+    auto init_260 = symbolic::add(indvar_19, symbolic::one());
+    auto condition_260 = symbolic::Lt(indvar_260, bound_260);
+    auto update_260 = symbolic::add(indvar_260, symbolic::integer(1));
+
+    auto& loop_260 = builder.add_for(body_19, indvar_260, condition_260, init_260, update_260);
+    auto& body_260 = loop_260.root();
+
+    // _267 loop
+    auto bound_267 = indvar_19;
+    auto indvar_267 = symbolic::symbol("_267");
+    auto init_267 = symbolic::zero();
+    auto condition_267 = symbolic::Lt(indvar_267, bound_267);
+    auto update_267 = symbolic::add(indvar_267, symbolic::integer(1));
+
+    auto& loop_267 = builder.add_for(body_260, indvar_267, condition_267, init_267, update_267);
+    auto& body_267 = loop_267.root();
+
+    // block _267
+    {
+        auto subset_in_1 = symbolic::add(
+            indvar_11,
+            symbolic::add(
+                indvar_267,
+                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_260")))));
+
+        auto subset_in_2 = symbolic::add(
+            indvar_11,
+            symbolic::add(
+                indvar_19,
+                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_267")))));
+
+        auto subset_in_3 = symbolic::add(
+            indvar_11,
+            symbolic::add(
+                indvar_19,
+                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_260")))));
+
+        auto& block_267_1 = builder.add_block(body_267);
+        auto& _1_in_1 = builder.add_access(block_267_1, "_1");
+        auto& _298_out = builder.add_access(block_267_1, "_298");
+        auto& tasklet = builder.add_tasklet(block_267_1, data_flow::TaskletCode::neg,
+                                            {"_out", base_desc}, {{"_in", base_desc}});
+        builder.add_memlet(block_267_1, _1_in_1, "void", tasklet, "_in", {subset_in_1});
+        builder.add_memlet(block_267_1, tasklet, "_out", _298_out, "void", {});
+
+        auto& block_267_2 = builder.add_block(body_267);
+        auto& _1_in_2 = builder.add_access(block_267_2, "_1");
+        auto& _1_in_3 = builder.add_access(block_267_2, "_1");
+        auto& _298_in_2 = builder.add_access(block_267_2, "_298");
+        auto& _1_out_2 = builder.add_access(block_267_2, "_1");
+        auto& tasklet_2 =
+            builder.add_tasklet(block_267_2, data_flow::TaskletCode::fma, {"_out", base_desc},
+                                {{"_in0", base_desc}, {"_in1", base_desc}, {"_in2", base_desc}});
+        builder.add_memlet(block_267_2, _298_in_2, "void", tasklet_2, "_in0", {});
+        builder.add_memlet(block_267_2, _1_in_2, "void", tasklet_2, "_in1", {subset_in_2});
+        builder.add_memlet(block_267_2, _1_in_3, "void", tasklet_2, "_in2", {subset_in_3});
+        builder.add_memlet(block_267_2, tasklet_2, "_out", _1_out_2, "void", {subset_in_3});
+    }
+
+    // block _260
+    {
+        auto subset = symbolic::add(
+            indvar_11,
+            symbolic::add(
+                indvar_19,
+                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_260")))));
+
+        auto& block_260 = builder.add_block(body_260);
+        auto& _1_in = builder.add_access(block_260, "_1");
+        auto& _1_out = builder.add_access(block_260, "_1");
+        auto& _258_in = builder.add_access(block_260, "_258");
+        auto& tasklet =
+            builder.add_tasklet(block_260, data_flow::TaskletCode::mul, {"_out", base_desc},
+                                {{"_in0", base_desc}, {"_in1", base_desc}});
+        builder.add_memlet(block_260, _258_in, "void", tasklet, "_in0", {});
+        builder.add_memlet(block_260, _1_in, "void", tasklet, "_in1", {subset});
+        builder.add_memlet(block_260, tasklet, "_out", _1_out, "void", {subset});
+    }
+
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
@@ -3190,9 +3297,11 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
     auto& dependencies_19 = analysis.dependencies(loop_19);
     auto& dependencies_244 = analysis.dependencies(loop_244);
     auto& dependencies_303 = analysis.dependencies(loop_303);
+    auto& dependencies_260 = analysis.dependencies(loop_260);
+    auto& dependencies_267 = analysis.dependencies(loop_267);
 
     // Check
-    EXPECT_EQ(dependencies_11.size(), 5);
+    EXPECT_EQ(dependencies_11.size(), 9);
     EXPECT_EQ(dependencies_11.at("_1"),
               analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
     EXPECT_EQ(dependencies_11.at("_330"),
@@ -3203,8 +3312,16 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
               analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
     EXPECT_EQ(dependencies_11.at("_303"),
               analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_11.at("_258"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_11.at("_260"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_11.at("_267"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_11.at("_298"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 
-    EXPECT_EQ(dependencies_19.size(), 4);
+    EXPECT_EQ(dependencies_19.size(), 8);
     EXPECT_EQ(dependencies_19.at("_1"),
               analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
     EXPECT_EQ(dependencies_19.at("_330"),
@@ -3212,6 +3329,14 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
     EXPECT_EQ(dependencies_19.at("_244"),
               analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
     EXPECT_EQ(dependencies_19.at("_303"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_19.at("_258"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_19.at("_260"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_19.at("_267"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_19.at("_298"),
               analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 
     EXPECT_EQ(dependencies_244.size(), 2);
@@ -3224,5 +3349,17 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
     EXPECT_EQ(dependencies_303.at("_1"),
               analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
     EXPECT_EQ(dependencies_303.at("_330"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+
+    EXPECT_EQ(dependencies_267.size(), 2);
+    EXPECT_EQ(dependencies_267.at("_1"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies_267.at("_298"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+
+    EXPECT_EQ(dependencies_260.size(), 2);
+    EXPECT_EQ(dependencies_260.at("_267"),
+              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_260.at("_298"),
               analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 }

@@ -77,8 +77,6 @@ bool is_disjoint_isl(const MultiExpression& expr1, const MultiExpression& expr2,
         return false;
     }
 
-    isl_ctx* ctx = isl_ctx_alloc();
-
     // Transform both expressions into two maps with separate dimensions
     auto expr1_delinearized = delinearize(expr1, assums1);
     auto expr2_delinearized = delinearize(expr2, assums2);
@@ -87,6 +85,8 @@ bool is_disjoint_isl(const MultiExpression& expr1, const MultiExpression& expr2,
     }
     auto maps = expressions_to_intersection_map_str(expr1_delinearized, expr2_delinearized, indvar,
                                                     assums1, assums2);
+
+    isl_ctx* ctx = isl_ctx_alloc();
     isl_map* map_1 = isl_map_read_from_str(ctx, std::get<0>(maps).c_str());
     isl_map* map_2 = isl_map_read_from_str(ctx, std::get<1>(maps).c_str());
     isl_map* map_3 = isl_map_read_from_str(ctx, std::get<2>(maps).c_str());
@@ -140,6 +140,8 @@ bool is_disjoint_isl(const MultiExpression& expr1, const MultiExpression& expr2,
 bool is_disjoint_monotonic(const MultiExpression& expr1, const MultiExpression& expr2,
                            const Symbol& indvar, const Assumptions& assums1,
                            const Assumptions& assums2) {
+    // TODO: Handle assumptions1 and assumptions2
+
     for (size_t i = 0; i < expr1.size(); i++) {
         auto& dim1 = expr1[i];
         if (expr2.size() <= i) {
