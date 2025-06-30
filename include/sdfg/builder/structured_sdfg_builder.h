@@ -82,6 +82,9 @@ class StructuredSDFGBuilder : public FunctionBuilder {
 
     void insert_children(Sequence& parent, Sequence& other, size_t i);
 
+    void insert(ControlFlowNode& node, Sequence& source, Sequence& target,
+                const DebugInfo& debug_info = DebugInfo());
+
     Block& add_block(Sequence& parent, const sdfg::control_flow::Assignments& assignments = {},
                      const DebugInfo& debug_info = DebugInfo());
 

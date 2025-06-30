@@ -445,6 +445,29 @@ void StructuredSDFGBuilder::insert_children(Sequence& parent, Sequence& other, s
     other.transitions_.clear();
 };
 
+void StructuredSDFGBuilder::insert(ControlFlowNode& node, Sequence& source, Sequence& target,
+                                   const DebugInfo& debug_info) {
+    // Insert node into target sequence
+    int index = -1;
+    for (size_t i = 0; i < source.children_.size(); i++) {
+        if (source.children_.at(i).get() == &node) {
+            index = i;
+            break;
+        }
+    }
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Node not found in source sequence");
+    }
+
+    auto node_ptr = std::move(source.children_.at(index));
+    source.children_.erase(source.children_.begin() + index);
+    source.transitions_.erase(source.transitions_.begin() + index);
+
+    target.children_.push_back(std::move(node_ptr));
+    target.transitions_.push_back(
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, target)));
+};
+
 Block& StructuredSDFGBuilder::add_block(Sequence& parent,
                                         const sdfg::control_flow::Assignments& assignments,
                                         const DebugInfo& debug_info) {

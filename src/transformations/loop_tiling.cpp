@@ -4,9 +4,6 @@
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
-#include "sdfg/passes/structured_control_flow/dead_cfg_elimination.h"
-#include "sdfg/passes/structured_control_flow/sequence_fusion.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 
 namespace sdfg {
@@ -36,69 +33,43 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder,
         static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&loop_));
 
     auto indvar = loop_.indvar();
+
+    // Step 1: Define new outer loop
     auto outer_indvar_str = builder.find_new_name(indvar->get_name() + "_tile");
     builder.add_container(outer_indvar_str, sdfg.type(loop_.indvar()->get_name()));
+
     auto outer_indvar = symbolic::symbol(outer_indvar_str);
-
-    auto tile_size = symbolic::integer(this->tile_size_);
-
-    auto condition = symbolic::subs(loop_.condition(), indvar, outer_indvar);
-    auto update = symbolic::add(outer_indvar, tile_size);
+    auto outer_condition = symbolic::subs(loop_.condition(), indvar, outer_indvar);
+    auto outer_update = symbolic::add(outer_indvar, symbolic::integer(this->tile_size_));
 
     structured_control_flow::StructuredLoop* outer_loop = nullptr;
     if (auto map = dynamic_cast<structured_control_flow::Map*>(&loop_)) {
         outer_loop = &builder
-                          .add_map_before(*parent, loop_, outer_indvar, condition, loop_.init(),
-                                          update, map->schedule_type())
+                          .add_map_before(*parent, loop_, outer_indvar, outer_condition,
+                                          loop_.init(), outer_update, map->schedule_type())
                           .first;
     } else {
-        outer_loop =
-            &builder.add_for_before(*parent, loop_, outer_indvar, condition, loop_.init(), update)
-                 .first;
+        outer_loop = &builder
+                          .add_for_before(*parent, loop_, outer_indvar, outer_condition,
+                                          loop_.init(), outer_update)
+                          .first;
     }
 
-    auto& outer_body = outer_loop->root();
-
+    // Step 2: Redefine inner loop
     auto inner_indvar = indvar;
     auto inner_init = outer_indvar;
-    auto inner_condition_tile = symbolic::Lt(inner_indvar, symbolic::add(outer_indvar, tile_size));
-    auto inner_condition_base = symbolic::subs(loop_.condition(), outer_indvar, inner_indvar);
-    auto inner_condition = symbolic::And(inner_condition_tile, inner_condition_base);
+    auto inner_condition_tile = symbolic::Lt(
+        inner_indvar, symbolic::add(outer_indvar, symbolic::integer(this->tile_size_)));
+    auto inner_condition = symbolic::And(inner_condition_tile, loop_.condition());
     auto inner_update = symbolic::add(inner_indvar, symbolic::integer(1));
+    loop_.update() = inner_update;
+    loop_.condition() = inner_condition;
+    loop_.init() = inner_init;
 
-    // Add new loop with original body
-    auto& tmp_root = builder.add_sequence_before(*parent, loop_).first;
-    structured_control_flow::StructuredLoop* inner_loop = nullptr;
-    if (dynamic_cast<structured_control_flow::Map*>(&loop_)) {
-        inner_loop =
-            &builder.add_map(tmp_root, inner_indvar, inner_condition, inner_init, inner_update,
-                             structured_control_flow::ScheduleType_Sequential);
-    } else {
-        inner_loop =
-            &builder.add_for(tmp_root, inner_indvar, inner_condition, inner_init, inner_update);
-    }
-
-    deepcopy::StructuredSDFGDeepCopy copies(builder, inner_loop->root(), loop_.root());
-    copies.copy();
-
-    builder.clear_sequence(outer_body);
-
-    deepcopy::StructuredSDFGDeepCopy copies2(builder, outer_body, tmp_root);
-    copies2.copy();
-
-    builder.remove_child(*parent, tmp_root);
-    builder.remove_child(*parent, loop_);
+    // Step 3: Move inner loop body to outer loop body
+    builder.insert(loop_, *parent, outer_loop->root(), loop_.debug_info());
 
     analysis_manager.invalidate_all();
-
-    passes::SequenceFusion sf_pass;
-    passes::DeadCFGElimination dce_pass;
-    bool applies = false;
-    do {
-        applies = false;
-        applies |= dce_pass.run(builder, analysis_manager);
-        applies |= sf_pass.run(builder, analysis_manager);
-    } while (applies);
 };
 
 void LoopTiling::to_json(nlohmann::json& j) const {
