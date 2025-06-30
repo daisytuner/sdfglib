@@ -378,11 +378,11 @@ TEST_F(RecorderMultiTransformationTest, Apply_Transformations) {
 
     EXPECT_EQ(j[1]["transformation_type"], "LoopTiling");
     EXPECT_EQ(j[1]["tile_size"], 16);
-    EXPECT_EQ(j[1]["loop_element_id"], 41);
+    EXPECT_EQ(j[1]["loop_element_id"], 4);
 
     EXPECT_EQ(j[2]["transformation_type"], "LoopInterchange");
-    EXPECT_EQ(j[2]["outer_loop_element_id"], 36);
-    EXPECT_EQ(j[2]["inner_loop_element_id"], 51);
+    EXPECT_EQ(j[2]["outer_loop_element_id"], 1);
+    EXPECT_EQ(j[2]["inner_loop_element_id"], 18);
 }
 
 TEST_F(RecorderMultiTransformationTest, Replay_Transformations) {
@@ -390,10 +390,9 @@ TEST_F(RecorderMultiTransformationTest, Replay_Transformations) {
 
     nlohmann::json j = nlohmann::json::array();
     j.push_back({{"loop_element_id", 1}, {"tile_size", 32}, {"transformation_type", "LoopTiling"}});
-    j.push_back(
-        {{"loop_element_id", 41}, {"tile_size", 16}, {"transformation_type", "LoopTiling"}});
-    j.push_back({{"inner_loop_element_id", 51},
-                 {"outer_loop_element_id", 36},
+    j.push_back({{"loop_element_id", 4}, {"tile_size", 16}, {"transformation_type", "LoopTiling"}});
+    j.push_back({{"inner_loop_element_id", 18},
+                 {"outer_loop_element_id", 1},
                  {"transformation_type", "LoopInterchange"}});
 
     EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j));
