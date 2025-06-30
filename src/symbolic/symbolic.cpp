@@ -115,6 +115,33 @@ Expression expand(const Expression& expr) {
 };
 
 Expression simplify(const Expression& expr) {
+    if (SymEngine::is_a<SymEngine::FunctionSymbol>(*expr)) {
+        auto func_sym = SymEngine::rcp_static_cast<const SymEngine::FunctionSymbol>(expr);
+        if (func_sym->get_name() == "idiv") {
+            auto lhs = func_sym->get_args()[0];
+            auto rhs = func_sym->get_args()[1];
+            if (SymEngine::is_a<SymEngine::Mul>(*lhs) &&
+                SymEngine::is_a<SymEngine::Integer>(*rhs)) {
+                auto lhs_mul = SymEngine::rcp_static_cast<const SymEngine::Mul>(lhs);
+                auto rhs_int = SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs);
+                auto lhs_args = lhs_mul->get_args();
+
+                bool skipped = false;
+                Expression new_mul = SymEngine::integer(1);
+                for (auto& arg : lhs_args) {
+                    if (eq(arg, rhs_int) && !skipped) {
+                        skipped = true;
+                    } else {
+                        new_mul = SymEngine::mul(new_mul, arg);
+                    }
+                }
+                if (skipped) {
+                    return new_mul;
+                }
+            }
+        }
+    }
+
     auto new_expr = SymEngine::simplify(expr);
     return new_expr;
 };

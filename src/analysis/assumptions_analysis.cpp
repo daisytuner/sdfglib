@@ -430,9 +430,19 @@ const symbolic::Assumptions AssumptionsAnalysis::get(structured_control_flow::Co
             assums_safe.at(entry.first).constant(false);
             assums_to.insert({entry.first, assums_safe.at(entry.first)});
         } else {
-            auto assums_safe = assums_to;
-            assums_safe.at(entry.first).constant(entry.second.constant());
-            assums_to[entry.first] = assums_safe.at(entry.first);
+            auto lower_assum = assums_to[entry.first];
+            auto lower_ub = lower_assum.upper_bound();
+            auto lower_lb = lower_assum.lower_bound();
+            auto new_ub = symbolic::min(entry.second.upper_bound(), lower_ub);
+            auto new_lb = symbolic::max(entry.second.lower_bound(), lower_lb);
+            lower_assum.upper_bound(new_ub);
+            lower_assum.lower_bound(new_lb);
+
+            if (lower_assum.map() == SymEngine::null) {
+                lower_assum.map(entry.second.map());
+            }
+            lower_assum.constant(entry.second.constant());
+            assums_to[entry.first] = lower_assum;
         }
     }
 
