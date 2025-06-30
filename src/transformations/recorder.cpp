@@ -12,20 +12,25 @@ Recorder::Recorder() : history_(nlohmann::json::array()) {}
 
 void Recorder::replay(builder::StructuredSDFGBuilder& builder,
                       analysis::AnalysisManager& analysis_manager,
-                      const nlohmann::json& transformation_data) {
+                      const nlohmann::json& transformation_data, bool skip_if_not_applicable) {
     for (const auto& desc : transformation_data) {
         auto transformation_name = desc["transformation_type"];
 
         if (transformation_name == "LoopTiling") {
-            this->apply<transformations::LoopTiling>(builder, analysis_manager, desc);
+            this->apply<transformations::LoopTiling>(builder, analysis_manager, desc,
+                                                     skip_if_not_applicable);
         } else if (transformation_name == "LoopDistribute") {
-            this->apply<transformations::LoopDistribute>(builder, analysis_manager, desc);
+            this->apply<transformations::LoopDistribute>(builder, analysis_manager, desc,
+                                                         skip_if_not_applicable);
         } else if (transformation_name == "LoopInterchange") {
-            this->apply<transformations::LoopInterchange>(builder, analysis_manager, desc);
+            this->apply<transformations::LoopInterchange>(builder, analysis_manager, desc,
+                                                          skip_if_not_applicable);
         } else if (transformation_name == "LoopSlicing") {
-            this->apply<transformations::LoopSlicing>(builder, analysis_manager, desc);
+            this->apply<transformations::LoopSlicing>(builder, analysis_manager, desc,
+                                                      skip_if_not_applicable);
         } else if (transformation_name == "OutLocalStorage") {
-            this->apply<transformations::OutLocalStorage>(builder, analysis_manager, desc);
+            this->apply<transformations::OutLocalStorage>(builder, analysis_manager, desc,
+                                                          skip_if_not_applicable);
         } else {
             throw transformations::InvalidTransformationDescriptionException(
                 "Unknown transformation: " + transformation_name.get<std::string>());

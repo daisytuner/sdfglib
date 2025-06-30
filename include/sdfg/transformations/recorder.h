@@ -23,12 +23,15 @@ class Recorder {
     template <typename T, typename... Args>
         requires transformation_concept<T>
     void apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager,
-               Args&&... args) {
+               bool skip_if_not_applicable, Args&&... args) {
         T transformation(std::forward<Args>(args)...);
 
         if (!transformation.can_be_applied(builder, analysis_manager)) {
-            throw transformations::InvalidTransformationException(
-                "Transformation " + transformation.name() + " cannot be applied.");
+            if (!skip_if_not_applicable) {
+                throw transformations::InvalidTransformationException(
+                    "Transformation " + transformation.name() + " cannot be applied.");
+            }
+            return;
         }
 
         nlohmann::json desc;
@@ -40,18 +43,22 @@ class Recorder {
     };
 
     void replay(builder::StructuredSDFGBuilder& builder,
-                analysis::AnalysisManager& analysis_manager, const nlohmann::json& desc);
+                analysis::AnalysisManager& analysis_manager, const nlohmann::json& desc,
+                bool skip_if_not_applicable = true);
 
     template <typename T>
         requires transformation_concept<T>
     void apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager,
-               const nlohmann::json& desc) {
-        auto transformation = std::make_unique<T>(T::from_json(builder, desc));
-        if (!transformation->can_be_applied(builder, analysis_manager)) {
-            throw transformations::InvalidTransformationException(
-                "Transformation " + transformation->name() + " cannot be applied.");
+               const nlohmann::json& desc, bool skip_if_not_applicable = true) {
+        T transformation(T::from_json(builder, desc));
+        if (!transformation.can_be_applied(builder, analysis_manager)) {
+            if (!skip_if_not_applicable) {
+                throw transformations::InvalidTransformationException(
+                    "Transformation " + transformation.name() + " cannot be applied.");
+            }
+            return;
         }
-        transformation->apply(builder, analysis_manager);
+        transformation.apply(builder, analysis_manager);
     };
 
     void save(std::filesystem::path path) const;

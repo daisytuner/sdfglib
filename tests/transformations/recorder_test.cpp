@@ -67,16 +67,16 @@ TEST_F(RecorderLoopTilingTest, Apply_LoopTiling) {
 
     EXPECT_TRUE(loop_ != nullptr);
     EXPECT_TRUE(analysis_manager_ != nullptr);
-    EXPECT_NO_THROW(
-        recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_, 32));
+    EXPECT_NO_THROW(recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, true,
+                                                                *loop_, 32));
 }
 
 TEST_F(RecorderLoopTilingTest, Apply_InvalidTransformation) {
     transformations::Recorder recorder;
 
-    EXPECT_THROW(
-        recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_, 0),
-        transformations::InvalidTransformationException);
+    EXPECT_THROW(recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, false,
+                                                             *loop_, 0),
+                 transformations::InvalidTransformationException);
 }
 
 TEST_F(RecorderLoopTilingTest, Save_SingleTransformation) {
@@ -84,8 +84,8 @@ TEST_F(RecorderLoopTilingTest, Save_SingleTransformation) {
 
     size_t loop_id = loop_->element_id();
 
-    EXPECT_NO_THROW(
-        recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_, 32));
+    EXPECT_NO_THROW(recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, true,
+                                                                *loop_, 32));
 
     // Use temporary file to save the transformation
     std::filesystem::path tmp_file =
@@ -164,7 +164,7 @@ TEST_F(RecorderLoopSlicingTest, Apply_LoopSlicing) {
     transformations::Recorder recorder;
 
     EXPECT_NO_THROW(
-        recorder.apply<transformations::LoopSlicing>(*builder_, *analysis_manager_, *loop_));
+        recorder.apply<transformations::LoopSlicing>(*builder_, *analysis_manager_, true, *loop_));
 }
 
 TEST_F(RecorderLoopSlicingTest, Save_SingleTransformation) {
@@ -173,7 +173,7 @@ TEST_F(RecorderLoopSlicingTest, Save_SingleTransformation) {
     size_t loop_id = loop_->element_id();
 
     EXPECT_NO_THROW(
-        recorder.apply<transformations::LoopSlicing>(*builder_, *analysis_manager_, *loop_));
+        recorder.apply<transformations::LoopSlicing>(*builder_, *analysis_manager_, true, *loop_));
 
     // Use temporary file to save the transformation
     std::filesystem::path tmp_file =
@@ -292,7 +292,7 @@ TEST_F(RecorderMultiTransformationTest, Apply_LoopInterchange) {
     EXPECT_TRUE((loop_1_ != nullptr && loop_2_ != nullptr));
 
     EXPECT_NO_THROW(recorder.apply<transformations::LoopInterchange>(*builder_, *analysis_manager_,
-                                                                     *loop_1_, *loop_2_));
+                                                                     true, *loop_1_, *loop_2_));
 }
 
 TEST_F(RecorderMultiTransformationTest, Apply_Transformations) {
@@ -315,7 +315,7 @@ TEST_F(RecorderMultiTransformationTest, Apply_Transformations) {
         }
     }
     EXPECT_TRUE(loop_1_ != nullptr);
-    recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_1_, 32);
+    recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, true, *loop_1_, 32);
 
     analysis_manager_->invalidate_all();
 
@@ -329,7 +329,7 @@ TEST_F(RecorderMultiTransformationTest, Apply_Transformations) {
     }
 
     EXPECT_TRUE(loop_2_ != nullptr);
-    recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, *loop_2_, 16);
+    recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, true, *loop_2_, 16);
 
     analysis_manager_->invalidate_all();
 
@@ -353,8 +353,8 @@ TEST_F(RecorderMultiTransformationTest, Apply_Transformations) {
     EXPECT_TRUE(loop_i_tile_id != 0);
     EXPECT_TRUE(loop_j_outer_id != 0);
 
-    EXPECT_NO_THROW(recorder.apply<transformations::LoopInterchange>(*builder_, *analysis_manager_,
-                                                                     *loop_i_tile, *loop_j_outer));
+    EXPECT_NO_THROW(recorder.apply<transformations::LoopInterchange>(
+        *builder_, *analysis_manager_, true, *loop_i_tile, *loop_j_outer));
 
     /**** Save ****/
 
@@ -397,4 +397,14 @@ TEST_F(RecorderMultiTransformationTest, Replay_Transformations) {
                  {"transformation_type", "LoopInterchange"}});
 
     EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j));
+}
+
+TEST_F(RecorderMultiTransformationTest, Replay_InvalidTransformation) {
+    nlohmann::json j = nlohmann::json::array();
+    j.push_back({{"loop_element_id", 1}, {"tile_size", 0}, {"transformation_type", "LoopTiling"}});
+
+    transformations::Recorder recorder;
+
+    EXPECT_THROW(recorder.replay(*builder_, *analysis_manager_, j, false),
+                 transformations::InvalidTransformationException);
 }
