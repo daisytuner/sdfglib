@@ -96,6 +96,7 @@ set(SOURCE_FILES
     src/passes/canonicalize_cfg.cpp
     src/passes/dataflow/dead_data_elimination.cpp
     src/passes/dataflow/dead_reference_elimination.cpp
+    src/passes/dataflow/constant_elimination.cpp
     src/passes/dataflow/memlet_propagation.cpp
     src/passes/dataflow/redundant_array_elimination.cpp
     src/passes/dataflow/trivial_array_elimination.cpp
