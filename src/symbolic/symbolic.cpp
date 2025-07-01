@@ -142,8 +142,13 @@ Expression simplify(const Expression& expr) {
         }
     }
 
-    auto new_expr = SymEngine::simplify(expr);
-    return new_expr;
+    try {
+        auto new_expr = SymEngine::simplify(expr);
+        return new_expr;
+    } catch (const SymEngine::SymEngineException& e) {
+        std::cout << "Error simplifying expression: " << e.what() << std::endl;
+        return expr;
+    }
 };
 
 bool eq(const Expression& lhs, const Expression& rhs) { return SymEngine::eq(*lhs, *rhs); };
