@@ -54,6 +54,7 @@ Pipeline Pipeline::expression_combine() {
     Pipeline p("ExpressionCombine");
 
     p.register_pass<SymbolPropagation>();
+    p.register_pass<ConstantElimination>();
     p.register_pass<DeadDataElimination>();
     p.register_pass<SymbolEvolution>();
 

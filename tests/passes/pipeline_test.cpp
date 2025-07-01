@@ -16,7 +16,7 @@ TEST(PipelineTest, RegisterPass) {
 TEST(PipelineTest, ExpressionCombine) {
     passes::Pipeline expression_combine = passes::Pipeline::expression_combine();
     EXPECT_EQ(expression_combine.name(), "ExpressionCombine");
-    EXPECT_EQ(expression_combine.size(), 3);
+    EXPECT_EQ(expression_combine.size(), 4);
 }
 
 TEST(PipelineTest, MemletCombine) {
