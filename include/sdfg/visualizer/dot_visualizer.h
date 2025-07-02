@@ -41,6 +41,8 @@ class DotVisualizer : public Visualizer {
     using Visualizer::Visualizer;
 
     virtual void visualize() override;
+
+    static void writeToFile(const StructuredSDFG& sdfg, std::filesystem::path* file = nullptr);
 };
 
 }  // namespace visualizer
