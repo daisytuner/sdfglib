@@ -62,6 +62,8 @@ class Recorder {
     };
 
     void save(std::filesystem::path path) const;
+
+    nlohmann::json get_history() const { return history_; }
 };
 
 }  // namespace transformations
