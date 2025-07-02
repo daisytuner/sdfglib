@@ -74,6 +74,28 @@ class LoopAnalysis : public Analysis {
      * @return The stride of the loop's update as a constant, otherwise null.
      */
     static symbolic::Integer stride(structured_control_flow::StructuredLoop* loop);
+
+    /**
+     * @brief counts all for loops in the SDFG.
+     *
+     * @return The number of for loops in the SDFG.
+     */
+    size_t count_for_loops() const;
+
+    /**
+     * @brief counts all maps in the SDFG.
+     *
+     * @return The number of maps in the SDFG.
+     */
+    size_t count_maps() const;
+
+    /**
+     * @brief counts all maps in the SDFG with a given schedule.
+     *
+     * @param schedule The schedule type to filter maps by.
+     * @return The number of maps in the SDFG.
+     */
+    size_t count_maps(structured_control_flow::ScheduleType schedule) const;
 };
 
 }  // namespace analysis

@@ -1,6 +1,7 @@
 #include "sdfg/analysis/loop_analysis.h"
 
 #include "sdfg/analysis/assumptions_analysis.h"
+#include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/conjunctive_normal_form.h"
 #include "sdfg/symbolic/series.h"
@@ -185,6 +186,39 @@ const std::vector<structured_control_flow::ControlFlowNode*> LoopAnalysis::outer
         }
     }
     return outermost_loops_;
+}
+
+size_t LoopAnalysis::count_for_loops() const {
+    size_t count = 0;
+    for (const auto& loop : this->loops_) {
+        if (dynamic_cast<structured_control_flow::StructuredLoop*>(loop)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+size_t LoopAnalysis::count_maps() const {
+    size_t count = 0;
+    for (const auto& loop : this->loops_) {
+        if (dynamic_cast<structured_control_flow::Map*>(loop)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+size_t LoopAnalysis::count_maps(structured_control_flow::ScheduleType schedule) const {
+    size_t count = 0;
+    for (const auto& loop : this->loops_) {
+        if (dynamic_cast<structured_control_flow::Map*>(loop)) {
+            auto map = dynamic_cast<structured_control_flow::Map*>(loop);
+            if (map->schedule_type() == schedule) {
+                count++;
+            }
+        }
+    }
+    return count;
 }
 
 }  // namespace analysis
