@@ -99,6 +99,12 @@ bool SymbolEvolution::eliminate_symbols(builder::StructuredSDFGBuilder& builder,
     std::unordered_map<std::string, structured_control_flow::Transition*> aliases;
     std::unordered_map<std::string, structured_control_flow::Transition*> pseudo_iterators;
     for (auto& sym : candidates) {
+        // Criterion: Must have place after loop
+        if (transition.assignments().find(symbolic::symbol(sym)) ==
+            transition.assignments().end()) {
+            continue;
+        }
+
         // Criterion: Must be written once
         if (body_users.writes(sym).size() != 1) {
             continue;
@@ -180,6 +186,8 @@ bool SymbolEvolution::eliminate_symbols(builder::StructuredSDFGBuilder& builder,
         auto new_first_block = builder.add_block_before(loop.root(), old_first_block);
         new_first_block.second.assignments().insert({symbolic::symbol(sym), evolution});
         update_transition.assignments().erase(symbolic::symbol(sym));
+        transition.assignments().insert({symbolic::symbol(sym), update_sym});
+
         applied = true;
     }
 
