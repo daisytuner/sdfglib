@@ -57,7 +57,6 @@ void DotVisualizer::visualizeBlock(const StructuredSDFG& sdfg, const structured_
         } else if (const data_flow::LibraryNode* libnode = dynamic_cast<const data_flow::LibraryNode*>(node)) {
             this->stream_ << nodeId << " [shape=doubleoctagon,label=\""
                 << libnode->toStr() << "\"];" << std::endl;
-            this->stream_ << "\"];" << std::endl;
         }
         for (const data_flow::Memlet& iedge : block.dataflow().in_edges(*node)) {
             auto& src = iedge.src();
@@ -239,5 +238,17 @@ void DotVisualizer::visualize() {
     this->stream_ << "}" << std::endl;
 }
 
+void DotVisualizer::writeToFile(const StructuredSDFG& sdfg, std::filesystem::path* file) {
+    DotVisualizer viz(sdfg);
+    viz.visualize();
+
+    std::filesystem::path fileName = file? *file : std::filesystem::path(sdfg.name() + ".dot");
+
+    std::ofstream dotOutput(fileName, std::ofstream::out);
+
+    dotOutput << viz.getStream().str();
+    dotOutput.close();
+    std::cout << "Wrote graph to : " << fileName << std::endl;
+}
 }  // namespace visualizer
 }  // namespace sdfg
