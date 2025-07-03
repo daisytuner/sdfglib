@@ -36,7 +36,6 @@ class Recorder {
 
         nlohmann::json desc;
         transformation.to_json(desc);
-        std::cout << desc.dump(4) << std::endl;
         history_.push_back(desc);
 
         transformation.apply(builder, analysis_manager);
