@@ -19,7 +19,7 @@ std::tuple<int, types::PrimitiveType> CodeGenerator::analyze_type_rec(
     int argIdx,
     const analysis::MemAccessRange* range
 ) {
-    if (dimIdx >= maxDim) {
+    if (dimIdx > maxDim) {
         std::cerr << "In '" << sdfg_.name() << "', arg" << argIdx << ": data nesting deeper than " << maxDim << ", ignoring" << std::endl;
         return std::make_tuple(-1, types::Void);
     }
