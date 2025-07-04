@@ -12,16 +12,19 @@ namespace sdfg {
 namespace analysis {
 
 std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::substitution(
-    const data_flow::Subset& subset1, const data_flow::Subset& subset2, const std::string& indvar,
-    const std::unordered_set<std::string>& moving_symbols, symbolic::ExpressionMap& replacements,
-    std::vector<std::string>& substitions) {
+    const data_flow::Subset& subset1,
+    const data_flow::Subset& subset2,
+    const std::string& indvar,
+    const std::unordered_set<std::string>& moving_symbols,
+    symbolic::ExpressionMap& replacements,
+    std::vector<std::string>& substitions
+) {
     data_flow::Subset subset1_new;
     for (auto& dim : subset1) {
         auto args = dim->get_args();
         auto new_dim = dim;
         for (auto& arg : args) {
-            if (!SymEngine::is_a<SymEngine::Symbol>(*arg) &&
-                !SymEngine::is_a<SymEngine::Integer>(*arg)) {
+            if (!SymEngine::is_a<SymEngine::Symbol>(*arg) && !SymEngine::is_a<SymEngine::Integer>(*arg)) {
                 bool is_moving = false;
                 for (auto& atom : symbolic::atoms(arg)) {
                     auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom);
@@ -50,8 +53,7 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::substit
         auto args = dim->get_args();
         auto new_dim = dim;
         for (auto& arg : args) {
-            if (!SymEngine::is_a<SymEngine::Symbol>(*arg) &&
-                !SymEngine::is_a<SymEngine::Integer>(*arg)) {
+            if (!SymEngine::is_a<SymEngine::Symbol>(*arg) && !SymEngine::is_a<SymEngine::Integer>(*arg)) {
                 bool is_moving = false;
                 for (auto& atom : symbolic::atoms(arg)) {
                     auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom);
@@ -79,9 +81,11 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::substit
 };
 
 std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::delinearization(
-    const data_flow::Subset& subset1, const data_flow::Subset& subset2,
+    const data_flow::Subset& subset1,
+    const data_flow::Subset& subset2,
     const std::unordered_set<std::string>& moving_symbols,
-    const symbolic::Assumptions& assumptions) {
+    const symbolic::Assumptions& assumptions
+) {
     // Attempt to prove:
     // dim = i + j * M
     // We can delinearize iff:
@@ -130,8 +134,7 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::delinea
         }
         auto multiplier = mult_->get_args()[0];
         auto indvar_ = mult_->get_args()[1];
-        if (!SymEngine::is_a<SymEngine::Symbol>(*multiplier) ||
-            !SymEngine::is_a<SymEngine::Symbol>(*indvar_)) {
+        if (!SymEngine::is_a<SymEngine::Symbol>(*multiplier) || !SymEngine::is_a<SymEngine::Symbol>(*indvar_)) {
             subset1_new.push_back(dim);
             continue;
         }
@@ -225,8 +228,7 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::delinea
         }
         auto multiplier = mult_->get_args()[0];
         auto indvar_ = mult_->get_args()[1];
-        if (!SymEngine::is_a<SymEngine::Symbol>(*multiplier) ||
-            !SymEngine::is_a<SymEngine::Symbol>(*indvar_)) {
+        if (!SymEngine::is_a<SymEngine::Symbol>(*multiplier) || !SymEngine::is_a<SymEngine::Symbol>(*indvar_)) {
             subset2_new.push_back(dim);
             continue;
         }
@@ -281,10 +283,13 @@ std::pair<data_flow::Subset, data_flow::Subset> DataParallelismAnalysis::delinea
     return {subset1_new, subset2_new};
 };
 
-bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
-                                       const data_flow::Subset& subset2, const std::string& indvar,
-                                       const std::unordered_set<std::string>& moving_symbols,
-                                       const symbolic::Assumptions& assumptions) {
+bool DataParallelismAnalysis::disjoint(
+    const data_flow::Subset& subset1,
+    const data_flow::Subset& subset2,
+    const std::string& indvar,
+    const std::unordered_set<std::string>& moving_symbols,
+    const symbolic::Assumptions& assumptions
+) {
     if (subset1.size() != subset2.size()) {
         return false;
     }
@@ -294,8 +299,8 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
     // Attempt to substitute complex constant expressions by parameters
     symbolic::ExpressionMap replacements;
     std::vector<std::string> substitions;
-    auto [subset1_, subset2_] = DataParallelismAnalysis::substitution(
-        subset1, subset2, indvar, moving_symbols, replacements, substitions);
+    auto [subset1_, subset2_] =
+        DataParallelismAnalysis::substitution(subset1, subset2, indvar, moving_symbols, replacements, substitions);
 
     // Attempt to delinearize subsets
     auto [subset1_2, subset2_2] =
@@ -309,15 +314,13 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
             auto mul_ = SymEngine::rcp_static_cast<const SymEngine::Mul>(mul);
             auto arg1 = mul_->get_args()[0];
             if (SymEngine::is_a<SymEngine::Symbol>(*arg1) &&
-                moving_symbols.find(
-                    SymEngine::rcp_static_cast<const SymEngine::Symbol>(arg1)->get_name()) ==
+                moving_symbols.find(SymEngine::rcp_static_cast<const SymEngine::Symbol>(arg1)->get_name()) ==
                     moving_symbols.end()) {
                 dim_ = symbolic::subs(dim_, mul_, symbolic::one());
             } else {
                 auto arg2 = mul_->get_args()[1];
                 if (SymEngine::is_a<SymEngine::Symbol>(*arg2) &&
-                    moving_symbols.find(
-                        SymEngine::rcp_static_cast<const SymEngine::Symbol>(arg2)->get_name()) ==
+                    moving_symbols.find(SymEngine::rcp_static_cast<const SymEngine::Symbol>(arg2)->get_name()) ==
                         moving_symbols.end()) {
                     dim_ = symbolic::subs(dim_, mul_, symbolic::one());
                 }
@@ -332,15 +335,13 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
             auto mul_ = SymEngine::rcp_static_cast<const SymEngine::Mul>(mul);
             auto arg1 = mul_->get_args()[0];
             if (SymEngine::is_a<SymEngine::Symbol>(*arg1) &&
-                moving_symbols.find(
-                    SymEngine::rcp_static_cast<const SymEngine::Symbol>(arg1)->get_name()) ==
+                moving_symbols.find(SymEngine::rcp_static_cast<const SymEngine::Symbol>(arg1)->get_name()) ==
                     moving_symbols.end()) {
                 dim_ = symbolic::subs(dim_, mul_, symbolic::one());
             } else {
                 auto arg2 = mul_->get_args()[1];
                 if (SymEngine::is_a<SymEngine::Symbol>(*arg2) &&
-                    moving_symbols.find(
-                        SymEngine::rcp_static_cast<const SymEngine::Symbol>(arg2)->get_name()) ==
+                    moving_symbols.find(SymEngine::rcp_static_cast<const SymEngine::Symbol>(arg2)->get_name()) ==
                         moving_symbols.end()) {
                     dim_ = symbolic::subs(dim_, mul_, symbolic::one());
                 }
@@ -359,8 +360,7 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
                 continue;
             }
 
-            if (std::find(substitions.begin(), substitions.end(), sym->get_name()) !=
-                substitions.end()) {
+            if (std::find(substitions.begin(), substitions.end(), sym->get_name()) != substitions.end()) {
                 continue;
             }
             if (moving_symbols.find(sym->get_name()) == moving_symbols.end()) {
@@ -377,8 +377,7 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
                 continue;
             }
 
-            if (std::find(substitions.begin(), substitions.end(), sym->get_name()) !=
-                substitions.end()) {
+            if (std::find(substitions.begin(), substitions.end(), sym->get_name()) != substitions.end()) {
                 continue;
             }
             if (moving_symbols.find(sym->get_name()) == moving_symbols.end()) {
@@ -458,17 +457,13 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
             if (SymEngine::is_a<SymEngine::Max>(*lb1)) {
                 auto max = SymEngine::rcp_static_cast<const SymEngine::Max>(lb1);
                 auto args1 = max->get_args();
-                constraints.push_back(language_extension.expression(args1[0]) + " <= " + dim +
-                                      "_1");
-                constraints.push_back(language_extension.expression(args1[1]) + " <= " + dim +
-                                      "_1");
+                constraints.push_back(language_extension.expression(args1[0]) + " <= " + dim + "_1");
+                constraints.push_back(language_extension.expression(args1[1]) + " <= " + dim + "_1");
 
                 auto max_ = SymEngine::rcp_static_cast<const SymEngine::Max>(lb2);
                 auto args2 = max_->get_args();
-                constraints.push_back(language_extension.expression(args2[0]) + " <= " + dim +
-                                      "_2");
-                constraints.push_back(language_extension.expression(args2[1]) + " <= " + dim +
-                                      "_2");
+                constraints.push_back(language_extension.expression(args2[0]) + " <= " + dim + "_2");
+                constraints.push_back(language_extension.expression(args2[1]) + " <= " + dim + "_2");
             } else {
                 constraints.push_back(language_extension.expression(lb1) + " <= " + dim + "_1");
                 constraints.push_back(language_extension.expression(lb2) + " <= " + dim + "_2");
@@ -527,14 +522,16 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
         std::string new_k = "__daisy_iterator" + std::to_string(k++);
 
         std::string k_1 = new_k + "_1";
-        constraints.push_back("exists " + k_1 + " : " + dim +
-                              "_1 = " + language_extension.expression(lb1) + " + " + k_1 + " * " +
-                              language_extension.expression(arg1));
+        constraints.push_back(
+            "exists " + k_1 + " : " + dim + "_1 = " + language_extension.expression(lb1) + " + " + k_1 + " * " +
+            language_extension.expression(arg1)
+        );
 
         std::string k_2 = new_k + "_2";
-        constraints.push_back("exists " + k_2 + " : " + dim +
-                              "_2 = " + language_extension.expression(lb1) + " + " + k_2 + " * " +
-                              language_extension.expression(arg1));
+        constraints.push_back(
+            "exists " + k_2 + " : " + dim + "_2 = " + language_extension.expression(lb1) + " + " + k_2 + " * " +
+            language_extension.expression(arg1)
+        );
     }
 
     // Extend parameters by dependening parameters
@@ -578,10 +575,8 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
             if (SymEngine::is_a<SymEngine::Max>(*lb)) {
                 auto max = SymEngine::rcp_static_cast<const SymEngine::Max>(lb);
                 auto args = max->get_args();
-                constraints.push_back(language_extension.expression(args[0]) +
-                                      " <= " + parameters[i]);
-                constraints.push_back(language_extension.expression(args[1]) +
-                                      " <= " + parameters[i]);
+                constraints.push_back(language_extension.expression(args[0]) + " <= " + parameters[i]);
+                constraints.push_back(language_extension.expression(args[1]) + " <= " + parameters[i]);
             } else if (SymEngine::atoms<const SymEngine::Min>(*lb).size() > 0) {
             } else {
                 constraints.push_back(language_extension.expression(lb) + " <= " + parameters[i]);
@@ -591,10 +586,8 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
             if (SymEngine::is_a<SymEngine::Min>(*ub)) {
                 auto min = SymEngine::rcp_static_cast<const SymEngine::Min>(ub);
                 auto args = min->get_args();
-                constraints.push_back(parameters[i] +
-                                      " <= " + language_extension.expression(args[0]));
-                constraints.push_back(parameters[i] +
-                                      " <= " + language_extension.expression(args[1]));
+                constraints.push_back(parameters[i] + " <= " + language_extension.expression(args[0]));
+                constraints.push_back(parameters[i] + " <= " + language_extension.expression(args[1]));
             } else if (SymEngine::atoms<const SymEngine::Max>(*ub).size() > 0) {
             } else {
                 constraints.push_back(parameters[i] + " <= " + language_extension.expression(ub));
@@ -697,8 +690,8 @@ bool DataParallelismAnalysis::disjoint(const data_flow::Subset& subset1,
     return disjoint;
 };
 
-void DataParallelismAnalysis::classify(analysis::AnalysisManager& analysis_manager,
-                                       structured_control_flow::StructuredLoop* loop) {
+void DataParallelismAnalysis::
+    classify(analysis::AnalysisManager& analysis_manager, structured_control_flow::StructuredLoop* loop) {
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
 
     // Strictly monotonic update
@@ -794,8 +787,7 @@ void DataParallelismAnalysis::classify(analysis::AnalysisManager& analysis_manag
                 auto subsets_ = write_->subsets();
                 for (auto& subset : subsets) {
                     for (auto& subset_ : subsets_) {
-                        if (!this->disjoint(subset, subset_, indvar->get_name(),
-                                            moving_symbols_local, assumptions)) {
+                        if (!this->disjoint(subset, subset_, indvar->get_name(), moving_symbols_local, assumptions)) {
                             ww_conflict = true;
                             break;
                         }
@@ -828,8 +820,7 @@ void DataParallelismAnalysis::classify(analysis::AnalysisManager& analysis_manag
                 auto subsets_ = write_->subsets();
                 for (auto& subset : subsets) {
                     for (auto& subset_ : subsets_) {
-                        if (!this->disjoint(subset, subset_, indvar->get_name(),
-                                            moving_symbols_local, assumptions)) {
+                        if (!this->disjoint(subset, subset_, indvar->get_name(), moving_symbols_local, assumptions)) {
                             rw_conflict = true;
                             break;
                         }
@@ -944,13 +935,12 @@ DataParallelismAnalysis::DataParallelismAnalysis(StructuredSDFG& sdfg)
 
       };
 
-const DataParallelismAnalysisResult& DataParallelismAnalysis::get(
-    const structured_control_flow::StructuredLoop& loop) const {
+const DataParallelismAnalysisResult& DataParallelismAnalysis::get(const structured_control_flow::StructuredLoop& loop
+) const {
     return this->results_.at(&loop);
 };
 
-symbolic::Expression DataParallelismAnalysis::bound(
-    const structured_control_flow::StructuredLoop& loop) {
+symbolic::Expression DataParallelismAnalysis::bound(const structured_control_flow::StructuredLoop& loop) {
     auto& indvar = loop.indvar();
     auto& condition = loop.condition();
     auto args = condition->get_args();
@@ -967,5 +957,5 @@ symbolic::Expression DataParallelismAnalysis::bound(
     return SymEngine::null;
 };
 
-}  // namespace analysis
-}  // namespace sdfg
+} // namespace analysis
+} // namespace sdfg

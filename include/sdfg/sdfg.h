@@ -34,25 +34,21 @@ namespace sdfg {
 namespace builder {
 class SDFGBuilder;
 class StructuredSDFGBuilder;
-}  // namespace builder
+} // namespace builder
 
 class SDFG : public Function {
     friend class sdfg::builder::SDFGBuilder;
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-   private:
+private:
     // Control-Flow Graph
     graph::Graph graph_;
-    std::unordered_map<graph::Vertex, std::unique_ptr<control_flow::State>,
-                       boost::hash<graph::Vertex>>
-        states_;
-    std::unordered_map<graph::Edge, std::unique_ptr<control_flow::InterstateEdge>,
-                       boost::hash<graph::Edge>>
-        edges_;
+    std::unordered_map<graph::Vertex, std::unique_ptr<control_flow::State>, boost::hash<graph::Vertex>> states_;
+    std::unordered_map<graph::Edge, std::unique_ptr<control_flow::InterstateEdge>, boost::hash<graph::Edge>> edges_;
 
     const control_flow::State* start_state_;
 
-   public:
+public:
     SDFG(const std::string& name, FunctionType type);
 
     SDFG(const SDFG& sdfg) = delete;
@@ -63,8 +59,7 @@ class SDFG : public Function {
     /***** Section: Graph *****/
 
     auto states() const {
-        return std::views::values(this->states_) |
-               std::views::transform(helpers::indirect<control_flow::State>) |
+        return std::views::values(this->states_) | std::views::transform(helpers::indirect<control_flow::State>) |
                std::views::transform(helpers::add_const<control_flow::State>);
     };
 
@@ -79,13 +74,12 @@ class SDFG : public Function {
         auto edges = std::ranges::subrange(eb, ee);
 
         // Convert Edge to const InterstateEdge&
-        auto interstate_edges =
-            std::views::transform(edges,
-                                  [&lookup_table = this->edges_](
-                                      const graph::Edge& edge) -> control_flow::InterstateEdge& {
-                                      return *(lookup_table.find(edge)->second);
-                                  }) |
-            std::views::transform(helpers::add_const<control_flow::InterstateEdge>);
+        auto interstate_edges = std::views::transform(
+                                    edges,
+                                    [&lookup_table = this->edges_](const graph::Edge& edge
+                                    ) -> control_flow::InterstateEdge& { return *(lookup_table.find(edge)->second); }
+                                ) |
+                                std::views::transform(helpers::add_const<control_flow::InterstateEdge>);
 
         return interstate_edges;
     };
@@ -95,13 +89,12 @@ class SDFG : public Function {
         auto edges = std::ranges::subrange(eb, ee);
 
         // Convert Edge to const InterstateEdge&
-        auto interstate_edges =
-            std::views::transform(edges,
-                                  [&lookup_table = this->edges_](
-                                      const graph::Edge& edge) -> control_flow::InterstateEdge& {
-                                      return *(lookup_table.find(edge)->second);
-                                  }) |
-            std::views::transform(helpers::add_const<control_flow::InterstateEdge>);
+        auto interstate_edges = std::views::transform(
+                                    edges,
+                                    [&lookup_table = this->edges_](const graph::Edge& edge
+                                    ) -> control_flow::InterstateEdge& { return *(lookup_table.find(edge)->second); }
+                                ) |
+                                std::views::transform(helpers::add_const<control_flow::InterstateEdge>);
 
         return interstate_edges;
     };
@@ -109,9 +102,8 @@ class SDFG : public Function {
     const control_flow::State& start_state() const;
 
     auto terminal_states() const {
-        return this->states() | std::views::filter([this](const control_flow::State& state) {
-                   return this->out_degree(state) == 0;
-               });
+        return this->states() |
+               std::views::filter([this](const control_flow::State& state) { return this->out_degree(state) == 0; });
     };
 
     size_t in_degree(const control_flow::State& state) const;
@@ -120,19 +112,16 @@ class SDFG : public Function {
 
     bool is_adjacent(const control_flow::State& src, const control_flow::State& dst) const;
 
-    const control_flow::InterstateEdge& edge(const control_flow::State& src,
-                                             const control_flow::State& dst) const;
+    const control_flow::InterstateEdge& edge(const control_flow::State& src, const control_flow::State& dst) const;
 
-    std::unordered_map<const control_flow::State*, const control_flow::State*> dominator_tree()
-        const;
+    std::unordered_map<const control_flow::State*, const control_flow::State*> dominator_tree() const;
 
-    std::unordered_map<const control_flow::State*, const control_flow::State*> post_dominator_tree()
-        const;
+    std::unordered_map<const control_flow::State*, const control_flow::State*> post_dominator_tree() const;
 
     std::list<const control_flow::InterstateEdge*> back_edges() const;
 
-    std::list<std::list<const control_flow::InterstateEdge*>> all_simple_paths(
-        const control_flow::State& src, const control_flow::State& dst) const;
+    std::list<std::list<const control_flow::InterstateEdge*>>
+    all_simple_paths(const control_flow::State& src, const control_flow::State& dst) const;
 };
 
-}  // namespace sdfg
+} // namespace sdfg

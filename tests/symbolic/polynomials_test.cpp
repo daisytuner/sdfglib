@@ -39,8 +39,7 @@ TEST(PolynomialsTest, Linear_2D) {
     EXPECT_EQ(coeffs.size(), 3);
     EXPECT_TRUE(symbolic::eq(coeffs[x], m1));
     EXPECT_TRUE(symbolic::eq(coeffs[y], m2));
-    EXPECT_TRUE(
-        symbolic::eq(coeffs[symbolic::symbol("__daisy_constant__")], symbolic::add(b1, b2)));
+    EXPECT_TRUE(symbolic::eq(coeffs[symbolic::symbol("__daisy_constant__")], symbolic::add(b1, b2)));
 }
 
 TEST(PolynomialsTest, Degree2) {

@@ -3,8 +3,8 @@
 namespace sdfg {
 namespace passes {
 
-std::unordered_set<const control_flow::State*> CanonicalizeCFG::determine_loop_nodes(
-    const SDFG& sdfg, const control_flow::State& start, const control_flow::State& end) const {
+std::unordered_set<const control_flow::State*> CanonicalizeCFG::
+    determine_loop_nodes(const SDFG& sdfg, const control_flow::State& start, const control_flow::State& end) const {
     std::unordered_set<const control_flow::State*> nodes;
     std::unordered_set<const control_flow::State*> visited;
     std::list<const control_flow::State*> queue = {&start};
@@ -59,5 +59,5 @@ bool CanonicalizeCFG::run_pass(builder::SDFGBuilder& builder) {
     return applied;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

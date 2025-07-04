@@ -31,8 +31,7 @@ bool Pipeline::run(builder::SDFGBuilder& builder) {
     return applied;
 };
 
-bool Pipeline::run(builder::StructuredSDFGBuilder& builder,
-                   analysis::AnalysisManager& analysis_manager) {
+bool Pipeline::run(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
     bool applied_pipeline;
     do {
@@ -92,5 +91,5 @@ Pipeline Pipeline::data_parallelism() {
     return p;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

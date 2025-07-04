@@ -31,10 +31,10 @@ class StructuredSDFG : public Function {
     friend class sdfg::builder::StructuredSDFGBuilder;
     friend class Schedule;
 
-   private:
+private:
     std::unique_ptr<structured_control_flow::Sequence> root_;
 
-   public:
+public:
     StructuredSDFG(const std::string& name, FunctionType type);
 
     StructuredSDFG(const StructuredSDFG& sdfg) = delete;
@@ -51,4 +51,4 @@ class StructuredSDFG : public Function {
     size_t num_nodes() const;
 };
 
-}  // namespace sdfg
+} // namespace sdfg

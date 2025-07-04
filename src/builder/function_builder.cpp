@@ -5,12 +5,10 @@ namespace builder {
 
 size_t FunctionBuilder::new_element_id() const { return ++this->function().element_counter_; };
 
-const types::IType& FunctionBuilder::add_container(const std::string& name,
-                                                   const types::IType& type, bool is_argument,
-                                                   bool is_external) const {
+const types::IType& FunctionBuilder::
+    add_container(const std::string& name, const types::IType& type, bool is_argument, bool is_external) const {
     if (is_argument && is_external) {
-        throw InvalidSDFGException("Container " + name +
-                                   " cannot be both an argument and an external");
+        throw InvalidSDFGException("Container " + name + " cannot be both an argument and an external");
     }
     // Legal name
     if (name.find(".") != std::string::npos) {
@@ -107,14 +105,13 @@ void FunctionBuilder::change_type(const std::string& name, const types::IType& t
     function.containers_[name] = type.clone();
 };
 
-types::StructureDefinition& FunctionBuilder::add_structure(const std::string& name,
-                                                           bool is_packed) const {
+types::StructureDefinition& FunctionBuilder::add_structure(const std::string& name, bool is_packed) const {
     if (this->function().structures_.find(name) != this->function().structures_.end()) {
         throw InvalidSDFGException("Structure " + name + " already exists");
     }
 
-    auto res = this->function().structures_.insert(
-        {name, std::make_unique<types::StructureDefinition>(name, is_packed)});
+    auto res = this->function().structures_.insert({name, std::make_unique<types::StructureDefinition>(name, is_packed)}
+    );
     assert(res.second);
 
     return *(*res.first).second;
@@ -147,5 +144,5 @@ std::string FunctionBuilder::find_new_name(std::string prefix) const {
     return new_name;
 };
 
-}  // namespace builder
-}  // namespace sdfg
+} // namespace builder
+} // namespace sdfg

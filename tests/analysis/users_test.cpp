@@ -161,9 +161,12 @@ TEST(UsersTest, AccessNode_Scalar_WAR) {
     auto& block = builder.add_block(root);
     auto& input_node = builder.add_access(block, "A");
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"_in", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
     builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
@@ -212,16 +215,22 @@ TEST(UsersTest, AccessNode_Scalar_WAW) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"0", types::PrimitiveType::Int32}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::PrimitiveType::Int32}}
+    );
     builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     auto& block2 = builder.add_block(root);
     auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"0", types::PrimitiveType::Int32}});
+    auto& tasklet2 = builder.add_tasklet(
+        block2,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::PrimitiveType::Int32}}
+    );
     builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
 
     auto sdfg = builder.move();
@@ -271,15 +280,21 @@ TEST(UsersTest, AccessNode_Scalar_RAW) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"0", types::PrimitiveType::Int32}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::PrimitiveType::Int32}}
+    );
     builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     auto& output_node2 = builder.add_access(block, "B");
-    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet2 = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"_in", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, output_node, "void", tasklet2, "_in", {});
     builder.add_memlet(block, tasklet2, "_out", output_node2, "void", {});
 
@@ -326,8 +341,9 @@ TEST(UsersTest, For_Definition) {
     auto sym2 = symbolic::symbol("B");
 
     auto& root = builder.subject().root();
-    auto& loop = builder.add_for(root, sym1, symbolic::Lt(sym1, sym2), symbolic::integer(0),
-                                 symbolic::add(sym1, symbolic::one()));
+    auto& loop =
+        builder
+            .add_for(root, sym1, symbolic::Lt(sym1, sym2), symbolic::integer(0), symbolic::add(sym1, symbolic::one()));
 
     auto sdfg = builder.move();
 

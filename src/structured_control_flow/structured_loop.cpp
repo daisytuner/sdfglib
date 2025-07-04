@@ -3,14 +3,15 @@
 namespace sdfg {
 namespace structured_control_flow {
 
-StructuredLoop::StructuredLoop(size_t element_id, const DebugInfo& debug_info,
-                               symbolic::Symbol indvar, symbolic::Expression init,
-                               symbolic::Expression update, symbolic::Condition condition)
-    : ControlFlowNode(element_id, debug_info),
-      indvar_(indvar),
-      init_(init),
-      update_(update),
-      condition_(condition) {
+StructuredLoop::StructuredLoop(
+    size_t element_id,
+    const DebugInfo& debug_info,
+    symbolic::Symbol indvar,
+    symbolic::Expression init,
+    symbolic::Expression update,
+    symbolic::Condition condition
+)
+    : ControlFlowNode(element_id, debug_info), indvar_(indvar), init_(init), update_(update), condition_(condition) {
     this->root_ = std::unique_ptr<Sequence>(new Sequence(++element_id, debug_info));
 }
 
@@ -32,10 +33,8 @@ symbolic::Condition& StructuredLoop::condition() { return this->condition_; };
 
 Sequence& StructuredLoop::root() const { return *this->root_; };
 
-void StructuredLoop::replace(const symbolic::Expression& old_expression,
-                             const symbolic::Expression& new_expression) {
-    if (symbolic::eq(this->indvar_, old_expression) &&
-        SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
+void StructuredLoop::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+    if (symbolic::eq(this->indvar_, old_expression) && SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
         this->indvar_ = SymEngine::rcp_static_cast<const SymEngine::Symbol>(new_expression);
     }
     this->init_ = symbolic::subs(this->init_, old_expression, new_expression);
@@ -45,5 +44,5 @@ void StructuredLoop::replace(const symbolic::Expression& old_expression,
     this->root_->replace(old_expression, new_expression);
 };
 
-}  // namespace structured_control_flow
-}  // namespace sdfg
+} // namespace structured_control_flow
+} // namespace sdfg

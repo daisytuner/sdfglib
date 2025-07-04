@@ -83,8 +83,8 @@ TEST(LoopAnalysisTest, CanonicalBound_Lt_And) {
 
     auto indvar = symbolic::symbol("i");
     auto update = symbolic::add(indvar, symbolic::one());
-    auto condition = symbolic::And(symbolic::Lt(indvar, symbolic::symbol("N")),
-                                   symbolic::Lt(indvar, symbolic::symbol("M")));
+    auto condition =
+        symbolic::And(symbolic::Lt(indvar, symbolic::symbol("N")), symbolic::Lt(indvar, symbolic::symbol("M")));
     auto init = symbolic::zero();
     auto& loop = builder.add_for(root, indvar, condition, init, update);
 
@@ -106,8 +106,8 @@ TEST(LoopAnalysisTest, CanonicalBound_Le_And) {
 
     auto indvar = symbolic::symbol("i");
     auto update = symbolic::add(indvar, symbolic::one());
-    auto condition = symbolic::And(symbolic::Le(indvar, symbolic::symbol("N")),
-                                   symbolic::Le(indvar, symbolic::symbol("M")));
+    auto condition =
+        symbolic::And(symbolic::Le(indvar, symbolic::symbol("N")), symbolic::Le(indvar, symbolic::symbol("M")));
     auto init = symbolic::zero();
     auto& loop = builder.add_for(root, indvar, condition, init, update);
 
@@ -115,7 +115,9 @@ TEST(LoopAnalysisTest, CanonicalBound_Le_And) {
     auto& assumptions_analysis = manager.get<analysis::AssumptionsAnalysis>();
 
     auto bound = analysis::LoopAnalysis::canonical_bound(&loop, assumptions_analysis);
-    EXPECT_TRUE(
-        symbolic::eq(bound, symbolic::min(symbolic::add(symbolic::symbol("N"), symbolic::one()),
-                                          symbolic::add(symbolic::symbol("M"), symbolic::one()))));
+    EXPECT_TRUE(symbolic::
+                    eq(bound,
+                       symbolic::
+                           min(symbolic::add(symbolic::symbol("N"), symbolic::one()),
+                               symbolic::add(symbolic::symbol("M"), symbolic::one()))));
 }

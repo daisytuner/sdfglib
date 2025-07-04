@@ -26,8 +26,9 @@ std::unique_ptr<SDFG> SDFGBuilder::move() { return std::move(this->sdfg_); };
 control_flow::State& SDFGBuilder::add_state(bool is_start_state, const DebugInfo& debug_info) {
     auto vertex = boost::add_vertex(this->sdfg_->graph_);
     auto res = this->sdfg_->states_.insert(
-        {vertex, std::unique_ptr<control_flow::State>(
-                     new control_flow::State(this->new_element_id(), debug_info, vertex))});
+        {vertex,
+         std::unique_ptr<control_flow::State>(new control_flow::State(this->new_element_id(), debug_info, vertex))}
+    );
 
     assert(res.second);
     (*res.first).second->dataflow_->parent_ = (*res.first).second.get();
@@ -39,9 +40,8 @@ control_flow::State& SDFGBuilder::add_state(bool is_start_state, const DebugInfo
     return *(*res.first).second;
 };
 
-control_flow::State& SDFGBuilder::add_state_before(const control_flow::State& state,
-                                                   bool is_start_state,
-                                                   const DebugInfo& debug_info) {
+control_flow::State& SDFGBuilder::
+    add_state_before(const control_flow::State& state, bool is_start_state, const DebugInfo& debug_info) {
     auto& new_state = this->add_state(false, debug_info);
 
     std::vector<const control_flow::InterstateEdge*> to_redirect;
@@ -64,9 +64,8 @@ control_flow::State& SDFGBuilder::add_state_before(const control_flow::State& st
     return new_state;
 };
 
-control_flow::State& SDFGBuilder::add_state_after(const control_flow::State& state,
-                                                  bool connect_states,
-                                                  const DebugInfo& debug_info) {
+control_flow::State& SDFGBuilder::
+    add_state_after(const control_flow::State& state, bool connect_states, const DebugInfo& debug_info) {
     auto& new_state = this->add_state(false, debug_info);
 
     std::vector<const control_flow::InterstateEdge*> to_redirect;
@@ -87,38 +86,45 @@ control_flow::State& SDFGBuilder::add_state_after(const control_flow::State& sta
     return new_state;
 };
 
-control_flow::InterstateEdge& SDFGBuilder::add_edge(const control_flow::State& src,
-                                                    const control_flow::State& dst,
-                                                    const DebugInfo& debug_info) {
+control_flow::InterstateEdge& SDFGBuilder::
+    add_edge(const control_flow::State& src, const control_flow::State& dst, const DebugInfo& debug_info) {
     return this->add_edge(src, dst, control_flow::Assignments{}, SymEngine::boolTrue, debug_info);
 };
 
-control_flow::InterstateEdge& SDFGBuilder::add_edge(const control_flow::State& src,
-                                                    const control_flow::State& dst,
-                                                    const symbolic::Condition condition,
-                                                    const DebugInfo& debug_info) {
+control_flow::InterstateEdge& SDFGBuilder::add_edge(
+    const control_flow::State& src,
+    const control_flow::State& dst,
+    const symbolic::Condition condition,
+    const DebugInfo& debug_info
+) {
     return this->add_edge(src, dst, control_flow::Assignments{}, condition, debug_info);
 };
 
-control_flow::InterstateEdge& SDFGBuilder::add_edge(const control_flow::State& src,
-                                                    const control_flow::State& dst,
-                                                    const control_flow::Assignments& assignments,
-                                                    const DebugInfo& debug_info) {
+control_flow::InterstateEdge& SDFGBuilder::add_edge(
+    const control_flow::State& src,
+    const control_flow::State& dst,
+    const control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
     return this->add_edge(src, dst, assignments, SymEngine::boolTrue, debug_info);
 };
 
-control_flow::InterstateEdge& SDFGBuilder::add_edge(const control_flow::State& src,
-                                                    const control_flow::State& dst,
-                                                    const control_flow::Assignments& assignments,
-                                                    const symbolic::Condition condition,
-                                                    const DebugInfo& debug_info) {
+control_flow::InterstateEdge& SDFGBuilder::add_edge(
+    const control_flow::State& src,
+    const control_flow::State& dst,
+    const control_flow::Assignments& assignments,
+    const symbolic::Condition condition,
+    const DebugInfo& debug_info
+) {
     auto edge = boost::add_edge(src.vertex_, dst.vertex_, this->sdfg_->graph_);
     assert(edge.second);
 
     auto res = this->sdfg_->edges_.insert(
         {edge.first,
          std::unique_ptr<control_flow::InterstateEdge>(new control_flow::InterstateEdge(
-             this->new_element_id(), debug_info, edge.first, src, dst, condition, assignments))});
+             this->new_element_id(), debug_info, edge.first, src, dst, condition, assignments
+         ))}
+    );
 
     assert(res.second);
 
@@ -133,9 +139,13 @@ void SDFGBuilder::remove_edge(const control_flow::InterstateEdge& edge) {
 };
 
 std::tuple<control_flow::State&, control_flow::State&, control_flow::State&> SDFGBuilder::add_loop(
-    const control_flow::State& state, sdfg::symbolic::Symbol iterator,
-    sdfg::symbolic::Expression init, sdfg::symbolic::Condition cond,
-    sdfg::symbolic::Expression update, const DebugInfo& debug_info) {
+    const control_flow::State& state,
+    sdfg::symbolic::Symbol iterator,
+    sdfg::symbolic::Expression init,
+    sdfg::symbolic::Condition cond,
+    sdfg::symbolic::Expression update,
+    const DebugInfo& debug_info
+) {
     // Init: iterator = init
     auto& init_state = this->add_state_after(state, true, debug_info);
     const graph::Edge init_edge_desc = (*this->sdfg_->in_edges(init_state).begin()).edge_;
@@ -169,8 +179,8 @@ std::tuple<control_flow::State&, control_flow::State&, control_flow::State&> SDF
 
 /***** Section: Dataflow Graph *****/
 
-data_flow::AccessNode& SDFGBuilder::add_access(control_flow::State& state, const std::string& data,
-                                               const DebugInfo& debug_info) {
+data_flow::AccessNode& SDFGBuilder::
+    add_access(control_flow::State& state, const std::string& data, const DebugInfo& debug_info) {
     // Check: Data exists
     if (!this->subject().exists(data)) {
         throw InvalidSDFGException("Data does not exist in SDFG: " + data);
@@ -179,17 +189,22 @@ data_flow::AccessNode& SDFGBuilder::add_access(control_flow::State& state, const
     auto& dataflow = state.dataflow();
     auto vertex = boost::add_vertex(dataflow.graph_);
     auto res = dataflow.nodes_.insert(
-        {vertex, std::unique_ptr<data_flow::AccessNode>(new data_flow::AccessNode(
-                     this->new_element_id(), debug_info, vertex, dataflow, data))});
+        {vertex,
+         std::unique_ptr<
+             data_flow::AccessNode>(new data_flow::AccessNode(this->new_element_id(), debug_info, vertex, dataflow, data)
+         )}
+    );
 
     return dynamic_cast<data_flow::AccessNode&>(*(res.first->second));
 };
 
 data_flow::Tasklet& SDFGBuilder::add_tasklet(
-    control_flow::State& state, const data_flow::TaskletCode code,
+    control_flow::State& state,
+    const data_flow::TaskletCode code,
     const std::pair<std::string, sdfg::types::Scalar>& output,
     const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
-    const DebugInfo& debug_info) {
+    const DebugInfo& debug_info
+) {
     // Check: Duplicate inputs
     std::unordered_set<std::string> input_names;
     for (auto& input : inputs) {
@@ -204,20 +219,25 @@ data_flow::Tasklet& SDFGBuilder::add_tasklet(
 
     auto& dataflow = state.dataflow();
     auto vertex = boost::add_vertex(dataflow.graph_);
-    auto res =
-        dataflow.nodes_.insert({vertex, std::unique_ptr<data_flow::Tasklet>(new data_flow::Tasklet(
-                                            this->new_element_id(), debug_info, vertex, dataflow,
-                                            code, output, inputs, symbolic::__true__()))});
+    auto res = dataflow.nodes_.insert(
+        {vertex,
+         std::unique_ptr<data_flow::Tasklet>(new data_flow::Tasklet(
+             this->new_element_id(), debug_info, vertex, dataflow, code, output, inputs, symbolic::__true__()
+         ))}
+    );
 
     return dynamic_cast<data_flow::Tasklet&>(*(res.first->second));
 };
 
-data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow::DataFlowNode& src,
-                                           const std::string& src_conn,
-                                           data_flow::DataFlowNode& dst,
-                                           const std::string& dst_conn,
-                                           const data_flow::Subset& subset,
-                                           const DebugInfo& debug_info) {
+data_flow::Memlet& SDFGBuilder::add_memlet(
+    control_flow::State& state,
+    data_flow::DataFlowNode& src,
+    const std::string& src_conn,
+    data_flow::DataFlowNode& dst,
+    const std::string& dst_conn,
+    const data_flow::Subset& subset,
+    const DebugInfo& debug_info
+) {
     auto& function_ = this->function();
 
     // Check - Case 1: Access Node -> Access Node
@@ -247,8 +267,7 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
                 throw InvalidSDFGException("Invalid dst connector: " + dst_conn);
             }
 
-            if (symbolic::is_pointer(symbolic::symbol(src_node.data())) ||
-                helpers::is_number(src_node.data())) {
+            if (symbolic::is_pointer(symbolic::symbol(src_node.data())) || helpers::is_number(src_node.data())) {
                 throw InvalidSDFGException("src_conn is void: src cannot be a raw pointer");
             }
 
@@ -266,8 +285,7 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
         } else {
             throw InvalidSDFGException("Invalid src connector: " + src_conn);
         }
-    } else if (dynamic_cast<data_flow::AccessNode*>(&src) &&
-               dynamic_cast<data_flow::Tasklet*>(&dst)) {
+    } else if (dynamic_cast<data_flow::AccessNode*>(&src) && dynamic_cast<data_flow::Tasklet*>(&dst)) {
         auto& src_node = dynamic_cast<data_flow::AccessNode&>(src);
         auto& dst_node = dynamic_cast<data_flow::Tasklet&>(dst);
         if (src_conn != "void") {
@@ -287,8 +305,7 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
         if (!dynamic_cast<const types::Scalar*>(&element_type)) {
             throw InvalidSDFGException("Tasklets inputs must be scalars");
         }
-    } else if (dynamic_cast<data_flow::Tasklet*>(&src) &&
-               dynamic_cast<data_flow::AccessNode*>(&dst)) {
+    } else if (dynamic_cast<data_flow::Tasklet*>(&src) && dynamic_cast<data_flow::AccessNode*>(&dst)) {
         auto& src_node = dynamic_cast<data_flow::Tasklet&>(src);
         auto& dst_node = dynamic_cast<data_flow::AccessNode&>(dst);
         if (src_conn != src_node.output().first) {
@@ -302,8 +319,7 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
         if (!dynamic_cast<const types::Scalar*>(&element_type)) {
             throw InvalidSDFGException("Tasklet output must be a scalar");
         }
-    } else if (dynamic_cast<data_flow::AccessNode*>(&src) &&
-               dynamic_cast<data_flow::LibraryNode*>(&dst)) {
+    } else if (dynamic_cast<data_flow::AccessNode*>(&src) && dynamic_cast<data_flow::LibraryNode*>(&dst)) {
         auto& dst_node = dynamic_cast<data_flow::LibraryNode&>(dst);
         if (src_conn != "void") {
             throw InvalidSDFGException("src_conn must be void. Found: " + src_conn);
@@ -318,8 +334,7 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
         if (!found) {
             throw InvalidSDFGException("dst_conn not found in library node: " + dst_conn);
         }
-    } else if (dynamic_cast<data_flow::LibraryNode*>(&src) &&
-               dynamic_cast<data_flow::AccessNode*>(&dst)) {
+    } else if (dynamic_cast<data_flow::LibraryNode*>(&src) && dynamic_cast<data_flow::AccessNode*>(&dst)) {
         auto& src_node = dynamic_cast<data_flow::LibraryNode&>(src);
         if (dst_conn != "void") {
             throw InvalidSDFGException("dst_conn must be void. Found: " + dst_conn);
@@ -341,12 +356,14 @@ data_flow::Memlet& SDFGBuilder::add_memlet(control_flow::State& state, data_flow
     auto& dataflow = state.dataflow();
     auto edge = boost::add_edge(src.vertex_, dst.vertex_, dataflow.graph_);
     auto res = dataflow.edges_.insert(
-        {edge.first, std::unique_ptr<data_flow::Memlet>(
-                         new data_flow::Memlet(this->new_element_id(), debug_info, edge.first,
-                                               dataflow, src, src_conn, dst, dst_conn, subset))});
+        {edge.first,
+         std::unique_ptr<data_flow::Memlet>(new data_flow::Memlet(
+             this->new_element_id(), debug_info, edge.first, dataflow, src, src_conn, dst, dst_conn, subset
+         ))}
+    );
 
     return dynamic_cast<data_flow::Memlet&>(*(res.first->second));
 };
 
-}  // namespace builder
-}  // namespace sdfg
+} // namespace builder
+} // namespace sdfg

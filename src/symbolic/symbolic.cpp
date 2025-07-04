@@ -40,10 +40,9 @@ bool is_nullptr(const Symbol& symbol) { return symbol->get_name() == "__daisy_nu
 bool is_pointer(const Symbol& symbol) { return is_nullptr(symbol); };
 
 bool is_nv(const Symbol& symbol) {
-    if (symbol == threadIdx_x() || symbol == threadIdx_y() || symbol == threadIdx_z() ||
-        symbol == blockIdx_x() || symbol == blockIdx_y() || symbol == blockIdx_z() ||
-        symbol == blockDim_x() || symbol == blockDim_y() || symbol == blockDim_z() ||
-        symbol == gridDim_x() || symbol == gridDim_y() || symbol == gridDim_z()) {
+    if (symbol == threadIdx_x() || symbol == threadIdx_y() || symbol == threadIdx_z() || symbol == blockIdx_x() ||
+        symbol == blockIdx_y() || symbol == blockIdx_z() || symbol == blockDim_x() || symbol == blockDim_y() ||
+        symbol == blockDim_z() || symbol == gridDim_x() || symbol == gridDim_y() || symbol == gridDim_z()) {
         return true;
     } else {
         return false;
@@ -52,13 +51,9 @@ bool is_nv(const Symbol& symbol) {
 
 /***** Logical Expressions *****/
 
-Condition And(const Condition& lhs, const Condition& rhs) {
-    return SymEngine::logical_and({lhs, rhs});
-};
+Condition And(const Condition& lhs, const Condition& rhs) { return SymEngine::logical_and({lhs, rhs}); };
 
-Condition Or(const Condition& lhs, const Condition& rhs) {
-    return SymEngine::logical_or({lhs, rhs});
-};
+Condition Or(const Condition& lhs, const Condition& rhs) { return SymEngine::logical_or({lhs, rhs}); };
 
 Condition Not(const Condition& expr) { return expr->logical_not(); };
 
@@ -120,8 +115,7 @@ Expression simplify(const Expression& expr) {
         if (func_sym->get_name() == "idiv") {
             auto lhs = func_sym->get_args()[0];
             auto rhs = func_sym->get_args()[1];
-            if (SymEngine::is_a<SymEngine::Mul>(*lhs) &&
-                SymEngine::is_a<SymEngine::Integer>(*rhs)) {
+            if (SymEngine::is_a<SymEngine::Mul>(*lhs) && SymEngine::is_a<SymEngine::Integer>(*rhs)) {
                 auto lhs_mul = SymEngine::rcp_static_cast<const SymEngine::Mul>(lhs);
                 auto rhs_int = SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs);
                 auto lhs_args = lhs_mul->get_args();
@@ -155,9 +149,7 @@ bool eq(const Expression& lhs, const Expression& rhs) { return SymEngine::eq(*lh
 
 bool uses(const Expression& expr, const Symbol& sym) { return SymEngine::has_symbol(*expr, *sym); };
 
-bool uses(const Expression& expr, const std::string& name) {
-    return symbolic::uses(expr, symbol(name));
-};
+bool uses(const Expression& expr, const std::string& name) { return symbolic::uses(expr, symbol(name)); };
 
 SymbolSet atoms(const Expression& expr) {
     SymbolSet atoms;
@@ -169,9 +161,7 @@ SymbolSet atoms(const Expression& expr) {
     return atoms;
 };
 
-ExpressionSet muls(const Expression& expr) {
-    return SymEngine::atoms<const SymEngine::Mul>(*expr);
-};
+ExpressionSet muls(const Expression& expr) { return SymEngine::atoms<const SymEngine::Mul>(*expr); };
 
 Expression subs(const Expression& expr, const Expression& old_expr, const Expression& new_expr) {
     SymEngine::map_basic_basic d;
@@ -213,5 +203,5 @@ Symbol gridDim_y() { return symbol("gridDim.y"); };
 
 Symbol gridDim_z() { return symbol("gridDim.z"); };
 
-}  // namespace symbolic
-}  // namespace sdfg
+} // namespace symbolic
+} // namespace sdfg

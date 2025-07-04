@@ -17,14 +17,12 @@
 namespace sdfg {
 namespace transformations {
 
-OutLocalStorage::OutLocalStorage(structured_control_flow::StructuredLoop& loop,
-                                 std::string container)
+OutLocalStorage::OutLocalStorage(structured_control_flow::StructuredLoop& loop, std::string container)
     : loop_(loop), container_(container) {};
 
 std::string OutLocalStorage::name() const { return "OutLocalStorage"; };
 
-bool OutLocalStorage::can_be_applied(builder::StructuredSDFGBuilder& builder,
-                                     analysis::AnalysisManager& analysis_manager) {
+bool OutLocalStorage::can_be_applied(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& body = this->loop_.root();
     this->requires_array_ = false;
 
@@ -105,8 +103,7 @@ bool OutLocalStorage::can_be_applied(builder::StructuredSDFGBuilder& builder,
     return true;
 };
 
-void OutLocalStorage::apply(builder::StructuredSDFGBuilder& builder,
-                            analysis::AnalysisManager& analysis_manager) {
+void OutLocalStorage::apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     if (requires_array_) {
         apply_array(builder, analysis_manager);
     } else {
@@ -127,8 +124,7 @@ void OutLocalStorage::apply(builder::StructuredSDFGBuilder& builder,
     } while (applies);
 };
 
-void OutLocalStorage::apply_array(builder::StructuredSDFGBuilder& builder,
-                                  analysis::AnalysisManager& analysis_manager) {
+void OutLocalStorage::apply_array(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
     auto& users = analysis_manager.get<analysis::Users>();
     auto& parent = builder.parent(loop_);
@@ -156,10 +152,9 @@ void OutLocalStorage::apply_array(builder::StructuredSDFGBuilder& builder,
     auto& init_block = builder.add_block(init_body);
     auto& init_access_read = builder.add_access(init_block, this->container_);
     auto& init_access_write = builder.add_access(init_block, replacement_name);
-    auto& init_tasklet = builder.add_tasklet(init_block, data_flow::TaskletCode::assign,
-                                             {"_out", scalar_type}, {{"_in", scalar_type}});
-    auto& init_memlet_in =
-        builder.add_memlet(init_block, init_access_read, "void", init_tasklet, "_in", first_subset);
+    auto& init_tasklet =
+        builder.add_tasklet(init_block, data_flow::TaskletCode::assign, {"_out", scalar_type}, {{"_in", scalar_type}});
+    auto& init_memlet_in = builder.add_memlet(init_block, init_access_read, "void", init_tasklet, "_in", first_subset);
     init_memlet_in.replace(loop_.indvar(), indvar);
     builder.add_memlet(init_block, init_tasklet, "_out", init_access_write, "void", {indvar});
 
@@ -168,11 +163,11 @@ void OutLocalStorage::apply_array(builder::StructuredSDFGBuilder& builder,
     auto& reset_block = builder.add_block(reset_body);
     auto& reset_access_read = builder.add_access(reset_block, replacement_name);
     auto& reset_access_write = builder.add_access(reset_block, this->container_);
-    auto& reset_tasklet = builder.add_tasklet(reset_block, data_flow::TaskletCode::assign,
-                                              {"_out", scalar_type}, {{"_in", scalar_type}});
+    auto& reset_tasklet =
+        builder.add_tasklet(reset_block, data_flow::TaskletCode::assign, {"_out", scalar_type}, {{"_in", scalar_type}});
     builder.add_memlet(reset_block, reset_access_read, "void", reset_tasklet, "_in", {indvar});
-    auto& reset_memlet_out = builder.add_memlet(reset_block, reset_tasklet, "_out",
-                                                reset_access_write, "void", first_subset);
+    auto& reset_memlet_out =
+        builder.add_memlet(reset_block, reset_tasklet, "_out", reset_access_write, "void", first_subset);
     reset_memlet_out.replace(loop_.indvar(), indvar);
 
     for (auto user : body_users.uses(this->container_)) {
@@ -186,8 +181,7 @@ void OutLocalStorage::apply_array(builder::StructuredSDFGBuilder& builder,
     loop_.replace(symbolic::symbol(this->container_), symbolic::symbol(replacement_name));
 };
 
-void OutLocalStorage::apply_scalar(builder::StructuredSDFGBuilder& builder,
-                                   analysis::AnalysisManager& analysis_manager) {
+void OutLocalStorage::apply_scalar(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
     auto& users = analysis_manager.get<analysis::Users>();
     auto& parent = builder.parent(loop_);
@@ -203,19 +197,18 @@ void OutLocalStorage::apply_scalar(builder::StructuredSDFGBuilder& builder,
     auto& init_block = builder.add_block_before(parent, loop_).first;
     auto& init_access_read = builder.add_access(init_block, this->container_);
     auto& init_access_write = builder.add_access(init_block, replacement_name);
-    auto& init_tasklet = builder.add_tasklet(init_block, data_flow::TaskletCode::assign,
-                                             {"_out", scalar_type}, {{"_in", scalar_type}});
+    auto& init_tasklet =
+        builder.add_tasklet(init_block, data_flow::TaskletCode::assign, {"_out", scalar_type}, {{"_in", scalar_type}});
     builder.add_memlet(init_block, init_access_read, "void", init_tasklet, "_in", first_subset);
     builder.add_memlet(init_block, init_tasklet, "_out", init_access_write, "void", {});
 
     auto& reset_block = builder.add_block_after(parent, loop_).first;
     auto& reset_access_read = builder.add_access(reset_block, replacement_name);
     auto& reset_access_write = builder.add_access(reset_block, this->container_);
-    auto& reset_tasklet = builder.add_tasklet(reset_block, data_flow::TaskletCode::assign,
-                                              {"_out", scalar_type}, {{"_in", scalar_type}});
+    auto& reset_tasklet =
+        builder.add_tasklet(reset_block, data_flow::TaskletCode::assign, {"_out", scalar_type}, {{"_in", scalar_type}});
     builder.add_memlet(reset_block, reset_access_read, "void", reset_tasklet, "_in", {});
-    builder.add_memlet(reset_block, reset_tasklet, "_out", reset_access_write, "void",
-                       first_subset);
+    builder.add_memlet(reset_block, reset_tasklet, "_out", reset_access_write, "void", first_subset);
 
     this->loop_.replace(symbolic::symbol(this->container_), symbolic::symbol(replacement_name));
 };
@@ -226,19 +219,17 @@ void OutLocalStorage::to_json(nlohmann::json& j) const {
     j["container"] = container_;
 };
 
-OutLocalStorage OutLocalStorage::from_json(builder::StructuredSDFGBuilder& builder,
-                                           const nlohmann::json& desc) {
+OutLocalStorage OutLocalStorage::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
     auto loop_id = desc["loop_element_id"].get<size_t>();
     std::string container = desc["container"].get<std::string>();
     auto element = builder.find_element_by_id(loop_id);
     if (!element) {
-        throw InvalidTransformationDescriptionException("Element with ID " +
-                                                        std::to_string(loop_id) + " not found.");
+        throw InvalidTransformationDescriptionException("Element with ID " + std::to_string(loop_id) + " not found.");
     }
     auto loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element);
 
     return OutLocalStorage(*loop, container);
 };
 
-}  // namespace transformations
-}  // namespace sdfg
+} // namespace transformations
+} // namespace sdfg

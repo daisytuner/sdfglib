@@ -7,9 +7,8 @@
 using namespace sdfg;
 
 class NoneVisitor : public visitor::StructuredSDFGVisitor {
-   public:
-    NoneVisitor(builder::StructuredSDFGBuilder& builder,
-                analysis::AnalysisManager& analysis_manager)
+public:
+    NoneVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
         : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
 };
 
@@ -26,8 +25,12 @@ TEST(StructuredSDFGVisitorTest, None) {
     auto& cont = builder.add_continue(loop.root());
     auto& br = builder.add_break(loop.root());
     auto& for_l = builder.add_for(
-        sequence, symbolic::symbol("i"), symbolic::Le(symbolic::symbol("i"), symbolic::integer(0)),
-        symbolic::integer(1), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)));
+        sequence,
+        symbolic::symbol("i"),
+        symbolic::Le(symbolic::symbol("i"), symbolic::integer(0)),
+        symbolic::integer(1),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
     auto& ret = builder.add_return(sequence);
 
     NoneVisitor visitor(builder, analysis_manager);
@@ -35,47 +38,39 @@ TEST(StructuredSDFGVisitorTest, None) {
 }
 
 class AllVisitor : public visitor::StructuredSDFGVisitor {
-   public:
+public:
     AllVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
         : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Block& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Block& node) override {
         return true;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Sequence& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) override {
         return &parent != &node;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::IfElse& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& node) override {
         return true;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::While& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::While& node) override {
         return true;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Return& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Return& node) override {
         return true;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Continue& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Continue& node) override {
         return true;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Break& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Break& node) override {
         return true;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::For& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::For& node) override {
         return true;
     };
 };
@@ -91,53 +86,43 @@ TEST(StructuredSDFGVisitorTest, All) {
 }
 
 class BlockVisitor : public visitor::StructuredSDFGVisitor {
-   public:
-    BlockVisitor(builder::StructuredSDFGBuilder& builder,
-                 analysis::AnalysisManager& analysis_manager)
+public:
+    BlockVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
         : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Block& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Block& node) override {
         return true;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Sequence& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::IfElse& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::While& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::While& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Return& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Return& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Continue& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Continue& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Break& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Break& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::For& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::For& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Map& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Map& node) override {
         return false;
     };
 };
@@ -155,53 +140,43 @@ TEST(StructuredSDFGVisitorTest, Block) {
 }
 
 class SequenceVisitor : public visitor::StructuredSDFGVisitor {
-   public:
-    SequenceVisitor(builder::StructuredSDFGBuilder& builder,
-                    analysis::AnalysisManager& analysis_manager)
+public:
+    SequenceVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
         : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Block& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Block& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Sequence& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) override {
         return true;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::IfElse& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::While& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::While& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Return& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Return& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Continue& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Continue& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Break& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Break& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::For& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::For& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Map& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Map& node) override {
         return false;
     };
 };
@@ -219,53 +194,43 @@ TEST(StructuredSDFGVisitorTest, Sequence) {
 }
 
 class IfElseVisitor : public visitor::StructuredSDFGVisitor {
-   public:
-    IfElseVisitor(builder::StructuredSDFGBuilder& builder,
-                  analysis::AnalysisManager& analysis_manager)
+public:
+    IfElseVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
         : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Block& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Block& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Sequence& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::IfElse& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& node) override {
         return true;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::While& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::While& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Return& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Return& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Continue& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Continue& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Break& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Break& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::For& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::For& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Map& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Map& node) override {
         return false;
     };
 };
@@ -283,53 +248,43 @@ TEST(StructuredSDFGVisitorTest, IfElse) {
 }
 
 class WhileVisitor : public visitor::StructuredSDFGVisitor {
-   public:
-    WhileVisitor(builder::StructuredSDFGBuilder& builder,
-                 analysis::AnalysisManager& analysis_manager)
+public:
+    WhileVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
         : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Block& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Block& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Sequence& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::IfElse& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::While& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::While& node) override {
         return true;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Return& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Return& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Continue& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Continue& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Break& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Break& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::For& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::For& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Map& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Map& node) override {
         return false;
     };
 };
@@ -347,53 +302,43 @@ TEST(StructuredSDFGVisitorTest, While) {
 }
 
 class ReturnVisitor : public visitor::StructuredSDFGVisitor {
-   public:
-    ReturnVisitor(builder::StructuredSDFGBuilder& builder,
-                  analysis::AnalysisManager& analysis_manager)
+public:
+    ReturnVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
         : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Block& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Block& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Sequence& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::IfElse& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::While& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::While& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Return& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Return& node) override {
         return true;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Continue& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Continue& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Break& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Break& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::For& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::For& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Map& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Map& node) override {
         return false;
     };
 };
@@ -411,53 +356,43 @@ TEST(StructuredSDFGVisitorTest, Return) {
 }
 
 class ContinueVisitor : public visitor::StructuredSDFGVisitor {
-   public:
-    ContinueVisitor(builder::StructuredSDFGBuilder& builder,
-                    analysis::AnalysisManager& analysis_manager)
+public:
+    ContinueVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
         : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Block& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Block& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Sequence& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::IfElse& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::While& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::While& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Return& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Return& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Continue& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Continue& node) override {
         return true;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Break& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Break& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::For& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::For& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Map& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Map& node) override {
         return false;
     };
 };
@@ -476,53 +411,43 @@ TEST(StructuredSDFGVisitorTest, Continue) {
 }
 
 class BreakVisitor : public visitor::StructuredSDFGVisitor {
-   public:
-    BreakVisitor(builder::StructuredSDFGBuilder& builder,
-                 analysis::AnalysisManager& analysis_manager)
+public:
+    BreakVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
         : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Block& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Block& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Sequence& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::IfElse& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::While& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::While& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Return& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Return& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Continue& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Continue& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Break& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Break& node) override {
         return true;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::For& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::For& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Map& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Map& node) override {
         return false;
     };
 };
@@ -541,52 +466,43 @@ TEST(StructuredSDFGVisitorTest, Break) {
 }
 
 class ForVisitor : public visitor::StructuredSDFGVisitor {
-   public:
+public:
     ForVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
         : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Block& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Block& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Sequence& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::IfElse& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::While& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::While& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Return& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Return& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Continue& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Continue& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Break& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Break& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::For& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::For& node) override {
         return true;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Map& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Map& node) override {
         return false;
     };
 };
@@ -598,60 +514,55 @@ TEST(StructuredSDFGVisitorTest, For) {
     auto& root = builder.subject().root();
 
     auto& for_ = builder.add_for(
-        root, symbolic::symbol("i"), symbolic::Le(symbolic::symbol("i"), symbolic::integer(0)),
-        symbolic::integer(1), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)));
+        root,
+        symbolic::symbol("i"),
+        symbolic::Le(symbolic::symbol("i"), symbolic::integer(0)),
+        symbolic::integer(1),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
 
     ForVisitor visitor(builder, analysis_manager);
     EXPECT_TRUE(visitor.visit());
 }
 
 class MapVisitor : public visitor::StructuredSDFGVisitor {
-   public:
+public:
     MapVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
         : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Block& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Block& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Sequence& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::IfElse& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::While& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::While& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Return& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Return& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Continue& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Continue& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Break& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Break& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::For& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::For& node) override {
         return false;
     };
 
-    bool accept(structured_control_flow::Sequence& parent,
-                structured_control_flow::Map& node) override {
+    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Map& node) override {
         return true;
     };
 };
@@ -663,9 +574,13 @@ TEST(StructuredSDFGVisitorTest, Map) {
     auto& root = builder.subject().root();
 
     auto& kernel = builder.add_map(
-        root, symbolic::symbol("i"), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential);
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential
+    );
 
     MapVisitor visitor(builder, analysis_manager);
     EXPECT_TRUE(visitor.visit());

@@ -13,8 +13,7 @@
 namespace sdfg {
 namespace analysis {
 
-symbolic::Expression AssumptionsAnalysis::cnf_to_upper_bound(const symbolic::CNF& cnf,
-                                                             const symbolic::Symbol& indvar) {
+symbolic::Expression AssumptionsAnalysis::cnf_to_upper_bound(const symbolic::CNF& cnf, const symbolic::Symbol& indvar) {
     std::vector<symbolic::Expression> candidates;
 
     for (const auto& clause : cnf) {
@@ -22,8 +21,7 @@ symbolic::Expression AssumptionsAnalysis::cnf_to_upper_bound(const symbolic::CNF
             // Comparison: indvar < expr
             if (SymEngine::is_a<SymEngine::StrictLessThan>(*literal)) {
                 auto lt = SymEngine::rcp_static_cast<const SymEngine::StrictLessThan>(literal);
-                if (symbolic::eq(lt->get_arg1(), indvar) &&
-                    !symbolic::uses(lt->get_arg2(), indvar)) {
+                if (symbolic::eq(lt->get_arg1(), indvar) && !symbolic::uses(lt->get_arg2(), indvar)) {
                     auto ub = symbolic::sub(lt->get_arg2(), symbolic::one());
                     candidates.push_back(ub);
                 }
@@ -31,16 +29,14 @@ symbolic::Expression AssumptionsAnalysis::cnf_to_upper_bound(const symbolic::CNF
             // Comparison: indvar <= expr
             else if (SymEngine::is_a<SymEngine::LessThan>(*literal)) {
                 auto le = SymEngine::rcp_static_cast<const SymEngine::LessThan>(literal);
-                if (symbolic::eq(le->get_arg1(), indvar) &&
-                    !symbolic::uses(le->get_arg2(), indvar)) {
+                if (symbolic::eq(le->get_arg1(), indvar) && !symbolic::uses(le->get_arg2(), indvar)) {
                     candidates.push_back(le->get_arg2());
                 }
             }
             // Comparison: indvar == expr
             else if (SymEngine::is_a<SymEngine::Equality>(*literal)) {
                 auto eq = SymEngine::rcp_static_cast<const SymEngine::Equality>(literal);
-                if (symbolic::eq(eq->get_arg1(), indvar) &&
-                    !symbolic::uses(eq->get_arg2(), indvar)) {
+                if (symbolic::eq(eq->get_arg1(), indvar) && !symbolic::uses(eq->get_arg2(), indvar)) {
                     candidates.push_back(eq->get_arg2());
                 }
             }
@@ -65,18 +61,17 @@ AssumptionsAnalysis::AssumptionsAnalysis(StructuredSDFG& sdfg)
 
       };
 
-void AssumptionsAnalysis::visit_block(structured_control_flow::Block* block,
-                                      analysis::AnalysisManager& analysis_manager) {
+void AssumptionsAnalysis::visit_block(structured_control_flow::Block* block, analysis::AnalysisManager& analysis_manager) {
     return;
 };
 
-void AssumptionsAnalysis::visit_sequence(structured_control_flow::Sequence* sequence,
-                                         analysis::AnalysisManager& analysis_manager) {
+void AssumptionsAnalysis::
+    visit_sequence(structured_control_flow::Sequence* sequence, analysis::AnalysisManager& analysis_manager) {
     return;
 };
 
-void AssumptionsAnalysis::visit_if_else(structured_control_flow::IfElse* if_else,
-                                        analysis::AnalysisManager& analysis_manager) {
+void AssumptionsAnalysis::
+    visit_if_else(structured_control_flow::IfElse* if_else, analysis::AnalysisManager& analysis_manager) {
     auto& users = analysis_manager.get<analysis::Users>();
     for (size_t i = 0; i < if_else->size(); i++) {
         auto& scope = if_else->at(i).first;
@@ -135,8 +130,7 @@ void AssumptionsAnalysis::visit_if_else(structured_control_flow::IfElse* if_else
                             break;
                         }
                     } else if (SymEngine::is_a<SymEngine::StrictLessThan>(*literal)) {
-                        auto lt =
-                            SymEngine::rcp_dynamic_cast<const SymEngine::StrictLessThan>(literal);
+                        auto lt = SymEngine::rcp_dynamic_cast<const SymEngine::StrictLessThan>(literal);
                         auto lhs = lt->get_args()[0];
                         auto rhs = lt->get_args()[1];
                         if (SymEngine::eq(*lhs, *sym) && !symbolic::uses(rhs, sym)) {
@@ -199,13 +193,12 @@ void AssumptionsAnalysis::visit_if_else(structured_control_flow::IfElse* if_else
     }
 };
 
-void AssumptionsAnalysis::visit_while(structured_control_flow::While* while_loop,
-                                      analysis::AnalysisManager& analysis_manager) {
+void AssumptionsAnalysis::
+    visit_while(structured_control_flow::While* while_loop, analysis::AnalysisManager& analysis_manager) {
     return;
 };
 
-void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop,
-                                    analysis::AnalysisManager& analysis_manager) {
+void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop, analysis::AnalysisManager& analysis_manager) {
     auto indvar = for_loop->indvar();
     auto update = for_loop->update();
 
@@ -259,8 +252,7 @@ void AssumptionsAnalysis::visit_for(structured_control_flow::For* for_loop,
     }
 }
 
-void AssumptionsAnalysis::visit_map(structured_control_flow::Map* map,
-                                    analysis::AnalysisManager& analysis_manager) {
+void AssumptionsAnalysis::visit_map(structured_control_flow::Map* map, analysis::AnalysisManager& analysis_manager) {
     auto indvar = map->indvar();
     auto update = map->update();
 
@@ -314,8 +306,7 @@ void AssumptionsAnalysis::visit_map(structured_control_flow::Map* map,
     }
 };
 
-void AssumptionsAnalysis::traverse(structured_control_flow::Sequence& root,
-                                   analysis::AnalysisManager& analysis_manager) {
+void AssumptionsAnalysis::traverse(structured_control_flow::Sequence& root, analysis::AnalysisManager& analysis_manager) {
     std::list<structured_control_flow::ControlFlowNode*> queue = {&root};
     while (!queue.empty()) {
         auto current = queue.front();
@@ -361,8 +352,8 @@ void AssumptionsAnalysis::run(analysis::AnalysisManager& analysis_manager) {
     this->traverse(sdfg_.root(), analysis_manager);
 };
 
-const symbolic::Assumptions AssumptionsAnalysis::get(structured_control_flow::ControlFlowNode& node,
-                                                     bool include_trivial_bounds) {
+const symbolic::Assumptions AssumptionsAnalysis::
+    get(structured_control_flow::ControlFlowNode& node, bool include_trivial_bounds) {
     // Compute assumptions on the fly
 
     // Node-level assumptions
@@ -416,9 +407,10 @@ const symbolic::Assumptions AssumptionsAnalysis::get(structured_control_flow::Co
     return assums;
 };
 
-const symbolic::Assumptions AssumptionsAnalysis::get(structured_control_flow::ControlFlowNode& from,
-                                                     structured_control_flow::ControlFlowNode& to,
-                                                     bool include_trivial_bounds) {
+const symbolic::Assumptions AssumptionsAnalysis::
+    get(structured_control_flow::ControlFlowNode& from,
+        structured_control_flow::ControlFlowNode& to,
+        bool include_trivial_bounds) {
     auto assums_from = this->get(from, include_trivial_bounds);
     auto assums_to = this->get(to, include_trivial_bounds);
 
@@ -449,8 +441,7 @@ const symbolic::Assumptions AssumptionsAnalysis::get(structured_control_flow::Co
     return assums_to;
 }
 
-void AssumptionsAnalysis::add(symbolic::Assumptions& assums,
-                              structured_control_flow::ControlFlowNode& node) {
+void AssumptionsAnalysis::add(symbolic::Assumptions& assums, structured_control_flow::ControlFlowNode& node) {
     if (this->assumptions_.find(&node) == this->assumptions_.end()) {
         return;
     }
@@ -464,5 +455,5 @@ void AssumptionsAnalysis::add(symbolic::Assumptions& assums,
     }
 }
 
-}  // namespace analysis
-}  // namespace sdfg
+} // namespace analysis
+} // namespace sdfg

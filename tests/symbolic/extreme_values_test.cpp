@@ -82,15 +82,15 @@ TEST(ExtremeValuesTest, Linear_Symbolic) {
     auto expr = symbolic::add(symbolic::mul(symbolic::integer(4), a), symbolic::integer(5));
 
     auto min = symbolic::minimum(expr, {N, M}, assums);
-    auto expr_lb = symbolic::add(symbolic::min(symbolic::mul(symbolic::integer(4), M),
-                                               symbolic::mul(symbolic::integer(4), N)),
-                                 symbolic::integer(5));
+    auto expr_lb = symbolic::
+        add(symbolic::min(symbolic::mul(symbolic::integer(4), M), symbolic::mul(symbolic::integer(4), N)),
+            symbolic::integer(5));
     EXPECT_TRUE(symbolic::eq(min, expr_lb));
 
     auto max = symbolic::maximum(expr, {N, M}, assums);
-    auto expr_ub = symbolic::add(symbolic::max(symbolic::mul(symbolic::integer(4), M),
-                                               symbolic::mul(symbolic::integer(4), N)),
-                                 symbolic::integer(5));
+    auto expr_ub = symbolic::
+        add(symbolic::max(symbolic::mul(symbolic::integer(4), M), symbolic::mul(symbolic::integer(4), N)),
+            symbolic::integer(5));
     EXPECT_TRUE(symbolic::eq(max, expr_ub));
 }
 
@@ -254,13 +254,9 @@ TEST(ExtremeValuesTest, Recursive_Assumptions) {
     assum_j.lower_bound(lb_j);
     assum_j.upper_bound(ub_j);
 
-    auto assumptions = symbolic::Assumptions {
-        {i, assum_i},
-        {i_init, assum_i_init},
-        {j, assum_j}
-    };
+    auto assumptions = symbolic::Assumptions{{i, assum_i}, {i_init, assum_i_init}, {j, assum_j}};
 
-    auto parameters = symbolic::SymbolSet { i_end_ex };
+    auto parameters = symbolic::SymbolSet{i_end_ex};
 
     auto i_min = symbolic::minimum(i, parameters, assumptions);
     EXPECT_TRUE(symbolic::eq(i_min, symbolic::integer(0)));

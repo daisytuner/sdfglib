@@ -181,8 +181,7 @@ TEST(SDFGBuilderTest, addEdgeWithAssignments) {
     auto& state_2 = builder.add_state();
     EXPECT_EQ(state_2.element_id(), 2);
 
-    auto& edge = builder.add_edge(state_1, state_2,
-                                  control_flow::Assignments{{iter_sym, SymEngine::integer(0)}});
+    auto& edge = builder.add_edge(state_1, state_2, control_flow::Assignments{{iter_sym, SymEngine::integer(0)}});
     EXPECT_EQ(edge.element_id(), 3);
 
     EXPECT_EQ(&edge.src(), &state_1);
@@ -231,8 +230,7 @@ TEST(SDFGBuilderTest, AddTasklet) {
     auto& access_node_out = builder.add_access(state, "scalar_1");
     EXPECT_EQ(access_node_out.element_id(), 3);
 
-    auto& tasklet =
-        builder.add_tasklet(state, data_flow::TaskletCode::assign, {"_out", desc}, {{"_in", desc}});
+    auto& tasklet = builder.add_tasklet(state, data_flow::TaskletCode::assign, {"_out", desc}, {{"_in", desc}});
     EXPECT_EQ(tasklet.element_id(), 4);
 
     auto& memlet_in = builder.add_memlet(state, access_node_in, "void", tasklet, "_in", {});
@@ -250,27 +248,37 @@ TEST(SDFGBuilderTest, AddTasklet) {
 
 inline data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
 class BarrierLocalLibraryNode : public data_flow::LibraryNode {
-   public:
-    BarrierLocalLibraryNode(size_t element_id, const DebugInfo& debug_info,
-                            const graph::Vertex vertex, data_flow::DataFlowGraph& parent,
-                            const data_flow::LibraryNodeCode& code,
-                            const std::vector<std::string>& outputs,
-                            const std::vector<std::string>& inputs, const bool side_effect)
-        : data_flow::LibraryNode(element_id, debug_info, vertex, parent, code, outputs, inputs,
-                                 side_effect) {}
+public:
+    BarrierLocalLibraryNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent,
+        const data_flow::LibraryNodeCode& code,
+        const std::vector<std::string>& outputs,
+        const std::vector<std::string>& inputs,
+        const bool side_effect
+    )
+        : data_flow::LibraryNode(element_id, debug_info, vertex, parent, code, outputs, inputs, side_effect) {}
 
-    virtual std::unique_ptr<data_flow::DataFlowNode> clone(
-        size_t element_id, const graph::Vertex vertex,
-        data_flow::DataFlowGraph& parent) const override {
-        return std::make_unique<BarrierLocalLibraryNode>(element_id, this->debug_info(), vertex,
-                                                         parent, this->code(), this->outputs(),
-                                                         this->inputs(), this->side_effect());
+    virtual std::unique_ptr<data_flow::DataFlowNode>
+    clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override {
+        return std::make_unique<BarrierLocalLibraryNode>(
+            element_id,
+            this->debug_info(),
+            vertex,
+            parent,
+            this->code(),
+            this->outputs(),
+            this->inputs(),
+            this->side_effect()
+        );
     }
 
     virtual symbolic::SymbolSet symbols() const override { return {}; }
 
-    virtual void replace(const symbolic::Expression& old_expression,
-                         const symbolic::Expression& new_expression) override {
+    virtual void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression)
+        override {
         // Do nothing
     }
 };
@@ -281,8 +289,7 @@ TEST(SDFGBuilderTest, AddLibnode) {
     auto& state = builder.add_state(true);
     EXPECT_EQ(state.element_id(), 1);
 
-    auto& library_node =
-        builder.add_library_node<BarrierLocalLibraryNode>(state, BARRIER_LOCAL, {}, {}, false);
+    auto& library_node = builder.add_library_node<BarrierLocalLibraryNode>(state, BARRIER_LOCAL, {}, {}, false);
     EXPECT_EQ(library_node.element_id(), 2);
 
     auto sdfg = builder.move();

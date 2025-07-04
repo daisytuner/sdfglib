@@ -21,13 +21,11 @@ TEST(GraphAlgorithmsTest, Undirected) {
     EXPECT_EQ(boost::num_edges(*std::get<0>(undirected_graph)), 1);
 
     sdfg::graph::UndirectedEdge e3, e4;
-    boost::tie(e3, found) =
-        boost::edge(std::get<1>(undirected_graph).at(u), std::get<1>(undirected_graph).at(v),
-                    *std::get<0>(undirected_graph));
+    boost::tie(e3, found) = boost::
+        edge(std::get<1>(undirected_graph).at(u), std::get<1>(undirected_graph).at(v), *std::get<0>(undirected_graph));
     EXPECT_TRUE(found);
-    boost::tie(e4, found) =
-        boost::edge(std::get<1>(undirected_graph).at(v), std::get<1>(undirected_graph).at(u),
-                    *std::get<0>(undirected_graph));
+    boost::tie(e4, found) = boost::
+        edge(std::get<1>(undirected_graph).at(v), std::get<1>(undirected_graph).at(u), *std::get<0>(undirected_graph));
     EXPECT_TRUE(found);
 }
 

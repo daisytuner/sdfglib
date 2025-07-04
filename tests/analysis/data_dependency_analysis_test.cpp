@@ -20,9 +20,12 @@ TEST(DataDependencyAnalysisTest, Block_Define_Scalar) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     // Run analysis
@@ -35,8 +38,7 @@ TEST(DataDependencyAnalysisTest, Block_Define_Scalar) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions,
-                         closed_definitions);
+    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -60,9 +62,12 @@ TEST(DataDependencyAnalysisTest, Block_Define_Array) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
 
     // Run analysis
@@ -75,8 +80,7 @@ TEST(DataDependencyAnalysisTest, Block_Define_Array) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions,
-                         closed_definitions);
+    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -100,9 +104,12 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Scalar) {
     auto& block = builder.add_block(root);
     auto& input_node = builder.add_access(block, "A");
     auto& output_node = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"_in", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
     builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
@@ -116,8 +123,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Scalar) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions,
-                         closed_definitions);
+    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -148,9 +154,12 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Array) {
     auto& block = builder.add_block(root);
     auto& input_node = builder.add_access(block, "A");
     auto& output_node = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"_in", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
     builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
 
@@ -164,8 +173,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Array) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions,
-                         closed_definitions);
+    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -197,16 +205,22 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Array_Subset) {
     auto& block = builder.add_block(root);
     auto& input_node = builder.add_access(block, "A");
     auto& output_node = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"_in", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
     builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
 
     auto& output_node2 = builder.add_access(block, "C");
-    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet2 = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"_in", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
     builder.add_memlet(block, output_node, "void", tasklet2, "_in", {symbolic::integer(1)});
 
@@ -220,8 +234,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Array_Subset) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions,
-                         closed_definitions);
+    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 2);
@@ -256,11 +269,13 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Symbol) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
-    auto& memlet =
-        builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::symbol("i")});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
+    auto& memlet = builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::symbol("i")});
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
@@ -272,8 +287,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Symbol) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions,
-                         closed_definitions);
+    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -303,16 +317,22 @@ TEST(DataDependencyAnalysisTest, Block_Use_Scalar) {
     auto& block = builder.add_block(root);
     auto& input_node = builder.add_access(block, "A");
     auto& output_node = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"_in", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
     builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
 
     auto& output_node2 = builder.add_access(block, "C");
-    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet2 = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"_in", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, tasklet2, "_out", output_node2, "void", {});
     builder.add_memlet(block, output_node, "void", tasklet2, "_in", {});
 
@@ -326,8 +346,7 @@ TEST(DataDependencyAnalysisTest, Block_Use_Scalar) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions,
-                         closed_definitions);
+    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -364,16 +383,22 @@ TEST(DataDependencyAnalysisTest, Block_Use_Array) {
     auto& block = builder.add_block(root);
     auto& input_node = builder.add_access(block, "A");
     auto& output_node = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"_in", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
     builder.add_memlet(block, input_node, "void", tasklet, "_in", {symbolic::integer(0)});
 
     auto& output_node2 = builder.add_access(block, "C");
-    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet2 = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"_in", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
     builder.add_memlet(block, output_node, "void", tasklet2, "_in", {symbolic::integer(0)});
 
@@ -387,8 +412,7 @@ TEST(DataDependencyAnalysisTest, Block_Use_Array) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions,
-                         closed_definitions);
+    analysis.visit_block(users, assumptions_analysis, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -431,8 +455,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Define_Scalar) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -469,8 +492,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Use_Scalar) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -513,8 +535,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Close_Scalar) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -544,16 +565,22 @@ TEST(DataDependencyAnalysisTest, Sequence_Close_Array) {
     auto& root = builder.subject().root();
     auto& block1 = builder.add_block(root);
     auto& output_node = builder.add_access(block1, "A");
-    auto& tasklet = builder.add_tasklet(block1, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block1,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block1, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
 
     auto& block2 = builder.add_block(root);
     auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"1", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet2 = builder.add_tasklet(
+        block2,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"1", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
 
     // Run analysis
@@ -566,8 +593,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Close_Array) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -597,16 +623,22 @@ TEST(DataDependencyAnalysisTest, Sequence_Define_Array_Subsets) {
     auto& root = builder.subject().root();
     auto& block1 = builder.add_block(root);
     auto& output_node = builder.add_access(block1, "A");
-    auto& tasklet = builder.add_tasklet(block1, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block1,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block1, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
 
     auto& block2 = builder.add_block(root);
     auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"1", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet2 = builder.add_tasklet(
+        block2,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"1", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(1)});
 
     // Run analysis
@@ -619,8 +651,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Define_Array_Subsets) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -648,8 +679,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Condition_Undefined) {
 
     auto& root = builder.subject().root();
     auto& if_else = builder.add_if_else(root);
-    auto& branch1 =
-        builder.add_case(if_else, symbolic::Eq(symbolic::symbol("A"), symbolic::integer(0)));
+    auto& branch1 = builder.add_case(if_else, symbolic::Eq(symbolic::symbol("A"), symbolic::integer(0)));
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
@@ -661,8 +691,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Condition_Undefined) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -683,8 +712,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Condition_Use) {
     auto& root = builder.subject().root();
     auto& block1 = builder.add_block(root, {{symbolic::symbol("A"), symbolic::integer(0)}});
     auto& if_else = builder.add_if_else(root);
-    auto& branch1 =
-        builder.add_case(if_else, symbolic::Eq(symbolic::symbol("A"), symbolic::integer(0)));
+    auto& branch1 = builder.add_case(if_else, symbolic::Eq(symbolic::symbol("A"), symbolic::integer(0)));
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
@@ -696,8 +724,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Condition_Use) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -739,8 +766,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Complete_Scalar) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -797,8 +823,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Incomplete_Scalar) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -840,24 +865,33 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Array) {
     auto& branch1 = builder.add_case(if_else, symbolic::__true__());
     auto& block1 = builder.add_block(branch1);
     auto& output_node = builder.add_access(block1, "A");
-    auto& tasklet = builder.add_tasklet(block1, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block1,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block1, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
 
     auto& branch2 = builder.add_case(if_else, symbolic::__false__());
     auto& block2 = builder.add_block(branch2);
     auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"1", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet2 = builder.add_tasklet(
+        block2,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"1", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
 
     auto& block3 = builder.add_block(root);
     auto& output_node3 = builder.add_access(block3, "A");
-    auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet3 = builder.add_tasklet(
+        block3,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block3, tasklet3, "_out", output_node3, "void", {symbolic::integer(0)});
 
     // Run analysis
@@ -870,8 +904,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Array) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -909,24 +942,33 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Array_Subsets) {
     auto& branch1 = builder.add_case(if_else, symbolic::__true__());
     auto& block1 = builder.add_block(branch1);
     auto& output_node = builder.add_access(block1, "A");
-    auto& tasklet = builder.add_tasklet(block1, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block1,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block1, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
 
     auto& branch2 = builder.add_case(if_else, symbolic::__false__());
     auto& block2 = builder.add_block(branch2);
     auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"1", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet2 = builder.add_tasklet(
+        block2,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"1", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
 
     auto& block3 = builder.add_block(root);
     auto& output_node3 = builder.add_access(block3, "A");
-    auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet3 = builder.add_tasklet(
+        block3,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block3, tasklet3, "_out", output_node3, "void", {symbolic::integer(1)});
 
     // Run analysis
@@ -939,8 +981,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Array_Subsets) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -978,24 +1019,33 @@ TEST(DataDependencyAnalysisTest, IfElse_Close_Array) {
     auto& branch1 = builder.add_case(if_else, symbolic::__true__());
     auto& block1 = builder.add_block(branch1);
     auto& output_node = builder.add_access(block1, "A");
-    auto& tasklet = builder.add_tasklet(block1, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block1,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block1, tasklet, "_out", output_node, "void", {symbolic::integer(1)});
 
     auto& branch2 = builder.add_case(if_else, symbolic::__false__());
     auto& block2 = builder.add_block(branch2);
     auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"1", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet2 = builder.add_tasklet(
+        block2,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"1", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
 
     auto& block3 = builder.add_block(root);
     auto& output_node3 = builder.add_access(block3, "A");
-    auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet3 = builder.add_tasklet(
+        block3,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block3, tasklet3, "_out", output_node3, "void", {symbolic::integer(1)});
 
     // Run analysis
@@ -1008,8 +1058,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Close_Array) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -1042,8 +1091,12 @@ TEST(DataDependencyAnalysisTest, For_Indvar) {
     auto& root = builder.subject().root();
 
     auto& for_loop = builder.add_for(
-        root, symbolic::symbol("i"), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)));
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
 
     analysis::AnalysisManager analysis_manager(builder.subject());
     analysis::DataDependencyAnalysis analysis(builder.subject());
@@ -1054,8 +1107,7 @@ TEST(DataDependencyAnalysisTest, For_Indvar) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -1087,21 +1139,31 @@ TEST(DataDependencyAnalysisTest, For_Close_Scalar) {
     auto& root = builder.subject().root();
 
     auto& for_loop = builder.add_for(
-        root, symbolic::symbol("i"), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(1)),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)));
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(1)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
 
     auto& block = builder.add_block(for_loop.root());
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
 
     auto& block2 = builder.add_block(root);
     auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet2 = builder.add_tasklet(
+        block2,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
 
     analysis::AnalysisManager analysis_manager(builder.subject());
@@ -1113,8 +1175,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Scalar) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -1143,25 +1204,39 @@ TEST(DataDependencyAnalysisTest, For_Close_Array) {
     auto& root = builder.subject().root();
 
     auto& for_loop1 = builder.add_for(
-        root, symbolic::symbol("i"), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(2)),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)));
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(2)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
 
     auto& block = builder.add_block(for_loop1.root());
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::symbol("i")});
 
     auto& for_loop2 = builder.add_for(
-        root, symbolic::symbol("j"), symbolic::Lt(symbolic::symbol("j"), symbolic::integer(2)),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("j"), symbolic::integer(1)));
+        root,
+        symbolic::symbol("j"),
+        symbolic::Lt(symbolic::symbol("j"), symbolic::integer(2)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("j"), symbolic::integer(1))
+    );
 
     auto& block2 = builder.add_block(for_loop2.root());
     auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet2 = builder.add_tasklet(
+        block2,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::symbol("j")});
 
     analysis::AnalysisManager analysis_manager(builder.subject());
@@ -1173,8 +1248,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Array) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -1203,25 +1277,39 @@ TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets) {
     auto& root = builder.subject().root();
 
     auto& for_loop1 = builder.add_for(
-        root, symbolic::symbol("i"), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(2)),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)));
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(2)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
 
     auto& block = builder.add_block(for_loop1.root());
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::symbol("i")});
 
     auto& for_loop2 = builder.add_for(
-        root, symbolic::symbol("j"), symbolic::Lt(symbolic::symbol("j"), symbolic::integer(1)),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("j"), symbolic::integer(1)));
+        root,
+        symbolic::symbol("j"),
+        symbolic::Lt(symbolic::symbol("j"), symbolic::integer(1)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("j"), symbolic::integer(1))
+    );
 
     auto& block2 = builder.add_block(for_loop2.root());
     auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet2 = builder.add_tasklet(
+        block2,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::symbol("j")});
 
     analysis::AnalysisManager analysis_manager(builder.subject());
@@ -1233,8 +1321,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -1263,25 +1350,39 @@ TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets_Trivial) {
     auto& root = builder.subject().root();
 
     auto& for_loop1 = builder.add_for(
-        root, symbolic::symbol("i"), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)));
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
 
     auto& block = builder.add_block(for_loop1.root());
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
 
     auto& for_loop2 = builder.add_for(
-        root, symbolic::symbol("j"), symbolic::Lt(symbolic::symbol("j"), symbolic::integer(1)),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("j"), symbolic::integer(1)));
+        root,
+        symbolic::symbol("j"),
+        symbolic::Lt(symbolic::symbol("j"), symbolic::integer(1)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("j"), symbolic::integer(1))
+    );
 
     auto& block2 = builder.add_block(for_loop2.root());
     auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                         {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                         {{"0", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet2 = builder.add_tasklet(
+        block2,
+        data_flow::TaskletCode::assign,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"0", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {symbolic::integer(0)});
 
     analysis::AnalysisManager analysis_manager(builder.subject());
@@ -1293,8 +1394,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets_Trivial) {
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
 
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions,
-                            closed_definitions);
+    analysis.visit_sequence(users, assumptions_analysis, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -1826,8 +1926,8 @@ TEST(LoopDependencyAnalysisTest, Last_1D) {
     auto& block = builder.add_block(body);
     auto& a1 = builder.add_access(block, "A");
     auto& b_out = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
     builder.add_memlet(block, a1, "void", tasklet, "_in", {indvar});
     builder.add_memlet(block, tasklet, "_out", b_out, "void", {});
 
@@ -1838,8 +1938,7 @@ TEST(LoopDependencyAnalysisTest, Last_1D) {
 
     // Check
     EXPECT_EQ(dependencies.size(), 1);
-    EXPECT_EQ(dependencies.at("B"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies.at("B"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 }
 
 TEST(LoopDependencyAnalysisTest, Sum_1D) {
@@ -1873,8 +1972,9 @@ TEST(LoopDependencyAnalysisTest, Sum_1D) {
     auto& a1 = builder.add_access(block, "A");
     auto& b_in = builder.add_access(block, "B");
     auto& b_out = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
-                                        {{"_in1", base_desc}, {"_in2", base_desc}});
+    auto& tasklet = builder.add_tasklet(
+        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", base_desc}}
+    );
     builder.add_memlet(block, a1, "void", tasklet, "_in1", {indvar});
     builder.add_memlet(block, b_in, "void", tasklet, "_in2", {});
     builder.add_memlet(block, tasklet, "_out", b_out, "void", {});
@@ -1886,8 +1986,7 @@ TEST(LoopDependencyAnalysisTest, Sum_1D) {
 
     // Check
     EXPECT_EQ(dependencies.size(), 1);
-    EXPECT_EQ(dependencies.at("B"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies.at("B"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
 }
 
 TEST(LoopDependencyAnalysisTest, Shift_1D) {
@@ -1919,10 +2018,9 @@ TEST(LoopDependencyAnalysisTest, Shift_1D) {
     auto& block = builder.add_block(body);
     auto& a1 = builder.add_access(block, "A");
     auto& a2 = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
-    builder.add_memlet(block, a1, "void", tasklet, "_in",
-                       {symbolic::sub(indvar, symbolic::integer(1))});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
+    builder.add_memlet(block, a1, "void", tasklet, "_in", {symbolic::sub(indvar, symbolic::integer(1))});
     builder.add_memlet(block, tasklet, "_out", a2, "void", {indvar});
 
     // Analysis
@@ -1932,8 +2030,7 @@ TEST(LoopDependencyAnalysisTest, Shift_1D) {
 
     // Check
     EXPECT_EQ(dependencies.size(), 1);
-    EXPECT_EQ(dependencies.at("A"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies.at("A"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
 }
 
 TEST(LoopDependencyAnalysisTest, PartialSum_1D) {
@@ -1966,10 +2063,10 @@ TEST(LoopDependencyAnalysisTest, PartialSum_1D) {
     auto& A1 = builder.add_access(block, "A");
     auto& A2 = builder.add_access(block, "A");
     auto& A3 = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
-                                        {{"_in1", base_desc}, {"_in2", base_desc}});
-    builder.add_memlet(block, A1, "void", tasklet, "_in1",
-                       {symbolic::sub(indvar, symbolic::integer(1))});
+    auto& tasklet = builder.add_tasklet(
+        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", base_desc}}
+    );
+    builder.add_memlet(block, A1, "void", tasklet, "_in1", {symbolic::sub(indvar, symbolic::integer(1))});
     builder.add_memlet(block, A2, "void", tasklet, "_in2", {indvar});
     builder.add_memlet(block, tasklet, "_out", A3, "void", {indvar});
 
@@ -1980,8 +2077,7 @@ TEST(LoopDependencyAnalysisTest, PartialSum_1D) {
 
     // Check
     EXPECT_EQ(dependencies.size(), 1);
-    EXPECT_EQ(dependencies.at("A"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies.at("A"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
 }
 
 TEST(LoopDependencyAnalysisTest, LoopLocal_1D) {
@@ -2014,16 +2110,16 @@ TEST(LoopDependencyAnalysisTest, LoopLocal_1D) {
     auto& block_1 = builder.add_block(body);
     auto& i_in = builder.add_access(block_1, "i");
     auto& tmp_out = builder.add_access(block_1, "tmp");
-    auto& tasklet_1 = builder.add_tasklet(block_1, data_flow::TaskletCode::assign,
-                                          {"_out", sym_desc}, {{"_in", sym_desc}});
+    auto& tasklet_1 =
+        builder.add_tasklet(block_1, data_flow::TaskletCode::assign, {"_out", sym_desc}, {{"_in", sym_desc}});
     builder.add_memlet(block_1, i_in, "void", tasklet_1, "_in", {});
     builder.add_memlet(block_1, tasklet_1, "_out", tmp_out, "void", {});
 
     auto& block_2 = builder.add_block(body);
     auto& tmp_in = builder.add_access(block_2, "tmp");
     auto& a_out = builder.add_access(block_2, "A");
-    auto& tasklet = builder.add_tasklet(block_2, data_flow::TaskletCode::assign,
-                                        {"_out", base_desc}, {{"_in", base_desc}});
+    auto& tasklet =
+        builder.add_tasklet(block_2, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
     builder.add_memlet(block_2, tmp_in, "void", tasklet, "_in", {});
     builder.add_memlet(block_2, tasklet, "_out", a_out, "void", {indvar});
 
@@ -2034,8 +2130,7 @@ TEST(LoopDependencyAnalysisTest, LoopLocal_1D) {
 
     // Check
     EXPECT_EQ(dependencies.size(), 1);
-    EXPECT_EQ(dependencies.at("tmp"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies.at("tmp"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 }
 
 TEST(LoopDependencyAnalysisTest, LoopLocal_Conditional) {
@@ -2074,8 +2169,8 @@ TEST(LoopDependencyAnalysisTest, LoopLocal_Conditional) {
     auto& block = builder.add_block(body1);
     auto& A_in = builder.add_access(block, "tmp");
     auto& A_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
     builder.add_memlet(block, A_in, "void", tasklet, "_in", {});
     builder.add_memlet(block, tasklet, "_out", A_out, "void", {indvar1});
 
@@ -2086,8 +2181,7 @@ TEST(LoopDependencyAnalysisTest, LoopLocal_Conditional) {
 
     // Check
     EXPECT_EQ(dependencies.size(), 1);
-    EXPECT_EQ(dependencies.at("tmp"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies.at("tmp"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 }
 
 TEST(LoopDependencyAnalysisTest, LoopLocal_Conditional_Incomplete) {
@@ -2124,8 +2218,8 @@ TEST(LoopDependencyAnalysisTest, LoopLocal_Conditional_Incomplete) {
     auto& block = builder.add_block(body1);
     auto& A_in = builder.add_access(block, "tmp");
     auto& A_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
     builder.add_memlet(block, A_in, "void", tasklet, "_in", {});
     builder.add_memlet(block, tasklet, "_out", A_out, "void", {indvar1});
 
@@ -2136,8 +2230,7 @@ TEST(LoopDependencyAnalysisTest, LoopLocal_Conditional_Incomplete) {
 
     // Check
     EXPECT_EQ(dependencies.size(), 1);
-    EXPECT_EQ(dependencies.at("tmp"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies.at("tmp"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
 }
 
 TEST(LoopDependencyAnalysisTest, Store_1D) {
@@ -2168,8 +2261,7 @@ TEST(LoopDependencyAnalysisTest, Store_1D) {
     // Add computation
     auto& block = builder.add_block(body);
     auto& a = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"0", base_desc}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"0", base_desc}});
     builder.add_memlet(block, tasklet, "_out", a, "void", {indvar});
 
     // Analysis
@@ -2211,8 +2303,8 @@ TEST(LoopDependencyAnalysisTest, Copy_1D) {
     auto& block = builder.add_block(body);
     auto& a = builder.add_access(block, "A");
     auto& b = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
     builder.add_memlet(block, a, "void", tasklet, "_in", {symbolic::symbol("i")});
     builder.add_memlet(block, tasklet, "_out", b, "void", {symbolic::symbol("i")});
 
@@ -2255,8 +2347,9 @@ TEST(LoopDependencyAnalysisTest, Map_1D) {
     auto& a_in = builder.add_access(block, "A");
     auto& i = builder.add_access(block, "i");
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
-                                        {{"_in1", base_desc}, {"_in2", sym_desc}});
+    auto& tasklet = builder.add_tasklet(
+        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", sym_desc}}
+    );
     builder.add_memlet(block, a_in, "void", tasklet, "_in1", {symbolic::symbol("i")});
     builder.add_memlet(block, i, "void", tasklet, "_in2", {});
     builder.add_memlet(block, tasklet, "_out", a_out, "void", {symbolic::symbol("i")});
@@ -2300,12 +2393,12 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Disjoint) {
     auto& a_in = builder.add_access(block, "A");
     auto& i = builder.add_access(block, "i");
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
-                                        {{"_in1", base_desc}, {"_in2", sym_desc}});
+    auto& tasklet = builder.add_tasklet(
+        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", sym_desc}}
+    );
     builder.add_memlet(block, a_in, "void", tasklet, "_in1", {symbolic::zero()});
     builder.add_memlet(block, i, "void", tasklet, "_in2", {});
-    builder.add_memlet(block, tasklet, "_out", a_out, "void",
-                       {symbolic::add(symbolic::symbol("i"), symbolic::one())});
+    builder.add_memlet(block, tasklet, "_out", a_out, "void", {symbolic::add(symbolic::symbol("i"), symbolic::one())});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -2345,11 +2438,10 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Strided) {
     auto& block = builder.add_block(body);
     auto& a_in = builder.add_access(block, "A");
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
     builder.add_memlet(block, a_in, "void", tasklet, "_in", {symbolic::symbol("i")});
-    builder.add_memlet(block, tasklet, "_out", a_out, "void",
-                       {symbolic::add(symbolic::symbol("i"), symbolic::one())});
+    builder.add_memlet(block, tasklet, "_out", a_out, "void", {symbolic::add(symbolic::symbol("i"), symbolic::one())});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -2389,11 +2481,10 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Strided2) {
     auto& block = builder.add_block(body);
     auto& a_in = builder.add_access(block, "A");
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
     builder.add_memlet(block, a_in, "void", tasklet, "_in", {symbolic::symbol("i")});
-    builder.add_memlet(block, tasklet, "_out", a_out, "void",
-                       {symbolic::sub(symbolic::symbol("i"), symbolic::one())});
+    builder.add_memlet(block, tasklet, "_out", a_out, "void", {symbolic::sub(symbolic::symbol("i"), symbolic::one())});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -2433,9 +2524,9 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Tiled) {
 
     auto indvar_tile = symbolic::symbol("i");
     auto init_tile = indvar;
-    auto condition_tile =
-        symbolic::And(symbolic::Lt(indvar_tile, symbolic::symbol("N")),
-                      symbolic::Lt(indvar_tile, symbolic::add(indvar, tile_size)));
+    auto condition_tile = symbolic::
+        And(symbolic::Lt(indvar_tile, symbolic::symbol("N")),
+            symbolic::Lt(indvar_tile, symbolic::add(indvar, tile_size)));
     auto update_tile = symbolic::add(indvar_tile, symbolic::one());
 
     auto& loop_inner = builder.add_for(body, indvar_tile, condition_tile, init_tile, update_tile);
@@ -2446,8 +2537,9 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Tiled) {
     auto& a_in = builder.add_access(block, "A");
     auto& i = builder.add_access(block, "i");
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
-                                        {{"_in1", base_desc}, {"_in2", sym_desc}});
+    auto& tasklet = builder.add_tasklet(
+        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", sym_desc}}
+    );
     builder.add_memlet(block, a_in, "void", tasklet, "_in1", {symbolic::symbol("i")});
     builder.add_memlet(block, i, "void", tasklet, "_in2", {});
     builder.add_memlet(block, tasklet, "_out", a_out, "void", {symbolic::symbol("i")});
@@ -2460,8 +2552,7 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Tiled) {
 
     // Check
     EXPECT_EQ(dependencies1.size(), 1);
-    EXPECT_EQ(dependencies1.at("i"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies1.at("i"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
     EXPECT_EQ(dependencies2.size(), 0);
 }
 
@@ -2503,14 +2594,24 @@ TEST(LoopDependencyAnalysisTest, MapParameterized_1D) {
     auto& block = builder.add_block(body);
     auto& A_in = builder.add_access(block, "A");
     auto& A_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in1", base_desc}});
-    builder.add_memlet(block, A_in, "void", tasklet, "_in1",
-                       {symbolic::add(symbolic::mul(symbolic::symbol("m"), symbolic::symbol("i")),
-                                      symbolic::symbol("b"))});
-    builder.add_memlet(block, tasklet, "_out", A_out, "void",
-                       {symbolic::add(symbolic::mul(symbolic::symbol("m"), symbolic::symbol("i")),
-                                      symbolic::symbol("b"))});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in1", base_desc}});
+    builder.add_memlet(
+        block,
+        A_in,
+        "void",
+        tasklet,
+        "_in1",
+        {symbolic::add(symbolic::mul(symbolic::symbol("m"), symbolic::symbol("i")), symbolic::symbol("b"))}
+    );
+    builder.add_memlet(
+        block,
+        tasklet,
+        "_out",
+        A_out,
+        "void",
+        {symbolic::add(symbolic::mul(symbolic::symbol("m"), symbolic::symbol("i")), symbolic::symbol("b"))}
+    );
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -2553,14 +2654,15 @@ TEST(LoopDependencyAnalysisTest, Stencil_1D) {
     auto& A2 = builder.add_access(block, "A");
     auto& A3 = builder.add_access(block, "A");
     auto& B = builder.add_access(block, "B");
-    auto& tasklet =
-        builder.add_tasklet(block, data_flow::TaskletCode::fma, {"_out", base_desc},
-                            {{"_in1", base_desc}, {"_in2", base_desc}, {"_in3", base_desc}});
-    builder.add_memlet(block, A1, "void", tasklet, "_in1",
-                       {symbolic::sub(symbolic::symbol("i"), symbolic::integer(1))});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::fma,
+        {"_out", base_desc},
+        {{"_in1", base_desc}, {"_in2", base_desc}, {"_in3", base_desc}}
+    );
+    builder.add_memlet(block, A1, "void", tasklet, "_in1", {symbolic::sub(symbolic::symbol("i"), symbolic::integer(1))});
     builder.add_memlet(block, A2, "void", tasklet, "_in2", {symbolic::symbol("i")});
-    builder.add_memlet(block, A3, "void", tasklet, "_in3",
-                       {symbolic::add(symbolic::symbol("i"), symbolic::integer(1))});
+    builder.add_memlet(block, A3, "void", tasklet, "_in3", {symbolic::add(symbolic::symbol("i"), symbolic::integer(1))});
     builder.add_memlet(block, tasklet, "_out", B, "void", {symbolic::symbol("i")});
 
     // Analysis
@@ -2606,16 +2708,16 @@ TEST(LoopDependencyAnalysisTest, Gather_1D) {
     // Define indirection
     auto& A = builder.add_access(block_1, "A");
     auto& b = builder.add_access(block_1, "b");
-    auto& tasklet1 = builder.add_tasklet(block_1, data_flow::TaskletCode::assign,
-                                         {"_out", base_desc}, {{"_in", base_desc}});
+    auto& tasklet1 =
+        builder.add_tasklet(block_1, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
     builder.add_memlet(block_1, A, "void", tasklet1, "_in", {indvar});
     builder.add_memlet(block_1, tasklet1, "_out", b, "void", {});
 
     auto& block_2 = builder.add_block(body);
     auto& B = builder.add_access(block_2, "B");
     auto& C = builder.add_access(block_2, "C");
-    auto& tasklet = builder.add_tasklet(block_2, data_flow::TaskletCode::assign,
-                                        {"_out", base_desc}, {{"_in", base_desc}});
+    auto& tasklet =
+        builder.add_tasklet(block_2, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
     builder.add_memlet(block_2, B, "void", tasklet, "_in", {symbolic::symbol("b")});
     builder.add_memlet(block_2, tasklet, "_out", C, "void", {symbolic::symbol("i")});
 
@@ -2626,8 +2728,7 @@ TEST(LoopDependencyAnalysisTest, Gather_1D) {
 
     // Check
     EXPECT_EQ(dependencies.size(), 1);
-    EXPECT_EQ(dependencies.at("b"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies.at("b"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 }
 
 TEST(LoopDependencyAnalysisTest, Scatter_1D) {
@@ -2662,16 +2763,16 @@ TEST(LoopDependencyAnalysisTest, Scatter_1D) {
     auto& block_1 = builder.add_block(body);
     auto& A = builder.add_access(block_1, "A");
     auto& b = builder.add_access(block_1, "b");
-    auto& tasklet1 = builder.add_tasklet(block_1, data_flow::TaskletCode::assign,
-                                         {"_out", base_desc}, {{"_in", base_desc}});
+    auto& tasklet1 =
+        builder.add_tasklet(block_1, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
     builder.add_memlet(block_1, A, "void", tasklet1, "_in", {symbolic::symbol("i")});
     builder.add_memlet(block_1, tasklet1, "_out", b, "void", {});
 
     auto& block_2 = builder.add_block(body);
     auto& B = builder.add_access(block_2, "B");
     auto& C = builder.add_access(block_2, "C");
-    auto& tasklet = builder.add_tasklet(block_2, data_flow::TaskletCode::assign,
-                                        {"_out", base_desc}, {{"_in", base_desc}});
+    auto& tasklet =
+        builder.add_tasklet(block_2, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
     builder.add_memlet(block_2, B, "void", tasklet, "_in", {symbolic::symbol("i")});
     builder.add_memlet(block_2, tasklet, "_out", C, "void", {symbolic::symbol("b")});
 
@@ -2682,10 +2783,8 @@ TEST(LoopDependencyAnalysisTest, Scatter_1D) {
 
     // Check
     EXPECT_EQ(dependencies.size(), 2);
-    EXPECT_EQ(dependencies.at("b"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies.at("C"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies.at("b"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies.at("C"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 }
 
 TEST(LoopDependencyAnalysisTest, MapDeg2_1D) {
@@ -2716,10 +2815,8 @@ TEST(LoopDependencyAnalysisTest, MapDeg2_1D) {
     // Add computation
     auto& block = builder.add_block(body);
     auto& A = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"0", base_desc}});
-    builder.add_memlet(block, tasklet, "_out", A, "void",
-                       {symbolic::mul(symbolic::symbol("i"), symbolic::symbol("i"))});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"0", base_desc}});
+    builder.add_memlet(block, tasklet, "_out", A, "void", {symbolic::mul(symbolic::symbol("i"), symbolic::symbol("i"))});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -2773,13 +2870,12 @@ TEST(LoopDependencyAnalysisTest, Map_2D) {
     auto& a_in = builder.add_access(block, "A");
     auto& i = builder.add_access(block, "i");
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
-                                        {{"_in1", base_desc}, {"_in2", sym_desc}});
-    builder.add_memlet(block, a_in, "void", tasklet, "_in1",
-                       {symbolic::symbol("i"), symbolic::symbol("j")});
+    auto& tasklet = builder.add_tasklet(
+        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", sym_desc}}
+    );
+    builder.add_memlet(block, a_in, "void", tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")});
     builder.add_memlet(block, i, "void", tasklet, "_in2", {});
-    builder.add_memlet(block, tasklet, "_out", a_out, "void",
-                       {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_memlet(block, tasklet, "_out", a_out, "void", {symbolic::symbol("i"), symbolic::symbol("j")});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -2788,8 +2884,7 @@ TEST(LoopDependencyAnalysisTest, Map_2D) {
     // Check
     auto& dependencies = analysis.dependencies(loop);
     EXPECT_EQ(dependencies.size(), 1);
-    EXPECT_EQ(dependencies.at("j"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies.at("j"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 
     // Check loop 2
     auto& dependencies_2 = analysis.dependencies(loop_2);
@@ -2838,10 +2933,10 @@ TEST(LoopDependencyAnalysisTest, PartialSumInner_2D) {
     auto& A = builder.add_access(block, "A");
     auto& B1 = builder.add_access(block, "B");
     auto& B2 = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
-                                        {{"_in1", base_desc}, {"_in2", base_desc}});
-    builder.add_memlet(block, A, "void", tasklet, "_in1",
-                       {symbolic::symbol("i"), symbolic::symbol("j")});
+    auto& tasklet = builder.add_tasklet(
+        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", base_desc}}
+    );
+    builder.add_memlet(block, A, "void", tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")});
     builder.add_memlet(block, B1, "void", tasklet, "_in2", {symbolic::symbol("i")});
     builder.add_memlet(block, tasklet, "_out", B2, "void", {symbolic::symbol("i")});
 
@@ -2853,12 +2948,10 @@ TEST(LoopDependencyAnalysisTest, PartialSumInner_2D) {
 
     // Check
     EXPECT_EQ(dependencies1.size(), 1);
-    EXPECT_EQ(dependencies1.at("j"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies1.at("j"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 
     EXPECT_EQ(dependencies2.size(), 1);
-    EXPECT_EQ(dependencies2.at("B"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies2.at("B"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
 }
 
 TEST(LoopDependencyAnalysisTest, PartialSumOuter_2D) {
@@ -2903,8 +2996,9 @@ TEST(LoopDependencyAnalysisTest, PartialSumOuter_2D) {
     auto& A = builder.add_access(block, "A");
     auto& B1 = builder.add_access(block, "B");
     auto& B2 = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
-                                        {{"_in1", base_desc}, {"_in2", base_desc}});
+    auto& tasklet = builder.add_tasklet(
+        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", base_desc}}
+    );
     builder.add_memlet(block, A, "void", tasklet, "_in1", {indvar1, indvar2});
     builder.add_memlet(block, B1, "void", tasklet, "_in2", {indvar2});
     builder.add_memlet(block, tasklet, "_out", B2, "void", {indvar2});
@@ -2917,10 +3011,8 @@ TEST(LoopDependencyAnalysisTest, PartialSumOuter_2D) {
 
     // Check
     EXPECT_EQ(dependencies1.size(), 2);
-    EXPECT_EQ(dependencies1.at("j"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies1.at("B"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies1.at("j"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies1.at("B"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
 
     EXPECT_EQ(dependencies2.size(), 0);
 }
@@ -2967,12 +3059,10 @@ TEST(LoopDependencyAnalysisTest, Transpose_2D) {
     auto& block = builder.add_block(body2);
     auto& A = builder.add_access(block, "A");
     auto& B = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
-    builder.add_memlet(block, A, "void", tasklet, "_in",
-                       {symbolic::symbol("i"), symbolic::symbol("j")});
-    builder.add_memlet(block, tasklet, "_out", B, "void",
-                       {symbolic::symbol("j"), symbolic::symbol("i")});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
+    builder.add_memlet(block, A, "void", tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_memlet(block, tasklet, "_out", B, "void", {symbolic::symbol("j"), symbolic::symbol("i")});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -2983,8 +3073,7 @@ TEST(LoopDependencyAnalysisTest, Transpose_2D) {
     // Check
     EXPECT_EQ(dependencies2.size(), 0);
     EXPECT_EQ(dependencies1.size(), 1);
-    EXPECT_EQ(dependencies1.at("j"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies1.at("j"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 }
 
 TEST(LoopDependencyAnalysisTest, TransposeTriangle_2D) {
@@ -3025,12 +3114,10 @@ TEST(LoopDependencyAnalysisTest, TransposeTriangle_2D) {
     auto& block = builder.add_block(body2);
     auto& A_in = builder.add_access(block, "A");
     auto& A_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
-    builder.add_memlet(block, A_in, "void", tasklet, "_in",
-                       {symbolic::symbol("i"), symbolic::symbol("j")});
-    builder.add_memlet(block, tasklet, "_out", A_out, "void",
-                       {symbolic::symbol("j"), symbolic::symbol("i")});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
+    builder.add_memlet(block, A_in, "void", tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_memlet(block, tasklet, "_out", A_out, "void", {symbolic::symbol("j"), symbolic::symbol("i")});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -3040,8 +3127,7 @@ TEST(LoopDependencyAnalysisTest, TransposeTriangle_2D) {
 
     // Check
     EXPECT_EQ(dependencies1.size(), 1);
-    EXPECT_EQ(dependencies1.at("j"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies1.at("j"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
     EXPECT_EQ(dependencies2.size(), 0);
 }
 
@@ -3083,12 +3169,10 @@ TEST(LoopDependencyAnalysisTest, TransposeTriangleWithDiagonal_2D) {
     auto& block = builder.add_block(body2);
     auto& A_in = builder.add_access(block, "A");
     auto& A_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
-    builder.add_memlet(block, A_in, "void", tasklet, "_in",
-                       {symbolic::symbol("i"), symbolic::symbol("j")});
-    builder.add_memlet(block, tasklet, "_out", A_out, "void",
-                       {symbolic::symbol("j"), symbolic::symbol("i")});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
+    builder.add_memlet(block, A_in, "void", tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_memlet(block, tasklet, "_out", A_out, "void", {symbolic::symbol("j"), symbolic::symbol("i")});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -3098,8 +3182,7 @@ TEST(LoopDependencyAnalysisTest, TransposeTriangleWithDiagonal_2D) {
 
     // Check
     EXPECT_EQ(dependencies1.size(), 1);
-    EXPECT_EQ(dependencies1.at("j"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies1.at("j"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
     EXPECT_EQ(dependencies2.size(), 0);
 }
 
@@ -3143,8 +3226,8 @@ TEST(LoopDependencyAnalysisTest, TransposeSquare_2D) {
     auto& block = builder.add_block(body2);
     auto& A_in = builder.add_access(block, "A");
     auto& A_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
     builder.add_memlet(block, A_in, "void", tasklet, "_in", {indvar1, indvar2});
     builder.add_memlet(block, tasklet, "_out", A_out, "void", {indvar2, indvar1});
 
@@ -3157,10 +3240,8 @@ TEST(LoopDependencyAnalysisTest, TransposeSquare_2D) {
     // Check
     EXPECT_EQ(dependencies2.size(), 0);
     EXPECT_EQ(dependencies1.size(), 2);
-    EXPECT_EQ(dependencies1.at("A"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
-    EXPECT_EQ(dependencies1.at("j"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies1.at("A"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies1.at("j"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 }
 
 TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
@@ -3230,43 +3311,49 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
 
     // 303_block
     {
-        auto subset_in = symbolic::add(
-            indvar_11,
-            symbolic::add(
-                indvar_303,
-                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
-                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_19")))));
+        auto subset_in = symbolic::
+            add(indvar_11,
+                symbolic::
+                    add(indvar_303,
+                        symbolic::
+                            add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                                symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_19")))));
 
         auto& block_303_1 = builder.add_block(body_303);
         auto& _1_in = builder.add_access(block_303_1, "_1");
         auto& _330_out = builder.add_access(block_303_1, "_330");
-        auto& tasklet = builder.add_tasklet(block_303_1, data_flow::TaskletCode::neg,
-                                            {"_out", base_desc}, {{"_in", base_desc}});
+        auto& tasklet =
+            builder.add_tasklet(block_303_1, data_flow::TaskletCode::neg, {"_out", base_desc}, {{"_in", base_desc}});
         builder.add_memlet(block_303_1, _1_in, "void", tasklet, "_in", {subset_in});
         builder.add_memlet(block_303_1, tasklet, "_out", _330_out, "void", {});
 
-        auto subset_in_2 = symbolic::add(
-            indvar_11,
-            symbolic::add(
-                indvar_244,
-                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
-                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_303")))));
+        auto subset_in_2 = symbolic::
+            add(indvar_11,
+                symbolic::
+                    add(indvar_244,
+                        symbolic::
+                            add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                                symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_303")))));
 
-        auto subset_out = symbolic::add(
-            indvar_11,
-            symbolic::add(
-                indvar_244,
-                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
-                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_19")))));
+        auto subset_out = symbolic::
+            add(indvar_11,
+                symbolic::
+                    add(indvar_244,
+                        symbolic::
+                            add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                                symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_19")))));
 
         auto& block_303_2 = builder.add_block(body_303);
         auto& _1_in_2 = builder.add_access(block_303_2, "_1");
         auto& _1_in_3 = builder.add_access(block_303_2, "_1");
         auto& _330_in_2 = builder.add_access(block_303_2, "_330");
         auto& _1_out_2 = builder.add_access(block_303_2, "_1");
-        auto& tasklet_2 =
-            builder.add_tasklet(block_303_2, data_flow::TaskletCode::fma, {"_out", base_desc},
-                                {{"_in0", base_desc}, {"_in1", base_desc}, {"_in2", base_desc}});
+        auto& tasklet_2 = builder.add_tasklet(
+            block_303_2,
+            data_flow::TaskletCode::fma,
+            {"_out", base_desc},
+            {{"_in0", base_desc}, {"_in1", base_desc}, {"_in2", base_desc}}
+        );
         builder.add_memlet(block_303_2, _1_in_2, "void", tasklet_2, "_in0", {subset_in_2});
         builder.add_memlet(block_303_2, _1_in_3, "void", tasklet_2, "_in1", {subset_out});
         builder.add_memlet(block_303_2, _330_in_2, "void", tasklet_2, "_in2", {});
@@ -3275,19 +3362,20 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
 
     // block _19
     {
-        auto subset = symbolic::add(
-            indvar_11,
-            symbolic::add(
-                indvar_19,
-                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
-                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_19")))));
+        auto subset = symbolic::
+            add(indvar_11,
+                symbolic::
+                    add(indvar_19,
+                        symbolic::
+                            add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                                symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_19")))));
 
         auto& block_19 = builder.add_block(body_19);
         auto& _1_in = builder.add_access(block_19, "_1");
         auto& _258_out = builder.add_access(block_19, "_258");
-        auto& tasklet =
-            builder.add_tasklet(block_19, data_flow::TaskletCode::mul, {"_out", base_desc},
-                                {{"1.0f", base_desc}, {"_in1", base_desc}});
+        auto& tasklet = builder.add_tasklet(
+            block_19, data_flow::TaskletCode::mul, {"_out", base_desc}, {{"1.0f", base_desc}, {"_in1", base_desc}}
+        );
         builder.add_memlet(block_19, _1_in, "void", tasklet, "_in1", {subset});
         builder.add_memlet(block_19, tasklet, "_out", _258_out, "void", {});
     }
@@ -3314,32 +3402,35 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
 
     // block _267
     {
-        auto subset_in_1 = symbolic::add(
-            indvar_11,
-            symbolic::add(
-                indvar_267,
-                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
-                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_260")))));
+        auto subset_in_1 = symbolic::
+            add(indvar_11,
+                symbolic::
+                    add(indvar_267,
+                        symbolic::
+                            add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                                symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_260")))));
 
-        auto subset_in_2 = symbolic::add(
-            indvar_11,
-            symbolic::add(
-                indvar_19,
-                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
-                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_267")))));
+        auto subset_in_2 = symbolic::
+            add(indvar_11,
+                symbolic::
+                    add(indvar_19,
+                        symbolic::
+                            add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                                symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_267")))));
 
-        auto subset_in_3 = symbolic::add(
-            indvar_11,
-            symbolic::add(
-                indvar_19,
-                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
-                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_260")))));
+        auto subset_in_3 = symbolic::
+            add(indvar_11,
+                symbolic::
+                    add(indvar_19,
+                        symbolic::
+                            add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                                symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_260")))));
 
         auto& block_267_1 = builder.add_block(body_267);
         auto& _1_in_1 = builder.add_access(block_267_1, "_1");
         auto& _298_out = builder.add_access(block_267_1, "_298");
-        auto& tasklet = builder.add_tasklet(block_267_1, data_flow::TaskletCode::neg,
-                                            {"_out", base_desc}, {{"_in", base_desc}});
+        auto& tasklet =
+            builder.add_tasklet(block_267_1, data_flow::TaskletCode::neg, {"_out", base_desc}, {{"_in", base_desc}});
         builder.add_memlet(block_267_1, _1_in_1, "void", tasklet, "_in", {subset_in_1});
         builder.add_memlet(block_267_1, tasklet, "_out", _298_out, "void", {});
 
@@ -3348,9 +3439,12 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
         auto& _1_in_3 = builder.add_access(block_267_2, "_1");
         auto& _298_in_2 = builder.add_access(block_267_2, "_298");
         auto& _1_out_2 = builder.add_access(block_267_2, "_1");
-        auto& tasklet_2 =
-            builder.add_tasklet(block_267_2, data_flow::TaskletCode::fma, {"_out", base_desc},
-                                {{"_in0", base_desc}, {"_in1", base_desc}, {"_in2", base_desc}});
+        auto& tasklet_2 = builder.add_tasklet(
+            block_267_2,
+            data_flow::TaskletCode::fma,
+            {"_out", base_desc},
+            {{"_in0", base_desc}, {"_in1", base_desc}, {"_in2", base_desc}}
+        );
         builder.add_memlet(block_267_2, _298_in_2, "void", tasklet_2, "_in0", {});
         builder.add_memlet(block_267_2, _1_in_2, "void", tasklet_2, "_in1", {subset_in_2});
         builder.add_memlet(block_267_2, _1_in_3, "void", tasklet_2, "_in2", {subset_in_3});
@@ -3359,20 +3453,21 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
 
     // block _260
     {
-        auto subset = symbolic::add(
-            indvar_11,
-            symbolic::add(
-                indvar_19,
-                symbolic::add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
-                              symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_260")))));
+        auto subset = symbolic::
+            add(indvar_11,
+                symbolic::
+                    add(indvar_19,
+                        symbolic::
+                            add(symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_11")),
+                                symbolic::mul(symbolic::symbol("_0"), symbolic::symbol("_260")))));
 
         auto& block_260 = builder.add_block(body_260);
         auto& _1_in = builder.add_access(block_260, "_1");
         auto& _1_out = builder.add_access(block_260, "_1");
         auto& _258_in = builder.add_access(block_260, "_258");
-        auto& tasklet =
-            builder.add_tasklet(block_260, data_flow::TaskletCode::mul, {"_out", base_desc},
-                                {{"_in0", base_desc}, {"_in1", base_desc}});
+        auto& tasklet = builder.add_tasklet(
+            block_260, data_flow::TaskletCode::mul, {"_out", base_desc}, {{"_in0", base_desc}, {"_in1", base_desc}}
+        );
         builder.add_memlet(block_260, _258_in, "void", tasklet, "_in0", {});
         builder.add_memlet(block_260, _1_in, "void", tasklet, "_in1", {subset});
         builder.add_memlet(block_260, tasklet, "_out", _1_out, "void", {subset});
@@ -3390,64 +3485,39 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
 
     // Check
     EXPECT_EQ(dependencies_11.size(), 9);
-    EXPECT_EQ(dependencies_11.at("_1"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
-    EXPECT_EQ(dependencies_11.at("_330"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies_11.at("_19"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies_11.at("_244"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies_11.at("_303"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies_11.at("_258"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies_11.at("_260"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies_11.at("_267"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies_11.at("_298"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_11.at("_1"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies_11.at("_330"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_11.at("_19"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_11.at("_244"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_11.at("_303"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_11.at("_258"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_11.at("_260"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_11.at("_267"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_11.at("_298"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 
     EXPECT_EQ(dependencies_19.size(), 8);
-    EXPECT_EQ(dependencies_19.at("_1"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
-    EXPECT_EQ(dependencies_19.at("_330"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies_19.at("_244"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies_19.at("_303"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies_19.at("_258"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies_19.at("_260"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies_19.at("_267"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies_19.at("_298"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_19.at("_1"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies_19.at("_330"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_19.at("_244"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_19.at("_303"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_19.at("_258"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_19.at("_260"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_19.at("_267"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_19.at("_298"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 
     EXPECT_EQ(dependencies_244.size(), 2);
-    EXPECT_EQ(dependencies_244.at("_330"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies_244.at("_303"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_244.at("_330"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_244.at("_303"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 
     EXPECT_EQ(dependencies_303.size(), 2);
-    EXPECT_EQ(dependencies_303.at("_1"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
-    EXPECT_EQ(dependencies_303.at("_330"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_303.at("_1"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies_303.at("_330"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 
     EXPECT_EQ(dependencies_267.size(), 2);
-    EXPECT_EQ(dependencies_267.at("_1"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
-    EXPECT_EQ(dependencies_267.at("_298"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_267.at("_1"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies_267.at("_298"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 
     EXPECT_EQ(dependencies_260.size(), 2);
-    EXPECT_EQ(dependencies_260.at("_267"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    EXPECT_EQ(dependencies_260.at("_298"),
-              analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_260.at("_267"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies_260.at("_298"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 }

@@ -52,12 +52,10 @@ TEST(LoopSlicingTest, FirstIteration) {
     auto new_loop = dynamic_cast<structured_control_flow::For*>(&root.at(0).first);
     EXPECT_NE(new_loop, nullptr);
     EXPECT_TRUE(symbolic::eq(new_loop->init(), symbolic::integer(0)));
-    EXPECT_TRUE(symbolic::eq(new_loop->condition(),
-                             symbolic::Lt(new_loop->indvar(), symbolic::integer(1))));
+    EXPECT_TRUE(symbolic::eq(new_loop->condition(), symbolic::Lt(new_loop->indvar(), symbolic::integer(1))));
 
     auto new_loop2 = dynamic_cast<structured_control_flow::For*>(&root.at(1).first);
     EXPECT_NE(new_loop2, nullptr);
     EXPECT_TRUE(symbolic::eq(new_loop2->init(), symbolic::integer(1)));
-    EXPECT_TRUE(symbolic::eq(new_loop2->condition(),
-                             symbolic::Lt(new_loop2->indvar(), symbolic::symbol("N"))));
+    EXPECT_TRUE(symbolic::eq(new_loop2->condition(), symbolic::Lt(new_loop2->indvar(), symbolic::symbol("N"))));
 }

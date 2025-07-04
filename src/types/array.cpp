@@ -6,11 +6,14 @@ namespace types {
 Array::Array(const IType& element_type, const symbolic::Expression& num_elements)
     : element_type_(element_type.clone()), num_elements_(num_elements) {};
 
-Array::Array(StorageType storage_type, size_t alignment, const std::string& initializer,
-             const IType& element_type, const symbolic::Expression& num_elements)
-    : IType(storage_type, alignment, initializer),
-      element_type_(element_type.clone()),
-      num_elements_(num_elements) {};
+Array::Array(
+    StorageType storage_type,
+    size_t alignment,
+    const std::string& initializer,
+    const IType& element_type,
+    const symbolic::Expression& num_elements
+)
+    : IType(storage_type, alignment, initializer), element_type_(element_type.clone()), num_elements_(num_elements) {};
 
 PrimitiveType Array::primitive_type() const { return this->element_type_->primitive_type(); };
 
@@ -32,11 +35,11 @@ bool Array::operator==(const IType& other) const {
 };
 
 std::unique_ptr<IType> Array::clone() const {
-    return std::make_unique<Array>(this->storage_type(), this->alignment(), this->initializer(),
-                                   *this->element_type_, this->num_elements_);
+    return std::make_unique<
+        Array>(this->storage_type(), this->alignment(), this->initializer(), *this->element_type_, this->num_elements_);
 };
 
 std::string Array::print() const { return "Array(" + this->element_type_->print() + ")"; };
 
-}  // namespace types
-}  // namespace sdfg
+} // namespace types
+} // namespace sdfg

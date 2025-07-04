@@ -25,8 +25,7 @@ bool is_monotonic_affine(const Expression& expr, const Symbol& sym, const Assump
     if (offset == SymEngine::null) {
         return false;
     }
-    if (!SymEngine::is_a<SymEngine::Integer>(*mul) ||
-        !SymEngine::is_a<SymEngine::Integer>(*offset)) {
+    if (!SymEngine::is_a<SymEngine::Integer>(*mul) || !SymEngine::is_a<SymEngine::Integer>(*offset)) {
         return false;
     }
     auto mul_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(mul);
@@ -43,8 +42,7 @@ bool is_monotonic_pow(const Expression& expr, const Symbol& sym, const Assumptio
         auto pow = SymEngine::rcp_dynamic_cast<const SymEngine::Pow>(expr);
         auto base = pow->get_base();
         auto exp = pow->get_exp();
-        if (SymEngine::is_a<SymEngine::Integer>(*exp) &&
-            SymEngine::is_a<SymEngine::Symbol>(*base)) {
+        if (SymEngine::is_a<SymEngine::Integer>(*exp) && SymEngine::is_a<SymEngine::Symbol>(*base)) {
             auto exp_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(exp);
             if (exp_int->as_int() <= 0) {
                 return false;
@@ -87,8 +85,7 @@ bool is_contiguous(const Expression& expr, const Symbol& sym, const Assumptions&
     if (offset == SymEngine::null) {
         return false;
     }
-    if (!SymEngine::is_a<SymEngine::Integer>(*mul) ||
-        !SymEngine::is_a<SymEngine::Integer>(*offset)) {
+    if (!SymEngine::is_a<SymEngine::Integer>(*mul) || !SymEngine::is_a<SymEngine::Integer>(*offset)) {
         return false;
     }
     auto mul_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(mul);
@@ -100,6 +97,6 @@ bool is_contiguous(const Expression& expr, const Symbol& sym, const Assumptions&
     return false;
 }
 
-}  // namespace series
-}  // namespace symbolic
-}  // namespace sdfg
+} // namespace series
+} // namespace symbolic
+} // namespace sdfg
