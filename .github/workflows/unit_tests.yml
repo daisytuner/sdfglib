@@ -22,7 +22,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10' 
+          python-version: '3.10'
 
       - name: Install dependencies
         if: matrix.os == 'ubuntu-22.04'
@@ -38,15 +38,26 @@ jobs:
           sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main"
           sudo add-apt-repository "deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main"
           sudo apt-get update
-          sudo apt-get install -y clang-format-19 clang-19 clang++-19 llvm-19
+          sudo apt-get install -y clang-format-19 clang-tidy-19 clang-19 clang++-19 llvm-19
 
           pip install gcovr pytest
 
-      - name: Build and test
+      - name: Formatting
+        run: clang-format-19 -style=file --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
+
+      - name: CMAKE Setup
         run: |
           mkdir build
           cd build
-          cmake -G Ninja -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Debug -DSDFGLIB_ENABLE_COVERAGE=ON -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
+          cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Debug -DSDFGLIB_ENABLE_COVERAGE=ON -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
+          ln -s compile_commands.json ../compile_commands.json
+
+      - name: Linting
+        run: clang-tidy-19 --config-file=".clang-tidy" src/**/*.cpp tests/**/*.cpp include/**/*.h
+
+      - name: Build and test
+        run: |
+          cd build
           ninja -j$(nproc)
 
           ./tests/sdfglib_test
@@ -59,6 +70,3 @@ jobs:
 
       - name: Coveralls
         uses: coverallsapp/github-action@v2
-
-      - name: Linting
-        run: clang-format-19 --dry-run src/**/*.cpp tests/**/*.cpp include/**/*.h
