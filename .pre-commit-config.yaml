@@ -4,3 +4,23 @@ repos:
     hooks:
       - id: clang-format
         args: [-style=file]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0 # Use the latest stable revision
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+
+  - repo: local
+    hooks:
+      - id: custom-clang-tidy
+        name: clang-tidy
+        description: Run clang-tidy and apply automatic fixes for C/C++ files.
+        language: system # We're executing a system command (bash)
+        types: [c++, c] # Only run on C/C++ files
+        files: '\.(c|cc|cpp|cxx|h|hh|hpp|hxx)$' # Regex for C/C++ file extensions
+        pass_filenames: true # Pass staged filenames as arguments to the entry command
+        # The 'entry' command contains the core logic that was in the wrapper script
+        entry: bash -c 'clang-tidy-19 -fix-errors --config-file=".clang-tidy" "$@"'
