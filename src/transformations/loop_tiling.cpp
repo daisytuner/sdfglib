@@ -14,8 +14,7 @@ LoopTiling::LoopTiling(structured_control_flow::StructuredLoop& loop, size_t til
 
 std::string LoopTiling::name() const { return "LoopTiling"; };
 
-bool LoopTiling::can_be_applied(builder::StructuredSDFGBuilder& builder,
-                                analysis::AnalysisManager& analysis_manager) {
+bool LoopTiling::can_be_applied(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     if (this->tile_size_ <= 1) {
         return false;
     }
@@ -24,13 +23,11 @@ bool LoopTiling::can_be_applied(builder::StructuredSDFGBuilder& builder,
     return analysis::LoopAnalysis::is_contiguous(&loop_, assumptions_analysis);
 };
 
-void LoopTiling::apply(builder::StructuredSDFGBuilder& builder,
-                       analysis::AnalysisManager& analysis_manager) {
+void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
 
     auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
-    auto parent =
-        static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&loop_));
+    auto parent = static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&loop_));
 
     auto indvar = loop_.indvar();
 
@@ -44,22 +41,22 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder,
 
     structured_control_flow::StructuredLoop* outer_loop = nullptr;
     if (auto map = dynamic_cast<structured_control_flow::Map*>(&loop_)) {
-        outer_loop = &builder
-                          .add_map_before(*parent, loop_, outer_indvar, outer_condition,
-                                          loop_.init(), outer_update, map->schedule_type())
-                          .first;
+        outer_loop =
+            &builder
+                 .add_map_before(
+                     *parent, loop_, outer_indvar, outer_condition, loop_.init(), outer_update, map->schedule_type()
+                 )
+                 .first;
     } else {
-        outer_loop = &builder
-                          .add_for_before(*parent, loop_, outer_indvar, outer_condition,
-                                          loop_.init(), outer_update)
-                          .first;
+        outer_loop =
+            &builder.add_for_before(*parent, loop_, outer_indvar, outer_condition, loop_.init(), outer_update).first;
     }
 
     // Step 2: Redefine inner loop
     auto inner_indvar = indvar;
     auto inner_init = outer_indvar;
-    auto inner_condition_tile = symbolic::Lt(
-        inner_indvar, symbolic::add(outer_indvar, symbolic::integer(this->tile_size_)));
+    auto inner_condition_tile =
+        symbolic::Lt(inner_indvar, symbolic::add(outer_indvar, symbolic::integer(this->tile_size_)));
     auto inner_condition = symbolic::And(inner_condition_tile, loop_.condition());
     auto inner_update = symbolic::add(inner_indvar, symbolic::integer(1));
     loop_.update() = inner_update;
@@ -78,19 +75,17 @@ void LoopTiling::to_json(nlohmann::json& j) const {
     j["tile_size"] = tile_size_;
 };
 
-LoopTiling LoopTiling::from_json(builder::StructuredSDFGBuilder& builder,
-                                 const nlohmann::json& desc) {
+LoopTiling LoopTiling::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
     auto loop_id = desc["loop_element_id"].get<size_t>();
     size_t tile_size = desc["tile_size"].get<size_t>();
     auto element = builder.find_element_by_id(loop_id);
     if (!element) {
-        throw InvalidTransformationDescriptionException("Element with ID " +
-                                                        std::to_string(loop_id) + " not found.");
+        throw InvalidTransformationDescriptionException("Element with ID " + std::to_string(loop_id) + " not found.");
     }
     auto loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element);
 
     return LoopTiling(*loop, tile_size);
 };
 
-}  // namespace transformations
-}  // namespace sdfg
+} // namespace transformations
+} // namespace sdfg

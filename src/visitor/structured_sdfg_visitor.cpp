@@ -3,8 +3,8 @@
 namespace sdfg {
 namespace visitor {
 
-StructuredSDFGVisitor::StructuredSDFGVisitor(builder::StructuredSDFGBuilder& builder,
-                                             analysis::AnalysisManager& analysis_manager)
+StructuredSDFGVisitor::
+    StructuredSDFGVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
     : builder_(builder), analysis_manager_(analysis_manager) {}
 
 bool StructuredSDFGVisitor::visit() {
@@ -87,50 +87,41 @@ bool StructuredSDFGVisitor::visit(structured_control_flow::Sequence& parent) {
     return false;
 };
 
-bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent,
-                                   structured_control_flow::Block& node) {
+bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent, structured_control_flow::Block& node) {
     return false;
 };
 
-bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent,
-                                   structured_control_flow::Sequence& node) {
+bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) {
     return false;
 };
 
-bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent,
-                                   structured_control_flow::Return& node) {
+bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent, structured_control_flow::Return& node) {
     return false;
 };
 
-bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent,
-                                   structured_control_flow::IfElse& node) {
+bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& node) {
     return false;
 };
 
-bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent,
-                                   structured_control_flow::While& node) {
+bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent, structured_control_flow::While& node) {
     return false;
 };
 
-bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent,
-                                   structured_control_flow::Continue& node) {
+bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent, structured_control_flow::Continue& node) {
     return false;
 };
 
-bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent,
-                                   structured_control_flow::Break& node) {
+bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent, structured_control_flow::Break& node) {
     return false;
 };
 
-bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent,
-                                   structured_control_flow::For& node) {
+bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent, structured_control_flow::For& node) {
     return false;
 };
 
-bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent,
-                                   structured_control_flow::Map& node) {
+bool StructuredSDFGVisitor::accept(structured_control_flow::Sequence& parent, structured_control_flow::Map& node) {
     return false;
 };
 
-}  // namespace visitor
-}  // namespace sdfg
+} // namespace visitor
+} // namespace sdfg

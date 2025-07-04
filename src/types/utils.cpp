@@ -3,8 +3,7 @@
 namespace sdfg {
 namespace types {
 
-const types::IType& infer_type(const sdfg::Function& function, const types::IType& type,
-                               const data_flow::Subset& subset) {
+const types::IType& infer_type(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset) {
     if (subset.empty()) {
         return type;
     }
@@ -31,21 +30,23 @@ const types::IType& infer_type(const sdfg::Function& function, const types::ITyp
     throw InvalidSDFGException("Type inference failed");
 };
 
-std::unique_ptr<types::IType> recombine_array_type(const types::IType& type, uint depth,
-                                                   const types::IType& inner_type) {
+std::unique_ptr<types::IType> recombine_array_type(const types::IType& type, uint depth, const types::IType& inner_type) {
     if (depth == 0) {
         return inner_type.clone();
     } else {
         if (auto atype = dynamic_cast<const types::Array*>(&type)) {
             return std::make_unique<types::Array>(
-                atype->storage_type(), atype->alignment(), atype->initializer(),
+                atype->storage_type(),
+                atype->alignment(),
+                atype->initializer(),
                 *recombine_array_type(atype->element_type(), depth - 1, inner_type).get(),
-                atype->num_elements());
+                atype->num_elements()
+            );
         } else {
             throw std::runtime_error("construct_type: Non array types are not supported yet!");
         }
     }
 };
 
-}  // namespace types
-}  // namespace sdfg
+} // namespace types
+} // namespace sdfg

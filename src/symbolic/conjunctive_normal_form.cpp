@@ -23,8 +23,7 @@ CNF conjunctive_normal_form(const Condition& cond) {
     // Goal: Convert a condition into ANDs of ORs
 
     // Case: Comparison with boolean literals
-    if (SymEngine::is_a<SymEngine::Equality>(*cond) ||
-        SymEngine::is_a<SymEngine::Unequality>(*cond)) {
+    if (SymEngine::is_a<SymEngine::Equality>(*cond) || SymEngine::is_a<SymEngine::Unequality>(*cond)) {
         auto expr = SymEngine::rcp_static_cast<const SymEngine::Relational>(cond);
         auto arg1 = expr->get_arg1();
         auto arg2 = expr->get_arg2();
@@ -34,35 +33,31 @@ CNF conjunctive_normal_form(const Condition& cond) {
 
         if (SymEngine::is_a<SymEngine::Equality>(*expr)) {
             if (symbolic::is_true(arg1)) {
-                return conjunctive_normal_form(
-                    SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2));
+                return conjunctive_normal_form(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2));
             } else if (symbolic::is_true(arg2)) {
-                return conjunctive_normal_form(
-                    SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1));
+                return conjunctive_normal_form(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1));
             } else if (symbolic::is_false(arg1)) {
-                return conjunctive_normal_form(
-                    symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2)));
+                return conjunctive_normal_form(symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2))
+                );
             } else if (symbolic::is_false(arg2)) {
-                return conjunctive_normal_form(
-                    symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1)));
+                return conjunctive_normal_form(symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1))
+                );
             }
         } else if (SymEngine::is_a<SymEngine::Unequality>(*expr)) {
             if (symbolic::is_true(arg1)) {
-                return conjunctive_normal_form(
-                    symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2)));
+                return conjunctive_normal_form(symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2))
+                );
             } else if (symbolic::is_true(arg2)) {
-                return conjunctive_normal_form(
-                    symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1)));
+                return conjunctive_normal_form(symbolic::Not(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1))
+                );
             } else if (symbolic::is_false(arg1)) {
-                return conjunctive_normal_form(
-                    SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2));
+                return conjunctive_normal_form(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg2));
             } else if (symbolic::is_false(arg2)) {
-                return conjunctive_normal_form(
-                    SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1));
+                return conjunctive_normal_form(SymEngine::rcp_static_cast<const SymEngine::Boolean>(arg1));
             }
         }
 
-        return {{cond}};  // Return the condition as a single clause
+        return {{cond}}; // Return the condition as a single clause
     }
 
     // Case: Not
@@ -174,5 +169,5 @@ CNF conjunctive_normal_form(const Condition& cond) {
     return {{cond}};
 }
 
-}  // namespace symbolic
-}  // namespace sdfg
+} // namespace symbolic
+} // namespace sdfg

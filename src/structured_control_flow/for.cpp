@@ -6,9 +6,14 @@
 namespace sdfg {
 namespace structured_control_flow {
 
-For::For(size_t element_id, const DebugInfo& debug_info, symbolic::Symbol indvar,
-         symbolic::Expression init, symbolic::Expression update, symbolic::Condition condition)
+For::
+    For(size_t element_id,
+        const DebugInfo& debug_info,
+        symbolic::Symbol indvar,
+        symbolic::Expression init,
+        symbolic::Expression update,
+        symbolic::Condition condition)
     : StructuredLoop(element_id, debug_info, indvar, init, update, condition) {};
 
-}  // namespace structured_control_flow
-}  // namespace sdfg
+} // namespace structured_control_flow
+} // namespace sdfg

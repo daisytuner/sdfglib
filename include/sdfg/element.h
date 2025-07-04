@@ -11,14 +11,14 @@ namespace sdfg {
 namespace builder {
 class SDFGBuilder;
 class StructuredSDFGBuilder;
-}  // namespace builder
+} // namespace builder
 
 namespace serializer {
 class JSONSerializer;
-}  // namespace serializer
+} // namespace serializer
 
 class DebugInfo {
-   private:
+private:
     std::string filename_;
     size_t start_line_;
     size_t start_column_;
@@ -27,11 +27,10 @@ class DebugInfo {
 
     bool has_;
 
-   public:
+public:
     DebugInfo();
 
-    DebugInfo(std::string filename, size_t start_line, size_t start_column, size_t end_line,
-              size_t end_column);
+    DebugInfo(std::string filename, size_t start_line, size_t start_column, size_t end_line, size_t end_column);
 
     bool has() const;
 
@@ -53,11 +52,11 @@ class Element {
     friend class builder::StructuredSDFGBuilder;
     friend class serializer::JSONSerializer;
 
-   protected:
+protected:
     size_t element_id_;
     DebugInfo debug_info_;
 
-   public:
+public:
     Element(size_t element_id, const DebugInfo& debug_info);
 
     virtual ~Element() = default;
@@ -66,8 +65,7 @@ class Element {
 
     const DebugInfo& debug_info() const;
 
-    virtual void replace(const symbolic::Expression& old_expression,
-                         const symbolic::Expression& new_expression) = 0;
+    virtual void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) = 0;
 };
 
-}  // namespace sdfg
+} // namespace sdfg

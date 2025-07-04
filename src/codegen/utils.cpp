@@ -24,13 +24,13 @@ void PrettyPrinter::clear() {
 };
 
 // Overload for manipulators (like std::endl)
-PrettyPrinter& PrettyPrinter::operator<<(std::ostream& (*manip)(std::ostream&)) {
+PrettyPrinter& PrettyPrinter::operator<<(std::ostream& (*manip)(std::ostream&) ) {
     if (frozen_) {
         throw std::runtime_error("PrettyPrinter is frozen");
     }
     stream << manip;
     // Reset indent application on new lines
-    if (manip == static_cast<std::ostream& (*)(std::ostream&)>(std::endl)) {
+    if (manip == static_cast<std::ostream& (*) (std::ostream&)>(std::endl)) {
         isNewLine = true;
     }
     return *this;
@@ -46,20 +46,18 @@ void PrettyPrinter::applyIndent() {
 
 Reference::Reference(const types::IType& reference_) : reference_(reference_.clone()) {};
 
-Reference::Reference(types::StorageType storage_type, size_t alignment,
-                     const std::string& initializer, const types::IType& reference_)
+Reference::Reference(
+    types::StorageType storage_type, size_t alignment, const std::string& initializer, const types::IType& reference_
+)
     : IType(storage_type, alignment, initializer), reference_(reference_.clone()) {};
 
 std::unique_ptr<types::IType> Reference::clone() const {
-    return std::make_unique<Reference>(this->storage_type(), this->alignment(), this->initializer(),
-                                       *this->reference_);
+    return std::make_unique<Reference>(this->storage_type(), this->alignment(), this->initializer(), *this->reference_);
 };
 
 types::TypeID Reference::type_id() const { return types::TypeID::Reference; };
 
-types::PrimitiveType Reference::primitive_type() const {
-    return this->reference_->primitive_type();
-};
+types::PrimitiveType Reference::primitive_type() const { return this->reference_->primitive_type(); };
 
 bool Reference::is_symbol() const { return false; };
 
@@ -67,8 +65,7 @@ const types::IType& Reference::reference_type() const { return *this->reference_
 
 bool Reference::operator==(const types::IType& other) const {
     if (auto reference = dynamic_cast<const Reference*>(&other)) {
-        return *(this->reference_) == *reference->reference_ &&
-               this->alignment_ == reference->alignment_;
+        return *(this->reference_) == *reference->reference_ && this->alignment_ == reference->alignment_;
     } else {
         return false;
     }
@@ -76,5 +73,5 @@ bool Reference::operator==(const types::IType& other) const {
 
 std::string Reference::print() const { return "Reference(" + this->reference_->print() + ")"; };
 
-}  // namespace codegen
-}  // namespace sdfg
+} // namespace codegen
+} // namespace sdfg

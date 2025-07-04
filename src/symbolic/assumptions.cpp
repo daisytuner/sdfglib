@@ -6,28 +6,19 @@ namespace sdfg {
 namespace symbolic {
 
 Assumption::Assumption()
-    : symbol_(symbolic::symbol("")),
-      lower_bound_(symbolic::infty(-1)),
-      upper_bound_(symbolic::infty(1)),
-      constant_(false),
-      map_(SymEngine::null) {
+    : symbol_(symbolic::symbol("")), lower_bound_(symbolic::infty(-1)), upper_bound_(symbolic::infty(1)),
+      constant_(false), map_(SymEngine::null) {
 
       };
 
 Assumption::Assumption(const Symbol& symbol)
-    : symbol_(symbol),
-      lower_bound_(symbolic::infty(-1)),
-      upper_bound_(symbolic::infty(1)),
-      constant_(false),
+    : symbol_(symbol), lower_bound_(symbolic::infty(-1)), upper_bound_(symbolic::infty(1)), constant_(false),
       map_(SymEngine::null) {
 
       };
 
 Assumption::Assumption(const Assumption& a)
-    : symbol_(a.symbol_),
-      lower_bound_(a.lower_bound_),
-      upper_bound_(a.upper_bound_),
-      constant_(a.constant_),
+    : symbol_(a.symbol_), lower_bound_(a.lower_bound_), upper_bound_(a.upper_bound_), constant_(a.constant_),
       map_(a.map_) {
 
       };
@@ -130,8 +121,12 @@ Assumption Assumption::create(const symbolic::Symbol& symbol, const types::IType
     }
 };
 
-void upper_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
-                  symbolic::ExpressionSet& ubs, symbolic::ExpressionSet& visited) {
+void upper_bounds(
+    const symbolic::Symbol& sym,
+    const Assumptions& assumptions,
+    symbolic::ExpressionSet& ubs,
+    symbolic::ExpressionSet& visited
+) {
     if (visited.find(sym) != visited.end()) {
         return;
     }
@@ -164,14 +159,17 @@ void upper_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
     }
 };
 
-void upper_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
-                  symbolic::ExpressionSet& ubs) {
+void upper_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions, symbolic::ExpressionSet& ubs) {
     symbolic::ExpressionSet visited;
     upper_bounds(sym, assumptions, ubs, visited);
 };
 
-void lower_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
-                  symbolic::ExpressionSet& lbs, symbolic::ExpressionSet& visited) {
+void lower_bounds(
+    const symbolic::Symbol& sym,
+    const Assumptions& assumptions,
+    symbolic::ExpressionSet& lbs,
+    symbolic::ExpressionSet& visited
+) {
     if (visited.find(sym) != visited.end()) {
         return;
     }
@@ -204,11 +202,10 @@ void lower_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
     }
 };
 
-void lower_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
-                  symbolic::ExpressionSet& lbs) {
+void lower_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions, symbolic::ExpressionSet& lbs) {
     symbolic::ExpressionSet visited;
     lower_bounds(sym, assumptions, lbs, visited);
 };
 
-}  // namespace symbolic
-}  // namespace sdfg
+} // namespace symbolic
+} // namespace sdfg

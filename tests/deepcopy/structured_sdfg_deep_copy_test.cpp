@@ -38,8 +38,7 @@ TEST(StructuredSDFGDeepCopy, Block_WithAssignments) {
 
     builder_source.add_container("a", types::Scalar(types::PrimitiveType::Int32));
     builder_source.add_container("b", types::Scalar(types::PrimitiveType::Int32));
-    auto& block =
-        builder_source.add_block(root_source, {{symbolic::symbol("a"), symbolic::symbol("b")}});
+    auto& block = builder_source.add_block(root_source, {{symbolic::symbol("a"), symbolic::symbol("b")}});
 
     builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
@@ -61,27 +60,37 @@ TEST(StructuredSDFGDeepCopy, Block_WithAssignments) {
 
 inline data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
 class BarrierLocalLibraryNode : public data_flow::LibraryNode {
-   public:
-    BarrierLocalLibraryNode(size_t element_id, const DebugInfo& debug_info,
-                            const graph::Vertex vertex, data_flow::DataFlowGraph& parent,
-                            const data_flow::LibraryNodeCode& code,
-                            const std::vector<std::string>& outputs,
-                            const std::vector<std::string>& inputs, const bool side_effect)
-        : data_flow::LibraryNode(element_id, debug_info, vertex, parent, code, outputs, inputs,
-                                 side_effect) {}
+public:
+    BarrierLocalLibraryNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent,
+        const data_flow::LibraryNodeCode& code,
+        const std::vector<std::string>& outputs,
+        const std::vector<std::string>& inputs,
+        const bool side_effect
+    )
+        : data_flow::LibraryNode(element_id, debug_info, vertex, parent, code, outputs, inputs, side_effect) {}
 
-    virtual std::unique_ptr<data_flow::DataFlowNode> clone(
-        size_t element_id, const graph::Vertex vertex,
-        data_flow::DataFlowGraph& parent) const override {
-        return std::make_unique<BarrierLocalLibraryNode>(element_id, this->debug_info(), vertex,
-                                                         parent, this->code(), this->outputs(),
-                                                         this->inputs(), this->side_effect());
+    virtual std::unique_ptr<data_flow::DataFlowNode>
+    clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override {
+        return std::make_unique<BarrierLocalLibraryNode>(
+            element_id,
+            this->debug_info(),
+            vertex,
+            parent,
+            this->code(),
+            this->outputs(),
+            this->inputs(),
+            this->side_effect()
+        );
     }
 
     virtual symbolic::SymbolSet symbols() const override { return {}; }
 
-    virtual void replace(const symbolic::Expression& old_expression,
-                         const symbolic::Expression& new_expression) override {
+    virtual void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression)
+        override {
         // Do nothing
     }
 };
@@ -92,8 +101,7 @@ TEST(StructuredSDFGDeepCopy, Block_WithLibraryNodebarrier_local) {
     auto& root_source = sdfg_source.root();
 
     auto& block = builder_source.add_block(root_source);
-    auto& barrier = builder_source.add_library_node<BarrierLocalLibraryNode>(block, BARRIER_LOCAL,
-                                                                             {}, {}, false);
+    auto& barrier = builder_source.add_library_node<BarrierLocalLibraryNode>(block, BARRIER_LOCAL, {}, {}, false);
 
     builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
@@ -111,13 +119,10 @@ TEST(StructuredSDFGDeepCopy, Block_WithLibraryNodebarrier_local) {
     EXPECT_EQ(inserted_root->size(), 1);
     EXPECT_TRUE(dynamic_cast<structured_control_flow::Block*>(&inserted_root->at(0).first));
     EXPECT_EQ(inserted_root->at(0).second.size(), 0);
-    auto inserted_block =
-        dynamic_cast<structured_control_flow::Block*>(&inserted_root->at(0).first);
+    auto inserted_block = dynamic_cast<structured_control_flow::Block*>(&inserted_root->at(0).first);
     EXPECT_EQ(inserted_block->dataflow().nodes().size(), 1);
-    EXPECT_TRUE(
-        dynamic_cast<data_flow::LibraryNode*>(&(*inserted_block->dataflow().nodes().begin())));
-    auto inserted_barrier =
-        dynamic_cast<data_flow::LibraryNode*>(&(*inserted_block->dataflow().nodes().begin()));
+    EXPECT_TRUE(dynamic_cast<data_flow::LibraryNode*>(&(*inserted_block->dataflow().nodes().begin())));
+    auto inserted_barrier = dynamic_cast<data_flow::LibraryNode*>(&(*inserted_block->dataflow().nodes().begin()));
     EXPECT_EQ(inserted_barrier->code(), BARRIER_LOCAL);
     EXPECT_EQ(inserted_barrier->side_effect(), barrier.side_effect());
     EXPECT_TRUE(dynamic_cast<BarrierLocalLibraryNode*>(inserted_barrier));
@@ -155,8 +160,7 @@ TEST(StructuredSDFGDeepCopy, Sequence_WithAssignments) {
 
     builder_source.add_container("a", types::Scalar(types::PrimitiveType::Int32));
     builder_source.add_container("b", types::Scalar(types::PrimitiveType::Int32));
-    auto& sequence =
-        builder_source.add_sequence(root_source, {{symbolic::symbol("a"), symbolic::symbol("b")}});
+    auto& sequence = builder_source.add_sequence(root_source, {{symbolic::symbol("a"), symbolic::symbol("b")}});
 
     builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
@@ -285,8 +289,7 @@ TEST(StructuredSDFGDeepCopy, Continue) {
     auto inserted_loop = dynamic_cast<structured_control_flow::While*>(&inserted_root->at(0).first);
     EXPECT_TRUE(inserted_loop);
     EXPECT_EQ(inserted_loop->root().size(), 1);
-    EXPECT_TRUE(
-        dynamic_cast<structured_control_flow::Continue*>(&inserted_loop->root().at(0).first));
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::Continue*>(&inserted_loop->root().at(0).first));
 }
 
 TEST(StructuredSDFGDeepCopy, For) {
@@ -331,11 +334,14 @@ TEST(StructuredSDFGDeepCopy, Map) {
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
-    auto& map = builder_source.add_map(root_source, symbolic::symbol("i"),
-                                       symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-                                       symbolic::integer(0),
-                                       symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-                                       structured_control_flow::ScheduleType_Sequential);
+    auto& map = builder_source.add_map(
+        root_source,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential
+    );
 
     builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
@@ -358,10 +364,8 @@ TEST(StructuredSDFGDeepCopy, Map) {
     EXPECT_EQ(inserted_map->root().size(), 0);
 
     EXPECT_TRUE(symbolic::eq(inserted_map->indvar(), symbolic::symbol("i")));
-    EXPECT_TRUE(symbolic::eq(inserted_map->condition(),
-                             symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10))));
+    EXPECT_TRUE(symbolic::eq(inserted_map->condition(), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10))));
     EXPECT_TRUE(symbolic::eq(inserted_map->init(), symbolic::integer(0)));
-    EXPECT_TRUE(symbolic::eq(inserted_map->update(),
-                             symbolic::add(symbolic::symbol("i"), symbolic::integer(1))));
+    EXPECT_TRUE(symbolic::eq(inserted_map->update(), symbolic::add(symbolic::symbol("i"), symbolic::integer(1))));
     EXPECT_EQ(inserted_map->schedule_type(), structured_control_flow::ScheduleType_Sequential);
 }

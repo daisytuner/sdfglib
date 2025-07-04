@@ -5,8 +5,8 @@ namespace analysis {
 
 ScopeAnalysis::ScopeAnalysis(StructuredSDFG& sdfg) : Analysis(sdfg) {}
 
-void ScopeAnalysis::run(structured_control_flow::ControlFlowNode* current,
-                        structured_control_flow::ControlFlowNode* parent_scope) {
+void ScopeAnalysis::
+    run(structured_control_flow::ControlFlowNode* current, structured_control_flow::ControlFlowNode* parent_scope) {
     if (dynamic_cast<structured_control_flow::Block*>(current)) {
         this->scope_tree_[current] = parent_scope;
     } else if (auto sequence_stmt = dynamic_cast<structured_control_flow::Sequence*>(current)) {
@@ -41,19 +41,18 @@ void ScopeAnalysis::run(AnalysisManager& analysis_manager) {
     this->run(&this->sdfg_.root(), nullptr);
 }
 
-const std::unordered_map<const structured_control_flow::ControlFlowNode*,
-                         structured_control_flow::ControlFlowNode*>&
+const std::unordered_map<const structured_control_flow::ControlFlowNode*, structured_control_flow::ControlFlowNode*>&
 ScopeAnalysis::scope_tree() const {
     return this->scope_tree_;
 }
 
-structured_control_flow::ControlFlowNode* ScopeAnalysis::parent_scope(
-    const structured_control_flow::ControlFlowNode* scope) const {
+structured_control_flow::ControlFlowNode* ScopeAnalysis::parent_scope(const structured_control_flow::ControlFlowNode*
+                                                                          scope) const {
     if (this->scope_tree_.find(scope) == this->scope_tree_.end()) {
         return nullptr;
     }
     return this->scope_tree_.at(scope);
 }
 
-}  // namespace analysis
-}  // namespace sdfg
+} // namespace analysis
+} // namespace sdfg

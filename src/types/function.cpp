@@ -6,11 +6,10 @@ namespace types {
 Function::Function(const IType& return_type, bool is_var_arg)
     : return_type_(return_type.clone()), is_var_arg_(is_var_arg) {};
 
-Function::Function(StorageType storage_type, size_t alignment, const std::string& initializer,
-                   const IType& return_type, bool is_var_arg)
-    : IType(storage_type, alignment, initializer),
-      return_type_(return_type.clone()),
-      is_var_arg_(is_var_arg) {};
+Function::Function(
+    StorageType storage_type, size_t alignment, const std::string& initializer, const IType& return_type, bool is_var_arg
+)
+    : IType(storage_type, alignment, initializer), return_type_(return_type.clone()), is_var_arg_(is_var_arg) {};
 
 PrimitiveType Function::primitive_type() const { return PrimitiveType::Void; }
 
@@ -18,9 +17,7 @@ bool Function::is_symbol() const { return false; }
 
 size_t Function::num_params() const { return this->params_.size(); }
 
-const IType& Function::param_type(symbolic::Integer index) const {
-    return *this->params_[index->as_int()];
-}
+const IType& Function::param_type(symbolic::Integer index) const { return *this->params_[index->as_int()]; }
 
 void Function::add_param(const IType& param) { this->params_.push_back(param.clone()); }
 
@@ -62,9 +59,8 @@ bool Function::operator==(const IType& other) const {
 }
 
 std::unique_ptr<IType> Function::clone() const {
-    auto new_function =
-        std::make_unique<Function>(this->storage_type(), this->alignment(), this->initializer(),
-                                   *this->return_type_, this->is_var_arg_);
+    auto new_function = std::make_unique<
+        Function>(this->storage_type(), this->alignment(), this->initializer(), *this->return_type_, this->is_var_arg_);
     for (const auto& param : this->params_) {
         new_function->add_param(*param);
     }
@@ -87,5 +83,5 @@ std::string Function::print() const {
     return "Function(" + this->return_type_->print() + ", " + params + ")";
 };
 
-}  // namespace types
-}  // namespace sdfg
+} // namespace types
+} // namespace sdfg

@@ -8,10 +8,9 @@ Return::Return(size_t element_id, const DebugInfo& debug_info)
 
       };
 
-void Return::replace(const symbolic::Expression& old_expression,
-                     const symbolic::Expression& new_expression) {
+void Return::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
 
 };
 
-}  // namespace structured_control_flow
-}  // namespace sdfg
+} // namespace structured_control_flow
+} // namespace sdfg

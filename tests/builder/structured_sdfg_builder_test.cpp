@@ -27,8 +27,7 @@ TEST(StructuredSDFGBuilderTest, AddBlock) {
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
 
-    auto& block = builder.add_block(
-        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+    auto& block = builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     EXPECT_EQ(block.element_id(), 1);
     EXPECT_EQ(root.at(0).second.element_id(), 2);
 
@@ -51,8 +50,8 @@ TEST(StructuredSDFGBuilderTest, AddBlockBefore) {
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
 
-    auto& block_base = builder.add_block(
-        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+    auto& block_base =
+        builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     EXPECT_EQ(block_base.element_id(), 1);
     EXPECT_EQ(root.at(0).second.element_id(), 2);
 
@@ -79,13 +78,13 @@ TEST(StructuredSDFGBuilderTest, AddBlockAfter) {
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
 
-    auto& block_base = builder.add_block(
-        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+    auto& block_base =
+        builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     EXPECT_EQ(block_base.element_id(), 1);
     EXPECT_EQ(root.at(0).second.element_id(), 2);
 
-    auto& block_base2 = builder.add_block(
-        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+    auto& block_base2 =
+        builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     EXPECT_EQ(block_base2.element_id(), 3);
     EXPECT_EQ(root.at(1).second.element_id(), 4);
 
@@ -105,27 +104,37 @@ TEST(StructuredSDFGBuilderTest, AddBlockAfter) {
 
 inline data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
 class BarrierLocalLibraryNode : public data_flow::LibraryNode {
-   public:
-    BarrierLocalLibraryNode(size_t element_id, const DebugInfo& debug_info,
-                            const graph::Vertex vertex, data_flow::DataFlowGraph& parent,
-                            const data_flow::LibraryNodeCode& code,
-                            const std::vector<std::string>& outputs,
-                            const std::vector<std::string>& inputs, const bool side_effect)
-        : data_flow::LibraryNode(element_id, debug_info, vertex, parent, code, outputs, inputs,
-                                 side_effect) {}
+public:
+    BarrierLocalLibraryNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent,
+        const data_flow::LibraryNodeCode& code,
+        const std::vector<std::string>& outputs,
+        const std::vector<std::string>& inputs,
+        const bool side_effect
+    )
+        : data_flow::LibraryNode(element_id, debug_info, vertex, parent, code, outputs, inputs, side_effect) {}
 
-    virtual std::unique_ptr<data_flow::DataFlowNode> clone(
-        size_t element_id, const graph::Vertex vertex,
-        data_flow::DataFlowGraph& parent) const override {
-        return std::make_unique<BarrierLocalLibraryNode>(element_id, this->debug_info(), vertex,
-                                                         parent, this->code(), this->outputs(),
-                                                         this->inputs(), this->side_effect());
+    virtual std::unique_ptr<data_flow::DataFlowNode>
+    clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override {
+        return std::make_unique<BarrierLocalLibraryNode>(
+            element_id,
+            this->debug_info(),
+            vertex,
+            parent,
+            this->code(),
+            this->outputs(),
+            this->inputs(),
+            this->side_effect()
+        );
     }
 
     virtual symbolic::SymbolSet symbols() const override { return {}; }
 
-    virtual void replace(const symbolic::Expression& old_expression,
-                         const symbolic::Expression& new_expression) override {
+    virtual void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression)
+        override {
         // Do nothing
     }
 };
@@ -139,13 +148,11 @@ TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
 
-    auto& block = builder.add_block(
-        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+    auto& block = builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     EXPECT_EQ(block.element_id(), 1);
     EXPECT_EQ(root.at(0).second.element_id(), 2);
 
-    auto& lib_node =
-        builder.add_library_node<BarrierLocalLibraryNode>(block, BARRIER_LOCAL, {}, {}, false);
+    auto& lib_node = builder.add_library_node<BarrierLocalLibraryNode>(block, BARRIER_LOCAL, {}, {}, false);
     EXPECT_EQ(lib_node.element_id(), 3);
 
     auto sdfg = builder.move();
@@ -199,8 +206,8 @@ TEST(StructuredSDFGBuilderTest, AddIfElseBefore) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& root = builder.subject().root();
-    auto& block_base = builder.add_block(
-        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+    auto& block_base =
+        builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     auto& if_else = builder.add_if_else_before(root, block_base).first;
     auto& true_case = builder.add_case(if_else, symbolic::__true__());
     auto& false_case = builder.add_case(if_else, symbolic::__false__());
@@ -254,8 +261,12 @@ TEST(StructuredSDFGBuilderTest, addFor) {
     EXPECT_EQ(root.element_id(), 0);
 
     auto& scope = builder.add_for(
-        root, symbolic::symbol("i"), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)));
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
     EXPECT_EQ(scope.element_id(), 1);
     EXPECT_EQ(scope.root().element_id(), 2);
     EXPECT_EQ(root.at(0).second.element_id(), 3);
@@ -280,9 +291,13 @@ TEST(StructuredSDFGBuilderTest, addMap) {
     EXPECT_EQ(root.element_id(), 0);
 
     auto& scope = builder.add_map(
-        root, symbolic::symbol("i"), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential);
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential
+    );
     EXPECT_EQ(scope.element_id(), 1);
     EXPECT_EQ(scope.root().element_id(), 2);
     EXPECT_EQ(root.at(0).second.element_id(), 3);
@@ -307,13 +322,17 @@ TEST(StructuredSDFGBuilderTest, addForBefore) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& root = builder.subject().root();
-    auto& block_base = builder.add_block(
-        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+    auto& block_base =
+        builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     auto& scope = builder
-                      .add_for_before(root, block_base, symbolic::symbol("i"),
-                                      symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-                                      symbolic::integer(0),
-                                      symbolic::add(symbolic::symbol("i"), symbolic::integer(1)))
+                      .add_for_before(
+                          root,
+                          block_base,
+                          symbolic::symbol("i"),
+                          symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+                          symbolic::integer(0),
+                          symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+                      )
                       .first;
     auto& body = builder.add_block(scope.root());
 
@@ -331,15 +350,19 @@ TEST(StructuredSDFGBuilderTest, addForAfter) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& root = builder.subject().root();
-    auto& block_base = builder.add_block(
-        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
-    auto& block_base2 = builder.add_block(
-        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+    auto& block_base =
+        builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+    auto& block_base2 =
+        builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     auto& scope = builder
-                      .add_for_after(root, block_base, symbolic::symbol("i"),
-                                     symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-                                     symbolic::integer(0),
-                                     symbolic::add(symbolic::symbol("i"), symbolic::integer(1)))
+                      .add_for_after(
+                          root,
+                          block_base,
+                          symbolic::symbol("i"),
+                          symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+                          symbolic::integer(0),
+                          symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+                      )
                       .first;
     auto& body = builder.add_block(scope.root());
 
@@ -440,10 +463,20 @@ TEST(SDFG2StructuredSDFGTest, IfElse) {
     auto& if_state = builder.add_state();
     auto& else_state = builder.add_state();
     auto& end_state = builder.add_state();
-    builder.add_edge(init_state, if_state, {{symbolic::symbol("i"), symbolic::integer(0)}},
-                     symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)), DebugInfo());
-    builder.add_edge(init_state, else_state, {{symbolic::symbol("i"), symbolic::integer(1)}},
-                     symbolic::Ge(symbolic::symbol("i"), symbolic::integer(10)), DebugInfo());
+    builder.add_edge(
+        init_state,
+        if_state,
+        {{symbolic::symbol("i"), symbolic::integer(0)}},
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        DebugInfo()
+    );
+    builder.add_edge(
+        init_state,
+        else_state,
+        {{symbolic::symbol("i"), symbolic::integer(1)}},
+        symbolic::Ge(symbolic::symbol("i"), symbolic::integer(10)),
+        DebugInfo()
+    );
     builder.add_edge(if_state, end_state);
     builder.add_edge(else_state, end_state);
 
@@ -466,38 +499,31 @@ TEST(SDFG2StructuredSDFGTest, IfElse) {
 
     {
         auto if_case = dynamic_cast<const structured_control_flow::IfElse&>(if_else.first).at(0);
-        EXPECT_TRUE(symbolic::eq(if_case.second,
-                                 symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10))));
+        EXPECT_TRUE(symbolic::eq(if_case.second, symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10))));
         EXPECT_EQ(if_case.first.size(), 2);
 
         auto if_case_first_block = if_case.first.at(0);
-        EXPECT_TRUE(
-            dynamic_cast<const structured_control_flow::Block*>(&if_case_first_block.first));
+        EXPECT_TRUE(dynamic_cast<const structured_control_flow::Block*>(&if_case_first_block.first));
         EXPECT_EQ(if_case_first_block.second.size(), 1);
-        EXPECT_TRUE(symbolic::eq(if_case_first_block.second.assignments().at(symbolic::symbol("i")),
-                                 symbolic::integer(0)));
+        EXPECT_TRUE(symbolic::eq(if_case_first_block.second.assignments().at(symbolic::symbol("i")), symbolic::integer(0))
+        );
 
         auto if_case_second_block = if_case.first.at(1);
-        EXPECT_TRUE(
-            dynamic_cast<const structured_control_flow::Block*>(&if_case_second_block.first));
+        EXPECT_TRUE(dynamic_cast<const structured_control_flow::Block*>(&if_case_second_block.first));
         EXPECT_EQ(if_case_second_block.second.size(), 0);
 
         auto else_case = dynamic_cast<const structured_control_flow::IfElse&>(if_else.first).at(1);
-        EXPECT_TRUE(symbolic::eq(else_case.second,
-                                 symbolic::Ge(symbolic::symbol("i"), symbolic::integer(10))));
+        EXPECT_TRUE(symbolic::eq(else_case.second, symbolic::Ge(symbolic::symbol("i"), symbolic::integer(10))));
         EXPECT_EQ(else_case.first.size(), 2);
 
         auto else_case_first_block = else_case.first.at(0);
-        EXPECT_TRUE(
-            dynamic_cast<const structured_control_flow::Block*>(&else_case_first_block.first));
+        EXPECT_TRUE(dynamic_cast<const structured_control_flow::Block*>(&else_case_first_block.first));
         EXPECT_EQ(else_case_first_block.second.size(), 1);
-        EXPECT_TRUE(
-            symbolic::eq(else_case_first_block.second.assignments().at(symbolic::symbol("i")),
-                         symbolic::integer(1)));
+        EXPECT_TRUE(symbolic::
+                        eq(else_case_first_block.second.assignments().at(symbolic::symbol("i")), symbolic::integer(1)));
 
         auto else_case_second_block = else_case.first.at(1);
-        EXPECT_TRUE(
-            dynamic_cast<const structured_control_flow::Block*>(&else_case_second_block.first));
+        EXPECT_TRUE(dynamic_cast<const structured_control_flow::Block*>(&else_case_second_block.first));
         EXPECT_EQ(else_case_second_block.second.size(), 0);
     }
 
