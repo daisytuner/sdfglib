@@ -47,5 +47,5 @@ AffineCoeffs affine_coefficients(Polynomial& poly, SymbolVec& symbols) {
     return coeffs;
 }
 
-}  // namespace symbolic
-}  // namespace sdfg
+} // namespace symbolic
+} // namespace sdfg

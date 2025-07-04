@@ -42,8 +42,7 @@ bool is_monotonic_pow(const Expression& expr, const Symbol& sym, const Assumptio
         auto pow = SymEngine::rcp_dynamic_cast<const SymEngine::Pow>(expr);
         auto base = pow->get_base();
         auto exp = pow->get_exp();
-        if (SymEngine::is_a<SymEngine::Integer>(*exp) &&
-            SymEngine::is_a<SymEngine::Symbol>(*base)) {
+        if (SymEngine::is_a<SymEngine::Integer>(*exp) && SymEngine::is_a<SymEngine::Symbol>(*base)) {
             auto exp_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(exp);
             if (exp_int->as_int() <= 0) {
                 return false;
@@ -68,8 +67,13 @@ bool is_monotonic(const Expression& expr, const Symbol& sym, const Assumptions& 
     return is_monotonic_pow(expr, sym, assums);
 }
 
-bool is_disjoint_isl(const MultiExpression& expr1, const MultiExpression& expr2,
-                     const Symbol& indvar, const Assumptions& assums1, const Assumptions& assums2) {
+bool is_disjoint_isl(
+    const MultiExpression& expr1,
+    const MultiExpression& expr2,
+    const Symbol& indvar,
+    const Assumptions& assums1,
+    const Assumptions& assums2
+) {
     if (expr1.size() != expr2.size()) {
         return false;
     }
@@ -83,8 +87,7 @@ bool is_disjoint_isl(const MultiExpression& expr1, const MultiExpression& expr2,
     if (expr1_delinearized.size() != expr2_delinearized.size()) {
         return false;
     }
-    auto maps = expressions_to_intersection_map_str(expr1_delinearized, expr2_delinearized, indvar,
-                                                    assums1, assums2);
+    auto maps = expressions_to_intersection_map_str(expr1_delinearized, expr2_delinearized, indvar, assums1, assums2);
 
     isl_ctx* ctx = isl_ctx_alloc();
     isl_map* map_1 = isl_map_read_from_str(ctx, std::get<0>(maps).c_str());
@@ -137,9 +140,13 @@ bool is_disjoint_isl(const MultiExpression& expr1, const MultiExpression& expr2,
     return disjoint;
 }
 
-bool is_disjoint_monotonic(const MultiExpression& expr1, const MultiExpression& expr2,
-                           const Symbol& indvar, const Assumptions& assums1,
-                           const Assumptions& assums2) {
+bool is_disjoint_monotonic(
+    const MultiExpression& expr1,
+    const MultiExpression& expr2,
+    const Symbol& indvar,
+    const Assumptions& assums1,
+    const Assumptions& assums2
+) {
     // TODO: Handle assumptions1 and assumptions2
 
     for (size_t i = 0; i < expr1.size(); i++) {
@@ -181,9 +188,13 @@ bool is_disjoint_monotonic(const MultiExpression& expr1, const MultiExpression& 
     return false;
 }
 
-bool is_disjoint_interval(const MultiExpression& expr1, const MultiExpression& expr2,
-                          const Symbol& indvar, const Assumptions& assums1,
-                          const Assumptions& assums2) {
+bool is_disjoint_interval(
+    const MultiExpression& expr1,
+    const MultiExpression& expr2,
+    const Symbol& indvar,
+    const Assumptions& assums1,
+    const Assumptions& assums2
+) {
     for (size_t i = 0; i < expr1.size(); i++) {
         auto& dim1 = expr1[i];
         if (expr2.size() <= i) {
@@ -218,8 +229,13 @@ bool is_disjoint_interval(const MultiExpression& expr1, const MultiExpression& e
     return false;
 }
 
-bool intersects(const MultiExpression& expr1, const MultiExpression& expr2, const Symbol& indvar,
-                const Assumptions& assums1, const Assumptions& assums2) {
+bool intersects(
+    const MultiExpression& expr1,
+    const MultiExpression& expr2,
+    const Symbol& indvar,
+    const Assumptions& assums1,
+    const Assumptions& assums2
+) {
     if (is_disjoint_interval(expr1, expr2, indvar, assums1, assums2)) {
         return false;
     }
@@ -229,6 +245,6 @@ bool intersects(const MultiExpression& expr1, const MultiExpression& expr2, cons
     return !is_disjoint_isl(expr1, expr2, indvar, assums1, assums2);
 }
 
-}  // namespace maps
-}  // namespace symbolic
-}  // namespace sdfg
+} // namespace maps
+} // namespace symbolic
+} // namespace sdfg

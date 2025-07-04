@@ -22,10 +22,8 @@ TEST(AssumptionsAnalysisTest, Init_bool) {
     auto& assumptions = analysis.get(root, true);
 
     // Check
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("N")).lower_bound(), *symbolic::integer(0)));
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("N")).upper_bound(), *symbolic::integer(1)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("N")).lower_bound(), *symbolic::integer(0)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("N")).upper_bound(), *symbolic::integer(1)));
 }
 
 TEST(AssumptionsAnalysisTest, Init_i8) {
@@ -46,14 +44,10 @@ TEST(AssumptionsAnalysisTest, Init_i8) {
     auto& assumptions = analysis.get(root, true);
 
     // Check
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("N")).lower_bound(), *symbolic::integer(0)));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("N")).upper_bound(),
-                              *symbolic::integer(255)));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).lower_bound(),
-                              *symbolic::integer(-128)));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).upper_bound(),
-                              *symbolic::integer(127)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("N")).lower_bound(), *symbolic::integer(0)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("N")).upper_bound(), *symbolic::integer(255)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).lower_bound(), *symbolic::integer(-128)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).upper_bound(), *symbolic::integer(127)));
 }
 
 TEST(AssumptionsAnalysisTest, Init_i16) {
@@ -74,14 +68,10 @@ TEST(AssumptionsAnalysisTest, Init_i16) {
     auto& assumptions = analysis.get(root, true);
 
     // Check
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("N")).lower_bound(), *symbolic::integer(0)));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("N")).upper_bound(),
-                              *symbolic::integer(65535)));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).lower_bound(),
-                              *symbolic::integer(-32768)));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).upper_bound(),
-                              *symbolic::integer(32767)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("N")).lower_bound(), *symbolic::integer(0)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("N")).upper_bound(), *symbolic::integer(65535)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).lower_bound(), *symbolic::integer(-32768)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).upper_bound(), *symbolic::integer(32767)));
 }
 
 TEST(AssumptionsAnalysisTest, Init_i32) {
@@ -102,14 +92,10 @@ TEST(AssumptionsAnalysisTest, Init_i32) {
     auto& assumptions = analysis.get(root, true);
 
     // Check
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("N")).lower_bound(), *symbolic::integer(0)));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("N")).upper_bound(),
-                              *symbolic::integer(4294967295)));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).lower_bound(),
-                              *symbolic::integer(-2147483648)));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).upper_bound(),
-                              *symbolic::integer(2147483647)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("N")).lower_bound(), *symbolic::integer(0)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("N")).upper_bound(), *symbolic::integer(4294967295)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).lower_bound(), *symbolic::integer(-2147483648)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).upper_bound(), *symbolic::integer(2147483647)));
 }
 
 TEST(AssumptionsAnalysisTest, Init_i64) {
@@ -130,14 +116,10 @@ TEST(AssumptionsAnalysisTest, Init_i64) {
     auto& assumptions = analysis.get(root, true);
 
     // Check
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("N")).lower_bound(), *symbolic::integer(0)));
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("N")).upper_bound(), *symbolic::infty(1)));
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("M")).lower_bound(), *symbolic::infty(-1)));
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("M")).upper_bound(), *symbolic::infty(1)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("N")).lower_bound(), *symbolic::integer(0)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("N")).upper_bound(), *symbolic::infty(1)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).lower_bound(), *symbolic::infty(-1)));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).upper_bound(), *symbolic::infty(1)));
 }
 
 TEST(AssumptionsAnalysisTest, For_1D) {
@@ -168,14 +150,13 @@ TEST(AssumptionsAnalysisTest, For_1D) {
 
     // Check
     EXPECT_EQ(assumptions.size(), 2);
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("i")).lower_bound(), *symbolic::integer(0)));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("i")).upper_bound(),
-                              *symbolic::sub(symbolic::symbol("N"), symbolic::integer(1))));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("i")).lower_bound(), *symbolic::integer(0)));
+    EXPECT_TRUE(SymEngine::
+                    eq(*assumptions.at(symbolic::symbol("i")).upper_bound(),
+                       *symbolic::sub(symbolic::symbol("N"), symbolic::integer(1))));
     EXPECT_TRUE(assumptions.at(symbolic::symbol("i")).constant());
     EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("N")).lower_bound(), symbolic::one()));
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("N")).upper_bound(), symbolic::infty(1)));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("N")).upper_bound(), symbolic::infty(1)));
     EXPECT_TRUE(assumptions.at(symbolic::symbol("N")).constant());
 }
 
@@ -196,8 +177,7 @@ TEST(AssumptionsAnalysisTest, For_1D_And) {
     auto bound = symbolic::symbol("N");
     auto indvar = symbolic::symbol("i");
     auto init = symbolic::integer(0);
-    auto condition =
-        symbolic::And(symbolic::Le(indvar, bound), symbolic::Le(indvar, symbolic::symbol("M")));
+    auto condition = symbolic::And(symbolic::Le(indvar, bound), symbolic::Le(indvar, symbolic::symbol("M")));
     auto update = symbolic::add(indvar, symbolic::integer(1));
 
     auto& loop = builder.add_for(root, indvar, condition, init, update);
@@ -209,18 +189,16 @@ TEST(AssumptionsAnalysisTest, For_1D_And) {
 
     // Check
     EXPECT_EQ(assumptions.size(), 3);
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("i")).lower_bound(), *symbolic::integer(0)));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("i")).upper_bound(),
-                              *symbolic::min(symbolic::symbol("N"), symbolic::symbol("M"))));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("i")).lower_bound(), *symbolic::integer(0)));
+    EXPECT_TRUE(SymEngine::
+                    eq(*assumptions.at(symbolic::symbol("i")).upper_bound(),
+                       *symbolic::min(symbolic::symbol("N"), symbolic::symbol("M"))));
     EXPECT_TRUE(assumptions.at(symbolic::symbol("i")).constant());
     EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("N")).lower_bound(), symbolic::one()));
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("N")).upper_bound(), symbolic::infty(1)));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("N")).upper_bound(), symbolic::infty(1)));
     EXPECT_TRUE(assumptions.at(symbolic::symbol("N")).constant());
     EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("M")).lower_bound(), symbolic::one()));
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("M")).upper_bound(), symbolic::infty(1)));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("M")).upper_bound(), symbolic::infty(1)));
     EXPECT_TRUE(assumptions.at(symbolic::symbol("M")).constant());
 }
 
@@ -261,24 +239,24 @@ TEST(AssumptionsAnalysisTest, For_2D) {
 
     // Check
     EXPECT_EQ(assumptions.size(), 3);
-    EXPECT_TRUE(
-        SymEngine::eq(*assumptions.at(symbolic::symbol("i")).lower_bound(), *symbolic::integer(0)));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("i")).upper_bound(),
-                              *symbolic::sub(symbolic::symbol("N"), symbolic::integer(2))));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("j")).lower_bound(),
-                              *symbolic::add(indvar, symbolic::integer(1))));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("j")).upper_bound(),
-                              *symbolic::sub(symbolic::symbol("N"), symbolic::integer(1))));
+    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("i")).lower_bound(), *symbolic::integer(0)));
+    EXPECT_TRUE(SymEngine::
+                    eq(*assumptions.at(symbolic::symbol("i")).upper_bound(),
+                       *symbolic::sub(symbolic::symbol("N"), symbolic::integer(2))));
+    EXPECT_TRUE(SymEngine::
+                    eq(*assumptions.at(symbolic::symbol("j")).lower_bound(),
+                       *symbolic::add(indvar, symbolic::integer(1))));
+    EXPECT_TRUE(SymEngine::
+                    eq(*assumptions.at(symbolic::symbol("j")).upper_bound(),
+                       *symbolic::sub(symbolic::symbol("N"), symbolic::integer(1))));
     EXPECT_TRUE(assumptions.at(symbolic::symbol("i")).constant());
     EXPECT_TRUE(assumptions.at(symbolic::symbol("j")).constant());
     std::cout << assumptions.at(symbolic::symbol("N")).lower_bound()->__str__() << std::endl;
     std::cout << assumptions.at(symbolic::symbol("N")).upper_bound()->__str__() << std::endl;
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("N")).lower_bound(),
-                     symbolic::max(symbolic::add(symbolic::symbol("i"), symbolic::integer(2)),
-                                   symbolic::one())));
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("N")).upper_bound(), symbolic::infty(1)));
+    EXPECT_TRUE(symbolic::
+                    eq(assumptions.at(symbolic::symbol("N")).lower_bound(),
+                       symbolic::max(symbolic::add(symbolic::symbol("i"), symbolic::integer(2)), symbolic::one())));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("N")).upper_bound(), symbolic::infty(1)));
     EXPECT_TRUE(assumptions.at(symbolic::symbol("N")).constant());
 }
 
@@ -296,8 +274,7 @@ TEST(AssumptionsAnalysisTest, IfElse_Lt) {
 
     // Define loop
     auto& if_else = builder.add_if_else(root);
-    auto& scope1 =
-        builder.add_case(if_else, symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")));
+    auto& scope1 = builder.add_case(if_else, symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")));
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -306,14 +283,10 @@ TEST(AssumptionsAnalysisTest, IfElse_Lt) {
 
     // Check
     EXPECT_EQ(assumptions.size(), 2);
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("i")).lower_bound(), symbolic::infty(-1)));
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("i")).upper_bound(), symbolic::symbol("N")));
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("N")).lower_bound(), symbolic::symbol("i")));
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("N")).upper_bound(), symbolic::infty(1)));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("i")).lower_bound(), symbolic::infty(-1)));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("i")).upper_bound(), symbolic::symbol("N")));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("N")).lower_bound(), symbolic::symbol("i")));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("N")).upper_bound(), symbolic::infty(1)));
 }
 
 TEST(AssumptionsAnalysisTest, IfElse_Eq) {
@@ -330,8 +303,7 @@ TEST(AssumptionsAnalysisTest, IfElse_Eq) {
 
     // Define loop
     auto& if_else = builder.add_if_else(root);
-    auto& scope1 =
-        builder.add_case(if_else, symbolic::Eq(symbolic::symbol("i"), symbolic::symbol("N")));
+    auto& scope1 = builder.add_case(if_else, symbolic::Eq(symbolic::symbol("i"), symbolic::symbol("N")));
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -340,14 +312,10 @@ TEST(AssumptionsAnalysisTest, IfElse_Eq) {
 
     // Check
     EXPECT_EQ(assumptions.size(), 2);
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("i")).lower_bound(), symbolic::symbol("N")));
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("i")).upper_bound(), symbolic::symbol("N")));
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("N")).lower_bound(), symbolic::symbol("i")));
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("N")).upper_bound(), symbolic::symbol("i")));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("i")).lower_bound(), symbolic::symbol("N")));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("i")).upper_bound(), symbolic::symbol("N")));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("N")).lower_bound(), symbolic::symbol("i")));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("N")).upper_bound(), symbolic::symbol("i")));
 }
 
 TEST(AssumptionsAnalysisTest, IfElse_And) {
@@ -366,8 +334,11 @@ TEST(AssumptionsAnalysisTest, IfElse_And) {
     // Define loop
     auto& if_else = builder.add_if_else(root);
     auto& scope1 = builder.add_case(
-        if_else, symbolic::And(symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
-                               symbolic::Gt(symbolic::symbol("i"), symbolic::symbol("M"))));
+        if_else,
+        symbolic::
+            And(symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
+                symbolic::Gt(symbolic::symbol("i"), symbolic::symbol("M")))
+    );
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -376,16 +347,10 @@ TEST(AssumptionsAnalysisTest, IfElse_And) {
 
     // Check
     EXPECT_EQ(assumptions.size(), 3);
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("i")).lower_bound(), symbolic::symbol("M")));
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("i")).upper_bound(), symbolic::symbol("N")));
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("N")).lower_bound(), symbolic::symbol("i")));
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("N")).upper_bound(), symbolic::infty(1)));
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("M")).lower_bound(), symbolic::infty(-1)));
-    EXPECT_TRUE(
-        symbolic::eq(assumptions.at(symbolic::symbol("M")).upper_bound(), symbolic::symbol("i")));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("i")).lower_bound(), symbolic::symbol("M")));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("i")).upper_bound(), symbolic::symbol("N")));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("N")).lower_bound(), symbolic::symbol("i")));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("N")).upper_bound(), symbolic::infty(1)));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("M")).lower_bound(), symbolic::infty(-1)));
+    EXPECT_TRUE(symbolic::eq(assumptions.at(symbolic::symbol("M")).upper_bound(), symbolic::symbol("i")));
 }

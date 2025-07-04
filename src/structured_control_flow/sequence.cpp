@@ -8,8 +8,9 @@ Transition::Transition(size_t element_id, const DebugInfo& debug_info, Sequence&
 
       };
 
-Transition::Transition(size_t element_id, const DebugInfo& debug_info, Sequence& parent,
-                       const control_flow::Assignments& assignments)
+Transition::Transition(
+    size_t element_id, const DebugInfo& debug_info, Sequence& parent, const control_flow::Assignments& assignments
+)
     : Element(element_id, debug_info), parent_(&parent), assignments_(assignments) {
 
       };
@@ -26,10 +27,8 @@ bool Transition::empty() const { return this->assignments_.empty(); };
 
 size_t Transition::size() const { return this->assignments_.size(); };
 
-void Transition::replace(const symbolic::Expression& old_expression,
-                         const symbolic::Expression& new_expression) {
-    if (SymEngine::is_a<SymEngine::Symbol>(*old_expression) &&
-        SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
+void Transition::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+    if (SymEngine::is_a<SymEngine::Symbol>(*old_expression) && SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
         auto old_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(old_expression);
         auto new_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(new_expression);
 
@@ -59,8 +58,7 @@ std::pair<ControlFlowNode&, Transition&> Sequence::at(size_t i) {
     return {*this->children_.at(i), *this->transitions_.at(i)};
 };
 
-void Sequence::replace(const symbolic::Expression& old_expression,
-                       const symbolic::Expression& new_expression) {
+void Sequence::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
     for (auto& child : this->children_) {
         child->replace(old_expression, new_expression);
     }
@@ -70,5 +68,5 @@ void Sequence::replace(const symbolic::Expression& old_expression,
     }
 };
 
-}  // namespace structured_control_flow
-}  // namespace sdfg
+} // namespace structured_control_flow
+} // namespace sdfg

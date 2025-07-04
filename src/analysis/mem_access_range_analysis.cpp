@@ -25,8 +25,8 @@ namespace analysis {
 
 MemAccessRanges::MemAccessRanges(StructuredSDFG& sdfg) : Analysis(sdfg), graph_() {}
 
-void MemAccessRanges::run(structured_control_flow::ControlFlowNode& node,
-                          std::unordered_set<std::string> target_containers) {
+void MemAccessRanges::
+    run(structured_control_flow::ControlFlowNode& node, std::unordered_set<std::string> target_containers) {
     auto& users = analysis_manager_->get<Users>();
     auto& assumptions_analysis = analysis_manager_->get<AssumptionsAnalysis>();
 
@@ -86,9 +86,10 @@ const MemAccessRange* MemAccessRanges::get(const std::string& varName) const {
     }
 }
 
-const MemAccessRange* MemAccessRanges::get(const std::string& varName,
-                                           structured_control_flow::ControlFlowNode& node,
-                                           std::unordered_set<std::string> target_nodes) {
+const MemAccessRange* MemAccessRanges::
+    get(const std::string& varName,
+        structured_control_flow::ControlFlowNode& node,
+        std::unordered_set<std::string> target_nodes) {
     auto ranges = this->ranges_.find(&node);
     if (ranges == this->ranges_.end()) {
         this->run(node, target_nodes);
@@ -106,8 +107,12 @@ const MemAccessRange* MemAccessRanges::get(const std::string& varName,
 }
 
 MemAccessRange::MemAccessRange(
-    const std::string& name, bool saw_read, bool saw_write, bool undefined,
-    const std::vector<std::pair<symbolic::Expression, symbolic::Expression>>&& dims)
+    const std::string& name,
+    bool saw_read,
+    bool saw_write,
+    bool undefined,
+    const std::vector<std::pair<symbolic::Expression, symbolic::Expression>>&& dims
+)
     : name_(name), saw_read_(saw_read), saw_write_(saw_write), undefined_(undefined), dims_(dims) {}
 
 const std::string& MemAccessRange::get_name() const { return name_; }
@@ -116,10 +121,7 @@ bool MemAccessRange::saw_read() const { return saw_read_; }
 bool MemAccessRange::saw_write() const { return saw_write_; }
 bool MemAccessRange::is_undefined() const { return undefined_; }
 
-const std::vector<std::pair<symbolic::Expression, symbolic::Expression>>& MemAccessRange::dims()
-    const {
-    return dims_;
-}
+const std::vector<std::pair<symbolic::Expression, symbolic::Expression>>& MemAccessRange::dims() const { return dims_; }
 
 void MemAccessRangesBuilder::process_workItem(WorkItem* item) {
     const auto* varName = item->var_name;
@@ -190,14 +192,15 @@ void MemAccessRangesBuilder::process_workItem(WorkItem* item) {
         // std::cout << "]" << std::endl;
 #endif
 
-        this->ranges_.emplace(std::piecewise_construct, std::forward_as_tuple(*varName),
-                              std::forward_as_tuple(*varName, item->saw_read, item->saw_write,
-                                                    item->undefined, std::move(finalDims)));
+        this->ranges_.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(*varName),
+            std::forward_as_tuple(*varName, item->saw_read, item->saw_write, item->undefined, std::move(finalDims))
+        );
     }
 }
 
-void MemAccessRangesBuilder::process_direct_users(WorkItem* item, bool is_write,
-                                                  std::vector<User*> accesses) {
+void MemAccessRangesBuilder::process_direct_users(WorkItem* item, bool is_write, std::vector<User*> accesses) {
     for (auto& access : accesses) {
         auto subsets = access->subsets();
         const auto& user_scope = analysis::Users::scope(access);
@@ -211,9 +214,11 @@ void MemAccessRangesBuilder::process_direct_users(WorkItem* item, bool is_write,
             auto subsetDims = subset.size();
             item->dims.reserve(subsetDims);
             for (size_t i = item->dims.size(); i < subsetDims; ++i) {
-                item->dims.emplace_back(
-                    std::make_tuple<std::vector<symbolic::Expression>, bool,
-                                    std::vector<symbolic::Expression>, bool>({}, false, {}, false));
+                item->dims.emplace_back(std::make_tuple<
+                                        std::vector<symbolic::Expression>,
+                                        bool,
+                                        std::vector<symbolic::Expression>,
+                                        bool>({}, false, {}, false));
             }
             int dimIdx = 0;
             for (auto& dim : subset) {
@@ -237,5 +242,5 @@ void MemAccessRangesBuilder::process_direct_users(WorkItem* item, bool is_write,
     }
 }
 
-}  // namespace analysis
-}  // namespace sdfg
+} // namespace analysis
+} // namespace sdfg

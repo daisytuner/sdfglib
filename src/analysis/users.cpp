@@ -26,8 +26,7 @@ User::User(graph::Vertex vertex, const std::string& container, Element* element,
 
       };
 
-User::User(graph::Vertex vertex, const std::string& container, Element* element,
-           data_flow::DataFlowGraph* parent, Use use)
+User::User(graph::Vertex vertex, const std::string& container, Element* element, data_flow::DataFlowGraph* parent, Use use)
     : vertex_(vertex), container_(container), use_(use), element_(element), parent_(parent) {
 
       };
@@ -70,12 +69,16 @@ const std::vector<data_flow::Subset> User::subsets() const {
     return {{}};
 };
 
-ForUser::ForUser(graph::Vertex vertex, const std::string& container, Element* element, Use use,
-                 bool is_init, bool is_condition, bool is_update)
-    : User(vertex, container, element, use),
-      is_init_(is_init),
-      is_condition_(is_condition),
-      is_update_(is_update) {
+ForUser::ForUser(
+    graph::Vertex vertex,
+    const std::string& container,
+    Element* element,
+    Use use,
+    bool is_init,
+    bool is_condition,
+    bool is_update
+)
+    : User(vertex, container, element, use), is_init_(is_init), is_condition_(is_condition), is_update_(is_update) {
 
       };
 
@@ -128,8 +131,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
                     }
 
                     auto v = boost::add_vertex(this->graph_);
-                    this->add_user(std::make_unique<User>(v, access_node->data(), access_node,
-                                                          &dataflow, use));
+                    this->add_user(std::make_unique<User>(v, access_node->data(), access_node, &dataflow, use));
 
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
                         boost::add_edge(last, v, this->graph_);
@@ -148,8 +150,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
                     }
 
                     auto v = boost::add_vertex(this->graph_);
-                    this->add_user(std::make_unique<User>(v, access_node->data(), access_node,
-                                                          &dataflow, use));
+                    this->add_user(std::make_unique<User>(v, access_node->data(), access_node, &dataflow, use));
 
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
                         boost::add_edge(last, v, this->graph_);
@@ -164,8 +165,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
                 auto& condition = tasklet->condition();
                 for (auto& atom : symbolic::atoms(condition)) {
                     auto v = boost::add_vertex(this->graph_);
-                    this->add_user(
-                        std::make_unique<User>(v, atom->get_name(), tasklet, &dataflow, Use::READ));
+                    this->add_user(std::make_unique<User>(v, atom->get_name(), tasklet, &dataflow, Use::READ));
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
                         boost::add_edge(last, v, this->graph_);
                     } else {
@@ -177,8 +177,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
         } else if (auto library_node = dynamic_cast<data_flow::LibraryNode*>(node)) {
             for (auto& symbol : library_node->symbols()) {
                 auto v = boost::add_vertex(this->graph_);
-                this->add_user(std::make_unique<User>(v, symbol->get_name(), library_node,
-                                                      &dataflow, Use::READ));
+                this->add_user(std::make_unique<User>(v, symbol->get_name(), library_node, &dataflow, Use::READ));
                 if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
                     boost::add_edge(last, v, this->graph_);
                 } else {
@@ -198,8 +197,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
                     used.insert(atom->get_name());
 
                     auto v = boost::add_vertex(this->graph_);
-                    this->add_user(
-                        std::make_unique<User>(v, atom->get_name(), &oedge, &dataflow, Use::READ));
+                    this->add_user(std::make_unique<User>(v, atom->get_name(), &oedge, &dataflow, Use::READ));
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
                         boost::add_edge(last, v, this->graph_);
                     } else {
@@ -214,8 +212,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
     return {first, last};
 };
 
-std::pair<graph::Vertex, graph::Vertex> Users::traverse(
-    structured_control_flow::ControlFlowNode& node) {
+std::pair<graph::Vertex, graph::Vertex> Users::traverse(structured_control_flow::ControlFlowNode& node) {
     if (auto block_stmt = dynamic_cast<structured_control_flow::Block*>(&node)) {
         // NOP
         auto s = boost::add_vertex(this->graph_);
@@ -265,8 +262,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
                     used.insert(atom->get_name());
 
                     auto v = boost::add_vertex(this->graph_);
-                    this->add_user(
-                        std::make_unique<User>(v, atom->get_name(), &child.second, Use::READ));
+                    this->add_user(std::make_unique<User>(v, atom->get_name(), &child.second, Use::READ));
 
                     boost::add_edge(current, v, this->graph_);
                     current = v;
@@ -275,8 +271,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
 
             for (auto& entry : child.second.assignments()) {
                 auto v = boost::add_vertex(this->graph_);
-                this->add_user(
-                    std::make_unique<User>(v, entry.first->get_name(), &child.second, Use::WRITE));
+                this->add_user(std::make_unique<User>(v, entry.first->get_name(), &child.second, Use::WRITE));
 
                 boost::add_edge(current, v, this->graph_);
                 current = v;
@@ -313,8 +308,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
 
                 auto v = boost::add_vertex(this->graph_);
 
-                this->add_user(
-                    std::make_unique<User>(v, atom->get_name(), if_else_stmt, Use::READ));
+                this->add_user(std::make_unique<User>(v, atom->get_name(), if_else_stmt, Use::READ));
 
                 boost::add_edge(last, v, this->graph_);
                 last = v;
@@ -380,15 +374,14 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
         // Init
         for (auto atom : symbolic::atoms(for_stmt->init())) {
             auto v = boost::add_vertex(this->graph_);
-            this->add_user(std::make_unique<ForUser>(v, atom->get_name(), for_stmt, Use::READ, true,
-                                                     false, false));
+            this->add_user(std::make_unique<ForUser>(v, atom->get_name(), for_stmt, Use::READ, true, false, false));
             boost::add_edge(last, v, this->graph_);
             last = v;
         }
         // Indvar
         auto v = boost::add_vertex(this->graph_);
-        this->add_user(std::make_unique<ForUser>(v, for_stmt->indvar()->get_name(), for_stmt,
-                                                 Use::WRITE, true, false, false));
+        this->add_user(std::make_unique<
+                       ForUser>(v, for_stmt->indvar()->get_name(), for_stmt, Use::WRITE, true, false, false));
 
         boost::add_edge(last, v, this->graph_);
         last = v;
@@ -396,8 +389,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
         // Condition
         for (auto atom : symbolic::atoms(for_stmt->condition())) {
             auto v = boost::add_vertex(this->graph_);
-            this->add_user(std::make_unique<ForUser>(v, atom->get_name(), for_stmt, Use::READ,
-                                                     false, true, false));
+            this->add_user(std::make_unique<ForUser>(v, atom->get_name(), for_stmt, Use::READ, false, true, false));
 
             boost::add_edge(last, v, this->graph_);
             boost::add_edge(v, t, this->graph_);
@@ -411,15 +403,14 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(
         auto end = subgraph.second;
         for (auto atom : symbolic::atoms(for_stmt->update())) {
             auto v = boost::add_vertex(this->graph_);
-            this->add_user(std::make_unique<ForUser>(v, atom->get_name(), for_stmt, Use::READ,
-                                                     false, false, true));
+            this->add_user(std::make_unique<ForUser>(v, atom->get_name(), for_stmt, Use::READ, false, false, true));
             boost::add_edge(end, v, this->graph_);
             end = v;
         }
 
         auto update_v = boost::add_vertex(this->graph_);
-        this->add_user(std::make_unique<ForUser>(update_v, for_stmt->indvar()->get_name(), for_stmt,
-                                                 Use::WRITE, false, false, true));
+        this->add_user(std::make_unique<
+                       ForUser>(update_v, for_stmt->indvar()->get_name(), for_stmt, Use::WRITE, false, false, true));
 
         if (end != boost::graph_traits<graph::Graph>::null_vertex()) {
             boost::add_edge(end, update_v, this->graph_);
@@ -680,12 +671,10 @@ structured_control_flow::ControlFlowNode* Users::scope(User* user) {
         return static_cast<structured_control_flow::Block*>(data_node->get_parent().get_parent());
     } else if (auto memlet = dynamic_cast<data_flow::Memlet*>(user->element())) {
         return static_cast<structured_control_flow::Block*>(memlet->get_parent().get_parent());
-    } else if (auto transition =
-                   dynamic_cast<structured_control_flow::Transition*>(user->element())) {
+    } else if (auto transition = dynamic_cast<structured_control_flow::Transition*>(user->element())) {
         return &transition->parent();
     } else {
-        auto user_element =
-            dynamic_cast<structured_control_flow::ControlFlowNode*>(user->element());
+        auto user_element = dynamic_cast<structured_control_flow::ControlFlowNode*>(user->element());
         assert(user_element != nullptr && "Users::scope: User element is not a ControlFlowNode");
         return user_element;
     }
@@ -1058,8 +1047,8 @@ std::unordered_set<User*> UsersView::all_uses_after(User& user) {
     return uses;
 };
 
-User* Users::get_user(const std::string& container, Element* element, Use use, bool is_init,
-                      bool is_condition, bool is_update) {
+User* Users::
+    get_user(const std::string& container, Element* element, Use use, bool is_init, bool is_condition, bool is_update) {
     if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element)) {
         if (is_init) {
             auto tmp = users_by_sdfg_loop_init_.at(container).at(for_loop).at(use);
@@ -1103,9 +1092,7 @@ void Users::add_user(std::unique_ptr<User> user) {
         (*target_structure)[user_ptr->container()].end()) {
         target_structure->at(user_ptr->container()).insert({user_ptr->element(), {}});
     }
-    target_structure->at(user_ptr->container())
-        .at(user_ptr->element())
-        .insert({user_ptr->use(), user_ptr});
+    target_structure->at(user_ptr->container()).at(user_ptr->element()).insert({user_ptr->use(), user_ptr});
 }
 
 std::unordered_set<std::string> Users::locals(structured_control_flow::ControlFlowNode& node) {
@@ -1128,5 +1115,5 @@ std::unordered_set<std::string> Users::locals(structured_control_flow::ControlFl
     return locals;
 };
 
-}  // namespace analysis
-}  // namespace sdfg
+} // namespace analysis
+} // namespace sdfg

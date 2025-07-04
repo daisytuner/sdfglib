@@ -14,8 +14,7 @@ LoopDistribute::LoopDistribute(structured_control_flow::StructuredLoop& loop)
 
 std::string LoopDistribute::name() const { return "LoopDistribute"; };
 
-bool LoopDistribute::can_be_applied(builder::StructuredSDFGBuilder& builder,
-                                    analysis::AnalysisManager& analysis_manager) {
+bool LoopDistribute::can_be_applied(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto indvar = this->loop_.indvar();
 
     // Criterion: Block -> Loop
@@ -68,8 +67,7 @@ bool LoopDistribute::can_be_applied(builder::StructuredSDFGBuilder& builder,
         }
 
         // Criterion: Readonly and parallel containers -> no action
-        if (dep_type == analysis::Parallelism::READONLY ||
-            dep_type == analysis::Parallelism::PARALLEL) {
+        if (dep_type == analysis::Parallelism::READONLY || dep_type == analysis::Parallelism::PARALLEL) {
             continue;
         }
 
@@ -110,8 +108,7 @@ bool LoopDistribute::can_be_applied(builder::StructuredSDFGBuilder& builder,
     return true;
 };
 
-void LoopDistribute::apply(builder::StructuredSDFGBuilder& builder,
-                           analysis::AnalysisManager& analysis_manager) {
+void LoopDistribute::apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
 
     auto indvar = this->loop_.indvar();
@@ -147,8 +144,7 @@ void LoopDistribute::apply(builder::StructuredSDFGBuilder& builder,
         if (containers.find(container) == containers.end()) {
             continue;
         }
-        if (dep_type == analysis::Parallelism::READONLY ||
-            dep_type == analysis::Parallelism::PARALLEL) {
+        if (dep_type == analysis::Parallelism::READONLY || dep_type == analysis::Parallelism::PARALLEL) {
             continue;
         }
         if (block_locals.find(container) != block_locals.end()) {
@@ -193,12 +189,10 @@ void LoopDistribute::apply(builder::StructuredSDFGBuilder& builder,
     }
 
     auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
-    auto parent =
-        static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&loop_));
+    auto parent = static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&loop_));
 
     // Copy loop
-    auto& new_loop =
-        builder.add_for_before(*parent, this->loop_, indvar, condition, init, update).first;
+    auto& new_loop = builder.add_for_before(*parent, this->loop_, indvar, condition, init, update).first;
 
     auto& new_body = new_loop.root();
     deepcopy::StructuredSDFGDeepCopy copies(builder, new_body, block);
@@ -220,18 +214,16 @@ void LoopDistribute::to_json(nlohmann::json& j) const {
     j["loop_element_id"] = loop_.element_id();
 };
 
-LoopDistribute LoopDistribute::from_json(builder::StructuredSDFGBuilder& builder,
-                                         const nlohmann::json& desc) {
+LoopDistribute LoopDistribute::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
     auto loop_id = desc["loop_element_id"].get<size_t>();
     auto element = builder.find_element_by_id(loop_id);
     if (!element) {
-        throw InvalidTransformationDescriptionException("Element with ID " +
-                                                        std::to_string(loop_id) + " not found.");
+        throw InvalidTransformationDescriptionException("Element with ID " + std::to_string(loop_id) + " not found.");
     }
     auto loop = dynamic_cast<structured_control_flow::For*>(element);
 
     return LoopDistribute(*loop);
 };
 
-}  // namespace transformations
-}  // namespace sdfg
+} // namespace transformations
+} // namespace sdfg

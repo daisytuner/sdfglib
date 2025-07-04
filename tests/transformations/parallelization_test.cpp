@@ -27,9 +27,13 @@ TEST(ParallelizationTest, Map_2D) {
     auto indvar = symbolic::symbol("i");
 
     auto& loop = builder.add_map(
-        root, indvar, symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential);
+        root,
+        indvar,
+        symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential
+    );
     auto& body = loop.root();
 
     // Add computation
@@ -37,13 +41,12 @@ TEST(ParallelizationTest, Map_2D) {
     auto& a_in = builder.add_access(block, "A");
     auto& i = builder.add_access(block, "i");
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
-                                        {{"_in1", base_desc}, {"_in2", sym_desc}});
-    builder.add_memlet(block, a_in, "void", tasklet, "_in1",
-                       {symbolic::symbol("i"), symbolic::symbol("j")});
+    auto& tasklet = builder.add_tasklet(
+        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", sym_desc}}
+    );
+    builder.add_memlet(block, a_in, "void", tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")});
     builder.add_memlet(block, i, "void", tasklet, "_in2", {});
-    builder.add_memlet(block, tasklet, "_out", a_out, "void",
-                       {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_memlet(block, tasklet, "_out", a_out, "void", {symbolic::symbol("i"), symbolic::symbol("j")});
 
     analysis::AnalysisManager analysis_manager(builder.subject());
     transformations::Parallelization transformation(loop);

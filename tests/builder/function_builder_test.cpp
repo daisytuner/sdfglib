@@ -47,8 +47,7 @@ TEST(FunctionBuilderTest, AddArgument) {
 TEST(FunctionBuilderTest, AddExternal) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
-    auto& container =
-        builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), false, true);
+    auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), false, true);
 
     auto sdfg = builder.move();
 
@@ -84,8 +83,7 @@ TEST(FunctionBuilderTest, RemoveArgument) {
 TEST(FunctionBuilderTest, RemoveExternal) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
-    auto& container =
-        builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), false, true);
+    auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), false, true);
 
     EXPECT_THROW(builder.remove_container("i"), sdfg::InvalidSDFGException);
 }
@@ -111,8 +109,7 @@ TEST(FunctionBuilderTest, MakeArrayTransient) {
     auto sdfg = builder.move();
 
     EXPECT_EQ(sdfg->containers().size(), 1);
-    EXPECT_EQ(sdfg->type("i"),
-              types::Array(types::Scalar(types::PrimitiveType::UInt64), symbolic::integer(10)));
+    EXPECT_EQ(sdfg->type("i"), types::Array(types::Scalar(types::PrimitiveType::UInt64), symbolic::integer(10)));
 }
 
 TEST(FunctionBuilderTest, MakeArrayArgument) {

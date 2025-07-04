@@ -41,7 +41,7 @@ inline FunctionType FunctionType_NV_GLOBAL{"NV_GLOBAL"};
 class Function {
     friend class sdfg::builder::FunctionBuilder;
 
-   protected:
+protected:
     size_t element_counter_;
 
     // Name
@@ -64,7 +64,7 @@ class Function {
 
     Function(const std::string& name, FunctionType type);
 
-   public:
+public:
     Function(const Function& function) = delete;
 
     virtual ~Function() = default;
@@ -123,4 +123,4 @@ class Function {
 
     const std::unordered_map<std::string, std::string>& metadata() const;
 };
-}  // namespace sdfg
+} // namespace sdfg

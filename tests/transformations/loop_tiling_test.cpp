@@ -38,8 +38,8 @@ TEST(LoopTilingTest, Basic) {
     auto& block = builder.add_block(body);
     auto& A_in = builder.add_access(block, "A");
     auto& A_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
     builder.add_memlet(block, A_in, "void", tasklet, "_in", {symbolic::symbol("i")});
     builder.add_memlet(block, tasklet, "_out", A_out, "void", {symbolic::symbol("i")});
 
@@ -65,8 +65,7 @@ TEST(LoopTilingTest, Basic) {
 
     auto& sdfg_opt = builder_opt.subject();
     EXPECT_EQ(sdfg_opt.root().size(), 1);
-    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&sdfg_opt.root().at(0).first) !=
-                nullptr);
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::For*>(&sdfg_opt.root().at(0).first) != nullptr);
     auto& loop = static_cast<structured_control_flow::For&>(sdfg_opt.root().at(0).first);
 
     EXPECT_EQ(loop.root().size(), 1);
@@ -85,18 +84,16 @@ TEST(LoopTilingTest, Basic) {
     EXPECT_TRUE(symbolic::eq(inner_init, loop.indvar()));
 
     auto& inner_condition_tile = inner_loop->condition();
-    EXPECT_TRUE(symbolic::eq(
-        inner_condition_tile,
-        symbolic::And(
-            symbolic::Lt(inner_loop->indvar(), symbolic::add(loop.indvar(), symbolic::integer(32))),
-            symbolic::Lt(inner_loop->indvar(), bound))));
+    EXPECT_TRUE(symbolic::
+                    eq(inner_condition_tile,
+                       symbolic::
+                           And(symbolic::Lt(inner_loop->indvar(), symbolic::add(loop.indvar(), symbolic::integer(32))),
+                               symbolic::Lt(inner_loop->indvar(), bound))));
     auto& inner_update = inner_loop->update();
-    EXPECT_TRUE(
-        symbolic::eq(inner_update, symbolic::add(inner_loop->indvar(), symbolic::integer(1))));
+    EXPECT_TRUE(symbolic::eq(inner_update, symbolic::add(inner_loop->indvar(), symbolic::integer(1))));
 
     EXPECT_EQ(inner_loop->root().size(), 1);
-    EXPECT_TRUE(dynamic_cast<structured_control_flow::Block*>(&inner_loop->root().at(0).first) !=
-                nullptr);
+    EXPECT_TRUE(dynamic_cast<structured_control_flow::Block*>(&inner_loop->root().at(0).first) != nullptr);
 
     EXPECT_EQ(builder_opt.subject().exists("i_tile0"), true);
 }

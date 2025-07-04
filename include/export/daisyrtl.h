@@ -123,6 +123,6 @@
 
 #define __daisy_fma_rz_ftz_f __nvvm_fma_rz_ftz_f
 
-#endif  // __DAISY_NVVM__
+#endif // __DAISY_NVVM__
 
-#endif  // __DAISY_RTL_H__
+#endif // __DAISY_RTL_H__

@@ -123,9 +123,8 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
         }
 
         std::string iter = "__daisy_iterator_" + dim;
-        std::string con = "exists " + iter + " : " + dim + " = " +
-                          language_extension.expression(lb) + " + " + iter + " * " +
-                          language_extension.expression(arg1);
+        std::string con = "exists " + iter + " : " + dim + " = " + language_extension.expression(lb) + " + " + iter +
+                          " * " + language_extension.expression(arg1);
         constraints.push_back(con);
     }
     if (!constraints.empty()) {
@@ -146,8 +145,12 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
 }
 
 std::tuple<std::string, std::string, std::string> expressions_to_intersection_map_str(
-    const MultiExpression& expr1, const MultiExpression& expr2, const Symbol& indvar,
-    const Assumptions& assums1, const Assumptions& assums2) {
+    const MultiExpression& expr1,
+    const MultiExpression& expr2,
+    const Symbol& indvar,
+    const Assumptions& assums1,
+    const Assumptions& assums2
+) {
     codegen::CLanguageExtension language_extension;
 
     // Get all symbols
@@ -167,8 +170,7 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     std::vector<std::string> parameters;
     SymbolSet parameters_syms;
     for (auto& sym : syms) {
-        if (sym->get_name() != indvar->get_name() && assums1.at(sym).constant() &&
-            assums2.at(sym).constant()) {
+        if (sym->get_name() != indvar->get_name() && assums1.at(sym).constant() && assums2.at(sym).constant()) {
             if (parameters_syms.find(sym) != parameters_syms.end()) {
                 continue;
             }
@@ -309,9 +311,8 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
 
         std::string dim1 = dim + "_1";
         std::string iter = "__daisy_iterator_" + dim1;
-        std::string con = "exists " + iter + " : " + dim1 + " = " +
-                          language_extension.expression(lb) + " + " + iter + " * " +
-                          language_extension.expression(arg1);
+        std::string con = "exists " + iter + " : " + dim1 + " = " + language_extension.expression(lb) + " + " + iter +
+                          " * " + language_extension.expression(arg1);
         constraints_1.push_back(con);
     }
     if (!constraints_1.empty()) {
@@ -367,9 +368,8 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
 
         std::string dim2 = dim + "_2";
         std::string iter = "__daisy_iterator_" + dim2;
-        std::string con = "exists " + iter + " : " + dim2 + " = " +
-                          language_extension.expression(lb) + " + " + iter + " * " +
-                          language_extension.expression(arg1);
+        std::string con = "exists " + iter + " : " + dim2 + " = " + language_extension.expression(lb) + " + " + iter +
+                          " * " + language_extension.expression(arg1);
         constraints_2.push_back(con);
     }
     if (!constraints_2.empty()) {
@@ -395,8 +395,7 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     map_3 += "]";
     std::vector<std::string> monotonicity_constraints;
     if (dimensions_syms.find(indvar) != dimensions_syms.end()) {
-        monotonicity_constraints.push_back(indvar->get_name() + "_1 != " + indvar->get_name() +
-                                           "_2");
+        monotonicity_constraints.push_back(indvar->get_name() + "_1 != " + indvar->get_name() + "_2");
     }
     if (!monotonicity_constraints.empty()) {
         map_3 += " : ";
@@ -533,8 +532,7 @@ std::string constraint_to_isl_str(const Expression& con) {
     return "";
 }
 
-void canonicalize_map_dims(isl_map* map, const std::string& in_prefix,
-                           const std::string& out_prefix) {
+void canonicalize_map_dims(isl_map* map, const std::string& in_prefix, const std::string& out_prefix) {
     int n_in = isl_map_dim(map, isl_dim_in);
     int n_out = isl_map_dim(map, isl_dim_out);
 
@@ -674,5 +672,5 @@ MultiExpression delinearize(const MultiExpression& expr, const Assumptions& assu
     return delinearized;
 }
 
-}  // namespace symbolic
-}  // namespace sdfg
+} // namespace symbolic
+} // namespace sdfg

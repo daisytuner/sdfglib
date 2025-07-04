@@ -24,41 +24,30 @@ TEST(AssumptionsTest, Create) {
 
     a = symbolic::Assumption::create(x, types::Scalar(types::PrimitiveType::UInt8));
     EXPECT_TRUE(symbolic::eq(a.lower_bound(), symbolic::zero()));
-    EXPECT_TRUE(
-        symbolic::eq(a.upper_bound(), symbolic::integer(std::numeric_limits<uint8_t>::max())));
+    EXPECT_TRUE(symbolic::eq(a.upper_bound(), symbolic::integer(std::numeric_limits<uint8_t>::max())));
 
     a = symbolic::Assumption::create(x, types::Scalar(types::PrimitiveType::Int8));
-    EXPECT_TRUE(
-        symbolic::eq(a.lower_bound(), symbolic::integer(std::numeric_limits<int8_t>::min())));
-    EXPECT_TRUE(
-        symbolic::eq(a.upper_bound(), symbolic::integer(std::numeric_limits<int8_t>::max())));
+    EXPECT_TRUE(symbolic::eq(a.lower_bound(), symbolic::integer(std::numeric_limits<int8_t>::min())));
+    EXPECT_TRUE(symbolic::eq(a.upper_bound(), symbolic::integer(std::numeric_limits<int8_t>::max())));
 
     a = symbolic::Assumption::create(x, types::Scalar(types::PrimitiveType::UInt16));
     EXPECT_TRUE(symbolic::eq(a.lower_bound(), symbolic::zero()));
-    EXPECT_TRUE(
-        symbolic::eq(a.upper_bound(), symbolic::integer(std::numeric_limits<uint16_t>::max())));
+    EXPECT_TRUE(symbolic::eq(a.upper_bound(), symbolic::integer(std::numeric_limits<uint16_t>::max())));
 
     a = symbolic::Assumption::create(x, types::Scalar(types::PrimitiveType::Int16));
-    EXPECT_TRUE(
-        symbolic::eq(a.lower_bound(), symbolic::integer(std::numeric_limits<int16_t>::min())));
-    EXPECT_TRUE(
-        symbolic::eq(a.upper_bound(), symbolic::integer(std::numeric_limits<int16_t>::max())));
+    EXPECT_TRUE(symbolic::eq(a.lower_bound(), symbolic::integer(std::numeric_limits<int16_t>::min())));
+    EXPECT_TRUE(symbolic::eq(a.upper_bound(), symbolic::integer(std::numeric_limits<int16_t>::max())));
 
     a = symbolic::Assumption::create(x, types::Scalar(types::PrimitiveType::UInt32));
-    EXPECT_TRUE(
-        symbolic::eq(a.lower_bound(), symbolic::integer(std::numeric_limits<uint32_t>::min())));
-    EXPECT_TRUE(
-        symbolic::eq(a.upper_bound(), symbolic::integer(std::numeric_limits<uint32_t>::max())));
+    EXPECT_TRUE(symbolic::eq(a.lower_bound(), symbolic::integer(std::numeric_limits<uint32_t>::min())));
+    EXPECT_TRUE(symbolic::eq(a.upper_bound(), symbolic::integer(std::numeric_limits<uint32_t>::max())));
 
     a = symbolic::Assumption::create(x, types::Scalar(types::PrimitiveType::Int32));
-    EXPECT_TRUE(
-        symbolic::eq(a.lower_bound(), symbolic::integer(std::numeric_limits<int32_t>::min())));
-    EXPECT_TRUE(
-        symbolic::eq(a.upper_bound(), symbolic::integer(std::numeric_limits<int32_t>::max())));
+    EXPECT_TRUE(symbolic::eq(a.lower_bound(), symbolic::integer(std::numeric_limits<int32_t>::min())));
+    EXPECT_TRUE(symbolic::eq(a.upper_bound(), symbolic::integer(std::numeric_limits<int32_t>::max())));
 
     a = symbolic::Assumption::create(x, types::Scalar(types::PrimitiveType::UInt64));
-    EXPECT_TRUE(
-        symbolic::eq(a.lower_bound(), symbolic::integer(std::numeric_limits<uint64_t>::min())));
+    EXPECT_TRUE(symbolic::eq(a.lower_bound(), symbolic::integer(std::numeric_limits<uint64_t>::min())));
     EXPECT_TRUE(symbolic::eq(a.upper_bound(), symbolic::infty(1)));
 
     a = symbolic::Assumption::create(x, types::Scalar(types::PrimitiveType::Int64));

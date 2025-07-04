@@ -13,13 +13,12 @@ AnalysisManager::AnalysisManager(StructuredSDFG& sdfg)
 
       };
 
-AnalysisManager::AnalysisManager(StructuredSDFG& sdfg,
-                                 const symbolic::Assumptions& additional_assumptions)
+AnalysisManager::AnalysisManager(StructuredSDFG& sdfg, const symbolic::Assumptions& additional_assumptions)
     : sdfg_(sdfg), additional_assumptions_(additional_assumptions) {
 
       };
 
 void AnalysisManager::invalidate_all() { cache_.clear(); };
 
-}  // namespace analysis
-}  // namespace sdfg
+} // namespace analysis
+} // namespace sdfg

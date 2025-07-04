@@ -2,48 +2,46 @@
 
 #include <exception>
 #include <string>
+#include <utility>
 
 namespace sdfg {
 
 class InvalidSDFGException : public std::exception {
-   private:
-    std::string message_;
+private:
+    std::string message;
 
-   public:
-    InvalidSDFGException(const std::string& message) : message_(message) {}
+public:
+    explicit InvalidSDFGException(std::string message) : message(std::move(message)) {}
 
-    const char* what() const noexcept override { return message_.c_str(); }
+    auto what() const noexcept -> const char* override { return message.c_str(); }
 };
 
 class UnstructuredControlFlowException : public std::exception {
-   public:
-    const char* what() const noexcept override { return "Unstructured control flow detected"; }
+public:
+    auto what() const noexcept -> const char* override { return "Unstructured control flow detected"; }
 };
 
 class StringEnum {
-   public:
-    StringEnum(const std::string& value) : value_(value) {}
-    StringEnum(const StringEnum& other) : value_(other.value_) {}
+public:
+    explicit StringEnum(std::string value) : value_(std::move(value)) {}
+    StringEnum(const StringEnum& other) = default;
     StringEnum(StringEnum&& other) noexcept : value_(std::move(other.value_)) {}
 
-    StringEnum& operator=(const StringEnum& other) {
-        value_ = other.value_;
-        return *this;
-    }
+    auto operator=(const StringEnum& other) -> StringEnum& = default;
 
-    StringEnum& operator=(StringEnum&& other) noexcept {
+    auto operator=(StringEnum&& other) noexcept -> StringEnum& {
         value_ = std::move(other.value_);
         return *this;
     }
 
-    std::string value() const { return value_; }
+    auto value() const -> std::string { return value_; }
 
-    bool operator==(const StringEnum& other) const { return value_ == other.value_; }
+    auto operator==(const StringEnum& other) const -> bool { return value_ == other.value_; }
 
-    bool operator!=(const StringEnum& other) const { return !(*this == other); }
+    auto operator!=(const StringEnum& other) const -> bool { return !(*this == other); }
 
-   private:
+private:
     std::string value_;
 };
 
-}  // namespace sdfg
+} // namespace sdfg

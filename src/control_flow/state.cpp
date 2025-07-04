@@ -14,10 +14,9 @@ const data_flow::DataFlowGraph& State::dataflow() const { return *this->dataflow
 
 data_flow::DataFlowGraph& State::dataflow() { return *this->dataflow_; };
 
-void State::replace(const symbolic::Expression& old_expression,
-                    const symbolic::Expression& new_expression) {
+void State::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
     this->dataflow_->replace(old_expression, new_expression);
 };
 
-}  // namespace control_flow
-}  // namespace sdfg
+} // namespace control_flow
+} // namespace sdfg

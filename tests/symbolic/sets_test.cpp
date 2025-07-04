@@ -166,8 +166,7 @@ TEST(DelinearizeTest, delinearize_3d) {
     assums.insert({M, assum_M});
     assums.insert({K, assum_K});
 
-    auto expr =
-        symbolic::add(symbolic::add(symbolic::mul(x, symbolic::mul(M, K)), symbolic::mul(y, K)), z);
+    auto expr = symbolic::add(symbolic::add(symbolic::mul(x, symbolic::mul(M, K)), symbolic::mul(y, K)), z);
 
     auto expr_delinearized = symbolic::delinearize({expr}, assums);
     EXPECT_EQ(expr_delinearized.size(), 3);

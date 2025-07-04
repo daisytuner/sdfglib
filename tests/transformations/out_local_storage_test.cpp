@@ -44,10 +44,10 @@ TEST(OutLocalStorage, Scalar) {
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "C");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
-                                        {{"_in1", base_desc}, {"_in2", base_desc}});
-    auto& memlet_in =
-        builder.add_memlet(block, access_in, "void", tasklet, "_in1", {{symbolic::symbol("i")}});
+    auto& tasklet = builder.add_tasklet(
+        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", base_desc}}
+    );
+    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in1", {{symbolic::symbol("i")}});
     auto& memlet_in2 = builder.add_memlet(block, access_in2, "void", tasklet, "_in2", {});
     auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {});
 
@@ -182,14 +182,12 @@ TEST(OutLocalStorage, Array) {
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "C");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
-                                        {{"_in1", base_desc}, {"_in2", base_desc}});
-    auto& memlet_in =
-        builder.add_memlet(block, access_in, "void", tasklet, "_in1", {{symbolic::symbol("i")}});
-    auto& memlet_in2 =
-        builder.add_memlet(block, access_in2, "void", tasklet, "_in2", {{symbolic::symbol("i")}});
-    auto& memlet_out =
-        builder.add_memlet(block, tasklet, "_out", access_out, "void", {{symbolic::symbol("i")}});
+    auto& tasklet = builder.add_tasklet(
+        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", base_desc}}
+    );
+    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in1", {{symbolic::symbol("i")}});
+    auto& memlet_in2 = builder.add_memlet(block, access_in2, "void", tasklet, "_in2", {{symbolic::symbol("i")}});
+    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {{symbolic::symbol("i")}});
 
     auto structured_sdfg = builder.move();
 
@@ -208,11 +206,9 @@ TEST(OutLocalStorage, Array) {
         auto init_for = dynamic_cast<structured_control_flow::For*>(&new_root.at(0).first);
         EXPECT_NE(init_for, nullptr);
 
-        EXPECT_TRUE(
-            symbolic::eq(symbolic::subs(init_for->condition(), init_for->indvar(), loop.indvar()),
-                         loop.condition()));
-        EXPECT_TRUE(symbolic::eq(
-            symbolic::subs(init_for->update(), init_for->indvar(), loop.indvar()), loop.update()));
+        EXPECT_TRUE(symbolic::
+                        eq(symbolic::subs(init_for->condition(), init_for->indvar(), loop.indvar()), loop.condition()));
+        EXPECT_TRUE(symbolic::eq(symbolic::subs(init_for->update(), init_for->indvar(), loop.indvar()), loop.update()));
         EXPECT_TRUE(symbolic::eq(init_for->init(), loop.init()));
 
         auto& init_body = init_for->root();
@@ -277,11 +273,9 @@ TEST(OutLocalStorage, Array) {
         auto init_for = dynamic_cast<structured_control_flow::For*>(&new_root.at(2).first);
         EXPECT_NE(init_for, nullptr);
 
-        EXPECT_TRUE(
-            symbolic::eq(symbolic::subs(init_for->condition(), init_for->indvar(), loop.indvar()),
-                         loop.condition()));
-        EXPECT_TRUE(symbolic::eq(
-            symbolic::subs(init_for->update(), init_for->indvar(), loop.indvar()), loop.update()));
+        EXPECT_TRUE(symbolic::
+                        eq(symbolic::subs(init_for->condition(), init_for->indvar(), loop.indvar()), loop.condition()));
+        EXPECT_TRUE(symbolic::eq(symbolic::subs(init_for->update(), init_for->indvar(), loop.indvar()), loop.update()));
         EXPECT_TRUE(symbolic::eq(init_for->init(), loop.init()));
 
         auto& init_body = init_for->root();
@@ -351,11 +345,10 @@ TEST(OutLocalStorage, Fail) {
     auto& block = builder.add_block(body);
     auto& access_in = builder.add_access(block, "i");
     auto& access_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
     auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in", {});
-    auto& memlet_out =
-        builder.add_memlet(block, tasklet, "_out", access_out, "void", {symbolic::integer(0)});
+    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {symbolic::integer(0)});
 
     auto structured_sdfg = builder.move();
 

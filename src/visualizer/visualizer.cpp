@@ -377,8 +377,7 @@ std::string Visualizer::expression(const std::string expr) {
     return res;
 }
 
-void Visualizer::visualizeNode(const StructuredSDFG& sdfg,
-                               const structured_control_flow::ControlFlowNode& node) {
+void Visualizer::visualizeNode(const StructuredSDFG& sdfg, const structured_control_flow::ControlFlowNode& node) {
     if (auto block = dynamic_cast<const structured_control_flow::Block*>(&node)) {
         this->visualizeBlock(sdfg, *block);
         return;
@@ -425,8 +424,7 @@ void Visualizer::visualizeTasklet(data_flow::Tasklet const& tasklet) {
         std::string arg = tasklet.input(i).first;
         if (!tasklet.needs_connector(i)) {
             if (arg != "NAN" && arg != "INFINITY") {
-                if (tasklet.input(i).second.primitive_type() == types::PrimitiveType::Float)
-                    arg += "f";
+                if (tasklet.input(i).second.primitive_type() == types::PrimitiveType::Float) arg += "f";
             }
         }
         arguments.push_back(this->expression(arg));
@@ -453,17 +451,20 @@ void Visualizer::visualizeTasklet(data_flow::Tasklet const& tasklet) {
     }
 }
 
-void Visualizer::visualizeForBounds(symbolic::Symbol const& indvar,
-                                    symbolic::Expression const& init,
-                                    symbolic::Condition const& condition,
-                                    symbolic::Expression const& update) {
+void Visualizer::visualizeForBounds(
+    symbolic::Symbol const& indvar,
+    symbolic::Expression const& init,
+    symbolic::Condition const& condition,
+    symbolic::Expression const& update
+) {
     this->stream_ << indvar->get_name() << " = " << this->expression(init->__str__()) << "; "
-                    << this->expression(condition->__str__()) << "; " << indvar->get_name()
-                    << " = " << this->expression(update->__str__());
+                  << this->expression(condition->__str__()) << "; " << indvar->get_name() << " = "
+                  << this->expression(update->__str__());
 }
 
 /// @brief If known, use the type to better visualize structures. Then track the type as far as it goes.
-void Visualizer::visualizeSubset(Function const& function, data_flow::Subset const& sub, types::IType const* type, int subIdx) {
+void Visualizer::
+    visualizeSubset(Function const& function, data_flow::Subset const& sub, types::IType const* type, int subIdx) {
     if (static_cast<int>(sub.size()) <= subIdx) {
         return;
     }
@@ -472,24 +473,24 @@ void Visualizer::visualizeSubset(Function const& function, data_flow::Subset con
         this->stream_ << ".member_" << this->expression(sub.at(subIdx)->__str__());
         auto member = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(sub.at(0));
         types::IType const& member_type = definition.member_type(member);
-        this->visualizeSubset(function, sub, &member_type, subIdx+1);
+        this->visualizeSubset(function, sub, &member_type, subIdx + 1);
     } else if (auto array_type = dynamic_cast<const types::Array*>(type)) {
         this->stream_ << "[" << this->expression(sub.at(subIdx)->__str__()) << "]";
         data_flow::Subset element_subset(sub.begin() + 1, sub.end());
         types::IType const& element_type = array_type->element_type();
-        this->visualizeSubset(function, sub, &element_type,  subIdx+1);
+        this->visualizeSubset(function, sub, &element_type, subIdx + 1);
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(type)) {
         this->stream_ << "[" << this->expression(sub.at(subIdx)->__str__()) << "]";
         types::IType const& pointee_type = pointer_type->pointee_type();
-        this->visualizeSubset(function, sub, &pointee_type,  subIdx+1);
+        this->visualizeSubset(function, sub, &pointee_type, subIdx + 1);
     } else {
         if (type != nullptr) {
             this->stream_ << "(rogue)";
         }
         this->stream_ << "[" << this->expression(sub.at(subIdx)->__str__()) << "]";
-        visualizeSubset(function, sub, nullptr, subIdx+1);
+        visualizeSubset(function, sub, nullptr, subIdx + 1);
     }
 }
 
-}  // namespace visualizer
-}  // namespace sdfg
+} // namespace visualizer
+} // namespace sdfg

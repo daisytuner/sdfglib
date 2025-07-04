@@ -1,13 +1,9 @@
 #pragma once
 
 #include <cassert>
-#include <functional>
-#include <list>
+#include <cstddef>
 #include <memory>
-#include <ranges>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 
 #include "sdfg/element.h"
 #include "sdfg/function.h"
@@ -31,24 +27,24 @@ class StructuredSDFG : public Function {
     friend class sdfg::builder::StructuredSDFGBuilder;
     friend class Schedule;
 
-   private:
-    std::unique_ptr<structured_control_flow::Sequence> root_;
+private:
+    std::unique_ptr<structured_control_flow::Sequence> root;
 
-   public:
+public:
     StructuredSDFG(const std::string& name, FunctionType type);
 
     StructuredSDFG(const StructuredSDFG& sdfg) = delete;
-    StructuredSDFG& operator=(const StructuredSDFG&) = delete;
+    auto operator=(const StructuredSDFG&) -> StructuredSDFG& = delete;
 
-    const DebugInfo debug_info() const override;
+    auto debug_info() const -> const DebugInfo override;
 
-    const structured_control_flow::Sequence& root() const;
+    auto root() const -> const structured_control_flow::Sequence&;
 
-    structured_control_flow::Sequence& root();
+    auto root() -> structured_control_flow::Sequence&;
 
-    std::unique_ptr<StructuredSDFG> clone() const;
+    auto clone() const -> std::unique_ptr<StructuredSDFG>;
 
-    size_t num_nodes() const;
+    auto num_nodes() const -> size_t;
 };
 
-}  // namespace sdfg
+} // namespace sdfg

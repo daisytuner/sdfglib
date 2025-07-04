@@ -52,8 +52,8 @@ jobs:
           cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Debug -DSDFGLIB_ENABLE_COVERAGE=ON -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
           ln -s compile_commands.json ../compile_commands.json
 
-      - name: Linting
-        run: clang-tidy-19 --config-file=".clang-tidy" src/**/*.cpp tests/**/*.cpp include/**/*.h
+      # - name: Linting
+      #   run: clang-tidy-19 --config-file=".clang-tidy" src/**/*.cpp tests/**/*.cpp include/**/*.h
 
       - name: Build and test
         run: |

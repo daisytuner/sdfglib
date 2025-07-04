@@ -28,14 +28,12 @@ bool IfElse::is_complete() {
     return symbolic::is_true(condition);
 };
 
-void IfElse::replace(const symbolic::Expression& old_expression,
-                     const symbolic::Expression& new_expression) {
+void IfElse::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
     for (size_t i = 0; i < this->cases_.size(); ++i) {
         this->cases_.at(i)->replace(old_expression, new_expression);
-        this->conditions_.at(i) =
-            symbolic::subs(this->conditions_.at(i), old_expression, new_expression);
+        this->conditions_.at(i) = symbolic::subs(this->conditions_.at(i), old_expression, new_expression);
     }
 };
 
-}  // namespace structured_control_flow
-}  // namespace sdfg
+} // namespace structured_control_flow
+} // namespace sdfg

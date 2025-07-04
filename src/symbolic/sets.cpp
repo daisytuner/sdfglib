@@ -9,8 +9,9 @@
 namespace sdfg {
 namespace symbolic {
 
-bool is_subset(const MultiExpression& expr1, const MultiExpression& expr2,
-               const Assumptions& assums1, const Assumptions& assums2) {
+bool is_subset(
+    const MultiExpression& expr1, const MultiExpression& expr2, const Assumptions& assums1, const Assumptions& assums2
+) {
     if (expr1.size() == 0 && expr2.size() == 0) {
         return true;
     }
@@ -38,18 +39,15 @@ bool is_subset(const MultiExpression& expr1, const MultiExpression& expr2,
     isl_space* params_map2 = isl_space_params(isl_map_get_space(map_2));
 
     // Align parameters carefully:
-    isl_space* unified_params =
-        isl_space_align_params(isl_space_copy(params_map1), isl_space_copy(params_map2));
+    isl_space* unified_params = isl_space_align_params(isl_space_copy(params_map1), isl_space_copy(params_map2));
 
     // Align maps to unified params:
     isl_map* aligned_map_1 = isl_map_align_params(map_1, isl_space_copy(unified_params));
     isl_map* aligned_map_2 = isl_map_align_params(map_2, isl_space_copy(unified_params));
 
     // Remove parameters explicitly (project them out)
-    aligned_map_1 = isl_map_project_out(aligned_map_1, isl_dim_param, 0,
-                                        isl_map_dim(aligned_map_1, isl_dim_param));
-    aligned_map_2 = isl_map_project_out(aligned_map_2, isl_dim_param, 0,
-                                        isl_map_dim(aligned_map_2, isl_dim_param));
+    aligned_map_1 = isl_map_project_out(aligned_map_1, isl_dim_param, 0, isl_map_dim(aligned_map_1, isl_dim_param));
+    aligned_map_2 = isl_map_project_out(aligned_map_2, isl_dim_param, 0, isl_map_dim(aligned_map_2, isl_dim_param));
 
     canonicalize_map_dims(aligned_map_1, "in_", "out_");
     canonicalize_map_dims(aligned_map_2, "in_", "out_");
@@ -69,8 +67,9 @@ bool is_subset(const MultiExpression& expr1, const MultiExpression& expr2,
     return subset;
 }
 
-bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
-                 const Assumptions& assums1, const Assumptions& assums2) {
+bool is_disjoint(
+    const MultiExpression& expr1, const MultiExpression& expr2, const Assumptions& assums1, const Assumptions& assums2
+) {
     auto expr1_delinearized = delinearize(expr1, assums1);
     auto expr2_delinearized = delinearize(expr2, assums2);
 
@@ -91,18 +90,15 @@ bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
     isl_space* params_map2 = isl_space_params(isl_map_get_space(map_2));
 
     // Align parameters carefully:
-    isl_space* unified_params =
-        isl_space_align_params(isl_space_copy(params_map1), isl_space_copy(params_map2));
+    isl_space* unified_params = isl_space_align_params(isl_space_copy(params_map1), isl_space_copy(params_map2));
 
     // Align maps to unified params:
     isl_map* aligned_map_1 = isl_map_align_params(map_1, isl_space_copy(unified_params));
     isl_map* aligned_map_2 = isl_map_align_params(map_2, isl_space_copy(unified_params));
 
     // Remove parameters explicitly (project them out)
-    aligned_map_1 = isl_map_project_out(aligned_map_1, isl_dim_param, 0,
-                                        isl_map_dim(aligned_map_1, isl_dim_param));
-    aligned_map_2 = isl_map_project_out(aligned_map_2, isl_dim_param, 0,
-                                        isl_map_dim(aligned_map_2, isl_dim_param));
+    aligned_map_1 = isl_map_project_out(aligned_map_1, isl_dim_param, 0, isl_map_dim(aligned_map_1, isl_dim_param));
+    aligned_map_2 = isl_map_project_out(aligned_map_2, isl_dim_param, 0, isl_map_dim(aligned_map_2, isl_dim_param));
 
     canonicalize_map_dims(aligned_map_1, "in_", "out_");
     canonicalize_map_dims(aligned_map_2, "in_", "out_");
@@ -122,5 +118,5 @@ bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
     return disjoint;
 }
 
-}  // namespace symbolic
-}  // namespace sdfg
+} // namespace symbolic
+} // namespace sdfg

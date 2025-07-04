@@ -1,8 +1,8 @@
 #include "sdfg/analysis/mem_access_range_analysis.h"
 
 #include <gtest/gtest.h>
-#include <symengine/symengine_rcp.h>
 #include <iostream>
+#include <symengine/symengine_rcp.h>
 
 
 #include "sdfg/builder/structured_sdfg_builder.h"
@@ -19,9 +19,9 @@ using namespace sdfg;
 #define DEBUG_WRITE_SDFG_VIZ true
 #endif
 
-#define DEBUG_DOT_SDFG(sdfg) \
+#define DEBUG_DOT_SDFG(sdfg)              \
     if constexpr (DEBUG_WRITE_SDFG_VIZ) { \
-        writeSdfgDot(sdfg);\
+        writeSdfgDot(sdfg);               \
     }
 
 static void writeSdfgDot(const StructuredSDFG& sdfg) {
@@ -52,7 +52,7 @@ TEST(MemAccessRangeTest, Arg_Index_Write) {
     auto& root = builder.subject().root();
 
     auto& block = builder.add_block(root);
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"__out", dataType }, {{"0", dataType}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"__out", dataType}, {{"0", dataType}});
     auto& writeAccess = builder.add_access(block, "A");
     auto& writeArg = builder.add_memlet(block, tasklet, "__out", writeAccess, "void", {sym_idx});
 
@@ -97,11 +97,20 @@ TEST(MemAccessRangeTest, Simple_2D_Map_Init) {
     auto sym_j = symbolic::symbol("j");
 
     auto& root = builder.subject().root();
-    auto& outer_for = builder.add_for(root, sym_i, symbolic::Lt(sym_i, symbolic::integer(23)), symbolic::zero(), symbolic::add(symbolic::one(), sym_i));
-    auto& inner_for = builder.add_for(outer_for.root(), sym_j, symbolic::Lt(sym_j, symbolic::integer(16)), symbolic::zero(), symbolic::add(symbolic::one(), sym_j));
+    auto& outer_for = builder.add_for(
+        root, sym_i, symbolic::Lt(sym_i, symbolic::integer(23)), symbolic::zero(), symbolic::add(symbolic::one(), sym_i)
+    );
+    auto& inner_for = builder.add_for(
+        outer_for.root(),
+        sym_j,
+        symbolic::Lt(sym_j, symbolic::integer(16)),
+        symbolic::zero(),
+        symbolic::add(symbolic::one(), sym_j)
+    );
 
     auto& block = builder.add_block(inner_for.root());
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"__out", dataType }, {{"__in", dataType}});
+    auto& tasklet =
+        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"__out", dataType}, {{"__in", dataType}});
     auto& readAccess = builder.add_access(block, "arg_init");
     auto& readArg = builder.add_memlet(block, readAccess, "void", tasklet, "__in", {});
     auto& writeAccess = builder.add_access(block, "A");
@@ -155,22 +164,24 @@ TEST(MemAccessRangeTest, Incomplete_2D_Line_Sum) {
 
     auto& root = builder.subject().root();
     auto& init_block = builder.add_block(root);
-    auto& initTasklet = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, {"__out", dataType}, {{"0", dataType}});
+    auto& initTasklet =
+        builder.add_tasklet(init_block, data_flow::TaskletCode::assign, {"__out", dataType}, {{"0", dataType}});
     auto& sumInitAccess = builder.add_access(init_block, "sum");
     builder.add_memlet(init_block, initTasklet, "__out", sumInitAccess, "void", {});
     auto& b_access = builder.add_access(init_block, "B");
-    auto& init_i_tasklet = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, {"__out", dataType}, {{"__in", dataType}});
+    auto& init_i_tasklet =
+        builder.add_tasklet(init_block, data_flow::TaskletCode::assign, {"__out", dataType}, {{"__in", dataType}});
     builder.add_memlet(init_block, b_access, "void", init_i_tasklet, "__in", {symbolic::integer(0)});
     auto& init_i_access = builder.add_access(init_block, "init_i");
     builder.add_memlet(init_block, init_i_tasklet, "__out", init_i_access, "void", {});
-    
+
 
     auto& outer_for = builder.add_for(
         root,
         sym_i,
         symbolic::Eq(symbolic::__false__(), symbolic::Eq(sym_i, symbolic::integer(23))),
         sym_init_i,
-        symbolic::add(symbolic::one(),sym_i)
+        symbolic::add(symbolic::one(), sym_i)
     );
     auto& inner_for = builder.add_for(
         outer_for.root(),
@@ -181,7 +192,9 @@ TEST(MemAccessRangeTest, Incomplete_2D_Line_Sum) {
     );
 
     auto& inner_block = builder.add_block(inner_for.root());
-    auto& tasklet = builder.add_tasklet(inner_block, data_flow::TaskletCode::add, {"__out", dataType }, {{"__in0", dataType}, {"__in1", dataType}});
+    auto& tasklet = builder.add_tasklet(
+        inner_block, data_flow::TaskletCode::add, {"__out", dataType}, {{"__in0", dataType}, {"__in1", dataType}}
+    );
     auto& prevSumAccess = builder.add_access(inner_block, "sum");
     auto& readPrevSum = builder.add_memlet(inner_block, prevSumAccess, "void", tasklet, "__in0", {});
     auto& readAAccess = builder.add_access(inner_block, "A");
@@ -191,7 +204,8 @@ TEST(MemAccessRangeTest, Incomplete_2D_Line_Sum) {
 
     auto& result_block = builder.add_block(root);
     auto& sumAccess = builder.add_access(result_block, "sum");
-    auto& result_tasklet = builder.add_tasklet(result_block, data_flow::TaskletCode::assign, {"__out", dataType}, {{"__in", dataType}});
+    auto& result_tasklet =
+        builder.add_tasklet(result_block, data_flow::TaskletCode::assign, {"__out", dataType}, {{"__in", dataType}});
     builder.add_memlet(result_block, sumAccess, "void", result_tasklet, "__in", {});
     auto& resultAccess = builder.add_access(result_block, "result");
     builder.add_memlet(result_block, result_tasklet, "__out", resultAccess, "void", {symbolic::integer(0)});
@@ -235,9 +249,7 @@ TEST(MemAccessRangeTest, Incomplete_2D_Line_Sum) {
     EXPECT_EQ(dims_a.size(), 2);
     EXPECT_TRUE(dims_a[0].first.is_null());
     EXPECT_TRUE(dims_a[0].second.is_null());
-    
+
     EXPECT_TRUE(symbolic::eq(dims_a[1].first, symbolic::zero()));
     EXPECT_TRUE(symbolic::eq(dims_a[1].second, symbolic::integer(15)));
 }
-
-

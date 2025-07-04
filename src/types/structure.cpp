@@ -5,8 +5,7 @@ namespace types {
 
 Structure::Structure(const std::string& name) : name_(name) {};
 
-Structure::Structure(StorageType storage_type, size_t alignment, const std::string& initializer,
-                     const std::string& name)
+Structure::Structure(StorageType storage_type, size_t alignment, const std::string& initializer, const std::string& name)
     : IType(storage_type, alignment, initializer), name_(name) {};
 
 PrimitiveType Structure::primitive_type() const { return PrimitiveType::Void; };
@@ -26,8 +25,7 @@ bool Structure::operator==(const IType& other) const {
 };
 
 std::unique_ptr<IType> Structure::clone() const {
-    return std::make_unique<Structure>(this->storage_type(), this->alignment(), this->initializer(),
-                                       this->name_);
+    return std::make_unique<Structure>(this->storage_type(), this->alignment(), this->initializer(), this->name_);
 };
 
 std::string Structure::print() const { return "Structure(" + this->name_ + ")"; };
@@ -53,9 +51,7 @@ const IType& StructureDefinition::member_type(symbolic::Integer index) const {
     return *this->members_.at(index->as_uint());
 };
 
-void StructureDefinition::add_member(const IType& member_type) {
-    this->members_.push_back(member_type.clone());
-};
+void StructureDefinition::add_member(const IType& member_type) { this->members_.push_back(member_type.clone()); };
 
-}  // namespace types
-}  // namespace sdfg
+} // namespace types
+} // namespace sdfg

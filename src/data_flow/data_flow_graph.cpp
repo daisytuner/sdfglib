@@ -15,8 +15,7 @@ size_t DataFlowGraph::out_degree(const data_flow::DataFlowNode& node) const {
     return boost::out_degree(node.vertex(), this->graph_);
 };
 
-void DataFlowGraph::replace(const symbolic::Expression& old_expression,
-                            const symbolic::Expression& new_expression) {
+void DataFlowGraph::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
     for (auto& node : this->nodes_) {
         node.second->replace(old_expression, new_expression);
     }
@@ -131,8 +130,8 @@ std::unordered_set<data_flow::DataFlowNode*> DataFlowGraph::sinks() {
     return ss;
 };
 
-std::unordered_set<const data_flow::DataFlowNode*> DataFlowGraph::predecessors(
-    const data_flow::DataFlowNode& node) const {
+std::unordered_set<const data_flow::DataFlowNode*> DataFlowGraph::predecessors(const data_flow::DataFlowNode& node
+) const {
     std::unordered_set<const data_flow::DataFlowNode*> ss;
     for (auto& edge : this->in_edges(node)) {
         ss.insert(&edge.src());
@@ -141,8 +140,8 @@ std::unordered_set<const data_flow::DataFlowNode*> DataFlowGraph::predecessors(
     return ss;
 };
 
-std::unordered_set<const data_flow::DataFlowNode*> DataFlowGraph::successors(
-    const data_flow::DataFlowNode& node) const {
+std::unordered_set<const data_flow::DataFlowNode*> DataFlowGraph::successors(const data_flow::DataFlowNode& node
+) const {
     std::unordered_set<const data_flow::DataFlowNode*> ss;
     for (auto& edge : this->out_edges(node)) {
         ss.insert(&edge.dst());
@@ -186,8 +185,7 @@ std::unordered_map<std::string, const data_flow::AccessNode*> DataFlowGraph::dom
     return frontier;
 };
 
-std::unordered_map<std::string, const data_flow::AccessNode*> DataFlowGraph::post_dominators()
-    const {
+std::unordered_map<std::string, const data_flow::AccessNode*> DataFlowGraph::post_dominators() const {
     std::unordered_map<std::string, const data_flow::AccessNode*> frontier;
     for (auto& node : this->topological_sort()) {
         if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(node)) {
@@ -209,10 +207,8 @@ std::unordered_map<std::string, data_flow::AccessNode*> DataFlowGraph::post_domi
     return frontier;
 };
 
-auto DataFlowGraph::all_simple_paths(const data_flow::DataFlowNode& src,
-                                     const data_flow::DataFlowNode& dst) const {
-    std::list<std::list<graph::Edge>> all_paths_raw =
-        graph::all_simple_paths(this->graph_, src.vertex(), dst.vertex());
+auto DataFlowGraph::all_simple_paths(const data_flow::DataFlowNode& src, const data_flow::DataFlowNode& dst) const {
+    std::list<std::list<graph::Edge>> all_paths_raw = graph::all_simple_paths(this->graph_, src.vertex(), dst.vertex());
 
     std::list<std::list<std::reference_wrapper<data_flow::Memlet>>> all_paths;
     for (auto& path_raw : all_paths_raw) {
@@ -226,8 +222,8 @@ auto DataFlowGraph::all_simple_paths(const data_flow::DataFlowNode& src,
     return all_paths;
 };
 
-const std::pair<size_t, const std::unordered_map<const data_flow::DataFlowNode*, size_t>>
-DataFlowGraph::weakly_connected_components() const {
+const std::pair<size_t, const std::unordered_map<const data_flow::DataFlowNode*, size_t>> DataFlowGraph::
+    weakly_connected_components() const {
     auto ccs_vertex = graph::weakly_connected_components(this->graph_);
 
     std::unordered_map<const data_flow::DataFlowNode*, size_t> ccs;
@@ -238,5 +234,5 @@ DataFlowGraph::weakly_connected_components() const {
     return {ccs_vertex.first, ccs};
 };
 
-}  // namespace data_flow
-}  // namespace sdfg
+} // namespace data_flow
+} // namespace sdfg

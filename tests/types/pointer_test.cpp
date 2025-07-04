@@ -30,7 +30,7 @@ TEST(PointerTest, Equal) {
 
 TEST(PointerTest, TypeId) {
     types::Pointer p{types::Scalar(types::PrimitiveType::UInt32)};
-    
+
     EXPECT_EQ(p.type_id(), types::TypeID::Pointer);
 }
 
