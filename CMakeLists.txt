@@ -35,10 +35,10 @@ endif()
 find_package(nlohmann_json REQUIRED)
 
 # Boost
-set(Boost_USE_STATIC_LIBS OFF) 
-set(Boost_USE_MULTITHREADED ON)  
-set(Boost_USE_STATIC_RUNTIME OFF) 
-find_package(Boost REQUIRED COMPONENTS graph) 
+set(Boost_USE_STATIC_LIBS OFF)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+find_package(Boost REQUIRED COMPONENTS graph)
 
 # Find the ISL library
 find_package(PkgConfig REQUIRED)
@@ -56,6 +56,7 @@ set(SOURCE_FILES
     src/analysis/mem_access_range_analysis.cpp
     src/analysis/scope_analysis.cpp
     src/analysis/users.cpp
+    src/analysis/work_depth_analysis.cpp
     src/builder/function_builder.cpp
     src/builder/sdfg_builder.cpp
     src/builder/structured_sdfg_builder.cpp
