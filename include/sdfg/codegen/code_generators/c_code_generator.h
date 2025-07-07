@@ -11,10 +11,10 @@ namespace sdfg {
 namespace codegen {
 
 class CCodeGenerator : public CodeGenerator {
-   private:
+private:
     CLanguageExtension language_extension_;
 
-   protected:
+protected:
     void dispatch_includes();
 
     void dispatch_structures();
@@ -23,21 +23,24 @@ class CCodeGenerator : public CodeGenerator {
 
     void dispatch_schedule();
 
-   public:
-    CCodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy = InstrumentationStrategy::NONE, bool capture_args_results = false);
+public:
+    CCodeGenerator(
+        StructuredSDFG& sdfg,
+        InstrumentationStrategy instrumentation_strategy = InstrumentationStrategy::NONE,
+        bool capture_args_results = false,
+        const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr
+    );
 
     bool generate() override;
 
     std::string function_definition() override;
 
-    bool as_source(const std::filesystem::path& header_path,
-                   const std::filesystem::path& source_path,
-                   const std::filesystem::path& library_path) override;
+    bool as_source(const std::filesystem::path& header_path, const std::filesystem::path& source_path) override;
 
     void emit_capture_context_init(std::ostream& ofs_source) const;
 
     void emit_arg_captures(std::ostream& ofs_source, const std::vector<CaptureVarPlan>& plan, bool after);
 };
 
-}  // namespace codegen
-}  // namespace sdfg
+} // namespace codegen
+} // namespace sdfg

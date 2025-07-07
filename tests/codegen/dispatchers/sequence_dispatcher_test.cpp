@@ -20,11 +20,11 @@ TEST(SequenceDispatcherTest, DispatchNode_Empty) {
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
-    codegen::PrettyPrinter library_stream;
-    dispatcher.dispatch_node(main_stream, globals_stream, library_stream);
+    codegen::CodeSnippetFactory library_factory;
+    dispatcher.dispatch_node(main_stream, globals_stream, library_factory);
 
     EXPECT_EQ(globals_stream.str(), "");
-    EXPECT_EQ(library_stream.str(), "");
+    EXPECT_TRUE(library_factory.snippets().empty());
     EXPECT_EQ(main_stream.str(), "");
 }
 
@@ -34,8 +34,7 @@ TEST(SequenceDispatcherTest, DispatchNode_Transition) {
     auto& root = sdfg.root();
 
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int16));
-    auto& block1 =
-        builder.add_block(root, {{symbolic::symbol("i"), symbolic::integer(0)}}, DebugInfo());
+    auto& block1 = builder.add_block(root, {{symbolic::symbol("i"), symbolic::integer(0)}}, DebugInfo());
 
     auto final_sdfg = builder.move();
 
@@ -45,11 +44,11 @@ TEST(SequenceDispatcherTest, DispatchNode_Transition) {
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
-    codegen::PrettyPrinter library_stream;
-    dispatcher.dispatch_node(main_stream, globals_stream, library_stream);
+    codegen::CodeSnippetFactory library_factory;
+    dispatcher.dispatch_node(main_stream, globals_stream, library_factory);
 
     EXPECT_EQ(globals_stream.str(), "");
-    EXPECT_EQ(library_stream.str(), "");
+    EXPECT_TRUE(library_factory.snippets().empty());
     EXPECT_EQ(main_stream.str(), "{\n    i = 0;\n}\n");
 }
 
@@ -59,10 +58,8 @@ TEST(SequenceDispatcherTest, DispatchNode_MultipleBlocks) {
     auto& root = sdfg.root();
 
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int16));
-    auto& block1 =
-        builder.add_block(root, {{symbolic::symbol("i"), symbolic::integer(0)}}, DebugInfo());
-    auto& block2 =
-        builder.add_block(root, {{symbolic::symbol("i"), symbolic::integer(1)}}, DebugInfo());
+    auto& block1 = builder.add_block(root, {{symbolic::symbol("i"), symbolic::integer(0)}}, DebugInfo());
+    auto& block2 = builder.add_block(root, {{symbolic::symbol("i"), symbolic::integer(1)}}, DebugInfo());
 
     auto final_sdfg = builder.move();
 
@@ -72,10 +69,10 @@ TEST(SequenceDispatcherTest, DispatchNode_MultipleBlocks) {
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
-    codegen::PrettyPrinter library_stream;
-    dispatcher.dispatch_node(main_stream, globals_stream, library_stream);
+    codegen::CodeSnippetFactory library_factory;
+    dispatcher.dispatch_node(main_stream, globals_stream, library_factory);
 
     EXPECT_EQ(globals_stream.str(), "");
-    EXPECT_EQ(library_stream.str(), "");
+    EXPECT_TRUE(library_factory.snippets().empty());
     EXPECT_EQ(main_stream.str(), "{\n    i = 0;\n}\n{\n    i = 1;\n}\n");
 }

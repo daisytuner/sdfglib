@@ -23,10 +23,10 @@ namespace sdfg {
 namespace codegen {
 
 class NodeDispatcher {
-   private:
+private:
     structured_control_flow::ControlFlowNode& node_;
 
-   protected:
+protected:
     LanguageExtension& language_extension_;
 
     StructuredSDFG& sdfg_;
@@ -37,19 +37,23 @@ class NodeDispatcher {
 
     virtual void end_node(PrettyPrinter& stream, bool has_declaration);
 
-   public:
-    NodeDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
-                   structured_control_flow::ControlFlowNode& node,
-                   Instrumentation& instrumentation);
+public:
+    NodeDispatcher(
+        LanguageExtension& language_extension,
+        StructuredSDFG& sdfg,
+        structured_control_flow::ControlFlowNode& node,
+        Instrumentation& instrumentation
+    );
 
     virtual ~NodeDispatcher() = default;
 
-    virtual void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
-                               PrettyPrinter& library_stream) = 0;
+    virtual void dispatch_node(
+        PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
+    ) = 0;
 
-    virtual void dispatch(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
-                          PrettyPrinter& library_stream);
+    virtual void
+    dispatch(PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory);
 };
 
-}  // namespace codegen
-}  // namespace sdfg
+} // namespace codegen
+} // namespace sdfg

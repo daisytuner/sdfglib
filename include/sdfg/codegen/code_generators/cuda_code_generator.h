@@ -8,10 +8,10 @@ namespace sdfg {
 namespace codegen {
 
 class CUDACodeGenerator : public CodeGenerator {
-   private:
+private:
     CUDALanguageExtension language_extension_;
 
-   protected:
+protected:
     void dispatch_includes();
 
     void dispatch_structures();
@@ -20,17 +20,20 @@ class CUDACodeGenerator : public CodeGenerator {
 
     void dispatch_schedule();
 
-   public:
-    CUDACodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy = InstrumentationStrategy::NONE, bool capture_args_results = false);
+public:
+    CUDACodeGenerator(
+        StructuredSDFG& sdfg,
+        InstrumentationStrategy instrumentation_strategy = InstrumentationStrategy::NONE,
+        bool capture_args_results = false,
+        const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr
+    );
 
     bool generate() override;
 
     std::string function_definition() override;
 
-    bool as_source(const std::filesystem::path& header_path,
-                   const std::filesystem::path& source_path,
-                   const std::filesystem::path& library_path) override;
+    bool as_source(const std::filesystem::path& header_path, const std::filesystem::path& source_path) override;
 };
 
-}  // namespace codegen
-}  // namespace sdfg
+} // namespace codegen
+} // namespace sdfg

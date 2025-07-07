@@ -6,15 +6,20 @@ namespace sdfg {
 namespace codegen {
 
 class IfElseDispatcher : public NodeDispatcher {
-   private:
+private:
     structured_control_flow::IfElse& node_;
 
-   public:
-    IfElseDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
-                     structured_control_flow::IfElse& node, Instrumentation& instrumentation);
+public:
+    IfElseDispatcher(
+        LanguageExtension& language_extension,
+        StructuredSDFG& sdfg,
+        structured_control_flow::IfElse& node,
+        Instrumentation& instrumentation
+    );
 
-    void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
-                       PrettyPrinter& library_stream) override;
+    void dispatch_node(
+        PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
+    ) override;
 };
-}  // namespace codegen
-}  // namespace sdfg
+} // namespace codegen
+} // namespace sdfg
