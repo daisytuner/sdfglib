@@ -3,6 +3,7 @@
 #include <stack>
 #include <string>
 #include <vector>
+#include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/data_flow/code_node.h"
 #include "sdfg/structured_control_flow/block.h"
@@ -52,6 +53,7 @@ void WorkDepthAnalysis::run(AnalysisManager& analysis_manager) {
     }
 
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
 
     // Calculate work and depth for each node
     while (!nodes.empty()) {
@@ -99,7 +101,8 @@ void WorkDepthAnalysis::run(AnalysisManager& analysis_manager) {
             symbolic::Expression body_depth = this->depth_.at(&for_loop->root());
 
             auto stride = analysis::LoopAnalysis::stride(for_loop);
-            auto num_iterations = symbolic::sub(for_loop->condition(), for_loop->init());
+            auto bound = analysis::LoopAnalysis::canonical_bound(for_loop, assumptions_analysis);
+            auto num_iterations = symbolic::sub(bound, for_loop->init());
             num_iterations = symbolic::div(num_iterations, stride);
 
             work = symbolic::mul(num_iterations, body_work);
@@ -111,7 +114,8 @@ void WorkDepthAnalysis::run(AnalysisManager& analysis_manager) {
             symbolic::Expression body_depth = this->depth_.at(&map_node->root());
 
             auto stride = analysis::LoopAnalysis::stride(map_node);
-            auto num_iterations = symbolic::sub(map_node->condition(), map_node->init());
+            auto bound = analysis::LoopAnalysis::canonical_bound(map_node, assumptions_analysis);
+            auto num_iterations = symbolic::sub(bound, map_node->init());
             num_iterations = symbolic::div(num_iterations, stride);
 
             work = symbolic::mul(num_iterations, body_work);

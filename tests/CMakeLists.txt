@@ -13,6 +13,7 @@ set(TEST_FILES
     analysis/loop_analysis_test.cpp
     analysis/mem_access_range_analysis_test.cpp
     analysis/users_test.cpp
+    analysis/work_depth_analysis_test.cpp
     builder/function_builder_test.cpp
     builder/sdfg_builder_test.cpp
     builder/structured_sdfg_builder_test.cpp
