@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sdfg/codegen/code_snippet_factory.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher.h"
 #include "sdfg/structured_control_flow/map.h"
 

@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "sdfg/codegen/code_snippet_factory.h"
 #include "sdfg/codegen/instrumentation/instrumentation.h"
 #include "sdfg/codegen/language_extension.h"
 #include "sdfg/codegen/utils.h"
@@ -19,6 +20,7 @@
 #include "sdfg/structured_control_flow/while.h"
 #include "sdfg/structured_sdfg.h"
 #include "sdfg/types/utils.h"
+
 namespace sdfg {
 namespace codegen {
 

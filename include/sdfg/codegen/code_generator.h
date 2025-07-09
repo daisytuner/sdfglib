@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 
+#include "code_snippet_factory.h"
 #include "sdfg/analysis/mem_access_range_analysis.h"
 #include "sdfg/codegen/instrumentation/capture_var_plan.h"
 #include "sdfg/codegen/instrumentation/instrumentation_strategy.h"
