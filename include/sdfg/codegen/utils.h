@@ -114,5 +114,8 @@ public:
     const std::filesystem::path& header_path() const { return header_path_; }
 };
 
+inline std::string CODE_SNIPPET_INIT_ONCE = "init_once";
+inline std::string CODE_SNIPPET_DEINIT_ONCE = "deinit_once";
+
 } // namespace codegen
 } // namespace sdfg

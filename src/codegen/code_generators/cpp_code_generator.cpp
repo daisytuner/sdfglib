@@ -7,29 +7,6 @@
 namespace sdfg {
 namespace codegen {
 
-CPPCodeGenerator::CPPCodeGenerator(
-    StructuredSDFG& sdfg,
-    InstrumentationStrategy instrumentation_strategy,
-    bool capture_args_results,
-    const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths
-)
-    : CodeGenerator(sdfg, instrumentation_strategy, capture_args_results, output_and_header_paths) {
-    if (sdfg.type() != FunctionType_CPU) {
-        throw std::runtime_error("CPPCodeGenerator can only be used for CPU SDFGs");
-    }
-    if (capture_args_results) {
-        std::cerr << "CPPCodeGenerator does not support capturing args/results!";
-    }
-};
-
-bool CPPCodeGenerator::generate() {
-    this->dispatch_includes();
-    this->dispatch_structures();
-    this->dispatch_globals();
-    this->dispatch_schedule();
-    return true;
-};
-
 std::string CPPCodeGenerator::function_definition() {
     /********** Arglist **********/
     std::vector<std::string> args;
@@ -42,42 +19,15 @@ std::string CPPCodeGenerator::function_definition() {
     return "extern \"C\" void " + sdfg_.name() + "(" + arglist.str() + ")";
 };
 
-bool CPPCodeGenerator::as_source(const std::filesystem::path& header_path, const std::filesystem::path& source_path) {
-    std::ofstream ofs_header(header_path, std::ofstream::out);
-    if (!ofs_header.is_open()) {
-        return false;
-    }
+void CPPCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const {
+    std::string name = sdfg_.name();
 
-    std::ofstream ofs_source(source_path, std::ofstream::out);
-    if (!ofs_source.is_open()) {
-        return false;
-    }
-
-    ofs_header << "#pragma once" << std::endl;
-    ofs_header << this->includes_stream_.str() << std::endl;
-    ofs_header << this->classes_stream_.str() << std::endl;
-    ofs_header.close();
-
-    ofs_source << "#include \"" << header_path.filename().string() << "\"" << std::endl;
-    ofs_source << this->globals_stream_.str() << std::endl;
-    ofs_source << this->function_definition() << std::endl;
-    ofs_source << "{" << std::endl;
-
-    if (instrumentation_strategy_ != InstrumentationStrategy::NONE) {
-        ofs_source << "__daisy_instrument_init();" << std::endl;
-    }
-
-    ofs_source << this->main_stream_.str() << std::endl;
-
-    if (instrumentation_strategy_ != InstrumentationStrategy::NONE) {
-        ofs_source << "__daisy_instrument_finalize();" << std::endl;
-    }
-
+    ofs_source << "static void* __capture_ctx;" << std::endl;
+    ofs_source << "static void __attribute__((constructor(1000))) __capture_ctx_init(void) {" << std::endl;
+    ofs_source << "\t__capture_ctx = __daisy_capture_init(\"" << name << "\");" << std::endl;
     ofs_source << "}" << std::endl;
-    ofs_source.close();
-
-    return true;
-};
+    ofs_source << std::endl;
+}
 
 void CPPCodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#include <cmath>" << std::endl;

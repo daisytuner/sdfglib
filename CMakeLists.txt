@@ -35,10 +35,10 @@ endif()
 find_package(nlohmann_json REQUIRED)
 
 # Boost
-set(Boost_USE_STATIC_LIBS OFF) 
-set(Boost_USE_MULTITHREADED ON)  
-set(Boost_USE_STATIC_RUNTIME OFF) 
-find_package(Boost REQUIRED COMPONENTS graph) 
+set(Boost_USE_STATIC_LIBS OFF)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+find_package(Boost REQUIRED COMPONENTS graph)
 
 # Find the ISL library
 find_package(PkgConfig REQUIRED)
@@ -66,6 +66,7 @@ set(SOURCE_FILES
     src/codegen/language_extensions/cpp_language_extension.cpp
     src/codegen/language_extensions/cuda_language_extension.cpp
     src/codegen/code_generators/c_code_generator.cpp
+    src/codegen/code_generators/c_style_base_code_generator.cpp
     src/codegen/code_generators/cpp_code_generator.cpp
     src/codegen/code_generators/cuda_code_generator.cpp
     src/codegen/dispatchers/node_dispatcher.cpp

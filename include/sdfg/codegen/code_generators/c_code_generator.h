@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "c_style_base_code_generator.h"
 #include "sdfg/codegen/code_generator.h"
 #include "sdfg/codegen/instrumentation/capture_var_plan.h"
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
@@ -10,36 +11,34 @@
 namespace sdfg {
 namespace codegen {
 
-class CCodeGenerator : public CodeGenerator {
+class CCodeGenerator : public CStyleBaseCodeGenerator {
 private:
     CLanguageExtension language_extension_;
 
 protected:
-    void dispatch_includes();
+    void dispatch_includes() override;
 
-    void dispatch_structures();
+    void dispatch_structures() override;
 
-    void dispatch_globals();
+    void dispatch_globals() override;
 
-    void dispatch_schedule();
+    void dispatch_schedule() override;
+
+    LanguageExtension& language_extension() override { return language_extension_; }
 
 public:
-    CCodeGenerator(
+    explicit CCodeGenerator(
         StructuredSDFG& sdfg,
         InstrumentationStrategy instrumentation_strategy = InstrumentationStrategy::NONE,
         bool capture_args_results = false,
         const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr
-    );
+    )
+        : CStyleBaseCodeGenerator(sdfg, instrumentation_strategy, capture_args_results, output_and_header_paths) {}
 
-    bool generate() override;
 
     std::string function_definition() override;
 
-    bool as_source(const std::filesystem::path& header_path, const std::filesystem::path& source_path) override;
-
-    void emit_capture_context_init(std::ostream& ofs_source) const;
-
-    void emit_arg_captures(std::ostream& ofs_source, const std::vector<CaptureVarPlan>& plan, bool after);
+    void emit_capture_context_init(std::ostream& ofs_source) const override;
 };
 
 } // namespace codegen
