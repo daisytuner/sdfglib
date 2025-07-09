@@ -90,6 +90,10 @@ public:
     /// @brief Generate the SDFG's code into source files
     virtual bool as_source(const std::filesystem::path& header_path, const std::filesystem::path& source_path) = 0;
 
+    /// @brief Generate only the function source code and append it to the source file. @ref as_source generates this
+    /// into `source_path` after includes, globals and structs
+    virtual void append_function_source(std::ofstream& ofs_source) = 0;
+
     /// @brief Get the includes
     const PrettyPrinter& includes() const { return this->includes_stream_; };
 

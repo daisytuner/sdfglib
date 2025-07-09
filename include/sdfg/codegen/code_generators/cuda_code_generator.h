@@ -33,6 +33,8 @@ public:
     std::string function_definition() override;
 
     bool as_source(const std::filesystem::path& header_path, const std::filesystem::path& source_path) override;
+
+    void append_function_source(std::ofstream& ofs_source) override;
 };
 
 } // namespace codegen

@@ -34,6 +34,8 @@ public:
 
     bool as_source(const std::filesystem::path& header_path, const std::filesystem::path& source_path) override;
 
+    void append_function_source(std::ofstream& ofs_source) override;
+
     virtual void emit_capture_context_init(std::ostream& ofs_source) const = 0;
 
     void emit_arg_captures(std::ostream& ofs_source, const std::vector<CaptureVarPlan>& plan, bool after);

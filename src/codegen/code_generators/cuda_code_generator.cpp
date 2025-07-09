@@ -59,15 +59,22 @@ bool CUDACodeGenerator::as_source(const std::filesystem::path& header_path, cons
     ofs_header.close();
 
     ofs_source << "#include \"" << header_path.filename().string() << "\"" << std::endl;
+
     ofs_source << this->globals_stream_.str() << std::endl;
-    ofs_source << this->function_definition() << std::endl;
-    ofs_source << "{" << std::endl;
-    ofs_source << this->main_stream_.str() << std::endl;
-    ofs_source << "}" << std::endl;
+
+    append_function_source(ofs_source);
+
     ofs_source.close();
 
     return true;
 };
+
+void CUDACodeGenerator::append_function_source(std::ofstream& ofs_source) {
+    ofs_source << this->function_definition() << std::endl;
+    ofs_source << "{" << std::endl;
+    ofs_source << this->main_stream_.str() << std::endl;
+    ofs_source << "}" << std::endl;
+}
 
 void CUDACodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#define "

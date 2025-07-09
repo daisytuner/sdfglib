@@ -42,6 +42,14 @@ bool CStyleBaseCodeGenerator::as_source(const std::filesystem::path& header_path
     ofs_source << "#include \"" << header_path.filename().string() << "\"" << std::endl;
     ofs_source << this->globals_stream_.str() << std::endl;
 
+    append_function_source(ofs_source);
+
+    ofs_source.close();
+
+    return true;
+}
+
+void CStyleBaseCodeGenerator::append_function_source(std::ofstream& ofs_source) {
     std::unique_ptr<std::vector<CaptureVarPlan>> capturePlan;
     if (capture_args_results_) {
         capturePlan = create_capture_plans();
@@ -85,9 +93,6 @@ bool CStyleBaseCodeGenerator::as_source(const std::filesystem::path& header_path
     }
 
     ofs_source << "}" << std::endl;
-    ofs_source.close();
-
-    return true;
 }
 
 void CStyleBaseCodeGenerator::
