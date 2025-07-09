@@ -5,8 +5,7 @@
 namespace sdfg {
 namespace codegen {
 
-OutermostLoopsInstrumentation::OutermostLoopsInstrumentation(StructuredSDFG& sdfg)
-    : Instrumentation(sdfg) {
+OutermostLoopsInstrumentation::OutermostLoopsInstrumentation(StructuredSDFG& sdfg) : Instrumentation(sdfg) {
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& loop_tree_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto ols = loop_tree_analysis.outermost_loops();
@@ -15,18 +14,17 @@ OutermostLoopsInstrumentation::OutermostLoopsInstrumentation(StructuredSDFG& sdf
     }
 }
 
-bool OutermostLoopsInstrumentation::should_instrument(
-    const structured_control_flow::ControlFlowNode& node) const {
+bool OutermostLoopsInstrumentation::should_instrument(const structured_control_flow::ControlFlowNode& node) const {
     return this->outermost_loops_.count(&node);
 }
 
-void OutermostLoopsInstrumentation::begin_instrumentation(
-    const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream) const {
+void OutermostLoopsInstrumentation::
+    begin_instrumentation(const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream) const {
     stream << "__daisy_instrument_enter();" << std::endl;
 }
 
-void OutermostLoopsInstrumentation::end_instrumentation(
-    const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream) const {
+void OutermostLoopsInstrumentation::
+    end_instrumentation(const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream) const {
     std::string region_name = sdfg_.name() + "_" + std::to_string(node.element_id());
 
     bool has_metadata = sdfg_.metadata().find("source_file") != sdfg_.metadata().end() &&
@@ -54,12 +52,15 @@ void OutermostLoopsInstrumentation::end_instrumentation(
         stream << ", ";
         stream << "\"" << sdfg_.metadata("source_file") << "\", ";
 
-        std::string features_path = sdfg_.metadata("features_path") + "/" + region_name + ".npz";
-        stream << "\"" << features_path << "\"";
+        std::string source_file = sdfg_.metadata("source_file");
+        std::string source_file_stem = source_file.substr(0, source_file.find_last_of('.'));
+        std::string features_file = source_file_stem + "_" + std::to_string(node.element_id()) + ".npz";
+
+        stream << "\"" << features_file << "\"";
     }
 
     stream << ");" << std::endl;
 }
 
-}  // namespace codegen
-}  // namespace sdfg
+} // namespace codegen
+} // namespace sdfg
