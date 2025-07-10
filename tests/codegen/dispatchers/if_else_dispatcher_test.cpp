@@ -24,11 +24,11 @@ TEST(IfElseDispatcherTest, DispatchNode_Trivial) {
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
-    codegen::PrettyPrinter library_stream;
-    dispatcher.dispatch_node(main_stream, globals_stream, library_stream);
+    codegen::CodeSnippetFactory library_factory;
+    dispatcher.dispatch_node(main_stream, globals_stream, library_factory);
 
     EXPECT_EQ(globals_stream.str(), "");
-    EXPECT_EQ(library_stream.str(), "");
+    EXPECT_TRUE(library_factory.snippets().empty());
     EXPECT_EQ(main_stream.str(), "if(true)\n{\n}\nelse if(false)\n{\n}\n");
 }
 
@@ -40,10 +40,8 @@ TEST(IfElseDispatcherTest, DispatchNode) {
     builder.add_container("a", types::Scalar(types::PrimitiveType::Int8));
 
     auto& if_else = builder.add_if_else(root);
-    auto& case_1 =
-        builder.add_case(if_else, symbolic::Eq(symbolic::symbol("a"), symbolic::integer(0)));
-    auto& case_2 =
-        builder.add_case(if_else, symbolic::Ne(symbolic::symbol("a"), symbolic::integer(0)));
+    auto& case_1 = builder.add_case(if_else, symbolic::Eq(symbolic::symbol("a"), symbolic::integer(0)));
+    auto& case_2 = builder.add_case(if_else, symbolic::Ne(symbolic::symbol("a"), symbolic::integer(0)));
 
     auto final_sdfg = builder.move();
 
@@ -53,10 +51,10 @@ TEST(IfElseDispatcherTest, DispatchNode) {
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
-    codegen::PrettyPrinter library_stream;
-    dispatcher.dispatch_node(main_stream, globals_stream, library_stream);
+    codegen::CodeSnippetFactory library_factory;
+    dispatcher.dispatch_node(main_stream, globals_stream, library_factory);
 
     EXPECT_EQ(globals_stream.str(), "");
-    EXPECT_EQ(library_stream.str(), "");
+    EXPECT_TRUE(library_factory.snippets().empty());
     EXPECT_EQ(main_stream.str(), "if((0 == a))\n{\n}\nelse if((0 != a))\n{\n}\n");
 }

@@ -14,9 +14,13 @@ TEST(MapDispatcherTest, DispatchNode) {
 
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
     auto& loop = builder.add_map(
-        root, symbolic::symbol("i"), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential);
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential
+    );
 
     auto final_sdfg = builder.move();
 
@@ -26,10 +30,10 @@ TEST(MapDispatcherTest, DispatchNode) {
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
-    codegen::PrettyPrinter library_stream;
-    dispatcher.dispatch_node(main_stream, globals_stream, library_stream);
+    codegen::CodeSnippetFactory library_factory;
+    dispatcher.dispatch_node(main_stream, globals_stream, library_factory);
 
     EXPECT_EQ(globals_stream.str(), "");
-    EXPECT_EQ(library_stream.str(), "");
+    EXPECT_TRUE(library_factory.snippets().empty());
     EXPECT_EQ(main_stream.str(), "// Map\nfor(i = 0;i < 10;i = 1 + i)\n{\n}\n");
 }

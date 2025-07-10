@@ -1,27 +1,29 @@
 #pragma once
 
+#include <memory>
+#include <vector>
+
 #include "sdfg/codegen/code_generator.h"
-#include "sdfg/codegen/instrumentation/instrumentation_strategy.h"
-#include "sdfg/codegen/language_extensions/cuda_language_extension.h"
+#include "sdfg/codegen/instrumentation/capture_var_plan.h"
+#include "sdfg/codegen/language_extension.h"
 
 namespace sdfg {
 namespace codegen {
 
-class CUDACodeGenerator : public CodeGenerator {
-private:
-    CUDALanguageExtension language_extension_;
-
+class CStyleBaseCodeGenerator : public CodeGenerator {
 protected:
-    void dispatch_includes();
+    virtual LanguageExtension& language_extension() = 0;
 
-    void dispatch_structures();
+    virtual void dispatch_includes() = 0;
 
-    void dispatch_globals();
+    virtual void dispatch_structures() = 0;
 
-    void dispatch_schedule();
+    virtual void dispatch_globals() = 0;
+
+    virtual void dispatch_schedule() = 0;
 
 public:
-    CUDACodeGenerator(
+    CStyleBaseCodeGenerator(
         StructuredSDFG& sdfg,
         InstrumentationStrategy instrumentation_strategy = InstrumentationStrategy::NONE,
         bool capture_args_results = false,
@@ -30,11 +32,13 @@ public:
 
     bool generate() override;
 
-    std::string function_definition() override;
-
     bool as_source(const std::filesystem::path& header_path, const std::filesystem::path& source_path) override;
 
     void append_function_source(std::ofstream& ofs_source) override;
+
+    virtual void emit_capture_context_init(std::ostream& ofs_source) const = 0;
+
+    void emit_arg_captures(std::ostream& ofs_source, const std::vector<CaptureVarPlan>& plan, bool after);
 };
 
 } // namespace codegen

@@ -1,0 +1,53 @@
+#pragma once
+#include <string>
+
+#include "utils.h"
+
+namespace sdfg {
+namespace codegen {
+
+inline std::string CODE_SNIPPET_INIT_ONCE = "init_once";
+inline std::string CODE_SNIPPET_DEINIT_ONCE = "deinit_once";
+
+class CodeSnippet {
+protected:
+    PrettyPrinter stream_;
+    std::string extension_;
+    bool as_file_;
+
+public:
+    CodeSnippet(const std::string& extension, bool as_file) : extension_(extension), as_file_(as_file) {};
+
+    PrettyPrinter& stream() { return stream_; }
+
+    const PrettyPrinter& stream() const { return stream_; }
+
+    const std::string& extension() const { return extension_; }
+
+    bool is_as_file() const { return as_file_; }
+};
+
+class CodeSnippetFactory {
+protected:
+    std::unordered_map<std::string, CodeSnippet> snippets_;
+    const std::filesystem::path output_path_;
+    const std::filesystem::path header_path_;
+
+public:
+    CodeSnippetFactory(const std::pair<std::filesystem::path, std::filesystem::path>* config = nullptr);
+
+    virtual ~CodeSnippetFactory() = default;
+
+    CodeSnippet& require(const std::string& name, const std::string& extension, bool as_file = true);
+
+    std::unordered_map<std::string, CodeSnippet>::iterator find(const std::string& name);
+
+    const std::unordered_map<std::string, CodeSnippet>& snippets() const;
+
+    const std::filesystem::path& output_path() const { return output_path_; }
+    const std::filesystem::path& header_path() const { return header_path_; }
+};
+
+
+} // namespace codegen
+} // namespace sdfg
