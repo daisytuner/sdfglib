@@ -4,11 +4,12 @@
 #include <sstream>
 #include <string>
 
+#include "code_snippet_factory.h"
 #include "sdfg/analysis/mem_access_range_analysis.h"
+#include "sdfg/codegen/instrumentation/capture_var_plan.h"
 #include "sdfg/codegen/instrumentation/instrumentation_strategy.h"
 #include "sdfg/codegen/utils.h"
 #include "sdfg/structured_sdfg.h"
-#include "sdfg/codegen/instrumentation/capture_var_plan.h"
 #include "sdfg/types/type.h"
 
 namespace sdfg {
@@ -21,7 +22,7 @@ namespace codegen {
  * It contains the streams for the includes, classes, globals, library functions and main code.
  */
 class CodeGenerator {
-   protected:
+protected:
     /// @brief Reference to the schedule
     StructuredSDFG& sdfg_;
 
@@ -38,12 +39,12 @@ class CodeGenerator {
     PrettyPrinter globals_stream_;
 
     /// @brief Stream for library functions
-    PrettyPrinter library_stream_;
+    CodeSnippetFactory library_snippet_factory_;
 
     /// @brief Main stream
     PrettyPrinter main_stream_;
 
-    /// @brief Emit instrumenetation code to capture runtime contents of inputs and outputs
+    /// @brief Emit instrumentation code to capture runtime contents of inputs and outputs
     bool capture_args_results_;
 
     std::tuple<int, types::PrimitiveType> analyze_type_rec(
@@ -55,11 +56,24 @@ class CodeGenerator {
         const analysis::MemAccessRange* range
     );
 
-    bool add_capture_plan(const std::string& name, int argIdx, bool isExternal, std::vector<CaptureVarPlan>& plan, const analysis::MemAccessRanges& ranges);
+    bool add_capture_plan(
+        const std::string& name,
+        int argIdx,
+        bool isExternal,
+        std::vector<CaptureVarPlan>& plan,
+        const analysis::MemAccessRanges& ranges
+    );
 
-   public:
-    CodeGenerator(StructuredSDFG& sdfg, InstrumentationStrategy instrumentation_strategy, bool capture_args_results = false)
-        : sdfg_(sdfg), instrumentation_strategy_(instrumentation_strategy), capture_args_results_(capture_args_results) {};
+public:
+    CodeGenerator(
+        StructuredSDFG& sdfg,
+        InstrumentationStrategy instrumentation_strategy,
+        bool capture_args_results = false,
+        const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr
+    )
+        : sdfg_(sdfg), instrumentation_strategy_(instrumentation_strategy),
+          library_snippet_factory_(output_and_header_paths), capture_args_results_(capture_args_results) {};
+
 
     virtual ~CodeGenerator() = default;
 
@@ -74,9 +88,11 @@ class CodeGenerator {
     virtual std::string function_definition() = 0;
 
     /// @brief Generate the SDFG's code into source files
-    virtual bool as_source(const std::filesystem::path& header_path,
-                           const std::filesystem::path& source_path,
-                           const std::filesystem::path& library_path) = 0;
+    virtual bool as_source(const std::filesystem::path& header_path, const std::filesystem::path& source_path) = 0;
+
+    /// @brief Generate only the function source code and append it to the source file. @ref as_source generates this
+    /// into `source_path` after includes, globals and structs
+    virtual void append_function_source(std::ofstream& ofs_source) = 0;
 
     /// @brief Get the includes
     const PrettyPrinter& includes() const { return this->includes_stream_; };
@@ -87,8 +103,10 @@ class CodeGenerator {
     /// @brief Get the globals
     const PrettyPrinter& globals() const { return this->globals_stream_; };
 
-    /// @brief Get the library
-    const PrettyPrinter& library() const { return this->library_stream_; };
+    /// @brief all created library snippets
+    const std::unordered_map<std::string, CodeSnippet>& library_snippets() const {
+        return this->library_snippet_factory_.snippets();
+    };
 
     /// @brief Get the main stream
     const PrettyPrinter& main() const { return this->main_stream_; };
@@ -96,5 +114,5 @@ class CodeGenerator {
     std::unique_ptr<std::vector<CaptureVarPlan>> create_capture_plans();
 };
 
-}  // namespace codegen
-}  // namespace sdfg
+} // namespace codegen
+} // namespace sdfg

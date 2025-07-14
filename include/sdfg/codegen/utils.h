@@ -8,8 +8,9 @@
 
 namespace sdfg {
 namespace codegen {
+
 class PrettyPrinter {
-   public:
+public:
     // Constructor
     PrettyPrinter(int indent = 0, bool frozen = false);
 
@@ -25,7 +26,7 @@ class PrettyPrinter {
     void clear();
 
     // Overload the insertion operator
-    template <typename T>
+    template<typename T>
     PrettyPrinter& operator<<(const T& value) {
         if (frozen_) {
             throw std::runtime_error("PrettyPrinter is frozen");
@@ -36,9 +37,9 @@ class PrettyPrinter {
     }
 
     // Overload for manipulators (like std::endl)
-    PrettyPrinter& operator<<(std::ostream& (*manip)(std::ostream&));
+    PrettyPrinter& operator<<(std::ostream& (*manip)(std::ostream&) );
 
-   private:
+private:
     std::stringstream stream;
     int indentSize;
     bool isNewLine = true;
@@ -49,14 +50,15 @@ class PrettyPrinter {
 };
 
 class Reference : public types::IType {
-   private:
+private:
     std::unique_ptr<types::IType> reference_;
 
-   public:
+public:
     Reference(const types::IType& reference_);
 
-    Reference(types::StorageType storage_type, size_t alignment, const std::string& initializer,
-              const types::IType& reference_);
+    Reference(
+        types::StorageType storage_type, size_t alignment, const std::string& initializer, const types::IType& reference_
+    );
 
     std::unique_ptr<types::IType> clone() const override;
 
@@ -73,5 +75,5 @@ class Reference : public types::IType {
     std::string print() const override;
 };
 
-}  // namespace codegen
-}  // namespace sdfg
+} // namespace codegen
+} // namespace sdfg

@@ -25,10 +25,10 @@ TEST(BlockDispatcherTest, DispatchNode) {
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
-    codegen::PrettyPrinter library_stream;
-    dispatcher.dispatch_node(main_stream, globals_stream, library_stream);
+    codegen::CodeSnippetFactory library_factory;
+    dispatcher.dispatch_node(main_stream, globals_stream, library_factory);
 
-    EXPECT_EQ(library_stream.str(), "");
+    EXPECT_TRUE(library_factory.snippets().empty());
     EXPECT_EQ(globals_stream.str(), "");
     EXPECT_EQ(main_stream.str(), "");
 }
@@ -46,10 +46,12 @@ TEST(BlockDispatcherTest, DispatchNode_withDataflow) {
     auto& access_node_1 = builder.add_access(block, "a");
     auto& access_node_2 = builder.add_access(block, "b");
     auto& access_node_3 = builder.add_access(block, "c");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"_in1", types::Scalar(types::PrimitiveType::Int32)},
-                                         {"_in2", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::add,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"_in1", types::Scalar(types::PrimitiveType::Int32)}, {"_in2", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, access_node_1, "void", tasklet, "_in1", data_flow::Subset{});
     builder.add_memlet(block, access_node_2, "void", tasklet, "_in2", data_flow::Subset{});
     builder.add_memlet(block, tasklet, "_out", access_node_3, "void", data_flow::Subset{});
@@ -62,13 +64,15 @@ TEST(BlockDispatcherTest, DispatchNode_withDataflow) {
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
-    codegen::PrettyPrinter library_stream;
-    dispatcher.dispatch(main_stream, globals_stream, library_stream);
+    codegen::CodeSnippetFactory library_factory;
+    dispatcher.dispatch_node(main_stream, globals_stream, library_factory);
 
-    EXPECT_EQ(main_stream.str(),
-              "{\n    int _in1 = a;\n    int _in2 = b;\n    int _out;\n\n    _out = _in1 + "
-              "_in2;\n\n    c = _out;\n}\n");
-    EXPECT_EQ(library_stream.str(), "");
+    EXPECT_EQ(
+        main_stream.str(),
+        "{\n    int _in1 = a;\n    int _in2 = b;\n    int _out;\n\n    _out = _in1 + "
+        "_in2;\n\n    c = _out;\n}\n"
+    );
+    EXPECT_TRUE(library_factory.snippets().empty());
     EXPECT_EQ(globals_stream.str(), "");
 }
 
@@ -85,10 +89,12 @@ TEST(DataFlowDispatcherTest, DispatchTasklet) {
     auto& access_node_1 = builder.add_access(block, "a");
     auto& access_node_2 = builder.add_access(block, "b");
     auto& access_node_3 = builder.add_access(block, "c");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add,
-                                        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-                                        {{"_in1", types::Scalar(types::PrimitiveType::Int32)},
-                                         {"_in2", types::Scalar(types::PrimitiveType::Int32)}});
+    auto& tasklet = builder.add_tasklet(
+        block,
+        data_flow::TaskletCode::add,
+        {"_out", types::Scalar(types::PrimitiveType::Int32)},
+        {{"_in1", types::Scalar(types::PrimitiveType::Int32)}, {"_in2", types::Scalar(types::PrimitiveType::Int32)}}
+    );
     builder.add_memlet(block, access_node_1, "void", tasklet, "_in1", data_flow::Subset{});
     builder.add_memlet(block, access_node_2, "void", tasklet, "_in2", data_flow::Subset{});
     builder.add_memlet(block, tasklet, "_out", access_node_3, "void", data_flow::Subset{});
@@ -101,9 +107,11 @@ TEST(DataFlowDispatcherTest, DispatchTasklet) {
     codegen::PrettyPrinter main_stream;
     dispatcher.dispatch(main_stream);
 
-    EXPECT_EQ(main_stream.str(),
-              "{\n    int _in1 = a;\n    int _in2 = b;\n    int _out;\n\n    _out = _in1 + "
-              "_in2;\n\n    c = _out;\n}\n");
+    EXPECT_EQ(
+        main_stream.str(),
+        "{\n    int _in1 = a;\n    int _in2 = b;\n    int _out;\n\n    _out = _in1 + "
+        "_in2;\n\n    c = _out;\n}\n"
+    );
 }
 
 TEST(DataFlowDispatcherTest, BarrierLocalNodeSimple) {
@@ -116,8 +124,7 @@ TEST(DataFlowDispatcherTest, BarrierLocalNodeSimple) {
     builder.add_container("c", types::Scalar(types::PrimitiveType::Int32));
 
     auto& block = builder.add_block(root);
-    builder.add_library_node<sdfg::data_flow::BarrierLocalNode>(block, data_flow::BARRIER_LOCAL, {},
-                                                                {}, true);
+    builder.add_library_node<sdfg::data_flow::BarrierLocalNode>(block, data_flow::BARRIER_LOCAL, {}, {}, true);
 
     auto final_sdfg = builder.move();
 

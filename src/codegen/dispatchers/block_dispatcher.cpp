@@ -5,15 +5,19 @@
 namespace sdfg {
 namespace codegen {
 
-BlockDispatcher::BlockDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
-                                 structured_control_flow::Block& node,
-                                 Instrumentation& instrumentation)
+BlockDispatcher::BlockDispatcher(
+    LanguageExtension& language_extension,
+    StructuredSDFG& sdfg,
+    structured_control_flow::Block& node,
+    Instrumentation& instrumentation
+)
     : sdfg::codegen::NodeDispatcher(language_extension, sdfg, node, instrumentation), node_(node) {
 
       };
 
-void BlockDispatcher::dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
-                                    PrettyPrinter& library_stream) {
+void BlockDispatcher::dispatch_node(
+    PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
+) {
     if (node_.dataflow().nodes().empty()) {
         return;
     }
@@ -22,8 +26,9 @@ void BlockDispatcher::dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& g
     dispatcher.dispatch(main_stream);
 };
 
-DataFlowDispatcher::DataFlowDispatcher(LanguageExtension& language_extension, const Function& sdfg,
-                                       const data_flow::DataFlowGraph& data_flow_graph)
+DataFlowDispatcher::DataFlowDispatcher(
+    LanguageExtension& language_extension, const Function& sdfg, const data_flow::DataFlowGraph& data_flow_graph
+)
     : language_extension_(language_extension), function_(sdfg), data_flow_graph_(data_flow_graph) {
 
       };
@@ -71,8 +76,7 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
     if (memlet.src_conn() == "void") {
         // Infer the dereferenced type
         auto subset = memlet.subset();
-        const types::IType* dereferenced_type =
-            &types::infer_type(function_, *final_src_type, subset);
+        const types::IType* dereferenced_type = &types::infer_type(function_, *final_src_type, subset);
 
         // Function are incomplete types, so we need to remove one level of indirection
         if (dynamic_cast<const types::Function*>(dereferenced_type)) {
@@ -116,8 +120,7 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
     stream << "}" << std::endl;
 };
 
-void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream,
-                                          const data_flow::Tasklet& tasklet) {
+void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow::Tasklet& tasklet) {
     if (tasklet.is_conditional()) {
         stream << "if (" << language_extension_.expression(tasklet.condition()) << ") ";
     }
@@ -136,12 +139,10 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream,
         auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
         stream << this->language_extension_.declaration(input.first, input.second);
         const types::IType& type = this->function_.type(src.data());
-        stream << " = " << src.data()
-               << this->language_extension_.subset(function_, type, iedge.subset()) << ";";
+        stream << " = " << src.data() << this->language_extension_.subset(function_, type, iedge.subset()) << ";";
         stream << std::endl;
     }
-    stream << this->language_extension_.declaration(tasklet.output().first,
-                                                    tasklet.output().second);
+    stream << this->language_extension_.declaration(tasklet.output().first, tasklet.output().second);
     stream << ";" << std::endl;
 
     stream << std::endl;
@@ -153,8 +154,7 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream,
     for (auto& oedge : this->data_flow_graph_.out_edges(tasklet)) {
         auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
         const types::IType& type = this->function_.type(dst.data());
-        stream << dst.data() << this->language_extension_.subset(function_, type, oedge.subset())
-               << " = ";
+        stream << dst.data() << this->language_extension_.subset(function_, type, oedge.subset()) << " = ";
         stream << oedge.src_conn();
         stream << ";" << std::endl;
     }
@@ -163,39 +163,39 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream,
     stream << "}" << std::endl;
 };
 
-void DataFlowDispatcher::dispatch_library_node(PrettyPrinter& stream,
-                                               const data_flow::LibraryNode& libnode) {
-    auto dispatcher_fn = LibraryNodeDispatcherRegistry::instance().get_library_node_dispatcher(
-        libnode.code().value());
+void DataFlowDispatcher::dispatch_library_node(PrettyPrinter& stream, const data_flow::LibraryNode& libnode) {
+    auto dispatcher_fn = LibraryNodeDispatcherRegistry::instance().get_library_node_dispatcher(libnode.code().value());
     if (dispatcher_fn) {
-        auto dispatcher = dispatcher_fn(this->language_extension_, this->function_,
-                                        this->data_flow_graph_, libnode);
+        auto dispatcher = dispatcher_fn(this->language_extension_, this->function_, this->data_flow_graph_, libnode);
         dispatcher->dispatch(stream);
     } else {
-        throw std::runtime_error("No library node dispatcher found for library node code: " +
-                                 std::string(libnode.code().value()));
+        throw std::runtime_error(
+            "No library node dispatcher found for library node code: " + std::string(libnode.code().value())
+        );
     }
 };
 
 void register_default_library_node_dispatchers() {
     LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
         data_flow::LibraryNodeCode{"barrier_local"}.value(),
-        [](LanguageExtension& language_extension, const Function& function,
-           const data_flow::DataFlowGraph& data_flow_graph, const data_flow::LibraryNode& node) {
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
             return std::make_unique<ThreadBarrierDispatcher>(
-                language_extension, function, data_flow_graph,
-                dynamic_cast<const data_flow::BarrierLocalNode&>(node));
-        });
+                language_extension, function, data_flow_graph, dynamic_cast<const data_flow::BarrierLocalNode&>(node)
+            );
+        }
+    );
 };
 
-LibraryNodeDispatcher::LibraryNodeDispatcher(LanguageExtension& language_extension,
-                                             const Function& function,
-                                             const data_flow::DataFlowGraph& data_flow_graph,
-                                             const data_flow::LibraryNode& node)
-    : language_extension_(language_extension),
-      function_(function),
-      data_flow_graph_(data_flow_graph),
-      node_(node) {};
+LibraryNodeDispatcher::LibraryNodeDispatcher(
+    LanguageExtension& language_extension,
+    const Function& function,
+    const data_flow::DataFlowGraph& data_flow_graph,
+    const data_flow::LibraryNode& node
+)
+    : language_extension_(language_extension), function_(function), data_flow_graph_(data_flow_graph), node_(node) {};
 
-}  // namespace codegen
-}  // namespace sdfg
+} // namespace codegen
+} // namespace sdfg

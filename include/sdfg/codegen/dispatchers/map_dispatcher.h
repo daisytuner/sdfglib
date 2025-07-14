@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sdfg/codegen/code_snippet_factory.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher.h"
 #include "sdfg/structured_control_flow/map.h"
 
@@ -7,50 +8,65 @@ namespace sdfg {
 namespace codegen {
 
 class MapDispatcher : public NodeDispatcher {
-   private:
+private:
     structured_control_flow::Map& node_;
 
-   public:
-    MapDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
-                  structured_control_flow::Map& node, Instrumentation& instrumentation);
+public:
+    MapDispatcher(
+        LanguageExtension& language_extension,
+        StructuredSDFG& sdfg,
+        structured_control_flow::Map& node,
+        Instrumentation& instrumentation
+    );
 
-    void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
-                       PrettyPrinter& library_stream) override;
+    void dispatch_node(
+        PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
+    ) override;
 };
 
 class SequentialMapDispatcher : public NodeDispatcher {
-   private:
+private:
     structured_control_flow::Map& node_;
 
-   public:
-    SequentialMapDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
-                            structured_control_flow::Map& node, Instrumentation& instrumentation);
+public:
+    SequentialMapDispatcher(
+        LanguageExtension& language_extension,
+        StructuredSDFG& sdfg,
+        structured_control_flow::Map& node,
+        Instrumentation& instrumentation
+    );
 
-    void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
-                       PrettyPrinter& library_stream) override;
+    void dispatch_node(
+        PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
+    ) override;
 };
 
 class CPUParallelMapDispatcher : public NodeDispatcher {
-   private:
+private:
     structured_control_flow::Map& node_;
 
-   public:
-    CPUParallelMapDispatcher(LanguageExtension& language_extension, StructuredSDFG& sdfg,
-                             structured_control_flow::Map& node, Instrumentation& instrumentation);
+public:
+    CPUParallelMapDispatcher(
+        LanguageExtension& language_extension,
+        StructuredSDFG& sdfg,
+        structured_control_flow::Map& node,
+        Instrumentation& instrumentation
+    );
 
-    void dispatch_node(PrettyPrinter& main_stream, PrettyPrinter& globals_stream,
-                       PrettyPrinter& library_stream) override;
+    void dispatch_node(
+        PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
+    ) override;
 };
 
-using MapDispatcherFn = std::function<std::unique_ptr<NodeDispatcher>(
-    LanguageExtension&, StructuredSDFG&, structured_control_flow::Map&, Instrumentation&)>;
+using MapDispatcherFn = std::function<std::unique_ptr<
+    NodeDispatcher>(LanguageExtension&, StructuredSDFG&, structured_control_flow::Map&, Instrumentation&)>;
 
 class MapDispatcherRegistry {
-   private:
+private:
     mutable std::mutex mutex_;
     std::unordered_map<std::string, MapDispatcherFn> factory_map_;
 
-   public:
+public:
     static MapDispatcherRegistry& instance() {
         static MapDispatcherRegistry registry;
         return registry;
@@ -59,8 +75,7 @@ class MapDispatcherRegistry {
     void register_map_dispatcher(std::string schedule_type, MapDispatcherFn fn) {
         std::lock_guard<std::mutex> lock(mutex_);
         if (factory_map_.find(schedule_type) != factory_map_.end()) {
-            throw std::runtime_error("Map dispatcher already registered for schedule type: " +
-                                     std::string(schedule_type));
+            throw std::runtime_error("Map dispatcher already registered for schedule type: " + std::string(schedule_type));
         }
         factory_map_[schedule_type] = std::move(fn);
     }
@@ -78,5 +93,5 @@ class MapDispatcherRegistry {
 
 void register_default_map_dispatchers();
 
-}  // namespace codegen
-}  // namespace sdfg
+} // namespace codegen
+} // namespace sdfg

@@ -73,5 +73,6 @@ bool Reference::operator==(const types::IType& other) const {
 
 std::string Reference::print() const { return "Reference(" + this->reference_->print() + ")"; };
 
+
 } // namespace codegen
 } // namespace sdfg

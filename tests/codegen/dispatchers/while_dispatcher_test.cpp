@@ -22,11 +22,11 @@ TEST(WhileDispatcherTest, DispatchNode) {
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
-    codegen::PrettyPrinter library_stream;
-    dispatcher.dispatch_node(main_stream, globals_stream, library_stream);
+    codegen::CodeSnippetFactory library_factory;
+    dispatcher.dispatch_node(main_stream, globals_stream, library_factory);
 
     EXPECT_EQ(globals_stream.str(), "");
-    EXPECT_EQ(library_stream.str(), "");
+    EXPECT_TRUE(library_factory.snippets().empty());
     EXPECT_EQ(main_stream.str(), "while (1)\n{\n}\n");
 }
 
@@ -42,16 +42,15 @@ TEST(BreakDispatcherTest, DispatchNode) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(*final_sdfg);
-    codegen::BreakDispatcher dispatcher(language_extension, *final_sdfg, break_node,
-                                        instrumentation);
+    codegen::BreakDispatcher dispatcher(language_extension, *final_sdfg, break_node, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
-    codegen::PrettyPrinter library_stream;
-    dispatcher.dispatch_node(main_stream, globals_stream, library_stream);
+    codegen::CodeSnippetFactory library_factory;
+    dispatcher.dispatch_node(main_stream, globals_stream, library_factory);
 
     EXPECT_EQ(globals_stream.str(), "");
-    EXPECT_EQ(library_stream.str(), "");
+    EXPECT_TRUE(library_factory.snippets().empty());
     EXPECT_EQ(main_stream.str(), "break;\n");
 }
 
@@ -67,16 +66,15 @@ TEST(ContinueDispatcherTest, DispatchNode) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(*final_sdfg);
-    codegen::ContinueDispatcher dispatcher(language_extension, *final_sdfg, continue_node,
-                                           instrumentation);
+    codegen::ContinueDispatcher dispatcher(language_extension, *final_sdfg, continue_node, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
-    codegen::PrettyPrinter library_stream;
-    dispatcher.dispatch_node(main_stream, globals_stream, library_stream);
+    codegen::CodeSnippetFactory library_factory;
+    dispatcher.dispatch_node(main_stream, globals_stream, library_factory);
 
     EXPECT_EQ(globals_stream.str(), "");
-    EXPECT_EQ(library_stream.str(), "");
+    EXPECT_TRUE(library_factory.snippets().empty());
     EXPECT_EQ(main_stream.str(), "continue;\n");
 }
 
@@ -91,15 +89,14 @@ TEST(ReturnDispatcherTest, DispatchNode) {
 
     codegen::CLanguageExtension language_extension;
     codegen::Instrumentation instrumentation(*final_sdfg);
-    codegen::ReturnDispatcher dispatcher(language_extension, *final_sdfg, return_node,
-                                         instrumentation);
+    codegen::ReturnDispatcher dispatcher(language_extension, *final_sdfg, return_node, instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
-    codegen::PrettyPrinter library_stream;
-    dispatcher.dispatch_node(main_stream, globals_stream, library_stream);
+    codegen::CodeSnippetFactory library_factory;
+    dispatcher.dispatch_node(main_stream, globals_stream, library_factory);
 
     EXPECT_EQ(globals_stream.str(), "");
-    EXPECT_EQ(library_stream.str(), "");
+    EXPECT_TRUE(library_factory.snippets().empty());
     EXPECT_EQ(main_stream.str(), "return;\n");
 }

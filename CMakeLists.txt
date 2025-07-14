@@ -62,11 +62,13 @@ set(SOURCE_FILES
     src/builder/structured_sdfg_builder.cpp
     src/codegen/utils.cpp
     src/codegen/code_generator.cpp
+    src/codegen/code_snippet_factory.cpp
     src/codegen/instrumentation/capture_var_plan.cpp
     src/codegen/language_extensions/c_language_extension.cpp
     src/codegen/language_extensions/cpp_language_extension.cpp
     src/codegen/language_extensions/cuda_language_extension.cpp
     src/codegen/code_generators/c_code_generator.cpp
+    src/codegen/code_generators/c_style_base_code_generator.cpp
     src/codegen/code_generators/cpp_code_generator.cpp
     src/codegen/code_generators/cuda_code_generator.cpp
     src/codegen/dispatchers/node_dispatcher.cpp
