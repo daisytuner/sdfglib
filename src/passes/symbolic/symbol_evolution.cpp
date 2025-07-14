@@ -11,12 +11,16 @@
 namespace sdfg {
 namespace passes {
 
-symbolic::Expression scalar_evolution(structured_control_flow::StructuredLoop& loop,
-                                      symbolic::Symbol indvar, symbolic::Expression indvar_update,
-                                      symbolic::Expression indvar_init, symbolic::Symbol sym,
-                                      symbolic::Expression sym_update,
-                                      symbolic::Expression sym_init,
-                                      const std::unordered_set<std::string>& moving_symbols) {
+symbolic::Expression scalar_evolution(
+    structured_control_flow::StructuredLoop& loop,
+    symbolic::Symbol indvar,
+    symbolic::Expression indvar_update,
+    symbolic::Expression indvar_init,
+    symbolic::Symbol sym,
+    symbolic::Expression sym_update,
+    symbolic::Expression sym_init,
+    const std::unordered_set<std::string>& moving_symbols
+) {
     // Check if expr is safe
     for (auto& atom : symbolic::atoms(sym_update)) {
         if (symbolic::eq(atom, sym)) {
@@ -64,10 +68,12 @@ symbolic::Expression scalar_evolution(structured_control_flow::StructuredLoop& l
     return inv;
 }
 
-bool SymbolEvolution::eliminate_symbols(builder::StructuredSDFGBuilder& builder,
-                                        analysis::AnalysisManager& analysis_manager,
-                                        structured_control_flow::StructuredLoop& loop,
-                                        structured_control_flow::Transition& transition) {
+bool SymbolEvolution::eliminate_symbols(
+    builder::StructuredSDFGBuilder& builder,
+    analysis::AnalysisManager& analysis_manager,
+    structured_control_flow::StructuredLoop& loop,
+    structured_control_flow::Transition& transition
+) {
     if (loop.root().size() == 0) {
         return false;
     }
@@ -100,8 +106,7 @@ bool SymbolEvolution::eliminate_symbols(builder::StructuredSDFGBuilder& builder,
     std::unordered_map<std::string, structured_control_flow::Transition*> pseudo_iterators;
     for (auto& sym : candidates) {
         // Criterion: Must have place after loop
-        if (transition.assignments().find(symbolic::symbol(sym)) ==
-            transition.assignments().end()) {
+        if (transition.assignments().find(symbolic::symbol(sym)) != transition.assignments().end()) {
             continue;
         }
 
@@ -120,8 +125,7 @@ bool SymbolEvolution::eliminate_symbols(builder::StructuredSDFGBuilder& builder,
         if (!dynamic_cast<structured_control_flow::Transition*>(update_write_element)) {
             continue;
         }
-        auto& update_transition =
-            static_cast<structured_control_flow::Transition&>(*update_write_element);
+        auto& update_transition = static_cast<structured_control_flow::Transition&>(*update_write_element);
         auto update_sym = update_transition.assignments().at(symbolic::symbol(sym));
 
         // Criterion: Not in a nested loop
@@ -170,13 +174,12 @@ bool SymbolEvolution::eliminate_symbols(builder::StructuredSDFGBuilder& builder,
         if (!dynamic_cast<structured_control_flow::Transition*>(init_write->element())) {
             continue;
         }
-        auto& init_transition =
-            static_cast<structured_control_flow::Transition&>(*init_write->element());
+        auto& init_transition = static_cast<structured_control_flow::Transition&>(*init_write->element());
         auto init_sym = init_transition.assignments().at(symbolic::symbol(sym));
 
         // Criterion: Infer scalar evolution
-        auto evolution = scalar_evolution(loop, indvar, update, init, symbolic::symbol(sym),
-                                          update_sym, init_sym, candidates);
+        auto evolution =
+            scalar_evolution(loop, indvar, update, init, symbolic::symbol(sym), update_sym, init_sym, candidates);
         if (evolution == SymEngine::null) {
             continue;
         }
@@ -201,8 +204,7 @@ SymbolEvolution::SymbolEvolution()
 
 std::string SymbolEvolution::name() { return "SymbolEvolution"; };
 
-bool SymbolEvolution::run_pass(builder::StructuredSDFGBuilder& builder,
-                               analysis::AnalysisManager& analysis_manager) {
+bool SymbolEvolution::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     // Traverse structured SDFG
@@ -215,10 +217,8 @@ bool SymbolEvolution::run_pass(builder::StructuredSDFGBuilder& builder,
         if (auto sequence_stmt = dynamic_cast<structured_control_flow::Sequence*>(current)) {
             for (size_t i = 0; i < sequence_stmt->size(); i++) {
                 auto child = sequence_stmt->at(i);
-                if (auto match =
-                        dynamic_cast<structured_control_flow::StructuredLoop*>(&child.first)) {
-                    applied |=
-                        this->eliminate_symbols(builder, analysis_manager, *match, child.second);
+                if (auto match = dynamic_cast<structured_control_flow::StructuredLoop*>(&child.first)) {
+                    applied |= this->eliminate_symbols(builder, analysis_manager, *match, child.second);
                 }
             }
             for (size_t i = 0; i < sequence_stmt->size(); i++) {
@@ -230,8 +230,7 @@ bool SymbolEvolution::run_pass(builder::StructuredSDFGBuilder& builder,
             }
         } else if (auto loop_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
             queue.push_back(&loop_stmt->root());
-        } else if (auto sloop_stmt =
-                       dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
+        } else if (auto sloop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
             queue.push_back(&sloop_stmt->root());
         }
     }
@@ -239,5 +238,5 @@ bool SymbolEvolution::run_pass(builder::StructuredSDFGBuilder& builder,
     return applied;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg
