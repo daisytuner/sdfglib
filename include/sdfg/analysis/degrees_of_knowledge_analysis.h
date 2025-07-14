@@ -19,7 +19,7 @@ private:
         number_of_maps_;
     std::unordered_map<const structured_control_flow::Map*, std::pair<symbolic::Expression, symbolic::SymbolSet>>
         size_of_a_map_;
-    std::unordered_map<const structured_control_flow::Map*, symbolic::Expression> load_of_a_map_;
+    std::unordered_map<const structured_control_flow::Map*, std::pair<symbolic::Expression, symbolic::SymbolSet>> load_of_a_map_;
     std::unordered_map<const structured_control_flow::Map*, symbolic::Expression> balance_of_a_map_;
 
     void number_analysis(
@@ -29,8 +29,8 @@ private:
         structured_control_flow::ControlFlowNode* node
     );
     void size_analysis(AnalysisManager& analysis_manager);
-    void load_analysis();
-    void balance_analysis();
+    void load_analysis(AnalysisManager& analysis_manager);
+    void balance_analysis(AnalysisManager& analysis_manager);
 
 protected:
     void run(analysis::AnalysisManager& analysis_manager) override;
