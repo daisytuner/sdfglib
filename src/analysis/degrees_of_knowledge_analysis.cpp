@@ -11,6 +11,7 @@
 #include "sdfg/analysis/data_dependency_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/users.h"
+#include "sdfg/analysis/work_depth_analysis.h"
 #include "sdfg/data_flow/code_node.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
@@ -136,6 +137,10 @@ void DegreesOfKnowledgeAnalysis::size_analysis(AnalysisManager& analysis_manager
             size_of_a_map_.insert({map_node, {num_iterations, unbound_symbols}});
         }
     }
+}
+
+void DegreesOfKnowledgeAnalysis::load_of_a_map(AnalysisManager& analysis_manager) {
+    auto& work_depth_analysis = analysis_manager.get<WorkDepthAnalysis>();
 }
 
 } // namespace analysis
