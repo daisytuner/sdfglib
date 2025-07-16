@@ -270,6 +270,17 @@ public:
         const DebugInfo& debug_info = DebugInfo()
     );
 
+    data_flow::Memlet& add_memlet(
+        structured_control_flow::Block& block,
+        data_flow::DataFlowNode& src,
+        const std::string& src_conn,
+        data_flow::DataFlowNode& dst,
+        const std::string& dst_conn,
+        const data_flow::Subset& begin_subset,
+        const data_flow::Subset& end_subset,
+        const DebugInfo& debug_info = DebugInfo()
+    );
+
     template<typename T, typename... Args>
     data_flow::LibraryNode& add_library_node(
         structured_control_flow::Block& block,

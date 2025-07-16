@@ -50,8 +50,7 @@ SymbolPropagation::SymbolPropagation()
 
 std::string SymbolPropagation::name() { return "SymbolPropagation"; };
 
-bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
-                                 analysis::AnalysisManager& analysis_manager) {
+bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     auto& sdfg = builder.subject();
@@ -150,8 +149,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                     success = false;
                     break;
                 }
-                auto sym_transition =
-                    dynamic_cast<structured_control_flow::Transition*>(user->element());
+                auto sym_transition = dynamic_cast<structured_control_flow::Transition*>(user->element());
                 auto sym_lhs = symbolic::symbol(user->container());
                 auto sym_rhs = sym_transition->assignments().at(sym_lhs);
 
@@ -180,8 +178,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
             }
             rhs_modified = symbolic::simplify(rhs_modified);
 
-            if (auto transition_stmt =
-                    dynamic_cast<structured_control_flow::Transition*>(read->element())) {
+            if (auto transition_stmt = dynamic_cast<structured_control_flow::Transition*>(read->element())) {
                 auto& assignments = transition_stmt->assignments();
                 for (auto& entry : assignments) {
                     if (symbolic::uses(entry.second, lhs)) {
@@ -189,8 +186,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                         applied = true;
                     }
                 }
-            } else if (auto if_else_stmt =
-                           dynamic_cast<structured_control_flow::IfElse*>(read->element())) {
+            } else if (auto if_else_stmt = dynamic_cast<structured_control_flow::IfElse*>(read->element())) {
                 // Criterion: RHS does not use nvptx symbols
                 bool nvptx = false;
                 for (auto& atom : symbolic::atoms(rhs_modified)) {
@@ -212,24 +208,24 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                 }
             } else if (auto memlet = dynamic_cast<data_flow::Memlet*>(read->element())) {
                 bool used = false;
-                for (auto& dim : memlet->subset()) {
+                auto subset = memlet->subset();
+                for (auto& dim : subset) {
                     if (symbolic::uses(dim, lhs)) {
                         dim = symbolic::subs(dim, lhs, rhs_modified);
                         used = true;
                     }
                 }
                 if (used) {
+                    memlet->set_subset(subset);
                     applied = true;
                 }
             } else if (auto access_node = dynamic_cast<data_flow::AccessNode*>(read->element())) {
                 if (SymEngine::is_a<SymEngine::Symbol>(*rhs_modified)) {
-                    auto new_symbol =
-                        SymEngine::rcp_static_cast<const SymEngine::Symbol>(rhs_modified);
+                    auto new_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(rhs_modified);
                     access_node->data() = new_symbol->get_name();
                     applied = true;
                 } else if (SymEngine::is_a<SymEngine::Integer>(*rhs_modified)) {
-                    auto new_int =
-                        SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs_modified);
+                    auto new_int = SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs_modified);
                     auto graph = read->parent();
                     auto block = static_cast<structured_control_flow::Block*>(graph->get_parent());
 
@@ -249,8 +245,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                     for (auto& edge : to_remove) {
                         builder.remove_memlet(*block, *edge);
                     }
-                    if (graph->in_degree(*access_node) == 0 &&
-                        graph->out_degree(*access_node) == 0) {
+                    if (graph->in_degree(*access_node) == 0 && graph->out_degree(*access_node) == 0) {
                         builder.remove_node(*block, *access_node);
                     }
                 }
@@ -267,15 +262,13 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                         applied = true;
                     }
                 }
-            } else if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(
-                           read->element())) {
+            } else if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(read->element())) {
                 auto for_user = dynamic_cast<analysis::ForUser*>(read);
                 if (for_user->is_init() && symbolic::uses(for_loop->init(), lhs)) {
                     for_loop->init() = symbolic::subs(for_loop->init(), lhs, rhs_modified);
                     applied = true;
                 } else if (for_user->is_condition() && symbolic::uses(for_loop->condition(), lhs)) {
-                    for_loop->condition() =
-                        symbolic::subs(for_loop->condition(), lhs, rhs_modified);
+                    for_loop->condition() = symbolic::subs(for_loop->condition(), lhs, rhs_modified);
                     applied = true;
                 } else if (for_user->is_update() && symbolic::uses(for_loop->update(), lhs)) {
                     for_loop->update() = symbolic::subs(for_loop->update(), lhs, rhs_modified);
@@ -288,5 +281,5 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
     return applied;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

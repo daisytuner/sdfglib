@@ -13,8 +13,7 @@ ViewPropagation::ViewPropagation()
 
 std::string ViewPropagation::name() { return "ViewPropagation"; };
 
-bool ViewPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
-                               analysis::AnalysisManager& analysis_manager) {
+bool ViewPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     auto& sdfg = builder.subject();
@@ -61,8 +60,7 @@ bool ViewPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
             auto& viewed_container = viewed_node.data();
 
             // Criterion: Must not be raw memory address
-            if (helpers::is_number(viewed_container) ||
-                symbolic::is_nullptr(symbolic::symbol(viewed_container))) {
+            if (helpers::is_number(viewed_container) || symbolic::is_nullptr(symbolic::symbol(viewed_container))) {
                 continue;
             }
 
@@ -145,14 +143,13 @@ bool ViewPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                         }
                     }
 
-                    auto& old_subset = oedge.subset();
+                    auto old_subset = oedge.subset();
 
                     // Handle first trailing dimensions
                     if (new_subset.empty()) {
                         auto& trail_dim = old_subset.front();
                         if (!symbolic::eq(trail_dim, symbolic::zero())) {
-                            throw std::runtime_error(
-                                "View propagation not implemented for non-void source connection");
+                            throw std::runtime_error("View propagation not implemented for non-void source connection");
                         }
                         old_subset.erase(old_subset.begin());
                     } else {
@@ -167,7 +164,7 @@ bool ViewPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                     for (auto& dim : old_subset) {
                         new_subset.push_back(dim);
                     }
-                    oedge.subset() = new_subset;
+                    oedge.set_subset(new_subset);
                 }
                 for (auto& iedge : use_graph->in_edges(use_node)) {
                     // Compute new subset
@@ -180,14 +177,13 @@ bool ViewPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                         }
                     }
 
-                    auto& old_subset = iedge.subset();
+                    auto old_subset = iedge.subset();
 
                     // Handle first trailing dimensions
                     if (new_subset.empty()) {
                         auto& trail_dim = old_subset.front();
                         if (!symbolic::eq(trail_dim, symbolic::zero())) {
-                            throw std::runtime_error(
-                                "View propagation not implemented for non-void source connection");
+                            throw std::runtime_error("View propagation not implemented for non-void source connection");
                         }
                         old_subset.erase(old_subset.begin());
                     } else {
@@ -202,7 +198,7 @@ bool ViewPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                     for (auto& dim : old_subset) {
                         new_subset.push_back(dim);
                     }
-                    iedge.subset() = new_subset;
+                    iedge.set_subset(new_subset);
                 }
 
                 applied = true;
@@ -214,5 +210,5 @@ bool ViewPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
     return applied;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg
