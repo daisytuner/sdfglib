@@ -551,10 +551,6 @@ void JSONSerializer::json_to_dataflow(
             nodes_map.insert({node["element_id"], tasklet});
         } else if (type == "library_node") {
             assert(node.contains("code"));
-            assert(node.contains("inputs"));
-            assert(node["inputs"].is_array());
-            assert(node.contains("outputs"));
-            assert(node["outputs"].is_array());
             data_flow::LibraryNodeCode code(node["code"].get<std::string>());
 
             auto serializer_fn = LibraryNodeSerializerRegistry::instance().get_library_node_serializer(code.value());
