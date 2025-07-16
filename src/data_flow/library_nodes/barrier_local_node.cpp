@@ -5,12 +5,9 @@
 namespace sdfg {
 namespace data_flow {
 
-BarrierLocalNode::BarrierLocalNode(size_t element_id, const DebugInfo& debug_info,
-                                   const graph::Vertex vertex, DataFlowGraph& parent,
-                                   const data_flow::LibraryNodeCode code,
-                                   const std::vector<std::string>& outputs,
-                                   const std::vector<std::string>& inputs, const bool side_effect)
-    : LibraryNode(element_id, debug_info, vertex, parent, code, outputs, inputs, side_effect) {
+BarrierLocalNode::
+    BarrierLocalNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent)
+    : LibraryNode(element_id, debug_info, vertex, parent, BARRIER_LOCAL, {}, {}, true) {
 
       };
 
@@ -36,17 +33,14 @@ bool BarrierLocalNode::needs_connector(size_t index) const {
     return false;
 };
 
-std::unique_ptr<DataFlowNode> BarrierLocalNode::clone(size_t element_id, const graph::Vertex vertex,
-                                                      DataFlowGraph& parent) const {
-    return std::unique_ptr<BarrierLocalNode>(
-        new BarrierLocalNode(element_id, this->debug_info_, vertex, parent, this->code_,
-                             this->outputs_, this->inputs_, this->side_effect_));
+std::unique_ptr<DataFlowNode> BarrierLocalNode::clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
+    const {
+    return std::unique_ptr<BarrierLocalNode>(new BarrierLocalNode(element_id, this->debug_info_, vertex, parent));
 };
 
-void BarrierLocalNode::replace(const symbolic::Expression& old_expression,
-                               const symbolic::Expression& new_expression) {
+void BarrierLocalNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
     // Do nothing
 };
 
-}  // namespace data_flow
-}  // namespace sdfg
+} // namespace data_flow
+} // namespace sdfg

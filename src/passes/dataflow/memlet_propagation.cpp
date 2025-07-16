@@ -13,8 +13,8 @@ ForwardMemletPropagation::ForwardMemletPropagation()
 
 std::string ForwardMemletPropagation::name() { return "ForwardMemletPropagation"; };
 
-bool ForwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
-                                        analysis::AnalysisManager& analysis_manager) {
+bool ForwardMemletPropagation::
+    run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     auto& sdfg = builder.subject();
@@ -77,8 +77,7 @@ bool ForwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
 
         // Criterion: Not casting types
         auto& assigning_type = types::infer_type(sdfg, sdfg.type(assigning_data), assigning_subset);
-        if (assigning_type.primitive_type() !=
-            tasklet->input_type(edge.dst_conn()).primitive_type()) {
+        if (assigning_type.primitive_type() != tasklet->input_type(edge.dst_conn()).primitive_type()) {
             continue;
         }
         if (type.primitive_type() != tasklet->output().second.primitive_type()) {
@@ -127,8 +126,7 @@ bool ForwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
                     auto& move_graph = *user->parent();
                     auto& move_edge = *move_graph.in_edges(move_node).begin();
                     auto& view_node = dynamic_cast<data_flow::AccessNode&>(move_edge.src());
-                    if (move_edge.dst_conn() == "void" ||
-                        symbolic::is_pointer(symbolic::symbol(view_node.data()))) {
+                    if (move_edge.dst_conn() == "void" || symbolic::is_pointer(symbolic::symbol(view_node.data()))) {
                         assigning_data_is_written = true;
                         break;
                     }
@@ -159,7 +157,7 @@ bool ForwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
             // Propagate
             read_node->data() = assigning_data;
             for (auto& oedge : read_graph->out_edges(*read_node)) {
-                oedge.subset() = assigning_subset;
+                oedge.set_subset(assigning_subset);
             }
 
             propagated--;
@@ -178,15 +176,16 @@ bool ForwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
             if (graph.out_degree(access_node) > 0) {
                 access_node.data() = assigning_data;
                 for (auto& oedge : graph.out_edges(access_node)) {
-                    oedge.subset() = assigning_subset;
+                    oedge.set_subset(assigning_subset);
                 }
                 std::vector<data_flow::Memlet*> assigning_node_in_edges;
                 for (auto& iedge : graph.in_edges(*assigning_node)) {
                     assigning_node_in_edges.push_back(&iedge);
                 }
                 for (auto& iedge : assigning_node_in_edges) {
-                    builder.add_memlet(block, iedge->src(), iedge->src_conn(), access_node,
-                                       iedge->dst_conn(), iedge->subset());
+                    builder.add_memlet(
+                        block, iedge->src(), iedge->src_conn(), access_node, iedge->dst_conn(), iedge->subset()
+                    );
                 }
                 for (auto& iedge : assigning_node_in_edges) {
                     builder.remove_memlet(block, *iedge);
@@ -213,8 +212,8 @@ BackwardMemletPropagation::BackwardMemletPropagation()
 
 std::string BackwardMemletPropagation::name() { return "BackwardMemletPropagation"; };
 
-bool BackwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder,
-                                         analysis::AnalysisManager& analysis_manager) {
+bool BackwardMemletPropagation::
+    run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     auto& sdfg = builder.subject();
@@ -324,8 +323,7 @@ bool BackwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder
                 auto& move_graph = *user->parent();
                 auto& move_edge = *move_graph.in_edges(move_node).begin();
                 auto& view_node = dynamic_cast<data_flow::AccessNode&>(move_edge.src());
-                if (move_edge.dst_conn() == "void" ||
-                    symbolic::is_pointer(symbolic::symbol(view_node.data()))) {
+                if (move_edge.dst_conn() == "void" || symbolic::is_pointer(symbolic::symbol(view_node.data()))) {
                     race_condition = true;
                     break;
                 }
@@ -348,10 +346,10 @@ bool BackwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder
         // Propagate
         write_access_node.data() = assigning_data;
         for (auto& iedge : write_graph.in_edges(write_access_node)) {
-            iedge.subset() = assigning_subset;
+            iedge.set_subset(assigning_subset);
         }
         for (auto& oedge : write_graph.out_edges(write_access_node)) {
-            oedge.subset() = assigning_subset;
+            oedge.set_subset(assigning_subset);
         }
         applied = true;
 
@@ -373,5 +371,5 @@ bool BackwardMemletPropagation::run_pass(builder::StructuredSDFGBuilder& builder
     return applied;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

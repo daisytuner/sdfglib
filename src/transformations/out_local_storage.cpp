@@ -173,9 +173,10 @@ void OutLocalStorage::apply_array(builder::StructuredSDFGBuilder& builder, analy
     for (auto user : body_users.uses(this->container_)) {
         auto element = user->element();
         if (auto memlet = dynamic_cast<data_flow::Memlet*>(element)) {
-            auto& subset = memlet->subset();
+            auto subset = memlet->subset();
             subset.clear();
             subset.push_back(this->loop_.indvar());
+            memlet->set_subset(subset);
         }
     }
     loop_.replace(symbolic::symbol(this->container_), symbolic::symbol(replacement_name));

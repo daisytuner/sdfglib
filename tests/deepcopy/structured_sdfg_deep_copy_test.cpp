@@ -62,29 +62,13 @@ inline data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
 class BarrierLocalLibraryNode : public data_flow::LibraryNode {
 public:
     BarrierLocalLibraryNode(
-        size_t element_id,
-        const DebugInfo& debug_info,
-        const graph::Vertex vertex,
-        data_flow::DataFlowGraph& parent,
-        const data_flow::LibraryNodeCode& code,
-        const std::vector<std::string>& outputs,
-        const std::vector<std::string>& inputs,
-        const bool side_effect
+        size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
     )
-        : data_flow::LibraryNode(element_id, debug_info, vertex, parent, code, outputs, inputs, side_effect) {}
+        : data_flow::LibraryNode(element_id, debug_info, vertex, parent, BARRIER_LOCAL, {}, {}, true) {}
 
     virtual std::unique_ptr<data_flow::DataFlowNode>
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override {
-        return std::make_unique<BarrierLocalLibraryNode>(
-            element_id,
-            this->debug_info(),
-            vertex,
-            parent,
-            this->code(),
-            this->outputs(),
-            this->inputs(),
-            this->side_effect()
-        );
+        return std::make_unique<BarrierLocalLibraryNode>(element_id, this->debug_info(), vertex, parent);
     }
 
     virtual symbolic::SymbolSet symbols() const override { return {}; }
@@ -101,7 +85,7 @@ TEST(StructuredSDFGDeepCopy, Block_WithLibraryNodebarrier_local) {
     auto& root_source = sdfg_source.root();
 
     auto& block = builder_source.add_block(root_source);
-    auto& barrier = builder_source.add_library_node<BarrierLocalLibraryNode>(block, BARRIER_LOCAL, {}, {}, false);
+    auto& barrier = builder_source.add_library_node<BarrierLocalLibraryNode>(block, DebugInfo());
 
     builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();

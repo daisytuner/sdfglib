@@ -1694,7 +1694,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
     auto& root = builder.subject().root();
 
     auto& block = builder.add_block(root);
-    auto& lib_node = builder.add_library_node<data_flow::BarrierLocalNode>(block, BARRIER_LOCAL, {}, {}, false);
+    auto& lib_node = builder.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfo());
 
     // Get the library node serializer
     auto lib_node_serializer_fn =

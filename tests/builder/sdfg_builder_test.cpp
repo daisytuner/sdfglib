@@ -250,29 +250,13 @@ inline data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
 class BarrierLocalLibraryNode : public data_flow::LibraryNode {
 public:
     BarrierLocalLibraryNode(
-        size_t element_id,
-        const DebugInfo& debug_info,
-        const graph::Vertex vertex,
-        data_flow::DataFlowGraph& parent,
-        const data_flow::LibraryNodeCode& code,
-        const std::vector<std::string>& outputs,
-        const std::vector<std::string>& inputs,
-        const bool side_effect
+        size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
     )
-        : data_flow::LibraryNode(element_id, debug_info, vertex, parent, code, outputs, inputs, side_effect) {}
+        : data_flow::LibraryNode(element_id, debug_info, vertex, parent, BARRIER_LOCAL, {}, {}, true) {}
 
     virtual std::unique_ptr<data_flow::DataFlowNode>
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override {
-        return std::make_unique<BarrierLocalLibraryNode>(
-            element_id,
-            this->debug_info(),
-            vertex,
-            parent,
-            this->code(),
-            this->outputs(),
-            this->inputs(),
-            this->side_effect()
-        );
+        return std::make_unique<BarrierLocalLibraryNode>(element_id, this->debug_info(), vertex, parent);
     }
 
     virtual symbolic::SymbolSet symbols() const override { return {}; }
@@ -289,7 +273,7 @@ TEST(SDFGBuilderTest, AddLibnode) {
     auto& state = builder.add_state(true);
     EXPECT_EQ(state.element_id(), 1);
 
-    auto& library_node = builder.add_library_node<BarrierLocalLibraryNode>(state, BARRIER_LOCAL, {}, {}, false);
+    auto& library_node = builder.add_library_node<BarrierLocalLibraryNode>(state, DebugInfo());
     EXPECT_EQ(library_node.element_id(), 2);
 
     auto sdfg = builder.move();
