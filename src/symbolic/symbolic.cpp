@@ -3,6 +3,7 @@
 #include <string>
 
 #include "sdfg/exceptions.h"
+#include "sdfg/types/type.h"
 #include "symengine/functions.h"
 #include "symengine/logic.h"
 
@@ -87,6 +88,11 @@ Expression mod(const Expression& lhs, const Expression& rhs) {
 };
 
 Expression pow(const Expression& base, const Expression& exp) { return SymEngine::pow(base, exp); };
+
+Expression size_of_type(const types::IType& type) {
+    auto so = SymEngine::make_rcp<SizeOfTypeFunction>(type);
+    return so;
+}
 
 /***** Comparisions *****/
 

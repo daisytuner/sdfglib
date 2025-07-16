@@ -1,5 +1,10 @@
 #include "sdfg/types/utils.h"
 
+#include "sdfg/codegen/utils.h"
+#include "sdfg/symbolic/symbolic.h"
+
+#include "sdfg/codegen/language_extensions/c_language_extension.h"
+
 namespace sdfg {
 namespace types {
 
@@ -47,6 +52,81 @@ std::unique_ptr<types::IType> recombine_array_type(const types::IType& type, uin
         }
     }
 };
+
+const IType& peel_to_innermost_element(const IType& type, int follow_ptr) {
+    int next_follow = follow_ptr;
+    if (follow_ptr == PEEL_TO_INNERMOST_ELEMENT_FOLLOW_ONLY_OUTER_PTR) {
+        next_follow = 0; // only follow an outermost pointer
+    }
+
+    switch (type.type_id()) {
+        case TypeID::Array:
+            return peel_to_innermost_element(dynamic_cast<const types::Array&>(type).element_type(), next_follow);
+        case TypeID::Reference:
+            return peel_to_innermost_element(dynamic_cast<const codegen::Reference&>(type).reference_type(), next_follow);
+        case TypeID::Pointer:
+            if (follow_ptr != 0) {
+                if (follow_ptr != PEEL_TO_INNERMOST_ELEMENT_FOLLOW_ONLY_OUTER_PTR) {
+                    next_follow = follow_ptr - 1; // follow one less pointer
+                }
+
+                return peel_to_innermost_element(dynamic_cast<const types::Pointer&>(type).pointee_type(), next_follow);
+            }
+            // fall back to cut-off if we did not follow the pointer
+        default:
+            return type;
+    }
+}
+
+symbolic::Expression get_contiguous_element_size(const types::IType& type, bool allow_comp_time_eval) {
+    // need to peel explicitly, primitive_type() would follow ALL pointers, even ***, even though this is not contiguous
+    auto& innermost = peel_to_innermost_element(type, PEEL_TO_INNERMOST_ELEMENT_FOLLOW_ONLY_OUTER_PTR);
+
+    return get_type_size(innermost, allow_comp_time_eval);
+}
+
+symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_time_eval) {
+    bool only_symbolic = false;
+
+    auto id = type.type_id();
+    if (id == TypeID::Pointer || id == TypeID::Reference || id == TypeID::Function) {
+        // TODO NEED target info to know pointer size (4 or 8 bytes?) !!
+        only_symbolic = true;
+    } else if (id == TypeID::Structure) {
+        // TODO if we have the target definition, we could evaluate the StructureDefinition to a size
+        only_symbolic = true;
+    } else if (id == TypeID::Array) {
+        auto& arr = dynamic_cast<const types::Array&>(type);
+        auto inner_element_size = get_type_size(arr.element_type(), allow_comp_time_eval);
+        if (!inner_element_size.is_null()) {
+            return symbolic::mul(inner_element_size, arr.num_elements());
+        } else {
+            return {};
+        }
+    }
+
+    if (only_symbolic) {
+        // Could not statically figure out the size
+        // Could be struct we could evaluate by its definition or sth. we do not understand here
+        if (allow_comp_time_eval) {
+            return symbolic::size_of_type(type);
+        } else { // size unknown
+            return {};
+        }
+    } else { // should just be a primitive type
+        auto prim_type = type.primitive_type();
+
+        long size_of_type = static_cast<long>(types::bit_width(prim_type)) / 8;
+        if (size_of_type != 0) {
+            return symbolic::integer(size_of_type);
+        } else {
+            codegen::CLanguageExtension lang;
+            std::cerr << "Unexpected primitive_type " << primitive_type_to_string(prim_type) << " of "
+                      << lang.declaration("", type) << ", unknown size";
+            return {};
+        }
+    }
+}
 
 } // namespace types
 } // namespace sdfg
