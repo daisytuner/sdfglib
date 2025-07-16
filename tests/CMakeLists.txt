@@ -32,6 +32,7 @@ set(TEST_FILES
     codegen/language_extensions/cuda_language_extension_test.cpp
     codegen/utils_test.cpp
     data_flow/data_flow_graph_test.cpp
+    data_flow/library_nodes/math_test.cpp
     deepcopy/structured_sdfg_deep_copy_test.cpp
     element_test.cpp
     graph/graph_algorithms_test.cpp
