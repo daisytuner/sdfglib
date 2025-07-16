@@ -118,22 +118,12 @@ public:
     );
 
     template<typename T, typename... Args>
-    data_flow::LibraryNode& add_library_node(
-        control_flow::State& state,
-        const data_flow::LibraryNodeCode code,
-        const std::vector<std::string>& outputs,
-        const std::vector<std::string>& inputs,
-        const bool side_effect = true,
-        const DebugInfo& debug_info = DebugInfo(),
-        Args... arguments
-    ) {
+    data_flow::LibraryNode& add_library_node(control_flow::State& state, const DebugInfo& debug_info, Args... arguments) {
         static_assert(std::is_base_of<data_flow::LibraryNode, T>::value, "T must be a subclass of data_flow::LibraryNode");
 
         auto& dataflow = state.dataflow();
         auto vertex = boost::add_vertex(dataflow.graph_);
-        auto node = std::unique_ptr<
-            T>(new T(this->new_element_id(), debug_info, vertex, dataflow, code, outputs, inputs, side_effect, arguments...)
-        );
+        auto node = std::unique_ptr<T>(new T(this->new_element_id(), debug_info, vertex, dataflow, arguments...));
         auto res = dataflow.nodes_.insert({vertex, std::move(node)});
 
         return static_cast<data_flow::LibraryNode&>(*(res.first->second));

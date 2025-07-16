@@ -90,7 +90,7 @@ TEST(SymbolReplaceTest, LibraryNodeTest) {
                                           {write_expr, write_expr2});
 
     auto& library_node =
-        builder.add_library_node(block, data_flow::LibraryNodeCode{"barrier_local"}, {}, {});
+        builder.add_library_node(block, DebugInfo());
 
     library_node.replace(symbolic::symbol("scalar_1"), symbolic::symbol("scalar_42"));
 

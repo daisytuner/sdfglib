@@ -3,14 +3,15 @@
 namespace sdfg {
 namespace passes {
 
-BlockFusion::BlockFusion(builder::StructuredSDFGBuilder& builder,
-                         analysis::AnalysisManager& analysis_manager)
+BlockFusion::BlockFusion(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
     : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
 
-bool BlockFusion::can_be_applied(data_flow::DataFlowGraph& first_graph,
-                                 control_flow::Assignments& first_assignments,
-                                 data_flow::DataFlowGraph& second_graph,
-                                 control_flow::Assignments& second_assignments) {
+bool BlockFusion::can_be_applied(
+    data_flow::DataFlowGraph& first_graph,
+    control_flow::Assignments& first_assignments,
+    data_flow::DataFlowGraph& second_graph,
+    control_flow::Assignments& second_assignments
+) {
     // Criterion: No side-effect nodes
     for (auto& node : first_graph.nodes()) {
         if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
@@ -66,10 +67,12 @@ bool BlockFusion::can_be_applied(data_flow::DataFlowGraph& first_graph,
     return true;
 };
 
-void BlockFusion::apply(structured_control_flow::Block& first_block,
-                        control_flow::Assignments& first_assignments,
-                        structured_control_flow::Block& second_block,
-                        control_flow::Assignments& second_assignments) {
+void BlockFusion::apply(
+    structured_control_flow::Block& first_block,
+    control_flow::Assignments& first_assignments,
+    structured_control_flow::Block& second_block,
+    control_flow::Assignments& second_assignments
+) {
     data_flow::DataFlowGraph& first_graph = first_block.dataflow();
     data_flow::DataFlowGraph& second_graph = second_block.dataflow();
 
@@ -116,10 +119,10 @@ void BlockFusion::apply(structured_control_flow::Block& first_block,
                 node_mapping[access_node] = &builder_.add_access(first_block, access_node->data());
             }
         } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(&node)) {
-            node_mapping[tasklet] = &builder_.add_tasklet(first_block, tasklet->code(),
-                                                          tasklet->output(), tasklet->inputs());
+            node_mapping[tasklet] =
+                &builder_.add_tasklet(first_block, tasklet->code(), tasklet->output(), tasklet->inputs());
         } else if (auto library_node = dynamic_cast<data_flow::LibraryNode*>(&node)) {
-            node_mapping[library_node] = &builder_.add_library_node(first_block, *library_node);
+            node_mapping[library_node] = &builder_.copy_library_node(first_block, *library_node);
         } else {
             throw InvalidSDFGException("BlockFusion: Unknown node type");
         }
@@ -130,13 +133,18 @@ void BlockFusion::apply(structured_control_flow::Block& first_block,
         auto& src_node = edge.src();
         auto& dst_node = edge.dst();
 
-        builder_.add_memlet(first_block, *node_mapping[&src_node], edge.src_conn(),
-                            *node_mapping[&dst_node], edge.dst_conn(), edge.subset());
+        builder_.add_memlet(
+            first_block,
+            *node_mapping[&src_node],
+            edge.src_conn(),
+            *node_mapping[&dst_node],
+            edge.dst_conn(),
+            edge.subset()
+        );
     }
 };
 
-bool BlockFusion::accept(structured_control_flow::Sequence& parent,
-                         structured_control_flow::Sequence& node) {
+bool BlockFusion::accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) {
     bool applied = false;
 
     if (node.size() == 0) {
@@ -160,10 +168,13 @@ bool BlockFusion::accept(structured_control_flow::Sequence& parent,
         }
         auto next_block = dynamic_cast<structured_control_flow::Block*>(&next_entry.first);
 
-        if (this->can_be_applied(current_block->dataflow(), current_entry.second.assignments(),
-                                 next_block->dataflow(), next_entry.second.assignments())) {
-            this->apply(*current_block, current_entry.second.assignments(), *next_block,
-                        next_entry.second.assignments());
+        if (this->can_be_applied(
+                current_block->dataflow(),
+                current_entry.second.assignments(),
+                next_block->dataflow(),
+                next_entry.second.assignments()
+            )) {
+            this->apply(*current_block, current_entry.second.assignments(), *next_block, next_entry.second.assignments());
             builder_.remove_child(node, i + 1);
             applied = true;
         } else {
@@ -174,5 +185,5 @@ bool BlockFusion::accept(structured_control_flow::Sequence& parent,
     return applied;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg
