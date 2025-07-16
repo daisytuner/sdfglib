@@ -1273,7 +1273,7 @@ void StructuredSDFGBuilder::remove_node(structured_control_flow::Block& block, c
     graph.nodes_.erase(v);
 };
 
-void StructuredSDFGBuilder::clear_node(structured_control_flow::Block& block, const data_flow::Tasklet& node) {
+void StructuredSDFGBuilder::clear_node(structured_control_flow::Block& block, const data_flow::CodeNode& node) {
     auto& graph = block.dataflow();
 
     std::unordered_set<const data_flow::DataFlowNode*> to_delete = {&node};
