@@ -32,7 +32,7 @@ TEST(MathTest, ReLU) {
         relu_node,
         "input",
         {symbolic::integer(0), symbolic::integer(0)},
-        {symbolic::integer(10), symbolic::integer(20)},
+        {symbolic::integer(9), symbolic::integer(19)},
         block.debug_info()
     );
     builder.add_memlet(
@@ -42,7 +42,7 @@ TEST(MathTest, ReLU) {
         output_node,
         "void",
         {symbolic::integer(0), symbolic::integer(0)},
-        {symbolic::integer(10), symbolic::integer(20)},
+        {symbolic::integer(9), symbolic::integer(19)},
         block.debug_info()
     );
 
