@@ -1,5 +1,7 @@
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 
+#include "sdfg/dataflow/library_nodes/metadata_node.h"
+
 #include "sdfg/codegen/dispatchers/library_nodes/barrier_local_dispatcher.h"
 
 namespace sdfg {
@@ -184,6 +186,17 @@ void register_default_library_node_dispatchers() {
            const data_flow::LibraryNode& node) {
             return std::make_unique<ThreadBarrierDispatcher>(
                 language_extension, function, data_flow_graph, dynamic_cast<const data_flow::BarrierLocalNode&>(node)
+            );
+        }
+    );
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        data_flow::LibraryNodeType_Metadata.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<data_flow::MetadataDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const data_flow::MetadataNode&>(node)
             );
         }
     );

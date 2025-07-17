@@ -4,6 +4,7 @@
 
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/serializer/library_nodes/barrier_local_node_serializer.h"
+#include "sdfg/data_flow/library_nodes/metadata_node.h"
 
 namespace sdfg {
 namespace serializer {
@@ -32,6 +33,9 @@ size_t LibraryNodeSerializerRegistry::size() const { return factory_map_.size();
 void register_default_serializers() {
     LibraryNodeSerializerRegistry::instance().register_library_node_serializer(data_flow::BARRIER_LOCAL.value(), []() {
         return std::make_unique<serializer::BarrierLocalNodeSerializer>();
+    });
+    LibraryNodeSerializerRegistry::instance().register_library_node_serializer(data_flow::LibraryNodeType_Metadata.value(), []() {
+        return std::make_unique<data_flow::MetadataNodeSerializer>();
     });
     // Add more serializers as needed
 }
