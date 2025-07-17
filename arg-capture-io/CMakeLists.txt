@@ -47,5 +47,7 @@ install(TARGETS arg_capture_io
 
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-set(INSTALL_GTEST OFF)
-add_subdirectory(tests)
+if(SDFGLIB_BUILD_TESTS)
+    set(INSTALL_GTEST OFF)
+    add_subdirectory(tests)
+endif()
