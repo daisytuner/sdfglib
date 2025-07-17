@@ -49,17 +49,18 @@ bool BlockFusion::can_be_applied(
         }
         auto access_node = static_cast<const data_flow::AccessNode*>(node);
 
+        // Not used in first graph
+        if (pdoms.find(access_node->data()) == pdoms.end()) {
+            continue;
+        }
         // Already connected
         if (connectors.find(access_node->data()) != connectors.end()) {
             continue;
         }
+
         // Write-after-write
         if (second_graph.in_degree(*access_node) > 0) {
             return false;
-        }
-
-        if (pdoms.find(access_node->data()) == pdoms.end()) {
-            continue;
         }
         connectors[access_node->data()] = pdoms.at(access_node->data());
     }
@@ -91,6 +92,10 @@ void BlockFusion::apply(
         }
         auto access_node = static_cast<data_flow::AccessNode*>(node);
 
+        // Not used in first graph
+        if (pdoms.find(access_node->data()) == pdoms.end()) {
+            continue;
+        }
         // Already connected
         if (already_connected.find(access_node->data()) != already_connected.end()) {
             continue;
@@ -98,10 +103,6 @@ void BlockFusion::apply(
         // Write-after-write
         if (second_graph.in_degree(*access_node) > 0) {
             throw InvalidSDFGException("BlockFusion: Write-after-write");
-        }
-
-        if (pdoms.find(access_node->data()) == pdoms.end()) {
-            continue;
         }
         connectors[access_node] = pdoms.at(access_node->data());
         already_connected.insert(access_node->data());
@@ -139,7 +140,9 @@ void BlockFusion::apply(
             edge.src_conn(),
             *node_mapping[&dst_node],
             edge.dst_conn(),
-            edge.subset()
+            edge.begin_subset(),
+            edge.end_subset(),
+            edge.debug_info()
         );
     }
 };
