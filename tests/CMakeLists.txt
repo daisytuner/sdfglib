@@ -70,6 +70,7 @@ set(TEST_FILES
     types/primitive_type_test.cpp
     types/reference_test.cpp
     types/scalar_test.cpp
+    types/sizeof_test.cpp
     types/structure_test.cpp
     types/utils_test.cpp
     visitor/structured_sdfg_visitor_test.cpp

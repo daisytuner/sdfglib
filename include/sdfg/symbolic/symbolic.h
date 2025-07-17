@@ -15,6 +15,11 @@
 
 namespace sdfg {
 
+namespace types {
+// forward declaration, because it depends on contents of this file
+class IType;
+} // namespace types
+
 namespace symbolic {
 
 /**** Basic Definitions ****/
@@ -30,14 +35,11 @@ typedef std::vector<Expression> MultiExpression;
 // Datastructures
 typedef std::vector<Symbol> SymbolVec;
 typedef std::set<Symbol, SymEngine::RCPBasicKeyLess> SymbolSet;
-typedef std::unordered_map<Symbol, Expression, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq>
-    SymbolMap;
+typedef std::unordered_map<Symbol, Expression, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq> SymbolMap;
 
 typedef std::vector<Symbol> ExpressionVec;
 typedef std::set<Expression, SymEngine::RCPBasicKeyLess> ExpressionSet;
-typedef std::unordered_map<Expression, Expression, SymEngine::RCPBasicHash,
-                           SymEngine::RCPBasicKeyEq>
-    ExpressionMap;
+typedef std::unordered_map<Expression, Expression, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq> ExpressionMap;
 
 /***** Special Symbols *****/
 
@@ -92,6 +94,19 @@ Expression max(const Expression& lhs, const Expression& rhs);
 Expression mod(const Expression& lhs, const Expression& rhs);
 
 Expression pow(const Expression& base, const Expression& exp);
+
+Expression size_of_type(const types::IType& type);
+
+class SizeOfTypeFunction : public SymEngine::FunctionSymbol {
+private:
+    const types::IType& type_;
+
+public:
+    explicit SizeOfTypeFunction(const types::IType& type)
+        : FunctionSymbol("sizeof", SymEngine::vec_basic{}), type_(type) {}
+
+    const types::IType& get_type() const { return type_; }
+};
 
 /***** Comparisions *****/
 
@@ -153,5 +168,5 @@ Symbol gridDim_y();
 
 Symbol gridDim_z();
 
-}  // namespace symbolic
-}  // namespace sdfg
+} // namespace symbolic
+} // namespace sdfg
