@@ -8,7 +8,6 @@
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 #include "sdfg/element.h"
 #include "sdfg/serializer/json_serializer.h"
-#include "sdfg/serializer/library_node_serializer_registry.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
@@ -1688,7 +1687,6 @@ TEST(JSONSerializerTest, SerializeDeserialize_Arguments) {
     EXPECT_EQ(sdfg_new->root().size(), 0);
 }
 
-data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
 TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU);
     auto& root = builder.subject().root();
@@ -1697,8 +1695,8 @@ TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
     auto& lib_node = builder.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfo());
 
     // Get the library node serializer
-    auto lib_node_serializer_fn =
-        serializer::LibraryNodeSerializerRegistry::instance().get_library_node_serializer(BARRIER_LOCAL.value());
+    auto lib_node_serializer_fn = serializer::LibraryNodeSerializerRegistry::instance()
+                                      .get_library_node_serializer(data_flow::LibraryNodeType_BarrierLocal.value());
     EXPECT_TRUE(lib_node_serializer_fn != nullptr);
     auto lib_node_serializer_ptr = lib_node_serializer_fn();
     EXPECT_TRUE(lib_node_serializer_ptr != nullptr);
@@ -1709,7 +1707,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
     // Deserialize the library node
     auto& lib_node_new = lib_node_serializer_ptr->deserialize(j, builder, block);
 
-    EXPECT_EQ(lib_node_new.code(), BARRIER_LOCAL);
+    EXPECT_EQ(lib_node_new.code(), data_flow::LibraryNodeType_BarrierLocal);
     EXPECT_EQ(lib_node_new.side_effect(), lib_node.side_effect());
     EXPECT_EQ(lib_node_new.outputs(), lib_node.outputs());
     EXPECT_EQ(lib_node_new.inputs(), lib_node.inputs());

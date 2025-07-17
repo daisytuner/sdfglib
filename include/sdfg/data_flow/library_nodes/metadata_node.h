@@ -2,7 +2,7 @@
 
 #include "sdfg/data_flow/library_node.h"
 
-#include "sdfg/codegen/dispatchers/library_nodes/library_node_dispatcher.h"
+#include "sdfg/codegen/dispatchers/block_dispatcher.h"
 #include "sdfg/serializer/json_serializer.h"
 
 namespace sdfg {
@@ -11,13 +11,17 @@ namespace data_flow {
 inline LibraryNodeCode LibraryNodeType_Metadata("Metadata");
 
 class MetadataNode : public LibraryNode {
-private: 
+private:
     std::unordered_map<std::string, std::string> metadata_;
 
 public:
     MetadataNode(
-        size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent,
-        const std::vector<std::string>& outputs, const std::vector<std::string>& inputs,
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        DataFlowGraph& parent,
+        const std::vector<std::string>& outputs,
+        const std::vector<std::string>& inputs,
         std::unordered_map<std::string, std::string> metadata
     );
 
@@ -32,19 +36,22 @@ public:
 };
 
 class MetadataNodeSerializer : public serializer::LibraryNodeSerializer {
-   public:
+public:
     nlohmann::json serialize(const LibraryNode& library_node) override;
 
-    LibraryNode& deserialize(const nlohmann::json& j,
-                                        builder::StructuredSDFGBuilder& builder,
-                                        structured_control_flow::Block& parent) override;
+    LibraryNode& deserialize(
+        const nlohmann::json& j, builder::StructuredSDFGBuilder& builder, structured_control_flow::Block& parent
+    ) override;
 };
 
 class MetadataDispatcher : public codegen::LibraryNodeDispatcher {
-   public:
-    MetadataDispatcher(codegen::LanguageExtension& language_extension, const Function& function,
-                            const DataFlowGraph& data_flow_graph,
-                            const MetadataNode& node);
+public:
+    MetadataDispatcher(
+        codegen::LanguageExtension& language_extension,
+        const Function& function,
+        const DataFlowGraph& data_flow_graph,
+        const MetadataNode& node
+    );
 
     void dispatch(codegen::PrettyPrinter& stream) override;
 };

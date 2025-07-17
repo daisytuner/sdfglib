@@ -4,48 +4,49 @@
 
 #include "sdfg/data_flow/library_node.h"
 
-namespace sdfg {
+#include "sdfg/codegen/dispatchers/block_dispatcher.h"
+#include "sdfg/serializer/json_serializer.h"
 
-namespace builder {
-class SDFGBuilder;
-class StructuredSDFGBuilder;
-} // namespace builder
+namespace sdfg {
 
 namespace data_flow {
 
-class BarrierLocalNode : public LibraryNode {
-    friend class sdfg::builder::SDFGBuilder;
-    friend class sdfg::builder::StructuredSDFGBuilder;
+inline LibraryNodeCode LibraryNodeType_BarrierLocal{"barrier_local"};
 
-protected:
+class BarrierLocalNode : public LibraryNode {
+public:
     BarrierLocalNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent);
 
-public:
-    BarrierLocalNode(const BarrierLocalNode& data_node) = delete;
-    BarrierLocalNode& operator=(const BarrierLocalNode&) = delete;
-
-    virtual ~BarrierLocalNode() = default;
-
-    const LibraryNodeCode& code() const;
-
-    const std::vector<std::string>& inputs() const;
-
-    const std::vector<std::string>& outputs() const;
-
-    const std::string& input(size_t index) const;
-
-    const std::string& output(size_t index) const;
-
-    bool side_effect() const;
-
     symbolic::SymbolSet symbols() const override;
-
-    bool needs_connector(size_t index) const override;
 
     std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
         const override;
 
     void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+};
+
+class BarrierLocalNodeSerializer : public serializer::LibraryNodeSerializer {
+public:
+    nlohmann::json serialize(const sdfg::data_flow::LibraryNode& library_node) override;
+
+    data_flow::LibraryNode& deserialize(
+        const nlohmann::json& j,
+        sdfg::builder::StructuredSDFGBuilder& builder,
+        sdfg::structured_control_flow::Block& parent
+    ) override;
+};
+
+class BarrierLocalNodeDispatcher : public codegen::LibraryNodeDispatcher {
+public:
+    BarrierLocalNodeDispatcher(
+        codegen::LanguageExtension& language_extension,
+        const Function& function,
+        const data_flow::DataFlowGraph& data_flow_graph,
+        const data_flow::BarrierLocalNode& node
+    )
+        : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
+
+    void dispatch(codegen::PrettyPrinter& stream) override;
 };
 
 } // namespace data_flow

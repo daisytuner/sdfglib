@@ -112,6 +112,56 @@ std::unique_ptr<data_flow::DataFlowNode> ReLUNode::
     );
 }
 
+nlohmann::json ReLUNodeSerializer::serialize(const data_flow::LibraryNode& library_node) {
+    const ReLUNode& relu_node = static_cast<const ReLUNode&>(library_node);
+    nlohmann::json j;
+
+    j["code"] = relu_node.code().value();
+    j["outputs"] = relu_node.outputs();
+    j["inputs"] = relu_node.inputs();
+
+    return j;
+}
+
+data_flow::LibraryNode& ReLUNodeSerializer::deserialize(
+    const nlohmann::json& j, builder::StructuredSDFGBuilder& builder, structured_control_flow::Block& parent
+) {
+    // Assertions for required fields
+    assert(j.contains("element_id"));
+    assert(j.contains("code"));
+    assert(j.contains("outputs"));
+    assert(j.contains("inputs"));
+    assert(j.contains("debug_info"));
+
+    auto code = j["code"].get<std::string>();
+    if (code != LibraryNodeType_ReLU.value()) {
+        throw std::runtime_error("Invalid library node code");
+    }
+
+    // Extract debug info using JSONSerializer
+    sdfg::serializer::JSONSerializer serializer;
+    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+
+    // Extract properties
+    auto outputs = j.at("outputs").get<std::vector<std::string>>();
+    auto inputs = j.at("inputs").get<std::vector<std::string>>();
+
+    return builder.add_library_node<ReLUNode>(parent, debug_info, outputs.at(0), inputs.at(0));
+}
+
+ReLUNodeDispatcher::ReLUNodeDispatcher(
+    codegen::LanguageExtension& language_extension,
+    const Function& function,
+    const data_flow::DataFlowGraph& data_flow_graph,
+    const ReLUNode& node
+)
+    : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
+
+void ReLUNodeDispatcher::dispatch(codegen::PrettyPrinter& stream) {
+    throw std::runtime_error("ReLUNode not implemented");
+}
+
+
 } // namespace ml
 } // namespace math
 } // namespace sdfg
