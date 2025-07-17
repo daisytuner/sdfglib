@@ -11,7 +11,7 @@ namespace sdfg {
 namespace builder {
 class SDFGBuilder;
 class StructuredSDFGBuilder;
-}  // namespace builder
+} // namespace builder
 
 namespace data_flow {
 
@@ -21,18 +21,24 @@ class LibraryNode : public CodeNode {
     friend class sdfg::builder::SDFGBuilder;
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-   protected:
+protected:
     LibraryNodeCode code_;
     std::vector<std::string> outputs_;
     std::vector<std::string> inputs_;
     bool side_effect_;
 
-    LibraryNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
-                DataFlowGraph& parent, const LibraryNodeCode& code,
-                const std::vector<std::string>& outputs, const std::vector<std::string>& inputs,
-                const bool side_effect);
+    LibraryNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        DataFlowGraph& parent,
+        const LibraryNodeCode& code,
+        const std::vector<std::string>& outputs,
+        const std::vector<std::string>& inputs,
+        const bool side_effect
+    );
 
-   public:
+public:
     LibraryNode(const LibraryNode& data_node) = delete;
     LibraryNode& operator=(const LibraryNode&) = delete;
 
@@ -57,12 +63,5 @@ class LibraryNode : public CodeNode {
     virtual symbolic::SymbolSet symbols() const = 0;
 };
 
-/*
- * List of predefiened library node codes.
- *
- */
-
-inline data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
-
-}  // namespace data_flow
-}  // namespace sdfg
+} // namespace data_flow
+} // namespace sdfg

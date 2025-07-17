@@ -81,7 +81,6 @@ set(SOURCE_FILES
     src/codegen/dispatchers/for_dispatcher.cpp
     src/codegen/dispatchers/map_dispatcher.cpp
     src/codegen/dispatchers/while_dispatcher.cpp
-    src/codegen/dispatchers/library_nodes/barrier_local_dispatcher.cpp
     src/codegen/instrumentation/outermost_loops_instrumentation.cpp
     src/control_flow/interstate_edge.cpp
     src/control_flow/state.cpp
@@ -93,6 +92,7 @@ set(SOURCE_FILES
     src/data_flow/memlet.cpp
     src/data_flow/tasklet.cpp
     src/data_flow/library_nodes/barrier_local_node.cpp
+    src/data_flow/library_nodes/metadata_node.cpp
     src/data_flow/library_nodes/math/math_node.cpp
     src/data_flow/library_nodes/math/ml/relu.cpp
     src/deepcopy/structured_sdfg_deep_copy.cpp
@@ -121,8 +121,6 @@ set(SOURCE_FILES
     src/passes/structured_control_flow/sequence_fusion.cpp
     src/passes/structured_control_flow/while_to_for_conversion.cpp
     src/serializer/json_serializer.cpp
-    src/serializer/library_node_serializer_registry.cpp
-    src/serializer/library_nodes/barrier_local_node_serializer.cpp
     src/structured_control_flow/block.cpp
     src/structured_control_flow/control_flow_node.cpp
     src/structured_control_flow/for.cpp
