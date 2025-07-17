@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.16)
 project(sdfglib VERSION 0.0.1 DESCRIPTION "A library for generating structured dataflow graphs (SDFG)")
 include(GNUInstallDirs)
 
+option(SDFGLIB_BUILD_TESTS
+       "Build tests" ON)
+
 add_subdirectory(3rdParty/symengine)
 add_subdirectory(rtl)
 add_subdirectory(arg-capture-io)
@@ -236,5 +239,7 @@ install(FILES
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfglib
 )
 
-set(INSTALL_GTEST OFF)
-add_subdirectory(tests)
+if(SDFGLIB_BUILD_TESTS)
+    set(INSTALL_GTEST OFF)
+    add_subdirectory(tests)
+endif()
