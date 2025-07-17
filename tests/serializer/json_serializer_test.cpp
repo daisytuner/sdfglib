@@ -876,6 +876,14 @@ TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
                 auto& subset = memlet->subset();
                 EXPECT_EQ(subset.size(), 1);
                 EXPECT_TRUE(symbolic::eq(subset[0], symbolic::symbol("i")));
+
+                auto& begin_subset = memlet->begin_subset();
+                EXPECT_EQ(begin_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(begin_subset[0], symbolic::symbol("i")));
+
+                auto& end_subset = memlet->end_subset();
+                EXPECT_EQ(end_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(end_subset[0], symbolic::symbol("i")));
             } else if (memlet->dst_conn() == "_in2") {
                 found_memlet_in2 = true;
                 auto& src = memlet->src();
@@ -1008,6 +1016,14 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
                 auto& subset = memlet->subset();
                 EXPECT_EQ(subset.size(), 1);
                 EXPECT_TRUE(symbolic::eq(subset[0], symbolic::symbol("i")));
+
+                auto& begin_subset = memlet->begin_subset();
+                EXPECT_EQ(begin_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(begin_subset[0], symbolic::symbol("i")));
+
+                auto& end_subset = memlet->end_subset();
+                EXPECT_EQ(end_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(end_subset[0], symbolic::symbol("i")));
             } else if (memlet->dst_conn() == "_in2") {
                 found_memlet_in2 = true;
                 auto& src = memlet->src();
@@ -1144,6 +1160,14 @@ TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
                 auto& subset = memlet->subset();
                 EXPECT_EQ(subset.size(), 1);
                 EXPECT_TRUE(symbolic::eq(subset[0], symbolic::symbol("i")));
+
+                auto& begin_subset = memlet->begin_subset();
+                EXPECT_EQ(begin_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(begin_subset[0], symbolic::symbol("i")));
+
+                auto& end_subset = memlet->end_subset();
+                EXPECT_EQ(end_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(end_subset[0], symbolic::symbol("i")));
             } else if (memlet->dst_conn() == "_in2") {
                 found_memlet_in2 = true;
                 auto& src = memlet->src();
@@ -1274,6 +1298,14 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
                 auto& subset = memlet->subset();
                 EXPECT_EQ(subset.size(), 1);
                 EXPECT_TRUE(symbolic::eq(subset[0], symbolic::symbol("i")));
+
+                auto& begin_subset = memlet->begin_subset();
+                EXPECT_EQ(begin_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(begin_subset[0], symbolic::symbol("i")));
+
+                auto& end_subset = memlet->end_subset();
+                EXPECT_EQ(end_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(end_subset[0], symbolic::symbol("i")));
             } else if (memlet->dst_conn() == "_in2") {
                 found_memlet_in2 = true;
                 auto& src = memlet->src();

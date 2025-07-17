@@ -190,6 +190,16 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
             edge_json["subset"].push_back(expression(subset));
         }
 
+        edge_json["begin_subset"] = nlohmann::json::array();
+        for (auto& subset : edge.begin_subset()) {
+            edge_json["begin_subset"].push_back(expression(subset));
+        }
+
+        edge_json["end_subset"] = nlohmann::json::array();
+        for (auto& subset : edge.end_subset()) {
+            edge_json["end_subset"].push_back(expression(subset));
+        }
+
         j["edges"].push_back(edge_json);
     }
 }
@@ -594,18 +604,53 @@ void JSONSerializer::json_to_dataflow(
         auto& source = nodes_map.at(edge["src"]);
         auto& target = nodes_map.at(edge["dst"]);
 
-        assert(edge.contains("subset"));
-        assert(edge["subset"].is_array());
-        std::vector<symbolic::Expression> subset;
-        for (const auto& subset_str : edge["subset"]) {
-            assert(subset_str.is_string());
-            SymEngine::Expression subset_expr(subset_str);
-            subset.push_back(subset_expr);
+        if (edge.contains("subset")) {
+            assert(edge["subset"].is_array());
+            std::vector<symbolic::Expression> subset;
+            for (const auto& subset_str : edge["subset"]) {
+                assert(subset_str.is_string());
+                SymEngine::Expression subset_expr(subset_str);
+                subset.push_back(subset_expr);
+            }
+            auto& memlet = builder.add_memlet(
+                parent,
+                source,
+                edge["src_conn"],
+                target,
+                edge["dst_conn"],
+                subset,
+                json_to_debug_info(edge["debug_info"])
+            );
+            memlet.element_id_ = edge["element_id"];
+        } else if (edge.contains("begin_subset") && edge.contains("end_subset")) {
+            assert(edge["begin_subset"].is_array());
+            assert(edge["end_subset"].is_array());
+            std::vector<symbolic::Expression> begin_subset;
+            std::vector<symbolic::Expression> end_subset;
+            for (const auto& subset_str : edge["begin_subset"]) {
+                assert(subset_str.is_string());
+                SymEngine::Expression subset_expr(subset_str);
+                begin_subset.push_back(subset_expr);
+            }
+            for (const auto& subset_str : edge["end_subset"]) {
+                assert(subset_str.is_string());
+                SymEngine::Expression subset_expr(subset_str);
+                end_subset.push_back(subset_expr);
+            }
+            auto& memlet = builder.add_memlet(
+                parent,
+                source,
+                edge["src_conn"],
+                target,
+                edge["dst_conn"],
+                begin_subset,
+                end_subset,
+                json_to_debug_info(edge["debug_info"])
+            );
+            memlet.element_id_ = edge["element_id"];
+        } else {
+            throw std::runtime_error("Subsets not specified in json");
         }
-        auto& memlet = builder.add_memlet(
-            parent, source, edge["src_conn"], target, edge["dst_conn"], subset, json_to_debug_info(edge["debug_info"])
-        );
-        memlet.element_id_ = edge["element_id"];
     }
 }
 
