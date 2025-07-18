@@ -6,11 +6,13 @@
 #include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
 #include "sdfg/element.h"
 
+#include "sdfg/serializer/json_serializer.h"
+
 namespace sdfg {
 
 StructuredSDFG::StructuredSDFG(const std::string& name, FunctionType type) : Function(name, type) {
-    this->root_ = std::unique_ptr<structured_control_flow::Sequence>(
-        new structured_control_flow::Sequence(this->element_counter_, DebugInfo()));
+    this->root_ = std::unique_ptr<
+        structured_control_flow::Sequence>(new structured_control_flow::Sequence(this->element_counter_, DebugInfo()));
 };
 
 const structured_control_flow::Sequence& StructuredSDFG::root() const { return *this->root_; };
@@ -18,37 +20,9 @@ const structured_control_flow::Sequence& StructuredSDFG::root() const { return *
 structured_control_flow::Sequence& StructuredSDFG::root() { return *this->root_; };
 
 std::unique_ptr<StructuredSDFG> StructuredSDFG::clone() const {
-    builder::StructuredSDFGBuilder builder(this->name_, this->type_);
-    auto& new_sdfg = builder.subject();
-
-    for (auto& structure : this->structures_) {
-        new_sdfg.structures_.insert({structure.first, structure.second->clone()});
-    }
-
-    for (auto& container : this->containers_) {
-        new_sdfg.containers_.insert({container.first, container.second->clone()});
-    }
-
-    for (auto& arg : this->arguments_) {
-        new_sdfg.arguments_.push_back(arg);
-    }
-
-    for (auto& ext : this->externals_) {
-        new_sdfg.externals_.push_back(ext);
-    }
-
-    for (auto& entry : this->metadata_) {
-        new_sdfg.metadata_[entry.first] = entry.second;
-    }
-
-    for (auto& assumption : this->assumptions_) {
-        new_sdfg.assumptions_.insert({assumption.first, assumption.second});
-    }
-
-    deepcopy::StructuredSDFGDeepCopy copier(builder, new_sdfg.root(), *this->root_);
-    auto mapping = copier.insert();
-
-    return builder.move();
+    serializer::JSONSerializer serializer;
+    nlohmann::json j = serializer.serialize(*this);
+    return serializer.deserialize(j);
 };
 
 size_t StructuredSDFG::num_nodes() const {
@@ -60,18 +34,15 @@ size_t StructuredSDFG::num_nodes() const {
         // if instance of block, add children to to_visit
         if (auto block = dynamic_cast<const structured_control_flow::Block*>(current)) {
             count += block->dataflow().nodes().size();
-        } else if (auto sloop_node =
-                       dynamic_cast<const structured_control_flow::StructuredLoop*>(current)) {
+        } else if (auto sloop_node = dynamic_cast<const structured_control_flow::StructuredLoop*>(current)) {
             to_visit.insert(&sloop_node->root());
-        } else if (auto condition_node =
-                       dynamic_cast<const structured_control_flow::IfElse*>(current)) {
+        } else if (auto condition_node = dynamic_cast<const structured_control_flow::IfElse*>(current)) {
             for (size_t i = 0; i < condition_node->size(); i++) {
                 to_visit.insert(&condition_node->at(i).first);
             }
         } else if (auto while_node = dynamic_cast<const structured_control_flow::While*>(current)) {
             to_visit.insert(&while_node->root());
-        } else if (auto sequence_node =
-                       dynamic_cast<const structured_control_flow::Sequence*>(current)) {
+        } else if (auto sequence_node = dynamic_cast<const structured_control_flow::Sequence*>(current)) {
             for (size_t i = 0; i < sequence_node->size(); i++) {
                 to_visit.insert(&sequence_node->at(i).first);
             }
@@ -100,12 +71,10 @@ const DebugInfo StructuredSDFG::debug_info() const {
             for (auto& edge : block->dataflow().edges()) {
                 info = DebugInfo::merge(info, edge.debug_info());
             }
-        } else if (auto sloop_node =
-                       dynamic_cast<const structured_control_flow::StructuredLoop*>(current)) {
+        } else if (auto sloop_node = dynamic_cast<const structured_control_flow::StructuredLoop*>(current)) {
             info = DebugInfo::merge(info, sloop_node->debug_info());
             to_visit.insert(&sloop_node->root());
-        } else if (auto condition_node =
-                       dynamic_cast<const structured_control_flow::IfElse*>(current)) {
+        } else if (auto condition_node = dynamic_cast<const structured_control_flow::IfElse*>(current)) {
             info = DebugInfo::merge(info, condition_node->debug_info());
             for (size_t i = 0; i < condition_node->size(); i++) {
                 to_visit.insert(&condition_node->at(i).first);
@@ -113,15 +82,13 @@ const DebugInfo StructuredSDFG::debug_info() const {
         } else if (auto while_node = dynamic_cast<const structured_control_flow::While*>(current)) {
             info = DebugInfo::merge(info, while_node->debug_info());
             to_visit.insert(&while_node->root());
-        } else if (auto sequence_node =
-                       dynamic_cast<const structured_control_flow::Sequence*>(current)) {
+        } else if (auto sequence_node = dynamic_cast<const structured_control_flow::Sequence*>(current)) {
             info = DebugInfo::merge(info, sequence_node->debug_info());
             for (size_t i = 0; i < sequence_node->size(); i++) {
                 to_visit.insert(&sequence_node->at(i).first);
                 info = DebugInfo::merge(info, sequence_node->at(i).second.debug_info());
             }
-        } else if (auto return_node =
-                       dynamic_cast<const structured_control_flow::Return*>(current)) {
+        } else if (auto return_node = dynamic_cast<const structured_control_flow::Return*>(current)) {
             info = DebugInfo::merge(info, return_node->debug_info());
         } else if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(current)) {
             info = DebugInfo::merge(info, map_node->debug_info());
@@ -131,4 +98,4 @@ const DebugInfo StructuredSDFG::debug_info() const {
     return info;
 };
 
-}  // namespace sdfg
+} // namespace sdfg
