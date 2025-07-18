@@ -14,6 +14,10 @@ AccessNode::AccessNode(
 
       };
 
+void AccessNode::validate() const {
+    // TODO: Implement
+}
+
 const std::string& AccessNode::data() const { return this->data_; };
 
 std::string& AccessNode::data() { return this->data_; };

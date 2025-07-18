@@ -66,6 +66,8 @@ public:
     Memlet(const Memlet& memlet) = delete;
     Memlet& operator=(const Memlet&) = delete;
 
+    void validate() const override;
+
     const graph::Edge edge() const;
 
     const DataFlowGraph& get_parent() const;

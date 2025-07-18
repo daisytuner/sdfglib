@@ -22,21 +22,27 @@ inline ScheduleType ScheduleType_CPU_Parallel{"CPU_PARALLEL"};
 class Map : public StructuredLoop {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-   private:
+private:
     ScheduleType schedule_type_;
 
-    Map(size_t element_id, const DebugInfo& debug_info, symbolic::Symbol indvar,
-        symbolic::Expression init, symbolic::Expression update, symbolic::Condition condition,
+    Map(size_t element_id,
+        const DebugInfo& debug_info,
+        symbolic::Symbol indvar,
+        symbolic::Expression init,
+        symbolic::Expression update,
+        symbolic::Condition condition,
         const ScheduleType& schedule_type);
 
-   public:
+public:
     Map(const Map& node) = delete;
     Map& operator=(const Map&) = delete;
+
+    void validate() const override;
 
     ScheduleType& schedule_type();
 
     const ScheduleType& schedule_type() const;
 };
 
-}  // namespace structured_control_flow
-}  // namespace sdfg
+} // namespace structured_control_flow
+} // namespace sdfg

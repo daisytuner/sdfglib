@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "sdfg/data_flow/library_node.h"
+#include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 
 using namespace sdfg;
 
@@ -58,34 +58,13 @@ TEST(StructuredSDFGDeepCopy, Block_WithAssignments) {
     EXPECT_EQ(inserted_root->at(0).second.size(), 1);
 }
 
-inline data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
-class BarrierLocalLibraryNode : public data_flow::LibraryNode {
-public:
-    BarrierLocalLibraryNode(
-        size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
-    )
-        : data_flow::LibraryNode(element_id, debug_info, vertex, parent, BARRIER_LOCAL, {}, {}, true) {}
-
-    virtual std::unique_ptr<data_flow::DataFlowNode>
-    clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override {
-        return std::make_unique<BarrierLocalLibraryNode>(element_id, this->debug_info(), vertex, parent);
-    }
-
-    virtual symbolic::SymbolSet symbols() const override { return {}; }
-
-    virtual void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression)
-        override {
-        // Do nothing
-    }
-};
-
 TEST(StructuredSDFGDeepCopy, Block_WithLibraryNodebarrier_local) {
     builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU);
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
     auto& block = builder_source.add_block(root_source);
-    auto& barrier = builder_source.add_library_node<BarrierLocalLibraryNode>(block, DebugInfo());
+    auto& barrier = builder_source.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfo());
 
     builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
@@ -107,9 +86,9 @@ TEST(StructuredSDFGDeepCopy, Block_WithLibraryNodebarrier_local) {
     EXPECT_EQ(inserted_block->dataflow().nodes().size(), 1);
     EXPECT_TRUE(dynamic_cast<data_flow::LibraryNode*>(&(*inserted_block->dataflow().nodes().begin())));
     auto inserted_barrier = dynamic_cast<data_flow::LibraryNode*>(&(*inserted_block->dataflow().nodes().begin()));
-    EXPECT_EQ(inserted_barrier->code(), BARRIER_LOCAL);
+    EXPECT_EQ(inserted_barrier->code(), data_flow::LibraryNodeType_BarrierLocal);
     EXPECT_EQ(inserted_barrier->side_effect(), barrier.side_effect());
-    EXPECT_TRUE(dynamic_cast<BarrierLocalLibraryNode*>(inserted_barrier));
+    EXPECT_TRUE(dynamic_cast<data_flow::BarrierLocalNode*>(inserted_barrier));
 }
 
 TEST(StructuredSDFGDeepCopy, Sequence) {

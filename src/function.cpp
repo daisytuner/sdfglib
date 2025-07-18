@@ -11,8 +11,7 @@ const std::unique_ptr<types::Scalar> Function::NVPTX_SYMBOL_TYPE =
 const std::unique_ptr<types::Pointer> Function::CONST_POINTER_TYPE =
     std::make_unique<types::Pointer>(types::Scalar(types::PrimitiveType::Void));
 
-Function::Function(const std::string& name, FunctionType type)
-    : element_counter_(0), name_(name), type_(type) {
+Function::Function(const std::string& name, FunctionType type) : element_counter_(0), name_(name), type_(type) {
     if (this->type_ == FunctionType_NV_GLOBAL) {
         this->assumptions_[symbolic::threadIdx_x()] =
             symbolic::Assumption::create(symbolic::threadIdx_x(), *NVPTX_SYMBOL_TYPE);
@@ -47,10 +46,16 @@ std::string& Function::name() { return this->name_; };
 
 FunctionType Function::type() const { return this->type_; };
 
+void Function::validate() const {
+    // Function type
+    if (this->type_ != FunctionType_CPU && this->type_ != FunctionType_NV_GLOBAL) {
+        throw InvalidSDFGException("Function type must be CPU or NV_GLOBAL");
+    }
+};
+
 bool Function::exists(const std::string& name) const {
-    return this->containers_.find(name) != this->containers_.end() ||
-           symbolic::is_pointer(symbolic::symbol(name)) || helpers::is_number(name) ||
-           symbolic::is_nv(symbolic::symbol(name));
+    return this->containers_.find(name) != this->containers_.end() || symbolic::is_pointer(symbolic::symbol(name)) ||
+           helpers::is_number(name) || symbolic::is_nv(symbolic::symbol(name));
 };
 
 const types::IType& Function::type(const std::string& name) const {
@@ -81,13 +86,11 @@ const std::vector<std::string>& Function::arguments() const { return this->argum
 const std::vector<std::string>& Function::externals() const { return this->externals_; };
 
 bool Function::is_argument(const std::string& name) const {
-    return std::find(this->arguments_.begin(), this->arguments_.end(), name) !=
-           this->arguments_.end();
+    return std::find(this->arguments_.begin(), this->arguments_.end(), name) != this->arguments_.end();
 };
 
 bool Function::is_external(const std::string& name) const {
-    return std::find(this->externals_.begin(), this->externals_.end(), name) !=
-           this->externals_.end();
+    return std::find(this->externals_.begin(), this->externals_.end(), name) != this->externals_.end();
 };
 
 bool Function::is_internal(const std::string& name) const {
@@ -142,18 +145,12 @@ symbolic::Assumption& Function::assumption(const symbolic::Symbol& symbol) {
 
 const symbolic::Assumptions& Function::assumptions() const { return this->assumptions_; };
 
-void Function::add_metadata(const std::string& key, const std::string& value) {
-    this->metadata_[key] = value;
-};
+void Function::add_metadata(const std::string& key, const std::string& value) { this->metadata_[key] = value; };
 
 void Function::remove_metadata(const std::string& key) { this->metadata_.erase(key); };
 
-const std::string& Function::metadata(const std::string& key) const {
-    return this->metadata_.at(key);
-};
+const std::string& Function::metadata(const std::string& key) const { return this->metadata_.at(key); };
 
-const std::unordered_map<std::string, std::string>& Function::metadata() const {
-    return this->metadata_;
-};
+const std::unordered_map<std::string, std::string>& Function::metadata() const { return this->metadata_; };
 
-}  // namespace sdfg
+} // namespace sdfg

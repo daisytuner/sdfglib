@@ -15,6 +15,8 @@ Map::
         const ScheduleType& schedule_type)
     : StructuredLoop(element_id, debug_info, indvar, init, update, condition), schedule_type_(schedule_type) {};
 
+void Map::validate() const { this->root_->validate(); };
+
 ScheduleType& Map::schedule_type() { return this->schedule_type_; };
 
 const ScheduleType& Map::schedule_type() const { return this->schedule_type_; };

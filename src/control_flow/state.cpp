@@ -8,6 +8,8 @@ State::State(size_t element_id, const DebugInfo& debug_info, const graph::Vertex
     this->dataflow_ = std::make_unique<data_flow::DataFlowGraph>();
 };
 
+void State::validate() const { this->dataflow_->validate(); };
+
 graph::Vertex State::vertex() const { return this->vertex_; };
 
 const data_flow::DataFlowGraph& State::dataflow() const { return *this->dataflow_; };

@@ -330,7 +330,13 @@ StructuredSDFGBuilder::StructuredSDFGBuilder(const SDFG& sdfg)
 
 StructuredSDFG& StructuredSDFGBuilder::subject() const { return *this->structured_sdfg_; };
 
-std::unique_ptr<StructuredSDFG> StructuredSDFGBuilder::move() { return std::move(this->structured_sdfg_); };
+std::unique_ptr<StructuredSDFG> StructuredSDFGBuilder::move() {
+#ifndef NDEBUG
+    this->structured_sdfg_->validate();
+#endif
+
+    return std::move(this->structured_sdfg_);
+};
 
 Element* StructuredSDFGBuilder::find_element_by_id(const size_t& element_id) const {
     auto& sdfg = this->subject();

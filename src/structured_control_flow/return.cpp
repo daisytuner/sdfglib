@@ -8,6 +8,8 @@ Return::Return(size_t element_id, const DebugInfo& debug_info)
 
       };
 
+void Return::validate() const {};
+
 void Return::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
 
 };

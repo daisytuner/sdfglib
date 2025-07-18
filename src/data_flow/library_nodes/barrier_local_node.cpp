@@ -13,6 +13,10 @@ BarrierLocalNode::
 
       };
 
+void BarrierLocalNode::validate() const {
+    // TODO: Implement
+}
+
 symbolic::SymbolSet BarrierLocalNode::symbols() const { return {}; };
 
 std::unique_ptr<DataFlowNode> BarrierLocalNode::clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)

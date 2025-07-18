@@ -17,6 +17,8 @@ class BarrierLocalNode : public LibraryNode {
 public:
     BarrierLocalNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent);
 
+    void validate() const override;
+
     symbolic::SymbolSet symbols() const override;
 
     std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)

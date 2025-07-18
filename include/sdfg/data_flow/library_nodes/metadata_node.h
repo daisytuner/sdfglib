@@ -27,6 +27,8 @@ public:
 
     const std::unordered_map<std::string, std::string>& metadata() const;
 
+    void validate() const override;
+
     symbolic::SymbolSet symbols() const override;
 
     std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
