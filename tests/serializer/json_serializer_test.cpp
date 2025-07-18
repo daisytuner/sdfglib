@@ -1220,7 +1220,7 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
     // Serialize the DataflowGraph to JSON
     auto& block_new = dynamic_cast<sdfg::structured_control_flow::Block&>(sdfg->root().at(0).first);
 
-    j = serializer.serialize(sdfg);
+    j = serializer.serialize(*sdfg);
 
     // Deserialize the JSON back into a DataflowGraph object
     auto des_sdfg = serializer.deserialize(j);
@@ -1673,7 +1673,7 @@ TEST(JSONSerializerTest, SerializeDeserialize) {
     sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the SDFG to JSON
-    auto j = serializer.serialize(sdfg);
+    auto j = serializer.serialize(*sdfg);
 
     // Deserialize the JSON back into a StructuredSDFG object
     auto sdfg_new = serializer.deserialize(j);
@@ -1702,7 +1702,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_Arguments) {
     sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the SDFG to JSON
-    auto j = serializer.serialize(sdfg);
+    auto j = serializer.serialize(*sdfg);
 
     // Deserialize the JSON back into a StructuredSDFG object
     auto sdfg_new = serializer.deserialize(j);

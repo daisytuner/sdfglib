@@ -21,7 +21,7 @@ class JSONSerializer {
 public:
     JSONSerializer() {}
 
-    nlohmann::json serialize(std::unique_ptr<sdfg::StructuredSDFG>& sdfg);
+    nlohmann::json serialize(const sdfg::StructuredSDFG& sdfg);
 
     std::unique_ptr<sdfg::StructuredSDFG> deserialize(nlohmann::json& j);
 

@@ -75,45 +75,45 @@ structured_control_flow::ScheduleType schedule_type_from_string(const std::strin
  * * Serialization logic
  */
 
-nlohmann::json JSONSerializer::serialize(std::unique_ptr<sdfg::StructuredSDFG>& sdfg) {
+nlohmann::json JSONSerializer::serialize(const sdfg::StructuredSDFG& sdfg) {
     nlohmann::json j;
 
-    j["name"] = sdfg->name();
-    j["type"] = std::string(sdfg->type().value());
+    j["name"] = sdfg.name();
+    j["type"] = std::string(sdfg.type().value());
 
     j["structures"] = nlohmann::json::array();
-    for (const auto& structure_name : sdfg->structures()) {
-        const auto& structure = sdfg->structure(structure_name);
+    for (const auto& structure_name : sdfg.structures()) {
+        const auto& structure = sdfg.structure(structure_name);
         nlohmann::json structure_json;
         structure_definition_to_json(structure_json, structure);
         j["structures"].push_back(structure_json);
     }
 
     j["containers"] = nlohmann::json::object();
-    for (const auto& container : sdfg->containers()) {
+    for (const auto& container : sdfg.containers()) {
         nlohmann::json desc;
-        type_to_json(desc, sdfg->type(container));
+        type_to_json(desc, sdfg.type(container));
         j["containers"][container] = desc;
     }
 
     j["arguments"] = nlohmann::json::array();
-    for (const auto& argument : sdfg->arguments()) {
+    for (const auto& argument : sdfg.arguments()) {
         j["arguments"].push_back(argument);
     }
 
     j["externals"] = nlohmann::json::array();
-    for (const auto& external : sdfg->externals()) {
+    for (const auto& external : sdfg.externals()) {
         j["externals"].push_back(external);
     }
 
     j["metadata"] = nlohmann::json::object();
-    for (const auto& entry : sdfg->metadata()) {
+    for (const auto& entry : sdfg.metadata()) {
         j["metadata"][entry.first] = entry.second;
     }
 
     // Walk the SDFG
     nlohmann::json root_json;
-    sequence_to_json(root_json, sdfg->root());
+    sequence_to_json(root_json, sdfg.root());
     j["root"] = root_json;
 
     return j;
