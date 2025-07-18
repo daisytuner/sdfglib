@@ -10,26 +10,30 @@
 namespace sdfg {
 namespace transformations {
 
-template <typename T>
+template<typename T>
 concept transformation_concept = std::derived_from<T, sdfg::transformations::Transformation>;
 
 class Recorder {
-   private:
+private:
     nlohmann::json history_;
 
-   public:
+public:
     Recorder();
 
-    template <typename T, typename... Args>
+    template<typename T, typename... Args>
         requires transformation_concept<T>
-    void apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager,
-               bool skip_if_not_applicable, Args&&... args) {
+    void apply(
+        builder::StructuredSDFGBuilder& builder,
+        analysis::AnalysisManager& analysis_manager,
+        bool skip_if_not_applicable,
+        Args&&... args
+    ) {
         T transformation(std::forward<Args>(args)...);
 
         if (!transformation.can_be_applied(builder, analysis_manager)) {
             if (!skip_if_not_applicable) {
-                throw transformations::InvalidTransformationException(
-                    "Transformation " + transformation.name() + " cannot be applied.");
+                throw transformations::
+                    InvalidTransformationException("Transformation " + transformation.name() + " cannot be applied.");
             }
             return;
         }
@@ -41,19 +45,26 @@ class Recorder {
         transformation.apply(builder, analysis_manager);
     };
 
-    void replay(builder::StructuredSDFGBuilder& builder,
-                analysis::AnalysisManager& analysis_manager, const nlohmann::json& desc,
-                bool skip_if_not_applicable = true);
+    virtual void replay(
+        builder::StructuredSDFGBuilder& builder,
+        analysis::AnalysisManager& analysis_manager,
+        const nlohmann::json& desc,
+        bool skip_if_not_applicable = true
+    );
 
-    template <typename T>
+    template<typename T>
         requires transformation_concept<T>
-    void apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager,
-               const nlohmann::json& desc, bool skip_if_not_applicable = true) {
+    void apply(
+        builder::StructuredSDFGBuilder& builder,
+        analysis::AnalysisManager& analysis_manager,
+        const nlohmann::json& desc,
+        bool skip_if_not_applicable = true
+    ) {
         T transformation(T::from_json(builder, desc));
         if (!transformation.can_be_applied(builder, analysis_manager)) {
             if (!skip_if_not_applicable) {
-                throw transformations::InvalidTransformationException(
-                    "Transformation " + transformation.name() + " cannot be applied.");
+                throw transformations::
+                    InvalidTransformationException("Transformation " + transformation.name() + " cannot be applied.");
             }
             return;
         }
@@ -63,7 +74,8 @@ class Recorder {
     void save(std::filesystem::path path) const;
 
     nlohmann::json get_history() const { return history_; }
+    nlohmann::json& history() { return history_; }
 };
 
-}  // namespace transformations
-}  // namespace sdfg
+} // namespace transformations
+} // namespace sdfg
