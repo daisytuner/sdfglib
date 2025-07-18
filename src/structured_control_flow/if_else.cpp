@@ -10,6 +10,12 @@ IfElse::IfElse(size_t element_id, const DebugInfo& debug_info)
 
       };
 
+void IfElse::validate() const {
+    for (auto& entry : this->cases_) {
+        entry->validate();
+    }
+};
+
 size_t IfElse::size() const { return this->cases_.size(); };
 
 std::pair<const Sequence&, const symbolic::Condition&> IfElse::at(size_t i) const {

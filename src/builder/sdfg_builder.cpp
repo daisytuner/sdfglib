@@ -19,7 +19,13 @@ SDFGBuilder::SDFGBuilder(const std::string& name, FunctionType type)
 
 SDFG& SDFGBuilder::subject() const { return *this->sdfg_; };
 
-std::unique_ptr<SDFG> SDFGBuilder::move() { return std::move(this->sdfg_); };
+std::unique_ptr<SDFG> SDFGBuilder::move() {
+#ifndef NDEBUG
+    this->sdfg_->validate();
+#endif
+
+    return std::move(this->sdfg_);
+};
 
 /***** Section: Control-Flow Graph *****/
 

@@ -22,18 +22,21 @@ class Sequence;
 class Transition : public Element {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-   private:
+private:
     Sequence* parent_;
     control_flow::Assignments assignments_;
 
     Transition(size_t element_id, const DebugInfo& debug_info, Sequence& parent);
 
-    Transition(size_t element_id, const DebugInfo& debug_info, Sequence& parent,
-               const control_flow::Assignments& assignments);
+    Transition(
+        size_t element_id, const DebugInfo& debug_info, Sequence& parent, const control_flow::Assignments& assignments
+    );
 
-   public:
+public:
     Transition(const Transition& node) = delete;
     Transition& operator=(const Transition&) = delete;
+
+    void validate() const override;
 
     const control_flow::Assignments& assignments() const;
 
@@ -47,8 +50,7 @@ class Transition : public Element {
 
     size_t size() const;
 
-    void replace(const symbolic::Expression& old_expression,
-                 const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
 
 class Sequence : public ControlFlowNode {
@@ -59,15 +61,17 @@ class Sequence : public ControlFlowNode {
     friend class sdfg::structured_control_flow::While;
     friend class sdfg::structured_control_flow::StructuredLoop;
 
-   private:
+private:
     std::vector<std::unique_ptr<ControlFlowNode>> children_;
     std::vector<std::unique_ptr<Transition>> transitions_;
 
     Sequence(size_t element_id, const DebugInfo& debug_info);
 
-   public:
+public:
     Sequence(const Sequence& node) = delete;
     Sequence& operator=(const Sequence&) = delete;
+
+    void validate() const override;
 
     size_t size() const;
 
@@ -75,9 +79,8 @@ class Sequence : public ControlFlowNode {
 
     std::pair<ControlFlowNode&, Transition&> at(size_t i);
 
-    void replace(const symbolic::Expression& old_expression,
-                 const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
 
-}  // namespace structured_control_flow
-}  // namespace sdfg
+} // namespace structured_control_flow
+} // namespace sdfg

@@ -18,14 +18,20 @@ namespace structured_control_flow {
 class For : public StructuredLoop {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-   private:
-    For(size_t element_id, const DebugInfo& debug_info, symbolic::Symbol indvar,
-        symbolic::Expression init, symbolic::Expression update, symbolic::Condition condition);
+private:
+    For(size_t element_id,
+        const DebugInfo& debug_info,
+        symbolic::Symbol indvar,
+        symbolic::Expression init,
+        symbolic::Expression update,
+        symbolic::Condition condition);
 
-   public:
+public:
     For(const For& node) = delete;
     For& operator=(const For&) = delete;
+
+    void validate() const override;
 };
 
-}  // namespace structured_control_flow
-}  // namespace sdfg
+} // namespace structured_control_flow
+} // namespace sdfg

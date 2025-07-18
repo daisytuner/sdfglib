@@ -15,5 +15,7 @@ For::
         symbolic::Condition condition)
     : StructuredLoop(element_id, debug_info, indvar, init, update, condition) {};
 
+void For::validate() const { this->root_->validate(); };
+
 } // namespace structured_control_flow
 } // namespace sdfg

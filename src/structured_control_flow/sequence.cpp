@@ -15,6 +15,10 @@ Transition::Transition(
 
       };
 
+void Transition::validate() const {
+    // TODO: Implement validation
+};
+
 const control_flow::Assignments& Transition::assignments() const { return this->assignments_; };
 
 control_flow::Assignments& Transition::assignments() { return this->assignments_; };
@@ -47,6 +51,15 @@ Sequence::Sequence(size_t element_id, const DebugInfo& debug_info)
     : ControlFlowNode(element_id, debug_info) {
 
       };
+
+void Sequence::validate() const {
+    for (auto& child : this->children_) {
+        child->validate();
+    }
+    for (auto& trans : this->transitions_) {
+        trans->validate();
+    }
+};
 
 size_t Sequence::size() const { return this->children_.size(); };
 

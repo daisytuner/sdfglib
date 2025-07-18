@@ -5,12 +5,22 @@ namespace passes {
 
 bool Pass::run(builder::SDFGBuilder& builder) {
     bool applied = this->run_pass(builder);
+
+#ifndef NDEBUG
+    builder.subject().validate();
+#endif
+
     return applied;
 };
 
 bool Pass::run(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = this->run_pass(builder, analysis_manager);
     this->invalidates(analysis_manager, applied);
+
+#ifndef NDEBUG
+    builder.subject().validate();
+#endif
+
     return applied;
 };
 

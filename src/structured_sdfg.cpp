@@ -98,4 +98,12 @@ const DebugInfo StructuredSDFG::debug_info() const {
     return info;
 };
 
+void StructuredSDFG::validate() const {
+    // Call parent validate
+    Function::validate();
+
+    // Validate root
+    this->root().validate();
+};
+
 } // namespace sdfg

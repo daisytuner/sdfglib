@@ -22,6 +22,8 @@ public:
         const std::string& input
     );
 
+    void validate() const override;
+
     bool expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
 
     std::unique_ptr<data_flow::DataFlowNode>

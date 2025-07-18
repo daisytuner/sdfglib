@@ -19,6 +19,10 @@ ReLUNode::ReLUNode(
 )
     : MathNode(element_id, debug_info, vertex, parent, LibraryNodeType_ReLU, {output}, {input}) {}
 
+void ReLUNode::validate() const {
+    // TODO: Implement
+}
+
 bool ReLUNode::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
     auto& dataflow = this->get_parent();

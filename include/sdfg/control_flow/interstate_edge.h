@@ -26,7 +26,7 @@ typedef symbolic::SymbolMap Assignments;
 class InterstateEdge : public Element {
     friend class builder::SDFGBuilder;
 
-   private:
+private:
     // Remark: Exclusive resource
     const graph::Edge edge_;
 
@@ -36,15 +36,22 @@ class InterstateEdge : public Element {
     symbolic::Condition condition_;
     control_flow::Assignments assignments_;
 
-    InterstateEdge(size_t element_id, const DebugInfo& debug_info, const graph::Edge& edge,
-                   const control_flow::State& src, const control_flow::State& dst,
-                   const symbolic::Condition& condition,
-                   const control_flow::Assignments& assignments);
+    InterstateEdge(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Edge& edge,
+        const control_flow::State& src,
+        const control_flow::State& dst,
+        const symbolic::Condition& condition,
+        const control_flow::Assignments& assignments
+    );
 
-   public:
+public:
     // Remark: Exclusive resource
     InterstateEdge(const InterstateEdge& state) = delete;
     InterstateEdge& operator=(const InterstateEdge&) = delete;
+
+    void validate() const override;
 
     const graph::Edge edge() const;
 
@@ -58,9 +65,8 @@ class InterstateEdge : public Element {
 
     const control_flow::Assignments& assignments() const;
 
-    void replace(const symbolic::Expression& old_expression,
-                 const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
 
-}  // namespace control_flow
-}  // namespace sdfg
+} // namespace control_flow
+} // namespace sdfg

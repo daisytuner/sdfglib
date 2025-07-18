@@ -4,22 +4,27 @@ namespace sdfg {
 namespace data_flow {
 
 MetadataNode::MetadataNode(
-    size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent,
-    const std::vector<std::string>& outputs, const std::vector<std::string>& inputs,
+    size_t element_id,
+    const DebugInfo& debug_info,
+    const graph::Vertex vertex,
+    DataFlowGraph& parent,
+    const std::vector<std::string>& outputs,
+    const std::vector<std::string>& inputs,
     std::unordered_map<std::string, std::string> metadata
 )
     : LibraryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Metadata, outputs, inputs, false),
       metadata_(metadata) {}
 
-const std::unordered_map<std::string, std::string>& MetadataNode::metadata() const {
-    return metadata_;
+void MetadataNode::validate() const {
+    // TODO: Implement
 }
 
-symbolic::SymbolSet MetadataNode::symbols() const {
-    return symbolic::SymbolSet();
-}
+const std::unordered_map<std::string, std::string>& MetadataNode::metadata() const { return metadata_; }
 
-std::unique_ptr<DataFlowNode> MetadataNode::clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent) const {
+symbolic::SymbolSet MetadataNode::symbols() const { return symbolic::SymbolSet(); }
+
+std::unique_ptr<DataFlowNode> MetadataNode::clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
+    const {
     return std::make_unique<MetadataNode>(element_id, debug_info_, vertex, parent, outputs_, inputs_, metadata_);
 }
 
@@ -41,9 +46,9 @@ nlohmann::json MetadataNodeSerializer::serialize(const LibraryNode& library_node
     return j;
 }
 
-LibraryNode& MetadataNodeSerializer::deserialize(const nlohmann::json& j,
-                                        builder::StructuredSDFGBuilder& builder,
-                                        structured_control_flow::Block& parent) {
+LibraryNode& MetadataNodeSerializer::deserialize(
+    const nlohmann::json& j, builder::StructuredSDFGBuilder& builder, structured_control_flow::Block& parent
+) {
     // Assertions for required fields
     assert(j.contains("element_id"));
     assert(j.contains("code"));
@@ -69,9 +74,12 @@ LibraryNode& MetadataNodeSerializer::deserialize(const nlohmann::json& j,
     return builder.add_library_node<MetadataNode>(parent, debug_info, outputs, inputs, metadata);
 }
 
-MetadataDispatcher::MetadataDispatcher(codegen::LanguageExtension& language_extension, const Function& function,
-                            const DataFlowGraph& data_flow_graph,
-                            const MetadataNode& node)
+MetadataDispatcher::MetadataDispatcher(
+    codegen::LanguageExtension& language_extension,
+    const Function& function,
+    const DataFlowGraph& data_flow_graph,
+    const MetadataNode& node
+)
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
 void MetadataDispatcher::dispatch(codegen::PrettyPrinter& stream) {

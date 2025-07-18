@@ -18,6 +18,10 @@ Tasklet::Tasklet(
     : CodeNode(element_id, debug_info, vertex, parent), code_(code), output_(output), inputs_(inputs),
       condition_(condition) {};
 
+void Tasklet::validate() const {
+    // TODO: Implement
+}
+
 TaskletCode Tasklet::code() const { return this->code_; };
 
 const std::vector<std::pair<std::string, sdfg::types::Scalar>>& Tasklet::inputs() const { return this->inputs_; };

@@ -9,6 +9,8 @@ Block::Block(size_t element_id, const DebugInfo& debug_info) : ControlFlowNode(e
     this->dataflow_ = std::make_unique<data_flow::DataFlowGraph>();
 };
 
+void Block::validate() const { this->dataflow_->validate(); };
+
 const data_flow::DataFlowGraph& Block::dataflow() const { return *this->dataflow_; };
 
 data_flow::DataFlowGraph& Block::dataflow() { return *this->dataflow_; };

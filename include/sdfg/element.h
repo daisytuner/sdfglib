@@ -65,6 +65,13 @@ public:
 
     const DebugInfo& debug_info() const;
 
+    /**
+     * Validates the element.
+     *
+     * @throw InvalidSDFGException if the element is invalid
+     */
+    virtual void validate() const = 0;
+
     virtual void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) = 0;
 };
 

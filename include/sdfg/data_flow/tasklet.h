@@ -10,7 +10,7 @@ namespace sdfg {
 namespace builder {
 class SDFGBuilder;
 class StructuredSDFGBuilder;
-}  // namespace builder
+} // namespace builder
 
 namespace data_flow {
 
@@ -560,21 +560,28 @@ class Tasklet : public CodeNode {
     friend class sdfg::builder::SDFGBuilder;
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-   private:
+private:
     TaskletCode code_;
     std::pair<std::string, sdfg::types::Scalar> output_;
     std::vector<std::pair<std::string, sdfg::types::Scalar>> inputs_;
     symbolic::Condition condition_;
 
-    Tasklet(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
-            DataFlowGraph& parent, const TaskletCode code,
-            const std::pair<std::string, sdfg::types::Scalar>& output,
-            const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
-            const symbolic::Condition& condition);
+    Tasklet(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        DataFlowGraph& parent,
+        const TaskletCode code,
+        const std::pair<std::string, sdfg::types::Scalar>& output,
+        const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
+        const symbolic::Condition& condition
+    );
 
-   public:
+public:
     Tasklet(const Tasklet& data_node) = delete;
     Tasklet& operator=(const Tasklet&) = delete;
+
+    void validate() const override;
 
     TaskletCode code() const;
 
@@ -598,11 +605,10 @@ class Tasklet : public CodeNode {
 
     bool is_conditional() const;
 
-    virtual std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex,
-                                                DataFlowGraph& parent) const override;
+    virtual std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
+        const override;
 
-    void replace(const symbolic::Expression& old_expression,
-                 const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
-}  // namespace data_flow
-}  // namespace sdfg
+} // namespace data_flow
+} // namespace sdfg

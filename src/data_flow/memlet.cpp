@@ -38,6 +38,10 @@ Memlet::Memlet(
 
       };
 
+void Memlet::validate() const {
+    // TODO: Implement
+};
+
 const graph::Edge Memlet::edge() const { return this->edge_; };
 
 const DataFlowGraph& Memlet::get_parent() const { return *this->parent_; };
