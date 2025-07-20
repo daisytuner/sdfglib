@@ -2,7 +2,6 @@
 #include <stdexcept>
 
 #include "sdfg/analysis/assumptions_analysis.h"
-#include "sdfg/analysis/data_parallelism_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
@@ -72,7 +71,7 @@ bool LoopSlicing::can_be_applied(builder::StructuredSDFGBuilder& builder, analys
                     return false;
                 }
             }
-            auto bound = analysis::DataParallelismAnalysis::bound(loop_);
+            auto bound = analysis::LoopAnalysis::canonical_bound(&loop_, assumptions_analysis);
             if (bound == SymEngine::null) {
                 return false;
             }
@@ -132,7 +131,7 @@ void LoopSlicing::apply(builder::StructuredSDFGBuilder& builder, analysis::Analy
 
     auto branch_1 = if_else->at(0);
     auto condition_1 = branch_1.second;
-    auto bound = analysis::DataParallelismAnalysis::bound(loop_);
+    auto bound = analysis::LoopAnalysis::canonical_bound(&loop_, analysis_manager.get<analysis::AssumptionsAnalysis>());
 
     LoopSlicingType slice_type = LoopSlicingType::Init;
     if (symbolic::eq(condition_1, symbolic::Eq(indvar, loop_.init()))) {
