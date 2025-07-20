@@ -12,8 +12,8 @@ TEST(ParallelizationTest, Map_2D) {
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Pointer desc(base_desc);
-    types::Pointer desc_2(static_cast<const types::IType&>(desc));
+    types::Array desc_1(base_desc, symbolic::symbol("M"));
+    types::Pointer desc_2(desc_1);
     builder.add_container("A", desc_2, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);

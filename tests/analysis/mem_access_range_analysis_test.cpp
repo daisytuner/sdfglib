@@ -86,7 +86,8 @@ TEST(MemAccessRangeTest, Simple_2D_Map_Init) {
     builder::StructuredSDFGBuilder builder("sdfg_simple_2d", FunctionType_CPU);
 
     auto dataType = types::Scalar(types::PrimitiveType::Int32);
-    auto array2dType = types::Pointer(static_cast<const types::IType&>(types::Pointer(dataType)));
+    types::Array array1dType(dataType, symbolic::symbol("M"));
+    types::Pointer array2dType(array1dType);
 
     builder.add_container("A", array2dType, true);
     builder.add_container("arg_init", dataType, true);
@@ -148,7 +149,8 @@ TEST(MemAccessRangeTest, Incomplete_2D_Line_Sum) {
     builder::StructuredSDFGBuilder builder("sdfg_incomplete_2d", FunctionType_CPU);
 
     auto dataType = types::Scalar(types::PrimitiveType::Int32);
-    auto array2dType = types::Pointer(static_cast<const types::IType&>(types::Pointer(dataType)));
+    types::Array array1dType(dataType, symbolic::symbol("M"));
+    types::Pointer array2dType(array1dType);
 
     builder.add_container("A", array2dType, true);
     builder.add_container("B", types::Pointer(dataType), true);

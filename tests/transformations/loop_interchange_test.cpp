@@ -12,8 +12,8 @@ TEST(LoopInterchangeTest, Map_2D) {
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Pointer desc(base_desc);
-    types::Pointer desc_2(static_cast<const types::IType&>(desc));
+    types::Array desc_1(base_desc, symbolic::symbol("M"));
+    types::Pointer desc_2(desc_1);
     builder.add_container("A", desc_2, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -91,13 +91,14 @@ TEST(LoopInterchangeTest, DependentLoops) {
     // Add containers
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
     builder.add_container("N", sym_desc, true);
+    builder.add_container("M", sym_desc, true);
     builder.add_container("i", sym_desc);
     builder.add_container("j", sym_desc);
 
     types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Pointer desc(base_desc);
-    types::Pointer desc2(static_cast<const types::IType&>(desc));
-    builder.add_container("A", desc2, true);
+    types::Array desc_1(base_desc, symbolic::symbol("M"));
+    types::Pointer desc_2(desc_1);
+    builder.add_container("A", desc_2, true);
 
     // Define loop
     auto indvar1 = symbolic::symbol("i");
@@ -150,8 +151,8 @@ TEST(LoopInterchangeTest, OuterLoopHasOuterBlocks) {
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Pointer desc(base_desc);
-    types::Pointer desc_2(static_cast<const types::IType&>(desc));
+    types::Array desc_1(base_desc, symbolic::symbol("M"));
+    types::Pointer desc_2(desc_1);
     builder.add_container("A", desc_2, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
