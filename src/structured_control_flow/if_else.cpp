@@ -10,9 +10,9 @@ IfElse::IfElse(size_t element_id, const DebugInfo& debug_info)
 
       };
 
-void IfElse::validate() const {
+void IfElse::validate(const Function& function) const {
     for (auto& entry : this->cases_) {
-        entry->validate();
+        entry->validate(function);
     }
 };
 

@@ -38,7 +38,7 @@ public:
     StructuredLoop(const StructuredLoop& node) = delete;
     StructuredLoop& operator=(const StructuredLoop&) = delete;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     const symbolic::Symbol& indvar() const;
 

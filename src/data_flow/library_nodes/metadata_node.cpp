@@ -15,7 +15,7 @@ MetadataNode::MetadataNode(
     : LibraryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Metadata, outputs, inputs, false),
       metadata_(metadata) {}
 
-void MetadataNode::validate() const {
+void MetadataNode::validate(const Function& function) const {
     // TODO: Implement
 }
 

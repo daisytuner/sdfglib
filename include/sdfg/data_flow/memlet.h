@@ -66,7 +66,7 @@ public:
     Memlet(const Memlet& memlet) = delete;
     Memlet& operator=(const Memlet&) = delete;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     const graph::Edge edge() const;
 

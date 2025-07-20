@@ -27,7 +27,7 @@ public:
     Block(const Block& block) = delete;
     Block& operator=(const Block&) = delete;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     const data_flow::DataFlowGraph& dataflow() const;
 

@@ -14,7 +14,7 @@ AccessNode::AccessNode(
 
       };
 
-void AccessNode::validate() const {
+void AccessNode::validate(const Function& function) const {
     // TODO: Implement
 }
 

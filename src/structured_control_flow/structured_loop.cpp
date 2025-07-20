@@ -15,7 +15,7 @@ StructuredLoop::StructuredLoop(
     this->root_ = std::unique_ptr<Sequence>(new Sequence(++element_id, debug_info));
 }
 
-void StructuredLoop::validate() const {
+void StructuredLoop::validate(const Function& function) const {
     // TODO: Implement validation
 };
 

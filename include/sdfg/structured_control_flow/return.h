@@ -19,7 +19,7 @@ public:
     Return(const Return& Return) = delete;
     Return& operator=(const Return&) = delete;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };

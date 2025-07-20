@@ -17,6 +17,8 @@ namespace serializer {
 class JSONSerializer;
 } // namespace serializer
 
+class Function;
+
 class DebugInfo {
 private:
     std::string filename_;
@@ -70,7 +72,7 @@ public:
      *
      * @throw InvalidSDFGException if the element is invalid
      */
-    virtual void validate() const = 0;
+    virtual void validate(const Function& function) const = 0;
 
     virtual void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) = 0;
 };

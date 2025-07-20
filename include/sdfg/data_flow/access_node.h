@@ -31,7 +31,7 @@ public:
     AccessNode(const AccessNode& data_node) = delete;
     AccessNode& operator=(const AccessNode&) = delete;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     const std::string& data() const;
 

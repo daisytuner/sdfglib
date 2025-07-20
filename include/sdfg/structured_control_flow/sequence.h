@@ -36,7 +36,7 @@ public:
     Transition(const Transition& node) = delete;
     Transition& operator=(const Transition&) = delete;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     const control_flow::Assignments& assignments() const;
 
@@ -71,7 +71,7 @@ public:
     Sequence(const Sequence& node) = delete;
     Sequence& operator=(const Sequence&) = delete;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     size_t size() const;
 

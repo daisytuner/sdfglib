@@ -26,7 +26,7 @@ public:
     IfElse(const IfElse& node) = delete;
     IfElse& operator=(const IfElse&) = delete;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     size_t size() const;
 

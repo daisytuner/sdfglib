@@ -27,7 +27,7 @@ public:
 
     const std::unordered_map<std::string, std::string>& metadata() const;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     symbolic::SymbolSet symbols() const override;
 

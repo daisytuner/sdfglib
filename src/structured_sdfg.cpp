@@ -103,7 +103,7 @@ void StructuredSDFG::validate() const {
     Function::validate();
 
     // Validate root
-    this->root().validate();
+    this->root().validate(*this);
 };
 
 } // namespace sdfg

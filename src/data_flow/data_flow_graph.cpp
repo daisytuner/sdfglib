@@ -3,12 +3,12 @@
 namespace sdfg {
 namespace data_flow {
 
-void DataFlowGraph::validate() const {
+void DataFlowGraph::validate(const Function& function) const {
     for (auto& node : this->nodes_) {
-        node.second->validate();
+        node.second->validate(function);
     }
     for (auto& edge : this->edges_) {
-        edge.second->validate();
+        edge.second->validate(function);
     }
 };
 

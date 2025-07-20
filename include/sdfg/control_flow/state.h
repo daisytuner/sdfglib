@@ -33,7 +33,7 @@ public:
     State(const State& state) = delete;
     State& operator=(const State&) = delete;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     graph::Vertex vertex() const;
 

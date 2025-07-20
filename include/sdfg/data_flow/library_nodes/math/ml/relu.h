@@ -22,7 +22,7 @@ public:
         const std::string& input
     );
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     bool expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
 

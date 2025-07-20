@@ -1,6 +1,8 @@
 #include <sdfg/data_flow/memlet.h>
 
+#include "sdfg/function.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/types/utils.h"
 
 namespace sdfg {
 namespace data_flow {
@@ -38,8 +40,16 @@ Memlet::Memlet(
 
       };
 
-void Memlet::validate() const {
-    // TODO: Implement
+void Memlet::validate(const Function& function) const {
+    // Criterion: Memlets must refer to contiguous memory
+    std::string data;
+    if (this->src_conn_ == "void") {
+        data = static_cast<const data_flow::AccessNode&>(this->src_).data();
+    } else {
+        data = static_cast<const data_flow::AccessNode&>(this->dst_).data();
+    }
+    auto& type = function.type(data);
+    auto& element_type = types::infer_type(function, type, this->begin_subset_);
 };
 
 const graph::Edge Memlet::edge() const { return this->edge_; };
