@@ -1,4 +1,5 @@
 #include "sdfg/transformations/loop_interchange.h"
+#include <stdexcept>
 
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
@@ -132,18 +133,20 @@ LoopInterchange LoopInterchange::from_json(builder::StructuredSDFGBuilder& build
     auto inner_loop_id = desc["inner_loop_element_id"].get<size_t>();
     auto outer_element = builder.find_element_by_id(outer_loop_id);
     auto inner_element = builder.find_element_by_id(inner_loop_id);
-    if (!outer_element) {
-        throw InvalidTransformationDescriptionException(
-            "Element with ID " + std::to_string(outer_loop_id) + " not found."
-        );
+    if (outer_element == nullptr) {
+        throw std::runtime_error("Element with ID " + std::to_string(outer_loop_id) + " not found.");
     }
-    if (!inner_element) {
-        throw InvalidTransformationDescriptionException(
-            "Element with ID " + std::to_string(inner_loop_id) + " not found."
-        );
+    if (inner_element == nullptr) {
+        throw std::runtime_error("Element with ID " + std::to_string(inner_loop_id) + " not found.");
     }
     auto outer_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(outer_element);
+    if (outer_loop == nullptr) {
+        throw std::runtime_error("Element with ID " + std::to_string(outer_loop_id) + " is not a StructuredLoop.");
+    }
     auto inner_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(inner_element);
+    if (inner_loop == nullptr) {
+        throw std::runtime_error("Element with ID " + std::to_string(inner_loop_id) + " is not a StructuredLoop.");
+    }
 
     return LoopInterchange(*outer_loop, *inner_loop);
 };

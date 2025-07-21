@@ -119,10 +119,15 @@ void LoopDistribute::to_json(nlohmann::json& j) const {
 LoopDistribute LoopDistribute::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
     auto loop_id = desc["loop_element_id"].get<size_t>();
     auto element = builder.find_element_by_id(loop_id);
-    if (!element) {
+    if (element == nullptr) {
         throw InvalidTransformationDescriptionException("Element with ID " + std::to_string(loop_id) + " not found.");
     }
     auto loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element);
+    if (loop == nullptr) {
+        throw InvalidTransformationDescriptionException(
+            "Element with ID " + std::to_string(loop_id) + " is not a StructuredLoop."
+        );
+    }
 
     return LoopDistribute(*loop);
 };

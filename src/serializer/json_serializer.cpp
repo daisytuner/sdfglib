@@ -79,6 +79,7 @@ nlohmann::json JSONSerializer::serialize(const sdfg::StructuredSDFG& sdfg) {
     nlohmann::json j;
 
     j["name"] = sdfg.name();
+    j["element_counter"] = sdfg.element_counter();
     j["type"] = std::string(sdfg.type().value());
 
     j["structures"] = nlohmann::json::array();
@@ -444,9 +445,13 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
     assert(j["name"].is_string());
     assert(j.contains("type"));
     assert(j["type"].is_string());
+    assert(j["element_counter"].is_number_integer());
 
     FunctionType function_type = function_type_from_string(j["type"].get<std::string>());
     builder::StructuredSDFGBuilder builder(j["name"], function_type);
+
+    size_t element_counter = j["element_counter"];
+    builder.set_element_counter(element_counter);
 
     // deserialize structures
     assert(j.contains("structures"));
@@ -496,6 +501,8 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
     for (const auto& entry : j["metadata"].items()) {
         builder.subject().add_metadata(entry.key(), entry.value());
     }
+
+    builder.set_element_counter(element_counter);
 
     return builder.move();
 }

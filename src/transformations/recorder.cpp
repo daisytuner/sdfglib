@@ -16,6 +16,10 @@ void Recorder::replay(
     const nlohmann::json& transformation_data,
     bool skip_if_not_applicable
 ) {
+    if (!transformation_data.is_array()) {
+        throw std::runtime_error("Transformation data must be an array.");
+    }
+
     for (const auto& desc : transformation_data) {
         auto transformation_name = desc["transformation_type"];
 
