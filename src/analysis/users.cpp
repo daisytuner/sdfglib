@@ -126,7 +126,8 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
 
                     // Check if the pointer itself is moved (overwritten)
                     for (auto& iedge : dataflow.in_edges(*access_node)) {
-                        if (iedge.dst_conn() == "ref" || iedge.dst_conn() == "deref") {
+                        if (iedge.type() == data_flow::MemletType::Reference ||
+                            iedge.type() == data_flow::MemletType::Dereference_Src) {
                             use = Use::MOVE;
                             break;
                         }
@@ -147,7 +148,8 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
 
                     // Check if the pointer itself is viewed (aliased)
                     for (auto& oedge : dataflow.out_edges(*access_node)) {
-                        if (oedge.dst_conn() == "ref" || oedge.src_conn() == "deref") {
+                        if (oedge.type() == data_flow::MemletType::Reference ||
+                            oedge.type() == data_flow::MemletType::Dereference_Dst) {
                             use = Use::VIEW;
                             break;
                         }

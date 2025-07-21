@@ -54,7 +54,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
             auto& move_edge = *dataflow.in_edges(access_node).begin();
 
             // Criterion: Must be a reference memlet
-            if (move_edge.dst_conn() != "ref") {
+            if (move_edge.type() != data_flow::MemletType::Reference) {
                 continue;
             }
 
@@ -114,13 +114,13 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                 // Criterion: Must not be a dereference memlet
                 bool deref = false;
                 for (auto& oedge : use_graph->out_edges(use_node)) {
-                    if (oedge.dst_conn() == "deref") {
+                    if (oedge.type() == data_flow::MemletType::Dereference_Src) {
                         deref = true;
                         break;
                     }
                 }
                 for (auto& iedge : use_graph->in_edges(use_node)) {
-                    if (iedge.src_conn() == "deref") {
+                    if (iedge.type() == data_flow::MemletType::Dereference_Dst) {
                         deref = true;
                         break;
                     }

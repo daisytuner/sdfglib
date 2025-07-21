@@ -1163,6 +1163,76 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
     return dynamic_cast<data_flow::Memlet&>(*(res.first->second));
 };
 
+data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
+    structured_control_flow::Block& block,
+    data_flow::AccessNode& src,
+    data_flow::Tasklet& dst,
+    const std::string& dst_conn,
+    const data_flow::Subset& subset,
+    const DebugInfo& debug_info
+) {
+    return this->add_memlet(block, src, "void", dst, dst_conn, subset, debug_info);
+};
+
+data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
+    structured_control_flow::Block& block,
+    data_flow::Tasklet& src,
+    const std::string& src_conn,
+    data_flow::AccessNode& dst,
+    const data_flow::Subset& subset,
+    const DebugInfo& debug_info
+) {
+    return this->add_memlet(block, src, src_conn, dst, "void", subset, debug_info);
+};
+
+data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
+    structured_control_flow::Block& block,
+    data_flow::AccessNode& src,
+    data_flow::LibraryNode& dst,
+    const std::string& dst_conn,
+    const data_flow::Subset& begin_subset,
+    const data_flow::Subset& end_subset,
+    const DebugInfo& debug_info
+) {
+    return this->add_memlet(block, src, "void", dst, dst_conn, begin_subset, end_subset, debug_info);
+};
+
+data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
+    structured_control_flow::Block& block,
+    data_flow::LibraryNode& src,
+    const std::string& src_conn,
+    data_flow::AccessNode& dst,
+    const data_flow::Subset& begin_subset,
+    const data_flow::Subset& end_subset,
+    const DebugInfo& debug_info
+) {
+    return this->add_memlet(block, src, src_conn, dst, "void", begin_subset, end_subset, debug_info);
+};
+
+data_flow::Memlet& StructuredSDFGBuilder::add_reference_memlet(
+    structured_control_flow::Block& block,
+    data_flow::AccessNode& src,
+    data_flow::AccessNode& dst,
+    const data_flow::Subset& subset,
+    const DebugInfo& debug_info
+) {
+    return this->add_memlet(block, src, "void", dst, "ref", subset, debug_info);
+};
+
+data_flow::Memlet& StructuredSDFGBuilder::add_dereference_memlet(
+    structured_control_flow::Block& block,
+    data_flow::AccessNode& src,
+    data_flow::AccessNode& dst,
+    bool derefs_src,
+    const DebugInfo& debug_info
+) {
+    if (derefs_src) {
+        return this->add_memlet(block, src, "void", dst, "deref", {symbolic::zero()}, debug_info);
+    } else {
+        return this->add_memlet(block, src, "deref", dst, "void", {symbolic::zero()}, debug_info);
+    }
+};
+
 void StructuredSDFGBuilder::remove_memlet(structured_control_flow::Block& block, const data_flow::Memlet& edge) {
     auto& graph = block.dataflow();
     auto e = edge.edge();

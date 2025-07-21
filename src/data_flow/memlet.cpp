@@ -264,6 +264,18 @@ const DataFlowGraph& Memlet::get_parent() const { return *this->parent_; };
 
 DataFlowGraph& Memlet::get_parent() { return *this->parent_; };
 
+MemletType Memlet::type() const {
+    if (this->dst_conn_ == "ref") {
+        return Reference;
+    } else if (this->dst_conn_ == "deref") {
+        return Dereference_Src;
+    } else if (this->src_conn_ == "deref") {
+        return Dereference_Dst;
+    } else {
+        return Computational;
+    }
+}
+
 const DataFlowNode& Memlet::src() const { return this->src_; };
 
 DataFlowNode& Memlet::src() { return this->src_; };
