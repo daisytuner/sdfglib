@@ -1,4 +1,5 @@
 #include "sdfg/function.h"
+#include <cstddef>
 
 #include "sdfg/symbolic/symbolic.h"
 
@@ -45,6 +46,8 @@ const std::string& Function::name() const { return this->name_; };
 std::string& Function::name() { return this->name_; };
 
 FunctionType Function::type() const { return this->type_; };
+
+size_t Function::element_counter() const { return this->element_counter_; };
 
 void Function::validate() const {
     // Function type

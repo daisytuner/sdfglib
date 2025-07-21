@@ -81,6 +81,8 @@ public:
 
     FunctionType type() const;
 
+    size_t element_counter() const;
+
     virtual const DebugInfo debug_info() const = 0;
 
     /**

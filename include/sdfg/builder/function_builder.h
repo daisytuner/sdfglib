@@ -9,18 +9,19 @@ namespace sdfg {
 namespace builder {
 
 class FunctionBuilder {
-   protected:
+protected:
     virtual Function& function() const = 0;
 
     size_t new_element_id() const;
 
-   public:
+public:
     virtual ~FunctionBuilder() = default;
 
     /***** Section: Containers *****/
 
-    const types::IType& add_container(const std::string& name, const types::IType& type,
-                                      bool is_argument = false, bool is_external = false) const;
+    const types::IType& add_container(
+        const std::string& name, const types::IType& type, bool is_argument = false, bool is_external = false
+    ) const;
 
     void remove_container(const std::string& name) const;
 
@@ -31,7 +32,9 @@ class FunctionBuilder {
     void make_array(const std::string& name, const symbolic::Expression& size) const;
 
     std::string find_new_name(std::string prefix = "tmp_") const;
+
+    void set_element_counter(size_t element_counter);
 };
 
-}  // namespace builder
-}  // namespace sdfg
+} // namespace builder
+} // namespace sdfg
