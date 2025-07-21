@@ -1,6 +1,4 @@
 #include "sdfg/transformations/loop_interchange.h"
-#include <cstddef>
-#include <iostream>
 #include <stdexcept>
 
 #include "sdfg/analysis/scope_analysis.h"
@@ -122,24 +120,12 @@ void LoopInterchange::apply(builder::StructuredSDFGBuilder& builder, analysis::A
     builder.remove_child(outer_scope, this->outer_loop_);
 
     analysis_manager.invalidate_all();
-
-    std::cout << "Applied LoopInterchange on outer loop: " << outer_loop_.indvar()->get_name() << " with element id "
-              << new_outer_loop->element_id() << " and inner loop: " << inner_loop_.indvar()->get_name()
-              << " with element id " << new_inner_loop->element_id() << std::endl;
-
-    /*   if (this->outer_loop_.element_id() == this->inner_loop_.element_id()) {
-           throw std::runtime_error("Outer and inner loop must be different after apply.");
-}
-           */
 };
 
 void LoopInterchange::to_json(nlohmann::json& j) const {
     j["transformation_type"] = this->name();
     j["outer_loop_element_id"] = this->outer_loop_.element_id();
     j["inner_loop_element_id"] = this->inner_loop_.element_id();
-    if (this->outer_loop_.element_id() == this->inner_loop_.element_id()) {
-        throw std::runtime_error("Outer and inner loop must be different.");
-    }
 };
 
 LoopInterchange LoopInterchange::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
