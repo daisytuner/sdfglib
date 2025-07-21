@@ -3,9 +3,9 @@
 #include <cstddef>
 #include <list>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
-#include <vector>
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/analysis/assumptions_analysis.h"
@@ -14,6 +14,7 @@
 #include "sdfg/analysis/users.h"
 #include "sdfg/analysis/work_depth_analysis.h"
 #include "sdfg/data_flow/access_node.h"
+#include "sdfg/data_flow/data_flow_node.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/for.h"
@@ -131,7 +132,7 @@ void DegreesOfKnowledgeAnalysis::size_analysis(AnalysisManager& analysis_manager
                 auto defined_by = dependencies.defined_by(user->container());
                 auto after = users.all_uses_after(*user);
                 auto definition = defined_by.at(user);
-                std::unordered_set<User *> intersection;
+                std::unordered_set<User*> intersection;
                 for (auto& use : after) {
                     if (definition.contains(use)) {
                         intersection.insert(use);
@@ -157,12 +158,10 @@ void DegreesOfKnowledgeAnalysis::load_analysis(AnalysisManager& analysis_manager
 
             load_of_a_map_.insert({map_node, {depth, while_symbols}});
         }
-    }    
+    }
 }
 
-bool contains_jump(
-    const structured_control_flow::ControlFlowNode* node
-) {
+bool contains_jump(const structured_control_flow::ControlFlowNode* node) {
     std::list<const structured_control_flow::ControlFlowNode*> stack;
     stack.push_back(node);
     while (!stack.empty()) {
@@ -171,7 +170,7 @@ bool contains_jump(
 
         if (dynamic_cast<const structured_control_flow::Break*>(current_node) ||
             dynamic_cast<const structured_control_flow::Continue*>(current_node)) {
-            return true;        
+            return true;
         } else if (auto loop_node = dynamic_cast<const structured_control_flow::StructuredLoop*>(current_node)) {
             stack.push_back(&loop_node->root());
         } else if (auto sequence_node = dynamic_cast<const structured_control_flow::Sequence*>(current_node)) {
@@ -190,39 +189,84 @@ bool contains_jump(
     return false;
 }
 
-std::unordered_set<User*> dynamic_writes(Users& users, structured_control_flow::Map* map_node) {
+std::unordered_set<User*> get_dependent_writes(
+    AnalysisManager& analysis_manager,
+    Users& users,
+    DataDependencyAnalysis& data_dependency_analysis,
+    data_flow::DataFlowNode& node
+) {
+    std::unordered_set<User*> dependent_writes;
+
+    auto succs = node.get_parent().successors(node);
+    std::list<data_flow::DataFlowNode*> successors(succs.begin(), succs.end());
+    while (!successors.empty()) {
+        auto succ = successors.front();
+        successors.pop_front();
+        if (auto access_node = dynamic_cast<data_flow::AccessNode*>(succ)) {
+            dependent_writes.insert(users.get_user(access_node->data(), access_node, Use::WRITE));
+        } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(succ)) {
+            auto added_succs = tasklet->get_parent().successors(*tasklet);
+            successors.insert(successors.end(), added_succs.begin(), added_succs.end());
+        }
+    }
+
+    return dependent_writes;
+}
+
+std::unordered_set<User*> dynamic_writes(
+    AnalysisManager& analysis_manager,
+    Users& users,
+    DataDependencyAnalysis& data_dependency_analysis,
+    structured_control_flow::Map* map_node
+) {
     std::unordered_set<User*> writes;
     writes.insert(users.get_user(map_node->indvar()->get_name(), map_node, Use::WRITE, true, false, false));
     writes.insert(users.get_user(map_node->indvar()->get_name(), map_node, Use::WRITE, false, false, true));
-
-    std::unordered_set<std::string> write_containers;
-    for (auto& write : writes) {
-        write_containers.insert(write->container());
-    }
 
     auto users_view = UsersView(users, map_node->root());
 
     bool updated = true;
     while (updated) {
         updated = false;
-        auto reads = users_view.reads();
+        std::unordered_set<User*> reads;
+        for (auto write : writes) {
+            auto read_users = data_dependency_analysis.defines(*write);
+            reads.insert(read_users.begin(), read_users.end());
+        }
+
         for (auto read : reads) {
-            if (write_containers.find(read->container()) != write_containers.end()) {
-                auto element = read->element();
-                if (auto loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element)) {
-                    // TODO: Compare number of iterations instead of individual reads. Since they might be canceled out (e.g. Loop tiling)
-                    if (loop->indvar()->get_name() != read->container()) {
-                        writes.insert(users.get_user(read->container(), loop, Use::WRITE, true, false, false));
-                        writes.insert(users.get_user(read->container(), loop, Use::WRITE, false, false, true));
-                        updated = true;
-                    }
-                } else if (auto if_else = dynamic_cast<data_flow::AccessNode*>(element)) {
-                    // TODO: Propagate access node through to the next access node
-                } else if (auto memlet = dynamic_cast<data_flow::Memlet*>(element)) {
-                    // TODO: Propagate memlet through to the next access node
-                } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(element)) {
-                    // TODO: Propagate tasklet through to the next access node
+            auto element = read->element();
+            if (auto loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element)) {
+                auto stride = analysis::LoopAnalysis::stride(map_node);
+                auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+                auto bound = analysis::LoopAnalysis::canonical_bound(map_node, assumptions_analysis);
+                auto num_iterations = symbolic::sub(bound, map_node->init());
+                auto atoms = symbolic::atoms(num_iterations);
+                if (atoms.find(symbolic::symbol(read->container())) != atoms.end()) {
+                    writes.insert(users.get_user(read->container(), loop, Use::WRITE, true, false, false));
+                    writes.insert(users.get_user(read->container(), loop, Use::WRITE, false, false, true));
+                    updated = true;
+                    break;
                 }
+            } else if (auto access = dynamic_cast<data_flow::AccessNode*>(element)) {
+                auto dependent_writes =
+                    get_dependent_writes(analysis_manager, users, data_dependency_analysis, *access);
+                writes.insert(dependent_writes.begin(), dependent_writes.end());
+                updated = true;
+            } else if (auto memlet = dynamic_cast<data_flow::Memlet*>(element)) {
+                if (auto access_node = dynamic_cast<data_flow::AccessNode*>(&memlet->dst())) {
+                    writes.insert(users.get_user(access_node->data(), access_node, Use::WRITE));
+                } else {
+                    auto dependent_writes =
+                        get_dependent_writes(analysis_manager, users, data_dependency_analysis, memlet->dst());
+                    writes.insert(dependent_writes.begin(), dependent_writes.end());
+                }
+                updated = true;
+            } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(element)) {
+                auto dependent_writes =
+                    get_dependent_writes(analysis_manager, users, data_dependency_analysis, *access);
+                writes.insert(dependent_writes.begin(), dependent_writes.end());
+                updated = true;
             }
         }
     }
@@ -232,78 +276,132 @@ std::unordered_set<User*> dynamic_writes(Users& users, structured_control_flow::
 void DegreesOfKnowledgeAnalysis::balance_analysis(AnalysisManager& analysis_manager) {
     auto& loop_analysis = analysis_manager.get<LoopAnalysis>();
     auto& users = analysis_manager.get<Users>();
+    auto& data_dependency_analysis = analysis_manager.get<DataDependencyAnalysis>();
+
+    symbolic::SymbolSet while_symbols;
+    symbolic::SymbolSet if_else_symbols;
 
     for (auto& loop : loop_analysis.loops()) {
         if (auto* map_node = dynamic_cast<structured_control_flow::Map*>(loop)) {
-            auto writes = dynamic_writes(users, map_node);
-            std::unordered_set<std::string> write_containers;
-            for (auto& write : writes) {
-                write_containers.insert(write->container());
+            auto writes = dynamic_writes(analysis_manager, users, data_dependency_analysis, map_node);
+
+            std::unordered_set<User*> reads;
+            for (auto write : writes) {
+                auto read_users = data_dependency_analysis.defines(*write);
+                reads.insert(read_users.begin(), read_users.end());
             }
 
-            // TODO: create buttom up order of nodes
-            // to avoid traversing the whole SDFG multiple times
-            // Then create differential depth expression
-            std::list<structured_control_flow::ControlFlowNode*> stack;
-            stack.push_back(&map_node->root());
-            while (!stack.empty()) {
-                auto node = stack.front();
-                stack.pop_front();
-                
-                if (auto loop_node = dynamic_cast<structured_control_flow::StructuredLoop*>(node)) {
-                    stack.push_back(&loop_node->root());
-                    
-                    bool is_dependent = false;
+            std::stack<structured_control_flow::ControlFlowNode*> nodes;
+            std::queue<structured_control_flow::ControlFlowNode*> queue;
 
-                    for (auto atom : symbolic::atoms(loop_node->init())) {
-                        if (write_containers.find(atom->get_name()) != write_containers.end()) {
-                            auto user = users.get_user(atom->get_name(), loop_node, Use::READ, true, false, false);
-                            for (auto write : writes) {
-                                if (write->container() == atom->get_name()) {
-                                    if (users.all_uses_after(*user).find(write) != users.all_uses_after(*user).end()) {
-                                        is_dependent = true;
-                                        break;                                
-                                    }
-                                }                                
-                            }
-                        }
+            queue.push(&map_node->root());
+
+            // Create bottom-up order of nodes
+            while (!queue.empty()) {
+                auto* node = queue.front();
+                queue.pop();
+
+                nodes.push(node);
+
+                if (dynamic_cast<structured_control_flow::Sequence*>(node)) {
+                    auto* sequence = dynamic_cast<structured_control_flow::Sequence*>(node);
+                    for (size_t i = 0; i < sequence->size(); ++i) {
+                        queue.push(&sequence->at(i).first);
                     }
+                } else if (dynamic_cast<structured_control_flow::StructuredLoop*>(node)) {
+                    auto* strutured_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(node);
+                    queue.push(&strutured_loop->root());
+                } else if (dynamic_cast<structured_control_flow::While*>(node)) {
+                    auto* while_loop = dynamic_cast<structured_control_flow::While*>(node);
+                    queue.push(&while_loop->root());
+                } else if (dynamic_cast<structured_control_flow::IfElse*>(node)) {
+                    auto* if_else = dynamic_cast<structured_control_flow::IfElse*>(node);
+                    for (size_t i = 0; i < if_else->size(); ++i) {
+                        queue.push(&if_else->at(i).first);
+                    }
+                }
+            }
 
-                    if (!is_dependent) {
-                        for (auto atom : symbolic::atoms(loop_node->condition())) {
-                            if (symbolic::eq(atom, loop_node->indvar())) {
-                                continue;                            
-                            }
+            std::unordered_map<structured_control_flow::ControlFlowNode*, symbolic::Expression> cost;
 
-                            if (write_containers.find(atom->get_name()) != write_containers.end()) {
-                                auto user = users.get_user(atom->get_name(), loop_node, Use::READ, false, true, false);
-                                for (auto write : writes) {
-                                    if (write->container() == atom->get_name()) {
-                                        if (users.all_uses_after(*user).find(write) != users.all_uses_after(*user).end()) {
-                                            is_dependent = true;
-                                            break;                                
-                                        }
-                                    }                                
+            while (!nodes.empty()) {
+                auto* node = nodes.top();
+                nodes.pop();
+
+                if (auto loop_node = dynamic_cast<structured_control_flow::StructuredLoop*>(node)) {
+                    std::unordered_set<User*> loop_reads;
+                    bool found = false;
+                    symbolic::Expression total_cost = symbolic::one();
+                    if (writes.find(users.get_user(loop_node->indvar()->get_name(), loop_node, Use::WRITE, true)) !=
+                        writes.end()) {
+                        found = true;
+                        auto stride = analysis::LoopAnalysis::stride(map_node);
+                        auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+                        auto bound = analysis::LoopAnalysis::canonical_bound(map_node, assumptions_analysis);
+                        auto num_iterations = symbolic::sub(bound, map_node->init());
+
+                        total_cost = symbolic::mul(num_iterations, cost.at(&loop_node->root()));
+                    }
+                    cost.insert({node, total_cost});
+
+                } else if (auto sequence_node = dynamic_cast<structured_control_flow::Sequence*>(node)) {
+                    symbolic::Expression total_cost = symbolic::one();
+                    for (size_t i = 0; i < sequence_node->size(); ++i) {
+                        auto& body = sequence_node->at(i).first;
+                        total_cost = symbolic::add(total_cost, cost.at(&body));
+                    }
+                    cost.insert({node, total_cost});
+                } else if (auto if_else_node = dynamic_cast<structured_control_flow::IfElse*>(node)) {
+                    symbolic::Expression total_cost = symbolic::one();
+                    bool is_dynamic = false;
+                    if (contains_jump(if_else_node)) {
+                        for (size_t i = 0; i < if_else_node->size(); ++i) {
+                            auto& condition = if_else_node->at(i).second;
+                            for (auto atom : symbolic::atoms(condition)) {
+                                if (reads.find(users.get_user(atom->get_name(), if_else_node, Use::READ)) !=
+                                    reads.end()) {
+                                    is_dynamic = true;
+                                    break;
                                 }
                             }
+                            if (is_dynamic) {
+                                break;
+                            }
+                        }
+                        if (is_dynamic) {
+                            for (size_t i = 0; i < if_else_node->size(); ++i) {
+                                auto& body = if_else_node->at(i).first;
+                                symbolic::Symbol if_else_symbol =
+                                    symbolic::symbol("if_else_" + std::to_string(if_else_node->element_id()));
+                                total_cost = symbolic::mul(symbolic::max(total_cost, cost.at(&body)), if_else_symbol);
+                                if_else_symbols.insert(if_else_symbol);
+                            }
                         }
                     }
-                } else if (auto sequence_node = dynamic_cast<structured_control_flow::Sequence*>(node)) {
-                    for (size_t i = 0; i < sequence_node->size(); ++i) {
-                        stack.push_back(&sequence_node->at(i).first);
-                    }
-                } else if (auto if_else_node = dynamic_cast<structured_control_flow::IfElse*>(node)) {
-                    for (size_t i = 0; i < if_else_node->size(); i++) {
-                        stack.push_back(&if_else_node->at(i).first);
-                    }
+                    cost.insert({node, total_cost});
                 } else if (auto while_loop = dynamic_cast<structured_control_flow::While*>(node)) {
-                    stack.push_back(&while_loop->root());
+                    symbolic::Expression total_cost = symbolic::one();
+
+                    auto body_cost = cost.at(&while_loop->root());
+                    bool is_dynamic = false;
+                    for (auto atom : symbolic::atoms(body_cost)) {
+                        if (if_else_symbols.find(atom) != if_else_symbols.end()) {
+                            is_dynamic = true;
+                            break;
+                        }
+                    }
+                    if (is_dynamic) {
+                        symbolic::Symbol while_symbol =
+                            symbolic::symbol("while_" + std::to_string(while_loop->element_id()));
+                        total_cost = symbolic::mul(while_symbol, body_cost);
+                        while_symbols.insert(while_symbol);
+                    }
+                    cost.insert({node, total_cost});
                 } else {
-                    // NOP
+                    cost.insert({node, symbolic::one()});
                 }
-                
-                //TODO: think
             }
+            this->balance_of_a_map_.insert({map_node, {cost.at(&map_node->root()), {while_symbols, if_else_symbols}}});
         }
     }
 }
