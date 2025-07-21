@@ -106,7 +106,7 @@ set(SOURCE_FILES
     src/passes/dataflow/memlet_propagation.cpp
     src/passes/dataflow/redundant_array_elimination.cpp
     src/passes/dataflow/trivial_array_elimination.cpp
-    src/passes/dataflow/view_propagation.cpp
+    src/passes/dataflow/reference_propagation.cpp
     src/passes/schedules/parallelization_pass.cpp
     src/passes/symbolic/symbol_evolution.cpp
     src/passes/symbolic/symbol_propagation.cpp

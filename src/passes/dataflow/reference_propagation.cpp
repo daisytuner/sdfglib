@@ -1,4 +1,4 @@
-#include "sdfg/passes/dataflow/view_propagation.h"
+#include "sdfg/passes/dataflow/reference_propagation.h"
 
 #include "sdfg/analysis/users.h"
 #include "sdfg/types/utils.h"
@@ -6,14 +6,14 @@
 namespace sdfg {
 namespace passes {
 
-ViewPropagation::ViewPropagation()
+ReferencePropagation::ReferencePropagation()
     : Pass() {
 
       };
 
-std::string ViewPropagation::name() { return "ViewPropagation"; };
+std::string ReferencePropagation::name() { return "ReferencePropagation"; };
 
-bool ViewPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
+bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     auto& sdfg = builder.subject();

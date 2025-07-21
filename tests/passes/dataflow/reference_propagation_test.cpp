@@ -1,4 +1,4 @@
-#include "sdfg/passes/dataflow/view_propagation.h"
+#include "sdfg/passes/dataflow/reference_propagation.h"
 
 #include <gtest/gtest.h>
 
@@ -8,7 +8,7 @@
 
 using namespace sdfg;
 
-TEST(ViewPropagationTest, ReferenceMemlet) {
+TEST(ReferencePropagationTest, ReferenceMemlet) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::Double);
@@ -35,7 +35,7 @@ TEST(ViewPropagationTest, ReferenceMemlet) {
     // Apply pass
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::ViewPropagation pass;
+    passes::ReferencePropagation pass;
     EXPECT_TRUE(pass.run(builder_opt, analysis_manager));
     sdfg = builder_opt.move();
 
@@ -44,7 +44,7 @@ TEST(ViewPropagationTest, ReferenceMemlet) {
     EXPECT_EQ(output_node.data(), "A");
 }
 
-TEST(ViewPropagationTest, DereferenceMemlet_Load) {
+TEST(ReferencePropagationTest, DereferenceMemlet_Load) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::Double);
@@ -69,7 +69,7 @@ TEST(ViewPropagationTest, DereferenceMemlet_Load) {
     // Apply pass
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::ViewPropagation pass;
+    passes::ReferencePropagation pass;
     EXPECT_FALSE(pass.run(builder_opt, analysis_manager));
 
     sdfg = builder_opt.move();
@@ -78,7 +78,7 @@ TEST(ViewPropagationTest, DereferenceMemlet_Load) {
     EXPECT_EQ(output_node.data(), "a");
 }
 
-TEST(ViewPropagationTest, DereferenceMemlet_Store) {
+TEST(ReferencePropagationTest, DereferenceMemlet_Store) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::Double);
@@ -104,7 +104,7 @@ TEST(ViewPropagationTest, DereferenceMemlet_Store) {
     // Apply pass
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::ViewPropagation pass;
+    passes::ReferencePropagation pass;
     EXPECT_FALSE(pass.run(builder_opt, analysis_manager));
 
     sdfg = builder_opt.move();
