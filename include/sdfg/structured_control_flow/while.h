@@ -17,44 +17,47 @@ namespace structured_control_flow {
 class While : public ControlFlowNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-   private:
+private:
     std::unique_ptr<Sequence> root_;
 
     While(size_t element_id, const DebugInfo& debug_info);
 
-   public:
+public:
     While(const While& node) = delete;
     While& operator=(const While&) = delete;
+
+    void validate() const override;
 
     const Sequence& root() const;
 
     Sequence& root();
 
-    void replace(const symbolic::Expression& old_expression,
-                 const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
 
 class Break : public ControlFlowNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-   private:
+private:
     Break(size_t element_id, const DebugInfo& debug_info);
 
-   public:
-    void replace(const symbolic::Expression& old_expression,
-                 const symbolic::Expression& new_expression) override;
+public:
+    void validate() const override;
+
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
 
 class Continue : public ControlFlowNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-   private:
+private:
     Continue(size_t element_id, const DebugInfo& debug_info);
 
-   public:
-    void replace(const symbolic::Expression& old_expression,
-                 const symbolic::Expression& new_expression) override;
+public:
+    void validate() const override;
+
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
 
-}  // namespace structured_control_flow
-}  // namespace sdfg
+} // namespace structured_control_flow
+} // namespace sdfg

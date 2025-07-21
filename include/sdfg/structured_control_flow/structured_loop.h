@@ -15,7 +15,7 @@ namespace structured_control_flow {
 class StructuredLoop : public ControlFlowNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-   protected:
+protected:
     symbolic::Symbol indvar_;
     symbolic::Expression init_;
     symbolic::Expression update_;
@@ -23,15 +23,22 @@ class StructuredLoop : public ControlFlowNode {
 
     std::unique_ptr<Sequence> root_;
 
-    StructuredLoop(size_t element_id, const DebugInfo& debug_info, symbolic::Symbol indvar,
-                   symbolic::Expression init, symbolic::Expression update,
-                   symbolic::Condition condition);
+    StructuredLoop(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        symbolic::Symbol indvar,
+        symbolic::Expression init,
+        symbolic::Expression update,
+        symbolic::Condition condition
+    );
 
-   public:
+public:
     virtual ~StructuredLoop() = default;
 
     StructuredLoop(const StructuredLoop& node) = delete;
     StructuredLoop& operator=(const StructuredLoop&) = delete;
+
+    void validate() const override;
 
     const symbolic::Symbol& indvar() const;
 
@@ -51,9 +58,8 @@ class StructuredLoop : public ControlFlowNode {
 
     Sequence& root() const;
 
-    void replace(const symbolic::Expression& old_expression,
-                 const symbolic::Expression& new_expression);
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
 
-}  // namespace structured_control_flow
-}  // namespace sdfg
+} // namespace structured_control_flow
+} // namespace sdfg

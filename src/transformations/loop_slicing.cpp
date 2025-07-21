@@ -1,4 +1,5 @@
 #include "sdfg/transformations/loop_slicing.h"
+#include <stdexcept>
 
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/data_parallelism_analysis.h"
@@ -295,10 +296,14 @@ void LoopSlicing::to_json(nlohmann::json& j) const {
 LoopSlicing LoopSlicing::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
     auto loop_id = desc["loop_element_id"].get<size_t>();
     auto element = builder.find_element_by_id(loop_id);
-    if (!element) {
-        throw InvalidTransformationDescriptionException("Element with ID " + std::to_string(loop_id) + " not found.");
+    if (element == nullptr) {
+        throw std::runtime_error("Element with ID " + std::to_string(loop_id) + " not found.");
     }
-    auto loop = dynamic_cast<structured_control_flow::For*>(element);
+    auto loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element);
+
+    if (loop == nullptr) {
+        throw std::runtime_error("Element with ID " + std::to_string(loop_id) + " is not a For loop.");
+    }
 
     return LoopSlicing(*loop);
 };

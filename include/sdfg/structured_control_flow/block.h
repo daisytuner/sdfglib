@@ -18,22 +18,23 @@ namespace structured_control_flow {
 class Block : public ControlFlowNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-   private:
+private:
     std::unique_ptr<data_flow::DataFlowGraph> dataflow_;
 
     Block(size_t element_id, const DebugInfo& debug_info);
 
-   public:
+public:
     Block(const Block& block) = delete;
     Block& operator=(const Block&) = delete;
+
+    void validate() const override;
 
     const data_flow::DataFlowGraph& dataflow() const;
 
     data_flow::DataFlowGraph& dataflow();
 
-    void replace(const symbolic::Expression& old_expression,
-                 const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
 
-}  // namespace structured_control_flow
-}  // namespace sdfg
+} // namespace structured_control_flow
+} // namespace sdfg

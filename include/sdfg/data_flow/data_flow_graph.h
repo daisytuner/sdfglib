@@ -20,7 +20,7 @@ namespace sdfg {
 namespace builder {
 class SDFGBuilder;
 class StructuredSDFGBuilder;
-}  // namespace builder
+} // namespace builder
 
 namespace data_flow {
 
@@ -28,61 +28,56 @@ class DataFlowGraph {
     friend class sdfg::builder::SDFGBuilder;
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-   private:
+private:
     // Remark: Exclusive resource
     graph::Graph graph_;
-    std::unordered_map<graph::Vertex, std::unique_ptr<data_flow::DataFlowNode>,
-                       boost::hash<graph::Vertex>>
-        nodes_;
-    std::unordered_map<graph::Edge, std::unique_ptr<data_flow::Memlet>, boost::hash<graph::Edge>>
-        edges_;
+    std::unordered_map<graph::Vertex, std::unique_ptr<data_flow::DataFlowNode>, boost::hash<graph::Vertex>> nodes_;
+    std::unordered_map<graph::Edge, std::unique_ptr<data_flow::Memlet>, boost::hash<graph::Edge>> edges_;
 
     Element* parent_;
 
-   public:
+public:
     DataFlowGraph() = default;
     ~DataFlowGraph() = default;
 
     DataFlowGraph(const DataFlowGraph& graph) = delete;
     DataFlowGraph& operator=(const DataFlowGraph&) = delete;
 
+    void validate() const;
+
     const Element* get_parent() const;
 
     Element* get_parent();
 
     auto nodes() const {
-        return std::views::values(this->nodes_) |
-               std::views::transform(helpers::indirect<data_flow::DataFlowNode>) |
+        return std::views::values(this->nodes_) | std::views::transform(helpers::indirect<data_flow::DataFlowNode>) |
                std::views::transform(helpers::add_const<data_flow::DataFlowNode>);
     };
 
     auto nodes() {
-        return std::views::values(this->nodes_) |
-               std::views::transform(helpers::indirect<data_flow::DataFlowNode>);
+        return std::views::values(this->nodes_) | std::views::transform(helpers::indirect<data_flow::DataFlowNode>);
     };
 
     auto edges() const {
-        return std::views::values(this->edges_) |
-               std::views::transform(helpers::indirect<data_flow::Memlet>) |
+        return std::views::values(this->edges_) | std::views::transform(helpers::indirect<data_flow::Memlet>) |
                std::views::transform(helpers::add_const<data_flow::Memlet>);
     };
 
     auto edges() {
-        return std::views::values(this->edges_) |
-               std::views::transform(helpers::indirect<data_flow::Memlet>);
+        return std::views::values(this->edges_) | std::views::transform(helpers::indirect<data_flow::Memlet>);
     };
 
     auto in_edges(const data_flow::DataFlowNode& node) const {
         auto [eb, ee] = boost::in_edges(node.vertex(), this->graph_);
         auto edges = std::ranges::subrange(eb, ee);
 
-        auto memlets =
-            std::views::transform(
-                edges,
-                [&lookup_table = this->edges_](const graph::Edge& edge) -> data_flow::Memlet& {
-                    return *(lookup_table.find(edge)->second);
-                }) |
-            std::views::transform(helpers::add_const<data_flow::Memlet>);
+        auto memlets = std::views::transform(
+                           edges,
+                           [&lookup_table = this->edges_](const graph::Edge& edge) -> data_flow::Memlet& {
+                               return *(lookup_table.find(edge)->second);
+                           }
+                       ) |
+                       std::views::transform(helpers::add_const<data_flow::Memlet>);
 
         return memlets;
     };
@@ -91,8 +86,8 @@ class DataFlowGraph {
         auto [eb, ee] = boost::in_edges(node.vertex(), this->graph_);
         auto edges = std::ranges::subrange(eb, ee);
 
-        auto memlets = std::views::transform(
-            edges, [&lookup_table = this->edges_](const graph::Edge& edge) -> data_flow::Memlet& {
+        auto memlets =
+            std::views::transform(edges, [&lookup_table = this->edges_](const graph::Edge& edge) -> data_flow::Memlet& {
                 return *(lookup_table.find(edge)->second);
             });
 
@@ -103,13 +98,13 @@ class DataFlowGraph {
         auto [eb, ee] = boost::out_edges(node.vertex(), this->graph_);
         auto edges = std::ranges::subrange(eb, ee);
 
-        auto memlets =
-            std::views::transform(
-                edges,
-                [&lookup_table = this->edges_](const graph::Edge& edge) -> data_flow::Memlet& {
-                    return *(lookup_table.find(edge)->second);
-                }) |
-            std::views::transform(helpers::add_const<data_flow::Memlet>);
+        auto memlets = std::views::transform(
+                           edges,
+                           [&lookup_table = this->edges_](const graph::Edge& edge) -> data_flow::Memlet& {
+                               return *(lookup_table.find(edge)->second);
+                           }
+                       ) |
+                       std::views::transform(helpers::add_const<data_flow::Memlet>);
 
         return memlets;
     };
@@ -118,8 +113,8 @@ class DataFlowGraph {
         auto [eb, ee] = boost::out_edges(node.vertex(), this->graph_);
         auto edges = std::ranges::subrange(eb, ee);
 
-        auto memlets = std::views::transform(
-            edges, [&lookup_table = this->edges_](const graph::Edge& edge) -> data_flow::Memlet& {
+        auto memlets =
+            std::views::transform(edges, [&lookup_table = this->edges_](const graph::Edge& edge) -> data_flow::Memlet& {
                 return *(lookup_table.find(edge)->second);
             });
 
@@ -130,8 +125,7 @@ class DataFlowGraph {
 
     size_t out_degree(const data_flow::DataFlowNode& node) const;
 
-    void replace(const symbolic::Expression& old_expression,
-                 const symbolic::Expression& new_expression);
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression);
 
     /***** Section: Analysis *****/
 
@@ -153,11 +147,9 @@ class DataFlowGraph {
 
     std::unordered_set<data_flow::DataFlowNode*> sinks();
 
-    std::unordered_set<const data_flow::DataFlowNode*> predecessors(
-        const data_flow::DataFlowNode& node) const;
+    std::unordered_set<const data_flow::DataFlowNode*> predecessors(const data_flow::DataFlowNode& node) const;
 
-    std::unordered_set<const data_flow::DataFlowNode*> successors(
-        const data_flow::DataFlowNode& node) const;
+    std::unordered_set<const data_flow::DataFlowNode*> successors(const data_flow::DataFlowNode& node) const;
 
     std::list<const data_flow::DataFlowNode*> topological_sort() const;
 
@@ -169,12 +161,11 @@ class DataFlowGraph {
 
     std::unordered_map<std::string, data_flow::AccessNode*> post_dominators();
 
-    auto all_simple_paths(const data_flow::DataFlowNode& src,
-                          const data_flow::DataFlowNode& dst) const;
+    auto all_simple_paths(const data_flow::DataFlowNode& src, const data_flow::DataFlowNode& dst) const;
 
-    const std::pair<size_t, const std::unordered_map<const data_flow::DataFlowNode*, size_t>>
-    weakly_connected_components() const;
+    const std::pair<size_t, const std::unordered_map<const data_flow::DataFlowNode*, size_t>> weakly_connected_components()
+        const;
 };
 
-}  // namespace data_flow
-}  // namespace sdfg
+} // namespace data_flow
+} // namespace sdfg

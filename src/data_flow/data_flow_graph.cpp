@@ -3,6 +3,15 @@
 namespace sdfg {
 namespace data_flow {
 
+void DataFlowGraph::validate() const {
+    for (auto& node : this->nodes_) {
+        node.second->validate();
+    }
+    for (auto& edge : this->edges_) {
+        edge.second->validate();
+    }
+};
+
 const Element* DataFlowGraph::get_parent() const { return this->parent_; };
 
 Element* DataFlowGraph::get_parent() { return this->parent_; };

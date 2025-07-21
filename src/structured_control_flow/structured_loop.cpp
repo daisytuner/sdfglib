@@ -15,6 +15,10 @@ StructuredLoop::StructuredLoop(
     this->root_ = std::unique_ptr<Sequence>(new Sequence(++element_id, debug_info));
 }
 
+void StructuredLoop::validate() const {
+    // TODO: Implement validation
+};
+
 const symbolic::Symbol& StructuredLoop::indvar() const { return this->indvar_; };
 
 symbolic::Symbol& StructuredLoop::indvar() { return this->indvar_; };

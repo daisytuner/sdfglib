@@ -384,8 +384,8 @@ std::string CLanguageExtension::primitive_type(const types::PrimitiveType prim_t
     throw std::runtime_error("Unknown primitive type");
 };
 
-std::string CLanguageExtension::declaration(const std::string& name, const types::IType& type,
-                                            bool use_initializer, bool use_alignment) {
+std::string CLanguageExtension::
+    declaration(const std::string& name, const types::IType& type, bool use_initializer, bool use_alignment) {
     std::stringstream val;
 
     if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
@@ -394,8 +394,7 @@ std::string CLanguageExtension::declaration(const std::string& name, const types
         val << name;
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
         auto& element_type = array_type->element_type();
-        val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]",
-                           element_type);
+        val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]", element_type);
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         const types::IType& pointee = pointer_type->pointee_type();
 
@@ -451,8 +450,7 @@ std::string CLanguageExtension::type_cast(const std::string& name, const types::
     return val.str();
 };
 
-std::string CLanguageExtension::subset(const Function& function, const types::IType& type,
-                                       const data_flow::Subset& sub) {
+std::string CLanguageExtension::subset(const Function& function, const types::IType& type, const data_flow::Subset& sub) {
     if (sub.empty()) {
         return "";
     }
@@ -578,9 +576,7 @@ void CSymbolicPrinter::bvisit(const SymEngine::Infty& x) {
         str_ = "INFINITY";
 };
 
-void CSymbolicPrinter::bvisit(const SymEngine::BooleanAtom& x) {
-    str_ = x.get_val() ? "true" : "false";
-};
+void CSymbolicPrinter::bvisit(const SymEngine::BooleanAtom& x) { str_ = x.get_val() ? "true" : "false"; };
 
 void CSymbolicPrinter::bvisit(const SymEngine::Symbol& x) {
     if (symbolic::is_nullptr(symbolic::symbol(x.get_name()))) {
@@ -676,14 +672,21 @@ void CSymbolicPrinter::bvisit(const SymEngine::FunctionSymbol& x) {
         str_ = "((" + apply(x.get_args()[0]) + ") / (" + apply(x.get_args()[1]) + "))";
     } else if (x.get_name() == "imod") {
         str_ = "((" + apply(x.get_args()[0]) + ") % (" + apply(x.get_args()[1]) + "))";
+    } else if (x.get_name() == "sizeof") {
+        auto& so = dynamic_cast<const symbolic::SizeOfTypeFunction&>(x);
+        auto& type = so.get_type();
+        CLanguageExtension lang;
+        str_ = "sizeof(" + lang.declaration("", type) + ")";
     } else {
         throw std::runtime_error("Unsupported function symbol: " + x.get_name());
     }
 };
 
-void CSymbolicPrinter::_print_pow(std::ostringstream& o,
-                                  const SymEngine::RCP<const SymEngine::Basic>& a,
-                                  const SymEngine::RCP<const SymEngine::Basic>& b) {
+void CSymbolicPrinter::_print_pow(
+    std::ostringstream& o,
+    const SymEngine::RCP<const SymEngine::Basic>& a,
+    const SymEngine::RCP<const SymEngine::Basic>& b
+) {
     if (SymEngine::eq(*a, *SymEngine::E)) {
         o << "exp(" << apply(b) << ")";
     } else if (SymEngine::eq(*b, *SymEngine::rational(1, 2))) {
@@ -697,5 +700,5 @@ void CSymbolicPrinter::_print_pow(std::ostringstream& o,
     }
 };
 
-}  // namespace codegen
-}  // namespace sdfg
+} // namespace codegen
+} // namespace sdfg

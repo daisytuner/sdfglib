@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "sdfg/data_flow/library_node.h"
+#include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 using namespace sdfg;
 
 TEST(SDFGBuilderTest, Empty) {
@@ -246,50 +246,13 @@ TEST(SDFGBuilderTest, AddTasklet) {
     EXPECT_EQ(tasklet.code(), data_flow::TaskletCode::assign);
 }
 
-inline data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
-class BarrierLocalLibraryNode : public data_flow::LibraryNode {
-public:
-    BarrierLocalLibraryNode(
-        size_t element_id,
-        const DebugInfo& debug_info,
-        const graph::Vertex vertex,
-        data_flow::DataFlowGraph& parent,
-        const data_flow::LibraryNodeCode& code,
-        const std::vector<std::string>& outputs,
-        const std::vector<std::string>& inputs,
-        const bool side_effect
-    )
-        : data_flow::LibraryNode(element_id, debug_info, vertex, parent, code, outputs, inputs, side_effect) {}
-
-    virtual std::unique_ptr<data_flow::DataFlowNode>
-    clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override {
-        return std::make_unique<BarrierLocalLibraryNode>(
-            element_id,
-            this->debug_info(),
-            vertex,
-            parent,
-            this->code(),
-            this->outputs(),
-            this->inputs(),
-            this->side_effect()
-        );
-    }
-
-    virtual symbolic::SymbolSet symbols() const override { return {}; }
-
-    virtual void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression)
-        override {
-        // Do nothing
-    }
-};
-
 TEST(SDFGBuilderTest, AddLibnode) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state = builder.add_state(true);
     EXPECT_EQ(state.element_id(), 1);
 
-    auto& library_node = builder.add_library_node<BarrierLocalLibraryNode>(state, BARRIER_LOCAL, {}, {}, false);
+    auto& library_node = builder.add_library_node<data_flow::BarrierLocalNode>(state, DebugInfo());
     EXPECT_EQ(library_node.element_id(), 2);
 
     auto sdfg = builder.move();

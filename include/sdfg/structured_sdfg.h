@@ -42,6 +42,8 @@ public:
 
     const DebugInfo debug_info() const override;
 
+    void validate() const override;
+
     const structured_control_flow::Sequence& root() const;
 
     structured_control_flow::Sequence& root();

@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "sdfg/builder/sdfg_builder.h"
+#include "sdfg/types/utils.h"
 
 using namespace sdfg;
 
@@ -86,15 +87,14 @@ TEST(CPPLanguageExtensionTest, Declaration_Scalar) {
 
 TEST(CPPLanguageExtensionTest, Declaration_Pointer) {
     codegen::CPPLanguageExtension generator;
-    auto result =
-        generator.declaration("var", types::Pointer(types::Scalar(types::PrimitiveType::Int32)));
+    auto result = generator.declaration("var", types::Pointer(types::Scalar(types::PrimitiveType::Int32)));
     EXPECT_EQ(result, "int *var");
 }
 
 TEST(CPPLanguageExtensionTest, Declaration_Array) {
     codegen::CPPLanguageExtension generator;
-    auto result = generator.declaration(
-        "var", types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)));
+    auto result =
+        generator.declaration("var", types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)));
     EXPECT_EQ(result, "int var[10]");
 }
 
@@ -106,24 +106,30 @@ TEST(CPPLanguageExtensionTest, Declaration_Struct) {
 
 TEST(CPPLanguageExtensionTest, Declaration_ArrayOfStruct) {
     codegen::CPPLanguageExtension generator;
-    auto result = generator.declaration(
-        "var", types::Array(types::Structure("MyStruct"), symbolic::integer(10)));
+    auto result = generator.declaration("var", types::Array(types::Structure("MyStruct"), symbolic::integer(10)));
     EXPECT_EQ(result, "MyStruct var[10]");
 }
 
 TEST(CPPLanguageExtensionTest, Declaration_PointerToArray) {
     codegen::CPPLanguageExtension generator;
     auto result = generator.declaration(
-        "var", types::Pointer(types::Array(types::Scalar(types::PrimitiveType::Int32),
-                                           symbolic::integer(10))));
+        "var", types::Pointer(types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)))
+    );
     EXPECT_EQ(result, "int (*var)[10]");
 }
 
 TEST(CPPLanguageExtensionTest, Typecast) {
     codegen::CPPLanguageExtension generator;
-    auto result =
-        generator.type_cast("var", types::Pointer(types::Scalar(types::PrimitiveType::Float)));
+    auto result = generator.type_cast("var", types::Pointer(types::Scalar(types::PrimitiveType::Float)));
     EXPECT_EQ(result, "reinterpret_cast<float *>(var)");
+}
+
+TEST(CPPLanguageExtensionTest, Sizeof) {
+    codegen::CPPLanguageExtension generator;
+    auto type = types::Pointer(types::Structure("some_t"));
+    auto size_expr = types::get_contiguous_element_size(type, true);
+    auto result = generator.expression(size_expr);
+    EXPECT_EQ(result, "sizeof(some_t )");
 }
 
 TEST(CPPLanguageExtensionTest, SubsetToCpp_Scalar) {
@@ -131,8 +137,7 @@ TEST(CPPLanguageExtensionTest, SubsetToCpp_Scalar) {
     auto& sdfg = builder.subject();
 
     codegen::CPPLanguageExtension generator;
-    auto result =
-        generator.subset(sdfg, types::Scalar(types::PrimitiveType::Int32), data_flow::Subset());
+    auto result = generator.subset(sdfg, types::Scalar(types::PrimitiveType::Int32), data_flow::Subset());
     EXPECT_EQ(result, "");
 }
 
@@ -142,8 +147,10 @@ TEST(CPPLanguageExtensionTest, SubsetToCpp_Array) {
 
     codegen::CPPLanguageExtension generator;
     auto result = generator.subset(
-        sdfg, types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)),
-        data_flow::Subset{symbolic::integer(1)});
+        sdfg,
+        types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)),
+        data_flow::Subset{symbolic::integer(1)}
+    );
     EXPECT_EQ(result, "[1]");
 }
 
@@ -156,7 +163,6 @@ TEST(CPPLanguageExtensionTest, SubsetToCpp_Struct) {
     struct_def.add_member(types::Scalar(types::PrimitiveType::Float));
 
     codegen::CPPLanguageExtension generator;
-    auto result = generator.subset(sdfg, types::Structure("MyStruct"),
-                                   data_flow::Subset{symbolic::integer(1)});
+    auto result = generator.subset(sdfg, types::Structure("MyStruct"), data_flow::Subset{symbolic::integer(1)});
     EXPECT_EQ(result, ".member_1");
 }

@@ -11,7 +11,7 @@ namespace sdfg {
 namespace builder {
 class SDFGBuilder;
 class StructuredSDFGBuilder;
-}  // namespace builder
+} // namespace builder
 
 namespace data_flow {
 
@@ -23,7 +23,7 @@ class Memlet : public Element {
     friend class sdfg::builder::SDFGBuilder;
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-   private:
+private:
     // Remark: Exclusive resource
     const graph::Edge edge_;
 
@@ -33,16 +33,40 @@ class Memlet : public Element {
     DataFlowNode& dst_;
     std::string src_conn_;
     std::string dst_conn_;
-    Subset subset_;
+    Subset begin_subset_;
+    Subset end_subset_;
 
-    Memlet(size_t element_id, const DebugInfo& debug_info, const graph::Edge& edge,
-           DataFlowGraph& parent, DataFlowNode& src, const std::string& src_conn, DataFlowNode& dst,
-           const std::string& dst_conn, const Subset& subset);
+    Memlet(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Edge& edge,
+        DataFlowGraph& parent,
+        DataFlowNode& src,
+        const std::string& src_conn,
+        DataFlowNode& dst,
+        const std::string& dst_conn,
+        const Subset& subset
+    );
 
-   public:
+    Memlet(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Edge& edge,
+        DataFlowGraph& parent,
+        DataFlowNode& src,
+        const std::string& src_conn,
+        DataFlowNode& dst,
+        const std::string& dst_conn,
+        const Subset& begin_subset,
+        const Subset& end_subset
+    );
+
+public:
     // Remark: Exclusive resource
     Memlet(const Memlet& memlet) = delete;
     Memlet& operator=(const Memlet&) = delete;
+
+    void validate() const override;
 
     const graph::Edge edge() const;
 
@@ -64,13 +88,21 @@ class Memlet : public Element {
 
     const Subset subset() const;
 
-    Subset& subset();
+    void set_subset(const Subset& subset);
 
-    std::unique_ptr<Memlet> clone(size_t element_id, const graph::Edge& edge, DataFlowGraph& parent,
-                                  DataFlowNode& src, DataFlowNode& dst) const;
+    const Subset begin_subset() const;
 
-    void replace(const symbolic::Expression& old_expression,
-                 const symbolic::Expression& new_expression) override;
+    const Subset end_subset() const;
+
+    bool has_range() const;
+
+    void set_subset(const Subset& begin_subset, const Subset& end_subset);
+
+    std::unique_ptr<Memlet> clone(
+        size_t element_id, const graph::Edge& edge, DataFlowGraph& parent, DataFlowNode& src, DataFlowNode& dst
+    ) const;
+
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
-}  // namespace data_flow
-}  // namespace sdfg
+} // namespace data_flow
+} // namespace sdfg

@@ -6,10 +6,14 @@
 #include <utility>
 #include <vector>
 
+#include "sdfg/data_flow/library_nodes/math/math.h"
+
+#include "sdfg/data_flow/library_nodes/barrier_local_node.h"
+#include "sdfg/data_flow/library_nodes/metadata_node.h"
+
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/element.h"
-#include "sdfg/serializer/library_node_serializer_registry.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
@@ -71,45 +75,46 @@ structured_control_flow::ScheduleType schedule_type_from_string(const std::strin
  * * Serialization logic
  */
 
-nlohmann::json JSONSerializer::serialize(std::unique_ptr<sdfg::StructuredSDFG>& sdfg) {
+nlohmann::json JSONSerializer::serialize(const sdfg::StructuredSDFG& sdfg) {
     nlohmann::json j;
 
-    j["name"] = sdfg->name();
-    j["type"] = std::string(sdfg->type().value());
+    j["name"] = sdfg.name();
+    j["element_counter"] = sdfg.element_counter();
+    j["type"] = std::string(sdfg.type().value());
 
     j["structures"] = nlohmann::json::array();
-    for (const auto& structure_name : sdfg->structures()) {
-        const auto& structure = sdfg->structure(structure_name);
+    for (const auto& structure_name : sdfg.structures()) {
+        const auto& structure = sdfg.structure(structure_name);
         nlohmann::json structure_json;
         structure_definition_to_json(structure_json, structure);
         j["structures"].push_back(structure_json);
     }
 
     j["containers"] = nlohmann::json::object();
-    for (const auto& container : sdfg->containers()) {
+    for (const auto& container : sdfg.containers()) {
         nlohmann::json desc;
-        type_to_json(desc, sdfg->type(container));
+        type_to_json(desc, sdfg.type(container));
         j["containers"][container] = desc;
     }
 
     j["arguments"] = nlohmann::json::array();
-    for (const auto& argument : sdfg->arguments()) {
+    for (const auto& argument : sdfg.arguments()) {
         j["arguments"].push_back(argument);
     }
 
     j["externals"] = nlohmann::json::array();
-    for (const auto& external : sdfg->externals()) {
+    for (const auto& external : sdfg.externals()) {
         j["externals"].push_back(external);
     }
 
     j["metadata"] = nlohmann::json::object();
-    for (const auto& entry : sdfg->metadata()) {
+    for (const auto& entry : sdfg.metadata()) {
         j["metadata"][entry.first] = entry.second;
     }
 
     // Walk the SDFG
     nlohmann::json root_json;
-    sequence_to_json(root_json, sdfg->root());
+    sequence_to_json(root_json, sdfg.root());
     j["root"] = root_json;
 
     return j;
@@ -184,6 +189,16 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
         edge_json["subset"] = nlohmann::json::array();
         for (auto& subset : edge.subset()) {
             edge_json["subset"].push_back(expression(subset));
+        }
+
+        edge_json["begin_subset"] = nlohmann::json::array();
+        for (auto& subset : edge.begin_subset()) {
+            edge_json["begin_subset"].push_back(expression(subset));
+        }
+
+        edge_json["end_subset"] = nlohmann::json::array();
+        for (auto& subset : edge.end_subset()) {
+            edge_json["end_subset"].push_back(expression(subset));
         }
 
         j["edges"].push_back(edge_json);
@@ -430,9 +445,13 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
     assert(j["name"].is_string());
     assert(j.contains("type"));
     assert(j["type"].is_string());
+    assert(j["element_counter"].is_number_integer());
 
     FunctionType function_type = function_type_from_string(j["type"].get<std::string>());
     builder::StructuredSDFGBuilder builder(j["name"], function_type);
+
+    size_t element_counter = j["element_counter"];
+    builder.set_element_counter(element_counter);
 
     // deserialize structures
     assert(j.contains("structures"));
@@ -482,6 +501,8 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
     for (const auto& entry : j["metadata"].items()) {
         builder.subject().add_metadata(entry.key(), entry.value());
     }
+
+    builder.set_element_counter(element_counter);
 
     return builder.move();
 }
@@ -551,10 +572,6 @@ void JSONSerializer::json_to_dataflow(
             nodes_map.insert({node["element_id"], tasklet});
         } else if (type == "library_node") {
             assert(node.contains("code"));
-            assert(node.contains("inputs"));
-            assert(node["inputs"].is_array());
-            assert(node.contains("outputs"));
-            assert(node["outputs"].is_array());
             data_flow::LibraryNodeCode code(node["code"].get<std::string>());
 
             auto serializer_fn = LibraryNodeSerializerRegistry::instance().get_library_node_serializer(code.value());
@@ -594,18 +611,53 @@ void JSONSerializer::json_to_dataflow(
         auto& source = nodes_map.at(edge["src"]);
         auto& target = nodes_map.at(edge["dst"]);
 
-        assert(edge.contains("subset"));
-        assert(edge["subset"].is_array());
-        std::vector<symbolic::Expression> subset;
-        for (const auto& subset_str : edge["subset"]) {
-            assert(subset_str.is_string());
-            SymEngine::Expression subset_expr(subset_str);
-            subset.push_back(subset_expr);
+        if (edge.contains("subset")) {
+            assert(edge["subset"].is_array());
+            std::vector<symbolic::Expression> subset;
+            for (const auto& subset_str : edge["subset"]) {
+                assert(subset_str.is_string());
+                SymEngine::Expression subset_expr(subset_str);
+                subset.push_back(subset_expr);
+            }
+            auto& memlet = builder.add_memlet(
+                parent,
+                source,
+                edge["src_conn"],
+                target,
+                edge["dst_conn"],
+                subset,
+                json_to_debug_info(edge["debug_info"])
+            );
+            memlet.element_id_ = edge["element_id"];
+        } else if (edge.contains("begin_subset") && edge.contains("end_subset")) {
+            assert(edge["begin_subset"].is_array());
+            assert(edge["end_subset"].is_array());
+            std::vector<symbolic::Expression> begin_subset;
+            std::vector<symbolic::Expression> end_subset;
+            for (const auto& subset_str : edge["begin_subset"]) {
+                assert(subset_str.is_string());
+                SymEngine::Expression subset_expr(subset_str);
+                begin_subset.push_back(subset_expr);
+            }
+            for (const auto& subset_str : edge["end_subset"]) {
+                assert(subset_str.is_string());
+                SymEngine::Expression subset_expr(subset_str);
+                end_subset.push_back(subset_expr);
+            }
+            auto& memlet = builder.add_memlet(
+                parent,
+                source,
+                edge["src_conn"],
+                target,
+                edge["dst_conn"],
+                begin_subset,
+                end_subset,
+                json_to_debug_info(edge["debug_info"])
+            );
+            memlet.element_id_ = edge["element_id"];
+        } else {
+            throw std::runtime_error("Subsets not specified in json");
         }
-        auto& memlet = builder.add_memlet(
-            parent, source, edge["src_conn"], target, edge["dst_conn"], subset, json_to_debug_info(edge["debug_info"])
-        );
-        memlet.element_id_ = edge["element_id"];
     }
 }
 
@@ -1045,6 +1097,45 @@ void JSONSymbolicPrinter::bvisit(const SymEngine::Max& x) {
 
     str_ = s.str();
 };
+
+void LibraryNodeSerializerRegistry::
+    register_library_node_serializer(std::string library_node_code, LibraryNodeSerializerFn fn) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (factory_map_.find(library_node_code) != factory_map_.end()) {
+        throw std::runtime_error(
+            "Library node serializer already registered for library node code: " + std::string(library_node_code)
+        );
+    }
+    factory_map_[library_node_code] = std::move(fn);
+}
+
+LibraryNodeSerializerFn LibraryNodeSerializerRegistry::get_library_node_serializer(std::string library_node_code) {
+    auto it = factory_map_.find(library_node_code);
+    if (it != factory_map_.end()) {
+        return it->second;
+    }
+    return nullptr;
+}
+
+size_t LibraryNodeSerializerRegistry::size() const { return factory_map_.size(); }
+
+void register_default_serializers() {
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(data_flow::LibraryNodeType_Metadata.value(), []() {
+            return std::make_unique<data_flow::MetadataNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(data_flow::LibraryNodeType_BarrierLocal.value(), []() {
+            return std::make_unique<data_flow::BarrierLocalNodeSerializer>();
+        });
+
+    /* Math */
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::ml::LibraryNodeType_ReLU.value(), []() {
+            return std::make_unique<math::ml::ReLUNodeSerializer>();
+        });
+    // Add more serializers as needed
+}
 
 } // namespace serializer
 } // namespace sdfg

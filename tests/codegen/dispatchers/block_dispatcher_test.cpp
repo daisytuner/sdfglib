@@ -124,7 +124,7 @@ TEST(DataFlowDispatcherTest, BarrierLocalNodeSimple) {
     builder.add_container("c", types::Scalar(types::PrimitiveType::Int32));
 
     auto& block = builder.add_block(root);
-    builder.add_library_node<sdfg::data_flow::BarrierLocalNode>(block, data_flow::BARRIER_LOCAL, {}, {}, true);
+    builder.add_library_node<sdfg::data_flow::BarrierLocalNode>(block, DebugInfo());
 
     auto final_sdfg = builder.move();
 

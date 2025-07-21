@@ -17,6 +17,10 @@ InterstateEdge::InterstateEdge(
 
       };
 
+void InterstateEdge::validate() const {
+    // TODO: Implement validation
+};
+
 const graph::Edge InterstateEdge::edge() const { return this->edge_; };
 
 const control_flow::State& InterstateEdge::src() const { return this->src_; };

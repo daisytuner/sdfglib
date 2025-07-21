@@ -16,15 +16,17 @@ namespace structured_control_flow {
 class IfElse : public ControlFlowNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-   private:
+private:
     std::vector<std::unique_ptr<Sequence>> cases_;
     std::vector<symbolic::Condition> conditions_;
 
     IfElse(size_t element_id, const DebugInfo& debug_info);
 
-   public:
+public:
     IfElse(const IfElse& node) = delete;
     IfElse& operator=(const IfElse&) = delete;
+
+    void validate() const override;
 
     size_t size() const;
 
@@ -34,9 +36,8 @@ class IfElse : public ControlFlowNode {
 
     bool is_complete();
 
-    void replace(const symbolic::Expression& old_expression,
-                 const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
 
-}  // namespace structured_control_flow
-}  // namespace sdfg
+} // namespace structured_control_flow
+} // namespace sdfg

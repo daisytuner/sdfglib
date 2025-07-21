@@ -21,17 +21,19 @@ namespace control_flow {
 class State : public Element {
     friend class sdfg::builder::SDFGBuilder;
 
-   private:
+private:
     // Remark: Exclusive resource
     const graph::Vertex vertex_;
     std::unique_ptr<data_flow::DataFlowGraph> dataflow_;
 
     State(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex);
 
-   public:
+public:
     // Remark: Exclusive resource
     State(const State& state) = delete;
     State& operator=(const State&) = delete;
+
+    void validate() const override;
 
     graph::Vertex vertex() const;
 
@@ -39,9 +41,8 @@ class State : public Element {
 
     data_flow::DataFlowGraph& dataflow();
 
-    void replace(const symbolic::Expression& old_expression,
-                 const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
 
-}  // namespace control_flow
-}  // namespace sdfg
+} // namespace control_flow
+} // namespace sdfg

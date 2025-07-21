@@ -13,8 +13,8 @@ TrivialArrayElimination::TrivialArrayElimination()
 
 std::string TrivialArrayElimination::name() { return "TrivialArrayElimination"; };
 
-bool TrivialArrayElimination::run_pass(builder::StructuredSDFGBuilder& builder,
-                                       analysis::AnalysisManager& analysis_manager) {
+bool TrivialArrayElimination::
+    run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     auto& sdfg = builder.subject();
@@ -48,8 +48,7 @@ bool TrivialArrayElimination::run_pass(builder::StructuredSDFGBuilder& builder,
         // Construct new type
         auto atype = static_cast<const types::Array*>(type.get());
         std::unique_ptr<types::IType> inner_type = atype->element_type().clone();
-        std::unique_ptr<types::IType> new_type =
-            types::recombine_array_type(sdfg.type(name), depth, *inner_type.get());
+        std::unique_ptr<types::IType> new_type = types::recombine_array_type(sdfg.type(name), depth, *inner_type.get());
 
         // Replace data type
         builder.change_type(name, *new_type.get());
@@ -61,8 +60,9 @@ bool TrivialArrayElimination::run_pass(builder::StructuredSDFGBuilder& builder,
 
             auto& graph = access_node->get_parent();
             for (auto& oedge : graph.out_edges(*access_node)) {
-                auto& subset = oedge.subset();
+                auto subset = oedge.subset();
                 subset.erase(subset.begin() + depth);
+                oedge.set_subset(subset);
             }
         }
         // Replace all writes
@@ -72,8 +72,9 @@ bool TrivialArrayElimination::run_pass(builder::StructuredSDFGBuilder& builder,
 
             auto& graph = access_node->get_parent();
             for (auto& iedge : graph.in_edges(*access_node)) {
-                auto& subset = iedge.subset();
+                auto subset = iedge.subset();
                 subset.erase(subset.begin() + depth);
+                iedge.set_subset(subset);
             }
         }
 
@@ -83,5 +84,5 @@ bool TrivialArrayElimination::run_pass(builder::StructuredSDFGBuilder& builder,
     return applied;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

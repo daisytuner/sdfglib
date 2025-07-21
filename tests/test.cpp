@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
-#include "sdfg/serializer/library_node_serializer_registry.h"
+#include "sdfg/serializer/json_serializer.h"
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);

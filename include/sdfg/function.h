@@ -81,7 +81,16 @@ public:
 
     FunctionType type() const;
 
+    size_t element_counter() const;
+
     virtual const DebugInfo debug_info() const = 0;
+
+    /**
+     * Validates the function.
+     *
+     * @throw InvalidSDFGException if the function is invalid
+     */
+    virtual void validate() const;
 
     bool exists(const std::string& name) const;
 

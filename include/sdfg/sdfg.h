@@ -56,6 +56,8 @@ public:
 
     const DebugInfo debug_info() const override;
 
+    void validate() const override;
+
     /***** Section: Graph *****/
 
     auto states() const {

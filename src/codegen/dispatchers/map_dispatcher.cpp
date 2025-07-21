@@ -1,6 +1,7 @@
 #include "sdfg/codegen/dispatchers/map_dispatcher.h"
 
 #include "sdfg/analysis/users.h"
+#include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 #include "sdfg/codegen/dispatchers/sequence_dispatcher.h"
 
 namespace sdfg {
@@ -99,27 +100,6 @@ void CPUParallelMapDispatcher::dispatch_node(
     SequentialMapDispatcher dispatcher(language_extension_, sdfg_, node_, instrumentation_);
     dispatcher.dispatch(main_stream, globals_stream, library_snippet_factory);
 };
-
-void register_default_map_dispatchers() {
-    MapDispatcherRegistry::instance().register_map_dispatcher(
-        structured_control_flow::ScheduleType_Sequential.value(),
-        [](LanguageExtension& language_extension,
-           StructuredSDFG& sdfg,
-           structured_control_flow::Map& node,
-           Instrumentation& instrumentation) {
-            return std::make_unique<SequentialMapDispatcher>(language_extension, sdfg, node, instrumentation);
-        }
-    );
-    MapDispatcherRegistry::instance().register_map_dispatcher(
-        structured_control_flow::ScheduleType_CPU_Parallel.value(),
-        [](LanguageExtension& language_extension,
-           StructuredSDFG& sdfg,
-           structured_control_flow::Map& node,
-           Instrumentation& instrumentation) {
-            return std::make_unique<CPUParallelMapDispatcher>(language_extension, sdfg, node, instrumentation);
-        }
-    );
-}
 
 } // namespace codegen
 } // namespace sdfg

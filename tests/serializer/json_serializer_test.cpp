@@ -8,7 +8,6 @@
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 #include "sdfg/element.h"
 #include "sdfg/serializer/json_serializer.h"
-#include "sdfg/serializer/library_node_serializer_registry.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
@@ -877,6 +876,14 @@ TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
                 auto& subset = memlet->subset();
                 EXPECT_EQ(subset.size(), 1);
                 EXPECT_TRUE(symbolic::eq(subset[0], symbolic::symbol("i")));
+
+                auto& begin_subset = memlet->begin_subset();
+                EXPECT_EQ(begin_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(begin_subset[0], symbolic::symbol("i")));
+
+                auto& end_subset = memlet->end_subset();
+                EXPECT_EQ(end_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(end_subset[0], symbolic::symbol("i")));
             } else if (memlet->dst_conn() == "_in2") {
                 found_memlet_in2 = true;
                 auto& src = memlet->src();
@@ -1009,6 +1016,14 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
                 auto& subset = memlet->subset();
                 EXPECT_EQ(subset.size(), 1);
                 EXPECT_TRUE(symbolic::eq(subset[0], symbolic::symbol("i")));
+
+                auto& begin_subset = memlet->begin_subset();
+                EXPECT_EQ(begin_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(begin_subset[0], symbolic::symbol("i")));
+
+                auto& end_subset = memlet->end_subset();
+                EXPECT_EQ(end_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(end_subset[0], symbolic::symbol("i")));
             } else if (memlet->dst_conn() == "_in2") {
                 found_memlet_in2 = true;
                 auto& src = memlet->src();
@@ -1145,6 +1160,14 @@ TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
                 auto& subset = memlet->subset();
                 EXPECT_EQ(subset.size(), 1);
                 EXPECT_TRUE(symbolic::eq(subset[0], symbolic::symbol("i")));
+
+                auto& begin_subset = memlet->begin_subset();
+                EXPECT_EQ(begin_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(begin_subset[0], symbolic::symbol("i")));
+
+                auto& end_subset = memlet->end_subset();
+                EXPECT_EQ(end_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(end_subset[0], symbolic::symbol("i")));
             } else if (memlet->dst_conn() == "_in2") {
                 found_memlet_in2 = true;
                 auto& src = memlet->src();
@@ -1197,7 +1220,7 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
     // Serialize the DataflowGraph to JSON
     auto& block_new = dynamic_cast<sdfg::structured_control_flow::Block&>(sdfg->root().at(0).first);
 
-    j = serializer.serialize(sdfg);
+    j = serializer.serialize(*sdfg);
 
     // Deserialize the JSON back into a DataflowGraph object
     auto des_sdfg = serializer.deserialize(j);
@@ -1275,6 +1298,14 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
                 auto& subset = memlet->subset();
                 EXPECT_EQ(subset.size(), 1);
                 EXPECT_TRUE(symbolic::eq(subset[0], symbolic::symbol("i")));
+
+                auto& begin_subset = memlet->begin_subset();
+                EXPECT_EQ(begin_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(begin_subset[0], symbolic::symbol("i")));
+
+                auto& end_subset = memlet->end_subset();
+                EXPECT_EQ(end_subset.size(), 1);
+                EXPECT_TRUE(symbolic::eq(end_subset[0], symbolic::symbol("i")));
             } else if (memlet->dst_conn() == "_in2") {
                 found_memlet_in2 = true;
                 auto& src = memlet->src();
@@ -1642,7 +1673,7 @@ TEST(JSONSerializerTest, SerializeDeserialize) {
     sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the SDFG to JSON
-    auto j = serializer.serialize(sdfg);
+    auto j = serializer.serialize(*sdfg);
 
     // Deserialize the JSON back into a StructuredSDFG object
     auto sdfg_new = serializer.deserialize(j);
@@ -1671,7 +1702,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_Arguments) {
     sdfg::serializer::JSONSerializer serializer;
 
     // Serialize the SDFG to JSON
-    auto j = serializer.serialize(sdfg);
+    auto j = serializer.serialize(*sdfg);
 
     // Deserialize the JSON back into a StructuredSDFG object
     auto sdfg_new = serializer.deserialize(j);
@@ -1688,17 +1719,16 @@ TEST(JSONSerializerTest, SerializeDeserialize_Arguments) {
     EXPECT_EQ(sdfg_new->root().size(), 0);
 }
 
-data_flow::LibraryNodeCode BARRIER_LOCAL{"barrier_local"};
 TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU);
     auto& root = builder.subject().root();
 
     auto& block = builder.add_block(root);
-    auto& lib_node = builder.add_library_node<data_flow::BarrierLocalNode>(block, BARRIER_LOCAL, {}, {}, false);
+    auto& lib_node = builder.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfo());
 
     // Get the library node serializer
-    auto lib_node_serializer_fn =
-        serializer::LibraryNodeSerializerRegistry::instance().get_library_node_serializer(BARRIER_LOCAL.value());
+    auto lib_node_serializer_fn = serializer::LibraryNodeSerializerRegistry::instance()
+                                      .get_library_node_serializer(data_flow::LibraryNodeType_BarrierLocal.value());
     EXPECT_TRUE(lib_node_serializer_fn != nullptr);
     auto lib_node_serializer_ptr = lib_node_serializer_fn();
     EXPECT_TRUE(lib_node_serializer_ptr != nullptr);
@@ -1709,7 +1739,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
     // Deserialize the library node
     auto& lib_node_new = lib_node_serializer_ptr->deserialize(j, builder, block);
 
-    EXPECT_EQ(lib_node_new.code(), BARRIER_LOCAL);
+    EXPECT_EQ(lib_node_new.code(), data_flow::LibraryNodeType_BarrierLocal);
     EXPECT_EQ(lib_node_new.side_effect(), lib_node.side_effect());
     EXPECT_EQ(lib_node_new.outputs(), lib_node.outputs());
     EXPECT_EQ(lib_node_new.inputs(), lib_node.inputs());
