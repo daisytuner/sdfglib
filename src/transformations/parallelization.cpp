@@ -1,4 +1,5 @@
 #include "sdfg/transformations/parallelization.h"
+#include <stdexcept>
 
 namespace sdfg {
 namespace transformations {
@@ -23,7 +24,17 @@ void Parallelization::to_json(nlohmann::json& j) const {
 Parallelization Parallelization::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
     auto map_id = desc["map_element_id"].get<size_t>();
     auto element = builder.find_element_by_id(map_id);
-    return Parallelization(*dynamic_cast<structured_control_flow::Map*>(element));
+    if (element == nullptr) {
+        throw std::runtime_error("Element with ID " + std::to_string(map_id) + " not found.");
+    }
+
+    auto loop = dynamic_cast<structured_control_flow::Map*>(element);
+
+    if (loop == nullptr) {
+        throw std::runtime_error("Element with ID " + std::to_string(map_id) + " is not a Map.");
+    }
+
+    return Parallelization(*loop);
 }
 
 } // namespace transformations
