@@ -12,12 +12,12 @@ namespace sdfg {
 namespace helpers {
 
 // Transformation functions
-template <typename T>
+template<typename T>
 inline T& indirect(const std::unique_ptr<T>& ptr) {
     return *ptr;
 };
 
-template <typename T>
+template<typename T>
 inline const T& add_const(T& s) {
     return s;
 };
@@ -37,7 +37,7 @@ inline bool endswith(std::string const& value, std::string const& ending) {
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 };
 
-template <class S, class T>
+template<class S, class T>
 inline std::string join(std::vector<T>& elems, S& delim) {
     if (elems.size() == 0) {
         return "";
@@ -60,7 +60,7 @@ inline void split(std::vector<std::string>& result, std::string s, std::string d
     } while (end != -1);
 }
 
-template <typename T>
+template<typename T>
 inline bool sets_intersect(const std::unordered_set<T>& set1, const std::unordered_set<T>& set2) {
     // Determine the smaller and larger set
     const std::unordered_set<T>& smaller = (set1.size() < set2.size()) ? set1 : set2;
@@ -69,12 +69,23 @@ inline bool sets_intersect(const std::unordered_set<T>& set1, const std::unorder
     // Iterate through the smaller set and check for existence in the larger set
     for (const T& element : smaller) {
         if (larger.find(element) != larger.end()) {
-            return true;  // Intersection found
+            return true; // Intersection found
         }
     }
 
-    return false;  // No intersection found
+    return false; // No intersection found
 }
 
-}  // namespace helpers
-}  // namespace sdfg
+template<typename T>
+inline bool sets_subset(const std::unordered_set<T>& set1, const std::unordered_set<T>& set2) {
+    // Returns true if every element of set2 is in set1
+    for (const T& element : set2) {
+        if (set1.find(element) == set1.end()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+} // namespace helpers
+} // namespace sdfg

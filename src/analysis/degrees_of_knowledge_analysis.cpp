@@ -1,6 +1,7 @@
 #include "sdfg/analysis/degrees_of_knowledge_analysis.h"
 
 #include <cstddef>
+#include <iostream>
 #include <list>
 #include <string>
 #include <unordered_map>
@@ -16,6 +17,7 @@
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/data_flow_node.h"
 #include "sdfg/data_flow/tasklet.h"
+#include "sdfg/helpers/helpers.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
@@ -35,9 +37,13 @@ DegreesOfKnowledgeAnalysis::DegreesOfKnowledgeAnalysis(StructuredSDFG& sdfg) : A
 void DegreesOfKnowledgeAnalysis::run(AnalysisManager& analysis_manager) {
     // Initialize the analysis
     this->number_analysis(analysis_manager, symbolic::one(), false, &sdfg_.root());
+    std::cout << "Number of maps: " << number_of_maps_.size() << std::endl;
     this->size_analysis(analysis_manager);
+    std::cout << "Size of maps: " << size_of_a_map_.size() << std::endl;
     this->load_analysis(analysis_manager);
+    std::cout << "Load of maps: " << load_of_a_map_.size() << std::endl;
     this->balance_analysis(analysis_manager);
+    std::cout << "Balance of maps: " << balance_of_a_map_.size() << std::endl;
 }
 
 void DegreesOfKnowledgeAnalysis::number_analysis(
@@ -245,30 +251,48 @@ std::unordered_set<User*> dynamic_writes(
                 auto num_iterations = symbolic::sub(bound, map_node->init());
                 auto atoms = symbolic::atoms(num_iterations);
                 if (atoms.find(symbolic::symbol(read->container())) != atoms.end()) {
-                    writes.insert(users.get_user(read->container(), loop, Use::WRITE, true, false, false));
-                    writes.insert(users.get_user(read->container(), loop, Use::WRITE, false, false, true));
-                    updated = true;
-                    break;
+                    auto write_init = users.get_user(read->container(), loop, Use::WRITE, true, false, false);
+                    auto write_update = users.get_user(read->container(), loop, Use::WRITE, false, false, true);
+
+                    if (writes.find(write_init) == writes.end()) {
+                        writes.insert(write_init);
+                        updated = true;
+                    }
+                    if (writes.find(write_update) == writes.end()) {
+                        writes.insert(write_update);
+                        updated = true;
+                    }
                 }
             } else if (auto access = dynamic_cast<data_flow::AccessNode*>(element)) {
                 auto dependent_writes =
                     get_dependent_writes(analysis_manager, users, data_dependency_analysis, *access);
-                writes.insert(dependent_writes.begin(), dependent_writes.end());
-                updated = true;
+                if (helpers::sets_subset(writes, dependent_writes)) {
+                    writes.insert(dependent_writes.begin(), dependent_writes.end());
+                    updated = true;
+                }
             } else if (auto memlet = dynamic_cast<data_flow::Memlet*>(element)) {
                 if (auto access_node = dynamic_cast<data_flow::AccessNode*>(&memlet->dst())) {
-                    writes.insert(users.get_user(access_node->data(), access_node, Use::WRITE));
+                    auto write = users.get_user(access_node->data(), access_node, Use::WRITE);
+                    if (writes.find(write) == writes.end()) {
+                        writes.insert(write);
+                        updated = true;
+                    }
                 } else {
                     auto dependent_writes =
                         get_dependent_writes(analysis_manager, users, data_dependency_analysis, memlet->dst());
-                    writes.insert(dependent_writes.begin(), dependent_writes.end());
+
+                    if (helpers::sets_subset(writes, dependent_writes)) {
+                        writes.insert(dependent_writes.begin(), dependent_writes.end());
+                        updated = true;
+                    }
                 }
-                updated = true;
             } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(element)) {
                 auto dependent_writes =
                     get_dependent_writes(analysis_manager, users, data_dependency_analysis, *access);
-                writes.insert(dependent_writes.begin(), dependent_writes.end());
-                updated = true;
+                if (helpers::sets_subset(writes, dependent_writes)) {
+                    writes.insert(dependent_writes.begin(), dependent_writes.end());
+                    updated = true;
+                }
             }
         }
     }
