@@ -31,7 +31,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
 
         // By definition, a view is a pointer
         auto& type = sdfg.type(container);
-        if (!dynamic_cast<const types::Pointer*>(&type)) {
+        if (type.type_id() != types::TypeID::Pointer) {
             continue;
         }
 
@@ -49,7 +49,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
         // Eliminate views
         auto uses = users.uses(container);
         for (auto& move : moves) {
-            auto& access_node = dynamic_cast<data_flow::AccessNode&>(*move->element());
+            auto& access_node = static_cast<data_flow::AccessNode&>(*move->element());
             auto& dataflow = *move->parent();
             auto& move_edge = *dataflow.in_edges(access_node).begin();
 
@@ -59,7 +59,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
             }
 
             // Retrieve underlying container
-            auto& viewed_node = dynamic_cast<const data_flow::AccessNode&>(move_edge.src());
+            auto& viewed_node = static_cast<const data_flow::AccessNode&>(move_edge.src());
             auto& viewed_container = viewed_node.data();
 
             // Criterion: Must not be raw memory address
@@ -69,6 +69,9 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
 
             // Criterion: Must not be reinterpret cast
             auto& move_subset = move_edge.subset();
+            if (move_subset.empty()) {
+                continue;
+            }
             auto& viewed_type = types::infer_type(sdfg, sdfg.type(viewed_container), move_subset);
             types::Pointer final_type(viewed_type);
             if (type != final_type) {
@@ -111,21 +114,24 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
 
                 auto use_graph = user->parent();
 
-                // Criterion: Must not be a dereference memlet
-                bool deref = false;
+                // Criterion: Must be a computational memlet
+                bool computational = true;
                 for (auto& oedge : use_graph->out_edges(use_node)) {
-                    if (oedge.type() == data_flow::MemletType::Dereference_Src) {
-                        deref = true;
+                    if (oedge.type() != data_flow::MemletType::Computational) {
+                        computational = false;
                         break;
                     }
+                }
+                if (!computational) {
+                    continue;
                 }
                 for (auto& iedge : use_graph->in_edges(use_node)) {
-                    if (iedge.type() == data_flow::MemletType::Dereference_Dst) {
-                        deref = true;
+                    if (iedge.type() != data_flow::MemletType::Computational) {
+                        computational = false;
                         break;
                     }
                 }
-                if (deref) {
+                if (!computational) {
                     continue;
                 }
 
@@ -136,69 +142,47 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                 for (auto& oedge : use_graph->out_edges(use_node)) {
                     // Compute new subset
                     data_flow::Subset new_subset;
-
-                    // Add leading dimensions from move
-                    if (move_edge.src_conn() == "void") {
-                        for (size_t i = 0; i < move_subset.size(); i++) {
-                            new_subset.push_back(move_subset[i]);
-                        }
+                    for (auto dim : move_subset) {
+                        new_subset.push_back(dim);
                     }
 
                     auto old_subset = oedge.subset();
 
                     // Handle first trailing dimensions
-                    if (new_subset.empty()) {
-                        auto& trail_dim = old_subset.front();
-                        if (!symbolic::eq(trail_dim, symbolic::zero())) {
-                            throw std::runtime_error("View propagation not implemented for non-void source connection");
-                        }
-                        old_subset.erase(old_subset.begin());
-                    } else {
-                        auto& trail_dim = old_subset.front();
-                        auto& current_dim = new_subset.back();
-                        auto new_dim = symbolic::add(current_dim, trail_dim);
-                        new_subset.back() = new_dim;
-                        old_subset.erase(old_subset.begin());
-                    }
+                    auto& trail_dim = old_subset.front();
+                    auto& current_dim = new_subset.back();
+                    auto new_dim = symbolic::add(current_dim, trail_dim);
+                    new_subset.back() = new_dim;
+                    old_subset.erase(old_subset.begin());
 
                     // Add remaining trailing dimensions
-                    for (auto& dim : old_subset) {
+                    for (auto dim : old_subset) {
                         new_subset.push_back(dim);
                     }
+
                     oedge.set_subset(new_subset);
                 }
                 for (auto& iedge : use_graph->in_edges(use_node)) {
                     // Compute new subset
                     data_flow::Subset new_subset;
-
-                    // Add leading dimensions from move
-                    if (move_edge.src_conn() == "void") {
-                        for (size_t i = 0; i < move_subset.size(); i++) {
-                            new_subset.push_back(move_subset[i]);
-                        }
+                    for (auto dim : move_subset) {
+                        new_subset.push_back(dim);
                     }
 
                     auto old_subset = iedge.subset();
 
                     // Handle first trailing dimensions
-                    if (new_subset.empty()) {
-                        auto& trail_dim = old_subset.front();
-                        if (!symbolic::eq(trail_dim, symbolic::zero())) {
-                            throw std::runtime_error("View propagation not implemented for non-void source connection");
-                        }
-                        old_subset.erase(old_subset.begin());
-                    } else {
-                        auto& trail_dim = old_subset.front();
-                        auto& current_dim = new_subset.back();
-                        auto new_dim = symbolic::add(current_dim, trail_dim);
-                        new_subset.back() = new_dim;
-                        old_subset.erase(old_subset.begin());
-                    }
+                    auto& trail_dim = old_subset.front();
+                    auto& current_dim = new_subset.back();
+                    auto new_dim = symbolic::add(current_dim, trail_dim);
+                    new_subset.back() = new_dim;
+                    old_subset.erase(old_subset.begin());
 
                     // Add remaining trailing dimensions
-                    for (auto& dim : old_subset) {
+                    for (auto dim : old_subset) {
                         new_subset.push_back(dim);
                     }
+
                     iedge.set_subset(new_subset);
                 }
 

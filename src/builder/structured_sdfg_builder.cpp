@@ -1130,7 +1130,12 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
          ))}
     );
 
-    return dynamic_cast<data_flow::Memlet&>(*(res.first->second));
+    auto& memlet = dynamic_cast<data_flow::Memlet&>(*(res.first->second));
+#ifndef NDEBUG
+    memlet.validate(*this->structured_sdfg_);
+#endif
+
+    return memlet;
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
@@ -1160,7 +1165,12 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
          ))}
     );
 
-    return dynamic_cast<data_flow::Memlet&>(*(res.first->second));
+    auto& memlet = dynamic_cast<data_flow::Memlet&>(*(res.first->second));
+#ifndef NDEBUG
+    memlet.validate(*this->structured_sdfg_);
+#endif
+
+    return memlet;
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(

@@ -236,7 +236,12 @@ data_flow::Memlet& SDFGBuilder::add_memlet(
          ))}
     );
 
-    return dynamic_cast<data_flow::Memlet&>(*(res.first->second));
+    auto& memlet = dynamic_cast<data_flow::Memlet&>(*(res.first->second));
+#ifndef NDEBUG
+    memlet.validate(*this->sdfg_);
+#endif
+
+    return memlet;
 };
 
 data_flow::Memlet& SDFGBuilder::add_memlet(
@@ -257,8 +262,12 @@ data_flow::Memlet& SDFGBuilder::add_memlet(
              this->new_element_id(), debug_info, edge.first, dataflow, src, src_conn, dst, dst_conn, begin_subset, end_subset
          ))}
     );
+    auto& memlet = dynamic_cast<data_flow::Memlet&>(*(res.first->second));
+#ifndef NDEBUG
+    memlet.validate(*this->sdfg_);
+#endif
 
-    return dynamic_cast<data_flow::Memlet&>(*(res.first->second));
+    return memlet;
 };
 
 data_flow::Memlet& SDFGBuilder::add_computational_memlet(
