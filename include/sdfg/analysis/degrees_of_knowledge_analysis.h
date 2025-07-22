@@ -42,16 +42,16 @@ protected:
 public:
     DegreesOfKnowledgeAnalysis(StructuredSDFG& sdfg);
 
-    std::pair<symbolic::Expression, DegreesOfKnowledgeClassification> number_of_maps(const structured_control_flow::Map*
+    std::pair<symbolic::Expression, DegreesOfKnowledgeClassification> number_of_maps(const structured_control_flow::Map&
                                                                                          node) const;
 
-    std::pair<symbolic::Expression, DegreesOfKnowledgeClassification> size_of_a_map(const structured_control_flow::Map*
+    std::pair<symbolic::Expression, DegreesOfKnowledgeClassification> size_of_a_map(const structured_control_flow::Map&
                                                                                         node) const;
 
-    std::pair<symbolic::Expression, DegreesOfKnowledgeClassification> load_of_a_map(const structured_control_flow::Map*
+    std::pair<symbolic::Expression, DegreesOfKnowledgeClassification> load_of_a_map(const structured_control_flow::Map&
                                                                                         node) const;
 
-    std::pair<symbolic::Expression, DegreesOfKnowledgeClassification> balance_of_a_map(const structured_control_flow::Map*
+    std::pair<symbolic::Expression, DegreesOfKnowledgeClassification> balance_of_a_map(const structured_control_flow::Map&
                                                                                            node) const;
 };
 

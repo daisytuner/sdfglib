@@ -121,7 +121,7 @@ void DegreesOfKnowledgeAnalysis::size_analysis(AnalysisManager& analysis_manager
             for (auto atom : atoms) {
                 for (auto read : users.reads(atom->get_name())) {
                     if (ForUser* for_user = dynamic_cast<ForUser*>(read)) {
-                        if (for_user->parent()->get_parent() == map_node) {
+                        if (for_user->element() == map_node) {
                             for_users.insert(for_user);
                         }
                     }
