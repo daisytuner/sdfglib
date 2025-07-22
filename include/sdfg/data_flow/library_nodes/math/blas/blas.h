@@ -7,11 +7,11 @@ namespace math {
 namespace blas {
 
 enum BLAS_Precision {
-    h,
-    s,
-    d,
-    c,
-    z,
+    h = 'h',
+    s = 's',
+    d = 'd',
+    c = 'c',
+    z = 'z',
 };
 
 constexpr std::string_view BLAS_Precision_to_string(BLAS_Precision precision) {
@@ -32,9 +32,9 @@ constexpr std::string_view BLAS_Precision_to_string(BLAS_Precision precision) {
 }
 
 enum BLAS_Transpose {
-    No = 111,
-    Trans = 112,
-    ConjTrans = 113,
+    No = 'N',
+    Trans = 'T',
+    ConjTrans = 'C',
 };
 
 constexpr std::string_view BLAS_Transpose_to_string(BLAS_Transpose transpose) {
@@ -61,6 +61,15 @@ constexpr std::string_view BLAS_Layout_to_string(BLAS_Layout layout) {
             return "CblasRowMajor";
         case BLAS_Layout::ColMajor:
             return "CblasColMajor";
+    }
+}
+
+inline constexpr std::string_view BLAS_Layout_to_short_string(BLAS_Layout layout) {
+    switch (layout) {
+        case BLAS_Layout::RowMajor:
+            return "RowM";
+        case BLAS_Layout::ColMajor:
+            return "ColM";
     }
 }
 
