@@ -68,7 +68,7 @@ void DotVisualizer::visualizeBlock(const StructuredSDFG& sdfg, const structured_
                 this->stream_ << dstVar;
                 if (dstIsVoid) {
                     types::IType const* dstTypePtr = sdfg.exists(dstVar) ? &sdfg.type(dstVar) : nullptr;
-                    this->visualizeSubset(sdfg, iedge.subset(), dstTypePtr);
+                    this->visualizeSubset(sdfg, iedge.begin_subset(), iedge.end_subset(), dstTypePtr);
                 }
             } else {
                 this->stream_ << dst_conn;
@@ -84,7 +84,7 @@ void DotVisualizer::visualizeBlock(const StructuredSDFG& sdfg, const structured_
                 this->stream_ << srcVar;
                 if (srcIsVoid) {
                     types::IType const* srcTypePtr = sdfg.exists(srcVar) ? &sdfg.type(srcVar) : nullptr;
-                    this->visualizeSubset(sdfg, iedge.subset(), srcTypePtr);
+                    this->visualizeSubset(sdfg, iedge.begin_subset(), iedge.end_subset(), srcTypePtr);
                 }
             } else {
                 this->stream_ << src_conn;
