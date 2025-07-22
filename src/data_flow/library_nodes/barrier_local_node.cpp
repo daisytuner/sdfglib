@@ -13,7 +13,7 @@ BarrierLocalNode::
 
       };
 
-void BarrierLocalNode::validate() const {
+void BarrierLocalNode::validate(const Function& function) const {
     // TODO: Implement
 }
 

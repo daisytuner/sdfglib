@@ -30,7 +30,7 @@ public:
     For(const For& node) = delete;
     For& operator=(const For&) = delete;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 };
 
 } // namespace structured_control_flow

@@ -18,7 +18,7 @@ Tasklet::Tasklet(
     : CodeNode(element_id, debug_info, vertex, parent), code_(code), output_(output), inputs_(inputs),
       condition_(condition) {};
 
-void Tasklet::validate() const {
+void Tasklet::validate(const Function& function) const {
     // TODO: Implement
 }
 

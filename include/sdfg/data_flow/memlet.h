@@ -19,6 +19,8 @@ class DataFlowGraph;
 
 typedef std::vector<symbolic::Expression> Subset;
 
+enum MemletType { Computational, Reference, Dereference_Src, Dereference_Dst };
+
 class Memlet : public Element {
     friend class sdfg::builder::SDFGBuilder;
     friend class sdfg::builder::StructuredSDFGBuilder;
@@ -66,13 +68,15 @@ public:
     Memlet(const Memlet& memlet) = delete;
     Memlet& operator=(const Memlet&) = delete;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     const graph::Edge edge() const;
 
     const DataFlowGraph& get_parent() const;
 
     DataFlowGraph& get_parent();
+
+    MemletType type() const;
 
     const DataFlowNode& src() const;
 

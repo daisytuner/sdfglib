@@ -63,9 +63,7 @@ Pipeline Pipeline::expression_combine() {
 Pipeline Pipeline::memlet_combine() {
     Pipeline p("MemletCombine");
 
-    p.register_pass<ViewPropagation>();
-    p.register_pass<ForwardMemletPropagation>();
-    p.register_pass<BackwardMemletPropagation>();
+    p.register_pass<ReferencePropagation>();
     p.register_pass<DeadReferenceElimination>();
 
     return p;

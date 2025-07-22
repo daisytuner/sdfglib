@@ -15,7 +15,7 @@ Transition::Transition(
 
       };
 
-void Transition::validate() const {
+void Transition::validate(const Function& function) const {
     // TODO: Implement validation
 };
 
@@ -52,12 +52,12 @@ Sequence::Sequence(size_t element_id, const DebugInfo& debug_info)
 
       };
 
-void Sequence::validate() const {
+void Sequence::validate(const Function& function) const {
     for (auto& child : this->children_) {
-        child->validate();
+        child->validate(function);
     }
     for (auto& trans : this->transitions_) {
-        trans->validate();
+        trans->validate(function);
     }
 };
 

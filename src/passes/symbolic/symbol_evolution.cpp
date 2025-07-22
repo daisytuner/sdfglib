@@ -1,7 +1,6 @@
 #include "sdfg/passes/symbolic/symbol_evolution.h"
 
 #include "sdfg/analysis/assumptions_analysis.h"
-#include "sdfg/analysis/data_parallelism_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/analysis/users.h"

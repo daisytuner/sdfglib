@@ -53,7 +53,6 @@ option(SDFGLIB_ENABLE_COVERAGE "Enable coverage flags" OFF)
 set(SOURCE_FILES
     src/analysis/analysis.cpp
     src/analysis/assumptions_analysis.cpp
-    src/analysis/data_parallelism_analysis.cpp
     src/analysis/data_dependency_analysis.cpp
     src/analysis/loop_analysis.cpp
     src/analysis/mem_access_range_analysis.cpp
@@ -104,10 +103,9 @@ set(SOURCE_FILES
     src/passes/dataflow/dead_data_elimination.cpp
     src/passes/dataflow/dead_reference_elimination.cpp
     src/passes/dataflow/constant_elimination.cpp
-    src/passes/dataflow/memlet_propagation.cpp
     src/passes/dataflow/redundant_array_elimination.cpp
     src/passes/dataflow/trivial_array_elimination.cpp
-    src/passes/dataflow/view_propagation.cpp
+    src/passes/dataflow/reference_propagation.cpp
     src/passes/schedules/parallelization_pass.cpp
     src/passes/symbolic/symbol_evolution.cpp
     src/passes/symbolic/symbol_propagation.cpp

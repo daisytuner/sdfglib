@@ -51,7 +51,7 @@ public:
     InterstateEdge(const InterstateEdge& state) = delete;
     InterstateEdge& operator=(const InterstateEdge&) = delete;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     const graph::Edge edge() const;
 

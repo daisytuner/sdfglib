@@ -8,31 +8,52 @@
 namespace sdfg {
 namespace types {
 
+const types::IType&
+infer_type_internal(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset) {
+    if (subset.empty()) {
+        return type;
+    }
+
+    if (type.type_id() == TypeID::Scalar) {
+        if (!subset.empty()) {
+            throw InvalidSDFGException("Scalar type must have no subset");
+        }
+
+        return type;
+    } else if (type.type_id() == TypeID::Array) {
+        auto& array_type = static_cast<const types::Array&>(type);
+
+        data_flow::Subset element_subset(subset.begin() + 1, subset.end());
+        return infer_type_internal(function, array_type.element_type(), element_subset);
+    } else if (type.type_id() == TypeID::Structure) {
+        auto& structure_type = static_cast<const types::Structure&>(type);
+
+        auto& definition = function.structure(structure_type.name());
+
+        data_flow::Subset element_subset(subset.begin() + 1, subset.end());
+        auto member = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(subset.at(0));
+        return infer_type_internal(function, definition.member_type(member), element_subset);
+    } else if (type.type_id() == TypeID::Pointer) {
+        throw InvalidSDFGException("Subset references non-contiguous memory");
+    }
+
+    throw InvalidSDFGException("Type inference failed because of unknown type");
+};
+
 const types::IType& infer_type(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset) {
     if (subset.empty()) {
         return type;
     }
 
-    if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
-        if (!subset.empty()) {
-            throw InvalidSDFGException("Scalar type must have no subset");
-        }
-        return *scalar_type;
-    } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
-        data_flow::Subset element_subset(subset.begin() + 1, subset.end());
-        return infer_type(function, array_type->element_type(), element_subset);
-    } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
-        data_flow::Subset element_subset(subset.begin() + 1, subset.end());
-        return infer_type(function, pointer_type->pointee_type(), element_subset);
-    } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
-        auto& definition = function.structure(structure_type->name());
+    if (type.type_id() == TypeID::Pointer) {
+        auto& pointer_type = static_cast<const types::Pointer&>(type);
+        auto& pointee_type = pointer_type.pointee_type();
 
         data_flow::Subset element_subset(subset.begin() + 1, subset.end());
-        auto member = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(subset.at(0));
-        return infer_type(function, definition.member_type(member), element_subset);
+        return infer_type_internal(function, pointee_type, element_subset);
+    } else {
+        return infer_type_internal(function, type, subset);
     }
-
-    throw InvalidSDFGException("Type inference failed");
 };
 
 std::unique_ptr<types::IType> recombine_array_type(const types::IType& type, uint depth, const types::IType& inner_type) {

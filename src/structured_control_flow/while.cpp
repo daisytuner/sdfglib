@@ -7,7 +7,7 @@ While::While(size_t element_id, const DebugInfo& debug_info) : ControlFlowNode(e
     this->root_ = std::unique_ptr<Sequence>(new Sequence(++element_id, debug_info));
 };
 
-void While::validate() const { this->root_->validate(); };
+void While::validate(const Function& function) const { this->root_->validate(function); };
 
 const Sequence& While::root() const { return *this->root_; };
 
@@ -22,7 +22,7 @@ Break::Break(size_t element_id, const DebugInfo& debug_info)
 
       };
 
-void Break::validate() const {};
+void Break::validate(const Function& function) const {};
 
 void Break::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
 
@@ -33,7 +33,7 @@ Continue::Continue(size_t element_id, const DebugInfo& debug_info)
 
       };
 
-void Continue::validate() const {};
+void Continue::validate(const Function& function) const {};
 
 void Continue::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
 

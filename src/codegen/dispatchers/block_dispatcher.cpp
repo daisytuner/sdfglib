@@ -39,14 +39,18 @@ void DataFlowDispatcher::dispatch(PrettyPrinter& stream) {
     for (auto& node : nodes) {
         if (auto tasklet = dynamic_cast<const data_flow::Tasklet*>(node)) {
             this->dispatch_tasklet(stream, *tasklet);
-        } else if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(node)) {
-            for (auto& edge : this->data_flow_graph_.out_edges(*access_node)) {
-                if (edge.dst_conn() == "refs" || edge.src_conn() == "refs") {
-                    this->dispatch_ref(stream, edge);
-                }
-            }
         } else if (auto libnode = dynamic_cast<const data_flow::LibraryNode*>(node)) {
             this->dispatch_library_node(stream, *libnode);
+        } else if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(node)) {
+            for (auto& edge : this->data_flow_graph_.out_edges(*access_node)) {
+                if (edge.dst_conn() == "ref" && edge.src_conn() == "void") {
+                    this->dispatch_ref(stream, edge);
+                } else if (edge.src_conn() == "deref" || edge.dst_conn() == "deref") {
+                    this->dispatch_deref(stream, edge);
+                }
+            }
+        } else {
+            throw InvalidSDFGException("Codegen: Node type not supported");
         }
     }
 };
@@ -60,61 +64,60 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
     auto& dst = dynamic_cast<const data_flow::AccessNode&>(memlet.dst());
     auto& dst_type = this->function_.type(dst.data());
 
-    const types::IType* final_src_type = &src_type;
-    const types::IType* final_dst_type = &dst_type;
+    auto& subset = memlet.subset();
 
     stream << dst.data();
-    if (memlet.dst_conn() == "void") {
-        stream << this->language_extension_.subset(function_, dst_type, memlet.subset());
-
-        final_dst_type = &types::infer_type(function_, *final_dst_type, memlet.subset());
-    }
     stream << " = ";
 
     std::string rhs;
-    bool allocated_src_type = false;
-    if (memlet.src_conn() == "void") {
-        // Infer the dereferenced type
-        auto subset = memlet.subset();
-        const types::IType* dereferenced_type = &types::infer_type(function_, *final_src_type, subset);
-
-        // Function are incomplete types, so we need to remove one level of indirection
-        if (dynamic_cast<const types::Function*>(dereferenced_type)) {
-            subset.pop_back();
-        } else {
-            rhs += "&";
-        }
-        rhs += src.data();
-        rhs += this->language_extension_.subset(function_, *final_src_type, subset);
-
-        allocated_src_type = true;
-        final_src_type = new types::Pointer(*dereferenced_type);
+    if (symbolic::is_nullptr(symbolic::symbol(src.data())) || helpers::is_number(src.data())) {
+        rhs += this->language_extension_.expression(symbolic::symbol(src.data()));
     } else {
-        if (symbolic::is_nullptr(symbolic::symbol(src.data()))) {
-            // nullptr
-            rhs += this->language_extension_.expression(symbolic::symbol(src.data()));
-        } else if (helpers::is_number(src.data())) {
-            // Integer: Raw memory address
-            rhs += this->language_extension_.type_cast(src.data(), *final_dst_type);
-        } else {
-            // Pointer
-            rhs += src.data();
-        }
+        rhs += "&";
+        rhs += src.data();
     }
+    rhs += this->language_extension_.subset(function_, src_type, subset);
 
-    if (*final_dst_type == *final_src_type || symbolic::is_pointer(symbolic::symbol(src.data())) ||
-        helpers::is_number(src.data())) {
+    // Check reinterpret_cast
+    auto& res_type = types::infer_type(function_, src_type, subset);
+    types::Pointer final_type(res_type);
+    if (final_type == dst_type || symbolic::is_nullptr(symbolic::symbol(src.data()))) {
         stream << rhs;
     } else {
-        stream << this->language_extension_.type_cast(rhs, *final_dst_type);
-    }
-
-    if (allocated_src_type) {
-        delete final_src_type;
+        stream << this->language_extension_.type_cast(rhs, dst_type);
     }
 
     stream << ";";
     stream << std::endl;
+
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
+};
+
+void DataFlowDispatcher::dispatch_deref(PrettyPrinter& stream, const data_flow::Memlet& memlet) {
+    stream << "{" << std::endl;
+    stream.setIndent(stream.indent() + 4);
+
+    auto& src = dynamic_cast<const data_flow::AccessNode&>(memlet.src());
+    auto& src_type = this->function_.type(src.data());
+    auto& dst = dynamic_cast<const data_flow::AccessNode&>(memlet.dst());
+    auto& dst_type = this->function_.type(dst.data());
+
+    stream << dst.data();
+    if (memlet.dst_conn() == "void") {
+        stream << this->language_extension_.subset(function_, dst_type, memlet.subset());
+    }
+    stream << " = ";
+
+    if (symbolic::is_nullptr(symbolic::symbol(src.data()))) {
+        stream << this->language_extension_.expression(symbolic::__nullptr__());
+    } else {
+        stream << src.data();
+    }
+    if (memlet.src_conn() == "void") {
+        stream << this->language_extension_.subset(function_, src_type, memlet.subset());
+    }
+    stream << ";" << std::endl;
 
     stream.setIndent(stream.indent() - 4);
     stream << "}" << std::endl;

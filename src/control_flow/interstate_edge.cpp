@@ -17,7 +17,7 @@ InterstateEdge::InterstateEdge(
 
       };
 
-void InterstateEdge::validate() const {
+void InterstateEdge::validate(const Function& function) const {
     // TODO: Implement validation
 };
 

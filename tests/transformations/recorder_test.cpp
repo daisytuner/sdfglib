@@ -221,8 +221,8 @@ protected:
 
         // Add containers
         types::Scalar base_desc(types::PrimitiveType::Float);
-        types::Pointer base_desc_ptr(base_desc);
-        types::Pointer desc(static_cast<types::IType&>(base_desc_ptr));
+        types::Array desc_1(base_desc, symbolic::symbol("M"));
+        types::Pointer desc(desc_1);
 
         builder_->add_container("A", desc, true);
 

@@ -123,8 +123,11 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
             if (!symbolic::is_pointer(symbolic::symbol(access_node->data()))) {
                 if (dataflow.in_degree(*node) > 0) {
                     Use use = Use::WRITE;
+
+                    // Check if the pointer itself is moved (overwritten)
                     for (auto& iedge : dataflow.in_edges(*access_node)) {
-                        if (iedge.src_conn() == "refs" || iedge.dst_conn() == "refs") {
+                        if (iedge.type() == data_flow::MemletType::Reference ||
+                            iedge.type() == data_flow::MemletType::Dereference_Src) {
                             use = Use::MOVE;
                             break;
                         }
@@ -142,8 +145,11 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
                 }
                 if (dataflow.out_degree(*access_node) > 0) {
                     Use use = Use::READ;
+
+                    // Check if the pointer itself is viewed (aliased)
                     for (auto& oedge : dataflow.out_edges(*access_node)) {
-                        if (oedge.src_conn() == "refs" || oedge.dst_conn() == "refs") {
+                        if (oedge.type() == data_flow::MemletType::Reference ||
+                            oedge.type() == data_flow::MemletType::Dereference_Dst) {
                             use = Use::VIEW;
                             break;
                         }

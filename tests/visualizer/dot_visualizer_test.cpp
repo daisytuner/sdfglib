@@ -41,10 +41,10 @@ TEST(DotVisualizerTest, transpose) {
     builder.add_container("j", sym_desc);
 
     types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Pointer desc(base_desc);
-    types::Pointer desc2(*desc.clone());
-    builder.add_container("A", desc2, true);
-    builder.add_container("B", desc2, true);
+    types::Array desc_1(base_desc, symbolic::symbol("M"));
+    types::Pointer desc_2(desc_1);
+    builder.add_container("A", desc_2, true);
+    builder.add_container("B", desc_2, true);
 
     // Define loops
     auto bound1 = symbolic::symbol("M");
@@ -133,8 +133,8 @@ TEST(DotVisualizerTest, syrk) {
     sdfg.add_container("beta", desc_element, true);
     sdfg.add_container("tmp", desc_element);
 
-    types::Pointer desc_1d(desc_element);
-    types::Pointer desc_2d(*desc_1d.clone());
+    types::Array desc_1d(desc_element, symbolic::symbol("M"));
+    types::Pointer desc_2d(desc_1d);
     sdfg.add_container("A", desc_2d, true);
     sdfg.add_container("C", desc_2d, true);
 
