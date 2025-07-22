@@ -12,8 +12,8 @@ DeadReferenceElimination::DeadReferenceElimination()
 
 std::string DeadReferenceElimination::name() { return "DeadReferenceElimination"; };
 
-bool DeadReferenceElimination::run_pass(builder::StructuredSDFGBuilder& builder,
-                                        analysis::AnalysisManager& analysis_manager) {
+bool DeadReferenceElimination::
+    run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     auto& sdfg = builder.subject();
@@ -39,20 +39,6 @@ bool DeadReferenceElimination::run_pass(builder::StructuredSDFGBuilder& builder,
             continue;
         }
 
-        bool assigned = false;
-        for (auto& move : moves) {
-            auto access_node = dynamic_cast<data_flow::AccessNode*>(move->element());
-            auto& graph = dynamic_cast<data_flow::DataFlowGraph&>(access_node->get_parent());
-            auto& edge = *graph.in_edges(*access_node).begin();
-            if (edge.dst_conn() == "void") {
-                assigned = true;
-                break;
-            }
-        }
-        if (assigned) {
-            continue;
-        }
-
         for (auto& move : moves) {
             auto access_node = dynamic_cast<data_flow::AccessNode*>(move->element());
             auto& graph = dynamic_cast<data_flow::DataFlowGraph&>(access_node->get_parent());
@@ -70,5 +56,5 @@ bool DeadReferenceElimination::run_pass(builder::StructuredSDFGBuilder& builder,
     return applied;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg
