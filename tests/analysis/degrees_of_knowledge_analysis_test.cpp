@@ -385,8 +385,8 @@ TEST(DOKLoadTest, StaticLoad) {
     auto& access_B = builder.add_access(block, "B");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", sc_type}, {{"_in", sc_type}});
 
-    builder.add_memlet(block, access_A, "void", tasklet, "_in", {symbolic::symbol("i")});
-    builder.add_memlet(block, tasklet, "_out", access_B, "void", {symbolic::symbol("i")});
+    builder.add_computational_memlet(block, access_A, tasklet, "_in", {symbolic::symbol("i")});
+    builder.add_computational_memlet(block, tasklet, "_out", access_B, {symbolic::symbol("i")});
 
     auto sdfg = builder.move();
 

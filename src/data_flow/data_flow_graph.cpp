@@ -159,6 +159,24 @@ std::unordered_set<const data_flow::DataFlowNode*> DataFlowGraph::successors(con
     return ss;
 };
 
+std::unordered_set<data_flow::DataFlowNode*> DataFlowGraph::predecessors(const data_flow::DataFlowNode& node) {
+    std::unordered_set<data_flow::DataFlowNode*> ss;
+    for (auto& edge : this->in_edges(node)) {
+        ss.insert(&edge.src());
+    }
+
+    return ss;
+};
+
+std::unordered_set<data_flow::DataFlowNode*> DataFlowGraph::successors(const data_flow::DataFlowNode& node) {
+    std::unordered_set<data_flow::DataFlowNode*> ss;
+    for (auto& edge : this->out_edges(node)) {
+        ss.insert(&edge.dst());
+    }
+
+    return ss;
+};
+
 std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort() const {
     std::list<graph::Vertex> order = graph::topological_sort(this->graph_);
 

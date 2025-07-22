@@ -151,6 +151,10 @@ public:
 
     std::unordered_set<const data_flow::DataFlowNode*> successors(const data_flow::DataFlowNode& node) const;
 
+    std::unordered_set<data_flow::DataFlowNode*> predecessors(const data_flow::DataFlowNode& node);
+
+    std::unordered_set<data_flow::DataFlowNode*> successors(const data_flow::DataFlowNode& node);
+
     std::list<const data_flow::DataFlowNode*> topological_sort() const;
 
     std::list<data_flow::DataFlowNode*> topological_sort();
