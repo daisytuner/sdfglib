@@ -87,13 +87,22 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
 };
 
 void LoopTiling::to_json(nlohmann::json& j) const {
+    std::string loop_type;
+    if (dynamic_cast<structured_control_flow::For*>(&loop_)) {
+        loop_type = "for";
+    } else if (dynamic_cast<structured_control_flow::Map*>(&loop_)) {
+        loop_type = "map";
+    } else {
+        throw std::runtime_error("Unsupported loop type for serialization of loop: " + loop_.indvar()->get_name());
+    }
+
     j["transformation_type"] = this->name();
-    j["loop_element_id"] = loop_.element_id();
+    j["subgraph"] = {{"0", {{"element_id", this->loop_.element_id()}, {"type", loop_type}}}};
     j["tile_size"] = tile_size_;
 };
 
 LoopTiling LoopTiling::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
-    auto loop_id = desc["loop_element_id"].get<size_t>();
+    auto loop_id = desc["subgraph"]["0"]["element_id"].get<size_t>();
     size_t tile_size = desc["tile_size"].get<size_t>();
     auto element = builder.find_element_by_id(loop_id);
     if (!element) {

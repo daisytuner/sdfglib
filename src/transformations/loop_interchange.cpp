@@ -2,6 +2,7 @@
 #include <stdexcept>
 
 #include "sdfg/analysis/scope_analysis.h"
+#include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 
 namespace sdfg {
@@ -123,14 +124,26 @@ void LoopInterchange::apply(builder::StructuredSDFGBuilder& builder, analysis::A
 };
 
 void LoopInterchange::to_json(nlohmann::json& j) const {
+    std::vector<std::string> loop_types;
+    for (auto* loop : {&(this->outer_loop_), &(this->inner_loop_)}) {
+        if (dynamic_cast<structured_control_flow::For*>(loop)) {
+            loop_types.push_back("for");
+        } else if (dynamic_cast<structured_control_flow::Map*>(loop)) {
+            loop_types.push_back("map");
+        } else {
+            throw std::runtime_error("Unsupported loop type for serialization of loop: " + loop->indvar()->get_name());
+        }
+    }
     j["transformation_type"] = this->name();
-    j["outer_loop_element_id"] = this->outer_loop_.element_id();
-    j["inner_loop_element_id"] = this->inner_loop_.element_id();
+    j["subgraph"] = {
+        {"0", {{"element_id", this->outer_loop_.element_id()}, {"type", loop_types[0]}}},
+        {"1", {{"element_id", this->inner_loop_.element_id()}, {"type", loop_types[1]}}}
+    };
 };
 
 LoopInterchange LoopInterchange::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
-    auto outer_loop_id = desc["outer_loop_element_id"].get<size_t>();
-    auto inner_loop_id = desc["inner_loop_element_id"].get<size_t>();
+    auto outer_loop_id = desc["subgraph"]["0"]["element_id"].get<size_t>();
+    auto inner_loop_id = desc["subgraph"]["1"]["element_id"].get<size_t>();
     auto outer_element = builder.find_element_by_id(outer_loop_id);
     auto inner_element = builder.find_element_by_id(inner_loop_id);
     if (outer_element == nullptr) {
