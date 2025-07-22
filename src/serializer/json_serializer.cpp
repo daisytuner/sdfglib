@@ -611,25 +611,7 @@ void JSONSerializer::json_to_dataflow(
         auto& source = nodes_map.at(edge["src"]);
         auto& target = nodes_map.at(edge["dst"]);
 
-        if (edge.contains("subset")) {
-            assert(edge["subset"].is_array());
-            std::vector<symbolic::Expression> subset;
-            for (const auto& subset_str : edge["subset"]) {
-                assert(subset_str.is_string());
-                SymEngine::Expression subset_expr(subset_str);
-                subset.push_back(subset_expr);
-            }
-            auto& memlet = builder.add_memlet(
-                parent,
-                source,
-                edge["src_conn"],
-                target,
-                edge["dst_conn"],
-                subset,
-                json_to_debug_info(edge["debug_info"])
-            );
-            memlet.element_id_ = edge["element_id"];
-        } else if (edge.contains("begin_subset") && edge.contains("end_subset")) {
+        if (edge.contains("begin_subset") && edge.contains("end_subset")) {
             assert(edge["begin_subset"].is_array());
             assert(edge["end_subset"].is_array());
             std::vector<symbolic::Expression> begin_subset;
@@ -652,6 +634,24 @@ void JSONSerializer::json_to_dataflow(
                 edge["dst_conn"],
                 begin_subset,
                 end_subset,
+                json_to_debug_info(edge["debug_info"])
+            );
+            memlet.element_id_ = edge["element_id"];
+        } else if (edge.contains("subset")) {
+            assert(edge["subset"].is_array());
+            std::vector<symbolic::Expression> subset;
+            for (const auto& subset_str : edge["subset"]) {
+                assert(subset_str.is_string());
+                SymEngine::Expression subset_expr(subset_str);
+                subset.push_back(subset_expr);
+            }
+            auto& memlet = builder.add_memlet(
+                parent,
+                source,
+                edge["src_conn"],
+                target,
+                edge["dst_conn"],
+                subset,
                 json_to_debug_info(edge["debug_info"])
             );
             memlet.element_id_ = edge["element_id"];
