@@ -155,6 +155,7 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
             // }
         } else if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
             node_json["type"] = "library_node";
+            node_json["implementation_type"] = std::string(lib_node->implementation_type().value());
             auto serializer_fn =
                 LibraryNodeSerializerRegistry::instance().get_library_node_serializer(lib_node->code().value());
             if (serializer_fn == nullptr) {
@@ -580,6 +581,8 @@ void JSONSerializer::json_to_dataflow(
             }
             auto serializer = serializer_fn();
             auto& lib_node = serializer->deserialize(node, builder, parent);
+            lib_node.implementation_type() =
+                data_flow::ImplementationType(node["implementation_type"].get<std::string>());
             lib_node.element_id_ = node["element_id"];
             nodes_map.insert({node["element_id"], lib_node});
         } else if (type == "access_node") {

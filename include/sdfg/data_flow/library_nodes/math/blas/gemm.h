@@ -91,9 +91,21 @@ public:
     ) override;
 };
 
-class GEMMNodeDispatcher : public codegen::LibraryNodeDispatcher {
+class GEMMNodeDispatcher_BLAS : public codegen::LibraryNodeDispatcher {
 public:
-    GEMMNodeDispatcher(
+    GEMMNodeDispatcher_BLAS(
+        codegen::LanguageExtension& language_extension,
+        const Function& function,
+        const data_flow::DataFlowGraph& data_flow_graph,
+        const GEMMNode& node
+    );
+
+    void dispatch(codegen::PrettyPrinter& stream) override;
+};
+
+class GEMMNodeDispatcher_CUBLAS : public codegen::LibraryNodeDispatcher {
+public:
+    GEMMNodeDispatcher_CUBLAS(
         codegen::LanguageExtension& language_extension,
         const Function& function,
         const data_flow::DataFlowGraph& data_flow_graph,

@@ -38,6 +38,30 @@ GEMMNode::GEMMNode(
     }
 }
 
+BLAS_Precision GEMMNode::precision() const { return this->precision_; };
+
+BLAS_Layout GEMMNode::layout() const { return this->layout_; };
+
+BLAS_Transpose GEMMNode::trans_a() const { return this->trans_a_; };
+
+BLAS_Transpose GEMMNode::trans_b() const { return this->trans_b_; };
+
+symbolic::Expression GEMMNode::m() const { return this->m_; };
+
+symbolic::Expression GEMMNode::n() const { return this->n_; };
+
+symbolic::Expression GEMMNode::k() const { return this->k_; };
+
+symbolic::Expression GEMMNode::lda() const { return this->lda_; };
+
+symbolic::Expression GEMMNode::ldb() const { return this->ldb_; };
+
+symbolic::Expression GEMMNode::ldc() const { return this->ldc_; };
+
+std::string GEMMNode::alpha() const { return this->alpha_; };
+
+std::string GEMMNode::beta() const { return this->beta_; };
+
 void GEMMNode::validate(const Function& function) const {
     auto& graph = this->get_parent();
 
@@ -195,7 +219,7 @@ data_flow::LibraryNode& GEMMNodeSerializer::deserialize(
         GEMMNode>(parent, debug_info, precision, layout, trans_a, trans_b, m, n, k, lda, ldb, ldc, alpha, beta);
 }
 
-GEMMNodeDispatcher::GEMMNodeDispatcher(
+GEMMNodeDispatcher_BLAS::GEMMNodeDispatcher_BLAS(
     codegen::LanguageExtension& language_extension,
     const Function& function,
     const data_flow::DataFlowGraph& data_flow_graph,
@@ -203,10 +227,21 @@ GEMMNodeDispatcher::GEMMNodeDispatcher(
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void GEMMNodeDispatcher::dispatch(codegen::PrettyPrinter& stream) {
-    throw std::runtime_error("GEMMNode not implemented");
+void GEMMNodeDispatcher_BLAS::dispatch(codegen::PrettyPrinter& stream) {
+    throw std::runtime_error("GEMMNodeDispatcher_BLAS not implemented");
 }
 
+GEMMNodeDispatcher_CUBLAS::GEMMNodeDispatcher_CUBLAS(
+    codegen::LanguageExtension& language_extension,
+    const Function& function,
+    const data_flow::DataFlowGraph& data_flow_graph,
+    const GEMMNode& node
+)
+    : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
+
+void GEMMNodeDispatcher_CUBLAS::dispatch(codegen::PrettyPrinter& stream) {
+    throw std::runtime_error("GEMMNodeDispatcher_CUBLAS not implemented");
+}
 
 } // namespace blas
 } // namespace math

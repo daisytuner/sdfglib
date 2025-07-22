@@ -167,7 +167,9 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow
 };
 
 void DataFlowDispatcher::dispatch_library_node(PrettyPrinter& stream, const data_flow::LibraryNode& libnode) {
-    auto dispatcher_fn = LibraryNodeDispatcherRegistry::instance().get_library_node_dispatcher(libnode.code().value());
+    auto dispatcher_fn =
+        LibraryNodeDispatcherRegistry::instance()
+            .get_library_node_dispatcher(libnode.code().value() + "::" + libnode.implementation_type().value());
     if (dispatcher_fn) {
         auto dispatcher = dispatcher_fn(this->language_extension_, this->function_, this->data_flow_graph_, libnode);
         dispatcher->dispatch(stream);

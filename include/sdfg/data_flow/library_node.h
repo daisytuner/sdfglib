@@ -16,6 +16,8 @@ class StructuredSDFGBuilder;
 namespace data_flow {
 
 typedef StringEnum LibraryNodeCode;
+typedef StringEnum ImplementationType;
+inline ImplementationType ImplementationType_NONE{""};
 
 class LibraryNode : public CodeNode {
     friend class sdfg::builder::SDFGBuilder;
@@ -26,6 +28,8 @@ protected:
     std::vector<std::string> outputs_;
     std::vector<std::string> inputs_;
     bool side_effect_;
+
+    ImplementationType implementation_type_;
 
     LibraryNode(
         size_t element_id,
@@ -45,6 +49,10 @@ public:
     virtual ~LibraryNode() = default;
 
     const LibraryNodeCode& code() const;
+
+    const ImplementationType& implementation_type() const;
+
+    ImplementationType& implementation_type();
 
     const std::vector<std::string>& inputs() const;
 

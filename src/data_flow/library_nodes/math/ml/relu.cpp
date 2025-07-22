@@ -153,19 +153,6 @@ data_flow::LibraryNode& ReLUNodeSerializer::deserialize(
     return builder.add_library_node<ReLUNode>(parent, debug_info, outputs.at(0), inputs.at(0));
 }
 
-ReLUNodeDispatcher::ReLUNodeDispatcher(
-    codegen::LanguageExtension& language_extension,
-    const Function& function,
-    const data_flow::DataFlowGraph& data_flow_graph,
-    const ReLUNode& node
-)
-    : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
-
-void ReLUNodeDispatcher::dispatch(codegen::PrettyPrinter& stream) {
-    throw std::runtime_error("ReLUNode not implemented");
-}
-
-
 } // namespace ml
 } // namespace math
 } // namespace sdfg

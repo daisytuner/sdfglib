@@ -25,6 +25,8 @@ enum class BLAS_Layout {
     ColMajor,
 };
 
+inline data_flow::ImplementationType ImplementationType_BLAS{"BLAS"};
+inline data_flow::ImplementationType ImplementationType_CUBLAS{"CUBLAS"};
 
 } // namespace blas
 } // namespace math

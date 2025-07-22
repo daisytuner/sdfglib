@@ -16,11 +16,15 @@ LibraryNode::LibraryNode(
     const bool side_effect
 )
     : CodeNode(element_id, debug_info, vertex, parent), code_(code), outputs_(outputs), inputs_(inputs),
-      side_effect_(side_effect) {
+      side_effect_(side_effect), implementation_type_(ImplementationType_NONE) {
 
       };
 
 const LibraryNodeCode& LibraryNode::code() const { return this->code_; };
+
+const ImplementationType& LibraryNode::implementation_type() const { return this->implementation_type_; };
+
+ImplementationType& LibraryNode::implementation_type() { return this->implementation_type_; };
 
 const std::vector<std::string>& LibraryNode::inputs() const { return this->inputs_; };
 
