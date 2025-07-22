@@ -19,7 +19,7 @@ ReLUNode::ReLUNode(
 )
     : MathNode(element_id, debug_info, vertex, parent, LibraryNodeType_ReLU, {output}, {input}) {}
 
-void ReLUNode::validate() const {
+void ReLUNode::validate(const Function& function) const {
     // TODO: Implement
 }
 

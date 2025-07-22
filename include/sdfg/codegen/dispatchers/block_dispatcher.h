@@ -31,6 +31,8 @@ private:
 
     void dispatch_ref(PrettyPrinter& stream, const data_flow::Memlet& memlet);
 
+    void dispatch_deref(PrettyPrinter& stream, const data_flow::Memlet& memlet);
+
     void dispatch_tasklet(PrettyPrinter& stream, const data_flow::Tasklet& tasklet);
 
     void dispatch_library_node(PrettyPrinter& stream, const data_flow::LibraryNode& libnode);

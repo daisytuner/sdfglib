@@ -31,10 +31,10 @@ void SDFG::validate() const {
 
     // Validate states and edges
     for (auto& state : this->states()) {
-        state.validate();
+        state.validate(*this);
     }
     for (auto& edge : this->edges()) {
-        edge.validate();
+        edge.validate(*this);
     }
 };
 

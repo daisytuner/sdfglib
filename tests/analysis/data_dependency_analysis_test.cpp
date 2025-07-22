@@ -2835,8 +2835,8 @@ TEST(LoopDependencyAnalysisTest, Map_2D) {
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Pointer desc(base_desc);
-    types::Pointer desc_2(static_cast<const types::IType&>(desc));
+    types::Array desc_1(base_desc, symbolic::symbol("M"));
+    types::Pointer desc_2(desc_1);
     builder.add_container("A", desc_2, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -2905,7 +2905,8 @@ TEST(LoopDependencyAnalysisTest, PartialSumInner_2D) {
 
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer desc(base_desc);
-    types::Pointer desc2(*desc.clone());
+    types::Array desc_1(base_desc, symbolic::symbol("N"));
+    types::Pointer desc2(desc_1);
     builder.add_container("A", desc2, true);
     builder.add_container("B", desc, true);
 
@@ -2967,10 +2968,10 @@ TEST(LoopDependencyAnalysisTest, PartialSumOuter_2D) {
     builder.add_container("j", sym_desc);
 
     types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Pointer desc(base_desc);
-    types::Pointer desc2(*desc.clone());
+    types::Array desc_1(base_desc, symbolic::symbol("N"));
+    types::Pointer desc2(desc_1);
     builder.add_container("A", desc2, true);
-    builder.add_container("B", desc, true);
+    builder.add_container("B", desc_1, true);
 
     // Define loop
     auto bound1 = symbolic::symbol("N");
@@ -3031,8 +3032,8 @@ TEST(LoopDependencyAnalysisTest, Transpose_2D) {
     builder.add_container("j", sym_desc);
 
     types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Pointer desc(base_desc);
-    types::Pointer desc2(static_cast<const types::IType&>(desc));
+    types::Array desc_1(base_desc, symbolic::symbol("M"));
+    types::Pointer desc2(desc_1);
     builder.add_container("A", desc2, true);
     builder.add_container("B", desc2, true);
 
@@ -3089,8 +3090,8 @@ TEST(LoopDependencyAnalysisTest, TransposeTriangle_2D) {
     builder.add_container("j", sym_desc);
 
     types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Pointer desc(base_desc);
-    types::Pointer desc2(static_cast<const types::IType&>(desc));
+    types::Array desc_1(base_desc, symbolic::symbol("N"));
+    types::Pointer desc2(desc_1);
     builder.add_container("A", desc2, true);
 
     // Define loop
@@ -3144,8 +3145,8 @@ TEST(LoopDependencyAnalysisTest, TransposeTriangleWithDiagonal_2D) {
     builder.add_container("j", sym_desc);
 
     types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Pointer desc(base_desc);
-    types::Pointer desc2(static_cast<const types::IType&>(desc));
+    types::Array desc_1(base_desc, symbolic::symbol("N"));
+    types::Pointer desc2(desc_1);
     builder.add_container("A", desc2, true);
 
     // Define loop
@@ -3199,8 +3200,8 @@ TEST(LoopDependencyAnalysisTest, TransposeSquare_2D) {
     builder.add_container("j", sym_desc);
 
     types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Pointer desc(base_desc);
-    types::Pointer desc2(static_cast<const types::IType&>(desc));
+    types::Array desc_1(base_desc, symbolic::symbol("N"));
+    types::Pointer desc2(desc_1);
     builder.add_container("A", desc2, true);
 
     // Define loop

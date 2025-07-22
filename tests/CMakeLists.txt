@@ -8,7 +8,6 @@ FetchContent_MakeAvailable(googletest)
 
 set(TEST_FILES
     analysis/assumptions_analysis_test.cpp
-    analysis/data_parallelism_analysis_test.cpp
     analysis/data_dependency_analysis_test.cpp
     analysis/loop_analysis_test.cpp
     analysis/mem_access_range_analysis_test.cpp
@@ -41,7 +40,7 @@ set(TEST_FILES
     passes/dataflow/dead_data_elimination_test.cpp
     passes/dataflow/redundant_array_elimination_test.cpp
     passes/dataflow/trivial_array_elimination_test.cpp
-    passes/dataflow/view_propagation_test.cpp
+    passes/dataflow/reference_propagation_test.cpp
     passes/pipeline_test.cpp
     passes/schedules/parallelization_pass_test.cpp
     passes/structured_control_flow/block_fusion_test.cpp

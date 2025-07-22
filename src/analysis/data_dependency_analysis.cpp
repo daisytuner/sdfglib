@@ -66,7 +66,8 @@ void DataDependencyAnalysis::visit_block(
                 if (dataflow.in_degree(*node) > 0) {
                     Use use = Use::WRITE;
                     for (auto& iedge : dataflow.in_edges(*access_node)) {
-                        if (iedge.src_conn() == "refs" || iedge.dst_conn() == "refs") {
+                        if (iedge.type() == data_flow::MemletType::Reference ||
+                            iedge.type() == data_flow::MemletType::Dereference_Src) {
                             use = Use::MOVE;
                             break;
                         }
@@ -91,7 +92,8 @@ void DataDependencyAnalysis::visit_block(
                 if (dataflow.out_degree(*access_node) > 0) {
                     Use use = Use::READ;
                     for (auto& oedge : dataflow.out_edges(*access_node)) {
-                        if (oedge.src_conn() == "refs" || oedge.dst_conn() == "refs") {
+                        if (oedge.type() == data_flow::MemletType::Reference ||
+                            oedge.type() == data_flow::MemletType::Dereference_Dst) {
                             use = Use::VIEW;
                             break;
                         }

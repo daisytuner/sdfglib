@@ -37,7 +37,7 @@ public:
     Map(const Map& node) = delete;
     Map& operator=(const Map&) = delete;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     ScheduleType& schedule_type();
 

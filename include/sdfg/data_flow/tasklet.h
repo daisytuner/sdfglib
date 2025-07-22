@@ -581,7 +581,7 @@ public:
     Tasklet(const Tasklet& data_node) = delete;
     Tasklet& operator=(const Tasklet&) = delete;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     TaskletCode code() const;
 

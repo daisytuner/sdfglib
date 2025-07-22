@@ -26,7 +26,7 @@ public:
     While(const While& node) = delete;
     While& operator=(const While&) = delete;
 
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     const Sequence& root() const;
 
@@ -42,7 +42,7 @@ private:
     Break(size_t element_id, const DebugInfo& debug_info);
 
 public:
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
@@ -54,7 +54,7 @@ private:
     Continue(size_t element_id, const DebugInfo& debug_info);
 
 public:
-    void validate() const override;
+    void validate(const Function& function) const override;
 
     void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };

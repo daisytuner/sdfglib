@@ -12,8 +12,8 @@ TEST(ParallelizationPassTest, Map_2D) {
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Pointer desc(base_desc);
-    types::Pointer desc_2(static_cast<const types::IType&>(desc));
+    types::Array desc_1(base_desc, symbolic::symbol("M"));
+    types::Pointer desc_2(desc_1);
     builder.add_container("A", desc_2, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -27,9 +27,13 @@ TEST(ParallelizationPassTest, Map_2D) {
     auto indvar = symbolic::symbol("i");
 
     auto& loop = builder.add_map(
-        root, indvar, symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential);
+        root,
+        indvar,
+        symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential
+    );
     auto& body = loop.root();
 
     // Define loop 2
@@ -37,9 +41,13 @@ TEST(ParallelizationPassTest, Map_2D) {
     auto indvar_2 = symbolic::symbol("j");
 
     auto& loop_2 = builder.add_map(
-        body, indvar_2, symbolic::Lt(symbolic::symbol("j"), symbolic::symbol("M")),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("j"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential);
+        body,
+        indvar_2,
+        symbolic::Lt(symbolic::symbol("j"), symbolic::symbol("M")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("j"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential
+    );
     auto& body_2 = loop_2.root();
 
     // Add computation
@@ -47,13 +55,12 @@ TEST(ParallelizationPassTest, Map_2D) {
     auto& a_in = builder.add_access(block, "A");
     auto& i = builder.add_access(block, "i");
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
-                                        {{"_in1", base_desc}, {"_in2", sym_desc}});
-    builder.add_memlet(block, a_in, "void", tasklet, "_in1",
-                       {symbolic::symbol("i"), symbolic::symbol("j")});
+    auto& tasklet = builder.add_tasklet(
+        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", sym_desc}}
+    );
+    builder.add_memlet(block, a_in, "void", tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")});
     builder.add_memlet(block, i, "void", tasklet, "_in2", {});
-    builder.add_memlet(block, tasklet, "_out", a_out, "void",
-                       {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_memlet(block, tasklet, "_out", a_out, "void", {symbolic::symbol("i"), symbolic::symbol("j")});
 
     analysis::AnalysisManager analysis_manager(builder.subject());
     passes::ParallelizationPass parallelization_pass;

@@ -43,7 +43,7 @@ public:
     DataFlowGraph(const DataFlowGraph& graph) = delete;
     DataFlowGraph& operator=(const DataFlowGraph&) = delete;
 
-    void validate() const;
+    void validate(const Function& function) const;
 
     const Element* get_parent() const;
 
