@@ -20,10 +20,7 @@ private:
     std::unordered_map<const structured_control_flow::Map*, std::pair<symbolic::Expression, symbolic::SymbolSet>>
         size_of_a_map_;
     std::unordered_map<const structured_control_flow::Map*, symbolic::Expression> load_of_a_map_;
-    std::unordered_map<
-        const structured_control_flow::Map*,
-        std::pair<symbolic::Expression, std::pair<symbolic::SymbolSet, symbolic::SymbolSet>>>
-        balance_of_a_map_;
+    std::unordered_map<const structured_control_flow::Map*, symbolic::Expression> balance_of_a_map_;
 
     void number_analysis(
         AnalysisManager& analysis_manager,

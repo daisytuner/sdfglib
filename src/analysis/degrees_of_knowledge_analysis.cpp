@@ -23,6 +23,7 @@
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/structured_control_flow/while.h"
+#include "sdfg/symbolic/sets.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
@@ -279,7 +280,6 @@ void DegreesOfKnowledgeAnalysis::balance_analysis(AnalysisManager& analysis_mana
     auto& users = analysis_manager.get<Users>();
     auto& data_dependency_analysis = analysis_manager.get<DataDependencyAnalysis>();
 
-    symbolic::SymbolSet while_symbols;
     symbolic::SymbolSet if_else_symbols;
 
     for (auto& loop : loop_analysis.loops()) {
@@ -395,14 +395,14 @@ void DegreesOfKnowledgeAnalysis::balance_analysis(AnalysisManager& analysis_mana
                         symbolic::Symbol while_symbol =
                             symbolic::symbol("while_" + std::to_string(while_loop->element_id()));
                         total_cost = symbolic::mul(while_symbol, body_cost);
-                        while_symbols.insert(while_symbol);
+                        while_symbols_.insert(while_symbol);
                     }
                     cost.insert({node, total_cost});
                 } else {
                     cost.insert({node, symbolic::one()});
                 }
             }
-            this->balance_of_a_map_.insert({map_node, {cost.at(&map_node->root()), {while_symbols, if_else_symbols}}});
+            this->balance_of_a_map_.insert({map_node, cost.at(&map_node->root())});
         }
     }
 }
@@ -414,15 +414,72 @@ std::pair<symbolic::Expression, DegreesOfKnowledgeClassification> DegreesOfKnowl
         throw std::runtime_error("Map node not found in DegreesOfKnowledgeAnalysis.");
     }
 
-    auto& bounds = number_of_maps_.at(&node);
-
+    auto bounds = number_of_maps_.at(&node);
     auto atoms = symbolic::atoms(bounds.second);
 
-    // TODO: Check if the map node is dynamic
-    if (true) {
+    if (!symbolic::intersects(atoms, while_symbols_) && symbolic::eq(bounds.first, bounds.second)) {
+        if (SymEngine::is_a<SymEngine::Integer>(*bounds.second)) {
+            return {bounds.second, DegreesOfKnowledgeClassification::Scalar};
+        }
+
+        return {bounds.second, DegreesOfKnowledgeClassification::Bound};
     }
 
     return {bounds.second, DegreesOfKnowledgeClassification::Unbound};
+}
+
+std::pair<symbolic::Expression, DegreesOfKnowledgeClassification> DegreesOfKnowledgeAnalysis::
+    size_of_a_map(const structured_control_flow::Map& node) const {
+    if (size_of_a_map_.find(&node) == size_of_a_map_.end()) {
+        throw std::runtime_error("Map node not found in DegreesOfKnowledgeAnalysis.");
+    }
+
+    auto [expr, unbound_symbols] = size_of_a_map_.at(&node);
+
+    if (unbound_symbols.empty() || !symbolic::intersects(symbolic::atoms(expr), unbound_symbols)) {
+        if (SymEngine::is_a<SymEngine::Integer>(*expr)) {
+            return {expr, DegreesOfKnowledgeClassification::Scalar};
+        }
+
+        return {expr, DegreesOfKnowledgeClassification::Bound};
+    }
+
+    return {expr, DegreesOfKnowledgeClassification::Unbound};
+}
+
+std::pair<symbolic::Expression, DegreesOfKnowledgeClassification> DegreesOfKnowledgeAnalysis::
+    load_of_a_map(const structured_control_flow::Map& node) const {
+    if (load_of_a_map_.find(&node) == load_of_a_map_.end()) {
+        throw std::runtime_error("Map node not found in DegreesOfKnowledgeAnalysis.");
+    }
+
+    auto expr = load_of_a_map_.at(&node);
+    if (!symbolic::intersects(symbolic::atoms(expr), while_symbols_)) {
+        if (SymEngine::is_a<SymEngine::Integer>(*expr)) {
+            return {expr, DegreesOfKnowledgeClassification::Scalar};
+        }
+        return {expr, DegreesOfKnowledgeClassification::Bound};
+    }
+
+    return {expr, DegreesOfKnowledgeClassification::Unbound};
+}
+
+std::pair<symbolic::Expression, DegreesOfKnowledgeClassification> DegreesOfKnowledgeAnalysis::
+    balance_of_a_map(const structured_control_flow::Map& node) const {
+    if (balance_of_a_map_.find(&node) == balance_of_a_map_.end()) {
+        throw std::runtime_error("Map node not found in DegreesOfKnowledgeAnalysis.");
+    }
+
+    auto expr = balance_of_a_map_.at(&node);
+
+    if (!symbolic::intersects(symbolic::atoms(expr), while_symbols_)) {
+        if (SymEngine::is_a<SymEngine::Integer>(*expr)) {
+            return {expr, DegreesOfKnowledgeClassification::Scalar};
+        }
+        return {expr, DegreesOfKnowledgeClassification::Bound};
+    }
+
+    return {expr, DegreesOfKnowledgeClassification::Unbound};
 }
 
 } // namespace analysis

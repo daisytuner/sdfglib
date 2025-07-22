@@ -4,6 +4,7 @@
 #include <isl/set.h>
 #include <isl/space.h>
 
+#include "sdfg/symbolic/symbolic.h"
 #include "sdfg/symbolic/utils.h"
 
 namespace sdfg {
@@ -116,6 +117,15 @@ bool is_disjoint(
     isl_ctx_free(ctx);
 
     return disjoint;
+}
+
+bool intersects(symbolic::SymbolSet set1, symbolic::SymbolSet set2) {
+    for (const auto& symbol : set1) {
+        if (set2.find(symbol) != set2.end()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 } // namespace symbolic
