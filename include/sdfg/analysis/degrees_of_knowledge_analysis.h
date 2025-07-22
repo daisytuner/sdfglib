@@ -19,8 +19,7 @@ private:
         number_of_maps_;
     std::unordered_map<const structured_control_flow::Map*, std::pair<symbolic::Expression, symbolic::SymbolSet>>
         size_of_a_map_;
-    std::unordered_map<const structured_control_flow::Map*, std::pair<symbolic::Expression, symbolic::SymbolSet>>
-        load_of_a_map_;
+    std::unordered_map<const structured_control_flow::Map*, symbolic::Expression> load_of_a_map_;
     std::unordered_map<
         const structured_control_flow::Map*,
         std::pair<symbolic::Expression, std::pair<symbolic::SymbolSet, symbolic::SymbolSet>>>

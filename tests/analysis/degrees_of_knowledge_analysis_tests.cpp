@@ -524,4 +524,166 @@ TEST(DOKLoadTest, UnboundLoad) {
     ));
 }
 
-// TODO: Add tests for balance_of_a_map
+TEST(DOKBalanceTest, StaticBalance) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto desc_type = types::Scalar(types::PrimitiveType::Int32);
+    auto sc_type = types::Scalar(types::PrimitiveType::Float);
+    auto pt_type = types::Pointer(sc_type);
+    builder.add_container("i", desc_type);
+    builder.add_container("A", pt_type);
+    builder.add_container("B", pt_type);
+
+    auto& root = builder.subject().root();
+
+    symbolic::Symbol indvar = symbolic::symbol("i");
+    symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
+    symbolic::Expression init = symbolic::zero();
+    symbolic::Expression update = symbolic::add(indvar, symbolic::one());
+    ScheduleType schedule_type = ScheduleType_Sequential;
+
+    auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
+
+    auto& block = builder.add_block(map_node.root());
+    auto& access_A = builder.add_access(block, "A");
+    auto& access_B = builder.add_access(block, "B");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", sc_type}, {{"_in", sc_type}});
+
+    builder.add_memlet(block, access_A, "void", tasklet, "_in", {symbolic::symbol("i")});
+    builder.add_memlet(block, tasklet, "_out", access_B, "void", {symbolic::symbol("i")});
+
+    auto sdfg = builder.move();
+
+    // Run analysis
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+
+    auto& root_node = builder_opt.subject().root();
+    auto work = work_depth_analysis.balance_of_a_map(map_node);
+    EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
+    EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(1)));
+}
+
+TEST(DOKBalanceTest, BoundBalance) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto desc_type = types::Scalar(types::PrimitiveType::Int32);
+    auto sc_type = types::Scalar(types::PrimitiveType::Float);
+    auto pt_type = types::Array(sc_type, symbolic::integer(10));
+    auto pt2_type = types::Pointer(pt_type);
+    builder.add_container("i", desc_type);
+    builder.add_container("j", desc_type);
+    builder.add_container("A", pt2_type);
+    builder.add_container("B", pt2_type);
+
+    auto& root = builder.subject().root();
+
+    symbolic::Symbol indvar = symbolic::symbol("i");
+    symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
+    symbolic::Expression init = symbolic::zero();
+    symbolic::Expression update = symbolic::add(indvar, symbolic::one());
+    ScheduleType schedule_type = ScheduleType_Sequential;
+
+    auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
+
+    symbolic::Symbol indvar_inner = symbolic::symbol("j");
+    symbolic::Condition condition_inner = symbolic::Lt(indvar_inner, symbolic::symbol("i"));
+    symbolic::Expression init_inner = symbolic::zero();
+    symbolic::Expression update_inner = symbolic::add(indvar_inner, symbolic::one());
+    ScheduleType schedule_type_inner = ScheduleType_Sequential;
+
+    auto& map_node_inner =
+        builder.add_map(map_node.root(), indvar_inner, condition_inner, init_inner, update_inner, schedule_type_inner);
+
+    auto& block = builder.add_block(map_node_inner.root());
+    auto& access_A = builder.add_access(block, "A");
+    auto& access_B = builder.add_access(block, "B");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", sc_type}, {{"_in", sc_type}});
+
+    builder.add_memlet(block, access_A, "void", tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_memlet(block, tasklet, "_out", access_B, "void", {symbolic::symbol("i"), symbolic::symbol("j")});
+
+    auto sdfg = builder.move();
+
+    // Run analysis
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+
+    auto& root_node = builder_opt.subject().root();
+    auto work = work_depth_analysis.load_of_a_map(map_node);
+    EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Bound);
+    EXPECT_TRUE(symbolic::eq(work.first, symbolic::symbol("i")));
+}
+
+TEST(DOKBalanceTest, UnboundBalance) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto desc_type = types::Scalar(types::PrimitiveType::Int32);
+    auto sc_type = types::Scalar(types::PrimitiveType::Float);
+    auto pt_type = types::Array(sc_type, symbolic::integer(100));
+    auto pt2_type = types::Pointer(pt_type);
+    builder.add_container("i", desc_type);
+    builder.add_container("j", desc_type);
+    builder.add_container("A", pt2_type);
+    builder.add_container("B", pt2_type);
+
+    auto& root = builder.subject().root();
+
+    symbolic::Symbol indvar = symbolic::symbol("i");
+    symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
+    symbolic::Expression init = symbolic::zero();
+    symbolic::Expression update = symbolic::add(indvar, symbolic::one());
+    ScheduleType schedule_type = ScheduleType_Sequential;
+
+    auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
+
+    auto& block_init = builder.add_block(map_node.root());
+    auto& tasklet_init =
+        builder.add_tasklet(block_init, data_flow::TaskletCode::assign, {"_out", sc_type}, {{"0", sc_type}});
+    auto& access_j = builder.add_access(block_init, "j");
+    builder.add_memlet(block_init, tasklet_init, "_out", access_j, "void", {});
+
+    auto& while_node = builder.add_while(map_node.root());
+
+    auto& if_else_node = builder.add_if_else(while_node.root());
+    auto& loop_end = builder.add_case(
+        if_else_node, symbolic::Lt(symbolic::mul(symbolic::symbol("i"), symbolic::symbol("j")), symbolic::integer(100))
+    );
+    builder.add_break(loop_end);
+
+    auto& block = builder.add_block(while_node.root());
+    auto& access_A = builder.add_access(block, "A");
+    auto& access_B = builder.add_access(block, "B");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", sc_type}, {{"_in", sc_type}});
+
+    builder.add_memlet(block, access_A, "void", tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_memlet(block, tasklet, "_out", access_B, "void", {symbolic::symbol("i"), symbolic::symbol("j")});
+
+    auto& update_read = builder.add_access(block, "j");
+    auto& update_write = builder.add_access(block, "j");
+    auto& update_tasklet =
+        builder
+            .add_tasklet(block, data_flow::TaskletCode::add, {"_out", desc_type}, {{"_in", desc_type}, {"1", desc_type}});
+
+    builder.add_memlet(block, update_read, "void", update_tasklet, "_in", {});
+    builder.add_memlet(block, update_tasklet, "_out", update_write, "void", {});
+
+    std::string while_symbol_name = "while_" + std::to_string(while_node.element_id());
+
+    auto sdfg = builder.move();
+
+    // Run analysis
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+
+    auto& root_node = builder_opt.subject().root();
+    auto work = work_depth_analysis.load_of_a_map(map_node);
+    EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Unbound);
+    EXPECT_TRUE(symbolic::eq(
+        work.first,
+        symbolic::add(symbolic::one(), symbolic::mul(symbolic::symbol(while_symbol_name), symbolic::integer(2)))
+    ));
+}

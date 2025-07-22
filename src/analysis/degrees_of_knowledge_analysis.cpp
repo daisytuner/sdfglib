@@ -155,8 +155,9 @@ void DegreesOfKnowledgeAnalysis::load_analysis(AnalysisManager& analysis_manager
         if (auto* map_node = dynamic_cast<structured_control_flow::Map*>(loop)) {
             auto depth = work_depth_analysis.depth(map_node);
             auto while_symbols = work_depth_analysis.while_symbols(depth);
+            while_symbols_.insert(while_symbols.begin(), while_symbols.end());
 
-            load_of_a_map_.insert({map_node, {depth, while_symbols}});
+            load_of_a_map_.insert({map_node, depth});
         }
     }
 }
@@ -404,6 +405,24 @@ void DegreesOfKnowledgeAnalysis::balance_analysis(AnalysisManager& analysis_mana
             this->balance_of_a_map_.insert({map_node, {cost.at(&map_node->root()), {while_symbols, if_else_symbols}}});
         }
     }
+}
+
+
+std::pair<symbolic::Expression, DegreesOfKnowledgeClassification> DegreesOfKnowledgeAnalysis::
+    number_of_maps(const structured_control_flow::Map& node) const {
+    if (number_of_maps_.find(&node) == number_of_maps_.end()) {
+        throw std::runtime_error("Map node not found in DegreesOfKnowledgeAnalysis.");
+    }
+
+    auto& bounds = number_of_maps_.at(&node);
+
+    auto atoms = symbolic::atoms(bounds.second);
+
+    // TODO: Check if the map node is dynamic
+    if (true) {
+    }
+
+    return {bounds.second, DegreesOfKnowledgeClassification::Unbound};
 }
 
 } // namespace analysis
