@@ -6,7 +6,7 @@ namespace sdfg {
 namespace math {
 namespace blas {
 
-enum class BLAS_Precision {
+enum BLAS_Precision {
     h,
     s,
     d,
@@ -14,15 +14,15 @@ enum class BLAS_Precision {
     z,
 };
 
-enum class BLAS_Transpose {
-    No,
-    Trans,
-    ConjTrans,
+enum BLAS_Transpose {
+    No = 111,
+    Trans = 112,
+    ConjTrans = 113,
 };
 
-enum class BLAS_Layout {
-    RowMajor,
-    ColMajor,
+enum BLAS_Layout {
+    RowMajor = 101,
+    ColMajor = 102,
 };
 
 inline data_flow::ImplementationType ImplementationType_BLAS{"BLAS"};
