@@ -14,7 +14,8 @@ void Recorder::replay(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
     const nlohmann::json& transformation_data,
-    bool skip_if_not_applicable
+    bool skip_if_not_applicable,
+    size_t loopnest_index
 ) {
     if (!transformation_data.is_array()) {
         throw std::runtime_error("Transformation data must be an array.");
