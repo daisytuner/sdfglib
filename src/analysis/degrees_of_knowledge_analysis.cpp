@@ -266,7 +266,7 @@ std::unordered_set<User*> dynamic_writes(
             } else if (auto access = dynamic_cast<data_flow::AccessNode*>(element)) {
                 auto dependent_writes =
                     get_dependent_writes(analysis_manager, users, data_dependency_analysis, *access);
-                if (helpers::sets_subset(writes, dependent_writes)) {
+                if (!helpers::sets_subset(writes, dependent_writes)) {
                     writes.insert(dependent_writes.begin(), dependent_writes.end());
                     updated = true;
                 }
@@ -281,7 +281,7 @@ std::unordered_set<User*> dynamic_writes(
                     auto dependent_writes =
                         get_dependent_writes(analysis_manager, users, data_dependency_analysis, memlet->dst());
 
-                    if (helpers::sets_subset(writes, dependent_writes)) {
+                    if (!helpers::sets_subset(writes, dependent_writes)) {
                         writes.insert(dependent_writes.begin(), dependent_writes.end());
                         updated = true;
                     }
@@ -289,7 +289,7 @@ std::unordered_set<User*> dynamic_writes(
             } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(element)) {
                 auto dependent_writes =
                     get_dependent_writes(analysis_manager, users, data_dependency_analysis, *access);
-                if (helpers::sets_subset(writes, dependent_writes)) {
+                if (!helpers::sets_subset(writes, dependent_writes)) {
                     writes.insert(dependent_writes.begin(), dependent_writes.end());
                     updated = true;
                 }
@@ -309,7 +309,7 @@ void DegreesOfKnowledgeAnalysis::balance_analysis(AnalysisManager& analysis_mana
     for (auto& loop : loop_analysis.loops()) {
         if (auto* map_node = dynamic_cast<structured_control_flow::Map*>(loop)) {
             auto writes = dynamic_writes(analysis_manager, users, data_dependency_analysis, map_node);
-
+            std::cout << "Dynamic writes for map " << map_node->element_id() << ": " << writes.size() << std::endl;
             std::unordered_set<User*> reads;
             for (auto write : writes) {
                 auto read_users = data_dependency_analysis.defines(*write);
@@ -346,6 +346,7 @@ void DegreesOfKnowledgeAnalysis::balance_analysis(AnalysisManager& analysis_mana
                     }
                 }
             }
+            std::cout << "Nodes in map " << map_node->element_id() << ": " << nodes.size() << std::endl;
 
             std::unordered_map<structured_control_flow::ControlFlowNode*, symbolic::Expression> cost;
 
