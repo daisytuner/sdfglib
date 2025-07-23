@@ -168,11 +168,16 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     const DebugInfo& dbg_Y = oedge_Y->dst().debug_info();
     const DebugInfo dbg_B = (iedge_B != nullptr) ? iedge_B->src().debug_info() : DebugInfo();
 
+    // Find names of input and output containers
+    std::string X_name = static_cast<const data_flow::AccessNode&>(iedge_X->src()).data();
+    std::string W_name = static_cast<const data_flow::AccessNode&>(iedge_W->src()).data();
+    std::string Y_name = static_cast<const data_flow::AccessNode&>(oedge_Y->dst()).data();
+
     // Create new access nodes inside the innermost block.
-    auto& X_acc = builder.add_access(code_block, "X", dbg_X);
-    auto& W_acc = builder.add_access(code_block, "W", dbg_W);
-    auto& Y_acc_in = builder.add_access(code_block, "Y", dbg_Y);
-    auto& Y_acc_out = builder.add_access(code_block, "Y", dbg_Y);
+    auto& X_acc = builder.add_access(code_block, X_name, dbg_X);
+    auto& W_acc = builder.add_access(code_block, W_name, dbg_W);
+    auto& Y_acc_in = builder.add_access(code_block, Y_name, dbg_Y);
+    auto& Y_acc_out = builder.add_access(code_block, Y_name, dbg_Y);
     // Bias handled after reduction loops; no need to access B inside the reduction tasklet.
 
     /********************
@@ -277,10 +282,11 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     if (has_bias_) {
         // Insert after the reduction loops (i.e., right after they finish).
         // We add a single tasklet in the parent scope (last_map root).
+        std::string B_name = static_cast<const data_flow::AccessNode&>(iedge_B->src()).data();
         auto& bias_block = builder.add_block(new_sequence, {}, block.debug_info());
-        auto& B_acc_local = builder.add_access(bias_block, "B", dbg_B);
-        auto& Y_acc2_in = builder.add_access(bias_block, "Y", dbg_Y);
-        auto& Y_acc2_out = builder.add_access(bias_block, "Y", dbg_Y);
+        auto& B_acc_local = builder.add_access(bias_block, B_name, dbg_B);
+        auto& Y_acc2_in = builder.add_access(bias_block, Y_name, dbg_Y);
+        auto& Y_acc2_out = builder.add_access(bias_block, Y_name, dbg_Y);
 
         auto& bias_tasklet = builder.add_tasklet(
             bias_block,
