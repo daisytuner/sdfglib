@@ -79,6 +79,11 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         }
     }
 
+    // Find names of input and output containers
+    std::string X_name = static_cast<const data_flow::AccessNode&>(iedge_X->src()).data();
+    std::string W_name = static_cast<const data_flow::AccessNode&>(iedge_W->src()).data();
+    std::string Y_name = static_cast<const data_flow::AccessNode&>(oedge_Y->dst()).data();
+
     data_flow::Subset dims_X = iedge_X->end_subset();
     data_flow::Subset dims_W = iedge_W->end_subset();
     data_flow::Subset dims_B;
@@ -158,8 +163,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& code_block = builder.add_block(*last_scope, {}, block.debug_info());
 
     // Determine scalar element type from output container.
-    const auto& output_container = this->outputs_.at(0);
-    const auto& output_type = sdfg.type(output_container);
+    const auto& output_type = sdfg.type(Y_name);
     types::Scalar scalar_type(output_type.primitive_type());
 
     // Reuse debug infos from original access nodes (if available).
@@ -167,11 +171,6 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     const DebugInfo& dbg_W = iedge_W->src().debug_info();
     const DebugInfo& dbg_Y = oedge_Y->dst().debug_info();
     const DebugInfo dbg_B = (iedge_B != nullptr) ? iedge_B->src().debug_info() : DebugInfo();
-
-    // Find names of input and output containers
-    std::string X_name = static_cast<const data_flow::AccessNode&>(iedge_X->src()).data();
-    std::string W_name = static_cast<const data_flow::AccessNode&>(iedge_W->src()).data();
-    std::string Y_name = static_cast<const data_flow::AccessNode&>(oedge_Y->dst()).data();
 
     // Create new access nodes inside the innermost block.
     auto& X_acc = builder.add_access(code_block, X_name, dbg_X);
@@ -283,7 +282,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         // Insert after the reduction loops (i.e., right after they finish).
         // We add a single tasklet in the parent scope (last_map root).
         std::string B_name = static_cast<const data_flow::AccessNode&>(iedge_B->src()).data();
-        auto& bias_block = builder.add_block(new_sequence, {}, block.debug_info());
+        auto& bias_block = builder.add_block(last_map->root(), {}, block.debug_info());
         auto& B_acc_local = builder.add_access(bias_block, B_name, dbg_B);
         auto& Y_acc2_in = builder.add_access(bias_block, Y_name, dbg_Y);
         auto& Y_acc2_out = builder.add_access(bias_block, Y_name, dbg_Y);
