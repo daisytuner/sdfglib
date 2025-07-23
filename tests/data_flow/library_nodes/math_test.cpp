@@ -4,7 +4,7 @@
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/library_nodes/math/math.h"
 #include "sdfg/data_flow/library_nodes/math/ml/conv.h"
-#include "sdfg/visualizer/dot_visualizer.h"
+#include "sdfg/data_flow/library_nodes/math/ml/maxpool.h"
 
 using namespace sdfg;
 
@@ -212,4 +212,58 @@ TEST(MathTest, Conv_2D_Strides) {
 
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(conv_node.expand(builder, analysis_manager));
+}
+
+TEST(MathTest, MaxPool_2D) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    auto& sdfg = builder.subject();
+
+    // Define scalar and tensor descriptors
+    types::Scalar element(types::PrimitiveType::Double);
+
+    // Input tensor X: [N=1][C=1][H=4][W=4]
+    types::Array w_dim(element, symbolic::integer(4)); // W
+    types::Array h_dim(w_dim, symbolic::integer(4)); // H
+    types::Array c_dim(h_dim, symbolic::integer(1)); // C
+    types::Array x_desc(c_dim, symbolic::integer(1)); // N
+
+    // Output tensor Y after 2x2 maxpool with stride 2 -> [N=1][C=1][OH=2][OW=2]
+    types::Array ow_dim(element, symbolic::integer(2)); // OW
+    types::Array oh_dim(ow_dim, symbolic::integer(2)); // OH
+    types::Array c_out_dim(oh_dim, symbolic::integer(1)); // C
+    types::Array y_desc(c_out_dim, symbolic::integer(1)); // N
+
+    // Add containers
+    builder.add_container("X", x_desc);
+    builder.add_container("Y", y_desc);
+
+    // Add block and access nodes
+    auto& block = builder.add_block(sdfg.root());
+    auto& X_acc = builder.add_access(block, "X");
+    auto& Y_acc = builder.add_access(block, "Y");
+
+    // MaxPool parameters
+    std::vector<size_t> kernel_shape = {2, 2};
+    std::vector<size_t> pads = {0, 0, 0, 0};
+    std::vector<size_t> strides = {2, 2};
+
+    auto& pool_node =
+        static_cast<math::ml::MaxPoolNode&>(builder.add_library_node<
+                                            math::ml::MaxPoolNode>(block, DebugInfo(), kernel_shape, pads, strides));
+
+    // Subsets
+    data_flow::Subset x_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
+    data_flow::Subset x_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(3), symbolic::integer(3)};
+
+    data_flow::Subset y_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
+    data_flow::Subset y_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(1), symbolic::integer(1)};
+
+    // Memlets
+    builder.add_computational_memlet(block, X_acc, pool_node, "X", x_begin, x_end, block.debug_info());
+    builder.add_computational_memlet(block, pool_node, "Y", Y_acc, y_begin, y_end, block.debug_info());
+
+    EXPECT_EQ(block.dataflow().nodes().size(), 3);
+
+    analysis::AnalysisManager analysis_manager(sdfg);
+    EXPECT_TRUE(pool_node.expand(builder, analysis_manager));
 }

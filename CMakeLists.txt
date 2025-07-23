@@ -95,6 +95,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/math_node.cpp
     src/data_flow/library_nodes/math/blas/gemm.cpp
     src/data_flow/library_nodes/math/ml/conv.cpp
+    src/data_flow/library_nodes/math/ml/maxpool.cpp
     src/data_flow/library_nodes/math/ml/relu.cpp
     src/deepcopy/structured_sdfg_deep_copy.cpp
     src/graph/graph.cpp
