@@ -20,15 +20,15 @@ TEST(ReferencePropagationTest, ReferenceMemlet) {
     auto& block1 = builder.add_block(root);
     auto& a_input = builder.add_access(block1, "A");
     auto& a_output = builder.add_access(block1, "a");
-    builder.add_memlet(block1, a_input, "void", a_output, "ref", {symbolic::integer(0)});
+    builder.add_reference_memlet(block1, a_input, a_output, {symbolic::integer(0)});
 
     auto& block2 = builder.add_block(root);
     auto& input_node = builder.add_access(block2, "a");
     auto& output_node = builder.add_access(block2, "a");
     auto& tasklet =
         builder.add_tasklet(block2, data_flow::TaskletCode::add, {"_out", desc}, {{"_in0", desc}, {"1", desc}});
-    builder.add_memlet(block2, input_node, "void", tasklet, "_in0", {symbolic::integer(0)});
-    builder.add_memlet(block2, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_computational_memlet(block2, input_node, tasklet, "_in0", {symbolic::integer(0)});
+    builder.add_computational_memlet(block2, tasklet, "_out", output_node, {symbolic::integer(0)});
 
     auto sdfg = builder.move();
 
@@ -57,12 +57,12 @@ TEST(ReferencePropagationTest, DereferenceMemlet_Load) {
     auto& block1 = builder.add_block(root);
     auto& a_input = builder.add_access(block1, "A");
     auto& a_output = builder.add_access(block1, "a");
-    builder.add_memlet(block1, a_input, "void", a_output, "deref", {symbolic::integer(0)});
+    builder.add_dereference_memlet(block1, a_input, a_output, true);
 
     auto& block2 = builder.add_block(root);
     auto& output_node = builder.add_access(block2, "a");
     auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign, {"_out", desc}, {{"0", desc}});
-    builder.add_memlet(block2, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_computational_memlet(block2, tasklet, "_out", output_node, {symbolic::integer(0)});
 
     auto sdfg = builder.move();
 
@@ -92,12 +92,12 @@ TEST(ReferencePropagationTest, DereferenceMemlet_Store) {
     auto& block1 = builder.add_block(root);
     auto& output_node = builder.add_access(block1, "a");
     auto& tasklet = builder.add_tasklet(block1, data_flow::TaskletCode::assign, {"_out", desc}, {{"0", desc}});
-    builder.add_memlet(block1, tasklet, "_out", output_node, "void", {symbolic::integer(0)});
+    builder.add_computational_memlet(block1, tasklet, "_out", output_node, {symbolic::integer(0)});
 
     auto& block2 = builder.add_block(root);
     auto& a_input = builder.add_access(block2, "a");
     auto& a_output = builder.add_access(block2, "A");
-    builder.add_memlet(block2, a_input, "deref", a_output, "void", {symbolic::integer(0)});
+    builder.add_dereference_memlet(block2, a_input, a_output, false);
 
     auto sdfg = builder.move();
 

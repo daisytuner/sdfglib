@@ -3,8 +3,8 @@
 #include <gtest/gtest.h>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/codegen/instrumentation/instrumentation_strategy.h"
 #include "sdfg/codegen/instrumentation/capture_var_plan.h"
+#include "sdfg/codegen/instrumentation/instrumentation_strategy.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/types/pointer.h"
 #include "sdfg/types/type.h"
@@ -28,10 +28,12 @@ TEST(CCodeGeneratorTest, Dispatch_Includes) {
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.includes().str();
-    EXPECT_EQ(result,
-              "#include <math.h>\n#include <stdbool.h>\n#include <stdlib.h>\n#define "
-              "__daisy_min(a,b) ((a)<(b)?(a):(b))\n#define __daisy_max(a,b) "
-              "((a)>(b)?(a):(b))\n#define __daisy_fma(a,b,c) a * b + c\n");
+    EXPECT_EQ(
+        result,
+        "#include <math.h>\n#include <cblas.h>\n#include <stdbool.h>\n#include <stdlib.h>\n#define "
+        "__daisy_min(a,b) ((a)<(b)?(a):(b))\n#define __daisy_max(a,b) "
+        "((a)>(b)?(a):(b))\n#define __daisy_fma(a,b,c) a * b + c\n"
+    );
 }
 
 TEST(CCodeGeneratorTest, DispatchStructures_Basic) {
@@ -128,7 +130,14 @@ TEST(CCodeGeneratorTest, EmitArgInCaptures) {
 
     std::vector<codegen::CaptureVarPlan> plan = {
         {true, false, codegen::CaptureVarType::CapRaw, 0, false, types::PrimitiveType::Int64},
-        {true, false, codegen::CaptureVarType::Cap2D, 1, false, types::PrimitiveType::Float, symbolic::integer(190), symbolic::integer(210)},
+        {true,
+         false,
+         codegen::CaptureVarType::Cap2D,
+         1,
+         false,
+         types::PrimitiveType::Float,
+         symbolic::integer(190),
+         symbolic::integer(210)},
         {true, false, codegen::CaptureVarType::CapRaw, 2, true, types::PrimitiveType::Int64}
     };
 
@@ -142,7 +151,8 @@ if (__daisy_cap_en) {
 	__daisy_capture_2d(__capture_ctx, 1, arg1, sizeof(float), 14, 190, 210, false);
 	__daisy_capture_raw(__capture_ctx, 2, &ext0, sizeof(ext0), 5, false);
 }
-)");
+)"
+    );
 }
 
 TEST(CCodeGeneratorTest, EmitArgOutCaptures) {
@@ -161,7 +171,14 @@ TEST(CCodeGeneratorTest, EmitArgOutCaptures) {
 
     std::vector<codegen::CaptureVarPlan> plan = {
         {true, false, codegen::CaptureVarType::CapRaw, 0, false, types::PrimitiveType::Int64},
-        {true, true, codegen::CaptureVarType::Cap2D, 1, false, types::PrimitiveType::Float, symbolic::integer(190), symbolic::integer(210)},
+        {true,
+         true,
+         codegen::CaptureVarType::Cap2D,
+         1,
+         false,
+         types::PrimitiveType::Float,
+         symbolic::integer(190),
+         symbolic::integer(210)},
         {true, false, codegen::CaptureVarType::CapRaw, 2, true, types::PrimitiveType::Int64},
         {false, true, codegen::CaptureVarType::Cap1D, 3, true, types::PrimitiveType::Int64, symbolic::integer(1)},
     };
@@ -175,11 +192,13 @@ TEST(CCodeGeneratorTest, EmitArgOutCaptures) {
 	__daisy_capture_1d(__capture_ctx, 3, ext1, sizeof(long long), 5, 1, true);
 	__daisy_capture_end(__capture_ctx);
 }
-)");
+)"
+    );
 }
 
 /**
- * This actually tests only code in CodeGenerator. But its abstract, so just reuse the generator, without actually using any of its code.
+ * This actually tests only code in CodeGenerator. But its abstract, so just reuse the generator, without actually using
+ * any of its code.
  */
 TEST(CCodeGeneratorTest, CreateCapturePlans) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
@@ -194,15 +213,21 @@ TEST(CCodeGeneratorTest, CreateCapturePlans) {
     auto sym_j = symbolic::symbol("j");
 
     auto& root = builder.subject().root();
-    auto& outer_for = builder.add_for(root, sym_i, symbolic::Lt(sym_i, symbolic::integer(190)), symbolic::zero(), symbolic::add(sym_i, symbolic::one()));
-    auto& inner_for = builder.add_for(outer_for.root(), sym_j, symbolic::Lt(sym_j, symbolic::integer(210)), symbolic::zero(), symbolic::add(sym_j, symbolic::one()));
+    auto& outer_for = builder.add_for(
+        root, sym_i, symbolic::Lt(sym_i, symbolic::integer(190)), symbolic::zero(), symbolic::add(sym_i, symbolic::one())
+    );
+    auto& inner_for = builder.add_for(
+        outer_for.root(),
+        sym_j,
+        symbolic::Lt(sym_j, symbolic::integer(210)),
+        symbolic::zero(),
+        symbolic::add(sym_j, symbolic::one())
+    );
 
     auto& block = builder.add_block(inner_for.root());
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"__out", valueType},
-        {
-            {"__in0", valueType},
-            {"1", valueType}
-        });
+    auto& tasklet = builder.add_tasklet(
+        block, data_flow::TaskletCode::add, {"__out", valueType}, {{"__in0", valueType}, {"1", valueType}}
+    );
     auto& readArr = builder.add_access(block, "arg1");
     auto& readPrev = builder.add_memlet(block, readArr, "void", tasklet, "__in0", {sym_i, sym_j});
     auto& writeArr = builder.add_access(block, "arg1");
@@ -230,8 +255,11 @@ TEST(CCodeGeneratorTest, CreateCapturePlans) {
     EXPECT_EQ((*capturePlan)[1].arg_idx, 1);
     EXPECT_EQ((*capturePlan)[1].is_external, false);
     EXPECT_EQ((*capturePlan)[1].inner_type, types::PrimitiveType::Float);
-    EXPECT_TRUE(symbolic::eq((*capturePlan)[1].dim1, symbolic::integer(190))) << "dim1: " << (*capturePlan)[1].dim1->__str__() << std::endl;;
-    EXPECT_TRUE(symbolic::eq((*capturePlan)[1].dim2, symbolic::integer(210))) << "dim2: " << (*capturePlan)[1].dim2->__str__() << std::endl;
+    EXPECT_TRUE(symbolic::eq((*capturePlan)[1].dim1, symbolic::integer(190)))
+        << "dim1: " << (*capturePlan)[1].dim1->__str__() << std::endl;
+    ;
+    EXPECT_TRUE(symbolic::eq((*capturePlan)[1].dim2, symbolic::integer(210)))
+        << "dim2: " << (*capturePlan)[1].dim2->__str__() << std::endl;
 
     EXPECT_EQ((*capturePlan)[2].capture_input, true);
     EXPECT_EQ((*capturePlan)[2].capture_output, false);

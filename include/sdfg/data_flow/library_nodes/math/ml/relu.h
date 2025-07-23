@@ -39,18 +39,6 @@ public:
     ) override;
 };
 
-class ReLUNodeDispatcher : public codegen::LibraryNodeDispatcher {
-public:
-    ReLUNodeDispatcher(
-        codegen::LanguageExtension& language_extension,
-        const Function& function,
-        const data_flow::DataFlowGraph& data_flow_graph,
-        const ReLUNode& node
-    );
-
-    void dispatch(codegen::PrettyPrinter& stream) override;
-};
-
 } // namespace ml
 } // namespace math
 } // namespace sdfg

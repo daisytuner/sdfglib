@@ -310,7 +310,7 @@ bool Memlet::has_range() const {
             return true;
         }
     }
-    return true;
+    return false;
 };
 
 std::unique_ptr<Memlet> Memlet::clone(

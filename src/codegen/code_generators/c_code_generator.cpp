@@ -34,6 +34,7 @@ void CCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const {
 
 void CCodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#include <math.h>" << std::endl;
+    this->includes_stream_ << "#include <cblas.h>" << std::endl;
     this->includes_stream_ << "#include <stdbool.h>" << std::endl;
     this->includes_stream_ << "#include <stdlib.h>" << std::endl;
     if (this->instrumentation_strategy_ != InstrumentationStrategy::NONE)
