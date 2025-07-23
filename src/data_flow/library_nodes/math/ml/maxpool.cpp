@@ -53,6 +53,9 @@ bool MaxPoolNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Anal
     }
     if (!iedge_X || !oedge_Y) return false;
 
+    std::string X_name = static_cast<const data_flow::AccessNode &>(iedge_X->src()).data();
+    std::string Y_name = static_cast<const data_flow::AccessNode &>(oedge_Y->dst()).data();
+
     // Create new sequence before
     auto &new_sequence = builder.add_sequence_before(parent, block, block.debug_info()).first;
     structured_control_flow::Sequence *last_scope = &new_sequence;
@@ -117,9 +120,9 @@ bool MaxPoolNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Anal
 
     // Access nodes
     const DebugInfo dbg = block.debug_info();
-    auto &X_acc = builder.add_access(code_block, "X", dbg);
-    auto &Y_acc_in = builder.add_access(code_block, "Y", dbg);
-    auto &Y_acc_out = builder.add_access(code_block, "Y", dbg);
+    auto &X_acc = builder.add_access(code_block, X_name, dbg);
+    auto &Y_acc_in = builder.add_access(code_block, Y_name, dbg);
+    auto &Y_acc_out = builder.add_access(code_block, Y_name, dbg);
 
     // Scalar type
     const auto &y_type = builder.subject().type("Y");
