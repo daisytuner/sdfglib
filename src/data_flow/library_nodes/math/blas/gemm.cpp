@@ -230,7 +230,80 @@ GEMMNodeDispatcher_BLAS::GEMMNodeDispatcher_BLAS(
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
 void GEMMNodeDispatcher_BLAS::dispatch(codegen::PrettyPrinter& stream) {
-    stream << "// IMPLEMENT DGEMM HERE" << std::endl;
+    stream << "{" << std::endl;
+    stream.setIndent(stream.indent() + 4);
+
+    auto& gemm_node = static_cast<const GEMMNode&>(this->node_);
+
+    sdfg::types::Scalar base_type(types::PrimitiveType::Void);
+    switch (gemm_node.precision()) {
+        case BLAS_Precision::h:
+            base_type = types::Scalar(types::PrimitiveType::Half);
+            break;
+        case BLAS_Precision::s:
+            base_type = types::Scalar(types::PrimitiveType::Float);
+            break;
+        case BLAS_Precision::d:
+            base_type = types::Scalar(types::PrimitiveType::Double);
+            break;
+        default:
+            throw std::runtime_error("Invalid BLAS_Precision value");
+    }
+
+    auto& graph = this->node_.get_parent();
+    for (auto& iedge : graph.in_edges(this->node_)) {
+        auto& access_node = static_cast<const data_flow::AccessNode&>(iedge.src());
+        std::string name = access_node.data();
+        auto& type = this->function_.type(name);
+
+        stream << this->language_extension_.declaration(iedge.dst_conn(), type);
+        stream << " = " << name << ";" << std::endl;
+    }
+
+    if (std::find(gemm_node.inputs().begin(), gemm_node.inputs().end(), "alpha") == gemm_node.inputs().end()) {
+        stream << this->language_extension_.declaration("alpha", base_type);
+        stream << " = " << gemm_node.alpha() << ";" << std::endl;
+    }
+    if (std::find(gemm_node.inputs().begin(), gemm_node.inputs().end(), "beta") == gemm_node.inputs().end()) {
+        stream << this->language_extension_.declaration("beta", base_type);
+        stream << " = " << gemm_node.beta() << ";" << std::endl;
+    }
+
+    stream << "cblas_" << BLAS_Precision_to_string(gemm_node.precision()) << "gemm(";
+    stream.setIndent(stream.indent() + 4);
+    stream << BLAS_Layout_to_string(gemm_node.layout());
+    stream << ", ";
+    stream << BLAS_Transpose_to_string(gemm_node.trans_a());
+    stream << ", ";
+    stream << BLAS_Transpose_to_string(gemm_node.trans_b());
+    stream << ", ";
+    stream << this->language_extension_.expression(gemm_node.m());
+    stream << ", ";
+    stream << this->language_extension_.expression(gemm_node.n());
+    stream << ", ";
+    stream << this->language_extension_.expression(gemm_node.k());
+    stream << ", ";
+    stream << "alpha";
+    stream << ", ";
+    stream << "A";
+    stream << ", ";
+    stream << this->language_extension_.expression(gemm_node.lda());
+    stream << ", ";
+    stream << "B";
+    stream << ", ";
+    stream << this->language_extension_.expression(gemm_node.ldb());
+    stream << ", ";
+    stream << "beta";
+    stream << ", ";
+    stream << "C";
+    stream << ", ";
+    stream << this->language_extension_.expression(gemm_node.ldc());
+
+    stream.setIndent(stream.indent() - 4);
+    stream << ");" << std::endl;
+
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
 }
 
 GEMMNodeDispatcher_CUBLAS::GEMMNodeDispatcher_CUBLAS(
