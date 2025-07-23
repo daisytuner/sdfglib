@@ -17,7 +17,16 @@ ReLUNode::ReLUNode(
     const std::string& output,
     const std::string& input
 )
-    : MathNode(element_id, debug_info, vertex, parent, LibraryNodeType_ReLU, {output}, {input}) {}
+    : MathNode(
+          element_id,
+          debug_info,
+          vertex,
+          parent,
+          LibraryNodeType_ReLU,
+          {output},
+          {input},
+          data_flow::ImplementationType_NONE
+      ) {}
 
 void ReLUNode::validate(const Function& function) const {
     // TODO: Implement

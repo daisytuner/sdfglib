@@ -12,7 +12,9 @@ MetadataNode::MetadataNode(
     const std::vector<std::string>& inputs,
     std::unordered_map<std::string, std::string> metadata
 )
-    : LibraryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Metadata, outputs, inputs, false),
+    : LibraryNode(
+          element_id, debug_info, vertex, parent, LibraryNodeType_Metadata, outputs, inputs, false, ImplementationType_NONE
+      ),
       metadata_(metadata) {}
 
 void MetadataNode::validate(const Function& function) const {

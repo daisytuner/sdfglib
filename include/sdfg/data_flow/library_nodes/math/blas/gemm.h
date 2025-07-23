@@ -36,6 +36,7 @@ public:
         const DebugInfo& debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph& parent,
+        const data_flow::ImplementationType& implementation_type,
         const BLAS_Precision& precision,
         const BLAS_Layout& layout,
         const BLAS_Transpose& trans_a,

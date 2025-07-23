@@ -39,7 +39,8 @@ protected:
         const LibraryNodeCode& code,
         const std::vector<std::string>& outputs,
         const std::vector<std::string>& inputs,
-        const bool side_effect
+        const bool side_effect,
+        const ImplementationType& implementation_type
     );
 
 public:

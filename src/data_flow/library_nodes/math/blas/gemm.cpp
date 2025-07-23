@@ -14,6 +14,7 @@ GEMMNode::GEMMNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
+    const data_flow::ImplementationType& implementation_type,
     const BLAS_Precision& precision,
     const BLAS_Layout& layout,
     const BLAS_Transpose& trans_a,
@@ -27,7 +28,7 @@ GEMMNode::GEMMNode(
     const std::string& alpha,
     const std::string& beta
 )
-    : MathNode(element_id, debug_info, vertex, parent, LibraryNodeType_GEMM, {"C"}, {"A", "B", "C"}),
+    : MathNode(element_id, debug_info, vertex, parent, LibraryNodeType_GEMM, {"C"}, {"A", "B", "C"}, implementation_type),
       precision_(precision), layout_(layout), trans_a_(trans_a), trans_b_(trans_b), m_(m), n_(n), k_(k), lda_(lda),
       ldb_(ldb), ldc_(ldc), alpha_(alpha), beta_(beta) {
     if (alpha.empty()) {
@@ -148,6 +149,7 @@ std::unique_ptr<data_flow::DataFlowNode> GEMMNode::
         this->debug_info(),
         vertex,
         parent,
+        this->implementation_type_,
         this->precision_,
         this->layout_,
         this->trans_a_,
@@ -161,7 +163,6 @@ std::unique_ptr<data_flow::DataFlowNode> GEMMNode::
         this->alpha_,
         this->beta_
     ));
-    node_clone->implementation_type() = this->implementation_type();
     return std::move(node_clone);
 }
 
@@ -217,8 +218,11 @@ data_flow::LibraryNode& GEMMNodeSerializer::deserialize(
     auto alpha = j.at("alpha").get<std::string>();
     auto beta = j.at("beta").get<std::string>();
 
-    return builder.add_library_node<
-        GEMMNode>(parent, debug_info, precision, layout, trans_a, trans_b, m, n, k, lda, ldb, ldc, alpha, beta);
+    auto implementation_type = j.at("implementation_type").get<std::string>();
+
+    return builder.add_library_node<GEMMNode>(
+        parent, debug_info, implementation_type, precision, layout, trans_a, trans_b, m, n, k, lda, ldb, ldc, alpha, beta
+    );
 }
 
 GEMMNodeDispatcher_BLAS::GEMMNodeDispatcher_BLAS(
