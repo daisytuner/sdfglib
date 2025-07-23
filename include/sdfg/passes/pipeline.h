@@ -47,6 +47,8 @@ public:
     static Pipeline controlflow_simplification();
 
     static Pipeline data_parallelism();
+
+    static Pipeline expansion();
 };
 
 } // namespace passes

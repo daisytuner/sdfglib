@@ -1,5 +1,7 @@
 #include "sdfg/passes/pipeline.h"
 
+#include "sdfg/passes/schedules/expansion_pass.h"
+
 namespace sdfg {
 namespace passes {
 
@@ -85,6 +87,14 @@ Pipeline Pipeline::data_parallelism() {
     p.register_pass<For2MapPass>();
     p.register_pass<SymbolPropagation>();
     p.register_pass<DeadDataElimination>();
+
+    return p;
+};
+
+Pipeline Pipeline::expansion() {
+    Pipeline p("Expansion");
+
+    p.register_pass<ExpansionPass>();
 
     return p;
 };
