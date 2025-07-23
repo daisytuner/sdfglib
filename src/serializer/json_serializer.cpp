@@ -1123,21 +1123,29 @@ LibraryNodeSerializerFn LibraryNodeSerializerRegistry::get_library_node_serializ
 size_t LibraryNodeSerializerRegistry::size() const { return factory_map_.size(); }
 
 void register_default_serializers() {
+    // Metadata
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(data_flow::LibraryNodeType_Metadata.value(), []() {
             return std::make_unique<data_flow::MetadataNodeSerializer>();
         });
+
+    // Barrier
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(data_flow::LibraryNodeType_BarrierLocal.value(), []() {
             return std::make_unique<data_flow::BarrierLocalNodeSerializer>();
         });
 
-    /* Math */
+    // ML
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_ReLU.value(), []() {
             return std::make_unique<math::ml::ReLUNodeSerializer>();
         });
-    // Add more serializers as needed
+
+    // BLAS
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::blas::LibraryNodeType_GEMM.value(), []() {
+            return std::make_unique<math::blas::GEMMNodeSerializer>();
+        });
 }
 
 } // namespace serializer

@@ -143,7 +143,7 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 
 std::unique_ptr<data_flow::DataFlowNode> GEMMNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
-    return std::unique_ptr<data_flow::DataFlowNode>(new GEMMNode(
+    auto node_clone = std::unique_ptr<GEMMNode>(new GEMMNode(
         element_id,
         this->debug_info(),
         vertex,
@@ -161,6 +161,8 @@ std::unique_ptr<data_flow::DataFlowNode> GEMMNode::
         this->alpha_,
         this->beta_
     ));
+    node_clone->implementation_type() = this->implementation_type();
+    return std::move(node_clone);
 }
 
 nlohmann::json GEMMNodeSerializer::serialize(const data_flow::LibraryNode& library_node) {
@@ -228,7 +230,7 @@ GEMMNodeDispatcher_BLAS::GEMMNodeDispatcher_BLAS(
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
 void GEMMNodeDispatcher_BLAS::dispatch(codegen::PrettyPrinter& stream) {
-    throw std::runtime_error("GEMMNodeDispatcher_BLAS not implemented");
+    stream << "// IMPLEMENT DGEMM HERE" << std::endl;
 }
 
 GEMMNodeDispatcher_CUBLAS::GEMMNodeDispatcher_CUBLAS(

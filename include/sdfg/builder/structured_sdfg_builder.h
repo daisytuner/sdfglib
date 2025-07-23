@@ -355,7 +355,11 @@ public:
         auto vertex = boost::add_vertex(dataflow.graph_);
         auto node_clone = node.clone(this->new_element_id(), vertex, dataflow);
         auto res = dataflow.nodes_.insert({vertex, std::move(node_clone)});
-        return static_cast<data_flow::LibraryNode&>(*(res.first->second));
+
+        auto& lib_node = static_cast<data_flow::LibraryNode&>(*(res.first->second));
+        lib_node.implementation_type() = node.implementation_type();
+
+        return lib_node;
     };
 
     void remove_memlet(structured_control_flow::Block& block, const data_flow::Memlet& edge);
