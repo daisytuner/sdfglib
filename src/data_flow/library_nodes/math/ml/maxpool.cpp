@@ -125,7 +125,7 @@ bool MaxPoolNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Anal
     auto &Y_acc_out = builder.add_access(code_block, Y_name, dbg);
 
     // Scalar type
-    const auto &y_type = builder.subject().type("Y");
+    const auto &y_type = builder.subject().type(Y_name);
     types::Scalar scalar_type(y_type.primitive_type());
 
     // Build X subset using output coords * stride - pad + kernel_idx
