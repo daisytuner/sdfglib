@@ -1137,6 +1137,14 @@ void register_default_serializers() {
 
     // ML
     LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::ml::LibraryNodeType_Conv.value(), []() {
+            return std::make_unique<math::ml::ConvNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::ml::LibraryNodeType_MaxPool.value(), []() {
+            return std::make_unique<math::ml::MaxPoolNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_ReLU.value(), []() {
             return std::make_unique<math::ml::ReLUNodeSerializer>();
         });

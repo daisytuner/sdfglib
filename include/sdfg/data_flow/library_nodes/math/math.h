@@ -7,4 +7,6 @@
 #include "sdfg/data_flow/library_nodes/math/blas/gemm.h"
 
 // ML
+#include "sdfg/data_flow/library_nodes/math/ml/conv.h"
+#include "sdfg/data_flow/library_nodes/math/ml/maxpool.h"
 #include "sdfg/data_flow/library_nodes/math/ml/relu.h"
