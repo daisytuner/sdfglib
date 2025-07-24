@@ -32,9 +32,9 @@ constexpr std::string_view BLAS_Precision_to_string(BLAS_Precision precision) {
 }
 
 enum BLAS_Transpose {
-    No = 'N',
-    Trans = 'T',
-    ConjTrans = 'C',
+    No = 111,
+    Trans = 112,
+    ConjTrans = 113,
 };
 
 constexpr std::string_view BLAS_Transpose_to_string(BLAS_Transpose transpose) {
@@ -45,6 +45,19 @@ constexpr std::string_view BLAS_Transpose_to_string(BLAS_Transpose transpose) {
             return "CblasTrans";
         case BLAS_Transpose::ConjTrans:
             return "CblasConjTrans";
+        default:
+            throw std::runtime_error("Invalid BLAS_Transpose value");
+    }
+}
+
+inline constexpr char BLAS_Transpose_to_char(BLAS_Transpose transpose) {
+    switch (transpose) {
+        case BLAS_Transpose::No:
+            return 'N';
+        case BLAS_Transpose::Trans:
+            return 'T';
+        case BLAS_Transpose::ConjTrans:
+            return 'C';
         default:
             throw std::runtime_error("Invalid BLAS_Transpose value");
     }
@@ -70,6 +83,8 @@ inline constexpr std::string_view BLAS_Layout_to_short_string(BLAS_Layout layout
             return "RowM";
         case BLAS_Layout::ColMajor:
             return "ColM";
+        default:
+            throw std::runtime_error("Invalid BLAS_Layout value");
     }
 }
 

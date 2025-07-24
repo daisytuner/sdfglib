@@ -173,7 +173,8 @@ void DotVisualizer::visualizeSequence(const StructuredSDFG& sdfg, const structur
         std::pair<const structured_control_flow::ControlFlowNode&, const structured_control_flow::Transition&> child =
             sequence.at(i);
         this->visualizeNode(sdfg, child.first);
-        if ((i > 0) && !last_comp_name_tmp.empty() && !this->last_comp_name_.empty()) {
+        if ((i > 0) && !last_comp_name_tmp.empty() && !this->last_comp_name_.empty() &&
+            last_comp_name_tmp != this->last_comp_name_) {
             this->stream_ << last_comp_name_tmp << " -> " << this->last_comp_name_ << " [";
             if (!last_comp_name_cluster_tmp.empty()) this->stream_ << "ltail=\"" << last_comp_name_cluster_tmp << "\",";
             if (!this->last_comp_name_cluster_.empty())
@@ -182,9 +183,7 @@ void DotVisualizer::visualizeSequence(const StructuredSDFG& sdfg, const structur
                           << ";" << std::endl;
         }
         last_comp_name_tmp = this->last_comp_name_;
-        this->last_comp_name_.clear();
         last_comp_name_cluster_tmp = this->last_comp_name_cluster_;
-        this->last_comp_name_cluster_.clear();
     }
 }
 

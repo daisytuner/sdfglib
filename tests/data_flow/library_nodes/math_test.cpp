@@ -103,8 +103,9 @@ TEST(MathTest, Gemm) {
 
     auto& input_a_node = builder.add_access(block, "arr_a");
     auto& input_b_node = builder.add_access(block, "arr_b");
-    auto& dummy_input_node = builder.add_access(block, "output");
-    auto& output_node = builder.add_access(block, "output");
+    auto c_var_name = "output";
+    auto& dummy_input_node = builder.add_access(block, c_var_name);
+    auto& output_node = builder.add_access(block, c_var_name);
     auto& gemm_node = static_cast<math::blas::GEMMNode&>(builder.add_library_node<math::blas::GEMMNode>(
         block,
         DebugInfo(),
@@ -186,7 +187,7 @@ TEST(MathTest, Gemm) {
     EXPECT_EQ(block_init->dataflow().nodes().size(), 2);
     auto init_tasklet = *block_init->dataflow().tasklets().begin();
     EXPECT_EQ(init_tasklet->code(), data_flow::TaskletCode::assign);
-    EXPECT_EQ(init_tasklet->inputs().at(0).first, "0");
+    EXPECT_EQ(init_tasklet->inputs().at(0).first, "0.0");
     EXPECT_EQ(init_tasklet->output().first, "_out");
     EXPECT_EQ(init_tasklet->output().second.primitive_type(), types::PrimitiveType::Float);
 
@@ -219,7 +220,7 @@ TEST(MathTest, Gemm) {
             auto& final_edge = *block_flush->dataflow().out_edges(*tasklet).begin();
             auto* final_access = dynamic_cast<data_flow::AccessNode*>(&final_edge.dst());
             EXPECT_NE(final_access, nullptr);
-            EXPECT_EQ(final_access->data(), output_node.data());
+            EXPECT_EQ(final_access->data(), c_var_name);
         }
     }
 }
