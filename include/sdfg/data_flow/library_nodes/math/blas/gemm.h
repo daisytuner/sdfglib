@@ -27,9 +27,6 @@ private:
     symbolic::Expression ldb_;
     symbolic::Expression ldc_;
 
-    std::string alpha_;
-    std::string beta_;
-
 public:
     GEMMNode(
         size_t element_id,
@@ -71,16 +68,19 @@ public:
 
     symbolic::Expression ldc() const;
 
-    std::string alpha() const;
+    const std::string& alpha() const;
 
-    std::string beta() const;
+    const std::string& beta() const;
 
     void validate(const Function& function) const override;
+    types::PrimitiveType scalar_primitive() const;
 
     bool expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
 
     std::unique_ptr<data_flow::DataFlowNode>
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override;
+
+    std::string toStr() const override;
 };
 
 class GEMMNodeSerializer : public serializer::LibraryNodeSerializer {

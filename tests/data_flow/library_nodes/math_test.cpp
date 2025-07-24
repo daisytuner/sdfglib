@@ -6,6 +6,9 @@
 #include "sdfg/data_flow/library_nodes/math/ml/conv.h"
 #include "sdfg/data_flow/library_nodes/math/ml/maxpool.h"
 
+#include "sdfg/data_flow/library_nodes/math/blas/gemm.h"
+#include "sdfg/visualizer/dot_visualizer.h"
+
 using namespace sdfg;
 
 TEST(MathTest, ReLU) {
@@ -27,22 +30,20 @@ TEST(MathTest, ReLU) {
     auto& relu_node = static_cast<
         math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block, DebugInfo(), "output", "input"));
 
-    builder.add_memlet(
+    builder.add_computational_memlet(
         block,
         input_node,
-        "void",
         relu_node,
         "input",
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         block.debug_info()
     );
-    builder.add_memlet(
+    builder.add_computational_memlet(
         block,
         relu_node,
         "output",
         output_node,
-        "void",
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         block.debug_info()
@@ -76,6 +77,152 @@ TEST(MathTest, ReLU) {
     EXPECT_EQ(tasklet->inputs().at(1).first, "_in");
     EXPECT_EQ(tasklet->output().first, "_out");
     EXPECT_EQ(tasklet->output().second.primitive_type(), types::PrimitiveType::Double);
+}
+
+TEST(MathTest, Gemm) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+
+    int dim_i = 10;
+    int dim_j = 20;
+    int dim_k = 30;
+
+    // res: ixj, A: ixk, B: kxj
+
+    types::Scalar desc(types::PrimitiveType::Float);
+    types::Array arr_a_type(desc, symbolic::mul(symbolic::integer(dim_k), symbolic::integer(dim_i)));
+    types::Array arr_b_type(desc, symbolic::mul(symbolic::integer(dim_j), symbolic::integer(dim_k)));
+    types::Array arr_res_type(desc, symbolic::mul(symbolic::integer(dim_j), symbolic::integer(dim_i)));
+
+    builder.add_container("arr_a", arr_a_type);
+    builder.add_container("arr_b", arr_b_type);
+    builder.add_container("output", arr_res_type);
+
+    auto& block = builder.add_block(sdfg.root());
+
+    auto& input_a_node = builder.add_access(block, "arr_a");
+    auto& input_b_node = builder.add_access(block, "arr_b");
+    auto c_var_name = "output";
+    auto& dummy_input_node = builder.add_access(block, c_var_name);
+    auto& output_node = builder.add_access(block, c_var_name);
+    auto& gemm_node = static_cast<math::blas::GEMMNode&>(builder.add_library_node<math::blas::GEMMNode>(
+        block,
+        DebugInfo(),
+        data_flow::ImplementationType_NONE,
+        math::blas::BLAS_Precision::s,
+        math::blas::BLAS_Layout::RowMajor,
+        math::blas::BLAS_Transpose::No,
+        math::blas::BLAS_Transpose::No,
+        symbolic::integer(dim_i),
+        symbolic::integer(dim_j),
+        symbolic::integer(dim_k),
+        symbolic::integer(dim_j), // lda
+        symbolic::integer(dim_k), // ldb
+        symbolic::integer(dim_j), // ldc
+        "1", // alpha
+        "0" // beta
+    ));
+
+    builder.add_computational_memlet(
+        block,
+        input_a_node,
+        gemm_node,
+        "A",
+        {symbolic::integer(0)},
+        {symbolic::mul(symbolic::integer(dim_i), symbolic::integer(dim_k))}
+    );
+    builder.add_computational_memlet(
+        block,
+        input_b_node,
+        gemm_node,
+        "B",
+        {symbolic::integer(0)},
+        {symbolic::mul(symbolic::integer(dim_k), symbolic::integer(dim_j))}
+    );
+    builder.add_computational_memlet(
+        block,
+        dummy_input_node,
+        gemm_node,
+        "C",
+        {symbolic::integer(0)},
+        {symbolic::mul(symbolic::integer(dim_i), symbolic::integer(dim_j))}
+    );
+
+    builder.add_computational_memlet(
+        block,
+        gemm_node,
+        "C",
+        output_node,
+        {symbolic::integer(0)},
+        {symbolic::mul(symbolic::integer(dim_i), symbolic::integer(dim_j))}
+    );
+
+    EXPECT_EQ(block.dataflow().nodes().size(), 5);
+
+    std::filesystem::path before_file = "gemm.before-expand.sdfg.dot";
+    visualizer::DotVisualizer::writeToFile(builder.subject(), &before_file);
+
+    analysis::AnalysisManager analysis_manager(sdfg);
+    EXPECT_TRUE(gemm_node.expand(builder, analysis_manager));
+    builder.subject().validate();
+
+    std::filesystem::path after_file = "gemm.after-expand.sdfg.dot";
+    visualizer::DotVisualizer::writeToFile(builder.subject(), &after_file);
+
+    EXPECT_EQ(sdfg.root().size(), 1);
+    auto new_sequence = dynamic_cast<structured_control_flow::Sequence*>(&sdfg.root().at(0).first);
+    EXPECT_NE(new_sequence, nullptr);
+
+    auto map_1 = dynamic_cast<structured_control_flow::Map*>(&new_sequence->at(0).first);
+    EXPECT_NE(map_1, nullptr);
+    EXPECT_EQ(map_1->root().size(), 1);
+
+    auto map_2 = dynamic_cast<structured_control_flow::Map*>(&map_1->root().at(0).first);
+    EXPECT_NE(map_2, nullptr);
+    EXPECT_EQ(map_2->root().size(), 3);
+
+    auto block_init = dynamic_cast<structured_control_flow::Block*>(&map_2->root().at(0).first);
+    EXPECT_NE(block_init, nullptr);
+    EXPECT_EQ(block_init->dataflow().nodes().size(), 2);
+    auto init_tasklet = *block_init->dataflow().tasklets().begin();
+    EXPECT_EQ(init_tasklet->code(), data_flow::TaskletCode::assign);
+    EXPECT_EQ(init_tasklet->inputs().at(0).first, "0.0");
+    EXPECT_EQ(init_tasklet->output().first, "_out");
+    EXPECT_EQ(init_tasklet->output().second.primitive_type(), types::PrimitiveType::Float);
+
+    auto map_3 = dynamic_cast<structured_control_flow::Map*>(&map_2->root().at(1).first);
+    EXPECT_NE(map_3, nullptr);
+    EXPECT_EQ(map_3->root().size(), 1);
+
+    auto block_fma = dynamic_cast<structured_control_flow::Block*>(&map_3->root().at(0).first);
+    EXPECT_NE(block_fma, nullptr);
+    EXPECT_EQ(block_fma->dataflow().nodes().size(), 5);
+
+    auto tasklet = *block_fma->dataflow().tasklets().begin();
+    EXPECT_EQ(tasklet->code(), data_flow::TaskletCode::fma);
+    EXPECT_EQ(tasklet->inputs().size(), 3);
+    EXPECT_EQ(tasklet->inputs().at(0).first, "_in1");
+    EXPECT_EQ(tasklet->inputs().at(1).first, "_in2");
+    EXPECT_EQ(tasklet->inputs().at(2).first, "_in3");
+    EXPECT_EQ(tasklet->output().first, "_out");
+    EXPECT_EQ(tasklet->output().second.primitive_type(), types::PrimitiveType::Float);
+
+    auto block_flush = dynamic_cast<structured_control_flow::Block*>(&map_2->root().at(2).first);
+    EXPECT_NE(block_flush, nullptr);
+    EXPECT_EQ(block_flush->dataflow().nodes().size(), 8);
+    auto flush_tasklets = block_flush->dataflow().tasklets();
+    EXPECT_EQ(flush_tasklets.size(), 3);
+    for (auto* tasklet : flush_tasklets) {
+        if (tasklet->code() == data_flow::add) {
+            EXPECT_EQ(tasklet->output().first, "_out");
+            EXPECT_EQ(tasklet->output().second.primitive_type(), types::PrimitiveType::Float);
+            auto& final_edge = *block_flush->dataflow().out_edges(*tasklet).begin();
+            auto* final_access = dynamic_cast<data_flow::AccessNode*>(&final_edge.dst());
+            EXPECT_NE(final_access, nullptr);
+            EXPECT_EQ(final_access->data(), c_var_name);
+        }
+    }
 }
 
 TEST(MathTest, Conv_2D) {

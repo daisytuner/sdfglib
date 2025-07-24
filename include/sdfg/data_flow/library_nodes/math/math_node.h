@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sdfg/data_flow/library_node.h"
+#include "sdfg/structured_control_flow/map.h"
 
 namespace sdfg {
 
