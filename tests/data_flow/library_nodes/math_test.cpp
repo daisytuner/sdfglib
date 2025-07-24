@@ -2,6 +2,7 @@
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/data_flow/library_nodes/math/blas/blas.h"
 #include "sdfg/data_flow/library_nodes/math/math.h"
 #include "sdfg/data_flow/library_nodes/math/ml/conv.h"
 #include "sdfg/data_flow/library_nodes/math/ml/maxpool.h"
@@ -266,4 +267,44 @@ TEST(MathTest, MaxPool_2D) {
 
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(pool_node.expand(builder, analysis_manager));
+}
+
+TEST(MathTest, Dot) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+
+    auto n = symbolic::integer(10);
+    auto stride_a = symbolic::integer(2);
+    auto stride_b = symbolic::integer(2);
+
+    types::Scalar desc(types::PrimitiveType::Double);
+    types::Array array_desc(desc, n);
+
+    builder.add_container("a", array_desc);
+    builder.add_container("b", array_desc);
+    builder.add_container("c", desc);
+
+    auto& block = builder.add_block(sdfg.root());
+
+    auto& a_node = builder.add_access(block, "a");
+    auto& b_node = builder.add_access(block, "b");
+    auto& c_node = builder.add_access(block, "c");
+
+    auto& dot_node = static_cast<math::blas::DotNode&>(builder.add_library_node<math::blas::DotNode>(
+        block, DebugInfo(), math::blas::ImplementationType_BLAS, math::blas::BLAS_Precision::d, n, stride_a, stride_b
+    ));
+
+    builder.add_computational_memlet(
+        block, a_node, dot_node, "x", {symbolic::zero()}, {symbolic::sub(n, symbolic::integer(1))}, block.debug_info()
+    );
+    builder.add_computational_memlet(
+        block, b_node, dot_node, "y", {symbolic::zero()}, {symbolic::sub(n, symbolic::integer(1))}, block.debug_info()
+    );
+    builder.add_computational_memlet(block, dot_node, "res", c_node, {}, {}, block.debug_info());
+
+    EXPECT_EQ(block.dataflow().nodes().size(), 4);
+
+    analysis::AnalysisManager analysis_manager(sdfg);
+    EXPECT_TRUE(dot_node.expand(builder, analysis_manager));
 }

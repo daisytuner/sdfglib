@@ -1151,6 +1151,10 @@ void register_default_serializers() {
 
     // BLAS
     LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::blas::LibraryNodeType_DOT.value(), []() {
+            return std::make_unique<math::blas::DotNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::blas::LibraryNodeType_GEMM.value(), []() {
             return std::make_unique<math::blas::GEMMNodeSerializer>();
         });

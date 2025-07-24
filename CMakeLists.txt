@@ -93,6 +93,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/barrier_local_node.cpp
     src/data_flow/library_nodes/metadata_node.cpp
     src/data_flow/library_nodes/math/math_node.cpp
+    src/data_flow/library_nodes/math/blas/dot.cpp
     src/data_flow/library_nodes/math/blas/gemm.cpp
     src/data_flow/library_nodes/math/ml/conv.cpp
     src/data_flow/library_nodes/math/ml/maxpool.cpp

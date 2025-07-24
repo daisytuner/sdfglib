@@ -178,6 +178,31 @@ void register_default_dispatchers() {
 
     // Math
 
+    // Dot - BLAS
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        math::blas::LibraryNodeType_DOT.value() + "::" + math::blas::ImplementationType_BLAS.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<math::blas::DotNodeDispatcher_BLAS>(
+                language_extension, function, data_flow_graph, dynamic_cast<const math::blas::DotNode&>(node)
+            );
+        }
+    );
+    // Dot - CUBLAS
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        math::blas::LibraryNodeType_DOT.value() + "::" + math::blas::ImplementationType_CUBLAS.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<math::blas::DotNodeDispatcher_CUBLAS>(
+                language_extension, function, data_flow_graph, dynamic_cast<const math::blas::DotNode&>(node)
+            );
+        }
+    );
+
     // GEMM - BLAS
     LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
         math::blas::LibraryNodeType_GEMM.value() + "::" + math::blas::ImplementationType_BLAS.value(),
