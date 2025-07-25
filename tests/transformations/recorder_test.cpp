@@ -102,7 +102,7 @@ TEST_F(RecorderLoopTilingTest, Save_SingleTransformation) {
     EXPECT_EQ(j.size(), 1);
     EXPECT_EQ(j[0]["transformation_type"], "LoopTiling");
     EXPECT_EQ(j[0]["tile_size"], 32);
-    EXPECT_EQ(j[0]["loop_element_id"], loop_id);
+    EXPECT_EQ(j[0]["subgraph"]["0"]["element_id"], loop_id);
 }
 
 TEST_F(RecorderLoopTilingTest, Replay_Transformations) {
@@ -110,10 +110,14 @@ TEST_F(RecorderLoopTilingTest, Replay_Transformations) {
 
     transformations::Recorder recorder;
 
-    nlohmann::json j = nlohmann::json::array();
-    j.push_back({{"loop_element_id", 1}, {"tile_size", 32}, {"transformation_type", "LoopTiling"}});
+    nlohmann::json j_array = nlohmann::json::array();
+    nlohmann::json j;
+    j["transformation_type"] = "LoopTiling";
+    j["subgraph"] = {{"0", {{"element_id", 1}, {"type", "for"}}}};
+    j["tile_size"] = 0;
+    j_array.push_back(j);
 
-    EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j));
+    EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j_array));
 }
 
 class RecorderLoopSlicingTest : public ::testing::Test {
@@ -186,7 +190,7 @@ TEST_F(RecorderLoopSlicingTest, Save_SingleTransformation) {
     EXPECT_TRUE(j.is_array());
     EXPECT_EQ(j.size(), 1);
     EXPECT_EQ(j[0]["transformation_type"], "LoopSlicing");
-    EXPECT_EQ(j[0]["loop_element_id"], loop_id);
+    EXPECT_EQ(j[0]["subgraph"]["0"]["element_id"], loop_id);
 }
 
 TEST_F(RecorderLoopSlicingTest, Replay_Transformations) {
@@ -195,7 +199,10 @@ TEST_F(RecorderLoopSlicingTest, Replay_Transformations) {
     transformations::Recorder recorder;
 
     nlohmann::json j = nlohmann::json::array();
-    j.push_back({{"loop_element_id", loop_->element_id()}, {"transformation_type", "LoopSlicing"}});
+    j.push_back(
+        {{"transformation_type", "LoopSlicing"},
+         {"subgraph", {{"0", {{"element_id", loop_->element_id()}, {"type", "for"}}}}}}
+    );
 
     EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j));
 }
@@ -206,8 +213,6 @@ protected:
     std::unique_ptr<analysis::AnalysisManager> analysis_manager_;
 
     void SetUp() override {
-        std::cout << "Starting setup for RecorderMultiTransformationTest" << std::endl;
-
         builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU);
 
         auto& sdfg = builder_->subject();
@@ -376,34 +381,52 @@ TEST_F(RecorderMultiTransformationTest, Apply_Transformations) {
     EXPECT_EQ(j.size(), 3);
     EXPECT_EQ(j[0]["transformation_type"], "LoopTiling");
     EXPECT_EQ(j[0]["tile_size"], 32);
-    EXPECT_EQ(j[0]["loop_element_id"], 1);
+    EXPECT_EQ(j[0]["subgraph"]["0"]["element_id"], 1);
 
     EXPECT_EQ(j[1]["transformation_type"], "LoopTiling");
     EXPECT_EQ(j[1]["tile_size"], 16);
-    EXPECT_EQ(j[1]["loop_element_id"], 4);
+    EXPECT_EQ(j[1]["subgraph"]["0"]["element_id"], 4);
 
     EXPECT_EQ(j[2]["transformation_type"], "LoopInterchange");
-    EXPECT_EQ(j[2]["outer_loop_element_id"], 1);
-    EXPECT_EQ(j[2]["inner_loop_element_id"], 18);
+    EXPECT_EQ(j[2]["subgraph"]["0"]["element_id"], 1);
+    EXPECT_EQ(j[2]["subgraph"]["1"]["element_id"], 18);
 }
 
 TEST_F(RecorderMultiTransformationTest, Replay_Transformations) {
     transformations::Recorder recorder;
 
-    nlohmann::json j = nlohmann::json::array();
-    j.push_back({{"loop_element_id", 1}, {"tile_size", 32}, {"transformation_type", "LoopTiling"}});
-    j.push_back({{"loop_element_id", 4}, {"tile_size", 16}, {"transformation_type", "LoopTiling"}});
-    j.push_back({{"inner_loop_element_id", 18}, {"outer_loop_element_id", 1}, {"transformation_type", "LoopInterchange"}}
-    );
+    nlohmann::json j_array = nlohmann::json::array();
+    nlohmann::json j;
+    j["transformation_type"] = "LoopTiling";
+    j["subgraph"] = {{"0", {{"element_id", 1}, {"type", "for"}}}};
+    j["tile_size"] = 32;
+    j_array.push_back(j);
 
-    EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j));
+    nlohmann::json j1;
+    j1["transformation_type"] = "LoopTiling";
+    j1["subgraph"] = {{"0", {{"element_id", 4}, {"type", "map"}}}};
+    j1["tile_size"] = 16;
+    j_array.push_back(j1);
+
+    nlohmann::json j2;
+    j2["transformation_type"] = "LoopInterchange";
+    j2["subgraph"] = {{"0", {{"element_id", 1}, {"type", "for"}}}, {"1", {{"element_id", 18}, {"type", "map"}}}};
+    j_array.push_back(j2);
+
+    EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j_array));
 }
 
 TEST_F(RecorderMultiTransformationTest, Replay_InvalidTransformation) {
-    nlohmann::json j = nlohmann::json::array();
-    j.push_back({{"loop_element_id", 1}, {"tile_size", 0}, {"transformation_type", "LoopTiling"}});
+    nlohmann::json j_array = nlohmann::json::array();
+    nlohmann::json j;
+    j["transformation_type"] = "LoopTiling";
+    j["subgraph"] = {{"0", {{"element_id", 1}, {"type", "for"}}}};
+    j["tile_size"] = 0;
+    j_array.push_back(j);
 
     transformations::Recorder recorder;
 
-    EXPECT_THROW(recorder.replay(*builder_, *analysis_manager_, j, false), transformations::InvalidTransformationException);
+    EXPECT_THROW(
+        recorder.replay(*builder_, *analysis_manager_, j_array, false), transformations::InvalidTransformationException
+    );
 }

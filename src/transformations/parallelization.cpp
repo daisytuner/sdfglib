@@ -18,11 +18,12 @@ void Parallelization::apply(builder::StructuredSDFGBuilder& builder, analysis::A
 
 void Parallelization::to_json(nlohmann::json& j) const {
     j["transformation_type"] = this->name();
-    j["map_element_id"] = map_.element_id();
+    j["subgraph"] = {{"0", {{"element_id", this->map_.element_id()}, {"type", "map"}}}};
+    j["transformation_type"] = this->name();
 }
 
 Parallelization Parallelization::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
-    auto map_id = desc["map_element_id"].get<size_t>();
+    auto map_id = desc["subgraph"]["0"]["element_id"].get<size_t>();
     auto element = builder.find_element_by_id(map_id);
     if (element == nullptr) {
         throw std::runtime_error("Element with ID " + std::to_string(map_id) + " not found.");

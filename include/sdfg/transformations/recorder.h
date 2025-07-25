@@ -49,7 +49,8 @@ public:
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
         const nlohmann::json& desc,
-        bool skip_if_not_applicable = true
+        bool skip_if_not_applicable = true,
+        size_t loopnest_index = 0
     );
 
     template<typename T>
