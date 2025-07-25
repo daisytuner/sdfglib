@@ -18,6 +18,10 @@ LoopInterchange::LoopInterchange(
 std::string LoopInterchange::name() const { return "LoopInterchange"; };
 
 bool LoopInterchange::can_be_applied(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
+    std::cout << "Trying to apply LoopInterchange transformation: " << this->name() << "to loops "
+              << this->outer_loop_.indvar()->get_name() << " and " << this->inner_loop_.indvar()->get_name()
+              << "with element ids " << this->outer_loop_.element_id() << " and " << this->inner_loop_.element_id();
+
     auto& outer_indvar = this->outer_loop_.indvar();
 
     // Criterion: Inner loop must not depend on outer loop
@@ -54,6 +58,10 @@ void LoopInterchange::apply(builder::StructuredSDFGBuilder& builder, analysis::A
     auto& outer_scope = static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&outer_loop_));
     auto& inner_scope = static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&inner_loop_));
 
+    std::cout << "Applying LoopInterchange transformation: " << this->name() << "to loops "
+              << this->outer_loop_.indvar()->get_name() << " and " << this->inner_loop_.indvar()->get_name()
+              << "with element ids " << this->outer_loop_.element_id() << " and " << this->inner_loop_.element_id()
+              << std::endl;
     // Add new outer loop behind current outer loop
     structured_control_flow::StructuredLoop* new_outer_loop = nullptr;
     if (auto inner_map = dynamic_cast<structured_control_flow::Map*>(&inner_loop_)) {
@@ -139,13 +147,17 @@ void LoopInterchange::to_json(nlohmann::json& j) const {
         {"0", {{"element_id", this->outer_loop_.element_id()}, {"type", loop_types[0]}}},
         {"1", {{"element_id", this->inner_loop_.element_id()}, {"type", loop_types[1]}}}
     };
+    std::cout << "LoopInterchange transformation serialized: " << j.dump(4) << std::endl;
 };
 
 LoopInterchange LoopInterchange::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
+    std::cout << "Deserializing LoopInterchange transformation from JSON: " << desc.dump(4) << std::endl;
     auto outer_loop_id = desc["subgraph"]["0"]["element_id"].get<size_t>();
     auto inner_loop_id = desc["subgraph"]["1"]["element_id"].get<size_t>();
     auto outer_element = builder.find_element_by_id(outer_loop_id);
     auto inner_element = builder.find_element_by_id(inner_loop_id);
+
+    std::cout << "Starting checks" << std::endl;
     if (outer_element == nullptr) {
         throw std::runtime_error("Element with ID " + std::to_string(outer_loop_id) + " not found.");
     }
@@ -161,6 +173,11 @@ LoopInterchange LoopInterchange::from_json(builder::StructuredSDFGBuilder& build
         throw std::runtime_error("Element with ID " + std::to_string(inner_loop_id) + " is not a StructuredLoop.");
     }
 
+    std::cout << "Creating LoopInterchange transformation: " << "to loops " << outer_loop->indvar()->get_name()
+              << " and " << inner_loop->indvar()->get_name() << "with element ids " << outer_loop->element_id()
+              << " and " << inner_loop->element_id();
+
+    std::cout << "After call to output: " << std::endl;
     return LoopInterchange(*outer_loop, *inner_loop);
 };
 

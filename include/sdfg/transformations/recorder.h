@@ -59,8 +59,10 @@ public:
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
         const nlohmann::json& desc,
-        bool skip_if_not_applicable = true
+        bool skip_if_not_applicable = false
     ) {
+        std::cout << "Recorder applying transformation: " << desc["transformation_type"].get<std::string>()
+                  << std::endl;
         T transformation(T::from_json(builder, desc));
         if (!transformation.can_be_applied(builder, analysis_manager)) {
             if (!skip_if_not_applicable) {
