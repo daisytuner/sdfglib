@@ -262,6 +262,8 @@ void DotNodeDispatcher_BLAS::dispatch(codegen::PrettyPrinter& stream) {
         stream << ";" << std::endl;
     }
 
+    std::string res_name = this->node_.outputs().at(0);
+    stream << res_name << " = ";
     stream << "cblas_" << BLAS_Precision_to_string(dot_node.precision()) << "dot(";
     stream.setIndent(stream.indent() + 4);
     stream << this->language_extension_.expression(dot_node.n());
