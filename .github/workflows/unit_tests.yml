@@ -27,7 +27,8 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Debug -DSDFGLIB_ENABLE_COVERAGE=ON -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
+          # cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Debug -DSDFGLIB_ENABLE_COVERAGE=ON -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
+          cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Debug -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
           ln -s compile_commands.json ../compile_commands.json
 
       # - name: Linting
@@ -39,12 +40,12 @@ jobs:
           ninja -j$(nproc)
 
           ./tests/sdfglib_test
-          gcovr --gcov-executable "llvm-cov-19 gcov" --filter ../include/ --filter ../src/ --coveralls coveralls.json -r ../
+          # gcovr --gcov-executable "llvm-cov-19 gcov" --filter ../include/ --filter ../src/ --coveralls coveralls.json -r ../
 
       - name: Test Arg-Capture-IO
         run: |
           cd build
           ./arg-capture-io/tests/capture_io_test
 
-      - name: Coveralls
-        uses: coverallsapp/github-action@v2
+      # - name: Coveralls
+      #   uses: coverallsapp/github-action@v2
