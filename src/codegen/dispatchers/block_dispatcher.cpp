@@ -23,7 +23,7 @@ void BlockDispatcher::dispatch_node(
     }
 
     DataFlowDispatcher dispatcher(this->language_extension_, sdfg_, node_.dataflow());
-    dispatcher.dispatch(main_stream);
+    dispatcher.dispatch(main_stream, globals_stream, library_snippet_factory);
 };
 
 DataFlowDispatcher::DataFlowDispatcher(
@@ -33,14 +33,15 @@ DataFlowDispatcher::DataFlowDispatcher(
 
       };
 
-void DataFlowDispatcher::dispatch(PrettyPrinter& stream) {
+void DataFlowDispatcher::
+    dispatch(PrettyPrinter& stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory) {
     // Dispatch code nodes in topological order
     auto nodes = this->data_flow_graph_.topological_sort();
     for (auto& node : nodes) {
         if (auto tasklet = dynamic_cast<const data_flow::Tasklet*>(node)) {
             this->dispatch_tasklet(stream, *tasklet);
         } else if (auto libnode = dynamic_cast<const data_flow::LibraryNode*>(node)) {
-            this->dispatch_library_node(stream, *libnode);
+            this->dispatch_library_node(stream, globals_stream, library_snippet_factory, *libnode);
         } else if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(node)) {
             for (auto& edge : this->data_flow_graph_.out_edges(*access_node)) {
                 if (edge.dst_conn() == "ref" && edge.src_conn() == "void") {
@@ -166,13 +167,18 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow
     stream << "}" << std::endl;
 };
 
-void DataFlowDispatcher::dispatch_library_node(PrettyPrinter& stream, const data_flow::LibraryNode& libnode) {
+void DataFlowDispatcher::dispatch_library_node(
+    PrettyPrinter& stream,
+    PrettyPrinter& globals_stream,
+    CodeSnippetFactory& library_snippet_factory,
+    const data_flow::LibraryNode& libnode
+) {
     auto dispatcher_fn =
         LibraryNodeDispatcherRegistry::instance()
             .get_library_node_dispatcher(libnode.code().value() + "::" + libnode.implementation_type().value());
     if (dispatcher_fn) {
         auto dispatcher = dispatcher_fn(this->language_extension_, this->function_, this->data_flow_graph_, libnode);
-        dispatcher->dispatch(stream);
+        dispatcher->dispatch(stream, globals_stream, library_snippet_factory);
     } else {
         throw std::runtime_error(
             "No library node dispatcher found for library node code: " + std::string(libnode.code().value())
@@ -187,6 +193,52 @@ LibraryNodeDispatcher::LibraryNodeDispatcher(
     const data_flow::LibraryNode& node
 )
     : language_extension_(language_extension), function_(function), data_flow_graph_(data_flow_graph), node_(node) {};
+
+void LibraryNodeDispatcher::
+    dispatch(PrettyPrinter& stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory) {
+    stream << "{" << std::endl;
+    stream.setIndent(stream.indent() + 4);
+
+    auto& node = node_;
+    std::vector<std::string> inputs_by_order;
+    std::vector<std::optional<std::string>> outputs_by_order;
+
+    std::unordered_map<std::string, const data_flow::Memlet*> in_edges;
+    for (auto& iedge : this->data_flow_graph_.in_edges(node)) {
+        in_edges[iedge.dst_conn()] = &iedge;
+    }
+
+    for (auto& input : node.inputs()) {
+        if (in_edges.find(input) == in_edges.end()) {
+            inputs_by_order.push_back(input);
+        } else {
+            auto& iedge = *in_edges[input];
+            auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
+            inputs_by_order.push_back(src.data());
+        }
+    }
+
+    std::unordered_map<std::string, const data_flow::Memlet*> out_edges;
+    for (auto& oedge : this->data_flow_graph_.out_edges(node)) {
+        out_edges[oedge.src_conn()] = &oedge;
+    }
+    for (auto& output : node.outputs()) {
+        auto it = out_edges.find(output);
+        if (it == out_edges.end()) {
+            outputs_by_order.push_back(std::nullopt);
+        } else {
+            auto& oedge = *it->second;
+            auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
+            outputs_by_order.push_back(dst.data());
+        }
+    }
+
+    dispatch_code(stream, globals_stream, library_snippet_factory, inputs_by_order, outputs_by_order);
+
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
+}
+
 
 } // namespace codegen
 } // namespace sdfg

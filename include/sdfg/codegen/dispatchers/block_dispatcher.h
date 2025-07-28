@@ -35,14 +35,19 @@ private:
 
     void dispatch_tasklet(PrettyPrinter& stream, const data_flow::Tasklet& tasklet);
 
-    void dispatch_library_node(PrettyPrinter& stream, const data_flow::LibraryNode& libnode);
+    void dispatch_library_node(
+        PrettyPrinter& stream,
+        PrettyPrinter& globals_stream,
+        CodeSnippetFactory& library_snippet_factory,
+        const data_flow::LibraryNode& libnode
+    );
 
 public:
     DataFlowDispatcher(
         LanguageExtension& language_extension, const Function& function, const data_flow::DataFlowGraph& data_flow_graph
     );
 
-    void dispatch(PrettyPrinter& stream);
+    void dispatch(PrettyPrinter& stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory);
 };
 
 class LibraryNodeDispatcher {
@@ -62,7 +67,16 @@ public:
 
     virtual ~LibraryNodeDispatcher() = default;
 
-    virtual void dispatch(PrettyPrinter& stream) = 0;
+    virtual void
+    dispatch(PrettyPrinter& stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory);
+
+    virtual void dispatch_code(
+        PrettyPrinter& stream,
+        PrettyPrinter& globals_stream,
+        CodeSnippetFactory& library_snippet_factory,
+        std::vector<std::string>& inputs_by_order,
+        std::vector<std::optional<std::string>>& outputs_by_order
+    ) {}
 };
 
 } // namespace codegen
