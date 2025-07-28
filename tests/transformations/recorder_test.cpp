@@ -430,3 +430,115 @@ TEST_F(RecorderMultiTransformationTest, Replay_InvalidTransformation) {
         replayer.replay(*builder_, *analysis_manager_, j_array, false), transformations::InvalidTransformationException
     );
 }
+
+class ReplayerTest : public ::testing::Test {
+protected:
+    std::unique_ptr<builder::StructuredSDFGBuilder> builder_;
+    std::unique_ptr<analysis::AnalysisManager> analysis_manager_;
+
+    void SetUp() override {
+        std::cout << "Starting setup for RecorderMultiTransformationTest" << std::endl;
+
+        builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU);
+
+        auto& sdfg = builder_->subject();
+        auto& root = sdfg.root();
+
+        /**
+         * for (i = 0; i < N; i++)
+         *   for (j = 0; j < M; j++)
+         *     A[i][j] = A[i][j] + 1;
+         */
+
+        // Add containers
+        types::Scalar base_desc(types::PrimitiveType::Float);
+        types::Array base_desc_ptr(base_desc, symbolic::symbol("M"));
+        types::Pointer desc(base_desc_ptr);
+
+        builder_->add_container("A", desc, true);
+
+        types::Scalar sym_desc(types::PrimitiveType::UInt64);
+        builder_->add_container("N", sym_desc, true);
+        builder_->add_container("M", sym_desc, true);
+        builder_->add_container("i", sym_desc);
+        builder_->add_container("j", sym_desc);
+
+        // Define loop 1
+        auto bound1 = symbolic::symbol("N");
+        auto indvar1 = symbolic::symbol("i");
+        auto& loop_1 = builder_->add_map(
+            root,
+            indvar1,
+            symbolic::Lt(indvar1, bound1),
+            symbolic::integer(0),
+            symbolic::add(indvar1, symbolic::integer(1)),
+            structured_control_flow::ScheduleType_Sequential
+        );
+        auto& body1 = loop_1.root();
+
+        // Define loop 2
+        auto bound2 = symbolic::symbol("M");
+        auto indvar2 = symbolic::symbol("j");
+        auto& loop_2 = builder_->add_map(
+            body1,
+            indvar2,
+            symbolic::Lt(indvar2, bound2),
+            symbolic::integer(0),
+            symbolic::add(indvar2, symbolic::integer(1)),
+            structured_control_flow::ScheduleType_Sequential
+        );
+        auto& body2 = loop_2.root();
+
+        // Add computation
+        auto& block = builder_->add_block(body2);
+        auto& A_in = builder_->add_access(block, "A");
+        auto& A_out = builder_->add_access(block, "A");
+
+        auto& tasklet = builder_->add_tasklet(
+            block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in", base_desc}, {"1", base_desc}}
+        );
+
+        builder_->add_computational_memlet(block, A_in, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
+
+        builder_
+            ->add_computational_memlet(block, tasklet, "_out", A_out, {symbolic::symbol("i"), symbolic::symbol("j")});
+
+        analysis_manager_ = std::make_unique<analysis::AnalysisManager>(builder_->subject());
+    }
+    void TearDown() override { analysis_manager_->invalidate<analysis::LoopAnalysis>(); };
+};
+
+TEST_F(ReplayerTest, Replay_Transformations) {
+    transformations::Replayer recorder;
+
+    nlohmann::json j = nlohmann::json::array();
+    j.push_back(
+        {{"transformation_type", "LoopTiling"},
+         {"subgraph", {{"0", {{"element_id", 1}, {"type", "map"}}}}},
+         {"tile_size", 32}}
+    );
+    j.push_back(
+        {{"transformation_type", "LoopTiling"},
+         {"subgraph", {{"0", {{"element_id", 4}, {"type", "map"}}}}},
+         {"tile_size", 16}}
+    );
+    j.push_back(
+        {{"transformation_type", "LoopInterchange"},
+         {"subgraph", {{"0", {{"element_id", 1}, {"type", "map"}}}, {"1", {{"element_id", 18}, {"type", "map"}}}}}}
+    );
+
+    EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j));
+}
+
+TEST_F(ReplayerTest, Replay_InvalidTransformation) {
+    nlohmann::json j = nlohmann::json::array();
+    j.push_back(
+        {{"transformation_type", "LoopTiling"},
+         {"subgraph", {{"0", {{"element_id", 1}, {"type", "map"}}}}},
+         {"tile_size", 0}}
+    );
+
+    transformations::Replayer recorder;
+
+    EXPECT_THROW(recorder.replay(*builder_, *analysis_manager_, j, false), transformations::InvalidTransformationException);
+}
