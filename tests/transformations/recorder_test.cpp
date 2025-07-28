@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <sdfg/transformations/recorder.h>
+#include <sdfg/transformations/replayer.h>
 
 #include <fstream>
 #include <iostream>
@@ -10,7 +11,6 @@
 #include "sdfg/transformations/loop_interchange.h"
 #include "sdfg/transformations/loop_slicing.h"
 #include "sdfg/transformations/loop_tiling.h"
-#include "sdfg/transformations/out_local_storage.h"
 #include "sdfg/types/pointer.h"
 #include "sdfg/types/type.h"
 
@@ -108,7 +108,7 @@ TEST_F(RecorderLoopTilingTest, Save_SingleTransformation) {
 TEST_F(RecorderLoopTilingTest, Replay_Transformations) {
     builder::StructuredSDFGBuilder replay_builder("sdfg_test", FunctionType_CPU);
 
-    transformations::Recorder recorder;
+    transformations::Replayer replayer;
 
     nlohmann::json j_array = nlohmann::json::array();
     nlohmann::json j;
@@ -117,7 +117,7 @@ TEST_F(RecorderLoopTilingTest, Replay_Transformations) {
     j["tile_size"] = 0;
     j_array.push_back(j);
 
-    EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j_array));
+    EXPECT_NO_THROW(replayer.replay(*builder_, *analysis_manager_, j_array));
 }
 
 class RecorderLoopSlicingTest : public ::testing::Test {
@@ -196,7 +196,7 @@ TEST_F(RecorderLoopSlicingTest, Save_SingleTransformation) {
 TEST_F(RecorderLoopSlicingTest, Replay_Transformations) {
     builder::StructuredSDFGBuilder replay_builder("sdfg_test", FunctionType_CPU);
 
-    transformations::Recorder recorder;
+    transformations::Replayer replayer;
 
     nlohmann::json j = nlohmann::json::array();
     j.push_back(
@@ -204,7 +204,7 @@ TEST_F(RecorderLoopSlicingTest, Replay_Transformations) {
          {"subgraph", {{"0", {{"element_id", loop_->element_id()}, {"type", "for"}}}}}}
     );
 
-    EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j));
+    EXPECT_NO_THROW(replayer.replay(*builder_, *analysis_manager_, j));
 }
 
 class RecorderMultiTransformationTest : public ::testing::Test {
@@ -393,7 +393,7 @@ TEST_F(RecorderMultiTransformationTest, Apply_Transformations) {
 }
 
 TEST_F(RecorderMultiTransformationTest, Replay_Transformations) {
-    transformations::Recorder recorder;
+    transformations::Replayer recorder;
 
     nlohmann::json j_array = nlohmann::json::array();
     nlohmann::json j;
@@ -424,9 +424,9 @@ TEST_F(RecorderMultiTransformationTest, Replay_InvalidTransformation) {
     j["tile_size"] = 0;
     j_array.push_back(j);
 
-    transformations::Recorder recorder;
+    transformations::Replayer replayer;
 
     EXPECT_THROW(
-        recorder.replay(*builder_, *analysis_manager_, j_array, false), transformations::InvalidTransformationException
+        replayer.replay(*builder_, *analysis_manager_, j_array, false), transformations::InvalidTransformationException
     );
 }
