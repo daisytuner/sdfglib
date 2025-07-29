@@ -91,31 +91,32 @@ void ensure_global_init() {
             // Initialise PAPI
             const char* ver_str = std::getenv("__DAISY_PAPI_VERSION");
             if (!ver_str) {
-                std::fprintf(stderr, "[daisy-rtl] __DAISY_PAPI_VERSION not set – using PAPI for time only\n");
-                g_runtime_only = true;
+                std::fprintf(stderr, "[daisy-rtl] __DAISY_PAPI_VERSION not set.\n");
+                exit(EXIT_FAILURE);
             } else {
                 int ver = std::strtol(ver_str, nullptr, 0);
                 int retval = _PAPI_library_init(ver);
                 if (retval != ver) {
                     std::fprintf(
                         stderr,
-                        "[daisy-rtl] PAPI init failed: %s – falling back to runtime mode\n",
+                        "[daisy-rtl] PAPI init failed: %s.\n",
                         _PAPI_strerror ? _PAPI_strerror(retval) : "unknown"
                     );
-                    g_runtime_only = true;
+                    exit(EXIT_FAILURE);
                 }
             }
         }
 
         if (g_papi_available && !g_runtime_only) {
             if (_PAPI_create_eventset(&g_eventset) != 0) {
-                std::fprintf(stderr, "[daisy-rtl] Failed to create PAPI eventset – falling back to runtime mode\n");
-                g_runtime_only = true;
+                std::fprintf(stderr, "[daisy-rtl] Failed to create PAPI eventset.\n");
+                exit(EXIT_FAILURE);
             } else {
                 for (const auto& ev : g_event_names) {
                     if (ev == "DURATION_TIME") continue; // handled separately
                     if (_PAPI_add_named_event(g_eventset, ev.c_str()) != 0) {
-                        std::fprintf(stderr, "[daisy-rtl] Could not add event %s – ignoring\n", ev.c_str());
+                        std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
+                        exit(EXIT_FAILURE);
                     }
                 }
             }
@@ -163,7 +164,7 @@ void write_event_json(
     for (size_t i = 0; i < g_event_names.size() && i < counts.size(); ++i) {
         std::fprintf(f, ",\"%s\":%lld", g_event_names[i].c_str(), counts[i]);
     }
-    std::fprintf(f, "}}" /* end args */ "}" /* end event obj */);
+    std::fprintf(f, "}" /* end args */ "}" /* end event obj */);
     std::fclose(f);
 }
 } // anonymous namespace

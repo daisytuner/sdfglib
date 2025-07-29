@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-struct __daisy_metadata {
+typedef struct __daisy_metadata {
     const char* file_name;
     const char* function_name;
     long line_begin;
@@ -15,16 +15,14 @@ struct __daisy_metadata {
     long column_begin;
     long column_end;
     const char* region_name;
-};
-
-struct __daisy_instrumentation;
+} __daisy_metadata_t;
 
 typedef struct __daisy_instrumentation __daisy_instrumentation_t;
 
 __daisy_instrumentation_t* __daisy_instrumentation_init();
 void __daisy_instrumentation_finalize(__daisy_instrumentation_t* context);
-void __daisy_instrumentation_enter(__daisy_instrumentation_t* context, __daisy_metadata* metadata);
-void __daisy_instrumentation_exit(__daisy_instrumentation_t* context, __daisy_metadata* metadata);
+void __daisy_instrumentation_enter(__daisy_instrumentation_t* context, __daisy_metadata_t* metadata);
+void __daisy_instrumentation_exit(__daisy_instrumentation_t* context, __daisy_metadata_t* metadata);
 
 typedef struct __daisy_capture __daisy_capture_t;
 
