@@ -65,6 +65,7 @@ set(SOURCE_FILES
     src/codegen/code_generator.cpp
     src/codegen/code_snippet_factory.cpp
     src/codegen/instrumentation/capture_var_plan.cpp
+    src/codegen/instrumentation/instrumentation_plan.cpp
     src/codegen/language_extensions/c_language_extension.cpp
     src/codegen/language_extensions/cpp_language_extension.cpp
     src/codegen/language_extensions/cuda_language_extension.cpp
@@ -80,7 +81,6 @@ set(SOURCE_FILES
     src/codegen/dispatchers/for_dispatcher.cpp
     src/codegen/dispatchers/map_dispatcher.cpp
     src/codegen/dispatchers/while_dispatcher.cpp
-    src/codegen/instrumentation/outermost_loops_instrumentation.cpp
     src/control_flow/interstate_edge.cpp
     src/control_flow/state.cpp
     src/data_flow/access_node.cpp
@@ -207,9 +207,6 @@ install(TARGETS sdfglib
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
-install(FILES
-    include/export/daisyrtl.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT runtime
 )
 install(DIRECTORY include/sdfg DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 

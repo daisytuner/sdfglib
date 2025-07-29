@@ -55,7 +55,6 @@ constexpr const char* to_string(PrimitiveType e) {
     } else {
         return primitive_type_names[static_cast<int32_t>(e)];
     }
-
 }
 
-}
+} // namespace arg_capture

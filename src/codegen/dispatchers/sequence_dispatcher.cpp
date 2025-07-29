@@ -9,9 +9,9 @@ SequenceDispatcher::SequenceDispatcher(
     LanguageExtension& language_extension,
     StructuredSDFG& sdfg,
     structured_control_flow::Sequence& node,
-    Instrumentation& instrumentation
+    InstrumentationPlan& instrumentation_plan
 )
-    : NodeDispatcher(language_extension, sdfg, node, instrumentation), node_(node) {
+    : NodeDispatcher(language_extension, sdfg, node, instrumentation_plan), node_(node) {
 
       };
 
@@ -23,7 +23,7 @@ void SequenceDispatcher::dispatch_node(
 
         // Node
         main_stream.setIndent(main_stream.indent() + 4);
-        auto dispatcher = create_dispatcher(language_extension_, sdfg_, child.first, instrumentation_);
+        auto dispatcher = create_dispatcher(language_extension_, sdfg_, child.first, instrumentation_plan_);
         dispatcher->dispatch(main_stream, globals_stream, library_snippet_factory);
         main_stream.setIndent(main_stream.indent() - 4);
 

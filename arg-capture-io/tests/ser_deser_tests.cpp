@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "arg_capture_io.h"
-#include "primitive_types.h"
-#include "test.h"
 #include <cstring>
 #include <filesystem>
+#include "daisy_rtl/arg_capture_io.h"
+#include "daisy_rtl/primitive_types.h"
+#include "test.h"
 
 using namespace arg_capture;
 
@@ -20,7 +20,9 @@ TEST(SerDeserTests, SerializeAndDeserializeCaptures) {
     EXPECT_TRUE(capture.create_and_capture_inline(3, true, static_cast<int>(PrimitiveType::Double), {8}, data));
     data[1] = 10;
     auto binFile = get_outputs_base_path() / "SerDeser" / "arg4_in.bin";
-    EXPECT_TRUE(capture.create_and_capture_to_file(4, false, static_cast<int>(PrimitiveType::Int64), {1, 2, 4}, binFile, data));
+    EXPECT_TRUE(capture
+                    .create_and_capture_to_file(4, false, static_cast<int>(PrimitiveType::Int64), {1, 2, 4}, binFile, data)
+    );
 
     auto indexFile = get_outputs_base_path() / "SerDeser" / "index.json";
     capture.write_index(indexFile);
@@ -38,7 +40,7 @@ TEST(SerDeserTests, SerializeAndDeserializeCaptures) {
     EXPECT_EQ(elem1.dims.size(), 1);
     EXPECT_EQ(elem1.dims[0], 8);
     EXPECT_EQ(elem1.data->size(), 8);
-    uint8_t ref_dat1[] = {1,2,3,4,5,6,7,8};
+    uint8_t ref_dat1[] = {1, 2, 3, 4, 5, 6, 7, 8};
     EXPECT_EQ(memcmp(elem1.data->data(), ref_dat1, 8), 0);
 
     auto& elem2 = deser->get_captures().at(std::make_pair(3, true));
@@ -48,7 +50,7 @@ TEST(SerDeserTests, SerializeAndDeserializeCaptures) {
     EXPECT_EQ(elem2.dims.size(), 1);
     EXPECT_EQ(elem2.dims[0], 8);
     EXPECT_EQ(elem2.data->size(), 8);
-    uint8_t ref_dat2[] = {9,2,3,4,5,6,7,8};
+    uint8_t ref_dat2[] = {9, 2, 3, 4, 5, 6, 7, 8};
     EXPECT_EQ(memcmp(elem2.data->data(), ref_dat2, 8), 0);
 
     auto& elem3 = deser->get_captures().at(std::make_pair(4, false));
@@ -67,6 +69,6 @@ TEST(SerDeserTests, SerializeAndDeserializeCaptures) {
     file.read(&extra, 1);
     EXPECT_TRUE(file.eof());
     file.close();
-    uint8_t ref_dat3[] = {9,10,3,4,5,6,7,8};
+    uint8_t ref_dat3[] = {9, 10, 3, 4, 5, 6, 7, 8};
     EXPECT_EQ(memcmp(file_contents, ref_dat3, 8), 0);
 }

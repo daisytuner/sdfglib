@@ -4,7 +4,7 @@
 
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/codegen/instrumentation/capture_var_plan.h"
-#include "sdfg/codegen/instrumentation/instrumentation_strategy.h"
+#include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/types/pointer.h"
 #include "sdfg/types/type.h"
@@ -15,7 +15,8 @@ TEST(CCodeGeneratorTest, FunctionDefintion) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto sdfg = builder.move();
 
-    codegen::CCodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
     auto result = generator.function_definition();
     EXPECT_EQ(result, "extern void sdfg_a()");
 }
@@ -24,15 +25,15 @@ TEST(CCodeGeneratorTest, Dispatch_Includes) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto sdfg = builder.move();
 
-    codegen::CCodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.includes().str();
     EXPECT_EQ(
         result,
-        "#include <math.h>\n#include <cblas.h>\n#include <stdbool.h>\n#include <stdlib.h>\n#define "
-        "__daisy_min(a,b) ((a)<(b)?(a):(b))\n#define __daisy_max(a,b) "
-        "((a)>(b)?(a):(b))\n#define __daisy_fma(a,b,c) a * b + c\n"
+        "#include <math.h>\n#include <cblas.h>\n#include <stdbool.h>\n#include <stdlib.h>\n#include "
+        "<daisy_rtl/daisy_rtl.h>\n"
     );
 }
 
@@ -44,7 +45,8 @@ TEST(CCodeGeneratorTest, DispatchStructures_Basic) {
 
     auto sdfg = builder.move();
 
-    codegen::CCodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -67,7 +69,8 @@ TEST(CCodeGeneratorTest, DispatchStructures_Nested) {
 
     auto sdfg = builder.move();
 
-    codegen::CCodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -91,7 +94,8 @@ TEST(CCodeGeneratorTest, DispatchGlobals) {
 
     auto sdfg = builder.move();
 
-    codegen::CCodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.globals().str();
@@ -103,7 +107,8 @@ TEST(CCodeGeneratorTest, CaptureInstrumentationInit) {
 
     auto sdfg = builder.move();
 
-    codegen::CCodeGenerator generator(*sdfg, codegen::InstrumentationStrategy::NONE, true);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, true);
     std::stringstream output;
 
     generator.emit_capture_context_init(output);
@@ -125,7 +130,8 @@ TEST(CCodeGeneratorTest, EmitArgInCaptures) {
 
     auto sdfg = builder.move();
 
-    codegen::CCodeGenerator generator(*sdfg, codegen::InstrumentationStrategy::NONE, true);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, true);
     std::stringstream output;
 
     std::vector<codegen::CaptureVarPlan> plan = {
@@ -166,7 +172,8 @@ TEST(CCodeGeneratorTest, EmitArgOutCaptures) {
 
     auto sdfg = builder.move();
 
-    codegen::CCodeGenerator generator(*sdfg, codegen::InstrumentationStrategy::NONE, true);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, true);
     std::stringstream output;
 
     std::vector<codegen::CaptureVarPlan> plan = {
@@ -237,7 +244,8 @@ TEST(CCodeGeneratorTest, CreateCapturePlans) {
 
     auto sdfg = builder.move();
 
-    codegen::CCodeGenerator generator(*sdfg, codegen::InstrumentationStrategy::NONE, true);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, true);
     auto capturePlan = generator.create_capture_plans();
 
     EXPECT_EQ(capturePlan->size(), 4);

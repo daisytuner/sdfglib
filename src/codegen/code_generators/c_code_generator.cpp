@@ -4,8 +4,7 @@
 #include "sdfg/analysis/users.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 #include "sdfg/codegen/instrumentation/capture_var_plan.h"
-#include "sdfg/codegen/instrumentation/instrumentation.h"
-#include "sdfg/codegen/instrumentation/outermost_loops_instrumentation.h"
+#include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 
 namespace sdfg {
 namespace codegen {
@@ -37,12 +36,7 @@ void CCodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#include <cblas.h>" << std::endl;
     this->includes_stream_ << "#include <stdbool.h>" << std::endl;
     this->includes_stream_ << "#include <stdlib.h>" << std::endl;
-    if (this->instrumentation_strategy_ != InstrumentationStrategy::NONE)
-        this->includes_stream_ << "#include <daisy_rtl.h>" << std::endl;
-
-    this->includes_stream_ << "#define __daisy_min(a,b) ((a)<(b)?(a):(b))" << std::endl;
-    this->includes_stream_ << "#define __daisy_max(a,b) ((a)>(b)?(a):(b))" << std::endl;
-    this->includes_stream_ << "#define __daisy_fma(a,b,c) a * b + c" << std::endl;
+    this->includes_stream_ << "#include <daisy_rtl/daisy_rtl.h>" << std::endl;
 };
 
 void CCodeGenerator::dispatch_structures() {
@@ -144,10 +138,7 @@ void CCodeGenerator::dispatch_schedule() {
         }
     }
 
-    // Add instrumentation
-    auto instrumentation = create_instrumentation(instrumentation_strategy_, sdfg_);
-
-    auto dispatcher = create_dispatcher(language_extension_, sdfg_, sdfg_.root(), *instrumentation);
+    auto dispatcher = create_dispatcher(language_extension_, sdfg_, sdfg_.root(), instrumentation_plan_);
     dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_snippet_factory_);
 };
 

@@ -9,9 +9,9 @@ BlockDispatcher::BlockDispatcher(
     LanguageExtension& language_extension,
     StructuredSDFG& sdfg,
     structured_control_flow::Block& node,
-    Instrumentation& instrumentation
+    InstrumentationPlan& instrumentation_plan
 )
-    : sdfg::codegen::NodeDispatcher(language_extension, sdfg, node, instrumentation), node_(node) {
+    : sdfg::codegen::NodeDispatcher(language_extension, sdfg, node, instrumentation_plan), node_(node) {
 
       };
 

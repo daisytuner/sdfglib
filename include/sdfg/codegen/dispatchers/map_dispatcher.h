@@ -16,7 +16,7 @@ public:
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
         structured_control_flow::Map& node,
-        Instrumentation& instrumentation
+        InstrumentationPlan& instrumentation_plan
     );
 
     void dispatch_node(
@@ -33,7 +33,7 @@ public:
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
         structured_control_flow::Map& node,
-        Instrumentation& instrumentation
+        InstrumentationPlan& instrumentation_plan
     );
 
     void dispatch_node(
@@ -50,7 +50,7 @@ public:
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
         structured_control_flow::Map& node,
-        Instrumentation& instrumentation
+        InstrumentationPlan& instrumentation_plan
     );
 
     void dispatch_node(

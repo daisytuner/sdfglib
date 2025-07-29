@@ -10,7 +10,8 @@ TEST(CPPCodeGeneratorTest, FunctionDefintion) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto sdfg = builder.move();
 
-    codegen::CPPCodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CPPCodeGenerator generator(*sdfg, *instrumentation_plan);
     auto result = generator.function_definition();
     EXPECT_EQ(result, "extern \"C\" void sdfg_a()");
 }
@@ -19,15 +20,12 @@ TEST(CPPCodeGeneratorTest, Dispatch_Includes) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto sdfg = builder.move();
 
-    codegen::CPPCodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CPPCodeGenerator generator(*sdfg, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.includes().str();
-    EXPECT_EQ(
-        result,
-        "#include <cmath>\n#include <cblas.h>\n#define __daisy_min(a,b) ((a)<(b)?(a):(b))\n#define "
-        "__daisy_max(a,b) ((a)>(b)?(a):(b))\n#define __daisy_fma(a,b,c) a * b + c\n"
-    );
+    EXPECT_EQ(result, "#include <cmath>\n#include <cblas.h>\n#include <daisy_rtl/daisy_rtl.h>\n");
 }
 
 TEST(CPPCodeGeneratorTest, DispatchStructures_Basic) {
@@ -38,7 +36,8 @@ TEST(CPPCodeGeneratorTest, DispatchStructures_Basic) {
 
     auto sdfg = builder.move();
 
-    codegen::CPPCodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CPPCodeGenerator generator(*sdfg, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -58,7 +57,8 @@ TEST(CPPCodeGeneratorTest, DispatchStructures_Packed) {
 
     auto sdfg = builder.move();
 
-    codegen::CPPCodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CPPCodeGenerator generator(*sdfg, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -81,7 +81,8 @@ TEST(CPPCodeGeneratorTest, DispatchStructures_Nested) {
 
     auto sdfg = builder.move();
 
-    codegen::CPPCodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CPPCodeGenerator generator(*sdfg, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -105,7 +106,8 @@ TEST(CPPCodeGeneratorTest, DispatchGlobals) {
 
     auto sdfg = builder.move();
 
-    codegen::CPPCodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CPPCodeGenerator generator(*sdfg, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.globals().str();

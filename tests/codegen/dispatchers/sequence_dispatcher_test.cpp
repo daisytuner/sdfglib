@@ -15,8 +15,8 @@ TEST(SequenceDispatcherTest, DispatchNode_Empty) {
     auto final_sdfg = builder.move();
 
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(*final_sdfg);
-    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, root, instrumentation);
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, root, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -39,8 +39,8 @@ TEST(SequenceDispatcherTest, DispatchNode_Transition) {
     auto final_sdfg = builder.move();
 
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(*final_sdfg);
-    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, root, instrumentation);
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, root, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -64,8 +64,8 @@ TEST(SequenceDispatcherTest, DispatchNode_MultipleBlocks) {
     auto final_sdfg = builder.move();
 
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(*final_sdfg);
-    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, root, instrumentation);
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, root, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

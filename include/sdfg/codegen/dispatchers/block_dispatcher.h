@@ -15,7 +15,7 @@ public:
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
         structured_control_flow::Block& node,
-        Instrumentation& instrumentation
+        InstrumentationPlan& instrumentation_plan
     );
 
     void dispatch_node(

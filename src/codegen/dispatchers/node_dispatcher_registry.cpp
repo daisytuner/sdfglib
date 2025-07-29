@@ -18,11 +18,11 @@ std::unique_ptr<NodeDispatcher> create_dispatcher(
     LanguageExtension& language_extension,
     StructuredSDFG& sdfg,
     structured_control_flow::ControlFlowNode& node,
-    Instrumentation& instrumentation
+    InstrumentationPlan& instrumentation_plan
 ) {
     auto dispatcher = NodeDispatcherRegistry::instance().get_dispatcher(typeid(node));
     if (dispatcher) {
-        return dispatcher(language_extension, sdfg, node, instrumentation);
+        return dispatcher(language_extension, sdfg, node, instrumentation_plan);
     }
 
     throw std::runtime_error("Unsupported control flow node: " + std::string(typeid(node).name()));
@@ -35,7 +35,7 @@ void register_default_dispatchers() {
         [](LanguageExtension& language_extension,
            StructuredSDFG& sdfg,
            structured_control_flow::ControlFlowNode& node,
-           Instrumentation& instrumentation) {
+           InstrumentationPlan& instrumentation) {
             return std::make_unique<BlockDispatcher>(
                 language_extension, sdfg, static_cast<structured_control_flow::Block&>(node), instrumentation
             );
@@ -46,7 +46,7 @@ void register_default_dispatchers() {
         [](LanguageExtension& language_extension,
            StructuredSDFG& sdfg,
            structured_control_flow::ControlFlowNode& node,
-           Instrumentation& instrumentation) {
+           InstrumentationPlan& instrumentation) {
             return std::make_unique<SequenceDispatcher>(
                 language_extension, sdfg, static_cast<structured_control_flow::Sequence&>(node), instrumentation
             );
@@ -57,7 +57,7 @@ void register_default_dispatchers() {
         [](LanguageExtension& language_extension,
            StructuredSDFG& sdfg,
            structured_control_flow::ControlFlowNode& node,
-           Instrumentation& instrumentation) {
+           InstrumentationPlan& instrumentation) {
             return std::make_unique<IfElseDispatcher>(
                 language_extension, sdfg, static_cast<structured_control_flow::IfElse&>(node), instrumentation
             );
@@ -68,7 +68,7 @@ void register_default_dispatchers() {
         [](LanguageExtension& language_extension,
            StructuredSDFG& sdfg,
            structured_control_flow::ControlFlowNode& node,
-           Instrumentation& instrumentation) {
+           InstrumentationPlan& instrumentation) {
             return std::make_unique<WhileDispatcher>(
                 language_extension, sdfg, static_cast<structured_control_flow::While&>(node), instrumentation
             );
@@ -79,7 +79,7 @@ void register_default_dispatchers() {
         [](LanguageExtension& language_extension,
            StructuredSDFG& sdfg,
            structured_control_flow::ControlFlowNode& node,
-           Instrumentation& instrumentation) {
+           InstrumentationPlan& instrumentation) {
             return std::make_unique<ForDispatcher>(
                 language_extension, sdfg, static_cast<structured_control_flow::For&>(node), instrumentation
             );
@@ -90,7 +90,7 @@ void register_default_dispatchers() {
         [](LanguageExtension& language_extension,
            StructuredSDFG& sdfg,
            structured_control_flow::ControlFlowNode& node,
-           Instrumentation& instrumentation) {
+           InstrumentationPlan& instrumentation) {
             return std::make_unique<MapDispatcher>(
                 language_extension, sdfg, static_cast<structured_control_flow::Map&>(node), instrumentation
             );
@@ -101,7 +101,7 @@ void register_default_dispatchers() {
         [](LanguageExtension& language_extension,
            StructuredSDFG& sdfg,
            structured_control_flow::ControlFlowNode& node,
-           Instrumentation& instrumentation) {
+           InstrumentationPlan& instrumentation) {
             return std::make_unique<ReturnDispatcher>(
                 language_extension, sdfg, static_cast<structured_control_flow::Return&>(node), instrumentation
             );
@@ -112,7 +112,7 @@ void register_default_dispatchers() {
         [](LanguageExtension& language_extension,
            StructuredSDFG& sdfg,
            structured_control_flow::ControlFlowNode& node,
-           Instrumentation& instrumentation) {
+           InstrumentationPlan& instrumentation) {
             return std::make_unique<BreakDispatcher>(
                 language_extension, sdfg, static_cast<structured_control_flow::Break&>(node), instrumentation
             );
@@ -123,7 +123,7 @@ void register_default_dispatchers() {
         [](LanguageExtension& language_extension,
            StructuredSDFG& sdfg,
            structured_control_flow::ControlFlowNode& node,
-           Instrumentation& instrumentation) {
+           InstrumentationPlan& instrumentation) {
             return std::make_unique<ContinueDispatcher>(
                 language_extension, sdfg, static_cast<structured_control_flow::Continue&>(node), instrumentation
             );
@@ -136,7 +136,7 @@ void register_default_dispatchers() {
         [](LanguageExtension& language_extension,
            StructuredSDFG& sdfg,
            structured_control_flow::Map& node,
-           Instrumentation& instrumentation) {
+           InstrumentationPlan& instrumentation) {
             return std::make_unique<SequentialMapDispatcher>(language_extension, sdfg, node, instrumentation);
         }
     );
@@ -145,7 +145,7 @@ void register_default_dispatchers() {
         [](LanguageExtension& language_extension,
            StructuredSDFG& sdfg,
            structured_control_flow::Map& node,
-           Instrumentation& instrumentation) {
+           InstrumentationPlan& instrumentation) {
             return std::make_unique<CPUParallelMapDispatcher>(language_extension, sdfg, node, instrumentation);
         }
     );

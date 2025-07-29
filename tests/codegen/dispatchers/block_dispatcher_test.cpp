@@ -20,8 +20,8 @@ TEST(BlockDispatcherTest, DispatchNode_Empty) {
     auto final_sdfg = builder.move();
 
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(*final_sdfg);
-    codegen::BlockDispatcher dispatcher(language_extension, *final_sdfg, block, instrumentation);
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::BlockDispatcher dispatcher(language_extension, *final_sdfg, block, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -67,8 +67,8 @@ TEST(BlockDispatcherTest, DispatchNode_TopologicalOrder) {
     auto final_sdfg = builder.move();
 
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(*final_sdfg);
-    codegen::BlockDispatcher dispatcher(language_extension, *final_sdfg, block, instrumentation);
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::BlockDispatcher dispatcher(language_extension, *final_sdfg, block, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

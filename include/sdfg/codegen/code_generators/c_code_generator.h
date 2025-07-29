@@ -29,12 +29,11 @@ protected:
 public:
     explicit CCodeGenerator(
         StructuredSDFG& sdfg,
-        InstrumentationStrategy instrumentation_strategy = InstrumentationStrategy::NONE,
+        InstrumentationPlan& instrumentation_plan,
         bool capture_args_results = false,
         const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr
     )
-        : CStyleBaseCodeGenerator(sdfg, instrumentation_strategy, capture_args_results, output_and_header_paths) {}
-
+        : CStyleBaseCodeGenerator(sdfg, instrumentation_plan, capture_args_results, output_and_header_paths) {}
 
     std::string function_definition() override;
 

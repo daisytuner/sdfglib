@@ -11,9 +11,9 @@ MapDispatcher::MapDispatcher(
     LanguageExtension& language_extension,
     StructuredSDFG& sdfg,
     structured_control_flow::Map& node,
-    Instrumentation& instrumentation
+    InstrumentationPlan& instrumentation_plan
 )
-    : NodeDispatcher(language_extension, sdfg, node, instrumentation), node_(node) {
+    : NodeDispatcher(language_extension, sdfg, node, instrumentation_plan), node_(node) {
 
       };
 
@@ -22,7 +22,7 @@ void MapDispatcher::dispatch_node(
 ) {
     auto dispatcher = MapDispatcherRegistry::instance().get_map_dispatcher(node_.schedule_type().value());
     if (dispatcher) {
-        auto dispatcher_ptr = dispatcher(language_extension_, sdfg_, node_, instrumentation_);
+        auto dispatcher_ptr = dispatcher(language_extension_, sdfg_, node_, instrumentation_plan_);
         dispatcher_ptr->dispatch_node(main_stream, globals_stream, library_snippet_factory);
     } else {
         throw std::runtime_error("Unsupported map schedule type: " + std::string(node_.schedule_type().value()));
@@ -33,9 +33,9 @@ SequentialMapDispatcher::SequentialMapDispatcher(
     LanguageExtension& language_extension,
     StructuredSDFG& sdfg,
     structured_control_flow::Map& node,
-    Instrumentation& instrumentation
+    InstrumentationPlan& instrumentation_plan
 )
-    : NodeDispatcher(language_extension, sdfg, node, instrumentation), node_(node) {
+    : NodeDispatcher(language_extension, sdfg, node, instrumentation_plan), node_(node) {
 
       };
 
@@ -58,7 +58,7 @@ void SequentialMapDispatcher::dispatch_node(
     main_stream << "{" << std::endl;
 
     main_stream.setIndent(main_stream.indent() + 4);
-    SequenceDispatcher dispatcher(language_extension_, sdfg_, node_.root(), instrumentation_);
+    SequenceDispatcher dispatcher(language_extension_, sdfg_, node_.root(), instrumentation_plan_);
     dispatcher.dispatch(main_stream, globals_stream, library_snippet_factory);
     main_stream.setIndent(main_stream.indent() - 4);
 
@@ -69,9 +69,9 @@ CPUParallelMapDispatcher::CPUParallelMapDispatcher(
     LanguageExtension& language_extension,
     StructuredSDFG& sdfg,
     structured_control_flow::Map& node,
-    Instrumentation& instrumentation
+    InstrumentationPlan& instrumentation_plan
 )
-    : NodeDispatcher(language_extension, sdfg, node, instrumentation), node_(node) {
+    : NodeDispatcher(language_extension, sdfg, node, instrumentation_plan), node_(node) {
 
       };
 
@@ -97,7 +97,7 @@ void CPUParallelMapDispatcher::dispatch_node(
     }
     main_stream << std::endl;
 
-    SequentialMapDispatcher dispatcher(language_extension_, sdfg_, node_, instrumentation_);
+    SequentialMapDispatcher dispatcher(language_extension_, sdfg_, node_, instrumentation_plan_);
     dispatcher.dispatch(main_stream, globals_stream, library_snippet_factory);
 };
 
