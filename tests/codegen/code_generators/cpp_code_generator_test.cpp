@@ -25,12 +25,7 @@ TEST(CPPCodeGeneratorTest, Dispatch_Includes) {
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.includes().str();
-    EXPECT_EQ(
-        result,
-        "#include <cmath>\n#include <cblas.h>\n#include <daisy_rtl.h>\n#define __daisy_min(a,b) "
-        "((a)<(b)?(a):(b))\n#define "
-        "__daisy_max(a,b) ((a)>(b)?(a):(b))\n#define __daisy_fma(a,b,c) a * b + c\n"
-    );
+    EXPECT_EQ(result, "#include <cmath>\n#include <cblas.h>\n#include <daisy_rtl.h>\n");
 }
 
 TEST(CPPCodeGeneratorTest, DispatchStructures_Basic) {

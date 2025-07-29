@@ -32,10 +32,7 @@ TEST(CCodeGeneratorTest, Dispatch_Includes) {
     auto result = generator.includes().str();
     EXPECT_EQ(
         result,
-        "#include <math.h>\n#include <cblas.h>\n#include <stdbool.h>\n#include <stdlib.h>\n#include "
-        "<daisy_rtl.h>\n#define "
-        "__daisy_min(a,b) ((a)<(b)?(a):(b))\n#define __daisy_max(a,b) "
-        "((a)>(b)?(a):(b))\n#define __daisy_fma(a,b,c) a * b + c\n"
+        "#include <math.h>\n#include <cblas.h>\n#include <stdbool.h>\n#include <stdlib.h>\n#include <daisy_rtl.h>\n"
     );
 }
 
