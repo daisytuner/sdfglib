@@ -25,7 +25,7 @@ TEST(CUDACodeGeneratorTest, Dispatch_Includes) {
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.includes().str();
-    EXPECT_EQ(result, "#define __DAISY_NVVM__\n#include <daisy_rtl.h>\n");
+    EXPECT_EQ(result, "#define __DAISY_NVVM__\n#include <daisy_rtl/daisy_rtl.h>\n");
 }
 
 TEST(CUDACodeGeneratorTest, DispatchStructures_Basic) {

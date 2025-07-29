@@ -1,15 +1,15 @@
-#include "arg_capture_io.h"
+#include "daisy_rtl/arg_capture_io.h"
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <nlohmann/json.hpp>
 #include <numeric>
 #include <utility>
 
-#include "primitive_types.h"
-#include "base64.h"
+#include "daisy_rtl/base64.h"
+#include "daisy_rtl/primitive_types.h"
 
 #ifndef DEBUG_LOG
 #define DEBUG_LOG false
@@ -40,7 +40,8 @@ void ArgCapture::serialize_into(nlohmann::json& j) const {
     j.push_back(entry);
 }
 
-void ArgCapture::parse_from(const nlohmann::json& entry, std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash>& map) {
+void ArgCapture::
+    parse_from(const nlohmann::json& entry, std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash>& map) {
     ArgCapture capture(
         entry["arg_idx"].get<int>(),
         entry["after"].get<bool>(),
@@ -59,13 +60,9 @@ void ArgCapture::parse_from(const nlohmann::json& entry, std::unordered_map<std:
     map.emplace(std::make_pair(capture.arg_idx, capture.after), std::move(capture));
 }
 
-const std::string& ArgCaptureIO::get_name() const {
-    return name_;
-}
+const std::string& ArgCaptureIO::get_name() const { return name_; }
 
-uint32_t ArgCaptureIO::get_current_invocation() const {
-    return invokes_;
-}
+uint32_t ArgCaptureIO::get_current_invocation() const { return invokes_; }
 
 void ArgCaptureIO::invocation() {
     ++invokes_;
@@ -75,32 +72,33 @@ void ArgCaptureIO::invocation() {
     }
 }
 
-void ArgCaptureIO::clear() {
-    current_captures_.clear();
-}
+void ArgCaptureIO::clear() { current_captures_.clear(); }
 
 const std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash>& ArgCaptureIO::get_captures() const {
     return current_captures_;
 }
 
-bool ArgCaptureIO::create_and_capture_inline(int arg_idx, bool after, int primitive_type, const std::vector<size_t>& dims, const void* data) {
+bool ArgCaptureIO::create_and_capture_inline(
+    int arg_idx, bool after, int primitive_type, const std::vector<size_t>& dims, const void* data
+) {
     auto key = std::make_pair(arg_idx, after);
 
-    auto it = current_captures_.emplace(
-        key,
-        ArgCapture(arg_idx, after, primitive_type, dims)
-    );
+    auto it = current_captures_.emplace(key, ArgCapture(arg_idx, after, primitive_type, dims));
 
     return capture_inline(it.first->second, data);
 }
 
-bool ArgCaptureIO::create_and_capture_to_file(int arg_idx, bool after, int primitive_type, const std::vector<size_t>& dims, std::filesystem::path& file, const void* data) {
+bool ArgCaptureIO::create_and_capture_to_file(
+    int arg_idx,
+    bool after,
+    int primitive_type,
+    const std::vector<size_t>& dims,
+    std::filesystem::path& file,
+    const void* data
+) {
     auto key = std::make_pair(arg_idx, after);
 
-    auto it = current_captures_.emplace(
-        key,
-        ArgCapture(arg_idx, after, primitive_type, dims)
-    );
+    auto it = current_captures_.emplace(key, ArgCapture(arg_idx, after, primitive_type, dims));
 
     return write_capture_to_file(it.first->second, file, data);
 }
@@ -109,10 +107,11 @@ bool ArgCaptureIO::capture_inline(ArgCapture& capture, const void* data) {
     auto size = std::accumulate(capture.dims.begin(), capture.dims.end(), 1, std::multiplies<size_t>());
 
     if (DEBUG_LOG) {
-        auto capType = capture.after? "result" : "input";
+        auto capType = capture.after ? "result" : "input";
 
-        std::cout << "Capturing " << (capture.dims.size()-1) << "D arg" << capture.arg_idx << " as " << capType << ": type "
-            << primitive_type_names[capture.primitive_type] << "(" << size << " bytes): 0x" << std::hex;
+        std::cout << "Capturing " << (capture.dims.size() - 1) << "D arg" << capture.arg_idx << " as " << capType
+                  << ": type " << primitive_type_names[capture.primitive_type] << "(" << size << " bytes): 0x"
+                  << std::hex;
 
         int perGroup = 0;
         for (int i = 0; i < size; ++i) {
@@ -141,13 +140,13 @@ bool ArgCaptureIO::capture_inline(ArgCapture& capture, const void* data) {
 }
 
 bool ArgCaptureIO::write_capture_to_file(ArgCapture& capture, std::filesystem::path file, const void* data) {
-
     if (DEBUG_LOG) {
-        auto capType = capture.after? "result" : "input";
+        auto capType = capture.after ? "result" : "input";
 
-        std::cout << "Capturing " << (capture.dims.size()-1) << "D arg" << capture.arg_idx << " as " << capType << ": type "
-            << primitive_type_names[capture.primitive_type] << ": 0x" << std::hex << data << std::dec << ", ";
-        for (int i=0; i < capture.dims.size(); ++i) {
+        std::cout << "Capturing " << (capture.dims.size() - 1) << "D arg" << capture.arg_idx << " as " << capType
+                  << ": type " << primitive_type_names[capture.primitive_type] << ": 0x" << std::hex << data << std::dec
+                  << ", ";
+        for (int i = 0; i < capture.dims.size(); ++i) {
             auto dim = capture.dims[i];
             std::cout << dim;
 
@@ -159,15 +158,17 @@ bool ArgCaptureIO::write_capture_to_file(ArgCapture& capture, std::filesystem::p
     }
 
     std::filesystem::create_directories(file.parent_path());
-    
+
 
     std::ofstream ofs(file, std::ofstream::binary | std::ofstream::out);
     if (!ofs.is_open()) {
-        throw std::runtime_error("Failed to open file for dumping arg" + std::to_string(capture.arg_idx) + ": " + file.string());
+        throw std::runtime_error(
+            "Failed to open file for dumping arg" + std::to_string(capture.arg_idx) + ": " + file.string()
+        );
     }
 
     auto totalSize = std::accumulate(capture.dims.begin(), capture.dims.end(), 1, std::multiplies<size_t>());
-    
+
     ofs.write(reinterpret_cast<const char*>(data), totalSize);
 
     ofs.close();
@@ -177,8 +178,7 @@ bool ArgCaptureIO::write_capture_to_file(ArgCapture& capture, std::filesystem::p
     return !ofs.bad();
 }
 
-void ArgCaptureIO::write_index(std::filesystem::path file) {    
-
+void ArgCaptureIO::write_index(std::filesystem::path file) {
     std::ofstream ofs(file);
     if (!ofs.is_open()) {
         throw std::runtime_error("Failed to open index file for writing: " + file.string());
@@ -192,7 +192,6 @@ void ArgCaptureIO::write_index(std::filesystem::path file) {
     auto arr = nlohmann::json::array();
 
     for (const auto& [key, capture] : current_captures_) {
-
         capture.serialize_into(arr);
     }
 
@@ -208,4 +207,4 @@ void ArgCaptureIO::write_index(std::filesystem::path file) {
 }
 
 
-}
+} // namespace arg_capture

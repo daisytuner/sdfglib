@@ -1,6 +1,6 @@
-#include "arg_capture_io.h"
-#include "daisy_rtl.h"
-#include "primitive_types.h"
+#include "daisy_rtl/arg_capture_io.h"
+#include "daisy_rtl/daisy_rtl.h"
+#include "daisy_rtl/primitive_types.h"
 
 #include <cstddef>
 #include <cstdint>

@@ -8,7 +8,7 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
-#include "daisy_rtl.h"
+#include "daisy_rtl/daisy_rtl.h"
 
 // -----------------------------------------------------------------------------
 //  Dynamic PAPI loading – we avoid a hard dependency on the library at link time

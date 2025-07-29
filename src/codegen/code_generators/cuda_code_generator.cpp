@@ -78,7 +78,7 @@ void CUDACodeGenerator::append_function_source(std::ofstream& ofs_source) {
 void CUDACodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#define "
                            << "__DAISY_NVVM__" << std::endl;
-    this->includes_stream_ << "#include <daisy_rtl.h>" << std::endl;
+    this->includes_stream_ << "#include <daisy_rtl/daisy_rtl.h>" << std::endl;
 };
 
 void CUDACodeGenerator::dispatch_structures() {

@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "arg_capture_io.h"
-#include "primitive_types.h"
-#include "test.h"
 #include <filesystem>
 #include <fstream>
+#include "daisy_rtl/arg_capture_io.h"
+#include "daisy_rtl/primitive_types.h"
+#include "test.h"
 
 using namespace arg_capture;
 
@@ -38,7 +38,7 @@ TEST(CaptureTests, CaptureInline) {
     EXPECT_TRUE(capture.create_and_capture_inline(3, true, static_cast<int>(PrimitiveType::Int64), {8}, data));
 
     data[0] = 9;
-    
+
     auto& cap = capture.get_captures().at(std::make_pair(3, true));
 
     EXPECT_EQ(cap.arg_idx, 3);
@@ -66,7 +66,7 @@ TEST(CaptureTests, Capture3D) {
 }
 
 TEST(CaptureTests, CaptureToFile) {
-    ArgCaptureIO capture("some_function");    
+    ArgCaptureIO capture("some_function");
 
     uint8_t data[] = {1, 2, 3, 4, 5, 6, 7, 8};
 

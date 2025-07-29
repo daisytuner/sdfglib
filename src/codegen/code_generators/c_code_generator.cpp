@@ -36,7 +36,7 @@ void CCodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#include <cblas.h>" << std::endl;
     this->includes_stream_ << "#include <stdbool.h>" << std::endl;
     this->includes_stream_ << "#include <stdlib.h>" << std::endl;
-    this->includes_stream_ << "#include <daisy_rtl.h>" << std::endl;
+    this->includes_stream_ << "#include <daisy_rtl/daisy_rtl.h>" << std::endl;
 };
 
 void CCodeGenerator::dispatch_structures() {
