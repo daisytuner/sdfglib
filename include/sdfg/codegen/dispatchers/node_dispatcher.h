@@ -7,7 +7,7 @@
 #include <string>
 
 #include "sdfg/codegen/code_snippet_factory.h"
-#include "sdfg/codegen/instrumentation/instrumentation.h"
+#include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 #include "sdfg/codegen/language_extension.h"
 #include "sdfg/codegen/utils.h"
 #include "sdfg/helpers/helpers.h"
@@ -33,7 +33,7 @@ protected:
 
     StructuredSDFG& sdfg_;
 
-    Instrumentation& instrumentation_;
+    InstrumentationPlan& instrumentation_plan_;
 
     virtual bool begin_node(PrettyPrinter& stream);
 
@@ -44,7 +44,7 @@ public:
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
         structured_control_flow::ControlFlowNode& node,
-        Instrumentation& instrumentation
+        InstrumentationPlan& instrumentation_plan
     );
 
     virtual ~NodeDispatcher() = default;

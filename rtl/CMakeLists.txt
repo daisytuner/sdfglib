@@ -5,8 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(daisy_rtl SHARED
-    src/daisy_rtl.cpp
-    src/daisy_capture.cpp
+    src/capture.cpp
+    src/instrumentation.cpp
 )
 
 target_include_directories(daisy_rtl PUBLIC
@@ -21,7 +21,7 @@ target_link_libraries(daisy_rtl PRIVATE dl sdfglib::arg_capture_io)
 set_target_properties(daisy_rtl PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
-    PUBLIC_HEADER "include/daisy_rtl.h" # Set this to the main public header
+    PUBLIC_HEADER "include/daisy_rtl.h"
 )
 
 install(TARGETS daisy_rtl

@@ -24,8 +24,8 @@ TEST(ForDispatcherTest, DispatchNode) {
     auto final_sdfg = builder.move();
 
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(*final_sdfg);
-    codegen::ForDispatcher dispatcher(language_extension, *final_sdfg, loop, instrumentation);
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::ForDispatcher dispatcher(language_extension, *final_sdfg, loop, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

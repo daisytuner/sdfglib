@@ -25,7 +25,7 @@ protected:
 public:
     CStyleBaseCodeGenerator(
         StructuredSDFG& sdfg,
-        InstrumentationStrategy instrumentation_strategy = InstrumentationStrategy::NONE,
+        InstrumentationPlan& instrumentation_plan,
         bool capture_args_results = false,
         const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr
     );

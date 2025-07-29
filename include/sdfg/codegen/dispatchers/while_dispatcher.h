@@ -15,7 +15,7 @@ public:
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
         structured_control_flow::While& node,
-        Instrumentation& instrumentation
+        InstrumentationPlan& instrumentation_plan
     );
 
     void dispatch_node(
@@ -32,7 +32,7 @@ public:
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
         structured_control_flow::Break& node,
-        Instrumentation& instrumentation
+        InstrumentationPlan& instrumentation_plan
     );
 
     void dispatch_node(
@@ -49,7 +49,7 @@ public:
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
         structured_control_flow::Continue& node,
-        Instrumentation& instrumentation
+        InstrumentationPlan& instrumentation_plan
     );
 
     void dispatch_node(
@@ -66,7 +66,7 @@ public:
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
         structured_control_flow::Return& node,
-        Instrumentation& instrumentation
+        InstrumentationPlan& instrumentation_plan
     );
 
     void dispatch_node(

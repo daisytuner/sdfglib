@@ -2,7 +2,7 @@
 
 #include "c_style_base_code_generator.h"
 #include "sdfg/codegen/code_generator.h"
-#include "sdfg/codegen/instrumentation/instrumentation_strategy.h"
+#include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 #include "sdfg/codegen/language_extensions/cpp_language_extension.h"
 
 namespace sdfg {
@@ -26,11 +26,11 @@ protected:
 public:
     explicit CPPCodeGenerator(
         StructuredSDFG& sdfg,
-        InstrumentationStrategy instrumentation_strategy = InstrumentationStrategy::NONE,
+        InstrumentationPlan& instrumentation_plan,
         bool capture_args_results = false,
         const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr
     )
-        : CStyleBaseCodeGenerator(sdfg, instrumentation_strategy, capture_args_results, output_and_header_paths) {};
+        : CStyleBaseCodeGenerator(sdfg, instrumentation_plan, capture_args_results, output_and_header_paths) {};
 
     std::string function_definition() override;
 

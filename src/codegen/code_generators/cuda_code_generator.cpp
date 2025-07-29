@@ -1,19 +1,18 @@
 #include "sdfg/codegen/code_generators/cuda_code_generator.h"
 
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
-#include "sdfg/codegen/instrumentation/instrumentation.h"
-#include "sdfg/codegen/instrumentation/outermost_loops_instrumentation.h"
+#include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 
 namespace sdfg {
 namespace codegen {
 
 CUDACodeGenerator::CUDACodeGenerator(
     StructuredSDFG& sdfg,
-    InstrumentationStrategy instrumentation_strategy,
+    InstrumentationPlan& instrumentation_plan,
     bool capture_args_results,
     const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths
 )
-    : CodeGenerator(sdfg, instrumentation_strategy, capture_args_results, output_and_header_paths) {
+    : CodeGenerator(sdfg, instrumentation_plan, capture_args_results, output_and_header_paths) {
     if (sdfg.type() != FunctionType_NV_GLOBAL) {
         throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
     }
@@ -79,10 +78,7 @@ void CUDACodeGenerator::append_function_source(std::ofstream& ofs_source) {
 void CUDACodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#define "
                            << "__DAISY_NVVM__" << std::endl;
-    this->includes_stream_ << "#include "
-                           << "\"daisyrtl.h\"" << std::endl;
-    if (instrumentation_strategy_ != InstrumentationStrategy::NONE)
-        this->includes_stream_ << "#include <daisy_rtl.h>" << std::endl;
+    this->includes_stream_ << "#include <daisy_rtl.h>" << std::endl;
 
     this->includes_stream_ << "#define __daisy_min(a,b) ((a)<(b)?(a):(b))" << std::endl;
     this->includes_stream_ << "#define __daisy_max(a,b) ((a)>(b)?(a):(b))" << std::endl;
@@ -203,10 +199,7 @@ void CUDACodeGenerator::dispatch_schedule() {
         }
     }
 
-    // Add instrumentation
-    auto instrumentation = create_instrumentation(instrumentation_strategy_, sdfg_);
-
-    auto dispatcher = create_dispatcher(language_extension_, sdfg_, sdfg_.root(), *instrumentation);
+    auto dispatcher = create_dispatcher(language_extension_, sdfg_, sdfg_.root(), instrumentation_plan_);
     dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_snippet_factory_);
 };
 

@@ -10,7 +10,8 @@ TEST(CUDACodeGeneratorTest, FunctionDefintion) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL);
     auto sdfg = builder.move();
 
-    codegen::CUDACodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CUDACodeGenerator generator(*sdfg, *instrumentation_plan);
     auto result = generator.function_definition();
     EXPECT_EQ(result, "extern \"C\" __global__ void sdfg_a()");
 }
@@ -19,14 +20,17 @@ TEST(CUDACodeGeneratorTest, Dispatch_Includes) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL);
     auto sdfg = builder.move();
 
-    codegen::CUDACodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CUDACodeGenerator generator(*sdfg, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.includes().str();
-    EXPECT_EQ(result,
-              "#define __DAISY_NVVM__\n#include \"daisyrtl.h\"\n#define __daisy_min(a,b) "
-              "((a)<(b)?(a):(b))\n#define __daisy_max(a,b) ((a)>(b)?(a):(b))\n#define "
-              "__daisy_fma(a,b,c) a * b + c\n");
+    EXPECT_EQ(
+        result,
+        "#define __DAISY_NVVM__\n#include <daisy_rtl.h>\n#define __daisy_min(a,b) "
+        "((a)<(b)?(a):(b))\n#define __daisy_max(a,b) ((a)>(b)?(a):(b))\n#define "
+        "__daisy_fma(a,b,c) a * b + c\n"
+    );
 }
 
 TEST(CUDACodeGeneratorTest, DispatchStructures_Basic) {
@@ -37,7 +41,8 @@ TEST(CUDACodeGeneratorTest, DispatchStructures_Basic) {
 
     auto sdfg = builder.move();
 
-    codegen::CUDACodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CUDACodeGenerator generator(*sdfg, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -60,7 +65,8 @@ TEST(CUDACodeGeneratorTest, DispatchStructures_Nested) {
 
     auto sdfg = builder.move();
 
-    codegen::CUDACodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CUDACodeGenerator generator(*sdfg, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -80,13 +86,13 @@ struct MyStructA member_0;
 TEST(CUDACodeGeneratorTest, DispatchGlobals) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL);
 
-    builder.add_container(
-        "a", types::Scalar(types::StorageType_NV_Global, 0, "", types::PrimitiveType::Int32), false,
-        true);
+    builder
+        .add_container("a", types::Scalar(types::StorageType_NV_Global, 0, "", types::PrimitiveType::Int32), false, true);
 
     auto sdfg = builder.move();
 
-    codegen::CUDACodeGenerator generator(*sdfg);
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CUDACodeGenerator generator(*sdfg, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.globals().str();

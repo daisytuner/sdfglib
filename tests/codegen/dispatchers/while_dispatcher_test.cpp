@@ -17,8 +17,8 @@ TEST(WhileDispatcherTest, DispatchNode) {
     auto final_sdfg = builder.move();
 
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(*final_sdfg);
-    codegen::WhileDispatcher dispatcher(language_extension, *final_sdfg, loop, instrumentation);
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::WhileDispatcher dispatcher(language_extension, *final_sdfg, loop, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -41,8 +41,8 @@ TEST(BreakDispatcherTest, DispatchNode) {
     auto final_sdfg = builder.move();
 
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(*final_sdfg);
-    codegen::BreakDispatcher dispatcher(language_extension, *final_sdfg, break_node, instrumentation);
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::BreakDispatcher dispatcher(language_extension, *final_sdfg, break_node, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -65,8 +65,8 @@ TEST(ContinueDispatcherTest, DispatchNode) {
     auto final_sdfg = builder.move();
 
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(*final_sdfg);
-    codegen::ContinueDispatcher dispatcher(language_extension, *final_sdfg, continue_node, instrumentation);
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::ContinueDispatcher dispatcher(language_extension, *final_sdfg, continue_node, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -88,8 +88,8 @@ TEST(ReturnDispatcherTest, DispatchNode) {
     auto final_sdfg = builder.move();
 
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(*final_sdfg);
-    codegen::ReturnDispatcher dispatcher(language_extension, *final_sdfg, return_node, instrumentation);
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::ReturnDispatcher dispatcher(language_extension, *final_sdfg, return_node, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
