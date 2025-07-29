@@ -16,7 +16,7 @@ void InstrumentationPlan::begin_instrumentation(const structured_control_flow::C
 
     // Create metadata variable
     std::string metdata_var = sdfg_.name() + "_" + std::to_string(node.element_id());
-    stream << "__daisy_metadata " << metdata_var << ";" << std::endl;
+    stream << "__daisy_metadata_t " << metdata_var << ";" << std::endl;
     stream << metdata_var << ".region_name = \"" << region_name << "\";" << std::endl;
     stream << metdata_var << ".function_name = \"" << sdfg_.metadata("function") << "\";" << std::endl;
     stream << metdata_var << ".file_name = \"" << dbg_info.filename() << "\";" << std::endl;
@@ -25,13 +25,13 @@ void InstrumentationPlan::begin_instrumentation(const structured_control_flow::C
     stream << metdata_var << ".column_begin = " << dbg_info.start_column() << ";" << std::endl;
     stream << metdata_var << ".column_end = " << dbg_info.end_column() << ";" << std::endl;
 
-    stream << "__daisy_instrumentation_enter(&" << metdata_var << ");" << std::endl;
+    stream << "__daisy_instrumentation_enter(__daisy_instrumentation_ctx, &" << metdata_var << ");" << std::endl;
 }
 
 void InstrumentationPlan::end_instrumentation(const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream)
     const {
     std::string metdata_var = sdfg_.name() + "_" + std::to_string(node.element_id());
-    stream << "__daisy_instrumentation_exit(&" << metdata_var << ");" << std::endl;
+    stream << "__daisy_instrumentation_exit(__daisy_instrumentation_ctx, &" << metdata_var << ");" << std::endl;
 }
 
 std::unique_ptr<InstrumentationPlan> InstrumentationPlan::none(StructuredSDFG& sdfg) {
