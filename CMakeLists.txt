@@ -149,6 +149,7 @@ set(SOURCE_FILES
     src/transformations/out_local_storage.cpp
     src/transformations/parallelization.cpp
     src/transformations/recorder.cpp
+    src/transformations/replayer.cpp
     src/transformations/utils.cpp
     src/types/array.cpp
     src/types/function.cpp
