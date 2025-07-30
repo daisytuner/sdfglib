@@ -44,10 +44,11 @@ static void load_papi_symbols() {
 //  Helpers / globals
 // -----------------------------------------------------------------------------
 namespace {
-std::vector<std::string> g_event_names;
-int g_eventset = -1;
+std::vector<std::string> g_event_names_cpu;
+std::vector<std::string> g_event_names_cuda;
+int g_eventset_cpu = -1;
+int g_eventset_cuda = -1;
 bool g_papi_available = false;
-bool g_runtime_only = false; // true when only time measurement is requested
 const char* g_output_file = nullptr;
 bool g_header_written = false;
 bool g_trace_closed = false;
@@ -64,6 +65,7 @@ void split_env_list(const char* str, std::vector<std::string>& out) {
         out.push_back(s.substr(start, end - start));
         start = end + 1;
     }
+    if (s.empty()) return;
     out.push_back(s.substr(start));
 }
 
@@ -72,52 +74,63 @@ void ensure_global_init() {
         load_papi_symbols();
         g_papi_available = _PAPI_library_init && _PAPI_create_eventset && _PAPI_add_named_event && _PAPI_start &&
                            _PAPI_stop && _PAPI_reset && _PAPI_get_real_nsec;
+        if (!g_papi_available) {
+            std::fprintf(stderr, "[daisy-rtl] PAPI not available.\n");
+            exit(EXIT_FAILURE);
+        }
+
+        // Initialise PAPI
+        const char* ver_str = std::getenv("__DAISY_PAPI_VERSION");
+        if (!ver_str) {
+            std::fprintf(stderr, "[daisy-rtl] __DAISY_PAPI_VERSION not set.\n");
+            exit(EXIT_FAILURE);
+        } else {
+            int ver = std::strtol(ver_str, nullptr, 0);
+            int retval = _PAPI_library_init(ver);
+            if (retval != ver) {
+                std::fprintf(
+                    stderr, "[daisy-rtl] PAPI init failed: %s.\n", _PAPI_strerror ? _PAPI_strerror(retval) : "unknown"
+                );
+                exit(EXIT_FAILURE);
+            }
+        }
 
         // Output file
         g_output_file = std::getenv("__DAISY_INSTRUMENTATION_FILE");
         if (!g_output_file) g_output_file = "daisy_trace.json";
 
-        // Events
-        const char* env_events = std::getenv("__DAISY_INSTRUMENTATION_EVENTS");
-        if (!env_events) env_events = "DURATION_TIME"; // default
-        split_env_list(env_events, g_event_names);
-
-        // Check for runtime only mode
-        if (g_event_names.size() == 1 && g_event_names[0] == "DURATION_TIME") {
-            g_runtime_only = true;
+        // Events - CPU
+        const char* env_events_cpu = std::getenv("__DAISY_INSTRUMENTATION_EVENTS");
+        if (env_events_cpu) {
+            split_env_list(env_events_cpu, g_event_names_cpu);
         }
 
-        if (g_papi_available && !g_runtime_only) {
-            // Initialise PAPI
-            const char* ver_str = std::getenv("__DAISY_PAPI_VERSION");
-            if (!ver_str) {
-                std::fprintf(stderr, "[daisy-rtl] __DAISY_PAPI_VERSION not set.\n");
-                exit(EXIT_FAILURE);
-            } else {
-                int ver = std::strtol(ver_str, nullptr, 0);
-                int retval = _PAPI_library_init(ver);
-                if (retval != ver) {
-                    std::fprintf(
-                        stderr,
-                        "[daisy-rtl] PAPI init failed: %s.\n",
-                        _PAPI_strerror ? _PAPI_strerror(retval) : "unknown"
-                    );
+        // Events - CUDA
+        const char* env_events_cuda = std::getenv("__DAISY_INSTRUMENTATION_EVENTS_CUDA");
+        if (env_events_cuda) {
+            split_env_list(env_events_cuda, g_event_names_cuda);
+        }
+
+        if (_PAPI_create_eventset(&g_eventset_cpu) != 0 || _PAPI_create_eventset(&g_eventset_cuda) != 0) {
+            std::fprintf(stderr, "[daisy-rtl] Failed to create PAPI eventset.\n");
+            exit(EXIT_FAILURE);
+        }
+
+        if (g_event_names_cpu.size() > 0) {
+            for (const auto& ev : g_event_names_cpu) {
+                if (ev == "DURATION_TIME") continue; // handled separately
+                if (_PAPI_add_named_event(g_eventset_cpu, ev.c_str()) != 0) {
+                    std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
                     exit(EXIT_FAILURE);
                 }
             }
         }
 
-        if (g_papi_available && !g_runtime_only) {
-            if (_PAPI_create_eventset(&g_eventset) != 0) {
-                std::fprintf(stderr, "[daisy-rtl] Failed to create PAPI eventset.\n");
-                exit(EXIT_FAILURE);
-            } else {
-                for (const auto& ev : g_event_names) {
-                    if (ev == "DURATION_TIME") continue; // handled separately
-                    if (_PAPI_add_named_event(g_eventset, ev.c_str()) != 0) {
-                        std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
-                        exit(EXIT_FAILURE);
-                    }
+        if (g_event_names_cuda.size() > 0) {
+            for (const auto& ev : g_event_names_cuda) {
+                if (_PAPI_add_named_event(g_eventset_cuda, ev.c_str()) != 0) {
+                    std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
+                    exit(EXIT_FAILURE);
                 }
             }
         }
@@ -125,7 +138,11 @@ void ensure_global_init() {
 }
 
 void write_event_json(
-    const __daisy_metadata* md, long long start_ns, long long dur_ns, const std::vector<long long>& counts
+    const __daisy_metadata* md,
+    long long start_ns,
+    long long dur_ns,
+    const std::vector<long long>& counts,
+    enum __daisy_event_set event_set
 ) {
     std::lock_guard<std::mutex> guard(g_trace_mutex);
     FILE* f = std::fopen(g_output_file, g_header_written ? "a" : "w");
@@ -161,8 +178,14 @@ void write_event_json(
         md->column_end
     );
     // PAPI counters
-    for (size_t i = 0; i < g_event_names.size() && i < counts.size(); ++i) {
-        std::fprintf(f, ",\"%s\":%lld", g_event_names[i].c_str(), counts[i]);
+    size_t num_events = event_set == __DAISY_EVENT_SET_CPU ? g_event_names_cpu.size() : g_event_names_cuda.size();
+    for (size_t i = 0; i < num_events; ++i) {
+        std::fprintf(
+            f,
+            ",\"%s\":%lld",
+            event_set == __DAISY_EVENT_SET_CPU ? g_event_names_cpu[i].c_str() : g_event_names_cuda[i].c_str(),
+            counts[i]
+        );
     }
     std::fprintf(f, "}" /* end args */ "}" /* end event obj */);
     std::fclose(f);
@@ -186,36 +209,42 @@ __daisy_instrumentation_t* __daisy_instrumentation_init() {
     return reinterpret_cast<__daisy_instrumentation_t*>(ctx);
 }
 
-void __daisy_instrumentation_enter(__daisy_instrumentation_t* context, __daisy_metadata* metadata) {
+void __daisy_instrumentation_enter(
+    __daisy_instrumentation_t* context, __daisy_metadata* metadata, enum __daisy_event_set event_set
+) {
     auto* ctx = reinterpret_cast<DaisyInstrumentationContext*>(context);
     if (!ctx || !metadata) return;
 
-    long long start_ns = _PAPI_get_real_nsec ? _PAPI_get_real_nsec()
-                                             : (long long) (std::clock()) * (1000000000LL / CLOCKS_PER_SEC);
-    ctx->start_ns = start_ns;
+    ctx->start_ns = _PAPI_get_real_nsec();
     ctx->region_name = metadata->region_name;
 
-    if (!g_runtime_only && g_papi_available) {
-        _PAPI_reset(g_eventset);
-        _PAPI_start(g_eventset);
+    if (event_set == __DAISY_EVENT_SET_CPU && g_event_names_cpu.size() > 0) {
+        _PAPI_reset(g_eventset_cpu);
+        _PAPI_start(g_eventset_cpu);
+    } else if (event_set == __DAISY_EVENT_SET_CUDA && g_event_names_cuda.size() > 0) {
+        _PAPI_reset(g_eventset_cuda);
+        _PAPI_start(g_eventset_cuda);
     }
 }
 
-void __daisy_instrumentation_exit(__daisy_instrumentation_t* context, __daisy_metadata* metadata) {
+void __daisy_instrumentation_exit(
+    __daisy_instrumentation_t* context, __daisy_metadata* metadata, enum __daisy_event_set event_set
+) {
     auto* ctx = reinterpret_cast<DaisyInstrumentationContext*>(context);
     if (!ctx || !metadata) return;
 
-    long long end_ns = _PAPI_get_real_nsec ? _PAPI_get_real_nsec()
-                                           : (long long) (std::clock()) * (1000000000LL / CLOCKS_PER_SEC);
+    long long end_ns = _PAPI_get_real_nsec();
+    long long duration_ns = end_ns - ctx->start_ns;
 
-    std::vector<long long> counts(g_event_names.size(), 0);
-    if (!g_runtime_only && g_papi_available) {
-        _PAPI_stop(g_eventset, counts.data());
-    } else {
-        counts[0] = end_ns - ctx->start_ns;
+    size_t num_events = event_set == __DAISY_EVENT_SET_CPU ? g_event_names_cpu.size() : g_event_names_cuda.size();
+    std::vector<long long> counts(num_events, 0);
+    if (event_set == __DAISY_EVENT_SET_CPU && g_event_names_cpu.size() > 0) {
+        _PAPI_stop(g_eventset_cpu, counts.data());
+    } else if (event_set == __DAISY_EVENT_SET_CUDA && g_event_names_cuda.size() > 0) {
+        _PAPI_stop(g_eventset_cuda, counts.data());
     }
 
-    write_event_json(metadata, ctx->start_ns, end_ns - ctx->start_ns, counts);
+    write_event_json(metadata, ctx->start_ns, duration_ns, counts, event_set);
 }
 
 void __daisy_instrumentation_finalize(__daisy_instrumentation_t* context) {

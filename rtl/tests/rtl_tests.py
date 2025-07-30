@@ -8,7 +8,7 @@ from pathlib import Path
 @pytest.mark.parametrize(
     "event",
     [
-        pytest.param("DURATION_TIME"),
+        pytest.param(""),
         pytest.param("perf::BRANCHES,perf::CYCLES"),
     ],
 )
@@ -55,7 +55,9 @@ def test_instrumentation(event):
     print(stderr)
     assert process.returncode == 0
 
-    event_names = event.split(",")
+    event_names = []
+    if event:
+        event_names = event.split(",")
 
     result = json.load(open(workdir / "data.json"))
     events = result["traceEvents"]
@@ -75,7 +77,7 @@ def test_instrumentation(event):
 @pytest.mark.parametrize(
     "event",
     [
-        pytest.param("DURATION_TIME"),
+        pytest.param(""),
         pytest.param("cuda:::dram__bytes,cuda:::sm__inst_executed_pipe_fma"),
     ],
 )
@@ -106,7 +108,7 @@ def test_instrumentation_cuda(event):
     ## THIS VERSION IS RUNNER-SPECIFIC and points to CI version of PAPI
     os.environ["__DAISY_PAPI_VERSION"] = "0x07020000"
     os.environ["__DAISY_INSTRUMENTATION_FILE"] = str(workdir / "data.json")
-    os.environ["__DAISY_INSTRUMENTATION_EVENTS"] = event
+    os.environ["__DAISY_INSTRUMENTATION_EVENTS_CUDA"] = event
 
     # Run benchmark
     process = subprocess.Popen(
@@ -118,7 +120,9 @@ def test_instrumentation_cuda(event):
     stdout, stderr = process.communicate()
     assert process.returncode == 0
 
-    event_names = event.split(",")
+    event_names = []
+    if event:
+        event_names = event.split(",")
 
     result = json.load(open(workdir / "data.json"))
     events = result["traceEvents"]

@@ -7,6 +7,11 @@
 extern "C" {
 #endif
 
+enum __daisy_event_set {
+    __DAISY_EVENT_SET_CPU = 0,
+    __DAISY_EVENT_SET_CUDA = 1,
+};
+
 typedef struct __daisy_metadata {
     const char* file_name;
     const char* function_name;
@@ -21,8 +26,12 @@ typedef struct __daisy_instrumentation __daisy_instrumentation_t;
 
 __daisy_instrumentation_t* __daisy_instrumentation_init();
 void __daisy_instrumentation_finalize(__daisy_instrumentation_t* context);
-void __daisy_instrumentation_enter(__daisy_instrumentation_t* context, __daisy_metadata_t* metadata);
-void __daisy_instrumentation_exit(__daisy_instrumentation_t* context, __daisy_metadata_t* metadata);
+void __daisy_instrumentation_enter(
+    __daisy_instrumentation_t* context, __daisy_metadata_t* metadata, enum __daisy_event_set event_set
+);
+void __daisy_instrumentation_exit(
+    __daisy_instrumentation_t* context, __daisy_metadata_t* metadata, enum __daisy_event_set event_set
+);
 
 typedef struct __daisy_capture __daisy_capture_t;
 

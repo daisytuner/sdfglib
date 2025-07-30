@@ -46,13 +46,13 @@ int main(int argc, char **argv) {
     };
 
     for (size_t rep = 0; rep < 10; rep++) {
-        __daisy_instrumentation_enter(context, &metadata);
+        __daisy_instrumentation_enter(context, &metadata, __DAISY_EVENT_SET_CUDA);
 
         initKernel<<<gridSize, blockSize>>>(dA, dB, dC, N);
         addKernel<<<gridSize, blockSize>>>(dA, dB, dC, N);
         cudaDeviceSynchronize();
 
-        __daisy_instrumentation_exit(context, &metadata);
+        __daisy_instrumentation_exit(context, &metadata, __DAISY_EVENT_SET_CUDA);
 
         // Copy result back to host for verification/printing
         cudaMemcpy(hC, dC, bytes, cudaMemcpyDeviceToHost);
