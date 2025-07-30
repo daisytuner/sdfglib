@@ -14,7 +14,9 @@ TEST(LoopInterchangeTest, Map_2D) {
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Array desc_1(base_desc, symbolic::symbol("M"));
     types::Pointer desc_2(desc_1);
-    builder.add_container("A", desc_2, true);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
     builder.add_container("N", sym_desc, true);
@@ -55,12 +57,12 @@ TEST(LoopInterchangeTest, Map_2D) {
     auto& a_in = builder.add_access(block, "A");
     auto& i = builder.add_access(block, "i");
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(
-        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", sym_desc}}
-    );
-    builder.add_memlet(block, a_in, "void", tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")});
-    builder.add_memlet(block, i, "void", tasklet, "_in2", {});
-    builder.add_memlet(block, tasklet, "_out", a_out, "void", {symbolic::symbol("i"), symbolic::symbol("j")});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    builder
+        .add_computational_memlet(block, a_in, tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")}, desc_2);
+    builder.add_computational_memlet(block, i, tasklet, "_in2", {});
+    builder
+        .add_computational_memlet(block, tasklet, "_out", a_out, {symbolic::symbol("i"), symbolic::symbol("j")}, desc_2);
 
     analysis::AnalysisManager analysis_manager(builder.subject());
     transformations::LoopInterchange transformation(loop, loop_2);
@@ -98,7 +100,9 @@ TEST(LoopInterchangeTest, DependentLoops) {
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Array desc_1(base_desc, symbolic::symbol("M"));
     types::Pointer desc_2(desc_1);
-    builder.add_container("A", desc_2, true);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
 
     // Define loop
     auto indvar1 = symbolic::symbol("i");
@@ -128,13 +132,12 @@ TEST(LoopInterchangeTest, DependentLoops) {
     auto& block = builder.add_block(body2);
     auto& A_in = builder.add_access(block, "A");
     auto& A_out = builder.add_access(block, "A");
-    auto& tasklet =
-        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
-    builder.add_memlet(
-        block, A_in, "void", tasklet, "_in", {symbolic::symbol("i"), symbolic::add(symbolic::symbol("j"), offset2)}
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(
+        block, A_in, tasklet, "_in", {symbolic::symbol("i"), symbolic::add(symbolic::symbol("j"), offset2)}, desc_2
     );
-    builder.add_memlet(
-        block, tasklet, "_out", A_out, "void", {symbolic::add(symbolic::symbol("j"), offset2), symbolic::symbol("i")}
+    builder.add_computational_memlet(
+        block, tasklet, "_out", A_out, {symbolic::add(symbolic::symbol("j"), offset2), symbolic::symbol("i")}, desc_2
     );
 
     // Analysis
@@ -153,7 +156,9 @@ TEST(LoopInterchangeTest, OuterLoopHasOuterBlocks) {
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Array desc_1(base_desc, symbolic::symbol("M"));
     types::Pointer desc_2(desc_1);
-    builder.add_container("A", desc_2, true);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
     builder.add_container("N", sym_desc, true);
@@ -195,12 +200,12 @@ TEST(LoopInterchangeTest, OuterLoopHasOuterBlocks) {
     auto& a_in = builder.add_access(block, "A");
     auto& i = builder.add_access(block, "i");
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(
-        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", sym_desc}}
-    );
-    builder.add_memlet(block, a_in, "void", tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")});
-    builder.add_memlet(block, i, "void", tasklet, "_in2", {});
-    builder.add_memlet(block, tasklet, "_out", a_out, "void", {symbolic::symbol("i"), symbolic::symbol("j")});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    builder
+        .add_computational_memlet(block, a_in, tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")}, desc_2);
+    builder.add_computational_memlet(block, i, tasklet, "_in2", {});
+    builder
+        .add_computational_memlet(block, tasklet, "_out", a_out, {symbolic::symbol("i"), symbolic::symbol("j")}, desc_2);
 
     analysis::AnalysisManager analysis_manager(builder.subject());
     transformations::LoopInterchange transformation(loop, loop_2);

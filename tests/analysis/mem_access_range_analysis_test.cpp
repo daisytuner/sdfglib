@@ -40,11 +40,12 @@ static void writeSdfgDot(const StructuredSDFG& sdfg) {
 TEST(MemAccessRangeTest, Arg_Index_Write) {
     builder::StructuredSDFGBuilder builder("sdfg_arg_idx", FunctionType_CPU);
 
-    auto dataType = types::Scalar(types::PrimitiveType::Int32);
-    auto& array1dType = static_cast<const types::IType&>(types::Pointer(dataType));
+    types::Scalar base_desc(types::PrimitiveType::Int32);
+    types::Pointer ptr_desc(base_desc);
 
-    builder.add_container("A", array1dType, true);
-    builder.add_container("arg_idx", dataType, true);
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("arg_idx", base_desc, true);
 
     auto symA = symbolic::symbol("A");
     auto sym_idx = symbolic::symbol("arg_idx");
@@ -52,9 +53,9 @@ TEST(MemAccessRangeTest, Arg_Index_Write) {
     auto& root = builder.subject().root();
 
     auto& block = builder.add_block(root);
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"__out", dataType}, {{"0", dataType}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
     auto& writeAccess = builder.add_access(block, "A");
-    auto& writeArg = builder.add_memlet(block, tasklet, "__out", writeAccess, "void", {sym_idx});
+    auto& writeArg = builder.add_computational_memlet(block, tasklet, "_out", writeAccess, {sym_idx}, ptr_desc);
 
     auto sdfg = builder.move();
 
@@ -85,14 +86,15 @@ TEST(MemAccessRangeTest, Arg_Index_Write) {
 TEST(MemAccessRangeTest, Simple_2D_Map_Init) {
     builder::StructuredSDFGBuilder builder("sdfg_simple_2d", FunctionType_CPU);
 
-    auto dataType = types::Scalar(types::PrimitiveType::Int32);
-    types::Array array1dType(dataType, symbolic::symbol("M"));
+    types::Scalar base_desc(types::PrimitiveType::Int32);
+    types::Array array1dType(base_desc, symbolic::symbol("M"));
     types::Pointer array2dType(array1dType);
 
-    builder.add_container("A", array2dType, true);
-    builder.add_container("arg_init", dataType, true);
-    builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("j", types::Scalar(types::PrimitiveType::Int32));
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("arg_init", base_desc, true);
+    builder.add_container("i", base_desc);
+    builder.add_container("j", base_desc);
     auto symA = symbolic::symbol("A");
     auto sym_i = symbolic::symbol("i");
     auto sym_j = symbolic::symbol("j");
@@ -110,12 +112,11 @@ TEST(MemAccessRangeTest, Simple_2D_Map_Init) {
     );
 
     auto& block = builder.add_block(inner_for.root());
-    auto& tasklet =
-        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"__out", dataType}, {{"__in", dataType}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
     auto& readAccess = builder.add_access(block, "arg_init");
-    auto& readArg = builder.add_memlet(block, readAccess, "void", tasklet, "__in", {});
+    auto& readArg = builder.add_computational_memlet(block, readAccess, tasklet, "_in", {});
     auto& writeAccess = builder.add_access(block, "A");
-    auto& writeArg = builder.add_memlet(block, tasklet, "__out", writeAccess, "void", {sym_i, sym_j});
+    auto& writeArg = builder.add_computational_memlet(block, tasklet, "_out", writeAccess, {sym_i, sym_j}, array2dType);
 
     auto sdfg = builder.move();
 
@@ -148,34 +149,35 @@ TEST(MemAccessRangeTest, Simple_2D_Map_Init) {
 TEST(MemAccessRangeTest, Incomplete_2D_Line_Sum) {
     builder::StructuredSDFGBuilder builder("sdfg_incomplete_2d", FunctionType_CPU);
 
-    auto dataType = types::Scalar(types::PrimitiveType::Int32);
-    types::Array array1dType(dataType, symbolic::symbol("M"));
+    types::Scalar base_desc(types::PrimitiveType::Int32);
+    types::Pointer base_ptr_desc(base_desc);
+
+    types::Array array1dType(base_desc, symbolic::symbol("M"));
     types::Pointer array2dType(array1dType);
 
-    builder.add_container("A", array2dType, true);
-    builder.add_container("B", types::Pointer(dataType), true);
-    builder.add_container("init_i", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("j", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("sum", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("result", types::Pointer(types::Scalar(types::PrimitiveType::Int32)), true);
-    auto symA = symbolic::symbol("A");
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("B", opaque_desc, true);
+    builder.add_container("result", opaque_desc, true);
+
+    builder.add_container("init_i", base_desc);
+    builder.add_container("i", base_desc);
+    builder.add_container("j", base_desc);
+    builder.add_container("sum", base_desc);
     auto sym_i = symbolic::symbol("i");
     auto sym_init_i = symbolic::symbol("init_i");
     auto sym_j = symbolic::symbol("j");
 
     auto& root = builder.subject().root();
     auto& init_block = builder.add_block(root);
-    auto& initTasklet =
-        builder.add_tasklet(init_block, data_flow::TaskletCode::assign, {"__out", dataType}, {{"0", dataType}});
+    auto& initTasklet = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, "_out", {"0"});
     auto& sumInitAccess = builder.add_access(init_block, "sum");
-    builder.add_memlet(init_block, initTasklet, "__out", sumInitAccess, "void", {});
+    builder.add_computational_memlet(init_block, initTasklet, "_out", sumInitAccess, {});
     auto& b_access = builder.add_access(init_block, "B");
-    auto& init_i_tasklet =
-        builder.add_tasklet(init_block, data_flow::TaskletCode::assign, {"__out", dataType}, {{"__in", dataType}});
-    builder.add_memlet(init_block, b_access, "void", init_i_tasklet, "__in", {symbolic::integer(0)});
+    auto& init_i_tasklet = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(init_block, b_access, init_i_tasklet, "_in", {symbolic::integer(0)}, base_ptr_desc);
     auto& init_i_access = builder.add_access(init_block, "init_i");
-    builder.add_memlet(init_block, init_i_tasklet, "__out", init_i_access, "void", {});
+    builder.add_computational_memlet(init_block, init_i_tasklet, "_out", init_i_access, {});
 
 
     auto& outer_for = builder.add_for(
@@ -194,23 +196,23 @@ TEST(MemAccessRangeTest, Incomplete_2D_Line_Sum) {
     );
 
     auto& inner_block = builder.add_block(inner_for.root());
-    auto& tasklet = builder.add_tasklet(
-        inner_block, data_flow::TaskletCode::add, {"__out", dataType}, {{"__in0", dataType}, {"__in1", dataType}}
-    );
+    auto& tasklet = builder.add_tasklet(inner_block, data_flow::TaskletCode::add, "_out", {"_in0", "_in1"});
     auto& prevSumAccess = builder.add_access(inner_block, "sum");
-    auto& readPrevSum = builder.add_memlet(inner_block, prevSumAccess, "void", tasklet, "__in0", {});
+    auto& readPrevSum = builder.add_computational_memlet(inner_block, prevSumAccess, tasklet, "_in0", {});
     auto& readAAccess = builder.add_access(inner_block, "A");
-    auto& readArray = builder.add_memlet(inner_block, readAAccess, "void", tasklet, "__in1", {sym_i, sym_j});
+    auto& readArray =
+        builder.add_computational_memlet(inner_block, readAAccess, tasklet, "_in1", {sym_i, sym_j}, array2dType);
     auto& writeAccess = builder.add_access(inner_block, "sum");
-    builder.add_memlet(inner_block, tasklet, "__out", writeAccess, "void", {});
+    builder.add_computational_memlet(inner_block, tasklet, "_out", writeAccess, {});
 
     auto& result_block = builder.add_block(root);
     auto& sumAccess = builder.add_access(result_block, "sum");
-    auto& result_tasklet =
-        builder.add_tasklet(result_block, data_flow::TaskletCode::assign, {"__out", dataType}, {{"__in", dataType}});
-    builder.add_memlet(result_block, sumAccess, "void", result_tasklet, "__in", {});
+    auto& result_tasklet = builder.add_tasklet(result_block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(result_block, sumAccess, result_tasklet, "_in", {});
     auto& resultAccess = builder.add_access(result_block, "result");
-    builder.add_memlet(result_block, result_tasklet, "__out", resultAccess, "void", {symbolic::integer(0)});
+    builder.add_computational_memlet(
+        result_block, result_tasklet, "_out", resultAccess, {symbolic::integer(0)}, base_ptr_desc
+    );
 
     auto sdfg = builder.move();
 

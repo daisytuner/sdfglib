@@ -43,8 +43,10 @@ TEST(DotVisualizerTest, transpose) {
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Array desc_1(base_desc, symbolic::symbol("M"));
     types::Pointer desc_2(desc_1);
-    builder.add_container("A", desc_2, true);
-    builder.add_container("B", desc_2, true);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("B", opaque_desc, true);
 
     // Define loops
     auto bound1 = symbolic::symbol("M");
@@ -69,10 +71,9 @@ TEST(DotVisualizerTest, transpose) {
     auto& block = builder.add_block(body2);
     auto& A = builder.add_access(block, "A");
     auto& B = builder.add_access(block, "B");
-    auto& tasklet =
-        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
-    builder.add_memlet(block, A, "void", tasklet, "_in", {indvar1, indvar2});
-    builder.add_memlet(block, tasklet, "_out", B, "void", {indvar2, indvar1});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, A, tasklet, "_in", {indvar1, indvar2}, desc_2);
+    builder.add_computational_memlet(block, tasklet, "_out", B, {indvar2, indvar1}, desc_2);
 
     auto sdfg2 = builder.move();
 
@@ -135,8 +136,10 @@ TEST(DotVisualizerTest, syrk) {
 
     types::Array desc_1d(desc_element, symbolic::symbol("M"));
     types::Pointer desc_2d(desc_1d);
-    sdfg.add_container("A", desc_2d, true);
-    sdfg.add_container("C", desc_2d, true);
+
+    types::Pointer opaque_desc;
+    sdfg.add_container("A", opaque_desc, true);
+    sdfg.add_container("C", opaque_desc, true);
 
     auto& root = sdfg.subject().root();
 
@@ -161,12 +164,14 @@ TEST(DotVisualizerTest, syrk) {
     auto& C_in_node_1 = sdfg.add_access(block1, "C");
     auto& C_out_node_1 = sdfg.add_access(block1, "C");
     auto& beta_node = sdfg.add_access(block1, "beta");
-    auto& tasklet1 = sdfg.add_tasklet(
-        block1, data_flow::TaskletCode::mul, {"_out", desc_element}, {{"_in1", desc_element}, {"_in2", desc_element}}
+    auto& tasklet1 = sdfg.add_tasklet(block1, data_flow::TaskletCode::mul, "_out", {"_in1", "_in2"});
+    sdfg.add_computational_memlet(
+        block1, C_in_node_1, tasklet1, "_in1", {symbolic::symbol("i"), symbolic::symbol("j_1")}, desc_2d
     );
-    sdfg.add_memlet(block1, C_in_node_1, "void", tasklet1, "_in1", {symbolic::symbol("i"), symbolic::symbol("j_1")});
-    sdfg.add_memlet(block1, beta_node, "void", tasklet1, "_in2", {});
-    sdfg.add_memlet(block1, tasklet1, "_out", C_out_node_1, "void", {symbolic::symbol("i"), symbolic::symbol("j_1")});
+    sdfg.add_computational_memlet(block1, beta_node, tasklet1, "_in2", {});
+    sdfg.add_computational_memlet(
+        block1, tasklet1, "_out", C_out_node_1, {symbolic::symbol("i"), symbolic::symbol("j_1")}, desc_2d
+    );
 
     auto& loop_k = sdfg.add_for(
         body_i,
@@ -187,23 +192,27 @@ TEST(DotVisualizerTest, syrk) {
     auto& block2 = sdfg.add_block(loop_j_2.root());
     auto& A_node = sdfg.add_access(block2, "A");
     auto& tmp_node = sdfg.add_access(block2, "tmp");
-    auto& tasklet2 = sdfg.add_tasklet(
-        block2, data_flow::TaskletCode::mul, {"_out", desc_element}, {{"_in1", desc_element}, {"_in2", desc_element}}
+    auto& tasklet2 = sdfg.add_tasklet(block2, data_flow::TaskletCode::mul, "_out", {"_in1", "_in2"});
+    sdfg.add_computational_memlet(
+        block2, A_node, tasklet2, "_in1", {symbolic::symbol("j_2"), symbolic::symbol("k")}, desc_2d
     );
-    sdfg.add_memlet(block2, A_node, "void", tasklet2, "_in1", {symbolic::symbol("j_2"), symbolic::symbol("k")});
-    sdfg.add_memlet(block2, A_node, "void", tasklet2, "_in2", {symbolic::symbol("i"), symbolic::symbol("k")});
-    sdfg.add_memlet(block2, tasklet2, "_out", tmp_node, "void", {});
+    sdfg.add_computational_memlet(
+        block2, A_node, tasklet2, "_in2", {symbolic::symbol("i"), symbolic::symbol("k")}, desc_2d
+    );
+    sdfg.add_computational_memlet(block2, tasklet2, "_out", tmp_node, {});
 
     auto& block3 = sdfg.add_block(loop_j_2.root());
     auto& C_in_node_2 = sdfg.add_access(block3, "C");
     auto& C_out_node_2 = sdfg.add_access(block3, "C");
     auto& tmp_node_2 = sdfg.add_access(block3, "tmp");
-    auto& tasklet3 = sdfg.add_tasklet(
-        block3, data_flow::TaskletCode::add, {"_out", desc_element}, {{"_in1", desc_element}, {"_in2", desc_element}}
+    auto& tasklet3 = sdfg.add_tasklet(block3, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    sdfg.add_computational_memlet(
+        block3, C_in_node_2, tasklet3, "_in1", {symbolic::symbol("i"), symbolic::symbol("j_2")}, desc_2d
     );
-    sdfg.add_memlet(block3, C_in_node_2, "void", tasklet3, "_in1", {symbolic::symbol("i"), symbolic::symbol("j_2")});
-    sdfg.add_memlet(block3, tmp_node_2, "void", tasklet3, "_in2", {});
-    sdfg.add_memlet(block3, tasklet3, "_out", C_out_node_2, "void", {symbolic::symbol("i"), symbolic::symbol("j_2")});
+    sdfg.add_computational_memlet(block3, tmp_node_2, tasklet3, "_in2", {});
+    sdfg.add_computational_memlet(
+        block3, tasklet3, "_out", C_out_node_2, {symbolic::symbol("i"), symbolic::symbol("j_2")}, desc_2d
+    );
 
     auto sdfg2 = sdfg.move();
 
@@ -318,23 +327,13 @@ TEST(DotVisualizerTest, multi_tasklet_block) {
     auto& A2 = builder.add_access(block, "A");
     auto& A3 = builder.add_access(block, "A");
 
-    auto& tasklet1 = builder.add_tasklet(
-        block,
-        data_flow::TaskletCode::fma,
-        {"_out", desc_element},
-        {{"2", desc_element}, {"_in", desc_element}, {"1", desc_element}}
-    );
-    builder.add_memlet(block, A1, "void", tasklet1, "_in", {symbolic::integer(0)});
-    builder.add_memlet(block, tasklet1, "_out", A2, "void", {symbolic::integer(0)});
+    auto& tasklet1 = builder.add_tasklet(block, data_flow::TaskletCode::fma, "_out", {"2", "_in", "1"});
+    builder.add_computational_memlet(block, A1, tasklet1, "_in", {symbolic::integer(0)});
+    builder.add_computational_memlet(block, tasklet1, "_out", A2, {symbolic::integer(0)});
 
-    auto& tasklet2 = builder.add_tasklet(
-        block,
-        data_flow::TaskletCode::fma,
-        {"_out", desc_element},
-        {{"2", desc_element}, {"_in", desc_element}, {"1", desc_element}}
-    );
-    builder.add_memlet(block, A2, "void", tasklet2, "_in", {symbolic::integer(0)});
-    builder.add_memlet(block, tasklet2, "_out", A3, "void", {symbolic::integer(0)});
+    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::fma, "_out", {"2", "_in", "1"});
+    builder.add_computational_memlet(block, A2, tasklet2, "_in", {symbolic::integer(0)});
+    builder.add_computational_memlet(block, tasklet2, "_out", A3, {symbolic::integer(0)});
 
     auto sdfg2 = builder.move();
 
@@ -388,26 +387,16 @@ TEST(DotVisualizerTest, test_if_else) {
     auto& block = builder.add_block(true_case);
     auto& input_node = builder.add_access(block, "A");
     auto& output_node = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(
-        block,
-        data_flow::TaskletCode::assign,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"_in", types::Scalar(types::PrimitiveType::Int32)}}
-    );
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+    builder.add_computational_memlet(block, input_node, tasklet, "_in", {});
 
     auto& block2 = builder.add_block(false_case);
     auto& input_node2 = builder.add_access(block2, "B");
     auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(
-        block2,
-        data_flow::TaskletCode::assign,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"_in", types::Scalar(types::PrimitiveType::Int32)}}
-    );
-    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
-    builder.add_memlet(block2, input_node2, "void", tasklet2, "_in", {});
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block2, tasklet2, "_out", output_node2, {});
+    builder.add_computational_memlet(block2, input_node2, tasklet2, "_in", {});
 
     auto sdfg2 = builder.move();
 
@@ -567,8 +556,8 @@ TEST(DotVisualizerTest, test_return) {
 
     auto& block1 = builder.add_block(root);
     auto& output1 = builder.add_access(block1, "i");
-    auto& tasklet1 = builder.add_tasklet(block1, data_flow::TaskletCode::assign, {"_out", sym_desc}, {{"0", sym_desc}});
-    builder.add_memlet(block1, tasklet1, "_out", output1, "void", {});
+    auto& tasklet1 = builder.add_tasklet(block1, data_flow::TaskletCode::assign, "_out", {"0"});
+    builder.add_computational_memlet(block1, tasklet1, "_out", output1, {});
 
     auto& loop = builder.add_while(root);
     auto& body = loop.root();
@@ -582,20 +571,16 @@ TEST(DotVisualizerTest, test_return) {
     auto& block2 = builder.add_block(case2);
     auto& input2 = builder.add_access(block2, "A");
     auto& output2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(
-        block2, data_flow::TaskletCode::mul, {"_out", base_desc}, {{"_in", base_desc}, {"2.0", base_desc}}
-    );
-    builder.add_memlet(block2, input2, "void", tasklet2, "_in", {symbolic::symbol("i")});
-    builder.add_memlet(block2, tasklet2, "_out", output2, "void", {symbolic::symbol("i")});
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::mul, "_out", {"_in", "2.0"});
+    builder.add_computational_memlet(block2, input2, tasklet2, "_in", {symbolic::symbol("i")});
+    builder.add_computational_memlet(block2, tasklet2, "_out", output2, {symbolic::symbol("i")});
 
     auto& block3 = builder.add_block(case2);
     auto& input3 = builder.add_access(block3, "i");
     auto& output3 = builder.add_access(block3, "i");
-    auto& tasklet3 =
-        builder
-            .add_tasklet(block3, data_flow::TaskletCode::add, {"_out", sym_desc}, {{"_in", sym_desc}, {"1", sym_desc}});
-    builder.add_memlet(block3, input3, "void", tasklet3, "_in", {});
-    builder.add_memlet(block3, tasklet3, "_out", output3, "void", {});
+    auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::add, "_out", {"_in", "1"});
+    builder.add_computational_memlet(block3, input3, tasklet3, "_in", {});
+    builder.add_computational_memlet(block3, tasklet3, "_out", output3, {});
 
     auto sdfg2 = builder.move();
 
@@ -857,10 +842,10 @@ TEST(DotVisualizerTest, test_handleTasklet) {
 
         auto& block = builder.add_block(root);
         auto& output = builder.add_access(block, "x");
-        std::vector<std::pair<std::string, sdfg::types::Scalar>> inputs;
-        for (size_t i = 0; i < arity; ++i) inputs.push_back({std::to_string(i), desc});
-        auto& tasklet = builder.add_tasklet(block, code.first, {"_out", desc}, inputs);
-        builder.add_memlet(block, tasklet, "_out", output, "void", {});
+        std::vector<std::string> inputs;
+        for (size_t i = 0; i < arity; ++i) inputs.push_back(std::to_string(i));
+        auto& tasklet = builder.add_tasklet(block, code.first, "_out", inputs);
+        builder.add_computational_memlet(block, tasklet, "_out", output, {});
 
         auto sdfg2 = builder.move();
 
