@@ -16,7 +16,7 @@ void main(int argc, char** argv) {
     };
 
     for (size_t rep = 0; rep < 10; rep++) {
-        __daisy_instrumentation_enter(context, &metadata);
+        __daisy_instrumentation_enter(context, &metadata, __DAISY_EVENT_SET_CPU);
 
         double A[1000];
         double B[1000];
@@ -32,7 +32,7 @@ void main(int argc, char** argv) {
             C[i] = A[i] + B[i];
         }
 
-        __daisy_instrumentation_exit(context, &metadata);
+        __daisy_instrumentation_exit(context, &metadata, __DAISY_EVENT_SET_CPU);
 
         for (int i = 0; i < 1000; i++) {
             printf("%f\n", C[i]);
