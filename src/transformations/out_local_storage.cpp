@@ -152,22 +152,21 @@ void OutLocalStorage::apply_array(builder::StructuredSDFGBuilder& builder, analy
     auto& init_block = builder.add_block(init_body);
     auto& init_access_read = builder.add_access(init_block, this->container_);
     auto& init_access_write = builder.add_access(init_block, replacement_name);
-    auto& init_tasklet =
-        builder.add_tasklet(init_block, data_flow::TaskletCode::assign, {"_out", scalar_type}, {{"_in", scalar_type}});
-    auto& init_memlet_in = builder.add_memlet(init_block, init_access_read, "void", init_tasklet, "_in", first_subset);
+    auto& init_tasklet = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    auto& init_memlet_in =
+        builder.add_computational_memlet(init_block, init_access_read, init_tasklet, "_in", first_subset);
     init_memlet_in.replace(loop_.indvar(), indvar);
-    builder.add_memlet(init_block, init_tasklet, "_out", init_access_write, "void", {indvar});
+    builder.add_computational_memlet(init_block, init_tasklet, "_out", init_access_write, {indvar});
 
     auto& reset_loop = builder.add_for_after(parent, loop_, indvar, condition, init, update).first;
     auto& reset_body = reset_loop.root();
     auto& reset_block = builder.add_block(reset_body);
     auto& reset_access_read = builder.add_access(reset_block, replacement_name);
     auto& reset_access_write = builder.add_access(reset_block, this->container_);
-    auto& reset_tasklet =
-        builder.add_tasklet(reset_block, data_flow::TaskletCode::assign, {"_out", scalar_type}, {{"_in", scalar_type}});
-    builder.add_memlet(reset_block, reset_access_read, "void", reset_tasklet, "_in", {indvar});
+    auto& reset_tasklet = builder.add_tasklet(reset_block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(reset_block, reset_access_read, reset_tasklet, "_in", {indvar});
     auto& reset_memlet_out =
-        builder.add_memlet(reset_block, reset_tasklet, "_out", reset_access_write, "void", first_subset);
+        builder.add_computational_memlet(reset_block, reset_tasklet, "_out", reset_access_write, first_subset);
     reset_memlet_out.replace(loop_.indvar(), indvar);
 
     for (auto user : body_users.uses(this->container_)) {
@@ -198,18 +197,16 @@ void OutLocalStorage::apply_scalar(builder::StructuredSDFGBuilder& builder, anal
     auto& init_block = builder.add_block_before(parent, loop_).first;
     auto& init_access_read = builder.add_access(init_block, this->container_);
     auto& init_access_write = builder.add_access(init_block, replacement_name);
-    auto& init_tasklet =
-        builder.add_tasklet(init_block, data_flow::TaskletCode::assign, {"_out", scalar_type}, {{"_in", scalar_type}});
-    builder.add_memlet(init_block, init_access_read, "void", init_tasklet, "_in", first_subset);
-    builder.add_memlet(init_block, init_tasklet, "_out", init_access_write, "void", {});
+    auto& init_tasklet = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(init_block, init_access_read, init_tasklet, "_in", first_subset);
+    builder.add_computational_memlet(init_block, init_tasklet, "_out", init_access_write, {});
 
     auto& reset_block = builder.add_block_after(parent, loop_).first;
     auto& reset_access_read = builder.add_access(reset_block, replacement_name);
     auto& reset_access_write = builder.add_access(reset_block, this->container_);
-    auto& reset_tasklet =
-        builder.add_tasklet(reset_block, data_flow::TaskletCode::assign, {"_out", scalar_type}, {{"_in", scalar_type}});
-    builder.add_memlet(reset_block, reset_access_read, "void", reset_tasklet, "_in", {});
-    builder.add_memlet(reset_block, reset_tasklet, "_out", reset_access_write, "void", first_subset);
+    auto& reset_tasklet = builder.add_tasklet(reset_block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(reset_block, reset_access_read, reset_tasklet, "_in", {});
+    builder.add_computational_memlet(reset_block, reset_tasklet, "_out", reset_access_write, first_subset);
 
     this->loop_.replace(symbolic::symbol(this->container_), symbolic::symbol(replacement_name));
 };

@@ -44,14 +44,11 @@ void DotVisualizer::visualizeBlock(const StructuredSDFG& sdfg, const structured_
         auto nodeId = escapeDotId(node->element_id(), "n_");
         if (this->last_comp_name_.empty()) this->last_comp_name_ = nodeId;
         if (const data_flow::Tasklet* tasklet = dynamic_cast<const data_flow::Tasklet*>(node)) {
-            this->stream_ << nodeId << " [shape=octagon,label=\"" << tasklet->output().first << " = ";
+            this->stream_ << nodeId << " [shape=octagon,label=\"" << tasklet->output() << " = ";
             this->visualizeTasklet(*tasklet);
             this->stream_ << "\"];" << std::endl;
 
-            std::ranges::
-                transform(tasklet->inputs(), std::inserter(in_connectors, in_connectors.end()), [](const auto& pair) {
-                    return pair.first;
-                });
+            in_connectors = tasklet->inputs();
             node_will_show_literal_connectors = true;
         } else if (const data_flow::AccessNode* access_node = dynamic_cast<const data_flow::AccessNode*>(node)) {
             this->stream_ << nodeId << " [";
@@ -61,10 +58,7 @@ void DotVisualizer::visualizeBlock(const StructuredSDFG& sdfg, const structured_
             is_access_node = true;
         } else if (const data_flow::LibraryNode* libnode = dynamic_cast<const data_flow::LibraryNode*>(node)) {
             this->stream_ << nodeId << " [shape=doubleoctagon,label=\"" << libnode->toStr() << "\"];" << std::endl;
-            std::ranges::
-                transform(libnode->inputs(), std::inserter(in_connectors, in_connectors.end()), [](const auto& elem) {
-                    return elem;
-                });
+            in_connectors = libnode->inputs();
         }
 
         std::unordered_set<std::string> unused_connectors(in_connectors.begin(), in_connectors.end());
@@ -113,8 +107,7 @@ void DotVisualizer::visualizeBlock(const StructuredSDFG& sdfg, const structured_
                     this->stream_ << dstVar; // use access node name instead of connector-name
                 }
                 if (subsetOnDst) {
-                    types::IType const* dstTypePtr = sdfg.exists(dstVar) ? &sdfg.type(dstVar) : nullptr;
-                    this->visualizeSubset(sdfg, iedge.begin_subset(), iedge.end_subset(), dstTypePtr);
+                    this->visualizeSubset(sdfg, iedge.begin_subset(), iedge.end_subset(), &iedge.base_type());
                 }
             } else { // dst is a tasklet/library node
                 this->stream_ << dst_conn;
@@ -142,8 +135,7 @@ void DotVisualizer::visualizeBlock(const StructuredSDFG& sdfg, const structured_
                 }
                 this->stream_ << srcVar;
                 if (subsetOnSrc) {
-                    types::IType const* srcTypePtr = sdfg.exists(srcVar) ? &sdfg.type(srcVar) : nullptr;
-                    this->visualizeSubset(sdfg, iedge.begin_subset(), iedge.end_subset(), srcTypePtr);
+                    this->visualizeSubset(sdfg, iedge.begin_subset(), iedge.end_subset(), &iedge.base_type());
                 }
             } else {
                 this->stream_ << src_conn;

@@ -293,9 +293,7 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& init_block = builder.add_block_before(output_loop->root(), *last_map, block.debug_info()).first;
     auto& sum_init = builder.add_access(init_block, sum_var, block.debug_info());
 
-    auto& init_tasklet =
-        builder
-            .add_tasklet(init_block, data_flow::assign, {"_out", scalar_type}, {{"0.0", scalar_type}}, block.debug_info());
+    auto& init_tasklet = builder.add_tasklet(init_block, data_flow::assign, "_out", {"0.0"}, block.debug_info());
 
     builder.add_computational_memlet(init_block, init_tasklet, "_out", sum_init, {}, block.debug_info());
 
@@ -303,35 +301,29 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& input_node_a_new = builder.add_access(code_block, A_var, input_node_a->debug_info());
     auto& input_node_b_new = builder.add_access(code_block, B_var, input_node_b->debug_info());
 
-    auto& core_fma = builder.add_tasklet(
-        code_block,
-        data_flow::fma,
-        {"_out", scalar_type},
-        {{"_in1", scalar_type}, {"_in2", scalar_type}, {"_in3", scalar_type}},
-        block.debug_info()
-    );
+    auto& core_fma =
+        builder.add_tasklet(code_block, data_flow::fma, "_out", {"_in1", "_in2", "_in3"}, block.debug_info());
     auto& sum_in = builder.add_access(code_block, sum_var, block.debug_info());
     auto& sum_out = builder.add_access(code_block, sum_var, block.debug_info());
     builder.add_computational_memlet(code_block, sum_in, core_fma, "_in3", {}, block.debug_info());
 
     symbolic::Expression a_idx = symbolic::add(symbolic::mul(lda(), new_subset[0]), new_subset[2]);
-    builder.add_computational_memlet(code_block, input_node_a_new, core_fma, "_in1", {a_idx}, block.debug_info());
+    builder.add_computational_memlet(
+        code_block, input_node_a_new, core_fma, "_in1", {a_idx}, iedge_a->base_type(), iedge_a->debug_info()
+    );
     symbolic::Expression b_idx = symbolic::add(symbolic::mul(ldb(), new_subset[2]), new_subset[1]);
-    builder.add_computational_memlet(code_block, input_node_b_new, core_fma, "_in2", {b_idx}, block.debug_info());
-    builder.add_computational_memlet(code_block, core_fma, "_out", sum_out, {}, block.debug_info());
+    builder.add_computational_memlet(
+        code_block, input_node_b_new, core_fma, "_in2", {b_idx}, iedge_b->base_type(), iedge_b->debug_info()
+    );
+    builder.add_computational_memlet(code_block, core_fma, "_out", sum_out, {}, oedge.debug_info());
 
     auto& flush_block = builder.add_block_after(output_loop->root(), *last_map, block.debug_info()).first;
     auto& sum_final = builder.add_access(flush_block, sum_var, block.debug_info());
     auto& input_node_c_new = builder.add_access(flush_block, C_in_var, input_node_c->debug_info());
     symbolic::Expression c_idx = symbolic::add(symbolic::mul(ldc(), new_subset[0]), new_subset[1]);
 
-    auto& scale_sum_tasklet = builder.add_tasklet(
-        flush_block,
-        data_flow::mul,
-        {"_out", scalar_type},
-        {{"_in1", scalar_type}, {alpha, scalar_type}},
-        block.debug_info()
-    );
+    auto& scale_sum_tasklet =
+        builder.add_tasklet(flush_block, data_flow::mul, "_out", {"_in1", alpha}, block.debug_info());
     builder.add_computational_memlet(flush_block, sum_final, scale_sum_tasklet, "_in1", {}, block.debug_info());
     if (alpha_node) {
         auto& alpha_node_new = builder.add_access(flush_block, alpha_node->data(), block.debug_info());
@@ -341,39 +333,41 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     std::string scaled_sum_temp = builder.find_new_name("scaled_sum_temp");
     builder.add_container(scaled_sum_temp, scalar_type);
     auto& scaled_sum_final = builder.add_access(flush_block, scaled_sum_temp, block.debug_info());
-    builder.add_computational_memlet(flush_block, scale_sum_tasklet, "_out", scaled_sum_final, {}, block.debug_info());
-
-    auto& scale_input_tasklet = builder.add_tasklet(
-        flush_block,
-        data_flow::mul,
-        {"_out", scalar_type},
-        {{"_in1", scalar_type}, {beta, scalar_type}},
-        block.debug_info()
+    builder.add_computational_memlet(
+        flush_block, scale_sum_tasklet, "_out", scaled_sum_final, {}, scalar_type, block.debug_info()
     );
-    builder
-        .add_computational_memlet(flush_block, input_node_c_new, scale_input_tasklet, "_in1", {c_idx}, block.debug_info());
+
+    auto& scale_input_tasklet =
+        builder.add_tasklet(flush_block, data_flow::mul, "_out", {"_in1", beta}, block.debug_info());
+    builder.add_computational_memlet(
+        flush_block, input_node_c_new, scale_input_tasklet, "_in1", {c_idx}, iedge_c->base_type(), iedge_c->debug_info()
+    );
     if (beta_node) {
         auto& beta_node_new = builder.add_access(flush_block, beta_node->data(), block.debug_info());
-        builder.add_computational_memlet(flush_block, scale_sum_tasklet, beta, beta_node_new, {}, block.debug_info());
+        builder.add_computational_memlet(
+            flush_block, scale_sum_tasklet, beta, beta_node_new, {}, scalar_type, block.debug_info()
+        );
     }
 
     std::string scaled_input_temp = builder.find_new_name("scaled_input_temp");
     builder.add_container(scaled_input_temp, scalar_type);
     auto& scaled_input_c = builder.add_access(flush_block, scaled_input_temp, block.debug_info());
-    builder.add_computational_memlet(flush_block, scale_input_tasklet, "_out", scaled_input_c, {}, block.debug_info());
-
-    auto& flush_add_tasklet = builder.add_tasklet(
-        flush_block,
-        data_flow::add,
-        {"_out", scalar_type},
-        {{"_in1", scalar_type}, {"_in2", scalar_type}},
-        block.debug_info()
+    builder.add_computational_memlet(
+        flush_block, scale_input_tasklet, "_out", scaled_input_c, {}, scalar_type, block.debug_info()
     );
+
+    auto& flush_add_tasklet =
+        builder.add_tasklet(flush_block, data_flow::add, "_out", {"_in1", "_in2"}, block.debug_info());
     auto& output_node_new = builder.add_access(flush_block, C_out_var, output_node->debug_info());
-    builder.add_computational_memlet(flush_block, scaled_sum_final, flush_add_tasklet, "_in1", {}, block.debug_info());
-    builder.add_computational_memlet(flush_block, scaled_input_c, flush_add_tasklet, "_in2", {}, block.debug_info());
-    builder
-        .add_computational_memlet(flush_block, flush_add_tasklet, "_out", output_node_new, {c_idx}, block.debug_info());
+    builder.add_computational_memlet(
+        flush_block, scaled_sum_final, flush_add_tasklet, "_in1", {}, scalar_type, block.debug_info()
+    );
+    builder.add_computational_memlet(
+        flush_block, scaled_input_c, flush_add_tasklet, "_in2", {}, scalar_type, block.debug_info()
+    );
+    builder.add_computational_memlet(
+        flush_block, flush_add_tasklet, "_out", output_node_new, {c_idx}, iedge_c->base_type(), iedge_c->debug_info()
+    );
 
 
     // Clean up block

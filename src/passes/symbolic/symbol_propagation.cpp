@@ -234,8 +234,8 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                         auto& dst = oedge.dst();
                         if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(&dst)) {
                             for (auto& entry : tasklet->inputs()) {
-                                if (entry.first == oedge.dst_conn()) {
-                                    entry.first = std::to_string(new_int->as_int());
+                                if (entry == oedge.dst_conn()) {
+                                    entry = std::to_string(new_int->as_int());
                                     to_remove.insert(&oedge);
                                     break;
                                 }

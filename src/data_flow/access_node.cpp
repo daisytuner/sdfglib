@@ -1,5 +1,7 @@
 #include "sdfg/data_flow/access_node.h"
 
+#include "sdfg/function.h"
+
 namespace sdfg {
 namespace data_flow {
 
@@ -15,7 +17,18 @@ AccessNode::AccessNode(
       };
 
 void AccessNode::validate(const Function& function) const {
-    // TODO: Implement
+    if (symbolic::is_nullptr(symbolic::symbol(this->data_)) || helpers::is_number(this->data_)) {
+        return;
+    }
+
+    auto& type = function.type(this->data_);
+    if (type.type_id() == types::TypeID::Pointer) {
+        auto& pointer_type = dynamic_cast<const types::Pointer&>(type);
+        if (pointer_type.has_pointee_type()) {
+            // Deprecation warning
+            std::cerr << "[DEPRECATION] Access node uses typed pointer type" << std::endl;
+        }
+    }
 }
 
 const std::string& AccessNode::data() const { return this->data_; };
