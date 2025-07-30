@@ -5,6 +5,10 @@
 namespace sdfg {
 namespace codegen {
 
+void InstrumentationPlan::update(const structured_control_flow::ControlFlowNode& node, InstrumentationEventType event_type) {
+    this->nodes_[&node] = event_type;
+}
+
 bool InstrumentationPlan::should_instrument(const structured_control_flow::ControlFlowNode& node) const {
     return this->nodes_.count(&node);
 }
@@ -25,20 +29,21 @@ void InstrumentationPlan::begin_instrumentation(const structured_control_flow::C
     stream << metdata_var << ".column_begin = " << dbg_info.start_column() << ";" << std::endl;
     stream << metdata_var << ".column_end = " << dbg_info.end_column() << ";" << std::endl;
 
-    stream << "__daisy_instrumentation_enter(__daisy_instrumentation_ctx, &" << metdata_var
-           << ", __DAISY_EVENT_SET_CPU);" << std::endl;
+    stream << "__daisy_instrumentation_enter(__daisy_instrumentation_ctx, &" << metdata_var << ", "
+           << this->nodes_.at(&node) << ");" << std::endl;
 }
 
 void InstrumentationPlan::end_instrumentation(const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream)
     const {
     std::string metdata_var = sdfg_.name() + "_" + std::to_string(node.element_id());
-    stream << "__daisy_instrumentation_exit(__daisy_instrumentation_ctx, &" << metdata_var
-           << ", __DAISY_EVENT_SET_CPU);" << std::endl;
+    stream << "__daisy_instrumentation_exit(__daisy_instrumentation_ctx, &" << metdata_var << ", "
+           << this->nodes_.at(&node) << ");" << std::endl;
 }
 
 std::unique_ptr<InstrumentationPlan> InstrumentationPlan::none(StructuredSDFG& sdfg) {
-    return std::make_unique<
-        InstrumentationPlan>(sdfg, std::unordered_set<const structured_control_flow::ControlFlowNode*>{});
+    return std::make_unique<InstrumentationPlan>(
+        sdfg, std::unordered_map<const structured_control_flow::ControlFlowNode*, InstrumentationEventType>{}
+    );
 }
 
 std::unique_ptr<InstrumentationPlan> InstrumentationPlan::outermost_loops_plan(StructuredSDFG& sdfg) {
@@ -46,9 +51,9 @@ std::unique_ptr<InstrumentationPlan> InstrumentationPlan::outermost_loops_plan(S
     auto& loop_tree_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto ols = loop_tree_analysis.outermost_loops();
 
-    std::unordered_set<const structured_control_flow::ControlFlowNode*> nodes;
+    std::unordered_map<const structured_control_flow::ControlFlowNode*, InstrumentationEventType> nodes;
     for (auto loop : ols) {
-        nodes.insert(loop);
+        nodes.insert({loop, InstrumentationEventType::CPU});
     }
 
     return std::make_unique<InstrumentationPlan>(sdfg, nodes);
