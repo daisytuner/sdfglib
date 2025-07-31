@@ -33,6 +33,8 @@ public:
 
     const std::vector<structured_control_flow::ControlFlowNode*> outermost_loops() const;
 
+    const std::vector<structured_control_flow::ControlFlowNode*> outermost_maps() const;
+
     /**
      * @brief Checks if a loop's update is a strictly monotonic function (positive).
      *
