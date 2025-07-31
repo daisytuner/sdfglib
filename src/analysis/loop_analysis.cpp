@@ -212,5 +212,46 @@ const std::vector<structured_control_flow::ControlFlowNode*> LoopAnalysis::outer
     return outermost_maps_;
 }
 
+std::vector<sdfg::structured_control_flow::ControlFlowNode*> LoopAnalysis::children(
+    sdfg::structured_control_flow::ControlFlowNode* node,
+    const std::unordered_map<
+        sdfg::structured_control_flow::ControlFlowNode*,
+        sdfg::structured_control_flow::ControlFlowNode*>& tree
+) const {
+    // Find unique child
+    std::vector<sdfg::structured_control_flow::ControlFlowNode*> c;
+    for (auto& entry : tree) {
+        if (entry.second == node) {
+            c.push_back(entry.first);
+        }
+    }
+    return c;
+};
+
+std::list<std::vector<sdfg::structured_control_flow::ControlFlowNode*>> LoopAnalysis::loop_tree_paths(
+    sdfg::structured_control_flow::ControlFlowNode* loop,
+    const std::unordered_map<
+        sdfg::structured_control_flow::ControlFlowNode*,
+        sdfg::structured_control_flow::ControlFlowNode*>& tree
+) const {
+    // Collect all paths in tree starting from loop recursively (DFS)
+    std::list<std::vector<sdfg::structured_control_flow::ControlFlowNode*>> paths;
+    auto children = this->children(loop, tree);
+    if (children.empty()) {
+        paths.push_back({loop});
+        return paths;
+    }
+
+    for (auto& child : children) {
+        auto p = this->loop_tree_paths(child, tree);
+        for (auto& path : p) {
+            path.insert(path.begin(), loop);
+            paths.push_back(path);
+        }
+    }
+
+    return paths;
+};
+
 } // namespace analysis
 } // namespace sdfg

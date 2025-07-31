@@ -35,6 +35,20 @@ public:
 
     const std::vector<structured_control_flow::ControlFlowNode*> outermost_maps() const;
 
+    std::vector<sdfg::structured_control_flow::ControlFlowNode*> children(
+        sdfg::structured_control_flow::ControlFlowNode* node,
+        const std::unordered_map<
+            sdfg::structured_control_flow::ControlFlowNode*,
+            sdfg::structured_control_flow::ControlFlowNode*>& tree
+    ) const;
+
+    std::list<std::vector<sdfg::structured_control_flow::ControlFlowNode*>> loop_tree_paths(
+        sdfg::structured_control_flow::ControlFlowNode* loop,
+        const std::unordered_map<
+            sdfg::structured_control_flow::ControlFlowNode*,
+            sdfg::structured_control_flow::ControlFlowNode*>& tree
+    ) const;
+
     /**
      * @brief Checks if a loop's update is a strictly monotonic function (positive).
      *
