@@ -142,6 +142,7 @@ void BlockFusion::apply(
             edge.dst_conn(),
             edge.begin_subset(),
             edge.end_subset(),
+            edge.base_type(),
             edge.debug_info()
         );
     }

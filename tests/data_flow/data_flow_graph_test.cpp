@@ -15,15 +15,13 @@ TEST(DataflowTest, TopologicalSort) {
     auto& access_node_1 = builder.add_access(state, "scalar_1");
     auto& access_node_2 = builder.add_access(state, "scalar_2");
     auto& access_node_3 = builder.add_access(state, "scalar_1");
-    auto& tasklet_1 =
-        builder.add_tasklet(state, data_flow::TaskletCode::add, {"_out", desc}, {{"_in", desc}, {"1", desc}});
-    auto& tasklet_2 =
-        builder.add_tasklet(state, data_flow::TaskletCode::add, {"_out", desc}, {{"_in", desc}, {"2", desc}});
+    auto& tasklet_1 = builder.add_tasklet(state, data_flow::TaskletCode::add, "_out", {"_in", "1"});
+    auto& tasklet_2 = builder.add_tasklet(state, data_flow::TaskletCode::add, "_out", {"_in", "2"});
 
-    builder.add_memlet(state, access_node_1, "void", tasklet_1, "_in", {});
-    builder.add_memlet(state, tasklet_1, "_out", access_node_2, "void", {});
-    builder.add_memlet(state, access_node_2, "void", tasklet_2, "_in", {});
-    builder.add_memlet(state, tasklet_2, "_out", access_node_3, "void", {});
+    builder.add_computational_memlet(state, access_node_1, tasklet_1, "_in", {});
+    builder.add_computational_memlet(state, tasklet_1, "_out", access_node_2, {});
+    builder.add_computational_memlet(state, access_node_2, tasklet_2, "_in", {});
+    builder.add_computational_memlet(state, tasklet_2, "_out", access_node_3, {});
 
     auto sdfg = builder.move();
 

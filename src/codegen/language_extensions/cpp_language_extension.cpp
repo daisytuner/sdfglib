@@ -391,15 +391,20 @@ std::string CPPLanguageExtension::
         auto& element_type = array_type->element_type();
         val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]", element_type);
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
-        const types::IType& pointee = pointer_type->pointee_type();
+        if (pointer_type->has_pointee_type()) {
+            const types::IType& pointee = pointer_type->pointee_type();
 
-        const bool pointee_is_function_or_array = dynamic_cast<const types::Function*>(&pointee) ||
-                                                  dynamic_cast<const types::Array*>(&pointee);
+            const bool pointee_is_function_or_array = dynamic_cast<const types::Function*>(&pointee) ||
+                                                      dynamic_cast<const types::Array*>(&pointee);
 
-        // Parenthesise *only* when it is needed to bind tighter than [] or ()
-        std::string decorated = pointee_is_function_or_array ? "(*" + name + ")" : "*" + name;
+            // Parenthesise *only* when it is needed to bind tighter than [] or ()
+            std::string decorated = pointee_is_function_or_array ? "(*" + name + ")" : "*" + name;
 
-        val << declaration(decorated, pointee);
+            val << declaration(decorated, pointee);
+        } else {
+            val << "void*";
+            val << " " << name;
+        }
     } else if (auto ref_type = dynamic_cast<const Reference*>(&type)) {
         val << declaration("&" + name, ref_type->reference_type());
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
@@ -494,15 +499,7 @@ std::string CPPLanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
     std::string op = code_to_string(tasklet.code());
     std::vector<std::string> arguments;
     for (size_t i = 0; i < tasklet.inputs().size(); ++i) {
-        std::string arg = tasklet.input(i).first;
-        if (!tasklet.needs_connector(i)) {
-            if (arg != "NAN" && arg != "INFINITY") {
-                if (tasklet.input(i).second.primitive_type() == types::PrimitiveType::Float) {
-                    arg += "f";
-                }
-            }
-        }
-        arguments.push_back(arg);
+        arguments.push_back(tasklet.input(i));
     }
 
     if (tasklet.code() == data_flow::TaskletCode::assign) {

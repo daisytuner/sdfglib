@@ -22,7 +22,9 @@ TEST(OutLocalStorage, Scalar) {
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer desc(base_desc);
-    builder.add_container("A", desc, true);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
     builder.add_container("C", base_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -44,12 +46,10 @@ TEST(OutLocalStorage, Scalar) {
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "C");
-    auto& tasklet = builder.add_tasklet(
-        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", base_desc}}
-    );
-    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in1", {{symbolic::symbol("i")}});
-    auto& memlet_in2 = builder.add_memlet(block, access_in2, "void", tasklet, "_in2", {});
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, access_in, tasklet, "_in1", {symbolic::symbol("i")}, desc);
+    builder.add_computational_memlet(block, access_in2, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", access_out, {});
 
     auto structured_sdfg = builder.move();
 
@@ -182,12 +182,10 @@ TEST(OutLocalStorage, Array) {
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "C");
-    auto& tasklet = builder.add_tasklet(
-        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", base_desc}}
-    );
-    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in1", {{symbolic::symbol("i")}});
-    auto& memlet_in2 = builder.add_memlet(block, access_in2, "void", tasklet, "_in2", {{symbolic::symbol("i")}});
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {{symbolic::symbol("i")}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, access_in, tasklet, "_in1", {symbolic::symbol("i")});
+    builder.add_computational_memlet(block, access_in2, tasklet, "_in2", {symbolic::symbol("i")});
+    builder.add_computational_memlet(block, tasklet, "_out", access_out, {symbolic::symbol("i")});
 
     auto structured_sdfg = builder.move();
 
@@ -325,7 +323,9 @@ TEST(OutLocalStorage, Fail) {
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Pointer desc(base_desc);
-    builder.add_container("A", desc, true);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
     builder.add_container("N", sym_desc, true);
@@ -345,10 +345,9 @@ TEST(OutLocalStorage, Fail) {
     auto& block = builder.add_block(body);
     auto& access_in = builder.add_access(block, "i");
     auto& access_out = builder.add_access(block, "A");
-    auto& tasklet =
-        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
-    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in", {});
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {symbolic::integer(0)});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, access_in, tasklet, "_in", {});
+    builder.add_computational_memlet(block, tasklet, "_out", access_out, {symbolic::integer(0)}, desc);
 
     auto structured_sdfg = builder.move();
 

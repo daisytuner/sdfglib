@@ -69,9 +69,8 @@ TEST(DeadDataEliminationTest, WriteWithoutRead_Dataflow) {
     auto& block = builder.add_block(root);
 
     auto& output_node = builder.add_access(block, "j");
-    auto& tasklet =
-        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", desc}, {{"0", desc}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto sdfg = builder.move();
 
@@ -103,8 +102,13 @@ TEST(DeadDataEliminationTest, WriteAfterWrite_For) {
 
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root, {{sym, symbolic::integer(0)}});
-    auto& loop = builder.add_for(root, sym, symbolic::Lt(sym, symbolic::integer(10)),
-                                 symbolic::integer(0), symbolic::add(sym, symbolic::integer(1)));
+    auto& loop = builder.add_for(
+        root,
+        sym,
+        symbolic::Lt(sym, symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(sym, symbolic::integer(1))
+    );
 
     auto sdfg = builder.move();
 

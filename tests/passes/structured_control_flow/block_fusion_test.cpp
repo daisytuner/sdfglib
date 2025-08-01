@@ -22,27 +22,17 @@ TEST(BlockFusionTest, Chain) {
 
     auto& node1_1 = builder.add_access(block1, "A");
     auto& node2_1 = builder.add_access(block1, "A");
-    auto& tasklet_1 = builder.add_tasklet(
-        block1,
-        data_flow::TaskletCode::fma,
-        {"_out", desc_element},
-        {{"2", desc_element}, {"_in", desc_element}, {"1", desc_element}}
-    );
-    builder.add_memlet(block1, node1_1, "void", tasklet_1, "_in", {symbolic::integer(0)});
-    builder.add_memlet(block1, tasklet_1, "_out", node2_1, "void", {symbolic::integer(0)});
+    auto& tasklet_1 = builder.add_tasklet(block1, data_flow::TaskletCode::fma, "_out", {"2", "_in", "1"});
+    builder.add_computational_memlet(block1, node1_1, tasklet_1, "_in", {symbolic::integer(0)});
+    builder.add_computational_memlet(block1, tasklet_1, "_out", node2_1, {symbolic::integer(0)});
 
     auto& block2 = builder.add_block(root, control_flow::Assignments{});
 
     auto& node1_2 = builder.add_access(block2, "A");
     auto& node2_2 = builder.add_access(block2, "A");
-    auto& tasklet_2 = builder.add_tasklet(
-        block2,
-        data_flow::TaskletCode::fma,
-        {"_out", desc_element},
-        {{"2", desc_element}, {"_in", desc_element}, {"1", desc_element}}
-    );
-    builder.add_memlet(block2, node1_2, "void", tasklet_2, "_in", {symbolic::integer(0)});
-    builder.add_memlet(block2, tasklet_2, "_out", node2_2, "void", {symbolic::integer(0)});
+    auto& tasklet_2 = builder.add_tasklet(block2, data_flow::TaskletCode::fma, "_out", {"2", "_in", "1"});
+    builder.add_computational_memlet(block2, node1_2, tasklet_2, "_in", {symbolic::integer(0)});
+    builder.add_computational_memlet(block2, tasklet_2, "_out", node2_2, {symbolic::integer(0)});
 
     auto sdfg = builder.move();
 
@@ -75,27 +65,17 @@ TEST(BlockFusionTest, Independent) {
 
     auto& node1_1 = builder.add_access(block1, "A");
     auto& node2_1 = builder.add_access(block1, "A");
-    auto& tasklet_1 = builder.add_tasklet(
-        block1,
-        data_flow::TaskletCode::fma,
-        {"_out", desc_element},
-        {{"2", desc_element}, {"_in", desc_element}, {"1", desc_element}}
-    );
-    builder.add_memlet(block1, node1_1, "void", tasklet_1, "_in", {symbolic::integer(0)});
-    builder.add_memlet(block1, tasklet_1, "_out", node2_1, "void", {symbolic::integer(0)});
+    auto& tasklet_1 = builder.add_tasklet(block1, data_flow::TaskletCode::fma, "_out", {"2", "_in", "1"});
+    builder.add_computational_memlet(block1, node1_1, tasklet_1, "_in", {symbolic::integer(0)});
+    builder.add_computational_memlet(block1, tasklet_1, "_out", node2_1, {symbolic::integer(0)});
 
     auto& block2 = builder.add_block(root, control_flow::Assignments{});
 
     auto& node1_2 = builder.add_access(block2, "B");
     auto& node2_2 = builder.add_access(block2, "B");
-    auto& tasklet_2 = builder.add_tasklet(
-        block2,
-        data_flow::TaskletCode::fma,
-        {"_out", desc_element},
-        {{"2", desc_element}, {"_in", desc_element}, {"1", desc_element}}
-    );
-    builder.add_memlet(block2, node1_2, "void", tasklet_2, "_in", {symbolic::integer(0)});
-    builder.add_memlet(block2, tasklet_2, "_out", node2_2, "void", {symbolic::integer(0)});
+    auto& tasklet_2 = builder.add_tasklet(block2, data_flow::TaskletCode::fma, "_out", {"2", "_in", "1"});
+    builder.add_computational_memlet(block2, node1_2, tasklet_2, "_in", {symbolic::integer(0)});
+    builder.add_computational_memlet(block2, tasklet_2, "_out", node2_2, {symbolic::integer(0)});
 
     auto sdfg = builder.move();
 
@@ -136,24 +116,24 @@ TEST(BlockFusionTest, LibraryNode_WithoutSideEffects) {
         static_cast<math::ml::ReLUNode&>(builder
                                              .add_library_node<math::ml::ReLUNode>(block_1, DebugInfo(), "tmp", "input")
         );
-    builder.add_memlet(
+    builder.add_computational_memlet(
         block_1,
         input_node,
-        "void",
         relu_node,
         "input",
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
+        array_desc_2,
         block_1.debug_info()
     );
-    builder.add_memlet(
+    builder.add_computational_memlet(
         block_1,
         relu_node,
         "tmp",
         tmp_node_out,
-        "void",
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
+        array_desc_2,
         block_1.debug_info()
     );
 
@@ -163,24 +143,24 @@ TEST(BlockFusionTest, LibraryNode_WithoutSideEffects) {
     auto& output_node = builder.add_access(block_2, "output");
     auto& relu_node_2 = static_cast<
         math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block_2, DebugInfo(), "output", "tmp"));
-    builder.add_memlet(
+    builder.add_computational_memlet(
         block_2,
         tmp_node_in,
-        "void",
         relu_node_2,
         "tmp",
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
+        array_desc_2,
         block_2.debug_info()
     );
-    builder.add_memlet(
+    builder.add_computational_memlet(
         block_2,
         relu_node_2,
         "output",
         output_node,
-        "void",
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
+        array_desc_2,
         block_2.debug_info()
     );
 

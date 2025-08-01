@@ -124,10 +124,6 @@ bool MaxPoolNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Anal
     auto &Y_acc_in = builder.add_access(code_block, Y_name, dbg);
     auto &Y_acc_out = builder.add_access(code_block, Y_name, dbg);
 
-    // Scalar type
-    const auto &y_type = builder.subject().type(Y_name);
-    types::Scalar scalar_type(y_type.primitive_type());
-
     // Build X subset using output coords * stride - pad + kernel_idx
     data_flow::Subset subset_X;
     // Assume dims: N, C, spatial...
@@ -143,17 +139,11 @@ bool MaxPoolNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Anal
     data_flow::Subset subset_Y = out_subset;
 
     // Tasklet max
-    auto &tasklet = builder.add_tasklet(
-        code_block,
-        data_flow::TaskletCode::max,
-        {"_out", scalar_type},
-        {{"_in1", scalar_type}, {"_in2", scalar_type}},
-        dbg
-    );
+    auto &tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::max, "_out", {"_in1", "_in2"}, dbg);
 
-    builder.add_computational_memlet(code_block, Y_acc_in, tasklet, "_in1", subset_Y, dbg);
-    builder.add_computational_memlet(code_block, X_acc, tasklet, "_in2", subset_X, dbg);
-    builder.add_computational_memlet(code_block, tasklet, "_out", Y_acc_out, subset_Y, dbg);
+    builder.add_computational_memlet(code_block, Y_acc_in, tasklet, "_in1", subset_Y, oedge_Y->base_type(), dbg);
+    builder.add_computational_memlet(code_block, X_acc, tasklet, "_in2", subset_X, iedge_X->base_type(), dbg);
+    builder.add_computational_memlet(code_block, tasklet, "_out", Y_acc_out, subset_Y, oedge_Y->base_type(), dbg);
 
     // Cleanup old block
     builder.remove_memlet(block, *iedge_X);

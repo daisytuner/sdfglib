@@ -18,7 +18,9 @@ TEST(LoopTilingTest, Basic) {
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer desc(base_desc);
-    builder.add_container("A", desc, true);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
     builder.add_container("N", sym_desc, true);
@@ -38,10 +40,9 @@ TEST(LoopTilingTest, Basic) {
     auto& block = builder.add_block(body);
     auto& A_in = builder.add_access(block, "A");
     auto& A_out = builder.add_access(block, "A");
-    auto& tasklet =
-        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
-    builder.add_memlet(block, A_in, "void", tasklet, "_in", {symbolic::symbol("i")});
-    builder.add_memlet(block, tasklet, "_out", A_out, "void", {symbolic::symbol("i")});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, A_in, tasklet, "_in", {symbolic::symbol("i")}, desc);
+    builder.add_computational_memlet(block, tasklet, "_out", A_out, {symbolic::symbol("i")}, desc);
 
     auto structured_sdfg = builder.move();
 

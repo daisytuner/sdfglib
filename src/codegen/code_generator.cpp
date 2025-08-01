@@ -40,7 +40,7 @@ std::tuple<int, types::PrimitiveType> CodeGenerator::analyze_type_rec(
 
         return analyze_type_rec(dims, maxDim, dimIdx + 1, inner, argIdx, range);
     } else if (auto* ptrType = dynamic_cast<const types::Pointer*>(&type)) {
-        if (range && !range->is_undefined()) {
+        if (ptrType->has_pointee_type() && range && !range->is_undefined()) {
             const auto& dim = range->dims()[dimIdx];
 
             if (symbolic::eq(symbolic::zero(), dim.first)) {

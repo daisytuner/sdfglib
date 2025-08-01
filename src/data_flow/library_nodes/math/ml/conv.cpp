@@ -162,10 +162,6 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     // Add innermost code block – convolution computation.
     auto& code_block = builder.add_block(*last_scope, {}, block.debug_info());
 
-    // Determine scalar element type from output container.
-    const auto& output_type = sdfg.type(Y_name);
-    types::Scalar scalar_type(output_type.primitive_type());
-
     // Reuse debug infos from original access nodes (if available).
     const DebugInfo& dbg_X = iedge_X->src().debug_info();
     const DebugInfo& dbg_W = iedge_W->src().debug_info();
@@ -260,22 +256,23 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
      * Add computation node *
      ************************/
     // Create tasklet performing fused-multiply-add: _out = _x * _w + _y
-    std::vector<std::pair<std::string, types::Scalar>> t_inputs{
-        {"_x", scalar_type}, {"_w", scalar_type}, {"_y", scalar_type}
-    };
     if (has_bias_) {
         // Bias will be added after reduction, so no change here.
     }
 
     auto& tasklet =
-        builder
-            .add_tasklet(code_block, data_flow::TaskletCode::fma, {"_out", scalar_type}, t_inputs, block.debug_info());
+        builder.add_tasklet(code_block, data_flow::TaskletCode::fma, "_out", {"_x", "_w", "_y"}, block.debug_info());
 
     // Connect memlets.
-    builder.add_computational_memlet(code_block, X_acc, tasklet, "_x", subset_X, block.debug_info());
-    builder.add_computational_memlet(code_block, W_acc, tasklet, "_w", subset_W, block.debug_info());
-    builder.add_computational_memlet(code_block, Y_acc_in, tasklet, "_y", subset_Y, block.debug_info());
-    builder.add_computational_memlet(code_block, tasklet, "_out", Y_acc_out, subset_Y, block.debug_info());
+    builder
+        .add_computational_memlet(code_block, X_acc, tasklet, "_x", subset_X, iedge_X->base_type(), block.debug_info());
+    builder
+        .add_computational_memlet(code_block, W_acc, tasklet, "_w", subset_W, iedge_W->base_type(), block.debug_info());
+    builder
+        .add_computational_memlet(code_block, Y_acc_in, tasklet, "_y", subset_Y, oedge_Y->base_type(), block.debug_info());
+    builder.add_computational_memlet(
+        code_block, tasklet, "_out", Y_acc_out, subset_Y, oedge_Y->base_type(), block.debug_info()
+    );
 
     // Bias: add once per output element outside reduction loops.
     if (has_bias_) {
@@ -287,16 +284,17 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         auto& Y_acc2_in = builder.add_access(bias_block, Y_name, dbg_Y);
         auto& Y_acc2_out = builder.add_access(bias_block, Y_name, dbg_Y);
 
-        auto& bias_tasklet = builder.add_tasklet(
-            bias_block,
-            data_flow::TaskletCode::add,
-            {"_out", scalar_type},
-            {{"_bias", scalar_type}, {"_y", scalar_type}},
-            block.debug_info()
+        auto& bias_tasklet =
+            builder.add_tasklet(bias_block, data_flow::TaskletCode::add, "_out", {"_bias", "_y"}, block.debug_info());
+        builder.add_computational_memlet(
+            bias_block, B_acc_local, bias_tasklet, "_bias", subset_B, iedge_B->base_type(), block.debug_info()
         );
-        builder.add_computational_memlet(bias_block, B_acc_local, bias_tasklet, "_bias", subset_B, block.debug_info());
-        builder.add_computational_memlet(bias_block, Y_acc2_in, bias_tasklet, "_y", subset_Y, block.debug_info());
-        builder.add_computational_memlet(bias_block, bias_tasklet, "_out", Y_acc2_out, subset_Y, block.debug_info());
+        builder.add_computational_memlet(
+            bias_block, Y_acc2_in, bias_tasklet, "_y", subset_Y, oedge_Y->base_type(), block.debug_info()
+        );
+        builder.add_computational_memlet(
+            bias_block, bias_tasklet, "_out", Y_acc2_out, subset_Y, oedge_Y->base_type(), block.debug_info()
+        );
     }
 
     // Clean up block

@@ -562,8 +562,8 @@ class Tasklet : public CodeNode {
 
 private:
     TaskletCode code_;
-    std::pair<std::string, sdfg::types::Scalar> output_;
-    std::vector<std::pair<std::string, sdfg::types::Scalar>> inputs_;
+    std::string output_;
+    std::vector<std::string> inputs_;
     symbolic::Condition condition_;
 
     Tasklet(
@@ -572,8 +572,8 @@ private:
         const graph::Vertex vertex,
         DataFlowGraph& parent,
         const TaskletCode code,
-        const std::pair<std::string, sdfg::types::Scalar>& output,
-        const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
+        const std::string& output,
+        const std::vector<std::string>& inputs,
         const symbolic::Condition& condition
     );
 
@@ -585,17 +585,13 @@ public:
 
     TaskletCode code() const;
 
-    const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs() const;
+    const std::vector<std::string>& inputs() const;
 
-    std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs();
+    std::vector<std::string>& inputs();
 
-    const std::pair<std::string, sdfg::types::Scalar>& output() const;
+    const std::string& output() const;
 
-    const std::pair<std::string, sdfg::types::Scalar>& input(size_t index) const;
-
-    const sdfg::types::Scalar& input_type(const std::string& input) const;
-
-    const sdfg::types::Scalar& output_type() const;
+    const std::string& input(size_t index) const;
 
     bool needs_connector(size_t index) const override;
 

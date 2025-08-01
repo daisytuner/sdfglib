@@ -14,7 +14,9 @@ TEST(ParallelizationTest, Map_2D) {
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Array desc_1(base_desc, symbolic::symbol("M"));
     types::Pointer desc_2(desc_1);
-    builder.add_container("A", desc_2, true);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
     builder.add_container("N", sym_desc, true);
@@ -41,12 +43,12 @@ TEST(ParallelizationTest, Map_2D) {
     auto& a_in = builder.add_access(block, "A");
     auto& i = builder.add_access(block, "i");
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(
-        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", sym_desc}}
-    );
-    builder.add_memlet(block, a_in, "void", tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")});
-    builder.add_memlet(block, i, "void", tasklet, "_in2", {});
-    builder.add_memlet(block, tasklet, "_out", a_out, "void", {symbolic::symbol("i"), symbolic::symbol("j")});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    builder
+        .add_computational_memlet(block, a_in, tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")}, desc_2);
+    builder.add_computational_memlet(block, i, tasklet, "_in2", {});
+    builder
+        .add_computational_memlet(block, tasklet, "_out", a_out, {symbolic::symbol("i"), symbolic::symbol("j")}, desc_2);
 
     analysis::AnalysisManager analysis_manager(builder.subject());
     transformations::Parallelization transformation(loop);

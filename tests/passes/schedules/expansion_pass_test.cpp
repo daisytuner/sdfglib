@@ -33,6 +33,7 @@ TEST(ExpansionPassTest, Simple) {
         "input",
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
+        array_desc_2,
         block.debug_info()
     );
     builder.add_computational_memlet(
@@ -42,6 +43,7 @@ TEST(ExpansionPassTest, Simple) {
         output_node,
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
+        array_desc_2,
         block.debug_info()
     );
 
@@ -68,8 +70,7 @@ TEST(ExpansionPassTest, Simple) {
     auto tasklet = *block_1->dataflow().tasklets().begin();
     EXPECT_EQ(tasklet->code(), data_flow::TaskletCode::max);
     EXPECT_EQ(tasklet->inputs().size(), 2);
-    EXPECT_EQ(tasklet->inputs().at(0).first, "0");
-    EXPECT_EQ(tasklet->inputs().at(1).first, "_in");
-    EXPECT_EQ(tasklet->output().first, "_out");
-    EXPECT_EQ(tasklet->output().second.primitive_type(), types::PrimitiveType::Double);
+    EXPECT_EQ(tasklet->inputs().at(0), "0");
+    EXPECT_EQ(tasklet->inputs().at(1), "_in");
+    EXPECT_EQ(tasklet->output(), "_out");
 }

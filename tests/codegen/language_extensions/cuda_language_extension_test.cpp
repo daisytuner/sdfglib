@@ -86,15 +86,17 @@ TEST(CUDALanguageExtensionTest, Declaration_Scalar) {
 
 TEST(CUDALanguageExtensionTest, Declaration_Pointer) {
     codegen::CUDALanguageExtension generator;
-    auto result =
-        generator.declaration("var", types::Pointer(types::Scalar(types::PrimitiveType::Int32)));
+    auto result = generator.declaration("var", types::Pointer(types::Scalar(types::PrimitiveType::Int32)));
     EXPECT_EQ(result, "int *var");
+
+    result = generator.declaration("var", types::Pointer());
+    EXPECT_EQ(result, "void* var");
 }
 
 TEST(CUDALanguageExtensionTest, Declaration_Array) {
     codegen::CUDALanguageExtension generator;
-    auto result = generator.declaration(
-        "var", types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)));
+    auto result =
+        generator.declaration("var", types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)));
     EXPECT_EQ(result, "int var[10]");
 }
 
@@ -106,23 +108,21 @@ TEST(CUDALanguageExtensionTest, Declaration_Struct) {
 
 TEST(CUDALanguageExtensionTest, Declaration_ArrayOfStruct) {
     codegen::CUDALanguageExtension generator;
-    auto result = generator.declaration(
-        "var", types::Array(types::Structure("MyStruct"), symbolic::integer(10)));
+    auto result = generator.declaration("var", types::Array(types::Structure("MyStruct"), symbolic::integer(10)));
     EXPECT_EQ(result, "MyStruct var[10]");
 }
 
 TEST(CUDALanguageExtensionTest, Declaration_PointerToArray) {
     codegen::CUDALanguageExtension generator;
     auto result = generator.declaration(
-        "var", types::Pointer(types::Array(types::Scalar(types::PrimitiveType::Int32),
-                                           symbolic::integer(10))));
+        "var", types::Pointer(types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)))
+    );
     EXPECT_EQ(result, "int (*var)[10]");
 }
 
 TEST(CUDALanguageExtensionTest, Typecast) {
     codegen::CUDALanguageExtension generator;
-    auto result =
-        generator.type_cast("var", types::Pointer(types::Scalar(types::PrimitiveType::Float)));
+    auto result = generator.type_cast("var", types::Pointer(types::Scalar(types::PrimitiveType::Float)));
     EXPECT_EQ(result, "reinterpret_cast<float *>(var)");
 }
 
@@ -131,8 +131,7 @@ TEST(CUDALanguageExtensionTest, SubsetToCpp_Scalar) {
     auto& sdfg = builder.subject();
 
     codegen::CUDALanguageExtension generator;
-    auto result =
-        generator.subset(sdfg, types::Scalar(types::PrimitiveType::Int32), data_flow::Subset());
+    auto result = generator.subset(sdfg, types::Scalar(types::PrimitiveType::Int32), data_flow::Subset());
     EXPECT_EQ(result, "");
 }
 
@@ -142,8 +141,10 @@ TEST(CUDALanguageExtensionTest, SubsetToCpp_Array) {
 
     codegen::CUDALanguageExtension generator;
     auto result = generator.subset(
-        sdfg, types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)),
-        data_flow::Subset{symbolic::integer(1)});
+        sdfg,
+        types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)),
+        data_flow::Subset{symbolic::integer(1)}
+    );
     EXPECT_EQ(result, "[1]");
 }
 
@@ -156,7 +157,6 @@ TEST(CUDALanguageExtensionTest, SubsetToCpp_Struct) {
     struct_def.add_member(types::Scalar(types::PrimitiveType::Float));
 
     codegen::CUDALanguageExtension generator;
-    auto result = generator.subset(sdfg, types::Structure("MyStruct"),
-                                   data_flow::Subset{symbolic::integer(1)});
+    auto result = generator.subset(sdfg, types::Structure("MyStruct"), data_flow::Subset{symbolic::integer(1)});
     EXPECT_EQ(result, ".member_1");
 }

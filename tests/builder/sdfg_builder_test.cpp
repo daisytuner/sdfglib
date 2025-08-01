@@ -230,13 +230,13 @@ TEST(SDFGBuilderTest, AddTasklet) {
     auto& access_node_out = builder.add_access(state, "scalar_1");
     EXPECT_EQ(access_node_out.element_id(), 3);
 
-    auto& tasklet = builder.add_tasklet(state, data_flow::TaskletCode::assign, {"_out", desc}, {{"_in", desc}});
+    auto& tasklet = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
     EXPECT_EQ(tasklet.element_id(), 4);
 
-    auto& memlet_in = builder.add_memlet(state, access_node_in, "void", tasklet, "_in", {});
+    auto& memlet_in = builder.add_computational_memlet(state, access_node_in, tasklet, "_in", {});
     EXPECT_EQ(memlet_in.element_id(), 5);
 
-    auto& memlet_out = builder.add_memlet(state, tasklet, "_out", access_node_out, "void", {});
+    auto& memlet_out = builder.add_computational_memlet(state, tasklet, "_out", access_node_out, {});
     EXPECT_EQ(memlet_out.element_id(), 6);
 
     auto sdfg = builder.move();

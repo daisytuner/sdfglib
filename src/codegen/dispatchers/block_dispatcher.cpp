@@ -66,25 +66,17 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
 
     auto& subset = memlet.subset();
 
+    auto& base_type = static_cast<const types::Pointer&>(memlet.base_type());
+
     stream << dst.data();
     stream << " = ";
 
-    std::string rhs;
     if (symbolic::is_nullptr(symbolic::symbol(src.data())) || helpers::is_number(src.data())) {
-        rhs += this->language_extension_.expression(symbolic::symbol(src.data()));
+        stream << this->language_extension_.expression(symbolic::symbol(src.data()));
     } else {
-        rhs += "&";
-        rhs += src.data();
-    }
-    rhs += this->language_extension_.subset(function_, src_type, subset);
-
-    // Check reinterpret_cast
-    auto& res_type = types::infer_type(function_, src_type, subset);
-    types::Pointer final_type(res_type);
-    if (final_type == dst_type || symbolic::is_nullptr(symbolic::symbol(src.data()))) {
-        stream << rhs;
-    } else {
-        stream << this->language_extension_.type_cast(rhs, dst_type);
+        stream << "&";
+        stream << "(" + this->language_extension_.type_cast(src.data(), base_type) + ")";
+        stream << this->language_extension_.subset(function_, base_type, subset);
     }
 
     stream << ";";
@@ -103,19 +95,30 @@ void DataFlowDispatcher::dispatch_deref(PrettyPrinter& stream, const data_flow::
     auto& dst = dynamic_cast<const data_flow::AccessNode&>(memlet.dst());
     auto& dst_type = this->function_.type(dst.data());
 
-    stream << dst.data();
+    auto& base_type = static_cast<const types::Pointer&>(memlet.base_type());
+
     if (memlet.dst_conn() == "void") {
-        stream << this->language_extension_.subset(function_, dst_type, memlet.subset());
+        stream << "(" << this->language_extension_.type_cast(dst.data(), base_type) << ")";
+        stream << this->language_extension_.subset(function_, base_type, memlet.subset());
+    } else {
+        stream << dst.data();
     }
     stream << " = ";
 
     if (symbolic::is_nullptr(symbolic::symbol(src.data()))) {
         stream << this->language_extension_.expression(symbolic::__nullptr__());
-    } else {
-        stream << src.data();
+        stream << ";" << std::endl;
+
+        stream.setIndent(stream.indent() - 4);
+        stream << "}" << std::endl;
+        return;
     }
+
     if (memlet.src_conn() == "void") {
-        stream << this->language_extension_.subset(function_, src_type, memlet.subset());
+        stream << "(" << this->language_extension_.type_cast(src.data(), base_type) << ")";
+        stream << this->language_extension_.subset(function_, base_type, memlet.subset());
+    } else {
+        stream << this->language_extension_.type_cast(src.data(), base_type.pointee_type());
     }
     stream << ";" << std::endl;
 
@@ -130,34 +133,52 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow
     stream << "{" << std::endl;
     stream.setIndent(stream.indent() + 4);
 
-    std::unordered_map<std::string, const data_flow::Memlet*> in_edges;
     for (auto& iedge : this->data_flow_graph_.in_edges(tasklet)) {
-        in_edges[iedge.dst_conn()] = &iedge;
-    }
-    for (auto& input : tasklet.inputs()) {
-        if (in_edges.find(input.first) == in_edges.end()) {
-            continue;
-        }
-        auto& iedge = *in_edges[input.first];
         auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
-        stream << this->language_extension_.declaration(input.first, input.second);
-        const types::IType& type = this->function_.type(src.data());
-        stream << " = " << src.data() << this->language_extension_.subset(function_, type, iedge.subset()) << ";";
+        auto& src_type = this->function_.type(src.data());
+
+        std::string conn = iedge.dst_conn();
+        auto& conn_type = iedge.result_type(this->function_);
+
+        stream << this->language_extension_.declaration(conn, conn_type);
+        stream << " = ";
+
+        // Reinterpret cast for opaque pointers
+        if (src_type.type_id() == types::TypeID::Pointer) {
+            stream << "(" << this->language_extension_.type_cast(src.data(), iedge.base_type()) << ")";
+        } else {
+            stream << src.data();
+        }
+
+        stream << this->language_extension_.subset(function_, iedge.base_type(), iedge.subset()) << ";";
         stream << std::endl;
     }
-    stream << this->language_extension_.declaration(tasklet.output().first, tasklet.output().second);
+
+    auto& oedge = *this->data_flow_graph_.out_edges(tasklet).begin();
+    std::string out_conn = oedge.src_conn();
+    auto& out_conn_type = oedge.result_type(this->function_);
+
+    stream << this->language_extension_.declaration(out_conn, out_conn_type);
     stream << ";" << std::endl;
 
     stream << std::endl;
-    stream << tasklet.output().first << " = ";
+    stream << out_conn << " = ";
     stream << this->language_extension_.tasklet(tasklet) << ";" << std::endl;
     stream << std::endl;
 
     // Write back
     for (auto& oedge : this->data_flow_graph_.out_edges(tasklet)) {
         auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
-        const types::IType& type = this->function_.type(dst.data());
-        stream << dst.data() << this->language_extension_.subset(function_, type, oedge.subset()) << " = ";
+        auto& dst_type = this->function_.type(dst.data());
+
+        // Reinterpret cast for opaque pointers
+        if (dst_type.type_id() == types::TypeID::Pointer) {
+            stream << "(" << this->language_extension_.type_cast(dst.data(), oedge.base_type()) << ")";
+        } else {
+            stream << dst.data();
+        }
+
+        stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << " = ";
         stream << oedge.src_conn();
         stream << ";" << std::endl;
     }

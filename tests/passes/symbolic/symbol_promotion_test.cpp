@@ -19,9 +19,8 @@ TEST(SymbolPromotionTest, as_symbol_int) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "i");
-    auto& tasklet =
-        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", desc}, {{"0", desc}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto res = passes::SymbolPromotion::as_symbol(block.dataflow(), tasklet, "0");
     codegen::CPPLanguageExtension language_extension;
@@ -38,9 +37,8 @@ TEST(SymbolPromotionTest, as_symbol_long) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "i");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", desc},
-                                        {{"4294967296", desc}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"4294967296"});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto res = passes::SymbolPromotion::as_symbol(block.dataflow(), tasklet, "4294967296");
     codegen::CPPLanguageExtension language_extension;
@@ -59,10 +57,9 @@ TEST(SymbolPromotionTest, as_symbol_input) {
     auto& block = builder.add_block(root);
     auto& input_node = builder.add_access(block, "j");
     auto& output_node = builder.add_access(block, "i");
-    auto& tasklet =
-        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", desc}, {{"_in", desc}});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, input_node, tasklet, "_in", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto res = passes::SymbolPromotion::as_symbol(block.dataflow(), tasklet, "_in");
     codegen::CPPLanguageExtension language_extension;
@@ -79,9 +76,8 @@ TEST(SymbolPromotionTest, Assignment1) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "i");
-    auto& tasklet =
-        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", desc}, {{"0", desc}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto sdfg = builder.move();
 
@@ -123,10 +119,9 @@ TEST(SymbolPromotionTest, Assignment2) {
     auto& block = builder.add_block(root);
     auto& input_node = builder.add_access(block, "i");
     auto& output_node = builder.add_access(block, "j");
-    auto& tasklet =
-        builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", desc}, {{"_in", desc}});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, input_node, tasklet, "_in", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto sdfg = builder.move();
 
@@ -165,9 +160,8 @@ TEST(SymbolPromotionTest, Add1) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "i");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", desc},
-                                        {{"0", desc}, {"1", desc}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"0", "1"});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto sdfg = builder.move();
 
@@ -210,11 +204,10 @@ TEST(SymbolPromotionTest, Add2) {
     auto& input_node1 = builder.add_access(block, "i");
     auto& input_node2 = builder.add_access(block, "j");
     auto& output_node = builder.add_access(block, "j");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", desc},
-                                        {{"_in1", desc}, {"_in2", desc}});
-    builder.add_memlet(block, input_node1, "void", tasklet, "_in1", {});
-    builder.add_memlet(block, input_node2, "void", tasklet, "_in2", {});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, input_node1, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, input_node2, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto sdfg = builder.move();
 
@@ -252,9 +245,8 @@ TEST(SymbolPromotionTest, Sub1) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "i");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::sub, {"_out", desc},
-                                        {{"0", desc}, {"1", desc}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::sub, "_out", {"0", "1"});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto sdfg = builder.move();
 
@@ -297,11 +289,10 @@ TEST(SymbolPromotionTest, Sub2) {
     auto& input_node1 = builder.add_access(block, "i");
     auto& input_node2 = builder.add_access(block, "j");
     auto& output_node = builder.add_access(block, "j");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::sub, {"_out", desc},
-                                        {{"_in1", desc}, {"_in2", desc}});
-    builder.add_memlet(block, input_node1, "void", tasklet, "_in1", {});
-    builder.add_memlet(block, input_node2, "void", tasklet, "_in2", {});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::sub, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, input_node1, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, input_node2, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto sdfg = builder.move();
 
@@ -339,9 +330,8 @@ TEST(SymbolPromotionTest, Mul1) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "i");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::mul, {"_out", desc},
-                                        {{"0", desc}, {"1", desc}});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::mul, "_out", {"0", "1"});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto sdfg = builder.move();
 
@@ -384,11 +374,10 @@ TEST(SymbolPromotionTest, Mul2) {
     auto& input_node1 = builder.add_access(block, "i");
     auto& input_node2 = builder.add_access(block, "j");
     auto& output_node = builder.add_access(block, "j");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::mul, {"_out", desc},
-                                        {{"_in1", desc}, {"_in2", desc}});
-    builder.add_memlet(block, input_node1, "void", tasklet, "_in1", {});
-    builder.add_memlet(block, input_node2, "void", tasklet, "_in2", {});
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::mul, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, input_node1, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, input_node2, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto sdfg = builder.move();
 

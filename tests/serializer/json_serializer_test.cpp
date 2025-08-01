@@ -181,8 +181,10 @@ TEST(JSONSerializerTest, DataflowToJSON) {
 
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer desc(base_desc);
-    builder.add_container("A", desc, true);
-    builder.add_container("D", desc, true);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("D", opaque_desc, true);
     builder.add_container("C", base_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -192,12 +194,12 @@ TEST(JSONSerializerTest, DataflowToJSON) {
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "D");
-    auto& tasklet = builder.add_tasklet(
-        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", base_desc}}
-    );
-    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in1", {{symbolic::symbol("i")}});
-    auto& memlet_in2 = builder.add_memlet(block, access_in2, "void", tasklet, "_in2", {});
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {symbolic::symbol("i")});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& memlet_in =
+        builder.add_computational_memlet(block, access_in, tasklet, "_in1", {symbolic::symbol("i")}, desc);
+    auto& memlet_in2 = builder.add_computational_memlet(block, access_in2, tasklet, "_in2", {});
+    auto& memlet_out =
+        builder.add_computational_memlet(block, tasklet, "_out", access_out, {symbolic::symbol("i")}, desc);
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
@@ -236,9 +238,7 @@ TEST(JSONSerializerTest, DataflowToJSON) {
     EXPECT_NE(tasklet_node, j["nodes"].end());
 
     EXPECT_EQ(tasklet_node->at("inputs").size(), 2);
-    EXPECT_EQ(tasklet_node->at("output")["name"], "_out");
-    EXPECT_EQ(tasklet_node->at("output")["type"]["type"], "scalar");
-    EXPECT_EQ(tasklet_node->at("output")["type"]["primitive_type"], base_desc.primitive_type());
+    EXPECT_EQ(tasklet_node->at("output"), "_out");
 
     auto edge_to_tasklet = std::find_if(j["edges"].begin(), j["edges"].end(), [&](const auto& edge) {
         return edge["src"] == access_node_A->at("element_id") && edge["dst"] == tasklet_node->at("element_id") &&
@@ -775,19 +775,19 @@ TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer pointer_type(base_desc);
 
-    builder.add_container("A", pointer_type);
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc);
     builder.add_container("C", base_desc);
 
     auto& block = builder.add_block(root);
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "C");
-    auto& tasklet = builder.add_tasklet(
-        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", base_desc}}
-    );
-    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in1", {{symbolic::symbol("i")}});
-    auto& memlet_in2 = builder.add_memlet(block, access_in2, "void", tasklet, "_in2", {});
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& memlet_in =
+        builder.add_computational_memlet(block, access_in, tasklet, "_in1", {symbolic::symbol("i")}, pointer_type);
+    auto& memlet_in2 = builder.add_computational_memlet(block, access_in2, tasklet, "_in2", {});
+    auto& memlet_out = builder.add_computational_memlet(block, tasklet, "_out", access_out, {});
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
@@ -803,7 +803,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
     auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU);
     auto& block2 = des_builder.add_block(des_builder.subject().root());
 
-    des_builder.add_container("A", pointer_type);
+    des_builder.add_container("A", opaque_desc);
     des_builder.add_container("C", base_desc);
 
     serializer.json_to_dataflow(j, des_builder, block2);
@@ -828,11 +828,10 @@ TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
                 auto& type = des_sdfg->type(access_node->data());
                 EXPECT_TRUE(dynamic_cast<const types::Pointer*>(&type) != nullptr);
                 auto& type_ptr = dynamic_cast<const types::Pointer&>(type);
-                EXPECT_EQ(type_ptr.primitive_type(), base_desc.primitive_type());
-                EXPECT_EQ(type_ptr.storage_type().value(), base_desc.storage_type().value());
-                EXPECT_EQ(type_ptr.initializer(), base_desc.initializer());
-                EXPECT_EQ(type_ptr.alignment(), base_desc.alignment());
-                EXPECT_EQ(type_ptr.pointee_type().primitive_type(), base_desc.primitive_type());
+                EXPECT_EQ(type_ptr.storage_type().value(), opaque_desc.storage_type().value());
+                EXPECT_EQ(type_ptr.initializer(), opaque_desc.initializer());
+                EXPECT_EQ(type_ptr.alignment(), opaque_desc.alignment());
+                EXPECT_FALSE(type_ptr.has_pointee_type());
             } else if (access_node->data() == "C") {
                 foundC++;
                 auto& type = des_sdfg->type(access_node->data());
@@ -847,12 +846,9 @@ TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {
             EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::add);
             EXPECT_EQ(tasklet_node->inputs().size(), 2);
-            EXPECT_EQ(tasklet_node->output().first, "_out");
-            EXPECT_EQ(tasklet_node->inputs().at(0).first, "_in1");
-            EXPECT_EQ(tasklet_node->inputs().at(1).first, "_in2");
-            EXPECT_EQ(tasklet_node->inputs().at(0).second.primitive_type(), types::PrimitiveType::Float);
-            EXPECT_EQ(tasklet_node->inputs().at(1).second.primitive_type(), types::PrimitiveType::Float);
-            EXPECT_EQ(tasklet_node->output().second.primitive_type(), types::PrimitiveType::Float);
+            EXPECT_EQ(tasklet_node->output(), "_out");
+            EXPECT_EQ(tasklet_node->inputs().at(0), "_in1");
+            EXPECT_EQ(tasklet_node->inputs().at(1), "_in2");
             found_tasklet = true;
         }
     }
@@ -914,19 +910,19 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer pointer_type(base_desc);
 
-    builder.add_container("A", pointer_type);
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc);
     builder.add_container("C", base_desc);
 
     auto& block = builder.add_block(root);
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "C");
-    auto& tasklet = builder.add_tasklet(
-        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", base_desc}}
-    );
-    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in1", {{symbolic::symbol("i")}});
-    auto& memlet_in2 = builder.add_memlet(block, access_in2, "void", tasklet, "_in2", {});
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& memlet_in =
+        builder.add_computational_memlet(block, access_in, tasklet, "_in1", {symbolic::symbol("i")}, pointer_type);
+    auto& memlet_in2 = builder.add_computational_memlet(block, access_in2, tasklet, "_in2", {});
+    auto& memlet_out = builder.add_computational_memlet(block, tasklet, "_out", access_out, {});
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
@@ -941,7 +937,7 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
     // Deserialize the JSON back into a DataflowGraph object
     auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU);
 
-    des_builder.add_container("A", pointer_type);
+    des_builder.add_container("A", opaque_desc);
     des_builder.add_container("C", base_desc);
 
     control_flow::Assignments assignments;
@@ -968,11 +964,11 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
                 auto& type = des_sdfg->type(access_node->data());
                 EXPECT_TRUE(dynamic_cast<const types::Pointer*>(&type) != nullptr);
                 auto& type_ptr = dynamic_cast<const types::Pointer&>(type);
-                EXPECT_EQ(type_ptr.primitive_type(), base_desc.primitive_type());
-                EXPECT_EQ(type_ptr.storage_type().value(), base_desc.storage_type().value());
-                EXPECT_EQ(type_ptr.initializer(), base_desc.initializer());
-                EXPECT_EQ(type_ptr.alignment(), base_desc.alignment());
-                EXPECT_EQ(type_ptr.pointee_type().primitive_type(), base_desc.primitive_type());
+                EXPECT_EQ(type_ptr.primitive_type(), opaque_desc.primitive_type());
+                EXPECT_EQ(type_ptr.storage_type().value(), opaque_desc.storage_type().value());
+                EXPECT_EQ(type_ptr.initializer(), opaque_desc.initializer());
+                EXPECT_EQ(type_ptr.alignment(), opaque_desc.alignment());
+                EXPECT_FALSE(type_ptr.has_pointee_type());
             } else if (access_node->data() == "C") {
                 foundC++;
                 auto& type = des_sdfg->type(access_node->data());
@@ -987,12 +983,9 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {
             EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::add);
             EXPECT_EQ(tasklet_node->inputs().size(), 2);
-            EXPECT_EQ(tasklet_node->output().first, "_out");
-            EXPECT_EQ(tasklet_node->inputs().at(0).first, "_in1");
-            EXPECT_EQ(tasklet_node->inputs().at(1).first, "_in2");
-            EXPECT_EQ(tasklet_node->inputs().at(0).second.primitive_type(), types::PrimitiveType::Float);
-            EXPECT_EQ(tasklet_node->inputs().at(1).second.primitive_type(), types::PrimitiveType::Float);
-            EXPECT_EQ(tasklet_node->output().second.primitive_type(), types::PrimitiveType::Float);
+            EXPECT_EQ(tasklet_node->output(), "_out");
+            EXPECT_EQ(tasklet_node->inputs().at(0), "_in1");
+            EXPECT_EQ(tasklet_node->inputs().at(1), "_in2");
             found_tasklet = true;
         }
     }
@@ -1054,19 +1047,19 @@ TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer pointer_type(base_desc);
 
-    builder.add_container("A", pointer_type);
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc);
     builder.add_container("C", base_desc);
 
     auto& block = builder.add_block(root);
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "C");
-    auto& tasklet = builder.add_tasklet(
-        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", base_desc}}
-    );
-    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in1", {{symbolic::symbol("i")}});
-    auto& memlet_in2 = builder.add_memlet(block, access_in2, "void", tasklet, "_in2", {});
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& memlet_in =
+        builder.add_computational_memlet(block, access_in, tasklet, "_in1", {symbolic::symbol("i")}, pointer_type);
+    auto& memlet_in2 = builder.add_computational_memlet(block, access_in2, tasklet, "_in2", {});
+    auto& memlet_out = builder.add_computational_memlet(block, tasklet, "_out", access_out, {});
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
@@ -1081,7 +1074,7 @@ TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
     // Deserialize the JSON back into a DataflowGraph object
     auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU);
 
-    des_builder.add_container("A", pointer_type);
+    des_builder.add_container("A", opaque_desc);
     des_builder.add_container("C", base_desc);
 
     serializer.json_to_sequence(j, des_builder, des_builder.subject().root());
@@ -1112,11 +1105,11 @@ TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
                 auto& type = des_sdfg->type(access_node->data());
                 EXPECT_TRUE(dynamic_cast<const types::Pointer*>(&type) != nullptr);
                 auto& type_ptr = dynamic_cast<const types::Pointer&>(type);
-                EXPECT_EQ(type_ptr.primitive_type(), base_desc.primitive_type());
-                EXPECT_EQ(type_ptr.storage_type().value(), base_desc.storage_type().value());
-                EXPECT_EQ(type_ptr.initializer(), base_desc.initializer());
-                EXPECT_EQ(type_ptr.alignment(), base_desc.alignment());
-                EXPECT_EQ(type_ptr.pointee_type().primitive_type(), base_desc.primitive_type());
+                EXPECT_EQ(type_ptr.primitive_type(), opaque_desc.primitive_type());
+                EXPECT_EQ(type_ptr.storage_type().value(), opaque_desc.storage_type().value());
+                EXPECT_EQ(type_ptr.initializer(), opaque_desc.initializer());
+                EXPECT_EQ(type_ptr.alignment(), opaque_desc.alignment());
+                EXPECT_FALSE(type_ptr.has_pointee_type());
             } else if (access_node->data() == "C") {
                 foundC++;
                 auto& type = des_sdfg->type(access_node->data());
@@ -1131,12 +1124,9 @@ TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {
             EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::add);
             EXPECT_EQ(tasklet_node->inputs().size(), 2);
-            EXPECT_EQ(tasklet_node->output().first, "_out");
-            EXPECT_EQ(tasklet_node->inputs().at(0).first, "_in1");
-            EXPECT_EQ(tasklet_node->inputs().at(1).first, "_in2");
-            EXPECT_EQ(tasklet_node->inputs().at(0).second.primitive_type(), types::PrimitiveType::Float);
-            EXPECT_EQ(tasklet_node->inputs().at(1).second.primitive_type(), types::PrimitiveType::Float);
-            EXPECT_EQ(tasklet_node->output().second.primitive_type(), types::PrimitiveType::Float);
+            EXPECT_EQ(tasklet_node->output(), "_out");
+            EXPECT_EQ(tasklet_node->inputs().at(0), "_in1");
+            EXPECT_EQ(tasklet_node->inputs().at(1), "_in2");
             found_tasklet = true;
         }
     }
@@ -1198,19 +1188,19 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer pointer_type(base_desc);
 
-    builder.add_container("A", pointer_type);
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc);
     builder.add_container("C", base_desc);
 
     auto& block = builder.add_block(root);
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "C");
-    auto& tasklet = builder.add_tasklet(
-        block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in1", base_desc}, {"_in2", base_desc}}
-    );
-    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in1", {{symbolic::symbol("i")}});
-    auto& memlet_in2 = builder.add_memlet(block, access_in2, "void", tasklet, "_in2", {});
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& memlet_in =
+        builder.add_computational_memlet(block, access_in, tasklet, "_in1", {symbolic::symbol("i")}, pointer_type);
+    auto& memlet_in2 = builder.add_computational_memlet(block, access_in2, tasklet, "_in2", {});
+    auto& memlet_out = builder.add_computational_memlet(block, tasklet, "_out", access_out, {});
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
@@ -1250,11 +1240,11 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
                 auto& type = des_sdfg->type(access_node->data());
                 EXPECT_TRUE(dynamic_cast<const types::Pointer*>(&type) != nullptr);
                 auto& type_ptr = dynamic_cast<const types::Pointer&>(type);
-                EXPECT_EQ(type_ptr.primitive_type(), base_desc.primitive_type());
-                EXPECT_EQ(type_ptr.storage_type(), base_desc.storage_type());
-                EXPECT_EQ(type_ptr.initializer(), base_desc.initializer());
-                EXPECT_EQ(type_ptr.alignment(), base_desc.alignment());
-                EXPECT_EQ(type_ptr.pointee_type().primitive_type(), base_desc.primitive_type());
+                EXPECT_EQ(type_ptr.primitive_type(), opaque_desc.primitive_type());
+                EXPECT_EQ(type_ptr.storage_type().value(), opaque_desc.storage_type().value());
+                EXPECT_EQ(type_ptr.initializer(), opaque_desc.initializer());
+                EXPECT_EQ(type_ptr.alignment(), opaque_desc.alignment());
+                EXPECT_FALSE(type_ptr.has_pointee_type());
             } else if (access_node->data() == "C") {
                 foundC++;
                 auto& type = des_sdfg->type(access_node->data());
@@ -1269,12 +1259,9 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {
             EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::add);
             EXPECT_EQ(tasklet_node->inputs().size(), 2);
-            EXPECT_EQ(tasklet_node->inputs().at(0).first, "_in1");
-            EXPECT_EQ(tasklet_node->inputs().at(1).first, "_in2");
-            EXPECT_EQ(tasklet_node->output().first, "_out");
-            EXPECT_EQ(tasklet_node->inputs().at(0).second.primitive_type(), types::PrimitiveType::Float);
-            EXPECT_EQ(tasklet_node->inputs().at(1).second.primitive_type(), types::PrimitiveType::Float);
-            EXPECT_EQ(tasklet_node->output().second.primitive_type(), types::PrimitiveType::Float);
+            EXPECT_EQ(tasklet_node->inputs().at(0), "_in1");
+            EXPECT_EQ(tasklet_node->inputs().at(1), "_in2");
+            EXPECT_EQ(tasklet_node->output(), "_out");
             found_tasklet = true;
         }
     }
@@ -1306,6 +1293,9 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
                 auto& end_subset = memlet->end_subset();
                 EXPECT_EQ(end_subset.size(), 1);
                 EXPECT_TRUE(symbolic::eq(end_subset[0], symbolic::symbol("i")));
+
+                auto& base_type = memlet->base_type();
+                EXPECT_EQ(base_type, pointer_type);
             } else if (memlet->dst_conn() == "_in2") {
                 found_memlet_in2 = true;
                 auto& src = memlet->src();

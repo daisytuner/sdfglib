@@ -421,13 +421,7 @@ void Visualizer::visualizeTasklet(data_flow::Tasklet const& tasklet) {
     std::string op = code_to_string(tasklet.code());
     std::vector<std::string> arguments;
     for (size_t i = 0; i < tasklet.inputs().size(); ++i) {
-        std::string arg = tasklet.input(i).first;
-        if (!tasklet.needs_connector(i)) {
-            if (arg != "NAN" && arg != "INFINITY") {
-                if (tasklet.input(i).second.primitive_type() == types::PrimitiveType::Float) arg += "f";
-            }
-        }
-        arguments.push_back(this->expression(arg));
+        arguments.push_back(this->expression(tasklet.input(i)));
     }
 
     if (tasklet.code() == data_flow::TaskletCode::assign) {

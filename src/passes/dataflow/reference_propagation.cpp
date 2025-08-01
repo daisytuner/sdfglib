@@ -72,11 +72,6 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
             if (move_subset.empty()) {
                 continue;
             }
-            auto& viewed_type = types::infer_type(sdfg, sdfg.type(viewed_container), move_subset);
-            types::Pointer final_type(viewed_type);
-            if (type != final_type) {
-                continue;
-            }
 
             // Replace all uses of the view by the pointer
             for (auto& user : uses) {
@@ -161,6 +156,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                     }
 
                     oedge.set_subset(new_subset);
+                    oedge.set_base_type(move_edge.base_type());
                 }
                 for (auto& iedge : use_graph->in_edges(use_node)) {
                     // Compute new subset
@@ -184,6 +180,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                     }
 
                     iedge.set_subset(new_subset);
+                    iedge.set_base_type(move_edge.base_type());
                 }
 
                 applied = true;

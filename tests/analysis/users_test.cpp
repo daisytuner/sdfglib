@@ -161,14 +161,9 @@ TEST(UsersTest, AccessNode_Scalar_WAR) {
     auto& block = builder.add_block(root);
     auto& input_node = builder.add_access(block, "A");
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(
-        block,
-        data_flow::TaskletCode::assign,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"_in", types::Scalar(types::PrimitiveType::Int32)}}
-    );
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
-    builder.add_memlet(block, input_node, "void", tasklet, "_in", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+    builder.add_computational_memlet(block, input_node, tasklet, "_in", {});
 
     auto sdfg = builder.move();
 
@@ -215,23 +210,13 @@ TEST(UsersTest, AccessNode_Scalar_WAW) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(
-        block,
-        data_flow::TaskletCode::assign,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"0", types::PrimitiveType::Int32}}
-    );
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto& block2 = builder.add_block(root);
     auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(
-        block2,
-        data_flow::TaskletCode::assign,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"0", types::PrimitiveType::Int32}}
-    );
-    builder.add_memlet(block2, tasklet2, "_out", output_node2, "void", {});
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"0"});
+    builder.add_computational_memlet(block2, tasklet2, "_out", output_node2, {});
 
     auto sdfg = builder.move();
 
@@ -280,23 +265,13 @@ TEST(UsersTest, AccessNode_Scalar_RAW) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(
-        block,
-        data_flow::TaskletCode::assign,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"0", types::PrimitiveType::Int32}}
-    );
-    builder.add_memlet(block, tasklet, "_out", output_node, "void", {});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto& output_node2 = builder.add_access(block, "B");
-    auto& tasklet2 = builder.add_tasklet(
-        block,
-        data_flow::TaskletCode::assign,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"_in", types::Scalar(types::PrimitiveType::Int32)}}
-    );
-    builder.add_memlet(block, output_node, "void", tasklet2, "_in", {});
-    builder.add_memlet(block, tasklet2, "_out", output_node2, "void", {});
+    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, output_node, tasklet2, "_in", {});
+    builder.add_computational_memlet(block, tasklet2, "_out", output_node2, {});
 
     auto sdfg = builder.move();
 

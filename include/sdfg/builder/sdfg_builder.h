@@ -91,12 +91,11 @@ public:
     data_flow::Tasklet& add_tasklet(
         control_flow::State& state,
         const data_flow::TaskletCode code,
-        const std::pair<std::string, sdfg::types::Scalar>& output,
-        const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
+        const std::string& output,
+        const std::vector<std::string>& inputs,
         const DebugInfo& debug_info = DebugInfo()
     );
 
-    [[deprecated("use specific memlet functions instead")]]
     data_flow::Memlet& add_memlet(
         control_flow::State& state,
         data_flow::DataFlowNode& src,
@@ -104,10 +103,10 @@ public:
         data_flow::DataFlowNode& dst,
         const std::string& dst_conn,
         const data_flow::Subset& subset,
-        const DebugInfo& debug_info = DebugInfo()
+        const types::IType& base_type,
+        const DebugInfo& debug_info
     );
 
-    [[deprecated("use specific memlet functions instead")]]
     data_flow::Memlet& add_memlet(
         control_flow::State& state,
         data_flow::DataFlowNode& src,
@@ -116,6 +115,27 @@ public:
         const std::string& dst_conn,
         const data_flow::Subset& begin_subset,
         const data_flow::Subset& end_subset,
+        const types::IType& base_type,
+        const DebugInfo& debug_info
+    );
+
+    data_flow::Memlet& add_computational_memlet(
+        control_flow::State& state,
+        data_flow::AccessNode& src,
+        data_flow::Tasklet& dst,
+        const std::string& dst_conn,
+        const data_flow::Subset& subset,
+        const types::IType& base_type,
+        const DebugInfo& debug_info = DebugInfo()
+    );
+
+    data_flow::Memlet& add_computational_memlet(
+        control_flow::State& state,
+        data_flow::Tasklet& src,
+        const std::string& src_conn,
+        data_flow::AccessNode& dst,
+        const data_flow::Subset& subset,
+        const types::IType& base_type,
         const DebugInfo& debug_info = DebugInfo()
     );
 
@@ -144,6 +164,7 @@ public:
         const std::string& dst_conn,
         const data_flow::Subset& begin_subset,
         const data_flow::Subset& end_subset,
+        const types::IType& base_type,
         const DebugInfo& debug_info = DebugInfo()
     );
 
@@ -154,6 +175,7 @@ public:
         data_flow::AccessNode& dst,
         const data_flow::Subset& begin_subset,
         const data_flow::Subset& end_subset,
+        const types::IType& base_type,
         const DebugInfo& debug_info = DebugInfo()
     );
 
@@ -162,6 +184,7 @@ public:
         data_flow::AccessNode& src,
         data_flow::AccessNode& dst,
         const data_flow::Subset& subset,
+        const types::IType& base_type,
         const DebugInfo& debug_info = DebugInfo()
     );
 
@@ -170,6 +193,7 @@ public:
         data_flow::AccessNode& src,
         data_flow::AccessNode& dst,
         bool derefs_src,
+        const types::IType& base_type,
         const DebugInfo& debug_info = DebugInfo()
     );
 

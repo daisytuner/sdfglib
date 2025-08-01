@@ -33,7 +33,6 @@ void ReLUNode::validate(const Function& function) const {
 }
 
 bool ReLUNode::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
-    auto& sdfg = builder.subject();
     auto& dataflow = this->get_parent();
     auto& block = static_cast<structured_control_flow::Block&>(*dataflow.get_parent());
     if (dataflow.in_degree(*this) != 1 || dataflow.out_degree(*this) != 1) {
@@ -44,9 +43,6 @@ bool ReLUNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 
     auto& input = this->inputs_.at(0);
     auto& output = this->outputs_.at(0);
-
-    auto& type = sdfg.type(input);
-    types::Scalar scalar_type(type.primitive_type());
 
     auto& iedge = *dataflow.in_edges(*this).begin();
     auto& oedge = *dataflow.out_edges(*this).begin();
@@ -97,15 +93,14 @@ bool ReLUNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& code_block = builder.add_block(*last_scope, {}, block.debug_info());
     auto& input_node_new = builder.add_access(code_block, input, input_node.debug_info());
     auto& output_node_new = builder.add_access(code_block, output, output_node.debug_info());
-    auto& tasklet = builder.add_tasklet(
-        code_block,
-        data_flow::TaskletCode::max,
-        {"_out", scalar_type},
-        {{"0", scalar_type}, {"_in", scalar_type}},
-        block.debug_info()
+    auto& tasklet =
+        builder.add_tasklet(code_block, data_flow::TaskletCode::max, "_out", {"0", "_in"}, block.debug_info());
+    builder.add_computational_memlet(
+        code_block, input_node_new, tasklet, "_in", new_subset, iedge.base_type(), block.debug_info()
     );
-    builder.add_memlet(code_block, input_node_new, "void", tasklet, "_in", new_subset, block.debug_info());
-    builder.add_memlet(code_block, tasklet, "_out", output_node_new, "void", new_subset, block.debug_info());
+    builder.add_computational_memlet(
+        code_block, tasklet, "_out", output_node_new, new_subset, oedge.base_type(), block.debug_info()
+    );
 
     // Clean up block
     builder.remove_memlet(block, iedge);
