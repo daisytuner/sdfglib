@@ -33,6 +33,8 @@ public:
 
     const std::vector<structured_control_flow::ControlFlowNode*> outermost_loops() const;
 
+    const std::vector<structured_control_flow::ControlFlowNode*> outermost_maps() const;
+
     std::vector<sdfg::structured_control_flow::ControlFlowNode*> children(
         sdfg::structured_control_flow::ControlFlowNode* node,
         const std::unordered_map<
