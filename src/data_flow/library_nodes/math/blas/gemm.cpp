@@ -497,7 +497,11 @@ GEMMNodeDispatcher_BLAS::GEMMNodeDispatcher_BLAS(
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void GEMMNodeDispatcher_BLAS::dispatch(codegen::PrettyPrinter& stream) {
+void GEMMNodeDispatcher_BLAS::dispatch(
+    codegen::PrettyPrinter& stream,
+    codegen::PrettyPrinter& globals_stream,
+    codegen::CodeSnippetFactory& library_snippet_factory
+) {
     stream << "{" << std::endl;
     stream.setIndent(stream.indent() + 4);
 
@@ -528,7 +532,8 @@ void GEMMNodeDispatcher_BLAS::dispatch(codegen::PrettyPrinter& stream) {
         stream << " = " << name << ";" << std::endl;
     }
 
-    if (std::find(gemm_node.inputs().begin(), gemm_node.inputs().end(), "alpha") == gemm_node.inputs().end()) {
+    if (std::find(gemm_node.inputs().begin(), gemm_node.inputs().end(), "alpha") ==
+        gemm_node.inputs().end()) { // TODO obsolute, must be an input!
         stream << this->language_extension_.declaration("alpha", base_type);
         stream << " = " << gemm_node.alpha() << ";" << std::endl;
     }
@@ -582,7 +587,11 @@ GEMMNodeDispatcher_CUBLAS::GEMMNodeDispatcher_CUBLAS(
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void GEMMNodeDispatcher_CUBLAS::dispatch(codegen::PrettyPrinter& stream) {
+void GEMMNodeDispatcher_CUBLAS::dispatch(
+    codegen::PrettyPrinter& stream,
+    codegen::PrettyPrinter& globals_stream,
+    codegen::CodeSnippetFactory& library_snippet_factory
+) {
     throw std::runtime_error("GEMMNodeDispatcher_CUBLAS not implemented");
 }
 

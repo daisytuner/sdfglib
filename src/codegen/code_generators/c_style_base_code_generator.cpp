@@ -24,12 +24,12 @@ bool CStyleBaseCodeGenerator::generate() {
 };
 
 bool CStyleBaseCodeGenerator::as_source(const std::filesystem::path& header_path, const std::filesystem::path& source_path) {
-    std::ofstream ofs_header(header_path, std::ofstream::out);
+    std::ofstream ofs_header(header_path, std::ofstream::out | std::ofstream::trunc);
     if (!ofs_header.is_open()) {
         return false;
     }
 
-    std::ofstream ofs_source(source_path, std::ofstream::out);
+    std::ofstream ofs_source(source_path, std::ofstream::out | std::ofstream::trunc);
     if (!ofs_source.is_open()) {
         return false;
     }

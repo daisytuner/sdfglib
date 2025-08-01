@@ -114,7 +114,9 @@ TEST(DataFlowDispatcherTest, DispatchTasklet) {
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
 
     codegen::PrettyPrinter main_stream;
-    dispatcher.dispatch(main_stream);
+    codegen::PrettyPrinter globals_printer;
+    codegen::CodeSnippetFactory snippet_factory;
+    dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
     EXPECT_EQ(
         main_stream.str(),
@@ -137,7 +139,9 @@ TEST(DataFlowDispatcherTest, DispatchLibraryNode) {
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
 
     codegen::PrettyPrinter main_stream;
-    dispatcher.dispatch(main_stream);
+    codegen::PrettyPrinter globals_printer;
+    codegen::CodeSnippetFactory snippet_factory;
+    dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
     EXPECT_EQ(main_stream.str(), "__syncthreads();\n");
 }
@@ -165,7 +169,9 @@ TEST(DataFlowDispatcherTest, DispatchRef_Empty) {
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
 
     codegen::PrettyPrinter main_stream;
-    dispatcher.dispatch(main_stream);
+    codegen::PrettyPrinter globals_printer;
+    codegen::CodeSnippetFactory snippet_factory;
+    dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
     EXPECT_EQ(main_stream.str(), "{\n    b = &a;\n}\n");
 }
@@ -192,7 +198,9 @@ TEST(DataFlowDispatcherTest, DispatchRef_Subset) {
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
 
     codegen::PrettyPrinter main_stream;
-    dispatcher.dispatch(main_stream);
+    codegen::PrettyPrinter globals_printer;
+    codegen::CodeSnippetFactory snippet_factory;
+    dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
     EXPECT_EQ(main_stream.str(), "{\n    b = &a[1];\n}\n");
 }
@@ -222,7 +230,9 @@ TEST(DataFlowDispatcherTest, DispatchRef_ReinterpretCast) {
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
 
     codegen::PrettyPrinter main_stream;
-    dispatcher.dispatch(main_stream);
+    codegen::PrettyPrinter globals_printer;
+    codegen::CodeSnippetFactory snippet_factory;
+    dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
     EXPECT_EQ(main_stream.str(), "{\n    b = (long long *) &a[0];\n}\n");
 }
@@ -248,7 +258,9 @@ TEST(DataFlowDispatcherTest, DispatchRef_Nullptr) {
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
 
     codegen::PrettyPrinter main_stream;
-    dispatcher.dispatch(main_stream);
+    codegen::PrettyPrinter globals_printer;
+    codegen::CodeSnippetFactory snippet_factory;
+    dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
     EXPECT_EQ(main_stream.str(), "{\n    b = NULL;\n}\n");
 }
@@ -274,7 +286,9 @@ TEST(DataFlowDispatcherTest, DispatchRef_Address) {
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
 
     codegen::PrettyPrinter main_stream;
-    dispatcher.dispatch(main_stream);
+    codegen::PrettyPrinter globals_printer;
+    codegen::CodeSnippetFactory snippet_factory;
+    dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
     EXPECT_EQ(main_stream.str(), "{\n    b = (long long *) 100;\n}\n");
 }
@@ -302,7 +316,9 @@ TEST(DataFlowDispatcherTest, DispatchDeref_Load) {
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
 
     codegen::PrettyPrinter main_stream;
-    dispatcher.dispatch(main_stream);
+    codegen::PrettyPrinter globals_printer;
+    codegen::CodeSnippetFactory snippet_factory;
+    dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
     EXPECT_EQ(main_stream.str(), "{\n    b = a[0];\n}\n");
 }
@@ -330,7 +346,9 @@ TEST(DataFlowDispatcherTest, DispatchDeref_Store) {
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
 
     codegen::PrettyPrinter main_stream;
-    dispatcher.dispatch(main_stream);
+    codegen::PrettyPrinter globals_printer;
+    codegen::CodeSnippetFactory snippet_factory;
+    dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
     EXPECT_EQ(main_stream.str(), "{\n    b[0] = a;\n}\n");
 }
@@ -358,7 +376,9 @@ TEST(DataFlowDispatcherTest, DispatchDeref_Store_Nullptr) {
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
 
     codegen::PrettyPrinter main_stream;
-    dispatcher.dispatch(main_stream);
+    codegen::PrettyPrinter globals_printer;
+    codegen::CodeSnippetFactory snippet_factory;
+    dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
     EXPECT_EQ(main_stream.str(), "{\n    b[0] = NULL;\n}\n");
 }
