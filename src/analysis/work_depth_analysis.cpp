@@ -2,7 +2,6 @@
 #include <cstddef>
 #include <stack>
 #include <string>
-#include <vector>
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/data_flow/code_node.h"

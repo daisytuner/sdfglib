@@ -1,7 +1,6 @@
 #include "sdfg/analysis/degrees_of_knowledge_analysis.h"
 
 #include <cstddef>
-#include <iostream>
 #include <list>
 #include <string>
 #include <unordered_map>
@@ -37,13 +36,9 @@ DegreesOfKnowledgeAnalysis::DegreesOfKnowledgeAnalysis(StructuredSDFG& sdfg) : A
 void DegreesOfKnowledgeAnalysis::run(AnalysisManager& analysis_manager) {
     // Initialize the analysis
     this->number_analysis(analysis_manager, symbolic::one(), false, &sdfg_.root());
-    std::cout << "Number of maps: " << number_of_maps_.size() << std::endl;
     this->size_analysis(analysis_manager);
-    std::cout << "Size of maps: " << size_of_a_map_.size() << std::endl;
     this->load_analysis(analysis_manager);
-    std::cout << "Load of maps: " << load_of_a_map_.size() << std::endl;
     this->balance_analysis(analysis_manager);
-    std::cout << "Balance of maps: " << balance_of_a_map_.size() << std::endl;
 }
 
 void DegreesOfKnowledgeAnalysis::number_analysis(
@@ -138,6 +133,9 @@ void DegreesOfKnowledgeAnalysis::size_analysis(AnalysisManager& analysis_manager
             for (auto user : for_users) {
                 auto defined_by = dependencies.defined_by(user->container());
                 auto after = users.all_uses_after(*user);
+                if (defined_by.find(user) == defined_by.end()) {
+                    continue;
+                }
                 auto definition = defined_by.at(user);
                 std::unordered_set<User*> intersection;
                 for (auto& use : after) {
@@ -160,7 +158,7 @@ void DegreesOfKnowledgeAnalysis::load_analysis(AnalysisManager& analysis_manager
     auto& loop_analysis = analysis_manager.get<LoopAnalysis>();
     for (auto& loop : loop_analysis.loops()) {
         if (auto* map_node = dynamic_cast<structured_control_flow::Map*>(loop)) {
-            auto depth = work_depth_analysis.depth(map_node);
+            auto depth = work_depth_analysis.work(&map_node->root());
             auto while_symbols = work_depth_analysis.while_symbols(depth);
             while_symbols_.insert(while_symbols.begin(), while_symbols.end());
 
@@ -245,14 +243,15 @@ std::unordered_set<User*> dynamic_writes(
         for (auto read : reads) {
             auto element = read->element();
             if (auto loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element)) {
-                auto stride = analysis::LoopAnalysis::stride(map_node);
+                auto stride = analysis::LoopAnalysis::stride(loop);
                 auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-                auto bound = analysis::LoopAnalysis::canonical_bound(map_node, assumptions_analysis);
-                auto num_iterations = symbolic::sub(bound, map_node->init());
+                auto bound = analysis::LoopAnalysis::canonical_bound(loop, assumptions_analysis);
+                auto num_iterations = symbolic::sub(bound, loop->init());
                 auto atoms = symbolic::atoms(num_iterations);
                 if (atoms.find(symbolic::symbol(read->container())) != atoms.end()) {
-                    auto write_init = users.get_user(read->container(), loop, Use::WRITE, true, false, false);
-                    auto write_update = users.get_user(read->container(), loop, Use::WRITE, false, false, true);
+                    auto write_init = users.get_user(loop->indvar()->get_name(), loop, Use::WRITE, true, false, false);
+                    auto write_update =
+                        users.get_user(loop->indvar()->get_name(), loop, Use::WRITE, false, false, true);
 
                     if (writes.find(write_init) == writes.end()) {
                         writes.insert(write_init);
@@ -309,7 +308,6 @@ void DegreesOfKnowledgeAnalysis::balance_analysis(AnalysisManager& analysis_mana
     for (auto& loop : loop_analysis.loops()) {
         if (auto* map_node = dynamic_cast<structured_control_flow::Map*>(loop)) {
             auto writes = dynamic_writes(analysis_manager, users, data_dependency_analysis, map_node);
-            std::cout << "Dynamic writes for map " << map_node->element_id() << ": " << writes.size() << std::endl;
             std::unordered_set<User*> reads;
             for (auto write : writes) {
                 auto read_users = data_dependency_analysis.defines(*write);
@@ -346,7 +344,6 @@ void DegreesOfKnowledgeAnalysis::balance_analysis(AnalysisManager& analysis_mana
                     }
                 }
             }
-            std::cout << "Nodes in map " << map_node->element_id() << ": " << nodes.size() << std::endl;
 
             std::unordered_map<structured_control_flow::ControlFlowNode*, symbolic::Expression> cost;
 
@@ -361,10 +358,10 @@ void DegreesOfKnowledgeAnalysis::balance_analysis(AnalysisManager& analysis_mana
                     if (writes.find(users.get_user(loop_node->indvar()->get_name(), loop_node, Use::WRITE, true)) !=
                         writes.end()) {
                         found = true;
-                        auto stride = analysis::LoopAnalysis::stride(map_node);
+                        auto stride = analysis::LoopAnalysis::stride(loop_node);
                         auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-                        auto bound = analysis::LoopAnalysis::canonical_bound(map_node, assumptions_analysis);
-                        auto num_iterations = symbolic::sub(bound, map_node->init());
+                        auto bound = analysis::LoopAnalysis::canonical_bound(loop_node, assumptions_analysis);
+                        auto num_iterations = symbolic::sub(bound, loop_node->init());
 
                         total_cost = symbolic::mul(num_iterations, cost.at(&loop_node->root()));
                     }
@@ -427,6 +424,7 @@ void DegreesOfKnowledgeAnalysis::balance_analysis(AnalysisManager& analysis_mana
                     cost.insert({node, symbolic::one()});
                 }
             }
+
             this->balance_of_a_map_.insert({map_node, cost.at(&map_node->root())});
         }
     }

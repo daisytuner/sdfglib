@@ -29,14 +29,13 @@ TEST(DOKSizeTest, StaticSize) {
 
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
+    auto& root_node = sdfg.root();
     auto work = work_depth_analysis.size_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(10)));
@@ -58,14 +57,13 @@ TEST(DOKSizeTest, StaticSizeOffset) {
 
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
+    auto& root_node = sdfg.root();
     auto work = work_depth_analysis.size_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(5)));
@@ -87,14 +85,13 @@ TEST(DOKSizeTest, StaticSizeStride) {
 
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
+    auto& root_node = sdfg.root();
     auto work = work_depth_analysis.size_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(5)));
@@ -117,14 +114,13 @@ TEST(DOKSizeTest, BoundSize) {
 
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
+    auto& root_node = sdfg.root();
     auto work = work_depth_analysis.size_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Bound);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::symbol("N")));
@@ -136,6 +132,7 @@ TEST(DOKSizeTest, UnboundSize) {
     auto desc_type = types::Scalar(types::PrimitiveType::Int32);
     builder.add_container("i", desc_type);
     builder.add_container("j", desc_type);
+    builder.add_container("N", desc_type);
 
     auto& root = builder.subject().root();
 
@@ -156,14 +153,13 @@ TEST(DOKSizeTest, UnboundSize) {
 
     auto& map_node = builder.add_map(map_node_outer.root(), indvar, condition, init, update, schedule_type);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
+    auto& root_node = sdfg.root();
     auto work = work_depth_analysis.size_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Unbound);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::symbol("j")));
@@ -195,14 +191,13 @@ TEST(DOKNumberTest, StaticNumber) {
 
     auto& map_node = builder.add_map(map_node_outer.root(), indvar, condition, init, update, schedule_type);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
+    auto& root_node = sdfg.root();
     auto work = work_depth_analysis.number_of_maps(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(10)));
@@ -234,14 +229,13 @@ TEST(DOKNumberTest, StaticNumberOffset) {
 
     auto& map_node = builder.add_map(map_node_outer.root(), indvar, condition, init, update, schedule_type);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
+    auto& root_node = sdfg.root();
     auto work = work_depth_analysis.number_of_maps(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(5)));
@@ -273,14 +267,13 @@ TEST(DOKNumberTest, StaticNumberStride) {
 
     auto& map_node = builder.add_map(map_node_outer.root(), indvar, condition, init, update, schedule_type);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
+    auto& root_node = sdfg.root();
     auto work = work_depth_analysis.number_of_maps(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(5)));
@@ -313,14 +306,13 @@ TEST(DOKNumberTest, BoundNumber) {
 
     auto& map_node = builder.add_map(map_node_outer.root(), indvar, condition, init, update, schedule_type);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
+    auto& root_node = sdfg.root();
     auto work = work_depth_analysis.number_of_maps(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Bound);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::symbol("N")));
@@ -347,14 +339,13 @@ TEST(DOKNumberTest, UnboundNumber) {
 
     std::string while_symbol_name = "while_" + std::to_string(while_node.element_id());
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
+    auto& root_node = sdfg.root();
     auto work = work_depth_analysis.number_of_maps(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Unbound);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::symbol(while_symbol_name)));
@@ -388,14 +379,13 @@ TEST(DOKLoadTest, StaticLoad) {
     builder.add_computational_memlet(block, access_A, tasklet, "_in", {symbolic::symbol("i")});
     builder.add_computational_memlet(block, tasklet, "_out", access_B, {symbolic::symbol("i")});
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
+    auto& root_node = sdfg.root();
     auto work = work_depth_analysis.load_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(1)));
@@ -441,14 +431,13 @@ TEST(DOKLoadTest, BoundLoad) {
     builder.add_memlet(block, access_A, "void", tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
     builder.add_memlet(block, tasklet, "_out", access_B, "void", {symbolic::symbol("i"), symbolic::symbol("j")});
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
+    auto& root_node = sdfg.root();
     auto work = work_depth_analysis.load_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Bound);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::symbol("N")));
@@ -508,14 +497,13 @@ TEST(DOKLoadTest, UnboundLoad) {
 
     std::string while_symbol_name = "while_" + std::to_string(while_node.element_id());
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
+    auto& root_node = sdfg.root();
     auto work = work_depth_analysis.load_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Unbound);
     EXPECT_TRUE(symbolic::eq(
@@ -552,17 +540,16 @@ TEST(DOKBalanceTest, StaticBalance) {
     builder.add_memlet(block, access_A, "void", tasklet, "_in", {symbolic::symbol("i")});
     builder.add_memlet(block, tasklet, "_out", access_B, "void", {symbolic::symbol("i")});
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
+    auto& root_node = sdfg.root();
     auto work = work_depth_analysis.balance_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
-    EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(1)));
+    EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(2)));
 }
 
 TEST(DOKBalanceTest, BoundBalance) {
@@ -604,17 +591,18 @@ TEST(DOKBalanceTest, BoundBalance) {
     builder.add_memlet(block, access_A, "void", tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
     builder.add_memlet(block, tasklet, "_out", access_B, "void", {symbolic::symbol("i"), symbolic::symbol("j")});
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
-    auto work = work_depth_analysis.load_of_a_map(map_node);
+    auto& root_node = sdfg.root();
+    auto work = work_depth_analysis.balance_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Bound);
-    EXPECT_TRUE(symbolic::eq(work.first, symbolic::symbol("i")));
+    EXPECT_TRUE(symbolic::
+                    eq(work.first,
+                       symbolic::add(symbolic::mul(symbolic::integer(2), symbolic::symbol("i")), symbolic::one())));
 }
 
 TEST(DOKBalanceTest, UnboundBalance) {
@@ -671,19 +659,24 @@ TEST(DOKBalanceTest, UnboundBalance) {
     builder.add_memlet(block, update_tasklet, "_out", update_write, "void", {});
 
     std::string while_symbol_name = "while_" + std::to_string(while_node.element_id());
+    std::string if_else_symbol_name = "if_else_" + std::to_string(if_else_node.element_id());
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    analysis::AnalysisManager analysis_manager(sdfg);
     auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
-    auto& root_node = builder_opt.subject().root();
-    auto work = work_depth_analysis.load_of_a_map(map_node);
+    auto& root_node = sdfg.root();
+    auto work = work_depth_analysis.balance_of_a_map(map_node);
+    auto expected_balance = symbolic::add(
+        symbolic::integer(2),
+        symbolic::mul(
+            symbolic::symbol(while_symbol_name),
+            symbolic::add(symbolic::integer(2), symbolic::mul(symbolic::integer(2), symbolic::symbol(if_else_symbol_name)))
+        )
+    );
+
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Unbound);
-    EXPECT_TRUE(symbolic::eq(
-        work.first,
-        symbolic::add(symbolic::one(), symbolic::mul(symbolic::symbol(while_symbol_name), symbolic::integer(2)))
-    ));
+    EXPECT_TRUE(symbolic::eq(work.first, expected_balance));
 }
