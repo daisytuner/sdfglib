@@ -12,7 +12,9 @@ MetadataNode::MetadataNode(
     const std::vector<std::string>& inputs,
     std::unordered_map<std::string, std::string> metadata
 )
-    : LibraryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Metadata, outputs, inputs, false),
+    : LibraryNode(
+          element_id, debug_info, vertex, parent, LibraryNodeType_Metadata, outputs, inputs, false, ImplementationType_NONE
+      ),
       metadata_(metadata) {}
 
 void MetadataNode::validate(const Function& function) const {
@@ -82,7 +84,11 @@ MetadataDispatcher::MetadataDispatcher(
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void MetadataDispatcher::dispatch(codegen::PrettyPrinter& stream) {
+void MetadataDispatcher::dispatch(
+    codegen::PrettyPrinter& stream,
+    codegen::PrettyPrinter& globals_stream,
+    codegen::CodeSnippetFactory& library_snippet_factory
+) {
     throw std::runtime_error("MetadataNode is not supported");
 }
 

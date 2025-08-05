@@ -10,9 +10,10 @@ MathNode::MathNode(
     data_flow::DataFlowGraph& parent,
     const data_flow::LibraryNodeCode& code,
     const std::vector<std::string>& outputs,
-    const std::vector<std::string>& inputs
+    const std::vector<std::string>& inputs,
+    const data_flow::ImplementationType& implementation_type
 )
-    : LibraryNode(element_id, debug_info, vertex, parent, code, outputs, inputs, false) {}
+    : LibraryNode(element_id, debug_info, vertex, parent, code, outputs, inputs, false, implementation_type) {}
 
 } // namespace math
 } // namespace sdfg

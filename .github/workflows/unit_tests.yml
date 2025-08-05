@@ -11,9 +11,12 @@ jobs:
   build:
     runs-on:
       group: dahlia
-      labels: openmp
+      labels: cuda
     container:
-      image: daisytuner/docc:latest
+      image: daisytuner/docc-v2:latest
+      options: >-
+        --cap-add=PERFMON
+        --gpus=all
 
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +30,11 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Debug -DSDFGLIB_ENABLE_COVERAGE=ON -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
+
+          # Enable coverage
+          # cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Debug -DSDFGLIB_ENABLE_COVERAGE=ON -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
+
+          cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Debug -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
           ln -s compile_commands.json ../compile_commands.json
 
       # - name: Linting
@@ -37,14 +44,30 @@ jobs:
         run: |
           cd build
           ninja -j$(nproc)
+          ninja install
 
           ./tests/sdfglib_test
-          gcovr --gcov-executable "llvm-cov-19 gcov" --filter ../include/ --filter ../src/ --coveralls coveralls.json -r ../
+
+          # Run coverage
+          # gcovr --gcov-executable "llvm-cov-19 gcov" --filter ../include/ --filter ../src/ --coveralls coveralls.json -r ../
 
       - name: Test Arg-Capture-IO
         run: |
           cd build
           ./arg-capture-io/tests/capture_io_test
 
-      - name: Coveralls
-        uses: coverallsapp/github-action@v2
+      - name: Test RTL
+        run: |
+          export CPATH=/usr/local/include:$CPATH
+          export LIBRARY_PATH=/usr/local/lib:$LIBRARY_PATH
+          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+          export PATH=/usr/local/bin:$PATH
+
+          pip install pytest==7.1.3 --break-system-packages
+          pip install pytest-parallel --break-system-packages
+
+          cd rtl/tests
+          pytest -v rtl_tests.py
+
+      # - name: Coveralls
+      #   uses: coverallsapp/github-action@v2

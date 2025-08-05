@@ -35,7 +35,6 @@ target_compile_options(arg_capture_io PRIVATE
 set_target_properties(arg_capture_io PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
-    PUBLIC_HEADER "include/arg_capture_io.h" # Set this to the main public header
 )
 
 install(TARGETS arg_capture_io
@@ -43,9 +42,10 @@ install(TARGETS arg_capture_io
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY include/daisy_rtl DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 if(SDFGLIB_BUILD_TESTS)
     set(INSTALL_GTEST OFF)

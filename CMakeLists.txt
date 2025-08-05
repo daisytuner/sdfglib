@@ -67,6 +67,7 @@ set(SOURCE_FILES
     src/codegen/code_generator.cpp
     src/codegen/code_snippet_factory.cpp
     src/codegen/instrumentation/capture_var_plan.cpp
+    src/codegen/instrumentation/instrumentation_plan.cpp
     src/codegen/language_extensions/c_language_extension.cpp
     src/codegen/language_extensions/cpp_language_extension.cpp
     src/codegen/language_extensions/cuda_language_extension.cpp
@@ -82,7 +83,6 @@ set(SOURCE_FILES
     src/codegen/dispatchers/for_dispatcher.cpp
     src/codegen/dispatchers/map_dispatcher.cpp
     src/codegen/dispatchers/while_dispatcher.cpp
-    src/codegen/instrumentation/outermost_loops_instrumentation.cpp
     src/control_flow/interstate_edge.cpp
     src/control_flow/state.cpp
     src/data_flow/access_node.cpp
@@ -95,6 +95,10 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/barrier_local_node.cpp
     src/data_flow/library_nodes/metadata_node.cpp
     src/data_flow/library_nodes/math/math_node.cpp
+    src/data_flow/library_nodes/math/blas/dot.cpp
+    src/data_flow/library_nodes/math/blas/gemm.cpp
+    src/data_flow/library_nodes/math/ml/conv.cpp
+    src/data_flow/library_nodes/math/ml/maxpool.cpp
     src/data_flow/library_nodes/math/ml/relu.cpp
     src/deepcopy/structured_sdfg_deep_copy.cpp
     src/graph/graph.cpp
@@ -108,6 +112,7 @@ set(SOURCE_FILES
     src/passes/dataflow/redundant_array_elimination.cpp
     src/passes/dataflow/trivial_array_elimination.cpp
     src/passes/dataflow/reference_propagation.cpp
+    src/passes/schedules/expansion_pass.cpp
     src/passes/schedules/parallelization_pass.cpp
     src/passes/symbolic/symbol_evolution.cpp
     src/passes/symbolic/symbol_propagation.cpp
@@ -146,6 +151,7 @@ set(SOURCE_FILES
     src/transformations/out_local_storage.cpp
     src/transformations/parallelization.cpp
     src/transformations/recorder.cpp
+    src/transformations/replayer.cpp
     src/transformations/utils.cpp
     src/types/array.cpp
     src/types/function.cpp
@@ -203,9 +209,6 @@ install(TARGETS sdfglib
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
-install(FILES
-    include/export/daisyrtl.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 install(DIRECTORY include/sdfg DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 

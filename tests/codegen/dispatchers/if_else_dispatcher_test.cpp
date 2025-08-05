@@ -19,8 +19,8 @@ TEST(IfElseDispatcherTest, DispatchNode_Trivial) {
     auto final_sdfg = builder.move();
 
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(*final_sdfg);
-    codegen::IfElseDispatcher dispatcher(language_extension, *final_sdfg, if_else, instrumentation);
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::IfElseDispatcher dispatcher(language_extension, *final_sdfg, if_else, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -46,8 +46,8 @@ TEST(IfElseDispatcherTest, DispatchNode) {
     auto final_sdfg = builder.move();
 
     codegen::CLanguageExtension language_extension;
-    codegen::Instrumentation instrumentation(*final_sdfg);
-    codegen::IfElseDispatcher dispatcher(language_extension, *final_sdfg, if_else, instrumentation);
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::IfElseDispatcher dispatcher(language_extension, *final_sdfg, if_else, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

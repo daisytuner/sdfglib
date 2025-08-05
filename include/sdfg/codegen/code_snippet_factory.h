@@ -14,9 +14,11 @@ protected:
     PrettyPrinter stream_;
     std::string extension_;
     bool as_file_;
+    std::string name_;
 
 public:
-    CodeSnippet(const std::string& extension, bool as_file) : extension_(extension), as_file_(as_file) {};
+    CodeSnippet(const std::string& name, const std::string& extension, bool as_file)
+        : extension_(extension), as_file_(as_file), name_(name) {};
 
     PrettyPrinter& stream() { return stream_; }
 
@@ -25,6 +27,8 @@ public:
     const std::string& extension() const { return extension_; }
 
     bool is_as_file() const { return as_file_; }
+
+    const std::string& name() const { return name_; }
 };
 
 class CodeSnippetFactory {

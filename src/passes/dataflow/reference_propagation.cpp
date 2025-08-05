@@ -117,7 +117,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                 // Criterion: Must be a computational memlet
                 bool computational = true;
                 for (auto& oedge : use_graph->out_edges(use_node)) {
-                    if (oedge.type() != data_flow::MemletType::Computational) {
+                    if (oedge.type() != data_flow::MemletType::Computational || oedge.has_range()) {
                         computational = false;
                         break;
                     }
@@ -126,7 +126,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                     continue;
                 }
                 for (auto& iedge : use_graph->in_edges(use_node)) {
-                    if (iedge.type() != data_flow::MemletType::Computational) {
+                    if (iedge.type() != data_flow::MemletType::Computational || iedge.has_range()) {
                         computational = false;
                         break;
                     }

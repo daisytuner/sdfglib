@@ -36,3 +36,8 @@ TEST(PipelineTest, DataParallelism) {
     EXPECT_EQ(data_parallelism.name(), "DataParallelism");
     EXPECT_EQ(data_parallelism.size(), 3);
 }
+
+TEST(PipelineTest, Expansion) {
+    passes::Pipeline expansion = passes::Pipeline::expansion();
+    EXPECT_EQ(expansion.size(), 1);
+}

@@ -5,11 +5,11 @@ namespace sdfg::codegen {
 
 CStyleBaseCodeGenerator::CStyleBaseCodeGenerator(
     StructuredSDFG& sdfg,
-    InstrumentationStrategy instrumentation_strategy,
+    InstrumentationPlan& instrumentation_plan,
     bool capture_args_results,
     const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths
 )
-    : CodeGenerator(sdfg, instrumentation_strategy, capture_args_results, output_and_header_paths) {
+    : CodeGenerator(sdfg, instrumentation_plan, capture_args_results, output_and_header_paths) {
     if (sdfg.type() != FunctionType_CPU) {
         throw std::runtime_error("CStyleBaseCodeGenerator can only be used for CPU SDFGs");
     }
@@ -24,12 +24,12 @@ bool CStyleBaseCodeGenerator::generate() {
 };
 
 bool CStyleBaseCodeGenerator::as_source(const std::filesystem::path& header_path, const std::filesystem::path& source_path) {
-    std::ofstream ofs_header(header_path, std::ofstream::out);
+    std::ofstream ofs_header(header_path, std::ofstream::out | std::ofstream::trunc);
     if (!ofs_header.is_open()) {
         return false;
     }
 
-    std::ofstream ofs_source(source_path, std::ofstream::out);
+    std::ofstream ofs_source(source_path, std::ofstream::out | std::ofstream::trunc);
     if (!ofs_source.is_open()) {
         return false;
     }
@@ -64,8 +64,9 @@ void CStyleBaseCodeGenerator::append_function_source(std::ofstream& ofs_source) 
     ofs_source << this->function_definition() << std::endl;
     ofs_source << "{" << std::endl;
 
-    if (instrumentation_strategy_ != InstrumentationStrategy::NONE) {
-        ofs_source << "__daisy_instrument_init();" << std::endl;
+    if (!instrumentation_plan_.is_empty()) {
+        ofs_source << "__daisy_instrumentation_t* __daisy_instrumentation_ctx = __daisy_instrumentation_init();"
+                   << std::endl;
     }
 
     if (capturePlan) {
@@ -88,8 +89,8 @@ void CStyleBaseCodeGenerator::append_function_source(std::ofstream& ofs_source) 
         this->emit_arg_captures(ofs_source, *capturePlan, true);
     }
 
-    if (instrumentation_strategy_ != InstrumentationStrategy::NONE) {
-        ofs_source << "__daisy_instrument_finalize();" << std::endl;
+    if (!instrumentation_plan_.is_empty()) {
+        ofs_source << "__daisy_instrumentation_finalize(__daisy_instrumentation_ctx);" << std::endl;
     }
 
     ofs_source << "}" << std::endl;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sdfg/data_flow/library_node.h"
+#include "sdfg/structured_control_flow/map.h"
 
 namespace sdfg {
 
@@ -24,7 +25,8 @@ public:
         data_flow::DataFlowGraph& parent,
         const data_flow::LibraryNodeCode& code,
         const std::vector<std::string>& outputs,
-        const std::vector<std::string>& inputs
+        const std::vector<std::string>& inputs,
+        const data_flow::ImplementationType& implementation_type
     );
 
     virtual bool expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) = 0;

@@ -13,14 +13,17 @@ LibraryNode::LibraryNode(
     const LibraryNodeCode& code,
     const std::vector<std::string>& outputs,
     const std::vector<std::string>& inputs,
-    const bool side_effect
+    const bool side_effect,
+    const ImplementationType& implementation_type
 )
     : CodeNode(element_id, debug_info, vertex, parent), code_(code), outputs_(outputs), inputs_(inputs),
-      side_effect_(side_effect) {
-
-      };
+      side_effect_(side_effect), implementation_type_(implementation_type) {}
 
 const LibraryNodeCode& LibraryNode::code() const { return this->code_; };
+
+const ImplementationType& LibraryNode::implementation_type() const { return this->implementation_type_; };
+
+ImplementationType& LibraryNode::implementation_type() { return this->implementation_type_; };
 
 const std::vector<std::string>& LibraryNode::inputs() const { return this->inputs_; };
 

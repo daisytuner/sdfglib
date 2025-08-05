@@ -7,7 +7,7 @@
 #include "code_snippet_factory.h"
 #include "sdfg/analysis/mem_access_range_analysis.h"
 #include "sdfg/codegen/instrumentation/capture_var_plan.h"
-#include "sdfg/codegen/instrumentation/instrumentation_strategy.h"
+#include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 #include "sdfg/codegen/utils.h"
 #include "sdfg/structured_sdfg.h"
 #include "sdfg/types/type.h"
@@ -27,7 +27,7 @@ protected:
     StructuredSDFG& sdfg_;
 
     /// @brief Instrumentation strategy
-    InstrumentationStrategy instrumentation_strategy_;
+    InstrumentationPlan& instrumentation_plan_;
 
     /// @brief Stream for includes
     PrettyPrinter includes_stream_;
@@ -67,12 +67,12 @@ protected:
 public:
     CodeGenerator(
         StructuredSDFG& sdfg,
-        InstrumentationStrategy instrumentation_strategy,
+        InstrumentationPlan& instrumentation_plan,
         bool capture_args_results = false,
         const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr
     )
-        : sdfg_(sdfg), instrumentation_strategy_(instrumentation_strategy),
-          library_snippet_factory_(output_and_header_paths), capture_args_results_(capture_args_results) {};
+        : sdfg_(sdfg), instrumentation_plan_(instrumentation_plan), library_snippet_factory_(output_and_header_paths),
+          capture_args_results_(capture_args_results) {};
 
 
     virtual ~CodeGenerator() = default;

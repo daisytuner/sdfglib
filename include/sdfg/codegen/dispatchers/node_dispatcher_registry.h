@@ -6,14 +6,14 @@
 
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher.h"
-#include "sdfg/codegen/instrumentation/instrumentation.h"
+#include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 #include "sdfg/codegen/language_extension.h"
 
 namespace sdfg {
 namespace codegen {
 
 using NodeDispatcherFn = std::function<std::unique_ptr<
-    NodeDispatcher>(LanguageExtension&, StructuredSDFG&, structured_control_flow::ControlFlowNode&, Instrumentation&)>;
+    NodeDispatcher>(LanguageExtension&, StructuredSDFG&, structured_control_flow::ControlFlowNode&, InstrumentationPlan&)>;
 
 class NodeDispatcherRegistry {
 private:
@@ -49,11 +49,11 @@ std::unique_ptr<NodeDispatcher> create_dispatcher(
     LanguageExtension& language_extension,
     StructuredSDFG& sdfg,
     structured_control_flow::ControlFlowNode& node,
-    Instrumentation& instrumentation
+    InstrumentationPlan& instrumentation_plan
 );
 
 using MapDispatcherFn = std::function<std::unique_ptr<
-    NodeDispatcher>(LanguageExtension&, StructuredSDFG&, structured_control_flow::Map&, Instrumentation&)>;
+    NodeDispatcher>(LanguageExtension&, StructuredSDFG&, structured_control_flow::Map&, InstrumentationPlan&)>;
 
 class MapDispatcherRegistry {
 private:
