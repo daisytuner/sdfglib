@@ -68,6 +68,9 @@ void DegreesOfKnowledgeAnalysis::number_analysis(
         auto stride = analysis::LoopAnalysis::stride(for_loop);
         auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
         auto bound = analysis::LoopAnalysis::canonical_bound(for_loop, assumptions_analysis);
+        std::cerr << "Condition for loop " << for_loop->indvar()->get_name() << ": " << for_loop->condition()->__str__()
+                  << std::endl;
+        std::cerr << "Bound for loop " << for_loop->indvar()->get_name() << ": " << bound->__str__() << std::endl;
         auto num_iterations = symbolic::zero();
         if (bound == SymEngine::null) {
             std::string while_symbol_name = "while_" + std::to_string(for_loop->element_id());
