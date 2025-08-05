@@ -68,8 +68,16 @@ void DegreesOfKnowledgeAnalysis::number_analysis(
         auto stride = analysis::LoopAnalysis::stride(for_loop);
         auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
         auto bound = analysis::LoopAnalysis::canonical_bound(for_loop, assumptions_analysis);
-        auto num_iterations = symbolic::sub(bound, for_loop->init());
-        num_iterations = symbolic::div(num_iterations, stride);
+        auto num_iterations = symbolic::zero();
+        if (bound == SymEngine::null) {
+            std::string while_symbol_name = "while_" + std::to_string(for_loop->element_id());
+            symbolic::Symbol while_symbol = symbolic::symbol(while_symbol_name);
+            while_symbols_.insert(while_symbol);
+            num_iterations = while_symbol;
+        } else {
+            num_iterations = symbolic::sub(bound, for_loop->init());
+            num_iterations = symbolic::div(num_iterations, stride);
+        }
 
         number_analysis(analysis_manager, symbolic::mul(num_iterations, base_iterations), branched, &for_loop->root());
     } else if (dynamic_cast<structured_control_flow::While*>(node)) {
