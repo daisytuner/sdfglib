@@ -30,16 +30,23 @@ TEST(RedundantArrayElimination, ArrayLate) {
     auto& access_in = builder.add_access(block, "test_in");
     auto& access_out = builder.add_access(block, "test_out");
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", scalar},
-                                        {{"_in", scalar}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
-    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in",
-                                         {symbolic::symbol("a"), symbolic::symbol("b"),
-                                          symbolic::symbol("c"), symbolic::symbol("d")});
+    auto& memlet_in = builder.add_computational_memlet(
+        block,
+        access_in,
+        tasklet,
+        "_in",
+        {symbolic::symbol("a"), symbolic::symbol("b"), symbolic::symbol("c"), symbolic::symbol("d")}
+    );
 
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void",
-                                          {symbolic::symbol("a"), symbolic::symbol("b"),
-                                           symbolic::symbol("c"), symbolic::symbol("e")});
+    auto& memlet_out = builder.add_computational_memlet(
+        block,
+        tasklet,
+        "_out",
+        access_out,
+        {symbolic::symbol("a"), symbolic::symbol("b"), symbolic::symbol("c"), symbolic::symbol("e")}
+    );
     auto sdfg = builder.move();
 
     // Apply pass
@@ -92,16 +99,23 @@ TEST(RedundantArrayElimination, ArrayEarly) {
     auto& access_in = builder.add_access(block, "test_in");
     auto& access_out = builder.add_access(block, "test_out");
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", scalar},
-                                        {{"_in", scalar}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
-    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in",
-                                         {symbolic::symbol("a"), symbolic::symbol("b"),
-                                          symbolic::symbol("c"), symbolic::symbol("d")});
+    auto& memlet_in = builder.add_computational_memlet(
+        block,
+        access_in,
+        tasklet,
+        "_in",
+        {symbolic::symbol("a"), symbolic::symbol("b"), symbolic::symbol("c"), symbolic::symbol("d")}
+    );
 
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void",
-                                          {symbolic::symbol("e"), symbolic::symbol("a"),
-                                           symbolic::symbol("b"), symbolic::symbol("c")});
+    auto& memlet_out = builder.add_computational_memlet(
+        block,
+        tasklet,
+        "_out",
+        access_out,
+        {symbolic::symbol("e"), symbolic::symbol("a"), symbolic::symbol("b"), symbolic::symbol("c")}
+    );
     auto sdfg = builder.move();
 
     // Apply pass
@@ -154,16 +168,23 @@ TEST(RedundantArrayElimination, ArrayMiddle) {
     auto& access_in = builder.add_access(block, "test_in");
     auto& access_out = builder.add_access(block, "test_out");
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", scalar},
-                                        {{"_in", scalar}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
-    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in",
-                                         {symbolic::symbol("a"), symbolic::symbol("b"),
-                                          symbolic::symbol("c"), symbolic::symbol("d")});
+    auto& memlet_in = builder.add_computational_memlet(
+        block,
+        access_in,
+        tasklet,
+        "_in",
+        {symbolic::symbol("a"), symbolic::symbol("b"), symbolic::symbol("c"), symbolic::symbol("d")}
+    );
 
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void",
-                                          {symbolic::symbol("a"), symbolic::symbol("e"),
-                                           symbolic::symbol("b"), symbolic::symbol("c")});
+    auto& memlet_out = builder.add_computational_memlet(
+        block,
+        tasklet,
+        "_out",
+        access_out,
+        {symbolic::symbol("a"), symbolic::symbol("e"), symbolic::symbol("b"), symbolic::symbol("c")}
+    );
     auto sdfg = builder.move();
 
     // Apply pass
@@ -215,16 +236,23 @@ TEST(RedundantArrayElimination, Negative) {
     auto& access_in = builder.add_access(block, "test_in");
     auto& access_out = builder.add_access(block, "test_out");
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", scalar},
-                                        {{"_in", scalar}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
-    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in",
-                                         {symbolic::symbol("a"), symbolic::symbol("b"),
-                                          symbolic::symbol("c"), symbolic::symbol("d")});
+    auto& memlet_in = builder.add_computational_memlet(
+        block,
+        access_in,
+        tasklet,
+        "_in",
+        {symbolic::symbol("a"), symbolic::symbol("b"), symbolic::symbol("c"), symbolic::symbol("d")}
+    );
 
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void",
-                                          {symbolic::symbol("a"), symbolic::symbol("b"),
-                                           symbolic::symbol("c"), symbolic::symbol("d")});
+    auto& memlet_out = builder.add_computational_memlet(
+        block,
+        tasklet,
+        "_out",
+        access_out,
+        {symbolic::symbol("a"), symbolic::symbol("b"), symbolic::symbol("c"), symbolic::symbol("d")}
+    );
     auto sdfg = builder.move();
 
     // Apply pass

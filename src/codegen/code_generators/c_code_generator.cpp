@@ -93,7 +93,8 @@ void CCodeGenerator::dispatch_structures() {
         for (size_t i = 0; i < definition.num_members(); i++) {
             auto& member_type = definition.member_type(symbolic::integer(i));
             if (auto pointer_type = dynamic_cast<const sdfg::types::Pointer*>(&member_type)) {
-                if (dynamic_cast<const sdfg::types::Structure*>(&pointer_type->pointee_type())) {
+                if (pointer_type->has_pointee_type() &&
+                    dynamic_cast<const sdfg::types::Structure*>(&pointer_type->pointee_type())) {
                     this->classes_stream_ << "struct ";
                 }
             }
@@ -107,24 +108,16 @@ void CCodeGenerator::dispatch_structures() {
 };
 
 void CCodeGenerator::dispatch_globals() {
+    // Externals are pointers. However, we need to declare them as the base type.
     for (auto& container : sdfg_.externals()) {
-        this->globals_stream_ << "extern " << language_extension_.declaration(container, sdfg_.type(container)) << ";"
-                              << std::endl;
+        auto& type = dynamic_cast<const types::Pointer&>(sdfg_.type(container));
+        assert(type.has_pointee_type() && "Externals must have a pointee type");
+        auto& base_type = type.pointee_type();
+        this->globals_stream_ << "extern " << language_extension_.declaration(container, base_type) << ";" << std::endl;
     }
 };
 
 void CCodeGenerator::dispatch_schedule() {
-    // Map external variables to internal variables
-    for (auto& container : sdfg_.containers()) {
-        if (!sdfg_.is_internal(container)) {
-            continue;
-        }
-        std::string external_name = container.substr(0, container.length() - external_suffix.length());
-        this->main_stream_ << language_extension_.declaration(container, sdfg_.type(container));
-        this->main_stream_ << " = " << language_extension_.type_cast("&" + external_name, sdfg_.type(container));
-        this->main_stream_ << ";" << std::endl;
-    }
-
     // Declare transient containers
     for (auto& container : sdfg_.containers()) {
         if (!sdfg_.is_transient(container)) {

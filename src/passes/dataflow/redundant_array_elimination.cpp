@@ -119,6 +119,7 @@ bool RedundantArrayElimination::
                 auto subset = oedge.subset();
                 subset.erase(subset.begin() + depth);
                 oedge.set_subset(subset);
+                oedge.set_base_type(*new_type);
             }
         }
         // Replace all writes
@@ -133,6 +134,7 @@ bool RedundantArrayElimination::
                 auto subset = iedge.subset();
                 subset.erase(subset.begin() + depth);
                 iedge.set_subset(subset);
+                iedge.set_base_type(*new_type);
             }
         }
 

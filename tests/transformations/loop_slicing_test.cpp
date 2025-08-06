@@ -15,9 +15,8 @@ TEST(LoopSlicingTest, FirstIteration) {
     auto& root = sdfg.root();
 
     // Add containers
-    types::Scalar base_desc(types::PrimitiveType::Float);
-    types::Pointer desc(base_desc);
-    builder.add_container("A", desc, true);
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
     builder.add_container("N", sym_desc, true);

@@ -17,25 +17,35 @@ namespace sdfg {
 namespace codegen {
 
 class LanguageExtension {
-   public:
+protected:
+    std::unordered_set<std::string> external_variables_;
+
+public:
+    LanguageExtension() : external_variables_() {}
+
+    LanguageExtension(const std::vector<std::string>& external_variables)
+        : external_variables_(external_variables.begin(), external_variables.end()) {}
+
     virtual ~LanguageExtension() = default;
 
     virtual std::string primitive_type(const types::PrimitiveType prim_type) = 0;
 
-    virtual std::string declaration(const std::string& name, const types::IType& type,
-                                    bool use_initializer = false, bool use_alignment = false) = 0;
+    virtual std::string declaration(
+        const std::string& name, const types::IType& type, bool use_initializer = false, bool use_alignment = false
+    ) = 0;
 
     virtual std::string type_cast(const std::string& name, const types::IType& type) = 0;
 
-    virtual std::string subset(const Function& function, const types::IType& type,
-                               const data_flow::Subset& subset) = 0;
+    virtual std::string subset(const Function& function, const types::IType& type, const data_flow::Subset& subset) = 0;
 
     virtual std::string expression(const symbolic::Expression& expr) = 0;
+
+    virtual std::string access_node(const data_flow::AccessNode& node) = 0;
 
     virtual std::string tasklet(const data_flow::Tasklet& tasklet) = 0;
 
     virtual std::string zero(const types::PrimitiveType prim_type) = 0;
 };
 
-}  // namespace codegen
-}  // namespace sdfg
+} // namespace codegen
+} // namespace sdfg

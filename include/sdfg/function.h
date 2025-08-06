@@ -32,8 +32,6 @@ namespace builder {
 class FunctionBuilder;
 }
 
-static std::string external_suffix = "__daisy__internal__";
-
 typedef StringEnum FunctionType;
 inline FunctionType FunctionType_CPU{"CPU"};
 inline FunctionType FunctionType_NV_GLOBAL{"NV_GLOBAL"};
@@ -109,8 +107,6 @@ public:
     bool is_argument(const std::string& name) const;
 
     bool is_external(const std::string& name) const;
-
-    bool is_internal(const std::string& name) const;
 
     bool is_transient(const std::string& name) const;
 

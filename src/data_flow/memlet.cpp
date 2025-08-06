@@ -18,10 +18,11 @@ Memlet::Memlet(
     const std::string& src_conn,
     DataFlowNode& dst,
     const std::string& dst_conn,
-    const Subset& subset
+    const Subset& subset,
+    const types::IType& base_type
 )
     : Element(element_id, debug_info), edge_(edge), parent_(&parent), src_(src), dst_(dst), src_conn_(src_conn),
-      dst_conn_(dst_conn), begin_subset_(subset), end_subset_(subset) {
+      dst_conn_(dst_conn), begin_subset_(subset), end_subset_(subset), base_type_(base_type.clone()) {
 
       };
 
@@ -35,10 +36,11 @@ Memlet::Memlet(
     DataFlowNode& dst,
     const std::string& dst_conn,
     const Subset& begin_subset,
-    const Subset& end_subset
+    const Subset& end_subset,
+    const types::IType& base_type
 )
     : Element(element_id, debug_info), edge_(edge), parent_(&parent), src_(src), dst_(dst), src_conn_(src_conn),
-      dst_conn_(dst_conn), begin_subset_(begin_subset), end_subset_(end_subset) {
+      dst_conn_(dst_conn), begin_subset_(begin_subset), end_subset_(end_subset), base_type_(base_type.clone()) {
 
       };
 
@@ -51,14 +53,12 @@ void Memlet::validate(const Function& function) const {
         if (this->dst_conn_ != "void") {
             throw InvalidSDFGException("Memlet: Computation memlets must have a void destination");
         }
-        if (tasklet->output().first != this->src_conn_) {
+        if (tasklet->output() != this->src_conn_) {
             throw InvalidSDFGException("Memlet: Computation memlet must have an output in the tasklet");
         }
 
-        // Criterion: Destination must be a scalar accessed through contiguous memory
-        auto dst_data = static_cast<const AccessNode&>(this->dst_).data();
-        auto& dst_type = function.type(dst_data);
-        auto& deref_type = types::infer_type(function, dst_type, this->begin_subset_);
+        // Criterion: Must be a scalar
+        auto& deref_type = types::infer_type(function, *this->base_type_, this->begin_subset_);
         if (deref_type.type_id() != types::TypeID::Scalar) {
             throw InvalidSDFGException("Memlet: Computation memlets must have a scalar destination");
         }
@@ -73,7 +73,7 @@ void Memlet::validate(const Function& function) const {
         }
         bool found_conn = false;
         for (auto& conn : tasklet->inputs()) {
-            if (conn.first == this->dst_conn_) {
+            if (conn == this->dst_conn_) {
                 found_conn = true;
                 break;
             }
@@ -82,10 +82,8 @@ void Memlet::validate(const Function& function) const {
             throw InvalidSDFGException("Memlet: Computation memlet must have an input in the tasklet");
         }
 
-        // Criterion: Source must be a scalar accessed through contiguous memory
-        auto src_data = static_cast<const AccessNode&>(this->src_).data();
-        auto& src_type = function.type(src_data);
-        auto& deref_type = types::infer_type(function, src_type, this->begin_subset_);
+        // Criterion: Must be a scalar
+        auto& deref_type = types::infer_type(function, *this->base_type_, this->begin_subset_);
         if (deref_type.type_id() != types::TypeID::Scalar) {
             throw InvalidSDFGException("Memlet: Computation memlets must have a scalar source");
         }
@@ -154,18 +152,16 @@ void Memlet::validate(const Function& function) const {
             }
         }
 
-        // Criterion: Reference memlets must refer to contiguous memory
-        auto src_data = src_node->data();
-        auto& src_type = function.type(src_data);
-        // Throws exception if not contiguous
-        auto& ref_type = types::infer_type(function, src_type, this->begin_subset_);
-
         // Criterion: Destination must be a pointer
         auto dst_data = dst_node->data();
         auto& dst_type = function.type(dst_data);
         if (dst_type.type_id() != types::TypeID::Pointer) {
             throw InvalidSDFGException("Memlet: Reference memlets must have a pointer destination");
         }
+
+        // Criterion: Must be a contiguous memory reference
+        // Throws exception if not contiguous
+        auto& ref_type = types::infer_type(function, *this->base_type_, this->begin_subset_);
 
         return;
     }
@@ -201,14 +197,18 @@ void Memlet::validate(const Function& function) const {
 
         // Criterion: Destination must be a pointer to source type
         auto dst_data = dst_node->data();
-        auto dst_type = dynamic_cast<const types::Pointer*>(&function.type(dst_data));
-        if (!dst_type) {
+        auto& dst_type = function.type(dst_data);
+        if (dst_type.type_id() != types::TypeID::Pointer) {
             throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer destination");
         }
-        if (dst_type->pointee_type() == src_type || symbolic::is_nullptr(symbolic::symbol(src_data))) {
-            // Do nothing
-        } else {
-            throw InvalidSDFGException("Memlet: Dereference memlets must be pointer to source type");
+
+        // Criterion: Must be typed pointer
+        auto base_pointer_type = dynamic_cast<const types::Pointer*>(this->base_type_.get());
+        if (!base_pointer_type) {
+            throw InvalidSDFGException("Memlet: Dereference memlets must have a typed pointer base type");
+        }
+        if (!base_pointer_type->has_pointee_type()) {
+            throw InvalidSDFGException("Memlet: Dereference memlets must have a pointee type");
         }
 
         return;
@@ -233,23 +233,27 @@ void Memlet::validate(const Function& function) const {
             throw InvalidSDFGException("Memlet: Dereference memlets must have '0' as the only dimension");
         }
 
-        // Criterion: Destination must be a pointer
+        // Criterion: Source must be a pointer
+        auto src_data = src_node->data();
+        auto& src_type = function.type(src_data);
+        if (src_type.type_id() != types::TypeID::Pointer || helpers::is_number(src_data)) {
+            throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer source");
+        }
+
+        // Criterion: Destination must be a pointer to source type
         auto dst_data = dst_node->data();
         auto& dst_type = function.type(dst_data);
         if (dst_type.type_id() != types::TypeID::Pointer) {
             throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer destination");
         }
 
-        // Criterion: Source must be a pointer to destination type
-        auto src_data = src_node->data();
-        auto src_type = dynamic_cast<const types::Pointer*>(&function.type(src_data));
-        if (!src_type) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer source");
+        // Criterion: Must be typed pointer
+        auto base_pointer_type = dynamic_cast<const types::Pointer*>(this->base_type_.get());
+        if (!base_pointer_type) {
+            throw InvalidSDFGException("Memlet: Dereference memlets must have a typed pointer base type");
         }
-        if (src_type->pointee_type() == dst_type) {
-            // Do nothing
-        } else {
-            throw InvalidSDFGException("Memlet: Dereference memlets be pointer to destination type");
+        if (!base_pointer_type->has_pointee_type()) {
+            throw InvalidSDFGException("Memlet: Dereference memlets must have a pointee type");
         }
 
         return;
@@ -313,6 +317,14 @@ bool Memlet::has_range() const {
     return false;
 };
 
+const types::IType& Memlet::base_type() const { return *this->base_type_; };
+
+void Memlet::set_base_type(const types::IType& base_type) { this->base_type_ = base_type.clone(); };
+
+const types::IType& Memlet::result_type(const Function& function) const {
+    return types::infer_type(function, *this->base_type_, this->begin_subset_);
+};
+
 std::unique_ptr<Memlet> Memlet::clone(
     size_t element_id, const graph::Edge& edge, DataFlowGraph& parent, DataFlowNode& src, DataFlowNode& dst
 ) const {
@@ -326,7 +338,8 @@ std::unique_ptr<Memlet> Memlet::clone(
         dst,
         this->dst_conn_,
         this->begin_subset_,
-        this->end_subset_
+        this->end_subset_,
+        *this->base_type_
     ));
 };
 

@@ -26,14 +26,17 @@ TEST(TrivialArrayElimination, ReadArrayLate) {
     auto& access_in = builder.add_access(block, "test_in");
     auto& access_out = builder.add_access(block, "test_out");
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", scalar2},
-                                        {{"_in", scalar}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
-    auto& memlet_in = builder.add_memlet(
-        block, access_in, "void", tasklet, "_in",
-        {symbolic::integer(3), symbolic::integer(2), symbolic::integer(1), symbolic::integer(0)});
+    auto& memlet_in = builder.add_computational_memlet(
+        block,
+        access_in,
+        tasklet,
+        "_in",
+        {symbolic::integer(3), symbolic::integer(2), symbolic::integer(1), symbolic::integer(0)}
+    );
 
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {});
+    auto& memlet_out = builder.add_computational_memlet(block, tasklet, "_out", access_out, {});
 
     auto sdfg = builder.move();
 
@@ -83,14 +86,17 @@ TEST(TrivialArrayElimination, ReadArrayEarly) {
     auto& access_in = builder.add_access(block, "test_in");
     auto& access_out = builder.add_access(block, "test_out");
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", scalar2},
-                                        {{"_in", scalar}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
-    auto& memlet_in = builder.add_memlet(
-        block, access_in, "void", tasklet, "_in",
-        {symbolic::integer(0), symbolic::integer(1), symbolic::integer(2), symbolic::integer(3)});
+    auto& memlet_in = builder.add_computational_memlet(
+        block,
+        access_in,
+        tasklet,
+        "_in",
+        {symbolic::integer(0), symbolic::integer(1), symbolic::integer(2), symbolic::integer(3)}
+    );
 
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {});
+    auto& memlet_out = builder.add_computational_memlet(block, tasklet, "_out", access_out, {});
 
     auto sdfg = builder.move();
 
@@ -140,14 +146,17 @@ TEST(TrivialArrayElimination, ReadArrayMiddle) {
     auto& access_in = builder.add_access(block, "test_in");
     auto& access_out = builder.add_access(block, "test_out");
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", scalar2},
-                                        {{"_in", scalar}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
-    auto& memlet_in = builder.add_memlet(
-        block, access_in, "void", tasklet, "_in",
-        {symbolic::integer(1), symbolic::integer(0), symbolic::integer(2), symbolic::integer(3)});
+    auto& memlet_in = builder.add_computational_memlet(
+        block,
+        access_in,
+        tasklet,
+        "_in",
+        {symbolic::integer(1), symbolic::integer(0), symbolic::integer(2), symbolic::integer(3)}
+    );
 
-    auto& memlet_out = builder.add_memlet(block, tasklet, "_out", access_out, "void", {});
+    auto& memlet_out = builder.add_computational_memlet(block, tasklet, "_out", access_out, {});
 
     auto sdfg = builder.move();
 
@@ -197,14 +206,17 @@ TEST(TrivialArrayElimination, WriteArrayLate) {
     auto& access_in = builder.add_access(block, "test_in");
     auto& access_out = builder.add_access(block, "test_out");
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", scalar2},
-                                        {{"_in", scalar}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
-    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in", {});
+    auto& memlet_in = builder.add_computational_memlet(block, access_in, tasklet, "_in", {});
 
-    auto& memlet_out = builder.add_memlet(
-        block, tasklet, "_out", access_out, "void",
-        {symbolic::integer(3), symbolic::integer(2), symbolic::integer(1), symbolic::integer(0)});
+    auto& memlet_out = builder.add_computational_memlet(
+        block,
+        tasklet,
+        "_out",
+        access_out,
+        {symbolic::integer(3), symbolic::integer(2), symbolic::integer(1), symbolic::integer(0)}
+    );
 
     auto sdfg = builder.move();
 
@@ -254,14 +266,17 @@ TEST(TrivialArrayElimination, WriteArrayEarly) {
     auto& access_in = builder.add_access(block, "test_in");
     auto& access_out = builder.add_access(block, "test_out");
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", scalar2},
-                                        {{"_in", scalar}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
-    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in", {});
+    auto& memlet_in = builder.add_computational_memlet(block, access_in, tasklet, "_in", {});
 
-    auto& memlet_out = builder.add_memlet(
-        block, tasklet, "_out", access_out, "void",
-        {symbolic::integer(0), symbolic::integer(1), symbolic::integer(2), symbolic::integer(3)});
+    auto& memlet_out = builder.add_computational_memlet(
+        block,
+        tasklet,
+        "_out",
+        access_out,
+        {symbolic::integer(0), symbolic::integer(1), symbolic::integer(2), symbolic::integer(3)}
+    );
 
     auto sdfg = builder.move();
 
@@ -311,14 +326,17 @@ TEST(TrivialArrayElimination, WriteArrayMiddle) {
     auto& access_in = builder.add_access(block, "test_in");
     auto& access_out = builder.add_access(block, "test_out");
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", scalar2},
-                                        {{"_in", scalar}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
-    auto& memlet_in = builder.add_memlet(block, access_in, "void", tasklet, "_in", {});
+    auto& memlet_in = builder.add_computational_memlet(block, access_in, tasklet, "_in", {});
 
-    auto& memlet_out = builder.add_memlet(
-        block, tasklet, "_out", access_out, "void",
-        {symbolic::integer(1), symbolic::integer(0), symbolic::integer(2), symbolic::integer(3)});
+    auto& memlet_out = builder.add_computational_memlet(
+        block,
+        tasklet,
+        "_out",
+        access_out,
+        {symbolic::integer(1), symbolic::integer(0), symbolic::integer(2), symbolic::integer(3)}
+    );
 
     auto sdfg = builder.move();
 

@@ -1,5 +1,7 @@
 #include "sdfg/data_flow/access_node.h"
 
+#include "sdfg/function.h"
+
 namespace sdfg {
 namespace data_flow {
 
@@ -14,9 +16,7 @@ AccessNode::AccessNode(
 
       };
 
-void AccessNode::validate(const Function& function) const {
-    // TODO: Implement
-}
+void AccessNode::validate(const Function& function) const {}
 
 const std::string& AccessNode::data() const { return this->data_; };
 

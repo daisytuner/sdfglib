@@ -96,13 +96,8 @@ bool Function::is_external(const std::string& name) const {
     return std::find(this->externals_.begin(), this->externals_.end(), name) != this->externals_.end();
 };
 
-bool Function::is_internal(const std::string& name) const {
-    return helpers::endswith(name, external_suffix) &&
-           is_external(name.substr(0, name.length() - external_suffix.length()));
-};
-
 bool Function::is_transient(const std::string& name) const {
-    return !this->is_argument(name) && !this->is_external(name) && !this->is_internal(name);
+    return !this->is_argument(name) && !this->is_external(name);
 };
 
 symbolic::SymbolSet Function::parameters() const {

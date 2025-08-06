@@ -130,9 +130,8 @@ TEST(SymbolPropagationTest, Transition2Memlet_Constant) {
     auto& block1 = builder.add_block(root, {{sym1, symbolic::integer(0)}});
     auto& block2 = builder.add_block(root);
     auto& output_node = builder.add_access(block2, "A");
-    auto& tasklet =
-        builder.add_tasklet(block2, data_flow::TaskletCode::assign, {"_out", desc}, {{"1", desc}});
-    auto& edge = builder.add_memlet(block2, tasklet, "_out", output_node, "void", {sym1});
+    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"1"});
+    auto& edge = builder.add_computational_memlet(block2, tasklet, "_out", output_node, {sym1});
 
     auto sdfg = builder.move();
 
@@ -168,9 +167,8 @@ TEST(SymbolPropagationTest, Transition2Memlet_Argument) {
     auto& block1 = builder.add_block(root, {{sym1, symbolic::symbol("A")}});
     auto& block2 = builder.add_block(root);
     auto& output_node = builder.add_access(block2, "A");
-    auto& tasklet =
-        builder.add_tasklet(block2, data_flow::TaskletCode::assign, {"_out", desc}, {{"1", desc}});
-    auto& edge = builder.add_memlet(block2, tasklet, "_out", output_node, "void", {sym1});
+    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"1"});
+    auto& edge = builder.add_computational_memlet(block2, tasklet, "_out", output_node, {sym1});
 
     auto sdfg = builder.move();
 
@@ -282,8 +280,9 @@ TEST(SymbolPropagationTest, Transition2IfElse_Argument) {
 
     auto case2_1 = child2.at(1).first.at(0);
     EXPECT_EQ(case2_1.second.assignments().size(), 1);
-    EXPECT_TRUE(SymEngine::eq(*case2_1.second.assignments().at(sym2),
-                              *symbolic::add(symbolic::symbol("A"), symbolic::integer(1))));
+    EXPECT_TRUE(SymEngine::
+                    eq(*case2_1.second.assignments().at(sym2),
+                       *symbolic::add(symbolic::symbol("A"), symbolic::integer(1))));
 }
 
 TEST(SymbolPropagationTest, Transition2IfElse_Negative) {
@@ -334,8 +333,9 @@ TEST(SymbolPropagationTest, Transition2For_Init) {
     auto& root = builder.subject().root();
     auto& block1 = builder.add_block(root, {{sym, symbolic::integer(0)}});
 
-    auto& loop = builder.add_for(root, sym, symbolic::Lt(sym, symbolic::integer(10)), sym,
-                                 symbolic::add(sym, symbolic::integer(1)));
+    auto& loop =
+        builder
+            .add_for(root, sym, symbolic::Lt(sym, symbolic::integer(10)), sym, symbolic::add(sym, symbolic::integer(1)));
 
     auto sdfg = builder.move();
 
@@ -362,8 +362,9 @@ TEST(SymbolPropagationTest, Transition2For_Condition) {
     auto& root = builder.subject().root();
     auto& block1 = builder.add_block(root, {{symN, symbolic::integer(10)}});
 
-    auto& loop = builder.add_for(root, sym, symbolic::Lt(sym, symN), symbolic::integer(0),
-                                 symbolic::add(sym, symbolic::integer(1)));
+    auto& loop =
+        builder
+            .add_for(root, sym, symbolic::Lt(sym, symN), symbolic::integer(0), symbolic::add(sym, symbolic::integer(1)));
 
     auto sdfg = builder.move();
 
@@ -388,8 +389,7 @@ TEST(SymbolPropagationTest, Transition2For_Update) {
     auto sym2 = symbolic::symbol("j");
 
     auto& root = builder.subject().root();
-    auto& loop = builder.add_for(root, sym, symbolic::Lt(sym, symbolic::integer(10)),
-                                 symbolic::integer(0), sym2);
+    auto& loop = builder.add_for(root, sym, symbolic::Lt(sym, symbolic::integer(10)), symbolic::integer(0), sym2);
     auto& body = builder.add_block(loop.root(), {{sym2, symbolic::add(sym, symbolic::integer(1))}});
 
     auto sdfg = builder.move();
@@ -431,6 +431,5 @@ TEST(SymbolPropagationTest, Transition2While_In) {
 
     // Check result
     auto& child1 = dynamic_cast<structured_control_flow::While&>(sdfg->root().at(1).first);
-    EXPECT_TRUE(
-        SymEngine::eq(*child1.root().at(0).second.assignments().at(sym2), *symbolic::integer(0)));
+    EXPECT_TRUE(SymEngine::eq(*child1.root().at(0).second.assignments().at(sym2), *symbolic::integer(0)));
 }

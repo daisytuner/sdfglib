@@ -72,11 +72,6 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
             if (move_subset.empty()) {
                 continue;
             }
-            auto& viewed_type = types::infer_type(sdfg, sdfg.type(viewed_container), move_subset);
-            types::Pointer final_type(viewed_type);
-            if (type != final_type) {
-                continue;
-            }
 
             // Replace all uses of the view by the pointer
             for (auto& user : uses) {
@@ -113,6 +108,17 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                 auto& use_node = static_cast<data_flow::AccessNode&>(*user->element());
 
                 auto use_graph = user->parent();
+
+                // Criterion: Must be a typed-pointer
+                auto& base_type = move_edge.base_type();
+                if (base_type.type_id() == types::TypeID::Pointer) {
+                    auto& element_type = static_cast<const types::Pointer&>(base_type).pointee_type();
+                    if (element_type.type_id() == types::TypeID::Scalar) {
+                        if (element_type.primitive_type() == types::PrimitiveType::Int8) {
+                            continue;
+                        }
+                    }
+                }
 
                 // Criterion: Must be a computational memlet
                 bool computational = true;
@@ -160,7 +166,15 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                         new_subset.push_back(dim);
                     }
 
+                    // Pad with zeros until scalar type
+                    auto inferred_type = &types::infer_type(builder.subject(), move_edge.base_type(), new_subset);
+                    while (inferred_type->type_id() != types::TypeID::Scalar) {
+                        new_subset.push_back(symbolic::zero());
+                        inferred_type = &types::infer_type(builder.subject(), move_edge.base_type(), new_subset);
+                    }
+
                     oedge.set_subset(new_subset);
+                    oedge.set_base_type(move_edge.base_type());
                 }
                 for (auto& iedge : use_graph->in_edges(use_node)) {
                     // Compute new subset
@@ -183,7 +197,15 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                         new_subset.push_back(dim);
                     }
 
+                    // Pad with zeros until scalar type
+                    auto inferred_type = &types::infer_type(builder.subject(), move_edge.base_type(), new_subset);
+                    while (inferred_type->type_id() != types::TypeID::Scalar) {
+                        new_subset.push_back(symbolic::zero());
+                        inferred_type = &types::infer_type(builder.subject(), move_edge.base_type(), new_subset);
+                    }
+
                     iedge.set_subset(new_subset);
+                    iedge.set_base_type(move_edge.base_type());
                 }
 
                 applied = true;

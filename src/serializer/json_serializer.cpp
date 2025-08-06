@@ -137,18 +137,9 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
             node_json["code"] = tasklet->code();
             node_json["inputs"] = nlohmann::json::array();
             for (auto& input : tasklet->inputs()) {
-                nlohmann::json input_json;
-                nlohmann::json type_json;
-                type_to_json(type_json, input.second);
-                input_json["type"] = type_json;
-                input_json["name"] = input.first;
-                node_json["inputs"].push_back(input_json);
+                node_json["inputs"].push_back(input);
             }
-            node_json["output"] = nlohmann::json::object();
-            node_json["output"]["name"] = tasklet->output().first;
-            nlohmann::json type_json;
-            type_to_json(type_json, tasklet->output().second);
-            node_json["output"]["type"] = type_json;
+            node_json["output"] = tasklet->output();
             // node_json["conditional"] = tasklet->is_conditional();
             // if (tasklet->is_conditional()) {
             //     node_json["condition"] = dumps_expression(tasklet->condition());
@@ -201,6 +192,10 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
         for (auto& subset : edge.end_subset()) {
             edge_json["end_subset"].push_back(expression(subset));
         }
+
+        nlohmann::json base_type_json;
+        type_to_json(base_type_json, edge.base_type());
+        edge_json["base_type"] = base_type_json;
 
         j["edges"].push_back(edge_json);
     }
@@ -385,9 +380,11 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
         j["alignment"] = array_type->alignment();
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
         j["type"] = "pointer";
-        nlohmann::json pointee_type_json;
-        type_to_json(pointee_type_json, pointer_type->pointee_type());
-        j["pointee_type"] = pointee_type_json;
+        if (pointer_type->has_pointee_type()) {
+            nlohmann::json pointee_type_json;
+            type_to_json(pointee_type_json, pointer_type->pointee_type());
+            j["pointee_type"] = pointee_type_json;
+        }
         j["storage_type"] = std::string(pointer_type->storage_type().value());
         j["initializer"] = pointer_type->initializer();
         j["alignment"] = pointer_type->alignment();
@@ -557,18 +554,12 @@ void JSONSerializer::json_to_dataflow(
             assert(node.contains("inputs"));
             assert(node["inputs"].is_array());
             assert(node.contains("output"));
-            assert(node["output"].is_object());
-            assert(node["output"].contains("name"));
-            assert(node["output"].contains("type"));
-            auto inputs = json_to_arguments(node["inputs"]);
+            assert(node["output"].is_string());
+            auto inputs = node["inputs"].get<std::vector<std::string>>();
 
-            auto output_name = node["output"]["name"];
-            auto output_type = json_to_type(node["output"]["type"]);
-            auto& output_type_scalar = dynamic_cast<types::Scalar&>(*output_type);
-
-            auto& tasklet = builder.add_tasklet(
-                parent, node["code"], {output_name, output_type_scalar}, inputs, json_to_debug_info(node["debug_info"])
-            );
+            auto& tasklet =
+                builder
+                    .add_tasklet(parent, node["code"], node["output"], inputs, json_to_debug_info(node["debug_info"]));
             tasklet.element_id_ = node["element_id"];
             nodes_map.insert({node["element_id"], tasklet});
         } else if (type == "library_node") {
@@ -614,6 +605,8 @@ void JSONSerializer::json_to_dataflow(
         auto& source = nodes_map.at(edge["src"]);
         auto& target = nodes_map.at(edge["dst"]);
 
+        auto base_type = json_to_type(edge["base_type"]);
+
         if (edge.contains("begin_subset") && edge.contains("end_subset")) {
             assert(edge["begin_subset"].is_array());
             assert(edge["end_subset"].is_array());
@@ -637,6 +630,7 @@ void JSONSerializer::json_to_dataflow(
                 edge["dst_conn"],
                 begin_subset,
                 end_subset,
+                *base_type,
                 json_to_debug_info(edge["debug_info"])
             );
             memlet.element_id_ = edge["element_id"];
@@ -655,6 +649,7 @@ void JSONSerializer::json_to_dataflow(
                 target,
                 edge["dst_conn"],
                 subset,
+                *base_type,
                 json_to_debug_info(edge["debug_info"])
             );
             memlet.element_id_ = edge["element_id"];
@@ -954,15 +949,24 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             return std::make_unique<types::Array>(storage_type, alignment, initializer, *member_type, num_elements);
         } else if (j["type"] == "pointer") {
             // Deserialize pointer type
-            assert(j.contains("pointee_type"));
-            std::unique_ptr<types::IType> pointee_type = json_to_type(j["pointee_type"]);
+            std::optional<std::unique_ptr<types::IType>> pointee_type;
+            if (j.contains("pointee_type")) {
+                assert(j.contains("pointee_type"));
+                pointee_type = json_to_type(j["pointee_type"]);
+            } else {
+                pointee_type = std::nullopt;
+            }
             assert(j.contains("storage_type"));
             types::StorageType storage_type = storage_type_from_string(j["storage_type"].get<std::string>());
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
             size_t alignment = j["alignment"];
-            return std::make_unique<types::Pointer>(storage_type, alignment, initializer, *pointee_type);
+            if (pointee_type.has_value()) {
+                return std::make_unique<types::Pointer>(storage_type, alignment, initializer, *pointee_type.value());
+            } else {
+                return std::make_unique<types::Pointer>(storage_type, alignment, initializer);
+            }
         } else if (j["type"] == "structure") {
             // Deserialize structure type
             assert(j.contains("name"));
