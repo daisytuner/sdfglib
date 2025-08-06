@@ -66,7 +66,7 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
 
     auto& subset = memlet.subset();
 
-    auto& base_type = static_cast<const types::Pointer&>(memlet.base_type());
+    auto& base_type = memlet.base_type();
 
     std::string src_name = this->language_extension_.access_node(src);
     std::string dst_name = this->language_extension_.access_node(dst);
@@ -76,9 +76,13 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
 
     if (symbolic::is_nullptr(symbolic::symbol(src.data())) || helpers::is_number(src.data())) {
         stream << this->language_extension_.expression(symbolic::symbol(src.data()));
-    } else {
+    } else if (base_type.type_id() == types::TypeID::Pointer) {
         stream << "&";
         stream << "(" + this->language_extension_.type_cast(src_name, base_type) + ")";
+        stream << this->language_extension_.subset(function_, base_type, subset);
+    } else {
+        stream << "&";
+        stream << src_name;
         stream << this->language_extension_.subset(function_, base_type, subset);
     }
 
