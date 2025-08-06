@@ -48,7 +48,11 @@ public:
     )
         : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-    void dispatch(codegen::PrettyPrinter& stream) override;
+    void dispatch(
+        codegen::PrettyPrinter& stream,
+        codegen::PrettyPrinter& globals_stream,
+        codegen::CodeSnippetFactory& library_snippet_factory
+    ) override;
 };
 
 } // namespace data_flow

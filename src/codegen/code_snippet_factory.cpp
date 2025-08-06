@@ -7,7 +7,7 @@ CodeSnippetFactory::CodeSnippetFactory(const std::pair<std::filesystem::path, st
 
 
 CodeSnippet& CodeSnippetFactory::require(const std::string& name, const std::string& extension, bool as_file) {
-    auto [snippet, newly_created] = snippets_.try_emplace(name, extension, as_file);
+    auto [snippet, newly_created] = snippets_.try_emplace(name, name, extension, as_file);
 
     if (!newly_created && extension != snippet->second.extension()) {
         throw std::runtime_error(
