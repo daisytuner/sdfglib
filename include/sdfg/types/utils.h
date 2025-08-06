@@ -18,7 +18,12 @@ typedef std::vector<symbolic::Expression> Subset;
 
 namespace types {
 
-const types::IType& infer_type(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset, bool ignore_contiguous_memory = false);
+const types::IType& infer_type(
+    const sdfg::Function& function,
+    const types::IType& type,
+    const data_flow::Subset& subset,
+    bool ignore_contiguous_memory = false
+);
 
 std::unique_ptr<types::IType> recombine_array_type(const types::IType& type, uint depth, const types::IType& inner_type);
 

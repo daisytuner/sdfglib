@@ -10,8 +10,12 @@
 namespace sdfg {
 namespace types {
 
-const types::IType&
-infer_type_internal(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset, bool ignore_contiguous_memory) {
+const types::IType& infer_type_internal(
+    const sdfg::Function& function,
+    const types::IType& type,
+    const data_flow::Subset& subset,
+    bool ignore_contiguous_memory
+) {
     if (subset.empty()) {
         return type;
     }
@@ -48,7 +52,12 @@ infer_type_internal(const sdfg::Function& function, const types::IType& type, co
     throw InvalidSDFGException("Type inference failed because of unknown type");
 };
 
-const types::IType& infer_type(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset, bool ignore_contiguous_memory) {
+const types::IType& infer_type(
+    const sdfg::Function& function,
+    const types::IType& type,
+    const data_flow::Subset& subset,
+    bool ignore_contiguous_memory
+) {
     if (subset.empty()) {
         return type;
     }
