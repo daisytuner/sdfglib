@@ -150,13 +150,6 @@ void Memlet::validate(const Function& function) const {
             if (!this->begin_subset_.empty()) {
                 throw InvalidSDFGException("Memlet: Reference memlets for raw addresses must not have a subset");
             }
-        } else {
-            // Criterion: Source must be a pointer
-            auto src_data = src_node->data();
-            auto& src_type = function.type(src_data);
-            if (src_type.type_id() != types::TypeID::Pointer) {
-                throw InvalidSDFGException("Memlet: Reference memlets must have a pointer source");
-            }
         }
 
         // Criterion: Destination must be a pointer
