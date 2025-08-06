@@ -522,6 +522,14 @@ std::string CUDALanguageExtension::expression(const symbolic::Expression& expr) 
     return printer.apply(expr);
 };
 
+std::string CUDALanguageExtension::access_node(const data_flow::AccessNode& node) {
+    std::string name = node.data();
+    if (this->external_variables_.find(name) != this->external_variables_.end()) {
+        return "(&" + name + ")";
+    }
+    return name;
+};
+
 std::string CUDALanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
     std::string op = code_to_string(tasklet.code());
     std::vector<std::string> arguments;

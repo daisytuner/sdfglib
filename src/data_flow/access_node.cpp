@@ -16,20 +16,7 @@ AccessNode::AccessNode(
 
       };
 
-void AccessNode::validate(const Function& function) const {
-    if (symbolic::is_nullptr(symbolic::symbol(this->data_)) || helpers::is_number(this->data_)) {
-        return;
-    }
-
-    auto& type = function.type(this->data_);
-    if (type.type_id() == types::TypeID::Pointer) {
-        auto& pointer_type = dynamic_cast<const types::Pointer&>(type);
-        if (pointer_type.has_pointee_type()) {
-            // Deprecation warning
-            std::cerr << "[DEPRECATION] Access node uses typed pointer type" << std::endl;
-        }
-    }
-}
+void AccessNode::validate(const Function& function) const {}
 
 const std::string& AccessNode::data() const { return this->data_; };
 

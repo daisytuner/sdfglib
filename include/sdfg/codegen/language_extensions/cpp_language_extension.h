@@ -12,27 +12,32 @@ namespace sdfg {
 namespace codegen {
 
 class CPPLanguageExtension : public LanguageExtension {
-   public:
+public:
+    CPPLanguageExtension() : LanguageExtension() {}
+
+    CPPLanguageExtension(const std::vector<std::string>& external_variables) : LanguageExtension(external_variables) {}
+
     std::string primitive_type(const types::PrimitiveType prim_type) override;
 
-    std::string declaration(const std::string& name, const types::IType& type,
-                            bool use_initializer = false, bool use_alignment = false) override;
+    std::string declaration(
+        const std::string& name, const types::IType& type, bool use_initializer = false, bool use_alignment = false
+    ) override;
 
     std::string type_cast(const std::string& name, const types::IType& type) override;
 
-    std::string subset(const Function& function, const types::IType& type,
-                       const data_flow::Subset& subset) override;
+    std::string subset(const Function& function, const types::IType& type, const data_flow::Subset& subset) override;
 
     std::string expression(const symbolic::Expression& expr) override;
+
+    std::string access_node(const data_flow::AccessNode& node) override;
 
     std::string tasklet(const data_flow::Tasklet& tasklet) override;
 
     std::string zero(const types::PrimitiveType prim_type) override;
 };
 
-class CPPSymbolicPrinter
-    : public SymEngine::BaseVisitor<CPPSymbolicPrinter, SymEngine::CodePrinter> {
-   public:
+class CPPSymbolicPrinter : public SymEngine::BaseVisitor<CPPSymbolicPrinter, SymEngine::CodePrinter> {
+public:
     using SymEngine::CodePrinter::apply;
     using SymEngine::CodePrinter::bvisit;
     using SymEngine::CodePrinter::str_;
@@ -54,9 +59,12 @@ class CPPSymbolicPrinter
     void bvisit(const SymEngine::Max& x);
     void bvisit(const SymEngine::FunctionSymbol& x);
 
-    void _print_pow(std::ostringstream& o, const SymEngine::RCP<const SymEngine::Basic>& a,
-                    const SymEngine::RCP<const SymEngine::Basic>& b) override;
+    void _print_pow(
+        std::ostringstream& o,
+        const SymEngine::RCP<const SymEngine::Basic>& a,
+        const SymEngine::RCP<const SymEngine::Basic>& b
+    ) override;
 };
 
-}  // namespace codegen
-}  // namespace sdfg
+} // namespace codegen
+} // namespace sdfg

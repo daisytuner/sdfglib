@@ -68,14 +68,17 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
 
     auto& base_type = static_cast<const types::Pointer&>(memlet.base_type());
 
-    stream << dst.data();
+    std::string src_name = this->language_extension_.access_node(src);
+    std::string dst_name = this->language_extension_.access_node(dst);
+
+    stream << dst_name;
     stream << " = ";
 
     if (symbolic::is_nullptr(symbolic::symbol(src.data())) || helpers::is_number(src.data())) {
         stream << this->language_extension_.expression(symbolic::symbol(src.data()));
     } else {
         stream << "&";
-        stream << "(" + this->language_extension_.type_cast(src.data(), base_type) + ")";
+        stream << "(" + this->language_extension_.type_cast(src_name, base_type) + ")";
         stream << this->language_extension_.subset(function_, base_type, subset);
     }
 
@@ -97,11 +100,14 @@ void DataFlowDispatcher::dispatch_deref(PrettyPrinter& stream, const data_flow::
 
     auto& base_type = static_cast<const types::Pointer&>(memlet.base_type());
 
+    std::string src_name = this->language_extension_.access_node(src);
+    std::string dst_name = this->language_extension_.access_node(dst);
+
     if (memlet.dst_conn() == "void") {
-        stream << "(" << this->language_extension_.type_cast(dst.data(), base_type) << ")";
+        stream << "(" << this->language_extension_.type_cast(dst_name, base_type) << ")";
         stream << this->language_extension_.subset(function_, base_type, memlet.subset());
     } else {
-        stream << dst.data();
+        stream << dst_name;
     }
     stream << " = ";
 
@@ -115,10 +121,10 @@ void DataFlowDispatcher::dispatch_deref(PrettyPrinter& stream, const data_flow::
     }
 
     if (memlet.src_conn() == "void") {
-        stream << "(" << this->language_extension_.type_cast(src.data(), base_type) << ")";
+        stream << "(" << this->language_extension_.type_cast(src_name, base_type) << ")";
         stream << this->language_extension_.subset(function_, base_type, memlet.subset());
     } else {
-        stream << this->language_extension_.type_cast(src.data(), base_type.pointee_type());
+        stream << this->language_extension_.type_cast(src_name, base_type.pointee_type());
     }
     stream << ";" << std::endl;
 
@@ -137,6 +143,8 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow
         auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
         auto& src_type = this->function_.type(src.data());
 
+        std::string src_name = this->language_extension_.access_node(src);
+
         std::string conn = iedge.dst_conn();
         auto& conn_type = iedge.result_type(this->function_);
 
@@ -145,9 +153,9 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow
 
         // Reinterpret cast for opaque pointers
         if (src_type.type_id() == types::TypeID::Pointer) {
-            stream << "(" << this->language_extension_.type_cast(src.data(), iedge.base_type()) << ")";
+            stream << "(" << this->language_extension_.type_cast(src_name, iedge.base_type()) << ")";
         } else {
-            stream << src.data();
+            stream << src_name;
         }
 
         stream << this->language_extension_.subset(function_, iedge.base_type(), iedge.subset()) << ";";
@@ -171,11 +179,13 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow
         auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
         auto& dst_type = this->function_.type(dst.data());
 
+        std::string dst_name = this->language_extension_.access_node(dst);
+
         // Reinterpret cast for opaque pointers
         if (dst_type.type_id() == types::TypeID::Pointer) {
-            stream << "(" << this->language_extension_.type_cast(dst.data(), oedge.base_type()) << ")";
+            stream << "(" << this->language_extension_.type_cast(dst_name, oedge.base_type()) << ")";
         } else {
-            stream << dst.data();
+            stream << dst_name;
         }
 
         stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << " = ";
