@@ -101,11 +101,21 @@ void WorkDepthAnalysis::run(AnalysisManager& analysis_manager) {
 
             auto stride = analysis::LoopAnalysis::stride(for_loop);
             auto bound = analysis::LoopAnalysis::canonical_bound(for_loop, assumptions_analysis);
-            auto num_iterations = symbolic::sub(bound, for_loop->init());
-            num_iterations = symbolic::div(num_iterations, stride);
 
-            work = symbolic::mul(num_iterations, body_work);
-            depth = symbolic::mul(num_iterations, body_depth);
+            if (bound == SymEngine::null) {
+                std::string while_symbol_name = "while_" + std::to_string(for_loop->element_id());
+                symbolic::Symbol while_symbol = symbolic::symbol(while_symbol_name);
+                while_symbols_.insert(while_symbol);
+
+                work = symbolic::mul(while_symbol, body_work);
+                depth = symbolic::mul(while_symbol, body_depth);
+            } else {
+                auto num_iterations = symbolic::sub(bound, for_loop->init());
+                num_iterations = symbolic::div(num_iterations, stride);
+
+                work = symbolic::mul(num_iterations, body_work);
+                depth = symbolic::mul(num_iterations, body_depth);
+            }
         } else if (dynamic_cast<structured_control_flow::Map*>(node)) {
             auto* map_node = dynamic_cast<structured_control_flow::Map*>(node);
 
