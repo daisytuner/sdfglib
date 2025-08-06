@@ -49,7 +49,11 @@ data_flow::LibraryNode& BarrierLocalNodeSerializer::deserialize(
     return builder.add_library_node<data_flow::BarrierLocalNode>(parent, DebugInfo());
 };
 
-void BarrierLocalNodeDispatcher::dispatch(codegen::PrettyPrinter& stream) {
+void BarrierLocalNodeDispatcher::dispatch(
+    codegen::PrettyPrinter& stream,
+    codegen::PrettyPrinter& globals_stream,
+    codegen::CodeSnippetFactory& library_snippet_factory
+) {
     if (dynamic_cast<codegen::CLanguageExtension*>(&this->language_extension_) != nullptr) {
         throw std::runtime_error(
             "ThreadBarrierDispatcher is not supported for C language extension. Use CUDA language "

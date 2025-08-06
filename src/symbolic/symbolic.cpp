@@ -73,6 +73,10 @@ Expression mul(const Expression& lhs, const Expression& rhs) { return SymEngine:
 Expression div(const Expression& lhs, const Expression& rhs) {
     if (eq(rhs, integer(1))) {
         return lhs;
+    } else if (SymEngine::is_a<SymEngine::Integer>(*lhs) && SymEngine::is_a<SymEngine::Integer>(*rhs)) {
+        auto a = SymEngine::rcp_static_cast<const SymEngine::Integer>(lhs)->as_int();
+        auto b = SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs)->as_int();
+        return integer(a / b);
     }
     auto idiv = SymEngine::function_symbol("idiv", {lhs, rhs});
     return idiv;
@@ -83,6 +87,11 @@ Expression min(const Expression& lhs, const Expression& rhs) { return SymEngine:
 Expression max(const Expression& lhs, const Expression& rhs) { return SymEngine::max({lhs, rhs}); };
 
 Expression mod(const Expression& lhs, const Expression& rhs) {
+    if (SymEngine::is_a<SymEngine::Integer>(*lhs) && SymEngine::is_a<SymEngine::Integer>(*rhs)) {
+        auto a = SymEngine::rcp_static_cast<const SymEngine::Integer>(lhs)->as_int();
+        auto b = SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs)->as_int();
+        return integer(a % b);
+    }
     auto imod = SymEngine::function_symbol("imod", {lhs, rhs});
     return imod;
 };
@@ -118,7 +127,8 @@ Expression expand(const Expression& expr) {
 Expression simplify(const Expression& expr) {
     if (SymEngine::is_a<SymEngine::FunctionSymbol>(*expr)) {
         auto func_sym = SymEngine::rcp_static_cast<const SymEngine::FunctionSymbol>(expr);
-        if (func_sym->get_name() == "idiv") {
+        auto func_id = func_sym->get_name();
+        if (func_id == "idiv") {
             auto lhs = func_sym->get_args()[0];
             auto rhs = func_sym->get_args()[1];
             if (SymEngine::is_a<SymEngine::Mul>(*lhs) && SymEngine::is_a<SymEngine::Integer>(*rhs)) {
@@ -138,6 +148,18 @@ Expression simplify(const Expression& expr) {
                 if (skipped) {
                     return new_mul;
                 }
+            } else if (SymEngine::is_a<SymEngine::Integer>(*lhs) && SymEngine::is_a<SymEngine::Integer>(*rhs)) {
+                auto a = SymEngine::rcp_static_cast<const SymEngine::Integer>(lhs)->as_int();
+                auto b = SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs)->as_int();
+                return integer(a / b);
+            }
+        } else if (func_id == "imod") {
+            auto lhs = func_sym->get_args()[0];
+            auto rhs = func_sym->get_args()[1];
+            if (SymEngine::is_a<SymEngine::Integer>(*lhs) && SymEngine::is_a<SymEngine::Integer>(*rhs)) {
+                auto a = SymEngine::rcp_static_cast<const SymEngine::Integer>(lhs)->as_int();
+                auto b = SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs)->as_int();
+                return integer(a % b);
             }
         }
     }

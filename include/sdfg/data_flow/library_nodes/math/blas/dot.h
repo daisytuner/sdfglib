@@ -70,7 +70,11 @@ public:
         const DotNode& node
     );
 
-    void dispatch(codegen::PrettyPrinter& stream) override;
+    void dispatch(
+        codegen::PrettyPrinter& stream,
+        codegen::PrettyPrinter& globals_stream,
+        codegen::CodeSnippetFactory& library_snippet_factory
+    ) override;
 };
 
 class DotNodeDispatcher_CUBLAS : public codegen::LibraryNodeDispatcher {
@@ -82,7 +86,11 @@ public:
         const DotNode& node
     );
 
-    void dispatch(codegen::PrettyPrinter& stream) override;
+    void dispatch(
+        codegen::PrettyPrinter& stream,
+        codegen::PrettyPrinter& globals_stream,
+        codegen::CodeSnippetFactory& library_snippet_factory
+    ) override;
 };
 
 } // namespace blas

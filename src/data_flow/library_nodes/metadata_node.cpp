@@ -84,7 +84,11 @@ MetadataDispatcher::MetadataDispatcher(
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void MetadataDispatcher::dispatch(codegen::PrettyPrinter& stream) {
+void MetadataDispatcher::dispatch(
+    codegen::PrettyPrinter& stream,
+    codegen::PrettyPrinter& globals_stream,
+    codegen::CodeSnippetFactory& library_snippet_factory
+) {
     throw std::runtime_error("MetadataNode is not supported");
 }
 

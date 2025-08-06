@@ -223,7 +223,11 @@ DotNodeDispatcher_BLAS::DotNodeDispatcher_BLAS(
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void DotNodeDispatcher_BLAS::dispatch(codegen::PrettyPrinter& stream) {
+void DotNodeDispatcher_BLAS::dispatch(
+    codegen::PrettyPrinter& stream,
+    codegen::PrettyPrinter& globals_stream,
+    codegen::CodeSnippetFactory& library_snippet_factory
+) {
     stream << "{" << std::endl;
     stream.setIndent(stream.indent() + 4);
 
@@ -297,7 +301,11 @@ DotNodeDispatcher_CUBLAS::DotNodeDispatcher_CUBLAS(
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void DotNodeDispatcher_CUBLAS::dispatch(codegen::PrettyPrinter& stream) {
+void DotNodeDispatcher_CUBLAS::dispatch(
+    codegen::PrettyPrinter& stream,
+    codegen::PrettyPrinter& globals_stream,
+    codegen::CodeSnippetFactory& library_snippet_factory
+) {
     throw std::runtime_error("DotNodeDispatcher_CUBLAS not implemented");
 }
 
