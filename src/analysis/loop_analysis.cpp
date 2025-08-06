@@ -1,4 +1,6 @@
 #include "sdfg/analysis/loop_analysis.h"
+#include <unordered_set>
+#include <vector>
 
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/exceptions.h"
@@ -188,6 +190,26 @@ const std::vector<structured_control_flow::ControlFlowNode*> LoopAnalysis::outer
         }
     }
     return outermost_loops_;
+}
+
+const std::vector<structured_control_flow::ControlFlowNode*> LoopAnalysis::outermost_maps() const {
+    std::vector<structured_control_flow::ControlFlowNode*> outermost_maps_;
+    for (const auto& [loop, parent] : this->loop_tree_) {
+        if (dynamic_cast<structured_control_flow::Map*>(loop)) {
+            auto ancestor = parent;
+            while (true) {
+                if (ancestor == nullptr) {
+                    outermost_maps_.push_back(loop);
+                    break;
+                }
+                if (dynamic_cast<structured_control_flow::Map*>(ancestor)) {
+                    break;
+                }
+                ancestor = this->loop_tree_.at(ancestor);
+            }
+        }
+    }
+    return outermost_maps_;
 }
 
 std::vector<sdfg::structured_control_flow::ControlFlowNode*> LoopAnalysis::children(
