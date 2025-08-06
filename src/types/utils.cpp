@@ -4,12 +4,14 @@
 #include "sdfg/symbolic/symbolic.h"
 
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
+#include "sdfg/types/pointer.h"
+#include "sdfg/types/type.h"
 
 namespace sdfg {
 namespace types {
 
 const types::IType&
-infer_type_internal(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset) {
+infer_type_internal(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset, bool ignore_contiguous_memory) {
     if (subset.empty()) {
         return type;
     }
@@ -24,7 +26,7 @@ infer_type_internal(const sdfg::Function& function, const types::IType& type, co
         auto& array_type = static_cast<const types::Array&>(type);
 
         data_flow::Subset element_subset(subset.begin() + 1, subset.end());
-        return infer_type_internal(function, array_type.element_type(), element_subset);
+        return infer_type_internal(function, array_type.element_type(), element_subset, ignore_contiguous_memory);
     } else if (type.type_id() == TypeID::Structure) {
         auto& structure_type = static_cast<const types::Structure&>(type);
 
@@ -32,7 +34,13 @@ infer_type_internal(const sdfg::Function& function, const types::IType& type, co
 
         data_flow::Subset element_subset(subset.begin() + 1, subset.end());
         auto member = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(subset.at(0));
-        return infer_type_internal(function, definition.member_type(member), element_subset);
+        return infer_type_internal(function, definition.member_type(member), element_subset, ignore_contiguous_memory);
+    } else if (type.type_id() == TypeID::Pointer && ignore_contiguous_memory) {
+        auto& pointer_type = static_cast<const types::Pointer&>(type);
+        auto& pointee_type = pointer_type.pointee_type();
+
+        data_flow::Subset element_subset(subset.begin() + 1, subset.end());
+        return infer_type_internal(function, pointee_type, element_subset, ignore_contiguous_memory);
     } else if (type.type_id() == TypeID::Pointer) {
         throw InvalidSDFGException("Subset references non-contiguous memory");
     }
@@ -40,7 +48,7 @@ infer_type_internal(const sdfg::Function& function, const types::IType& type, co
     throw InvalidSDFGException("Type inference failed because of unknown type");
 };
 
-const types::IType& infer_type(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset) {
+const types::IType& infer_type(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset, bool ignore_contiguous_memory) {
     if (subset.empty()) {
         return type;
     }
@@ -50,9 +58,9 @@ const types::IType& infer_type(const sdfg::Function& function, const types::ITyp
         auto& pointee_type = pointer_type.pointee_type();
 
         data_flow::Subset element_subset(subset.begin() + 1, subset.end());
-        return infer_type_internal(function, pointee_type, element_subset);
+        return infer_type_internal(function, pointee_type, element_subset, ignore_contiguous_memory);
     } else {
-        return infer_type_internal(function, type, subset);
+        return infer_type_internal(function, type, subset, ignore_contiguous_memory);
     }
 };
 
