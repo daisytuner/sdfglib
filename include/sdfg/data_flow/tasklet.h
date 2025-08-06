@@ -158,9 +158,13 @@ enum TaskletCode {
     rint,
     rintf,
     rintl,
+    lrint,
+    llrint,
     round,
     roundf,
     roundl,
+    lround,
+    llround,
     roundeven,
     roundevenf,
     roundevenl,
@@ -463,6 +467,10 @@ constexpr size_t arity(TaskletCode c) {
             return 1;
         case TaskletCode::powl:
             return 1;
+        case TaskletCode::lrint:
+            return 1;
+        case TaskletCode::llrint:
+            return 1;
         case TaskletCode::rint:
             return 1;
         case TaskletCode::rintf:
@@ -474,6 +482,10 @@ constexpr size_t arity(TaskletCode c) {
         case TaskletCode::roundf:
             return 1;
         case TaskletCode::roundl:
+            return 1;
+        case TaskletCode::lround:
+            return 1;
+        case TaskletCode::llround:
             return 1;
         case TaskletCode::roundeven:
             return 1;

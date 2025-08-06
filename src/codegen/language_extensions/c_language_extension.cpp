@@ -299,6 +299,14 @@ constexpr const char* code_to_string(data_flow::TaskletCode c) {
             return "roundf";
         case data_flow::TaskletCode::roundl:
             return "roundl";
+        case data_flow::TaskletCode::lrint:
+            return "lrint";
+        case data_flow::TaskletCode::llrint:
+            return "llrint";
+        case data_flow::TaskletCode::lround:
+            return "lround";
+        case data_flow::TaskletCode::llround:
+            return "llround";
         case data_flow::TaskletCode::roundeven:
             return "roundeven";
         case data_flow::TaskletCode::roundevenf:
