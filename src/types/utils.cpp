@@ -95,7 +95,12 @@ const IType& peel_to_innermost_element(const IType& type, int follow_ptr) {
                     next_follow = follow_ptr - 1; // follow one less pointer
                 }
 
-                return peel_to_innermost_element(dynamic_cast<const types::Pointer&>(type).pointee_type(), next_follow);
+                auto& pointer_type = dynamic_cast<const types::Pointer&>(type);
+                if (pointer_type.has_pointee_type()) {
+                    return peel_to_innermost_element(pointer_type.pointee_type(), next_follow);
+                } else {
+                    return type;
+                }
             }
             // fall back to cut-off if we did not follow the pointer
         default:
