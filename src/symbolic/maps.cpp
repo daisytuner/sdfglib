@@ -1,6 +1,7 @@
 #include "sdfg/symbolic/maps.h"
 
 #include <isl/ctx.h>
+#include <isl/options.h>
 #include <isl/set.h>
 #include <isl/space.h>
 
@@ -90,6 +91,8 @@ bool is_disjoint_isl(
     auto maps = expressions_to_intersection_map_str(expr1_delinearized, expr2_delinearized, indvar, assums1, assums2);
 
     isl_ctx* ctx = isl_ctx_alloc();
+    isl_options_set_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+
     isl_map* map_1 = isl_map_read_from_str(ctx, std::get<0>(maps).c_str());
     isl_map* map_2 = isl_map_read_from_str(ctx, std::get<1>(maps).c_str());
     isl_map* map_3 = isl_map_read_from_str(ctx, std::get<2>(maps).c_str());
