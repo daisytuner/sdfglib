@@ -28,7 +28,7 @@ TEST(PipelineTest, MemletCombine) {
 TEST(PipelineTest, ControlFlowSimplification) {
     passes::Pipeline control_flow_simplification = passes::Pipeline::controlflow_simplification();
     EXPECT_EQ(control_flow_simplification.name(), "ControlFlowSimplification");
-    EXPECT_EQ(control_flow_simplification.size(), 3);
+    EXPECT_EQ(control_flow_simplification.size(), 4);
 }
 
 TEST(PipelineTest, DataParallelism) {
