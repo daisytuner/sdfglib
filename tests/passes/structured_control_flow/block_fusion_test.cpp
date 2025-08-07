@@ -10,7 +10,7 @@
 
 using namespace sdfg;
 
-TEST(BlockFusionTest, Chain) {
+TEST(BlockFusionTest, Computational_Chain) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc_element(types::PrimitiveType::Double);
@@ -52,7 +52,7 @@ TEST(BlockFusionTest, Chain) {
     EXPECT_EQ(first_block->dataflow().nodes().size(), 5);
 }
 
-TEST(BlockFusionTest, Independent) {
+TEST(BlockFusionTest, Computational_IndependentSubgraphs) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc_element(types::PrimitiveType::Double);
@@ -97,7 +97,7 @@ TEST(BlockFusionTest, Independent) {
     EXPECT_EQ(dataflow.weakly_connected_components().first, 2);
 }
 
-TEST(BlockFusionTest, LibraryNode_WithoutSideEffects) {
+TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::Double);
@@ -179,4 +179,84 @@ TEST(BlockFusionTest, LibraryNode_WithoutSideEffects) {
     EXPECT_EQ(dataflow.nodes().size(), 5);
     EXPECT_EQ(dataflow.edges().size(), 4);
     EXPECT_EQ(dataflow.weakly_connected_components().first, 1);
+}
+
+TEST(BlockFusionTest, Reference) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Scalar desc_element(types::PrimitiveType::Double);
+    types::Pointer desc_pointer(desc_element);
+    builder.add_container("A", desc_pointer);
+    builder.add_container("B", desc_pointer);
+
+    auto& root = builder.subject().root();
+    auto& block1 = builder.add_block(root, control_flow::Assignments{});
+
+    auto& node1_1 = builder.add_access(block1, "A");
+    auto& node2_1 = builder.add_access(block1, "B");
+    builder.add_reference_memlet(block1, node1_1, node2_1, {symbolic::integer(0)}, desc_pointer);
+
+    auto& block2 = builder.add_block(root, control_flow::Assignments{});
+
+    auto& node1_2 = builder.add_access(block2, "B");
+    auto& node2_2 = builder.add_access(block2, "B");
+    auto& tasklet_2 = builder.add_tasklet(block2, data_flow::TaskletCode::fma, "_out", {"2", "_in", "1"});
+    builder.add_computational_memlet(block2, node1_2, tasklet_2, "_in", {symbolic::integer(0)}, desc_pointer);
+    builder.add_computational_memlet(block2, tasklet_2, "_out", node2_2, {symbolic::integer(0)}, desc_pointer);
+
+    auto sdfg = builder.move();
+
+    EXPECT_EQ(sdfg->name(), "sdfg_1");
+    EXPECT_EQ(sdfg->root().size(), 2);
+
+    // Fusion
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::BlockFusionPass fusion_pass;
+    EXPECT_FALSE(fusion_pass.run(builder_opt, analysis_manager));
+
+    sdfg = builder_opt.move();
+    EXPECT_EQ(sdfg->root().size(), 2);
+}
+
+TEST(BlockFusionTest, Dereference) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Pointer opaque_ptr;
+    builder.add_container("A", opaque_ptr);
+    builder.add_container("B", opaque_ptr);
+
+    auto& root = builder.subject().root();
+    auto& block1 = builder.add_block(root, control_flow::Assignments{});
+
+    auto& node1_1 = builder.add_access(block1, "A");
+    auto& node2_1 = builder.add_access(block1, "B");
+
+    types::Pointer desc_ptr_2(static_cast<const types::IType&>(opaque_ptr));
+    builder.add_dereference_memlet(block1, node1_1, node2_1, true, desc_ptr_2);
+
+    auto& block2 = builder.add_block(root, control_flow::Assignments{});
+
+    auto& node1_2 = builder.add_access(block2, "B");
+    auto& node2_2 = builder.add_access(block2, "B");
+    auto& tasklet_2 = builder.add_tasklet(block2, data_flow::TaskletCode::fma, "_out", {"2", "_in", "1"});
+
+    types::Scalar desc_element(types::PrimitiveType::Double);
+    types::Pointer desc_ptr(desc_element);
+    builder.add_computational_memlet(block2, node1_2, tasklet_2, "_in", {symbolic::integer(0)}, desc_ptr);
+    builder.add_computational_memlet(block2, tasklet_2, "_out", node2_2, {symbolic::integer(0)}, desc_ptr);
+
+    auto sdfg = builder.move();
+
+    EXPECT_EQ(sdfg->name(), "sdfg_1");
+    EXPECT_EQ(sdfg->root().size(), 2);
+
+    // Fusion
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::BlockFusionPass fusion_pass;
+    EXPECT_FALSE(fusion_pass.run(builder_opt, analysis_manager));
+
+    sdfg = builder_opt.move();
+    EXPECT_EQ(sdfg->root().size(), 2);
 }
