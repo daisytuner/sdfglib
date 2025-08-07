@@ -6,6 +6,7 @@
 
 #include <concepts>
 #include <nlohmann/json.hpp>
+#include "sdfg/optimization_report/opt_report.h"
 
 namespace sdfg {
 namespace transformations {
@@ -42,7 +43,13 @@ public:
         transformation.to_json(desc);
         history_.push_back(desc);
 
+        std::chrono::time_point start_time = std::chrono::high_resolution_clock::now();
         transformation.apply(builder, analysis_manager);
+        if (OptimizationReport::applicable()) {
+            std::chrono::time_point end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+            OptimizationReport::add_transformation_entry(transformation.name(), duration, desc);
+        }
     };
 
     void save(std::filesystem::path path) const;
