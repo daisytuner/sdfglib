@@ -44,6 +44,7 @@ set(TEST_FILES
     passes/schedules/expansion_pass_test.cpp
     passes/schedules/parallelization_pass_test.cpp
     passes/structured_control_flow/block_fusion_test.cpp
+    passes/structured_control_flow/condition_elimination_test.cpp
     passes/structured_control_flow/for2map_test.cpp
     passes/structured_control_flow/loop_normalization_test.cpp
     passes/symbolic/symbol_promotion_test.cpp
