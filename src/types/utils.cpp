@@ -165,13 +165,12 @@ symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_tim
     }
 }
 
-std::unique_ptr<typename types::IType> infer_type_from_container(analysis::AnalysisManager& analysis_manager, const StructuredSDFG& sdfg, std::string container) {
-
+std::unique_ptr<typename types::IType> infer_type_from_container(
+    analysis::AnalysisManager& analysis_manager, const StructuredSDFG& sdfg, std::string container
+) {
     if (sdfg.type(container).type_id() == types::TypeID::Scalar) {
         return sdfg.type(container).clone();
     }
-
-    std::cerr << "Inferring type of container " << container << std::endl;
 
     std::unique_ptr<typename types::IType> type = nullptr;
     auto& users = analysis_manager.get<analysis::Users>();
@@ -181,16 +180,10 @@ std::unique_ptr<typename types::IType> infer_type_from_container(analysis::Analy
                 if (type == nullptr) {
                     if (memlet.base_type().primitive_type() != types::Void) {
                         type = memlet.base_type().clone();
-                        std::cerr << "Read Container " << container << " has type: "
-                                  << codegen::CLanguageExtension().declaration("", *type) << std::endl;
                     }
                 } else {
                     if (*type != memlet.base_type()) {
                         if (memlet.base_type().primitive_type() != types::Void) {
-                            codegen::CLanguageExtension lang;
-                            std::cerr << "Read Container " << container << " has multiple types: "
-                                    << lang.declaration("", memlet.base_type()) << " and "
-                                    << lang.declaration("", *type) << std::endl;
                             throw std::runtime_error("Container " + container + " has multiple types");
                         }
                     }
@@ -205,16 +198,10 @@ std::unique_ptr<typename types::IType> infer_type_from_container(analysis::Analy
                 if (type == nullptr) {
                     if (memlet.base_type().primitive_type() != types::Void) {
                         type = memlet.base_type().clone();
-                        std::cerr << "Write Container " << container << " has type: "
-                                  << codegen::CLanguageExtension().declaration("", *type) << std::endl;
                     }
                 } else {
                     if (*type != memlet.base_type()) {
                         if (memlet.base_type().primitive_type() != types::Void) {
-                            codegen::CLanguageExtension lang;
-                            std::cerr << "Write Container " << container << " has multiple types: "
-                                    << lang.declaration("", memlet.base_type()) << " and "
-                                    << lang.declaration("", *type) << std::endl;
                             throw std::runtime_error("Container " + container + " has multiple types");
                         }
                     }
