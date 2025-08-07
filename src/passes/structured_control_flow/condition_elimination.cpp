@@ -16,14 +16,14 @@ bool ConditionElimination::eliminate_condition(
     auto loop_init = loop.init();
     auto loop_condition = loop.condition();
 
-    // indvar must be a local, because it will be written before the condition is checked
+    // indvar shall not be read afterwards directly since loop init overrides it
     analysis::Users& users = this->analysis_manager_.get<analysis::Users>();
-    auto locals = users.locals(match);
-    if (locals.find(loop_indvar->get_name()) == locals.end()) {
+    analysis::UsersView loop_users(users, match.at(0).first);
+    if (users.reads(loop_indvar->get_name()).size() > loop_users.reads(loop_indvar->get_name()).size()) {
         return false;
     }
 
-    // If loop condition for iter 0 is equals to condition, we can eliminate the match
+    // If loop condition == true => condition == true && condition == false => loop condition == false
     auto loop_iter0_condition = symbolic::subs(loop_condition, loop_indvar, loop_init);
     if (symbolic::eq(loop_iter0_condition, condition)) {
         auto& new_seq = this->builder_.add_sequence_before(root, match).first;
