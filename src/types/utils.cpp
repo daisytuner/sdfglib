@@ -1,9 +1,16 @@
 #include "sdfg/types/utils.h"
+#include <iostream>
+#include <memory>
+#include <string>
 
+#include "sdfg/analysis/users.h"
 #include "sdfg/codegen/utils.h"
+#include "sdfg/function.h"
+#include "sdfg/structured_sdfg.h"
 #include "sdfg/symbolic/symbolic.h"
 
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
+#include "sdfg/types/type.h"
 
 namespace sdfg {
 namespace types {
@@ -156,6 +163,69 @@ symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_tim
             return {};
         }
     }
+}
+
+std::unique_ptr<typename types::IType> infer_type_from_container(analysis::AnalysisManager& analysis_manager, const StructuredSDFG& sdfg, std::string container) {
+
+    if (sdfg.type(container).type_id() == types::TypeID::Scalar) {
+        return sdfg.type(container).clone();
+    }
+
+    std::cerr << "Inferring type of container " << container << std::endl;
+
+    std::unique_ptr<typename types::IType> type = nullptr;
+    auto& users = analysis_manager.get<analysis::Users>();
+    for (auto user : users.reads(container)) {
+        if (auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element())) {
+            for (auto& memlet : user->parent()->out_edges(*access_node)) {
+                if (type == nullptr) {
+                    if (memlet.base_type().primitive_type() != types::Void) {
+                        type = memlet.base_type().clone();
+                        std::cerr << "Read Container " << container << " has type: "
+                                  << codegen::CLanguageExtension().declaration("", *type) << std::endl;
+                    }
+                } else {
+                    if (*type != memlet.base_type()) {
+                        if (memlet.base_type().primitive_type() != types::Void) {
+                            codegen::CLanguageExtension lang;
+                            std::cerr << "Read Container " << container << " has multiple types: "
+                                    << lang.declaration("", memlet.base_type()) << " and "
+                                    << lang.declaration("", *type) << std::endl;
+                            throw std::runtime_error("Container " + container + " has multiple types");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (auto user : users.writes(container)) {
+        if (auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element())) {
+            for (auto& memlet : user->parent()->in_edges(*access_node)) {
+                if (type == nullptr) {
+                    if (memlet.base_type().primitive_type() != types::Void) {
+                        type = memlet.base_type().clone();
+                        std::cerr << "Write Container " << container << " has type: "
+                                  << codegen::CLanguageExtension().declaration("", *type) << std::endl;
+                    }
+                } else {
+                    if (*type != memlet.base_type()) {
+                        if (memlet.base_type().primitive_type() != types::Void) {
+                            codegen::CLanguageExtension lang;
+                            std::cerr << "Write Container " << container << " has multiple types: "
+                                    << lang.declaration("", memlet.base_type()) << " and "
+                                    << lang.declaration("", *type) << std::endl;
+                            throw std::runtime_error("Container " + container + " has multiple types");
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (type == nullptr) {
+        throw std::runtime_error("Container " + container + " has no users");
+    }
+    return type;
 }
 
 } // namespace types
