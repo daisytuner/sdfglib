@@ -172,19 +172,36 @@ std::unique_ptr<typename types::IType> infer_type_from_container(
         return sdfg.type(container).clone();
     }
 
+    codegen::CLanguageExtension lang;
+
+    std::cerr << "Inferring type for container " << container << std::endl;
+
+    std::cerr << "Container " << container << " has type " << lang.declaration("", sdfg.type(container)) << std::endl;
+
     std::unique_ptr<typename types::IType> type = nullptr;
     auto& users = analysis_manager.get<analysis::Users>();
     for (auto user : users.reads(container)) {
+        std::cerr << "Container " << container << " has read users" << std::endl;
         if (auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element())) {
             for (auto& memlet : user->parent()->out_edges(*access_node)) {
+                std::cerr << "Container " << container << " has type " << lang.declaration("", memlet.base_type())
+                          << std::endl;
                 if (type == nullptr) {
-                    if (memlet.base_type().primitive_type() != types::Void) {
+                    if (memlet.base_type().type_id() == types::TypeID::Pointer) {
+                        auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
+                        if (pointer_type->has_pointee_type()) {
+                            type = memlet.base_type().clone();
+                        }
+                    } else {
                         type = memlet.base_type().clone();
                     }
                 } else {
                     if (*type != memlet.base_type()) {
-                        if (memlet.base_type().primitive_type() != types::Void) {
-                            throw std::runtime_error("Container " + container + " has multiple types");
+                        if (memlet.base_type().type_id() == types::TypeID::Pointer) {
+                            auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
+                            if (pointer_type->has_pointee_type()) {
+                                throw std::runtime_error("Container " + container + " has multiple types");
+                            }
                         }
                     }
                 }
@@ -193,16 +210,27 @@ std::unique_ptr<typename types::IType> infer_type_from_container(
     }
 
     for (auto user : users.writes(container)) {
+        std::cerr << "Container " << container << " has write users" << std::endl;
         if (auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element())) {
             for (auto& memlet : user->parent()->in_edges(*access_node)) {
+                std::cerr << "Container " << container << " has type " << lang.declaration("", memlet.base_type())
+                          << std::endl;
                 if (type == nullptr) {
-                    if (memlet.base_type().primitive_type() != types::Void) {
+                    if (memlet.base_type().type_id() == types::TypeID::Pointer) {
+                        auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
+                        if (pointer_type->has_pointee_type()) {
+                            type = memlet.base_type().clone();
+                        }
+                    } else {
                         type = memlet.base_type().clone();
                     }
                 } else {
                     if (*type != memlet.base_type()) {
-                        if (memlet.base_type().primitive_type() != types::Void) {
-                            throw std::runtime_error("Container " + container + " has multiple types");
+                        if (memlet.base_type().type_id() == types::TypeID::Pointer) {
+                            auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
+                            if (pointer_type->has_pointee_type()) {
+                                throw std::runtime_error("Container " + container + " has multiple types");
+                            }
                         }
                     }
                 }
