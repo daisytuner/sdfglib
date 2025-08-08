@@ -166,101 +166,79 @@ symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_tim
     }
 }
 
-std::unique_ptr<typename types::IType> infer_type_from_container(
+const types::IType* infer_type_from_container(
     analysis::AnalysisManager& analysis_manager, const StructuredSDFG& sdfg, std::string container
 ) {
-    if (sdfg.type(container).type_id() == types::TypeID::Scalar) {
-        return sdfg.type(container).clone();
+    if (sdfg.type(container).type_id() != types::TypeID::Pointer) {
+        return &sdfg.type(container);
     }
 
-    std::unique_ptr<typename types::IType> type = nullptr;
+    const types::IType* type = nullptr;
     auto& users = analysis_manager.get<analysis::Users>();
 
     for (auto user : users.reads(container)) {
-        if (auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element())) {
-            for (auto& memlet : user->parent()->out_edges(*access_node)) {
-                if (type == nullptr) {
-                    if (memlet.base_type().type_id() == types::TypeID::Pointer) {
-                        auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
-                        if (pointer_type->has_pointee_type()) {
-                            type = memlet.base_type().clone();
-                        }
-                    } else {
-                        type = memlet.base_type().clone();
-                    }
-                } else {
-                    if (*type != memlet.base_type()) {
-                        if (memlet.base_type().type_id() == types::TypeID::Pointer) {
-                            auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
-                            if (pointer_type->has_pointee_type()) {
-                                throw std::runtime_error("Container " + container + " has multiple types");
-                            }
-                        }
-                    }
+        auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element());
+        for (auto& memlet : user->parent()->out_edges(*access_node)) {
+            if (memlet.base_type().type_id() == types::TypeID::Pointer) {
+                auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
+                if (!pointer_type->has_pointee_type()) {
+                    continue;
                 }
+            }
+            auto& base_type = memlet.base_type();
+            if (type == nullptr) {
+                type = &base_type;
+                continue;
+            }
+
+            if (*type != base_type) {
+                return nullptr;
             }
         }
     }
 
     for (auto user : users.writes(container)) {
-        if (auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element())) {
-            for (auto& memlet : user->parent()->in_edges(*access_node)) {
-                if (type == nullptr) {
-                    if (memlet.base_type().type_id() == types::TypeID::Pointer) {
-                        auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
-                        if (pointer_type->has_pointee_type()) {
-                            type = memlet.base_type().clone();
-                        }
-                    } else {
-                        type = memlet.base_type().clone();
-                    }
-                } else {
-                    if (*type != memlet.base_type()) {
-                        if (memlet.base_type().type_id() == types::TypeID::Pointer) {
-                            auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
-                            if (pointer_type->has_pointee_type()) {
-                                throw std::runtime_error("Container " + container + " has multiple types");
-                            }
-                        }
-                    }
+        auto access_node = static_cast<data_flow::AccessNode*>(user->element());
+        for (auto& memlet : user->parent()->in_edges(*access_node)) {
+            if (memlet.base_type().type_id() == types::TypeID::Pointer) {
+                auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
+                if (!pointer_type->has_pointee_type()) {
+                    continue;
                 }
+            }
+            auto& base_type = memlet.base_type();
+            if (type == nullptr) {
+                type = &base_type;
+                continue;
+            }
+
+            if (*type != base_type) {
+                return nullptr;
             }
         }
     }
 
     if (type == nullptr) {
         for (auto user : users.views(container)) {
-            if (auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element())) {
-                for (auto& memlet : user->parent()->out_edges(*access_node)) {
-                    if (auto dest = dynamic_cast<data_flow::AccessNode*>(&memlet.dst())) {
-                        auto infered_type = infer_type_from_container(analysis_manager, sdfg, dest->data());
-                        if (type == nullptr) {
-                            if (memlet.base_type().type_id() == types::TypeID::Pointer) {
-                                auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
-                                if (pointer_type->has_pointee_type()) {
-                                    type = memlet.base_type().clone();
-                                }
-                            } else {
-                                type = memlet.base_type().clone();
-                            }
-                        } else {
-                            if (*type != memlet.base_type()) {
-                                if (memlet.base_type().type_id() == types::TypeID::Pointer) {
-                                    auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
-                                    if (pointer_type->has_pointee_type()) {
-                                        throw std::runtime_error("Container " + container + " has multiple types");
-                                    }
-                                }
-                            }
-                        }
+            auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element());
+            for (auto& memlet : user->parent()->out_edges(*access_node)) {
+                if (memlet.base_type().type_id() == types::TypeID::Pointer) {
+                    auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
+                    if (!pointer_type->has_pointee_type()) {
+                        continue;
                     }
+                }
+                auto& base_type = memlet.base_type();
+                if (type == nullptr) {
+                    type = &base_type;
+                    continue;
+                }
+
+                if (*type != base_type) {
+                    return nullptr;
                 }
             }
         }
-    }
-
-    if (type == nullptr) {
-        throw std::runtime_error("Container " + container + " has no type");
     }
 
     return type;
