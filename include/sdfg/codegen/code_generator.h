@@ -53,7 +53,10 @@ protected:
         int dim_idx,
         const types::IType& type,
         int arg_idx,
-        const analysis::MemAccessRange* range
+        const analysis::MemAccessRange* range,
+        analysis::AnalysisManager& analysis_manager,
+        const StructuredSDFG& sdfg,
+        std::string var_name
     );
 
     bool add_capture_plan(
