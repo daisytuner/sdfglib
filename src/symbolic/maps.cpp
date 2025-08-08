@@ -245,7 +245,10 @@ bool intersects(
     if (is_disjoint_monotonic(expr1, expr2, indvar, assums1, assums2)) {
         return false;
     }
-    return !is_disjoint_isl(expr1, expr2, indvar, assums1, assums2);
+    if (is_disjoint_isl(expr1, expr2, indvar, assums1, assums2)) {
+        return false;
+    }
+    return true;
 }
 
 } // namespace maps

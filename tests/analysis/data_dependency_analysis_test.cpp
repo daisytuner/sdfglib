@@ -2860,6 +2860,69 @@ TEST(LoopDependencyAnalysisTest, PartialSumOuter_2D) {
     EXPECT_EQ(dependencies2.size(), 0);
 }
 
+TEST(LoopDependencyAnalysisTest, PartialSum_1D_Triangle) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+    builder.add_container("j", sym_desc);
+
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer ptr_desc(base_desc);
+
+    types::Pointer desc;
+    builder.add_container("A", desc, true);
+
+    // Define loop
+    auto indvar1 = symbolic::symbol("i");
+    auto init1 = symbolic::integer(0);
+    auto condition1 = symbolic::Lt(indvar1, symbolic::symbol("N"));
+    auto update1 = symbolic::add(indvar1, symbolic::integer(1));
+
+    auto& loop1 = builder.add_for(root, indvar1, condition1, init1, update1);
+    auto& body1 = loop1.root();
+
+    // init block
+    auto& init_block = builder.add_block(body1);
+    auto& A_init = builder.add_access(init_block, "A");
+    auto& tasklet_init = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, "_out", {"0.0"});
+    builder.add_computational_memlet(init_block, tasklet_init, "_out", A_init, {indvar1}, ptr_desc);
+
+    auto indvar2 = symbolic::symbol("j");
+    auto init2 = symbolic::zero();
+    auto condition2 = symbolic::Lt(indvar2, indvar1);
+    auto update2 = symbolic::add(indvar2, symbolic::integer(1));
+
+    auto& loop2 = builder.add_for(body1, indvar2, condition2, init2, update2);
+    auto& body2 = loop2.root();
+
+    // Reduction block
+    auto& block = builder.add_block(body2);
+    auto& A_in = builder.add_access(block, "A");
+    auto& A_out = builder.add_access(block, "A");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, A_in, tasklet, "_in1", {indvar2}, ptr_desc);
+    builder.add_computational_memlet(block, A_in, tasklet, "_in2", {indvar1}, ptr_desc);
+    builder.add_computational_memlet(block, tasklet, "_out", A_out, {indvar1}, ptr_desc);
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    auto& dependencies1 = analysis.dependencies(loop1);
+    auto& dependencies2 = analysis.dependencies(loop2);
+
+    // Check
+    EXPECT_EQ(dependencies1.size(), 2);
+    EXPECT_EQ(dependencies1.at("A"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+    EXPECT_EQ(dependencies1.at("j"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies2.size(), 1);
+    EXPECT_EQ(dependencies2.at("A"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+}
+
 TEST(LoopDependencyAnalysisTest, Transpose_2D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 

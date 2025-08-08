@@ -16,28 +16,43 @@ enum LoopCarriedDependency {
     LOOP_CARRIED_DEPENDENCY_WRITE_WRITE,
 };
 
+/**
+ * @brief Analysis to compute data dependencies between definitions (writes) and uses (reads) of containers.
+ *
+ * A definition is a write to a container.
+ * A use is a read from that container after the definition.
+ * A definition is closed when a new definition dominates it.
+ *
+ * For scalar types, the analysis is straightforward.
+ * For dimensional types, we use integer set analysis:
+ *    - A read must intersect with the subset of the definition.
+ *    - A new definition must supersede the previous definition.
+ */
 class DataDependencyAnalysis : public Analysis {
     friend class AnalysisManager;
 
-   private:
+private:
     structured_control_flow::Sequence& node_;
     std::unordered_map<std::string, std::unordered_map<User*, std::unordered_set<User*>>> results_;
 
-    std::unordered_map<structured_control_flow::StructuredLoop*,
-                       std::unordered_map<std::string, LoopCarriedDependency>>
+    std::unordered_map<structured_control_flow::StructuredLoop*, std::unordered_map<std::string, LoopCarriedDependency>>
         loop_carried_dependencies_;
 
-    bool loop_depends(User& previous, User& current,
-                      analysis::AssumptionsAnalysis& assumptions_analysis,
-                      structured_control_flow::StructuredLoop& loop);
+    bool loop_depends(
+        User& previous,
+        User& current,
+        analysis::AssumptionsAnalysis& assumptions_analysis,
+        structured_control_flow::StructuredLoop& loop
+    );
 
-    bool supersedes(User& previous, User& current,
-                    analysis::AssumptionsAnalysis& assumptions_analysis);
+    bool supersedes(User& previous, User& current, analysis::AssumptionsAnalysis& assumptions_analysis);
 
-    bool intersects(User& previous, User& current,
-                    analysis::AssumptionsAnalysis& assumptions_analysis);
+    bool supersedes_restrictive(User& previous, User& current, analysis::AssumptionsAnalysis& assumptions_analysis);
 
-   public:
+
+    bool intersects(User& previous, User& current, analysis::AssumptionsAnalysis& assumptions_analysis);
+
+public:
     DataDependencyAnalysis(StructuredSDFG& sdfg);
 
     DataDependencyAnalysis(StructuredSDFG& sdfg, structured_control_flow::Sequence& node);
@@ -46,40 +61,59 @@ class DataDependencyAnalysis : public Analysis {
 
     /****** Visitor API ******/
 
-    void visit_block(analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-                     structured_control_flow::Block& block, std::unordered_set<User*>& undefined,
-                     std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
-                     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
+    void visit_block(
+        analysis::Users& users,
+        analysis::AssumptionsAnalysis& assumptions_analysis,
+        structured_control_flow::Block& block,
+        std::unordered_set<User*>& undefined,
+        std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
+        std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions
+    );
 
-    void visit_for(analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-                   structured_control_flow::StructuredLoop& for_loop,
-                   std::unordered_set<User*>& undefined,
-                   std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
-                   std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
+    void visit_for(
+        analysis::Users& users,
+        analysis::AssumptionsAnalysis& assumptions_analysis,
+        structured_control_flow::StructuredLoop& for_loop,
+        std::unordered_set<User*>& undefined,
+        std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
+        std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions
+    );
 
-    void visit_if_else(analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-                       structured_control_flow::IfElse& if_loop,
-                       std::unordered_set<User*>& undefined,
-                       std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
-                       std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
+    void visit_if_else(
+        analysis::Users& users,
+        analysis::AssumptionsAnalysis& assumptions_analysis,
+        structured_control_flow::IfElse& if_loop,
+        std::unordered_set<User*>& undefined,
+        std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
+        std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions
+    );
 
-    void visit_while(analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-                     structured_control_flow::While& while_loop,
-                     std::unordered_set<User*>& undefined,
-                     std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
-                     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
+    void visit_while(
+        analysis::Users& users,
+        analysis::AssumptionsAnalysis& assumptions_analysis,
+        structured_control_flow::While& while_loop,
+        std::unordered_set<User*>& undefined,
+        std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
+        std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions
+    );
 
-    void visit_return(analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-                      structured_control_flow::Return& return_statement,
-                      std::unordered_set<User*>& undefined,
-                      std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
-                      std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
+    void visit_return(
+        analysis::Users& users,
+        analysis::AssumptionsAnalysis& assumptions_analysis,
+        structured_control_flow::Return& return_statement,
+        std::unordered_set<User*>& undefined,
+        std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
+        std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions
+    );
 
-    void visit_sequence(analysis::Users& users, analysis::AssumptionsAnalysis& assumptions_analysis,
-                        structured_control_flow::Sequence& sequence,
-                        std::unordered_set<User*>& undefined,
-                        std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
-                        std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions);
+    void visit_sequence(
+        analysis::Users& users,
+        analysis::AssumptionsAnalysis& assumptions_analysis,
+        structured_control_flow::Sequence& sequence,
+        std::unordered_set<User*>& undefined,
+        std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
+        std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions
+    );
 
     /****** Defines & Use ******/
 
@@ -119,9 +153,9 @@ class DataDependencyAnalysis : public Analysis {
 
     bool available(structured_control_flow::StructuredLoop& loop) const;
 
-    const std::unordered_map<std::string, LoopCarriedDependency>& dependencies(
-        structured_control_flow::StructuredLoop& loop) const;
+    const std::unordered_map<std::string, LoopCarriedDependency>& dependencies(structured_control_flow::StructuredLoop&
+                                                                                   loop) const;
 };
 
-}  // namespace analysis
-}  // namespace sdfg
+} // namespace analysis
+} // namespace sdfg
