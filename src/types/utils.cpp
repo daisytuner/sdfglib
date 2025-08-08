@@ -203,7 +203,6 @@ std::unique_ptr<typename types::IType> infer_type_from_container(
     }
 
     for (auto user : users.writes(container)) {
-        std::cerr << "Container " << container << " has write users" << std::endl;
         if (auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element())) {
             for (auto& memlet : user->parent()->in_edges(*access_node)) {
                 if (type == nullptr) {
