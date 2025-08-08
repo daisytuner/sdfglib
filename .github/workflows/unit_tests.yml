@@ -6,6 +6,8 @@ on:
       - main
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
+  schedule:
+    - cron: "0 4 * * *"
 
 jobs:
   build:
