@@ -40,6 +40,18 @@ bool BlockFusion::can_be_applied(
         return false;
     }
 
+    // Criterion: Keep references and dereference in separate blocks
+    for (auto& edge : first_graph.edges()) {
+        if (edge.type() != data_flow::MemletType::Computational) {
+            return false;
+        }
+    }
+    for (auto& edge : second_graph.edges()) {
+        if (edge.type() != data_flow::MemletType::Computational) {
+            return false;
+        }
+    }
+
     // Numerical stability: Unique order of nodes
     auto pdoms = first_graph.post_dominators();
     std::unordered_map<std::string, const data_flow::AccessNode*> connectors;

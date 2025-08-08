@@ -77,6 +77,7 @@ Pipeline Pipeline::controlflow_simplification() {
     p.register_pass<DeadCFGElimination>();
     p.register_pass<BlockFusionPass>();
     p.register_pass<SequenceFusion>();
+    p.register_pass<ConditionEliminationPass>();
 
     return p;
 };
