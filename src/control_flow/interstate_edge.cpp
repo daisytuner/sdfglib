@@ -1,5 +1,7 @@
 #include "sdfg/control_flow/interstate_edge.h"
 
+#include "sdfg/function.h"
+
 namespace sdfg {
 namespace control_flow {
 
@@ -18,7 +20,34 @@ InterstateEdge::InterstateEdge(
       };
 
 void InterstateEdge::validate(const Function& function) const {
-    // TODO: Implement validation
+    for (auto& entry : this->assignments_) {
+        auto& lhs = entry.first;
+        auto& type = function.type(lhs->get_name());
+        if (type.type_id() != types::TypeID::Scalar) {
+            throw InvalidSDFGException("Assignment - LHS: must be integer type");
+        }
+
+        auto& rhs = entry.second;
+        for (auto& atom : symbolic::atoms(rhs)) {
+            if (symbolic::is_nullptr(atom)) {
+                throw InvalidSDFGException("Assignment - RHS: must be integer type, but is nullptr");
+            }
+            auto& atom_type = function.type(atom->get_name());
+            if (atom_type.type_id() != types::TypeID::Scalar) {
+                throw InvalidSDFGException("Assignment - RHS: must be integer type");
+            }
+        }
+    }
+
+    for (auto& atom : symbolic::atoms(this->condition_)) {
+        if (symbolic::is_nullptr(atom)) {
+            continue;
+        }
+        auto& atom_type = function.type(atom->get_name());
+        if (atom_type.type_id() != types::TypeID::Scalar && atom_type.type_id() != types::TypeID::Pointer) {
+            throw InvalidSDFGException("Condition: must be integer type or pointer type");
+        }
+    }
 };
 
 const graph::Edge InterstateEdge::edge() const { return this->edge_; };
