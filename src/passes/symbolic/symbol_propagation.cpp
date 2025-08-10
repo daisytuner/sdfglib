@@ -232,8 +232,8 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                     std::unordered_set<data_flow::Memlet*> to_remove;
                     for (auto& oedge : graph->out_edges(*access_node)) {
                         auto& dst = oedge.dst();
-                        if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(&dst)) {
-                            for (auto& entry : tasklet->inputs()) {
+                        if (auto code_node = dynamic_cast<data_flow::CodeNode*>(&dst)) {
+                            for (auto& entry : code_node->inputs()) {
                                 if (entry == oedge.dst_conn()) {
                                     entry = std::to_string(new_int->as_int());
                                     to_remove.insert(&oedge);
