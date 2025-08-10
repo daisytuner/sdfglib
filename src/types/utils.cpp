@@ -56,11 +56,10 @@ const types::IType& infer_type(const sdfg::Function& function, const types::ITyp
     if (type.type_id() == TypeID::Pointer) {
         auto& pointer_type = static_cast<const types::Pointer&>(type);
         if (!pointer_type.has_pointee_type()) {
-            throw InvalidSDFGException("Non-empty subset for pointer type without pointee type");
+            throw InvalidSDFGException("Opaque pointer with non-empty subset");
         }
 
         auto& pointee_type = pointer_type.pointee_type();
-
         data_flow::Subset element_subset(subset.begin() + 1, subset.end());
         return infer_type_internal(function, pointee_type, element_subset);
     } else {

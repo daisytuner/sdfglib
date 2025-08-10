@@ -25,8 +25,6 @@ class LibraryNode : public CodeNode {
 
 protected:
     LibraryNodeCode code_;
-    std::vector<std::string> outputs_;
-    std::vector<std::string> inputs_;
     bool side_effect_;
 
     ImplementationType implementation_type_;
@@ -54,14 +52,6 @@ public:
     const ImplementationType& implementation_type() const;
 
     ImplementationType& implementation_type();
-
-    const std::vector<std::string>& inputs() const;
-
-    const std::vector<std::string>& outputs() const;
-
-    const std::string& input(size_t index) const;
-
-    const std::string& output(size_t index) const;
 
     bool side_effect() const;
 

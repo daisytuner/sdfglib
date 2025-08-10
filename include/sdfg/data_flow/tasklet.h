@@ -574,8 +574,6 @@ class Tasklet : public CodeNode {
 
 private:
     TaskletCode code_;
-    std::string output_;
-    std::vector<std::string> inputs_;
     symbolic::Condition condition_;
 
     Tasklet(
@@ -597,13 +595,7 @@ public:
 
     TaskletCode code() const;
 
-    const std::vector<std::string>& inputs() const;
-
-    std::vector<std::string>& inputs();
-
     const std::string& output() const;
-
-    const std::string& input(size_t index) const;
 
     bool needs_connector(size_t index) const override;
 

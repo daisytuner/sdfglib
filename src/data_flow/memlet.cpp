@@ -45,221 +45,198 @@ Memlet::Memlet(
       };
 
 void Memlet::validate(const Function& function) const {
-    // Case 1: Computational Memlet (Tasklet)
-    if (auto tasklet = dynamic_cast<const Tasklet*>(&this->src_)) {
-        if (!dynamic_cast<const AccessNode*>(&this->dst_)) {
-            throw InvalidSDFGException("Memlet: Computational memlet must have an access node destination");
-        }
-        if (this->dst_conn_ != "void") {
-            throw InvalidSDFGException("Memlet: Computation memlets must have a void destination");
-        }
-        if (tasklet->output() != this->src_conn_) {
-            throw InvalidSDFGException("Memlet: Computation memlet must have an output in the tasklet");
-        }
+    switch (this->type()) {
+        case MemletType::Computational: {
+            // Criterion: Must connect a code node and an access node with void connector at access node
+            const AccessNode* data_node = nullptr;
+            const CodeNode* code_node = nullptr;
+            if (this->src_conn_ == "void") {
+                data_node = dynamic_cast<const AccessNode*>(&this->src_);
+                code_node = dynamic_cast<const CodeNode*>(&this->dst_);
+                if (!data_node || !code_node) {
+                    throw InvalidSDFGException("Memlet: Computation memlets must connect a code node and an access node"
+                    );
+                }
 
-        // Criterion: Must be a scalar
-        auto& deref_type = types::infer_type(function, *this->base_type_, this->begin_subset_);
-        if (deref_type.type_id() != types::TypeID::Scalar) {
-            throw InvalidSDFGException("Memlet: Computation memlets must have a scalar destination");
-        }
+                // Criterion: Non-void connector must be an input of the code node
+                if (std::find(code_node->inputs().begin(), code_node->inputs().end(), this->dst_conn_) ==
+                    code_node->inputs().end()) {
+                    throw InvalidSDFGException("Memlet: Computation memlets must have an input in the code node");
+                }
+            } else if (this->dst_conn_ == "void") {
+                data_node = dynamic_cast<const AccessNode*>(&this->dst_);
+                code_node = dynamic_cast<const CodeNode*>(&this->src_);
+                if (!data_node || !code_node) {
+                    throw InvalidSDFGException("Memlet: Computation memlets must connect a code node and an access node"
+                    );
+                }
 
-        return;
-    } else if (auto tasklet = dynamic_cast<const Tasklet*>(&this->dst_)) {
-        if (!dynamic_cast<const AccessNode*>(&this->src_)) {
-            throw InvalidSDFGException("Memlet: Computation memlet must have an access node source");
-        }
-        if (this->src_conn_ != "void") {
-            throw InvalidSDFGException("Memlet: Computation memlets must have a void source");
-        }
-        bool found_conn = false;
-        for (auto& conn : tasklet->inputs()) {
-            if (conn == this->dst_conn_) {
-                found_conn = true;
-                break;
+                // Criterion: Non-void connector must be an output of the code node
+                if (std::find(code_node->outputs().begin(), code_node->outputs().end(), this->src_conn_) ==
+                    code_node->outputs().end()) {
+                    throw InvalidSDFGException("Memlet: Computation memlets must have an output in the code node");
+                }
+            } else {
+                throw InvalidSDFGException(
+                    "Memlet: Computation memlets must have void connector at source or destination"
+                );
             }
-        }
-        if (!found_conn) {
-            throw InvalidSDFGException("Memlet: Computation memlet must have an input in the tasklet");
-        }
 
-        // Criterion: Must be a scalar
-        auto& deref_type = types::infer_type(function, *this->base_type_, this->begin_subset_);
-        if (deref_type.type_id() != types::TypeID::Scalar) {
-            throw InvalidSDFGException("Memlet: Computation memlets must have a scalar source");
-        }
-        return;
-    }
+            // Criterion: edge must be contiguous memory
+            auto& inferred_type = types::infer_type(function, *this->base_type_, this->begin_subset_);
 
-    // Case 2: Computational Memlet (LibraryNode)
-    if (auto libnode = dynamic_cast<const LibraryNode*>(&this->src_)) {
-        if (!dynamic_cast<const AccessNode*>(&this->dst_)) {
-            throw InvalidSDFGException("Memlet: Computational memlet must have an access node destination");
-        }
-        if (this->dst_conn_ != "void") {
-            throw InvalidSDFGException("Memlet: Computation memlets must have a void destination");
-        }
-
-        bool found_conn = false;
-        for (auto& conn : libnode->outputs()) {
-            if (conn == this->src_conn_) {
-                found_conn = true;
-                break;
+            // Return if library node
+            if (dynamic_cast<const LibraryNode*>(code_node)) {
+                return;
             }
-        }
-        if (!found_conn) {
-            throw InvalidSDFGException("Memlet: Computation memlet must have an output in the library node");
-        }
-        return;
-    } else if (auto libnode = dynamic_cast<const LibraryNode*>(&this->dst_)) {
-        if (!dynamic_cast<const AccessNode*>(&this->src_)) {
-            throw InvalidSDFGException("Memlet: Computational memlet must have an access node source");
-        }
-        if (this->src_conn_ != "void") {
-            throw InvalidSDFGException("Memlet: Computation memlets must have a void source");
-        }
 
-        bool found_conn = false;
-        for (auto& conn : libnode->inputs()) {
-            if (conn == this->dst_conn_) {
-                found_conn = true;
-                break;
+            // Criterion: Inferred type must be a scalar
+            if (inferred_type.type_id() != types::TypeID::Scalar) {
+                throw InvalidSDFGException("Memlet: Computation memlets must have a scalar destination");
             }
+            break;
         }
-        if (!found_conn) {
-            throw InvalidSDFGException("Memlet: Computation memlet must have an input in the library node");
-        }
-        return;
-    }
-
-    // Case 3: Reference Memlet (Address Calculation)
-    if (this->dst_conn_ == "ref") {
-        if (this->src_conn_ != "void") {
-            throw InvalidSDFGException("Memlet: Reference memlets must have a void source");
-        }
-        auto src_node = dynamic_cast<const AccessNode*>(&this->src_);
-        if (!src_node) {
-            throw InvalidSDFGException("Memlet: Reference memlets must have an access node source");
-        }
-        auto dst_node = dynamic_cast<const AccessNode*>(&this->dst_);
-        if (!dst_node) {
-            throw InvalidSDFGException("Memlet: Reference memlets must have an access node destination");
-        }
-
-        // Criterion: Reference memlets for raw addresses must not have a subset
-        if (helpers::is_number(src_node->data()) || symbolic::is_nullptr(symbolic::symbol(src_node->data()))) {
-            if (!this->begin_subset_.empty()) {
-                throw InvalidSDFGException("Memlet: Reference memlets for raw addresses must not have a subset");
+        case MemletType::Reference: {
+            // Criterion: Destination must be an access node with a pointer type
+            auto dst_node = dynamic_cast<const AccessNode*>(&this->dst_);
+            if (!dst_node) {
+                throw InvalidSDFGException("Memlet: Reference memlets must have an access node destination");
             }
+            auto dst_data = dst_node->data();
+            // Criterion: Destination must be non-constant
+            if (helpers::is_number(dst_data) || symbolic::is_nullptr(symbolic::symbol(dst_data))) {
+                throw InvalidSDFGException("Memlet: Reference memlets must have a non-constant destination");
+            }
+
+            // Criterion: Destination must be a pointer
+            auto& dst_type = function.type(dst_data);
+            if (dst_type.type_id() != types::TypeID::Pointer) {
+                throw InvalidSDFGException("Memlet: Reference memlets must have a pointer destination");
+            }
+
+            // Criterion: Source must be an access node
+            if (this->src_conn_ != "void") {
+                throw InvalidSDFGException("Memlet: Reference memlets must have a void source");
+            }
+            auto src_node = dynamic_cast<const AccessNode*>(&this->src_);
+            if (!src_node) {
+                throw InvalidSDFGException("Memlet: Reference memlets must have an access node source");
+            }
+
+            // Case: Constant
+            if (helpers::is_number(src_node->data()) || symbolic::is_nullptr(symbolic::symbol(src_node->data()))) {
+                if (!this->begin_subset_.empty()) {
+                    throw InvalidSDFGException("Memlet: Reference memlets for raw addresses must not have a subset");
+                }
+                return;
+            }
+
+            // Case: Container
+            // Criterion: Must be contiguous memory reference
+            // Throws exception if not contiguous
+            types::infer_type(function, *this->base_type_, this->begin_subset_);
+            break;
         }
+        case MemletType::Dereference_Src: {
+            if (this->src_conn_ != "void") {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have a void destination");
+            }
 
-        // Criterion: Destination must be a pointer
-        auto dst_data = dst_node->data();
-        auto& dst_type = function.type(dst_data);
-        if (dst_type.type_id() != types::TypeID::Pointer) {
-            throw InvalidSDFGException("Memlet: Reference memlets must have a pointer destination");
+            auto src_node = dynamic_cast<const AccessNode*>(&this->src_);
+            if (!src_node) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have an access node source");
+            }
+            auto dst_node = dynamic_cast<const AccessNode*>(&this->dst_);
+            if (!dst_node) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have an access node destination");
+            }
+
+            // Criterion: Dereference memlets must have '0' as the only dimension
+            if (this->begin_subset_.size() != 1) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have '0' as the only dimension");
+            }
+            if (!symbolic::eq(this->begin_subset_[0], symbolic::zero())) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have '0' as the only dimension");
+            }
+
+            // Criterion: Source must be a pointer
+            auto src_data = src_node->data();
+            auto& src_type = function.type(src_data);
+            if (src_type.type_id() != types::TypeID::Pointer || helpers::is_number(src_data) ||
+                symbolic::is_nullptr(symbolic::symbol(src_data))) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer source");
+            }
+
+            // Criterion: Destination must be a pointer to source type
+            auto dst_data = dst_node->data();
+            auto& dst_type = function.type(dst_data);
+            if (dst_type.type_id() != types::TypeID::Pointer || helpers::is_number(dst_data) ||
+                symbolic::is_nullptr(symbolic::symbol(dst_data))) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer destination");
+            }
+
+            // Criterion: Must be typed pointer
+            auto base_pointer_type = dynamic_cast<const types::Pointer*>(this->base_type_.get());
+            if (!base_pointer_type) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have a typed pointer base type");
+            }
+            if (!base_pointer_type->has_pointee_type()) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have a pointee type");
+            }
+
+            break;
         }
+        case MemletType::Dereference_Dst: {
+            if (this->dst_conn_ != "void") {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have a void source");
+            }
 
-        // Criterion: Must be a contiguous memory reference
-        // Throws exception if not contiguous
-        auto& ref_type = types::infer_type(function, *this->base_type_, this->begin_subset_);
+            auto src_node = dynamic_cast<const AccessNode*>(&this->src_);
+            if (!src_node) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have an access node source");
+            }
+            auto dst_node = dynamic_cast<const AccessNode*>(&this->dst_);
+            if (!dst_node) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have an access node destination");
+            }
 
-        return;
+            // Criterion: Dereference memlets must have '0' as the only dimension
+            if (this->begin_subset_.size() != 1) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have '0' as the only dimension");
+            }
+            if (!symbolic::eq(this->begin_subset_[0], symbolic::zero())) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have '0' as the only dimension");
+            }
+
+            // Criterion: Source must be a pointer
+            auto src_data = src_node->data();
+            auto& src_type = function.type(src_data);
+            if (src_type.type_id() != types::TypeID::Pointer || helpers::is_number(src_data)) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer source");
+            }
+
+            // Criterion: Destination must be a pointer to source type
+            auto dst_data = dst_node->data();
+            auto& dst_type = function.type(dst_data);
+            if (dst_type.type_id() != types::TypeID::Pointer || helpers::is_number(dst_data) ||
+                symbolic::is_nullptr(symbolic::symbol(dst_data))) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer destination");
+            }
+
+            // Criterion: Must be typed pointer
+            auto base_pointer_type = dynamic_cast<const types::Pointer*>(this->base_type_.get());
+            if (!base_pointer_type) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have a typed pointer base type");
+            }
+            if (!base_pointer_type->has_pointee_type()) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have a pointee type");
+            }
+
+            break;
+        }
+        default:
+            throw InvalidSDFGException("Memlet: Invalid memlet type");
     }
-
-    // Case 4: Dereference Memlet (Load/Store from/to pointer)
-    if (this->src_conn_ == "deref") {
-        if (this->dst_conn_ != "void") {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have a void destination");
-        }
-        auto src_node = dynamic_cast<const AccessNode*>(&this->src_);
-        if (!src_node) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have an access node source");
-        }
-        auto dst_node = dynamic_cast<const AccessNode*>(&this->dst_);
-        if (!dst_node) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have an access node destination");
-        }
-
-        // Criterion: Dereference memlets must have '0' as the only dimension
-        if (this->begin_subset_.size() != 1) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have '0' as the only dimension");
-        }
-        if (!symbolic::eq(this->begin_subset_[0], symbolic::integer(0))) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have '0' as the only dimension");
-        }
-
-        // Criterion: Source must be a pointer
-        auto src_data = src_node->data();
-        auto& src_type = function.type(src_data);
-        if (src_type.type_id() != types::TypeID::Pointer || helpers::is_number(src_data)) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer source");
-        }
-
-        // Criterion: Destination must be a pointer to source type
-        auto dst_data = dst_node->data();
-        auto& dst_type = function.type(dst_data);
-        if (dst_type.type_id() != types::TypeID::Pointer) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer destination");
-        }
-
-        // Criterion: Must be typed pointer
-        auto base_pointer_type = dynamic_cast<const types::Pointer*>(this->base_type_.get());
-        if (!base_pointer_type) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have a typed pointer base type");
-        }
-        if (!base_pointer_type->has_pointee_type()) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have a pointee type");
-        }
-
-        return;
-    } else if (this->dst_conn_ == "deref") {
-        if (this->src_conn_ != "void") {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have a void source");
-        }
-        auto src_node = dynamic_cast<const AccessNode*>(&this->src_);
-        if (!src_node) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have an access node source");
-        }
-        auto dst_node = dynamic_cast<const AccessNode*>(&this->dst_);
-        if (!dst_node) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have an access node destination");
-        }
-
-        // Criterion: Dereference memlets must have '0' as the only dimension
-        if (this->begin_subset_.size() != 1) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have '0' as the only dimension");
-        }
-        if (!symbolic::eq(this->begin_subset_[0], symbolic::integer(0))) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have '0' as the only dimension");
-        }
-
-        // Criterion: Source must be a pointer
-        auto src_data = src_node->data();
-        auto& src_type = function.type(src_data);
-        if (src_type.type_id() != types::TypeID::Pointer || helpers::is_number(src_data)) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer source");
-        }
-
-        // Criterion: Destination must be a pointer to source type
-        auto dst_data = dst_node->data();
-        auto& dst_type = function.type(dst_data);
-        if (dst_type.type_id() != types::TypeID::Pointer) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer destination");
-        }
-
-        // Criterion: Must be typed pointer
-        auto base_pointer_type = dynamic_cast<const types::Pointer*>(this->base_type_.get());
-        if (!base_pointer_type) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have a typed pointer base type");
-        }
-        if (!base_pointer_type->has_pointee_type()) {
-            throw InvalidSDFGException("Memlet: Dereference memlets must have a pointee type");
-        }
-
-        return;
-    }
-
-    throw InvalidSDFGException("Memlet: Invalid memlet connection");
 };
 
 const graph::Edge Memlet::edge() const { return this->edge_; };

@@ -15,8 +15,7 @@ Tasklet::Tasklet(
     const std::vector<std::string>& inputs,
     const symbolic::Condition& condition
 )
-    : CodeNode(element_id, debug_info, vertex, parent), code_(code), output_(output), inputs_(inputs),
-      condition_(condition) {};
+    : CodeNode(element_id, debug_info, vertex, parent, {output}, inputs), code_(code), condition_(condition) {};
 
 void Tasklet::validate(const Function& function) const {
     // TODO: Implement
@@ -24,13 +23,7 @@ void Tasklet::validate(const Function& function) const {
 
 TaskletCode Tasklet::code() const { return this->code_; };
 
-const std::vector<std::string>& Tasklet::inputs() const { return this->inputs_; };
-
-std::vector<std::string>& Tasklet::inputs() { return this->inputs_; };
-
-const std::string& Tasklet::output() const { return this->output_; };
-
-const std::string& Tasklet::input(size_t index) const { return this->inputs_[index]; };
+const std::string& Tasklet::output() const { return this->outputs_[0]; };
 
 bool Tasklet::needs_connector(size_t index) const {
     // Is non-constant, if starts with _in prefix
@@ -49,7 +42,7 @@ bool Tasklet::is_conditional() const { return !symbolic::is_true(this->condition
 std::unique_ptr<DataFlowNode> Tasklet::clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
     const {
     return std::unique_ptr<Tasklet>(new Tasklet(
-        element_id, this->debug_info_, vertex, parent, this->code_, this->output_, this->inputs_, this->condition_
+        element_id, this->debug_info_, vertex, parent, this->code_, this->outputs_.at(0), this->inputs_, this->condition_
     ));
 };
 
