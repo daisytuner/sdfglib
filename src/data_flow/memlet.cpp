@@ -82,13 +82,13 @@ void Memlet::validate(const Function& function) const {
                 );
             }
 
-            // Criterion: edge must be contiguous memory
-            auto& inferred_type = types::infer_type(function, *this->base_type_, this->begin_subset_);
-
             // Return if library node
             if (dynamic_cast<const LibraryNode*>(code_node)) {
                 return;
             }
+
+            // Criterion: edge must be contiguous memory
+            auto& inferred_type = types::infer_type(function, *this->base_type_, this->begin_subset_);
 
             // Criterion: Inferred type must be a scalar
             if (inferred_type.type_id() != types::TypeID::Scalar) {
