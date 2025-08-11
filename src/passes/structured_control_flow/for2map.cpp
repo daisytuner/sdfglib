@@ -55,8 +55,6 @@ void For2Map::apply(
 
     // convert for to map
     builder.convert_for(*parent, for_stmt);
-
-    analysis_manager.invalidate_all();
 }
 
 bool For2Map::accept(structured_control_flow::For& node) {
