@@ -64,7 +64,7 @@ set(TEST_FILES
     transformations/loop_tiling_test.cpp
     transformations/out_local_storage_test.cpp
     transformations/parallelization_test.cpp
-    # transformations/recorder_test.cpp
+    transformations/recorder_test.cpp
     types/array_test.cpp
     types/function_test.cpp
     types/pointer_test.cpp
