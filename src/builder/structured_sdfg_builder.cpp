@@ -7,6 +7,7 @@
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/sequence.h"
+#include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/types/utils.h"
 
 using namespace sdfg::control_flow;
@@ -1073,8 +1074,8 @@ Sequence& StructuredSDFGBuilder::parent(const ControlFlowNode& node) {
             }
         } else if (auto while_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
             queue.push_back(&while_stmt->root());
-        } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(current)) {
-            queue.push_back(&for_stmt->root());
+        } else if (auto loop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
+            queue.push_back(&loop_stmt->root());
         }
     }
 
