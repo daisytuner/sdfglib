@@ -30,17 +30,12 @@ std::tuple<int, types::PrimitiveType> CodeGenerator::analyze_type_rec(
     }
 
     if (auto* scalarType = dynamic_cast<const types::Scalar*>(&type)) {
-        // std::cerr << "In '" << sdfg_.name() << "', arg" << argIdx << " dim" << dimIdx << ": scalar" << std::endl;
         return std::make_tuple(dimIdx, scalarType->primitive_type());
     } else if (auto structureType = dynamic_cast<const sdfg::types::Structure*>(&type)) {
-        // std::cerr << "In '" << sdfg_.name() << "', arg" << argIdx << " dim" << dimIdx << ": struct" << std::endl;
         return std::make_tuple(dimIdx, types::Void);
     } else if (auto* arrayType = dynamic_cast<const types::Array*>(&type)) {
         dims[dimIdx] = arrayType->num_elements();
         auto& inner = arrayType->element_type();
-
-        // std::cerr << "In '" << sdfg_.name() << "', arg" << argIdx << " dim" << dimIdx << ": " <<
-        // language_extension_.expression(dims[dimIdx]) << std::endl;
 
         return analyze_type_rec(dims, maxDim, dimIdx + 1, inner, argIdx, range, analysis_manager, sdfg, var_name);
     } else if (auto* ptrType = dynamic_cast<const types::Pointer*>(&type)) {
