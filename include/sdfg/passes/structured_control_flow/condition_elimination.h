@@ -17,7 +17,7 @@ private:
 public:
     ConditionElimination(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
 
-    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) override;
+    bool accept(structured_control_flow::Sequence& node) override;
 };
 
 typedef VisitorPass<ConditionElimination> ConditionEliminationPass;

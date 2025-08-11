@@ -55,9 +55,10 @@ ConditionElimination::
       };
 
 
-bool ConditionElimination::accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) {
+bool ConditionElimination::accept(structured_control_flow::Sequence& node) {
     for (size_t i = 0; i < node.size(); i++) {
-        if (auto ifelse = dynamic_cast<structured_control_flow::IfElse*>(&node.at(i).first)) {
+        auto& current = node.at(i).first;
+        if (auto ifelse = dynamic_cast<structured_control_flow::IfElse*>(&current)) {
             if (ifelse->size() != 1) {
                 continue;
             }
@@ -72,7 +73,7 @@ bool ConditionElimination::accept(structured_control_flow::Sequence& parent, str
                 continue;
             }
 
-            if (this->eliminate_condition(parent, *ifelse, node.at(i).second)) {
+            if (this->eliminate_condition(node, *ifelse, node.at(i).second)) {
                 return true;
             }
         }

@@ -10,7 +10,7 @@ class Expansion : public visitor::StructuredSDFGVisitor {
 public:
     Expansion(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
 
-    bool accept(structured_control_flow::Sequence& parent, structured_control_flow::Block& node) override;
+    bool accept(structured_control_flow::Block& node) override;
 };
 
 typedef VisitorPass<Expansion> ExpansionPass;

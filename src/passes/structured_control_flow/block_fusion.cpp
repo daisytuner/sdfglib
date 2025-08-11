@@ -160,7 +160,7 @@ void BlockFusion::apply(
     }
 };
 
-bool BlockFusion::accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) {
+bool BlockFusion::accept(structured_control_flow::Sequence& node) {
     bool applied = false;
 
     if (node.size() == 0) {
