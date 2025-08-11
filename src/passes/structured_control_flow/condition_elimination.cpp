@@ -6,9 +6,12 @@
 namespace sdfg {
 namespace passes {
 
-bool ConditionElimination::
-    eliminate_condition(structured_control_flow::Sequence& root, structured_control_flow::IfElse& match) {
-    auto branch = match.at(0);
+bool ConditionElimination::eliminate_condition(
+    structured_control_flow::Sequence& root,
+    structured_control_flow::IfElse& match_node,
+    structured_control_flow::Transition& match_transition
+) {
+    auto branch = match_node.at(0);
     auto& branch_root = branch.first;
     auto& branch_condition = branch.second;
     auto& loop = static_cast<structured_control_flow::StructuredLoop&>(branch_root.at(0).first);
@@ -28,13 +31,16 @@ bool ConditionElimination::
     auto loop_iter0_condition = symbolic::subs(loop_condition, loop_indvar, loop_init);
     if (symbolic::eq(loop_iter0_condition, branch_condition)) {
         // Insert placeholder before if-else
-        auto new_child = this->builder_.add_sequence_before(root, match);
+        auto new_child = this->builder_.add_sequence_before(root, match_node);
+        for (auto& assignment : match_transition.assignments()) {
+            new_child.second.assignments()[assignment.first] = assignment.second;
+        }
 
         // Move children of branch to placeholder
         this->builder_.insert_children(new_child.first, branch_root, 0);
 
         // Remove now empty if-else
-        this->builder_.remove_child(root, match);
+        this->builder_.remove_child(root, match_node);
 
         return true;
     }
@@ -49,23 +55,30 @@ ConditionElimination::
       };
 
 
-bool ConditionElimination::accept(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& node) {
-    if (node.size() != 1) {
-        return false;
-    }
-    auto branch = node.at(0);
-    auto& condition = branch.second;
+bool ConditionElimination::accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) {
+    for (size_t i = 0; i < node.size(); i++) {
+        if (auto ifelse = dynamic_cast<structured_control_flow::IfElse*>(&node.at(i).first)) {
+            if (ifelse->size() != 1) {
+                continue;
+            }
+            auto branch = ifelse->at(0);
+            auto& condition = branch.second;
 
-    auto& root = branch.first;
-    if (root.size() != 1) {
-        return false;
+            auto& branch_root = branch.first;
+            if (branch_root.size() != 1) {
+                continue;
+            }
+            if (!dynamic_cast<structured_control_flow::StructuredLoop*>(&branch_root.at(0).first)) {
+                continue;
+            }
+
+            if (this->eliminate_condition(parent, *ifelse, node.at(i).second)) {
+                return true;
+            }
+        }
     }
 
-    if (!dynamic_cast<structured_control_flow::StructuredLoop*>(&root.at(0).first)) {
-        return false;
-    }
-
-    return this->eliminate_condition(parent, node);
+    return false;
 };
 
 } // namespace passes
