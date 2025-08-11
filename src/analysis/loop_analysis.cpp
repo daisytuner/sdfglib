@@ -26,10 +26,6 @@ void LoopAnalysis::
             this->loop_tree_[while_stmt] = parent_loop;
         } else if (auto loop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
             this->loops_.insert(loop_stmt);
-            auto res = this->indvars_.insert({loop_stmt->indvar()->get_name(), loop_stmt});
-            if (!res.second) {
-                throw sdfg::InvalidSDFGException("Found multiple loops with same indvar");
-            }
             this->loop_tree_[loop_stmt] = parent_loop;
         }
 
@@ -62,14 +58,20 @@ void LoopAnalysis::
 void LoopAnalysis::run(AnalysisManager& analysis_manager) {
     this->loops_.clear();
     this->loop_tree_.clear();
-    this->indvars_.clear();
     this->run(this->sdfg_.root(), nullptr);
 }
 
 const std::unordered_set<structured_control_flow::ControlFlowNode*> LoopAnalysis::loops() const { return this->loops_; }
 
 structured_control_flow::ControlFlowNode* LoopAnalysis::find_loop_by_indvar(const std::string& indvar) {
-    return this->indvars_.at(indvar);
+    for (auto& loop : this->loops_) {
+        if (auto loop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(loop)) {
+            if (loop_stmt->indvar()->get_name() == indvar) {
+                return loop;
+            }
+        }
+    }
+    return nullptr;
 }
 
 bool LoopAnalysis::is_monotonic(structured_control_flow::StructuredLoop* loop, AssumptionsAnalysis& assumptions_analysis) {

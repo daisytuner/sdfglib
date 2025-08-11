@@ -11,7 +11,6 @@ class AssumptionsAnalysis;
 class LoopAnalysis : public Analysis {
 private:
     std::unordered_set<structured_control_flow::ControlFlowNode*> loops_;
-    std::unordered_map<std::string, structured_control_flow::StructuredLoop*> indvars_;
     std::unordered_map<structured_control_flow::ControlFlowNode*, structured_control_flow::ControlFlowNode*> loop_tree_;
 
     void run(structured_control_flow::ControlFlowNode& scope, structured_control_flow::ControlFlowNode* parent_loop);
