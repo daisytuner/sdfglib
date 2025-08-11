@@ -1,5 +1,6 @@
 #include "sdfg/data_flow/tasklet.h"
 
+#include "sdfg/data_flow/data_flow_graph.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
@@ -18,7 +19,19 @@ Tasklet::Tasklet(
     : CodeNode(element_id, debug_info, vertex, parent, {output}, inputs), code_(code), condition_(condition) {};
 
 void Tasklet::validate(const Function& function) const {
-    // TODO: Implement
+    auto& graph = this->get_parent();
+
+    std::unordered_map<std::string, const AccessNode*> input_names;
+    for (auto& iedge : graph.in_edges(*this)) {
+        auto& src = static_cast<const AccessNode&>(iedge.src());
+        if (input_names.find(src.data()) != input_names.end()) {
+            if (input_names.at(src.data()) != &src) {
+                throw InvalidSDFGException("Tasklet: Two access nodes with the same data as iedge: " + src.data());
+            }
+        } else {
+            input_names.insert({src.data(), &src});
+        }
+    }
 }
 
 TaskletCode Tasklet::code() const { return this->code_; };
