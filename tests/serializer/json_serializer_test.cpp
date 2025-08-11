@@ -1709,6 +1709,42 @@ TEST(JSONSerializerTest, SerializeDeserialize_Arguments) {
     EXPECT_EQ(sdfg_new->root().size(), 0);
 }
 
+TEST(JSONSerializerTest, SerializeDeserialize_Externals) {
+    // Create a sample StructuredSDFG object
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU);
+
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+
+    builder.add_external("A", base_desc, LinkageType_External);
+    builder.add_external("C", base_desc, LinkageType_Internal);
+    builder.add_external("B", base_desc, LinkageType_External);
+
+    auto sdfg = builder.move();
+
+    // Create a JSONSerializer object
+    std::string filename = "test_sdfg.json";
+    sdfg::serializer::JSONSerializer serializer;
+
+    // Serialize the SDFG to JSON
+    auto j = serializer.serialize(*sdfg);
+
+    // Deserialize the JSON back into a StructuredSDFG object
+    auto sdfg_new = serializer.deserialize(j);
+
+    // Check if the deserialized SDFG matches the original SDFG
+    EXPECT_EQ(sdfg_new->name(), "test_sdfg");
+    EXPECT_EQ(sdfg_new->containers().size(), 3);
+    EXPECT_EQ(sdfg_new->type(), FunctionType_CPU);
+
+    EXPECT_EQ(sdfg_new->externals().size(), 3);
+    EXPECT_EQ(sdfg_new->linkage_type("A"), LinkageType_External);
+    EXPECT_EQ(sdfg_new->linkage_type("B"), LinkageType_External);
+    EXPECT_EQ(sdfg_new->linkage_type("C"), LinkageType_Internal);
+
+    EXPECT_EQ(sdfg_new->root().size(), 0);
+}
+
 TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU);
     auto& root = builder.subject().root();

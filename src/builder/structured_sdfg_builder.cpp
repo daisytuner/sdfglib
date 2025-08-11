@@ -315,6 +315,7 @@ StructuredSDFGBuilder::StructuredSDFGBuilder(const SDFG& sdfg)
 
     for (auto& ext : sdfg.externals_) {
         this->structured_sdfg_->externals_.push_back(ext);
+        this->structured_sdfg_->externals_linkage_types_[ext] = sdfg.linkage_type(ext);
     }
 
     for (auto& entry : sdfg.assumptions_) {

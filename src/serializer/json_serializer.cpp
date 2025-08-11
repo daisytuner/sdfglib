@@ -104,7 +104,10 @@ nlohmann::json JSONSerializer::serialize(const sdfg::StructuredSDFG& sdfg) {
 
     j["externals"] = nlohmann::json::array();
     for (const auto& external : sdfg.externals()) {
-        j["externals"].push_back(external);
+        nlohmann::json external_json;
+        external_json["name"] = external;
+        external_json["linkage_type"] = sdfg.linkage_type(external);
+        j["externals"].push_back(external_json);
     }
 
     j["metadata"] = nlohmann::json::object();
@@ -463,10 +466,14 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
     nlohmann::json& containers = j["containers"];
 
     // deserialize externals
-    for (const auto& name : j["externals"]) {
-        auto& type_desc = containers.at(name.get<std::string>());
+    for (const auto& external : j["externals"]) {
+        assert(external.contains("name"));
+        assert(external["name"].is_string());
+        assert(external.contains("linkage_type"));
+        assert(external["linkage_type"].is_number_integer());
+        auto& type_desc = containers.at(external["name"].get<std::string>());
         auto type = json_to_type(type_desc);
-        builder.add_container(name, *type, false, true);
+        builder.add_external(external["name"], *type, LinkageType(external["linkage_type"]));
     }
 
     // deserialize arguments

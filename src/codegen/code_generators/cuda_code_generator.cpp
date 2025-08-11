@@ -152,8 +152,16 @@ void CUDACodeGenerator::dispatch_globals() {
         auto& type = sdfg_.type(container);
         if (type.storage_type() == types::StorageType_NV_Global) {
             auto& base_type = dynamic_cast<const types::Pointer&>(type).pointee_type();
-            this->globals_stream_ << "extern " << language_extension_.declaration(container, base_type) << ";"
-                                  << std::endl;
+            if (sdfg_.linkage_type(container) == LinkageType_External) {
+                this->globals_stream_ << "extern " << language_extension_.declaration(container, base_type) << ";"
+                                      << std::endl;
+            } else {
+                this->globals_stream_ << "static " << language_extension_.declaration(container, base_type);
+                if (!type.initializer().empty()) {
+                    this->globals_stream_ << " = " << type.initializer();
+                }
+                this->globals_stream_ << ";" << std::endl;
+            }
         }
         if (type.storage_type() == types::StorageType_NV_Constant) {
             assert(type.initializer().empty());

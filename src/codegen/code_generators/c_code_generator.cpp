@@ -113,7 +113,17 @@ void CCodeGenerator::dispatch_globals() {
         auto& type = dynamic_cast<const types::Pointer&>(sdfg_.type(container));
         assert(type.has_pointee_type() && "Externals must have a pointee type");
         auto& base_type = type.pointee_type();
-        this->globals_stream_ << "extern " << language_extension_.declaration(container, base_type) << ";" << std::endl;
+
+        if (sdfg_.linkage_type(container) == LinkageType_External) {
+            this->globals_stream_ << "extern " << language_extension_.declaration(container, base_type) << ";"
+                                  << std::endl;
+        } else {
+            this->globals_stream_ << "static " << language_extension_.declaration(container, base_type);
+            if (!type.initializer().empty()) {
+                this->globals_stream_ << " = " << type.initializer();
+            }
+            this->globals_stream_ << ";" << std::endl;
+        }
     }
 };
 
