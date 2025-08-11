@@ -36,6 +36,8 @@ typedef StringEnum FunctionType;
 inline FunctionType FunctionType_CPU{"CPU"};
 inline FunctionType FunctionType_NV_GLOBAL{"NV_GLOBAL"};
 
+enum LinkageType { LinkageType_External, LinkageType_Internal };
+
 class Function {
     friend class sdfg::builder::FunctionBuilder;
 
@@ -53,6 +55,7 @@ protected:
     // External data
     std::vector<std::string> arguments_;
     std::vector<std::string> externals_;
+    std::unordered_map<std::string, LinkageType> externals_linkage_types_;
 
     // Symbolic assumptions
     symbolic::Assumptions assumptions_;
@@ -109,6 +112,8 @@ public:
     bool is_external(const std::string& name) const;
 
     bool is_transient(const std::string& name) const;
+
+    LinkageType linkage_type(const std::string& name) const;
 
     symbolic::SymbolSet parameters() const;
 

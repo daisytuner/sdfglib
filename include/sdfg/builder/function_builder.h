@@ -23,6 +23,8 @@ public:
         const std::string& name, const types::IType& type, bool is_argument = false, bool is_external = false
     ) const;
 
+    const types::IType& add_external(const std::string& name, const types::IType& type, LinkageType linkage_type) const;
+
     void remove_container(const std::string& name) const;
 
     void change_type(const std::string& name, const types::IType& type) const;

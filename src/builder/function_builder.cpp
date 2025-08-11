@@ -3,18 +3,7 @@
 namespace sdfg {
 namespace builder {
 
-size_t FunctionBuilder::new_element_id() const { return ++this->function().element_counter_; };
-
-void FunctionBuilder::set_element_counter(size_t element_counter) {
-    this->function().element_counter_ = element_counter;
-};
-
-const types::IType& FunctionBuilder::
-    add_container(const std::string& name, const types::IType& type, bool is_argument, bool is_external) const {
-    if (is_argument && is_external) {
-        throw InvalidSDFGException("Container " + name + " cannot be both an argument and an external");
-    }
-    // Legal name
+void check_name(const std::string& name) {
     if (name.find(".") != std::string::npos) {
         throw InvalidSDFGException("Container name " + name + " contains a dot");
     } else if (name.find(" ") != std::string::npos) {
@@ -62,6 +51,21 @@ const types::IType& FunctionBuilder::
     } else if (name.find("|") != std::string::npos) {
         throw InvalidSDFGException("Container name " + name + " contains a pipe");
     }
+};
+
+size_t FunctionBuilder::new_element_id() const { return ++this->function().element_counter_; };
+
+void FunctionBuilder::set_element_counter(size_t element_counter) {
+    this->function().element_counter_ = element_counter;
+};
+
+const types::IType& FunctionBuilder::
+    add_container(const std::string& name, const types::IType& type, bool is_argument, bool is_external) const {
+    if (is_argument && is_external) {
+        throw InvalidSDFGException("Container " + name + " cannot be both an argument and an external");
+    }
+    // Legal name
+    check_name(name);
 
     auto res = this->function().containers_.insert({name, type.clone()});
     assert(res.second);
@@ -71,11 +75,25 @@ const types::IType& FunctionBuilder::
     }
     if (is_external) {
         this->function().externals_.push_back(name);
+        this->function().externals_linkage_types_[name] = LinkageType_External;
     }
     if (type.is_symbol() && dynamic_cast<const types::Scalar*>(&type)) {
         auto sym = symbolic::symbol(name);
         this->function().assumptions_.insert({sym, symbolic::Assumption::create(sym, type)});
     }
+
+    return *(*res.first).second;
+};
+
+const types::IType& FunctionBuilder::
+    add_external(const std::string& name, const types::IType& type, LinkageType linkage_type) const {
+    check_name(name);
+
+    auto res = this->function().containers_.insert({name, type.clone()});
+    assert(res.second);
+
+    this->function().externals_.push_back(name);
+    this->function().externals_linkage_types_[name] = linkage_type;
 
     return *(*res.first).second;
 };
