@@ -171,3 +171,19 @@ TEST(CLanguageExtensionTest, SubsetToCpp_Struct) {
     auto result = generator.subset(sdfg, types::Structure("MyStruct"), data_flow::Subset{symbolic::integer(1)});
     EXPECT_EQ(result, ".member_1");
 }
+
+TEST(CLanguageExtensionTest, Expression_Pow2) {
+    codegen::CLanguageExtension generator;
+
+    auto sym = symbolic::symbol("x");
+    auto result = generator.expression(symbolic::pow(sym, symbolic::integer(2)));
+    EXPECT_EQ(result, "((x) * (x))");
+}
+
+TEST(CLanguageExtensionTest, Expression_Pow2_Mul) {
+    codegen::CLanguageExtension generator;
+
+    auto sym = symbolic::symbol("x");
+    auto result = generator.expression(symbolic::mul(sym, sym));
+    EXPECT_EQ(result, "((x) * (x))");
+}
