@@ -90,7 +90,9 @@ MyStructA member_0;
 TEST(CCodeGeneratorTest, DispatchGlobals) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
-    builder.add_container("a", types::Scalar(types::PrimitiveType::Int32), false, true);
+    sdfg::types::Scalar base_type(sdfg::types::PrimitiveType::Int32);
+    sdfg::types::Pointer ptr_type(base_type);
+    builder.add_container("a", ptr_type, false, true);
 
     auto sdfg = builder.move();
 
@@ -209,12 +211,17 @@ TEST(CCodeGeneratorTest, EmitArgOutCaptures) {
  */
 TEST(CCodeGeneratorTest, CreateCapturePlans) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
-    builder.add_container("arg0", types::Scalar(types::PrimitiveType::Int64), true, false);
-    auto valueType = types::Scalar(types::PrimitiveType::Float);
-    auto innerType = types::Array(valueType, symbolic::integer(210));
-    builder.add_container("arg1", types::Pointer(static_cast<types::IType&>(innerType)), true, false);
-    builder.add_container("ext0", types::Scalar(types::PrimitiveType::Int64), false, true);
-    builder.add_container("ext1", types::Pointer(static_cast<types::IType&>(valueType)), false, true);
+
+    types::Scalar sym_type(types::PrimitiveType::Int64);
+    types::Scalar value_type(types::PrimitiveType::Float);
+    types::Array inner_type(value_type, symbolic::integer(210));
+    types::Pointer ptr_inner_type(inner_type);
+    types::Pointer ptr_value_type(value_type);
+
+    builder.add_container("arg0", sym_type, true, false);
+    builder.add_container("arg1", ptr_inner_type, true, false);
+    builder.add_container("ext0", sym_type, false, true);
+    builder.add_container("ext1", ptr_value_type, false, true);
 
     auto sym_i = symbolic::symbol("i");
     auto sym_j = symbolic::symbol("j");
@@ -232,15 +239,15 @@ TEST(CCodeGeneratorTest, CreateCapturePlans) {
     );
 
     auto& block = builder.add_block(inner_for.root());
-    auto& tasklet = builder.add_tasklet(
-        block, data_flow::TaskletCode::add, {"__out", valueType}, {{"__in0", valueType}, {"1", valueType}}
-    );
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "__out", {"__in0", "__in1"});
     auto& readArr = builder.add_access(block, "arg1");
-    auto& readPrev = builder.add_memlet(block, readArr, "void", tasklet, "__in0", {sym_i, sym_j});
+    auto& readPrev = builder.add_computational_memlet(block, readArr, tasklet, "__in0", {sym_i, sym_j}, ptr_inner_type);
     auto& writeArr = builder.add_access(block, "arg1");
-    auto& writeEntry = builder.add_memlet(block, tasklet, "__out", writeArr, "void", {sym_i, sym_j});
+    auto& writeEntry =
+        builder.add_computational_memlet(block, tasklet, "__out", writeArr, {sym_i, sym_j}, ptr_inner_type);
     auto& writeOut = builder.add_access(block, "ext1");
-    auto& writeLast = builder.add_memlet(block, tasklet, "__out", writeOut, "void", {symbolic::zero()});
+    auto& writeLast =
+        builder.add_computational_memlet(block, tasklet, "__out", writeOut, {symbolic::zero()}, ptr_value_type);
 
     auto sdfg = builder.move();
 

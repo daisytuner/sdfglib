@@ -1,4 +1,6 @@
 #include "sdfg/analysis/loop_analysis.h"
+#include <unordered_set>
+#include <vector>
 
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/exceptions.h"
@@ -24,10 +26,6 @@ void LoopAnalysis::
             this->loop_tree_[while_stmt] = parent_loop;
         } else if (auto loop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
             this->loops_.insert(loop_stmt);
-            auto res = this->indvars_.insert({loop_stmt->indvar()->get_name(), loop_stmt});
-            if (!res.second) {
-                throw sdfg::InvalidSDFGException("Found multiple loops with same indvar");
-            }
             this->loop_tree_[loop_stmt] = parent_loop;
         }
 
@@ -60,14 +58,20 @@ void LoopAnalysis::
 void LoopAnalysis::run(AnalysisManager& analysis_manager) {
     this->loops_.clear();
     this->loop_tree_.clear();
-    this->indvars_.clear();
     this->run(this->sdfg_.root(), nullptr);
 }
 
 const std::unordered_set<structured_control_flow::ControlFlowNode*> LoopAnalysis::loops() const { return this->loops_; }
 
 structured_control_flow::ControlFlowNode* LoopAnalysis::find_loop_by_indvar(const std::string& indvar) {
-    return this->indvars_.at(indvar);
+    for (auto& loop : this->loops_) {
+        if (auto loop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(loop)) {
+            if (loop_stmt->indvar()->get_name() == indvar) {
+                return loop;
+            }
+        }
+    }
+    return nullptr;
 }
 
 bool LoopAnalysis::is_monotonic(structured_control_flow::StructuredLoop* loop, AssumptionsAnalysis& assumptions_analysis) {
@@ -188,6 +192,26 @@ const std::vector<structured_control_flow::ControlFlowNode*> LoopAnalysis::outer
         }
     }
     return outermost_loops_;
+}
+
+const std::vector<structured_control_flow::ControlFlowNode*> LoopAnalysis::outermost_maps() const {
+    std::vector<structured_control_flow::ControlFlowNode*> outermost_maps_;
+    for (const auto& [loop, parent] : this->loop_tree_) {
+        if (dynamic_cast<structured_control_flow::Map*>(loop)) {
+            auto ancestor = parent;
+            while (true) {
+                if (ancestor == nullptr) {
+                    outermost_maps_.push_back(loop);
+                    break;
+                }
+                if (dynamic_cast<structured_control_flow::Map*>(ancestor)) {
+                    break;
+                }
+                ancestor = this->loop_tree_.at(ancestor);
+            }
+        }
+    }
+    return outermost_maps_;
 }
 
 std::vector<sdfg::structured_control_flow::ControlFlowNode*> LoopAnalysis::children(

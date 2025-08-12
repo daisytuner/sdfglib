@@ -1,5 +1,6 @@
 #include "sdfg/data_flow/tasklet.h"
 
+#include "sdfg/data_flow/data_flow_graph.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
@@ -11,44 +12,39 @@ Tasklet::Tasklet(
     const graph::Vertex vertex,
     DataFlowGraph& parent,
     const TaskletCode code,
-    const std::pair<std::string, sdfg::types::Scalar>& output,
-    const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
+    const std::string& output,
+    const std::vector<std::string>& inputs,
     const symbolic::Condition& condition
 )
-    : CodeNode(element_id, debug_info, vertex, parent), code_(code), output_(output), inputs_(inputs),
-      condition_(condition) {};
+    : CodeNode(element_id, debug_info, vertex, parent, {output}, inputs), code_(code), condition_(condition) {};
 
 void Tasklet::validate(const Function& function) const {
-    // TODO: Implement
+    auto& graph = this->get_parent();
+
+    std::unordered_map<std::string, const AccessNode*> input_names;
+    for (auto& iedge : graph.in_edges(*this)) {
+        auto& src = static_cast<const AccessNode&>(iedge.src());
+        if (input_names.find(src.data()) != input_names.end()) {
+            if (input_names.at(src.data()) != &src) {
+                throw InvalidSDFGException("Tasklet: Two access nodes with the same data as iedge: " + src.data());
+            }
+        } else {
+            input_names.insert({src.data(), &src});
+        }
+    }
 }
 
 TaskletCode Tasklet::code() const { return this->code_; };
 
-const std::vector<std::pair<std::string, sdfg::types::Scalar>>& Tasklet::inputs() const { return this->inputs_; };
-
-std::vector<std::pair<std::string, sdfg::types::Scalar>>& Tasklet::inputs() { return this->inputs_; };
-
-const std::pair<std::string, sdfg::types::Scalar>& Tasklet::output() const { return this->output_; };
-
-const std::pair<std::string, sdfg::types::Scalar>& Tasklet::input(size_t index) const { return this->inputs_[index]; };
-
-const sdfg::types::Scalar& Tasklet::input_type(const std::string& input) const {
-    return std::find_if(
-               this->inputs_.begin(),
-               this->inputs_.end(),
-               [&input](const std::pair<std::string, sdfg::types::Scalar>& p) { return p.first == input; }
-    )->second;
-};
+const std::string& Tasklet::output() const { return this->outputs_[0]; };
 
 bool Tasklet::needs_connector(size_t index) const {
     // Is non-constant, if starts with _in prefix
-    if (this->inputs_[index].first.compare(0, 3, "_in") == 0) {
+    if (this->inputs_[index].compare(0, 3, "_in") == 0) {
         return true;
     }
     return false;
 };
-
-const sdfg::types::Scalar& Tasklet::output_type() const { return this->output_.second; };
 
 const symbolic::Condition& Tasklet::condition() const { return this->condition_; };
 
@@ -59,7 +55,7 @@ bool Tasklet::is_conditional() const { return !symbolic::is_true(this->condition
 std::unique_ptr<DataFlowNode> Tasklet::clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
     const {
     return std::unique_ptr<Tasklet>(new Tasklet(
-        element_id, this->debug_info_, vertex, parent, this->code_, this->output_, this->inputs_, this->condition_
+        element_id, this->debug_info_, vertex, parent, this->code_, this->outputs_.at(0), this->inputs_, this->condition_
     ));
 };
 

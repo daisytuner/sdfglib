@@ -16,22 +16,14 @@ LibraryNode::LibraryNode(
     const bool side_effect,
     const ImplementationType& implementation_type
 )
-    : CodeNode(element_id, debug_info, vertex, parent), code_(code), outputs_(outputs), inputs_(inputs),
-      side_effect_(side_effect), implementation_type_(implementation_type) {}
+    : CodeNode(element_id, debug_info, vertex, parent, outputs, inputs), code_(code), side_effect_(side_effect),
+      implementation_type_(implementation_type) {}
 
 const LibraryNodeCode& LibraryNode::code() const { return this->code_; };
 
 const ImplementationType& LibraryNode::implementation_type() const { return this->implementation_type_; };
 
 ImplementationType& LibraryNode::implementation_type() { return this->implementation_type_; };
-
-const std::vector<std::string>& LibraryNode::inputs() const { return this->inputs_; };
-
-const std::vector<std::string>& LibraryNode::outputs() const { return this->outputs_; };
-
-const std::string& LibraryNode::input(size_t index) const { return this->inputs_[index]; };
-
-const std::string& LibraryNode::output(size_t index) const { return this->outputs_[index]; };
 
 bool LibraryNode::side_effect() const { return this->side_effect_; };
 

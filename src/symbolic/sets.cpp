@@ -1,6 +1,7 @@
 #include "sdfg/symbolic/sets.h"
 
 #include <isl/ctx.h>
+#include <isl/options.h>
 #include <isl/set.h>
 #include <isl/space.h>
 
@@ -24,6 +25,8 @@ bool is_subset(
     std::string map_2_str = expression_to_map_str(expr2_delinearized, assums2);
 
     isl_ctx* ctx = isl_ctx_alloc();
+    isl_options_set_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+
     isl_map* map_1 = isl_map_read_from_str(ctx, map_1_str.c_str());
     isl_map* map_2 = isl_map_read_from_str(ctx, map_2_str.c_str());
     if (!map_1 || !map_2) {
@@ -78,6 +81,8 @@ bool is_disjoint(
     std::string map_2_str = expression_to_map_str(expr2_delinearized, assums2);
 
     isl_ctx* ctx = isl_ctx_alloc();
+    isl_options_set_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+
     isl_map* map_1 = isl_map_read_from_str(ctx, map_1_str.c_str());
     isl_map* map_2 = isl_map_read_from_str(ctx, map_2_str.c_str());
     if (!map_1 || !map_2) {

@@ -12,7 +12,8 @@ CUDACodeGenerator::CUDACodeGenerator(
     bool capture_args_results,
     const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths
 )
-    : CodeGenerator(sdfg, instrumentation_plan, capture_args_results, output_and_header_paths) {
+    : CodeGenerator(sdfg, instrumentation_plan, capture_args_results, output_and_header_paths),
+      language_extension_(sdfg.externals()) {
     if (sdfg.type() != FunctionType_NV_GLOBAL) {
         throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
     }
@@ -150,12 +151,23 @@ void CUDACodeGenerator::dispatch_globals() {
     for (auto& container : sdfg_.externals()) {
         auto& type = sdfg_.type(container);
         if (type.storage_type() == types::StorageType_NV_Global) {
-            this->globals_stream_ << "extern " << language_extension_.declaration(container, type) << ";" << std::endl;
+            auto& base_type = dynamic_cast<const types::Pointer&>(type).pointee_type();
+            if (sdfg_.linkage_type(container) == LinkageType_External) {
+                this->globals_stream_ << "extern " << language_extension_.declaration(container, base_type) << ";"
+                                      << std::endl;
+            } else {
+                this->globals_stream_ << "static " << language_extension_.declaration(container, base_type);
+                if (!type.initializer().empty()) {
+                    this->globals_stream_ << " = " << type.initializer();
+                }
+                this->globals_stream_ << ";" << std::endl;
+            }
         }
         if (type.storage_type() == types::StorageType_NV_Constant) {
             assert(type.initializer().empty());
-            this->globals_stream_ << "__constant__ " << language_extension_.declaration(container, type, true) << ";"
-                                  << std::endl;
+            auto& base_type = dynamic_cast<const types::Pointer&>(type).pointee_type();
+            this->globals_stream_ << "__constant__ " << language_extension_.declaration(container, base_type, true)
+                                  << ";" << std::endl;
         }
     }
 };
@@ -167,19 +179,6 @@ void CUDACodeGenerator::dispatch_schedule() {
         if (type.storage_type() == types::StorageType_NV_Shared) {
             this->main_stream_ << language_extension_.declaration(container, sdfg_.type(container)) << ";" << std::endl;
         }
-    }
-
-    // Map external variables to internal variables
-    for (auto& container : sdfg_.containers()) {
-        if (!sdfg_.is_internal(container)) {
-            continue;
-        }
-
-        std::string external_name = container.substr(0, container.length() - external_suffix.length());
-        this->main_stream_ << language_extension_.declaration(container, sdfg_.type(container));
-        this->main_stream_ << " = "
-                           << "&" << external_name;
-        this->main_stream_ << ";" << std::endl;
     }
 
     // Declare transient containers

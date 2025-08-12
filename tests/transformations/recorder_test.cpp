@@ -50,10 +50,9 @@ protected:
         auto& block = builder_->add_block(body);
         auto& A_in = builder_->add_access(block, "A");
         auto& A_out = builder_->add_access(block, "A");
-        auto& tasklet =
-            builder_->add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc}, {{"_in", base_desc}});
-        builder_->add_memlet(block, A_in, "void", tasklet, "_in", {symbolic::symbol("i")});
-        builder_->add_memlet(block, tasklet, "_out", A_out, "void", {symbolic::symbol("i")});
+        auto& tasklet = builder_->add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+        builder_->add_computational_memlet(block, A_in, tasklet, "_in", {symbolic::symbol("i")});
+        builder_->add_computational_memlet(block, tasklet, "_out", A_out, {symbolic::symbol("i")});
 
         analysis_manager_ = std::make_unique<analysis::AnalysisManager>(builder_->subject());
     }
@@ -268,13 +267,12 @@ protected:
         auto& A_in = builder_->add_access(block, "A");
         auto& A_out = builder_->add_access(block, "A");
 
-        auto& tasklet = builder_->add_tasklet(
-            block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in", base_desc}, {"1", base_desc}}
-        );
+        auto& tasklet = builder_->add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in", "1"});
 
-        builder_->add_memlet(block, A_in, "void", tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
+        builder_->add_computational_memlet(block, A_in, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
 
-        builder_->add_memlet(block, tasklet, "_out", A_out, "void", {symbolic::symbol("i"), symbolic::symbol("j")});
+        builder_
+            ->add_computational_memlet(block, tasklet, "_out", A_out, {symbolic::symbol("i"), symbolic::symbol("j")});
 
         analysis_manager_ = std::make_unique<analysis::AnalysisManager>(builder_->subject());
     }
@@ -374,8 +372,6 @@ TEST_F(RecorderMultiTransformationTest, Apply_Transformations) {
     nlohmann::json j = nlohmann::json::array();
     file >> j;
     file.close();
-
-    std::cout << j.dump(4) << std::endl;
 
     EXPECT_TRUE(j.is_array());
     EXPECT_EQ(j.size(), 3);
@@ -494,9 +490,7 @@ protected:
         auto& A_in = builder_->add_access(block, "A");
         auto& A_out = builder_->add_access(block, "A");
 
-        auto& tasklet = builder_->add_tasklet(
-            block, data_flow::TaskletCode::add, {"_out", base_desc}, {{"_in", base_desc}, {"1", base_desc}}
-        );
+        auto& tasklet = builder_->add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in", "1"});
 
         builder_->add_computational_memlet(block, A_in, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
 

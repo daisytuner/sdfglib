@@ -88,6 +88,14 @@ const std::vector<std::string>& Function::arguments() const { return this->argum
 
 const std::vector<std::string>& Function::externals() const { return this->externals_; };
 
+LinkageType Function::linkage_type(const std::string& name) const {
+    auto entry = this->externals_linkage_types_.find(name);
+    if (entry == this->externals_linkage_types_.end()) {
+        throw InvalidSDFGException("Linkage type: " + name + " not found");
+    }
+    return entry->second;
+};
+
 bool Function::is_argument(const std::string& name) const {
     return std::find(this->arguments_.begin(), this->arguments_.end(), name) != this->arguments_.end();
 };
@@ -96,13 +104,8 @@ bool Function::is_external(const std::string& name) const {
     return std::find(this->externals_.begin(), this->externals_.end(), name) != this->externals_.end();
 };
 
-bool Function::is_internal(const std::string& name) const {
-    return helpers::endswith(name, external_suffix) &&
-           is_external(name.substr(0, name.length() - external_suffix.length()));
-};
-
 bool Function::is_transient(const std::string& name) const {
-    return !this->is_argument(name) && !this->is_external(name) && !this->is_internal(name);
+    return !this->is_argument(name) && !this->is_external(name);
 };
 
 symbolic::SymbolSet Function::parameters() const {

@@ -89,6 +89,9 @@ TEST(CPPLanguageExtensionTest, Declaration_Pointer) {
     codegen::CPPLanguageExtension generator;
     auto result = generator.declaration("var", types::Pointer(types::Scalar(types::PrimitiveType::Int32)));
     EXPECT_EQ(result, "int *var");
+
+    result = generator.declaration("var", types::Pointer());
+    EXPECT_EQ(result, "void* var");
 }
 
 TEST(CPPLanguageExtensionTest, Declaration_Array) {

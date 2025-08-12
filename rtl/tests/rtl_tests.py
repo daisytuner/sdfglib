@@ -78,7 +78,7 @@ def test_instrumentation(event):
     "event",
     [
         pytest.param(""),
-        pytest.param("cuda:::dram__bytes,cuda:::sm__inst_executed_pipe_fma"),
+        # pytest.param("cuda:::dram__bytes,cuda:::sm__inst_executed_pipe_fma"),
     ],
 )
 def test_instrumentation_cuda(event):

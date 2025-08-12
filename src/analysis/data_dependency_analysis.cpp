@@ -27,6 +27,7 @@ DataDependencyAnalysis::DataDependencyAnalysis(StructuredSDFG& sdfg, structured_
 
 void DataDependencyAnalysis::run(analysis::AnalysisManager& analysis_manager) {
     results_.clear();
+    loop_carried_dependencies_.clear();
 
     std::unordered_set<User*> undefined;
     std::unordered_map<User*, std::unordered_set<User*>> open_definitions;
@@ -76,6 +77,7 @@ void DataDependencyAnalysis::visit_block(
                     auto current_user = users.get_user(access_node->data(), access_node, use);
 
                     if (use == Use::WRITE) {
+                        // Close all definitions that we supersede
                         std::unordered_map<User*, std::unordered_set<User*>> to_close;
                         for (auto& user : open_definitions) {
                             if (supersedes(*user.first, *current_user, assumptions_analysis)) {
@@ -86,6 +88,8 @@ void DataDependencyAnalysis::visit_block(
                             open_definitions.erase(user.first);
                             closed_definitions.insert(user);
                         }
+
+                        // Add new definition
                         open_definitions.insert({current_user, {}});
                     }
                 }
@@ -102,6 +106,7 @@ void DataDependencyAnalysis::visit_block(
                     auto current_user = users.get_user(access_node->data(), access_node, use);
 
                     if (use == Use::READ) {
+                        // Find all definitions that we read from
                         bool found = false;
                         for (auto& user : open_definitions) {
                             if (intersects(*user.first, *current_user, assumptions_analysis)) {
@@ -111,6 +116,16 @@ void DataDependencyAnalysis::visit_block(
                         }
                         if (!found) {
                             undefined.insert(current_user);
+                        } else {
+                            bool supersedes_all = true;
+                            for (auto& user : open_definitions) {
+                                if (user.first->container() == current_user->container()) {
+                                    supersedes_all &= supersedes(*user.first, *current_user, assumptions_analysis);
+                                }
+                            }
+                            if (!supersedes_all) {
+                                undefined.insert(current_user);
+                            }
                         }
                     }
                 }
@@ -121,14 +136,21 @@ void DataDependencyAnalysis::visit_block(
                 for (auto& atom : symbolic::atoms(condition)) {
                     auto current_user = users.get_user(atom->get_name(), tasklet, Use::READ);
                     {
+                        // Find all definitions that we read from
                         bool found = false;
+                        bool superseded_all = false;
                         for (auto& user : open_definitions) {
                             if (intersects(*user.first, *current_user, assumptions_analysis)) {
                                 user.second.insert(current_user);
-                                found = true;
+                                if (!found) {
+                                    found = true;
+                                    superseded_all = true;
+                                }
+
+                                superseded_all &= supersedes(*current_user, *user.first, assumptions_analysis);
                             }
                         }
-                        if (!found) {
+                        if (!superseded_all) {
                             undefined.insert(current_user);
                         }
                     }
@@ -138,14 +160,20 @@ void DataDependencyAnalysis::visit_block(
             for (auto& symbol : library_node->symbols()) {
                 auto current_user = users.get_user(symbol->get_name(), library_node, Use::READ);
                 {
+                    // Find all definitions that we read from
                     bool found = false;
+                    bool superseded_all = false;
                     for (auto& user : open_definitions) {
                         if (intersects(*user.first, *current_user, assumptions_analysis)) {
                             user.second.insert(current_user);
-                            found = true;
+                            if (!found) {
+                                found = true;
+                                superseded_all = true;
+                            }
+                            superseded_all &= supersedes(*current_user, *user.first, assumptions_analysis);
                         }
                     }
-                    if (!found) {
+                    if (!superseded_all) {
                         undefined.insert(current_user);
                     }
                 }
@@ -163,14 +191,20 @@ void DataDependencyAnalysis::visit_block(
                 auto current_user = users.get_user(atom, &oedge, Use::READ);
 
                 {
+                    // Find all definitions that we read from
                     bool found = false;
+                    bool superseded_all = false;
                     for (auto& user : open_definitions) {
                         if (intersects(*user.first, *current_user, assumptions_analysis)) {
                             user.second.insert(current_user);
-                            found = true;
+                            if (!found) {
+                                found = true;
+                                superseded_all = true;
+                            }
+                            superseded_all &= supersedes(*current_user, *user.first, assumptions_analysis);
                         }
                     }
-                    if (!found) {
+                    if (!superseded_all) {
                         undefined.insert(current_user);
                     }
                 }
@@ -293,6 +327,16 @@ void DataDependencyAnalysis::visit_for(
         }
         if (!found) {
             undefined.insert(open_read);
+        } else {
+            bool subset_all = true;
+            for (auto& entry : open_definitions) {
+                if (entry.first->container() == open_read->container()) {
+                    subset_all &= supersedes_restrictive(*open_read, *entry.first, assumptions_analysis);
+                }
+            }
+            if (!subset_all) {
+                undefined.insert(open_read);
+            }
         }
     }
 
@@ -317,7 +361,7 @@ void DataDependencyAnalysis::visit_for(
     bool is_monotonic = LoopAnalysis::is_monotonic(&for_loop, assumptions_analysis);
     if (is_monotonic) {
         // Case: Can analyze
-        this->loop_carried_dependencies_.insert({&for_loop, {}});
+        assert(this->loop_carried_dependencies_.insert({&for_loop, {}}).second);
         auto& dependencies = this->loop_carried_dependencies_.at(&for_loop);
 
         // We can focus on written containers
@@ -326,9 +370,7 @@ void DataDependencyAnalysis::visit_for(
         for (auto& read : undefined_for) {
             for (auto& write : open_definitions_for) {
                 if (loop_depends(*write.first, *read, assumptions_analysis, for_loop)) {
-                    if (dependencies.find(read->container()) == dependencies.end()) {
-                        dependencies.insert({read->container(), LOOP_CARRIED_DEPENDENCY_READ_WRITE});
-                    }
+                    dependencies[read->container()] = LOOP_CARRIED_DEPENDENCY_READ_WRITE;
                     write.second.insert(read);
                 }
             }
@@ -348,7 +390,7 @@ void DataDependencyAnalysis::visit_for(
         }
     } else {
         // Case: Cannot analyze
-        this->loop_carried_dependencies_.insert({&for_loop, {}});
+        assert(this->loop_carried_dependencies_.insert({&for_loop, {}}).second);
         auto& dependencies = this->loop_carried_dependencies_.at(&for_loop);
 
         // Over-Approximation:
@@ -692,6 +734,41 @@ bool DataDependencyAnalysis::supersedes(User& previous, User& current, analysis:
         bool found = false;
         for (auto& current_subset : current_subsets) {
             if (symbolic::is_subset(previous_subset, current_subset, previous_assumptions, current_assumptions)) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool DataDependencyAnalysis::
+    supersedes_restrictive(User& previous, User& current, analysis::AssumptionsAnalysis& assumptions_analysis) {
+    if (previous.container() != current.container()) {
+        return false;
+    }
+    // Shortcut for scalars
+    auto& type = this->sdfg_.type(previous.container());
+    if (dynamic_cast<const types::Scalar*>(&type)) {
+        return true;
+    }
+
+    auto& previous_subsets = previous.subsets();
+    auto& current_subsets = current.subsets();
+    auto previous_scope = Users::scope(&previous);
+    auto previous_assumptions = assumptions_analysis.get(*previous_scope, true);
+    auto current_scope = Users::scope(&current);
+    auto current_assumptions = assumptions_analysis.get(*current_scope, true);
+
+    // Check if previous subset is subset of any current subset
+    for (auto& previous_subset : previous_subsets) {
+        bool found = false;
+        for (auto& current_subset : current_subsets) {
+            if (symbolic::is_subset(previous_subset, current_subset, previous_assumptions, previous_assumptions)) {
                 found = true;
                 break;
             }

@@ -102,7 +102,9 @@ struct MyStructA member_0;
 TEST(CPPCodeGeneratorTest, DispatchGlobals) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
-    builder.add_container("a", types::Scalar(types::PrimitiveType::Int32), false, true);
+    sdfg::types::Scalar base_type(sdfg::types::PrimitiveType::Int32);
+    sdfg::types::Pointer ptr_type(base_type);
+    builder.add_container("a", ptr_type, false, true);
 
     auto sdfg = builder.move();
 
