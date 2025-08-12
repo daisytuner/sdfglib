@@ -4,7 +4,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(daisy_rtl SHARED
+add_library(daisy_rtl STATIC
     src/capture.cpp
     src/instrumentation.cpp
 )
@@ -24,10 +24,10 @@ set_target_properties(daisy_rtl PROPERTIES
 )
 
 install(TARGETS daisy_rtl
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT runtime
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT runtime
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT runtime
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT runtime
+    LIBRARY DESTINATION lib/docc-${DOCC_VERSION}/lib COMPONENT runtime
+    ARCHIVE DESTINATION lib/docc-${DOCC_VERSION}/lib COMPONENT runtime
+    PUBLIC_HEADER DESTINATION lib/docc-${DOCC_VERSION}/include COMPONENT runtime
+    INCLUDES DESTINATION lib/docc-${DOCC_VERSION}/include COMPONENT runtime
 )
 
-install(DIRECTORY include/daisy_rtl DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT runtime)
+install(DIRECTORY include/daisy_rtl DESTINATION lib/docc-${DOCC_VERSION}/include COMPONENT runtime)
