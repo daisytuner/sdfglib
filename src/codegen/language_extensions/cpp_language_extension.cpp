@@ -702,7 +702,7 @@ void CPPSymbolicPrinter::_print_pow(
     } else if (SymEngine::eq(*b, *SymEngine::rational(1, 3))) {
         o << "cbrt(" << apply(a) << ")";
     } else if (SymEngine::eq(*b, *SymEngine::integer(2))) {
-        o << apply(a) + " * " + apply(a);
+        o << "((" + apply(a) + ") * (" + apply(a) + "))";
     } else {
         o << "pow(" << apply(a) << ", " << apply(b) << ")";
     }
