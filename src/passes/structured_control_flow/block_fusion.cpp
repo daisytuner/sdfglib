@@ -13,6 +13,7 @@ bool BlockFusion::can_be_applied(
     control_flow::Assignments& second_assignments
 ) {
     // Criterion: No side-effect nodes
+    std::unordered_set<std::string> first_write_symbols;
     for (auto& node : first_graph.nodes()) {
         if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
             if (lib_node->side_effect()) {
@@ -22,8 +23,16 @@ bool BlockFusion::can_be_applied(
             if (tasklet->is_conditional()) {
                 return false;
             }
+        } else if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
+            if (first_graph.in_degree(*access_node) > 0) {
+                auto& type = builder_.subject().type(access_node->data());
+                if (type.is_symbol()) {
+                    first_write_symbols.insert(access_node->data());
+                }
+            }
         }
     }
+    std::unordered_set<std::string> second_write_symbols;
     for (auto& node : second_graph.nodes()) {
         if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
             if (lib_node->side_effect()) {
@@ -33,9 +42,37 @@ bool BlockFusion::can_be_applied(
             if (tasklet->is_conditional()) {
                 return false;
             }
+        } else if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
+            if (second_graph.in_degree(*access_node) > 0) {
+                auto& type = builder_.subject().type(access_node->data());
+                if (type.is_symbol()) {
+                    second_write_symbols.insert(access_node->data());
+                }
+            }
         }
     }
-    // Criterion: No data races cause by transition
+
+    // Criterion: Subsets may not use written symbols
+    for (auto& edge : first_graph.edges()) {
+        for (auto& dim : edge.begin_subset()) {
+            for (auto& sym : symbolic::atoms(dim)) {
+                if (second_write_symbols.find(sym->get_name()) != second_write_symbols.end()) {
+                    return false;
+                }
+            }
+        }
+    }
+    for (auto& edge : second_graph.edges()) {
+        for (auto& dim : edge.begin_subset()) {
+            for (auto& sym : symbolic::atoms(dim)) {
+                if (first_write_symbols.find(sym->get_name()) != first_write_symbols.end()) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    // Criterion: Transition must be empty
     if (!first_assignments.empty()) {
         return false;
     }
@@ -129,11 +166,13 @@ void BlockFusion::apply(
                 node_mapping[access_node] = connectors[access_node];
             } else {
                 // Add new
-                node_mapping[access_node] = &builder_.add_access(first_block, access_node->data());
+                node_mapping[access_node] =
+                    &builder_.add_access(first_block, access_node->data(), access_node->debug_info());
             }
         } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(&node)) {
-            node_mapping[tasklet] =
-                &builder_.add_tasklet(first_block, tasklet->code(), tasklet->output(), tasklet->inputs());
+            node_mapping[tasklet] = &builder_.add_tasklet(
+                first_block, tasklet->code(), tasklet->output(), tasklet->inputs(), tasklet->debug_info()
+            );
         } else if (auto library_node = dynamic_cast<data_flow::LibraryNode*>(&node)) {
             node_mapping[library_node] = &builder_.copy_library_node(first_block, *library_node);
         } else {
@@ -160,7 +199,7 @@ void BlockFusion::apply(
     }
 };
 
-bool BlockFusion::accept(structured_control_flow::Sequence& parent, structured_control_flow::Sequence& node) {
+bool BlockFusion::accept(structured_control_flow::Sequence& node) {
     bool applied = false;
 
     if (node.size() == 0) {
@@ -175,14 +214,14 @@ bool BlockFusion::accept(structured_control_flow::Sequence& parent, structured_c
             i++;
             continue;
         }
-        auto current_block = dynamic_cast<structured_control_flow::Block*>(&current_entry.first);
+        auto current_block = static_cast<structured_control_flow::Block*>(&current_entry.first);
 
         auto next_entry = node.at(i + 1);
         if (dynamic_cast<structured_control_flow::Block*>(&next_entry.first) == nullptr) {
             i++;
             continue;
         }
-        auto next_block = dynamic_cast<structured_control_flow::Block*>(&next_entry.first);
+        auto next_block = static_cast<structured_control_flow::Block*>(&next_entry.first);
 
         if (this->can_be_applied(
                 current_block->dataflow(),
@@ -193,9 +232,11 @@ bool BlockFusion::accept(structured_control_flow::Sequence& parent, structured_c
             this->apply(*current_block, current_entry.second.assignments(), *next_block, next_entry.second.assignments());
             builder_.remove_child(node, i + 1);
             applied = true;
-        } else {
-            i++;
+
+            continue;
         }
+
+        i++;
     }
 
     return applied;

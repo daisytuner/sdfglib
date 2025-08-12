@@ -125,7 +125,6 @@ const std::vector<std::pair<symbolic::Expression, symbolic::Expression>>& MemAcc
 
 void MemAccessRangesBuilder::process_workItem(WorkItem* item) {
     const auto* varName = item->var_name;
-    const auto& type = sdfg_.type(*varName);
 
     const auto& reads = users_.reads(*varName);
     process_direct_users(item, false, reads);
