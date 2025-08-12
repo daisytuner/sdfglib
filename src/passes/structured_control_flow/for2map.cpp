@@ -10,14 +10,12 @@
 namespace sdfg {
 namespace passes {
 
-For2Map::For2Map(builder::StructuredSDFGBuilder& builder,
-                 analysis::AnalysisManager& analysis_manager)
+For2Map::For2Map(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
     : visitor::StructuredSDFGVisitor(builder, analysis_manager) {
 
       };
 
-bool For2Map::can_be_applied(structured_control_flow::For& for_stmt,
-                             analysis::AnalysisManager& analysis_manager) {
+bool For2Map::can_be_applied(structured_control_flow::For& for_stmt, analysis::AnalysisManager& analysis_manager) {
     // Criterion: loop must be data-parallel w.r.t containers
     auto& data_dependency_analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto dependencies = data_dependency_analysis.dependencies(for_stmt);
@@ -47,20 +45,19 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt,
     return true;
 }
 
-void For2Map::apply(structured_control_flow::For& for_stmt, builder::StructuredSDFGBuilder& builder,
-                    analysis::AnalysisManager& analysis_manager) {
+void For2Map::apply(
+    structured_control_flow::For& for_stmt,
+    builder::StructuredSDFGBuilder& builder,
+    analysis::AnalysisManager& analysis_manager
+) {
     auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
-    auto parent =
-        static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&for_stmt));
+    auto parent = static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&for_stmt));
 
     // convert for to map
     builder.convert_for(*parent, for_stmt);
-
-    analysis_manager.invalidate_all();
 }
 
-bool For2Map::accept(structured_control_flow::Sequence& parent,
-                     structured_control_flow::For& node) {
+bool For2Map::accept(structured_control_flow::For& node) {
     if (!this->can_be_applied(node, analysis_manager_)) {
         return false;
     }
@@ -69,5 +66,5 @@ bool For2Map::accept(structured_control_flow::Sequence& parent,
     return true;
 }
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg
