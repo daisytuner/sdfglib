@@ -19,14 +19,9 @@ TEST(WorkDepthTest, BlockSingleTasklet) {
 
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
-    auto& tasklet = builder.add_tasklet(
-        block,
-        data_flow::TaskletCode::assign,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"0", types::PrimitiveType::Int32}}
-    );
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
     auto& A = builder.add_access(block, "A");
-    builder.add_memlet(block, tasklet, "_out", A, "void", {});
+    builder.add_computational_memlet(block, tasklet, "_out", A, {});
 
     auto sdfg = builder.move();
 
@@ -52,23 +47,13 @@ TEST(WorkDepthTest, BlockMultipleTasklets) {
 
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
-    auto& tasklet1 = builder.add_tasklet(
-        block,
-        data_flow::TaskletCode::assign,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"0", types::PrimitiveType::Int32}}
-    );
-    auto& tasklet2 = builder.add_tasklet(
-        block,
-        data_flow::TaskletCode::add,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"_in", types::PrimitiveType::Int32}, {"1", types::PrimitiveType::Int32}}
-    );
+    auto& tasklet1 = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in", "1"});
     auto& A = builder.add_access(block, "A");
     auto& B = builder.add_access(block, "B");
-    builder.add_memlet(block, tasklet1, "_out", A, "void", {});
-    builder.add_memlet(block, A, "void", tasklet2, "_in", {});
-    builder.add_memlet(block, tasklet2, "_out", B, "void", {});
+    builder.add_computational_memlet(block, tasklet1, "_out", A, {});
+    builder.add_computational_memlet(block, A, tasklet2, "_in", {});
+    builder.add_computational_memlet(block, tasklet2, "_out", B, {});
 
     auto sdfg = builder.move();
 
@@ -94,26 +79,16 @@ TEST(WorkDepthAnalysis, SequenceMultipleBlocks) {
 
     auto& root = builder.subject().root();
     auto& block1 = builder.add_block(root);
-    auto& tasklet1 = builder.add_tasklet(
-        block1,
-        data_flow::TaskletCode::assign,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"0", types::PrimitiveType::Int32}}
-    );
+    auto& tasklet1 = builder.add_tasklet(block1, data_flow::TaskletCode::assign, "_out", {"0"});
     auto& A = builder.add_access(block1, "A");
-    builder.add_memlet(block1, tasklet1, "_out", A, "void", {});
+    builder.add_computational_memlet(block1, tasklet1, "_out", A, {});
 
     auto& block2 = builder.add_block(root);
-    auto& tasklet2 = builder.add_tasklet(
-        block2,
-        data_flow::TaskletCode::add,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"_in", types::PrimitiveType::Int32}, {"1", types::PrimitiveType::Int32}}
-    );
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::add, "_out", {"_in", "1"});
     auto& A_in = builder.add_access(block2, "A");
     auto& B = builder.add_access(block2, "B");
-    builder.add_memlet(block2, A_in, "void", tasklet2, "_in", {});
-    builder.add_memlet(block2, tasklet2, "_out", B, "void", {});
+    builder.add_computational_memlet(block2, A_in, tasklet2, "_in", {});
+    builder.add_computational_memlet(block2, tasklet2, "_out", B, {});
 
     auto sdfg = builder.move();
 
@@ -145,14 +120,9 @@ TEST(WorkDepthAnalysis, ForLoop) {
         symbolic::add(symbolic::symbol("i"), symbolic::one())
     );
     auto& block = builder.add_block(for_loop.root());
-    auto& tasklet = builder.add_tasklet(
-        block,
-        data_flow::TaskletCode::assign,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"0", types::PrimitiveType::Int32}}
-    );
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
     auto& A = builder.add_access(block, "A");
-    builder.add_memlet(block, tasklet, "_out", A, "void", {});
+    builder.add_computational_memlet(block, tasklet, "_out", A, {});
 
     auto sdfg = builder.move();
 
@@ -185,14 +155,9 @@ TEST(WorkDepthAnalysis, Map) {
         ScheduleType_Sequential
     );
     auto& block = builder.add_block(map_node.root());
-    auto& tasklet = builder.add_tasklet(
-        block,
-        data_flow::TaskletCode::assign,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"0", types::PrimitiveType::Int32}}
-    );
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
     auto& A = builder.add_access(block, "A");
-    builder.add_memlet(block, tasklet, "_out", A, "void", {});
+    builder.add_computational_memlet(block, tasklet, "_out", A, {});
 
     auto sdfg = builder.move();
 
@@ -220,23 +185,13 @@ TEST(WorkDepthAnalysis, WhileLoop) {
     auto& root = builder.subject().root();
     auto& while_loop = builder.add_while(root);
     auto& block = builder.add_block(while_loop.root());
-    auto& tasklet1 = builder.add_tasklet(
-        block,
-        data_flow::TaskletCode::assign,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"0", types::PrimitiveType::Int32}}
-    );
-    auto& tasklet2 = builder.add_tasklet(
-        block,
-        data_flow::TaskletCode::add,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"_in", types::PrimitiveType::Int32}, {"1", types::PrimitiveType::Int32}}
-    );
+    auto& tasklet1 = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in", "1"});
     auto& A = builder.add_access(block, "A");
     auto& B = builder.add_access(block, "B");
-    builder.add_memlet(block, tasklet1, "_out", A, "void", {});
-    builder.add_memlet(block, A, "void", tasklet2, "_in", {});
-    builder.add_memlet(block, tasklet2, "_out", B, "void", {});
+    builder.add_computational_memlet(block, tasklet1, "_out", A, {});
+    builder.add_computational_memlet(block, A, tasklet2, "_in", {});
+    builder.add_computational_memlet(block, tasklet2, "_out", B, {});
 
     auto sdfg = builder.move();
 
@@ -269,37 +224,22 @@ TEST(WorkDepthAnalysis, IfElse) {
     auto& if_else = builder.add_if_else(root);
     auto& case_1 = builder.add_case(if_else, symbolic::Lt(symbolic::one(), symbolic::integer(2)));
     auto& block1 = builder.add_block(case_1);
-    auto& tasklet1 = builder.add_tasklet(
-        block1,
-        data_flow::TaskletCode::assign,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"0", types::PrimitiveType::Int32}}
-    );
-    auto& tasklet1_2 = builder.add_tasklet(
-        block1,
-        data_flow::TaskletCode::add,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"_in", types::PrimitiveType::Int32}, {"1", types::PrimitiveType::Int32}}
-    );
+    auto& tasklet1 = builder.add_tasklet(block1, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& tasklet1_2 = builder.add_tasklet(block1, data_flow::TaskletCode::add, "_out", {"_in", "1"});
     auto& A = builder.add_access(block1, "A");
     auto& A_out = builder.add_access(block1, "A");
 
-    builder.add_memlet(block1, tasklet1, "_out", A, "void", {});
-    builder.add_memlet(block1, A, "void", tasklet1_2, "_in", {});
-    builder.add_memlet(block1, tasklet1_2, "_out", A_out, "void", {});
+    builder.add_computational_memlet(block1, tasklet1, "_out", A, {});
+    builder.add_computational_memlet(block1, A, tasklet1_2, "_in", {});
+    builder.add_computational_memlet(block1, tasklet1_2, "_out", A_out, {});
 
     auto& case_2 = builder.add_case(if_else, symbolic::Lt(symbolic::one(), symbolic::integer(3)));
     auto& block2 = builder.add_block(case_2);
-    auto& tasklet2 = builder.add_tasklet(
-        block2,
-        data_flow::TaskletCode::add,
-        {"_out", types::Scalar(types::PrimitiveType::Int32)},
-        {{"_in", types::PrimitiveType::Int32}, {"1", types::PrimitiveType::Int32}}
-    );
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::add, "_out", {"_in", "1"});
     auto& A_in_2 = builder.add_access(block2, "A");
     auto& B = builder.add_access(block2, "B");
-    builder.add_memlet(block2, A_in_2, "void", tasklet2, "_in", {});
-    builder.add_memlet(block2, tasklet2, "_out", B, "void", {});
+    builder.add_computational_memlet(block2, A_in_2, tasklet2, "_in", {});
+    builder.add_computational_memlet(block2, tasklet2, "_out", B, {});
 
     auto sdfg = builder.move();
 

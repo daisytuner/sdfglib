@@ -374,7 +374,7 @@ TEST(DOKLoadTest, StaticLoad) {
     auto& block = builder.add_block(map_node.root());
     auto& access_A = builder.add_access(block, "A");
     auto& access_B = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", sc_type}, {{"_in", sc_type}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
     builder.add_computational_memlet(block, access_A, tasklet, "_in", {symbolic::symbol("i")});
     builder.add_computational_memlet(block, tasklet, "_out", access_B, {symbolic::symbol("i")});
@@ -426,10 +426,10 @@ TEST(DOKLoadTest, BoundLoad) {
     auto& block = builder.add_block(map_node_inner.root());
     auto& access_A = builder.add_access(block, "A");
     auto& access_B = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", sc_type}, {{"_in", sc_type}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
-    builder.add_memlet(block, access_A, "void", tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
-    builder.add_memlet(block, tasklet, "_out", access_B, "void", {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_computational_memlet(block, access_A, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_computational_memlet(block, tasklet, "_out", access_B, {symbolic::symbol("i"), symbolic::symbol("j")});
 
     auto& sdfg = builder.subject();
 
@@ -467,10 +467,9 @@ TEST(DOKLoadTest, UnboundLoad) {
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 
     auto& block_init = builder.add_block(map_node.root());
-    auto& tasklet_init =
-        builder.add_tasklet(block_init, data_flow::TaskletCode::assign, {"_out", sc_type}, {{"0", sc_type}});
+    auto& tasklet_init = builder.add_tasklet(block_init, data_flow::TaskletCode::assign, "_out", {"0"});
     auto& access_j = builder.add_access(block_init, "j");
-    builder.add_memlet(block_init, tasklet_init, "_out", access_j, "void", {});
+    builder.add_computational_memlet(block_init, tasklet_init, "_out", access_j, {});
 
     auto& while_node = builder.add_while(map_node.root());
 
@@ -481,19 +480,17 @@ TEST(DOKLoadTest, UnboundLoad) {
     auto& block = builder.add_block(while_node.root());
     auto& access_A = builder.add_access(block, "A");
     auto& access_B = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", sc_type}, {{"_in", sc_type}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
-    builder.add_memlet(block, access_A, "void", tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
-    builder.add_memlet(block, tasklet, "_out", access_B, "void", {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_computational_memlet(block, access_A, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_computational_memlet(block, tasklet, "_out", access_B, {symbolic::symbol("i"), symbolic::symbol("j")});
 
     auto& update_read = builder.add_access(block, "j");
     auto& update_write = builder.add_access(block, "j");
-    auto& update_tasklet =
-        builder
-            .add_tasklet(block, data_flow::TaskletCode::add, {"_out", desc_type}, {{"_in", desc_type}, {"1", desc_type}});
+    auto& update_tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in", "1"});
 
-    builder.add_memlet(block, update_read, "void", update_tasklet, "_in", {});
-    builder.add_memlet(block, update_tasklet, "_out", update_write, "void", {});
+    builder.add_computational_memlet(block, update_read, update_tasklet, "_in", {});
+    builder.add_computational_memlet(block, update_tasklet, "_out", update_write, {});
 
     std::string while_symbol_name = "while_" + std::to_string(while_node.element_id());
 
@@ -535,10 +532,10 @@ TEST(DOKBalanceTest, StaticBalance) {
     auto& block = builder.add_block(map_node.root());
     auto& access_A = builder.add_access(block, "A");
     auto& access_B = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", sc_type}, {{"_in", sc_type}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
-    builder.add_memlet(block, access_A, "void", tasklet, "_in", {symbolic::symbol("i")});
-    builder.add_memlet(block, tasklet, "_out", access_B, "void", {symbolic::symbol("i")});
+    builder.add_computational_memlet(block, access_A, tasklet, "_in", {symbolic::symbol("i")});
+    builder.add_computational_memlet(block, tasklet, "_out", access_B, {symbolic::symbol("i")});
 
     auto& sdfg = builder.subject();
 
@@ -586,10 +583,10 @@ TEST(DOKBalanceTest, BoundBalance) {
     auto& block = builder.add_block(map_node_inner.root());
     auto& access_A = builder.add_access(block, "A");
     auto& access_B = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", sc_type}, {{"_in", sc_type}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
-    builder.add_memlet(block, access_A, "void", tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
-    builder.add_memlet(block, tasklet, "_out", access_B, "void", {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_computational_memlet(block, access_A, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_computational_memlet(block, tasklet, "_out", access_B, {symbolic::symbol("i"), symbolic::symbol("j")});
 
     auto& sdfg = builder.subject();
 
@@ -628,10 +625,9 @@ TEST(DOKBalanceTest, UnboundBalance) {
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 
     auto& block_init = builder.add_block(map_node.root());
-    auto& tasklet_init =
-        builder.add_tasklet(block_init, data_flow::TaskletCode::assign, {"_out", sc_type}, {{"0", sc_type}});
+    auto& tasklet_init = builder.add_tasklet(block_init, data_flow::TaskletCode::assign, "_out", {"0"});
     auto& access_j = builder.add_access(block_init, "j");
-    builder.add_memlet(block_init, tasklet_init, "_out", access_j, "void", {});
+    builder.add_computational_memlet(block_init, tasklet_init, "_out", access_j, {});
 
     auto& while_node = builder.add_while(map_node.root());
 
@@ -644,19 +640,17 @@ TEST(DOKBalanceTest, UnboundBalance) {
     auto& block = builder.add_block(while_node.root());
     auto& access_A = builder.add_access(block, "A");
     auto& access_B = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", sc_type}, {{"_in", sc_type}});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
-    builder.add_memlet(block, access_A, "void", tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
-    builder.add_memlet(block, tasklet, "_out", access_B, "void", {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_computational_memlet(block, access_A, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
+    builder.add_computational_memlet(block, tasklet, "_out", access_B, {symbolic::symbol("i"), symbolic::symbol("j")});
 
     auto& update_read = builder.add_access(block, "j");
     auto& update_write = builder.add_access(block, "j");
-    auto& update_tasklet =
-        builder
-            .add_tasklet(block, data_flow::TaskletCode::add, {"_out", desc_type}, {{"_in", desc_type}, {"1", desc_type}});
+    auto& update_tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in", "1"});
 
-    builder.add_memlet(block, update_read, "void", update_tasklet, "_in", {});
-    builder.add_memlet(block, update_tasklet, "_out", update_write, "void", {});
+    builder.add_computational_memlet(block, update_read, update_tasklet, "_in", {});
+    builder.add_computational_memlet(block, update_tasklet, "_out", update_write, {});
 
     std::string while_symbol_name = "while_" + std::to_string(while_node.element_id());
     std::string if_else_symbol_name = "if_else_" + std::to_string(if_else_node.element_id());
