@@ -15,6 +15,7 @@
 #include "sdfg/analysis/work_depth_analysis.h"
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/data_flow_node.h"
+#include "sdfg/data_flow/memlet.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/helpers/helpers.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
@@ -280,10 +281,12 @@ std::unordered_set<User*> dynamic_writes(
                 }
             } else if (auto memlet = dynamic_cast<data_flow::Memlet*>(element)) {
                 if (auto access_node = dynamic_cast<data_flow::AccessNode*>(&memlet->dst())) {
-                    auto write = users.get_user(access_node->data(), access_node, Use::WRITE);
-                    if (writes.find(write) == writes.end()) {
-                        writes.insert(write);
-                        updated = true;
+                    if (memlet->type() != data_flow::MemletType::Reference) {
+                        auto write = users.get_user(access_node->data(), access_node, Use::WRITE);
+                        if (writes.find(write) == writes.end()) {
+                            writes.insert(write);
+                            updated = true;
+                        }
                     }
                 } else {
                     auto dependent_writes =
