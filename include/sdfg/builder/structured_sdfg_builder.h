@@ -244,6 +244,7 @@ public:
 
     void clear_sequence(Sequence& parent);
 
+    [[deprecated("use ScopeAnalysis instead")]]
     Sequence& parent(const ControlFlowNode& node);
 
     /***** Section: Dataflow Graph *****/
