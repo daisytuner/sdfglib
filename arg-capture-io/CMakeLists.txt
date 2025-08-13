@@ -13,7 +13,7 @@ add_library(sdfglib::arg_capture_io ALIAS arg_capture_io)
 
 target_include_directories(arg_capture_io PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    $<INSTALL_INTERFACE:${PARENT_PROJECT_INSTALL_PREFIX}include>
 )
 
 # Coverage option
@@ -39,13 +39,13 @@ set_target_properties(arg_capture_io PROPERTIES
 
 install(TARGETS arg_capture_io
     EXPORT sdfglibTargets
-    LIBRARY DESTINATION lib/docc-${DOCC_VERSION}/lib COMPONENT runtime
-    ARCHIVE DESTINATION lib/docc-${DOCC_VERSION}/lib COMPONENT runtime
-    PUBLIC_HEADER DESTINATION lib/docc-${DOCC_VERSION}/include COMPONENT runtime
-    INCLUDES DESTINATION lib/docc-${DOCC_VERSION}/include COMPONENT runtime
+    LIBRARY DESTINATION ${PARENT_PROJECT_INSTALL_PREFIX}lib COMPONENT runtime
+    ARCHIVE DESTINATION ${PARENT_PROJECT_INSTALL_PREFIX}lib COMPONENT runtime
+    PUBLIC_HEADER DESTINATION ${PARENT_PROJECT_INSTALL_PREFIX}include COMPONENT runtime
+    INCLUDES DESTINATION ${PARENT_PROJECT_INSTALL_PREFIX}include COMPONENT runtime
 )
 
-install(DIRECTORY include/daisy_rtl DESTINATION lib/docc-${DOCC_VERSION}/include COMPONENT runtime)
+install(DIRECTORY include/daisy_rtl DESTINATION ${PARENT_PROJECT_INSTALL_PREFIX}include COMPONENT runtime)
 
 if(SDFGLIB_BUILD_TESTS)
     set(INSTALL_GTEST OFF)
