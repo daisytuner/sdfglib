@@ -23,6 +23,8 @@ def test_instrumentation(event):
         "-o",
         str(output_path),
         "-ldaisy_rtl",
+        "-larg_capture_io",
+        "-lstdc++"
     ]
 
     process = subprocess.Popen(
@@ -92,6 +94,8 @@ def test_instrumentation_cuda(event):
         "-o",
         str(output_path),
         "-ldaisy_rtl",
+        "-larg_capture_io",
+        "-lstdc++"
     ]
 
     process = subprocess.Popen(
