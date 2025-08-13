@@ -33,7 +33,7 @@ DebugInfo DebugInfo::merge(const DebugInfo& left, const DebugInfo& right) {
         return left;
     }
     if (left.filename() != right.filename()) {
-        throw InvalidSDFGException("DebugInfo: Filenames do not match");
+        return left;
     }
 
     size_t start_line = 0;
