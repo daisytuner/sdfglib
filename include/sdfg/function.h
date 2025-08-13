@@ -84,8 +84,6 @@ public:
 
     size_t element_counter() const;
 
-    virtual const DebugInfo debug_info() const = 0;
-
     /**
      * Validates the function.
      *

@@ -67,6 +67,8 @@ public:
 
     const DebugInfo& debug_info() const;
 
+    void set_debug_info(const DebugInfo& debug_info);
+
     /**
      * Validates the element.
      *
