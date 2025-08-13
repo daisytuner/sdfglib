@@ -40,8 +40,6 @@ public:
     StructuredSDFG(const StructuredSDFG& sdfg) = delete;
     StructuredSDFG& operator=(const StructuredSDFG&) = delete;
 
-    const DebugInfo debug_info() const override;
-
     void validate() const override;
 
     const structured_control_flow::Sequence& root() const;

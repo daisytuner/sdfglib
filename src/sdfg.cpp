@@ -8,23 +8,6 @@ namespace sdfg {
 
 SDFG::SDFG(const std::string& name, FunctionType type) : Function(name, type), start_state_(nullptr) {};
 
-const DebugInfo SDFG::debug_info() const {
-    DebugInfo info;
-    for (auto& state : this->states()) {
-        info = DebugInfo::merge(info, state.debug_info());
-        for (auto& data_flow_node : state.dataflow().nodes()) {
-            info = DebugInfo::merge(info, data_flow_node.debug_info());
-        }
-        for (auto& edge : state.dataflow().edges()) {
-            info = DebugInfo::merge(info, edge.debug_info());
-        }
-    }
-    for (auto& edges : this->edges()) {
-        info = DebugInfo::merge(info, edges.debug_info());
-    }
-    return info;
-};
-
 void SDFG::validate() const {
     // Call parent validate
     Function::validate();

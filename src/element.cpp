@@ -7,14 +7,9 @@ DebugInfo::DebugInfo()
 
       };
 
-DebugInfo::DebugInfo(std::string filename, size_t start_line, size_t start_column, size_t end_line,
-                     size_t end_column)
-    : filename_(filename),
-      start_line_(start_line),
-      start_column_(start_column),
-      end_line_(end_line),
-      end_column_(end_column),
-      has_(true) {
+DebugInfo::DebugInfo(std::string filename, size_t start_line, size_t start_column, size_t end_line, size_t end_column)
+    : filename_(filename), start_line_(start_line), start_column_(start_column), end_line_(end_line),
+      end_column_(end_column), has_(true) {
 
       };
 
@@ -64,11 +59,12 @@ DebugInfo DebugInfo::merge(const DebugInfo& left, const DebugInfo& right) {
     return DebugInfo(left.filename_, start_line, start_column, end_line, end_column);
 };
 
-Element::Element(size_t element_id, const DebugInfo& debug_info)
-    : element_id_(element_id), debug_info_(debug_info) {};
+Element::Element(size_t element_id, const DebugInfo& debug_info) : element_id_(element_id), debug_info_(debug_info) {};
 
 size_t Element::element_id() const { return this->element_id_; };
 
 const DebugInfo& Element::debug_info() const { return this->debug_info_; };
 
-}  // namespace sdfg
+void Element::set_debug_info(const DebugInfo& debug_info) { this->debug_info_ = debug_info; };
+
+} // namespace sdfg

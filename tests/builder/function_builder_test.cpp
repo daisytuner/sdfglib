@@ -11,7 +11,6 @@ TEST(FunctionBuilderTest, Empty) {
 
     EXPECT_EQ(sdfg->name(), "sdfg_1");
     EXPECT_EQ(sdfg->containers().size(), 0);
-    EXPECT_FALSE(sdfg->debug_info().has());
 }
 
 TEST(FunctionBuilderTest, AddTransient) {
