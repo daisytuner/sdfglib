@@ -16,7 +16,7 @@ target_include_directories(daisy_rtl PUBLIC
 
 # Don't link against PAPI!
 # Just link against the dynamic linker
-target_link_libraries(daisy_rtl PRIVATE dl sdfglib::arg_capture_io)
+target_link_libraries(daisy_rtl PRIVATE dl arg_capture_io)
 
 set_target_properties(daisy_rtl PROPERTIES
     VERSION ${PROJECT_VERSION}
@@ -24,10 +24,11 @@ set_target_properties(daisy_rtl PROPERTIES
 )
 
 install(TARGETS daisy_rtl
+    EXPORT sdfglibTargets
     LIBRARY DESTINATION ${PARENT_PROJECT_INSTALL_PREFIX}lib COMPONENT runtime
     ARCHIVE DESTINATION ${PARENT_PROJECT_INSTALL_PREFIX}lib COMPONENT runtime
     PUBLIC_HEADER DESTINATION ${PARENT_PROJECT_INSTALL_PREFIX}include COMPONENT runtime
-    INCLUDES DESTINATION ${PARENT_PROJECT_INSTALL_PREFIX}include COMPONENT runtime
+    INCLUDES DESTINATION ${PARENT_PROJECT_INSTALL_PREFIX}include
 )
 
 install(DIRECTORY include/daisy_rtl DESTINATION ${PARENT_PROJECT_INSTALL_PREFIX}include COMPONENT runtime)
