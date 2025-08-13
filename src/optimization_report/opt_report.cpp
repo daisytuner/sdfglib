@@ -2,6 +2,8 @@
 
 namespace sdfg {
 
+static OptimizationReport* instance_;
+
 void OptimizationReport::add_pass_entry_internal(const std::string& pass_name, long duration, bool applied) {}
 
 void OptimizationReport::add_transformation_entry_internal(

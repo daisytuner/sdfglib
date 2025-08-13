@@ -100,6 +100,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/ml/relu.cpp
     src/deepcopy/structured_sdfg_deep_copy.cpp
     src/graph/graph.cpp
+    src//optimization_report/opt_report.cpp
     src/visitor/structured_sdfg_visitor.cpp
     src/passes/pass.cpp
     src/passes/pipeline.cpp

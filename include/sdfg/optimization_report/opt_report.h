@@ -14,8 +14,6 @@ private:
     nlohmann::json aggregate_report_;
     nlohmann::json detailed_report_;
 
-    static OptimizationReport* instance_;
-
     void add_pass_entry_internal(const std::string& pass_name, long duration, bool applied);
 
     void add_transformation_entry_internal(
