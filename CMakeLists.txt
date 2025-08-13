@@ -3,6 +3,11 @@ cmake_minimum_required(VERSION 3.16)
 project(sdfglib VERSION 0.0.1 DESCRIPTION "A library for generating structured dataflow graphs (SDFG)")
 include(GNUInstallDirs)
 
+if(NOT DEFINED PARENT_PROJECT_INSTALL_PREFIX)
+    set(PARENT_PROJECT_INSTALL_PREFIX "" CACHE STRING
+           "Path prefix (trailing /!) for installing sdfglib artifacts. For example 'lib/docc-0.1.6/'" )
+endif()
+
 option(SDFGLIB_BUILD_TESTS
        "Build tests" ON)
 
