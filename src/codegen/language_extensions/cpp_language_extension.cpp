@@ -288,6 +288,14 @@ constexpr const char* code_to_string(data_flow::TaskletCode c) {
             return "rintf";
         case data_flow::TaskletCode::rintl:
             return "rintl";
+        case data_flow::TaskletCode::lrint:
+            return "lrint";
+        case data_flow::TaskletCode::llrint:
+            return "llrint";
+        case data_flow::TaskletCode::lround:
+            return "lround";
+        case data_flow::TaskletCode::llround:
+            return "llround";
         case data_flow::TaskletCode::round:
             return "round";
         case data_flow::TaskletCode::roundf:
@@ -391,15 +399,20 @@ std::string CPPLanguageExtension::
         auto& element_type = array_type->element_type();
         val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]", element_type);
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
-        const types::IType& pointee = pointer_type->pointee_type();
+        if (pointer_type->has_pointee_type()) {
+            const types::IType& pointee = pointer_type->pointee_type();
 
-        const bool pointee_is_function_or_array = dynamic_cast<const types::Function*>(&pointee) ||
-                                                  dynamic_cast<const types::Array*>(&pointee);
+            const bool pointee_is_function_or_array = dynamic_cast<const types::Function*>(&pointee) ||
+                                                      dynamic_cast<const types::Array*>(&pointee);
 
-        // Parenthesise *only* when it is needed to bind tighter than [] or ()
-        std::string decorated = pointee_is_function_or_array ? "(*" + name + ")" : "*" + name;
+            // Parenthesise *only* when it is needed to bind tighter than [] or ()
+            std::string decorated = pointee_is_function_or_array ? "(*" + name + ")" : "*" + name;
 
-        val << declaration(decorated, pointee);
+            val << declaration(decorated, pointee);
+        } else {
+            val << "void*";
+            val << " " << name;
+        }
     } else if (auto ref_type = dynamic_cast<const Reference*>(&type)) {
         val << declaration("&" + name, ref_type->reference_type());
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
@@ -490,19 +503,19 @@ std::string CPPLanguageExtension::expression(const symbolic::Expression& expr) {
     return printer.apply(expr);
 };
 
+std::string CPPLanguageExtension::access_node(const data_flow::AccessNode& node) {
+    std::string name = node.data();
+    if (this->external_variables_.find(name) != this->external_variables_.end()) {
+        return "(&" + name + ")";
+    }
+    return name;
+};
+
 std::string CPPLanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
     std::string op = code_to_string(tasklet.code());
     std::vector<std::string> arguments;
     for (size_t i = 0; i < tasklet.inputs().size(); ++i) {
-        std::string arg = tasklet.input(i).first;
-        if (!tasklet.needs_connector(i)) {
-            if (arg != "NAN" && arg != "INFINITY") {
-                if (tasklet.input(i).second.primitive_type() == types::PrimitiveType::Float) {
-                    arg += "f";
-                }
-            }
-        }
-        arguments.push_back(arg);
+        arguments.push_back(tasklet.input(i));
     }
 
     if (tasklet.code() == data_flow::TaskletCode::assign) {
@@ -689,7 +702,7 @@ void CPPSymbolicPrinter::_print_pow(
     } else if (SymEngine::eq(*b, *SymEngine::rational(1, 3))) {
         o << "cbrt(" << apply(a) << ")";
     } else if (SymEngine::eq(*b, *SymEngine::integer(2))) {
-        o << apply(a) + " * " + apply(a);
+        o << "((" + apply(a) + ") * (" + apply(a) + "))";
     } else {
         o << "pow(" << apply(a) << ", " << apply(b) << ")";
     }

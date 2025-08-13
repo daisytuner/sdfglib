@@ -122,6 +122,35 @@ control_flow::InterstateEdge& SDFGBuilder::add_edge(
     const symbolic::Condition condition,
     const DebugInfo& debug_info
 ) {
+    for (auto& entry : assignments) {
+        auto& lhs = entry.first;
+        auto& type = this->function().type(lhs->get_name());
+        if (type.type_id() != types::TypeID::Scalar) {
+            throw InvalidSDFGException("Assignment - LHS: must be integer type");
+        }
+
+        auto& rhs = entry.second;
+        for (auto& atom : symbolic::atoms(rhs)) {
+            if (symbolic::is_nullptr(atom)) {
+                throw InvalidSDFGException("Assignment - RHS: must be integer type, but is nullptr");
+            }
+            auto& atom_type = this->function().type(atom->get_name());
+            if (atom_type.type_id() != types::TypeID::Scalar) {
+                throw InvalidSDFGException("Assignment - RHS: must be integer type");
+            }
+        }
+    }
+
+    for (auto& atom : symbolic::atoms(condition)) {
+        if (symbolic::is_nullptr(atom)) {
+            continue;
+        }
+        auto& atom_type = this->function().type(atom->get_name());
+        if (atom_type.type_id() != types::TypeID::Scalar && atom_type.type_id() != types::TypeID::Pointer) {
+            throw InvalidSDFGException("Condition: must be integer type or pointer type");
+        }
+    }
+
     auto edge = boost::add_edge(src.vertex_, dst.vertex_, this->sdfg_->graph_);
     assert(edge.second);
 
@@ -202,8 +231,8 @@ data_flow::AccessNode& SDFGBuilder::
 data_flow::Tasklet& SDFGBuilder::add_tasklet(
     control_flow::State& state,
     const data_flow::TaskletCode code,
-    const std::pair<std::string, sdfg::types::Scalar>& output,
-    const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
+    const std::string& output,
+    const std::vector<std::string>& inputs,
     const DebugInfo& debug_info
 ) {
     auto& dataflow = state.dataflow();
@@ -225,6 +254,7 @@ data_flow::Memlet& SDFGBuilder::add_memlet(
     data_flow::DataFlowNode& dst,
     const std::string& dst_conn,
     const data_flow::Subset& subset,
+    const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
     auto& dataflow = state.dataflow();
@@ -232,7 +262,7 @@ data_flow::Memlet& SDFGBuilder::add_memlet(
     auto res = dataflow.edges_.insert(
         {edge.first,
          std::unique_ptr<data_flow::Memlet>(new data_flow::Memlet(
-             this->new_element_id(), debug_info, edge.first, dataflow, src, src_conn, dst, dst_conn, subset
+             this->new_element_id(), debug_info, edge.first, dataflow, src, src_conn, dst, dst_conn, subset, base_type
          ))}
     );
 
@@ -252,6 +282,7 @@ data_flow::Memlet& SDFGBuilder::add_memlet(
     const std::string& dst_conn,
     const data_flow::Subset& begin_subset,
     const data_flow::Subset& end_subset,
+    const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
     auto& dataflow = state.dataflow();
@@ -259,7 +290,17 @@ data_flow::Memlet& SDFGBuilder::add_memlet(
     auto res = dataflow.edges_.insert(
         {edge.first,
          std::unique_ptr<data_flow::Memlet>(new data_flow::Memlet(
-             this->new_element_id(), debug_info, edge.first, dataflow, src, src_conn, dst, dst_conn, begin_subset, end_subset
+             this->new_element_id(),
+             debug_info,
+             edge.first,
+             dataflow,
+             src,
+             src_conn,
+             dst,
+             dst_conn,
+             begin_subset,
+             end_subset,
+             base_type
          ))}
     );
     auto& memlet = dynamic_cast<data_flow::Memlet&>(*(res.first->second));
@@ -276,9 +317,38 @@ data_flow::Memlet& SDFGBuilder::add_computational_memlet(
     data_flow::Tasklet& dst,
     const std::string& dst_conn,
     const data_flow::Subset& subset,
+    const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(state, src, "void", dst, dst_conn, subset, debug_info);
+    return this->add_memlet(state, src, "void", dst, dst_conn, subset, base_type, debug_info);
+};
+
+data_flow::Memlet& SDFGBuilder::add_computational_memlet(
+    control_flow::State& state,
+    data_flow::Tasklet& src,
+    const std::string& src_conn,
+    data_flow::AccessNode& dst,
+    const data_flow::Subset& subset,
+    const types::IType& base_type,
+    const DebugInfo& debug_info
+) {
+    return this->add_memlet(state, src, src_conn, dst, "void", subset, base_type, debug_info);
+};
+
+data_flow::Memlet& SDFGBuilder::add_computational_memlet(
+    control_flow::State& state,
+    data_flow::AccessNode& src,
+    data_flow::Tasklet& dst,
+    const std::string& dst_conn,
+    const data_flow::Subset& subset,
+    const DebugInfo& debug_info
+) {
+    auto& src_type = this->function().type(src.data());
+    auto& base_type = types::infer_type(this->function(), src_type, subset);
+    if (base_type.type_id() != types::TypeID::Scalar) {
+        throw InvalidSDFGException("Computational memlet must have a scalar type");
+    }
+    return this->add_memlet(state, src, "void", dst, dst_conn, subset, src_type, debug_info);
 };
 
 data_flow::Memlet& SDFGBuilder::add_computational_memlet(
@@ -289,7 +359,12 @@ data_flow::Memlet& SDFGBuilder::add_computational_memlet(
     const data_flow::Subset& subset,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(state, src, src_conn, dst, "void", subset, debug_info);
+    auto& dst_type = this->function().type(dst.data());
+    auto& base_type = types::infer_type(this->function(), dst_type, subset);
+    if (base_type.type_id() != types::TypeID::Scalar) {
+        throw InvalidSDFGException("Computational memlet must have a scalar type");
+    }
+    return this->add_memlet(state, src, src_conn, dst, "void", subset, dst_type, debug_info);
 };
 
 data_flow::Memlet& SDFGBuilder::add_computational_memlet(
@@ -299,9 +374,10 @@ data_flow::Memlet& SDFGBuilder::add_computational_memlet(
     const std::string& dst_conn,
     const data_flow::Subset& begin_subset,
     const data_flow::Subset& end_subset,
+    const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(state, src, "void", dst, dst_conn, begin_subset, end_subset, debug_info);
+    return this->add_memlet(state, src, "void", dst, dst_conn, begin_subset, end_subset, base_type, debug_info);
 };
 
 data_flow::Memlet& SDFGBuilder::add_computational_memlet(
@@ -311,9 +387,10 @@ data_flow::Memlet& SDFGBuilder::add_computational_memlet(
     data_flow::AccessNode& dst,
     const data_flow::Subset& begin_subset,
     const data_flow::Subset& end_subset,
+    const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(state, src, src_conn, dst, "void", begin_subset, end_subset, debug_info);
+    return this->add_memlet(state, src, src_conn, dst, "void", begin_subset, end_subset, base_type, debug_info);
 };
 
 data_flow::Memlet& SDFGBuilder::add_reference_memlet(
@@ -321,9 +398,10 @@ data_flow::Memlet& SDFGBuilder::add_reference_memlet(
     data_flow::AccessNode& src,
     data_flow::AccessNode& dst,
     const data_flow::Subset& subset,
+    const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(state, src, "void", dst, "ref", subset, debug_info);
+    return this->add_memlet(state, src, "void", dst, "ref", subset, base_type, debug_info);
 };
 
 data_flow::Memlet& SDFGBuilder::add_dereference_memlet(
@@ -331,12 +409,13 @@ data_flow::Memlet& SDFGBuilder::add_dereference_memlet(
     data_flow::AccessNode& src,
     data_flow::AccessNode& dst,
     bool derefs_src,
+    const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
     if (derefs_src) {
-        return this->add_memlet(state, src, "void", dst, "deref", {symbolic::zero()}, debug_info);
+        return this->add_memlet(state, src, "void", dst, "deref", {symbolic::zero()}, base_type, debug_info);
     } else {
-        return this->add_memlet(state, src, "deref", dst, "void", {symbolic::zero()}, debug_info);
+        return this->add_memlet(state, src, "deref", dst, "void", {symbolic::zero()}, base_type, debug_info);
     }
 };
 

@@ -6,9 +6,8 @@
 namespace sdfg {
 namespace passes {
 
-symbolic::Expression SymbolPromotion::as_symbol(const data_flow::DataFlowGraph& dataflow,
-                                                const data_flow::Tasklet& tasklet,
-                                                const std::string& op) {
+symbolic::Expression SymbolPromotion::
+    as_symbol(const data_flow::DataFlowGraph& dataflow, const data_flow::Tasklet& tasklet, const std::string& op) {
     if (op.compare(0, 3, "_in") == 0) {
         for (auto& iedge : dataflow.in_edges(tasklet)) {
             if (iedge.dst_conn() == op) {
@@ -23,9 +22,13 @@ symbolic::Expression SymbolPromotion::as_symbol(const data_flow::DataFlowGraph& 
     }
 };
 
-bool SymbolPromotion::can_be_applied(builder::StructuredSDFGBuilder& builder,
-                                     analysis::AnalysisManager& analysis_manager,
-                                     data_flow::DataFlowGraph& dataflow) {
+bool SymbolPromotion::can_be_applied(
+    builder::StructuredSDFGBuilder& builder,
+    analysis::AnalysisManager& analysis_manager,
+    data_flow::DataFlowGraph& dataflow
+) {
+    auto& sdfg = builder.subject();
+
     // Criterion: Single tasklet in graph
     // Has to run before all the other passes
     if (dataflow.tasklets().size() != 1) {
@@ -41,16 +44,6 @@ bool SymbolPromotion::can_be_applied(builder::StructuredSDFGBuilder& builder,
     }
 
     // Criterion: Tasklet has only scalar integer inputs and outputs
-    for (auto& input : tasklet->inputs()) {
-        auto& type = input.second;
-        if (!types::is_integer(type.primitive_type())) {
-            return false;
-        }
-    }
-    auto& output_type = tasklet->output().second;
-    if (!types::is_integer(output_type.primitive_type())) {
-        return false;
-    }
     for (auto& iedge : dataflow.in_edges(*tasklet)) {
         // scalar input
         if (iedge.subset().size() > 0) {
@@ -60,16 +53,25 @@ bool SymbolPromotion::can_be_applied(builder::StructuredSDFGBuilder& builder,
         if (dataflow.in_degree(iedge.src()) > 0) {
             return false;
         }
+
+        auto& type = iedge.result_type(sdfg);
+        if (!types::is_integer(type.primitive_type())) {
+            return false;
+        }
     }
-    for (auto& oedge : dataflow.out_edges(*tasklet)) {
-        // scalar output
-        if (oedge.subset().size() > 0) {
-            return false;
-        }
-        // isolated output
-        if (dataflow.out_degree(oedge.dst()) > 0) {
-            return false;
-        }
+
+    auto& oedge = *dataflow.out_edges(*tasklet).begin();
+    // scalar output
+    if (oedge.subset().size() > 0) {
+        return false;
+    }
+    // isolated output
+    if (dataflow.out_degree(oedge.dst()) > 0) {
+        return false;
+    }
+    auto& output_type = oedge.result_type(sdfg);
+    if (!types::is_integer(output_type.primitive_type())) {
+        return false;
     }
 
     // Criterion: Known tasklet class. To be extended on the go.
@@ -93,14 +95,12 @@ bool SymbolPromotion::can_be_applied(builder::StructuredSDFGBuilder& builder,
         case data_flow::TaskletCode::bitwise_xor:
         case data_flow::TaskletCode::bitwise_not: {
             // Bitwise operation is constant for boolean inputs
-            auto& sdfg = builder.subject();
-            for (auto& input : tasklet->inputs()) {
-                auto& type = input.second;
+            for (auto& iedge : dataflow.in_edges(*tasklet)) {
+                auto& type = iedge.result_type(sdfg);
                 if (type.primitive_type() != types::PrimitiveType::Bool) {
                     return false;
                 }
             }
-            auto& output_type = tasklet->output().second;
             if (output_type.primitive_type() != types::PrimitiveType::Bool) {
                 return false;
             }
@@ -111,10 +111,12 @@ bool SymbolPromotion::can_be_applied(builder::StructuredSDFGBuilder& builder,
     }
 };
 
-void SymbolPromotion::apply(builder::StructuredSDFGBuilder& builder,
-                            analysis::AnalysisManager& analysis_manager,
-                            structured_control_flow::Sequence& sequence,
-                            structured_control_flow::Block& block) {
+void SymbolPromotion::apply(
+    builder::StructuredSDFGBuilder& builder,
+    analysis::AnalysisManager& analysis_manager,
+    structured_control_flow::Sequence& sequence,
+    structured_control_flow::Block& block
+) {
     auto& dataflow = block.dataflow();
     auto tasklet = *dataflow.tasklets().begin();
     auto& output_node = (*dataflow.out_edges(*tasklet).begin()).dst();
@@ -126,87 +128,78 @@ void SymbolPromotion::apply(builder::StructuredSDFGBuilder& builder,
 
     switch (tasklet->code()) {
         case data_flow::TaskletCode::assign: {
-            rhs = as_symbol(dataflow, *tasklet, tasklet->input(0).first);
+            rhs = as_symbol(dataflow, *tasklet, tasklet->input(0));
             break;
         }
         case data_flow::TaskletCode::add: {
-            rhs = symbolic::add(as_symbol(dataflow, *tasklet, tasklet->input(0).first),
-                                as_symbol(dataflow, *tasklet, tasklet->input(1).first));
+            rhs = symbolic::
+                add(as_symbol(dataflow, *tasklet, tasklet->input(0)), as_symbol(dataflow, *tasklet, tasklet->input(1)));
             break;
         }
         case data_flow::TaskletCode::sub: {
-            rhs = symbolic::sub(as_symbol(dataflow, *tasklet, tasklet->input(0).first),
-                                as_symbol(dataflow, *tasklet, tasklet->input(1).first));
+            rhs = symbolic::
+                sub(as_symbol(dataflow, *tasklet, tasklet->input(0)), as_symbol(dataflow, *tasklet, tasklet->input(1)));
             break;
         }
         case data_flow::TaskletCode::mul: {
-            rhs = symbolic::mul(as_symbol(dataflow, *tasklet, tasklet->input(0).first),
-                                as_symbol(dataflow, *tasklet, tasklet->input(1).first));
+            rhs = symbolic::
+                mul(as_symbol(dataflow, *tasklet, tasklet->input(0)), as_symbol(dataflow, *tasklet, tasklet->input(1)));
             break;
         }
         case data_flow::TaskletCode::div: {
-            rhs = symbolic::div(as_symbol(dataflow, *tasklet, tasklet->input(0).first),
-                                as_symbol(dataflow, *tasklet, tasklet->input(1).first));
+            rhs = symbolic::
+                div(as_symbol(dataflow, *tasklet, tasklet->input(0)), as_symbol(dataflow, *tasklet, tasklet->input(1)));
             break;
         }
         case data_flow::TaskletCode::mod: {
-            auto op_1 = as_symbol(dataflow, *tasklet, tasklet->input(0).first);
-            auto op_2 = as_symbol(dataflow, *tasklet, tasklet->input(1).first);
+            auto op_1 = as_symbol(dataflow, *tasklet, tasklet->input(0));
+            auto op_2 = as_symbol(dataflow, *tasklet, tasklet->input(1));
             rhs = symbolic::mod(op_1, op_2);
             break;
         }
         case data_flow::TaskletCode::max: {
-            rhs = symbolic::max(as_symbol(dataflow, *tasklet, tasklet->input(0).first),
-                                as_symbol(dataflow, *tasklet, tasklet->input(1).first));
+            rhs = symbolic::
+                max(as_symbol(dataflow, *tasklet, tasklet->input(0)), as_symbol(dataflow, *tasklet, tasklet->input(1)));
             break;
         }
         case data_flow::TaskletCode::min: {
-            rhs = symbolic::min(as_symbol(dataflow, *tasklet, tasklet->input(0).first),
-                                as_symbol(dataflow, *tasklet, tasklet->input(1).first));
+            rhs = symbolic::
+                min(as_symbol(dataflow, *tasklet, tasklet->input(0)), as_symbol(dataflow, *tasklet, tasklet->input(1)));
             break;
         }
         case data_flow::TaskletCode::shift_right: {
-            rhs = symbolic::div(
-                as_symbol(dataflow, *tasklet, tasklet->input(0).first),
-                symbolic::pow(symbolic::integer(2),
-                              as_symbol(dataflow, *tasklet, tasklet->input(1).first)));
+            rhs = symbolic::
+                div(as_symbol(dataflow, *tasklet, tasklet->input(0)),
+                    symbolic::pow(symbolic::integer(2), as_symbol(dataflow, *tasklet, tasklet->input(1))));
             break;
         }
         case data_flow::TaskletCode::shift_left: {
-            rhs = symbolic::mul(
-                as_symbol(dataflow, *tasklet, tasklet->input(0).first),
-                symbolic::pow(symbolic::integer(2),
-                              as_symbol(dataflow, *tasklet, tasklet->input(1).first)));
+            rhs = symbolic::
+                mul(as_symbol(dataflow, *tasklet, tasklet->input(0)),
+                    symbolic::pow(symbolic::integer(2), as_symbol(dataflow, *tasklet, tasklet->input(1))));
             break;
         }
         case data_flow::TaskletCode::bitwise_and: {
-            auto op_1_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(0).first),
-                                             symbolic::__true__());
-            auto op_2_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(1).first),
-                                             symbolic::__true__());
+            auto op_1_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(0)), symbolic::__true__());
+            auto op_2_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(1)), symbolic::__true__());
             rhs = symbolic::And(op_1_is_true, op_2_is_true);
             break;
         }
         case data_flow::TaskletCode::bitwise_or: {
-            auto op_1_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(0).first),
-                                             symbolic::__true__());
-            auto op_2_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(1).first),
-                                             symbolic::__true__());
+            auto op_1_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(0)), symbolic::__true__());
+            auto op_2_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(1)), symbolic::__true__());
             rhs = symbolic::Or(op_1_is_true, op_2_is_true);
             break;
         }
         case data_flow::TaskletCode::bitwise_xor: {
-            auto op_1_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(0).first),
-                                             symbolic::__true__());
-            auto op_2_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(1).first),
-                                             symbolic::__true__());
-            rhs = symbolic::And(symbolic::Or(op_1_is_true, op_2_is_true),
-                                symbolic::Not(symbolic::And(op_1_is_true, op_2_is_true)));
+            auto op_1_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(0)), symbolic::__true__());
+            auto op_2_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(1)), symbolic::__true__());
+            rhs = symbolic::
+                And(symbolic::Or(op_1_is_true, op_2_is_true), symbolic::Not(symbolic::And(op_1_is_true, op_2_is_true)));
             break;
         }
         case data_flow::TaskletCode::bitwise_not: {
-            auto op_1_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(0).first),
-                                             symbolic::__true__());
+            auto op_1_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(0)), symbolic::__true__());
             rhs = symbolic::Not(op_1_is_true);
             break;
         }
@@ -229,8 +222,7 @@ SymbolPromotion::SymbolPromotion()
 
 std::string SymbolPromotion::name() { return "SymbolPromotion"; };
 
-bool SymbolPromotion::run_pass(builder::StructuredSDFGBuilder& builder,
-                               analysis::AnalysisManager& analysis_manager) {
+bool SymbolPromotion::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     // Traverse structured SDFG
@@ -266,8 +258,7 @@ bool SymbolPromotion::run_pass(builder::StructuredSDFGBuilder& builder,
             }
         } else if (auto loop_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
             queue.push_back(&loop_stmt->root());
-        } else if (auto sloop_stmt =
-                       dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
+        } else if (auto sloop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
             queue.push_back(&sloop_stmt->root());
         }
     }
@@ -275,5 +266,5 @@ bool SymbolPromotion::run_pass(builder::StructuredSDFGBuilder& builder,
     return applied;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

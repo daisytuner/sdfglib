@@ -89,6 +89,9 @@ TEST(CPPLanguageExtensionTest, Declaration_Pointer) {
     codegen::CPPLanguageExtension generator;
     auto result = generator.declaration("var", types::Pointer(types::Scalar(types::PrimitiveType::Int32)));
     EXPECT_EQ(result, "int *var");
+
+    result = generator.declaration("var", types::Pointer());
+    EXPECT_EQ(result, "void* var");
 }
 
 TEST(CPPLanguageExtensionTest, Declaration_Array) {
@@ -165,4 +168,20 @@ TEST(CPPLanguageExtensionTest, SubsetToCpp_Struct) {
     codegen::CPPLanguageExtension generator;
     auto result = generator.subset(sdfg, types::Structure("MyStruct"), data_flow::Subset{symbolic::integer(1)});
     EXPECT_EQ(result, ".member_1");
+}
+
+TEST(CPPLanguageExtensionTest, Expression_Pow2) {
+    codegen::CPPLanguageExtension generator;
+
+    auto sym = symbolic::symbol("x");
+    auto result = generator.expression(symbolic::pow(sym, symbolic::integer(2)));
+    EXPECT_EQ(result, "((x) * (x))");
+}
+
+TEST(CPPLanguageExtensionTest, Expression_Pow2_Mul) {
+    codegen::CPPLanguageExtension generator;
+
+    auto sym = symbolic::symbol("x");
+    auto result = generator.expression(symbolic::mul(sym, sym));
+    EXPECT_EQ(result, "((x) * (x))");
 }

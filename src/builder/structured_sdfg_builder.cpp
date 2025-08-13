@@ -7,6 +7,7 @@
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/sequence.h"
+#include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/types/utils.h"
 
 using namespace sdfg::control_flow;
@@ -315,6 +316,7 @@ StructuredSDFGBuilder::StructuredSDFGBuilder(const SDFG& sdfg)
 
     for (auto& ext : sdfg.externals_) {
         this->structured_sdfg_->externals_.push_back(ext);
+        this->structured_sdfg_->externals_linkage_types_[ext] = sdfg.linkage_type(ext);
     }
 
     for (auto& entry : sdfg.assumptions_) {
@@ -1072,8 +1074,8 @@ Sequence& StructuredSDFGBuilder::parent(const ControlFlowNode& node) {
             }
         } else if (auto while_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
             queue.push_back(&while_stmt->root());
-        } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(current)) {
-            queue.push_back(&for_stmt->root());
+        } else if (auto loop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
+            queue.push_back(&loop_stmt->root());
         }
     }
 
@@ -1098,8 +1100,8 @@ data_flow::AccessNode& StructuredSDFGBuilder::
 data_flow::Tasklet& StructuredSDFGBuilder::add_tasklet(
     structured_control_flow::Block& block,
     const data_flow::TaskletCode code,
-    const std::pair<std::string, sdfg::types::Scalar>& output,
-    const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
+    const std::string& output,
+    const std::vector<std::string>& inputs,
     const DebugInfo& debug_info
 ) {
     auto vertex = boost::add_vertex(block.dataflow_->graph_);
@@ -1120,13 +1122,14 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
     data_flow::DataFlowNode& dst,
     const std::string& dst_conn,
     const data_flow::Subset& subset,
+    const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
     auto edge = boost::add_edge(src.vertex_, dst.vertex_, block.dataflow_->graph_);
     auto res = block.dataflow_->edges_.insert(
         {edge.first,
          std::unique_ptr<data_flow::Memlet>(new data_flow::Memlet(
-             this->new_element_id(), debug_info, edge.first, block.dataflow(), src, src_conn, dst, dst_conn, subset
+             this->new_element_id(), debug_info, edge.first, block.dataflow(), src, src_conn, dst, dst_conn, subset, base_type
          ))}
     );
 
@@ -1146,6 +1149,7 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
     const std::string& dst_conn,
     const data_flow::Subset& begin_subset,
     const data_flow::Subset& end_subset,
+    const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
     auto edge = boost::add_edge(src.vertex_, dst.vertex_, block.dataflow_->graph_);
@@ -1161,7 +1165,8 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
              dst,
              dst_conn,
              begin_subset,
-             end_subset
+             end_subset,
+             base_type
          ))}
     );
 
@@ -1179,9 +1184,38 @@ data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
     data_flow::Tasklet& dst,
     const std::string& dst_conn,
     const data_flow::Subset& subset,
+    const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(block, src, "void", dst, dst_conn, subset, debug_info);
+    return this->add_memlet(block, src, "void", dst, dst_conn, subset, base_type, debug_info);
+};
+
+data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
+    structured_control_flow::Block& block,
+    data_flow::Tasklet& src,
+    const std::string& src_conn,
+    data_flow::AccessNode& dst,
+    const data_flow::Subset& subset,
+    const types::IType& base_type,
+    const DebugInfo& debug_info
+) {
+    return this->add_memlet(block, src, src_conn, dst, "void", subset, base_type, debug_info);
+};
+
+data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
+    structured_control_flow::Block& block,
+    data_flow::AccessNode& src,
+    data_flow::Tasklet& dst,
+    const std::string& dst_conn,
+    const data_flow::Subset& subset,
+    const DebugInfo& debug_info
+) {
+    auto& src_type = this->structured_sdfg_->type(src.data());
+    auto& base_type = types::infer_type(*this->structured_sdfg_, src_type, subset);
+    if (base_type.type_id() != types::TypeID::Scalar) {
+        throw InvalidSDFGException("Computational memlet must have a scalar type");
+    }
+    return this->add_memlet(block, src, "void", dst, dst_conn, subset, src_type, debug_info);
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
@@ -1192,7 +1226,12 @@ data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
     const data_flow::Subset& subset,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(block, src, src_conn, dst, "void", subset, debug_info);
+    auto& dst_type = this->structured_sdfg_->type(dst.data());
+    auto& base_type = types::infer_type(*this->structured_sdfg_, dst_type, subset);
+    if (base_type.type_id() != types::TypeID::Scalar) {
+        throw InvalidSDFGException("Computational memlet must have a scalar type");
+    }
+    return this->add_memlet(block, src, src_conn, dst, "void", subset, dst_type, debug_info);
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
@@ -1202,9 +1241,10 @@ data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
     const std::string& dst_conn,
     const data_flow::Subset& begin_subset,
     const data_flow::Subset& end_subset,
+    const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(block, src, "void", dst, dst_conn, begin_subset, end_subset, debug_info);
+    return this->add_memlet(block, src, "void", dst, dst_conn, begin_subset, end_subset, base_type, debug_info);
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
@@ -1214,9 +1254,10 @@ data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
     data_flow::AccessNode& dst,
     const data_flow::Subset& begin_subset,
     const data_flow::Subset& end_subset,
+    const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(block, src, src_conn, dst, "void", begin_subset, end_subset, debug_info);
+    return this->add_memlet(block, src, src_conn, dst, "void", begin_subset, end_subset, base_type, debug_info);
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_reference_memlet(
@@ -1224,9 +1265,10 @@ data_flow::Memlet& StructuredSDFGBuilder::add_reference_memlet(
     data_flow::AccessNode& src,
     data_flow::AccessNode& dst,
     const data_flow::Subset& subset,
+    const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(block, src, "void", dst, "ref", subset, debug_info);
+    return this->add_memlet(block, src, "void", dst, "ref", subset, base_type, debug_info);
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_dereference_memlet(
@@ -1234,12 +1276,13 @@ data_flow::Memlet& StructuredSDFGBuilder::add_dereference_memlet(
     data_flow::AccessNode& src,
     data_flow::AccessNode& dst,
     bool derefs_src,
+    const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
     if (derefs_src) {
-        return this->add_memlet(block, src, "void", dst, "deref", {symbolic::zero()}, debug_info);
+        return this->add_memlet(block, src, "void", dst, "deref", {symbolic::zero()}, base_type, debug_info);
     } else {
-        return this->add_memlet(block, src, "deref", dst, "void", {symbolic::zero()}, debug_info);
+        return this->add_memlet(block, src, "deref", dst, "void", {symbolic::zero()}, base_type, debug_info);
     }
 };
 
@@ -1335,128 +1378,6 @@ void StructuredSDFGBuilder::clear_node(structured_control_flow::Block& block, co
         auto vertex = current->vertex();
         graph.nodes_.erase(vertex);
         boost::remove_vertex(vertex, graph.graph_);
-    }
-};
-
-data_flow::AccessNode& StructuredSDFGBuilder::
-    symbolic_expression_to_dataflow(structured_control_flow::Block& parent, const symbolic::Expression& expr) {
-    auto& sdfg = this->subject();
-
-    codegen::CPPLanguageExtension language_extension;
-
-    // Base cases
-    if (SymEngine::is_a<SymEngine::Symbol>(*expr)) {
-        auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(expr);
-
-        // Determine type
-        types::Scalar sym_type = types::Scalar(types::PrimitiveType::Void);
-        if (symbolic::is_nv(sym)) {
-            sym_type = types::Scalar(types::PrimitiveType::Int32);
-        } else {
-            sym_type = static_cast<const types::Scalar&>(sdfg.type(sym->get_name()));
-        }
-
-        // Add new container for intermediate result
-        auto tmp = this->find_new_name();
-        this->add_container(tmp, sym_type);
-
-        // Create dataflow graph
-        auto& input_node = this->add_access(parent, sym->get_name());
-        auto& output_node = this->add_access(parent, tmp);
-        auto& tasklet =
-            this->add_tasklet(parent, data_flow::TaskletCode::assign, {"_out", sym_type}, {{"_in", sym_type}});
-        this->add_memlet(parent, input_node, "void", tasklet, "_in", {});
-        this->add_memlet(parent, tasklet, "_out", output_node, "void", {});
-
-        return output_node;
-    } else if (SymEngine::is_a<SymEngine::Integer>(*expr)) {
-        auto tmp = this->find_new_name();
-        this->add_container(tmp, types::Scalar(types::PrimitiveType::Int64));
-
-        auto& output_node = this->add_access(parent, tmp);
-        auto& tasklet = this->add_tasklet(
-            parent,
-            data_flow::TaskletCode::assign,
-            {"_out", types::Scalar(types::PrimitiveType::Int64)},
-            {{language_extension.expression(expr), types::Scalar(types::PrimitiveType::Int64)}}
-        );
-        this->add_memlet(parent, tasklet, "_out", output_node, "void", {});
-        return output_node;
-    } else if (SymEngine::is_a<SymEngine::BooleanAtom>(*expr)) {
-        auto tmp = this->find_new_name();
-        this->add_container(tmp, types::Scalar(types::PrimitiveType::Bool));
-
-        auto& output_node = this->add_access(parent, tmp);
-        auto& tasklet = this->add_tasklet(
-            parent,
-            data_flow::TaskletCode::assign,
-            {"_out", types::Scalar(types::PrimitiveType::Bool)},
-            {{language_extension.expression(expr), types::Scalar(types::PrimitiveType::Bool)}}
-        );
-        this->add_memlet(parent, tasklet, "_out", output_node, "void", {});
-        return output_node;
-    } else if (SymEngine::is_a<SymEngine::Or>(*expr)) {
-        auto or_expr = SymEngine::rcp_static_cast<const SymEngine::Or>(expr);
-        if (or_expr->get_container().size() != 2) {
-            throw InvalidSDFGException("StructuredSDFGBuilder: Or expression must have exactly two arguments");
-        }
-
-        std::vector<data_flow::AccessNode*> input_nodes;
-        std::vector<std::pair<std::string, types::Scalar>> input_types;
-        for (auto& arg : or_expr->get_container()) {
-            auto& input_node = symbolic_expression_to_dataflow(parent, arg);
-            input_nodes.push_back(&input_node);
-            input_types.push_back(
-                {"_in" + std::to_string(input_types.size() + 1),
-                 static_cast<const types::Scalar&>(sdfg.type(input_node.data()))}
-            );
-        }
-
-        // Add new container for intermediate result
-        auto tmp = this->find_new_name();
-        this->add_container(tmp, types::Scalar(types::PrimitiveType::Bool));
-
-        auto& output_node = this->add_access(parent, tmp);
-        auto& tasklet = this->add_tasklet(
-            parent, data_flow::TaskletCode::logical_or, {"_out", types::Scalar(types::PrimitiveType::Bool)}, input_types
-        );
-        for (size_t i = 0; i < input_nodes.size(); i++) {
-            this->add_memlet(parent, *input_nodes.at(i), "void", tasklet, input_types.at(i).first, {});
-        }
-        this->add_memlet(parent, tasklet, "_out", output_node, "void", {});
-        return output_node;
-    } else if (SymEngine::is_a<SymEngine::And>(*expr)) {
-        auto and_expr = SymEngine::rcp_static_cast<const SymEngine::And>(expr);
-        if (and_expr->get_container().size() != 2) {
-            throw InvalidSDFGException("StructuredSDFGBuilder: And expression must have exactly two arguments");
-        }
-
-        std::vector<data_flow::AccessNode*> input_nodes;
-        std::vector<std::pair<std::string, types::Scalar>> input_types;
-        for (auto& arg : and_expr->get_container()) {
-            auto& input_node = symbolic_expression_to_dataflow(parent, arg);
-            input_nodes.push_back(&input_node);
-            input_types.push_back(
-                {"_in" + std::to_string(input_types.size() + 1),
-                 static_cast<const types::Scalar&>(sdfg.type(input_node.data()))}
-            );
-        }
-
-        // Add new container for intermediate result
-        auto tmp = this->find_new_name();
-        this->add_container(tmp, types::Scalar(types::PrimitiveType::Bool));
-
-        auto& output_node = this->add_access(parent, tmp);
-        auto& tasklet = this->add_tasklet(
-            parent, data_flow::TaskletCode::logical_and, {"_out", types::Scalar(types::PrimitiveType::Bool)}, input_types
-        );
-        for (size_t i = 0; i < input_nodes.size(); i++) {
-            this->add_memlet(parent, *input_nodes.at(i), "void", tasklet, input_types.at(i).first, {});
-        }
-        this->add_memlet(parent, tasklet, "_out", output_node, "void", {});
-        return output_node;
-    } else {
-        throw std::runtime_error("Unsupported expression type");
     }
 };
 

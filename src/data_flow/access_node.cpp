@@ -1,5 +1,8 @@
 #include "sdfg/data_flow/access_node.h"
 
+#include "sdfg/data_flow/data_flow_graph.h"
+#include "sdfg/function.h"
+
 namespace sdfg {
 namespace data_flow {
 
@@ -15,7 +18,25 @@ AccessNode::AccessNode(
       };
 
 void AccessNode::validate(const Function& function) const {
-    // TODO: Implement
+    auto& graph = this->get_parent();
+
+    if (graph.out_degree(*this) > 1) {
+        MemletType type = (*graph.out_edges(*this).begin()).type();
+        for (auto& oedge : graph.out_edges(*this)) {
+            if (oedge.type() != type) {
+                throw InvalidSDFGException("Access node " + this->data() + " used with multiple memlet types");
+            }
+        }
+    }
+
+    if (graph.in_degree(*this) > 1) {
+        MemletType type = (*graph.in_edges(*this).begin()).type();
+        for (auto& iedge : graph.in_edges(*this)) {
+            if (iedge.type() != type) {
+                throw InvalidSDFGException("Access node " + this->data() + " used with multiple memlet types");
+            }
+        }
+    }
 }
 
 const std::string& AccessNode::data() const { return this->data_; };

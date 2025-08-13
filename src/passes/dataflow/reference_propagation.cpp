@@ -25,7 +25,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
         if (reduced.find(container) != reduced.end()) {
             continue;
         }
-        if (sdfg.is_external(container)) {
+        if (!sdfg.is_transient(container)) {
             continue;
         }
 
@@ -62,24 +62,24 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
             auto& viewed_node = static_cast<const data_flow::AccessNode&>(move_edge.src());
             auto& viewed_container = viewed_node.data();
 
-            // Criterion: Must not be raw memory address
+            // Criterion: Must not be constant data
             if (helpers::is_number(viewed_container) || symbolic::is_nullptr(symbolic::symbol(viewed_container))) {
                 continue;
             }
 
-            // Criterion: Must not be reinterpret cast
+            // Criterion: Must not be address of
             auto& move_subset = move_edge.subset();
             if (move_subset.empty()) {
-                continue;
-            }
-            auto& viewed_type = types::infer_type(sdfg, sdfg.type(viewed_container), move_subset);
-            types::Pointer final_type(viewed_type);
-            if (type != final_type) {
                 continue;
             }
 
             // Replace all uses of the view by the pointer
             for (auto& user : uses) {
+                // Criterion: Must be an access node
+                if (!dynamic_cast<data_flow::AccessNode*>(user->element())) {
+                    continue;
+                }
+
                 // Criterion: Must be dominated by the move
                 if (!users.dominates(*move, *user)) {
                     continue;
@@ -106,34 +106,48 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                     continue;
                 }
 
-                // Can only replace access nodes
-                if (!dynamic_cast<data_flow::AccessNode*>(user->element())) {
-                    continue;
-                }
                 auto& use_node = static_cast<data_flow::AccessNode&>(*user->element());
 
+                // Criterion: Must be a typed-pointer at this point, no empty subset / constant data
+                auto& base_type = move_edge.base_type();
+                auto& pointer_type = dynamic_cast<const types::Pointer&>(base_type);
+
+                // Criterion: Must strictly propagate into computational memlets
+                // Criterion: Types must match
                 auto use_graph = user->parent();
 
-                // Criterion: Must be a computational memlet
-                bool computational = true;
+                auto& result_base_type = types::infer_type(builder.subject(), move_edge.base_type(), move_subset);
+                sdfg::types::Pointer result_type(static_cast<const types::IType&>(result_base_type));
+
+                bool safe = true;
                 for (auto& oedge : use_graph->out_edges(use_node)) {
                     if (oedge.type() != data_flow::MemletType::Computational || oedge.has_range()) {
-                        computational = false;
+                        safe = false;
+                        break;
+                    }
+                    if (result_base_type.type_id() != types::TypeID::Pointer && oedge.base_type() != result_type) {
+                        safe = false;
                         break;
                     }
                 }
-                if (!computational) {
+                if (!safe) {
                     continue;
                 }
                 for (auto& iedge : use_graph->in_edges(use_node)) {
                     if (iedge.type() != data_flow::MemletType::Computational || iedge.has_range()) {
-                        computational = false;
+                        safe = false;
+                        break;
+                    }
+                    if (result_base_type.type_id() != types::TypeID::Pointer && iedge.base_type() != result_type) {
+                        safe = false;
                         break;
                     }
                 }
-                if (!computational) {
+                if (!safe) {
                     continue;
                 }
+
+                // Propagate pointer type
 
                 // Step 1: Replace container
                 use_node.data() = viewed_container;
@@ -160,8 +174,16 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                         new_subset.push_back(dim);
                     }
 
-                    oedge.set_subset(new_subset);
+                    // Build new type
+                    if (move_subset.size() == 1) {
+                        oedge.set_subset(new_subset);
+                    } else {
+                        // Case 2: multi-dimensional subset
+                        oedge.set_subset(new_subset);
+                        oedge.set_base_type(move_edge.base_type());
+                    }
                 }
+
                 for (auto& iedge : use_graph->in_edges(use_node)) {
                     // Compute new subset
                     data_flow::Subset new_subset;
@@ -183,7 +205,14 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                         new_subset.push_back(dim);
                     }
 
-                    iedge.set_subset(new_subset);
+                    // Case 1: 1D subset, "original pointer is shifted"
+                    if (move_subset.size() == 1) {
+                        iedge.set_subset(new_subset);
+                    } else {
+                        // Case 2: multi-dimensional subset
+                        iedge.set_subset(new_subset);
+                        iedge.set_base_type(move_edge.base_type());
+                    }
                 }
 
                 applied = true;

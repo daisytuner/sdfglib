@@ -16,8 +16,10 @@ TEST(For2MapTest, Basic) {
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer desc(base_desc);
-    builder.add_container("A", desc, true);
-    builder.add_container("B", desc, true);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("B", opaque_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
     builder.add_container("N", sym_desc, true);
@@ -37,10 +39,9 @@ TEST(For2MapTest, Basic) {
     auto& block = builder.add_block(body);
     auto& a = builder.add_access(block, "A");
     auto& b = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
-    builder.add_memlet(block, a, "void", tasklet, "_in", {indvar});
-    builder.add_memlet(block, tasklet, "_out", b, "void", {indvar});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, a, tasklet, "_in", {indvar}, desc);
+    builder.add_computational_memlet(block, tasklet, "_out", b, {indvar}, desc);
 
     // Analysis
     auto sdfg_opt = builder.move();
@@ -66,8 +67,10 @@ TEST(For2MapTest, MultiBound) {
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer desc(base_desc);
-    builder.add_container("A", desc, true);
-    builder.add_container("B", desc, true);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("B", opaque_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
     builder.add_container("N", sym_desc, true);
@@ -78,8 +81,7 @@ TEST(For2MapTest, MultiBound) {
     auto bound = symbolic::symbol("N");
     auto indvar = symbolic::symbol("i");
     auto init = symbolic::integer(0);
-    auto condition =
-        symbolic::And(symbolic::Lt(indvar, bound), symbolic::Le(indvar, symbolic::symbol("M")));
+    auto condition = symbolic::And(symbolic::Lt(indvar, bound), symbolic::Le(indvar, symbolic::symbol("M")));
     auto update = symbolic::add(indvar, symbolic::integer(1));
 
     auto& loop = builder.add_for(root, indvar, condition, init, update);
@@ -89,10 +91,9 @@ TEST(For2MapTest, MultiBound) {
     auto& block = builder.add_block(body);
     auto& a = builder.add_access(block, "A");
     auto& b = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
-    builder.add_memlet(block, a, "void", tasklet, "_in", {indvar});
-    builder.add_memlet(block, tasklet, "_out", b, "void", {indvar});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, a, tasklet, "_in", {indvar}, desc);
+    builder.add_computational_memlet(block, tasklet, "_out", b, {indvar}, desc);
 
     // Analysis
     auto sdfg_opt = builder.move();
@@ -118,8 +119,10 @@ TEST(For2MapTest, NonContiguous) {
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer desc(base_desc);
-    builder.add_container("A", desc, true);
-    builder.add_container("B", desc, true);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("B", opaque_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
     builder.add_container("N", sym_desc, true);
@@ -139,10 +142,9 @@ TEST(For2MapTest, NonContiguous) {
     auto& block = builder.add_block(body);
     auto& a = builder.add_access(block, "A");
     auto& b = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
-    builder.add_memlet(block, a, "void", tasklet, "_in", {indvar});
-    builder.add_memlet(block, tasklet, "_out", b, "void", {indvar});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, a, tasklet, "_in", {indvar}, desc);
+    builder.add_computational_memlet(block, tasklet, "_out", b, {indvar}, desc);
 
     // Analysis
     auto sdfg_opt = builder.move();
@@ -168,8 +170,10 @@ TEST(For2MapTest, NonCanonicalBound) {
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer desc(base_desc);
-    builder.add_container("A", desc, true);
-    builder.add_container("B", desc, true);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("B", opaque_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
     builder.add_container("N", sym_desc, true);
@@ -189,10 +193,9 @@ TEST(For2MapTest, NonCanonicalBound) {
     auto& block = builder.add_block(body);
     auto& a = builder.add_access(block, "A");
     auto& b = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
-    builder.add_memlet(block, a, "void", tasklet, "_in", {indvar});
-    builder.add_memlet(block, tasklet, "_out", b, "void", {indvar});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, a, tasklet, "_in", {indvar}, desc);
+    builder.add_computational_memlet(block, tasklet, "_out", b, {indvar}, desc);
 
     // Analysis
     auto sdfg_opt = builder.move();
@@ -218,8 +221,10 @@ TEST(For2MapTest, Shift) {
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer desc(base_desc);
-    builder.add_container("A", desc, true);
-    builder.add_container("B", desc, true);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("B", opaque_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
     builder.add_container("N", sym_desc, true);
@@ -239,10 +244,9 @@ TEST(For2MapTest, Shift) {
     auto& block = builder.add_block(body);
     auto& a = builder.add_access(block, "A");
     auto& b = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
-    auto& memlet_1 = builder.add_memlet(block, a, "void", tasklet, "_in", {indvar});
-    auto& memlet_2 = builder.add_memlet(block, tasklet, "_out", b, "void", {indvar});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, a, tasklet, "_in", {indvar}, desc);
+    builder.add_computational_memlet(block, tasklet, "_out", b, {indvar}, desc);
 
     // Analysis
     auto sdfg_opt = builder.move();
@@ -268,8 +272,10 @@ TEST(For2MapTest, LastValue) {
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer desc(base_desc);
-    builder.add_container("A", desc, true);
-    builder.add_container("B", desc, true);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("B", opaque_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
     builder.add_container("N", sym_desc, true);
@@ -289,10 +295,9 @@ TEST(For2MapTest, LastValue) {
     auto& block = builder.add_block(body);
     auto& a = builder.add_access(block, "A");
     auto& b = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out", base_desc},
-                                        {{"_in", base_desc}});
-    auto& memlet_1 = builder.add_memlet(block, a, "void", tasklet, "_in", {indvar});
-    auto& memlet_2 = builder.add_memlet(block, tasklet, "_out", b, "void", {indvar});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, a, tasklet, "_in", {indvar}, desc);
+    builder.add_computational_memlet(block, tasklet, "_out", b, {indvar}, desc);
 
     // Analysis
     auto sdfg_opt = builder.move();
@@ -318,7 +323,8 @@ TEST(For2MapTest, Tiled) {
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
     types::Pointer desc(base_desc);
-    builder.add_container("A", desc, true);
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
     builder.add_container("N", sym_desc, true);
@@ -338,9 +344,9 @@ TEST(For2MapTest, Tiled) {
 
     auto indvar_tile = symbolic::symbol("i");
     auto init_tile = indvar;
-    auto condition_tile =
-        symbolic::And(symbolic::Lt(indvar_tile, symbolic::symbol("N")),
-                      symbolic::Lt(indvar_tile, symbolic::add(indvar, tile_size)));
+    auto condition_tile = symbolic::
+        And(symbolic::Lt(indvar_tile, symbolic::symbol("N")),
+            symbolic::Lt(indvar_tile, symbolic::add(indvar, tile_size)));
     auto update_tile = symbolic::add(indvar_tile, symbolic::one());
 
     auto& loop_inner = builder.add_for(body, indvar_tile, condition_tile, init_tile, update_tile);
@@ -351,11 +357,10 @@ TEST(For2MapTest, Tiled) {
     auto& a_in = builder.add_access(block, "A");
     auto& i = builder.add_access(block, "i");
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, {"_out", base_desc},
-                                        {{"_in1", base_desc}, {"_in2", sym_desc}});
-    builder.add_memlet(block, a_in, "void", tasklet, "_in1", {symbolic::symbol("i")});
-    builder.add_memlet(block, i, "void", tasklet, "_in2", {});
-    builder.add_memlet(block, tasklet, "_out", a_out, "void", {symbolic::symbol("i")});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, a_in, tasklet, "_in1", {symbolic::symbol("i")}, desc);
+    builder.add_computational_memlet(block, i, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", a_out, {symbolic::symbol("i")}, desc);
 
     // Analysis
     auto sdfg_opt = builder.move();
@@ -368,13 +373,11 @@ TEST(For2MapTest, Tiled) {
     auto& sdfg_map = builder_opt.subject();
 
     // Check
-    auto map_outer =
-        dynamic_cast<const structured_control_flow::Map*>(&sdfg_map.root().at(0).first);
+    auto map_outer = dynamic_cast<const structured_control_flow::Map*>(&sdfg_map.root().at(0).first);
     EXPECT_TRUE(map_outer != nullptr);
     EXPECT_TRUE(symbolic::eq(map_outer->indvar(), symbolic::symbol("i_tile")));
 
-    auto map_inner =
-        dynamic_cast<const structured_control_flow::Map*>(&map_outer->root().at(0).first);
+    auto map_inner = dynamic_cast<const structured_control_flow::Map*>(&map_outer->root().at(0).first);
     EXPECT_TRUE(map_inner != nullptr);
     EXPECT_TRUE(symbolic::eq(map_inner->indvar(), symbolic::symbol("i")));
 }

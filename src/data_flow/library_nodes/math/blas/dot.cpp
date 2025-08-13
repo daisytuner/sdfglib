@@ -77,7 +77,6 @@ void DotNode::validate(const Function& function) const {
 }
 
 bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
-    auto& sdfg = builder.subject();
     auto& dataflow = this->get_parent();
     auto& block = static_cast<structured_control_flow::Block&>(*dataflow.get_parent());
 
@@ -132,18 +131,31 @@ bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
     auto& x = builder.add_access(new_block, input_node_x.data());
     auto& y = builder.add_access(new_block, input_node_y.data());
 
-    types::Scalar elem_type(sdfg.type(res_in.data()).primitive_type());
-    auto& tasklet = builder.add_tasklet(
-        new_block,
-        data_flow::TaskletCode::fma,
-        {"_out", elem_type},
-        {{"_in1", elem_type}, {"_in2", elem_type}, {"_in3", elem_type}}
-    );
+    auto& tasklet = builder.add_tasklet(new_block, data_flow::TaskletCode::fma, "_out", {"_in1", "_in2", "_in3"});
 
-    builder.add_computational_memlet(new_block, x, tasklet, "_in1", {symbolic::mul(loop_indvar, this->incx_)});
-    builder.add_computational_memlet(new_block, y, tasklet, "_in2", {symbolic::mul(loop_indvar, this->incy_)});
-    builder.add_computational_memlet(new_block, res_in, tasklet, "_in3", {});
-    builder.add_computational_memlet(new_block, tasklet, "_out", res_out, {});
+    builder.add_computational_memlet(
+        new_block,
+        x,
+        tasklet,
+        "_in1",
+        {symbolic::mul(loop_indvar, this->incx_)},
+        iedge_x->base_type(),
+        iedge_x->debug_info()
+    );
+    builder.add_computational_memlet(
+        new_block,
+        y,
+        tasklet,
+        "_in2",
+        {symbolic::mul(loop_indvar, this->incy_)},
+        iedge_y->base_type(),
+        iedge_y->debug_info()
+    );
+    builder
+        .add_computational_memlet(new_block, res_in, tasklet, "_in3", {}, oedge_res->base_type(), oedge_res->debug_info());
+    builder.add_computational_memlet(
+        new_block, tasklet, "_out", res_out, {}, oedge_res->base_type(), oedge_res->debug_info()
+    );
 
     // Clean up
     builder.remove_memlet(block, *iedge_x);

@@ -6,6 +6,8 @@ on:
       - main
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
+  schedule:
+    - cron: "0 4 * * *"
 
 jobs:
   build:
@@ -23,6 +25,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Mark GitHub Actions workdir as safe
+        run: git config --global --add safe.directory /__w/sdfglib/sdfglib
+
       - name: Formatting
         run: clang-format-19 -style=file --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
 
@@ -32,9 +37,7 @@ jobs:
           cd build
 
           # Enable coverage
-          # cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Debug -DSDFGLIB_ENABLE_COVERAGE=ON -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
-
-          cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Debug -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
+          cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Debug -DSDFGLIB_ENABLE_COVERAGE=ON -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
           ln -s compile_commands.json ../compile_commands.json
 
       # - name: Linting
@@ -49,7 +52,10 @@ jobs:
           ./tests/sdfglib_test
 
           # Run coverage
-          # gcovr --gcov-executable "llvm-cov-19 gcov" --filter ../include/ --filter ../src/ --coveralls coveralls.json -r ../
+          gcovr --gcov-executable "llvm-cov-19 gcov" --filter ../include/ --filter ../src/ --coveralls coveralls.json -r ../
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2
 
       - name: Test Arg-Capture-IO
         run: |
@@ -68,6 +74,3 @@ jobs:
 
           cd rtl/tests
           pytest -v rtl_tests.py
-
-      # - name: Coveralls
-      #   uses: coverallsapp/github-action@v2

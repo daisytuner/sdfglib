@@ -158,9 +158,13 @@ enum TaskletCode {
     rint,
     rintf,
     rintl,
+    lrint,
+    llrint,
     round,
     roundf,
     roundl,
+    lround,
+    llround,
     roundeven,
     roundevenf,
     roundevenl,
@@ -463,6 +467,10 @@ constexpr size_t arity(TaskletCode c) {
             return 1;
         case TaskletCode::powl:
             return 1;
+        case TaskletCode::lrint:
+            return 1;
+        case TaskletCode::llrint:
+            return 1;
         case TaskletCode::rint:
             return 1;
         case TaskletCode::rintf:
@@ -474,6 +482,10 @@ constexpr size_t arity(TaskletCode c) {
         case TaskletCode::roundf:
             return 1;
         case TaskletCode::roundl:
+            return 1;
+        case TaskletCode::lround:
+            return 1;
+        case TaskletCode::llround:
             return 1;
         case TaskletCode::roundeven:
             return 1;
@@ -562,8 +574,6 @@ class Tasklet : public CodeNode {
 
 private:
     TaskletCode code_;
-    std::pair<std::string, sdfg::types::Scalar> output_;
-    std::vector<std::pair<std::string, sdfg::types::Scalar>> inputs_;
     symbolic::Condition condition_;
 
     Tasklet(
@@ -572,8 +582,8 @@ private:
         const graph::Vertex vertex,
         DataFlowGraph& parent,
         const TaskletCode code,
-        const std::pair<std::string, sdfg::types::Scalar>& output,
-        const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs,
+        const std::string& output,
+        const std::vector<std::string>& inputs,
         const symbolic::Condition& condition
     );
 
@@ -585,17 +595,7 @@ public:
 
     TaskletCode code() const;
 
-    const std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs() const;
-
-    std::vector<std::pair<std::string, sdfg::types::Scalar>>& inputs();
-
-    const std::pair<std::string, sdfg::types::Scalar>& output() const;
-
-    const std::pair<std::string, sdfg::types::Scalar>& input(size_t index) const;
-
-    const sdfg::types::Scalar& input_type(const std::string& input) const;
-
-    const sdfg::types::Scalar& output_type() const;
+    const std::string& output() const;
 
     bool needs_connector(size_t index) const override;
 

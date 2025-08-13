@@ -100,24 +100,26 @@ void CPPCodeGenerator::dispatch_structures() {
 };
 
 void CPPCodeGenerator::dispatch_globals() {
+    // Externals are pointers. However, we need to declare them as the base type.
     for (auto& container : sdfg_.externals()) {
-        this->globals_stream_ << "extern " << language_extension_.declaration(container, sdfg_.type(container)) << ";"
-                              << std::endl;
+        auto& type = dynamic_cast<const types::Pointer&>(sdfg_.type(container));
+        assert(type.has_pointee_type() && "Externals must have a pointee type");
+        auto& base_type = type.pointee_type();
+
+        if (sdfg_.linkage_type(container) == LinkageType_External) {
+            this->globals_stream_ << "extern " << language_extension_.declaration(container, base_type) << ";"
+                                  << std::endl;
+        } else {
+            this->globals_stream_ << "static " << language_extension_.declaration(container, base_type);
+            if (!type.initializer().empty()) {
+                this->globals_stream_ << " = " << type.initializer();
+            }
+            this->globals_stream_ << ";" << std::endl;
+        }
     }
 };
 
 void CPPCodeGenerator::dispatch_schedule() {
-    // Map external variables to internal variables
-    for (auto& container : sdfg_.containers()) {
-        if (!sdfg_.is_internal(container)) {
-            continue;
-        }
-        std::string external_name = container.substr(0, container.length() - external_suffix.length());
-        this->main_stream_ << language_extension_.declaration(container, sdfg_.type(container));
-        this->main_stream_ << " = " << language_extension_.type_cast("&" + external_name, sdfg_.type(container));
-        this->main_stream_ << ";" << std::endl;
-    }
-
     // Declare transient containers
     for (auto& container : sdfg_.containers()) {
         if (!sdfg_.is_transient(container)) {

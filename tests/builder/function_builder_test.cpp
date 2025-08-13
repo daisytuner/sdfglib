@@ -11,7 +11,6 @@ TEST(FunctionBuilderTest, Empty) {
 
     EXPECT_EQ(sdfg->name(), "sdfg_1");
     EXPECT_EQ(sdfg->containers().size(), 0);
-    EXPECT_FALSE(sdfg->debug_info().has());
 }
 
 TEST(FunctionBuilderTest, AddTransient) {
@@ -57,6 +56,38 @@ TEST(FunctionBuilderTest, AddExternal) {
     EXPECT_FALSE(sdfg->is_argument("i"));
     EXPECT_TRUE(sdfg->is_external("i"));
     EXPECT_FALSE(sdfg->is_transient("i"));
+}
+
+TEST(FunctionBuilderTest, AddExternal_LinkageType_External) {
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& container = builder.add_external("i", types::Scalar(types::PrimitiveType::UInt64), LinkageType_External);
+
+    auto sdfg = builder.move();
+
+    EXPECT_EQ(sdfg->containers().size(), 1);
+    EXPECT_EQ(sdfg->exists("i"), true);
+    EXPECT_EQ(sdfg->type("i"), types::Scalar(types::PrimitiveType::UInt64));
+    EXPECT_FALSE(sdfg->is_argument("i"));
+    EXPECT_TRUE(sdfg->is_external("i"));
+    EXPECT_FALSE(sdfg->is_transient("i"));
+    EXPECT_EQ(sdfg->linkage_type("i"), LinkageType_External);
+}
+
+TEST(FunctionBuilderTest, AddExternal_LinkageType_Internal) {
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& container = builder.add_external("i", types::Scalar(types::PrimitiveType::UInt64), LinkageType_Internal);
+
+    auto sdfg = builder.move();
+
+    EXPECT_EQ(sdfg->containers().size(), 1);
+    EXPECT_EQ(sdfg->exists("i"), true);
+    EXPECT_EQ(sdfg->type("i"), types::Scalar(types::PrimitiveType::UInt64));
+    EXPECT_FALSE(sdfg->is_argument("i"));
+    EXPECT_TRUE(sdfg->is_external("i"));
+    EXPECT_FALSE(sdfg->is_transient("i"));
+    EXPECT_EQ(sdfg->linkage_type("i"), LinkageType_Internal);
 }
 
 TEST(FunctionBuilderTest, RemoveTransient) {
