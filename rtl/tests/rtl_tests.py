@@ -67,7 +67,7 @@ def test_instrumentation(event):
         assert events[i]["name"].startswith("main")
         assert events[i]["cat"] == "region,daisy"
         assert events[i]["ph"] == "X"
-        assert events[i]["args"]["module"] == "instrumentation_test"
+        assert events[i]["args"]["module"] == "instrumentation_test.c"
         assert events[i]["args"]["function"] == "main"
         assert events[i]["args"]["source_ranges"][0]["from"]["line"] == 18
         assert events[i]["args"]["source_ranges"][0]["to"]["line"] == 31
@@ -136,7 +136,7 @@ def test_instrumentation_cuda(event):
         assert events[i]["name"].startswith("main")
         assert events[i]["cat"] == "region,daisy"
         assert events[i]["ph"] == "X"
-        assert events[i]["args"]["module"] == "instrumentation_cuda_test"
+        assert events[i]["args"]["module"] == "instrumentation_cuda_test.cu"
         assert events[i]["args"]["function"] == "main"
         assert events[i]["args"]["source_ranges"][0]["from"]["line"] == 18
         assert events[i]["args"]["source_ranges"][0]["to"]["line"] == 31
