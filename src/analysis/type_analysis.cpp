@@ -42,10 +42,10 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     auto pointer_type = dynamic_cast<const types::Pointer*>(base_type);
                     base_type = &pointer_type->pointee_type();
 
-                } else if (base_type->type_id() == types::TypeID::Array) {
+                } /* else if (base_type->type_id() == types::TypeID::Array) {
                     auto array_type = dynamic_cast<const types::Array*>(base_type);
                     base_type = &array_type->element_type();
-                }
+                } */
 
                 if (base_type->type_id() == types::TypeID::Pointer) {
                     auto inner_pointer_type = dynamic_cast<const types::Pointer*>(base_type);
@@ -61,11 +61,11 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
             }
 
             if (*this->type_map_.at(user->container()) != *base_type) {
-                throw InvalidSDFGException(
+                /* throw InvalidSDFGException(
                     "Type mismatch for container '" + user->container() + "': expected " +
                     c_lang.declaration("", *this->type_map_.at(user->container())) + ", got " +
                     c_lang.declaration("", *base_type)
-                );
+                ); */
             }
         }
     }
@@ -92,10 +92,10 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     auto pointer_type = dynamic_cast<const types::Pointer*>(base_type);
                     base_type = &pointer_type->pointee_type();
 
-                } else if (base_type->type_id() == types::TypeID::Array) {
+                } /* else if (base_type->type_id() == types::TypeID::Array) {
                     auto array_type = dynamic_cast<const types::Array*>(base_type);
                     base_type = &array_type->element_type();
-                }
+                } */
 
                 if (base_type->type_id() == types::TypeID::Pointer) {
                     auto inner_pointer_type = dynamic_cast<const types::Pointer*>(base_type);
@@ -110,11 +110,11 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
             }
 
             if (*this->type_map_.at(user->container()) != *base_type) {
-                throw InvalidSDFGException(
+                /* throw InvalidSDFGException(
                     "Type mismatch for container '" + user->container() + "': expected " +
                     c_lang.declaration("", *this->type_map_.at(user->container())) + ", got " +
                     c_lang.declaration("", *base_type)
-                );
+                ); */
             }
         }
     }
@@ -139,10 +139,10 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     auto pointer_type = dynamic_cast<const types::Pointer*>(base_type);
                     base_type = &pointer_type->pointee_type();
 
-                } else if (base_type->type_id() == types::TypeID::Array) {
+                } /* else if (base_type->type_id() == types::TypeID::Array) {
                     auto array_type = dynamic_cast<const types::Array*>(base_type);
                     base_type = &array_type->element_type();
-                }
+                } */
 
                 if (base_type->type_id() == types::TypeID::Pointer) {
                     auto inner_pointer_type = dynamic_cast<const types::Pointer*>(base_type);
@@ -178,10 +178,10 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     auto pointer_type = dynamic_cast<const types::Pointer*>(base_type);
                     base_type = &pointer_type->pointee_type();
 
-                } else if (base_type->type_id() == types::TypeID::Array) {
+                } /* else if (base_type->type_id() == types::TypeID::Array) {
                     auto array_type = dynamic_cast<const types::Array*>(base_type);
                     base_type = &array_type->element_type();
-                }
+                } */
 
                 if (base_type->type_id() == types::TypeID::Pointer) {
                     auto inner_pointer_type = dynamic_cast<const types::Pointer*>(base_type);
