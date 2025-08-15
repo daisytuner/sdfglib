@@ -83,8 +83,8 @@ class Users : public Analysis {
     graph::Graph graph_;
     std::unordered_map<graph::Vertex, std::unique_ptr<User>, boost::hash<graph::Vertex>> users_;
 
-    std::unordered_map<structured_control_flow::ControlFlowNode*, User*> entries_;
-    std::unordered_map<structured_control_flow::ControlFlowNode*, User*> exits_;
+    std::unordered_map<const structured_control_flow::ControlFlowNode*, User*> entries_;
+    std::unordered_map<const structured_control_flow::ControlFlowNode*, User*> exits_;
 
     std::unordered_map<std::string, std::unordered_map<Element*, std::unordered_map<Use, User*>>>
         users_by_sdfg_;
@@ -178,7 +178,7 @@ class UsersView {
     std::unordered_map<User*, User*> sub_pdom_tree_;
 
    public:
-    UsersView(Users& users, structured_control_flow::ControlFlowNode& node);
+    UsersView(Users& users, const structured_control_flow::ControlFlowNode& node);
 
     /**** Users ****/
 

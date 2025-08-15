@@ -773,7 +773,7 @@ const std::unordered_set<User*> Users::all_uses_after(User& user) {
     return uses;
 };
 
-UsersView::UsersView(Users& users, structured_control_flow::ControlFlowNode& node) : users_(users) {
+UsersView::UsersView(Users& users, const structured_control_flow::ControlFlowNode& node) : users_(users) {
     this->entry_ = users.entries_.at(&node);
     this->exit_ = users.exits_.at(&node);
 
