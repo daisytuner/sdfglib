@@ -15,7 +15,7 @@ protected:
 public:
     TypeAnalysis(StructuredSDFG& sdfg);
 
-    const std::unordered_map<std::string, const sdfg::types::IType*>& type_map() const;
+    const sdfg::types::IType* get_outer_type(const std::string& container) const;
 };
 
 } // namespace analysis

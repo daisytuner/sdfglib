@@ -4,10 +4,10 @@
 #include <symengine/number.h>
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/analysis/mem_access_range_analysis.h"
+#include "sdfg/analysis/type_analysis.h"
 #include "sdfg/codegen/instrumentation/capture_var_plan.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/types/structure.h"
-#include "sdfg/types/utils.h"
 
 namespace sdfg {
 namespace codegen {
@@ -53,7 +53,8 @@ std::tuple<int, types::PrimitiveType> CodeGenerator::analyze_type_rec(
                                   << ": missing pointee type for dim > 0, cannot capture!" << std::endl;
                         return std::make_tuple(-2, types::Void);
                     } else {
-                        auto outer = types::infer_type_from_container(analysis_manager, sdfg, var_name);
+                        auto& type_analysis = analysis_manager.get<analysis::TypeAnalysis>();
+                        auto outer = type_analysis.get_outer_type(var_name);
                         if (outer != nullptr) {
                             if (auto* ptrType_new = dynamic_cast<const types::Pointer*>(outer)) {
                                 if (ptrType_new->has_pointee_type()) {
