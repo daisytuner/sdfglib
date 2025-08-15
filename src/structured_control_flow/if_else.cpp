@@ -26,7 +26,7 @@ std::pair<Sequence&, symbolic::Condition&> IfElse::at(size_t i) {
     return {*this->cases_.at(i), this->conditions_.at(i)};
 };
 
-bool IfElse::is_complete() {
+bool IfElse::is_complete() const{
     auto condition = symbolic::__false__();
     for (auto& entry : this->conditions_) {
         condition = symbolic::Or(condition, entry);
