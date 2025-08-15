@@ -2,12 +2,9 @@
 
 #include <cassert>
 #include <memory>
-#include <string>
 #include <vector>
 
-#include "sdfg/analysis/analysis.h"
 #include "sdfg/function.h"
-#include "sdfg/structured_sdfg.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/types/type.h"
 
@@ -44,16 +41,6 @@ symbolic::Expression get_contiguous_element_size(const types::IType& type, bool 
 ///     if the size cannot be determined statically
 /// @return Empty RCP if the size is unknown
 symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_time_eval = true);
-
-/** Infers the type of a container from its users.
- *  @param analysis_manager Analysis manager to use for finding users.
- *  @param sdfg The SDFG to use for type inference.
- *  @param container The name of the container to infer the type for.
- *  @return The inferred type of the container.
- */
-const types::IType* infer_type_from_container(
-    analysis::AnalysisManager& analysis_manager, const StructuredSDFG& sdfg, std::string container
-);
 
 } // namespace types
 } // namespace sdfg
