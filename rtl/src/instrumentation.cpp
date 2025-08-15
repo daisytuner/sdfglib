@@ -120,7 +120,6 @@ void ensure_global_init() {
 
         if (g_event_names_cpu.size() > 0) {
             for (const auto& ev : g_event_names_cpu) {
-                if (ev == "DURATION_TIME") continue; // handled separately
                 if (_PAPI_add_named_event(g_eventset_cpu, ev.c_str()) != 0) {
                     std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
                     exit(EXIT_FAILURE);
@@ -192,7 +191,7 @@ void write_event_json(
     entry << "\"args\":{";
     entry << "\"region_id\":\"" << md->region_name << "\",";
     entry << "\"function\":\"" << md->function_name << "\",";
-    entry << "\"module\":\"" << std::filesystem::path(md->file_name).stem().string() << "\",";
+    entry << "\"module\":\"" << std::filesystem::path(md->file_name).filename().string() << "\",";
     entry << "\"build_id\":\"\",";
     entry << "\"source_ranges\":[";
     entry << "{\"file\":\"" << md->file_name << "\",";
