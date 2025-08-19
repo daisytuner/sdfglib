@@ -1172,6 +1172,10 @@ void register_default_serializers() {
             return std::make_unique<math::ml::DivNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::ml::LibraryNodeType_Dropout.value(), []() {
+            return std::make_unique<math::ml::DropoutSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_Elu.value(), []() {
             return std::make_unique<math::ml::EluNodeSerializer>();
         });
