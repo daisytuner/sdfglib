@@ -13,6 +13,7 @@
 #include "sdfg/data_flow/library_nodes/math/ml/clip.h"
 #include "sdfg/data_flow/library_nodes/math/ml/conv.h"
 #include "sdfg/data_flow/library_nodes/math/ml/div.h"
+#include "sdfg/data_flow/library_nodes/math/ml/dropout.h"
 #include "sdfg/data_flow/library_nodes/math/ml/elu.h"
 #include "sdfg/data_flow/library_nodes/math/ml/erf.h"
 #include "sdfg/data_flow/library_nodes/math/ml/hard_sigmoid.h"

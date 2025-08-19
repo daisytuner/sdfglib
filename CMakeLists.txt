@@ -105,6 +105,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/ml/clip.cpp
     src/data_flow/library_nodes/math/ml/conv.cpp
     src/data_flow/library_nodes/math/ml/div.cpp
+    src/data_flow/library_nodes/math/ml/dropout.cpp
     src/data_flow/library_nodes/math/ml/element_wise.cpp
     src/data_flow/library_nodes/math/ml/elu.cpp
     src/data_flow/library_nodes/math/ml/erf.cpp
