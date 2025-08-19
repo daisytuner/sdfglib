@@ -9,11 +9,18 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_ReLU("ReLU");
+inline data_flow::LibraryNodeCode LibraryNodeType_HardSigmoid("HardSigmoid");
 
-class ReLUNode : public ElementWiseUnaryNode {
+class HardSigmoidNode : public ElementWiseUnaryNode {
 public:
-    ReLUNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
+    HardSigmoidNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent,
+        const std::string& alpha = "0.2f",
+        const std::string& beta = "0.5f"
+    );
 
     bool expand_operation(
         builder::StructuredSDFGBuilder& builder,
@@ -30,7 +37,7 @@ public:
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override;
 };
 
-typedef ElementWiseUnaryNodeSerializer<ReLUNode> ReLUNodeSerializer;
+typedef ElementWiseUnaryNodeSerializer<HardSigmoidNode> HardSigmoidNodeSerializer;
 
 } // namespace ml
 } // namespace math

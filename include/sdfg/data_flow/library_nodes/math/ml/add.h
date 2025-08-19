@@ -9,19 +9,21 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_ReLU("ReLU");
+inline data_flow::LibraryNodeCode LibraryNodeType_Add("Add");
 
-class ReLUNode : public ElementWiseUnaryNode {
+class AddNode : public ElementWiseBinaryNode {
 public:
-    ReLUNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
+    AddNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
 
     bool expand_operation(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
         structured_control_flow::Sequence& body,
-        const std::string& input_name,
+        const std::string& input_name_a,
+        const std::string& input_name_b,
         const std::string& output_name,
-        const types::IType& input_type,
+        const types::IType& input_type_a,
+        const types::IType& input_type_b,
         const types::IType& output_type,
         const data_flow::Subset& subset
     ) override;
@@ -30,7 +32,7 @@ public:
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override;
 };
 
-typedef ElementWiseUnaryNodeSerializer<ReLUNode> ReLUNodeSerializer;
+typedef ElementWiseBinaryNodeSerializer<AddNode> AddNodeSerializer;
 
 } // namespace ml
 } // namespace math

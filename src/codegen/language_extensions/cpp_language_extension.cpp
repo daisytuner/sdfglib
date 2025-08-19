@@ -162,6 +162,12 @@ constexpr const char* code_to_string(data_flow::TaskletCode c) {
             return "cbrtf";
         case data_flow::TaskletCode::cbrtl:
             return "cbrtl";
+        case data_flow::TaskletCode::erf:
+            return "erf";
+        case data_flow::TaskletCode::erff:
+            return "erff";
+        case data_flow::TaskletCode::erfl:
+            return "erfl";
         case data_flow::TaskletCode::exp10:
             return "exp10";
         case data_flow::TaskletCode::exp10f:
