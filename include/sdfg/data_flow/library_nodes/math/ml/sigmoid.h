@@ -9,11 +9,13 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_ReLU("ReLU");
+inline data_flow::LibraryNodeCode LibraryNodeType_Sigmoid("Sigmoid");
 
-class ReLUNode : public ElementWiseUnaryNode {
+class SigmoidNode : public ElementWiseUnaryNode {
 public:
-    ReLUNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
+    SigmoidNode(
+        size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
+    );
 
     bool expand_operation(
         builder::StructuredSDFGBuilder& builder,
@@ -30,7 +32,7 @@ public:
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override;
 };
 
-typedef ElementWiseUnaryNodeSerializer<ReLUNode> ReLUNodeSerializer;
+typedef ElementWiseUnaryNodeSerializer<SigmoidNode> SigmoidNodeSerializer;
 
 } // namespace ml
 } // namespace math

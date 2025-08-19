@@ -9,11 +9,18 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_ReLU("ReLU");
+inline data_flow::LibraryNodeCode LibraryNodeType_Clip("Clip");
 
-class ReLUNode : public ElementWiseUnaryNode {
+class ClipNode : public ElementWiseUnaryNode {
 public:
-    ReLUNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
+    ClipNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent,
+        const std::string& min = "",
+        const std::string& max = ""
+    );
 
     bool expand_operation(
         builder::StructuredSDFGBuilder& builder,
@@ -30,7 +37,7 @@ public:
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override;
 };
 
-typedef ElementWiseUnaryNodeSerializer<ReLUNode> ReLUNodeSerializer;
+typedef ElementWiseUnaryNodeSerializer<ClipNode> ClipNodeSerializer;
 
 } // namespace ml
 } // namespace math
