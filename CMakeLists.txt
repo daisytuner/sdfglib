@@ -202,8 +202,6 @@ target_include_directories(sdfglib
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine/symengine/utilities/cereal/include>
 )
 
-target_compile_options(sdfglib PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-private-field -Wno-switch -Wno-deprecated-declarations)
-
 if(SDFGLIB_ENABLE_SANITIZER)
   target_compile_options(sdfglib PUBLIC ${_SAN_COMPILE_OPTS})
   target_link_options   (sdfglib PUBLIC ${_SAN_LINK_OPTS})
