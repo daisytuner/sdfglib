@@ -9,28 +9,16 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_MaxPool("ml::MaxPool");
+inline data_flow::LibraryNodeCode LibraryNodeType_MatMul("ml::MatMul");
 
-class MaxPoolNode : public MathNode {
-private:
-    std::vector<size_t> kernel_shape_;
-    std::vector<size_t> pads_;
-    std::vector<size_t> strides_;
-
+class MatMulNode : public MathNode {
 public:
-    MaxPoolNode(
+    MatMulNode(
         size_t element_id,
         const DebugInfo &debug_info,
         const graph::Vertex vertex,
-        data_flow::DataFlowGraph &parent,
-        std::vector<size_t> kernel_shape,
-        std::vector<size_t> pads,
-        std::vector<size_t> strides
+        data_flow::DataFlowGraph &parent
     );
-
-    std::vector<size_t> kernel_shape() const;
-    std::vector<size_t> pads() const;
-    std::vector<size_t> strides() const;
 
     void validate(const Function &function) const override;
 
@@ -40,7 +28,7 @@ public:
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph &parent) const override;
 };
 
-class MaxPoolNodeSerializer : public serializer::LibraryNodeSerializer {
+class MatMulNodeSerializer : public serializer::LibraryNodeSerializer {
 public:
     nlohmann::json serialize(const data_flow::LibraryNode &library_node) override;
 
@@ -49,6 +37,6 @@ public:
     ) override;
 };
 
-} // namespace ml
-} // namespace math
-} // namespace sdfg
+}
+}
+}

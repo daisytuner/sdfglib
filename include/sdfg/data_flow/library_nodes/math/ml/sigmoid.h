@@ -9,7 +9,7 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_Sigmoid("Sigmoid");
+inline data_flow::LibraryNodeCode LibraryNodeType_Sigmoid("ml::Sigmoid");
 
 class SigmoidNode : public ElementWiseUnaryNode {
 public:

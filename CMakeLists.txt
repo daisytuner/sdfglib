@@ -111,6 +111,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/ml/erf.cpp
     src/data_flow/library_nodes/math/ml/hard_sigmoid.cpp
     src/data_flow/library_nodes/math/ml/leaky_relu.cpp
+    src/data_flow/library_nodes/math/ml/matmul.cpp
     src/data_flow/library_nodes/math/ml/maxpool.cpp
     src/data_flow/library_nodes/math/ml/mul.cpp
     src/data_flow/library_nodes/math/ml/pow.cpp

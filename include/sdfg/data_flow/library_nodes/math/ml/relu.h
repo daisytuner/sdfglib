@@ -9,7 +9,7 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_ReLU("ReLU");
+inline data_flow::LibraryNodeCode LibraryNodeType_ReLU("ml::ReLU");
 
 class ReLUNode : public ElementWiseUnaryNode {
 public:
