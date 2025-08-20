@@ -109,6 +109,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/ml/element_wise.cpp
     src/data_flow/library_nodes/math/ml/elu.cpp
     src/data_flow/library_nodes/math/ml/erf.cpp
+    src/data_flow/library_nodes/math/ml/gemm.cpp
     src/data_flow/library_nodes/math/ml/hard_sigmoid.cpp
     src/data_flow/library_nodes/math/ml/leaky_relu.cpp
     src/data_flow/library_nodes/math/ml/matmul.cpp

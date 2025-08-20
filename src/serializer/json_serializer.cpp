@@ -1184,12 +1184,16 @@ void register_default_serializers() {
             return std::make_unique<math::ml::ErfNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_LeakyReLU.value(), []() {
-            return std::make_unique<math::ml::LeakyReLUNodeSerializer>();
+        .register_library_node_serializer(math::ml::LibraryNodeType_Gemm.value(), []() {
+            return std::make_unique<math::ml::GemmNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_HardSigmoid.value(), []() {
             return std::make_unique<math::ml::HardSigmoidNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::ml::LibraryNodeType_LeakyReLU.value(), []() {
+            return std::make_unique<math::ml::LeakyReLUNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_MatMul.value(), []() {
