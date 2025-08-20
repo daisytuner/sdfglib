@@ -112,12 +112,15 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/ml/gemm.cpp
     src/data_flow/library_nodes/math/ml/hard_sigmoid.cpp
     src/data_flow/library_nodes/math/ml/leaky_relu.cpp
+    src/data_flow/library_nodes/math/ml/log_softmax.cpp
     src/data_flow/library_nodes/math/ml/matmul.cpp
     src/data_flow/library_nodes/math/ml/maxpool.cpp
     src/data_flow/library_nodes/math/ml/mul.cpp
     src/data_flow/library_nodes/math/ml/pow.cpp
+    src/data_flow/library_nodes/math/ml/reduce_mean.cpp
     src/data_flow/library_nodes/math/ml/relu.cpp
     src/data_flow/library_nodes/math/ml/sigmoid.cpp
+    src/data_flow/library_nodes/math/ml/softmax.cpp
     src/data_flow/library_nodes/math/ml/sqrt.cpp
     src/data_flow/library_nodes/math/ml/sub.cpp
     src/data_flow/library_nodes/math/ml/tanh.cpp
