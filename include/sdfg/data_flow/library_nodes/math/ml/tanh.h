@@ -9,7 +9,7 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_Tanh("Tanh");
+inline data_flow::LibraryNodeCode LibraryNodeType_Tanh("ml::Tanh");
 
 class TanhNode : public ElementWiseUnaryNode {
 public:
