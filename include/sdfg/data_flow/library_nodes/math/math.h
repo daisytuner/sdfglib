@@ -18,6 +18,7 @@
 #include "sdfg/data_flow/library_nodes/math/ml/erf.h"
 #include "sdfg/data_flow/library_nodes/math/ml/hard_sigmoid.h"
 #include "sdfg/data_flow/library_nodes/math/ml/leaky_relu.h"
+#include "sdfg/data_flow/library_nodes/math/ml/matmul.h"
 #include "sdfg/data_flow/library_nodes/math/ml/maxpool.h"
 #include "sdfg/data_flow/library_nodes/math/ml/mul.h"
 #include "sdfg/data_flow/library_nodes/math/ml/pow.h"

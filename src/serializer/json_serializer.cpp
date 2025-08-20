@@ -1192,6 +1192,10 @@ void register_default_serializers() {
             return std::make_unique<math::ml::HardSigmoidNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::ml::LibraryNodeType_MatMul.value(), []() {
+            return std::make_unique<math::ml::MatMulNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_MaxPool.value(), []() {
             return std::make_unique<math::ml::MaxPoolNodeSerializer>();
         });
