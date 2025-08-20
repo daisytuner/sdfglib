@@ -9,7 +9,7 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-Dropout::Dropout(
+DropoutNode::DropoutNode(
     size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
 )
     : MathNode(
@@ -23,11 +23,11 @@ Dropout::Dropout(
           data_flow::ImplementationType_NONE
       ) {}
 
-void Dropout::validate(const Function& function) const {
+void DropoutNode::validate(const Function& function) const {
     // TODO: Implement
 }
 
-bool Dropout::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
+bool DropoutNode::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& dataflow = this->get_parent();
     auto& block = static_cast<structured_control_flow::Block&>(*dataflow.get_parent());
     if (dataflow.in_degree(*this) != 1 || dataflow.out_degree(*this) != 2) {
@@ -139,9 +139,9 @@ bool Dropout::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
     return true;
 }
 
-std::unique_ptr<data_flow::DataFlowNode> Dropout::
+std::unique_ptr<data_flow::DataFlowNode> DropoutNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
-    return std::unique_ptr<data_flow::DataFlowNode>(new Dropout(element_id, this->debug_info(), vertex, parent));
+    return std::unique_ptr<data_flow::DataFlowNode>(new DropoutNode(element_id, this->debug_info(), vertex, parent));
 }
 
 } // namespace ml
