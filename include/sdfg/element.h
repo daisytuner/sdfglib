@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <memory>
 #include <string>
 
 #include "sdfg/exceptions.h"
@@ -19,8 +20,7 @@ class JSONSerializer;
 
 class Function;
 
-class DebugInfo {
-private:
+struct DebugLoc {
     std::string filename_;
     std::string function_;
     size_t start_line_;
@@ -29,20 +29,20 @@ private:
     size_t end_column_;
 
     bool has_;
+};
+
+class DebugInfoInstruction {
+private:
+    DebugLoc loc_;
+
+    std::unique_ptr<DebugInfoInstruction> InlinedAt_;
 
 public:
-    DebugInfo();
+    DebugInfoInstruction();
 
-    DebugInfo(std::string filename, size_t start_line, size_t start_column, size_t end_line, size_t end_column);
+    DebugInfoInstruction(DebugLoc loc);
 
-    DebugInfo(
-        std::string filename,
-        std::string function,
-        size_t start_line,
-        size_t start_column,
-        size_t end_line,
-        size_t end_column
-    );
+    DebugInfoInstruction(DebugLoc loc, std::unique_ptr<DebugInfoInstruction> inlined_at);
 
     bool has() const;
 
@@ -58,7 +58,7 @@ public:
 
     size_t end_column() const;
 
-    static DebugInfo merge(const DebugInfo& left, const DebugInfo& right);
+    static DebugInfoInstruction merge(const DebugInfoInstruction& left, const DebugInfoInstruction& right);
 };
 
 class Element {

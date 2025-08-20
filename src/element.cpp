@@ -3,38 +3,34 @@
 namespace sdfg {
 
 DebugInfo::DebugInfo()
-    : filename_(), function_(), start_line_(0), start_column_(0), end_line_(0), end_column_(0), has_(false) {
+    : loc_("", "", 0, 0, 0, 0, false), InlinedAt_(nullptr) {
 
       };
 
-DebugInfo::DebugInfo(std::string filename, size_t start_line, size_t start_column, size_t end_line, size_t end_column)
-    : filename_(filename), function_(), start_line_(start_line), start_column_(start_column), end_line_(end_line),
-      end_column_(end_column), has_(true) {
+DebugInfo::DebugInfo(DebugLoc loc)
+    : loc_(loc), InlinedAt_(nullptr) {
 
       };
 
-DebugInfo::DebugInfo(
-    std::string filename, std::string function, size_t start_line, size_t start_column, size_t end_line, size_t end_column
-)
-    : filename_(filename), function_(function), start_line_(start_line), start_column_(start_column),
-      end_line_(end_line), end_column_(end_column), has_(true) {
+DebugInfo::DebugInfo(DebugLoc loc, std::unique_ptr<DebugInfo> inlined_at)
+    : loc_(loc), InlinedAt_(std::move(inlined_at)) {
 
       };
 
 
-bool DebugInfo::has() const { return this->has_; };
+bool DebugInfo::has() const { return this->loc_.has_; };
 
-std::string DebugInfo::filename() const { return this->filename_; };
+std::string DebugInfo::filename() const { return this->loc_.filename_; };
 
-std::string DebugInfo::function() const { return this->function_; };
+std::string DebugInfo::function() const { return this->loc_.function_; };
 
-size_t DebugInfo::start_line() const { return this->start_line_; };
+size_t DebugInfo::start_line() const { return this->loc_.start_line_; };
 
-size_t DebugInfo::start_column() const { return this->start_column_; };
+size_t DebugInfo::start_column() const { return this->loc_.start_column_; };
 
-size_t DebugInfo::end_line() const { return this->end_line_; };
+size_t DebugInfo::end_line() const { return this->loc_.end_line_; };
 
-size_t DebugInfo::end_column() const { return this->end_column_; };
+size_t DebugInfo::end_column() const { return this->loc_.end_column_; };
 
 DebugInfo DebugInfo::merge(const DebugInfo& left, const DebugInfo& right) {
     if (!left.has()) {
