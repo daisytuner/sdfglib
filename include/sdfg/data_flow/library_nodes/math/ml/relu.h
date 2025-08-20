@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sdfg/data_flow/library_nodes/math/math_node.h"
+#include "sdfg/data_flow/library_nodes/math/ml/element_wise.h"
 
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 #include "sdfg/serializer/json_serializer.h"
@@ -11,33 +11,26 @@ namespace ml {
 
 inline data_flow::LibraryNodeCode LibraryNodeType_ReLU("ReLU");
 
-class ReLUNode : public math::MathNode {
+class ReLUNode : public ElementWiseUnaryNode {
 public:
-    ReLUNode(
-        size_t element_id,
-        const DebugInfo& debug_info,
-        const graph::Vertex vertex,
-        data_flow::DataFlowGraph& parent,
-        const std::string& output,
-        const std::string& input
-    );
+    ReLUNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
 
-    void validate(const Function& function) const override;
-
-    bool expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
+    bool expand_operation(
+        builder::StructuredSDFGBuilder& builder,
+        analysis::AnalysisManager& analysis_manager,
+        structured_control_flow::Sequence& body,
+        const std::string& input_name,
+        const std::string& output_name,
+        const types::IType& input_type,
+        const types::IType& output_type,
+        const data_flow::Subset& subset
+    ) override;
 
     std::unique_ptr<data_flow::DataFlowNode>
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override;
 };
 
-class ReLUNodeSerializer : public serializer::LibraryNodeSerializer {
-public:
-    nlohmann::json serialize(const data_flow::LibraryNode& library_node) override;
-
-    data_flow::LibraryNode& deserialize(
-        const nlohmann::json& j, builder::StructuredSDFGBuilder& builder, structured_control_flow::Block& parent
-    ) override;
-};
+typedef ElementWiseUnaryNodeSerializer<ReLUNode> ReLUNodeSerializer;
 
 } // namespace ml
 } // namespace math

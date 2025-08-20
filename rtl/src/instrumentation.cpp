@@ -3,8 +3,10 @@
 #include <cstring>
 #include <ctime>
 #include <dlfcn.h>
+#include <filesystem>
 #include <iterator>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include <unistd.h>
 #include <vector>
@@ -118,7 +120,6 @@ void ensure_global_init() {
 
         if (g_event_names_cpu.size() > 0) {
             for (const auto& ev : g_event_names_cpu) {
-                if (ev == "DURATION_TIME") continue; // handled separately
                 if (_PAPI_add_named_event(g_eventset_cpu, ev.c_str()) != 0) {
                     std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
                     exit(EXIT_FAILURE);
@@ -157,37 +158,64 @@ void write_event_json(
         std::fprintf(f, ",\n");
     }
 
-    std::fprintf(
-        f,
-        "{\"name\":\"%s\",\"cat\":\"DAISY\",\"ph\":\"X\",\"ts\":%lld,\"dur\":%lld,\"pid\":%d,\"tid\":0,\"args\":{",
-        md->region_name,
-        ns_to_us(start_ns),
-        ns_to_us(dur_ns),
-        getpid()
-    );
-    // Source location metadata
-    std::fprintf(
-        f,
-        "\"file\":\"%s\",\"function\":\"%s\",\"line_begin\":%ld,\"line_end\":%ld,\"column_begin\":%ld,\"column_end\":%"
-        "ld",
-        md->file_name ? md->file_name : "<unknown>",
-        md->function_name ? md->function_name : "<unknown>",
-        md->line_begin,
-        md->line_end,
-        md->column_begin,
-        md->column_end
-    );
+    // Target format:
+    // "ph": "X",
+    // "cat": "region,daisy",
+    // "name": "main  [L110–118]",
+    // "pid": 9535,
+    // "tid": 0,
+    // "ts": 11657,
+    // "dur": 613913,
+    // "args": {
+    // "region_id": "__daisy_correlation18122842100848744318_0_0_1396",
+    // "function": "main",
+    // "module": "correlation",
+    // "build_id": "",
+    // "source_ranges": [
+    //     {
+    //     "file": "/home/lukas/repos/docc/tests/polybench/datamining/correlation/correlation.c",
+    //     "from": { "line": 110, "col": 17 },
+    //     "to":   { "line": 118, "col": 24 }
+    //     }
+    // ],
+    // "metrics": { "CYCLES": 2834021434 } }
+
+    std::stringstream entry;
+    entry << "{\"ph\":\"X\",";
+    entry << "\"cat\":\"region,daisy\",";
+    entry << "\"name\":\"" << md->function_name << " [L" << md->line_begin << "-" << md->line_end << "]\",";
+    entry << "\"pid\":" << getpid() << ",";
+    entry << "\"tid\":" << gettid() << ",";
+    entry << "\"ts\":" << ns_to_us(start_ns) << ",";
+    entry << "\"dur\":" << ns_to_us(dur_ns) << ",";
+    entry << "\"args\":{";
+    entry << "\"region_id\":\"" << md->region_name << "\",";
+    entry << "\"function\":\"" << md->function_name << "\",";
+    entry << "\"module\":\"" << std::filesystem::path(md->file_name).filename().string() << "\",";
+    entry << "\"build_id\":\"\",";
+    entry << "\"source_ranges\":[";
+    entry << "{\"file\":\"" << md->file_name << "\",";
+    entry << "\"from\":{\"line\":" << md->line_begin << ",\"col\":" << md->column_begin << "},";
+    entry << "\"to\":{\"line\":" << md->line_end << ",\"col\":" << md->column_end << "}";
+    entry << "}";
+    entry << "],\"metrics\":{";
     // PAPI counters
     size_t num_events = event_set == __DAISY_EVENT_SET_CPU ? g_event_names_cpu.size() : g_event_names_cuda.size();
     for (size_t i = 0; i < num_events; ++i) {
-        std::fprintf(
-            f,
-            ",\"%s\":%lld",
-            event_set == __DAISY_EVENT_SET_CPU ? g_event_names_cpu[i].c_str() : g_event_names_cuda[i].c_str(),
-            counts[i]
-        );
+        if (event_set == __DAISY_EVENT_SET_CPU) {
+            entry << "\"" << g_event_names_cpu[i] << "\":" << counts[i];
+        } else {
+            entry << "\"" << g_event_names_cuda[i] << "\":" << counts[i];
+        }
+        if (i < num_events - 1) {
+            entry << ",";
+        }
     }
-    std::fprintf(f, "}" /* end args */ "}" /* end event obj */);
+    entry << "}";
+    entry << "}";
+    entry << "}";
+
+    std::fprintf(f, "%s", entry.str().c_str());
     std::fclose(f);
 }
 } // anonymous namespace

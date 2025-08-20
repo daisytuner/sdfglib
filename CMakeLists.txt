@@ -3,6 +3,11 @@ cmake_minimum_required(VERSION 3.16)
 project(sdfglib VERSION 0.0.1 DESCRIPTION "A library for generating structured dataflow graphs (SDFG)")
 include(GNUInstallDirs)
 
+if(NOT DEFINED PARENT_PROJECT_INSTALL_PREFIX)
+    set(PARENT_PROJECT_INSTALL_PREFIX "" CACHE STRING
+           "Path prefix (trailing /!) for installing sdfglib artifacts. For example 'lib/docc-0.1.6/'" )
+endif()
+
 option(SDFGLIB_BUILD_TESTS
        "Build tests" ON)
 
@@ -97,9 +102,25 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/math_node.cpp
     src/data_flow/library_nodes/math/blas/dot.cpp
     src/data_flow/library_nodes/math/blas/gemm.cpp
+    src/data_flow/library_nodes/math/ml/abs.cpp
+    src/data_flow/library_nodes/math/ml/add.cpp
+    src/data_flow/library_nodes/math/ml/clip.cpp
     src/data_flow/library_nodes/math/ml/conv.cpp
+    src/data_flow/library_nodes/math/ml/div.cpp
+    src/data_flow/library_nodes/math/ml/dropout.cpp
+    src/data_flow/library_nodes/math/ml/element_wise.cpp
+    src/data_flow/library_nodes/math/ml/elu.cpp
+    src/data_flow/library_nodes/math/ml/erf.cpp
+    src/data_flow/library_nodes/math/ml/hard_sigmoid.cpp
+    src/data_flow/library_nodes/math/ml/leaky_relu.cpp
     src/data_flow/library_nodes/math/ml/maxpool.cpp
+    src/data_flow/library_nodes/math/ml/mul.cpp
+    src/data_flow/library_nodes/math/ml/pow.cpp
     src/data_flow/library_nodes/math/ml/relu.cpp
+    src/data_flow/library_nodes/math/ml/sigmoid.cpp
+    src/data_flow/library_nodes/math/ml/sqrt.cpp
+    src/data_flow/library_nodes/math/ml/sub.cpp
+    src/data_flow/library_nodes/math/ml/tanh.cpp
     src/deepcopy/structured_sdfg_deep_copy.cpp
     src/graph/graph.cpp
     src/visitor/structured_sdfg_visitor.cpp
@@ -125,6 +146,7 @@ set(SOURCE_FILES
     src/passes/structured_control_flow/loop_normalization.cpp
     src/passes/structured_control_flow/sequence_fusion.cpp
     src/passes/structured_control_flow/while_to_for_conversion.cpp
+    src/passes/debug_info_propagation.cpp
     src/serializer/json_serializer.cpp
     src/structured_control_flow/block.cpp
     src/structured_control_flow/control_flow_node.cpp

@@ -15,7 +15,7 @@ set(TEST_FILES
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(capture_io_test ${TEST_FILES})
 target_include_directories(capture_io_test PRIVATE ./)
-target_link_libraries(capture_io_test gtest_main sdfglib::arg_capture_io)
+target_link_libraries(capture_io_test gtest_main arg_capture_io)
 
 add_test(NAME capture_io_test_test COMMAND capture_io_test)
 

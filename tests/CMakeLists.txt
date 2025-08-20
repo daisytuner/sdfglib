@@ -49,6 +49,7 @@ set(TEST_FILES
     passes/structured_control_flow/condition_elimination_test.cpp
     passes/structured_control_flow/for2map_test.cpp
     passes/structured_control_flow/loop_normalization_test.cpp
+    passes/debug_info_propagation_test.cpp
     passes/symbolic/symbol_promotion_test.cpp
     passes/symbolic/symbol_propagation_test.cpp
     replace/symbol_replace_test.cpp

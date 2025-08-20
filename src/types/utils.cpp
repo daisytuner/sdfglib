@@ -176,7 +176,12 @@ const types::IType* infer_type_from_container(
     auto& users = analysis_manager.get<analysis::Users>();
 
     for (auto user : users.reads(container)) {
+        // Pointers may be used in symbolic conditions
         auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element());
+        if (access_node == nullptr) {
+            continue;
+        }
+
         for (auto& memlet : user->parent()->out_edges(*access_node)) {
             if (memlet.base_type().type_id() == types::TypeID::Pointer) {
                 auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());

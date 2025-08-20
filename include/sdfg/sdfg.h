@@ -54,8 +54,6 @@ public:
     SDFG(const SDFG& sdfg) = delete;
     SDFG& operator=(const SDFG&) = delete;
 
-    const DebugInfo debug_info() const override;
-
     void validate() const override;
 
     /***** Section: Graph *****/

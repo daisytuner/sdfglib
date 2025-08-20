@@ -175,14 +175,12 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
     auto& input_node = builder.add_access(block_1, "input");
     auto& tmp_node_out = builder.add_access(block_1, "tmp");
     auto& relu_node =
-        static_cast<math::ml::ReLUNode&>(builder
-                                             .add_library_node<math::ml::ReLUNode>(block_1, DebugInfo(), "tmp", "input")
-        );
+        static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block_1, DebugInfo()));
     builder.add_computational_memlet(
         block_1,
         input_node,
         relu_node,
-        "input",
+        "X",
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
@@ -191,7 +189,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
     builder.add_computational_memlet(
         block_1,
         relu_node,
-        "tmp",
+        "Y",
         tmp_node_out,
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
@@ -203,13 +201,13 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
 
     auto& tmp_node_in = builder.add_access(block_2, "tmp");
     auto& output_node = builder.add_access(block_2, "output");
-    auto& relu_node_2 = static_cast<
-        math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block_2, DebugInfo(), "output", "tmp"));
+    auto& relu_node_2 =
+        static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block_2, DebugInfo()));
     builder.add_computational_memlet(
         block_2,
         tmp_node_in,
         relu_node_2,
-        "tmp",
+        "X",
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
@@ -218,7 +216,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
     builder.add_computational_memlet(
         block_2,
         relu_node_2,
-        "output",
+        "Y",
         output_node,
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},

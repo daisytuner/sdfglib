@@ -95,6 +95,9 @@ enum TaskletCode {
     cbrt,
     cbrtf,
     cbrtl,
+    erf,
+    erff,
+    erfl,
     exp10,
     exp10f,
     exp10l,
@@ -346,6 +349,12 @@ constexpr size_t arity(TaskletCode c) {
         case TaskletCode::cbrtf:
             return 1;
         case TaskletCode::cbrtl:
+            return 1;
+        case TaskletCode::erf:
+            return 1;
+        case TaskletCode::erff:
+            return 1;
+        case TaskletCode::erfl:
             return 1;
         case TaskletCode::exp10:
             return 1;

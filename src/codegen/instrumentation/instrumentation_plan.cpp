@@ -22,22 +22,32 @@ void InstrumentationPlan::begin_instrumentation(const structured_control_flow::C
     std::string metdata_var = sdfg_.name() + "_" + std::to_string(node.element_id());
     stream << "__daisy_metadata_t " << metdata_var << ";" << std::endl;
     stream << metdata_var << ".region_name = \"" << region_name << "\";" << std::endl;
-    stream << metdata_var << ".function_name = \"" << sdfg_.metadata("function") << "\";" << std::endl;
+    stream << metdata_var << ".function_name = \"" << dbg_info.function() << "\";" << std::endl;
     stream << metdata_var << ".file_name = \"" << dbg_info.filename() << "\";" << std::endl;
     stream << metdata_var << ".line_begin = " << dbg_info.start_line() << ";" << std::endl;
     stream << metdata_var << ".line_end = " << dbg_info.end_line() << ";" << std::endl;
     stream << metdata_var << ".column_begin = " << dbg_info.start_column() << ";" << std::endl;
     stream << metdata_var << ".column_end = " << dbg_info.end_column() << ";" << std::endl;
 
-    stream << "__daisy_instrumentation_enter(__daisy_instrumentation_ctx, &" << metdata_var << ", "
-           << this->nodes_.at(&node) << ");" << std::endl;
+    if (this->nodes_.at(&node) == InstrumentationEventType::CPU) {
+        stream << "__daisy_instrumentation_enter(__daisy_instrumentation_ctx, &" << metdata_var << ", "
+               << "__DAISY_EVENT_SET_CPU" << ");" << std::endl;
+    } else {
+        stream << "__daisy_instrumentation_enter(__daisy_instrumentation_ctx, &" << metdata_var << ", "
+               << "__DAISY_EVENT_SET_CUDA" << ");" << std::endl;
+    }
 }
 
 void InstrumentationPlan::end_instrumentation(const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream)
     const {
     std::string metdata_var = sdfg_.name() + "_" + std::to_string(node.element_id());
-    stream << "__daisy_instrumentation_exit(__daisy_instrumentation_ctx, &" << metdata_var << ", "
-           << this->nodes_.at(&node) << ");" << std::endl;
+    if (this->nodes_.at(&node) == InstrumentationEventType::CPU) {
+        stream << "__daisy_instrumentation_exit(__daisy_instrumentation_ctx, &" << metdata_var << ", "
+               << "__DAISY_EVENT_SET_CPU" << ");" << std::endl;
+    } else {
+        stream << "__daisy_instrumentation_exit(__daisy_instrumentation_ctx, &" << metdata_var << ", "
+               << "__DAISY_EVENT_SET_CUDA" << ");" << std::endl;
+    }
 }
 
 std::unique_ptr<InstrumentationPlan> InstrumentationPlan::none(StructuredSDFG& sdfg) {
@@ -53,7 +63,13 @@ std::unique_ptr<InstrumentationPlan> InstrumentationPlan::outermost_loops_plan(S
 
     std::unordered_map<const structured_control_flow::ControlFlowNode*, InstrumentationEventType> nodes;
     for (auto loop : ols) {
-        nodes.insert({loop, InstrumentationEventType::CPU});
+        if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(loop)) {
+            if (map_node->schedule_type().value() == "CUDA") {
+                nodes.insert({loop, InstrumentationEventType::CUDA});
+                continue;
+            }
+        }
+        nodes.insert({loop, InstrumentationEventType::CPU}); // Default to CPU if not CUDA
     }
 
     return std::make_unique<InstrumentationPlan>(sdfg, nodes);

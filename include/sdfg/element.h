@@ -22,6 +22,7 @@ class Function;
 class DebugInfo {
 private:
     std::string filename_;
+    std::string function_;
     size_t start_line_;
     size_t start_column_;
     size_t end_line_;
@@ -34,9 +35,20 @@ public:
 
     DebugInfo(std::string filename, size_t start_line, size_t start_column, size_t end_line, size_t end_column);
 
+    DebugInfo(
+        std::string filename,
+        std::string function,
+        size_t start_line,
+        size_t start_column,
+        size_t end_line,
+        size_t end_column
+    );
+
     bool has() const;
 
     std::string filename() const;
+
+    std::string function() const;
 
     size_t start_line() const;
 
@@ -66,6 +78,8 @@ public:
     size_t element_id() const;
 
     const DebugInfo& debug_info() const;
+
+    void set_debug_info(const DebugInfo& debug_info);
 
     /**
      * Validates the element.
