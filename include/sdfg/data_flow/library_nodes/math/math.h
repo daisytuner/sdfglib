@@ -16,6 +16,7 @@
 #include "sdfg/data_flow/library_nodes/math/ml/dropout.h"
 #include "sdfg/data_flow/library_nodes/math/ml/elu.h"
 #include "sdfg/data_flow/library_nodes/math/ml/erf.h"
+#include "sdfg/data_flow/library_nodes/math/ml/gemm.h"
 #include "sdfg/data_flow/library_nodes/math/ml/hard_sigmoid.h"
 #include "sdfg/data_flow/library_nodes/math/ml/leaky_relu.h"
 #include "sdfg/data_flow/library_nodes/math/ml/matmul.h"
