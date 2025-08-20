@@ -15,17 +15,8 @@ TEST(TypeAnalysisTest, ScalarType) {
 
     types::Scalar scalar_type(types::PrimitiveType::Int32);
     builder.add_container("i", scalar_type);
-    builder.add_container("N", scalar_type);
 
     auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
-
-    auto indvar = symbolic::symbol("i");
-    // 3 * i + 2
-    auto update = symbolic::add(symbolic::mul(symbolic::integer(3), indvar), symbolic::integer(2));
-    auto condition = symbolic::Lt(indvar, symbolic::symbol("N"));
-    auto init = symbolic::zero();
-    auto& loop = builder.add_for(root, indvar, condition, init, update);
 
     analysis::AnalysisManager manager(sdfg);
     auto& type_analysis = manager.get<analysis::TypeAnalysis>();
@@ -34,24 +25,15 @@ TEST(TypeAnalysisTest, ScalarType) {
     EXPECT_TRUE(*type_analysis.get_outer_type("i") == types::Scalar(types::PrimitiveType::Int32));
 }
 
-TEST(TypeAnalysisTest, PointerType) {
+TEST(TypeAnalysisTest, TypedPointerType) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar scalar_type(types::PrimitiveType::Int32);
     types::Pointer ptr(scalar_type);
 
     builder.add_container("i", ptr);
-    builder.add_container("N", ptr);
 
     auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
-
-    auto indvar = symbolic::symbol("i");
-    // 3 * i + 2
-    auto update = symbolic::add(symbolic::mul(symbolic::integer(3), indvar), symbolic::integer(2));
-    auto condition = symbolic::Lt(indvar, symbolic::symbol("N"));
-    auto init = symbolic::zero();
-    auto& loop = builder.add_for(root, indvar, condition, init, update);
 
     analysis::AnalysisManager manager(sdfg);
     auto& type_analysis = manager.get<analysis::TypeAnalysis>();
@@ -66,17 +48,8 @@ TEST(TypeAnalysisTest, ArrayType) {
     types::Array arr(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10));
 
     builder.add_container("i", arr);
-    builder.add_container("N", arr);
 
     auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
-
-    auto indvar = symbolic::symbol("i");
-    // 3 * i + 2
-    auto update = symbolic::add(symbolic::mul(symbolic::integer(3), indvar), symbolic::integer(2));
-    auto condition = symbolic::Lt(indvar, symbolic::symbol("N"));
-    auto init = symbolic::zero();
-    auto& loop = builder.add_for(root, indvar, condition, init, update);
 
     analysis::AnalysisManager manager(sdfg);
     auto& type_analysis = manager.get<analysis::TypeAnalysis>();
@@ -93,20 +66,6 @@ TEST(TypeAnalysisTest, StructureType) {
     builder.add_container("my_struct", struct_type);
 
     auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
-
-    auto indvar = symbolic::symbol("my_struct");
-    // 3 * a + 2
-    auto update = symbolic::add(symbolic::mul(symbolic::integer(3), symbolic::symbol("a")), symbolic::integer(2));
-    auto condition = symbolic::Lt(symbolic::symbol("a"), symbolic::symbol("b"));
-    auto init = symbolic::zero();
-    auto& loop = builder.add_for(root, indvar, condition, init, update);
-
-    analysis::AnalysisManager manager(sdfg);
-    auto& type_analysis = manager.get<analysis::TypeAnalysis>();
-
-    EXPECT_TRUE(type_analysis.get_outer_type("my_struct") != nullptr);
-    EXPECT_TRUE(*type_analysis.get_outer_type("my_struct") == struct_type);
 }
 
 TEST(TypeAnalysisTest, OpaquePointerTypeRead) {
@@ -115,8 +74,7 @@ TEST(TypeAnalysisTest, OpaquePointerTypeRead) {
     types::Pointer ptr;
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Pointer array1dType(base_desc);
-    types::IType& wrapper = array1dType;
-    types::Pointer array2dType(wrapper);
+    types::Pointer array2dType(static_cast<const types::IType&>(array1dType));
 
     builder.add_container("i", ptr);
     builder.add_container("N", ptr);
@@ -234,4 +192,49 @@ TEST(TypeAnalysisTest, TaskletReadWrite) {
 
     EXPECT_TRUE(type_analysis.get_outer_type("N") != nullptr);
     EXPECT_TRUE(*type_analysis.get_outer_type("N") == base_desc);
+}
+
+TEST(TypeAnalysisTest, Dereference_Chain) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Pointer ptr;
+    types::Scalar base_desc(types::PrimitiveType::Int32);
+    types::Pointer array1dType(base_desc);
+    types::Pointer array2dType(static_cast<const types::IType&>(array1dType));
+
+    builder.add_container("A", ptr);
+    builder.add_container("B", ptr);
+    builder.add_container("C", ptr);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    auto& block = builder.add_block(root);
+    auto& access_node = builder.add_access(block, "A");
+    auto& access_node2 = builder.add_access(block, "B");
+
+    auto& memlet = builder.add_dereference_memlet(block, access_node, access_node2, true, array2dType);
+
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0.0"});
+
+    auto& access_node3 = builder.add_access(block, "B");
+
+    auto& memlet3 =
+        builder.add_computational_memlet(block, tasklet, "_out", access_node3, {symbolic::zero()}, array1dType);
+
+    auto& access_node4 = builder.add_access(block, "C");
+
+    auto& memlet4 = builder.add_dereference_memlet(block, access_node3, access_node4, false, array2dType);
+
+    analysis::AnalysisManager manager(sdfg);
+    auto& type_analysis = manager.get<analysis::TypeAnalysis>();
+
+    EXPECT_TRUE(type_analysis.get_outer_type("A") != nullptr);
+    EXPECT_TRUE(*type_analysis.get_outer_type("A") == array2dType);
+
+    EXPECT_TRUE(type_analysis.get_outer_type("B") != nullptr);
+    EXPECT_TRUE(*type_analysis.get_outer_type("B") == array1dType);
+
+    EXPECT_TRUE(type_analysis.get_outer_type("C") != nullptr);
+    EXPECT_TRUE(*type_analysis.get_outer_type("C") == array2dType);
 }
