@@ -9,7 +9,7 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_Mul("Mul");
+inline data_flow::LibraryNodeCode LibraryNodeType_Mul("ml::Mul");
 
 class MulNode : public ElementWiseBinaryNode {
 public:

@@ -9,7 +9,7 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_Div("Div");
+inline data_flow::LibraryNodeCode LibraryNodeType_Div("ml::Div");
 
 class DivNode : public ElementWiseBinaryNode {
 public:

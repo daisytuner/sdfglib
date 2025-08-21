@@ -9,7 +9,7 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_Dropout("Dropout");
+inline data_flow::LibraryNodeCode LibraryNodeType_Dropout("ml::Dropout");
 
 // Non-training dropout node
 class DropoutNode : public math::MathNode {

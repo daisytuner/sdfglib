@@ -9,7 +9,7 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_Abs("Abs");
+inline data_flow::LibraryNodeCode LibraryNodeType_Abs("ml::Abs");
 
 class AbsNode : public ElementWiseUnaryNode {
 public:

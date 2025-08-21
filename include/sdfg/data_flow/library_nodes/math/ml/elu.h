@@ -9,7 +9,7 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_Elu("Elu");
+inline data_flow::LibraryNodeCode LibraryNodeType_Elu("ml::Elu");
 
 class EluNode : public ElementWiseUnaryNode {
 public:

@@ -9,7 +9,7 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_Sqrt("Sqrt");
+inline data_flow::LibraryNodeCode LibraryNodeType_Sqrt("ml::Sqrt");
 
 class SqrtNode : public ElementWiseUnaryNode {
 public:

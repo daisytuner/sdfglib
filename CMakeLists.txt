@@ -62,6 +62,7 @@ set(SOURCE_FILES
     src/analysis/loop_analysis.cpp
     src/analysis/mem_access_range_analysis.cpp
     src/analysis/scope_analysis.cpp
+    src/analysis/type_analysis.cpp
     src/analysis/users.cpp
     src/builder/function_builder.cpp
     src/builder/sdfg_builder.cpp
@@ -109,13 +110,18 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/ml/element_wise.cpp
     src/data_flow/library_nodes/math/ml/elu.cpp
     src/data_flow/library_nodes/math/ml/erf.cpp
+    src/data_flow/library_nodes/math/ml/gemm.cpp
     src/data_flow/library_nodes/math/ml/hard_sigmoid.cpp
     src/data_flow/library_nodes/math/ml/leaky_relu.cpp
+    src/data_flow/library_nodes/math/ml/log_softmax.cpp
+    src/data_flow/library_nodes/math/ml/matmul.cpp
     src/data_flow/library_nodes/math/ml/maxpool.cpp
     src/data_flow/library_nodes/math/ml/mul.cpp
     src/data_flow/library_nodes/math/ml/pow.cpp
+    src/data_flow/library_nodes/math/ml/reduce_mean.cpp
     src/data_flow/library_nodes/math/ml/relu.cpp
     src/data_flow/library_nodes/math/ml/sigmoid.cpp
+    src/data_flow/library_nodes/math/ml/softmax.cpp
     src/data_flow/library_nodes/math/ml/sqrt.cpp
     src/data_flow/library_nodes/math/ml/sub.cpp
     src/data_flow/library_nodes/math/ml/tanh.cpp
@@ -131,6 +137,7 @@ set(SOURCE_FILES
     src/passes/dataflow/redundant_array_elimination.cpp
     src/passes/dataflow/trivial_array_elimination.cpp
     src/passes/dataflow/reference_propagation.cpp
+    src/passes/dataflow/byte_reference_elimination.cpp
     src/passes/schedules/expansion_pass.cpp
     src/passes/schedules/parallelization_pass.cpp
     src/passes/symbolic/symbol_evolution.cpp
