@@ -428,6 +428,31 @@ void JSONSerializer::structure_definition_to_json(nlohmann::json& j, const types
     j["is_packed"] = definition.is_packed();
 }
 
+void JSONSerializer::debug_info_loc_to_json(nlohmann::json& j, const DebugLoc& loc) {
+    j["has"] = loc.has_;
+    if (!loc.has_) {
+        return;
+    }
+    j["filename"] = loc.filename_;
+    j["function"] = loc.function_;
+    j["line"] = loc.line_;
+    j["column"] = loc.column_;
+}
+
+
+void JSONSerializer::debug_info_element_to_json(nlohmann::json& j, const DebugInfoElement& debug_info_element) {
+    j["has"] = debug_info_element.has();
+    if (!debug_info_element.has()) {
+        return;
+    }
+    j["locations"] = nlohmann::json::array();
+    for (const auto& loc : debug_info_element.locations()) {
+        nlohmann::json loc_json;
+        debug_info_loc_to_json(loc_json, loc);
+        j["locations"].push_back(loc_json);
+    }
+}
+
 void JSONSerializer::debug_info_to_json(nlohmann::json& j, const DebugInfo& debug_info) {
     j["has"] = debug_info.has();
     j["filename"] = debug_info.filename();
@@ -436,6 +461,13 @@ void JSONSerializer::debug_info_to_json(nlohmann::json& j, const DebugInfo& debu
     j["start_column"] = debug_info.start_column();
     j["end_line"] = debug_info.end_line();
     j["end_column"] = debug_info.end_column();
+
+    j["instructions"] = nlohmann::json::array();
+    for (const auto& instruction : debug_info.instructions()) {
+        nlohmann::json instruction_json;
+        debug_info_element_to_json(instruction_json, instruction);
+        j["instructions"].push_back(instruction_json);
+    }
 }
 
 /*
@@ -1018,11 +1050,11 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
     }
 }
 
-DebugInfo JSONSerializer::json_to_debug_info(const nlohmann::json& j) {
+DebugLoc JSONSerializer::json_to_debug_loc(const nlohmann::json& j) {
     assert(j.contains("has"));
     assert(j["has"].is_boolean());
     if (!j["has"]) {
-        return DebugInfo();
+        return DebugLoc();
     }
     assert(j.contains("filename"));
     assert(j["filename"].is_string());
@@ -1030,19 +1062,77 @@ DebugInfo JSONSerializer::json_to_debug_info(const nlohmann::json& j) {
     assert(j.contains("function"));
     assert(j["function"].is_string());
     std::string function = j["function"];
+    assert(j.contains("line"));
+    assert(j["line"].is_number_integer());
+    size_t line = j["line"];
+    assert(j.contains("column"));
+    assert(j["column"].is_number_integer());
+    size_t column = j["column"];
+    return DebugLoc(filename, function, line, column);
+}
+
+DebugInfoElement JSONSerializer::json_to_debug_info_element(const nlohmann::json& j) {
+    assert(j.contains("has"));
+    assert(j["has"].is_boolean());
+    if (!j["has"]) {
+        return DebugInfoElement();
+    }
+    assert(j.contains("locations"));
+    assert(j["locations"].is_array());
+    std::vector<DebugLoc> locations;
+    for (const auto& loc_json : j["locations"]) {
+        locations.push_back(json_to_debug_loc(loc_json));
+    }
+    return DebugInfoElement(locations);
+}
+
+DebugInfo JSONSerializer::json_to_debug_info(const nlohmann::json& j) {
+    assert(j.contains("has"));
+    assert(j["has"].is_boolean());
+    if (!j["has"]) {
+        return DebugInfo();
+    }
+
+    assert(j.contains("instructions"));
+    assert(j["instructions"].is_array());
+    std::vector<DebugInfoElement> instructions;
+    for (const auto& instruction_json : j["instructions"]) {
+        instructions.push_back(json_to_debug_info_element(instruction_json));
+    }
+    DebugInfo debug_info(instructions);
+
+
+    assert(j.contains("filename"));
+    assert(j["filename"].is_string());
+    std::string filename = j["filename"];
+    assert(filename == debug_info.filename());
+
+    assert(j.contains("function"));
+    assert(j["function"].is_string());
+    std::string function = j["function"];
+    assert(function == debug_info.function());
+
     assert(j.contains("start_line"));
     assert(j["start_line"].is_number_integer());
     size_t start_line = j["start_line"];
+    assert(start_line == debug_info.start_line());
+
     assert(j.contains("start_column"));
     assert(j["start_column"].is_number_integer());
     size_t start_column = j["start_column"];
+    assert(start_column == debug_info.start_column());
+
     assert(j.contains("end_line"));
     assert(j["end_line"].is_number_integer());
     size_t end_line = j["end_line"];
+    assert(end_line == debug_info.end_line());
+
     assert(j.contains("end_column"));
     assert(j["end_column"].is_number_integer());
     size_t end_column = j["end_column"];
-    return DebugInfo(filename, function, start_line, start_column, end_line, end_column);
+    assert(end_column == debug_info.end_column());
+
+    return debug_info;
 }
 
 std::string JSONSerializer::expression(const symbolic::Expression& expr) {

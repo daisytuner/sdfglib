@@ -5,6 +5,7 @@
 #include <string>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/element.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/sequence.h"
@@ -39,6 +40,8 @@ public:
     void return_node_to_json(nlohmann::json& j, const sdfg::structured_control_flow::Return& return_node);
     void map_to_json(nlohmann::json& j, const sdfg::structured_control_flow::Map& map_node);
 
+    void debug_info_loc_to_json(nlohmann::json& j, const sdfg::DebugLoc& loc);
+    void debug_info_element_to_json(nlohmann::json& j, const sdfg::DebugInfoElement& debug_info_element);
     void debug_info_to_json(nlohmann::json& j, const sdfg::DebugInfo& debug_info);
 
     void json_to_structure_definition(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder);
@@ -103,6 +106,9 @@ public:
     );
     std::unique_ptr<sdfg::types::IType> json_to_type(const nlohmann::json& j);
     std::vector<std::pair<std::string, types::Scalar>> json_to_arguments(const nlohmann::json& j);
+
+    DebugLoc json_to_debug_loc(const nlohmann::json& j);
+    DebugInfoElement json_to_debug_info_element(const nlohmann::json& j);
     DebugInfo json_to_debug_info(const nlohmann::json& j);
 
     std::string expression(const symbolic::Expression& expr);

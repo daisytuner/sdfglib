@@ -1,5 +1,6 @@
 #include "sdfg/element.h"
 #include <string>
+#include <vector>
 #include "sdfg/exceptions.h"
 
 namespace sdfg {
@@ -19,6 +20,15 @@ DebugInfoElement::DebugInfoElement(DebugLoc loc, std::vector<DebugLoc> inlined_a
     }
 };
 
+DebugInfoElement::DebugInfoElement(std::vector<DebugLoc> inlined_at) {
+    for (auto& loc : inlined_at) {
+        if (loc.has_) {
+            this->locations_.push_back(loc);
+        }
+    }
+}
+
+const std::vector<DebugLoc>& DebugInfoElement::locations() const { return this->locations_; }
 
 bool DebugInfoElement::has() const { return this->locations_.front().has_; };
 
@@ -33,7 +43,7 @@ size_t DebugInfoElement::column() const { return this->locations_.front().column
 const std::vector<DebugInfoElement>& DebugInfo::instructions() const { return this->instructions_; };
 
 DebugInfo::DebugInfo()
-    : instructions_(), filename_(""), function_(""), line_start_(0), column_start_(0), line_end_(0), column_end_(0),
+    : instructions_(), filename_(""), function_(""), start_line_(0), start_column_(0), end_line_(0), end_column_(0),
       has_(false) {};
 
 DebugInfo::DebugInfo(DebugInfoElement loc) : instructions_() {
@@ -41,16 +51,30 @@ DebugInfo::DebugInfo(DebugInfoElement loc) : instructions_() {
         this->instructions_.push_back(loc);
         this->filename_ = loc.filename();
         this->function_ = loc.function();
-        this->line_start_ = loc.line();
-        this->column_start_ = loc.column();
-        this->line_end_ = loc.line();
-        this->column_end_ = loc.column();
+        this->start_line_ = loc.line();
+        this->start_column_ = loc.column();
+        this->end_line_ = loc.line();
+        this->end_column_ = loc.column();
         this->has_ = true;
         instructions_.push_back(std::move(loc));
     } else {
         this->has_ = false;
     }
 };
+
+bool DebugInfo::has() const { return has_; }
+
+std::string DebugInfo::filename() const { return filename_; }
+
+std::string DebugInfo::function() const { return function_; }
+
+size_t DebugInfo::start_line() const { return start_line_; }
+
+size_t DebugInfo::start_column() const { return start_column_; }
+
+size_t DebugInfo::end_line() const { return end_line_; }
+
+size_t DebugInfo::end_column() const { return end_column_; }
 
 bool fuse_ranges(
     const DebugLoc& loc,
@@ -101,23 +125,23 @@ DebugInfo::DebugInfo(std::vector<DebugInfoElement> instructions) {
     // find locations
     std::string filename;
     std::string function;
-    size_t line_start;
-    size_t col_start;
-    size_t line_end;
-    size_t col_end;
+    size_t start_line;
+    size_t start_column;
+    size_t end_line;
+    size_t end_column;
 
 
     bool found = false;
     for (auto& loc : this->instructions_.front().locations()) {
         filename = loc.filename_;
         function = loc.function_;
-        line_start = loc.line_;
-        col_start = loc.column_;
-        line_end = loc.line_;
-        col_end = loc.column_;
+        start_line = loc.line_;
+        start_column = loc.column_;
+        end_line = loc.line_;
+        end_column = loc.column_;
         for (const auto& instruction : this->instructions_) {
             for (const auto& inlined_loc : instruction.locations()) {
-                if (fuse_ranges(inlined_loc, filename, function, line_start, col_start, line_end, col_end)) {
+                if (fuse_ranges(inlined_loc, filename, function, start_line, start_column, end_line, end_column)) {
                     found = true;
                     break;
                 }
@@ -134,18 +158,45 @@ DebugInfo::DebugInfo(std::vector<DebugInfoElement> instructions) {
 
     this->filename_ = filename;
     this->function_ = function;
-    this->line_start_ = line_start;
-    this->column_start_ = col_start;
-    this->line_end_ = line_end;
-    this->column_end_ = col_end;
+    this->start_line_ = start_line;
+    this->start_column_ = start_column;
+    this->end_line_ = end_line;
+    this->end_column_ = end_column;
 };
 
-DebugInfo DebugInfo::merge(DebugInfo left, DebugInfo right) {
-    // TODO: Implement merging logic
+DebugInfo DebugInfo::merge(const DebugInfo& left, const DebugInfo& right) {
+    if (left.filename() != right.filename() || left.function() != right.function()) {
+        throw InvalidSDFGException("Cannot merge DebugInfo from different files or functions");
+    }
+
+    auto list = left.instructions();
+    list.insert(list.end(), right.instructions().begin(), right.instructions().end());
+    return DebugInfo(list);
 };
 
-DebugInfo& DebugInfo::append(DebugInfoElement& other) {
-    // TODO: Implement append logic
+void DebugInfo::append(DebugInfoElement& other) {
+    if (!other.has()) {
+        return;
+    }
+
+    bool found = false;
+    for (auto& loc : other.locations()) {
+        if (fuse_ranges(
+                loc,
+                this->filename_,
+                this->function_,
+                this->start_line_,
+                this->start_column_,
+                this->end_line_,
+                this->end_column_
+            )) {
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        throw InvalidSDFGException("Cannot append DebugInfoElement with different file or function");
+    }
 };
 
 Element::Element(size_t element_id, const DebugInfo& debug_info) : element_id_(element_id), debug_info_(debug_info) {};

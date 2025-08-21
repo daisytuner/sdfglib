@@ -39,6 +39,8 @@ public:
 
     DebugInfoElement(DebugLoc loc, std::vector<DebugLoc> inlined_at);
 
+    DebugInfoElement(std::vector<DebugLoc> inlined_at);
+
     bool has() const;
 
     std::string filename() const;
@@ -60,13 +62,13 @@ private:
 
     std::string function_;
 
-    size_t line_start_;
+    size_t start_line_;
 
-    size_t column_start_;
+    size_t start_column_;
 
-    size_t line_end_;
+    size_t end_line_;
 
-    size_t column_end_;
+    size_t end_column_;
 
     bool has_;
 
@@ -77,13 +79,20 @@ public:
 
     DebugInfo(std::vector<DebugInfoElement> instructions);
 
-    DebugInfo(const DebugInfo& other);
-
     const std::vector<DebugInfoElement>& instructions() const;
 
-    DebugInfo merge(DebugInfo& left, DebugInfo& right);
+    static DebugInfo merge(const DebugInfo& left, const DebugInfo& right);
 
-    DebugInfo& append(DebugInfoElement& other);
+    void append(DebugInfoElement& other);
+
+    bool has() const;
+
+    std::string filename() const;
+    std::string function() const;
+    size_t start_line() const;
+    size_t start_column() const;
+    size_t end_line() const;
+    size_t end_column() const;
 };
 
 class Element {
