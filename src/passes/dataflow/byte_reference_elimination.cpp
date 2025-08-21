@@ -48,7 +48,7 @@ bool ByteReferenceElimination::
             }
         }
         auto move_pointee_type_bytes = types::get_type_size(move_pointee_type, false);
-        if (!SymEngine::is_a<SymEngine::Integer>(*move_pointee_type_bytes)) {
+        if (move_pointee_type_bytes.is_null() || !SymEngine::is_a<SymEngine::Integer>(*move_pointee_type_bytes)) {
             continue;
         }
         auto move_pointee_type_bytes_int = SymEngine::rcp_static_cast<const SymEngine::Integer>(move_pointee_type_bytes
@@ -84,7 +84,7 @@ bool ByteReferenceElimination::
                 continue;
             }
             auto offset_int = SymEngine::rcp_static_cast<const SymEngine::Integer>(offset);
-            if (offset_int->as_int() % move_pointee_type_bytes_int->as_int() != 0) {
+            if (offset_int->as_int() % move_pointee_type_bytes_int->as_int() != 0 || offset_int->as_int() == 0) {
                 continue;
             }
 
