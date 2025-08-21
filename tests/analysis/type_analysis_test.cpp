@@ -217,14 +217,12 @@ TEST(TypeAnalysisTest, Dereference_Chain) {
 
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0.0"});
 
-    auto& access_node3 = builder.add_access(block, "B");
-
     auto& memlet3 =
-        builder.add_computational_memlet(block, tasklet, "_out", access_node3, {symbolic::zero()}, array1dType);
+        builder.add_computational_memlet(block, tasklet, "_out", access_node2, {symbolic::zero()}, array1dType);
 
     auto& access_node4 = builder.add_access(block, "C");
 
-    auto& memlet4 = builder.add_dereference_memlet(block, access_node3, access_node4, false, array2dType);
+    auto& memlet4 = builder.add_dereference_memlet(block, access_node2, access_node4, false, array2dType);
 
     analysis::AnalysisManager manager(sdfg);
     auto& type_analysis = manager.get<analysis::TypeAnalysis>();
