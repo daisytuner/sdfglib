@@ -22,7 +22,7 @@ TEST(PipelineTest, ExpressionCombine) {
 TEST(PipelineTest, MemletCombine) {
     passes::Pipeline memlet_combine = passes::Pipeline::memlet_combine();
     EXPECT_EQ(memlet_combine.name(), "MemletCombine");
-    EXPECT_EQ(memlet_combine.size(), 2);
+    EXPECT_EQ(memlet_combine.size(), 3);
 }
 
 TEST(PipelineTest, ControlFlowSimplification) {
