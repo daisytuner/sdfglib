@@ -165,8 +165,11 @@ DebugInfo::DebugInfo(std::vector<DebugInfoElement> instructions) {
 };
 
 DebugInfo DebugInfo::merge(const DebugInfo& left, const DebugInfo& right) {
-    if (left.filename() != right.filename() || left.function() != right.function()) {
-        throw InvalidSDFGException("Cannot merge DebugInfo from different files or functions");
+    if (left.has() && !right.has()) {
+        return left; // If left has debug info, return it
+    }
+    if (!left.has() && right.has()) {
+        return right; // If right has debug info, return it
     }
 
     auto list = left.instructions();
