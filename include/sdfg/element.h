@@ -1,10 +1,9 @@
 #pragma once
 
 #include <cassert>
-#include <memory>
 #include <string>
+#include <vector>
 
-#include "sdfg/exceptions.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
@@ -23,26 +22,22 @@ class Function;
 struct DebugLoc {
     std::string filename_;
     std::string function_;
-    size_t start_line_;
-    size_t start_column_;
-    size_t end_line_;
-    size_t end_column_;
+    size_t line_;
+    size_t column_;
 
     bool has_;
 };
 
-class DebugInfoInstruction {
+class DebugInfoElement {
 private:
-    DebugLoc loc_;
-
-    std::unique_ptr<DebugInfoInstruction> InlinedAt_;
+    std::vector<DebugLoc> locations_;
 
 public:
-    DebugInfoInstruction();
+    DebugInfoElement();
 
-    DebugInfoInstruction(DebugLoc loc);
+    DebugInfoElement(DebugLoc loc);
 
-    DebugInfoInstruction(DebugLoc loc, std::unique_ptr<DebugInfoInstruction> inlined_at);
+    DebugInfoElement(DebugLoc loc, std::vector<DebugLoc> inlined_at);
 
     bool has() const;
 
@@ -50,15 +45,45 @@ public:
 
     std::string function() const;
 
-    size_t start_line() const;
+    size_t line() const;
 
-    size_t start_column() const;
+    size_t column() const;
 
-    size_t end_line() const;
+    const std::vector<DebugLoc>& locations() const;
+};
 
-    size_t end_column() const;
+class DebugInfo {
+private:
+    std::vector<DebugInfoElement> instructions_;
 
-    static DebugInfoInstruction merge(const DebugInfoInstruction& left, const DebugInfoInstruction& right);
+    std::string filename_;
+
+    std::string function_;
+
+    size_t line_start_;
+
+    size_t column_start_;
+
+    size_t line_end_;
+
+    size_t column_end_;
+
+    bool has_;
+
+public:
+    DebugInfo();
+
+    DebugInfo(DebugInfoElement loc);
+
+    DebugInfo(std::vector<DebugInfoElement> instructions);
+
+    DebugInfo(const DebugInfo& other);
+
+    const std::vector<DebugInfoElement>& instructions() const;
+
+    DebugInfo merge(DebugInfo& left, DebugInfo& right);
+
+    DebugInfo& append(DebugInfoElement& other);
 };
 
 class Element {
