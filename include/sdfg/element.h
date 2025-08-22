@@ -2,8 +2,8 @@
 
 #include <cassert>
 #include <string>
+#include <vector>
 
-#include "sdfg/exceptions.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
@@ -19,30 +19,27 @@ class JSONSerializer;
 
 class Function;
 
-class DebugInfo {
-private:
+struct DebugLoc {
     std::string filename_;
     std::string function_;
-    size_t start_line_;
-    size_t start_column_;
-    size_t end_line_;
-    size_t end_column_;
+    size_t line_;
+    size_t column_;
 
     bool has_;
+};
+
+class DebugInfoElement {
+private:
+    std::vector<DebugLoc> locations_;
 
 public:
-    DebugInfo();
+    DebugInfoElement();
 
-    DebugInfo(std::string filename, size_t start_line, size_t start_column, size_t end_line, size_t end_column);
+    DebugInfoElement(DebugLoc loc);
 
-    DebugInfo(
-        std::string filename,
-        std::string function,
-        size_t start_line,
-        size_t start_column,
-        size_t end_line,
-        size_t end_column
-    );
+    DebugInfoElement(DebugLoc loc, std::vector<DebugLoc> inlined_at);
+
+    DebugInfoElement(std::vector<DebugLoc> inlined_at);
 
     bool has() const;
 
@@ -50,15 +47,52 @@ public:
 
     std::string function() const;
 
-    size_t start_line() const;
+    size_t line() const;
 
-    size_t start_column() const;
+    size_t column() const;
 
-    size_t end_line() const;
+    const std::vector<DebugLoc>& locations() const;
+};
 
-    size_t end_column() const;
+class DebugInfo {
+private:
+    std::vector<DebugInfoElement> instructions_;
+
+    std::string filename_;
+
+    std::string function_;
+
+    size_t start_line_;
+
+    size_t start_column_;
+
+    size_t end_line_;
+
+    size_t end_column_;
+
+    bool has_;
+
+public:
+    DebugInfo();
+
+    DebugInfo(DebugInfoElement loc);
+
+    DebugInfo(std::vector<DebugInfoElement> instructions);
+
+    const std::vector<DebugInfoElement>& instructions() const;
 
     static DebugInfo merge(const DebugInfo& left, const DebugInfo& right);
+
+    void append(DebugInfoElement& other);
+
+    bool has() const;
+
+    std::string filename() const;
+    std::string function() const;
+    size_t start_line() const;
+    size_t start_column() const;
+    size_t end_line() const;
+    size_t end_column() const;
 };
 
 class Element {
