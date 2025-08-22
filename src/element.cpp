@@ -201,24 +201,17 @@ void DebugInfo::append(DebugInfoElement& other) {
         return;
     }
 
-    bool found = false;
-    for (auto& loc : other.locations()) {
-        if (fuse_ranges(
-                loc,
-                this->filename_,
-                this->function_,
-                this->start_line_,
-                this->start_column_,
-                this->end_line_,
-                this->end_column_
-            )) {
-            found = true;
-            break;
-        }
-    }
-    if (!found) {
-        throw InvalidSDFGException("Cannot append DebugInfoElement with different file or function");
-    }
+    this->instructions_.push_back(other);
+
+    DebugInfo debug_info(this->instructions_);
+
+    this->filename_ = debug_info.filename();
+    this->function_ = debug_info.function();
+    this->start_line_ = debug_info.start_line();
+    this->start_column_ = debug_info.start_column();
+    this->end_line_ = debug_info.end_line();
+    this->end_column_ = debug_info.end_column();
+    this->has_ = true;
 };
 
 Element::Element(size_t element_id, const DebugInfo& debug_info) : element_id_(element_id), debug_info_(debug_info) {};
