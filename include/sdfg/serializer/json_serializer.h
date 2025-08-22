@@ -40,7 +40,7 @@ public:
     void return_node_to_json(nlohmann::json& j, const sdfg::structured_control_flow::Return& return_node);
     void map_to_json(nlohmann::json& j, const sdfg::structured_control_flow::Map& map_node);
 
-    void debug_info_loc_to_json(nlohmann::json& j, const sdfg::DebugLoc& loc);
+    void debug_loc_to_json(nlohmann::json& j, const sdfg::DebugLoc& loc);
     void debug_info_element_to_json(nlohmann::json& j, const sdfg::DebugInfoElement& debug_info_element);
     void debug_info_to_json(nlohmann::json& j, const sdfg::DebugInfo& debug_info);
 

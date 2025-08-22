@@ -428,7 +428,7 @@ void JSONSerializer::structure_definition_to_json(nlohmann::json& j, const types
     j["is_packed"] = definition.is_packed();
 }
 
-void JSONSerializer::debug_info_loc_to_json(nlohmann::json& j, const DebugLoc& loc) {
+void JSONSerializer::debug_loc_to_json(nlohmann::json& j, const DebugLoc& loc) {
     j["has"] = loc.has_;
     if (!loc.has_) {
         return;
@@ -448,7 +448,7 @@ void JSONSerializer::debug_info_element_to_json(nlohmann::json& j, const DebugIn
     j["locations"] = nlohmann::json::array();
     for (const auto& loc : debug_info_element.locations()) {
         nlohmann::json loc_json;
-        debug_info_loc_to_json(loc_json, loc);
+        debug_loc_to_json(loc_json, loc);
         j["locations"].push_back(loc_json);
     }
 }
@@ -1068,7 +1068,7 @@ DebugLoc JSONSerializer::json_to_debug_loc(const nlohmann::json& j) {
     assert(j.contains("column"));
     assert(j["column"].is_number_integer());
     size_t column = j["column"];
-    return DebugLoc(filename, function, line, column);
+    return DebugLoc(filename, function, line, column, true);
 }
 
 DebugInfoElement JSONSerializer::json_to_debug_info_element(const nlohmann::json& j) {
@@ -1100,8 +1100,6 @@ DebugInfo JSONSerializer::json_to_debug_info(const nlohmann::json& j) {
         instructions.push_back(json_to_debug_info_element(instruction_json));
     }
     DebugInfo debug_info(instructions);
-
-
     assert(j.contains("filename"));
     assert(j["filename"].is_string());
     std::string filename = j["filename"];

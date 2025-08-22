@@ -7,15 +7,12 @@ namespace sdfg {
 
 DebugInfoElement::DebugInfoElement() { this->locations_ = {DebugLoc("", "", 0, 0, false)}; };
 
-DebugInfoElement::DebugInfoElement(DebugLoc loc)
-    : locations_({loc}) {
-
-      };
+DebugInfoElement::DebugInfoElement(DebugLoc loc) : locations_({loc}) {};
 
 DebugInfoElement::DebugInfoElement(DebugLoc loc, std::vector<DebugLoc> inlined_at) : locations_({loc}) {
-    for (auto& loc : inlined_at) {
-        if (loc.has_) {
-            this->locations_.push_back(loc);
+    for (auto& debug_loc : inlined_at) {
+        if (debug_loc.has_) {
+            this->locations_.push_back(debug_loc);
         }
     }
 };
@@ -25,6 +22,9 @@ DebugInfoElement::DebugInfoElement(std::vector<DebugLoc> inlined_at) {
         if (loc.has_) {
             this->locations_.push_back(loc);
         }
+    }
+    if (this->locations_.empty()) {
+        this->locations_.push_back(DebugLoc("", "", 0, 0, false));
     }
 }
 
@@ -40,13 +40,11 @@ size_t DebugInfoElement::line() const { return this->locations_.front().line_; }
 
 size_t DebugInfoElement::column() const { return this->locations_.front().column_; };
 
-const std::vector<DebugInfoElement>& DebugInfo::instructions() const { return this->instructions_; };
-
 DebugInfo::DebugInfo()
     : instructions_(), filename_(""), function_(""), start_line_(0), start_column_(0), end_line_(0), end_column_(0),
       has_(false) {};
 
-DebugInfo::DebugInfo(DebugInfoElement loc) : instructions_() {
+DebugInfo::DebugInfo(DebugInfoElement loc) {
     if (loc.has()) {
         this->instructions_.push_back(loc);
         this->filename_ = loc.filename();
@@ -75,6 +73,8 @@ size_t DebugInfo::start_column() const { return start_column_; }
 size_t DebugInfo::end_line() const { return end_line_; }
 
 size_t DebugInfo::end_column() const { return end_column_; }
+
+const std::vector<DebugInfoElement>& DebugInfo::instructions() const { return this->instructions_; };
 
 bool fuse_ranges(
     const DebugLoc& loc,
@@ -139,7 +139,9 @@ DebugInfo::DebugInfo(std::vector<DebugInfoElement> instructions) {
         start_column = loc.column_;
         end_line = loc.line_;
         end_column = loc.column_;
+        int fitting = 0;
         for (const auto& instruction : this->instructions_) {
+            found = false;
             for (const auto& inlined_loc : instruction.locations()) {
                 if (fuse_ranges(inlined_loc, filename, function, start_line, start_column, end_line, end_column)) {
                     found = true;
@@ -150,6 +152,11 @@ DebugInfo::DebugInfo(std::vector<DebugInfoElement> instructions) {
                 // If no ranges were fused, we can break early
                 break;
             }
+            fitting++;
+        }
+        if (fitting == this->instructions_.size()) {
+            found = true;
+            break; // All instructions fit the same file and function
         }
     }
     if (!found) {
@@ -179,6 +186,18 @@ DebugInfo DebugInfo::merge(const DebugInfo& left, const DebugInfo& right) {
 
 void DebugInfo::append(DebugInfoElement& other) {
     if (!other.has()) {
+        return;
+    }
+
+    if (!this->has_) {
+        this->instructions_.push_back(other);
+        this->filename_ = other.filename();
+        this->function_ = other.function();
+        this->start_line_ = other.line();
+        this->start_column_ = other.column();
+        this->end_line_ = other.line();
+        this->end_column_ = other.column();
+        this->has_ = true;
         return;
     }
 
