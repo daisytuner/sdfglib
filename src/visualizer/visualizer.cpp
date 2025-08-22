@@ -354,7 +354,7 @@ constexpr const char* code_to_string(data_flow::TaskletCode c) {
         case data_flow::TaskletCode::tanhl:
             return "tanhl";
     };
-    throw InvalidSDFGException("code_to_string: Unsupported tasklet code");
+    return "?";
 };
 
 std::string Visualizer::expression(const std::string expr) {
