@@ -1160,6 +1160,10 @@ void register_default_serializers() {
             return std::make_unique<math::ml::AddNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::ml::LibraryNodeType_BatchNormalization.value(), []() {
+            return std::make_unique<math::ml::BatchNormalizationNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_Clip.value(), []() {
             return std::make_unique<math::ml::ClipNodeSerializer>();
         });
@@ -1190,6 +1194,10 @@ void register_default_serializers() {
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_HardSigmoid.value(), []() {
             return std::make_unique<math::ml::HardSigmoidNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::ml::LibraryNodeType_LayerNormalization.value(), []() {
+            return std::make_unique<math::ml::LayerNormalizationNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_LeakyReLU.value(), []() {
