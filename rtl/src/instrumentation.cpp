@@ -192,7 +192,7 @@ void write_event_json(
     entry << "\"args\":{";
     entry << "\"region_id\":\"" << md->region_name << "\",";
     entry << "\"function\":\"" << md->function_name << "\",";
-    entry << "\"loopnest_index\":\"" << md->loopnest_index << "\",";
+    entry << "\"loopnest_index\":" << md->loopnest_index << ",";
     entry << "\"module\":\"" << std::filesystem::path(md->file_name).filename().string() << "\",";
     entry << "\"build_id\":\"\",";
     entry << "\"source_ranges\":[";
