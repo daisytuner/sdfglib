@@ -10,8 +10,6 @@ class DOKScheduling : public Pass {
 private:
     symbolic::Expression load_threshold;
 
-    symbolic::Expression load_threshold_gpu;
-
     symbolic::Expression balance_threshold;
 
     symbolic::Expression size_threshold;

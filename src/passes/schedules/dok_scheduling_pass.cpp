@@ -38,13 +38,6 @@ bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
             size_threshold = symbolic::max(symbolic::one(), symbolic::div(load_threshold, load.first));
         }
 
-        symbolic::Expression size_threshold_gpu;
-        if (load.second == analysis::DegreesOfKnowledgeClassification::Unbound) {
-            size_threshold_gpu = symbolic::one();
-        } else {
-            size_threshold_gpu = symbolic::max(symbolic::one(), symbolic::div(load_threshold_gpu, load.first));
-        }
-
         symbolic::Expression num_threads;
         if (size.second == analysis::DegreesOfKnowledgeClassification::Unbound) {
             num_threads = symbolic::integer(avail_threads);
@@ -68,7 +61,6 @@ bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
 void DOKScheduling::read_thresholds() {
     // Read thresholds from configuration or set default values
     load_threshold = symbolic::integer(100);
-    load_threshold_gpu = symbolic::integer(10);
     balance_threshold = symbolic::integer(50);
     size_threshold = symbolic::integer(200); // Example value
     number_threshold = symbolic::integer(10); // Example value
@@ -77,14 +69,6 @@ void DOKScheduling::read_thresholds() {
     if (threshold_env) {
         try {
             load_threshold = symbolic::integer(std::stoi(threshold_env));
-        } catch (const std::exception&) {
-        }
-    }
-
-    const char* threshold_gpu_env = std::getenv("DOK_LOAD_THRESHOLD_GPU");
-    if (threshold_gpu_env) {
-        try {
-            load_threshold_gpu = symbolic::integer(std::stoi(threshold_gpu_env));
         } catch (const std::exception&) {
         }
     }
