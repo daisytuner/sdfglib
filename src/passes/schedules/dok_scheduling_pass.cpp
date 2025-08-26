@@ -1,8 +1,10 @@
 #include "sdfg/passes/schedules/dok_scheduling_pass.h"
+#include <thread>
 #include "sdfg/analysis/degrees_of_knowledge_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/return.h"
+#include "sdfg/symbolic/symbolic.h"
 
 
 namespace sdfg {
@@ -18,6 +20,8 @@ bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
 
     auto outermost_maps = loop_analysis.outermost_maps();
 
+    read_thresholds();
+
     // Schedule outermost maps
     for (const auto& node : outermost_maps) {
         Map* map = static_cast<Map*>(node);
@@ -27,12 +31,82 @@ bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
         auto size = dok_analysis.size_of_a_map(*map);
         auto number = dok_analysis.number_of_maps(*map);
 
-        // enable fat bin generation
+        // compute size threshold on demand
+        if (load.second == analysis::DegreesOfKnowledgeClassification::Unbound) {
+            size_threshold = symbolic::one();
+        } else {
+            size_threshold = symbolic::max(symbolic::one(), symbolic::div(load_threshold, load.first));
+        }
+
+        symbolic::Expression size_threshold_gpu;
+        if (load.second == analysis::DegreesOfKnowledgeClassification::Unbound) {
+            size_threshold_gpu = symbolic::one();
+        } else {
+            size_threshold_gpu = symbolic::max(symbolic::one(), symbolic::div(load_threshold_gpu, load.first));
+        }
+
+        symbolic::Expression num_threads;
+        if (size.second == analysis::DegreesOfKnowledgeClassification::Unbound) {
+            num_threads = symbolic::integer(avail_threads);
+        } else {
+            num_threads = symbolic::min(symbolic::div(size.first, size_threshold), symbolic::integer(avail_threads));
+        }
+
+        symbolic::Condition run_dynamic;
+        if (balance.second == analysis::DegreesOfKnowledgeClassification::Scalar) {
+            run_dynamic = symbolic::__false__();
+        } else {
+            run_dynamic = symbolic::Le(balance_threshold, symbolic::div(size.first, num_threads));
+        }
+
+        // Enable fat bin generation
     }
 
     return false;
 }
 
+void DOKScheduling::read_thresholds() {
+    // Read thresholds from configuration or set default values
+    load_threshold = symbolic::integer(100);
+    load_threshold_gpu = symbolic::integer(10);
+    balance_threshold = symbolic::integer(50);
+    size_threshold = symbolic::integer(200); // Example value
+    number_threshold = symbolic::integer(10); // Example value
+
+    const char* threshold_env = std::getenv("DOK_LOAD_THRESHOLD");
+    if (threshold_env) {
+        try {
+            load_threshold = symbolic::integer(std::stoi(threshold_env));
+        } catch (const std::exception&) {
+        }
+    }
+
+    const char* threshold_gpu_env = std::getenv("DOK_LOAD_THRESHOLD_GPU");
+    if (threshold_gpu_env) {
+        try {
+            load_threshold_gpu = symbolic::integer(std::stoi(threshold_gpu_env));
+        } catch (const std::exception&) {
+        }
+    }
+
+    const char* balance_env = std::getenv("DOK_BALANCE_THRESHOLD");
+    if (balance_env) {
+        try {
+            balance_threshold = symbolic::integer(std::stoi(balance_env));
+        } catch (const std::exception&) {
+        }
+    }
+
+    const char* threads = std::getenv("DOK_NUM_THREADS");
+    if (threads) {
+        try {
+            avail_threads = std::stoi(threads);
+        } catch (const std::exception&) {
+        }
+    } else {
+        avail_threads = std::thread::hardware_concurrency();
+    }
+}
 
 } // namespace passes
 } // namespace sdfg

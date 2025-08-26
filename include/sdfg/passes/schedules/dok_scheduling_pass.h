@@ -1,11 +1,27 @@
 #pragma once
 
 #include "sdfg/passes/pass.h"
+#include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
 namespace passes {
 
 class DOKScheduling : public Pass {
+private:
+    symbolic::Expression load_threshold;
+
+    symbolic::Expression load_threshold_gpu;
+
+    symbolic::Expression balance_threshold;
+
+    symbolic::Expression size_threshold;
+
+    symbolic::Expression number_threshold;
+
+    int avail_threads;
+
+    void read_thresholds();
+
 public:
     DOKScheduling();
 
