@@ -9,7 +9,7 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_Pow("Pow");
+inline data_flow::LibraryNodeCode LibraryNodeType_Pow("ml::Pow");
 
 class PowNode : public ElementWiseBinaryNode {
 public:

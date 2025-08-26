@@ -9,28 +9,31 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_MaxPool("ml::MaxPool");
+inline data_flow::LibraryNodeCode LibraryNodeType_Gemm("ml::Gemm");
 
-class MaxPoolNode : public MathNode {
+class GemmNode : public MathNode {
 private:
-    std::vector<size_t> kernel_shape_;
-    std::vector<size_t> pads_;
-    std::vector<size_t> strides_;
+    std::string alpha_;
+    std::string beta_;
+    bool trans_a_;
+    bool trans_b_;
 
 public:
-    MaxPoolNode(
+    GemmNode(
         size_t element_id,
         const DebugInfo &debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph &parent,
-        std::vector<size_t> kernel_shape,
-        std::vector<size_t> pads,
-        std::vector<size_t> strides
+        const std::string &alpha = "1.0f",
+        const std::string &beta = "1.0f",
+        bool trans_a = false,
+        bool trans_b = false
     );
 
-    std::vector<size_t> kernel_shape() const;
-    std::vector<size_t> pads() const;
-    std::vector<size_t> strides() const;
+    const std::string &alpha() const { return alpha_; }
+    const std::string &beta() const { return beta_; }
+    bool trans_a() const { return trans_a_; }
+    bool trans_b() const { return trans_b_; }
 
     void validate(const Function &function) const override;
 
@@ -40,7 +43,7 @@ public:
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph &parent) const override;
 };
 
-class MaxPoolNodeSerializer : public serializer::LibraryNodeSerializer {
+class GemmNodeSerializer : public serializer::LibraryNodeSerializer {
 public:
     nlohmann::json serialize(const data_flow::LibraryNode &library_node) override;
 
@@ -49,6 +52,6 @@ public:
     ) override;
 };
 
-} // namespace ml
-} // namespace math
-} // namespace sdfg
+}
+}
+}

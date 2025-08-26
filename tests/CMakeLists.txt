@@ -12,6 +12,7 @@ set(TEST_FILES
     analysis/degrees_of_knowledge_analysis_test.cpp
     analysis/loop_analysis_test.cpp
     analysis/mem_access_range_analysis_test.cpp
+    analysis/type_analysis_test.cpp
     analysis/users_test.cpp
     analysis/work_depth_analysis_test.cpp
     builder/function_builder_test.cpp

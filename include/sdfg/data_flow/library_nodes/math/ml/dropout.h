@@ -9,12 +9,12 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_Dropout("Dropout");
+inline data_flow::LibraryNodeCode LibraryNodeType_Dropout("ml::Dropout");
 
 // Non-training dropout node
-class Dropout : public math::MathNode {
+class DropoutNode : public math::MathNode {
 public:
-    Dropout(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
+    DropoutNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
 
     void validate(const Function& function) const override;
 
@@ -27,7 +27,7 @@ public:
 class DropoutSerializer : public serializer::LibraryNodeSerializer {
 public:
     nlohmann::json serialize(const data_flow::LibraryNode& library_node) override {
-        const Dropout& elem_node = static_cast<const Dropout&>(library_node);
+        const DropoutNode& elem_node = static_cast<const DropoutNode&>(library_node);
         nlohmann::json j;
 
         j["code"] = elem_node.code().value();
@@ -49,7 +49,7 @@ public:
         sdfg::serializer::JSONSerializer serializer;
         DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
-        return builder.add_library_node<Dropout>(parent, debug_info);
+        return builder.add_library_node<DropoutNode>(parent, debug_info);
     }
 };
 

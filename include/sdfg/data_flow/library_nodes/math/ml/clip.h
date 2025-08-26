@@ -9,7 +9,7 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_Clip("Clip");
+inline data_flow::LibraryNodeCode LibraryNodeType_Clip("ml::Clip");
 
 class ClipNode : public ElementWiseUnaryNode {
 public:

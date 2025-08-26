@@ -1160,6 +1160,10 @@ void register_default_serializers() {
             return std::make_unique<math::ml::AddNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::ml::LibraryNodeType_BatchNormalization.value(), []() {
+            return std::make_unique<math::ml::BatchNormalizationNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_Clip.value(), []() {
             return std::make_unique<math::ml::ClipNodeSerializer>();
         });
@@ -1184,12 +1188,28 @@ void register_default_serializers() {
             return std::make_unique<math::ml::ErfNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_LeakyReLU.value(), []() {
-            return std::make_unique<math::ml::LeakyReLUNodeSerializer>();
+        .register_library_node_serializer(math::ml::LibraryNodeType_Gemm.value(), []() {
+            return std::make_unique<math::ml::GemmNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_HardSigmoid.value(), []() {
             return std::make_unique<math::ml::HardSigmoidNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::ml::LibraryNodeType_LayerNormalization.value(), []() {
+            return std::make_unique<math::ml::LayerNormalizationNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::ml::LibraryNodeType_LeakyReLU.value(), []() {
+            return std::make_unique<math::ml::LeakyReLUNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::ml::LibraryNodeType_LogSoftmax.value(), []() {
+            return std::make_unique<math::ml::LogSoftmaxNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::ml::LibraryNodeType_MatMul.value(), []() {
+            return std::make_unique<math::ml::MatMulNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_MaxPool.value(), []() {
@@ -1204,12 +1224,20 @@ void register_default_serializers() {
             return std::make_unique<math::ml::PowNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::ml::LibraryNodeType_ReduceMean.value(), []() {
+            return std::make_unique<math::ml::ReduceMeanNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_ReLU.value(), []() {
             return std::make_unique<math::ml::ReLUNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_Sigmoid.value(), []() {
             return std::make_unique<math::ml::SigmoidNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::ml::LibraryNodeType_Softmax.value(), []() {
+            return std::make_unique<math::ml::SoftmaxNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_Sqrt.value(), []() {

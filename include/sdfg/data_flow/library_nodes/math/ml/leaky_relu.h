@@ -9,7 +9,7 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_LeakyReLU("LeakyReLU");
+inline data_flow::LibraryNodeCode LibraryNodeType_LeakyReLU("ml::LeakyReLU");
 
 class LeakyReLUNode : public ElementWiseUnaryNode {
 public:

@@ -63,6 +63,7 @@ set(SOURCE_FILES
     src/analysis/loop_analysis.cpp
     src/analysis/mem_access_range_analysis.cpp
     src/analysis/scope_analysis.cpp
+    src/analysis/type_analysis.cpp
     src/analysis/users.cpp
     src/analysis/work_depth_analysis.cpp
     src/builder/function_builder.cpp
@@ -104,6 +105,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/blas/gemm.cpp
     src/data_flow/library_nodes/math/ml/abs.cpp
     src/data_flow/library_nodes/math/ml/add.cpp
+    src/data_flow/library_nodes/math/ml/batch_normalization.cpp
     src/data_flow/library_nodes/math/ml/clip.cpp
     src/data_flow/library_nodes/math/ml/conv.cpp
     src/data_flow/library_nodes/math/ml/div.cpp
@@ -111,13 +113,19 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/ml/element_wise.cpp
     src/data_flow/library_nodes/math/ml/elu.cpp
     src/data_flow/library_nodes/math/ml/erf.cpp
+    src/data_flow/library_nodes/math/ml/gemm.cpp
     src/data_flow/library_nodes/math/ml/hard_sigmoid.cpp
+    src/data_flow/library_nodes/math/ml/layer_normalization.cpp
     src/data_flow/library_nodes/math/ml/leaky_relu.cpp
+    src/data_flow/library_nodes/math/ml/log_softmax.cpp
+    src/data_flow/library_nodes/math/ml/matmul.cpp
     src/data_flow/library_nodes/math/ml/maxpool.cpp
     src/data_flow/library_nodes/math/ml/mul.cpp
     src/data_flow/library_nodes/math/ml/pow.cpp
+    src/data_flow/library_nodes/math/ml/reduce_mean.cpp
     src/data_flow/library_nodes/math/ml/relu.cpp
     src/data_flow/library_nodes/math/ml/sigmoid.cpp
+    src/data_flow/library_nodes/math/ml/softmax.cpp
     src/data_flow/library_nodes/math/ml/sqrt.cpp
     src/data_flow/library_nodes/math/ml/sub.cpp
     src/data_flow/library_nodes/math/ml/tanh.cpp
@@ -133,6 +141,7 @@ set(SOURCE_FILES
     src/passes/dataflow/redundant_array_elimination.cpp
     src/passes/dataflow/trivial_array_elimination.cpp
     src/passes/dataflow/reference_propagation.cpp
+    src/passes/dataflow/byte_reference_elimination.cpp
     src/passes/schedules/expansion_pass.cpp
     src/passes/schedules/parallelization_pass.cpp
     src/passes/symbolic/symbol_evolution.cpp
@@ -203,8 +212,6 @@ target_include_directories(sdfglib
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/symengine/symengine/utilities/cereal/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/3rdParty/symengine/symengine/utilities/cereal/include>
 )
-
-target_compile_options(sdfglib PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-private-field -Wno-switch -Wno-deprecated-declarations)
 
 if(SDFGLIB_ENABLE_SANITIZER)
   target_compile_options(sdfglib PUBLIC ${_SAN_COMPILE_OPTS})

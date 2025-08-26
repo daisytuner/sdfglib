@@ -9,7 +9,7 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_Add("Add");
+inline data_flow::LibraryNodeCode LibraryNodeType_Add("ml::Add");
 
 class AddNode : public ElementWiseBinaryNode {
 public:
