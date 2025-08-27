@@ -103,6 +103,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/blas/gemm.cpp
     src/data_flow/library_nodes/math/ml/abs.cpp
     src/data_flow/library_nodes/math/ml/add.cpp
+    src/data_flow/library_nodes/math/ml/batch_normalization.cpp
     src/data_flow/library_nodes/math/ml/clip.cpp
     src/data_flow/library_nodes/math/ml/conv.cpp
     src/data_flow/library_nodes/math/ml/div.cpp
@@ -112,6 +113,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/ml/erf.cpp
     src/data_flow/library_nodes/math/ml/gemm.cpp
     src/data_flow/library_nodes/math/ml/hard_sigmoid.cpp
+    src/data_flow/library_nodes/math/ml/layer_normalization.cpp
     src/data_flow/library_nodes/math/ml/leaky_relu.cpp
     src/data_flow/library_nodes/math/ml/log_softmax.cpp
     src/data_flow/library_nodes/math/ml/matmul.cpp

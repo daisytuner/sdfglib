@@ -10,6 +10,7 @@
 // ML
 #include "sdfg/data_flow/library_nodes/math/ml/abs.h"
 #include "sdfg/data_flow/library_nodes/math/ml/add.h"
+#include "sdfg/data_flow/library_nodes/math/ml/batch_normalization.h"
 #include "sdfg/data_flow/library_nodes/math/ml/clip.h"
 #include "sdfg/data_flow/library_nodes/math/ml/conv.h"
 #include "sdfg/data_flow/library_nodes/math/ml/div.h"
@@ -18,6 +19,7 @@
 #include "sdfg/data_flow/library_nodes/math/ml/erf.h"
 #include "sdfg/data_flow/library_nodes/math/ml/gemm.h"
 #include "sdfg/data_flow/library_nodes/math/ml/hard_sigmoid.h"
+#include "sdfg/data_flow/library_nodes/math/ml/layer_normalization.h"
 #include "sdfg/data_flow/library_nodes/math/ml/leaky_relu.h"
 #include "sdfg/data_flow/library_nodes/math/ml/log_softmax.h"
 #include "sdfg/data_flow/library_nodes/math/ml/matmul.h"
