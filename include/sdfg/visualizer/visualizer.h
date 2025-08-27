@@ -49,14 +49,6 @@ protected:
         symbolic::Expression const& update
     );
 
-    virtual void visualizeSubset(
-        Function const& function,
-        data_flow::Subset const& begin_sub,
-        data_flow::Subset const& end_sub,
-        types::IType const* type = nullptr,
-        int subIdx = 0
-    );
-
     std::string subsetRangeString(data_flow::Subset const& begin_subset, data_flow::Subset const& end_subset, int subIdx);
 
 public:
@@ -65,6 +57,14 @@ public:
     virtual void visualize() = 0;
 
     codegen::PrettyPrinter const& getStream() const { return this->stream_; }
+
+    virtual void visualizeSubset(
+        Function const& function,
+        data_flow::Subset const& begin_sub,
+        data_flow::Subset const& end_sub,
+        types::IType const* type = nullptr,
+        int subIdx = 0
+    );
 };
 
 } // namespace visualizer
