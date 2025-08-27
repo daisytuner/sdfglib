@@ -73,6 +73,7 @@ def test_instrumentation(event):
         assert events[i]["args"]["source_ranges"][0]["to"]["line"] == 31
         assert events[i]["args"]["source_ranges"][0]["from"]["col"] == 4
         assert events[i]["args"]["source_ranges"][0]["to"]["col"] == 5
+        assert events[i]["args"]["loopnest_index"] == 0
         for event_name in event_names:
             assert event_name in events[i]["args"]["metrics"]
 
@@ -142,5 +143,6 @@ def test_instrumentation_cuda(event):
         assert events[i]["args"]["source_ranges"][0]["to"]["line"] == 31
         assert events[i]["args"]["source_ranges"][0]["from"]["col"] == 4
         assert events[i]["args"]["source_ranges"][0]["to"]["col"] == 5
+        assert events[i]["args"]["loopnest_index"] == 0
         for event_name in event_names:
             assert event_name in events[i]["args"]["metrics"]
