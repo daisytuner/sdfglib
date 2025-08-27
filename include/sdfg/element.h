@@ -1,9 +1,8 @@
 #pragma once
 
 #include <cassert>
-#include <string>
-#include <vector>
 
+#include "sdfg/debug_info.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
@@ -19,82 +18,6 @@ class JSONSerializer;
 
 class Function;
 
-struct DebugLoc {
-    std::string filename_;
-    std::string function_;
-    size_t line_;
-    size_t column_;
-
-    bool has_;
-};
-
-class DebugInfoElement {
-private:
-    std::vector<DebugLoc> locations_;
-
-public:
-    DebugInfoElement();
-
-    DebugInfoElement(DebugLoc loc);
-
-    DebugInfoElement(DebugLoc loc, std::vector<DebugLoc> inlined_at);
-
-    DebugInfoElement(std::vector<DebugLoc> inlined_at);
-
-    bool has() const;
-
-    std::string filename() const;
-
-    std::string function() const;
-
-    size_t line() const;
-
-    size_t column() const;
-
-    const std::vector<DebugLoc>& locations() const;
-};
-
-class DebugInfo {
-private:
-    std::vector<DebugInfoElement> instructions_;
-
-    std::string filename_;
-
-    std::string function_;
-
-    size_t start_line_;
-
-    size_t start_column_;
-
-    size_t end_line_;
-
-    size_t end_column_;
-
-    bool has_;
-
-public:
-    DebugInfo();
-
-    DebugInfo(DebugInfoElement loc);
-
-    DebugInfo(std::vector<DebugInfoElement> instructions);
-
-    const std::vector<DebugInfoElement>& instructions() const;
-
-    static DebugInfo merge(const DebugInfo& left, const DebugInfo& right);
-
-    void append(DebugInfoElement& other);
-
-    bool has() const;
-
-    std::string filename() const;
-    std::string function() const;
-    size_t start_line() const;
-    size_t start_column() const;
-    size_t end_line() const;
-    size_t end_column() const;
-};
-
 class Element {
     friend class builder::SDFGBuilder;
     friend class builder::StructuredSDFGBuilder;
@@ -102,18 +25,18 @@ class Element {
 
 protected:
     size_t element_id_;
-    DebugInfo debug_info_;
+    DebugInfoRegion debug_info_;
 
 public:
-    Element(size_t element_id, const DebugInfo& debug_info);
+    Element(size_t element_id, const DebugInfoRegion& debug_info);
 
     virtual ~Element() = default;
 
     size_t element_id() const;
 
-    const DebugInfo& debug_info() const;
+    const DebugInfoRegion& debug_info() const;
 
-    void set_debug_info(const DebugInfo& debug_info);
+    void set_debug_info(const DebugInfoRegion& debug_info);
 
     /**
      * Validates the element.

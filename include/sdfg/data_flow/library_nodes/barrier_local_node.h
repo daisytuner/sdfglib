@@ -15,7 +15,9 @@ inline LibraryNodeCode LibraryNodeType_BarrierLocal{"barrier_local"};
 
 class BarrierLocalNode : public LibraryNode {
 public:
-    BarrierLocalNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent);
+    BarrierLocalNode(
+        size_t element_id, const DebugInfoRegion& debug_info, const graph::Vertex vertex, DataFlowGraph& parent
+    );
 
     void validate(const Function& function) const override;
 

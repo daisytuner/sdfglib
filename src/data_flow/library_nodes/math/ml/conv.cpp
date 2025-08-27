@@ -11,7 +11,7 @@ namespace ml {
 
 ConvNode::ConvNode(
     size_t element_id,
-    const DebugInfo& debug_info,
+    const DebugInfoRegion& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     bool has_bias,
@@ -163,9 +163,9 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& code_block = builder.add_block(*last_scope, {}, block.debug_info());
 
     // Reuse debug infos from original access nodes (if available).
-    const DebugInfo& dbg_X = iedge_X->src().debug_info();
-    const DebugInfo& dbg_W = iedge_W->src().debug_info();
-    const DebugInfo& dbg_Y = oedge_Y->dst().debug_info();
+    const DebugInfoRegion& dbg_X = iedge_X->src().debug_info();
+    const DebugInfoRegion& dbg_W = iedge_W->src().debug_info();
+    const DebugInfoRegion& dbg_Y = oedge_Y->dst().debug_info();
     const DebugInfo dbg_B = (iedge_B != nullptr) ? iedge_B->src().debug_info() : DebugInfo();
 
     // Create new access nodes inside the innermost block.

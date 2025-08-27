@@ -1,13 +1,8 @@
 #pragma once
 
 #include <cassert>
-#include <functional>
-#include <list>
 #include <memory>
-#include <ranges>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 
 #include "sdfg/element.h"
 #include "sdfg/function.h"
@@ -34,6 +29,8 @@ class StructuredSDFG : public Function {
 private:
     std::unique_ptr<structured_control_flow::Sequence> root_;
 
+    DebugInfo debug_info_;
+
 public:
     StructuredSDFG(const std::string& name, FunctionType type);
 
@@ -49,6 +46,10 @@ public:
     std::unique_ptr<StructuredSDFG> clone() const;
 
     size_t num_nodes() const;
+
+    /***** Section: Debug Info *****/
+    DebugInfo& debug_info() { return this->debug_info_; };
+    const DebugInfo& debug_info() const { return this->debug_info_; };
 };
 
 } // namespace sdfg

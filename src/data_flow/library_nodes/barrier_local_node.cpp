@@ -7,8 +7,9 @@
 namespace sdfg {
 namespace data_flow {
 
-BarrierLocalNode::
-    BarrierLocalNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent)
+BarrierLocalNode::BarrierLocalNode(
+    size_t element_id, const DebugInfoRegion& debug_info, const graph::Vertex vertex, DataFlowGraph& parent
+)
     : LibraryNode(
           element_id, debug_info, vertex, parent, LibraryNodeType_BarrierLocal, {}, {}, true, ImplementationType_NONE
       ) {
