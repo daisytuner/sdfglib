@@ -403,6 +403,10 @@ public:
     void clear_node(structured_control_flow::Block& block, const data_flow::CodeNode& node);
 
     void clear_node(structured_control_flow::Block& block, const data_flow::AccessNode& node);
+
+    size_t add_debug_info_element(const DebugInfoElement& element);
+
+    const DebugInfo& debug_info() const;
 };
 
 } // namespace builder

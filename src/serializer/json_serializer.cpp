@@ -13,6 +13,7 @@
 
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/library_node.h"
+#include "sdfg/debug_info.h"
 #include "sdfg/element.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
@@ -1155,6 +1156,17 @@ DebugInfoRegion JSONSerializer::json_to_debug_info_region(const nlohmann::json& 
     size_t end_column = j["end_column"];
     assert(end_column == debug_info.end_column());
 
+    return debug_info;
+}
+
+DebugInfo JSONSerializer::json_to_debug_info(const nlohmann::json& j) {
+    assert(j.contains("instructions"));
+    assert(j["instructions"].is_array());
+    DebugInfo debug_info;
+    std::vector<DebugInfoElement> instructions;
+    for (const auto& instruction_json : j["instructions"]) {
+        debug_info.add_element(json_to_debug_info_element(instruction_json));
+    }
     return debug_info;
 }
 

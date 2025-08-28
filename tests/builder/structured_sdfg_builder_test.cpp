@@ -4,6 +4,7 @@
 
 #include "sdfg/builder/sdfg_builder.h"
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
+#include "sdfg/debug_info.h"
 #include "sdfg/element.h"
 #include "sdfg/symbolic/symbolic.h"
 
@@ -115,7 +116,7 @@ TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
     EXPECT_EQ(block.element_id(), 1);
     EXPECT_EQ(root.at(0).second.element_id(), 2);
 
-    auto& lib_node = builder.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfo());
+    auto& lib_node = builder.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfoRegion());
     EXPECT_EQ(lib_node.element_id(), 3);
 
     auto sdfg = builder.move();
@@ -340,7 +341,7 @@ TEST(StructuredSDFGBuilderTest, addForAfter) {
 }
 
 TEST(SDFG2StructuredSDFGTest, Function_Definition) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& start_state = builder.add_state(true);
 
     types::Scalar desc1(types::PrimitiveType::Double);
@@ -386,7 +387,7 @@ TEST(SDFG2StructuredSDFGTest, Function_Definition) {
 }
 
 TEST(SDFG2StructuredSDFGTest, Sequence) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& state1 = builder.add_state(true);
     auto& state2 = builder.add_state_after(state1);
     auto& state3 = builder.add_state_after(state2);
@@ -417,7 +418,7 @@ TEST(SDFG2StructuredSDFGTest, Sequence) {
 }
 
 TEST(SDFG2StructuredSDFGTest, IfElse) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("i", desc);
@@ -431,14 +432,14 @@ TEST(SDFG2StructuredSDFGTest, IfElse) {
         if_state,
         {{symbolic::symbol("i"), symbolic::integer(0)}},
         symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-        DebugInfo()
+        {}
     );
     builder.add_edge(
         init_state,
         else_state,
         {{symbolic::symbol("i"), symbolic::integer(1)}},
         symbolic::Ge(symbolic::symbol("i"), symbolic::integer(10)),
-        DebugInfo()
+        {}
     );
     builder.add_edge(if_state, end_state);
     builder.add_edge(else_state, end_state);
@@ -500,7 +501,7 @@ TEST(SDFG2StructuredSDFGTest, IfElse) {
 }
 
 TEST(SDFG2StructuredSDFGTest, While) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("i", desc);

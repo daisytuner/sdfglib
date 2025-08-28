@@ -7,7 +7,7 @@
 using namespace sdfg;
 
 TEST(CUDACodeGeneratorTest, FunctionDefintion) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL, DebugInfo());
     auto sdfg = builder.move();
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
@@ -17,7 +17,7 @@ TEST(CUDACodeGeneratorTest, FunctionDefintion) {
 }
 
 TEST(CUDACodeGeneratorTest, Dispatch_Includes) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL, DebugInfo());
     auto sdfg = builder.move();
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
@@ -29,7 +29,7 @@ TEST(CUDACodeGeneratorTest, Dispatch_Includes) {
 }
 
 TEST(CUDACodeGeneratorTest, DispatchStructures_Basic) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL, DebugInfo());
 
     auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
@@ -50,7 +50,7 @@ char member_0;
 }
 
 TEST(CUDACodeGeneratorTest, DispatchStructures_Nested) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL, DebugInfo());
 
     auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
@@ -79,7 +79,7 @@ struct MyStructA member_0;
 }
 
 TEST(CUDACodeGeneratorTest, DispatchGlobals) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL, DebugInfo());
 
     sdfg::types::Scalar base_type(sdfg::types::StorageType_NV_Global, 0, "", sdfg::types::PrimitiveType::Int32);
     sdfg::types::Pointer

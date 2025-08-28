@@ -454,5 +454,11 @@ data_flow::Memlet& SDFGBuilder::add_dereference_memlet(
     }
 };
 
+size_t SDFGBuilder::add_debug_info_element(const DebugInfoElement& element) {
+    return sdfg_->debug_info().add_element(element);
+}
+
+const DebugInfo& SDFGBuilder::debug_info() const { return sdfg_->debug_info(); }
+
 } // namespace builder
 } // namespace sdfg

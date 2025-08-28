@@ -7,6 +7,7 @@
 #include "sdfg/codegen/language_extensions/cuda_language_extension.h"
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
+#include "sdfg/debug_info.h"
 
 using namespace sdfg;
 
@@ -118,7 +119,7 @@ TEST(DataFlowDispatcherTest, DispatchLibraryNode) {
     auto& root = sdfg.root();
 
     auto& block = builder.add_block(root);
-    builder.add_library_node<sdfg::data_flow::BarrierLocalNode>(block, DebugInfo());
+    builder.add_library_node<sdfg::data_flow::BarrierLocalNode>(block, DebugInfoRegion());
 
     auto final_sdfg = builder.move();
 

@@ -1421,5 +1421,11 @@ void StructuredSDFGBuilder::add_dataflow(const data_flow::DataFlowGraph& from, B
     }
 };
 
+size_t StructuredSDFGBuilder::add_debug_info_element(const DebugInfoElement& element) {
+    return structured_sdfg_->debug_info().add_element(element);
+}
+
+const DebugInfo& StructuredSDFGBuilder::debug_info() const { return structured_sdfg_->debug_info(); }
+
 } // namespace builder
 } // namespace sdfg

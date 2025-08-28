@@ -23,8 +23,8 @@ TEST(ExpansionPassTest, Simple) {
 
     auto& input_node = builder.add_access(block, "input");
     auto& output_node = builder.add_access(block, "output");
-    auto& relu_node = static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block, DebugInfo())
-    );
+    auto& relu_node =
+        static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block, DebugInfoRegion()));
 
     builder.add_computational_memlet(
         block,

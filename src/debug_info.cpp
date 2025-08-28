@@ -129,7 +129,7 @@ DebugInfoRegion::DebugInfoRegion(std::unordered_set<size_t> indices, const std::
     this->end_column_ = end_column;
 };
 
-bool fuse_ranges(
+bool DebugInfoRegion::fuse_ranges(
     const DebugLoc& loc,
     std::string& filename,
     std::string& function,

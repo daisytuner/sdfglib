@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 #include "sdfg/data_flow/library_node.h"
 
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"

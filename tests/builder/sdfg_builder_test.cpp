@@ -6,7 +6,7 @@
 using namespace sdfg;
 
 TEST(SDFGBuilderTest, Empty) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto sdfg = builder.move();
 
@@ -16,7 +16,7 @@ TEST(SDFGBuilderTest, Empty) {
 }
 
 TEST(SDFGBuilderTest, AddState) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state = builder.add_state();
     EXPECT_EQ(state.element_id(), 1);
@@ -32,7 +32,7 @@ TEST(SDFGBuilderTest, AddState) {
 }
 
 TEST(SDFGBuilderTest, AddStartState) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state = builder.add_state(true);
     EXPECT_EQ(state.element_id(), 1);
@@ -50,7 +50,7 @@ TEST(SDFGBuilderTest, AddStartState) {
 }
 
 TEST(SDFGBuilderTest, AddStateBefore) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state_1 = builder.add_state();
     EXPECT_EQ(state_1.element_id(), 1);
@@ -78,7 +78,7 @@ TEST(SDFGBuilderTest, AddStateBefore) {
 }
 
 TEST(SDFGBuilderTest, AddStateAfter) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state_1 = builder.add_state();
     EXPECT_EQ(state_1.element_id(), 1);
@@ -106,7 +106,7 @@ TEST(SDFGBuilderTest, AddStateAfter) {
 }
 
 TEST(SDFGBuilderTest, AddEdge) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state_1 = builder.add_state();
     EXPECT_EQ(state_1.element_id(), 1);
@@ -137,7 +137,7 @@ TEST(SDFGBuilderTest, AddEdge) {
 }
 
 TEST(SDFGBuilderTest, addEdgeWithCondition) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64));
     symbolic::Symbol iter_sym = symbolic::symbol("i");
@@ -170,7 +170,7 @@ TEST(SDFGBuilderTest, addEdgeWithCondition) {
 }
 
 TEST(SDFGBuilderTest, addEdgeWithAssignments) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64));
     symbolic::Symbol iter_sym = symbolic::symbol("i");
@@ -197,7 +197,7 @@ TEST(SDFGBuilderTest, addEdgeWithAssignments) {
 }
 
 TEST(SDFGBuilderTest, AddAccessNode) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state = builder.add_state();
     EXPECT_EQ(state.element_id(), 1);
@@ -216,7 +216,7 @@ TEST(SDFGBuilderTest, AddAccessNode) {
 }
 
 TEST(SDFGBuilderTest, AddTasklet) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state = builder.add_state();
     EXPECT_EQ(state.element_id(), 1);
@@ -247,12 +247,12 @@ TEST(SDFGBuilderTest, AddTasklet) {
 }
 
 TEST(SDFGBuilderTest, AddLibnode) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& state = builder.add_state(true);
     EXPECT_EQ(state.element_id(), 1);
 
-    auto& library_node = builder.add_library_node<data_flow::BarrierLocalNode>(state, DebugInfo());
+    auto& library_node = builder.add_library_node<data_flow::BarrierLocalNode>(state, {});
     EXPECT_EQ(library_node.element_id(), 2);
 
     auto sdfg = builder.move();

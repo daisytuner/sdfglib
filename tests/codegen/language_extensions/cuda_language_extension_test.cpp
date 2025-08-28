@@ -127,7 +127,7 @@ TEST(CUDALanguageExtensionTest, Typecast) {
 }
 
 TEST(CUDALanguageExtensionTest, SubsetToCpp_Scalar) {
-    builder::SDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     codegen::CUDALanguageExtension generator;
@@ -136,7 +136,7 @@ TEST(CUDALanguageExtensionTest, SubsetToCpp_Scalar) {
 }
 
 TEST(CUDALanguageExtensionTest, SubsetToCpp_Array) {
-    builder::SDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     codegen::CUDALanguageExtension generator;
@@ -149,7 +149,7 @@ TEST(CUDALanguageExtensionTest, SubsetToCpp_Array) {
 }
 
 TEST(CUDALanguageExtensionTest, SubsetToCpp_Struct) {
-    builder::SDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     auto& struct_def = builder.add_structure("MyStruct", false);

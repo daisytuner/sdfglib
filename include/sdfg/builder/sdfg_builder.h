@@ -4,6 +4,7 @@
 
 #include "sdfg/builder/function_builder.h"
 #include "sdfg/data_flow/library_node.h"
+#include "sdfg/debug_info.h"
 #include "sdfg/sdfg.h"
 #include "sdfg/symbolic/symbolic.h"
 
@@ -211,19 +212,22 @@ public:
     );
 
     template<typename T, typename... Args>
-    data_flow::LibraryNode& add_library_node(
-        control_flow::State& state, const std::vector<DebugInfoElement>& debug_info_elements, Args... arguments
-    ) {
+    data_flow::LibraryNode&
+    add_library_node(control_flow::State& state, const DebugInfoRegion& debug_info_region, Args... arguments) {
         static_assert(std::is_base_of<data_flow::LibraryNode, T>::value, "T must be a subclass of data_flow::LibraryNode");
 
         auto& dataflow = state.dataflow();
         auto vertex = boost::add_vertex(dataflow.graph_);
-        auto node =
-            std::unique_ptr<T>(new T(this->new_element_id(), debug_info_elements, vertex, dataflow, arguments...));
+        auto node = std::unique_ptr<T>(new T(this->new_element_id(), debug_info_region, vertex, dataflow, arguments...)
+        );
         auto res = dataflow.nodes_.insert({vertex, std::move(node)});
 
         return static_cast<data_flow::LibraryNode&>(*(res.first->second));
     };
+
+    size_t add_debug_info_element(const DebugInfoElement& element);
+
+    const DebugInfo& debug_info() const;
 };
 
 } // namespace builder
