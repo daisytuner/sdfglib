@@ -184,7 +184,7 @@ data_flow::LibraryNode &GemmNodeSerializer::deserialize(
     }
 
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"], builder.debug_info());
 
     auto alpha = j["alpha"].get<std::string>();
     auto beta = j["beta"].get<std::string>();

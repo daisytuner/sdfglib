@@ -350,7 +350,7 @@ data_flow::LibraryNode& ConvNodeSerializer::deserialize(
     }
 
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"], builder.debug_info());
 
     auto outputs = j.at("outputs").get<std::vector<std::string>>();
     auto inputs = j.at("inputs").get<std::vector<std::string>>();

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/debug_info.h"
 #include "sdfg/element.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
@@ -112,7 +113,7 @@ public:
 
     DebugLoc json_to_debug_loc(const nlohmann::json& j);
     DebugInfoElement json_to_debug_info_element(const nlohmann::json& j);
-    DebugInfoRegion json_to_debug_info_region(const nlohmann::json& j);
+    DebugInfoRegion json_to_debug_info_region(const nlohmann::json& j, const DebugInfo& debug_info);
     DebugInfo json_to_debug_info(const nlohmann::json& j);
 
     std::string expression(const symbolic::Expression& expr);

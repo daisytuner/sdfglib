@@ -613,7 +613,11 @@ void JSONSerializer::json_to_dataflow(
             auto inputs = node["inputs"].get<std::vector<std::string>>();
 
             auto& tasklet = builder.add_tasklet(
-                parent, node["code"], node["output"], inputs, json_to_debug_info_region(node["debug_info_region"])
+                parent,
+                node["code"],
+                node["output"],
+                inputs,
+                json_to_debug_info_region(node["debug_info_region"], *debug_info_)
             );
             tasklet.element_id_ = node["element_id"];
             nodes_map.insert({node["element_id"], tasklet});
@@ -634,7 +638,8 @@ void JSONSerializer::json_to_dataflow(
         } else if (type == "access_node") {
             assert(node.contains("data"));
             auto& access_node =
-                builder.add_access(parent, node["data"], json_to_debug_info_region(node["debug_info_region"]));
+                builder
+                    .add_access(parent, node["data"], json_to_debug_info_region(node["debug_info_region"], *debug_info_));
             access_node.element_id_ = node["element_id"];
             nodes_map.insert({node["element_id"], access_node});
         } else {
@@ -687,7 +692,7 @@ void JSONSerializer::json_to_dataflow(
                 begin_subset,
                 end_subset,
                 *base_type,
-                json_to_debug_info_region(edge["debug_info_region"])
+                json_to_debug_info_region(edge["debug_info_region"], *debug_info_)
             );
             memlet.element_id_ = edge["element_id"];
         } else if (edge.contains("subset")) {
@@ -706,7 +711,7 @@ void JSONSerializer::json_to_dataflow(
                 edge["dst_conn"],
                 subset,
                 *base_type,
-                json_to_debug_info_region(edge["debug_info_region"])
+                json_to_debug_info_region(edge["debug_info_region"], *debug_info_)
             );
             memlet.element_id_ = edge["element_id"];
         } else {
@@ -727,7 +732,7 @@ void JSONSerializer::json_to_sequence(
     assert(j["transitions"].size() == j["children"].size());
 
     sequence.element_id_ = j["element_id"];
-    sequence.debug_info_ = json_to_debug_info_region(j["debug_info_region"]);
+    sequence.debug_info_ = json_to_debug_info_region(j["debug_info_region"], *debug_info_);
 
     std::string type = j["type"];
     if (type == "sequence") {
@@ -768,14 +773,16 @@ void JSONSerializer::json_to_sequence(
             } else if (child["type"] == "map") {
                 json_to_map_node(child, builder, sequence, assignments);
             } else if (child["type"] == "sequence") {
-                auto& subseq =
-                    builder.add_sequence(sequence, assignments, json_to_debug_info_region(child["debug_info_region"]));
+                auto& subseq = builder.add_sequence(
+                    sequence, assignments, json_to_debug_info_region(child["debug_info_region"], *debug_info_)
+                );
                 json_to_sequence(child, builder, subseq);
             } else {
                 throw std::runtime_error("Unknown child type");
             }
 
-            sequence.at(i).second.debug_info_ = json_to_debug_info_region(transition["debug_info_region"]);
+            sequence.at(i).second.debug_info_ =
+                json_to_debug_info_region(transition["debug_info_region"], *debug_info_);
             sequence.at(i).second.element_id_ = transition["element_id"];
         }
     } else {
@@ -793,7 +800,8 @@ void JSONSerializer::json_to_block_node(
     assert(j["type"].is_string());
     assert(j.contains("dataflow"));
     assert(j["dataflow"].is_object());
-    auto& block = builder.add_block(parent, assignments, json_to_debug_info_region(j["debug_info_region"]));
+    auto& block =
+        builder.add_block(parent, assignments, json_to_debug_info_region(j["debug_info_region"], *debug_info_));
     block.element_id_ = j["element_id"];
     assert(j["dataflow"].contains("type"));
     assert(j["dataflow"]["type"].is_string());
@@ -831,7 +839,13 @@ void JSONSerializer::json_to_for_node(
     symbolic::Condition condition = SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic());
     SymEngine::Expression update(j["update"]);
     auto& for_node = builder.add_for(
-        parent, indvar, condition, init, update, assignments, json_to_debug_info_region(j["debug_info_region"])
+        parent,
+        indvar,
+        condition,
+        init,
+        update,
+        assignments,
+        json_to_debug_info_region(j["debug_info_region"], *debug_info_)
     );
     for_node.element_id_ = j["element_id"];
 
@@ -852,7 +866,8 @@ void JSONSerializer::json_to_if_else_node(
     assert(j["type"] == "if_else");
     assert(j.contains("branches"));
     assert(j["branches"].is_array());
-    auto& if_else_node = builder.add_if_else(parent, assignments, json_to_debug_info_region(j["debug_info_region"]));
+    auto& if_else_node =
+        builder.add_if_else(parent, assignments, json_to_debug_info_region(j["debug_info_region"], *debug_info_));
     if_else_node.element_id_ = j["element_id"];
     for (const auto& branch : j["branches"]) {
         assert(branch.contains("condition"));
@@ -887,7 +902,8 @@ void JSONSerializer::json_to_while_node(
     assert(j.contains("root"));
     assert(j["root"].is_object());
 
-    auto& while_node = builder.add_while(parent, assignments, json_to_debug_info_region(j["debug_info_region"]));
+    auto& while_node =
+        builder.add_while(parent, assignments, json_to_debug_info_region(j["debug_info_region"], *debug_info_));
     while_node.element_id_ = j["element_id"];
 
     assert(j["root"]["type"] == "sequence");
@@ -903,7 +919,8 @@ void JSONSerializer::json_to_break_node(
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "break");
-    auto& node = builder.add_break(parent, assignments, json_to_debug_info_region(j["debug_info_region"]));
+    auto& node =
+        builder.add_break(parent, assignments, json_to_debug_info_region(j["debug_info_region"], *debug_info_));
     node.element_id_ = j["element_id"];
 }
 
@@ -916,7 +933,8 @@ void JSONSerializer::json_to_continue_node(
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "continue");
-    auto& node = builder.add_continue(parent, assignments, json_to_debug_info_region(j["debug_info_region"]));
+    auto& node =
+        builder.add_continue(parent, assignments, json_to_debug_info_region(j["debug_info_region"], *debug_info_));
     node.element_id_ = j["element_id"];
 }
 
@@ -960,7 +978,7 @@ void JSONSerializer::json_to_map_node(
         update,
         schedule_type,
         assignments,
-        json_to_debug_info_region(j["debug_info_region"])
+        json_to_debug_info_region(j["debug_info_region"], *debug_info_)
     );
     map_node.element_id_ = j["element_id"];
 
@@ -980,7 +998,8 @@ void JSONSerializer::json_to_return_node(
     assert(j["type"].is_string());
     assert(j["type"] == "return");
 
-    auto& node = builder.add_return(parent, assignments, json_to_debug_info_region(j["debug_info_region"]));
+    auto& node =
+        builder.add_return(parent, assignments, json_to_debug_info_region(j["debug_info_region"], *debug_info_));
     node.element_id_ = j["element_id"];
 }
 
@@ -1111,52 +1130,52 @@ DebugInfoElement JSONSerializer::json_to_debug_info_element(const nlohmann::json
     return DebugInfoElement(locations);
 }
 
-DebugInfoRegion JSONSerializer::json_to_debug_info_region(const nlohmann::json& j) {
+DebugInfoRegion JSONSerializer::json_to_debug_info_region(const nlohmann::json& j, const DebugInfo& debug_info) {
     assert(j.contains("has"));
     assert(j["has"].is_boolean());
     if (!j["has"]) {
         return DebugInfoRegion();
     }
 
-    assert(j.contains("instructions"));
-    assert(j["instructions"].is_array());
+    assert(j.contains("indices"));
+    assert(j["indices"].is_array());
     std::unordered_set<size_t> indices;
-    for (auto instruction_json : j["instructions"]) {
-        size_t index = instruction_json;
+    for (auto index_json : j["indices"]) {
+        size_t index = index_json;
         indices.insert(index);
     }
-    DebugInfoRegion debug_info(indices, debug_info_->instructions());
+    DebugInfoRegion debug_info_region(indices, debug_info.instructions());
     assert(j.contains("filename"));
     assert(j["filename"].is_string());
     std::string filename = j["filename"];
-    assert(filename == debug_info.filename());
+    assert(filename == debug_info_region.filename());
 
     assert(j.contains("function"));
     assert(j["function"].is_string());
     std::string function = j["function"];
-    assert(function == debug_info.function());
+    assert(function == debug_info_region.function());
 
     assert(j.contains("start_line"));
     assert(j["start_line"].is_number_integer());
     size_t start_line = j["start_line"];
-    assert(start_line == debug_info.start_line());
+    assert(start_line == debug_info_region.start_line());
 
     assert(j.contains("start_column"));
     assert(j["start_column"].is_number_integer());
     size_t start_column = j["start_column"];
-    assert(start_column == debug_info.start_column());
+    assert(start_column == debug_info_region.start_column());
 
     assert(j.contains("end_line"));
     assert(j["end_line"].is_number_integer());
     size_t end_line = j["end_line"];
-    assert(end_line == debug_info.end_line());
+    assert(end_line == debug_info_region.end_line());
 
     assert(j.contains("end_column"));
     assert(j["end_column"].is_number_integer());
     size_t end_column = j["end_column"];
-    assert(end_column == debug_info.end_column());
+    assert(end_column == debug_info_region.end_column());
 
-    return debug_info;
+    return debug_info_region;
 }
 
 DebugInfo JSONSerializer::json_to_debug_info(const nlohmann::json& j) {

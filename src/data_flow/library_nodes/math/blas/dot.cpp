@@ -215,7 +215,7 @@ data_flow::LibraryNode& DotNodeSerializer::deserialize(
 
     // Extract debug info using JSONSerializer
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"], builder.debug_info());
 
     auto precision = j.at("precision").get<BLAS_Precision>();
     auto n = SymEngine::Expression(j.at("n"));

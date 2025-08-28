@@ -150,7 +150,7 @@ data_flow::LibraryNode &MatMulNodeSerializer::deserialize(
     }
 
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"], builder.debug_info());
 
     return builder.add_library_node<MatMulNode>(parent, debug_info);
 }

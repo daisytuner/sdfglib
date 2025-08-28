@@ -461,7 +461,7 @@ data_flow::LibraryNode& GEMMNodeSerializer::deserialize(
 
     // Extract debug info using JSONSerializer
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"], builder.debug_info());
 
     auto precision = j.at("precision").get<BLAS_Precision>();
     auto layout = j.at("layout").get<BLAS_Layout>();

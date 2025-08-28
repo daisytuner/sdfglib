@@ -69,7 +69,7 @@ public:
 
         // Extract debug info using JSONSerializer
         sdfg::serializer::JSONSerializer serializer;
-        DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
+        DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"], builder.debug_info());
 
         auto& node = static_cast<ElementWiseUnaryNode&>(builder.add_library_node<T>(parent, debug_info));
         node.set_attributes(attributes);
@@ -141,7 +141,7 @@ public:
 
         // Extract debug info using JSONSerializer
         sdfg::serializer::JSONSerializer serializer;
-        DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
+        DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"], builder.debug_info());
 
         auto& node = static_cast<ElementWiseBinaryNode&>(builder.add_library_node<T>(parent, debug_info));
         node.set_attributes(attributes);

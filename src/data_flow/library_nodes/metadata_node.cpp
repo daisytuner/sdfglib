@@ -66,7 +66,7 @@ LibraryNode& MetadataNodeSerializer::deserialize(
 
     // Extract debug info using JSONSerializer
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"], builder.debug_info());
 
     // Extract properties
     auto outputs = j.at("outputs").get<std::vector<std::string>>();

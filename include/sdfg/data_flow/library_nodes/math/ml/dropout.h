@@ -52,7 +52,7 @@ public:
 
         // Extract debug info using JSONSerializer
         sdfg::serializer::JSONSerializer serializer;
-        DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
+        DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"], builder.debug_info());
 
         return builder.add_library_node<DropoutNode>(parent, debug_info);
     }

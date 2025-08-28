@@ -1851,7 +1851,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_DebugInfoRegion_inner) {
     sdfg::serializer::JSONSerializer serializer;
     serializer.debug_info_region_to_json(j, debug_info_region);
 
-    DebugInfoRegion des_debug_info_region = serializer.json_to_debug_info_region(j);
+    DebugInfoRegion des_debug_info_region = serializer.json_to_debug_info_region(j, debug_info);
 
     EXPECT_EQ(des_debug_info_region.indices().size(), 2);
 
@@ -1867,14 +1867,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_DebugInfoRegion_inner) {
     EXPECT_EQ(
         j.dump(2),
         "{\n  \"end_column\": 3,\n  \"end_line\": 30,\n  \"filename\": \"file1.cpp\",\n  \"function\": \"func2\",\n  "
-        "\"has\": true,\n  \"instructions\": [\n    {\n      \"has\": true,\n      \"locations\": [\n        {\n       "
-        "   \"column\": 1,\n          \"filename\": \"file1.cpp\",\n          \"function\": \"func1\",\n          "
-        "\"has\": true,\n          \"line\": 10\n        },\n        {\n          \"column\": 2,\n          "
-        "\"filename\": \"file1.cpp\",\n          \"function\": \"func2\",\n          \"has\": true,\n          "
-        "\"line\": 20\n        }\n      ]\n    },\n    {\n      \"has\": true,\n      \"locations\": [\n        {\n    "
-        "      \"column\": 3,\n          \"filename\": \"file1.cpp\",\n          \"function\": \"func2\",\n          "
-        "\"has\": true,\n          \"line\": 30\n        }\n      ]\n    }\n  ],\n  \"start_column\": 2,\n  "
-        "\"start_line\": 20\n}"
+        "\"has\": true,\n  \"indices\": [\n    1,\n    0\n  ],\n  \"start_column\": 2,\n  \"start_line\": 20\n}"
     );
 }
 
@@ -1894,7 +1887,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_DebugInfoRegion_outer) {
     sdfg::serializer::JSONSerializer serializer;
     serializer.debug_info_region_to_json(j, debug_info_region);
 
-    DebugInfoRegion des_debug_info_region = serializer.json_to_debug_info_region(j);
+    DebugInfoRegion des_debug_info_region = serializer.json_to_debug_info_region(j, debug_info);
 
     EXPECT_EQ(des_debug_info_region.indices().size(), 2);
 
@@ -1909,15 +1902,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_DebugInfoRegion_outer) {
     EXPECT_EQ(
         j.dump(2),
         "{\n  \"end_column\": 1,\n  \"end_line\": 10,\n  \"filename\": \"file1.cpp\",\n  \"function\": \"func1\",\n  "
-        "\"has\": true,\n  \"instructions\": [\n    {\n      \"has\": true,\n      \"locations\": [\n        {\n       "
-        "   \"column\": 1,\n          \"filename\": \"file1.cpp\",\n          \"function\": \"func1\",\n          "
-        "\"has\": true,\n          \"line\": 10\n        },\n        {\n          \"column\": 2,\n          "
-        "\"filename\": \"file1.cpp\",\n          \"function\": \"func2\",\n          \"has\": true,\n          "
-        "\"line\": 20\n        }\n      ]\n    },\n    {\n      \"has\": true,\n      \"locations\": [\n        {\n    "
-        "      \"column\": 1,\n          \"filename\": \"file1.cpp\",\n          \"function\": \"func1\",\n          "
-        "\"has\": true,\n          \"line\": 10\n        },\n        {\n          \"column\": 3,\n          "
-        "\"filename\": \"file1.cpp\",\n          \"function\": \"func2\",\n          \"has\": true,\n          "
-        "\"line\": 30\n        }\n      ]\n    }\n  ],\n  \"start_column\": 1,\n  \"start_line\": 10\n}"
+        "\"has\": true,\n  \"indices\": [\n    1,\n    0\n  ],\n  \"start_column\": 1,\n  \"start_line\": 10\n}"
     );
 }
 
@@ -1968,15 +1953,14 @@ TEST(JSONSerializerTest, SerializeDeserialize_DebugInfo) {
 
     EXPECT_EQ(
         j.dump(2),
-        "{\n  \"end_column\": 1,\n  \"end_line\": 10,\n  \"filename\": \"file1.cpp\",\n  \"function\": \"func1\",\n  "
-        "\"has\": true,\n  \"instructions\": [\n    {\n      \"has\": true,\n      \"locations\": [\n        {\n       "
-        "   \"column\": 1,\n          \"filename\": \"file1.cpp\",\n          \"function\": \"func1\",\n          "
+        "{\n  \"instructions\": [\n    {\n      \"has\": true,\n      \"locations\": [\n        {\n          "
+        "\"column\": 1,\n          \"filename\": \"file1.cpp\",\n          \"function\": \"func1\",\n          "
         "\"has\": true,\n          \"line\": 10\n        },\n        {\n          \"column\": 2,\n          "
         "\"filename\": \"file1.cpp\",\n          \"function\": \"func2\",\n          \"has\": true,\n          "
         "\"line\": 20\n        }\n      ]\n    },\n    {\n      \"has\": true,\n      \"locations\": [\n        {\n    "
         "      \"column\": 1,\n          \"filename\": \"file1.cpp\",\n          \"function\": \"func1\",\n          "
         "\"has\": true,\n          \"line\": 10\n        },\n        {\n          \"column\": 3,\n          "
         "\"filename\": \"file1.cpp\",\n          \"function\": \"func2\",\n          \"has\": true,\n          "
-        "\"line\": 30\n        }\n      ]\n    }\n  ],\n  \"start_column\": 1,\n  \"start_line\": 10\n}"
+        "\"line\": 30\n        }\n      ]\n    }\n  ]\n}"
     );
 }
