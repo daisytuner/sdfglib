@@ -11,7 +11,7 @@ namespace ml {
 /*************** Constructor ***************/
 MaxPoolNode::MaxPoolNode(
     size_t element_id,
-    const DebugInfo &debug_info,
+    const DebugInfoRegion &debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph &parent,
     std::vector<size_t> kernel_shape,
@@ -119,7 +119,7 @@ bool MaxPoolNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Anal
     auto &code_block = builder.add_block(*last_scope, {}, block.debug_info());
 
     // Access nodes
-    const DebugInfo dbg = block.debug_info();
+    const DebugInfoRegion dbg = block.debug_info();
     auto &X_acc = builder.add_access(code_block, X_name, dbg);
     auto &Y_acc_in = builder.add_access(code_block, Y_name, dbg);
     auto &Y_acc_out = builder.add_access(code_block, Y_name, dbg);
@@ -183,7 +183,7 @@ data_flow::LibraryNode &MaxPoolNodeSerializer::deserialize(
         throw std::runtime_error("Invalid library node code");
     }
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
 
     auto kernel_shape = j["kernel_shape"].get<std::vector<size_t>>();
     auto pads = j["pads"].get<std::vector<size_t>>();

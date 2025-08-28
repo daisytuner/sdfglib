@@ -8,7 +8,7 @@
 using namespace sdfg;
 
 TEST(SequenceDispatcherTest, DispatchNode_Empty) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugInfo());
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -29,7 +29,7 @@ TEST(SequenceDispatcherTest, DispatchNode_Empty) {
 }
 
 TEST(SequenceDispatcherTest, DispatchNode_Transition) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugInfo());
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -53,7 +53,7 @@ TEST(SequenceDispatcherTest, DispatchNode_Transition) {
 }
 
 TEST(SequenceDispatcherTest, DispatchNode_MultipleBlocks) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugInfo());
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 

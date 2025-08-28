@@ -13,7 +13,7 @@ public:
 };
 
 TEST(StructuredSDFGVisitorTest, None) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -62,7 +62,7 @@ public:
 };
 
 TEST(StructuredSDFGVisitorTest, Block) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -98,7 +98,7 @@ public:
 };
 
 TEST(StructuredSDFGVisitorTest, Sequence) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -134,7 +134,7 @@ public:
 };
 
 TEST(StructuredSDFGVisitorTest, IfElse) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -170,7 +170,7 @@ public:
 };
 
 TEST(StructuredSDFGVisitorTest, While) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -206,7 +206,7 @@ public:
 };
 
 TEST(StructuredSDFGVisitorTest, Return) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -242,7 +242,7 @@ public:
 };
 
 TEST(StructuredSDFGVisitorTest, Continue) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -279,7 +279,7 @@ public:
 };
 
 TEST(StructuredSDFGVisitorTest, Break) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -316,7 +316,7 @@ public:
 };
 
 TEST(StructuredSDFGVisitorTest, For) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();
@@ -358,7 +358,7 @@ public:
 };
 
 TEST(StructuredSDFGVisitorTest, Map) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
     analysis::AnalysisManager analysis_manager(builder.subject());
 
     auto& root = builder.subject().root();

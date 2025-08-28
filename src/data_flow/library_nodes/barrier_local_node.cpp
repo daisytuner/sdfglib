@@ -47,7 +47,7 @@ data_flow::LibraryNode& BarrierLocalNodeSerializer::deserialize(
     if (code != data_flow::LibraryNodeType_BarrierLocal.value()) {
         throw std::runtime_error("Invalid library node code");
     }
-    return builder.add_library_node<data_flow::BarrierLocalNode>(parent, DebugInfo());
+    return builder.add_library_node<data_flow::BarrierLocalNode>(parent, DebugInfoRegion());
 };
 
 void BarrierLocalNodeDispatcher::dispatch(

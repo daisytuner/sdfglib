@@ -28,7 +28,7 @@ static std::string escapeDotId(const std::string& id, const std::string& prefix 
 static std::string escapeDotId(size_t id, const std::string& prefix) { return prefix + std::to_string(id); }
 
 TEST(DotVisualizerTest, transpose) {
-    builder::StructuredSDFGBuilder builder("transpose", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("transpose", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -120,7 +120,7 @@ TEST(DotVisualizerTest, transpose) {
 
 
 TEST(DotVisualizerTest, syrk) {
-    builder::StructuredSDFGBuilder sdfg("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder sdfg("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar desc_symbols(types::PrimitiveType::UInt64);
     sdfg.add_container("M", desc_symbols, true);
@@ -312,7 +312,7 @@ TEST(DotVisualizerTest, syrk) {
 
 
 TEST(DotVisualizerTest, multi_tasklet_block) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar desc_element(types::PrimitiveType::Double);
     types::Array desc_array(desc_element, symbolic::integer(10));
@@ -373,7 +373,7 @@ TEST(DotVisualizerTest, multi_tasklet_block) {
 }
 
 TEST(DotVisualizerTest, test_if_else) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -462,7 +462,7 @@ TEST(DotVisualizerTest, test_if_else) {
 
 
 TEST(DotVisualizerTest, test_while) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -541,7 +541,7 @@ TEST(DotVisualizerTest, test_while) {
 }
 
 TEST(DotVisualizerTest, test_return) {
-    builder::StructuredSDFGBuilder builder("test_return", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("test_return", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -832,7 +832,7 @@ TEST(DotVisualizerTest, test_handleTasklet) {
     };
     for (const std::pair<const data_flow::TaskletCode, const std::string> code : codes) {
         const size_t arity = data_flow::arity(code.first);
-        builder::StructuredSDFGBuilder builder("test", FunctionType_CPU);
+        builder::StructuredSDFGBuilder builder("test", FunctionType_CPU, DebugInfo());
 
         auto& sdfg = builder.subject();
         auto& root = sdfg.root();

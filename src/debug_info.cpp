@@ -47,6 +47,11 @@ size_t DebugInfoElement::column() const { return this->locations_.front().column
 
 /***** DebugInfoRegion *****/
 
+DebugInfoRegion::DebugInfoRegion()
+    : indices_(), filename_(""), function_(""), start_line_(0), start_column_(0), end_line_(0), end_column_(0) {
+    this->has_ = false;
+};
+
 DebugInfoRegion::DebugInfoRegion(std::unordered_set<size_t> indices, const std::vector<DebugInfoElement>& all_instructions)
     : indices_(indices) {
     if (this->indices_.empty()) {
@@ -154,8 +159,9 @@ bool fuse_ranges(
 
 std::unordered_set<size_t> DebugInfoRegion::indices() const { return this->indices_; }
 
-DebugInfoRegion DebugInfoRegion::
-    merge(DebugInfoRegion& first, DebugInfoRegion& second, const std::vector<DebugInfoElement>& all_instructions) {
+DebugInfoRegion DebugInfoRegion::merge(
+    const DebugInfoRegion& first, const DebugInfoRegion& second, const std::vector<DebugInfoElement>& all_instructions
+) {
     // Merge the two regions by combining their indices
     std::unordered_set<size_t> merged_indices = first.indices_;
     merged_indices.insert(second.indices_.begin(), second.indices_.end());

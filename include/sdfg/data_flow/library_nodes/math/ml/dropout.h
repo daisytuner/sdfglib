@@ -46,13 +46,13 @@ public:
         // Assertions for required fields
         assert(j.contains("element_id"));
         assert(j.contains("code"));
-        assert(j.contains("debug_info"));
+        assert(j.contains("debug_info_region"));
 
         auto code = j["code"].get<std::string>();
 
         // Extract debug info using JSONSerializer
         sdfg::serializer::JSONSerializer serializer;
-        DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+        DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
 
         return builder.add_library_node<DropoutNode>(parent, debug_info);
     }

@@ -19,6 +19,8 @@ namespace sdfg {
 namespace serializer {
 
 class JSONSerializer {
+    DebugInfo* debug_info_;
+
 public:
     JSONSerializer() {}
 
@@ -42,6 +44,7 @@ public:
 
     void debug_loc_to_json(nlohmann::json& j, const sdfg::DebugLoc& loc);
     void debug_info_element_to_json(nlohmann::json& j, const sdfg::DebugInfoElement& debug_info_element);
+    void debug_info_region_to_json(nlohmann::json& j, const sdfg::DebugInfoRegion& debug_info_region);
     void debug_info_to_json(nlohmann::json& j, const sdfg::DebugInfo& debug_info);
 
     void json_to_structure_definition(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder);
@@ -109,6 +112,7 @@ public:
 
     DebugLoc json_to_debug_loc(const nlohmann::json& j);
     DebugInfoElement json_to_debug_info_element(const nlohmann::json& j);
+    DebugInfoRegion json_to_debug_info_region(const nlohmann::json& j);
     DebugInfo json_to_debug_info(const nlohmann::json& j);
 
     std::string expression(const symbolic::Expression& expr);

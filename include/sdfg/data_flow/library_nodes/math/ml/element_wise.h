@@ -2,7 +2,6 @@
 
 #include "sdfg/data_flow/library_nodes/math/math_node.h"
 
-#include "sdfg/codegen/dispatchers/block_dispatcher.h"
 #include "sdfg/serializer/json_serializer.h"
 
 namespace sdfg {
@@ -62,7 +61,7 @@ public:
         // Assertions for required fields
         assert(j.contains("element_id"));
         assert(j.contains("code"));
-        assert(j.contains("debug_info"));
+        assert(j.contains("debug_info_region"));
         assert(j.contains("attributes"));
 
         auto code = j["code"].get<std::string>();
@@ -70,7 +69,7 @@ public:
 
         // Extract debug info using JSONSerializer
         sdfg::serializer::JSONSerializer serializer;
-        DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+        DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
 
         auto& node = static_cast<ElementWiseUnaryNode&>(builder.add_library_node<T>(parent, debug_info));
         node.set_attributes(attributes);
@@ -134,7 +133,7 @@ public:
         // Assertions for required fields
         assert(j.contains("element_id"));
         assert(j.contains("code"));
-        assert(j.contains("debug_info"));
+        assert(j.contains("debug_info_region"));
         assert(j.contains("attributes"));
 
         auto code = j["code"].get<std::string>();
@@ -142,7 +141,7 @@ public:
 
         // Extract debug info using JSONSerializer
         sdfg::serializer::JSONSerializer serializer;
-        DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+        DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
 
         auto& node = static_cast<ElementWiseBinaryNode&>(builder.add_library_node<T>(parent, debug_info));
         node.set_attributes(attributes);

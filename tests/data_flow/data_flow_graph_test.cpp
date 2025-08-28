@@ -4,7 +4,7 @@
 using namespace sdfg;
 
 TEST(DataflowTest, TopologicalSort) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     auto& state = builder.add_state();
 

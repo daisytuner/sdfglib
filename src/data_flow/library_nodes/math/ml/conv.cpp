@@ -166,7 +166,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     const DebugInfoRegion& dbg_X = iedge_X->src().debug_info();
     const DebugInfoRegion& dbg_W = iedge_W->src().debug_info();
     const DebugInfoRegion& dbg_Y = oedge_Y->dst().debug_info();
-    const DebugInfo dbg_B = (iedge_B != nullptr) ? iedge_B->src().debug_info() : DebugInfo();
+    const DebugInfoRegion dbg_B = (iedge_B != nullptr) ? iedge_B->src().debug_info() : DebugInfoRegion();
 
     // Create new access nodes inside the innermost block.
     auto& X_acc = builder.add_access(code_block, X_name, dbg_X);
@@ -350,7 +350,7 @@ data_flow::LibraryNode& ConvNodeSerializer::deserialize(
     }
 
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
 
     auto outputs = j.at("outputs").get<std::vector<std::string>>();
     auto inputs = j.at("inputs").get<std::vector<std::string>>();

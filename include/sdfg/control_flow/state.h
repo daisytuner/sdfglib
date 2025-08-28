@@ -6,6 +6,7 @@
 #include "sdfg/data_flow/data_flow_graph.h"
 #include "sdfg/element.h"
 #include "sdfg/graph/graph.h"
+#include "sdfg/types/type.h"
 
 using json = nlohmann::json;
 

@@ -13,7 +13,7 @@
 using namespace sdfg;
 
 TEST(DataDependencyAnalysisTest, Block_Define_Scalar) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     builder.add_container("A", base_desc);
@@ -49,7 +49,7 @@ TEST(DataDependencyAnalysisTest, Block_Define_Scalar) {
 }
 
 TEST(DataDependencyAnalysisTest, Block_Define_Array) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Array array_desc(base_desc, symbolic::integer(2));
@@ -86,7 +86,7 @@ TEST(DataDependencyAnalysisTest, Block_Define_Array) {
 }
 
 TEST(DataDependencyAnalysisTest, Block_Undefined_Scalar) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     builder.add_container("A", base_desc);
@@ -130,7 +130,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Scalar) {
 }
 
 TEST(DataDependencyAnalysisTest, Block_Undefined_Array) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Array array_desc(base_desc, symbolic::integer(2));
@@ -175,7 +175,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Array) {
 }
 
 TEST(DataDependencyAnalysisTest, Block_Undefined_Array_Subset) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Array array_desc(base_desc, symbolic::integer(2));
@@ -231,7 +231,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Array_Subset) {
 }
 
 TEST(DataDependencyAnalysisTest, Block_Undefined_Symbol) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Array array_desc(base_desc, symbolic::integer(2));
@@ -274,7 +274,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Symbol) {
 }
 
 TEST(DataDependencyAnalysisTest, Block_Use_Scalar) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     builder.add_container("A", base_desc);
@@ -329,7 +329,7 @@ TEST(DataDependencyAnalysisTest, Block_Use_Scalar) {
 }
 
 TEST(DataDependencyAnalysisTest, Block_Use_Array) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Array array_desc(base_desc, symbolic::integer(2));
@@ -385,7 +385,7 @@ TEST(DataDependencyAnalysisTest, Block_Use_Array) {
 }
 
 TEST(DataDependencyAnalysisTest, Sequence_Define_Scalar) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     builder.add_container("A", base_desc);
@@ -420,7 +420,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Define_Scalar) {
 }
 
 TEST(DataDependencyAnalysisTest, Sequence_Use_Scalar) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     builder.add_container("A", base_desc);
@@ -464,7 +464,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Use_Scalar) {
 }
 
 TEST(DataDependencyAnalysisTest, Sequence_Close_Scalar) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     builder.add_container("A", base_desc);
@@ -504,7 +504,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Close_Scalar) {
 }
 
 TEST(DataDependencyAnalysisTest, Sequence_Close_Array) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Array array_desc(base_desc, symbolic::integer(2));
@@ -552,7 +552,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Close_Array) {
 }
 
 TEST(DataDependencyAnalysisTest, Sequence_Define_Array_Subsets) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Array array_desc(base_desc, symbolic::integer(2));
@@ -600,7 +600,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Define_Array_Subsets) {
 }
 
 TEST(DataDependencyAnalysisTest, IfElse_Condition_Undefined) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     builder.add_container("A", base_desc);
@@ -632,7 +632,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Condition_Undefined) {
 }
 
 TEST(DataDependencyAnalysisTest, IfElse_Condition_Use) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     builder.add_container("A", base_desc);
@@ -670,7 +670,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Condition_Use) {
 }
 
 TEST(DataDependencyAnalysisTest, IfElse_Define_Complete_Scalar) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     builder.add_container("A", base_desc);
@@ -728,7 +728,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Complete_Scalar) {
 }
 
 TEST(DataDependencyAnalysisTest, IfElse_Define_Incomplete_Scalar) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     builder.add_container("A", base_desc);
@@ -781,7 +781,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Incomplete_Scalar) {
 }
 
 TEST(DataDependencyAnalysisTest, IfElse_Define_Array) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Array array_desc(base_desc, symbolic::integer(2));
@@ -843,7 +843,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Array) {
 }
 
 TEST(DataDependencyAnalysisTest, IfElse_Define_Array_Subsets) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Array array_desc(base_desc, symbolic::integer(2));
@@ -905,7 +905,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Array_Subsets) {
 }
 
 TEST(DataDependencyAnalysisTest, IfElse_Close_Array) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Array array_desc(base_desc, symbolic::integer(2));
@@ -967,7 +967,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Close_Array) {
 }
 
 TEST(DataDependencyAnalysisTest, For_Indvar) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
 
@@ -1014,7 +1014,7 @@ TEST(DataDependencyAnalysisTest, For_Indvar) {
 }
 
 TEST(DataDependencyAnalysisTest, For_Close_Scalar) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
@@ -1068,7 +1068,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Scalar) {
 }
 
 TEST(DataDependencyAnalysisTest, For_Close_Array) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Array array_desc(base_desc, symbolic::integer(2));
@@ -1131,7 +1131,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Array) {
 }
 
 TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Array array_desc(base_desc, symbolic::integer(2));
@@ -1194,7 +1194,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets) {
 }
 
 TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets_Trivial) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Array array_desc(base_desc, symbolic::integer(2));
@@ -1258,7 +1258,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets_Trivial) {
 
 /*
 TEST(DataDependencyAnalysisTest, visit_map) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
@@ -1324,7 +1324,7 @@ types::Scalar(types::PrimitiveType::Int32));
 }
 
 TEST(DataDependencyAnalysisTest, visit_while) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -1401,7 +1401,7 @@ types::Scalar(types::PrimitiveType::Int32));
 }
 
 TEST(DataDependencyAnalysisTest, visit_sequence_for_loop) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -1493,7 +1493,7 @@ types::Scalar(types::PrimitiveType::Int32));
 }
 
 TEST(DataDependencyAnalysisTest, visit_sequence_while_loop) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -1575,7 +1575,7 @@ types::Scalar(types::PrimitiveType::Int32));
 }
 
 TEST(DataDependencyAnalysisTest, visit_sdfg) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -1663,7 +1663,7 @@ types::Scalar(types::PrimitiveType::Int32));
 }
 
 TEST(DataDependencyAnalysisTest, propagate_open_read_out_of_while) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     builder.add_container("_0", types::Pointer(types::Scalar(types::PrimitiveType::Double)), true);
     builder.add_container("_1", types::Pointer(types::Scalar(types::PrimitiveType::Double)));
@@ -1753,7 +1753,7 @@ types::Pointer(types::Scalar(types::PrimitiveType::Double)));
 */
 
 TEST(LoopDependencyAnalysisTest, Last_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1798,7 +1798,7 @@ TEST(LoopDependencyAnalysisTest, Last_1D) {
 }
 
 TEST(LoopDependencyAnalysisTest, Sum_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1845,7 +1845,7 @@ TEST(LoopDependencyAnalysisTest, Sum_1D) {
 }
 
 TEST(LoopDependencyAnalysisTest, Shift_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1890,7 +1890,7 @@ TEST(LoopDependencyAnalysisTest, Shift_1D) {
 }
 
 TEST(LoopDependencyAnalysisTest, PartialSum_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1936,7 +1936,7 @@ TEST(LoopDependencyAnalysisTest, PartialSum_1D) {
 }
 
 TEST(LoopDependencyAnalysisTest, LoopLocal_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1987,7 +1987,7 @@ TEST(LoopDependencyAnalysisTest, LoopLocal_1D) {
 }
 
 TEST(LoopDependencyAnalysisTest, LoopLocal_Conditional) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2038,7 +2038,7 @@ TEST(LoopDependencyAnalysisTest, LoopLocal_Conditional) {
 }
 
 TEST(LoopDependencyAnalysisTest, LoopLocal_Conditional_Incomplete) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2086,7 +2086,7 @@ TEST(LoopDependencyAnalysisTest, LoopLocal_Conditional_Incomplete) {
 }
 
 TEST(LoopDependencyAnalysisTest, Store_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2126,7 +2126,7 @@ TEST(LoopDependencyAnalysisTest, Store_1D) {
 }
 
 TEST(LoopDependencyAnalysisTest, Copy_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2169,7 +2169,7 @@ TEST(LoopDependencyAnalysisTest, Copy_1D) {
 }
 
 TEST(LoopDependencyAnalysisTest, Map_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2213,7 +2213,7 @@ TEST(LoopDependencyAnalysisTest, Map_1D) {
 }
 
 TEST(LoopDependencyAnalysisTest, Map_1D_Disjoint) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2259,7 +2259,7 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Disjoint) {
 }
 
 TEST(LoopDependencyAnalysisTest, Map_1D_Strided) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2303,7 +2303,7 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Strided) {
 }
 
 TEST(LoopDependencyAnalysisTest, Map_1D_Strided2) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2347,7 +2347,7 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Strided2) {
 }
 
 TEST(LoopDependencyAnalysisTest, Map_1D_Tiled) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2406,7 +2406,7 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Tiled) {
 }
 
 TEST(LoopDependencyAnalysisTest, MapParameterized_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2471,7 +2471,7 @@ TEST(LoopDependencyAnalysisTest, MapParameterized_1D) {
 }
 
 TEST(LoopDependencyAnalysisTest, Stencil_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2522,7 +2522,7 @@ TEST(LoopDependencyAnalysisTest, Stencil_1D) {
 }
 
 TEST(LoopDependencyAnalysisTest, Gather_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2577,7 +2577,7 @@ TEST(LoopDependencyAnalysisTest, Gather_1D) {
 }
 
 TEST(LoopDependencyAnalysisTest, Scatter_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2631,7 +2631,7 @@ TEST(LoopDependencyAnalysisTest, Scatter_1D) {
 }
 
 TEST(LoopDependencyAnalysisTest, MapDeg2_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2673,7 +2673,7 @@ TEST(LoopDependencyAnalysisTest, MapDeg2_1D) {
 }
 
 TEST(LoopDependencyAnalysisTest, Map_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2737,7 +2737,7 @@ TEST(LoopDependencyAnalysisTest, Map_2D) {
 }
 
 TEST(LoopDependencyAnalysisTest, PartialSumInner_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2800,7 +2800,7 @@ TEST(LoopDependencyAnalysisTest, PartialSumInner_2D) {
 }
 
 TEST(LoopDependencyAnalysisTest, PartialSumOuter_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2861,7 +2861,7 @@ TEST(LoopDependencyAnalysisTest, PartialSumOuter_2D) {
 }
 
 TEST(LoopDependencyAnalysisTest, PartialSum_1D_Triangle) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2924,7 +2924,7 @@ TEST(LoopDependencyAnalysisTest, PartialSum_1D_Triangle) {
 }
 
 TEST(LoopDependencyAnalysisTest, Transpose_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -2985,7 +2985,7 @@ TEST(LoopDependencyAnalysisTest, Transpose_2D) {
 }
 
 TEST(LoopDependencyAnalysisTest, TransposeTriangle_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -3042,7 +3042,7 @@ TEST(LoopDependencyAnalysisTest, TransposeTriangle_2D) {
 }
 
 TEST(LoopDependencyAnalysisTest, TransposeTriangleWithDiagonal_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -3099,7 +3099,7 @@ TEST(LoopDependencyAnalysisTest, TransposeTriangleWithDiagonal_2D) {
 }
 
 TEST(LoopDependencyAnalysisTest, TransposeSquare_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -3157,7 +3157,7 @@ TEST(LoopDependencyAnalysisTest, TransposeSquare_2D) {
 }
 
 TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();

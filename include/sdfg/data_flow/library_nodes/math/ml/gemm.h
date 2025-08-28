@@ -21,7 +21,7 @@ private:
 public:
     GemmNode(
         size_t element_id,
-        const DebugInfo &debug_info,
+        const DebugInfoRegion &debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph &parent,
         const std::string &alpha = "1.0f",
@@ -52,6 +52,6 @@ public:
     ) override;
 };
 
-}
-}
-}
+} // namespace ml
+} // namespace math
+} // namespace sdfg

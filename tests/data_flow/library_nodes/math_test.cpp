@@ -13,7 +13,7 @@
 using namespace sdfg;
 
 TEST(MathTest, ReLU) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
 
@@ -82,7 +82,7 @@ TEST(MathTest, ReLU) {
 }
 
 TEST(MathTest, Gemm) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
 
@@ -229,7 +229,7 @@ TEST(MathTest, Gemm) {
 }
 
 TEST(MathTest, Conv_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
     auto& sdfg = builder.subject();
 
     // Define scalar and tensor descriptors
@@ -297,7 +297,7 @@ TEST(MathTest, Conv_2D) {
 }
 
 TEST(MathTest, Conv_2D_Strides) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
     auto& sdfg = builder.subject();
 
     // Define scalar and tensor descriptors
@@ -365,7 +365,7 @@ TEST(MathTest, Conv_2D_Strides) {
 }
 
 TEST(MathTest, MaxPool_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
     auto& sdfg = builder.subject();
 
     // Define scalar and tensor descriptors
@@ -419,7 +419,7 @@ TEST(MathTest, MaxPool_2D) {
 }
 
 TEST(MathTest, Dot) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
 

@@ -32,7 +32,7 @@ private:
     DebugInfo debug_info_;
 
 public:
-    StructuredSDFG(const std::string& name, FunctionType type);
+    StructuredSDFG(const std::string& name, FunctionType type, const DebugInfo& debug_info);
 
     StructuredSDFG(const StructuredSDFG& sdfg) = delete;
     StructuredSDFG& operator=(const StructuredSDFG&) = delete;

@@ -38,7 +38,7 @@ static void writeSdfgDot(const StructuredSDFG& sdfg) {
 }
 
 TEST(MemAccessRangeTest, Arg_Index_Write) {
-    builder::StructuredSDFGBuilder builder("sdfg_arg_idx", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_arg_idx", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Pointer ptr_desc(base_desc);
@@ -84,7 +84,7 @@ TEST(MemAccessRangeTest, Arg_Index_Write) {
 }
 
 TEST(MemAccessRangeTest, Simple_2D_Map_Init) {
-    builder::StructuredSDFGBuilder builder("sdfg_simple_2d", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_simple_2d", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Array array1dType(base_desc, symbolic::symbol("M"));
@@ -147,7 +147,7 @@ TEST(MemAccessRangeTest, Simple_2D_Map_Init) {
 }
 
 TEST(MemAccessRangeTest, Incomplete_2D_Line_Sum) {
-    builder::StructuredSDFGBuilder builder("sdfg_incomplete_2d", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_incomplete_2d", FunctionType_CPU, DebugInfo());
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
     types::Pointer base_ptr_desc(base_desc);

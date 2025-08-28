@@ -206,7 +206,7 @@ data_flow::LibraryNode& DotNodeSerializer::deserialize(
     // Assertions for required fields
     assert(j.contains("element_id"));
     assert(j.contains("code"));
-    assert(j.contains("debug_info"));
+    assert(j.contains("debug_info_region"));
 
     auto code = j["code"].get<std::string>();
     if (code != LibraryNodeType_DOT.value()) {
@@ -215,7 +215,7 @@ data_flow::LibraryNode& DotNodeSerializer::deserialize(
 
     // Extract debug info using JSONSerializer
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
 
     auto precision = j.at("precision").get<BLAS_Precision>();
     auto n = SymEngine::Expression(j.at("n"));

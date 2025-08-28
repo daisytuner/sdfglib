@@ -7,7 +7,7 @@
 using namespace sdfg;
 
 TEST(DebugInfoPropagationTest, BlockPropagation_Node) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     DebugLoc debug_loc("main.c", "main", 1, 1, true);
     DebugInfoElement debug_info_element(debug_loc);
@@ -40,7 +40,7 @@ TEST(DebugInfoPropagationTest, BlockPropagation_Node) {
 }
 
 TEST(DebugInfoPropagationTest, BlockPropagation_Edge) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     DebugLoc debug_loc1("main.c", "main", 1, 1, true);
     DebugInfoElement debug_info_element1(debug_loc1);

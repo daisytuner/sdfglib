@@ -78,12 +78,17 @@ private:
     );
 
 public:
+    DebugInfoRegion();
+
     DebugInfoRegion(std::unordered_set<size_t> indices, const std::vector<DebugInfoElement>& all_instructions);
 
     std::unordered_set<size_t> indices() const;
 
-    static DebugInfoRegion
-    merge(DebugInfoRegion& first, DebugInfoRegion& second, const std::vector<DebugInfoElement>& all_instructions);
+    static DebugInfoRegion merge(
+        const DebugInfoRegion& first,
+        const DebugInfoRegion& second,
+        const std::vector<DebugInfoElement>& all_instructions
+    );
 
     bool has() const;
 

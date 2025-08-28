@@ -9,13 +9,17 @@ namespace math {
 namespace ml {
 
 MatMulNode::MatMulNode(
-    size_t element_id,
-    const DebugInfo &debug_info,
-    const graph::Vertex vertex,
-    data_flow::DataFlowGraph &parent
+    size_t element_id, const DebugInfoRegion &debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph &parent
 )
     : MathNode(
-          element_id, debug_info, vertex, parent, LibraryNodeType_MatMul, {"C"}, {"A", "B"}, data_flow::ImplementationType_NONE
+          element_id,
+          debug_info,
+          vertex,
+          parent,
+          LibraryNodeType_MatMul,
+          {"C"},
+          {"A", "B"},
+          data_flow::ImplementationType_NONE
       ) {}
 
 void MatMulNode::validate(const Function &) const { /* TODO */ }
@@ -91,17 +95,27 @@ bool MatMulNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Analy
 
     // Create innermost block
     auto &code_block = builder.add_block(*last_scope);
-    auto &tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::fma, "_out", {"_in1", "_in2", "_in3"}, block.debug_info());
+    auto &tasklet =
+        builder
+            .add_tasklet(code_block, data_flow::TaskletCode::fma, "_out", {"_in1", "_in2", "_in3"}, block.debug_info());
 
     auto &A_in = builder.add_access(code_block, A_name, block.debug_info());
     auto &B_in = builder.add_access(code_block, B_name, block.debug_info());
     auto &C_in = builder.add_access(code_block, C_name, block.debug_info());
     auto &C_out = builder.add_access(code_block, C_name, block.debug_info());
 
-    builder.add_computational_memlet(code_block, A_in, tasklet, "_in1", {out_syms[0], out_syms[2]}, iedge_A->base_type(), block.debug_info());
-    builder.add_computational_memlet(code_block, B_in, tasklet, "_in2", {out_syms[1], out_syms[2]}, iedge_B->base_type(), block.debug_info());
-    builder.add_computational_memlet(code_block, C_in, tasklet, "_in3", {out_syms[0], out_syms[1]}, oedge_C->base_type(), block.debug_info());
-    builder.add_computational_memlet(code_block, tasklet, "_out", C_out, {out_syms[0], out_syms[1]}, oedge_C->base_type(), block.debug_info());
+    builder.add_computational_memlet(
+        code_block, A_in, tasklet, "_in1", {out_syms[0], out_syms[2]}, iedge_A->base_type(), block.debug_info()
+    );
+    builder.add_computational_memlet(
+        code_block, B_in, tasklet, "_in2", {out_syms[1], out_syms[2]}, iedge_B->base_type(), block.debug_info()
+    );
+    builder.add_computational_memlet(
+        code_block, C_in, tasklet, "_in3", {out_syms[0], out_syms[1]}, oedge_C->base_type(), block.debug_info()
+    );
+    builder.add_computational_memlet(
+        code_block, tasklet, "_out", C_out, {out_syms[0], out_syms[1]}, oedge_C->base_type(), block.debug_info()
+    );
 
     // Cleanup old block
     builder.remove_memlet(block, *iedge_A);
@@ -115,9 +129,7 @@ bool MatMulNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Analy
 
 std::unique_ptr<data_flow::DataFlowNode> MatMulNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph &parent) const {
-    return std::unique_ptr<data_flow::DataFlowNode>(new MatMulNode(
-        element_id, this->debug_info(), vertex, parent
-    ));
+    return std::unique_ptr<data_flow::DataFlowNode>(new MatMulNode(element_id, this->debug_info(), vertex, parent));
 }
 
 nlohmann::json MatMulNodeSerializer::serialize(const data_flow::LibraryNode &library_node) {
@@ -138,7 +150,7 @@ data_flow::LibraryNode &MatMulNodeSerializer::deserialize(
     }
 
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"]);
 
     return builder.add_library_node<MatMulNode>(parent, debug_info);
 }

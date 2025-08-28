@@ -15,7 +15,7 @@ class MatMulNode : public MathNode {
 public:
     MatMulNode(
         size_t element_id,
-        const DebugInfo &debug_info,
+        const DebugInfoRegion &debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph &parent
     );
@@ -37,6 +37,6 @@ public:
     ) override;
 };
 
-}
-}
-}
+} // namespace ml
+} // namespace math
+} // namespace sdfg

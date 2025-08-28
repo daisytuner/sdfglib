@@ -138,7 +138,7 @@ TEST(CLanguageExtensionTest, Sizeof) {
 }
 
 TEST(CLanguageExtensionTest, SubsetToCpp_Scalar) {
-    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
+    builder::SDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
     auto& sdfg = builder.subject();
 
     codegen::CLanguageExtension generator;
@@ -147,7 +147,7 @@ TEST(CLanguageExtensionTest, SubsetToCpp_Scalar) {
 }
 
 TEST(CLanguageExtensionTest, SubsetToCpp_Array) {
-    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
+    builder::SDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
     auto& sdfg = builder.subject();
 
     codegen::CLanguageExtension generator;
@@ -160,7 +160,7 @@ TEST(CLanguageExtensionTest, SubsetToCpp_Array) {
 }
 
 TEST(CLanguageExtensionTest, SubsetToCpp_Struct) {
-    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
+    builder::SDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
     auto& sdfg = builder.subject();
 
     auto& struct_def = builder.add_structure("MyStruct", false);

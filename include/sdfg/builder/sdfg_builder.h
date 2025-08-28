@@ -212,7 +212,7 @@ public:
 
     template<typename T, typename... Args>
     data_flow::LibraryNode& add_library_node(
-        control_flow::State& state, const const std::vector<DebugInfoElement>&& debug_info_elements, Args... arguments
+        control_flow::State& state, const std::vector<DebugInfoElement>& debug_info_elements, Args... arguments
     ) {
         static_assert(std::is_base_of<data_flow::LibraryNode, T>::value, "T must be a subclass of data_flow::LibraryNode");
 
