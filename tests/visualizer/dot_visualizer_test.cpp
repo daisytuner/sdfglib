@@ -893,3 +893,44 @@ TEST(DotVisualizerTest, test_handleTasklet) {
         EXPECT_EQ(dot.getStream().str(), exp.str());
     }
 }
+
+TEST(DotVisualizerTest, visualizeSubset_does_not_fail_on_incomplete_opaque_ptr) {
+    builder::StructuredSDFGBuilder builder("dummy", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Array arr_of_float(base_desc, symbolic::symbol("M"));
+    types::Pointer ptr_of_arr_of_float(arr_of_float);
+
+    types::Pointer ptr_of_float(base_desc);
+
+    types::Pointer opaque_desc;
+
+    {
+        visualizer::DotVisualizer dot(sdfg);
+
+        dot.visualizeSubset(sdfg, {symbolic::zero()}, {symbolic::zero()}, &opaque_desc);
+
+        EXPECT_EQ(dot.getStream().str(), "[0]");
+    }
+
+    {
+        visualizer::DotVisualizer dot(sdfg);
+
+        dot.visualizeSubset(sdfg, {symbolic::one()}, {symbolic::one()}, &opaque_desc);
+
+        EXPECT_EQ(dot.getStream().str(), "[1]#illgl");
+    }
+
+    {
+        visualizer::DotVisualizer dot(sdfg);
+
+        dot.visualizeSubset(sdfg, {symbolic::zero(), symbolic::one()}, {symbolic::zero(), symbolic::one()}, &opaque_desc);
+
+        EXPECT_EQ(dot.getStream().str(), "[0](rogue)[1]");
+    }
+}
