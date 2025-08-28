@@ -895,7 +895,7 @@ TEST(DotVisualizerTest, test_handleTasklet) {
 }
 
 TEST(DotVisualizerTest, visualizeSubset_does_not_fail_on_incomplete_opaque_ptr) {
-    builder::StructuredSDFGBuilder builder("dummy", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("dummy", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
