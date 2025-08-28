@@ -28,9 +28,6 @@ void InstrumentationPlan::begin_instrumentation(const structured_control_flow::C
     stream << metdata_var << ".line_end = " << dbg_info.end_line() << ";" << std::endl;
     stream << metdata_var << ".column_begin = " << dbg_info.start_column() << ";" << std::endl;
     stream << metdata_var << ".column_end = " << dbg_info.end_column() << ";" << std::endl;
-    if (!(this->loopnest_indices_.empty())) {
-        stream << metdata_var << ".loopnest_index = " << this->loopnest_indices_.at(&node) << ";" << std::endl;
-    }
 
     if (this->nodes_.at(&node) == InstrumentationEventType::CPU) {
         stream << "__daisy_instrumentation_enter(__daisy_instrumentation_ctx, &" << metdata_var << ", "
@@ -65,19 +62,17 @@ std::unique_ptr<InstrumentationPlan> InstrumentationPlan::outermost_loops_plan(S
     auto ols = loop_tree_analysis.outermost_loops();
 
     std::unordered_map<const structured_control_flow::ControlFlowNode*, InstrumentationEventType> nodes;
-    std::unordered_map<const structured_control_flow::ControlFlowNode*, size_t> loopnest_indices;
-    for (size_t i = 0; i < ols.size(); i++) {
-        auto& loop = ols[i];
+    for (auto loop : ols) {
         if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(loop)) {
             if (map_node->schedule_type().value() == "CUDA") {
                 nodes.insert({loop, InstrumentationEventType::CUDA});
                 continue;
             }
         }
-        loopnest_indices[loop] = i;
         nodes.insert({loop, InstrumentationEventType::CPU}); // Default to CPU if not CUDA
     }
-    return std::make_unique<InstrumentationPlan>(sdfg, nodes, loopnest_indices);
+
+    return std::make_unique<InstrumentationPlan>(sdfg, nodes);
 }
 
 } // namespace codegen
