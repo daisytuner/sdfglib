@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 #ifdef __cplusplus
+#include <cstddef>
 extern "C" {
 #endif
 
@@ -20,6 +21,7 @@ typedef struct __daisy_metadata {
     long column_begin;
     long column_end;
     const char* region_name;
+    size_t loopnest_index;
 } __daisy_metadata_t;
 
 typedef struct __daisy_instrumentation __daisy_instrumentation_t;

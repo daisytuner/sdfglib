@@ -67,6 +67,7 @@ Pipeline Pipeline::memlet_combine() {
 
     p.register_pass<ReferencePropagation>();
     p.register_pass<DeadReferenceElimination>();
+    p.register_pass<ByteReferenceElimination>();
 
     return p;
 };

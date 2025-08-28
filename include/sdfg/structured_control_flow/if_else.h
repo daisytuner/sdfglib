@@ -34,7 +34,7 @@ public:
 
     std::pair<Sequence&, symbolic::Condition&> at(size_t i);
 
-    bool is_complete();
+    bool is_complete() const;
 
     void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };

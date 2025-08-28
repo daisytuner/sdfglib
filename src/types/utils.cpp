@@ -3,11 +3,8 @@
 #include <memory>
 #include <string>
 
-#include "sdfg/analysis/users.h"
 #include "sdfg/codegen/utils.h"
-#include "sdfg/data_flow/access_node.h"
 #include "sdfg/function.h"
-#include "sdfg/structured_sdfg.h"
 #include "sdfg/symbolic/symbolic.h"
 
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
@@ -163,89 +160,6 @@ symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_tim
             return {};
         }
     }
-}
-
-const types::IType* infer_type_from_container(
-    analysis::AnalysisManager& analysis_manager, const StructuredSDFG& sdfg, std::string container
-) {
-    if (sdfg.type(container).type_id() != types::TypeID::Pointer) {
-        return &sdfg.type(container);
-    }
-
-    const types::IType* type = nullptr;
-    auto& users = analysis_manager.get<analysis::Users>();
-
-    for (auto user : users.reads(container)) {
-        // Pointers may be used in symbolic conditions
-        auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element());
-        if (access_node == nullptr) {
-            continue;
-        }
-
-        for (auto& memlet : user->parent()->out_edges(*access_node)) {
-            if (memlet.base_type().type_id() == types::TypeID::Pointer) {
-                auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
-                if (!pointer_type->has_pointee_type()) {
-                    continue;
-                }
-            }
-            auto& base_type = memlet.base_type();
-            if (type == nullptr) {
-                type = &base_type;
-                continue;
-            }
-
-            if (*type != base_type) {
-                return nullptr;
-            }
-        }
-    }
-
-    for (auto user : users.writes(container)) {
-        auto access_node = static_cast<data_flow::AccessNode*>(user->element());
-        for (auto& memlet : user->parent()->in_edges(*access_node)) {
-            if (memlet.base_type().type_id() == types::TypeID::Pointer) {
-                auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
-                if (!pointer_type->has_pointee_type()) {
-                    continue;
-                }
-            }
-            auto& base_type = memlet.base_type();
-            if (type == nullptr) {
-                type = &base_type;
-                continue;
-            }
-
-            if (*type != base_type) {
-                return nullptr;
-            }
-        }
-    }
-
-    if (type == nullptr) {
-        for (auto user : users.views(container)) {
-            auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element());
-            for (auto& memlet : user->parent()->out_edges(*access_node)) {
-                if (memlet.base_type().type_id() == types::TypeID::Pointer) {
-                    auto pointer_type = dynamic_cast<const types::Pointer*>(&memlet.base_type());
-                    if (!pointer_type->has_pointee_type()) {
-                        continue;
-                    }
-                }
-                auto& base_type = memlet.base_type();
-                if (type == nullptr) {
-                    type = &base_type;
-                    continue;
-                }
-
-                if (*type != base_type) {
-                    return nullptr;
-                }
-            }
-        }
-    }
-
-    return type;
 }
 
 } // namespace types

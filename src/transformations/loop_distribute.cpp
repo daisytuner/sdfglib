@@ -59,6 +59,9 @@ bool LoopDistribute::can_be_applied(builder::StructuredSDFGBuilder& builder, ana
     auto& users = analysis_manager.get<analysis::Users>();
     analysis::UsersView child_users(users, child);
     auto child_locals = users.locals(child);
+    if (!child_users.views().empty() || !child_users.moves().empty()) {
+        return false;
+    }
 
     // Check dependencies
     for (auto& dep : dependencies) {

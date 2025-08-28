@@ -23,6 +23,8 @@ def test_instrumentation(event):
         "-o",
         str(output_path),
         "-ldaisy_rtl",
+        "-larg_capture_io",
+        "-lstdc++"
     ]
 
     process = subprocess.Popen(
@@ -36,11 +38,11 @@ def test_instrumentation(event):
     print(stderr)
     assert process.returncode == 0
 
-    (workdir / "data.json").unlink(missing_ok=True)
+    (workdir / "data_cpu.json").unlink(missing_ok=True)
 
     ## THIS VERSION IS RUNNER-SPECIFIC and points to CI version of PAPI
     os.environ["__DAISY_PAPI_VERSION"] = "0x07020000"
-    os.environ["__DAISY_INSTRUMENTATION_FILE"] = str(workdir / "data.json")
+    os.environ["__DAISY_INSTRUMENTATION_FILE"] = str(workdir / "data_cpu.json")
     os.environ["__DAISY_INSTRUMENTATION_EVENTS"] = event
 
     # Run benchmark
@@ -59,20 +61,21 @@ def test_instrumentation(event):
     if event:
         event_names = event.split(",")
 
-    result = json.load(open(workdir / "data.json"))
+    result = json.load(open(workdir / "data_cpu.json"))
     events = result["traceEvents"]
     for i in range(len(events)):
-        assert events[i]["name"] == "instrumentation_test_main"
-        assert events[i]["cat"] == "DAISY"
+        assert events[i]["name"].startswith("main")
+        assert events[i]["cat"] == "region,daisy"
         assert events[i]["ph"] == "X"
-        assert events[i]["args"]["file"] == "instrumentation_test.c"
+        assert events[i]["args"]["module"] == "instrumentation_test.c"
         assert events[i]["args"]["function"] == "main"
-        assert events[i]["args"]["line_begin"] == 18
-        assert events[i]["args"]["line_end"] == 31
-        assert events[i]["args"]["column_begin"] == 4
-        assert events[i]["args"]["column_end"] == 5
+        assert events[i]["args"]["source_ranges"][0]["from"]["line"] == 18
+        assert events[i]["args"]["source_ranges"][0]["to"]["line"] == 31
+        assert events[i]["args"]["source_ranges"][0]["from"]["col"] == 4
+        assert events[i]["args"]["source_ranges"][0]["to"]["col"] == 5
+        assert events[i]["args"]["loopnest_index"] == 0
         for event_name in event_names:
-            assert event_name in events[i]["args"]
+            assert event_name in events[i]["args"]["metrics"]
 
 @pytest.mark.parametrize(
     "event",
@@ -92,6 +95,8 @@ def test_instrumentation_cuda(event):
         "-o",
         str(output_path),
         "-ldaisy_rtl",
+        "-larg_capture_io",
+        "-lstdc++"
     ]
 
     process = subprocess.Popen(
@@ -101,13 +106,15 @@ def test_instrumentation_cuda(event):
         universal_newlines=True,
     )
     stdout, stderr = process.communicate()
+    print(stdout)
+    print(stderr)
     assert process.returncode == 0
 
-    (workdir / "data.json").unlink(missing_ok=True)
+    (workdir / "data_cuda.json").unlink(missing_ok=True)
 
     ## THIS VERSION IS RUNNER-SPECIFIC and points to CI version of PAPI
     os.environ["__DAISY_PAPI_VERSION"] = "0x07020000"
-    os.environ["__DAISY_INSTRUMENTATION_FILE"] = str(workdir / "data.json")
+    os.environ["__DAISY_INSTRUMENTATION_FILE"] = str(workdir / "data_cuda.json")
     os.environ["__DAISY_INSTRUMENTATION_EVENTS_CUDA"] = event
 
     # Run benchmark
@@ -124,17 +131,18 @@ def test_instrumentation_cuda(event):
     if event:
         event_names = event.split(",")
 
-    result = json.load(open(workdir / "data.json"))
+    result = json.load(open(workdir / "data_cuda.json"))
     events = result["traceEvents"]
     for i in range(len(events)):
-        assert events[i]["name"] == "instrumentation_cuda_test_main"
-        assert events[i]["cat"] == "DAISY"
+        assert events[i]["name"].startswith("main")
+        assert events[i]["cat"] == "region,daisy"
         assert events[i]["ph"] == "X"
-        assert events[i]["args"]["file"] == "instrumentation_cuda_test.cu"
+        assert events[i]["args"]["module"] == "instrumentation_cuda_test.cu"
         assert events[i]["args"]["function"] == "main"
-        assert events[i]["args"]["line_begin"] == 18
-        assert events[i]["args"]["line_end"] == 31
-        assert events[i]["args"]["column_begin"] == 4
-        assert events[i]["args"]["column_end"] == 5
+        assert events[i]["args"]["source_ranges"][0]["from"]["line"] == 18
+        assert events[i]["args"]["source_ranges"][0]["to"]["line"] == 31
+        assert events[i]["args"]["source_ranges"][0]["from"]["col"] == 4
+        assert events[i]["args"]["source_ranges"][0]["to"]["col"] == 5
+        assert events[i]["args"]["loopnest_index"] == 0
         for event_name in event_names:
-            assert event_name in events[i]["args"]
+            assert event_name in events[i]["args"]["metrics"]

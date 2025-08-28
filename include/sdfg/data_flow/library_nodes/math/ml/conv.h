@@ -9,7 +9,7 @@ namespace sdfg {
 namespace math {
 namespace ml {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_Conv("Conv");
+inline data_flow::LibraryNodeCode LibraryNodeType_Conv("ml::Conv");
 
 class ConvNode : public math::MathNode {
 private:

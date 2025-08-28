@@ -73,4 +73,4 @@ jobs:
           pip install pytest-parallel --break-system-packages
 
           cd rtl/tests
-          pytest -v rtl_tests.py
+          pytest -v -s rtl_tests.py
