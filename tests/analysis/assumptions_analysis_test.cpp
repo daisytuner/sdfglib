@@ -7,7 +7,7 @@
 using namespace sdfg;
 
 TEST(AssumptionsAnalysisTest, Init_bool) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -27,7 +27,7 @@ TEST(AssumptionsAnalysisTest, Init_bool) {
 }
 
 TEST(AssumptionsAnalysisTest, Init_i8) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -51,7 +51,7 @@ TEST(AssumptionsAnalysisTest, Init_i8) {
 }
 
 TEST(AssumptionsAnalysisTest, Init_i16) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -75,7 +75,7 @@ TEST(AssumptionsAnalysisTest, Init_i16) {
 }
 
 TEST(AssumptionsAnalysisTest, Init_i32) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -99,7 +99,7 @@ TEST(AssumptionsAnalysisTest, Init_i32) {
 }
 
 TEST(AssumptionsAnalysisTest, Init_i64) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -123,7 +123,7 @@ TEST(AssumptionsAnalysisTest, Init_i64) {
 }
 
 TEST(AssumptionsAnalysisTest, For_1D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -161,7 +161,7 @@ TEST(AssumptionsAnalysisTest, For_1D) {
 }
 
 TEST(AssumptionsAnalysisTest, For_1D_And) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -203,7 +203,7 @@ TEST(AssumptionsAnalysisTest, For_1D_And) {
 }
 
 TEST(AssumptionsAnalysisTest, For_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -261,7 +261,7 @@ TEST(AssumptionsAnalysisTest, For_2D) {
 }
 
 TEST(AssumptionsAnalysisTest, IfElse_Lt) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -290,7 +290,7 @@ TEST(AssumptionsAnalysisTest, IfElse_Lt) {
 }
 
 TEST(AssumptionsAnalysisTest, IfElse_Eq) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -319,7 +319,7 @@ TEST(AssumptionsAnalysisTest, IfElse_Eq) {
 }
 
 TEST(AssumptionsAnalysisTest, IfElse_And) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();

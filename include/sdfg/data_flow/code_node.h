@@ -1,8 +1,8 @@
 #pragma once
 
 #include "sdfg/data_flow/data_flow_node.h"
+#include "sdfg/debug_info.h"
 #include "sdfg/graph/graph.h"
-#include "sdfg/types/scalar.h"
 
 namespace sdfg {
 
@@ -23,7 +23,7 @@ protected:
 
     CodeNode(
         size_t element_id,
-        const DebugInfo& debug_info,
+        const DebugInfoRegion& debug_info_region,
         const graph::Vertex vertex,
         DataFlowGraph& parent,
         const std::vector<std::string>& outputs,

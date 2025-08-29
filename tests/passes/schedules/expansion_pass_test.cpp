@@ -8,7 +8,7 @@
 using namespace sdfg;
 
 TEST(ExpansionPassTest, Simple) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
 
@@ -23,8 +23,8 @@ TEST(ExpansionPassTest, Simple) {
 
     auto& input_node = builder.add_access(block, "input");
     auto& output_node = builder.add_access(block, "output");
-    auto& relu_node = static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block, DebugInfo())
-    );
+    auto& relu_node =
+        static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block, DebugInfoRegion()));
 
     builder.add_computational_memlet(
         block,

@@ -4,13 +4,14 @@
 
 #include "sdfg/builder/sdfg_builder.h"
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
+#include "sdfg/debug_info.h"
 #include "sdfg/element.h"
 #include "sdfg/symbolic/symbolic.h"
 
 using namespace sdfg;
 
 TEST(StructuredSDFGBuilderTest, Empty) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     auto sdfg = builder.move();
 
@@ -19,7 +20,7 @@ TEST(StructuredSDFGBuilderTest, Empty) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddBlock) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("N", desc);
@@ -42,7 +43,7 @@ TEST(StructuredSDFGBuilderTest, AddBlock) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddBlockBefore) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("N", desc);
@@ -70,7 +71,7 @@ TEST(StructuredSDFGBuilderTest, AddBlockBefore) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddBlockAfter) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("N", desc);
@@ -103,7 +104,7 @@ TEST(StructuredSDFGBuilderTest, AddBlockAfter) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("N", desc);
@@ -115,7 +116,7 @@ TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
     EXPECT_EQ(block.element_id(), 1);
     EXPECT_EQ(root.at(0).second.element_id(), 2);
 
-    auto& lib_node = builder.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfo());
+    auto& lib_node = builder.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfoRegion());
     EXPECT_EQ(lib_node.element_id(), 3);
 
     auto sdfg = builder.move();
@@ -135,7 +136,7 @@ TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddIfElse) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
@@ -166,7 +167,7 @@ TEST(StructuredSDFGBuilderTest, AddIfElse) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddIfElseBefore) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     auto& root = builder.subject().root();
     auto& block_base =
@@ -191,7 +192,7 @@ TEST(StructuredSDFGBuilderTest, AddIfElseBefore) {
 }
 
 TEST(StructuredSDFGBuilderTest, addWhile) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
@@ -218,7 +219,7 @@ TEST(StructuredSDFGBuilderTest, addWhile) {
 }
 
 TEST(StructuredSDFGBuilderTest, addFor) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
@@ -248,7 +249,7 @@ TEST(StructuredSDFGBuilderTest, addFor) {
 }
 
 TEST(StructuredSDFGBuilderTest, addMap) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
@@ -282,7 +283,7 @@ TEST(StructuredSDFGBuilderTest, addMap) {
 }
 
 TEST(StructuredSDFGBuilderTest, addForBefore) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     auto& root = builder.subject().root();
     auto& block_base =
@@ -310,7 +311,7 @@ TEST(StructuredSDFGBuilderTest, addForBefore) {
 }
 
 TEST(StructuredSDFGBuilderTest, addForAfter) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     auto& root = builder.subject().root();
     auto& block_base =
@@ -431,14 +432,14 @@ TEST(SDFG2StructuredSDFGTest, IfElse) {
         if_state,
         {{symbolic::symbol("i"), symbolic::integer(0)}},
         symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-        DebugInfo()
+        {}
     );
     builder.add_edge(
         init_state,
         else_state,
         {{symbolic::symbol("i"), symbolic::integer(1)}},
         symbolic::Ge(symbolic::symbol("i"), symbolic::integer(10)),
-        DebugInfo()
+        {}
     );
     builder.add_edge(if_state, end_state);
     builder.add_edge(else_state, end_state);
@@ -563,7 +564,7 @@ TEST(SDFG2StructuredSDFGTest, While) {
 }
 
 TEST(StructuredSDFGBuilderTest, FindElementById_Root) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     auto& root = builder.subject().root();
 
@@ -573,7 +574,7 @@ TEST(StructuredSDFGBuilderTest, FindElementById_Root) {
 }
 
 TEST(StructuredSDFGBuilderTest, FindElementById_Block) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);

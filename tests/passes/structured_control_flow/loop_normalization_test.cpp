@@ -5,7 +5,7 @@
 using namespace sdfg;
 
 TEST(LoopNormalizationTest, UnequalitySingle) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -35,7 +35,7 @@ TEST(LoopNormalizationTest, UnequalitySingle) {
 }
 
 TEST(LoopNormalizationTest, AndUnequality) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -63,12 +63,12 @@ TEST(LoopNormalizationTest, AndUnequality) {
     pass.run(builder, analysis_manager);
 
     // Check
-    EXPECT_TRUE(SymEngine::eq(*loop.condition(), *symbolic::And(symbolic::Lt(indvar, bound),
-                                                                symbolic::Lt(indvar, bound2))));
+    EXPECT_TRUE(SymEngine::eq(*loop.condition(), *symbolic::And(symbolic::Lt(indvar, bound), symbolic::Lt(indvar, bound2)))
+    );
 }
 
 TEST(LoopNormalizationTest, OrUnequality) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -96,6 +96,6 @@ TEST(LoopNormalizationTest, OrUnequality) {
     pass.run(builder, analysis_manager);
 
     // Check
-    EXPECT_TRUE(SymEngine::eq(*loop.condition(), *symbolic::Or(symbolic::Lt(indvar, bound),
-                                                               symbolic::Lt(indvar, bound2))));
+    EXPECT_TRUE(SymEngine::eq(*loop.condition(), *symbolic::Or(symbolic::Lt(indvar, bound), symbolic::Lt(indvar, bound2)))
+    );
 }

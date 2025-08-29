@@ -10,7 +10,7 @@ namespace math {
 namespace ml {
 
 DropoutNode::DropoutNode(
-    size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
+    size_t element_id, const DebugInfoRegion& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
 )
     : MathNode(
           element_id,

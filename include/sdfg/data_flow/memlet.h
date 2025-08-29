@@ -2,6 +2,7 @@
 
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/data_flow_node.h"
+#include "sdfg/debug_info.h"
 #include "sdfg/element.h"
 #include "sdfg/graph/graph.h"
 #include "sdfg/symbolic/symbolic.h"
@@ -41,7 +42,7 @@ private:
 
     Memlet(
         size_t element_id,
-        const DebugInfo& debug_info,
+        const DebugInfoRegion& debug_info_region,
         const graph::Edge& edge,
         DataFlowGraph& parent,
         DataFlowNode& src,
@@ -54,7 +55,7 @@ private:
 
     Memlet(
         size_t element_id,
-        const DebugInfo& debug_info,
+        const DebugInfoRegion& debug_info_region,
         const graph::Edge& edge,
         DataFlowGraph& parent,
         DataFlowNode& src,

@@ -4,11 +4,12 @@
 
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
+#include "sdfg/debug_info.h"
 
 using namespace sdfg;
 
 TEST(SequenceDispatcherTest, DispatchNode_Empty) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugInfo());
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
@@ -29,12 +30,12 @@ TEST(SequenceDispatcherTest, DispatchNode_Empty) {
 }
 
 TEST(SequenceDispatcherTest, DispatchNode_Transition) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugInfo());
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int16));
-    auto& block1 = builder.add_block(root, {{symbolic::symbol("i"), symbolic::integer(0)}}, DebugInfo());
+    auto& block1 = builder.add_block(root, {{symbolic::symbol("i"), symbolic::integer(0)}});
 
     auto final_sdfg = builder.move();
 
@@ -53,13 +54,13 @@ TEST(SequenceDispatcherTest, DispatchNode_Transition) {
 }
 
 TEST(SequenceDispatcherTest, DispatchNode_MultipleBlocks) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugInfo());
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int16));
-    auto& block1 = builder.add_block(root, {{symbolic::symbol("i"), symbolic::integer(0)}}, DebugInfo());
-    auto& block2 = builder.add_block(root, {{symbolic::symbol("i"), symbolic::integer(1)}}, DebugInfo());
+    auto& block1 = builder.add_block(root, {{symbolic::symbol("i"), symbolic::integer(0)}});
+    auto& block2 = builder.add_block(root, {{symbolic::symbol("i"), symbolic::integer(1)}});
 
     auto final_sdfg = builder.move();
 

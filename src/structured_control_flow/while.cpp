@@ -3,7 +3,7 @@
 namespace sdfg {
 namespace structured_control_flow {
 
-While::While(size_t element_id, const DebugInfo& debug_info) : ControlFlowNode(element_id, debug_info) {
+While::While(size_t element_id, const DebugInfoRegion& debug_info) : ControlFlowNode(element_id, debug_info) {
     this->root_ = std::unique_ptr<Sequence>(new Sequence(++element_id, debug_info));
 };
 
@@ -17,7 +17,7 @@ void While::replace(const symbolic::Expression& old_expression, const symbolic::
     this->root_->replace(old_expression, new_expression);
 };
 
-Break::Break(size_t element_id, const DebugInfo& debug_info)
+Break::Break(size_t element_id, const DebugInfoRegion& debug_info)
     : ControlFlowNode(element_id, debug_info) {
 
       };
@@ -28,7 +28,7 @@ void Break::replace(const symbolic::Expression& old_expression, const symbolic::
 
 };
 
-Continue::Continue(size_t element_id, const DebugInfo& debug_info)
+Continue::Continue(size_t element_id, const DebugInfoRegion& debug_info)
     : ControlFlowNode(element_id, debug_info) {
 
       };

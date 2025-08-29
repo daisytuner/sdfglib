@@ -252,7 +252,7 @@ TEST(SDFGBuilderTest, AddLibnode) {
     auto& state = builder.add_state(true);
     EXPECT_EQ(state.element_id(), 1);
 
-    auto& library_node = builder.add_library_node<data_flow::BarrierLocalNode>(state, DebugInfo());
+    auto& library_node = builder.add_library_node<data_flow::BarrierLocalNode>(state, {});
     EXPECT_EQ(library_node.element_id(), 2);
 
     auto sdfg = builder.move();

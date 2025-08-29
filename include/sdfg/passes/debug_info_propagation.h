@@ -7,7 +7,7 @@ namespace passes {
 
 class DebugInfoPropagation : public Pass {
 private:
-    void propagate(structured_control_flow::ControlFlowNode* current);
+    void propagate(builder::StructuredSDFGBuilder& builder, structured_control_flow::ControlFlowNode* current);
 
 public:
     DebugInfoPropagation();

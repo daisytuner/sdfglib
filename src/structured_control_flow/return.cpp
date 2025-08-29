@@ -3,7 +3,7 @@
 namespace sdfg {
 namespace structured_control_flow {
 
-Return::Return(size_t element_id, const DebugInfo& debug_info)
+Return::Return(size_t element_id, const DebugInfoRegion& debug_info)
     : ControlFlowNode(element_id, debug_info) {
 
       };

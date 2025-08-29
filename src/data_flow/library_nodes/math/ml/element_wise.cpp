@@ -11,7 +11,7 @@ namespace ml {
 
 ElementWiseUnaryNode::ElementWiseUnaryNode(
     size_t element_id,
-    const DebugInfo& debug_info,
+    const DebugInfoRegion& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     const data_flow::LibraryNodeCode& code,
@@ -108,7 +108,7 @@ bool ElementWiseUnaryNode::expand(builder::StructuredSDFGBuilder& builder, analy
 
 ElementWiseBinaryNode::ElementWiseBinaryNode(
     size_t element_id,
-    const DebugInfo& debug_info,
+    const DebugInfoRegion& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     const data_flow::LibraryNodeCode& code,

@@ -1,10 +1,7 @@
 #pragma once
 
 #include <boost/lexical_cast.hpp>
-#include <memory>
 #include <nlohmann/json.hpp>
-#include <string>
-#include <unordered_map>
 
 #include "sdfg/control_flow/state.h"
 #include "sdfg/element.h"
@@ -38,7 +35,7 @@ private:
 
     InterstateEdge(
         size_t element_id,
-        const DebugInfo& debug_info,
+        const DebugInfoRegion& debug_info_region,
         const graph::Edge& edge,
         const control_flow::State& src,
         const control_flow::State& dst,

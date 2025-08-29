@@ -23,7 +23,7 @@ protected:
     structured_control_flow::For* loop_;
 
     void SetUp() override {
-        builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU);
+        builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU, DebugInfo());
         auto& sdfg = builder_->subject();
         auto& root = sdfg.root();
 
@@ -105,7 +105,7 @@ TEST_F(RecorderLoopTilingTest, Save_SingleTransformation) {
 }
 
 TEST_F(RecorderLoopTilingTest, Replay_Transformations) {
-    builder::StructuredSDFGBuilder replay_builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder replay_builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     transformations::Replayer replayer;
 
@@ -126,7 +126,7 @@ protected:
     structured_control_flow::For* loop_;
 
     void SetUp() override {
-        builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU);
+        builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU, DebugInfo());
         auto& sdfg = builder_->subject();
         auto& root = sdfg.root();
 
@@ -193,7 +193,7 @@ TEST_F(RecorderLoopSlicingTest, Save_SingleTransformation) {
 }
 
 TEST_F(RecorderLoopSlicingTest, Replay_Transformations) {
-    builder::StructuredSDFGBuilder replay_builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder replay_builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     transformations::Replayer replayer;
 
@@ -212,7 +212,7 @@ protected:
     std::unique_ptr<analysis::AnalysisManager> analysis_manager_;
 
     void SetUp() override {
-        builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU);
+        builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU, DebugInfo());
 
         auto& sdfg = builder_->subject();
         auto& root = sdfg.root();
@@ -435,7 +435,7 @@ protected:
     void SetUp() override {
         std::cout << "Starting setup for RecorderMultiTransformationTest" << std::endl;
 
-        builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU);
+        builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU, DebugInfo());
 
         auto& sdfg = builder_->subject();
         auto& root = sdfg.root();

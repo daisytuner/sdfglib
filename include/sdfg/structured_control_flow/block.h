@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "sdfg/control_flow/state.h"
 #include "sdfg/data_flow/data_flow_graph.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/symbolic/symbolic.h"
@@ -21,7 +20,7 @@ class Block : public ControlFlowNode {
 private:
     std::unique_ptr<data_flow::DataFlowGraph> dataflow_;
 
-    Block(size_t element_id, const DebugInfo& debug_info);
+    Block(size_t element_id, const DebugInfoRegion& debug_info);
 
 public:
     Block(const Block& block) = delete;

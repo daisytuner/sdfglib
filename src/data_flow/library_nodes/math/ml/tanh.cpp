@@ -10,7 +10,7 @@ namespace math {
 namespace ml {
 
 TanhNode::TanhNode(
-    size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
+    size_t element_id, const DebugInfoRegion& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
 )
     : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Tanh, {}) {}
 

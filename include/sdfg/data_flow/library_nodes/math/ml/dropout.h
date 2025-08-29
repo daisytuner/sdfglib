@@ -14,7 +14,12 @@ inline data_flow::LibraryNodeCode LibraryNodeType_Dropout("ml::Dropout");
 // Non-training dropout node
 class DropoutNode : public math::MathNode {
 public:
-    DropoutNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
+    DropoutNode(
+        size_t element_id,
+        const DebugInfoRegion& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent
+    );
 
     void validate(const Function& function) const override;
 
@@ -47,7 +52,7 @@ public:
 
         // Extract debug info using JSONSerializer
         sdfg::serializer::JSONSerializer serializer;
-        DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+        DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
 
         return builder.add_library_node<DropoutNode>(parent, debug_info);
     }

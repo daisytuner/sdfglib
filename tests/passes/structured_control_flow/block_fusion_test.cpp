@@ -2,16 +2,14 @@
 
 #include <gtest/gtest.h>
 
-#include <ostream>
-
-#include "sdfg/builder/sdfg_builder.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/library_nodes/math/math.h"
+#include "sdfg/debug_info.h"
 
 using namespace sdfg;
 
 TEST(BlockFusionTest, Computational_Chain) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar desc_element(types::PrimitiveType::Double);
     types::Array desc_array(desc_element, symbolic::integer(10));
@@ -53,7 +51,7 @@ TEST(BlockFusionTest, Computational_Chain) {
 }
 
 TEST(BlockFusionTest, SymbolUsedInSubset_Dataflow) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar desc_element(types::PrimitiveType::Int32);
     types::Array desc_array(desc_element, symbolic::integer(10));
@@ -86,7 +84,7 @@ TEST(BlockFusionTest, SymbolUsedInSubset_Dataflow) {
 }
 
 TEST(BlockFusionTest, SymbolUsedWithSubset_Transition) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar desc_element(types::PrimitiveType::Int32);
     types::Array desc_array(desc_element, symbolic::integer(10));
@@ -115,7 +113,7 @@ TEST(BlockFusionTest, SymbolUsedWithSubset_Transition) {
 }
 
 TEST(BlockFusionTest, Computational_IndependentSubgraphs) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar desc_element(types::PrimitiveType::Double);
     types::Array desc_array(desc_element, symbolic::integer(10));
@@ -160,7 +158,7 @@ TEST(BlockFusionTest, Computational_IndependentSubgraphs) {
 }
 
 TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar desc(types::PrimitiveType::Double);
     types::Array array_desc(desc, symbolic::integer(10));
@@ -175,7 +173,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
     auto& input_node = builder.add_access(block_1, "input");
     auto& tmp_node_out = builder.add_access(block_1, "tmp");
     auto& relu_node =
-        static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block_1, DebugInfo()));
+        static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block_1, DebugInfoRegion()));
     builder.add_computational_memlet(
         block_1,
         input_node,
@@ -202,7 +200,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
     auto& tmp_node_in = builder.add_access(block_2, "tmp");
     auto& output_node = builder.add_access(block_2, "output");
     auto& relu_node_2 =
-        static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block_2, DebugInfo()));
+        static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block_2, DebugInfoRegion()));
     builder.add_computational_memlet(
         block_2,
         tmp_node_in,
@@ -242,7 +240,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
 }
 
 TEST(BlockFusionTest, Reference) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Scalar desc_element(types::PrimitiveType::Double);
     types::Pointer desc_pointer(desc_element);
@@ -280,7 +278,7 @@ TEST(BlockFusionTest, Reference) {
 }
 
 TEST(BlockFusionTest, Dereference) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
 
     types::Pointer opaque_ptr;
     builder.add_container("A", opaque_ptr);

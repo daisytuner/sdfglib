@@ -13,7 +13,12 @@ inline data_flow::LibraryNodeCode LibraryNodeType_Sub("ml::Sub");
 
 class SubNode : public ElementWiseBinaryNode {
 public:
-    SubNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
+    SubNode(
+        size_t element_id,
+        const DebugInfoRegion& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent
+    );
 
     bool expand_operation(
         builder::StructuredSDFGBuilder& builder,

@@ -3,14 +3,11 @@
 #include <boost/graph/graphviz.hpp>
 #include <boost/lexical_cast.hpp>
 #include <cassert>
-#include <functional>
-#include <iostream>
 #include <list>
 #include <memory>
 #include <ranges>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 
 #include "function.h"
 #include "sdfg/control_flow/interstate_edge.h"
@@ -20,14 +17,10 @@
 #include "sdfg/data_flow/data_flow_node.h"
 #include "sdfg/data_flow/memlet.h"
 #include "sdfg/data_flow/tasklet.h"
+#include "sdfg/element.h"
 #include "sdfg/function.h"
 #include "sdfg/graph/graph.h"
 #include "sdfg/helpers/helpers.h"
-#include "sdfg/types/array.h"
-#include "sdfg/types/pointer.h"
-#include "sdfg/types/scalar.h"
-#include "sdfg/types/structure.h"
-#include "sdfg/types/type.h"
 
 namespace sdfg {
 
@@ -47,6 +40,8 @@ private:
     std::unordered_map<graph::Edge, std::unique_ptr<control_flow::InterstateEdge>, boost::hash<graph::Edge>> edges_;
 
     const control_flow::State* start_state_;
+
+    DebugInfo debug_info_;
 
 public:
     SDFG(const std::string& name, FunctionType type);
@@ -122,6 +117,10 @@ public:
 
     std::list<std::list<const control_flow::InterstateEdge*>>
     all_simple_paths(const control_flow::State& src, const control_flow::State& dst) const;
+
+    /***** Section: Debug Info *****/
+    DebugInfo& debug_info() { return this->debug_info_; };
+    const DebugInfo& debug_info() const { return this->debug_info_; };
 };
 
 } // namespace sdfg

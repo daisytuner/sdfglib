@@ -1,11 +1,12 @@
 #include "sdfg/structured_control_flow/block.h"
 
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/types/type.h"
 
 namespace sdfg {
 namespace structured_control_flow {
 
-Block::Block(size_t element_id, const DebugInfo& debug_info) : ControlFlowNode(element_id, debug_info) {
+Block::Block(size_t element_id, const DebugInfoRegion& debug_info) : ControlFlowNode(element_id, debug_info) {
     this->dataflow_ = std::make_unique<data_flow::DataFlowGraph>();
 };
 

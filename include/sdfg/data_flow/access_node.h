@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sdfg/data_flow/data_flow_node.h"
+#include "sdfg/debug_info.h"
 #include "sdfg/graph/graph.h"
 
 namespace sdfg {
@@ -21,7 +22,7 @@ private:
 
     AccessNode(
         size_t element_id,
-        const DebugInfo& debug_info,
+        const DebugInfoRegion& debug_info_region,
         const graph::Vertex vertex,
         DataFlowGraph& parent,
         const std::string& data

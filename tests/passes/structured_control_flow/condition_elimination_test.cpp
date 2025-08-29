@@ -8,7 +8,7 @@
 using namespace sdfg;
 
 TEST(ConditionEliminationTest, Basic) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -65,7 +65,7 @@ TEST(ConditionEliminationTest, Basic) {
 }
 
 TEST(ConditionEliminationTest, Basic_WithAssignmentsAtLoop) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -126,7 +126,7 @@ TEST(ConditionEliminationTest, Basic_WithAssignmentsAtLoop) {
 }
 
 TEST(ConditionEliminationTest, Basic_WithAssignmentsAtIfElse) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -187,7 +187,7 @@ TEST(ConditionEliminationTest, Basic_WithAssignmentsAtIfElse) {
 }
 
 TEST(ConditionEliminationTest, IndvarReadAfterLoop) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
