@@ -183,7 +183,7 @@ data_flow::LibraryNode &MaxPoolNodeSerializer::deserialize(
         throw std::runtime_error("Invalid library node code");
     }
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"], builder.debug_info());
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
 
     auto kernel_shape = j["kernel_shape"].get<std::vector<size_t>>();
     auto pads = j["pads"].get<std::vector<size_t>>();

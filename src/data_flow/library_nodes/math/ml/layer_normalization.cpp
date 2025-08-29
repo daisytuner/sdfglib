@@ -318,7 +318,7 @@ data_flow::LibraryNode &LayerNormalizationNodeSerializer::deserialize(
     }
 
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"], builder.debug_info());
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
 
     auto axis = j["axis"].get<int>();
     auto epsilon = j["epsilon"].get<std::string>();

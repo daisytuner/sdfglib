@@ -452,7 +452,7 @@ data_flow::LibraryNode& GEMMNodeSerializer::deserialize(
     // Assertions for required fields
     assert(j.contains("element_id"));
     assert(j.contains("code"));
-    assert(j.contains("debug_info_region"));
+    assert(j.contains("debug_info"));
 
     auto code = j["code"].get<std::string>();
     if (code != LibraryNodeType_GEMM.value()) {
@@ -461,7 +461,7 @@ data_flow::LibraryNode& GEMMNodeSerializer::deserialize(
 
     // Extract debug info using JSONSerializer
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"], builder.debug_info());
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
 
     auto precision = j.at("precision").get<BLAS_Precision>();
     auto layout = j.at("layout").get<BLAS_Layout>();

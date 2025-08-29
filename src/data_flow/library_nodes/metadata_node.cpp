@@ -56,7 +56,7 @@ LibraryNode& MetadataNodeSerializer::deserialize(
     assert(j.contains("code"));
     assert(j.contains("outputs"));
     assert(j.contains("inputs"));
-    assert(j.contains("debug_info_region"));
+    assert(j.contains("debug_info"));
     assert(j.contains("metadata"));
 
     auto code = j["code"].get<std::string>();
@@ -66,7 +66,7 @@ LibraryNode& MetadataNodeSerializer::deserialize(
 
     // Extract debug info using JSONSerializer
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info_region"], builder.debug_info());
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
 
     // Extract properties
     auto outputs = j.at("outputs").get<std::vector<std::string>>();
