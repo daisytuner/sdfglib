@@ -19,12 +19,16 @@ GemmNode::GemmNode(
     bool trans_b
 )
     : MathNode(
-          element_id, debug_info, vertex, parent, LibraryNodeType_Gemm, {"Y"}, {"A", "B", "C"}, data_flow::ImplementationType_NONE
+          element_id,
+          debug_info,
+          vertex,
+          parent,
+          LibraryNodeType_Gemm,
+          {"Y"},
+          {"A", "B", "C"},
+          data_flow::ImplementationType_NONE
       ),
-      alpha_(alpha),
-      beta_(beta),
-      trans_a_(trans_a),
-      trans_b_(trans_b) {}
+      alpha_(alpha), beta_(beta), trans_a_(trans_a), trans_b_(trans_b) {}
 
 void GemmNode::validate(const Function &) const { /* TODO */ }
 
@@ -34,6 +38,8 @@ bool GemmNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Analysi
 
     auto &scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto &parent = static_cast<structured_control_flow::Sequence &>(*scope_analysis.parent_scope(&block));
+    int index = parent.index(block);
+    auto &transition = parent.at(index).second;
 
     // Locate edges
     const data_flow::Memlet *iedge_A = nullptr;
@@ -66,7 +72,7 @@ bool GemmNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Analysi
     std::string C_out_name = static_cast<const data_flow::AccessNode &>(oedge_Y->dst()).data();
 
     // Create new sequence before
-    auto &new_sequence = builder.add_sequence_before(parent, block, block.debug_info()).first;
+    auto &new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
     structured_control_flow::Sequence *last_scope = &new_sequence;
 
     // Create maps over output subset dims (parallel dims)
@@ -106,7 +112,9 @@ bool GemmNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Analysi
 
     // Create innermost block
     auto &code_block = builder.add_block(*last_scope);
-    auto &tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::fma, "_out", {"_in1", "_in2", "_in3"}, block.debug_info());
+    auto &tasklet =
+        builder
+            .add_tasklet(code_block, data_flow::TaskletCode::fma, "_out", {"_in1", "_in2", "_in3"}, block.debug_info());
 
     auto &A_in = builder.add_access(code_block, A_name, block.debug_info());
     auto &B_in = builder.add_access(code_block, B_name, block.debug_info());
@@ -127,10 +135,14 @@ bool GemmNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Analysi
     }
     data_flow::Subset subset_C = {out_syms[0], out_syms[1]};
 
-    builder.add_computational_memlet(code_block, A_in, tasklet, "_in1", subset_A, iedge_A->base_type(), block.debug_info());
-    builder.add_computational_memlet(code_block, B_in, tasklet, "_in2", subset_B, iedge_B->base_type(), block.debug_info());
-    builder.add_computational_memlet(code_block, C_in, tasklet, "_in3", subset_C, oedge_Y->base_type(), block.debug_info());
-    builder.add_computational_memlet(code_block, tasklet, "_out", C_out, subset_C, oedge_Y->base_type(), block.debug_info());
+    builder
+        .add_computational_memlet(code_block, A_in, tasklet, "_in1", subset_A, iedge_A->base_type(), block.debug_info());
+    builder
+        .add_computational_memlet(code_block, B_in, tasklet, "_in2", subset_B, iedge_B->base_type(), block.debug_info());
+    builder
+        .add_computational_memlet(code_block, C_in, tasklet, "_in3", subset_C, oedge_Y->base_type(), block.debug_info());
+    builder
+        .add_computational_memlet(code_block, tasklet, "_out", C_out, subset_C, oedge_Y->base_type(), block.debug_info());
 
     // Cleanup old block
     builder.remove_memlet(block, *iedge_A);
@@ -140,16 +152,16 @@ bool GemmNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Analysi
     }
     builder.remove_memlet(block, *oedge_Y);
     builder.remove_node(block, *this);
-    builder.remove_child(parent, block);
+    builder.remove_child(parent, index + 1);
 
     return true;
 }
 
 std::unique_ptr<data_flow::DataFlowNode> GemmNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph &parent) const {
-    return std::unique_ptr<data_flow::DataFlowNode>(new GemmNode(
-        element_id, this->debug_info(), vertex, parent, alpha_, beta_, trans_a_, trans_b_
-    ));
+    return std::unique_ptr<data_flow::DataFlowNode>(
+        new GemmNode(element_id, this->debug_info(), vertex, parent, alpha_, beta_, trans_a_, trans_b_)
+    );
 }
 
 nlohmann::json GemmNodeSerializer::serialize(const data_flow::LibraryNode &library_node) {

@@ -14,10 +14,17 @@ BatchNormalizationNode::BatchNormalizationNode(
     const graph::Vertex vertex,
     data_flow::DataFlowGraph &parent,
     int axis,
-    const std::string& epsilon
+    const std::string &epsilon
 )
     : MathNode(
-          element_id, debug_info, vertex, parent, LibraryNodeType_BatchNormalization, {"Y"}, {"X", "Scale", "B", "input_mean", "input_var"}, data_flow::ImplementationType_NONE
+          element_id,
+          debug_info,
+          vertex,
+          parent,
+          LibraryNodeType_BatchNormalization,
+          {"Y"},
+          {"X", "Scale", "B", "input_mean", "input_var"},
+          data_flow::ImplementationType_NONE
       ),
       axis_(axis), epsilon_(epsilon) {}
 
@@ -29,6 +36,8 @@ bool BatchNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, ana
 
     auto &scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto &parent = static_cast<structured_control_flow::Sequence &>(*scope_analysis.parent_scope(&block));
+    int index = parent.index(block);
+    auto &transition = parent.at(index).second;
 
     // Locate edges
     const data_flow::Memlet *iedge_input = nullptr;
@@ -65,7 +74,7 @@ bool BatchNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, ana
     std::string output_name = static_cast<const data_flow::AccessNode &>(oedge_output->dst()).data();
 
     // Create new sequence before
-    auto &new_sequence = builder.add_sequence_before(parent, block, block.debug_info()).first;
+    auto &new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
     structured_control_flow::Sequence *last_scope = &new_sequence;
 
     // Create maps over output subset dims (parallel dims)
@@ -94,10 +103,10 @@ bool BatchNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, ana
         last_scope = &last_map->root();
         loop_syms.push_back(indvar);
     }
-    
+
     // Create normalization block
     auto &norm_block = builder.add_block(*last_scope);
-    
+
     // Create access nodes for normalization
     auto &input_access_norm = builder.add_access(norm_block, input_name);
     auto &scale_access_norm = builder.add_access(norm_block, scale_name);
@@ -105,42 +114,61 @@ bool BatchNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, ana
     auto &mean_access_norm = builder.add_access(norm_block, mean_name);
     auto &var_access_norm = builder.add_access(norm_block, var_name);
     auto &output_access_norm = builder.add_access(norm_block, output_name);
-    
+
     // Add epsilon to variance and compute standard deviation
-    auto &add_epsilon_tasklet = builder.add_tasklet(norm_block, data_flow::TaskletCode::add, "_out", {"_in1", epsilon_});
+    auto &add_epsilon_tasklet =
+        builder.add_tasklet(norm_block, data_flow::TaskletCode::add, "_out", {"_in1", epsilon_});
     auto &var_eps_access = builder.add_access(norm_block, builder.find_new_name("_var_eps"));
-    builder.add_computational_memlet(norm_block, var_access_norm, add_epsilon_tasklet, "_in1", loop_syms, iedge_var->base_type());
-    builder.add_computational_memlet(norm_block, add_epsilon_tasklet, "_out", var_eps_access, {}, iedge_var->base_type());
-    
+    builder.add_computational_memlet(
+        norm_block, var_access_norm, add_epsilon_tasklet, "_in1", loop_syms, iedge_var->base_type()
+    );
+    builder
+        .add_computational_memlet(norm_block, add_epsilon_tasklet, "_out", var_eps_access, {}, iedge_var->base_type());
+
     auto &sqrt_tasklet = builder.add_tasklet(norm_block, data_flow::TaskletCode::sqrt, "_out", {"_in"});
     auto &std_dev_access = builder.add_access(norm_block, builder.find_new_name("_std_dev"));
     builder.add_computational_memlet(norm_block, var_eps_access, sqrt_tasklet, "_in", {}, iedge_var->base_type());
     builder.add_computational_memlet(norm_block, sqrt_tasklet, "_out", std_dev_access, {}, iedge_var->base_type());
-    
+
     // Normalize: (x - mean) / std_dev
     auto &sub_norm_tasklet = builder.add_tasklet(norm_block, data_flow::TaskletCode::sub, "_out", {"_in1", "_in2"});
     auto &centered_access = builder.add_access(norm_block, builder.find_new_name("_centered"));
-    builder.add_computational_memlet(norm_block, input_access_norm, sub_norm_tasklet, "_in1", loop_syms, iedge_input->base_type());
-    builder.add_computational_memlet(norm_block, mean_access_norm, sub_norm_tasklet, "_in2", loop_syms, iedge_mean->base_type());
-    builder.add_computational_memlet(norm_block, sub_norm_tasklet, "_out", centered_access, {}, iedge_input->base_type());
-    
+    builder.add_computational_memlet(
+        norm_block, input_access_norm, sub_norm_tasklet, "_in1", loop_syms, iedge_input->base_type()
+    );
+    builder.add_computational_memlet(
+        norm_block, mean_access_norm, sub_norm_tasklet, "_in2", loop_syms, iedge_mean->base_type()
+    );
+    builder
+        .add_computational_memlet(norm_block, sub_norm_tasklet, "_out", centered_access, {}, iedge_input->base_type());
+
     auto &div_norm_tasklet = builder.add_tasklet(norm_block, data_flow::TaskletCode::div, "_out", {"_in1", "_in2"});
     auto &normalized_access = builder.add_access(norm_block, builder.find_new_name("_normalized"));
-    builder.add_computational_memlet(norm_block, centered_access, div_norm_tasklet, "_in1", {}, iedge_input->base_type());
-    builder.add_computational_memlet(norm_block, std_dev_access, div_norm_tasklet, "_in2", loop_syms, iedge_var->base_type());
-    builder.add_computational_memlet(norm_block, div_norm_tasklet, "_out", normalized_access, {}, iedge_input->base_type());
-    
+    builder
+        .add_computational_memlet(norm_block, centered_access, div_norm_tasklet, "_in1", {}, iedge_input->base_type());
+    builder
+        .add_computational_memlet(norm_block, std_dev_access, div_norm_tasklet, "_in2", loop_syms, iedge_var->base_type());
+    builder
+        .add_computational_memlet(norm_block, div_norm_tasklet, "_out", normalized_access, {}, iedge_input->base_type());
+
     // Apply scale and bias: scale * normalized + bias
     auto &mul_scale_tasklet = builder.add_tasklet(norm_block, data_flow::TaskletCode::mul, "_out", {"_in1", "_in2"});
     auto &scaled_access = builder.add_access(norm_block, builder.find_new_name("_scaled"));
-    builder.add_computational_memlet(norm_block, normalized_access, mul_scale_tasklet, "_in1", {}, iedge_input->base_type());
-    builder.add_computational_memlet(norm_block, scale_access_norm, mul_scale_tasklet, "_in2", loop_syms, iedge_scale->base_type());
+    builder
+        .add_computational_memlet(norm_block, normalized_access, mul_scale_tasklet, "_in1", {}, iedge_input->base_type());
+    builder.add_computational_memlet(
+        norm_block, scale_access_norm, mul_scale_tasklet, "_in2", loop_syms, iedge_scale->base_type()
+    );
     builder.add_computational_memlet(norm_block, mul_scale_tasklet, "_out", scaled_access, {}, iedge_input->base_type());
-    
+
     auto &add_bias_tasklet = builder.add_tasklet(norm_block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(norm_block, scaled_access, add_bias_tasklet, "_in1", {}, iedge_input->base_type());
-    builder.add_computational_memlet(norm_block, bias_access_norm, add_bias_tasklet, "_in2", loop_syms, iedge_bias->base_type());
-    builder.add_computational_memlet(norm_block, add_bias_tasklet, "_out", output_access_norm, loop_syms, oedge_output->base_type());
+    builder.add_computational_memlet(
+        norm_block, bias_access_norm, add_bias_tasklet, "_in2", loop_syms, iedge_bias->base_type()
+    );
+    builder.add_computational_memlet(
+        norm_block, add_bias_tasklet, "_out", output_access_norm, loop_syms, oedge_output->base_type()
+    );
 
     // Cleanup old block
     builder.remove_memlet(block, *iedge_input);
@@ -152,16 +180,16 @@ bool BatchNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, ana
     builder.remove_memlet(block, *iedge_var);
     builder.remove_memlet(block, *oedge_output);
     builder.remove_node(block, *this);
-    builder.remove_child(parent, block);
+    builder.remove_child(parent, index + 1);
 
     return true;
 }
 
 std::unique_ptr<data_flow::DataFlowNode> BatchNormalizationNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph &parent) const {
-    return std::unique_ptr<data_flow::DataFlowNode>(new BatchNormalizationNode(
-        element_id, this->debug_info(), vertex, parent, axis_, epsilon_
-    ));
+    return std::unique_ptr<data_flow::DataFlowNode>(
+        new BatchNormalizationNode(element_id, this->debug_info(), vertex, parent, axis_, epsilon_)
+    );
 }
 
 nlohmann::json BatchNormalizationNodeSerializer::serialize(const data_flow::LibraryNode &library_node) {

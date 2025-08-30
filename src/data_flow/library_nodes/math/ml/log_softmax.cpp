@@ -16,7 +16,14 @@ LogSoftmaxNode::LogSoftmaxNode(
     int axis
 )
     : MathNode(
-          element_id, debug_info, vertex, parent, LibraryNodeType_LogSoftmax, {"output"}, {"input"}, data_flow::ImplementationType_NONE
+          element_id,
+          debug_info,
+          vertex,
+          parent,
+          LibraryNodeType_LogSoftmax,
+          {"output"},
+          {"input"},
+          data_flow::ImplementationType_NONE
       ),
       axis_(axis) {}
 
@@ -28,6 +35,8 @@ bool LogSoftmaxNode::expand(builder::StructuredSDFGBuilder &builder, analysis::A
 
     auto &scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto &parent = static_cast<structured_control_flow::Sequence &>(*scope_analysis.parent_scope(&block));
+    int index = parent.index(block);
+    auto &transition = parent.at(index).second;
 
     // Locate edges
     const data_flow::Memlet *iedge_input = nullptr;
@@ -48,7 +57,7 @@ bool LogSoftmaxNode::expand(builder::StructuredSDFGBuilder &builder, analysis::A
     std::string output_name = static_cast<const data_flow::AccessNode &>(oedge_output->dst()).data();
 
     // Create new sequence before
-    auto &new_sequence = builder.add_sequence_before(parent, block, block.debug_info()).first;
+    auto &new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
     structured_control_flow::Sequence *last_scope = &new_sequence;
 
     // Create maps over output subset dims (parallel dims)
@@ -77,14 +86,14 @@ bool LogSoftmaxNode::expand(builder::StructuredSDFGBuilder &builder, analysis::A
         last_scope = &last_map->root();
         loop_syms.push_back(indvar);
     }
-    
+
     // Initialize temp variable to zero
     std::string temp_name = builder.find_new_name("_tmp");
     std::string temp_name2 = builder.find_new_name("_tmp");
     types::Scalar temp_type(types::PrimitiveType::Float);
     builder.add_container(temp_name, temp_type);
     builder.add_container(temp_name2, temp_type);
-    
+
     auto &init_block = builder.add_block(*last_scope);
     auto &init_tasklet = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, "_out", {"0.0f"});
     auto &tmp_access_init = builder.add_access(init_block, temp_name);
@@ -106,40 +115,33 @@ bool LogSoftmaxNode::expand(builder::StructuredSDFGBuilder &builder, analysis::A
     auto red_init = red_begin;
     auto red_update = symbolic::add(red_indvar, symbolic::one());
     auto red_cond = symbolic::Lt(red_indvar, symbolic::add(red_end, symbolic::one()));
-    auto red_map = &builder.add_for(
-        *last_scope,
-        red_indvar,
-        red_cond,
-        red_init,
-        red_update,
-        {},
-        block.debug_info()
-    );
+    auto red_map = &builder.add_for(*last_scope, red_indvar, red_cond, red_init, red_update, {}, block.debug_info());
 
     // Create innermost block
     auto &code_block = builder.add_block(red_map->root());
-    
+
     // Create access nodes for input and output
     auto &input_access = builder.add_access(code_block, input_name);
     auto &tmp2_access = builder.add_access(code_block, temp_name2);
     auto &tmp_access_out = builder.add_access(code_block, temp_name);
     auto &tmp_access_in = builder.add_access(code_block, temp_name2);
-    
+
     // Create index expressions for input and output
     std::vector<symbolic::Expression> input_subset = loop_syms;
-    
+
     // Replace the reduction axis index with the reduction variable for input
     if (axis_ >= 0 && axis_ < static_cast<int>(input_subset.size())) {
         input_subset.insert(input_subset.begin() + axis_, red_indvar);
     } else if (axis_ < 0) {
         input_subset.push_back(red_indvar);
     }
-    
+
     // Compute exponential
     auto &exp_tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::expf, "_out", {"_in"});
-    builder.add_computational_memlet(code_block, input_access, exp_tasklet, "_in", input_subset, iedge_input->base_type());
+    builder
+        .add_computational_memlet(code_block, input_access, exp_tasklet, "_in", input_subset, iedge_input->base_type());
     builder.add_computational_memlet(code_block, exp_tasklet, "_out", tmp2_access, {}, temp_type);
-    
+
     // Add to temp (reduction)
     auto &add_tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(code_block, tmp_access_in, add_tasklet, "_in1", {}, temp_type);
@@ -152,22 +154,23 @@ bool LogSoftmaxNode::expand(builder::StructuredSDFGBuilder &builder, analysis::A
     auto &output_access_wb = builder.add_access(writeback_block, output_name);
     auto &writeback_tasklet = builder.add_tasklet(writeback_block, data_flow::TaskletCode::logf, "_out", {"_in"});
     builder.add_computational_memlet(writeback_block, tmp_access_wb, writeback_tasklet, "_in", {}, temp_type);
-    builder.add_computational_memlet(writeback_block, writeback_tasklet, "_out", output_access_wb, loop_syms, oedge_output->base_type());
+    builder.add_computational_memlet(
+        writeback_block, writeback_tasklet, "_out", output_access_wb, loop_syms, oedge_output->base_type()
+    );
 
     // Cleanup old block
     builder.remove_memlet(block, *iedge_input);
     builder.remove_memlet(block, *oedge_output);
     builder.remove_node(block, *this);
-    builder.remove_child(parent, block);
+    builder.remove_child(parent, index + 1);
 
     return true;
 }
 
 std::unique_ptr<data_flow::DataFlowNode> LogSoftmaxNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph &parent) const {
-    return std::unique_ptr<data_flow::DataFlowNode>(new LogSoftmaxNode(
-        element_id, this->debug_info(), vertex, parent, axis_
-    ));
+    return std::unique_ptr<
+        data_flow::DataFlowNode>(new LogSoftmaxNode(element_id, this->debug_info(), vertex, parent, axis_));
 }
 
 nlohmann::json LogSoftmaxNodeSerializer::serialize(const data_flow::LibraryNode &library_node) {
