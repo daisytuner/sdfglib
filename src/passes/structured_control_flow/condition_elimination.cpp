@@ -7,7 +7,7 @@ namespace sdfg {
 namespace passes {
 
 bool ConditionElimination::eliminate_condition(
-    structured_control_flow::Sequence& root,
+    structured_control_flow::Sequence& parent,
     structured_control_flow::IfElse& match_node,
     structured_control_flow::Transition& match_transition
 ) {
@@ -31,16 +31,13 @@ bool ConditionElimination::eliminate_condition(
     auto loop_iter0_condition = symbolic::subs(loop_condition, loop_indvar, loop_init);
     if (symbolic::eq(loop_iter0_condition, branch_condition)) {
         // Insert placeholder before if-else
-        auto new_child = this->builder_.add_sequence_before(root, match_node);
-        for (auto& assignment : match_transition.assignments()) {
-            new_child.second.assignments()[assignment.first] = assignment.second;
-        }
+        auto& new_child = this->builder_.add_sequence_before(parent, match_node, match_transition.assignments());
 
         // Move children of branch to placeholder
-        this->builder_.insert_children(new_child.first, branch_root, 0);
+        this->builder_.move_children(branch_root, new_child);
 
         // Remove now empty if-else
-        this->builder_.remove_child(root, match_node);
+        this->builder_.remove_child(parent, parent.index(match_node));
 
         return true;
     }
