@@ -112,15 +112,14 @@ void LoopInterchange::apply(builder::StructuredSDFGBuilder& builder, analysis::A
     }
 
     // Insert inner loop body into new inner loop
-    auto& inner_body = this->inner_loop_.root();
-    builder.move_children(inner_body, new_inner_loop->root());
+    builder.move_children(this->inner_loop_.root(), new_inner_loop->root());
 
     // Insert outer loop body into new outer loop
     builder.move_children(this->outer_loop_.root(), new_outer_loop->root());
 
     // Remove old loops
     builder.remove_child(new_outer_loop->root(), 0);
-    builder.remove_child(outer_scope, index + 1);
+    builder.remove_child(outer_scope, index);
 
     analysis_manager.invalidate_all();
 };

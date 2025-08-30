@@ -96,8 +96,8 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
     loop_.init() = inner_init;
 
     // Step 3: Move loop into tiling loop
-    builder.move_child(*parent, index, outer_loop->root());
-    builder.remove_child(*parent, index + 1);
+    transition.assignments().clear();
+    builder.move_child(*parent, index + 1, outer_loop->root());
 
     analysis_manager.invalidate_all();
 };

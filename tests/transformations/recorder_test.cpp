@@ -9,7 +9,6 @@
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/transformations/loop_interchange.h"
-#include "sdfg/transformations/loop_slicing.h"
 #include "sdfg/transformations/loop_tiling.h"
 #include "sdfg/types/pointer.h"
 #include "sdfg/types/type.h"
@@ -117,93 +116,6 @@ TEST_F(RecorderLoopTilingTest, Replay_Transformations) {
     j_array.push_back(j);
 
     EXPECT_NO_THROW(replayer.replay(*builder_, *analysis_manager_, j_array));
-}
-
-class RecorderLoopSlicingTest : public ::testing::Test {
-protected:
-    std::unique_ptr<builder::StructuredSDFGBuilder> builder_;
-    std::unique_ptr<analysis::AnalysisManager> analysis_manager_;
-    structured_control_flow::For* loop_;
-
-    void SetUp() override {
-        builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU);
-        auto& sdfg = builder_->subject();
-        auto& root = sdfg.root();
-
-        // Add containers
-        types::Scalar base_desc(types::PrimitiveType::Float);
-        types::Pointer desc(base_desc);
-        builder_->add_container("A", desc, true);
-
-        types::Scalar sym_desc(types::PrimitiveType::UInt64);
-        builder_->add_container("N", sym_desc, true);
-        builder_->add_container("i", sym_desc);
-
-        // Define loop
-        auto bound = symbolic::symbol("N");
-        auto indvar = symbolic::symbol("i");
-        auto init = symbolic::integer(0);
-        auto condition = symbolic::Lt(indvar, bound);
-        auto update = symbolic::add(indvar, symbolic::integer(1));
-
-        loop_ = &(builder_->add_for(root, indvar, condition, init, update));
-        auto& body = loop_->root();
-
-        // Add slicing
-        auto& if_else = builder_->add_if_else(body);
-        auto& branch_1 = builder_->add_case(if_else, symbolic::Eq(indvar, symbolic::integer(0)));
-        auto& branch_2 = builder_->add_case(if_else, symbolic::Ne(indvar, symbolic::integer(0)));
-
-        analysis_manager_ = std::make_unique<analysis::AnalysisManager>(builder_->subject());
-    }
-    void TearDown() override {
-        // Cleanup if necessary
-    };
-};
-
-TEST_F(RecorderLoopSlicingTest, Apply_LoopSlicing) {
-    transformations::Recorder recorder;
-
-    EXPECT_NO_THROW(recorder.apply<transformations::LoopSlicing>(*builder_, *analysis_manager_, true, *loop_));
-}
-
-TEST_F(RecorderLoopSlicingTest, Save_SingleTransformation) {
-    transformations::Recorder recorder;
-
-    size_t loop_id = loop_->element_id();
-
-    EXPECT_NO_THROW(recorder.apply<transformations::LoopSlicing>(*builder_, *analysis_manager_, true, *loop_));
-
-    // Use temporary file to save the transformation
-    std::filesystem::path tmp_file = std::filesystem::temp_directory_path() / "Save_LoopSlicingTransformation.json";
-    EXPECT_NO_THROW(recorder.save(tmp_file));
-    EXPECT_TRUE(std::filesystem::exists(tmp_file));
-
-    std::ifstream file(tmp_file);
-    nlohmann::json j = nlohmann::json::array();
-    file >> j;
-    file.close();
-
-    std::cout << j.dump(4) << std::endl;
-
-    EXPECT_TRUE(j.is_array());
-    EXPECT_EQ(j.size(), 1);
-    EXPECT_EQ(j[0]["transformation_type"], "LoopSlicing");
-    EXPECT_EQ(j[0]["subgraph"]["0"]["element_id"], loop_id);
-}
-
-TEST_F(RecorderLoopSlicingTest, Replay_Transformations) {
-    builder::StructuredSDFGBuilder replay_builder("sdfg_test", FunctionType_CPU);
-
-    transformations::Replayer replayer;
-
-    nlohmann::json j = nlohmann::json::array();
-    j.push_back(
-        {{"transformation_type", "LoopSlicing"},
-         {"subgraph", {{"0", {{"element_id", loop_->element_id()}, {"type", "for"}}}}}}
-    );
-
-    EXPECT_NO_THROW(replayer.replay(*builder_, *analysis_manager_, j));
 }
 
 class RecorderMultiTransformationTest : public ::testing::Test {
@@ -385,7 +297,7 @@ TEST_F(RecorderMultiTransformationTest, Apply_Transformations) {
 
     EXPECT_EQ(j[2]["transformation_type"], "LoopInterchange");
     EXPECT_EQ(j[2]["subgraph"]["0"]["element_id"], 1);
-    EXPECT_EQ(j[2]["subgraph"]["1"]["element_id"], 18);
+    EXPECT_EQ(j[2]["subgraph"]["1"]["element_id"], 17);
 }
 
 TEST_F(RecorderMultiTransformationTest, Replay_Transformations) {
@@ -406,7 +318,7 @@ TEST_F(RecorderMultiTransformationTest, Replay_Transformations) {
 
     nlohmann::json j2;
     j2["transformation_type"] = "LoopInterchange";
-    j2["subgraph"] = {{"0", {{"element_id", 1}, {"type", "for"}}}, {"1", {{"element_id", 18}, {"type", "map"}}}};
+    j2["subgraph"] = {{"0", {{"element_id", 1}, {"type", "for"}}}, {"1", {{"element_id", 17}, {"type", "map"}}}};
     j_array.push_back(j2);
 
     EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j_array));
@@ -518,7 +430,7 @@ TEST_F(ReplayerTest, Replay_Transformations) {
     );
     j.push_back(
         {{"transformation_type", "LoopInterchange"},
-         {"subgraph", {{"0", {{"element_id", 1}, {"type", "map"}}}, {"1", {{"element_id", 18}, {"type", "map"}}}}}}
+         {"subgraph", {{"0", {{"element_id", 1}, {"type", "map"}}}, {"1", {{"element_id", 17}, {"type", "map"}}}}}}
     );
 
     EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j));

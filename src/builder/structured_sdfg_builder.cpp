@@ -773,7 +773,7 @@ IfElse& StructuredSDFGBuilder::add_if_else_before(
         std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
     );
 
-    return static_cast<IfElse&>(*parent.children_.back().get());
+    return static_cast<IfElse&>(*parent.children_.at(index));
 };
 
 IfElse& StructuredSDFGBuilder::add_if_else_after(
@@ -796,7 +796,7 @@ IfElse& StructuredSDFGBuilder::add_if_else_after(
         std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
     );
 
-    return static_cast<IfElse&>(*parent.children_.back().get());
+    return static_cast<IfElse&>(*parent.children_.at(index + 1));
 };
 
 std::pair<IfElse&, Transition&> StructuredSDFGBuilder::
