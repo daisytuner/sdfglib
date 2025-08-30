@@ -2,8 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "sdfg/visualizer/dot_visualizer.h"
-
 using namespace sdfg;
 
 TEST(LoopInterchangeTest, Map_2D) {
@@ -70,9 +68,6 @@ TEST(LoopInterchangeTest, Map_2D) {
     transformations::LoopInterchange transformation(loop, loop_2);
     EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
     transformation.apply(builder, analysis_manager);
-
-    std::filesystem::path dot_file = "loop_interchange.dot";
-    sdfg::visualizer::DotVisualizer::writeToFile(builder.subject(), &dot_file);
 
     auto& new_sdfg = builder.subject();
     EXPECT_EQ(new_sdfg.root().size(), 1);
@@ -154,9 +149,6 @@ TEST(LoopInterchangeTest, Map_2D_Transition) {
     transformations::LoopInterchange transformation(loop, loop_2);
     EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
     transformation.apply(builder, analysis_manager);
-
-    std::filesystem::path dot_file = "loop_interchange.dot";
-    sdfg::visualizer::DotVisualizer::writeToFile(builder.subject(), &dot_file);
 
     auto& new_sdfg = builder.subject();
     EXPECT_EQ(new_sdfg.root().size(), 1);
