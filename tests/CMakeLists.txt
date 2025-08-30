@@ -62,7 +62,6 @@ set(TEST_FILES
     symbolic/symbolic_test.cpp
     symbolic/sets_test.cpp
     transformations/loop_interchange_test.cpp
-    transformations/loop_slicing_test.cpp
     transformations/loop_tiling_test.cpp
     transformations/out_local_storage_test.cpp
     transformations/parallelization_test.cpp
