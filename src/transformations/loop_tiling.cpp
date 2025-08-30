@@ -29,6 +29,8 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
 
     auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto parent = static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&loop_));
+    size_t index = parent->index(loop_);
+    auto& transition = parent->at(index).second;
 
     auto indvar = loop_.indvar();
 
@@ -42,15 +44,28 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
 
     structured_control_flow::StructuredLoop* outer_loop = nullptr;
     if (auto map = dynamic_cast<structured_control_flow::Map*>(&loop_)) {
-        outer_loop =
-            &builder
-                 .add_map_before(
-                     *parent, loop_, outer_indvar, outer_condition, loop_.init(), outer_update, map->schedule_type()
-                 )
-                 .first;
+        outer_loop = &builder.add_map_before(
+            *parent,
+            loop_,
+            outer_indvar,
+            outer_condition,
+            loop_.init(),
+            outer_update,
+            map->schedule_type(),
+            transition.assignments(),
+            loop_.debug_info()
+        );
     } else {
-        outer_loop =
-            &builder.add_for_before(*parent, loop_, outer_indvar, outer_condition, loop_.init(), outer_update).first;
+        outer_loop = &builder.add_for_before(
+            *parent,
+            loop_,
+            outer_indvar,
+            outer_condition,
+            loop_.init(),
+            outer_update,
+            transition.assignments(),
+            loop_.debug_info()
+        );
     }
 
     // Step 2: Redefine inner loop
@@ -80,8 +95,9 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
     loop_.condition() = inner_condition;
     loop_.init() = inner_init;
 
-    // Step 3: Move inner loop body to outer loop body
-    builder.insert(loop_, *parent, outer_loop->root(), loop_.debug_info());
+    // Step 3: Move loop into tiling loop
+    builder.move_child(*parent, index, outer_loop->root());
+    builder.remove_child(*parent, index + 1);
 
     analysis_manager.invalidate_all();
 };

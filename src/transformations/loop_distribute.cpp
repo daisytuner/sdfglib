@@ -89,22 +89,16 @@ void LoopDistribute::apply(builder::StructuredSDFGBuilder& builder, analysis::An
     auto update = this->loop_.update();
     auto init = this->loop_.init();
 
-    auto& body = this->loop_.root();
-    auto& child = body.at(0).first;
-
     auto& analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto parent = static_cast<structured_control_flow::Sequence*>(analysis.parent_scope(&this->loop_));
     structured_control_flow::ScheduleType schedule_type = structured_control_flow::ScheduleType_Sequential;
     if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&this->loop_)) {
         schedule_type = map_stmt->schedule_type();
     }
-    auto& new_map =
-        builder
-            .add_map_before(
-                *parent, this->loop_, indvar, condition, init, update, schedule_type, {}, this->loop_.debug_info()
-            )
-            .first;
-    builder.insert(child, this->loop_.root(), new_map.root(), child.debug_info());
+    auto& new_map = builder.add_map_before(
+        *parent, this->loop_, indvar, condition, init, update, schedule_type, {}, this->loop_.debug_info()
+    );
+    builder.move_child(this->loop_.root(), 0, new_map.root());
 
     // Replace indvar in new loop
     std::string new_indvar = builder.find_new_name(indvar->get_name());
