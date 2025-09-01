@@ -84,6 +84,90 @@ TEST(LoopInterchangeTest, Map_2D) {
     EXPECT_EQ(&inner_loop->root().at(0).first, &block);
 }
 
+TEST(LoopInterchangeTest, Map_2D_Transition) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Array desc_1(base_desc, symbolic::symbol("M"));
+    types::Pointer desc_2(desc_1);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("M", sym_desc, true);
+    builder.add_container("i", sym_desc);
+    builder.add_container("j", sym_desc);
+
+    // Define loop 1
+    auto bound = symbolic::symbol("N");
+    auto indvar = symbolic::symbol("i");
+
+    auto& loop = builder.add_map(
+        root,
+        indvar,
+        symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential,
+        {{symbolic::symbol("i"), symbolic::zero()}}
+    );
+    auto& body = loop.root();
+
+    // Define loop 2
+    auto bound_2 = symbolic::symbol("M");
+    auto indvar_2 = symbolic::symbol("j");
+
+    auto& loop_2 = builder.add_map(
+        body,
+        indvar_2,
+        symbolic::Lt(symbolic::symbol("j"), symbolic::symbol("M")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("j"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential
+    );
+    auto& body_2 = loop_2.root();
+
+    // Add computation
+    auto& block = builder.add_block(body_2);
+    auto& a_in = builder.add_access(block, "A");
+    auto& i = builder.add_access(block, "i");
+    auto& a_out = builder.add_access(block, "A");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    builder
+        .add_computational_memlet(block, a_in, tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")}, desc_2);
+    builder.add_computational_memlet(block, i, tasklet, "_in2", {});
+    builder
+        .add_computational_memlet(block, tasklet, "_out", a_out, {symbolic::symbol("i"), symbolic::symbol("j")}, desc_2);
+
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    transformations::LoopInterchange transformation(loop, loop_2);
+    EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
+    transformation.apply(builder, analysis_manager);
+
+    auto& new_sdfg = builder.subject();
+    EXPECT_EQ(new_sdfg.root().size(), 1);
+    auto outer_loop = dynamic_cast<structured_control_flow::Map*>(&new_sdfg.root().at(0).first);
+    EXPECT_TRUE(outer_loop != nullptr);
+    EXPECT_EQ(new_sdfg.root().at(0).second.assignments().size(), 1);
+    EXPECT_TRUE(symbolic::eq(new_sdfg.root().at(0).second.assignments().at(indvar), symbolic::zero()));
+    auto inner_loop = dynamic_cast<structured_control_flow::Map*>(&outer_loop->root().at(0).first);
+    EXPECT_TRUE(inner_loop != nullptr);
+    EXPECT_EQ(outer_loop->root().at(0).second.assignments().size(), 0);
+
+    EXPECT_EQ(outer_loop->indvar()->get_name(), "j");
+    EXPECT_EQ(inner_loop->indvar()->get_name(), "i");
+
+    EXPECT_EQ(outer_loop->root().size(), 1);
+    EXPECT_EQ(inner_loop->root().size(), 1);
+    EXPECT_EQ(&inner_loop->root().at(0).first, &block);
+}
+
 TEST(LoopInterchangeTest, DependentLoops) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 

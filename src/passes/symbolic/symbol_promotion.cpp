@@ -209,9 +209,7 @@ void SymbolPromotion::apply(
     }
 
     // Split states and set transition
-    auto before = builder.add_block_before(sequence, block);
-    before.second.assignments().insert({lhs, rhs});
-
+    builder.add_block_before(sequence, block, {{lhs, rhs}}, block.debug_info());
     builder.clear_node(block, *tasklet);
 };
 
