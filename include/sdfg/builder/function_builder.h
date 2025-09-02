@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include "sdfg/data_flow/tasklet.h"
 #include "sdfg/function.h"
 #include "sdfg/types/type.h"
 
@@ -36,6 +37,10 @@ public:
     std::string find_new_name(std::string prefix = "tmp_") const;
 
     void set_element_counter(size_t element_counter);
+
+    /** Common Dataflow Operations **/
+
+    void update_tasklet(data_flow::Tasklet& tasklet, const data_flow::TaskletCode code);
 };
 
 } // namespace builder
