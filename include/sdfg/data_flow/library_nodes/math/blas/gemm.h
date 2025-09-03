@@ -101,7 +101,7 @@ public:
         const GEMMNode& node
     );
 
-    void dispatch(
+    void dispatch_code(
         codegen::PrettyPrinter& stream,
         codegen::PrettyPrinter& globals_stream,
         codegen::CodeSnippetFactory& library_snippet_factory
@@ -117,7 +117,7 @@ public:
         const GEMMNode& node
     );
 
-    void dispatch(
+    void dispatch_code(
         codegen::PrettyPrinter& stream,
         codegen::PrettyPrinter& globals_stream,
         codegen::CodeSnippetFactory& library_snippet_factory

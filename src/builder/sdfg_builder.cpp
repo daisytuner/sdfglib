@@ -274,43 +274,6 @@ data_flow::Memlet& SDFGBuilder::add_memlet(
     return memlet;
 };
 
-data_flow::Memlet& SDFGBuilder::add_memlet(
-    control_flow::State& state,
-    data_flow::DataFlowNode& src,
-    const std::string& src_conn,
-    data_flow::DataFlowNode& dst,
-    const std::string& dst_conn,
-    const data_flow::Subset& begin_subset,
-    const data_flow::Subset& end_subset,
-    const types::IType& base_type,
-    const DebugInfo& debug_info
-) {
-    auto& dataflow = state.dataflow();
-    auto edge = boost::add_edge(src.vertex_, dst.vertex_, dataflow.graph_);
-    auto res = dataflow.edges_.insert(
-        {edge.first,
-         std::unique_ptr<data_flow::Memlet>(new data_flow::Memlet(
-             this->new_element_id(),
-             debug_info,
-             edge.first,
-             dataflow,
-             src,
-             src_conn,
-             dst,
-             dst_conn,
-             begin_subset,
-             end_subset,
-             base_type
-         ))}
-    );
-    auto& memlet = dynamic_cast<data_flow::Memlet&>(*(res.first->second));
-#ifndef NDEBUG
-    memlet.validate(*this->sdfg_);
-#endif
-
-    return memlet;
-};
-
 data_flow::Memlet& SDFGBuilder::add_computational_memlet(
     control_flow::State& state,
     data_flow::AccessNode& src,
@@ -372,12 +335,11 @@ data_flow::Memlet& SDFGBuilder::add_computational_memlet(
     data_flow::AccessNode& src,
     data_flow::LibraryNode& dst,
     const std::string& dst_conn,
-    const data_flow::Subset& begin_subset,
-    const data_flow::Subset& end_subset,
+    const data_flow::Subset& subset,
     const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(state, src, "void", dst, dst_conn, begin_subset, end_subset, base_type, debug_info);
+    return this->add_memlet(state, src, "void", dst, dst_conn, subset, base_type, debug_info);
 };
 
 data_flow::Memlet& SDFGBuilder::add_computational_memlet(
@@ -385,12 +347,11 @@ data_flow::Memlet& SDFGBuilder::add_computational_memlet(
     data_flow::LibraryNode& src,
     const std::string& src_conn,
     data_flow::AccessNode& dst,
-    const data_flow::Subset& begin_subset,
-    const data_flow::Subset& end_subset,
+    const data_flow::Subset& subset,
     const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(state, src, src_conn, dst, "void", begin_subset, end_subset, base_type, debug_info);
+    return this->add_memlet(state, src, src_conn, dst, "void", subset, base_type, debug_info);
 };
 
 data_flow::Memlet& SDFGBuilder::add_reference_memlet(

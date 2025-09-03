@@ -92,9 +92,8 @@ void DotVisualizer::visualizeBlock(const StructuredSDFG& sdfg, const structured_
                 auto& dstVar = dynamic_cast<data_flow::AccessNode const&>(iedge.dst()).data();
                 bool subsetOnDst = false;
                 if (srcIsDeref && dstIsVoid) { // Pure Store by Memlet definition (Dereference Memlet Store)
-                    auto& subset_begin = iedge.begin_subset();
-                    auto& subset_end = iedge.end_subset();
-                    if (subset_begin.size() == subset_end.size() == 1 && subset_begin[0] == subset_end[0] == 0) {
+                    auto& subset = iedge.subset();
+                    if (subset.size() == 1 && symbolic::eq(subset[0], symbolic::integer(0))) {
                         this->stream_ << "*" << dstVar; // store to pointer without further address calc
                     } else { // fallback, this should not be allowed to happen
                         this->stream_ << dstVar; // use access node name instead of connector-name
@@ -107,7 +106,7 @@ void DotVisualizer::visualizeBlock(const StructuredSDFG& sdfg, const structured_
                     this->stream_ << dstVar; // use access node name instead of connector-name
                 }
                 if (subsetOnDst) {
-                    this->visualizeSubset(sdfg, iedge.begin_subset(), iedge.end_subset(), &iedge.base_type());
+                    this->visualizeSubset(sdfg, iedge.subset(), &iedge.base_type());
                 }
             } else { // dst is a tasklet/library node
                 this->stream_ << dst_conn;
@@ -124,10 +123,9 @@ void DotVisualizer::visualizeBlock(const StructuredSDFG& sdfg, const structured_
                     subsetOnSrc = true;
                 } else if (srcIsVoid && dstIsDeref) { // Dereference memlet / load from address
                     this->stream_ << "*";
-                    auto& subset_begin = iedge.begin_subset();
-                    auto& subset_end = iedge.end_subset();
-                    if (subset_begin.size() == subset_end.size() != 1 ||
-                        subset_begin[0] == subset_end[0] != 0) { // does not match memlet definition -> fallback
+                    auto& subset = iedge.subset();
+                    if (subset.size() != 1 && symbolic::eq(subset[0], symbolic::integer(0))) { // does not match memlet
+                                                                                               // definition -> fallback
                         subsetOnSrc = true;
                     }
                 } else if (srcIsVoid) {
@@ -135,7 +133,7 @@ void DotVisualizer::visualizeBlock(const StructuredSDFG& sdfg, const structured_
                 }
                 this->stream_ << srcVar;
                 if (subsetOnSrc) {
-                    this->visualizeSubset(sdfg, iedge.begin_subset(), iedge.end_subset(), &iedge.base_type());
+                    this->visualizeSubset(sdfg, iedge.subset(), &iedge.base_type());
                 }
             } else {
                 this->stream_ << src_conn;

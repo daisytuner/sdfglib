@@ -231,44 +231,32 @@ LibraryNodeDispatcher::LibraryNodeDispatcher(
 
 void LibraryNodeDispatcher::
     dispatch(PrettyPrinter& stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory) {
+    auto& graph = this->node_.get_parent();
+
     stream << "{" << std::endl;
     stream.setIndent(stream.indent() + 4);
 
-    auto& node = node_;
-    std::vector<std::string> inputs_by_order;
-    std::vector<std::optional<std::string>> outputs_by_order;
+    for (auto& iedge : graph.in_edges(this->node_)) {
+        stream << language_extension_.declaration(iedge.dst_conn(), iedge.base_type()) << ";" << std::endl;
 
-    std::unordered_map<std::string, const data_flow::Memlet*> in_edges;
-    for (auto& iedge : this->data_flow_graph_.in_edges(node)) {
-        in_edges[iedge.dst_conn()] = &iedge;
+        auto& src = static_cast<const data_flow::AccessNode&>(iedge.src());
+        stream << iedge.dst_conn() << " = " << src.data()
+               << language_extension_.subset(this->function_, this->function_.type(src.data()), iedge.subset()) << ";"
+               << std::endl;
     }
 
-    for (auto& input : node.inputs()) {
-        if (in_edges.find(input) == in_edges.end()) {
-            inputs_by_order.push_back(input);
-        } else {
-            auto& iedge = *in_edges[input];
-            auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
-            inputs_by_order.push_back(src.data());
-        }
+    for (auto& oedge : graph.out_edges(this->node_)) {
+        stream << language_extension_.declaration(oedge.src_conn(), oedge.base_type()) << ";" << std::endl;
     }
 
-    std::unordered_map<std::string, const data_flow::Memlet*> out_edges;
-    for (auto& oedge : this->data_flow_graph_.out_edges(node)) {
-        out_edges[oedge.src_conn()] = &oedge;
-    }
-    for (auto& output : node.outputs()) {
-        auto it = out_edges.find(output);
-        if (it == out_edges.end()) {
-            outputs_by_order.push_back(std::nullopt);
-        } else {
-            auto& oedge = *it->second;
-            auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
-            outputs_by_order.push_back(dst.data());
-        }
-    }
+    this->dispatch_code(stream, globals_stream, library_snippet_factory);
 
-    dispatch_code(stream, globals_stream, library_snippet_factory, inputs_by_order, outputs_by_order);
+    for (auto& oedge : graph.out_edges(this->node_)) {
+        auto& dst = static_cast<const data_flow::AccessNode&>(oedge.dst());
+        stream << dst.data()
+               << language_extension_.subset(this->function_, this->function_.type(dst.data()), oedge.subset()) << " = "
+               << oedge.src_conn() << ";" << std::endl;
+    }
 
     stream.setIndent(stream.indent() - 4);
     stream << "}" << std::endl;

@@ -27,14 +27,7 @@ TEST(ExpansionPassTest, Simple) {
     );
 
     builder.add_computational_memlet(
-        block,
-        input_node,
-        relu_node,
-        "X",
-        {symbolic::integer(0), symbolic::integer(0)},
-        {symbolic::integer(10), symbolic::integer(20)},
-        array_desc_2,
-        block.debug_info()
+        block, input_node, relu_node, "X", {symbolic::integer(0), symbolic::integer(0)}, array_desc_2, block.debug_info()
     );
     builder.add_computational_memlet(
         block,
@@ -42,7 +35,6 @@ TEST(ExpansionPassTest, Simple) {
         "Y",
         output_node,
         {symbolic::integer(0), symbolic::integer(0)},
-        {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
         block.debug_info()
     );

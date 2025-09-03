@@ -35,8 +35,7 @@ private:
     DataFlowNode& dst_;
     std::string src_conn_;
     std::string dst_conn_;
-    Subset begin_subset_;
-    Subset end_subset_;
+    Subset subset_;
     std::unique_ptr<types::IType> base_type_;
 
     Memlet(
@@ -49,20 +48,6 @@ private:
         DataFlowNode& dst,
         const std::string& dst_conn,
         const Subset& subset,
-        const types::IType& base_type
-    );
-
-    Memlet(
-        size_t element_id,
-        const DebugInfo& debug_info,
-        const graph::Edge& edge,
-        DataFlowGraph& parent,
-        DataFlowNode& src,
-        const std::string& src_conn,
-        DataFlowNode& dst,
-        const std::string& dst_conn,
-        const Subset& begin_subset,
-        const Subset& end_subset,
         const types::IType& base_type
     );
 
@@ -96,14 +81,6 @@ public:
     const Subset subset() const;
 
     void set_subset(const Subset& subset);
-
-    const Subset begin_subset() const;
-
-    const Subset end_subset() const;
-
-    bool has_range() const;
-
-    void set_subset(const Subset& begin_subset, const Subset& end_subset);
 
     const types::IType& base_type() const;
 

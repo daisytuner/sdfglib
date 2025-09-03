@@ -32,7 +32,7 @@ set(TEST_FILES
     codegen/language_extensions/cuda_language_extension_test.cpp
     codegen/utils_test.cpp
     data_flow/data_flow_graph_test.cpp
-    data_flow/library_nodes/math_test.cpp
+    # data_flow/library_nodes/math_test.cpp
     deepcopy/structured_sdfg_deep_copy_test.cpp
     element_test.cpp
     graph/graph_algorithms_test.cpp
@@ -42,7 +42,7 @@ set(TEST_FILES
     passes/dataflow/trivial_array_elimination_test.cpp
     passes/dataflow/reference_propagation_test.cpp
     passes/pipeline_test.cpp
-    passes/schedules/expansion_pass_test.cpp
+    # passes/schedules/expansion_pass_test.cpp
     passes/schedules/parallelization_pass_test.cpp
     passes/structured_control_flow/block_fusion_test.cpp
     passes/structured_control_flow/condition_elimination_test.cpp

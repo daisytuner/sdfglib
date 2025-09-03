@@ -49,7 +49,7 @@ protected:
         symbolic::Expression const& update
     );
 
-    std::string subsetRangeString(data_flow::Subset const& begin_subset, data_flow::Subset const& end_subset, int subIdx);
+    std::string subsetRangeString(data_flow::Subset const& subset, int subIdx);
 
 public:
     Visualizer(const StructuredSDFG& sdfg) : stream_{}, sdfg_{sdfg}, replacements_{} {};
@@ -59,11 +59,7 @@ public:
     codegen::PrettyPrinter const& getStream() const { return this->stream_; }
 
     virtual void visualizeSubset(
-        Function const& function,
-        data_flow::Subset const& begin_sub,
-        data_flow::Subset const& end_sub,
-        types::IType const* type = nullptr,
-        int subIdx = 0
+        Function const& function, data_flow::Subset const& begin_sub, types::IType const* type = nullptr, int subIdx = 0
     );
 };
 

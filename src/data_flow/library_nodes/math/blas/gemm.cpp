@@ -65,79 +65,7 @@ const std::string& GEMMNode::alpha() const { return this->inputs_.at(3); };
 
 const std::string& GEMMNode::beta() const { return this->inputs_.at(4); };
 
-void GEMMNode::validate(const Function& function) const {
-    auto& graph = this->get_parent();
-
-    if (this->inputs_.size() != 5) {
-        throw InvalidSDFGException("GEMMNode must have 5 inputs: A, B, C, (alpha), (beta)");
-    }
-
-    int input_edge_count = graph.in_degree(*this);
-    if (input_edge_count < 3 || input_edge_count > 5) {
-        throw InvalidSDFGException("GEMMNode must have 3-5 inputs");
-    }
-    if (graph.out_degree(*this) != 1) {
-        throw InvalidSDFGException("GEMMNode must have 1 output");
-    }
-
-    // // Check if all inputs are connected A, B, C, (alpha), (beta)
-    std::unordered_map<std::string, const data_flow::Memlet*> memlets;
-    for (auto& input : this->inputs_) {
-        bool found = false;
-        for (auto& iedge : graph.in_edges(*this)) {
-            if (iedge.dst_conn() == input) {
-                found = true;
-                memlets[input] = &iedge;
-                break;
-            }
-        }
-        if (!found && (input == "A" || input == "B" || input == "C")) {
-            throw InvalidSDFGException("GEMMNode input " + input + " not found");
-        }
-    }
-
-    // Check if output is connected to C
-    auto& oedge = *graph.out_edges(*this).begin();
-    if (oedge.src_conn() != this->outputs_.at(0)) {
-        throw InvalidSDFGException("GEMMNode output " + this->outputs_.at(0) + " not found");
-    }
-
-    // Check dimensions of A, B, C
-    auto& a_memlet = memlets.at("A");
-    auto& a_subset_begin = a_memlet->begin_subset();
-    auto& a_subset_end = a_memlet->end_subset();
-    if (a_subset_begin.size() != 1) {
-        throw InvalidSDFGException("GEMMNode input A must have 1 dimensions");
-    }
-    data_flow::Subset a_dims;
-    for (size_t i = 0; i < a_subset_begin.size(); i++) {
-        a_dims.push_back(symbolic::sub(a_subset_end[i], a_subset_begin[i]));
-    }
-
-    auto& b_memlet = memlets.at("B");
-    auto& b_subset_begin = b_memlet->begin_subset();
-    auto& b_subset_end = b_memlet->end_subset();
-    if (b_subset_begin.size() != 1) {
-        throw InvalidSDFGException("GEMMNode input B must have 1 dimensions");
-    }
-    data_flow::Subset b_dims;
-    for (size_t i = 0; i < b_subset_begin.size(); i++) {
-        b_dims.push_back(symbolic::sub(b_subset_end[i], b_subset_begin[i]));
-    }
-
-    auto& c_memlet = memlets.at("C");
-    auto& c_subset_begin = c_memlet->begin_subset();
-    auto& c_subset_end = c_memlet->end_subset();
-    if (c_subset_begin.size() != 1) {
-        throw InvalidSDFGException("GEMMNode input C must have 1 dimensions");
-    }
-    data_flow::Subset c_dims;
-    for (size_t i = 0; i < c_subset_begin.size(); i++) {
-        c_dims.push_back(symbolic::sub(c_subset_end[i], c_subset_begin[i]));
-    }
-
-    // TODO: Check if dimensions of A, B, C are valid
-}
+void GEMMNode::validate(const Function& function) const {}
 
 types::PrimitiveType GEMMNode::scalar_primitive() const {
     switch (this->precision_) {
@@ -246,10 +174,6 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 
     // Add maps
     std::vector<symbolic::Expression> indvar_ends{this->m(), this->n(), this->k()};
-    auto& begin_subsets_out = oedge.begin_subset();
-    auto& end_subsets_out = oedge.end_subset();
-    auto& begin_subsets_in_a = iedge_a->begin_subset();
-    auto& end_subsets_in_a = iedge_a->end_subset();
     data_flow::Subset new_subset;
     structured_control_flow::Sequence* last_scope = &new_sequence;
     structured_control_flow::Map* last_map = nullptr;
@@ -492,7 +416,7 @@ GEMMNodeDispatcher_BLAS::GEMMNodeDispatcher_BLAS(
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void GEMMNodeDispatcher_BLAS::dispatch(
+void GEMMNodeDispatcher_BLAS::dispatch_code(
     codegen::PrettyPrinter& stream,
     codegen::PrettyPrinter& globals_stream,
     codegen::CodeSnippetFactory& library_snippet_factory
@@ -515,16 +439,6 @@ void GEMMNodeDispatcher_BLAS::dispatch(
             break;
         default:
             throw std::runtime_error("Invalid BLAS_Precision value");
-    }
-
-    auto& graph = this->node_.get_parent();
-    for (auto& iedge : graph.in_edges(this->node_)) {
-        auto& access_node = static_cast<const data_flow::AccessNode&>(iedge.src());
-        std::string name = access_node.data();
-        auto& type = this->function_.type(name);
-
-        stream << this->language_extension_.declaration(iedge.dst_conn(), type);
-        stream << " = " << name << ";" << std::endl;
     }
 
     if (std::find(gemm_node.inputs().begin(), gemm_node.inputs().end(), "alpha") ==
@@ -582,7 +496,7 @@ GEMMNodeDispatcher_CUBLAS::GEMMNodeDispatcher_CUBLAS(
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void GEMMNodeDispatcher_CUBLAS::dispatch(
+void GEMMNodeDispatcher_CUBLAS::dispatch_code(
     codegen::PrettyPrinter& stream,
     codegen::PrettyPrinter& globals_stream,
     codegen::CodeSnippetFactory& library_snippet_factory

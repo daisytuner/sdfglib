@@ -32,14 +32,7 @@ TEST(MathTest, ReLU) {
     );
 
     builder.add_computational_memlet(
-        block,
-        input_node,
-        relu_node,
-        "X",
-        {symbolic::integer(0), symbolic::integer(0)},
-        {symbolic::integer(10), symbolic::integer(20)},
-        array_desc_2,
-        block.debug_info()
+        block, input_node, relu_node, "X", {symbolic::integer(0), symbolic::integer(0)}, array_desc_2, block.debug_info()
     );
     builder.add_computational_memlet(
         block,
@@ -47,7 +40,6 @@ TEST(MathTest, ReLU) {
         "Y",
         output_node,
         {symbolic::integer(0), symbolic::integer(0)},
-        {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
         block.debug_info()
     );
@@ -126,43 +118,11 @@ TEST(MathTest, Gemm) {
         "0" // beta
     ));
 
-    builder.add_computational_memlet(
-        block,
-        input_a_node,
-        gemm_node,
-        "A",
-        {symbolic::integer(0)},
-        {symbolic::mul(symbolic::integer(dim_i), symbolic::integer(dim_k))},
-        arr_a_type
-    );
-    builder.add_computational_memlet(
-        block,
-        input_b_node,
-        gemm_node,
-        "B",
-        {symbolic::integer(0)},
-        {symbolic::mul(symbolic::integer(dim_k), symbolic::integer(dim_j))},
-        arr_b_type
-    );
-    builder.add_computational_memlet(
-        block,
-        dummy_input_node,
-        gemm_node,
-        "C",
-        {symbolic::integer(0)},
-        {symbolic::mul(symbolic::integer(dim_i), symbolic::integer(dim_j))},
-        arr_res_type
-    );
+    builder.add_computational_memlet(block, input_a_node, gemm_node, "A", {symbolic::integer(0)}, arr_a_type);
+    builder.add_computational_memlet(block, input_b_node, gemm_node, "B", {symbolic::integer(0)}, arr_b_type);
+    builder.add_computational_memlet(block, dummy_input_node, gemm_node, "C", {symbolic::integer(0)}, arr_res_type);
 
-    builder.add_computational_memlet(
-        block,
-        gemm_node,
-        "C",
-        output_node,
-        {symbolic::integer(0)},
-        {symbolic::mul(symbolic::integer(dim_i), symbolic::integer(dim_j))},
-        arr_res_type
-    );
+    builder.add_computational_memlet(block, gemm_node, "C", output_node, {symbolic::integer(0)}, arr_res_type);
 
     EXPECT_EQ(block.dataflow().nodes().size(), 5);
 
@@ -277,18 +237,13 @@ TEST(MathTest, Conv_2D) {
 
     // Memlet subsets
     data_flow::Subset x_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
-    data_flow::Subset x_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(3), symbolic::integer(3)};
-
     data_flow::Subset w_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
-    data_flow::Subset w_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(2), symbolic::integer(2)};
-
     data_flow::Subset y_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
-    data_flow::Subset y_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(1), symbolic::integer(1)};
 
     // Connect memlets
-    builder.add_computational_memlet(block, X_acc, conv_node, "X", x_begin, x_end, x_desc, block.debug_info());
-    builder.add_computational_memlet(block, W_acc, conv_node, "W", w_begin, w_end, w_desc, block.debug_info());
-    builder.add_computational_memlet(block, conv_node, "Y", Y_acc, y_begin, y_end, y_desc, block.debug_info());
+    builder.add_computational_memlet(block, X_acc, conv_node, "X", x_begin, x_desc, block.debug_info());
+    builder.add_computational_memlet(block, W_acc, conv_node, "W", w_begin, w_desc, block.debug_info());
+    builder.add_computational_memlet(block, conv_node, "Y", Y_acc, y_begin, y_desc, block.debug_info());
 
     EXPECT_EQ(block.dataflow().nodes().size(), 4);
 
@@ -345,18 +300,13 @@ TEST(MathTest, Conv_2D_Strides) {
 
     // Memlet subsets
     data_flow::Subset x_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
-    data_flow::Subset x_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(4), symbolic::integer(4)};
-
     data_flow::Subset w_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
-    data_flow::Subset w_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(2), symbolic::integer(2)};
-
     data_flow::Subset y_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
-    data_flow::Subset y_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(1), symbolic::integer(1)};
 
     // Connect memlets
-    builder.add_computational_memlet(block, X_acc, conv_node, "X", x_begin, x_end, x_desc, block.debug_info());
-    builder.add_computational_memlet(block, W_acc, conv_node, "W", w_begin, w_end, w_desc, block.debug_info());
-    builder.add_computational_memlet(block, conv_node, "Y", Y_acc, y_begin, y_end, y_desc, block.debug_info());
+    builder.add_computational_memlet(block, X_acc, conv_node, "X", x_begin, x_desc, block.debug_info());
+    builder.add_computational_memlet(block, W_acc, conv_node, "W", w_begin, w_desc, block.debug_info());
+    builder.add_computational_memlet(block, conv_node, "Y", Y_acc, y_begin, y_desc, block.debug_info());
 
     EXPECT_EQ(block.dataflow().nodes().size(), 4);
 
@@ -403,14 +353,11 @@ TEST(MathTest, MaxPool_2D) {
 
     // Subsets
     data_flow::Subset x_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
-    data_flow::Subset x_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(3), symbolic::integer(3)};
-
     data_flow::Subset y_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
-    data_flow::Subset y_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(1), symbolic::integer(1)};
 
     // Memlets
-    builder.add_computational_memlet(block, X_acc, pool_node, "X", x_begin, x_end, x_desc, block.debug_info());
-    builder.add_computational_memlet(block, pool_node, "Y", Y_acc, y_begin, y_end, y_desc, block.debug_info());
+    builder.add_computational_memlet(block, X_acc, pool_node, "X", x_begin, x_desc, block.debug_info());
+    builder.add_computational_memlet(block, pool_node, "Y", Y_acc, y_begin, y_desc, block.debug_info());
 
     EXPECT_EQ(block.dataflow().nodes().size(), 3);
 
@@ -444,27 +391,9 @@ TEST(MathTest, Dot) {
         block, DebugInfo(), math::blas::ImplementationType_BLAS, math::blas::BLAS_Precision::d, n, stride_a, stride_b
     ));
 
-    builder.add_computational_memlet(
-        block,
-        a_node,
-        dot_node,
-        "x",
-        {symbolic::zero()},
-        {symbolic::sub(n, symbolic::integer(1))},
-        array_desc,
-        block.debug_info()
-    );
-    builder.add_computational_memlet(
-        block,
-        b_node,
-        dot_node,
-        "y",
-        {symbolic::zero()},
-        {symbolic::sub(n, symbolic::integer(1))},
-        array_desc,
-        block.debug_info()
-    );
-    builder.add_computational_memlet(block, dot_node, "res", c_node, {}, {}, desc, block.debug_info());
+    builder.add_computational_memlet(block, a_node, dot_node, "x", {symbolic::zero()}, array_desc, block.debug_info());
+    builder.add_computational_memlet(block, b_node, dot_node, "y", {symbolic::zero()}, array_desc, block.debug_info());
+    builder.add_computational_memlet(block, dot_node, "res", c_node, {}, desc, block.debug_info());
 
     EXPECT_EQ(block.dataflow().nodes().size(), 4);
 

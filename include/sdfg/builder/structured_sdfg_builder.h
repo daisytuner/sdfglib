@@ -341,18 +341,6 @@ public:
         const DebugInfo& debug_info
     );
 
-    data_flow::Memlet& add_memlet(
-        structured_control_flow::Block& block,
-        data_flow::DataFlowNode& src,
-        const std::string& src_conn,
-        data_flow::DataFlowNode& dst,
-        const std::string& dst_conn,
-        const data_flow::Subset& begin_subset,
-        const data_flow::Subset& end_subset,
-        const types::IType& base_type,
-        const DebugInfo& debug_info
-    );
-
     data_flow::Memlet& add_computational_memlet(
         structured_control_flow::Block& block,
         data_flow::AccessNode& src,
@@ -388,17 +376,6 @@ public:
         const std::string& src_conn,
         data_flow::AccessNode& dst,
         const data_flow::Subset& subset,
-        const DebugInfo& debug_info = DebugInfo()
-    );
-
-    data_flow::Memlet& add_computational_memlet(
-        structured_control_flow::Block& block,
-        data_flow::AccessNode& src,
-        data_flow::LibraryNode& dst,
-        const std::string& dst_conn,
-        const data_flow::Subset& begin_subset,
-        const data_flow::Subset& end_subset,
-        const types::IType& base_type,
         const DebugInfo& debug_info = DebugInfo()
     );
 
@@ -407,8 +384,17 @@ public:
         data_flow::LibraryNode& src,
         const std::string& src_conn,
         data_flow::AccessNode& dst,
-        const data_flow::Subset& begin_subset,
-        const data_flow::Subset& end_subset,
+        const data_flow::Subset& subset,
+        const types::IType& base_type,
+        const DebugInfo& debug_info = DebugInfo()
+    );
+
+    data_flow::Memlet& add_computational_memlet(
+        structured_control_flow::Block& block,
+        data_flow::AccessNode& src,
+        data_flow::LibraryNode& dst,
+        const std::string& dst_conn,
+        const data_flow::Subset& subset,
         const types::IType& base_type,
         const DebugInfo& debug_info = DebugInfo()
     );

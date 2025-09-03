@@ -10,6 +10,7 @@
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 #include "sdfg/data_flow/library_nodes/math/math.h"
 #include "sdfg/data_flow/library_nodes/metadata_node.h"
+#include "sdfg/data_flow/library_nodes/stdlib/stdlib.h"
 
 namespace sdfg {
 namespace codegen {
@@ -147,6 +148,85 @@ void register_default_dispatchers() {
            structured_control_flow::Map& node,
            InstrumentationPlan& instrumentation) {
             return std::make_unique<CPUParallelMapDispatcher>(language_extension, sdfg, node, instrumentation);
+        }
+    );
+
+    // stdlib
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        stdlib::LibraryNodeType_Fprintf.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<stdlib::FprintfNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::FprintfNode&>(node)
+            );
+        }
+    );
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        stdlib::LibraryNodeType_FPutc.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<stdlib::FPutcNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::FPutcNode&>(node)
+            );
+        }
+    );
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        stdlib::LibraryNodeType_Free.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<stdlib::FreeNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::FreeNode&>(node)
+            );
+        }
+    );
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        stdlib::LibraryNodeType_FWrite.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<stdlib::FWriteNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::FWriteNode&>(node)
+            );
+        }
+    );
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        stdlib::LibraryNodeType_Malloc.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<stdlib::MallocNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::MallocNode&>(node)
+            );
+        }
+    );
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        stdlib::LibraryNodeType_Rand.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<stdlib::RandNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::RandNode&>(node)
+            );
+        }
+    );
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        stdlib::LibraryNodeType_Srand.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<stdlib::SrandNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::SrandNode&>(node)
+            );
         }
     );
 

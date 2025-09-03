@@ -54,7 +54,7 @@ bool BlockFusion::can_be_applied(
 
     // Criterion: Subsets may not use written symbols
     for (auto& edge : first_graph.edges()) {
-        for (auto& dim : edge.begin_subset()) {
+        for (auto& dim : edge.subset()) {
             for (auto& sym : symbolic::atoms(dim)) {
                 if (second_write_symbols.find(sym->get_name()) != second_write_symbols.end()) {
                     return false;
@@ -63,7 +63,7 @@ bool BlockFusion::can_be_applied(
         }
     }
     for (auto& edge : second_graph.edges()) {
-        for (auto& dim : edge.begin_subset()) {
+        for (auto& dim : edge.subset()) {
             for (auto& sym : symbolic::atoms(dim)) {
                 if (first_write_symbols.find(sym->get_name()) != first_write_symbols.end()) {
                     return false;
@@ -191,8 +191,7 @@ void BlockFusion::apply(
             edge.src_conn(),
             *node_mapping[&dst_node],
             edge.dst_conn(),
-            edge.begin_subset(),
-            edge.end_subset(),
+            edge.subset(),
             edge.base_type(),
             edge.debug_info()
         );
