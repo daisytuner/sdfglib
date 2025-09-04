@@ -27,7 +27,7 @@ TEST(ReferencePropagationTest, ReferenceMemlet_TrivialOffset) {
     auto& block2 = builder.add_block(root);
     auto& input_node = builder.add_access(block2, "a");
     auto& output_node = builder.add_access(block2, "a");
-    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::add, "_out", {"_in0", "1"});
+    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"_in0"});
     auto& iedge =
         builder.add_computational_memlet(block2, input_node, tasklet, "_in0", {symbolic::integer(0)}, desc_ptr);
     auto& oedge =
@@ -77,7 +77,7 @@ TEST(ReferencePropagationTest, ReferenceMemlet_NonTrivialOffset) {
     auto& block2 = builder.add_block(root);
     auto& input_node = builder.add_access(block2, "a");
     auto& output_node = builder.add_access(block2, "a");
-    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::add, "_out", {"_in0", "1"});
+    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"_in0"});
     auto& iedge =
         builder.add_computational_memlet(block2, input_node, tasklet, "_in0", {symbolic::integer(0)}, desc_base_ptr);
     auto& oedge =
@@ -124,7 +124,9 @@ TEST(ReferencePropagationTest, DereferenceMemlet_Load) {
 
     auto& block2 = builder.add_block(root);
     auto& output_node = builder.add_access(block2, "a");
-    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& zero_node = builder.add_constant(block2, "0", desc);
+    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block2, zero_node, tasklet, "_in", {}, desc);
     builder.add_computational_memlet(block2, tasklet, "_out", output_node, {symbolic::integer(0)}, desc_ptr);
 
     auto sdfg = builder.move();
@@ -156,7 +158,9 @@ TEST(ReferencePropagationTest, DereferenceMemlet_Store) {
 
     auto& block1 = builder.add_block(root);
     auto& output_node = builder.add_access(block1, "a");
-    auto& tasklet = builder.add_tasklet(block1, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& zero_node = builder.add_constant(block1, "0", desc);
+    auto& tasklet = builder.add_tasklet(block1, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block1, zero_node, tasklet, "_in", {}, desc);
     builder.add_computational_memlet(block1, tasklet, "_out", output_node, {symbolic::integer(0)}, desc_ptr);
 
     auto& block2 = builder.add_block(root);

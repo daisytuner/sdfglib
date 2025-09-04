@@ -6,6 +6,15 @@ namespace data_flow {
 void DataFlowGraph::validate(const Function& function) const {
     for (auto& node : this->nodes_) {
         node.second->validate(function);
+
+        if (auto code_node = dynamic_cast<const data_flow::CodeNode*>(node.second.get())) {
+            if (this->in_degree(*code_node) != code_node->inputs().size()) {
+                throw InvalidSDFGException("DataFlowGraph: Number of input edges does not match number of inputs.");
+            }
+            if (this->out_degree(*code_node) != code_node->outputs().size()) {
+                throw InvalidSDFGException("DataFlowGraph: Number of output edges does not match number of outputs.");
+            }
+        }
     }
     for (auto& edge : this->edges_) {
         edge.second->validate(function);

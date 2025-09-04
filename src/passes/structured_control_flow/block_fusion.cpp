@@ -165,9 +165,16 @@ void BlockFusion::apply(
                 // Connect by replacement
                 node_mapping[access_node] = connectors[access_node];
             } else {
-                // Add new
-                node_mapping[access_node] =
-                    &builder_.add_access(first_block, access_node->data(), access_node->debug_info());
+                if (auto const_node = dynamic_cast<data_flow::ConstantNode*>(access_node)) {
+                    // Add new
+                    node_mapping[const_node] =
+                        &builder_
+                             .add_constant(first_block, const_node->data(), const_node->type(), const_node->debug_info());
+                } else {
+                    // Add new
+                    node_mapping[access_node] =
+                        &builder_.add_access(first_block, access_node->data(), access_node->debug_info());
+                }
             }
         } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(&node)) {
             node_mapping[tasklet] = &builder_.add_tasklet(

@@ -19,6 +19,13 @@ Tasklet::Tasklet(
     : CodeNode(element_id, debug_info, vertex, parent, {output}, inputs), code_(code), condition_(condition) {};
 
 void Tasklet::validate(const Function& function) const {
+    if (arity(this->code_) != this->inputs_.size()) {
+        throw InvalidSDFGException(
+            "Tasklet: Invalid number of inputs for code " + std::to_string(this->code_) + ": expected " +
+            std::to_string(arity(this->code_)) + ", got " + std::to_string(this->inputs_.size())
+        );
+    }
+
     auto& graph = this->get_parent();
 
     std::unordered_map<std::string, const AccessNode*> input_names;
@@ -37,14 +44,6 @@ void Tasklet::validate(const Function& function) const {
 TaskletCode Tasklet::code() const { return this->code_; };
 
 const std::string& Tasklet::output() const { return this->outputs_[0]; };
-
-bool Tasklet::needs_connector(size_t index) const {
-    // Is non-constant, if starts with _in prefix
-    if (this->inputs_[index].compare(0, 3, "_in") == 0) {
-        return true;
-    }
-    return false;
-};
 
 const symbolic::Condition& Tasklet::condition() const { return this->condition_; };
 

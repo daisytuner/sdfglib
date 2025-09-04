@@ -88,6 +88,13 @@ public:
     data_flow::AccessNode&
     add_access(control_flow::State& state, const std::string& data, const DebugInfo& debug_info = DebugInfo());
 
+    data_flow::ConstantNode& add_constant(
+        control_flow::State& state,
+        const std::string& data,
+        const types::IType& type,
+        const DebugInfo& debug_info = DebugInfo()
+    );
+
     data_flow::Tasklet& add_tasklet(
         control_flow::State& state,
         const data_flow::TaskletCode code,

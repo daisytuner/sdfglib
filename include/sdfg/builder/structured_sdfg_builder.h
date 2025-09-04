@@ -322,6 +322,13 @@ public:
         structured_control_flow::Block& block, const std::string& data, const DebugInfo& debug_info = DebugInfo()
     );
 
+    data_flow::ConstantNode& add_constant(
+        structured_control_flow::Block& block,
+        const std::string& data,
+        const types::IType& type,
+        const DebugInfo& debug_info = DebugInfo()
+    );
+
     data_flow::Tasklet& add_tasklet(
         structured_control_flow::Block& block,
         const data_flow::TaskletCode code,

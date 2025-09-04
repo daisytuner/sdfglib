@@ -74,6 +74,7 @@ data_flow::LibraryNode& FWriteNodeSerializer::deserialize(
     assert(j.contains("inputs"));
     assert(j.contains("debug_info"));
     assert(j.contains("size"));
+    assert(j.contains("count"));
 
     auto code = j["code"].get<std::string>();
     if (code != LibraryNodeType_FWrite.value()) {
@@ -106,13 +107,13 @@ void FWriteNodeDispatcher::dispatch_code(
 ) {
     auto& fwrite_node = static_cast<const FWriteNode&>(node_);
 
-    stream << fwrite_node.outputs().at(1);
+    stream << fwrite_node.outputs().at(0);
     stream << " = ";
     stream << "fwrite(";
     stream << fwrite_node.inputs().at(0) << ", ";
-    stream << language_extension_.expression(fwrite_node.size()) << ",";
-    stream << language_extension_.expression(fwrite_node.count()) << ",";
-    stream << fwrite_node.outputs().at(0) << ");";
+    stream << language_extension_.expression(fwrite_node.size()) << ", ";
+    stream << language_extension_.expression(fwrite_node.count()) << ", ";
+    stream << fwrite_node.inputs().at(1) << ");";
     stream << std::endl;
 }
 

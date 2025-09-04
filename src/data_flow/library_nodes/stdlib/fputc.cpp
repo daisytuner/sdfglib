@@ -50,7 +50,6 @@ data_flow::LibraryNode& FPutcNodeSerializer::deserialize(
     assert(j.contains("outputs"));
     assert(j.contains("inputs"));
     assert(j.contains("debug_info"));
-    assert(j.contains("size"));
 
     auto code = j["code"].get<std::string>();
     if (code != LibraryNodeType_FPutc.value()) {

@@ -472,11 +472,11 @@ constexpr size_t arity(TaskletCode c) {
         case TaskletCode::nearbyintl:
             return 1;
         case TaskletCode::pow:
-            return 1;
+            return 2;
         case TaskletCode::powf:
-            return 1;
+            return 2;
         case TaskletCode::powl:
-            return 1;
+            return 2;
         case TaskletCode::lrint:
             return 1;
         case TaskletCode::llrint:
@@ -607,8 +607,6 @@ public:
     TaskletCode code() const;
 
     const std::string& output() const;
-
-    bool needs_connector(size_t index) const override;
 
     const symbolic::Condition& condition() const;
 

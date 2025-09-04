@@ -57,18 +57,10 @@ void Function::validate() const {
 };
 
 bool Function::exists(const std::string& name) const {
-    return this->containers_.find(name) != this->containers_.end() || symbolic::is_pointer(symbolic::symbol(name)) ||
-           helpers::is_number(name) || symbolic::is_nv(symbolic::symbol(name));
+    return this->containers_.find(name) != this->containers_.end();
 };
 
 const types::IType& Function::type(const std::string& name) const {
-    if (symbolic::is_nv(symbolic::symbol(name))) {
-        return *NVPTX_SYMBOL_TYPE;
-    }
-    if (symbolic::is_pointer(symbolic::symbol(name)) || helpers::is_number(name)) {
-        return *CONST_POINTER_TYPE;
-    }
-
     auto entry = this->containers_.find(name);
     if (entry == this->containers_.end()) {
         throw InvalidSDFGException("Type: Container " + name + " not found");

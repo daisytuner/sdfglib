@@ -327,11 +327,11 @@ TEST(DotVisualizerTest, multi_tasklet_block) {
     auto& A2 = builder.add_access(block, "A");
     auto& A3 = builder.add_access(block, "A");
 
-    auto& tasklet1 = builder.add_tasklet(block, data_flow::TaskletCode::fma, "_out", {"2", "_in", "1"});
+    auto& tasklet1 = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
     builder.add_computational_memlet(block, A1, tasklet1, "_in", {symbolic::integer(0)});
     builder.add_computational_memlet(block, tasklet1, "_out", A2, {symbolic::integer(0)});
 
-    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::fma, "_out", {"2", "_in", "1"});
+    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
     builder.add_computational_memlet(block, A2, tasklet2, "_in", {symbolic::integer(0)});
     builder.add_computational_memlet(block, tasklet2, "_out", A3, {symbolic::integer(0)});
 
@@ -348,13 +348,13 @@ TEST(DotVisualizerTest, multi_tasklet_block) {
     exp.setIndent(12);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
         << escapeDotId(A1.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"A\"];" << std::endl
-        << escapeDotId(tasklet1.element_id(), "n_") << " [shape=octagon,label=\"_out = 2 * _in + 1\"];" << std::endl
+        << escapeDotId(tasklet1.element_id(), "n_") << " [shape=octagon,label=\"_out = _in\"];" << std::endl
         << escapeDotId(A1.element_id(), "n_") << " -> " << escapeDotId(tasklet1.element_id(), "n_")
         << " [label=\"   _in = A[0]   \"];" << std::endl
         << escapeDotId(A2.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"A\"];" << std::endl
         << escapeDotId(tasklet1.element_id(), "n_") << " -> " << escapeDotId(A2.element_id(), "n_")
         << " [label=\"   A[0] = _out   \"];" << std::endl
-        << escapeDotId(tasklet2.element_id(), "n_") << " [shape=octagon,label=\"_out = 2 * _in + 1\"];" << std::endl
+        << escapeDotId(tasklet2.element_id(), "n_") << " [shape=octagon,label=\"_out = _in\"];" << std::endl
         << escapeDotId(A2.element_id(), "n_") << " -> " << escapeDotId(tasklet2.element_id(), "n_")
         << " [label=\"   _in = A[0]   \"];" << std::endl
         << escapeDotId(A3.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"A\"];" << std::endl
@@ -556,7 +556,9 @@ TEST(DotVisualizerTest, test_return) {
 
     auto& block1 = builder.add_block(root);
     auto& output1 = builder.add_access(block1, "i");
-    auto& tasklet1 = builder.add_tasklet(block1, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& zero_node = builder.add_constant(block1, "0", sym_desc);
+    auto& tasklet1 = builder.add_tasklet(block1, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block1, zero_node, tasklet1, "_in", {});
     builder.add_computational_memlet(block1, tasklet1, "_out", output1, {});
 
     auto& loop = builder.add_while(root);
@@ -571,15 +573,19 @@ TEST(DotVisualizerTest, test_return) {
     auto& block2 = builder.add_block(case2);
     auto& input2 = builder.add_access(block2, "A");
     auto& output2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::mul, "_out", {"_in", "2.0"});
-    builder.add_computational_memlet(block2, input2, tasklet2, "_in", {symbolic::symbol("i")});
+    auto& two_node = builder.add_constant(block2, "2.0", base_desc);
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::mul, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block2, input2, tasklet2, "_in1", {symbolic::symbol("i")});
+    builder.add_computational_memlet(block2, two_node, tasklet2, "_in2", {});
     builder.add_computational_memlet(block2, tasklet2, "_out", output2, {symbolic::symbol("i")});
 
     auto& block3 = builder.add_block(case2);
     auto& input3 = builder.add_access(block3, "i");
     auto& output3 = builder.add_access(block3, "i");
-    auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::add, "_out", {"_in", "1"});
-    builder.add_computational_memlet(block3, input3, tasklet3, "_in", {});
+    auto& one_node = builder.add_constant(block3, "1", sym_desc);
+    auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block3, input3, tasklet3, "_in1", {});
+    builder.add_computational_memlet(block3, one_node, tasklet3, "_in2", {});
     builder.add_computational_memlet(block3, tasklet3, "_out", output3, {});
 
     auto sdfg2 = builder.move();
@@ -594,7 +600,11 @@ TEST(DotVisualizerTest, test_return) {
         << "subgraph cluster_" << escapeDotId(block1.element_id(), "block_") << " {" << std::endl;
     exp.setIndent(12);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << escapeDotId(tasklet1.element_id(), "n_") << " [shape=octagon,label=\"_out = 0\"];" << std::endl
+        << escapeDotId(zero_node.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"0\"];"
+        << std::endl
+        << escapeDotId(tasklet1.element_id(), "n_") << " [shape=octagon,label=\"_out = _in\"];" << std::endl
+        << escapeDotId(zero_node.element_id(), "n_") << " -> " << escapeDotId(tasklet1.element_id(), "n_")
+        << " [label=\"   _in = 0   \"];" << std::endl
         << escapeDotId(output1.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"i\"];"
         << std::endl
         << escapeDotId(tasklet1.element_id(), "n_") << " -> " << escapeDotId(output1.element_id(), "n_")
@@ -619,10 +629,14 @@ TEST(DotVisualizerTest, test_return) {
         << "subgraph cluster_" << escapeDotId(block2.element_id(), "block_") << " {" << std::endl;
     exp.setIndent(24);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
+        << escapeDotId(two_node.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"2.0\"];"
+        << std::endl
         << escapeDotId(input2.element_id(), "n_") << " [penwidth=3.0,label=\"A\"];" << std::endl
-        << escapeDotId(tasklet2.element_id(), "n_") << " [shape=octagon,label=\"_out = _in * 2.0\"];" << std::endl
+        << escapeDotId(tasklet2.element_id(), "n_") << " [shape=octagon,label=\"_out = _in1 * _in2\"];" << std::endl
         << escapeDotId(input2.element_id(), "n_") << " -> " << escapeDotId(tasklet2.element_id(), "n_")
-        << " [label=\"   _in = A[i]   \"];" << std::endl
+        << " [label=\"   _in1 = A[i]   \"];" << std::endl
+        << escapeDotId(two_node.element_id(), "n_") << " -> " << escapeDotId(tasklet2.element_id(), "n_")
+        << " [label=\"   _in2 = 2.0   \"];" << std::endl
         << escapeDotId(output2.element_id(), "n_") << " [penwidth=3.0,label=\"A\"];" << std::endl
         << escapeDotId(tasklet2.element_id(), "n_") << " -> " << escapeDotId(output2.element_id(), "n_")
         << " [label=\"   A[i] = _out   \"];" << std::endl;
@@ -630,17 +644,21 @@ TEST(DotVisualizerTest, test_return) {
     exp << "}" << std::endl << "subgraph cluster_" << escapeDotId(block3.element_id(), "block_") << " {" << std::endl;
     exp.setIndent(24);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
+        << escapeDotId(one_node.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"1\"];"
+        << std::endl
         << escapeDotId(input3.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"i\"];" << std::endl
-        << escapeDotId(tasklet3.element_id(), "n_") << " [shape=octagon,label=\"_out = _in + 1\"];" << std::endl
+        << escapeDotId(tasklet3.element_id(), "n_") << " [shape=octagon,label=\"_out = _in1 + _in2\"];" << std::endl
         << escapeDotId(input3.element_id(), "n_") << " -> " << escapeDotId(tasklet3.element_id(), "n_")
-        << " [label=\"   _in = i   \"];" << std::endl
+        << " [label=\"   _in1 = i   \"];" << std::endl
+        << escapeDotId(one_node.element_id(), "n_") << " -> " << escapeDotId(tasklet3.element_id(), "n_")
+        << " [label=\"   _in2 = 1   \"];" << std::endl
         << escapeDotId(output3.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"i\"];"
         << std::endl
         << escapeDotId(tasklet3.element_id(), "n_") << " -> " << escapeDotId(output3.element_id(), "n_")
         << " [label=\"   i = _out   \"];" << std::endl;
     exp.setIndent(20);
     exp << "}" << std::endl
-        << escapeDotId(input2.element_id(), "n_") << " -> " << escapeDotId(input3.element_id(), "n_")
+        << escapeDotId(two_node.element_id(), "n_") << " -> " << escapeDotId(one_node.element_id(), "n_")
         << " [ltail=\"cluster_" << escapeDotId(block2.element_id(), "block_") << "\",lhead=\"cluster_"
         << escapeDotId(block3.element_id(), "block_") << "\",minlen=3];" << std::endl;
     exp.setIndent(16);
@@ -649,7 +667,7 @@ TEST(DotVisualizerTest, test_return) {
     exp << "}" << std::endl;
     exp.setIndent(8);
     exp << "}" << std::endl
-        << escapeDotId(tasklet1.element_id(), "n_") << " -> " << escapeDotId(loop.element_id(), "while_")
+        << escapeDotId(zero_node.element_id(), "n_") << " -> " << escapeDotId(loop.element_id(), "while_")
         << " [ltail=\"cluster_" << escapeDotId(block1.element_id(), "block_") << "\",lhead=\"cluster_"
         << escapeDotId(loop.element_id(), "while_") << "\",minlen=3];" << std::endl;
     exp.setIndent(4);
@@ -847,12 +865,11 @@ TEST(DotVisualizerTest, test_handleTasklet) {
         auto& tasklet = builder.add_tasklet(block, code.first, "_out", inputs);
         builder.add_computational_memlet(block, tasklet, "_out", output, {});
 
-        auto sdfg2 = builder.move();
-
         codegen::PrettyPrinter exp;
-        exp << "digraph " << sdfg2->name() << " {" << std::endl;
+        exp << "digraph " << builder.subject().name() << " {" << std::endl;
         exp.setIndent(4);
-        exp << "graph [compound=true];" << std::endl << "subgraph cluster_" << sdfg2->name() << " {" << std::endl;
+        exp << "graph [compound=true];" << std::endl
+            << "subgraph cluster_" << builder.subject().name() << " {" << std::endl;
         exp.setIndent(8);
         exp << "node [style=filled,fillcolor=white];" << std::endl
             << "style=filled;color=lightblue;label=\"\";" << std::endl
@@ -888,7 +905,7 @@ TEST(DotVisualizerTest, test_handleTasklet) {
         exp.setIndent(0);
         exp << "}" << std::endl;
 
-        visualizer::DotVisualizer dot(*sdfg2);
+        visualizer::DotVisualizer dot(builder.subject());
         dot.visualize();
         EXPECT_EQ(dot.getStream().str(), exp.str());
     }

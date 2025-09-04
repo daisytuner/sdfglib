@@ -1200,6 +1200,21 @@ data_flow::AccessNode& StructuredSDFGBuilder::
     return dynamic_cast<data_flow::AccessNode&>(*(res.first->second));
 };
 
+data_flow::ConstantNode& StructuredSDFGBuilder::add_constant(
+    structured_control_flow::Block& block, const std::string& data, const types::IType& type, const DebugInfo& debug_info
+) {
+    auto vertex = boost::add_vertex(block.dataflow_->graph_);
+    auto res = block.dataflow_->nodes_.insert(
+        {vertex,
+         std::unique_ptr<data_flow::ConstantNode>(
+             new data_flow::ConstantNode(this->new_element_id(), debug_info, vertex, block.dataflow(), data, type)
+         )}
+    );
+
+    return dynamic_cast<data_flow::ConstantNode&>(*(res.first->second));
+};
+
+
 data_flow::Tasklet& StructuredSDFGBuilder::add_tasklet(
     structured_control_flow::Block& block,
     const data_flow::TaskletCode code,
@@ -1276,12 +1291,17 @@ data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
     const data_flow::Subset& subset,
     const DebugInfo& debug_info
 ) {
-    auto& src_type = this->structured_sdfg_->type(src.data());
-    auto& base_type = types::infer_type(*this->structured_sdfg_, src_type, subset);
+    const types::IType* src_type = nullptr;
+    if (auto cnode = dynamic_cast<data_flow::ConstantNode*>(&src)) {
+        src_type = &cnode->type();
+    } else {
+        src_type = &this->structured_sdfg_->type(src.data());
+    }
+    auto& base_type = types::infer_type(*this->structured_sdfg_, *src_type, subset);
     if (base_type.type_id() != types::TypeID::Scalar) {
         throw InvalidSDFGException("Computational memlet must have a scalar type");
     }
-    return this->add_memlet(block, src, "void", dst, dst_conn, subset, src_type, debug_info);
+    return this->add_memlet(block, src, "void", dst, dst_conn, subset, *src_type, debug_info);
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(

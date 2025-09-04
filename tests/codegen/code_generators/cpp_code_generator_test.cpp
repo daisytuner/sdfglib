@@ -25,7 +25,7 @@ TEST(CPPCodeGeneratorTest, Dispatch_Includes) {
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.includes().str();
-    EXPECT_EQ(result, "#include <cmath>\n#include <cblas.h>\n#include <daisy_rtl/daisy_rtl.h>\n");
+    EXPECT_EQ(result, "#include <cmath>\n#include <cblas.h>\n#include <cstdio>\n#include <daisy_rtl/daisy_rtl.h>\n");
 }
 
 TEST(CPPCodeGeneratorTest, DispatchStructures_Basic) {

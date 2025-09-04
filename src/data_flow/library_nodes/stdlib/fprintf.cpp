@@ -54,7 +54,6 @@ data_flow::LibraryNode& FprintfNodeSerializer::deserialize(
     assert(j.contains("outputs"));
     assert(j.contains("inputs"));
     assert(j.contains("debug_info"));
-    assert(j.contains("size"));
 
     auto code = j["code"].get<std::string>();
     if (code != LibraryNodeType_Fprintf.value()) {
@@ -89,7 +88,10 @@ void FprintfNodeDispatcher::dispatch_code(
     stream << " = ";
     stream << "fprintf(";
     for (size_t i = 0; i < fprintf_node.inputs().size(); ++i) {
-        stream << ", " << fprintf_node.inputs().at(i);
+        stream << fprintf_node.inputs().at(i);
+        if (i < fprintf_node.inputs().size() - 1) {
+            stream << ", ";
+        }
     }
     stream << ");";
     stream << std::endl;

@@ -43,9 +43,7 @@ public:
         symbolic::Expression k,
         symbolic::Expression lda,
         symbolic::Expression ldb,
-        symbolic::Expression ldc,
-        const std::string& alpha = "",
-        const std::string& beta = ""
+        symbolic::Expression ldc
     );
 
     BLAS_Precision precision() const;
@@ -67,10 +65,6 @@ public:
     symbolic::Expression ldb() const;
 
     symbolic::Expression ldc() const;
-
-    const std::string& alpha() const;
-
-    const std::string& beta() const;
 
     void validate(const Function& function) const override;
     types::PrimitiveType scalar_primitive() const;

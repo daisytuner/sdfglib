@@ -229,25 +229,43 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                     auto graph = read->parent();
                     auto block = static_cast<structured_control_flow::Block*>(graph->get_parent());
 
-                    std::unordered_set<data_flow::Memlet*> to_remove;
+                    // Replace with const node
+                    auto& const_node =
+                        builder
+                            .add_constant(*block, std::to_string(new_int->as_int()), type, read->element()->debug_info());
+
+                    std::unordered_set<data_flow::Memlet*> replace_edges;
                     for (auto& oedge : graph->out_edges(*access_node)) {
-                        auto& dst = oedge.dst();
-                        if (auto code_node = dynamic_cast<data_flow::CodeNode*>(&dst)) {
-                            for (auto& entry : code_node->inputs()) {
-                                if (entry == oedge.dst_conn()) {
-                                    entry = std::to_string(new_int->as_int());
-                                    to_remove.insert(&oedge);
-                                    break;
-                                }
-                            }
-                        }
+                        builder.add_memlet(
+                            *block,
+                            const_node,
+                            oedge.src_conn(),
+                            oedge.dst(),
+                            oedge.dst_conn(),
+                            oedge.subset(),
+                            oedge.base_type(),
+                            oedge.debug_info()
+                        );
+                        replace_edges.insert(&oedge);
                     }
-                    for (auto& edge : to_remove) {
+                    for (auto& iedge : graph->in_edges(*access_node)) {
+                        builder.add_memlet(
+                            *block,
+                            iedge.src(),
+                            iedge.src_conn(),
+                            const_node,
+                            iedge.dst_conn(),
+                            iedge.subset(),
+                            iedge.base_type(),
+                            iedge.debug_info()
+                        );
+                    }
+
+                    for (auto& edge : replace_edges) {
                         builder.remove_memlet(*block, *edge);
                     }
-                    if (graph->in_degree(*access_node) == 0 && graph->out_degree(*access_node) == 0) {
-                        builder.remove_node(*block, *access_node);
-                    }
+                    builder.remove_node(*block, *access_node);
+                    applied = true;
                 }
             } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(read->element())) {
                 auto& condition = tasklet->condition();

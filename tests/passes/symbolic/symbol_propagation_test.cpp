@@ -130,7 +130,9 @@ TEST(SymbolPropagationTest, Transition2Memlet_Constant) {
     auto& block1 = builder.add_block(root, {{sym1, symbolic::integer(0)}});
     auto& block2 = builder.add_block(root);
     auto& output_node = builder.add_access(block2, "A");
-    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"1"});
+    auto& one_node = builder.add_constant(block2, "1", desc);
+    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block2, one_node, tasklet, "_in", {});
     auto& edge = builder.add_computational_memlet(block2, tasklet, "_out", output_node, {sym1});
 
     auto sdfg = builder.move();
@@ -167,7 +169,9 @@ TEST(SymbolPropagationTest, Transition2Memlet_Argument) {
     auto& block1 = builder.add_block(root, {{sym1, symbolic::symbol("A")}});
     auto& block2 = builder.add_block(root);
     auto& output_node = builder.add_access(block2, "A");
-    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"1"});
+    auto& one_node = builder.add_constant(block2, "1", desc);
+    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block2, one_node, tasklet, "_in", {});
     auto& edge = builder.add_computational_memlet(block2, tasklet, "_out", output_node, {sym1});
 
     auto sdfg = builder.move();

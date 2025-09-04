@@ -35,6 +35,7 @@ void CCodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#include <math.h>" << std::endl;
     this->includes_stream_ << "#include <cblas.h>" << std::endl;
     this->includes_stream_ << "#include <stdbool.h>" << std::endl;
+    this->includes_stream_ << "#include <stdio.h>" << std::endl;
     this->includes_stream_ << "#include <stdlib.h>" << std::endl;
     this->includes_stream_ << "#include <daisy_rtl/daisy_rtl.h>" << std::endl;
 };
@@ -110,6 +111,10 @@ void CCodeGenerator::dispatch_structures() {
 void CCodeGenerator::dispatch_globals() {
     // Externals are pointers. However, we need to declare them as the base type.
     for (auto& container : sdfg_.externals()) {
+        if (container == "stderr" || container == "stdout" || container == "stdin") {
+            continue;
+        }
+
         auto& type = dynamic_cast<const types::Pointer&>(sdfg_.type(container));
         assert(type.has_pointee_type() && "Externals must have a pointee type");
         auto& base_type = type.pointee_type();

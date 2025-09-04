@@ -62,6 +62,10 @@ void DataDependencyAnalysis::visit_block(
     auto& dataflow = block.dataflow();
 
     for (auto node : dataflow.topological_sort()) {
+        if (dynamic_cast<data_flow::ConstantNode*>(node) != nullptr) {
+            continue;
+        }
+
         if (auto access_node = dynamic_cast<data_flow::AccessNode*>(node)) {
             if (!symbolic::is_pointer(symbolic::symbol(access_node->data()))) {
                 if (dataflow.in_degree(*node) > 0) {

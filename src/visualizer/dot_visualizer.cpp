@@ -50,6 +50,12 @@ void DotVisualizer::visualizeBlock(const StructuredSDFG& sdfg, const structured_
 
             in_connectors = tasklet->inputs();
             node_will_show_literal_connectors = true;
+        } else if (const data_flow::ConstantNode* constant_node = dynamic_cast<const data_flow::ConstantNode*>(node)) {
+            this->stream_ << nodeId << " [";
+            this->stream_ << "penwidth=3.0,";
+            if (sdfg.is_transient(constant_node->data())) this->stream_ << "style=\"dashed,filled\",";
+            this->stream_ << "label=\"" << constant_node->data() << "\"];" << std::endl;
+            is_access_node = true;
         } else if (const data_flow::AccessNode* access_node = dynamic_cast<const data_flow::AccessNode*>(node)) {
             this->stream_ << nodeId << " [";
             this->stream_ << "penwidth=3.0,";

@@ -225,7 +225,22 @@ data_flow::AccessNode& SDFGBuilder::
          )}
     );
 
-    return dynamic_cast<data_flow::AccessNode&>(*(res.first->second));
+    return static_cast<data_flow::AccessNode&>(*(res.first->second));
+};
+
+data_flow::ConstantNode& SDFGBuilder::add_constant(
+    control_flow::State& state, const std::string& data, const types::IType& type, const DebugInfo& debug_info
+) {
+    auto& dataflow = state.dataflow();
+    auto vertex = boost::add_vertex(dataflow.graph_);
+    auto res = dataflow.nodes_.insert(
+        {vertex,
+         std::unique_ptr<data_flow::ConstantNode>(
+             new data_flow::ConstantNode(this->new_element_id(), debug_info, vertex, dataflow, data, type)
+         )}
+    );
+
+    return static_cast<data_flow::ConstantNode&>(*(res.first->second));
 };
 
 data_flow::Tasklet& SDFGBuilder::add_tasklet(
@@ -244,7 +259,7 @@ data_flow::Tasklet& SDFGBuilder::add_tasklet(
          ))}
     );
 
-    return dynamic_cast<data_flow::Tasklet&>(*(res.first->second));
+    return static_cast<data_flow::Tasklet&>(*(res.first->second));
 };
 
 data_flow::Memlet& SDFGBuilder::add_memlet(
@@ -266,7 +281,7 @@ data_flow::Memlet& SDFGBuilder::add_memlet(
          ))}
     );
 
-    auto& memlet = dynamic_cast<data_flow::Memlet&>(*(res.first->second));
+    auto& memlet = static_cast<data_flow::Memlet&>(*(res.first->second));
 #ifndef NDEBUG
     memlet.validate(*this->sdfg_);
 #endif
@@ -306,12 +321,17 @@ data_flow::Memlet& SDFGBuilder::add_computational_memlet(
     const data_flow::Subset& subset,
     const DebugInfo& debug_info
 ) {
-    auto& src_type = this->function().type(src.data());
-    auto& base_type = types::infer_type(this->function(), src_type, subset);
+    const types::IType* src_type = nullptr;
+    if (auto cnode = dynamic_cast<data_flow::ConstantNode*>(&src)) {
+        src_type = &cnode->type();
+    } else {
+        src_type = &this->sdfg_->type(src.data());
+    }
+    auto& base_type = types::infer_type(*this->sdfg_, *src_type, subset);
     if (base_type.type_id() != types::TypeID::Scalar) {
         throw InvalidSDFGException("Computational memlet must have a scalar type");
     }
-    return this->add_memlet(state, src, "void", dst, dst_conn, subset, src_type, debug_info);
+    return this->add_memlet(state, src, "void", dst, dst_conn, subset, *src_type, debug_info);
 };
 
 data_flow::Memlet& SDFGBuilder::add_computational_memlet(

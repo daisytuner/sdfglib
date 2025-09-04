@@ -158,6 +158,13 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
             auto serializer = serializer_fn();
             auto lib_node_json = serializer->serialize(*lib_node);
             node_json.merge_patch(lib_node_json);
+        } else if (auto code_node = dynamic_cast<const data_flow::ConstantNode*>(&node)) {
+            node_json["type"] = "constant_node";
+            node_json["data"] = code_node->data();
+
+            nlohmann::json type_json;
+            type_to_json(type_json, code_node->type());
+            node_json["data_type"] = type_json;
         } else if (auto code_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
             node_json["type"] = "access_node";
             node_json["data"] = code_node->data();
@@ -579,6 +586,16 @@ void JSONSerializer::json_to_dataflow(
             auto& access_node = builder.add_access(parent, node["data"], json_to_debug_info(node["debug_info"]));
             access_node.element_id_ = node["element_id"];
             nodes_map.insert({node["element_id"], access_node});
+        } else if (type == "constant_node") {
+            assert(node.contains("data"));
+            assert(node.contains("data_type"));
+
+            auto type = json_to_type(node["data_type"]);
+
+            auto& constant_node =
+                builder.add_constant(parent, node["data"], *type, json_to_debug_info(node["debug_info"]));
+            constant_node.element_id_ = node["element_id"];
+            nodes_map.insert({node["element_id"], constant_node});
         } else {
             throw std::runtime_error("Unknown node type");
         }
