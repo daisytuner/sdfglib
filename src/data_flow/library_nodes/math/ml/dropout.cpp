@@ -84,7 +84,7 @@ bool DropoutNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Anal
             condition,
             init,
             update,
-            structured_control_flow::ScheduleType_Sequential,
+            structured_control_flow::ScheduleType_Sequential(),
             {},
             block.debug_info()
         );

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
 
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/sequence.h"
@@ -15,9 +16,29 @@ class StructuredSDFGBuilder;
 
 namespace structured_control_flow {
 
-typedef StringEnum ScheduleType;
-inline ScheduleType ScheduleType_Sequential{"SEQUENTIAL"};
-inline ScheduleType ScheduleType_CPU_Parallel{"CPU_PARALLEL"};
+class ScheduleType {
+private:
+    std::unordered_map<std::string, std::string> properties_;
+
+public:
+    static const std::string value() { return "BASE"; }
+    std::unordered_map<std::string, std::string> properties() const { return properties_; }
+};
+
+class ScheduleType_Sequential : public ScheduleType {
+public:
+    static const std::string value() { return "SEQUENTIAL"; }
+};
+
+class ScheduleType_CPU_Parallel : public ScheduleType {
+public:
+    ScheduleType_CPU_Parallel();
+    void num_threads(const symbolic::Expression& num_threads);
+    const symbolic::Expression& num_threads() const;
+    void set_dynamic();
+    bool dynamic() const;
+    static const std::string value() { return "CPU_PARALLEL"; }
+};
 
 class Map : public StructuredLoop {
     friend class sdfg::builder::StructuredSDFGBuilder;

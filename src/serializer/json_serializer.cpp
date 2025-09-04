@@ -17,6 +17,7 @@
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
+#include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/return.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
@@ -58,16 +59,6 @@ types::StorageType storage_type_from_string(const std::string& str) {
     }
 
     return types::StorageType(str);
-}
-
-structured_control_flow::ScheduleType schedule_type_from_string(const std::string& str) {
-    if (str == structured_control_flow::ScheduleType_Sequential.value()) {
-        return structured_control_flow::ScheduleType_Sequential;
-    } else if (str == structured_control_flow::ScheduleType_CPU_Parallel.value()) {
-        return structured_control_flow::ScheduleType_CPU_Parallel;
-    }
-
-    return structured_control_flow::ScheduleType(str);
 }
 
 /*
@@ -436,6 +427,17 @@ void JSONSerializer::debug_info_to_json(nlohmann::json& j, const DebugInfo& debu
     j["start_column"] = debug_info.start_column();
     j["end_line"] = debug_info.end_line();
     j["end_column"] = debug_info.end_column();
+}
+
+void JSONSerializer::schedule_type_to_json(nlohmann::json& j, const ScheduleType& schedule_type) {
+    j["value"] = std::string(schedule_type.value());
+    j["properties"] = nlohmann::json::array();
+    for (const auto& prop : schedule_type.properties()) {
+        nlohmann::json prop_json;
+        prop_json["key"] = prop.first;
+        prop_json["value"] = prop.second;
+        j["properties"].push_back(prop_json);
+    }
 }
 
 /*
@@ -1043,6 +1045,21 @@ DebugInfo JSONSerializer::json_to_debug_info(const nlohmann::json& j) {
     assert(j["end_column"].is_number_integer());
     size_t end_column = j["end_column"];
     return DebugInfo(filename, function, start_line, start_column, end_line, end_column);
+}
+
+ScheduleType JSONSerializer::json_to_schedule_type(nlohmann::json& j) {
+    assert(j.contains("value"));
+    assert(j["value"].is_string());
+    assert(j.contains("properties"));
+    assert(j["properties"].is_array());
+    for (const auto& prop : j["properties"]) {
+        assert(prop.contains("key"));
+        assert(prop["key"].is_string());
+        assert(prop.contains("value"));
+        assert(prop["value"].is_string());
+        schedule_type.add_property(prop["key"], prop["value"]);
+    }
+    return schedule_type;
 }
 
 std::string JSONSerializer::expression(const symbolic::Expression& expr) {

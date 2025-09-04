@@ -1142,7 +1142,7 @@ Map& StructuredSDFGBuilder::convert_for(Sequence& parent, For& loop) {
             loop.init(),
             loop.update(),
             loop.condition(),
-            ScheduleType_Sequential
+            ScheduleType_Sequential()
         ))
     );
 

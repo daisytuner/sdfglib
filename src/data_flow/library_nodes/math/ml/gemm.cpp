@@ -102,7 +102,7 @@ bool GemmNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Analysi
             cond,
             init,
             update,
-            structured_control_flow::ScheduleType_Sequential,
+            structured_control_flow::ScheduleType_Sequential(),
             {},
             block.debug_info()
         );
