@@ -521,7 +521,7 @@ Block& StructuredSDFGBuilder::
         .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
         );
 
-    auto& new_block = dynamic_cast<structured_control_flow::Block&>(*parent.children_.back().get());
+    auto& new_block = static_cast<structured_control_flow::Block&>(*parent.children_.back());
     (*new_block.dataflow_).parent_ = &new_block;
 
     return new_block;
@@ -539,7 +539,7 @@ Block& StructuredSDFGBuilder::add_block(
         .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
         );
 
-    auto& new_block = dynamic_cast<structured_control_flow::Block&>(*parent.children_.back().get());
+    auto& new_block = static_cast<structured_control_flow::Block&>(*parent.children_.back());
     (*new_block.dataflow_).parent_ = &new_block;
 
     this->add_dataflow(data_flow_graph, new_block);
@@ -566,7 +566,10 @@ Block& StructuredSDFGBuilder::add_block_before(
         std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
     );
 
-    return static_cast<Block&>(*parent.children_.at(index).get());
+    auto& new_block = static_cast<structured_control_flow::Block&>(*parent.children_.at(index));
+    (*new_block.dataflow_).parent_ = &new_block;
+
+    return new_block;
 };
 
 Block& StructuredSDFGBuilder::add_block_before(
@@ -589,7 +592,7 @@ Block& StructuredSDFGBuilder::add_block_before(
         std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
     );
 
-    auto& new_block = static_cast<structured_control_flow::Block&>(*parent.children_.at(index).get());
+    auto& new_block = static_cast<structured_control_flow::Block&>(*parent.children_.at(index));
     (*new_block.dataflow_).parent_ = &new_block;
     this->add_dataflow(data_flow_graph, new_block);
 
@@ -616,7 +619,10 @@ Block& StructuredSDFGBuilder::add_block_after(
         std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
     );
 
-    return static_cast<Block&>(*parent.children_.at(index + 1).get());
+    auto& new_block = static_cast<structured_control_flow::Block&>(*parent.children_.at(index + 1));
+    (*new_block.dataflow_).parent_ = &new_block;
+
+    return new_block;
 };
 
 Block& StructuredSDFGBuilder::add_block_after(
@@ -640,7 +646,7 @@ Block& StructuredSDFGBuilder::add_block_after(
         std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
     );
 
-    auto& new_block = static_cast<structured_control_flow::Block&>(*parent.children_.at(index + 1).get());
+    auto& new_block = static_cast<structured_control_flow::Block&>(*parent.children_.at(index + 1));
     (*new_block.dataflow_).parent_ = &new_block;
     this->add_dataflow(data_flow_graph, new_block);
 
@@ -663,7 +669,7 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::
     );
 
     auto new_entry = parent.at(index);
-    auto& new_block = dynamic_cast<structured_control_flow::Block&>(new_entry.first);
+    auto& new_block = static_cast<structured_control_flow::Block&>(new_entry.first);
     (*new_block.dataflow_).parent_ = &new_block;
 
     return {new_block, new_entry.second};
