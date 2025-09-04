@@ -9,7 +9,12 @@ Block::Block(size_t element_id, const DebugInfo& debug_info) : ControlFlowNode(e
     this->dataflow_ = std::make_unique<data_flow::DataFlowGraph>();
 };
 
-void Block::validate(const Function& function) const { this->dataflow_->validate(function); };
+void Block::validate(const Function& function) const {
+    this->dataflow_->validate(function);
+    if (this->dataflow().get_parent() != this) {
+        throw InvalidSDFGException("Block::validate: Dataflow parent does not point to self");
+    }
+};
 
 const data_flow::DataFlowGraph& Block::dataflow() const { return *this->dataflow_; };
 
