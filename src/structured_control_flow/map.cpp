@@ -4,6 +4,7 @@
 #include "sdfg/serializer/json_serializer.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "symengine/expression.h"
+#include "symengine/symengine_rcp.h"
 
 namespace sdfg {
 namespace structured_control_flow {
@@ -31,7 +32,7 @@ void ScheduleType_CPU_Parallel::num_threads(ScheduleType& schedule, const symbol
 const symbolic::Expression ScheduleType_CPU_Parallel::num_threads(const ScheduleType& schedule) {
     serializer::JSONSerializer serializer;
     if (schedule.properties().find("num_threads") == schedule.properties().end()) {
-        return symbolic::__nullptr__();
+        return SymEngine::null;
     }
     std::string expr_str = schedule.properties().at("num_threads");
     SymEngine::Expression expr(expr_str);

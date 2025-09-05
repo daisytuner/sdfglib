@@ -32,6 +32,14 @@ public:
         }
         properties_.at(key) = value;
     }
+
+    void operator=(const ScheduleType& rhs) {
+        value_ = rhs.value_;
+        properties_.clear();
+        for (const auto& entry : rhs.properties_) {
+            properties_.insert(entry);
+        }
+    }
 };
 
 class ScheduleType_Sequential {
