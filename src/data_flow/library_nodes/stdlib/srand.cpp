@@ -35,9 +35,6 @@ nlohmann::json SrandNodeSerializer::serialize(const data_flow::LibraryNode& libr
 
     nlohmann::json j;
     j["code"] = node.code().value();
-    j["outputs"] = node.outputs();
-    j["inputs"] = node.inputs();
-    j["side_effect"] = node.side_effect();
 
     sdfg::serializer::JSONSerializer serializer;
     j["seed"] = serializer.expression(node.seed());
@@ -49,23 +46,18 @@ data_flow::LibraryNode& SrandNodeSerializer::deserialize(
     const nlohmann::json& j, builder::StructuredSDFGBuilder& builder, structured_control_flow::Block& parent
 ) {
     // Assertions for required fields
-    assert(j.contains("element_id"));
     assert(j.contains("code"));
-    assert(j.contains("outputs"));
-    assert(j.contains("inputs"));
     assert(j.contains("debug_info"));
     assert(j.contains("seed"));
 
     auto code = j["code"].get<std::string>();
     if (code != LibraryNodeType_Srand.value()) {
-        throw std::runtime_error("Invalid library node code");
+        throw InvalidSDFGException("Invalid library node code");
     }
 
-    // Extract debug info using JSONSerializer
     sdfg::serializer::JSONSerializer serializer;
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
-    // Extract properties
     SymEngine::Expression seed(j.at("seed"));
 
     return builder.add_library_node<SrandNode>(parent, debug_info, seed);

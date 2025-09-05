@@ -8,7 +8,7 @@ FprintfNode::FprintfNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
-    const std::vector<std::string>& inputs
+    const std::vector<std::string>& args
 )
     : LibraryNode(
           element_id,
@@ -16,11 +16,16 @@ FprintfNode::FprintfNode(
           vertex,
           parent,
           LibraryNodeType_Fprintf,
-          {"_out"},
-          inputs,
+          {"_ret", "_stream"},
+          {"_stream", "_format"},
           true,
           data_flow::ImplementationType_NONE
-      ) {}
+      ),
+      args_(args) {
+    for (auto& arg : args) {
+        inputs_.push_back(arg);
+    }
+}
 
 void FprintfNode::validate(const Function& function) const {}
 
@@ -28,7 +33,7 @@ symbolic::SymbolSet FprintfNode::symbols() const { return {}; }
 
 std::unique_ptr<data_flow::DataFlowNode> FprintfNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
-    return std::make_unique<FprintfNode>(element_id, debug_info_, vertex, parent, this->inputs_);
+    return std::make_unique<FprintfNode>(element_id, debug_info_, vertex, parent, this->args_);
 }
 
 void FprintfNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {}
@@ -38,9 +43,7 @@ nlohmann::json FprintfNodeSerializer::serialize(const data_flow::LibraryNode& li
 
     nlohmann::json j;
     j["code"] = node.code().value();
-    j["outputs"] = node.outputs();
-    j["inputs"] = node.inputs();
-    j["side_effect"] = node.side_effect();
+    j["args"] = node.args();
 
     return j;
 }
@@ -48,25 +51,21 @@ nlohmann::json FprintfNodeSerializer::serialize(const data_flow::LibraryNode& li
 data_flow::LibraryNode& FprintfNodeSerializer::deserialize(
     const nlohmann::json& j, builder::StructuredSDFGBuilder& builder, structured_control_flow::Block& parent
 ) {
-    // Assertions for required fields
-    assert(j.contains("element_id"));
     assert(j.contains("code"));
-    assert(j.contains("outputs"));
-    assert(j.contains("inputs"));
     assert(j.contains("debug_info"));
+    assert(j.contains("args"));
 
     auto code = j["code"].get<std::string>();
     if (code != LibraryNodeType_Fprintf.value()) {
-        throw std::runtime_error("Invalid library node code");
+        throw InvalidSDFGException("Invalid library node code");
     }
 
-    // Extract debug info using JSONSerializer
     sdfg::serializer::JSONSerializer serializer;
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
-    std::vector<std::string> inputs = j["inputs"].get<std::vector<std::string>>();
+    std::vector<std::string> args = j["args"].get<std::vector<std::string>>();
 
-    return builder.add_library_node<FprintfNode>(parent, debug_info, inputs);
+    return builder.add_library_node<FprintfNode>(parent, debug_info, args);
 }
 
 FprintfNodeDispatcher::FprintfNodeDispatcher(

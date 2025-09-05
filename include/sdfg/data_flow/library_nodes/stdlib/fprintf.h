@@ -11,14 +11,19 @@ namespace stdlib {
 inline data_flow::LibraryNodeCode LibraryNodeType_Fprintf("Fprintf");
 
 class FprintfNode : public data_flow::LibraryNode {
+private:
+    std::vector<std::string> args_;
+
 public:
     FprintfNode(
         size_t element_id,
         const DebugInfo& debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph& parent,
-        const std::vector<std::string>& inputs
+        const std::vector<std::string>& args
     );
+
+    const std::vector<std::string>& args() const { return args_; }
 
     void validate(const Function& function) const override;
 

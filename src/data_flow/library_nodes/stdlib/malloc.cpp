@@ -16,7 +16,7 @@ MallocNode::MallocNode(
           vertex,
           parent,
           LibraryNodeType_Malloc,
-          {"_out"},
+          {"_ret"},
           {},
           true,
           data_flow::ImplementationType_NONE
@@ -43,9 +43,6 @@ nlohmann::json MallocNodeSerializer::serialize(const data_flow::LibraryNode& lib
 
     nlohmann::json j;
     j["code"] = node.code().value();
-    j["outputs"] = node.outputs();
-    j["inputs"] = node.inputs();
-    j["side_effect"] = node.side_effect();
 
     sdfg::serializer::JSONSerializer serializer;
     j["size"] = serializer.expression(node.size());
@@ -56,24 +53,18 @@ nlohmann::json MallocNodeSerializer::serialize(const data_flow::LibraryNode& lib
 data_flow::LibraryNode& MallocNodeSerializer::deserialize(
     const nlohmann::json& j, builder::StructuredSDFGBuilder& builder, structured_control_flow::Block& parent
 ) {
-    // Assertions for required fields
-    assert(j.contains("element_id"));
     assert(j.contains("code"));
-    assert(j.contains("outputs"));
-    assert(j.contains("inputs"));
     assert(j.contains("debug_info"));
     assert(j.contains("size"));
 
     auto code = j["code"].get<std::string>();
     if (code != LibraryNodeType_Malloc.value()) {
-        throw std::runtime_error("Invalid library node code");
+        throw InvalidSDFGException("Invalid library node code");
     }
 
-    // Extract debug info using JSONSerializer
     sdfg::serializer::JSONSerializer serializer;
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
-    // Extract properties
     SymEngine::Expression size(j.at("size"));
 
     return builder.add_library_node<MallocNode>(parent, debug_info, size);

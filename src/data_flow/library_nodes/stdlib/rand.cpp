@@ -12,7 +12,7 @@ RandNode::RandNode(
           vertex,
           parent,
           LibraryNodeType_Rand,
-          {"_out"},
+          {"_ret"},
           {},
           true,
           data_flow::ImplementationType_NONE
@@ -34,9 +34,6 @@ nlohmann::json RandNodeSerializer::serialize(const data_flow::LibraryNode& libra
 
     nlohmann::json j;
     j["code"] = node.code().value();
-    j["outputs"] = node.outputs();
-    j["inputs"] = node.inputs();
-    j["side_effect"] = node.side_effect();
 
     return j;
 }
@@ -44,19 +41,14 @@ nlohmann::json RandNodeSerializer::serialize(const data_flow::LibraryNode& libra
 data_flow::LibraryNode& RandNodeSerializer::deserialize(
     const nlohmann::json& j, builder::StructuredSDFGBuilder& builder, structured_control_flow::Block& parent
 ) {
-    // Assertions for required fields
-    assert(j.contains("element_id"));
     assert(j.contains("code"));
-    assert(j.contains("outputs"));
-    assert(j.contains("inputs"));
     assert(j.contains("debug_info"));
 
     auto code = j["code"].get<std::string>();
     if (code != LibraryNodeType_Rand.value()) {
-        throw std::runtime_error("Invalid library node code");
+        throw InvalidSDFGException("Invalid library node code");
     }
 
-    // Extract debug info using JSONSerializer
     sdfg::serializer::JSONSerializer serializer;
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 

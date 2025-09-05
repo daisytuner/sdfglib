@@ -234,6 +234,10 @@ void LibraryNodeDispatcher::
     }
 
     for (auto& oedge : graph.out_edges(this->node_)) {
+        if (std::find(this->node_.inputs().begin(), this->node_.inputs().end(), oedge.src_conn()) !=
+            this->node_.inputs().end()) {
+            continue;
+        }
         stream << language_extension_.declaration(oedge.src_conn(), oedge.base_type()) << ";" << std::endl;
     }
     stream << std::endl;
