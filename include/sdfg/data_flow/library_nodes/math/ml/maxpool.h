@@ -13,6 +13,7 @@ inline data_flow::LibraryNodeCode LibraryNodeType_MaxPool("ml::MaxPool");
 
 class MaxPoolNode : public MathNode {
 private:
+    std::vector<symbolic::Expression> shape_;
     std::vector<size_t> kernel_shape_;
     std::vector<size_t> pads_;
     std::vector<size_t> strides_;
@@ -23,14 +24,20 @@ public:
         const DebugInfo &debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph &parent,
+        std::vector<symbolic::Expression> shape,
         std::vector<size_t> kernel_shape,
         std::vector<size_t> pads,
         std::vector<size_t> strides
     );
 
+    const std::vector<symbolic::Expression> &shape() const;
     std::vector<size_t> kernel_shape() const;
     std::vector<size_t> pads() const;
     std::vector<size_t> strides() const;
+
+    symbolic::SymbolSet symbols() const override;
+
+    void replace(const symbolic::Expression &old_expression, const symbolic::Expression &new_expression) override;
 
     void validate(const Function &function) const override;
 

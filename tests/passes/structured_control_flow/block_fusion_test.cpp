@@ -181,83 +181,86 @@ TEST(BlockFusionTest, Computational_IndependentSubgraphs) {
     EXPECT_EQ(dataflow.weakly_connected_components().first, 2);
 }
 
-// TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
-//     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
-//     types::Scalar desc(types::PrimitiveType::Double);
-//     types::Array array_desc(desc, symbolic::integer(10));
-//     types::Array array_desc_2(array_desc, symbolic::integer(20));
+    types::Scalar desc(types::PrimitiveType::Double);
+    types::Array array_desc(desc, symbolic::integer(10));
+    types::Array array_desc_2(array_desc, symbolic::integer(20));
 
-//     builder.add_container("input", array_desc_2);
-//     builder.add_container("tmp", array_desc_2);
-//     builder.add_container("output", array_desc_2);
+    builder.add_container("input", array_desc_2);
+    builder.add_container("tmp", array_desc_2);
+    builder.add_container("output", array_desc_2);
 
-//     auto& block_1 = builder.add_block(builder.subject().root());
+    auto& block_1 = builder.add_block(builder.subject().root());
 
-//     auto& input_node = builder.add_access(block_1, "input");
-//     auto& tmp_node_out = builder.add_access(block_1, "tmp");
-//     auto& relu_node =
-//         static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block_1, DebugInfo()));
-//     builder.add_computational_memlet(
-//         block_1,
-//         input_node,
-//         relu_node,
-//         "X",
-//         {symbolic::integer(0), symbolic::integer(0)},
-//         array_desc_2,
-//         block_1.debug_info()
-//     );
-//     builder.add_computational_memlet(
-//         block_1,
-//         relu_node,
-//         "Y",
-//         tmp_node_out,
-//         {symbolic::integer(0), symbolic::integer(0)},
-//         array_desc_2,
-//         block_1.debug_info()
-//     );
+    auto& input_node = builder.add_access(block_1, "input");
+    auto& tmp_node_out = builder.add_access(block_1, "tmp");
+    auto& relu_node = static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(
+        block_1, DebugInfo(), std::vector<symbolic::Expression>{symbolic::integer(10), symbolic::integer(20)}
+    ));
 
-//     auto& block_2 = builder.add_block(builder.subject().root());
+    builder.add_computational_memlet(
+        block_1,
+        input_node,
+        relu_node,
+        "X",
+        {symbolic::integer(0), symbolic::integer(0)},
+        array_desc_2,
+        block_1.debug_info()
+    );
+    builder.add_computational_memlet(
+        block_1,
+        relu_node,
+        "Y",
+        tmp_node_out,
+        {symbolic::integer(0), symbolic::integer(0)},
+        array_desc_2,
+        block_1.debug_info()
+    );
 
-//     auto& tmp_node_in = builder.add_access(block_2, "tmp");
-//     auto& output_node = builder.add_access(block_2, "output");
-//     auto& relu_node_2 =
-//         static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block_2, DebugInfo()));
-//     builder.add_computational_memlet(
-//         block_2,
-//         tmp_node_in,
-//         relu_node_2,
-//         "X",
-//         {symbolic::integer(0), symbolic::integer(0)},
-//         array_desc_2,
-//         block_2.debug_info()
-//     );
-//     builder.add_computational_memlet(
-//         block_2,
-//         relu_node_2,
-//         "Y",
-//         output_node,
-//         {symbolic::integer(0), symbolic::integer(0)},
-//         array_desc_2,
-//         block_2.debug_info()
-//     );
+    auto& block_2 = builder.add_block(builder.subject().root());
 
-//     auto sdfg = builder.move();
+    auto& tmp_node_in = builder.add_access(block_2, "tmp");
+    auto& output_node = builder.add_access(block_2, "output");
+    auto& relu_node_2 = static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(
+        block_2, DebugInfo(), std::vector<symbolic::Expression>{symbolic::integer(10), symbolic::integer(20)}
+    ));
+    builder.add_computational_memlet(
+        block_2,
+        tmp_node_in,
+        relu_node_2,
+        "X",
+        {symbolic::integer(0), symbolic::integer(0)},
+        array_desc_2,
+        block_2.debug_info()
+    );
+    builder.add_computational_memlet(
+        block_2,
+        relu_node_2,
+        "Y",
+        output_node,
+        {symbolic::integer(0), symbolic::integer(0)},
+        array_desc_2,
+        block_2.debug_info()
+    );
 
-//     // Fusion
-//     builder::StructuredSDFGBuilder builder_opt(sdfg);
-//     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-//     passes::BlockFusionPass fusion_pass;
-//     fusion_pass.run(builder_opt, analysis_manager);
+    auto sdfg = builder.move();
 
-//     sdfg = builder_opt.move();
-//     EXPECT_EQ(sdfg->root().size(), 1);
+    // Fusion
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::BlockFusionPass fusion_pass;
+    fusion_pass.run(builder_opt, analysis_manager);
 
-//     auto& dataflow = dynamic_cast<const structured_control_flow::Block*>(&sdfg->root().at(0).first)->dataflow();
-//     EXPECT_EQ(dataflow.nodes().size(), 5);
-//     EXPECT_EQ(dataflow.edges().size(), 4);
-//     EXPECT_EQ(dataflow.weakly_connected_components().first, 1);
-// }
+    sdfg = builder_opt.move();
+    EXPECT_EQ(sdfg->root().size(), 1);
+
+    auto& dataflow = dynamic_cast<const structured_control_flow::Block*>(&sdfg->root().at(0).first)->dataflow();
+    EXPECT_EQ(dataflow.nodes().size(), 5);
+    EXPECT_EQ(dataflow.edges().size(), 4);
+    EXPECT_EQ(dataflow.weakly_connected_components().first, 1);
+}
 
 TEST(BlockFusionTest, Reference) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);

@@ -14,6 +14,7 @@ ConvNode::ConvNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
+    const std::vector<symbolic::Expression> shape,
     bool has_bias,
     std::vector<size_t> dilations,
     std::vector<size_t> kernel_shape,
@@ -30,15 +31,32 @@ ConvNode::ConvNode(
           {"X", "W"},
           data_flow::ImplementationType_NONE
       ),
-      has_bias_(has_bias), dilations_(dilations), kernel_shape_(kernel_shape), pads_(pads), strides_(strides) {
+      shape_(shape), has_bias_(has_bias), dilations_(dilations), kernel_shape_(kernel_shape), pads_(pads),
+      strides_(strides) {
     if (has_bias_) {
         this->inputs_.push_back("B");
     }
 }
 
-void ConvNode::validate(const Function& function) const {
-    // TODO: Implement
+const std::vector<symbolic::Expression>& ConvNode::shape() const { return shape_; }
+
+symbolic::SymbolSet ConvNode::symbols() const {
+    symbolic::SymbolSet syms;
+    for (const auto& dim : shape_) {
+        for (auto& atom : symbolic::atoms(dim)) {
+            syms.insert(atom);
+        }
+    }
+    return syms;
 }
+
+void ConvNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+    for (auto& dim : shape_) {
+        dim = symbolic::subs(dim, old_expression, new_expression);
+    }
+}
+
+void ConvNode::validate(const Function& function) const {}
 
 bool ConvNode::has_bias() const { return has_bias_; }
 
@@ -86,14 +104,6 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     std::string W_name = static_cast<const data_flow::AccessNode&>(iedge_W->src()).data();
     std::string Y_name = static_cast<const data_flow::AccessNode&>(oedge_Y->dst()).data();
 
-    data_flow::Subset dims_X = iedge_X->end_subset();
-    data_flow::Subset dims_W = iedge_W->end_subset();
-    data_flow::Subset dims_B;
-    if (iedge_B != nullptr) {
-        dims_B = iedge_B->end_subset();
-    }
-    data_flow::Subset dims_Y = oedge_Y->end_subset();
-
     auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
     structured_control_flow::Sequence* last_scope = &new_sequence;
 
@@ -101,23 +111,17 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
      * Parallel dimensions *
      ************************/
     // Generate one Map per parallel dimension of the output tensor (Y).
-    const auto& begin_Y_subset = oedge_Y->begin_subset();
-    const auto& end_Y_subset = oedge_Y->end_subset();
-
     data_flow::Subset out_subset;
     std::vector<symbolic::Expression> parallel_syms;
     structured_control_flow::Map* last_map = nullptr;
-    for (size_t dim = 0; dim < begin_Y_subset.size(); ++dim) {
-        const auto& dim_begin = begin_Y_subset[dim];
-        const auto& dim_end = end_Y_subset[dim];
-
+    for (size_t dim = 0; dim < this->shape_.size(); ++dim) {
         std::string indvar_str = builder.find_new_name("_i");
         builder.add_container(indvar_str, types::Scalar(types::PrimitiveType::UInt64));
 
         auto indvar = symbolic::symbol(indvar_str);
-        auto init = dim_begin;
+        auto init = symbolic::zero();
         auto update = symbolic::add(indvar, symbolic::one());
-        auto condition = symbolic::Lt(indvar, symbolic::add(dim_end, symbolic::one()));
+        auto condition = symbolic::Lt(indvar, this->shape_[dim]);
 
         last_map = &builder.add_map(
             *last_scope,
@@ -139,22 +143,16 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
      ************************/
     // For convolution, we reduce over input channels and kernel dimensions.
     // Assuming weight tensor layout (M, C, k1, k2, ...), skip the first dim (output channels).
-    const auto& begin_W_subset = iedge_W->begin_subset();
-    const auto& end_W_subset = iedge_W->end_subset();
-
     std::vector<symbolic::Expression> reduction_syms;
     structured_control_flow::For* last_for = nullptr;
-    for (size_t dim = 1; dim < begin_W_subset.size(); ++dim) {
-        const auto& dim_begin = begin_W_subset[dim];
-        const auto& dim_end = end_W_subset[dim];
-
+    for (size_t dim = 0; dim < this->kernel_shape_.size(); ++dim) {
         std::string indvar_str = builder.find_new_name("_r");
         builder.add_container(indvar_str, types::Scalar(types::PrimitiveType::UInt64));
 
         auto indvar = symbolic::symbol(indvar_str);
-        auto init = dim_begin;
+        auto init = symbolic::zero();
         auto update = symbolic::add(indvar, symbolic::one());
-        auto condition = symbolic::Lt(indvar, symbolic::add(dim_end, symbolic::one()));
+        auto condition = symbolic::Lt(indvar, symbolic::integer(this->kernel_shape_[dim]));
 
         last_for = &builder.add_for(*last_scope, indvar, condition, init, update, {}, block.debug_info());
         last_scope = &last_for->root();
@@ -319,6 +317,7 @@ std::unique_ptr<data_flow::DataFlowNode> ConvNode::
         this->debug_info(),
         vertex,
         parent,
+        this->shape_,
         this->has_bias_,
         this->dilations_,
         this->kernel_shape_,
@@ -328,17 +327,23 @@ std::unique_ptr<data_flow::DataFlowNode> ConvNode::
 }
 
 nlohmann::json ConvNodeSerializer::serialize(const data_flow::LibraryNode& library_node) {
-    const ConvNode& relu_node = static_cast<const ConvNode&>(library_node);
+    const ConvNode& node = static_cast<const ConvNode&>(library_node);
     nlohmann::json j;
 
-    j["code"] = relu_node.code().value();
-    j["outputs"] = relu_node.outputs();
-    j["inputs"] = relu_node.inputs();
-    j["has_bias"] = relu_node.has_bias();
-    j["dilations"] = relu_node.dilations();
-    j["kernel_shape"] = relu_node.kernel_shape();
-    j["pads"] = relu_node.pads();
-    j["strides"] = relu_node.strides();
+    j["code"] = node.code().value();
+    j["outputs"] = node.outputs();
+    j["inputs"] = node.inputs();
+    j["has_bias"] = node.has_bias();
+    j["dilations"] = node.dilations();
+    j["kernel_shape"] = node.kernel_shape();
+    j["pads"] = node.pads();
+    j["strides"] = node.strides();
+
+    serializer::JSONSerializer serializer;
+    j["shape"] = nlohmann::json::array();
+    for (auto& dim : node.shape()) {
+        j["shape"].push_back(serializer.expression(dim));
+    }
 
     return j;
 }
@@ -362,7 +367,13 @@ data_flow::LibraryNode& ConvNodeSerializer::deserialize(
     auto pads = j.at("pads").get<std::vector<size_t>>();
     auto strides = j.at("strides").get<std::vector<size_t>>();
 
-    return builder.add_library_node<ConvNode>(parent, debug_info, has_bias, dilations, kernel_shape, pads, strides);
+    std::vector<symbolic::Expression> shape;
+    for (const auto& dim : j["shape"]) {
+        shape.push_back(SymEngine::Expression(dim.get<std::string>()));
+    }
+
+    return builder
+        .add_library_node<ConvNode>(parent, debug_info, shape, has_bias, dilations, kernel_shape, pads, strides);
 }
 
 } // namespace ml

@@ -28,8 +28,9 @@ TEST(MathTest, ReLU) {
 
     auto& input_node = builder.add_access(block, "input");
     auto& output_node = builder.add_access(block, "output");
-    auto& relu_node = static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block, DebugInfo())
-    );
+    auto& relu_node = static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(
+        block, DebugInfo(), std::vector<symbolic::Expression>{symbolic::integer(10), symbolic::integer(20)}
+    ));
 
     builder.add_computational_memlet(
         block, input_node, relu_node, "X", {symbolic::integer(0), symbolic::integer(0)}, array_desc_2, block.debug_info()
@@ -63,13 +64,13 @@ TEST(MathTest, ReLU) {
 
     auto block_1 = dynamic_cast<structured_control_flow::Block*>(&map_2->root().at(0).first);
     EXPECT_NE(block_1, nullptr);
-    EXPECT_EQ(block_1->dataflow().nodes().size(), 3);
+    EXPECT_EQ(block_1->dataflow().nodes().size(), 4);
 
     auto tasklet = *block_1->dataflow().tasklets().begin();
     EXPECT_EQ(tasklet->code(), data_flow::TaskletCode::max);
     EXPECT_EQ(tasklet->inputs().size(), 2);
-    EXPECT_EQ(tasklet->inputs().at(0), "0.0f");
-    EXPECT_EQ(tasklet->inputs().at(1), "_in");
+    EXPECT_EQ(tasklet->inputs().at(0), "_in1");
+    EXPECT_EQ(tasklet->inputs().at(1), "_in2");
     EXPECT_EQ(tasklet->output(), "_out");
 }
 
@@ -113,28 +114,29 @@ TEST(MathTest, Gemm) {
         symbolic::integer(dim_k),
         symbolic::integer(dim_j), // lda
         symbolic::integer(dim_k), // ldb
-        symbolic::integer(dim_j), // ldc
-        "1", // alpha
-        "0" // beta
+        symbolic::integer(dim_j) // ldc
     ));
+
+    auto& alpha_node = builder.add_constant(block, "1.0", desc);
+    auto& beta_node = builder.add_constant(block, "0.0", desc);
 
     builder.add_computational_memlet(block, input_a_node, gemm_node, "A", {symbolic::integer(0)}, arr_a_type);
     builder.add_computational_memlet(block, input_b_node, gemm_node, "B", {symbolic::integer(0)}, arr_b_type);
     builder.add_computational_memlet(block, dummy_input_node, gemm_node, "C", {symbolic::integer(0)}, arr_res_type);
+    builder.add_computational_memlet(block, alpha_node, gemm_node, "alpha", {}, desc);
+    builder.add_computational_memlet(block, beta_node, gemm_node, "beta", {}, desc);
 
     builder.add_computational_memlet(block, gemm_node, "C", output_node, {symbolic::integer(0)}, arr_res_type);
 
-    EXPECT_EQ(block.dataflow().nodes().size(), 5);
+    EXPECT_EQ(block.dataflow().nodes().size(), 7);
 
-    std::filesystem::path before_file = "gemm.before-expand.sdfg.dot";
-    visualizer::DotVisualizer::writeToFile(builder.subject(), &before_file);
-
+    builder.subject().validate();
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(gemm_node.expand(builder, analysis_manager));
     builder.subject().validate();
 
-    std::filesystem::path after_file = "gemm.after-expand.sdfg.dot";
-    visualizer::DotVisualizer::writeToFile(builder.subject(), &after_file);
+    std::filesystem::path output_path = "gemm_before_expansion.dot";
+    visualizer::DotVisualizer::writeToFile(sdfg, &output_path);
 
     EXPECT_EQ(sdfg.root().size(), 1);
     auto new_sequence = dynamic_cast<structured_control_flow::Sequence*>(&sdfg.root().at(0).first);
@@ -150,10 +152,10 @@ TEST(MathTest, Gemm) {
 
     auto block_init = dynamic_cast<structured_control_flow::Block*>(&map_2->root().at(0).first);
     EXPECT_NE(block_init, nullptr);
-    EXPECT_EQ(block_init->dataflow().nodes().size(), 2);
+    EXPECT_EQ(block_init->dataflow().nodes().size(), 3);
     auto init_tasklet = *block_init->dataflow().tasklets().begin();
     EXPECT_EQ(init_tasklet->code(), data_flow::TaskletCode::assign);
-    EXPECT_EQ(init_tasklet->inputs().at(0), "0.0");
+    EXPECT_EQ(init_tasklet->inputs().at(0), "_in");
     EXPECT_EQ(init_tasklet->output(), "_out");
 
     auto map_3 = dynamic_cast<structured_control_flow::Map*>(&map_2->root().at(1).first);
@@ -174,7 +176,7 @@ TEST(MathTest, Gemm) {
 
     auto block_flush = dynamic_cast<structured_control_flow::Block*>(&map_2->root().at(2).first);
     EXPECT_NE(block_flush, nullptr);
-    EXPECT_EQ(block_flush->dataflow().nodes().size(), 8);
+    EXPECT_EQ(block_flush->dataflow().nodes().size(), 10);
     auto flush_tasklets = block_flush->dataflow().tasklets();
     EXPECT_EQ(flush_tasklets.size(), 3);
     for (auto* tasklet : flush_tasklets) {
@@ -225,15 +227,18 @@ TEST(MathTest, Conv_2D) {
     auto& Y_acc = builder.add_access(block, "Y");
 
     // Conv parameters
+    std::vector<symbolic::Expression> shape = {
+        symbolic::integer(1), symbolic::integer(1), symbolic::integer(2), symbolic::integer(2)
+    };
     bool has_bias = false;
     std::vector<size_t> dilations = {1, 1};
     std::vector<size_t> kernel_shape = {3, 3};
     std::vector<size_t> pads = {0, 0, 0, 0};
     std::vector<size_t> strides = {1, 1};
 
-    auto& conv_node = static_cast<
-        math::ml::ConvNode&>(builder.add_library_node<
-                             math::ml::ConvNode>(block, DebugInfo(), has_bias, dilations, kernel_shape, pads, strides));
+    auto& conv_node = static_cast<math::ml::ConvNode&>(builder.add_library_node<math::ml::ConvNode>(
+        block, DebugInfo(), shape, has_bias, dilations, kernel_shape, pads, strides
+    ));
 
     // Memlet subsets
     data_flow::Subset x_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
@@ -288,15 +293,18 @@ TEST(MathTest, Conv_2D_Strides) {
     auto& Y_acc = builder.add_access(block, "Y");
 
     // Conv parameters
+    std::vector<symbolic::Expression> shape = {
+        symbolic::integer(1), symbolic::integer(1), symbolic::integer(2), symbolic::integer(2)
+    };
     bool has_bias = false;
     std::vector<size_t> dilations = {1, 1};
     std::vector<size_t> kernel_shape = {3, 3};
     std::vector<size_t> pads = {0, 0, 0, 0};
     std::vector<size_t> strides = {2, 2};
 
-    auto& conv_node = static_cast<
-        math::ml::ConvNode&>(builder.add_library_node<
-                             math::ml::ConvNode>(block, DebugInfo(), has_bias, dilations, kernel_shape, pads, strides));
+    auto& conv_node = static_cast<math::ml::ConvNode&>(builder.add_library_node<math::ml::ConvNode>(
+        block, DebugInfo(), shape, has_bias, dilations, kernel_shape, pads, strides
+    ));
 
     // Memlet subsets
     data_flow::Subset x_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
@@ -343,13 +351,16 @@ TEST(MathTest, MaxPool_2D) {
     auto& Y_acc = builder.add_access(block, "Y");
 
     // MaxPool parameters
+    std::vector<symbolic::Expression> shape = {
+        symbolic::integer(1), symbolic::integer(1), symbolic::integer(2), symbolic::integer(2)
+    };
     std::vector<size_t> kernel_shape = {2, 2};
     std::vector<size_t> pads = {0, 0, 0, 0};
     std::vector<size_t> strides = {2, 2};
 
-    auto& pool_node =
-        static_cast<math::ml::MaxPoolNode&>(builder.add_library_node<
-                                            math::ml::MaxPoolNode>(block, DebugInfo(), kernel_shape, pads, strides));
+    auto& pool_node = static_cast<
+        math::ml::MaxPoolNode&>(builder.add_library_node<
+                                math::ml::MaxPoolNode>(block, DebugInfo(), shape, kernel_shape, pads, strides));
 
     // Subsets
     data_flow::Subset x_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
@@ -393,7 +404,7 @@ TEST(MathTest, Dot) {
 
     builder.add_computational_memlet(block, a_node, dot_node, "x", {symbolic::zero()}, array_desc, block.debug_info());
     builder.add_computational_memlet(block, b_node, dot_node, "y", {symbolic::zero()}, array_desc, block.debug_info());
-    builder.add_computational_memlet(block, dot_node, "res", c_node, {}, desc, block.debug_info());
+    builder.add_computational_memlet(block, dot_node, "_out", c_node, {}, desc, block.debug_info());
 
     EXPECT_EQ(block.dataflow().nodes().size(), 4);
 

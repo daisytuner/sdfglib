@@ -259,10 +259,12 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     if (auto const_node = dynamic_cast<data_flow::ConstantNode*>(beta_node)) {
         auto& beta_node_new =
             builder.add_constant(flush_block, const_node->data(), const_node->type(), block.debug_info());
-        builder.add_computational_memlet(flush_block, beta_node_new, scale_sum_tasklet, "_in2", {}, block.debug_info());
+        builder
+            .add_computational_memlet(flush_block, beta_node_new, scale_input_tasklet, "_in2", {}, block.debug_info());
     } else {
         auto& beta_node_new = builder.add_access(flush_block, beta_node->data(), block.debug_info());
-        builder.add_computational_memlet(flush_block, beta_node_new, scale_sum_tasklet, "_in2", {}, block.debug_info());
+        builder
+            .add_computational_memlet(flush_block, beta_node_new, scale_input_tasklet, "_in2", {}, block.debug_info());
     }
 
     std::string scaled_input_temp = builder.find_new_name("scaled_input_temp");

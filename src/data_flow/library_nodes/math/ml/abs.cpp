@@ -10,9 +10,13 @@ namespace math {
 namespace ml {
 
 AbsNode::AbsNode(
-    size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
+    size_t element_id,
+    const DebugInfo& debug_info,
+    const graph::Vertex vertex,
+    data_flow::DataFlowGraph& parent,
+    const std::vector<symbolic::Expression>& shape
 )
-    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Abs, {}) {}
+    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Abs, shape, {}) {}
 
 bool AbsNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,
@@ -37,7 +41,8 @@ bool AbsNode::expand_operation(
 
 std::unique_ptr<data_flow::DataFlowNode> AbsNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
-    return std::unique_ptr<data_flow::DataFlowNode>(new AbsNode(element_id, this->debug_info(), vertex, parent));
+    return std::unique_ptr<
+        data_flow::DataFlowNode>(new AbsNode(element_id, this->debug_info(), vertex, parent, this->shape_));
 }
 
 } // namespace ml

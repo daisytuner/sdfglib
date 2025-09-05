@@ -15,14 +15,29 @@ ElementWiseUnaryNode::ElementWiseUnaryNode(
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     const data_flow::LibraryNodeCode& code,
+    const std::vector<symbolic::Expression>& shape,
     const std::unordered_map<std::string, std::string>& attributes
 )
     : MathNode(element_id, debug_info, vertex, parent, code, {"Y"}, {"X"}, data_flow::ImplementationType_NONE),
-      attributes_(attributes) {}
+      shape_(shape), attributes_(attributes) {}
 
-void ElementWiseUnaryNode::validate(const Function& function) const {
-    // TODO: Implement
+symbolic::SymbolSet ElementWiseUnaryNode::symbols() const {
+    symbolic::SymbolSet syms;
+    for (const auto& dim : shape_) {
+        for (auto& atom : symbolic::atoms(dim)) {
+            syms.insert(atom);
+        }
+    }
+    return syms;
 }
+
+void ElementWiseUnaryNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+    for (auto& dim : shape_) {
+        dim = symbolic::subs(dim, old_expression, new_expression);
+    }
+}
+
+void ElementWiseUnaryNode::validate(const Function& function) const {}
 
 bool ElementWiseUnaryNode::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& dataflow = this->get_parent();
@@ -53,22 +68,17 @@ bool ElementWiseUnaryNode::expand(builder::StructuredSDFGBuilder& builder, analy
     auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
 
     // Add maps
-    auto& begin_subsets_out = oedge.begin_subset();
-    auto& end_subsets_out = oedge.end_subset();
     data_flow::Subset new_subset;
     structured_control_flow::Sequence* last_scope = &new_sequence;
     structured_control_flow::Map* last_map = nullptr;
-    for (size_t i = 0; i < begin_subsets_out.size(); i++) {
-        auto& dim_begin = begin_subsets_out[i];
-        auto& dim_end = end_subsets_out[i];
-
+    for (size_t i = 0; i < this->shape_.size(); i++) {
         std::string indvar_str = builder.find_new_name("_i");
         builder.add_container(indvar_str, types::Scalar(types::PrimitiveType::UInt64));
 
         auto indvar = symbolic::symbol(indvar_str);
-        auto init = dim_begin;
+        auto init = symbolic::zero();
         auto update = symbolic::add(indvar, symbolic::one());
-        auto condition = symbolic::Lt(indvar, symbolic::add(dim_end, symbolic::one()));
+        auto condition = symbolic::Lt(indvar, this->shape_[i]);
         last_map = &builder.add_map(
             *last_scope,
             indvar,
@@ -115,14 +125,29 @@ ElementWiseBinaryNode::ElementWiseBinaryNode(
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     const data_flow::LibraryNodeCode& code,
+    const std::vector<symbolic::Expression>& shape,
     const std::unordered_map<std::string, std::string>& attributes
 )
     : MathNode(element_id, debug_info, vertex, parent, code, {"C"}, {"A", "B"}, data_flow::ImplementationType_NONE),
-      attributes_(attributes) {}
+      shape_(shape), attributes_(attributes) {}
 
-void ElementWiseBinaryNode::validate(const Function& function) const {
-    // TODO: Implement
+symbolic::SymbolSet ElementWiseBinaryNode::symbols() const {
+    symbolic::SymbolSet syms;
+    for (const auto& dim : shape_) {
+        for (auto& atom : symbolic::atoms(dim)) {
+            syms.insert(atom);
+        }
+    }
+    return syms;
 }
+
+void ElementWiseBinaryNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+    for (auto& dim : shape_) {
+        dim = symbolic::subs(dim, old_expression, new_expression);
+    }
+}
+
+void ElementWiseBinaryNode::validate(const Function& function) const {}
 
 bool ElementWiseBinaryNode::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& dataflow = this->get_parent();
@@ -159,22 +184,17 @@ bool ElementWiseBinaryNode::expand(builder::StructuredSDFGBuilder& builder, anal
     auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
 
     // Add maps
-    auto& begin_subsets_out = oedge.begin_subset();
-    auto& end_subsets_out = oedge.end_subset();
     data_flow::Subset new_subset;
     structured_control_flow::Sequence* last_scope = &new_sequence;
     structured_control_flow::Map* last_map = nullptr;
-    for (size_t i = 0; i < begin_subsets_out.size(); i++) {
-        auto& dim_begin = begin_subsets_out[i];
-        auto& dim_end = end_subsets_out[i];
-
+    for (size_t i = 0; i < this->shape_.size(); i++) {
         std::string indvar_str = builder.find_new_name("_i");
         builder.add_container(indvar_str, types::Scalar(types::PrimitiveType::UInt64));
 
         auto indvar = symbolic::symbol(indvar_str);
-        auto init = dim_begin;
+        auto init = symbolic::zero();
         auto update = symbolic::add(indvar, symbolic::one());
-        auto condition = symbolic::Lt(indvar, symbolic::add(dim_end, symbolic::one()));
+        auto condition = symbolic::Lt(indvar, this->shape_[i]);
         last_map = &builder.add_map(
             *last_scope,
             indvar,
