@@ -1117,6 +1117,10 @@ size_t LibraryNodeSerializerRegistry::size() const { return factory_map_.size();
 void register_default_serializers() {
     // stdlib
     LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Calloc.value(), []() {
+            return std::make_unique<stdlib::CallocNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(stdlib::LibraryNodeType_Fprintf.value(), []() {
             return std::make_unique<stdlib::FprintfNodeSerializer>();
         });

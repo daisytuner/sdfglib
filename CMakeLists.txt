@@ -127,6 +127,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/ml/sqrt.cpp
     src/data_flow/library_nodes/math/ml/sub.cpp
     src/data_flow/library_nodes/math/ml/tanh.cpp
+    src/data_flow/library_nodes/stdlib/calloc.cpp
     src/data_flow/library_nodes/stdlib/fprintf.cpp
     src/data_flow/library_nodes/stdlib/fputc.cpp
     src/data_flow/library_nodes/stdlib/free.cpp

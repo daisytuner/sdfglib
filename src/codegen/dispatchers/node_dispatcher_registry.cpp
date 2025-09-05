@@ -153,6 +153,17 @@ void register_default_dispatchers() {
 
     // stdlib
     LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        stdlib::LibraryNodeType_Calloc.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<stdlib::CallocNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::CallocNode&>(node)
+            );
+        }
+    );
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
         stdlib::LibraryNodeType_Fprintf.value() + "::" + data_flow::ImplementationType_NONE.value(),
         [](LanguageExtension& language_extension,
            const Function& function,
