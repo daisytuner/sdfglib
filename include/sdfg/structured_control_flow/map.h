@@ -23,7 +23,7 @@ private:
 
 public:
     ScheduleType(std::string value) : value_(value) {}
-    const std::string value() const { return value_; }
+    const std::string& value() const { return value_; }
     const std::unordered_map<std::string, std::string>& properties() const { return properties_; }
     void set_property(const std::string& key, const std::string& value) {
         if (properties_.find(key) == properties_.end()) {
