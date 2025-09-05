@@ -75,7 +75,7 @@ bool ElementWiseUnaryNode::expand(builder::StructuredSDFGBuilder& builder, analy
             condition,
             init,
             update,
-            structured_control_flow::ScheduleType_Sequential,
+            structured_control_flow::ScheduleType_Sequential::create(),
             {},
             block.debug_info()
         );
@@ -181,7 +181,7 @@ bool ElementWiseBinaryNode::expand(builder::StructuredSDFGBuilder& builder, anal
             condition,
             init,
             update,
-            structured_control_flow::ScheduleType_Sequential,
+            structured_control_flow::ScheduleType_Sequential::create(),
             {},
             block.debug_info()
         );

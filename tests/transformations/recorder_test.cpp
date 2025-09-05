@@ -157,7 +157,7 @@ protected:
             symbolic::Lt(indvar1, bound1),
             symbolic::integer(0),
             symbolic::add(indvar1, symbolic::integer(1)),
-            structured_control_flow::ScheduleType_Sequential
+            structured_control_flow::ScheduleType_Sequential::create()
         );
         auto& body1 = loop_1.root();
 
@@ -170,7 +170,7 @@ protected:
             symbolic::Lt(indvar2, bound2),
             symbolic::integer(0),
             symbolic::add(indvar2, symbolic::integer(1)),
-            structured_control_flow::ScheduleType_Sequential
+            structured_control_flow::ScheduleType_Sequential::create()
         );
         auto& body2 = loop_2.root();
 
@@ -380,7 +380,7 @@ protected:
             symbolic::Lt(indvar1, bound1),
             symbolic::integer(0),
             symbolic::add(indvar1, symbolic::integer(1)),
-            structured_control_flow::ScheduleType_Sequential
+            structured_control_flow::ScheduleType_Sequential::create()
         );
         auto& body1 = loop_1.root();
 
@@ -393,7 +393,7 @@ protected:
             symbolic::Lt(indvar2, bound2),
             symbolic::integer(0),
             symbolic::add(indvar2, symbolic::integer(1)),
-            structured_control_flow::ScheduleType_Sequential
+            structured_control_flow::ScheduleType_Sequential::create()
         );
         auto& body2 = loop_2.root();
 

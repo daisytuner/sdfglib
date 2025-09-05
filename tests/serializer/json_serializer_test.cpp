@@ -11,6 +11,7 @@
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
+#include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/return.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
@@ -508,7 +509,7 @@ TEST(JSONSerializerTest, MapToJSON) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     auto& body = builder.add_block(map.root());
 
@@ -1588,7 +1589,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_Map) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
 
     // Create a JSONSerializer object
@@ -1617,7 +1618,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_Map) {
     EXPECT_TRUE(symbolic::eq(des_map.condition(), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10))));
     EXPECT_TRUE(symbolic::eq(des_map.init(), symbolic::integer(0)));
     EXPECT_TRUE(symbolic::eq(des_map.update(), symbolic::add(symbolic::symbol("i"), symbolic::integer(1))));
-    EXPECT_EQ(des_map.schedule_type(), structured_control_flow::ScheduleType_Sequential);
+    EXPECT_EQ(des_map.schedule_type().value(), structured_control_flow::ScheduleType_Sequential::value());
 
     EXPECT_EQ(des_map.root().size(), 0);
 }
@@ -1772,4 +1773,23 @@ TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
 
     EXPECT_TRUE(dynamic_cast<data_flow::BarrierLocalNode*>(&lib_node_new));
     auto barrier_local_node = dynamic_cast<data_flow::BarrierLocalNode*>(&lib_node_new);
+}
+
+TEST(JSONSerializerTest, SerializeDeserialize_ScheduleType) {
+    ScheduleType sched_type = ScheduleType_CPU_Parallel::create();
+
+    sched_type.set_property("num_threads", "4");
+
+    sdfg::serializer::JSONSerializer serializer;
+
+    // Serialize the schedule type
+    nlohmann::json j;
+    serializer.schedule_type_to_json(j, sched_type);
+
+    // Deserialize the schedule type
+    ScheduleType sched_type_new = serializer.json_to_schedule_type(j);
+
+    EXPECT_EQ(sched_type_new.value(), sched_type.value());
+    EXPECT_EQ(sched_type_new.properties().size(), sched_type.properties().size());
+    EXPECT_EQ(sched_type_new.properties().at("num_threads"), sched_type.properties().at("num_threads"));
 }

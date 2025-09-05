@@ -91,7 +91,7 @@ void LoopDistribute::apply(builder::StructuredSDFGBuilder& builder, analysis::An
 
     auto& analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto parent = static_cast<structured_control_flow::Sequence*>(analysis.parent_scope(&this->loop_));
-    structured_control_flow::ScheduleType schedule_type = structured_control_flow::ScheduleType_Sequential;
+    structured_control_flow::ScheduleType schedule_type = structured_control_flow::ScheduleType_Sequential::create();
     if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&this->loop_)) {
         schedule_type = map_stmt->schedule_type();
     }

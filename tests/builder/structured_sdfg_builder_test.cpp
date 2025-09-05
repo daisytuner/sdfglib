@@ -291,7 +291,7 @@ TEST(StructuredSDFGBuilderTest, addMap) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     EXPECT_EQ(scope.element_id(), 1);
     EXPECT_EQ(scope.root().element_id(), 2);
@@ -326,7 +326,7 @@ TEST(StructuredSDFGBuilderTest, addMap_Transition) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential,
+        structured_control_flow::ScheduleType_Sequential::create(),
         {{symbolic::symbol("i"), symbolic::zero()}}
     );
     EXPECT_EQ(scope.element_id(), 1);
