@@ -133,9 +133,6 @@ void DataFlowDispatcher::dispatch_deref(PrettyPrinter& stream, const data_flow::
 };
 
 void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow::Tasklet& tasklet) {
-    if (tasklet.is_conditional()) {
-        stream << "if (" << language_extension_.expression(tasklet.condition()) << ") ";
-    }
     stream << "{" << std::endl;
     stream.setIndent(stream.indent() + 4);
 

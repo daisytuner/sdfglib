@@ -267,12 +267,6 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                     builder.remove_node(*block, *access_node);
                     applied = true;
                 }
-            } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(read->element())) {
-                auto& condition = tasklet->condition();
-                if (symbolic::uses(condition, lhs)) {
-                    tasklet->condition() = symbolic::subs(condition, lhs, rhs_modified);
-                    applied = true;
-                }
             } else if (auto library_node = dynamic_cast<data_flow::LibraryNode*>(read->element())) {
                 for (auto& symbol : library_node->symbols()) {
                     if (symbolic::eq(symbol, lhs)) {

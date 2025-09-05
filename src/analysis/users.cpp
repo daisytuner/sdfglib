@@ -170,20 +170,6 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
                     last = v;
                 }
             }
-        } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(node)) {
-            if (tasklet->is_conditional()) {
-                auto& condition = tasklet->condition();
-                for (auto& atom : symbolic::atoms(condition)) {
-                    auto v = boost::add_vertex(this->graph_);
-                    this->add_user(std::make_unique<User>(v, atom->get_name(), tasklet, &dataflow, Use::READ));
-                    if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
-                        boost::add_edge(last, v, this->graph_);
-                    } else {
-                        first = v;
-                    }
-                    last = v;
-                }
-            }
         } else if (auto library_node = dynamic_cast<data_flow::LibraryNode*>(node)) {
             for (auto& symbol : library_node->symbols()) {
                 auto v = boost::add_vertex(this->graph_);

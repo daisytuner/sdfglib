@@ -1225,9 +1225,9 @@ data_flow::Tasklet& StructuredSDFGBuilder::add_tasklet(
     auto vertex = boost::add_vertex(block.dataflow_->graph_);
     auto res = block.dataflow_->nodes_.insert(
         {vertex,
-         std::unique_ptr<data_flow::Tasklet>(new data_flow::Tasklet(
-             this->new_element_id(), debug_info, vertex, block.dataflow(), code, output, inputs, symbolic::__true__()
-         ))}
+         std::unique_ptr<data_flow::Tasklet>(
+             new data_flow::Tasklet(this->new_element_id(), debug_info, vertex, block.dataflow(), code, output, inputs)
+         )}
     );
 
     return dynamic_cast<data_flow::Tasklet&>(*(res.first->second));

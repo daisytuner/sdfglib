@@ -13,10 +13,9 @@ Tasklet::Tasklet(
     DataFlowGraph& parent,
     const TaskletCode code,
     const std::string& output,
-    const std::vector<std::string>& inputs,
-    const symbolic::Condition& condition
+    const std::vector<std::string>& inputs
 )
-    : CodeNode(element_id, debug_info, vertex, parent, {output}, inputs), code_(code), condition_(condition) {};
+    : CodeNode(element_id, debug_info, vertex, parent, {output}, inputs), code_(code) {};
 
 void Tasklet::validate(const Function& function) const {
     if (arity(this->code_) != this->inputs_.size()) {
@@ -45,22 +44,14 @@ TaskletCode Tasklet::code() const { return this->code_; };
 
 const std::string& Tasklet::output() const { return this->outputs_[0]; };
 
-const symbolic::Condition& Tasklet::condition() const { return this->condition_; };
-
-symbolic::Condition& Tasklet::condition() { return this->condition_; };
-
-bool Tasklet::is_conditional() const { return !symbolic::is_true(this->condition_); };
-
 std::unique_ptr<DataFlowNode> Tasklet::clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
     const {
-    return std::unique_ptr<Tasklet>(new Tasklet(
-        element_id, this->debug_info_, vertex, parent, this->code_, this->outputs_.at(0), this->inputs_, this->condition_
-    ));
+    return std::unique_ptr<Tasklet>(
+        new Tasklet(element_id, this->debug_info_, vertex, parent, this->code_, this->outputs_.at(0), this->inputs_)
+    );
 };
 
-void Tasklet::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
-    this->condition_ = symbolic::subs(this->condition_, old_expression, new_expression);
-};
+void Tasklet::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {};
 
 } // namespace data_flow
 } // namespace sdfg

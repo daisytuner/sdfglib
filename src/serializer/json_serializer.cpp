@@ -143,10 +143,6 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
                 node_json["inputs"].push_back(input);
             }
             node_json["output"] = tasklet->output();
-            // node_json["conditional"] = tasklet->is_conditional();
-            // if (tasklet->is_conditional()) {
-            //     node_json["condition"] = dumps_expression(tasklet->condition());
-            // }
         } else if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
             node_json["type"] = "library_node";
             node_json["implementation_type"] = std::string(lib_node->implementation_type().value());

@@ -19,10 +19,6 @@ bool BlockFusion::can_be_applied(
             if (lib_node->side_effect()) {
                 return false;
             }
-        } else if (auto tasklet = dynamic_cast<const data_flow::Tasklet*>(&node)) {
-            if (tasklet->is_conditional()) {
-                return false;
-            }
         } else if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
             if (first_graph.in_degree(*access_node) > 0) {
                 auto& type = builder_.subject().type(access_node->data());
@@ -36,10 +32,6 @@ bool BlockFusion::can_be_applied(
     for (auto& node : second_graph.nodes()) {
         if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
             if (lib_node->side_effect()) {
-                return false;
-            }
-        } else if (auto tasklet = dynamic_cast<const data_flow::Tasklet*>(&node)) {
-            if (tasklet->is_conditional()) {
                 return false;
             }
         } else if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {

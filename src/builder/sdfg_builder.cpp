@@ -254,9 +254,9 @@ data_flow::Tasklet& SDFGBuilder::add_tasklet(
     auto vertex = boost::add_vertex(dataflow.graph_);
     auto res = dataflow.nodes_.insert(
         {vertex,
-         std::unique_ptr<data_flow::Tasklet>(new data_flow::Tasklet(
-             this->new_element_id(), debug_info, vertex, dataflow, code, output, inputs, symbolic::__true__()
-         ))}
+         std::unique_ptr<data_flow::Tasklet>(
+             new data_flow::Tasklet(this->new_element_id(), debug_info, vertex, dataflow, code, output, inputs)
+         )}
     );
 
     return static_cast<data_flow::Tasklet&>(*(res.first->second));
