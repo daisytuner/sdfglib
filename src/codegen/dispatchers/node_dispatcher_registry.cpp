@@ -133,7 +133,7 @@ void register_default_dispatchers() {
 
     /* Map dispatchers */
     MapDispatcherRegistry::instance().register_map_dispatcher(
-        structured_control_flow::ScheduleType_Sequential.value(),
+        structured_control_flow::ScheduleType_Sequential::value(),
         [](LanguageExtension& language_extension,
            StructuredSDFG& sdfg,
            structured_control_flow::Map& node,
@@ -142,7 +142,7 @@ void register_default_dispatchers() {
         }
     );
     MapDispatcherRegistry::instance().register_map_dispatcher(
-        structured_control_flow::ScheduleType_CPU_Parallel.value(),
+        structured_control_flow::ScheduleType_CPU_Parallel::value(),
         [](LanguageExtension& language_extension,
            StructuredSDFG& sdfg,
            structured_control_flow::Map& node,

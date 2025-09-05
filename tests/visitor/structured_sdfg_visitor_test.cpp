@@ -369,7 +369,7 @@ TEST(StructuredSDFGVisitorTest, Map) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
 
     MapVisitor visitor(builder, analysis_manager);

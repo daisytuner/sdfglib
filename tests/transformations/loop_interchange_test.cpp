@@ -34,7 +34,7 @@ TEST(LoopInterchangeTest, Map_2D) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     auto& body = loop.root();
 
@@ -48,7 +48,7 @@ TEST(LoopInterchangeTest, Map_2D) {
         symbolic::Lt(symbolic::symbol("j"), symbolic::symbol("M")),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("j"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     auto& body_2 = loop_2.root();
 
@@ -114,7 +114,7 @@ TEST(LoopInterchangeTest, Map_2D_Transition) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential,
+        structured_control_flow::ScheduleType_Sequential::create(),
         {{symbolic::symbol("i"), symbolic::zero()}}
     );
     auto& body = loop.root();
@@ -129,7 +129,7 @@ TEST(LoopInterchangeTest, Map_2D_Transition) {
         symbolic::Lt(symbolic::symbol("j"), symbolic::symbol("M")),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("j"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     auto& body_2 = loop_2.root();
 
@@ -196,7 +196,7 @@ TEST(LoopInterchangeTest, DependentLoops) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     auto& body1 = loop1.root();
 
@@ -208,7 +208,7 @@ TEST(LoopInterchangeTest, DependentLoops) {
         symbolic::Lt(symbolic::symbol("j"), symbolic::sub(symbolic::symbol("M"), offset2)),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("j"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     auto& body2 = loop2.root();
 
@@ -260,7 +260,7 @@ TEST(LoopInterchangeTest, OuterLoopHasOuterBlocks) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     auto& body = loop.root();
     auto& blocker = builder.add_block(body);
@@ -275,7 +275,7 @@ TEST(LoopInterchangeTest, OuterLoopHasOuterBlocks) {
         symbolic::Lt(symbolic::symbol("j"), symbolic::symbol("M")),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("j"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     auto& body_2 = loop_2.root();
 

@@ -54,6 +54,7 @@ set(TEST_FILES
     replace/symbol_replace_test.cpp
     sdfg_test.cpp
     serializer/json_serializer_test.cpp
+    structured_control_flow/map_test.cpp
     structured_sdfg_test.cpp
     symbolic/assumptions_test.cpp
     symbolic/conjunctive_normal_form_test.cpp

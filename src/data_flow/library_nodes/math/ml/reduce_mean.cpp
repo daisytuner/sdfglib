@@ -79,7 +79,7 @@ bool ReduceMeanNode::expand(builder::StructuredSDFGBuilder &builder, analysis::A
             cond,
             init,
             update,
-            structured_control_flow::ScheduleType_Sequential,
+            structured_control_flow::ScheduleType_Sequential::create(),
             {},
             block.debug_info()
         );
