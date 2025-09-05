@@ -13,7 +13,7 @@ bool Parallelization::can_be_applied(builder::StructuredSDFGBuilder& builder, an
 }
 
 void Parallelization::apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
-    this->map_.schedule_type() = structured_control_flow::ScheduleType_CPU_Parallel();
+    this->map_.schedule_type() = structured_control_flow::ScheduleType_CPU_Parallel::create();
 }
 
 void Parallelization::to_json(nlohmann::json& j) const {

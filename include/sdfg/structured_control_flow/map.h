@@ -19,25 +19,35 @@ namespace structured_control_flow {
 class ScheduleType {
 private:
     std::unordered_map<std::string, std::string> properties_;
+    std::string value_;
 
 public:
-    static const std::string value() { return "BASE"; }
-    std::unordered_map<std::string, std::string> properties() const { return properties_; }
+    ScheduleType(std::string value) : value_(value) {}
+    const std::string value() const { return value_; }
+    const std::unordered_map<std::string, std::string>& properties() const { return properties_; }
+    void set_property(const std::string& key, const std::string& value) {
+        if (properties_.find(key) == properties_.end()) {
+            properties_.insert({key, value});
+            return;
+        }
+        properties_.at(key) = value;
+    }
 };
 
-class ScheduleType_Sequential : public ScheduleType {
+class ScheduleType_Sequential {
 public:
     static const std::string value() { return "SEQUENTIAL"; }
+    static ScheduleType create() { return ScheduleType(value()); }
 };
 
-class ScheduleType_CPU_Parallel : public ScheduleType {
+class ScheduleType_CPU_Parallel {
 public:
-    ScheduleType_CPU_Parallel();
-    void num_threads(const symbolic::Expression& num_threads);
-    const symbolic::Expression& num_threads() const;
-    void set_dynamic();
-    bool dynamic() const;
+    static void num_threads(ScheduleType& schedule, const symbolic::Expression& num_threads);
+    static const symbolic::Expression num_threads(const ScheduleType& schedule);
+    static void set_dynamic(ScheduleType& schedule);
+    static bool dynamic(const ScheduleType& schedule);
     static const std::string value() { return "CPU_PARALLEL"; }
+    static ScheduleType create() { return ScheduleType(value()); }
 };
 
 class Map : public StructuredLoop {

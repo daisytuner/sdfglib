@@ -282,7 +282,8 @@ void JSONSerializer::map_to_json(nlohmann::json& j, const structured_control_flo
     j["condition"] = expression(map_node.condition());
     j["update"] = expression(map_node.update());
 
-    j["schedule_type"] = std::string(map_node.schedule_type().value());
+    j["schedule_type"] = nlohmann::json::object();
+    schedule_type_to_json(j["schedule_type"], map_node.schedule_type());
 
     nlohmann::json body_json;
     sequence_to_json(body_json, map_node.root());
@@ -430,13 +431,10 @@ void JSONSerializer::debug_info_to_json(nlohmann::json& j, const DebugInfo& debu
 }
 
 void JSONSerializer::schedule_type_to_json(nlohmann::json& j, const ScheduleType& schedule_type) {
-    j["value"] = std::string(schedule_type.value());
-    j["properties"] = nlohmann::json::array();
+    j["value"] = schedule_type.value();
+    j["properties"] = nlohmann::json::object();
     for (const auto& prop : schedule_type.properties()) {
-        nlohmann::json prop_json;
-        prop_json["key"] = prop.first;
-        prop_json["value"] = prop.second;
-        j["properties"].push_back(prop_json);
+        j["properties"][prop.first] = prop.second;
     }
 }
 
@@ -892,10 +890,9 @@ void JSONSerializer::json_to_map_node(
     assert(j.contains("root"));
     assert(j["root"].is_object());
     assert(j.contains("schedule_type"));
-    assert(j["schedule_type"].is_string());
+    assert(j["schedule_type"].is_object());
 
-    structured_control_flow::ScheduleType schedule_type =
-        schedule_type_from_string(j["schedule_type"].get<std::string>());
+    structured_control_flow::ScheduleType schedule_type = json_to_schedule_type(j["schedule_type"]);
 
     symbolic::Symbol indvar = symbolic::symbol(j["indvar"]);
     SymEngine::Expression init(j["init"]);
@@ -1047,17 +1044,15 @@ DebugInfo JSONSerializer::json_to_debug_info(const nlohmann::json& j) {
     return DebugInfo(filename, function, start_line, start_column, end_line, end_column);
 }
 
-ScheduleType JSONSerializer::json_to_schedule_type(nlohmann::json& j) {
+ScheduleType JSONSerializer::json_to_schedule_type(const nlohmann::json& j) {
     assert(j.contains("value"));
     assert(j["value"].is_string());
     assert(j.contains("properties"));
-    assert(j["properties"].is_array());
-    for (const auto& prop : j["properties"]) {
-        assert(prop.contains("key"));
-        assert(prop["key"].is_string());
-        assert(prop.contains("value"));
-        assert(prop["value"].is_string());
-        schedule_type.add_property(prop["key"], prop["value"]);
+    assert(j["properties"].is_object());
+    ScheduleType schedule_type(j["value"].get<std::string>());
+    for (const auto& [key, value] : j["properties"].items()) {
+        assert(value.is_string());
+        schedule_type.set_property(key, value.get<std::string>());
     }
     return schedule_type;
 }

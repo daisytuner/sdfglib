@@ -91,7 +91,7 @@ bool LayerNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, ana
             cond,
             init,
             update,
-            structured_control_flow::ScheduleType_Sequential(),
+            structured_control_flow::ScheduleType_Sequential::create(),
             {},
             block.debug_info()
         );
