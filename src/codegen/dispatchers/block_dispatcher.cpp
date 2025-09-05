@@ -225,31 +225,90 @@ void LibraryNodeDispatcher::
     stream << "{" << std::endl;
     stream.setIndent(stream.indent() + 4);
 
+    // Define and initialize inputs
     for (auto& iedge : graph.in_edges(this->node_)) {
-        auto& src = static_cast<const data_flow::AccessNode&>(iedge.src());
+        auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
+        std::string src_name = this->language_extension_.access_node(src);
 
-        stream << language_extension_.declaration(iedge.dst_conn(), iedge.base_type());
-        stream << " = " << language_extension_.access_node(src)
-               << language_extension_.subset(this->function_, iedge.base_type(), iedge.subset()) << ";" << std::endl;
+        std::string conn = iedge.dst_conn();
+        auto& conn_type = iedge.result_type(this->function_);
+
+        stream << this->language_extension_.declaration(conn, conn_type);
+        stream << " = ";
+
+        // Reinterpret cast for opaque pointers
+        if (iedge.base_type().type_id() == types::TypeID::Pointer) {
+            stream << "(" << this->language_extension_.type_cast(src_name, iedge.base_type()) << ")";
+        } else {
+            stream << src_name;
+        }
+
+        stream << this->language_extension_.subset(function_, iedge.base_type(), iedge.subset()) << ";";
+        stream << std::endl;
     }
 
+    // Define outputs and initialize pointer outputs
     for (auto& oedge : graph.out_edges(this->node_)) {
         if (std::find(this->node_.inputs().begin(), this->node_.inputs().end(), oedge.src_conn()) !=
             this->node_.inputs().end()) {
             continue;
         }
-        stream << language_extension_.declaration(oedge.src_conn(), oedge.base_type()) << ";" << std::endl;
+
+        auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
+        std::string dst_name = this->language_extension_.access_node(dst);
+
+        std::string conn = oedge.src_conn();
+        auto& conn_type = oedge.result_type(this->function_);
+        if (conn_type.type_id() == types::TypeID::Pointer) {
+            stream << this->language_extension_.declaration(conn, conn_type);
+            stream << " = ";
+
+            // Reinterpret cast for opaque pointers
+            if (oedge.base_type().type_id() == types::TypeID::Pointer) {
+                stream << "(" << this->language_extension_.type_cast(dst_name, oedge.base_type()) << ")";
+            } else {
+                stream << dst_name;
+            }
+
+            stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << ";";
+            stream << std::endl;
+        } else {
+            stream << this->language_extension_.declaration(conn, conn_type);
+            stream << ";" << std::endl;
+        }
     }
+
     stream << std::endl;
 
     this->dispatch_code(stream, globals_stream, library_snippet_factory);
 
     stream << std::endl;
-    for (auto& oedge : graph.out_edges(this->node_)) {
-        auto& dst = static_cast<const data_flow::AccessNode&>(oedge.dst());
-        stream << language_extension_.access_node(dst)
-               << language_extension_.subset(this->function_, oedge.base_type(), oedge.subset()) << " = "
-               << oedge.src_conn() << ";" << std::endl;
+
+    for (auto& oedge : this->data_flow_graph_.out_edges(this->node_)) {
+        if (std::find(this->node_.inputs().begin(), this->node_.inputs().end(), oedge.src_conn()) !=
+            this->node_.inputs().end()) {
+            continue;
+        }
+
+        auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
+        std::string dst_name = this->language_extension_.access_node(dst);
+
+        std::string conn = oedge.src_conn();
+        auto& conn_type = oedge.result_type(this->function_);
+        if (conn_type.type_id() == types::TypeID::Pointer) {
+            continue;
+        }
+
+        // Reinterpret cast for opaque pointers
+        if (oedge.base_type().type_id() == types::TypeID::Pointer) {
+            stream << "(" << this->language_extension_.type_cast(dst_name, oedge.base_type()) << ")";
+        } else {
+            stream << dst_name;
+        }
+
+        stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << " = ";
+        stream << oedge.src_conn();
+        stream << ";" << std::endl;
     }
 
     stream.setIndent(stream.indent() - 4);
