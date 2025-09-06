@@ -9,9 +9,8 @@ ConstantElimination::ConstantElimination() : Pass() {};
 
 std::string ConstantElimination::name() { return "ConstantElimination"; };
 
-std::unordered_set<analysis::User*> inputs(const std::string& container,
-                                           data_flow::AccessNode* access_node,
-                                           analysis::Users& users) {
+std::unordered_set<analysis::User*>
+inputs(const std::string& container, data_flow::AccessNode* access_node, analysis::Users& users) {
     std::unordered_set<analysis::User*> inputs;
 
     auto& graph = access_node->get_parent();
@@ -24,14 +23,17 @@ std::unordered_set<analysis::User*> inputs(const std::string& container,
     }
     for (auto& iedge : graph.in_edges(*tasklet)) {
         auto& src_node = static_cast<data_flow::AccessNode&>(iedge.src());
+        if (dynamic_cast<data_flow::ConstantNode*>(&src_node) != nullptr) {
+            continue;
+        }
+
         inputs.insert(users.get_user(src_node.data(), &src_node, analysis::Use::READ));
     }
     return inputs;
 }
 
-std::unordered_set<analysis::User*> inputs(const std::string& container,
-                                           structured_control_flow::Transition* transition,
-                                           analysis::Users& users) {
+std::unordered_set<analysis::User*>
+inputs(const std::string& container, structured_control_flow::Transition* transition, analysis::Users& users) {
     std::unordered_set<analysis::User*> inputs;
     auto& assign = transition->assignments().at(symbolic::symbol(container));
     for (auto& sym : symbolic::atoms(assign)) {
@@ -43,16 +45,14 @@ std::unordered_set<analysis::User*> inputs(const std::string& container,
 std::unordered_set<analysis::User*> inputs(analysis::User& user, analysis::Users& users) {
     if (auto access_node = dynamic_cast<data_flow::AccessNode*>(user.element())) {
         return inputs(user.container(), access_node, users);
-    } else if (auto transition =
-                   dynamic_cast<structured_control_flow::Transition*>(user.element())) {
+    } else if (auto transition = dynamic_cast<structured_control_flow::Transition*>(user.element())) {
         return inputs(user.container(), transition, users);
     } else {
         return {};
     }
 }
 
-bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder,
-                                   analysis::AnalysisManager& analysis_manager) {
+bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     auto& sdfg = builder.subject();
@@ -130,8 +130,7 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder,
             }
 
             // input1 is constant
-            if (!users.writes(input->container()).empty() ||
-                !users.moves(input->container()).empty() ||
+            if (!users.writes(input->container()).empty() || !users.moves(input->container()).empty() ||
                 !users.views(input->container()).empty()) {
                 constant_inputs = false;
                 break;
@@ -194,5 +193,5 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder,
     return applied;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

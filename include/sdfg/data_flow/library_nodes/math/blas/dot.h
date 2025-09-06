@@ -70,7 +70,7 @@ public:
         const DotNode& node
     );
 
-    void dispatch(
+    void dispatch_code(
         codegen::PrettyPrinter& stream,
         codegen::PrettyPrinter& globals_stream,
         codegen::CodeSnippetFactory& library_snippet_factory
@@ -86,7 +86,7 @@ public:
         const DotNode& node
     );
 
-    void dispatch(
+    void dispatch_code(
         codegen::PrettyPrinter& stream,
         codegen::PrettyPrinter& globals_stream,
         codegen::CodeSnippetFactory& library_snippet_factory

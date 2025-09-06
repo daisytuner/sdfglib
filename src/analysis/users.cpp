@@ -119,6 +119,10 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
     graph::Vertex first = boost::graph_traits<graph::Graph>::null_vertex();
     graph::Vertex last = boost::graph_traits<graph::Graph>::null_vertex();
     for (auto node : dataflow.topological_sort()) {
+        if (dynamic_cast<data_flow::ConstantNode*>(node) != nullptr) {
+            continue;
+        }
+
         if (auto access_node = dynamic_cast<data_flow::AccessNode*>(node)) {
             if (!symbolic::is_pointer(symbolic::symbol(access_node->data()))) {
                 if (dataflow.in_degree(*node) > 0) {
@@ -158,20 +162,6 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
                     auto v = boost::add_vertex(this->graph_);
                     this->add_user(std::make_unique<User>(v, access_node->data(), access_node, &dataflow, use));
 
-                    if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
-                        boost::add_edge(last, v, this->graph_);
-                    } else {
-                        first = v;
-                    }
-                    last = v;
-                }
-            }
-        } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(node)) {
-            if (tasklet->is_conditional()) {
-                auto& condition = tasklet->condition();
-                for (auto& atom : symbolic::atoms(condition)) {
-                    auto v = boost::add_vertex(this->graph_);
-                    this->add_user(std::make_unique<User>(v, atom->get_name(), tasklet, &dataflow, Use::READ));
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
                         boost::add_edge(last, v, this->graph_);
                     } else {

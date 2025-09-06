@@ -13,7 +13,13 @@ inline data_flow::LibraryNodeCode LibraryNodeType_Div("ml::Div");
 
 class DivNode : public ElementWiseBinaryNode {
 public:
-    DivNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
+    DivNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent,
+        const std::vector<symbolic::Expression>& shape
+    );
 
     bool expand_operation(
         builder::StructuredSDFGBuilder& builder,

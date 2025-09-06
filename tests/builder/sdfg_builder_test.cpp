@@ -215,6 +215,22 @@ TEST(SDFGBuilderTest, AddAccessNode) {
     EXPECT_EQ(access_node.data(), "scalar_1");
 }
 
+TEST(SDFGBuilderTest, AddConstantNode) {
+    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& state = builder.add_state();
+    EXPECT_EQ(state.element_id(), 1);
+
+    auto& access_node = builder.add_constant(state, "0.0f", types::Scalar(types::PrimitiveType::Float));
+    EXPECT_EQ(access_node.element_id(), 2);
+
+    auto sdfg = builder.move();
+
+    EXPECT_EQ(state.dataflow().nodes().size(), 1);
+    EXPECT_EQ(state.dataflow().edges().size(), 0);
+    EXPECT_EQ(access_node.data(), "0.0f");
+}
+
 TEST(SDFGBuilderTest, AddTasklet) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 

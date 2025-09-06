@@ -1,5 +1,8 @@
 #include "sdfg/data_flow/code_node.h"
 
+#include "sdfg/data_flow/access_node.h"
+#include "sdfg/data_flow/data_flow_graph.h"
+
 namespace sdfg {
 namespace data_flow {
 
@@ -25,6 +28,17 @@ const std::string& CodeNode::output(size_t index) const { return this->outputs_[
 
 const std::string& CodeNode::input(size_t index) const { return this->inputs_[index]; };
 
+bool CodeNode::has_constant_input(size_t index) const {
+    for (auto& iedge : this->get_parent().in_edges(*this)) {
+        if (iedge.dst_conn() == this->inputs_[index]) {
+            if (dynamic_cast<const ConstantNode*>(&iedge.src())) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
 
 } // namespace data_flow
 } // namespace sdfg

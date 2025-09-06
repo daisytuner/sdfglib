@@ -69,7 +69,9 @@ TEST(DeadDataEliminationTest, WriteWithoutRead_Dataflow) {
     auto& block = builder.add_block(root);
 
     auto& output_node = builder.add_access(block, "j");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& zero_node = builder.add_constant(block, "0", desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, zero_node, tasklet, "_in", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto sdfg = builder.move();

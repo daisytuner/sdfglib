@@ -13,6 +13,7 @@ BatchNormalizationNode::BatchNormalizationNode(
     const DebugInfo &debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph &parent,
+    const std::vector<symbolic::Expression> &shape,
     int axis,
     const std::string &epsilon
 )
@@ -26,9 +27,26 @@ BatchNormalizationNode::BatchNormalizationNode(
           {"X", "Scale", "B", "input_mean", "input_var"},
           data_flow::ImplementationType_NONE
       ),
-      axis_(axis), epsilon_(epsilon) {}
+      shape_(shape), axis_(axis), epsilon_(epsilon) {}
 
-void BatchNormalizationNode::validate(const Function &) const { /* TODO */ }
+symbolic::SymbolSet BatchNormalizationNode::symbols() const {
+    symbolic::SymbolSet syms;
+    for (const auto &dim : shape_) {
+        for (auto &atom : symbolic::atoms(dim)) {
+            syms.insert(atom);
+        }
+    }
+    return syms;
+}
+
+void BatchNormalizationNode::
+    replace(const symbolic::Expression &old_expression, const symbolic::Expression &new_expression) {
+    for (auto &dim : shape_) {
+        dim = symbolic::subs(dim, old_expression, new_expression);
+    }
+}
+
+void BatchNormalizationNode::validate(const Function &) const {}
 
 bool BatchNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, analysis::AnalysisManager &analysis_manager) {
     auto &dataflow = this->get_parent();
@@ -77,19 +95,15 @@ bool BatchNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, ana
     auto &new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
     structured_control_flow::Sequence *last_scope = &new_sequence;
 
-    // Create maps over output subset dims (parallel dims)
-    data_flow::Subset domain_begin = oedge_output->begin_subset();
-    data_flow::Subset domain_end = oedge_output->end_subset();
-
     std::vector<symbolic::Expression> loop_syms;
     structured_control_flow::Map *last_map = nullptr;
-    for (size_t d = 0; d < domain_begin.size(); ++d) {
+    for (size_t d = 0; d < this->shape_.size(); ++d) {
         std::string indvar_str = builder.find_new_name("_i");
         builder.add_container(indvar_str, types::Scalar(types::PrimitiveType::UInt64));
         auto indvar = symbolic::symbol(indvar_str);
-        auto init = domain_begin[d];
+        auto init = symbolic::zero();
         auto update = symbolic::add(indvar, symbolic::one());
-        auto cond = symbolic::Lt(indvar, symbolic::add(domain_end[d], symbolic::one()));
+        auto cond = symbolic::Lt(indvar, this->shape_[d]);
         last_map = &builder.add_map(
             *last_scope,
             indvar,
@@ -188,7 +202,7 @@ bool BatchNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, ana
 std::unique_ptr<data_flow::DataFlowNode> BatchNormalizationNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph &parent) const {
     return std::unique_ptr<data_flow::DataFlowNode>(
-        new BatchNormalizationNode(element_id, this->debug_info(), vertex, parent, axis_, epsilon_)
+        new BatchNormalizationNode(element_id, this->debug_info(), vertex, parent, this->shape_, axis_, epsilon_)
     );
 }
 
@@ -199,6 +213,12 @@ nlohmann::json BatchNormalizationNodeSerializer::serialize(const data_flow::Libr
     j["code"] = node.code().value();
     j["axis"] = node.axis();
     j["epsilon"] = node.epsilon();
+
+    serializer::JSONSerializer serializer;
+    j["shape"] = nlohmann::json::array();
+    for (auto &dim : node.shape()) {
+        j["shape"].push_back(serializer.expression(dim));
+    }
 
     return j;
 }
@@ -214,10 +234,15 @@ data_flow::LibraryNode &BatchNormalizationNodeSerializer::deserialize(
     sdfg::serializer::JSONSerializer serializer;
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
+    std::vector<symbolic::Expression> shape;
+    for (const auto &dim : j["shape"]) {
+        shape.push_back(SymEngine::Expression(dim.get<std::string>()));
+    }
+
     auto axis = j["axis"].get<int>();
     auto epsilon = j["epsilon"].get<std::string>();
 
-    return builder.add_library_node<BatchNormalizationNode>(parent, debug_info, axis, epsilon);
+    return builder.add_library_node<BatchNormalizationNode>(parent, debug_info, shape, axis, epsilon);
 }
 
 } // namespace ml

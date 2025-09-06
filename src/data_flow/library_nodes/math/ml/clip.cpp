@@ -14,11 +14,13 @@ ClipNode::ClipNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
+    const std::vector<symbolic::Expression>& shape,
     const std::string& min,
     const std::string& max
 )
-    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Clip, {{"min", min}, {"max", max}}) {
-}
+    : ElementWiseUnaryNode(
+          element_id, debug_info, vertex, parent, LibraryNodeType_Clip, shape, {{"min", min}, {"max", max}}
+      ) {}
 
 bool ClipNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,
@@ -70,7 +72,13 @@ bool ClipNode::expand_operation(
 std::unique_ptr<data_flow::DataFlowNode> ClipNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
     return std::unique_ptr<data_flow::DataFlowNode>(new ClipNode(
-        element_id, this->debug_info(), vertex, parent, this->attributes_.at("min"), this->attributes_.at("max")
+        element_id,
+        this->debug_info(),
+        vertex,
+        parent,
+        this->shape_,
+        this->attributes_.at("min"),
+        this->attributes_.at("max")
     ));
 }
 

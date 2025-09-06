@@ -13,7 +13,13 @@ inline data_flow::LibraryNodeCode LibraryNodeType_Abs("ml::Abs");
 
 class AbsNode : public ElementWiseUnaryNode {
 public:
-    AbsNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
+    AbsNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent,
+        const std::vector<symbolic::Expression>& shape
+    );
 
     bool expand_operation(
         builder::StructuredSDFGBuilder& builder,

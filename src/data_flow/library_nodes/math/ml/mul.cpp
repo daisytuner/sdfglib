@@ -10,9 +10,13 @@ namespace math {
 namespace ml {
 
 MulNode::MulNode(
-    size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
+    size_t element_id,
+    const DebugInfo& debug_info,
+    const graph::Vertex vertex,
+    data_flow::DataFlowGraph& parent,
+    const std::vector<symbolic::Expression>& shape
 )
-    : ElementWiseBinaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Mul, {}) {}
+    : ElementWiseBinaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Mul, shape, {}) {}
 
 bool MulNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,
@@ -41,7 +45,8 @@ bool MulNode::expand_operation(
 
 std::unique_ptr<data_flow::DataFlowNode> MulNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
-    return std::unique_ptr<data_flow::DataFlowNode>(new MulNode(element_id, this->debug_info(), vertex, parent));
+    return std::unique_ptr<
+        data_flow::DataFlowNode>(new MulNode(element_id, this->debug_info(), vertex, parent, this->shape_));
 }
 
 } // namespace ml

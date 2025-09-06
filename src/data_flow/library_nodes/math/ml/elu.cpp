@@ -14,9 +14,10 @@ EluNode::EluNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
+    const std::vector<symbolic::Expression>& shape,
     const std::string& alpha
 )
-    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Elu, {{"alpha", alpha}}) {}
+    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Elu, shape, {{"alpha", alpha}}) {}
 
 bool EluNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,
@@ -60,8 +61,8 @@ bool EluNode::expand_operation(
 
 std::unique_ptr<data_flow::DataFlowNode> EluNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
-    return std::unique_ptr<
-        data_flow::DataFlowNode>(new EluNode(element_id, this->debug_info(), vertex, parent, this->attributes_.at("alpha"))
+    return std::unique_ptr<data_flow::DataFlowNode>(
+        new EluNode(element_id, this->debug_info(), vertex, parent, this->shape_, this->attributes_.at("alpha"))
     );
 }
 

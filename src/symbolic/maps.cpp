@@ -206,19 +206,19 @@ bool is_disjoint_interval(
         auto& dim2 = expr2[i];
 
         auto lb1 = minimum(dim1, {}, assums1);
-        if (lb1 == SymEngine::null) {
+        if (lb1 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*lb1)) {
             continue;
         }
         auto ub1 = maximum(dim1, {}, assums1);
-        if (ub1 == SymEngine::null) {
+        if (ub1 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*ub1)) {
             continue;
         }
         auto lb2 = minimum(dim2, {}, assums2);
-        if (lb2 == SymEngine::null) {
+        if (lb2 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*lb2)) {
             continue;
         }
         auto ub2 = maximum(dim2, {}, assums2);
-        if (ub2 == SymEngine::null) {
+        if (ub2 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*ub2)) {
             continue;
         }
 

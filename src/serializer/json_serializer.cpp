@@ -6,10 +6,10 @@
 #include <utility>
 #include <vector>
 
-#include "sdfg/data_flow/library_nodes/math/math.h"
-
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
+#include "sdfg/data_flow/library_nodes/math/math.h"
 #include "sdfg/data_flow/library_nodes/metadata_node.h"
+#include "sdfg/data_flow/library_nodes/stdlib/stdlib.h"
 
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/library_node.h"
@@ -134,10 +134,6 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
                 node_json["inputs"].push_back(input);
             }
             node_json["output"] = tasklet->output();
-            // node_json["conditional"] = tasklet->is_conditional();
-            // if (tasklet->is_conditional()) {
-            //     node_json["condition"] = dumps_expression(tasklet->condition());
-            // }
         } else if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
             node_json["type"] = "library_node";
             node_json["implementation_type"] = std::string(lib_node->implementation_type().value());
@@ -149,6 +145,13 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
             auto serializer = serializer_fn();
             auto lib_node_json = serializer->serialize(*lib_node);
             node_json.merge_patch(lib_node_json);
+        } else if (auto code_node = dynamic_cast<const data_flow::ConstantNode*>(&node)) {
+            node_json["type"] = "constant_node";
+            node_json["data"] = code_node->data();
+
+            nlohmann::json type_json;
+            type_to_json(type_json, code_node->type());
+            node_json["data_type"] = type_json;
         } else if (auto code_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
             node_json["type"] = "access_node";
             node_json["data"] = code_node->data();
@@ -175,16 +178,6 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
         edge_json["subset"] = nlohmann::json::array();
         for (auto& subset : edge.subset()) {
             edge_json["subset"].push_back(expression(subset));
-        }
-
-        edge_json["begin_subset"] = nlohmann::json::array();
-        for (auto& subset : edge.begin_subset()) {
-            edge_json["begin_subset"].push_back(expression(subset));
-        }
-
-        edge_json["end_subset"] = nlohmann::json::array();
-        for (auto& subset : edge.end_subset()) {
-            edge_json["end_subset"].push_back(expression(subset));
         }
 
         nlohmann::json base_type_json;
@@ -589,6 +582,16 @@ void JSONSerializer::json_to_dataflow(
             auto& access_node = builder.add_access(parent, node["data"], json_to_debug_info(node["debug_info"]));
             access_node.element_id_ = node["element_id"];
             nodes_map.insert({node["element_id"], access_node});
+        } else if (type == "constant_node") {
+            assert(node.contains("data"));
+            assert(node.contains("data_type"));
+
+            auto type = json_to_type(node["data_type"]);
+
+            auto& constant_node =
+                builder.add_constant(parent, node["data"], *type, json_to_debug_info(node["debug_info"]));
+            constant_node.element_id_ = node["element_id"];
+            nodes_map.insert({node["element_id"], constant_node});
         } else {
             throw std::runtime_error("Unknown node type");
         }
@@ -615,55 +618,25 @@ void JSONSerializer::json_to_dataflow(
 
         auto base_type = json_to_type(edge["base_type"]);
 
-        if (edge.contains("begin_subset") && edge.contains("end_subset")) {
-            assert(edge["begin_subset"].is_array());
-            assert(edge["end_subset"].is_array());
-            std::vector<symbolic::Expression> begin_subset;
-            std::vector<symbolic::Expression> end_subset;
-            for (const auto& subset_str : edge["begin_subset"]) {
-                assert(subset_str.is_string());
-                SymEngine::Expression subset_expr(subset_str);
-                begin_subset.push_back(subset_expr);
-            }
-            for (const auto& subset_str : edge["end_subset"]) {
-                assert(subset_str.is_string());
-                SymEngine::Expression subset_expr(subset_str);
-                end_subset.push_back(subset_expr);
-            }
-            auto& memlet = builder.add_memlet(
-                parent,
-                source,
-                edge["src_conn"],
-                target,
-                edge["dst_conn"],
-                begin_subset,
-                end_subset,
-                *base_type,
-                json_to_debug_info(edge["debug_info"])
-            );
-            memlet.element_id_ = edge["element_id"];
-        } else if (edge.contains("subset")) {
-            assert(edge["subset"].is_array());
-            std::vector<symbolic::Expression> subset;
-            for (const auto& subset_str : edge["subset"]) {
-                assert(subset_str.is_string());
-                SymEngine::Expression subset_expr(subset_str);
-                subset.push_back(subset_expr);
-            }
-            auto& memlet = builder.add_memlet(
-                parent,
-                source,
-                edge["src_conn"],
-                target,
-                edge["dst_conn"],
-                subset,
-                *base_type,
-                json_to_debug_info(edge["debug_info"])
-            );
-            memlet.element_id_ = edge["element_id"];
-        } else {
-            throw std::runtime_error("Subsets not specified in json");
+        assert(edge.contains("subset"));
+        assert(edge["subset"].is_array());
+        std::vector<symbolic::Expression> subset;
+        for (const auto& subset_str : edge["subset"]) {
+            assert(subset_str.is_string());
+            SymEngine::Expression subset_expr(subset_str);
+            subset.push_back(subset_expr);
         }
+        auto& memlet = builder.add_memlet(
+            parent,
+            source,
+            edge["src_conn"],
+            target,
+            edge["dst_conn"],
+            subset,
+            *base_type,
+            json_to_debug_info(edge["debug_info"])
+        );
+        memlet.element_id_ = edge["element_id"];
     }
 }
 
@@ -1150,6 +1123,40 @@ LibraryNodeSerializerFn LibraryNodeSerializerRegistry::get_library_node_serializ
 size_t LibraryNodeSerializerRegistry::size() const { return factory_map_.size(); }
 
 void register_default_serializers() {
+    // stdlib
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Calloc.value(), []() {
+            return std::make_unique<stdlib::CallocNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Fprintf.value(), []() {
+            return std::make_unique<stdlib::FprintfNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_FPutc.value(), []() {
+            return std::make_unique<stdlib::FPutcNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Free.value(), []() {
+            return std::make_unique<stdlib::FreeNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_FWrite.value(), []() {
+            return std::make_unique<stdlib::FWriteNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Malloc.value(), []() {
+            return std::make_unique<stdlib::MallocNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Rand.value(), []() {
+            return std::make_unique<stdlib::RandNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Srand.value(), []() {
+            return std::make_unique<stdlib::SrandNodeSerializer>();
+        });
+
     // Metadata
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(data_flow::LibraryNodeType_Metadata.value(), []() {
@@ -1163,106 +1170,106 @@ void register_default_serializers() {
         });
 
     // ML
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Abs.value(), []() {
-            return std::make_unique<math::ml::AbsNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Add.value(), []() {
-            return std::make_unique<math::ml::AddNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_BatchNormalization.value(), []() {
-            return std::make_unique<math::ml::BatchNormalizationNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Clip.value(), []() {
-            return std::make_unique<math::ml::ClipNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Conv.value(), []() {
-            return std::make_unique<math::ml::ConvNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Div.value(), []() {
-            return std::make_unique<math::ml::DivNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Dropout.value(), []() {
-            return std::make_unique<math::ml::DropoutSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Elu.value(), []() {
-            return std::make_unique<math::ml::EluNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Erf.value(), []() {
-            return std::make_unique<math::ml::ErfNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Gemm.value(), []() {
-            return std::make_unique<math::ml::GemmNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_HardSigmoid.value(), []() {
-            return std::make_unique<math::ml::HardSigmoidNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_LayerNormalization.value(), []() {
-            return std::make_unique<math::ml::LayerNormalizationNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_LeakyReLU.value(), []() {
-            return std::make_unique<math::ml::LeakyReLUNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_LogSoftmax.value(), []() {
-            return std::make_unique<math::ml::LogSoftmaxNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_MatMul.value(), []() {
-            return std::make_unique<math::ml::MatMulNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_MaxPool.value(), []() {
-            return std::make_unique<math::ml::MaxPoolNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Mul.value(), []() {
-            return std::make_unique<math::ml::MulNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Pow.value(), []() {
-            return std::make_unique<math::ml::PowNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_ReduceMean.value(), []() {
-            return std::make_unique<math::ml::ReduceMeanNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_ReLU.value(), []() {
-            return std::make_unique<math::ml::ReLUNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Sigmoid.value(), []() {
-            return std::make_unique<math::ml::SigmoidNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Softmax.value(), []() {
-            return std::make_unique<math::ml::SoftmaxNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Sqrt.value(), []() {
-            return std::make_unique<math::ml::SqrtNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Sub.value(), []() {
-            return std::make_unique<math::ml::SubNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Tanh.value(), []() {
-            return std::make_unique<math::ml::TanhNodeSerializer>();
-        });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Abs.value(), []() {
+    //         return std::make_unique<math::ml::AbsNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Add.value(), []() {
+    //         return std::make_unique<math::ml::AddNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_BatchNormalization.value(), []() {
+    //         return std::make_unique<math::ml::BatchNormalizationNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Clip.value(), []() {
+    //         return std::make_unique<math::ml::ClipNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Conv.value(), []() {
+    //         return std::make_unique<math::ml::ConvNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Div.value(), []() {
+    //         return std::make_unique<math::ml::DivNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Dropout.value(), []() {
+    //         return std::make_unique<math::ml::DropoutSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Elu.value(), []() {
+    //         return std::make_unique<math::ml::EluNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Erf.value(), []() {
+    //         return std::make_unique<math::ml::ErfNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Gemm.value(), []() {
+    //         return std::make_unique<math::ml::GemmNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_HardSigmoid.value(), []() {
+    //         return std::make_unique<math::ml::HardSigmoidNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_LayerNormalization.value(), []() {
+    //         return std::make_unique<math::ml::LayerNormalizationNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_LeakyReLU.value(), []() {
+    //         return std::make_unique<math::ml::LeakyReLUNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_LogSoftmax.value(), []() {
+    //         return std::make_unique<math::ml::LogSoftmaxNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_MatMul.value(), []() {
+    //         return std::make_unique<math::ml::MatMulNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_MaxPool.value(), []() {
+    //         return std::make_unique<math::ml::MaxPoolNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Mul.value(), []() {
+    //         return std::make_unique<math::ml::MulNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Pow.value(), []() {
+    //         return std::make_unique<math::ml::PowNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_ReduceMean.value(), []() {
+    //         return std::make_unique<math::ml::ReduceMeanNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_ReLU.value(), []() {
+    //         return std::make_unique<math::ml::ReLUNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Sigmoid.value(), []() {
+    //         return std::make_unique<math::ml::SigmoidNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Softmax.value(), []() {
+    //         return std::make_unique<math::ml::SoftmaxNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Sqrt.value(), []() {
+    //         return std::make_unique<math::ml::SqrtNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Sub.value(), []() {
+    //         return std::make_unique<math::ml::SubNodeSerializer>();
+    //     });
+    // LibraryNodeSerializerRegistry::instance()
+    //     .register_library_node_serializer(math::ml::LibraryNodeType_Tanh.value(), []() {
+    //         return std::make_unique<math::ml::TanhNodeSerializer>();
+    //     });
 
     // BLAS
     LibraryNodeSerializerRegistry::instance()

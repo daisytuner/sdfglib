@@ -19,10 +19,12 @@ TEST(SymbolPromotionTest, as_symbol_int) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "i");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& zero_node = builder.add_constant(block, "0", desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, zero_node, tasklet, "_in", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
-    auto res = passes::SymbolPromotion::as_symbol(block.dataflow(), tasklet, "0");
+    auto res = passes::SymbolPromotion::as_symbol(block.dataflow(), tasklet, "_in");
     codegen::CPPLanguageExtension language_extension;
     EXPECT_EQ(language_extension.expression(res), "0");
 }
@@ -37,10 +39,12 @@ TEST(SymbolPromotionTest, as_symbol_long) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "i");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"4294967296"});
+    auto& const_node = builder.add_constant(block, "4294967296", desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, const_node, tasklet, "_in", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
-    auto res = passes::SymbolPromotion::as_symbol(block.dataflow(), tasklet, "4294967296");
+    auto res = passes::SymbolPromotion::as_symbol(block.dataflow(), tasklet, "_in");
     codegen::CPPLanguageExtension language_extension;
     EXPECT_EQ(language_extension.expression(res), "4294967296");
 }
@@ -75,8 +79,10 @@ TEST(SymbolPromotionTest, Assignment1) {
 
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
+    auto& zero_node = builder.add_constant(block, "0", desc);
     auto& output_node = builder.add_access(block, "i");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, zero_node, tasklet, "_in", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto sdfg = builder.move();
@@ -160,7 +166,11 @@ TEST(SymbolPromotionTest, Add1) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "i");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"0", "1"});
+    auto& zero_node = builder.add_constant(block, "0", desc);
+    auto& one_node = builder.add_constant(block, "1", desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, zero_node, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, one_node, tasklet, "_in2", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto sdfg = builder.move();
@@ -245,7 +255,11 @@ TEST(SymbolPromotionTest, Sub1) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "i");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::sub, "_out", {"0", "1"});
+    auto& zero_node = builder.add_constant(block, "0", desc);
+    auto& one_node = builder.add_constant(block, "1", desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::sub, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, zero_node, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, one_node, tasklet, "_in2", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto sdfg = builder.move();
@@ -330,7 +344,11 @@ TEST(SymbolPromotionTest, Mul1) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "i");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::mul, "_out", {"0", "1"});
+    auto& zero_node = builder.add_constant(block, "0", desc);
+    auto& one_node = builder.add_constant(block, "1", desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::mul, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, zero_node, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, one_node, tasklet, "_in2", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto sdfg = builder.move();

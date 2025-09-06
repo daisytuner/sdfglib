@@ -13,7 +13,13 @@ inline data_flow::LibraryNodeCode LibraryNodeType_Sqrt("ml::Sqrt");
 
 class SqrtNode : public ElementWiseUnaryNode {
 public:
-    SqrtNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
+    SqrtNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent,
+        const std::vector<symbolic::Expression>& shape
+    );
 
     bool expand_operation(
         builder::StructuredSDFGBuilder& builder,

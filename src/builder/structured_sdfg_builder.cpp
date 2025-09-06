@@ -1200,6 +1200,21 @@ data_flow::AccessNode& StructuredSDFGBuilder::
     return dynamic_cast<data_flow::AccessNode&>(*(res.first->second));
 };
 
+data_flow::ConstantNode& StructuredSDFGBuilder::add_constant(
+    structured_control_flow::Block& block, const std::string& data, const types::IType& type, const DebugInfo& debug_info
+) {
+    auto vertex = boost::add_vertex(block.dataflow_->graph_);
+    auto res = block.dataflow_->nodes_.insert(
+        {vertex,
+         std::unique_ptr<data_flow::ConstantNode>(
+             new data_flow::ConstantNode(this->new_element_id(), debug_info, vertex, block.dataflow(), data, type)
+         )}
+    );
+
+    return dynamic_cast<data_flow::ConstantNode&>(*(res.first->second));
+};
+
+
 data_flow::Tasklet& StructuredSDFGBuilder::add_tasklet(
     structured_control_flow::Block& block,
     const data_flow::TaskletCode code,
@@ -1210,9 +1225,9 @@ data_flow::Tasklet& StructuredSDFGBuilder::add_tasklet(
     auto vertex = boost::add_vertex(block.dataflow_->graph_);
     auto res = block.dataflow_->nodes_.insert(
         {vertex,
-         std::unique_ptr<data_flow::Tasklet>(new data_flow::Tasklet(
-             this->new_element_id(), debug_info, vertex, block.dataflow(), code, output, inputs, symbolic::__true__()
-         ))}
+         std::unique_ptr<data_flow::Tasklet>(
+             new data_flow::Tasklet(this->new_element_id(), debug_info, vertex, block.dataflow(), code, output, inputs)
+         )}
     );
 
     return dynamic_cast<data_flow::Tasklet&>(*(res.first->second));
@@ -1233,43 +1248,6 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
         {edge.first,
          std::unique_ptr<data_flow::Memlet>(new data_flow::Memlet(
              this->new_element_id(), debug_info, edge.first, block.dataflow(), src, src_conn, dst, dst_conn, subset, base_type
-         ))}
-    );
-
-    auto& memlet = dynamic_cast<data_flow::Memlet&>(*(res.first->second));
-#ifndef NDEBUG
-    memlet.validate(*this->structured_sdfg_);
-#endif
-
-    return memlet;
-};
-
-data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
-    structured_control_flow::Block& block,
-    data_flow::DataFlowNode& src,
-    const std::string& src_conn,
-    data_flow::DataFlowNode& dst,
-    const std::string& dst_conn,
-    const data_flow::Subset& begin_subset,
-    const data_flow::Subset& end_subset,
-    const types::IType& base_type,
-    const DebugInfo& debug_info
-) {
-    auto edge = boost::add_edge(src.vertex_, dst.vertex_, block.dataflow_->graph_);
-    auto res = block.dataflow_->edges_.insert(
-        {edge.first,
-         std::unique_ptr<data_flow::Memlet>(new data_flow::Memlet(
-             this->new_element_id(),
-             debug_info,
-             edge.first,
-             block.dataflow(),
-             src,
-             src_conn,
-             dst,
-             dst_conn,
-             begin_subset,
-             end_subset,
-             base_type
          ))}
     );
 
@@ -1313,12 +1291,17 @@ data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
     const data_flow::Subset& subset,
     const DebugInfo& debug_info
 ) {
-    auto& src_type = this->structured_sdfg_->type(src.data());
-    auto& base_type = types::infer_type(*this->structured_sdfg_, src_type, subset);
+    const types::IType* src_type = nullptr;
+    if (auto cnode = dynamic_cast<data_flow::ConstantNode*>(&src)) {
+        src_type = &cnode->type();
+    } else {
+        src_type = &this->structured_sdfg_->type(src.data());
+    }
+    auto& base_type = types::infer_type(*this->structured_sdfg_, *src_type, subset);
     if (base_type.type_id() != types::TypeID::Scalar) {
         throw InvalidSDFGException("Computational memlet must have a scalar type");
     }
-    return this->add_memlet(block, src, "void", dst, dst_conn, subset, src_type, debug_info);
+    return this->add_memlet(block, src, "void", dst, dst_conn, subset, *src_type, debug_info);
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
@@ -1342,12 +1325,11 @@ data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
     data_flow::AccessNode& src,
     data_flow::LibraryNode& dst,
     const std::string& dst_conn,
-    const data_flow::Subset& begin_subset,
-    const data_flow::Subset& end_subset,
+    const data_flow::Subset& subset,
     const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(block, src, "void", dst, dst_conn, begin_subset, end_subset, base_type, debug_info);
+    return this->add_memlet(block, src, "void", dst, dst_conn, subset, base_type, debug_info);
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
@@ -1355,12 +1337,11 @@ data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
     data_flow::LibraryNode& src,
     const std::string& src_conn,
     data_flow::AccessNode& dst,
-    const data_flow::Subset& begin_subset,
-    const data_flow::Subset& end_subset,
+    const data_flow::Subset& subset,
     const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(block, src, src_conn, dst, "void", begin_subset, end_subset, base_type, debug_info);
+    return this->add_memlet(block, src, src_conn, dst, "void", subset, base_type, debug_info);
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_reference_memlet(

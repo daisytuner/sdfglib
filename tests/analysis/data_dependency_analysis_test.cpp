@@ -21,8 +21,10 @@ TEST(DataDependencyAnalysisTest, Block_Define_Scalar) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& input_node = builder.add_constant(block, "0", base_desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+    builder.add_computational_memlet(block, input_node, tasklet, "_in", {});
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
@@ -58,8 +60,10 @@ TEST(DataDependencyAnalysisTest, Block_Define_Array) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& input_node = builder.add_constant(block, "0", base_desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {symbolic::integer(0)});
+    builder.add_computational_memlet(block, input_node, tasklet, "_in", {});
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());

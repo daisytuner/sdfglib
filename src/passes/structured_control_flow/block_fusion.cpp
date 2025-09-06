@@ -19,10 +19,6 @@ bool BlockFusion::can_be_applied(
             if (lib_node->side_effect()) {
                 return false;
             }
-        } else if (auto tasklet = dynamic_cast<const data_flow::Tasklet*>(&node)) {
-            if (tasklet->is_conditional()) {
-                return false;
-            }
         } else if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
             if (first_graph.in_degree(*access_node) > 0) {
                 auto& type = builder_.subject().type(access_node->data());
@@ -38,10 +34,6 @@ bool BlockFusion::can_be_applied(
             if (lib_node->side_effect()) {
                 return false;
             }
-        } else if (auto tasklet = dynamic_cast<const data_flow::Tasklet*>(&node)) {
-            if (tasklet->is_conditional()) {
-                return false;
-            }
         } else if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
             if (second_graph.in_degree(*access_node) > 0) {
                 auto& type = builder_.subject().type(access_node->data());
@@ -54,7 +46,7 @@ bool BlockFusion::can_be_applied(
 
     // Criterion: Subsets may not use written symbols
     for (auto& edge : first_graph.edges()) {
-        for (auto& dim : edge.begin_subset()) {
+        for (auto& dim : edge.subset()) {
             for (auto& sym : symbolic::atoms(dim)) {
                 if (second_write_symbols.find(sym->get_name()) != second_write_symbols.end()) {
                     return false;
@@ -63,7 +55,7 @@ bool BlockFusion::can_be_applied(
         }
     }
     for (auto& edge : second_graph.edges()) {
-        for (auto& dim : edge.begin_subset()) {
+        for (auto& dim : edge.subset()) {
             for (auto& sym : symbolic::atoms(dim)) {
                 if (first_write_symbols.find(sym->get_name()) != first_write_symbols.end()) {
                     return false;
@@ -165,9 +157,16 @@ void BlockFusion::apply(
                 // Connect by replacement
                 node_mapping[access_node] = connectors[access_node];
             } else {
-                // Add new
-                node_mapping[access_node] =
-                    &builder_.add_access(first_block, access_node->data(), access_node->debug_info());
+                if (auto const_node = dynamic_cast<data_flow::ConstantNode*>(access_node)) {
+                    // Add new
+                    node_mapping[const_node] =
+                        &builder_
+                             .add_constant(first_block, const_node->data(), const_node->type(), const_node->debug_info());
+                } else {
+                    // Add new
+                    node_mapping[access_node] =
+                        &builder_.add_access(first_block, access_node->data(), access_node->debug_info());
+                }
             }
         } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(&node)) {
             node_mapping[tasklet] = &builder_.add_tasklet(
@@ -191,8 +190,7 @@ void BlockFusion::apply(
             edge.src_conn(),
             *node_mapping[&dst_node],
             edge.dst_conn(),
-            edge.begin_subset(),
-            edge.end_subset(),
+            edge.subset(),
             edge.base_type(),
             edge.debug_info()
         );

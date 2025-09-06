@@ -15,8 +15,8 @@ TEST(DataflowTest, TopologicalSort) {
     auto& access_node_1 = builder.add_access(state, "scalar_1");
     auto& access_node_2 = builder.add_access(state, "scalar_2");
     auto& access_node_3 = builder.add_access(state, "scalar_1");
-    auto& tasklet_1 = builder.add_tasklet(state, data_flow::TaskletCode::add, "_out", {"_in", "1"});
-    auto& tasklet_2 = builder.add_tasklet(state, data_flow::TaskletCode::add, "_out", {"_in", "2"});
+    auto& tasklet_1 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    auto& tasklet_2 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
 
     builder.add_computational_memlet(state, access_node_1, tasklet_1, "_in", {});
     builder.add_computational_memlet(state, tasklet_1, "_out", access_node_2, {});

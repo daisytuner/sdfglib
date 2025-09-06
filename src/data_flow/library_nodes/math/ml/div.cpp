@@ -10,9 +10,13 @@ namespace math {
 namespace ml {
 
 DivNode::DivNode(
-    size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
+    size_t element_id,
+    const DebugInfo& debug_info,
+    const graph::Vertex vertex,
+    data_flow::DataFlowGraph& parent,
+    const std::vector<symbolic::Expression>& shape
 )
-    : ElementWiseBinaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Div, {}) {}
+    : ElementWiseBinaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Div, shape, {}) {}
 
 bool DivNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,
@@ -41,7 +45,8 @@ bool DivNode::expand_operation(
 
 std::unique_ptr<data_flow::DataFlowNode> DivNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
-    return std::unique_ptr<data_flow::DataFlowNode>(new DivNode(element_id, this->debug_info(), vertex, parent));
+    return std::unique_ptr<
+        data_flow::DataFlowNode>(new DivNode(element_id, this->debug_info(), vertex, parent, this->shape_));
 }
 
 } // namespace ml

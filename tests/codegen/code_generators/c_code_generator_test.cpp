@@ -32,7 +32,8 @@ TEST(CCodeGeneratorTest, Dispatch_Includes) {
     auto result = generator.includes().str();
     EXPECT_EQ(
         result,
-        "#include <math.h>\n#include <cblas.h>\n#include <stdbool.h>\n#include <stdlib.h>\n#include "
+        "#include <math.h>\n#include <cblas.h>\n#include <stdbool.h>\n#include <stdio.h>\n#include "
+        "<stdlib.h>\n#include "
         "<daisy_rtl/daisy_rtl.h>\n"
     );
 }
@@ -239,15 +240,19 @@ TEST(CCodeGeneratorTest, CreateCapturePlans) {
     );
 
     auto& block = builder.add_block(inner_for.root());
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "__out", {"__in0", "__in1"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "__out", {"__in0"});
     auto& readArr = builder.add_access(block, "arg1");
     auto& readPrev = builder.add_computational_memlet(block, readArr, tasklet, "__in0", {sym_i, sym_j}, ptr_inner_type);
     auto& writeArr = builder.add_access(block, "arg1");
     auto& writeEntry =
         builder.add_computational_memlet(block, tasklet, "__out", writeArr, {sym_i, sym_j}, ptr_inner_type);
+
+    auto& zero_node = builder.add_constant(block, "0", value_type);
+    auto& tasklet_ext = builder.add_tasklet(block, data_flow::TaskletCode::assign, "__out", {"__in0"});
+    builder.add_computational_memlet(block, zero_node, tasklet_ext, "__in0", {}, value_type);
     auto& writeOut = builder.add_access(block, "ext1");
     auto& writeLast =
-        builder.add_computational_memlet(block, tasklet, "__out", writeOut, {symbolic::zero()}, ptr_value_type);
+        builder.add_computational_memlet(block, tasklet_ext, "__out", writeOut, {symbolic::zero()}, ptr_value_type);
 
     auto sdfg = builder.move();
 

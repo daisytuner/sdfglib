@@ -62,6 +62,10 @@ void DataDependencyAnalysis::visit_block(
     auto& dataflow = block.dataflow();
 
     for (auto node : dataflow.topological_sort()) {
+        if (dynamic_cast<data_flow::ConstantNode*>(node) != nullptr) {
+            continue;
+        }
+
         if (auto access_node = dynamic_cast<data_flow::AccessNode*>(node)) {
             if (!symbolic::is_pointer(symbolic::symbol(access_node->data()))) {
                 if (dataflow.in_degree(*node) > 0) {
@@ -126,32 +130,6 @@ void DataDependencyAnalysis::visit_block(
                             if (!supersedes_all) {
                                 undefined.insert(current_user);
                             }
-                        }
-                    }
-                }
-            }
-        } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(node)) {
-            if (tasklet->is_conditional()) {
-                auto& condition = tasklet->condition();
-                for (auto& atom : symbolic::atoms(condition)) {
-                    auto current_user = users.get_user(atom->get_name(), tasklet, Use::READ);
-                    {
-                        // Find all definitions that we read from
-                        bool found = false;
-                        bool superseded_all = false;
-                        for (auto& user : open_definitions) {
-                            if (intersects(*user.first, *current_user, assumptions_analysis)) {
-                                user.second.insert(current_user);
-                                if (!found) {
-                                    found = true;
-                                    superseded_all = true;
-                                }
-
-                                superseded_all &= supersedes(*current_user, *user.first, assumptions_analysis);
-                            }
-                        }
-                        if (!superseded_all) {
-                            undefined.insert(current_user);
                         }
                     }
                 }

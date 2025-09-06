@@ -18,6 +18,10 @@ AccessNode::AccessNode(
       };
 
 void AccessNode::validate(const Function& function) const {
+    if (!function.exists(this->data_)) {
+        throw InvalidSDFGException("Access node " + this->data_ + " uses non-existent variable");
+    }
+
     auto& graph = this->get_parent();
 
     if (graph.out_degree(*this) > 1) {
@@ -56,6 +60,35 @@ void AccessNode::replace(const symbolic::Expression& old_expression, const symbo
             this->data_ = new_symbol->get_name();
         }
     }
+};
+
+ConstantNode::ConstantNode(
+    size_t element_id,
+    const DebugInfo& debug_info,
+    const graph::Vertex vertex,
+    DataFlowGraph& parent,
+    const std::string& data,
+    const types::IType& type
+)
+    : AccessNode(element_id, debug_info, vertex, parent, data), type_(type.clone()) {};
+
+void ConstantNode::validate(const Function& function) const {
+    if (function.exists(this->data_)) {
+        throw InvalidSDFGException("ConstantNode " + this->data_ + " uses variable");
+    }
+
+    auto& graph = this->get_parent();
+    if (graph.in_degree(*this) > 0) {
+        throw InvalidSDFGException("ConstantNode " + this->data_ + " has incoming edges");
+    }
+}
+
+const types::IType& ConstantNode::type() const { return *this->type_; };
+
+std::unique_ptr<DataFlowNode> ConstantNode::clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
+    const {
+    return std::unique_ptr<
+        ConstantNode>(new ConstantNode(element_id, this->debug_info_, vertex, parent, this->data(), *this->type_));
 };
 
 } // namespace data_flow

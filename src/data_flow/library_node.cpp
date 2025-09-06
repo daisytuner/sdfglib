@@ -27,14 +27,6 @@ ImplementationType& LibraryNode::implementation_type() { return this->implementa
 
 bool LibraryNode::side_effect() const { return this->side_effect_; };
 
-bool LibraryNode::needs_connector(size_t index) const {
-    // Is non-constant, if starts with _in prefix
-    if (this->inputs_[index].compare(0, 3, "_in") == 0) {
-        return true;
-    }
-    return false;
-};
-
 std::string LibraryNode::toStr() const { return std::string(this->code_.value()); }
 
 } // namespace data_flow

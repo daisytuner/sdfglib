@@ -70,13 +70,8 @@ public:
     virtual void
     dispatch(PrettyPrinter& stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory);
 
-    virtual void dispatch_code(
-        PrettyPrinter& stream,
-        PrettyPrinter& globals_stream,
-        CodeSnippetFactory& library_snippet_factory,
-        std::vector<std::string>& inputs_by_order,
-        std::vector<std::optional<std::string>>& outputs_by_order
-    ) {}
+    virtual void
+    dispatch_code(PrettyPrinter& stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory) {}
 };
 
 } // namespace codegen
