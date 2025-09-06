@@ -30,12 +30,7 @@ TEST(CCodeGeneratorTest, Dispatch_Includes) {
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.includes().str();
-    EXPECT_EQ(
-        result,
-        "#include <math.h>\n#include <cblas.h>\n#include <stdbool.h>\n#include <stdio.h>\n#include "
-        "<stdlib.h>\n#include "
-        "<daisy_rtl/daisy_rtl.h>\n"
-    );
+    EXPECT_EQ(result, "#include <math.h>\n#include <stdbool.h>\n#include <daisy_rtl/daisy_rtl.h>\n");
 }
 
 TEST(CCodeGeneratorTest, DispatchStructures_Basic) {

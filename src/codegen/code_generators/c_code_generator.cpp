@@ -33,10 +33,7 @@ void CCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const {
 
 void CCodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#include <math.h>" << std::endl;
-    this->includes_stream_ << "#include <cblas.h>" << std::endl;
     this->includes_stream_ << "#include <stdbool.h>" << std::endl;
-    this->includes_stream_ << "#include <stdio.h>" << std::endl;
-    this->includes_stream_ << "#include <stdlib.h>" << std::endl;
     this->includes_stream_ << "#include <daisy_rtl/daisy_rtl.h>" << std::endl;
 };
 
@@ -109,12 +106,16 @@ void CCodeGenerator::dispatch_structures() {
 };
 
 void CCodeGenerator::dispatch_globals() {
-    // Externals are pointers. However, we need to declare them as the base type.
+    // Declare globals
     for (auto& container : sdfg_.externals()) {
-        if (container == "stderr" || container == "stdout" || container == "stdin") {
+        // Function declarations
+        if (auto function_type = dynamic_cast<const types::Function*>(&sdfg_.type(container))) {
+            this->globals_stream_ << "extern " << language_extension_.declaration(container, *function_type) << ";"
+                                  << std::endl;
             continue;
         }
 
+        // Other types must be pointers
         auto& type = dynamic_cast<const types::Pointer&>(sdfg_.type(container));
         assert(type.has_pointee_type() && "Externals must have a pointee type");
         auto& base_type = type.pointee_type();
