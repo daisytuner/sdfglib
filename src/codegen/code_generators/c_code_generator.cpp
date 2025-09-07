@@ -18,7 +18,8 @@ std::string CCodeGenerator::function_definition() {
     std::stringstream arglist;
     arglist << sdfg::helpers::join(args, ", ");
 
-    return "extern void " + sdfg_.name() + "(" + arglist.str() + ")";
+    return "extern " + this->language_extension_.declaration("", sdfg_.return_type()) + sdfg_.name() + "(" +
+           arglist.str() + ")";
 };
 
 void CCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const {

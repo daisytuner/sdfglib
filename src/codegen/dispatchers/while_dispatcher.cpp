@@ -72,7 +72,7 @@ ReturnDispatcher::ReturnDispatcher(
 void ReturnDispatcher::dispatch_node(
     PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
 ) {
-    main_stream << "return;" << std::endl;
+    main_stream << "return " << node_.data() << ";" << std::endl;
 };
 
 } // namespace codegen

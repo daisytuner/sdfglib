@@ -47,6 +47,7 @@ protected:
     // Name
     std::string name_;
     FunctionType type_;
+    std::unique_ptr<types::IType> return_type_;
 
     // Data definition
     std::unordered_map<std::string, std::unique_ptr<types::IType>> containers_;
@@ -64,6 +65,7 @@ protected:
     std::unordered_map<std::string, std::string> metadata_;
 
     Function(const std::string& name, FunctionType type);
+    Function(const std::string& name, FunctionType type, const types::IType& return_type);
 
 public:
     Function(const Function& function) = delete;
@@ -81,6 +83,8 @@ public:
     std::string& name();
 
     FunctionType type() const;
+
+    const types::IType& return_type() const;
 
     size_t element_counter() const;
 

@@ -98,5 +98,5 @@ TEST(ReturnDispatcherTest, DispatchNode) {
 
     EXPECT_EQ(globals_stream.str(), "");
     EXPECT_TRUE(library_factory.snippets().empty());
-    EXPECT_EQ(main_stream.str(), "return;\n");
+    EXPECT_EQ(main_stream.str(), "return ;\n");
 }

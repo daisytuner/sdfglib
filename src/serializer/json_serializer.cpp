@@ -74,6 +74,10 @@ nlohmann::json JSONSerializer::serialize(const sdfg::StructuredSDFG& sdfg) {
     j["element_counter"] = sdfg.element_counter();
     j["type"] = std::string(sdfg.type().value());
 
+    nlohmann::json return_type_json;
+    type_to_json(return_type_json, sdfg.return_type());
+    j["return_type"] = return_type_json;
+
     j["structures"] = nlohmann::json::array();
     for (const auto& structure_name : sdfg.structures()) {
         const auto& structure = sdfg.structure(structure_name);
@@ -287,6 +291,7 @@ void JSONSerializer::map_to_json(nlohmann::json& j, const structured_control_flo
 void JSONSerializer::return_node_to_json(nlohmann::json& j, const structured_control_flow::Return& return_node) {
     j["type"] = "return";
     j["element_id"] = return_node.element_id();
+    j["data"] = return_node.data();
 
     j["debug_info"] = nlohmann::json::object();
     debug_info_to_json(j["debug_info"], return_node.debug_info());
@@ -441,10 +446,15 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
     assert(j["name"].is_string());
     assert(j.contains("type"));
     assert(j["type"].is_string());
+    assert(j.contains("element_counter"));
     assert(j["element_counter"].is_number_integer());
+    assert(j.contains("return_type"));
+    assert(j["return_type"].is_object());
 
     FunctionType function_type = function_type_from_string(j["type"].get<std::string>());
-    builder::StructuredSDFGBuilder builder(j["name"], function_type);
+    auto return_type = json_to_type(j["return_type"]);
+
+    builder::StructuredSDFGBuilder builder(j["name"], function_type, *return_type);
 
     size_t element_counter = j["element_counter"];
     builder.set_element_counter(element_counter);

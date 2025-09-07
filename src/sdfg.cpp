@@ -6,7 +6,10 @@
 
 namespace sdfg {
 
-SDFG::SDFG(const std::string& name, FunctionType type) : Function(name, type), start_state_(nullptr) {};
+SDFG::SDFG(const std::string& name, FunctionType type, const types::IType& return_type)
+    : Function(name, type, return_type), start_state_(nullptr) {};
+
+SDFG::SDFG(const std::string& name, FunctionType type) : SDFG(name, type, types::Scalar(types::PrimitiveType::Void)) {};
 
 void SDFG::validate() const {
     // Call parent validate

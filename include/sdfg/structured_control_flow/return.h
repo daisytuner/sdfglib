@@ -13,11 +13,18 @@ namespace structured_control_flow {
 class Return : public ControlFlowNode {
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-    Return(size_t element_id, const DebugInfo& debug_info);
+private:
+    std::string data_;
+
+    Return(size_t element_id, const DebugInfo& debug_info, const std::string& data);
 
 public:
     Return(const Return& Return) = delete;
     Return& operator=(const Return&) = delete;
+
+    bool has_data() const;
+
+    const std::string& data() const;
 
     void validate(const Function& function) const override;
 

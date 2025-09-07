@@ -141,7 +141,6 @@ set(SOURCE_FILES
     src/visitor/structured_sdfg_visitor.cpp
     src/passes/pass.cpp
     src/passes/pipeline.cpp
-    src/passes/canonicalize_cfg.cpp
     src/passes/dataflow/dead_data_elimination.cpp
     src/passes/dataflow/dead_reference_elimination.cpp
     src/passes/dataflow/constant_elimination.cpp

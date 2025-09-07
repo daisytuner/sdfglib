@@ -59,8 +59,10 @@ void CallNode::validate(const Function& function) const {
             std::to_string(func_type.num_params()) + ", got " + std::to_string(inputs_.size())
         );
     }
-    if (this->is_void(function) && outputs_.size() < 1) {
-        throw InvalidSDFGException("CallNode: Void function must have at least one output to store the return value.");
+    if (!this->is_void(function) && outputs_.size() < 1) {
+        throw InvalidSDFGException(
+            "CallNode: Non-void function must have at least one output to store the return value."
+        );
     }
 }
 

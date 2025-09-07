@@ -20,6 +20,8 @@ public:
 
     /***** Section: Containers *****/
 
+    void set_return_type(const types::IType& type) const;
+
     const types::IType& add_container(
         const std::string& name, const types::IType& type, bool is_argument = false, bool is_external = false
     ) const;

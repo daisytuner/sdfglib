@@ -17,6 +17,11 @@ SDFGBuilder::SDFGBuilder(const std::string& name, FunctionType type)
 
       };
 
+SDFGBuilder::SDFGBuilder(const std::string& name, FunctionType type, const types::IType& return_type)
+    : FunctionBuilder(), sdfg_(new SDFG(name, type, return_type)) {
+
+      };
+
 SDFG& SDFGBuilder::subject() const { return *this->sdfg_; };
 
 std::unique_ptr<SDFG> SDFGBuilder::move() {
@@ -92,6 +97,20 @@ control_flow::State& SDFGBuilder::
     return new_state;
 };
 
+control_flow::ReturnState& SDFGBuilder::add_return_state(const std::string& data, const DebugInfo& debug_info) {
+    auto vertex = boost::add_vertex(this->sdfg_->graph_);
+    auto res = this->sdfg_->states_.insert(
+        {vertex,
+         std::unique_ptr<
+             control_flow::State>(new control_flow::ReturnState(this->new_element_id(), debug_info, vertex, data))}
+    );
+
+    assert(res.second);
+    (*res.first).second->dataflow_->parent_ = (*res.first).second.get();
+
+    return static_cast<control_flow::ReturnState&>(*(*res.first).second);
+};
+
 control_flow::InterstateEdge& SDFGBuilder::
     add_edge(const control_flow::State& src, const control_flow::State& dst, const DebugInfo& debug_info) {
     return this->add_edge(src, dst, control_flow::Assignments{}, SymEngine::boolTrue, debug_info);
@@ -122,6 +141,10 @@ control_flow::InterstateEdge& SDFGBuilder::add_edge(
     const symbolic::Condition condition,
     const DebugInfo& debug_info
 ) {
+    if (dynamic_cast<const control_flow::ReturnState*>(&src) != nullptr) {
+        throw InvalidSDFGException("Cannot add edge from ReturnState");
+    }
+
     for (auto& entry : assignments) {
         auto& lhs = entry.first;
         auto& type = this->function().type(lhs->get_name());

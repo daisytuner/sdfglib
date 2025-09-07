@@ -1,5 +1,7 @@
 #include "sdfg/control_flow/state.h"
 
+#include "sdfg/sdfg.h"
+
 namespace sdfg {
 namespace control_flow {
 
@@ -19,6 +21,20 @@ data_flow::DataFlowGraph& State::dataflow() { return *this->dataflow_; };
 void State::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
     this->dataflow_->replace(old_expression, new_expression);
 };
+
+ReturnState::ReturnState(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, const std::string& data)
+    : State(element_id, debug_info, vertex), data_(data) {};
+
+const std::string& ReturnState::data() const { return this->data_; };
+
+void ReturnState::validate(const Function& function) const {
+    State::validate(function);
+
+    auto& sdfg = static_cast<const SDFG&>(function);
+    if (sdfg.out_degree(*this) > 0) {
+        throw InvalidSDFGException("ReturnState must not have outgoing transitions");
+    }
+}
 
 } // namespace control_flow
 } // namespace sdfg

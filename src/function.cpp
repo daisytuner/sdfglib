@@ -12,7 +12,8 @@ const std::unique_ptr<types::Scalar> Function::NVPTX_SYMBOL_TYPE =
 const std::unique_ptr<types::Pointer> Function::CONST_POINTER_TYPE =
     std::make_unique<types::Pointer>(types::Scalar(types::PrimitiveType::Void));
 
-Function::Function(const std::string& name, FunctionType type) : element_counter_(0), name_(name), type_(type) {
+Function::Function(const std::string& name, FunctionType type, const types::IType& return_type)
+    : element_counter_(0), name_(name), type_(type), return_type_(return_type.clone()) {
     if (this->type_ == FunctionType_NV_GLOBAL) {
         this->assumptions_[symbolic::threadIdx_x()] =
             symbolic::Assumption::create(symbolic::threadIdx_x(), *NVPTX_SYMBOL_TYPE);
@@ -41,11 +42,16 @@ Function::Function(const std::string& name, FunctionType type) : element_counter
     }
 };
 
+Function::Function(const std::string& name, FunctionType type)
+    : Function(name, type, types::Scalar(types::PrimitiveType::Void)) {}
+
 const std::string& Function::name() const { return this->name_; };
 
 std::string& Function::name() { return this->name_; };
 
 FunctionType Function::type() const { return this->type_; };
+
+const types::IType& Function::return_type() const { return *this->return_type_; };
 
 size_t Function::element_counter() const { return this->element_counter_; };
 

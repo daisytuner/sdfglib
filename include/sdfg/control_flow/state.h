@@ -26,6 +26,7 @@ private:
     const graph::Vertex vertex_;
     std::unique_ptr<data_flow::DataFlowGraph> dataflow_;
 
+protected:
     State(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex);
 
 public:
@@ -42,6 +43,24 @@ public:
     data_flow::DataFlowGraph& dataflow();
 
     void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+};
+
+class ReturnState : public State {
+    friend class sdfg::builder::SDFGBuilder;
+
+private:
+    const std::string data_;
+
+    ReturnState(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, const std::string& data);
+
+public:
+    // Remark: Exclusive resource
+    ReturnState(const ReturnState& state) = delete;
+    ReturnState& operator=(const ReturnState&) = delete;
+
+    const std::string& data() const;
+
+    void validate(const Function& function) const override;
 };
 
 } // namespace control_flow

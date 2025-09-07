@@ -71,6 +71,8 @@ public:
 
     StructuredSDFGBuilder(const std::string& name, FunctionType type);
 
+    StructuredSDFGBuilder(const std::string& name, FunctionType type, const types::IType& return_type);
+
     StructuredSDFGBuilder(const SDFG& sdfg);
 
     StructuredSDFG& subject() const;
@@ -298,6 +300,13 @@ public:
 
     Return& add_return(
         Sequence& parent,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfo& debug_info = DebugInfo()
+    );
+
+    Return& add_return(
+        Sequence& parent,
+        const std::string& data,
         const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfo& debug_info = DebugInfo()
     );

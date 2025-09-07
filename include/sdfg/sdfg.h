@@ -50,6 +50,7 @@ private:
 
 public:
     SDFG(const std::string& name, FunctionType type);
+    SDFG(const std::string& name, FunctionType type, const types::IType& return_type);
 
     SDFG(const SDFG& sdfg) = delete;
     SDFG& operator=(const SDFG&) = delete;

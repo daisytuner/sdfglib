@@ -582,6 +582,21 @@ void DataDependencyAnalysis::visit_return(
     std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions
 ) {
+    if (return_statement.has_data()) {
+        auto current_user = users.get_user(return_statement.data(), &return_statement, Use::READ);
+
+        bool found = false;
+        for (auto& user : open_definitions) {
+            if (user.first->container() == return_statement.data()) {
+                user.second.insert(current_user);
+                found = true;
+            }
+        }
+        if (!found) {
+            undefined.insert(current_user);
+        }
+    }
+
     // close all open reads_after_writes
     for (auto& entry : open_definitions) {
         closed_definitions.insert(entry);

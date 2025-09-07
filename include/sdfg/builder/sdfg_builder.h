@@ -22,6 +22,8 @@ public:
 
     SDFGBuilder(const std::string& name, FunctionType type);
 
+    SDFGBuilder(const std::string& name, FunctionType type, const types::IType& return_type);
+
     SDFG& subject() const;
 
     sdfg::control_flow::State* get_non_const_state(const sdfg::control_flow::State* state) const {
@@ -46,6 +48,8 @@ public:
     control_flow::State& add_state_after(
         const control_flow::State& state, bool connect_states = true, const DebugInfo& debug_info = DebugInfo()
     );
+
+    control_flow::ReturnState& add_return_state(const std::string& data, const DebugInfo& debug_info = DebugInfo());
 
     control_flow::InterstateEdge&
     add_edge(const control_flow::State& src, const control_flow::State& dst, const DebugInfo& debug_info = DebugInfo());

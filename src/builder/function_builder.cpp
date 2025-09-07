@@ -59,6 +59,8 @@ void FunctionBuilder::set_element_counter(size_t element_counter) {
     this->function().element_counter_ = element_counter;
 };
 
+void FunctionBuilder::set_return_type(const types::IType& type) const { this->function().return_type_ = type.clone(); };
+
 const types::IType& FunctionBuilder::
     add_container(const std::string& name, const types::IType& type, bool is_argument, bool is_external) const {
     if (is_argument && is_external) {

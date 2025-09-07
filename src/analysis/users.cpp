@@ -436,11 +436,19 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(structured_control_flow:
         this->exits_.insert({br_stmt, this->users_.at(v).get()});
         return {v, v};
     } else if (auto ret_stmt = dynamic_cast<structured_control_flow::Return*>(&node)) {
-        auto v = boost::add_vertex(this->graph_);
-        this->users_.insert({v, std::make_unique<User>(v, "", ret_stmt, Use::NOP)});
-        this->entries_.insert({ret_stmt, this->users_.at(v).get()});
-        this->exits_.insert({ret_stmt, this->users_.at(v).get()});
-        return {v, boost::graph_traits<graph::Graph>::null_vertex()};
+        if (!ret_stmt->has_data()) {
+            auto v = boost::add_vertex(this->graph_);
+            this->users_.insert({v, std::make_unique<User>(v, "", ret_stmt, Use::NOP)});
+            this->entries_.insert({ret_stmt, this->users_.at(v).get()});
+            this->exits_.insert({ret_stmt, this->users_.at(v).get()});
+            return {v, boost::graph_traits<graph::Graph>::null_vertex()};
+        } else {
+            auto v = boost::add_vertex(this->graph_);
+            this->add_user(std::make_unique<User>(v, ret_stmt->data(), ret_stmt, Use::READ));
+            this->entries_.insert({ret_stmt, this->users_.at(v).get()});
+            this->exits_.insert({ret_stmt, this->users_.at(v).get()});
+            return {v, boost::graph_traits<graph::Graph>::null_vertex()};
+        }
     }
 
     throw std::invalid_argument("Invalid control flow node type");
