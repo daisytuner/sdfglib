@@ -15,8 +15,9 @@ class Return : public ControlFlowNode {
 
 private:
     std::string data_;
+    bool unreachable_;
 
-    Return(size_t element_id, const DebugInfo& debug_info, const std::string& data);
+    Return(size_t element_id, const DebugInfo& debug_info, const std::string& data, bool unreachable);
 
 public:
     Return(const Return& Return) = delete;
@@ -25,6 +26,8 @@ public:
     bool has_data() const;
 
     const std::string& data() const;
+
+    bool unreachable() const;
 
     void validate(const Function& function) const override;
 

@@ -17,7 +17,7 @@ namespace sdfg {
 namespace builder {
 
 std::unordered_set<const control_flow::State*> StructuredSDFGBuilder::
-    determine_loop_nodes(const SDFG& sdfg, const control_flow::State& start, const control_flow::State& end) const {
+    determine_loop_nodes(SDFG& sdfg, const control_flow::State& start, const control_flow::State& end) const {
     std::unordered_set<const control_flow::State*> nodes;
     std::unordered_set<const control_flow::State*> visited;
     std::list<const control_flow::State*> queue = {&start};
@@ -63,13 +63,17 @@ bool post_dominates(
 }
 
 const control_flow::State* StructuredSDFGBuilder::find_end_of_if_else(
-    const SDFG& sdfg,
+    SDFG& sdfg,
     const State* current,
     std::vector<const InterstateEdge*>& out_edges,
     const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
 ) {
     // Best-effort approach: Check if post-dominator of current dominates all out edges
     auto pdom = pdom_tree.at(current);
+    if (pdom == nullptr) {
+        return nullptr;
+    }
+
     for (auto& edge : out_edges) {
         if (!post_dominates(pdom, &edge->dst(), pdom_tree)) {
             return nullptr;
@@ -79,7 +83,7 @@ const control_flow::State* StructuredSDFGBuilder::find_end_of_if_else(
     return pdom;
 }
 
-void StructuredSDFGBuilder::traverse(const SDFG& sdfg) {
+void StructuredSDFGBuilder::traverse(SDFG& sdfg) {
     // Start of SDFGS
     Sequence& root = *structured_sdfg_->root_;
     const State* start_state = &sdfg.start_state();
@@ -97,7 +101,7 @@ void StructuredSDFGBuilder::traverse(const SDFG& sdfg) {
 };
 
 void StructuredSDFGBuilder::traverse_with_loop_detection(
-    const SDFG& sdfg,
+    SDFG& sdfg,
     Sequence& scope,
     const State* current,
     const State* end,
@@ -174,7 +178,7 @@ void StructuredSDFGBuilder::traverse_with_loop_detection(
 };
 
 void StructuredSDFGBuilder::traverse_without_loop_detection(
-    const SDFG& sdfg,
+    SDFG& sdfg,
     Sequence& scope,
     const State* current,
     const State* end,
@@ -204,11 +208,8 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
             this->add_block(scope, curr->dataflow(), {}, curr->debug_info());
 
             auto return_state = dynamic_cast<const control_flow::ReturnState*>(curr);
-            if (return_state) {
-                this->add_return(scope, return_state->data(), {}, curr->debug_info());
-            } else {
-                this->add_return(scope, {}, curr->debug_info());
-            }
+            assert(return_state != nullptr);
+            this->add_return(scope, return_state->data(), return_state->unreachable(), {}, return_state->debug_info());
             continue;
         }
 
@@ -309,7 +310,7 @@ StructuredSDFGBuilder::StructuredSDFGBuilder(const std::string& name, FunctionTy
 StructuredSDFGBuilder::StructuredSDFGBuilder(const std::string& name, FunctionType type, const types::IType& return_type)
     : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name, type, return_type)) {};
 
-StructuredSDFGBuilder::StructuredSDFGBuilder(const SDFG& sdfg)
+StructuredSDFGBuilder::StructuredSDFGBuilder(SDFG& sdfg)
     : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(sdfg.name(), sdfg.type(), sdfg.return_type())) {
     for (auto& entry : sdfg.structures_) {
         this->structured_sdfg_->structures_.insert({entry.first, entry.second->clone()});
@@ -1093,24 +1094,15 @@ Break& StructuredSDFGBuilder::
     return static_cast<Break&>(*parent.children_.back().get());
 };
 
-Return& StructuredSDFGBuilder::
-    add_return(Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfo& debug_info) {
-    parent.children_.push_back(std::unique_ptr<Return>(new Return(this->new_element_id(), debug_info, "")));
-
-    parent.transitions_
-        .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
-        );
-
-    return static_cast<Return&>(*parent.children_.back().get());
-};
-
 Return& StructuredSDFGBuilder::add_return(
     Sequence& parent,
     const std::string& data,
+    bool unreachable,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
 ) {
-    parent.children_.push_back(std::unique_ptr<Return>(new Return(this->new_element_id(), debug_info, data)));
+    parent.children_.push_back(std::unique_ptr<Return>(new Return(this->new_element_id(), debug_info, data, unreachable)
+    ));
 
     parent.transitions_
         .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))

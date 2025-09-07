@@ -107,6 +107,8 @@ public:
                std::views::filter([this](const control_flow::State& state) { return this->out_degree(state) == 0; });
     };
 
+    size_t num_terminal_states() const;
+
     size_t in_degree(const control_flow::State& state) const;
 
     size_t out_degree(const control_flow::State& state) const;
@@ -117,7 +119,7 @@ public:
 
     std::unordered_map<const control_flow::State*, const control_flow::State*> dominator_tree() const;
 
-    std::unordered_map<const control_flow::State*, const control_flow::State*> post_dominator_tree() const;
+    std::unordered_map<const control_flow::State*, const control_flow::State*> post_dominator_tree();
 
     std::list<const control_flow::InterstateEdge*> back_edges() const;
 

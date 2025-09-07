@@ -22,10 +22,14 @@ void State::replace(const symbolic::Expression& old_expression, const symbolic::
     this->dataflow_->replace(old_expression, new_expression);
 };
 
-ReturnState::ReturnState(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, const std::string& data)
-    : State(element_id, debug_info, vertex), data_(data) {};
+ReturnState::ReturnState(
+    size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, const std::string& data, bool unreachable
+)
+    : State(element_id, debug_info, vertex), data_(data), unreachable_(unreachable) {};
 
 const std::string& ReturnState::data() const { return this->data_; };
+
+bool ReturnState::unreachable() const { return this->unreachable_; };
 
 void ReturnState::validate(const Function& function) const {
     State::validate(function);

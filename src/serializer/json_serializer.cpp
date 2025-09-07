@@ -292,6 +292,7 @@ void JSONSerializer::return_node_to_json(nlohmann::json& j, const structured_con
     j["type"] = "return";
     j["element_id"] = return_node.element_id();
     j["data"] = return_node.data();
+    j["unreachable"] = return_node.unreachable();
 
     j["debug_info"] = nlohmann::json::object();
     debug_info_to_json(j["debug_info"], return_node.debug_info());
@@ -905,8 +906,14 @@ void JSONSerializer::json_to_return_node(
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "return");
+    assert(j.contains("data"));
+    assert(j["data"].is_string());
+    assert(j.contains("unreachable"));
+    assert(j["unreachable"].is_boolean());
 
-    auto& node = builder.add_return(parent, assignments, json_to_debug_info(j["debug_info"]));
+    std::string data = j["data"];
+    bool unreachable = j["unreachable"];
+    auto& node = builder.add_return(parent, data, unreachable, assignments, json_to_debug_info(j["debug_info"]));
     node.element_id_ = j["element_id"];
 }
 

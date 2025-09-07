@@ -23,8 +23,6 @@ TEST(DataflowTest, TopologicalSort) {
     builder.add_computational_memlet(state, access_node_2, tasklet_2, "_in", {});
     builder.add_computational_memlet(state, tasklet_2, "_out", access_node_3, {});
 
-    auto sdfg = builder.move();
-
     int i = 0;
     auto order = state.dataflow().topological_sort();
     for (auto& node : order) {

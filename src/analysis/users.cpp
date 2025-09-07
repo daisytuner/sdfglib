@@ -104,7 +104,7 @@ void Users::init_dom_tree() {
     }
 
     // Compute post-dominator-tree
-    auto pdom_tree = graph::post_dominator_tree(this->graph_, this->sink_->vertex_);
+    auto pdom_tree = graph::post_dominator_tree(this->graph_);
     for (auto& entry : pdom_tree) {
         User* first = this->users_.at(entry.first).get();
         User* second = nullptr;

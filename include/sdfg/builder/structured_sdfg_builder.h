@@ -28,19 +28,19 @@ private:
     std::unique_ptr<StructuredSDFG> structured_sdfg_;
 
     std::unordered_set<const control_flow::State*>
-    determine_loop_nodes(const SDFG& sdfg, const control_flow::State& start, const control_flow::State& end) const;
+    determine_loop_nodes(SDFG& sdfg, const control_flow::State& start, const control_flow::State& end) const;
 
     const control_flow::State* find_end_of_if_else(
-        const SDFG& sdfg,
+        SDFG& sdfg,
         const State* current,
         std::vector<const InterstateEdge*>& out_edges,
         const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
     );
 
-    void traverse(const SDFG& sdfg);
+    void traverse(SDFG& sdfg);
 
     void traverse_with_loop_detection(
-        const SDFG& sdfg,
+        SDFG& sdfg,
         Sequence& scope,
         const State* current,
         const State* end,
@@ -51,7 +51,7 @@ private:
     );
 
     void traverse_without_loop_detection(
-        const SDFG& sdfg,
+        SDFG& sdfg,
         Sequence& scope,
         const State* current,
         const State* end,
@@ -73,7 +73,7 @@ public:
 
     StructuredSDFGBuilder(const std::string& name, FunctionType type, const types::IType& return_type);
 
-    StructuredSDFGBuilder(const SDFG& sdfg);
+    StructuredSDFGBuilder(SDFG& sdfg);
 
     StructuredSDFG& subject() const;
 
@@ -300,13 +300,8 @@ public:
 
     Return& add_return(
         Sequence& parent,
-        const sdfg::control_flow::Assignments& assignments = {},
-        const DebugInfo& debug_info = DebugInfo()
-    );
-
-    Return& add_return(
-        Sequence& parent,
         const std::string& data,
+        bool unreachable = false,
         const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfo& debug_info = DebugInfo()
     );

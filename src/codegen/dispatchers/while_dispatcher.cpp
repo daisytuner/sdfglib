@@ -72,6 +72,10 @@ ReturnDispatcher::ReturnDispatcher(
 void ReturnDispatcher::dispatch_node(
     PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
 ) {
+    if (node_.unreachable()) {
+        main_stream << "/* unreachable return */" << std::endl;
+        return;
+    }
     main_stream << "return " << node_.data() << ";" << std::endl;
 };
 

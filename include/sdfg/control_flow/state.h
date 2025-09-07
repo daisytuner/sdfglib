@@ -50,8 +50,15 @@ class ReturnState : public State {
 
 private:
     const std::string data_;
+    bool unreachable_;
 
-    ReturnState(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, const std::string& data);
+    ReturnState(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        const std::string& data,
+        bool unreachable
+    );
 
 public:
     // Remark: Exclusive resource
@@ -59,6 +66,8 @@ public:
     ReturnState& operator=(const ReturnState&) = delete;
 
     const std::string& data() const;
+
+    bool unreachable() const;
 
     void validate(const Function& function) const override;
 };

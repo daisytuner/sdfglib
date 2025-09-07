@@ -407,6 +407,7 @@ TEST(StructuredSDFGBuilderTest, addForAfter) {
 TEST(SDFG2StructuredSDFGTest, Function_Definition) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& start_state = builder.add_state(true);
+    auto& end_state = builder.add_return_state_after(start_state, "");
 
     types::Scalar desc1(types::PrimitiveType::Double);
     types::Scalar desc2(types::PrimitiveType::Int8);
@@ -454,7 +455,7 @@ TEST(SDFG2StructuredSDFGTest, Sequence) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& state1 = builder.add_state(true);
     auto& state2 = builder.add_state_after(state1);
-    auto& state3 = builder.add_state_after(state2);
+    auto& state3 = builder.add_return_state_after(state2, "");
 
     auto sdfg = builder.move();
 
@@ -490,7 +491,7 @@ TEST(SDFG2StructuredSDFGTest, IfElse) {
     auto& init_state = builder.add_state(true);
     auto& if_state = builder.add_state();
     auto& else_state = builder.add_state();
-    auto& end_state = builder.add_state();
+    auto& end_state = builder.add_return_state("");
     builder.add_edge(
         init_state,
         if_state,
@@ -577,6 +578,7 @@ TEST(SDFG2StructuredSDFGTest, While) {
 
     auto& init_state = builder.add_state(true);
     auto loop = builder.add_loop(init_state, iter_sym, init_expr, cond_expr, update_expr);
+    auto& end_state = builder.add_return_state_after(std::get<2>(loop), "");
 
     auto sdfg = builder.move();
 
@@ -585,7 +587,7 @@ TEST(SDFG2StructuredSDFGTest, While) {
 
     // Loop
     auto& root = structured_sdfg->root();
-    EXPECT_EQ(root.size(), 5);
+    EXPECT_EQ(root.size(), 6);
 
     auto child1 = root.at(0);
     EXPECT_TRUE(dynamic_cast<const structured_control_flow::Block*>(&child1.first));
@@ -623,8 +625,12 @@ TEST(SDFG2StructuredSDFGTest, While) {
     EXPECT_EQ(child4.second.size(), 0);
 
     auto child5 = root.at(4);
-    EXPECT_TRUE(dynamic_cast<const structured_control_flow::Return*>(&child5.first));
+    EXPECT_TRUE(dynamic_cast<const structured_control_flow::Block*>(&child5.first));
     EXPECT_EQ(child5.second.size(), 0);
+
+    auto child6 = root.at(5);
+    EXPECT_TRUE(dynamic_cast<const structured_control_flow::Return*>(&child6.first));
+    EXPECT_EQ(child6.second.size(), 0);
 }
 
 TEST(StructuredSDFGBuilderTest, FindElementById_Root) {

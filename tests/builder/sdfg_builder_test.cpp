@@ -8,11 +8,11 @@ using namespace sdfg;
 TEST(SDFGBuilderTest, Empty) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
-    EXPECT_EQ(sdfg->name(), "sdfg_1");
-    EXPECT_EQ(sdfg->states().size(), 0);
-    EXPECT_EQ(sdfg->edges().size(), 0);
+    EXPECT_EQ(sdfg.name(), "sdfg_1");
+    EXPECT_EQ(sdfg.states().size(), 0);
+    EXPECT_EQ(sdfg.edges().size(), 0);
 }
 
 TEST(SDFGBuilderTest, AddState) {
@@ -21,14 +21,14 @@ TEST(SDFGBuilderTest, AddState) {
     auto& state = builder.add_state();
     EXPECT_EQ(state.element_id(), 1);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
-    auto states = sdfg->states();
+    auto states = sdfg.states();
     EXPECT_EQ(states.size(), 1);
     EXPECT_EQ(&*states.begin(), &state);
 
-    EXPECT_EQ(sdfg->in_degree(state), 0);
-    EXPECT_EQ(sdfg->out_degree(state), 0);
+    EXPECT_EQ(sdfg.in_degree(state), 0);
+    EXPECT_EQ(sdfg.out_degree(state), 0);
 }
 
 TEST(SDFGBuilderTest, AddStartState) {
@@ -37,16 +37,16 @@ TEST(SDFGBuilderTest, AddStartState) {
     auto& state = builder.add_state(true);
     EXPECT_EQ(state.element_id(), 1);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
-    auto states = sdfg->states();
+    auto states = sdfg.states();
     EXPECT_EQ(states.size(), 1);
     EXPECT_EQ(&*states.begin(), &state);
 
-    EXPECT_EQ(sdfg->in_degree(state), 0);
-    EXPECT_EQ(sdfg->out_degree(state), 0);
+    EXPECT_EQ(sdfg.in_degree(state), 0);
+    EXPECT_EQ(sdfg.out_degree(state), 0);
 
-    EXPECT_EQ(&sdfg->start_state(), &state);
+    EXPECT_EQ(&sdfg.start_state(), &state);
 }
 
 TEST(SDFGBuilderTest, AddStateBefore) {
@@ -64,17 +64,17 @@ TEST(SDFGBuilderTest, AddStateBefore) {
     auto& state_3 = builder.add_state_before(state_2);
     EXPECT_EQ(state_3.element_id(), 4);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
-    auto states = sdfg->states();
+    auto states = sdfg.states();
     EXPECT_EQ(states.size(), 3);
 
-    EXPECT_EQ(sdfg->in_degree(state_1), 0);
-    EXPECT_EQ(sdfg->out_degree(state_1), 1);
-    EXPECT_EQ(sdfg->in_degree(state_2), 1);
-    EXPECT_EQ(sdfg->out_degree(state_2), 0);
-    EXPECT_EQ(sdfg->in_degree(state_3), 1);
-    EXPECT_EQ(sdfg->out_degree(state_3), 1);
+    EXPECT_EQ(sdfg.in_degree(state_1), 0);
+    EXPECT_EQ(sdfg.out_degree(state_1), 1);
+    EXPECT_EQ(sdfg.in_degree(state_2), 1);
+    EXPECT_EQ(sdfg.out_degree(state_2), 0);
+    EXPECT_EQ(sdfg.in_degree(state_3), 1);
+    EXPECT_EQ(sdfg.out_degree(state_3), 1);
 }
 
 TEST(SDFGBuilderTest, AddStateAfter) {
@@ -92,17 +92,17 @@ TEST(SDFGBuilderTest, AddStateAfter) {
     auto& state_3 = builder.add_state_after(state_1);
     EXPECT_EQ(state_3.element_id(), 4);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
-    auto states = sdfg->states();
+    auto states = sdfg.states();
     EXPECT_EQ(states.size(), 3);
 
-    EXPECT_EQ(sdfg->in_degree(state_1), 0);
-    EXPECT_EQ(sdfg->out_degree(state_1), 1);
-    EXPECT_EQ(sdfg->in_degree(state_2), 1);
-    EXPECT_EQ(sdfg->out_degree(state_2), 0);
-    EXPECT_EQ(sdfg->in_degree(state_3), 1);
-    EXPECT_EQ(sdfg->out_degree(state_3), 1);
+    EXPECT_EQ(sdfg.in_degree(state_1), 0);
+    EXPECT_EQ(sdfg.out_degree(state_1), 1);
+    EXPECT_EQ(sdfg.in_degree(state_2), 1);
+    EXPECT_EQ(sdfg.out_degree(state_2), 0);
+    EXPECT_EQ(sdfg.in_degree(state_3), 1);
+    EXPECT_EQ(sdfg.out_degree(state_3), 1);
 }
 
 TEST(SDFGBuilderTest, AddEdge) {
@@ -121,19 +121,19 @@ TEST(SDFGBuilderTest, AddEdge) {
     EXPECT_EQ(&edge.dst(), &state_2);
     EXPECT_TRUE(symbolic::is_true(edge.condition()));
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
-    auto edges = sdfg->edges();
+    auto edges = sdfg.edges();
     EXPECT_EQ(edges.size(), 1);
     EXPECT_EQ(&*edges.begin(), &edge);
 
-    EXPECT_EQ(sdfg->in_degree(state_1), 0);
-    EXPECT_EQ(sdfg->out_degree(state_1), 1);
-    EXPECT_EQ(&*sdfg->out_edges(state_1).begin(), &edge);
+    EXPECT_EQ(sdfg.in_degree(state_1), 0);
+    EXPECT_EQ(sdfg.out_degree(state_1), 1);
+    EXPECT_EQ(&*sdfg.out_edges(state_1).begin(), &edge);
 
-    EXPECT_EQ(sdfg->in_degree(state_2), 1);
-    EXPECT_EQ(sdfg->out_degree(state_2), 0);
-    EXPECT_EQ(&*sdfg->in_edges(state_2).begin(), &edge);
+    EXPECT_EQ(sdfg.in_degree(state_2), 1);
+    EXPECT_EQ(sdfg.out_degree(state_2), 0);
+    EXPECT_EQ(&*sdfg.in_edges(state_2).begin(), &edge);
 }
 
 TEST(SDFGBuilderTest, addEdgeWithCondition) {
@@ -166,7 +166,7 @@ TEST(SDFGBuilderTest, addEdgeWithCondition) {
     EXPECT_EQ(&edge_else.dst(), &state_else);
     EXPECT_EQ(edge_else.condition()->__str__(), "0 != i");
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 }
 
 TEST(SDFGBuilderTest, addEdgeWithAssignments) {
@@ -193,7 +193,7 @@ TEST(SDFGBuilderTest, addEdgeWithAssignments) {
     EXPECT_EQ(assignment->first->get_name(), "i");
     EXPECT_EQ(assignment->second->__str__(), "0");
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 }
 
 TEST(SDFGBuilderTest, AddAccessNode) {
@@ -208,7 +208,7 @@ TEST(SDFGBuilderTest, AddAccessNode) {
     auto& access_node = builder.add_access(state, "scalar_1");
     EXPECT_EQ(access_node.element_id(), 2);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     EXPECT_EQ(state.dataflow().nodes().size(), 1);
     EXPECT_EQ(state.dataflow().edges().size(), 0);
@@ -224,7 +224,7 @@ TEST(SDFGBuilderTest, AddConstantNode) {
     auto& access_node = builder.add_constant(state, "0.0f", types::Scalar(types::PrimitiveType::Float));
     EXPECT_EQ(access_node.element_id(), 2);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     EXPECT_EQ(state.dataflow().nodes().size(), 1);
     EXPECT_EQ(state.dataflow().edges().size(), 0);
@@ -255,7 +255,7 @@ TEST(SDFGBuilderTest, AddTasklet) {
     auto& memlet_out = builder.add_computational_memlet(state, tasklet, "_out", access_node_out, {});
     EXPECT_EQ(memlet_out.element_id(), 6);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
     EXPECT_EQ(state.dataflow().nodes().size(), 3);
     EXPECT_EQ(state.dataflow().edges().size(), 2);
@@ -271,13 +271,13 @@ TEST(SDFGBuilderTest, AddLibnode) {
     auto& library_node = builder.add_library_node<data_flow::BarrierLocalNode>(state, DebugInfo());
     EXPECT_EQ(library_node.element_id(), 2);
 
-    auto sdfg = builder.move();
-    auto states = sdfg->states();
+    auto& sdfg = builder.subject();
+    auto states = sdfg.states();
     EXPECT_EQ(states.size(), 1);
     EXPECT_EQ(&*states.begin(), &state);
 
-    EXPECT_EQ(sdfg->in_degree(state), 0);
-    EXPECT_EQ(sdfg->out_degree(state), 0);
+    EXPECT_EQ(sdfg.in_degree(state), 0);
+    EXPECT_EQ(sdfg.out_degree(state), 0);
 
-    EXPECT_EQ(&sdfg->start_state(), &state);
+    EXPECT_EQ(&sdfg.start_state(), &state);
 }

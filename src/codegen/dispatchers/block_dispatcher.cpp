@@ -75,9 +75,16 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
         stream << this->language_extension_.subset(function_, base_type, subset);
     } else {
         if (base_type.type_id() == types::TypeID::Pointer) {
+            stream << this->language_extension_.type_cast("", this->function_.type(dst.data()));
+            stream << " ";
+
             stream << "&";
-            stream << "(" + this->language_extension_.type_cast(src_name, base_type) + ")";
-            stream << this->language_extension_.subset(function_, base_type, subset);
+            if (!subset.empty()) {
+                stream << "(" + this->language_extension_.type_cast(src_name, base_type) + ")";
+                stream << this->language_extension_.subset(function_, base_type, subset);
+            } else {
+                stream << src_name;
+            }
         } else {
             stream << "&";
             stream << src_name;
