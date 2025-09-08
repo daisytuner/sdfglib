@@ -311,23 +311,29 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(structured_control_flow:
             }
         }
 
-        // NOP
-        auto t = boost::add_vertex(this->graph_);
-        this->users_.insert({t, std::make_unique<User>(t, "", if_else_stmt, Use::NOP)});
-        this->exits_.insert({if_else_stmt, this->users_.at(t).get()});
-
-        // Forward edge: Potentially missing else case
-        if (!if_else_stmt->is_complete()) {
-            boost::add_edge(last, t, this->graph_);
-        }
-
+        graph::Vertex t = boost::graph_traits<graph::Graph>::null_vertex();
         for (size_t i = 0; i < if_else_stmt->size(); i++) {
             auto branch = if_else_stmt->at(i);
             auto subgraph = this->traverse(branch.first);
             boost::add_edge(last, subgraph.first, this->graph_);
             if (subgraph.second != boost::graph_traits<graph::Graph>::null_vertex()) {
+                if (t == boost::graph_traits<graph::Graph>::null_vertex()) {
+                    t = boost::add_vertex(this->graph_);
+                    this->users_.insert({t, std::make_unique<User>(t, "", if_else_stmt, Use::NOP)});
+                    this->exits_.insert({if_else_stmt, this->users_.at(t).get()});
+                }
                 boost::add_edge(subgraph.second, t, this->graph_);
             }
+        }
+
+        // Forward edge: Potentially missing else case
+        if (!if_else_stmt->is_complete()) {
+            if (t == boost::graph_traits<graph::Graph>::null_vertex()) {
+                t = boost::add_vertex(this->graph_);
+                this->users_.insert({t, std::make_unique<User>(t, "", if_else_stmt, Use::NOP)});
+                this->exits_.insert({if_else_stmt, this->users_.at(t).get()});
+            }
+            boost::add_edge(last, t, this->graph_);
         }
 
         return {s, t};

@@ -14,9 +14,13 @@ std::string CPPCodeGenerator::function_definition() {
     }
     std::stringstream arglist;
     arglist << sdfg::helpers::join(args, ", ");
+    std::string arglist_str = arglist.str();
+    if (arglist_str.empty()) {
+        arglist_str = "void";
+    }
 
     return "extern \"C\" " + this->language_extension_.declaration("", sdfg_.return_type()) + sdfg_.name() + "(" +
-           arglist.str() + ")";
+           arglist_str + ")";
 };
 
 void CPPCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const {

@@ -160,7 +160,7 @@ TEST(DataFlowDispatcherTest, DispatchRef_Empty) {
     codegen::CodeSnippetFactory snippet_factory;
     dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
-    EXPECT_EQ(main_stream.str(), "{\n    b = (void* )  &a;\n}\n");
+    EXPECT_EQ(main_stream.str(), "{\n    b = &a;\n}\n");
 }
 
 TEST(DataFlowDispatcherTest, DispatchRef_Subset) {
@@ -190,7 +190,7 @@ TEST(DataFlowDispatcherTest, DispatchRef_Subset) {
     codegen::CodeSnippetFactory snippet_factory;
     dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
-    EXPECT_EQ(main_stream.str(), "{\n    b = (void* )  &((int *) a)[1];\n}\n");
+    EXPECT_EQ(main_stream.str(), "{\n    b = &((int *) a)[1];\n}\n");
 }
 
 TEST(DataFlowDispatcherTest, DispatchRef_Nullptr) {

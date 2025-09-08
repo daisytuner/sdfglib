@@ -13,7 +13,7 @@ TEST(CPPCodeGeneratorTest, FunctionDefintion) {
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
     codegen::CPPCodeGenerator generator(*sdfg, *instrumentation_plan);
     auto result = generator.function_definition();
-    EXPECT_EQ(result, "extern \"C\" void sdfg_a()");
+    EXPECT_EQ(result, "extern \"C\" void sdfg_a(void)");
 }
 
 TEST(CPPCodeGeneratorTest, Dispatch_Includes) {

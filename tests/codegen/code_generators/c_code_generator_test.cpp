@@ -18,7 +18,7 @@ TEST(CCodeGeneratorTest, FunctionDefintion) {
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
     codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
     auto result = generator.function_definition();
-    EXPECT_EQ(result, "extern void sdfg_a()");
+    EXPECT_EQ(result, "extern void sdfg_a(void)");
 }
 
 TEST(CCodeGeneratorTest, Dispatch_Includes) {
