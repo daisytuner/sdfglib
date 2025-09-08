@@ -247,35 +247,17 @@ void LibraryNodeDispatcher::
         stream << std::endl;
     }
 
-    // Define outputs and initialize pointer outputs
+    // Define outputs
     for (auto& oedge : graph.out_edges(this->node_)) {
         if (std::find(this->node_.inputs().begin(), this->node_.inputs().end(), oedge.src_conn()) !=
             this->node_.inputs().end()) {
             continue;
         }
 
-        auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
-        std::string dst_name = this->language_extension_.access_node(dst);
-
         std::string conn = oedge.src_conn();
         auto& conn_type = oedge.result_type(this->function_);
-        if (conn_type.type_id() == types::TypeID::Pointer) {
-            stream << this->language_extension_.declaration(conn, conn_type);
-            stream << " = ";
-
-            // Reinterpret cast for opaque pointers
-            if (oedge.base_type().type_id() == types::TypeID::Pointer) {
-                stream << "(" << this->language_extension_.type_cast(dst_name, oedge.base_type()) << ")";
-            } else {
-                stream << dst_name;
-            }
-
-            stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << ";";
-            stream << std::endl;
-        } else {
-            stream << this->language_extension_.declaration(conn, conn_type);
-            stream << ";" << std::endl;
-        }
+        stream << this->language_extension_.declaration(conn, conn_type);
+        stream << ";" << std::endl;
     }
 
     stream << std::endl;
@@ -285,27 +267,16 @@ void LibraryNodeDispatcher::
     stream << std::endl;
 
     for (auto& oedge : this->data_flow_graph_.out_edges(this->node_)) {
-        if (std::find(this->node_.inputs().begin(), this->node_.inputs().end(), oedge.src_conn()) !=
-            this->node_.inputs().end()) {
+        auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
+        if (this->function_.is_external(dst.data())) {
             continue;
         }
 
-        auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
         std::string dst_name = this->language_extension_.access_node(dst);
 
-        std::string conn = oedge.src_conn();
-        auto& conn_type = oedge.result_type(this->function_);
-        if (conn_type.type_id() == types::TypeID::Pointer) {
-            continue;
-        }
+        auto& result_type = oedge.result_type(this->function_);
 
-        // Reinterpret cast for opaque pointers
-        if (oedge.base_type().type_id() == types::TypeID::Pointer) {
-            stream << "(" << this->language_extension_.type_cast(dst_name, oedge.base_type()) << ")";
-        } else {
-            stream << dst_name;
-        }
-
+        stream << dst_name;
         stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << " = ";
         stream << oedge.src_conn();
         stream << ";" << std::endl;
