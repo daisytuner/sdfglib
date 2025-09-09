@@ -254,10 +254,24 @@ void LibraryNodeDispatcher::
             continue;
         }
 
+        auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
+        std::string dst_name = this->language_extension_.access_node(dst);
+
         std::string conn = oedge.src_conn();
         auto& conn_type = oedge.result_type(this->function_);
         stream << this->language_extension_.declaration(conn, conn_type);
-        stream << ";" << std::endl;
+
+        stream << " = ";
+
+        // Reinterpret cast for opaque pointers
+        if (oedge.base_type().type_id() == types::TypeID::Pointer) {
+            stream << "(" << this->language_extension_.type_cast(dst_name, oedge.base_type()) << ")";
+        } else {
+            stream << dst_name;
+        }
+
+        stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << ";";
+        stream << std::endl;
     }
 
     stream << std::endl;
