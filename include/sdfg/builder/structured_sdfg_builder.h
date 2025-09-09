@@ -79,6 +79,8 @@ public:
 
     std::unique_ptr<StructuredSDFG> move();
 
+    void rename_container(const std::string& old_name, const std::string& new_name) const override;
+
     Element* find_element_by_id(const size_t& element_id) const;
 
     Sequence& add_sequence(

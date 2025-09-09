@@ -32,6 +32,17 @@ std::unique_ptr<SDFG> SDFGBuilder::move() {
     return std::move(this->sdfg_);
 };
 
+void SDFGBuilder::rename_container(const std::string& old_name, const std::string& new_name) const {
+    FunctionBuilder::rename_container(old_name, new_name);
+
+    for (auto& entry : this->sdfg_->states_) {
+        entry.second->replace(symbolic::symbol(old_name), symbolic::symbol(new_name));
+    }
+    for (auto& entry : this->sdfg_->edges_) {
+        entry.second->replace(symbolic::symbol(old_name), symbolic::symbol(new_name));
+    }
+}
+
 /***** Section: Control-Flow Graph *****/
 
 control_flow::State& SDFGBuilder::add_state(bool is_start_state, const DebugInfo& debug_info) {

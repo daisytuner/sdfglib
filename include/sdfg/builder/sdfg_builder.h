@@ -37,6 +37,8 @@ public:
 
     std::unique_ptr<SDFG> move();
 
+    void rename_container(const std::string& old_name, const std::string& new_name) const override;
+
     /***** Section: Control-Flow Graph *****/
 
     control_flow::State& add_state(bool is_start_state = false, const DebugInfo& debug_info = DebugInfo());

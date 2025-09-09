@@ -40,5 +40,13 @@ void ReturnState::validate(const Function& function) const {
     }
 }
 
+void ReturnState::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+    State::replace(old_expression, new_expression);
+
+    if (this->data_ == old_expression->__str__()) {
+        this->data_ = new_expression->__str__();
+    }
+};
+
 } // namespace control_flow
 } // namespace sdfg

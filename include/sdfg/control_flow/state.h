@@ -49,7 +49,7 @@ class ReturnState : public State {
     friend class sdfg::builder::SDFGBuilder;
 
 private:
-    const std::string data_;
+    std::string data_;
     bool unreachable_;
 
     ReturnState(
@@ -70,6 +70,8 @@ public:
     bool unreachable() const;
 
     void validate(const Function& function) const override;
+
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
 
 } // namespace control_flow

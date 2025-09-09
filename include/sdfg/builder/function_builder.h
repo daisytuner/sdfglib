@@ -32,6 +32,8 @@ public:
 
     void change_type(const std::string& name, const types::IType& type) const;
 
+    virtual void rename_container(const std::string& old_name, const std::string& new_name) const;
+
     types::StructureDefinition& add_structure(const std::string& name, bool is_packed) const;
 
     std::string find_new_name(std::string prefix = "tmp_") const;

@@ -350,6 +350,12 @@ std::unique_ptr<StructuredSDFG> StructuredSDFGBuilder::move() {
     return std::move(this->structured_sdfg_);
 };
 
+void StructuredSDFGBuilder::rename_container(const std::string& old_name, const std::string& new_name) const {
+    FunctionBuilder::rename_container(old_name, new_name);
+
+    this->structured_sdfg_->root_->replace(symbolic::symbol(old_name), symbolic::symbol(new_name));
+};
+
 Element* StructuredSDFGBuilder::find_element_by_id(const size_t& element_id) const {
     auto& sdfg = this->subject();
     std::list<Element*> queue = {&sdfg.root()};
