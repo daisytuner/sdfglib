@@ -141,23 +141,6 @@ types::StructureDefinition& FunctionBuilder::add_structure(const std::string& na
     return *(*res.first).second;
 };
 
-void FunctionBuilder::make_array(const std::string& name, const symbolic::Expression& size) const {
-    auto& function = this->function();
-    if (!function.is_transient(name)) {
-        throw InvalidSDFGException("Container " + name + " is not transient");
-    }
-    if (function.containers_.find(name) == function.containers_.end()) {
-        throw InvalidSDFGException("Container " + name + " does not exist");
-    }
-
-    auto& old_type = function.containers_[name];
-    if (old_type->is_symbol() && dynamic_cast<const types::Scalar*>(old_type.get())) {
-        function.assumptions_.erase(symbolic::symbol(name));
-    }
-
-    function.containers_[name] = std::make_unique<types::Array>(*old_type, size);
-};
-
 std::string FunctionBuilder::find_new_name(std::string prefix) const {
     size_t i = 0;
     std::string new_name = prefix + std::to_string(i);

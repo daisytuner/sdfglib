@@ -34,8 +34,6 @@ public:
 
     types::StructureDefinition& add_structure(const std::string& name, bool is_packed) const;
 
-    void make_array(const std::string& name, const symbolic::Expression& size) const;
-
     std::string find_new_name(std::string prefix = "tmp_") const;
 
     void set_element_counter(size_t element_counter);
