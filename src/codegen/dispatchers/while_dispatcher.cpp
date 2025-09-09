@@ -76,7 +76,13 @@ void ReturnDispatcher::dispatch_node(
         main_stream << "/* unreachable return */" << std::endl;
         return;
     }
-    main_stream << "return " << node_.data() << ";" << std::endl;
+
+    if (symbolic::is_nullptr(symbolic::symbol(node_.data()))) {
+        main_stream << "return " << this->language_extension_.expression(symbolic::symbol(node_.data())) << ";"
+                    << std::endl;
+    } else {
+        main_stream << "return " << node_.data() << ";" << std::endl;
+    }
 };
 
 } // namespace codegen
