@@ -69,7 +69,7 @@ void LoopInterchange::apply(builder::StructuredSDFGBuilder& builder, analysis::A
             inner_map->update(),
             inner_map->schedule_type(),
             outer_transition.assignments(),
-            this->inner_loop_.debug_info()
+            builder.debug_info().get_region(inner_map->debug_info().indices())
         );
     } else {
         new_outer_loop = &builder.add_for_after(
@@ -80,7 +80,7 @@ void LoopInterchange::apply(builder::StructuredSDFGBuilder& builder, analysis::A
             this->inner_loop_.init(),
             this->inner_loop_.update(),
             outer_transition.assignments(),
-            this->inner_loop_.debug_info()
+            builder.debug_info().get_region(this->inner_loop_.debug_info().indices())
         );
     }
 
@@ -96,7 +96,7 @@ void LoopInterchange::apply(builder::StructuredSDFGBuilder& builder, analysis::A
             outer_map->update(),
             outer_map->schedule_type(),
             {},
-            this->outer_loop_.debug_info()
+            builder.debug_info().get_region(outer_map->debug_info().indices())
         );
     } else {
         new_inner_loop = &builder.add_for_after(
@@ -107,7 +107,7 @@ void LoopInterchange::apply(builder::StructuredSDFGBuilder& builder, analysis::A
             this->outer_loop_.init(),
             this->outer_loop_.update(),
             {},
-            this->outer_loop_.debug_info()
+            builder.debug_info().get_region(this->outer_loop_.debug_info().indices())
         );
     }
 
