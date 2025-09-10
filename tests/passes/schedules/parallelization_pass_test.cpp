@@ -32,7 +32,7 @@ TEST(ParallelizationPassTest, Map_2D) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     auto& body = loop.root();
 
@@ -46,7 +46,7 @@ TEST(ParallelizationPassTest, Map_2D) {
         symbolic::Lt(symbolic::symbol("j"), symbolic::symbol("M")),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("j"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     auto& body_2 = loop_2.root();
 
@@ -66,6 +66,6 @@ TEST(ParallelizationPassTest, Map_2D) {
     passes::ParallelizationPass parallelization_pass;
     EXPECT_TRUE(parallelization_pass.run_pass(builder, analysis_manager));
 
-    EXPECT_EQ(loop.schedule_type(), structured_control_flow::ScheduleType_CPU_Parallel);
-    EXPECT_EQ(loop_2.schedule_type(), structured_control_flow::ScheduleType_Sequential);
+    EXPECT_EQ(loop.schedule_type().value(), structured_control_flow::ScheduleType_CPU_Parallel::value());
+    EXPECT_EQ(loop_2.schedule_type().value(), structured_control_flow::ScheduleType_Sequential::value());
 }

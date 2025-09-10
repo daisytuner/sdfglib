@@ -14,7 +14,7 @@ TEST(SizeOfTest, StaticElementSizeOf2DArrayLike) {
     EXPECT_TRUE(symbolic::eq(s, symbolic::integer(4)));
 }
 
-TEST(SizeOfTest, SizeOfPointer) {
+TEST(SizeOfTest, StaticSizeOfPointer) {
     auto innerPtrType = types::Pointer(types::Scalar(types::Float));
     auto type = types::Pointer(types::Array(innerPtrType, symbolic::integer(1000)));
 
@@ -22,11 +22,8 @@ TEST(SizeOfTest, SizeOfPointer) {
 
     auto ptr_size = types::get_type_size(innerPtrType, false);
 
-    EXPECT_EQ(s.is_null(), ptr_size.is_null());
-
-    if (!s.is_null()) {
-        EXPECT_TRUE(symbolic::eq(s, ptr_size));
-    }
+    EXPECT_TRUE(symbolic::eq(s, symbolic::integer(8)));
+    EXPECT_TRUE(symbolic::eq(ptr_size, symbolic::integer(8)));
 }
 
 TEST(SizeOfTest, StaticSizeOfArray) {
@@ -45,31 +42,12 @@ TEST(SizeOfTest, StaticSizeOfScalar) {
     EXPECT_TRUE(symbolic::eq(s, symbolic::integer(2)));
 }
 
-TEST(SizeOfTest, NoStaticSizeOfPointer) {
-    auto type = types::Pointer(types::Scalar(types::Int16));
-
-    auto s = types::get_type_size(type, false);
-
-    EXPECT_TRUE(s.is_null());
-}
-
 TEST(SizeOfTest, NoStaticSizeOfStruct) {
     auto type = types::Structure("some_t");
 
     auto s = types::get_type_size(type, false);
 
     EXPECT_TRUE(s.is_null());
-}
-
-TEST(SizeOfTest, SymbolicSizeOfPointer) {
-    auto type = types::Pointer(types::Scalar(types::Int16));
-
-    auto s = types::get_type_size(type, true);
-
-    EXPECT_TRUE(symbolic::eq(s, symbolic::size_of_type(type)));
-    auto f = SymEngine::rcp_dynamic_cast<const symbolic::SizeOfTypeFunction>(s);
-    auto& t = f->get_type();
-    EXPECT_EQ(t, type);
 }
 
 TEST(SizeOfTest, SymbolicSizeOfStruct) {

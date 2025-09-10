@@ -77,11 +77,13 @@ void DotNode::validate(const Function& function) const {
 }
 
 bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
+    auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+
     auto& dataflow = this->get_parent();
     auto& block = static_cast<structured_control_flow::Block&>(*dataflow.get_parent());
-
-    auto& scope_analyisis = analysis_manager.get<analysis::ScopeAnalysis>();
-    auto& parent = static_cast<structured_control_flow::Sequence&>(*scope_analyisis.parent_scope(&block));
+    auto& parent = static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&block));
+    int index = parent.index(block);
+    auto& transition = parent.at(index).second;
 
     const data_flow::Memlet* iedge_x = nullptr;
     const data_flow::Memlet* iedge_y = nullptr;
@@ -110,10 +112,9 @@ bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
         return false;
     }
 
-    auto& new_sequence =
-        builder
-            .add_sequence_before(parent, block, builder.subject().debug_info().get_region(block.debug_info().indices()))
-            .first;
+    auto& new_sequence = builder.add_sequence_before(
+        parent, block, transition.assignments(), builder.debug_info().get_region(block.debug_info().indices())
+    );
 
     std::string loop_var = builder.find_new_name("_i");
     builder.add_container(loop_var, types::Scalar(types::PrimitiveType::UInt64));
@@ -188,7 +189,7 @@ bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
     builder.remove_node(block, input_node_y);
     builder.remove_node(block, output_node_res);
     builder.remove_node(block, *this);
-    builder.remove_child(parent, block);
+    builder.remove_child(parent, index + 1);
 
     return true;
 }

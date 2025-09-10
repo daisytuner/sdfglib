@@ -18,6 +18,7 @@
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
+#include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/return.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
@@ -59,16 +60,6 @@ types::StorageType storage_type_from_string(const std::string& str) {
     }
 
     return types::StorageType(str);
-}
-
-structured_control_flow::ScheduleType schedule_type_from_string(const std::string& str) {
-    if (str == structured_control_flow::ScheduleType_Sequential.value()) {
-        return structured_control_flow::ScheduleType_Sequential;
-    } else if (str == structured_control_flow::ScheduleType_CPU_Parallel.value()) {
-        return structured_control_flow::ScheduleType_CPU_Parallel;
-    }
-
-    return structured_control_flow::ScheduleType(str);
 }
 
 /*
@@ -294,7 +285,8 @@ void JSONSerializer::map_to_json(nlohmann::json& j, const structured_control_flo
     j["condition"] = expression(map_node.condition());
     j["update"] = expression(map_node.update());
 
-    j["schedule_type"] = std::string(map_node.schedule_type().value());
+    j["schedule_type"] = nlohmann::json::object();
+    schedule_type_to_json(j["schedule_type"], map_node.schedule_type());
 
     nlohmann::json body_json;
     sequence_to_json(body_json, map_node.root());
@@ -477,6 +469,14 @@ void JSONSerializer::debug_table_to_json(nlohmann::json& j, const DebugTable& de
         nlohmann::json instruction_json;
         debug_info_element_to_json(instruction_json, instruction);
         j["elements"].push_back(instruction_json);
+    }
+}
+
+void JSONSerializer::schedule_type_to_json(nlohmann::json& j, const ScheduleType& schedule_type) {
+    j["value"] = schedule_type.value();
+    j["properties"] = nlohmann::json::object();
+    for (const auto& prop : schedule_type.properties()) {
+        j["properties"][prop.first] = prop.second;
     }
 }
 
@@ -983,10 +983,9 @@ void JSONSerializer::json_to_map_node(
     assert(j.contains("root"));
     assert(j["root"].is_object());
     assert(j.contains("schedule_type"));
-    assert(j["schedule_type"].is_string());
+    assert(j["schedule_type"].is_object());
 
-    structured_control_flow::ScheduleType schedule_type =
-        schedule_type_from_string(j["schedule_type"].get<std::string>());
+    structured_control_flow::ScheduleType schedule_type = json_to_schedule_type(j["schedule_type"]);
 
     symbolic::Symbol indvar = symbolic::symbol(j["indvar"]);
     SymEngine::Expression init(j["init"]);
@@ -1215,6 +1214,19 @@ DebugTable JSONSerializer::json_to_debug_table(const nlohmann::json& j) {
         debug_info.add_element(json_to_debug_info_element(entry_json));
     }
     return debug_info;
+}
+
+ScheduleType JSONSerializer::json_to_schedule_type(const nlohmann::json& j) {
+    assert(j.contains("value"));
+    assert(j["value"].is_string());
+    assert(j.contains("properties"));
+    assert(j["properties"].is_object());
+    ScheduleType schedule_type(j["value"].get<std::string>());
+    for (const auto& [key, value] : j["properties"].items()) {
+        assert(value.is_string());
+        schedule_type.set_property(key, value.get<std::string>());
+    }
+    return schedule_type;
 }
 
 std::string JSONSerializer::expression(const symbolic::Expression& expr) {

@@ -166,5 +166,9 @@ std::string FunctionBuilder::find_new_name(std::string prefix) const {
     return new_name;
 };
 
+void FunctionBuilder::update_tasklet(data_flow::Tasklet& tasklet, const data_flow::TaskletCode code) {
+    tasklet.code_ = code;
+}
+
 } // namespace builder
 } // namespace sdfg

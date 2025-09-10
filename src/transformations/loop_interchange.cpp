@@ -52,73 +52,74 @@ bool LoopInterchange::can_be_applied(builder::StructuredSDFGBuilder& builder, an
 void LoopInterchange::apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto& outer_scope = static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&outer_loop_));
-    auto& inner_scope = static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&inner_loop_));
+    auto& inner_scope = outer_loop_.root();
+
+    int index = outer_scope.index(this->outer_loop_);
+    auto& outer_transition = outer_scope.at(index).second;
 
     // Add new outer loop behind current outer loop
     structured_control_flow::StructuredLoop* new_outer_loop = nullptr;
     if (auto inner_map = dynamic_cast<structured_control_flow::Map*>(&inner_loop_)) {
-        new_outer_loop = &builder
-                              .add_map_after(
-                                  outer_scope,
-                                  this->outer_loop_,
-                                  inner_map->indvar(),
-                                  inner_map->condition(),
-                                  inner_map->init(),
-                                  inner_map->update(),
-                                  inner_map->schedule_type()
-                              )
-                              .first;
+        new_outer_loop = &builder.add_map_after(
+            outer_scope,
+            this->outer_loop_,
+            inner_map->indvar(),
+            inner_map->condition(),
+            inner_map->init(),
+            inner_map->update(),
+            inner_map->schedule_type(),
+            outer_transition.assignments(),
+            this->inner_loop_.debug_info()
+        );
     } else {
-        new_outer_loop = &builder
-                              .add_for_after(
-                                  outer_scope,
-                                  this->outer_loop_,
-                                  this->inner_loop_.indvar(),
-                                  this->inner_loop_.condition(),
-                                  this->inner_loop_.init(),
-                                  this->inner_loop_.update()
-                              )
-                              .first;
+        new_outer_loop = &builder.add_for_after(
+            outer_scope,
+            this->outer_loop_,
+            this->inner_loop_.indvar(),
+            this->inner_loop_.condition(),
+            this->inner_loop_.init(),
+            this->inner_loop_.update(),
+            outer_transition.assignments(),
+            this->inner_loop_.debug_info()
+        );
     }
 
     // Add new inner loop behind current inner loop
     structured_control_flow::StructuredLoop* new_inner_loop = nullptr;
     if (auto outer_map = dynamic_cast<structured_control_flow::Map*>(&outer_loop_)) {
-        new_inner_loop = &builder
-                              .add_map_after(
-                                  inner_scope,
-                                  this->inner_loop_,
-                                  outer_map->indvar(),
-                                  outer_map->condition(),
-                                  outer_map->init(),
-                                  outer_map->update(),
-                                  outer_map->schedule_type()
-                              )
-                              .first;
+        new_inner_loop = &builder.add_map_after(
+            inner_scope,
+            this->inner_loop_,
+            outer_map->indvar(),
+            outer_map->condition(),
+            outer_map->init(),
+            outer_map->update(),
+            outer_map->schedule_type(),
+            {},
+            this->outer_loop_.debug_info()
+        );
     } else {
-        new_inner_loop = &builder
-                              .add_for_after(
-                                  inner_scope,
-                                  this->inner_loop_,
-                                  this->outer_loop_.indvar(),
-                                  this->outer_loop_.condition(),
-                                  this->outer_loop_.init(),
-                                  this->outer_loop_.update()
-                              )
-                              .first;
+        new_inner_loop = &builder.add_for_after(
+            inner_scope,
+            this->inner_loop_,
+            this->outer_loop_.indvar(),
+            this->outer_loop_.condition(),
+            this->outer_loop_.init(),
+            this->outer_loop_.update(),
+            {},
+            this->outer_loop_.debug_info()
+        );
     }
 
     // Insert inner loop body into new inner loop
-    auto& inner_body = this->inner_loop_.root();
-    builder.insert_children(new_inner_loop->root(), inner_body, 0);
+    builder.move_children(this->inner_loop_.root(), new_inner_loop->root());
 
     // Insert outer loop body into new outer loop
-    auto& outer_body = this->outer_loop_.root();
-    builder.insert_children(new_outer_loop->root(), outer_body, 0);
+    builder.move_children(this->outer_loop_.root(), new_outer_loop->root());
 
     // Remove old loops
-    builder.remove_child(new_outer_loop->root(), this->inner_loop_);
-    builder.remove_child(outer_scope, this->outer_loop_);
+    builder.remove_child(new_outer_loop->root(), 0);
+    builder.remove_child(outer_scope, index);
 
     analysis_manager.invalidate_all();
 };

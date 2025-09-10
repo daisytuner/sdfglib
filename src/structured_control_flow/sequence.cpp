@@ -53,6 +53,11 @@ Sequence::Sequence(size_t element_id, const DebugInfoRegion& debug_info)
       };
 
 void Sequence::validate(const Function& function) const {
+    // children and transition have same length
+    if (this->children_.size() != this->transitions_.size()) {
+        throw InvalidSDFGException("Sequence must have the same number of children and transitions");
+    }
+
     for (auto& child : this->children_) {
         child->validate(function);
     }
@@ -69,6 +74,26 @@ std::pair<const ControlFlowNode&, const Transition&> Sequence::at(size_t i) cons
 
 std::pair<ControlFlowNode&, Transition&> Sequence::at(size_t i) {
     return {*this->children_.at(i), *this->transitions_.at(i)};
+};
+
+int Sequence::index(const ControlFlowNode& child) const {
+    for (size_t i = 0; i < this->children_.size(); i++) {
+        if (this->children_.at(i).get() == &child) {
+            return static_cast<int>(i);
+        }
+    }
+
+    return -1;
+};
+
+int Sequence::index(const Transition& transition) const {
+    for (size_t i = 0; i < this->transitions_.size(); i++) {
+        if (this->transitions_.at(i).get() == &transition) {
+            return static_cast<int>(i);
+        }
+    }
+
+    return -1;
 };
 
 void Sequence::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {

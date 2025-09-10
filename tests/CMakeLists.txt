@@ -54,6 +54,7 @@ set(TEST_FILES
     replace/symbol_replace_test.cpp
     sdfg_test.cpp
     serializer/json_serializer_test.cpp
+    structured_control_flow/map_test.cpp
     structured_sdfg_test.cpp
     symbolic/assumptions_test.cpp
     symbolic/conjunctive_normal_form_test.cpp
@@ -62,7 +63,6 @@ set(TEST_FILES
     symbolic/symbolic_test.cpp
     symbolic/sets_test.cpp
     transformations/loop_interchange_test.cpp
-    transformations/loop_slicing_test.cpp
     transformations/loop_tiling_test.cpp
     transformations/out_local_storage_test.cpp
     transformations/parallelization_test.cpp

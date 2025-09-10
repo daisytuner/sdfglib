@@ -82,6 +82,10 @@ public:
 
     std::pair<ControlFlowNode&, Transition&> at(size_t i);
 
+    int index(const ControlFlowNode& child) const;
+
+    int index(const Transition& transition) const;
+
     void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
 

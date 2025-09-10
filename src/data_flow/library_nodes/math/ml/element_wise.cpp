@@ -30,8 +30,11 @@ bool ElementWiseUnaryNode::expand(builder::StructuredSDFGBuilder& builder, analy
     if (dataflow.in_degree(*this) != 1 || dataflow.out_degree(*this) != 1) {
         return false;
     }
+
     auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto& parent = static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&block));
+    int index = parent.index(block);
+    auto& transition = parent.at(index).second;
 
     auto& input = this->inputs_.at(0);
     auto& output = this->outputs_.at(0);
@@ -47,8 +50,9 @@ bool ElementWiseUnaryNode::expand(builder::StructuredSDFGBuilder& builder, analy
     }
 
     // Add new graph after the current block
-    auto& new_sequence =
-        builder.add_sequence_before(parent, block, builder.debug_info().get_region(block.debug_info().indices())).first;
+    auto& new_sequence = builder.add_sequence_before(
+        parent, block, transition.assignments(), builder.debug_info().get_region(block.debug_info().indices())
+    );
 
     // Add maps
     auto& begin_subsets_out = oedge.begin_subset();
@@ -73,7 +77,7 @@ bool ElementWiseUnaryNode::expand(builder::StructuredSDFGBuilder& builder, analy
             condition,
             init,
             update,
-            structured_control_flow::ScheduleType_Sequential,
+            structured_control_flow::ScheduleType_Sequential::create(),
             {},
             builder.debug_info().get_region(block.debug_info().indices())
         );
@@ -102,7 +106,7 @@ bool ElementWiseUnaryNode::expand(builder::StructuredSDFGBuilder& builder, analy
     builder.remove_node(block, input_node);
     builder.remove_node(block, output_node);
     builder.remove_node(block, *this);
-    builder.remove_child(parent, block);
+    builder.remove_child(parent, index + 1);
 
     return true;
 }
@@ -130,6 +134,9 @@ bool ElementWiseBinaryNode::expand(builder::StructuredSDFGBuilder& builder, anal
     }
     auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto& parent = static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&block));
+    int index = parent.index(block);
+    auto& transition = parent.at(index).second;
+
     auto& input_a = this->inputs_.at(0);
     auto& input_b = this->inputs_.at(1);
     auto& output = this->outputs_.at(0);
@@ -151,8 +158,9 @@ bool ElementWiseBinaryNode::expand(builder::StructuredSDFGBuilder& builder, anal
     }
 
     // Add new graph after the current block
-    auto& new_sequence =
-        builder.add_sequence_before(parent, block, builder.debug_info().get_region(block.debug_info().indices())).first;
+    auto& new_sequence = builder.add_sequence_before(
+        parent, block, transition.assignments(), builder.debug_info().get_region(block.debug_info().indices())
+    );
 
     // Add maps
     auto& begin_subsets_out = oedge.begin_subset();
@@ -177,7 +185,7 @@ bool ElementWiseBinaryNode::expand(builder::StructuredSDFGBuilder& builder, anal
             condition,
             init,
             update,
-            structured_control_flow::ScheduleType_Sequential,
+            structured_control_flow::ScheduleType_Sequential::create(),
             {},
             builder.debug_info().get_region(block.debug_info().indices())
         );
@@ -210,7 +218,7 @@ bool ElementWiseBinaryNode::expand(builder::StructuredSDFGBuilder& builder, anal
     builder.remove_node(block, input_node_b);
     builder.remove_node(block, output_node);
     builder.remove_node(block, *this);
-    builder.remove_child(parent, block);
+    builder.remove_child(parent, index + 1);
 
     return true;
 }

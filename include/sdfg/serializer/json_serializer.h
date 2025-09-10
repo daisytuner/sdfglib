@@ -9,6 +9,7 @@
 #include "sdfg/element.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
+#include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
 #include "sdfg/structured_sdfg.h"
@@ -47,6 +48,8 @@ public:
     void debug_info_element_to_json(nlohmann::json& j, const sdfg::DebugInfo& debug_info_element);
     void debug_info_region_to_json(nlohmann::json& j, const sdfg::DebugInfoRegion& debug_info_region);
     void debug_table_to_json(nlohmann::json& j, const sdfg::DebugTable& debug_table);
+
+    void schedule_type_to_json(nlohmann::json& j, const sdfg::structured_control_flow::ScheduleType& schedule_type);
 
     void json_to_structure_definition(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder);
     void json_to_dataflow(
@@ -115,6 +118,8 @@ public:
     DebugInfo json_to_debug_info_element(const nlohmann::json& j);
     DebugInfoRegion json_to_debug_info_region(const nlohmann::json& j, const DebugTable& debug_info);
     DebugTable json_to_debug_table(const nlohmann::json& j);
+
+    ScheduleType json_to_schedule_type(const nlohmann::json& j);
 
     std::string expression(const symbolic::Expression& expr);
 };

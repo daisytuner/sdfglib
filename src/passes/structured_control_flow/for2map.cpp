@@ -16,6 +16,32 @@ For2Map::For2Map(builder::StructuredSDFGBuilder& builder, analysis::AnalysisMana
       };
 
 bool For2Map::can_be_applied(structured_control_flow::For& for_stmt, analysis::AnalysisManager& analysis_manager) {
+    // Criterion: Loop must not have dereference memlets
+    auto& users = analysis_manager.get<analysis::Users>();
+    analysis::UsersView users_view(users, for_stmt);
+    for (auto& move : users_view.moves()) {
+        auto element = move->element();
+        if (auto node = dynamic_cast<data_flow::AccessNode*>(element)) {
+            auto& parent = node->get_parent();
+            for (auto& iedge : parent.in_edges(*node)) {
+                if (iedge.type() == data_flow::MemletType::Dereference_Src) {
+                    return false;
+                }
+            }
+        }
+    }
+    for (auto& view : users_view.views()) {
+        auto element = view->element();
+        if (auto node = dynamic_cast<data_flow::AccessNode*>(element)) {
+            auto& parent = node->get_parent();
+            for (auto& iedge : parent.out_edges(*node)) {
+                if (iedge.type() == data_flow::MemletType::Dereference_Dst) {
+                    return false;
+                }
+            }
+        }
+    }
+
     // Criterion: loop must be data-parallel w.r.t containers
     auto& data_dependency_analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     auto dependencies = data_dependency_analysis.dependencies(for_stmt);
@@ -28,7 +54,6 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt, analysis::A
     }
 
     // b. False dependencies (WAW) are limited to loop-local variables
-    auto& users = analysis_manager.get<analysis::Users>();
     auto locals = users.locals(for_stmt.root());
     for (auto& dep : dependencies) {
         auto& container = dep.first;

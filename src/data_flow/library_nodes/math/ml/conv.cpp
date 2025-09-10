@@ -56,8 +56,10 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& dataflow = this->get_parent();
     auto& block = static_cast<structured_control_flow::Block&>(*dataflow.get_parent());
 
-    auto& scope_analyisis = analysis_manager.get<analysis::ScopeAnalysis>();
-    auto& parent = static_cast<structured_control_flow::Sequence&>(*scope_analyisis.parent_scope(&block));
+    auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+    auto& parent = static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&block));
+    int index = parent.index(block);
+    auto& transition = parent.at(index).second;
 
     const data_flow::Memlet* iedge_X = nullptr;
     const data_flow::Memlet* iedge_W = nullptr;
@@ -93,8 +95,9 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     }
     data_flow::Subset dims_Y = oedge_Y->end_subset();
 
-    auto& new_sequence =
-        builder.add_sequence_before(parent, block, builder.debug_info().get_region(block.debug_info().indices())).first;
+    auto& new_sequence = builder.add_sequence_before(
+        parent, block, transition.assignments(), builder.debug_info().get_region(block.debug_info().indices())
+    );
     structured_control_flow::Sequence* last_scope = &new_sequence;
 
     /************************
@@ -125,7 +128,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
             condition,
             init,
             update,
-            structured_control_flow::ScheduleType_Sequential,
+            structured_control_flow::ScheduleType_Sequential::create(),
             {},
             builder.debug_info().get_region(block.debug_info().indices())
         );
@@ -374,7 +377,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     }
     builder.remove_memlet(block, *oedge_Y);
     builder.remove_node(block, *this);
-    builder.remove_child(parent, block);
+    builder.remove_child(parent, index + 1);
 
     return true;
 }

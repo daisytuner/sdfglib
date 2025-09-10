@@ -87,16 +87,35 @@ public:
         const DebugInfos& debug_info_elements = {}
     );
 
+    Sequence& add_sequence_before(
+        Sequence& parent,
+        ControlFlowNode& block,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfos& debug_info_elements = {}
+    );
+
+    Sequence& add_sequence_after(
+        Sequence& parent,
+        ControlFlowNode& block,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfos& debug_info_elements = {}
+    );
+
+    [[deprecated("use method with explicit assignments instead")]]
     std::pair<Sequence&, Transition&>
     add_sequence_before(Sequence& parent, ControlFlowNode& block, const DebugInfos& debug_info_elements = {});
 
-    void remove_child(Sequence& parent, size_t i);
+    void remove_child(Sequence& parent, size_t index);
 
-    void remove_child(Sequence& parent, ControlFlowNode& child);
+    void remove_children(Sequence& parent);
 
-    void insert_children(Sequence& parent, Sequence& other, size_t i);
+    void move_child(Sequence& source, size_t source_index, Sequence& target);
 
-    void insert(ControlFlowNode& node, Sequence& source, Sequence& target, const DebugInfos& debug_info_elements = {});
+    void move_child(Sequence& source, size_t source_index, Sequence& target, size_t target_index);
+
+    void move_children(Sequence& source, Sequence& target);
+
+    void move_children(Sequence& source, Sequence& target, size_t target_index);
 
     Block& add_block(
         Sequence& parent,
@@ -111,23 +130,91 @@ public:
         const DebugInfos& debug_info_elements = {}
     );
 
-    std::pair<Block&, Transition&>
-    add_block_before(Sequence& parent, ControlFlowNode& block, const DebugInfos& debug_info_elements = {});
+    Block& add_block_before(
+        Sequence& parent,
+        ControlFlowNode& child,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfos& debug_info_elements = {}
+    );
 
+    Block& add_block_before(
+        Sequence& parent,
+        ControlFlowNode& child,
+        data_flow::DataFlowGraph& data_flow_graph,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfos& debug_info_elements = {}
+    );
+
+    Block& add_block_after(
+        Sequence& parent,
+        ControlFlowNode& child,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfos& debug_info_elements = {}
+    );
+
+    Block& add_block_after(
+        Sequence& parent,
+        ControlFlowNode& child,
+        data_flow::DataFlowGraph& data_flow_graph,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfos& debug_info_elements = {}
+    );
+
+    [[deprecated("use method with explicit assignments instead")]]
+    std::pair<Block&, Transition&>
+    add_block_before(Sequence& parent, ControlFlowNode& child, const DebugInfos& debug_info_elements = {});
+
+    [[deprecated("use method with explicit assignments instead")]]
     std::pair<Block&, Transition&> add_block_before(
         Sequence& parent,
-        ControlFlowNode& block,
+        ControlFlowNode& child,
         data_flow::DataFlowGraph& data_flow_graph,
         const DebugInfos& debug_info_elements = {}
     );
 
+    [[deprecated("use method with explicit assignments instead")]]
     std::pair<Block&, Transition&>
-    add_block_after(Sequence& parent, ControlFlowNode& block, const DebugInfos& debug_info_elements = {});
+    add_block_after(Sequence& parent, ControlFlowNode& child, const DebugInfos& debug_info_elements = {});
 
+    [[deprecated("use method with explicit assignments instead")]]
     std::pair<Block&, Transition&> add_block_after(
         Sequence& parent,
-        ControlFlowNode& block,
+        ControlFlowNode& child,
         data_flow::DataFlowGraph& data_flow_graph,
+        const DebugInfos& debug_info_elements = {}
+    );
+
+    IfElse& add_if_else(
+        Sequence& parent,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfos& debug_info_elements = {}
+    );
+
+    IfElse& add_if_else_before(
+        Sequence& parent,
+        ControlFlowNode& child,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfos& debug_info_elements = {}
+    );
+
+    IfElse& add_if_else_after(
+        Sequence& parent,
+        ControlFlowNode& child,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfos& debug_info_elements = {}
+    );
+
+    [[deprecated("use method with explicit assignments instead")]]
+    std::pair<IfElse&, Transition&>
+    add_if_else_before(Sequence& parent, ControlFlowNode& child, const DebugInfos& debug_info_elements = {});
+
+    Sequence& add_case(IfElse& scope, const sdfg::symbolic::Condition cond, const DebugInfos& debug_info_elements = {});
+
+    void remove_case(IfElse& scope, size_t i, const DebugInfos& debug_info_elements = {});
+
+    While& add_while(
+        Sequence& parent,
+        const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfos& debug_info_elements = {}
     );
 
@@ -141,55 +228,26 @@ public:
         const DebugInfos& debug_info_elements = {}
     );
 
-    std::pair<For&, Transition&> add_for_before(
+    For& add_for_before(
         Sequence& parent,
-        ControlFlowNode& block,
+        ControlFlowNode& child,
         const symbolic::Symbol& indvar,
         const symbolic::Condition& condition,
         const symbolic::Expression& init,
         const symbolic::Expression& update,
-        const DebugInfos& debug_info_elements = {}
-    );
-
-    std::pair<For&, Transition&> add_for_after(
-        Sequence& parent,
-        ControlFlowNode& block,
-        const symbolic::Symbol& indvar,
-        const symbolic::Condition& condition,
-        const symbolic::Expression& init,
-        const symbolic::Expression& update,
-        const DebugInfos& debug_info_elements = {}
-    );
-
-    IfElse& add_if_else(Sequence& parent, const DebugInfos& debug_info_elements = {});
-
-    IfElse& add_if_else(
-        Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfos& debug_info_elements = {}
-    );
-
-    std::pair<IfElse&, Transition&>
-    add_if_else_before(Sequence& parent, ControlFlowNode& block, const DebugInfos& debug_info_elements = {});
-
-    Sequence& add_case(IfElse& scope, const sdfg::symbolic::Condition cond, const DebugInfos& debug_info_elements = {});
-
-    void remove_case(IfElse& scope, size_t i, const DebugInfos& debug_info_elements = {});
-
-    While& add_while(
-        Sequence& parent,
         const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfos& debug_info_elements = {}
     );
 
-    Continue& add_continue(Sequence& parent, const DebugInfos& debug_info_elements = {});
-
-    Continue& add_continue(
-        Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfos& debug_info_elements = {}
-    );
-
-    Break& add_break(Sequence& parent, const DebugInfos& debug_info_elements = {});
-
-    Break& add_break(
-        Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfos& debug_info_elements = {}
+    For& add_for_after(
+        Sequence& parent,
+        ControlFlowNode& child,
+        const symbolic::Symbol& indvar,
+        const symbolic::Condition& condition,
+        const symbolic::Expression& init,
+        const symbolic::Expression& update,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfos& debug_info_elements = {}
     );
 
     Map& add_map(
@@ -203,9 +261,9 @@ public:
         const DebugInfos& debug_info_elements = {}
     );
 
-    std::pair<Map&, Transition&> add_map_after(
+    Map& add_map_after(
         Sequence& parent,
-        ControlFlowNode& block,
+        ControlFlowNode& child,
         const symbolic::Symbol& indvar,
         const symbolic::Condition& condition,
         const symbolic::Expression& init,
@@ -215,14 +273,26 @@ public:
         const DebugInfos& debug_info_elements = {}
     );
 
-    std::pair<Map&, Transition&> add_map_before(
+    Map& add_map_before(
         Sequence& parent,
-        ControlFlowNode& block,
+        ControlFlowNode& child,
         const symbolic::Symbol& indvar,
         const symbolic::Condition& condition,
         const symbolic::Expression& init,
         const symbolic::Expression& update,
         const ScheduleType& schedule_type,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfos& debug_info_elements = {}
+    );
+
+    Continue& add_continue(
+        Sequence& parent,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfos& debug_info_elements = {}
+    );
+
+    Break& add_break(
+        Sequence& parent,
         const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfos& debug_info_elements = {}
     );
@@ -243,8 +313,6 @@ public:
     );
 
     Map& convert_for(Sequence& parent, For& loop);
-
-    void clear_sequence(Sequence& parent);
 
     [[deprecated("use ScopeAnalysis instead")]]
     Sequence& parent(const ControlFlowNode& node);

@@ -153,12 +153,13 @@ types::PrimitiveType GEMMNode::scalar_primitive() const {
 }
 
 bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
-    auto& sdfg = builder.subject();
+    auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+
     auto& dataflow = this->get_parent();
     auto& block = static_cast<structured_control_flow::Block&>(*dataflow.get_parent());
-
-    auto& scope_analyisis = analysis_manager.get<analysis::ScopeAnalysis>();
-    auto& parent = static_cast<structured_control_flow::Sequence&>(*scope_analyisis.parent_scope(&block));
+    auto& parent = static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&block));
+    int index = parent.index(block);
+    auto& transition = parent.at(index).second;
 
     if (trans_a_ != BLAS_Transpose::No || trans_b_ != BLAS_Transpose::No) {
         return false;
@@ -241,10 +242,9 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 
 
     // Add new graph after the current block
-    auto& new_sequence =
-        builder
-            .add_sequence_before(parent, block, builder.subject().debug_info().get_region(block.debug_info().indices()))
-            .first;
+    auto& new_sequence = builder.add_sequence_before(
+        parent, block, transition.assignments(), builder.debug_info().get_region(block.debug_info().indices())
+    );
 
     // Add maps
     std::vector<symbolic::Expression> indvar_ends{this->m(), this->n(), this->k()};
@@ -278,7 +278,7 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
             condition,
             init,
             update,
-            structured_control_flow::ScheduleType_Sequential,
+            structured_control_flow::ScheduleType_Sequential::create(),
             {},
             builder.subject().debug_info().get_region(block.debug_info().indices())
         );
@@ -293,14 +293,11 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 
 
     // Add code
-    auto& init_block =
-        builder
-            .add_block_before(
-                output_loop->root(), *last_map, builder.subject().debug_info().get_region(block.debug_info().indices())
-            )
-            .first;
+    auto& init_block = builder.add_block_before(
+        output_loop->root(), *last_map, {}, builder.debug_info().get_region(block.debug_info().indices())
+    );
     auto& sum_init =
-        builder.add_access(init_block, sum_var, builder.subject().debug_info().get_region(block.debug_info().indices()));
+        builder.add_access(init_block, sum_var, builder.debug_info().get_region(block.debug_info().indices()));
 
     auto& init_tasklet = builder.add_tasklet(
         init_block,
@@ -372,18 +369,13 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         builder.subject().debug_info().get_region(oedge.debug_info().indices())
     );
 
-    auto& flush_block =
-        builder
-            .add_block_after(
-                output_loop->root(), *last_map, builder.subject().debug_info().get_region(block.debug_info().indices())
-            )
-            .first;
-    auto& sum_final =
-        builder
-            .add_access(flush_block, sum_var, builder.subject().debug_info().get_region(block.debug_info().indices()));
-    auto& input_node_c_new = builder.add_access(
-        flush_block, C_in_var, builder.subject().debug_info().get_region(input_node_c->debug_info().indices())
+    auto& flush_block = builder.add_block_after(
+        output_loop->root(), *last_map, {}, builder.debug_info().get_region(block.debug_info().indices())
     );
+    auto& sum_final =
+        builder.add_access(flush_block, sum_var, builder.debug_info().get_region(block.debug_info().indices()));
+    auto& input_node_c_new =
+        builder.add_access(flush_block, C_in_var, builder.debug_info().get_region(input_node_c->debug_info().indices()));
     symbolic::Expression c_idx = symbolic::add(symbolic::mul(ldc(), new_subset[0]), new_subset[1]);
 
     auto& scale_sum_tasklet = builder.add_tasklet(
@@ -533,7 +525,7 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     builder.remove_node(block, *input_node_c);
     builder.remove_node(block, *output_node);
     builder.remove_node(block, *this);
-    builder.remove_child(parent, block);
+    builder.remove_child(parent, index + 1);
 
     return true;
 }

@@ -34,7 +34,7 @@ TEST(ParallelizationTest, Map_2D) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     auto& body = loop.root();
 
@@ -55,5 +55,5 @@ TEST(ParallelizationTest, Map_2D) {
     EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
     transformation.apply(builder, analysis_manager);
 
-    EXPECT_EQ(loop.schedule_type(), structured_control_flow::ScheduleType_CPU_Parallel);
+    EXPECT_EQ(loop.schedule_type().value(), structured_control_flow::ScheduleType_CPU_Parallel::value());
 }

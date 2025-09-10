@@ -8,6 +8,7 @@
 namespace sdfg {
 
 namespace builder {
+class FunctionBuilder;
 class SDFGBuilder;
 class StructuredSDFGBuilder;
 } // namespace builder
@@ -578,6 +579,7 @@ constexpr bool is_infix(TaskletCode c) {
 };
 
 class Tasklet : public CodeNode {
+    friend class sdfg::builder::FunctionBuilder;
     friend class sdfg::builder::SDFGBuilder;
     friend class sdfg::builder::StructuredSDFGBuilder;
 

@@ -136,11 +136,12 @@ void StructuredSDFGDeepCopy::
         this->append(new_scope.root(), for_stmt->root());
     } else if (auto cont_stmt = dynamic_cast<structured_control_flow::Continue*>(&source)) {
         auto& new_cont =
-            this->builder_.add_continue(root, this->builder_.debug_info().get_region(cont_stmt->debug_info().indices()));
+            this->builder_
+                .add_continue(root, {}, this->builder_.debug_info().get_region(cont_stmt->debug_info().indices()));
         this->node_mapping[cont_stmt] = &new_cont;
     } else if (auto br_stmt = dynamic_cast<structured_control_flow::Break*>(&source)) {
         auto& new_br =
-            this->builder_.add_break(root, this->builder_.debug_info().get_region(br_stmt->debug_info().indices()));
+            this->builder_.add_break(root, {}, this->builder_.debug_info().get_region(br_stmt->debug_info().indices()));
         this->node_mapping[br_stmt] = &new_br;
     } else if (auto ret_stmt = dynamic_cast<structured_control_flow::Return*>(&source)) {
         auto& new_ret =
