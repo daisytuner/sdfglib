@@ -34,7 +34,6 @@ void CPPCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const
 }
 
 void CPPCodeGenerator::dispatch_includes() {
-    this->includes_stream_ << "#include <cmath>" << std::endl;
     this->includes_stream_ << "#include <alloca.h>" << std::endl;
     this->includes_stream_ << "#include <daisy_rtl/daisy_rtl.h>" << std::endl;
 };
@@ -109,8 +108,8 @@ void CPPCodeGenerator::dispatch_globals() {
     for (auto& container : sdfg_.externals()) {
         // Function declarations
         if (auto function_type = dynamic_cast<const types::Function*>(&sdfg_.type(container))) {
-            this->globals_stream_ << "extern " << language_extension_.declaration(container, *function_type) << ";"
-                                  << std::endl;
+            this->globals_stream_ << "extern \"C\" " << language_extension_.declaration(container, *function_type)
+                                  << ";" << std::endl;
             continue;
         }
 
