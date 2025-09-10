@@ -8,23 +8,38 @@
 namespace sdfg {
 namespace stdlib {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_Fputc("Fputc");
+inline data_flow::LibraryNodeCode LibraryNodeType_Memset("Memset");
 
-class FputcNode : public data_flow::LibraryNode {
+class MemsetNode : public data_flow::LibraryNode {
+private:
+    symbolic::Expression value_;
+    symbolic::Expression num_;
+
 public:
-    FputcNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
+    MemsetNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent,
+        const symbolic::Expression& value,
+        const symbolic::Expression& num
+    );
+
+    const symbolic::Expression& value() const;
+
+    const symbolic::Expression& num() const;
 
     void validate(const Function& function) const override;
 
     symbolic::SymbolSet symbols() const override;
 
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+
     std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent)
         const override;
-
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
 
-class FputcNodeSerializer : public serializer::LibraryNodeSerializer {
+class MemsetNodeSerializer : public serializer::LibraryNodeSerializer {
 public:
     nlohmann::json serialize(const data_flow::LibraryNode& library_node) override;
 
@@ -33,13 +48,13 @@ public:
     ) override;
 };
 
-class FputcNodeDispatcher : public codegen::LibraryNodeDispatcher {
+class MemsetNodeDispatcher : public codegen::LibraryNodeDispatcher {
 public:
-    FputcNodeDispatcher(
+    MemsetNodeDispatcher(
         codegen::LanguageExtension& language_extension,
         const Function& function,
         const data_flow::DataFlowGraph& data_flow_graph,
-        const FputcNode& node
+        const MemsetNode& node
     );
 
     void dispatch_code(

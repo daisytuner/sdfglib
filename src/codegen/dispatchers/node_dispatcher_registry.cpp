@@ -154,6 +154,17 @@ void register_default_dispatchers() {
 
     // stdlib
     LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        stdlib::LibraryNodeType_Alloca.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<stdlib::AllocaNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::AllocaNode&>(node)
+            );
+        }
+    );
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
         stdlib::LibraryNodeType_Calloc.value() + "::" + data_flow::ImplementationType_NONE.value(),
         [](LanguageExtension& language_extension,
            const Function& function,
@@ -176,13 +187,13 @@ void register_default_dispatchers() {
         }
     );
     LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
-        stdlib::LibraryNodeType_FPutc.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        stdlib::LibraryNodeType_Fputc.value() + "::" + data_flow::ImplementationType_NONE.value(),
         [](LanguageExtension& language_extension,
            const Function& function,
            const data_flow::DataFlowGraph& data_flow_graph,
            const data_flow::LibraryNode& node) {
-            return std::make_unique<stdlib::FPutcNodeDispatcher>(
-                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::FPutcNode&>(node)
+            return std::make_unique<stdlib::FputcNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::FputcNode&>(node)
             );
         }
     );
@@ -216,6 +227,39 @@ void register_default_dispatchers() {
            const data_flow::LibraryNode& node) {
             return std::make_unique<stdlib::MallocNodeDispatcher>(
                 language_extension, function, data_flow_graph, dynamic_cast<const stdlib::MallocNode&>(node)
+            );
+        }
+    );
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        stdlib::LibraryNodeType_Memcpy.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<stdlib::MemcpyNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::MemcpyNode&>(node)
+            );
+        }
+    );
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        stdlib::LibraryNodeType_Memmove.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<stdlib::MemmoveNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::MemmoveNode&>(node)
+            );
+        }
+    );
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        stdlib::LibraryNodeType_Memset.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<stdlib::MemsetNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::MemsetNode&>(node)
             );
         }
     );

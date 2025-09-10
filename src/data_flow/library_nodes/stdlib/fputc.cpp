@@ -3,7 +3,7 @@
 namespace sdfg {
 namespace stdlib {
 
-FPutcNode::FPutcNode(
+FputcNode::FputcNode(
     size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
 )
     : LibraryNode(
@@ -11,26 +11,26 @@ FPutcNode::FPutcNode(
           debug_info,
           vertex,
           parent,
-          LibraryNodeType_FPutc,
+          LibraryNodeType_Fputc,
           {"_ret", "_stream"},
           {"_character", "_stream"},
           true,
           data_flow::ImplementationType_NONE
       ) {}
 
-void FPutcNode::validate(const Function& function) const {}
+void FputcNode::validate(const Function& function) const {}
 
-symbolic::SymbolSet FPutcNode::symbols() const { return {}; }
+symbolic::SymbolSet FputcNode::symbols() const { return {}; }
 
-std::unique_ptr<data_flow::DataFlowNode> FPutcNode::
+std::unique_ptr<data_flow::DataFlowNode> FputcNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
-    return std::make_unique<FPutcNode>(element_id, debug_info_, vertex, parent);
+    return std::make_unique<FputcNode>(element_id, debug_info_, vertex, parent);
 }
 
-void FPutcNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {}
+void FputcNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {}
 
-nlohmann::json FPutcNodeSerializer::serialize(const data_flow::LibraryNode& library_node) {
-    const FPutcNode& node = static_cast<const FPutcNode&>(library_node);
+nlohmann::json FputcNodeSerializer::serialize(const data_flow::LibraryNode& library_node) {
+    const FputcNode& node = static_cast<const FputcNode&>(library_node);
 
     nlohmann::json j;
     j["code"] = node.code().value();
@@ -38,37 +38,37 @@ nlohmann::json FPutcNodeSerializer::serialize(const data_flow::LibraryNode& libr
     return j;
 }
 
-data_flow::LibraryNode& FPutcNodeSerializer::deserialize(
+data_flow::LibraryNode& FputcNodeSerializer::deserialize(
     const nlohmann::json& j, builder::StructuredSDFGBuilder& builder, structured_control_flow::Block& parent
 ) {
     assert(j.contains("code"));
     assert(j.contains("debug_info"));
 
     auto code = j["code"].get<std::string>();
-    if (code != LibraryNodeType_FPutc.value()) {
+    if (code != LibraryNodeType_Fputc.value()) {
         throw InvalidSDFGException("Invalid library node code");
     }
 
     sdfg::serializer::JSONSerializer serializer;
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
-    return builder.add_library_node<FPutcNode>(parent, debug_info);
+    return builder.add_library_node<FputcNode>(parent, debug_info);
 }
 
-FPutcNodeDispatcher::FPutcNodeDispatcher(
+FputcNodeDispatcher::FputcNodeDispatcher(
     codegen::LanguageExtension& language_extension,
     const Function& function,
     const data_flow::DataFlowGraph& data_flow_graph,
-    const FPutcNode& node
+    const FputcNode& node
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void FPutcNodeDispatcher::dispatch_code(
+void FputcNodeDispatcher::dispatch_code(
     codegen::PrettyPrinter& stream,
     codegen::PrettyPrinter& globals_stream,
     codegen::CodeSnippetFactory& library_snippet_factory
 ) {
-    auto& fputc_node = static_cast<const FPutcNode&>(node_);
+    auto& fputc_node = static_cast<const FputcNode&>(node_);
 
     stream << fputc_node.outputs().at(0);
     stream << " = ";

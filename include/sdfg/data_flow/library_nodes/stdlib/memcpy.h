@@ -8,23 +8,34 @@
 namespace sdfg {
 namespace stdlib {
 
-inline data_flow::LibraryNodeCode LibraryNodeType_Fputc("Fputc");
+inline data_flow::LibraryNodeCode LibraryNodeType_Memcpy("Memcpy");
 
-class FputcNode : public data_flow::LibraryNode {
+class MemcpyNode : public data_flow::LibraryNode {
+private:
+    symbolic::Expression count_;
+
 public:
-    FputcNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
+    MemcpyNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent,
+        const symbolic::Expression& count
+    );
+
+    const symbolic::Expression& count() const;
 
     void validate(const Function& function) const override;
 
     symbolic::SymbolSet symbols() const override;
 
+    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+
     std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent)
         const override;
-
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
 };
 
-class FputcNodeSerializer : public serializer::LibraryNodeSerializer {
+class MemcpyNodeSerializer : public serializer::LibraryNodeSerializer {
 public:
     nlohmann::json serialize(const data_flow::LibraryNode& library_node) override;
 
@@ -33,13 +44,13 @@ public:
     ) override;
 };
 
-class FputcNodeDispatcher : public codegen::LibraryNodeDispatcher {
+class MemcpyNodeDispatcher : public codegen::LibraryNodeDispatcher {
 public:
-    FputcNodeDispatcher(
+    MemcpyNodeDispatcher(
         codegen::LanguageExtension& language_extension,
         const Function& function,
         const data_flow::DataFlowGraph& data_flow_graph,
-        const FputcNode& node
+        const MemcpyNode& node
     );
 
     void dispatch_code(

@@ -15,6 +15,8 @@ public:
 
     CLanguageExtension(const std::vector<std::string>& external_variables) : LanguageExtension(external_variables) {}
 
+    const std::string language() const override { return "C"; }
+
     std::string primitive_type(const types::PrimitiveType prim_type) override;
 
     std::string declaration(

@@ -17,6 +17,8 @@ public:
 
     CUDALanguageExtension(const std::vector<std::string>& external_variables) : LanguageExtension(external_variables) {}
 
+    const std::string language() const override { return "CUDA"; }
+
     std::string primitive_type(const types::PrimitiveType prim_type) override;
 
     std::string declaration(

@@ -28,6 +28,8 @@ public:
 
     virtual ~LanguageExtension() = default;
 
+    virtual const std::string language() const = 0;
+
     virtual std::string primitive_type(const types::PrimitiveType prim_type) = 0;
 
     virtual std::string declaration(

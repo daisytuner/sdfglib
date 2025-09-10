@@ -1143,6 +1143,10 @@ size_t LibraryNodeSerializerRegistry::size() const { return factory_map_.size();
 void register_default_serializers() {
     // stdlib
     LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Alloca.value(), []() {
+            return std::make_unique<stdlib::AllocaNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(stdlib::LibraryNodeType_Calloc.value(), []() {
             return std::make_unique<stdlib::CallocNodeSerializer>();
         });
@@ -1151,8 +1155,8 @@ void register_default_serializers() {
             return std::make_unique<stdlib::FprintfNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(stdlib::LibraryNodeType_FPutc.value(), []() {
-            return std::make_unique<stdlib::FPutcNodeSerializer>();
+        .register_library_node_serializer(stdlib::LibraryNodeType_Fputc.value(), []() {
+            return std::make_unique<stdlib::FputcNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(stdlib::LibraryNodeType_Free.value(), []() {
@@ -1165,6 +1169,18 @@ void register_default_serializers() {
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(stdlib::LibraryNodeType_Malloc.value(), []() {
             return std::make_unique<stdlib::MallocNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Memcpy.value(), []() {
+            return std::make_unique<stdlib::MemcpyNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Memmove.value(), []() {
+            return std::make_unique<stdlib::MemmoveNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Memset.value(), []() {
+            return std::make_unique<stdlib::MemsetNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(stdlib::LibraryNodeType_Rand.value(), []() {
