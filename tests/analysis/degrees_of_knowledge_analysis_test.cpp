@@ -25,7 +25,7 @@ TEST(DOKSizeTest, StaticSize) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
     symbolic::Expression init = symbolic::zero();
     symbolic::Expression update = symbolic::add(indvar, symbolic::one());
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 
@@ -53,7 +53,7 @@ TEST(DOKSizeTest, StaticSizeOffset) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
     symbolic::Expression init = symbolic::integer(5);
     symbolic::Expression update = symbolic::add(indvar, symbolic::one());
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 
@@ -81,7 +81,7 @@ TEST(DOKSizeTest, StaticSizeStride) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
     symbolic::Expression init = symbolic::zero();
     symbolic::Expression update = symbolic::add(indvar, symbolic::integer(2));
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 
@@ -110,7 +110,7 @@ TEST(DOKSizeTest, BoundSize) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::symbol("N"));
     symbolic::Expression init = symbolic::zero();
     symbolic::Expression update = symbolic::add(indvar, symbolic::one());
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 
@@ -140,7 +140,7 @@ TEST(DOKSizeTest, UnboundSize) {
     symbolic::Condition condition_outer = symbolic::Lt(indvar_outer, symbolic::symbol("N"));
     symbolic::Expression init_outer = symbolic::zero();
     symbolic::Expression update_outer = symbolic::add(indvar_outer, symbolic::one());
-    ScheduleType schedule_type_outer = ScheduleType_Sequential;
+    ScheduleType schedule_type_outer = ScheduleType_Sequential::create();
 
     auto& map_node_outer =
         builder.add_map(root, indvar_outer, condition_outer, init_outer, update_outer, schedule_type_outer);
@@ -149,7 +149,7 @@ TEST(DOKSizeTest, UnboundSize) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::symbol("j"));
     symbolic::Expression init = symbolic::zero();
     symbolic::Expression update = symbolic::add(indvar, symbolic::one());
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(map_node_outer.root(), indvar, condition, init, update, schedule_type);
 
@@ -178,7 +178,7 @@ TEST(DOKNumberTest, StaticNumber) {
     symbolic::Condition condition_outer = symbolic::Lt(indvar_outer, symbolic::integer(10));
     symbolic::Expression init_outer = symbolic::zero();
     symbolic::Expression update_outer = symbolic::add(indvar_outer, symbolic::one());
-    ScheduleType schedule_type_outer = ScheduleType_Sequential;
+    ScheduleType schedule_type_outer = ScheduleType_Sequential::create();
 
     auto& map_node_outer =
         builder.add_map(root, indvar_outer, condition_outer, init_outer, update_outer, schedule_type_outer);
@@ -187,7 +187,7 @@ TEST(DOKNumberTest, StaticNumber) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
     symbolic::Expression init = symbolic::zero();
     symbolic::Expression update = symbolic::add(indvar, symbolic::one());
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(map_node_outer.root(), indvar, condition, init, update, schedule_type);
 
@@ -216,7 +216,7 @@ TEST(DOKNumberTest, StaticNumberOffset) {
     symbolic::Condition condition_outer = symbolic::Lt(indvar_outer, symbolic::integer(10));
     symbolic::Expression init_outer = symbolic::integer(5);
     symbolic::Expression update_outer = symbolic::add(indvar_outer, symbolic::one());
-    ScheduleType schedule_type_outer = ScheduleType_Sequential;
+    ScheduleType schedule_type_outer = ScheduleType_Sequential::create();
 
     auto& map_node_outer =
         builder.add_map(root, indvar_outer, condition_outer, init_outer, update_outer, schedule_type_outer);
@@ -225,7 +225,7 @@ TEST(DOKNumberTest, StaticNumberOffset) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
     symbolic::Expression init = symbolic::zero();
     symbolic::Expression update = symbolic::add(indvar, symbolic::one());
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(map_node_outer.root(), indvar, condition, init, update, schedule_type);
 
@@ -254,7 +254,7 @@ TEST(DOKNumberTest, StaticNumberStride) {
     symbolic::Condition condition_outer = symbolic::Lt(indvar_outer, symbolic::integer(10));
     symbolic::Expression init_outer = symbolic::zero();
     symbolic::Expression update_outer = symbolic::add(indvar_outer, symbolic::integer(2));
-    ScheduleType schedule_type_outer = ScheduleType_Sequential;
+    ScheduleType schedule_type_outer = ScheduleType_Sequential::create();
 
     auto& map_node_outer =
         builder.add_map(root, indvar_outer, condition_outer, init_outer, update_outer, schedule_type_outer);
@@ -263,7 +263,7 @@ TEST(DOKNumberTest, StaticNumberStride) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
     symbolic::Expression init = symbolic::zero();
     symbolic::Expression update = symbolic::add(indvar, symbolic::one());
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(map_node_outer.root(), indvar, condition, init, update, schedule_type);
 
@@ -293,7 +293,7 @@ TEST(DOKNumberTest, BoundNumber) {
     symbolic::Condition condition_outer = symbolic::Lt(indvar_outer, symbolic::symbol("N"));
     symbolic::Expression init_outer = symbolic::zero();
     symbolic::Expression update_outer = symbolic::add(indvar_outer, symbolic::one());
-    ScheduleType schedule_type_outer = ScheduleType_Sequential;
+    ScheduleType schedule_type_outer = ScheduleType_Sequential::create();
 
     auto& map_node_outer =
         builder.add_map(root, indvar_outer, condition_outer, init_outer, update_outer, schedule_type_outer);
@@ -302,7 +302,7 @@ TEST(DOKNumberTest, BoundNumber) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
     symbolic::Expression init = symbolic::zero();
     symbolic::Expression update = symbolic::add(indvar, symbolic::one());
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(map_node_outer.root(), indvar, condition, init, update, schedule_type);
 
@@ -333,7 +333,7 @@ TEST(DOKNumberTest, UnboundNumber) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
     symbolic::Expression init = symbolic::zero();
     symbolic::Expression update = symbolic::add(indvar, symbolic::one());
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(while_node.root(), indvar, condition, init, update, schedule_type);
 
@@ -367,7 +367,7 @@ TEST(DOKLoadTest, StaticLoad) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
     symbolic::Expression init = symbolic::zero();
     symbolic::Expression update = symbolic::add(indvar, symbolic::one());
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 
@@ -410,7 +410,7 @@ TEST(DOKLoadTest, BoundLoad) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
     symbolic::Expression init = symbolic::zero();
     symbolic::Expression update = symbolic::add(indvar, symbolic::one());
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 
@@ -418,7 +418,7 @@ TEST(DOKLoadTest, BoundLoad) {
     symbolic::Condition condition_inner = symbolic::Lt(indvar_inner, symbolic::symbol("N"));
     symbolic::Expression init_inner = symbolic::zero();
     symbolic::Expression update_inner = symbolic::add(indvar_inner, symbolic::one());
-    ScheduleType schedule_type_inner = ScheduleType_Sequential;
+    ScheduleType schedule_type_inner = ScheduleType_Sequential::create();
 
     auto& map_node_inner =
         builder.add_map(map_node.root(), indvar_inner, condition_inner, init_inner, update_inner, schedule_type_inner);
@@ -462,7 +462,7 @@ TEST(DOKLoadTest, UnboundLoad) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
     symbolic::Expression init = symbolic::zero();
     symbolic::Expression update = symbolic::add(indvar, symbolic::one());
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 
@@ -525,7 +525,7 @@ TEST(DOKBalanceTest, StaticBalance) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
     symbolic::Expression init = symbolic::zero();
     symbolic::Expression update = symbolic::add(indvar, symbolic::one());
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 
@@ -567,7 +567,7 @@ TEST(DOKBalanceTest, BoundBalance) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
     symbolic::Expression init = symbolic::zero();
     symbolic::Expression update = symbolic::add(indvar, symbolic::one());
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 
@@ -575,7 +575,7 @@ TEST(DOKBalanceTest, BoundBalance) {
     symbolic::Condition condition_inner = symbolic::Lt(indvar_inner, symbolic::symbol("i"));
     symbolic::Expression init_inner = symbolic::zero();
     symbolic::Expression update_inner = symbolic::add(indvar_inner, symbolic::one());
-    ScheduleType schedule_type_inner = ScheduleType_Sequential;
+    ScheduleType schedule_type_inner = ScheduleType_Sequential::create();
 
     auto& map_node_inner =
         builder.add_map(map_node.root(), indvar_inner, condition_inner, init_inner, update_inner, schedule_type_inner);
@@ -620,7 +620,7 @@ TEST(DOKBalanceTest, UnboundBalance) {
     symbolic::Condition condition = symbolic::Lt(indvar, symbolic::integer(10));
     symbolic::Expression init = symbolic::zero();
     symbolic::Expression update = symbolic::add(indvar, symbolic::one());
-    ScheduleType schedule_type = ScheduleType_Sequential;
+    ScheduleType schedule_type = ScheduleType_Sequential::create();
 
     auto& map_node = builder.add_map(root, indvar, condition, init, update, schedule_type);
 

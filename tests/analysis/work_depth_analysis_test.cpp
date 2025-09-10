@@ -152,7 +152,7 @@ TEST(WorkDepthAnalysis, Map) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
         symbolic::zero(),
         symbolic::add(symbolic::symbol("i"), symbolic::one()),
-        ScheduleType_Sequential
+        ScheduleType_Sequential::create()
     );
     auto& block = builder.add_block(map_node.root());
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
