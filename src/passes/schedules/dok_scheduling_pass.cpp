@@ -52,7 +52,13 @@ bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
             run_dynamic = symbolic::Le(balance_threshold, symbolic::div(size.first, num_threads));
         }
 
-        // Enable fat bin generation
+        ScheduleType schedule_type = ScheduleType_CPU_Parallel::create();
+        if (symbolic::is_true(run_dynamic)) {
+            ScheduleType_CPU_Parallel::set_dynamic(schedule_type);
+        }
+        ScheduleType_CPU_Parallel::num_threads(schedule_type, num_threads);
+
+        map->schedule_type() = schedule_type;
     }
 
     return false;
