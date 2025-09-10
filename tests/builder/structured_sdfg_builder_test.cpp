@@ -55,7 +55,7 @@ TEST(StructuredSDFGBuilderTest, AddBlockBefore) {
     EXPECT_EQ(block_base.element_id(), 1);
     EXPECT_EQ(root.at(0).second.element_id(), 2);
 
-    auto& block = builder.add_block_before(root, block_base).first;
+    auto& block = builder.add_block_before(root, block_base, {}, {});
     EXPECT_EQ(block.element_id(), 3);
     EXPECT_EQ(root.at(0).second.element_id(), 4);
 
@@ -88,7 +88,7 @@ TEST(StructuredSDFGBuilderTest, AddBlockAfter) {
     EXPECT_EQ(block_base2.element_id(), 3);
     EXPECT_EQ(root.at(1).second.element_id(), 4);
 
-    auto& block = builder.add_block_after(root, block_base).first;
+    auto& block = builder.add_block_after(root, block_base, {}, {});
     EXPECT_EQ(block.element_id(), 5);
     EXPECT_EQ(root.at(1).second.element_id(), 6);
 
@@ -171,7 +171,7 @@ TEST(StructuredSDFGBuilderTest, AddIfElseBefore) {
     auto& root = builder.subject().root();
     auto& block_base =
         builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
-    auto& if_else = builder.add_if_else_before(root, block_base).first;
+    auto& if_else = builder.add_if_else_before(root, block_base, {}, {});
     auto& true_case = builder.add_case(if_else, symbolic::__true__());
     auto& false_case = builder.add_case(if_else, symbolic::__false__());
 
@@ -247,6 +247,38 @@ TEST(StructuredSDFGBuilderTest, addFor) {
     EXPECT_EQ(scope.root().size(), 1);
 }
 
+TEST(StructuredSDFGBuilderTest, addFor_Transition) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& root = builder.subject().root();
+    EXPECT_EQ(root.element_id(), 0);
+
+    auto& scope = builder.add_for(
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        {{symbolic::symbol("i"), symbolic::zero()}}
+    );
+    EXPECT_EQ(scope.element_id(), 1);
+    EXPECT_EQ(scope.root().element_id(), 2);
+    EXPECT_EQ(root.at(0).second.element_id(), 3);
+
+    auto& body = builder.add_block(scope.root());
+    EXPECT_EQ(body.element_id(), 4);
+
+    auto sdfg = builder.move();
+
+    EXPECT_EQ(sdfg->name(), "sdfg_1");
+    EXPECT_EQ(sdfg->root().size(), 1);
+    EXPECT_EQ(sdfg->root().at(0).second.assignments().size(), 1);
+
+    auto child = sdfg->root().at(0);
+    EXPECT_EQ(&child.first, &scope);
+    EXPECT_EQ(scope.root().size(), 1);
+}
+
 TEST(StructuredSDFGBuilderTest, addMap) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
@@ -259,7 +291,7 @@ TEST(StructuredSDFGBuilderTest, addMap) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     EXPECT_EQ(scope.element_id(), 1);
     EXPECT_EQ(scope.root().element_id(), 2);
@@ -275,6 +307,43 @@ TEST(StructuredSDFGBuilderTest, addMap) {
 
     auto map = dynamic_cast<structured_control_flow::Map*>(&sdfg->root().at(0).first);
     EXPECT_TRUE(map);
+    EXPECT_EQ(sdfg->root().at(0).second.assignments().size(), 0);
+
+    auto child = sdfg->root().at(0);
+    EXPECT_EQ(&child.first, &scope);
+    EXPECT_EQ(scope.root().size(), 1);
+}
+
+TEST(StructuredSDFGBuilderTest, addMap_Transition) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& root = builder.subject().root();
+    EXPECT_EQ(root.element_id(), 0);
+
+    auto& scope = builder.add_map(
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential::create(),
+        {{symbolic::symbol("i"), symbolic::zero()}}
+    );
+    EXPECT_EQ(scope.element_id(), 1);
+    EXPECT_EQ(scope.root().element_id(), 2);
+    EXPECT_EQ(root.at(0).second.element_id(), 3);
+
+    auto& body = builder.add_block(scope.root());
+    EXPECT_EQ(body.element_id(), 4);
+
+    auto sdfg = builder.move();
+
+    EXPECT_EQ(sdfg->name(), "sdfg_1");
+    EXPECT_EQ(sdfg->root().size(), 1);
+
+    auto map = dynamic_cast<structured_control_flow::Map*>(&sdfg->root().at(0).first);
+    EXPECT_TRUE(map);
+    EXPECT_EQ(sdfg->root().at(0).second.assignments().size(), 1);
 
     auto child = sdfg->root().at(0);
     EXPECT_EQ(&child.first, &scope);
@@ -287,16 +356,14 @@ TEST(StructuredSDFGBuilderTest, addForBefore) {
     auto& root = builder.subject().root();
     auto& block_base =
         builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
-    auto& scope = builder
-                      .add_for_before(
-                          root,
-                          block_base,
-                          symbolic::symbol("i"),
-                          symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-                          symbolic::integer(0),
-                          symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
-                      )
-                      .first;
+    auto& scope = builder.add_for_before(
+        root,
+        block_base,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
     auto& body = builder.add_block(scope.root());
 
     auto sdfg = builder.move();
@@ -317,16 +384,14 @@ TEST(StructuredSDFGBuilderTest, addForAfter) {
         builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     auto& block_base2 =
         builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
-    auto& scope = builder
-                      .add_for_after(
-                          root,
-                          block_base,
-                          symbolic::symbol("i"),
-                          symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-                          symbolic::integer(0),
-                          symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
-                      )
-                      .first;
+    auto& scope = builder.add_for_after(
+        root,
+        block_base,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
     auto& body = builder.add_block(scope.root());
 
     auto sdfg = builder.move();

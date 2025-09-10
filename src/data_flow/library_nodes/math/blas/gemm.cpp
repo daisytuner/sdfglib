@@ -153,12 +153,13 @@ types::PrimitiveType GEMMNode::scalar_primitive() const {
 }
 
 bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
-    auto& sdfg = builder.subject();
+    auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+
     auto& dataflow = this->get_parent();
     auto& block = static_cast<structured_control_flow::Block&>(*dataflow.get_parent());
-
-    auto& scope_analyisis = analysis_manager.get<analysis::ScopeAnalysis>();
-    auto& parent = static_cast<structured_control_flow::Sequence&>(*scope_analyisis.parent_scope(&block));
+    auto& parent = static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&block));
+    int index = parent.index(block);
+    auto& transition = parent.at(index).second;
 
     if (trans_a_ != BLAS_Transpose::No || trans_b_ != BLAS_Transpose::No) {
         return false;
@@ -241,7 +242,7 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 
 
     // Add new graph after the current block
-    auto& new_sequence = builder.add_sequence_before(parent, block, block.debug_info()).first;
+    auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
 
     // Add maps
     std::vector<symbolic::Expression> indvar_ends{this->m(), this->n(), this->k()};
@@ -275,7 +276,7 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
             condition,
             init,
             update,
-            structured_control_flow::ScheduleType_Sequential,
+            structured_control_flow::ScheduleType_Sequential::create(),
             {},
             block.debug_info()
         );
@@ -290,7 +291,7 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 
 
     // Add code
-    auto& init_block = builder.add_block_before(output_loop->root(), *last_map, block.debug_info()).first;
+    auto& init_block = builder.add_block_before(output_loop->root(), *last_map, {}, block.debug_info());
     auto& sum_init = builder.add_access(init_block, sum_var, block.debug_info());
 
     auto& init_tasklet = builder.add_tasklet(init_block, data_flow::assign, "_out", {"0.0"}, block.debug_info());
@@ -317,7 +318,7 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     );
     builder.add_computational_memlet(code_block, core_fma, "_out", sum_out, {}, oedge.debug_info());
 
-    auto& flush_block = builder.add_block_after(output_loop->root(), *last_map, block.debug_info()).first;
+    auto& flush_block = builder.add_block_after(output_loop->root(), *last_map, {}, block.debug_info());
     auto& sum_final = builder.add_access(flush_block, sum_var, block.debug_info());
     auto& input_node_c_new = builder.add_access(flush_block, C_in_var, input_node_c->debug_info());
     symbolic::Expression c_idx = symbolic::add(symbolic::mul(ldc(), new_subset[0]), new_subset[1]);
@@ -388,7 +389,7 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     builder.remove_node(block, *input_node_c);
     builder.remove_node(block, *output_node);
     builder.remove_node(block, *this);
-    builder.remove_child(parent, block);
+    builder.remove_child(parent, index + 1);
 
     return true;
 }

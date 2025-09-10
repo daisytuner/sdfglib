@@ -492,10 +492,19 @@ void Visualizer::visualizeSubset(
         this->visualizeSubset(function, begin_sub, end_sub, &element_type, subIdx + 1);
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(type)) {
         this->stream_ << "[" << subsetRangeString(begin_sub, end_sub, subIdx) << "]";
-        types::IType const& pointee_type = pointer_type->pointee_type();
-        this->visualizeSubset(function, begin_sub, end_sub, &pointee_type, subIdx + 1);
+        const types::IType* pointee_type;
+        if (pointer_type->has_pointee_type()) {
+            pointee_type = &pointer_type->pointee_type();
+        } else {
+            auto z = symbolic::zero();
+            if (!symbolic::eq(begin_sub.at(subIdx), z) || !symbolic::eq(end_sub.at(subIdx), z)) {
+                this->stream_ << "#illgl";
+            }
+            pointee_type = nullptr;
+        }
+        this->visualizeSubset(function, begin_sub, end_sub, pointee_type, subIdx + 1);
     } else {
-        if (type != nullptr) {
+        if (type == nullptr) {
             this->stream_ << "(rogue)";
         }
         this->stream_ << "[" << subsetRangeString(begin_sub, end_sub, subIdx) << "]";

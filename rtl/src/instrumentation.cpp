@@ -169,6 +169,7 @@ void write_event_json(
     // "args": {
     // "region_id": "__daisy_correlation18122842100848744318_0_0_1396",
     // "function": "main",
+    // "loopnest_index": 0,
     // "module": "correlation",
     // "build_id": "",
     // "source_ranges": [
@@ -191,6 +192,7 @@ void write_event_json(
     entry << "\"args\":{";
     entry << "\"region_id\":\"" << md->region_name << "\",";
     entry << "\"function\":\"" << md->function_name << "\",";
+    entry << "\"loopnest_index\":" << md->loopnest_index << ",";
     entry << "\"module\":\"" << std::filesystem::path(md->file_name).filename().string() << "\",";
     entry << "\"build_id\":\"\",";
     entry << "\"source_ranges\":[";

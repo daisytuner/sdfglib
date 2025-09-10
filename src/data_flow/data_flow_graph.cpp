@@ -47,6 +47,17 @@ std::unordered_set<const data_flow::Tasklet*> DataFlowGraph::tasklets() const {
     return ts;
 };
 
+std::unordered_set<data_flow::Tasklet*> DataFlowGraph::tasklets() {
+    std::unordered_set<data_flow::Tasklet*> ts;
+    for (auto& node : this->nodes_) {
+        if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(node.second.get())) {
+            ts.insert(tasklet);
+        }
+    }
+
+    return ts;
+};
+
 std::unordered_set<const data_flow::AccessNode*> DataFlowGraph::data_nodes() const {
     std::unordered_set<const data_flow::AccessNode*> dnodes;
     for (auto& node : this->nodes_) {

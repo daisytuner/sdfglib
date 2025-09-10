@@ -15,13 +15,15 @@ class InstrumentationPlan {
 protected:
     StructuredSDFG& sdfg_;
     std::unordered_map<const structured_control_flow::ControlFlowNode*, InstrumentationEventType> nodes_;
+    std::unordered_map<const structured_control_flow::ControlFlowNode*, size_t> loopnest_indices_;
 
 public:
     InstrumentationPlan(
         StructuredSDFG& sdfg,
-        const std::unordered_map<const structured_control_flow::ControlFlowNode*, InstrumentationEventType>& nodes
+        const std::unordered_map<const structured_control_flow::ControlFlowNode*, InstrumentationEventType>& nodes,
+        const std::unordered_map<const structured_control_flow::ControlFlowNode*, size_t>& loopnest_indices = {}
     )
-        : sdfg_(sdfg), nodes_(nodes) {}
+        : sdfg_(sdfg), nodes_(nodes), loopnest_indices_(loopnest_indices) {}
 
     InstrumentationPlan(const InstrumentationPlan& other) = delete;
     InstrumentationPlan(InstrumentationPlan&& other) = delete;

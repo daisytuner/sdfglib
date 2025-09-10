@@ -28,8 +28,7 @@ DeadCFGElimination::DeadCFGElimination()
 
 std::string DeadCFGElimination::name() { return "DeadCFGElimination"; };
 
-bool DeadCFGElimination::run_pass(builder::StructuredSDFGBuilder& builder,
-                                  analysis::AnalysisManager& analysis_manager) {
+bool DeadCFGElimination::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     auto& sdfg = builder.subject();
@@ -67,11 +66,10 @@ bool DeadCFGElimination::run_pass(builder::StructuredSDFGBuilder& builder,
                 }
 
                 // Trivial branch
-                if (auto if_else_stmt =
-                        dynamic_cast<structured_control_flow::IfElse*>(&child.first)) {
+                if (auto if_else_stmt = dynamic_cast<structured_control_flow::IfElse*>(&child.first)) {
                     auto branch = if_else_stmt->at(0);
                     if (symbolic::is_true(branch.second)) {
-                        builder.insert_children(*sequence_stmt, branch.first, i + 1);
+                        builder.move_children(branch.first, *sequence_stmt, i + 1);
                         builder.remove_child(*sequence_stmt, i);
                         applied = true;
                         continue;
@@ -141,5 +139,5 @@ bool DeadCFGElimination::run_pass(builder::StructuredSDFGBuilder& builder,
     return applied;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

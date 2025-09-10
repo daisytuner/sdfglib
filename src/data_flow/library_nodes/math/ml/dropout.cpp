@@ -35,6 +35,8 @@ bool DropoutNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Anal
     }
     auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto& parent = static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&block));
+    int index = parent.index(block);
+    auto& transition = parent.at(index).second;
 
     auto& input = this->inputs_.at(0);
     auto& output_data = this->outputs_.at(0);
@@ -57,7 +59,7 @@ bool DropoutNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Anal
     }
 
     // Add new graph after the current block
-    auto& new_sequence = builder.add_sequence_before(parent, block, block.debug_info()).first;
+    auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
 
     // Add maps
     auto& begin_subsets_out = oedge_output->begin_subset();
@@ -82,7 +84,7 @@ bool DropoutNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Anal
             condition,
             init,
             update,
-            structured_control_flow::ScheduleType_Sequential,
+            structured_control_flow::ScheduleType_Sequential::create(),
             {},
             block.debug_info()
         );
@@ -134,7 +136,7 @@ bool DropoutNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Anal
     builder.remove_node(block, output_node_output);
     builder.remove_node(block, output_node_mask);
     builder.remove_node(block, *this);
-    builder.remove_child(parent, block);
+    builder.remove_child(parent, index + 1);
 
     return true;
 }

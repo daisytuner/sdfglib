@@ -85,7 +85,7 @@ void CPUParallelMapDispatcher::dispatch_node(
 
     std::vector<std::string> locals;
     for (auto& entry : users.locals(node_.root())) {
-        if (users_view.writes(entry).size() > 0) {
+        if (users_view.writes(entry).size() > 0 || users_view.moves(entry).size() > 0) {
             locals.push_back(entry);
         }
     }
