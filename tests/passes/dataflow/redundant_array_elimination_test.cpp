@@ -9,7 +9,7 @@
 using namespace sdfg;
 
 TEST(RedundantArrayElimination, ArrayLate) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     auto& block = builder.add_block(builder.subject().root());
 
@@ -78,7 +78,7 @@ TEST(RedundantArrayElimination, ArrayLate) {
 }
 
 TEST(RedundantArrayElimination, ArrayEarly) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     auto& block = builder.add_block(builder.subject().root());
 
@@ -147,7 +147,7 @@ TEST(RedundantArrayElimination, ArrayEarly) {
 }
 
 TEST(RedundantArrayElimination, ArrayMiddle) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     auto& block = builder.add_block(builder.subject().root());
 
@@ -216,7 +216,7 @@ TEST(RedundantArrayElimination, ArrayMiddle) {
 }
 
 TEST(RedundantArrayElimination, Negative) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     auto& block = builder.add_block(builder.subject().root());
 

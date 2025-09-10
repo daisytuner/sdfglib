@@ -5,7 +5,7 @@
 using namespace sdfg;
 
 TEST(LoopNormalizationTest, UnequalitySingle) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugTable());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -35,7 +35,7 @@ TEST(LoopNormalizationTest, UnequalitySingle) {
 }
 
 TEST(LoopNormalizationTest, AndUnequality) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugTable());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -68,7 +68,7 @@ TEST(LoopNormalizationTest, AndUnequality) {
 }
 
 TEST(LoopNormalizationTest, OrUnequality) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugTable());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();

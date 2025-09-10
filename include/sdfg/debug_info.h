@@ -8,38 +8,27 @@
 
 namespace sdfg {
 
-namespace builder {
-class SDFGBuilder;
-class StructuredSDFGBuilder;
-} // namespace builder
-
-namespace serializer {
-class JSONSerializer;
-} // namespace serializer
-
-class Function;
-
 struct DebugLoc {
-    std::string filename_;
-    std::string function_;
-    size_t line_;
-    size_t column_;
+    std::string filename;
+    std::string function;
+    size_t line;
+    size_t column;
 
-    bool has_;
+    bool has;
 };
 
-class DebugInfoElement {
+class DebugInfo {
 private:
     std::vector<DebugLoc> locations_;
 
 public:
-    DebugInfoElement();
+    DebugInfo();
 
-    DebugInfoElement(DebugLoc loc);
+    DebugInfo(DebugLoc loc);
 
-    DebugInfoElement(DebugLoc loc, std::vector<DebugLoc> inlined_at);
+    DebugInfo(DebugLoc loc, std::vector<DebugLoc> inlined_at);
 
-    DebugInfoElement(std::vector<DebugLoc> inlined_at);
+    DebugInfo(std::vector<DebugLoc> inlined_at);
 
     bool has() const;
 
@@ -80,15 +69,12 @@ private:
 public:
     DebugInfoRegion();
 
-    DebugInfoRegion(std::unordered_set<size_t> indices, const std::vector<DebugInfoElement>& all_instructions);
+    DebugInfoRegion(std::unordered_set<size_t> indices, const std::vector<DebugInfo>& all_instructions);
 
     std::unordered_set<size_t> indices() const;
 
-    static DebugInfoRegion merge(
-        const DebugInfoRegion& first,
-        const DebugInfoRegion& second,
-        const std::vector<DebugInfoElement>& all_instructions
-    );
+    static DebugInfoRegion
+    merge(const DebugInfoRegion& first, const DebugInfoRegion& second, const std::vector<DebugInfo>& all_instructions);
 
     bool has() const;
 
@@ -100,16 +86,16 @@ public:
     size_t end_column() const;
 };
 
-class DebugInfo {
+class DebugTable {
 private:
-    std::vector<DebugInfoElement> instructions_;
+    std::vector<DebugInfo> instructions_;
 
 public:
-    size_t add_element(DebugInfoElement loc);
+    size_t add_element(DebugInfo loc);
 
     DebugInfoRegion get_region(std::unordered_set<size_t> indices) const;
 
-    const std::vector<DebugInfoElement>& instructions() const;
+    const std::vector<DebugInfo>& instructions() const;
 };
 
 

@@ -63,6 +63,9 @@ protected:
     // Metadata
     std::unordered_map<std::string, std::string> metadata_;
 
+    // Debug information
+    DebugTable debug_info_;
+
     Function(const std::string& name, FunctionType type);
 
 public:
@@ -130,5 +133,9 @@ public:
     const std::string& metadata(const std::string& key) const;
 
     const std::unordered_map<std::string, std::string>& metadata() const;
+
+    /***** Section: Debug Info *****/
+    DebugTable& debug_info() { return this->debug_info_; };
+    const DebugTable& debug_info() const { return this->debug_info_; };
 };
 } // namespace sdfg

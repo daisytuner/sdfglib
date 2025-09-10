@@ -9,7 +9,7 @@
 using namespace sdfg;
 
 TEST(ReferencePropagationTest, ReferenceMemlet_TrivialOffset) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::Double);
     types::Pointer desc_ptr(desc);
@@ -56,7 +56,7 @@ TEST(ReferencePropagationTest, ReferenceMemlet_TrivialOffset) {
 }
 
 TEST(ReferencePropagationTest, ReferenceMemlet_NonTrivialOffset) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     types::Scalar desc_base(types::PrimitiveType::Double);
     types::Pointer desc_base_ptr(desc_base);
@@ -106,7 +106,7 @@ TEST(ReferencePropagationTest, ReferenceMemlet_NonTrivialOffset) {
 }
 
 TEST(ReferencePropagationTest, DereferenceMemlet_Load) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::Double);
     types::Pointer desc_ptr(desc);
@@ -142,7 +142,7 @@ TEST(ReferencePropagationTest, DereferenceMemlet_Load) {
 }
 
 TEST(ReferencePropagationTest, DereferenceMemlet_Store) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::Double);
     types::Pointer desc_ptr(desc);

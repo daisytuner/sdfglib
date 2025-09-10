@@ -8,7 +8,7 @@
 using namespace sdfg;
 
 TEST(ExpansionPassTest, Simple) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     auto& sdfg = builder.subject();
 

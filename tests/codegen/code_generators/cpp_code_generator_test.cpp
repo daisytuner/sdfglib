@@ -7,7 +7,7 @@
 using namespace sdfg;
 
 TEST(CPPCodeGeneratorTest, FunctionDefintion) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugTable());
     auto sdfg = builder.move();
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
@@ -17,7 +17,7 @@ TEST(CPPCodeGeneratorTest, FunctionDefintion) {
 }
 
 TEST(CPPCodeGeneratorTest, Dispatch_Includes) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugTable());
     auto sdfg = builder.move();
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
@@ -29,7 +29,7 @@ TEST(CPPCodeGeneratorTest, Dispatch_Includes) {
 }
 
 TEST(CPPCodeGeneratorTest, DispatchStructures_Basic) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugTable());
 
     auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
@@ -50,7 +50,7 @@ char member_0;
 }
 
 TEST(CPPCodeGeneratorTest, DispatchStructures_Packed) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugTable());
 
     auto& struct_def_A = builder.add_structure("MyStructA", true);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
@@ -71,7 +71,7 @@ char member_0;
 }
 
 TEST(CPPCodeGeneratorTest, DispatchStructures_Nested) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugTable());
 
     auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
@@ -100,7 +100,7 @@ struct MyStructA member_0;
 }
 
 TEST(CPPCodeGeneratorTest, DispatchGlobals) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugTable());
 
     sdfg::types::Scalar base_type(sdfg::types::PrimitiveType::Int32);
     sdfg::types::Pointer ptr_type(base_type);

@@ -300,7 +300,7 @@ Function& StructuredSDFGBuilder::function() const { return static_cast<Function&
 StructuredSDFGBuilder::StructuredSDFGBuilder(std::unique_ptr<StructuredSDFG>& sdfg)
     : FunctionBuilder(), structured_sdfg_(std::move(sdfg)) {};
 
-StructuredSDFGBuilder::StructuredSDFGBuilder(const std::string& name, FunctionType type, const DebugInfo& debug_info)
+StructuredSDFGBuilder::StructuredSDFGBuilder(const std::string& name, FunctionType type, const DebugTable& debug_info)
     : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name, type, debug_info)) {};
 
 StructuredSDFGBuilder::StructuredSDFGBuilder(const SDFG& sdfg)
@@ -1421,11 +1421,11 @@ void StructuredSDFGBuilder::add_dataflow(const data_flow::DataFlowGraph& from, B
     }
 };
 
-size_t StructuredSDFGBuilder::add_debug_info_element(const DebugInfoElement& element) {
+size_t StructuredSDFGBuilder::add_debug_info_element(const DebugInfo& element) {
     return structured_sdfg_->debug_info().add_element(element);
 }
 
-const DebugInfo& StructuredSDFGBuilder::debug_info() const { return structured_sdfg_->debug_info(); }
+const DebugTable& StructuredSDFGBuilder::debug_info() const { return structured_sdfg_->debug_info(); }
 
 } // namespace builder
 } // namespace sdfg

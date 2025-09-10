@@ -7,11 +7,11 @@
 
 using namespace sdfg;
 
-TEST(DebugInfoPropagationTest, BlockPropagation_Node) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+TEST(DebugTablePropagationTest, BlockPropagation_Node) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     DebugLoc debug_loc("main.c", "main", 1, 1, true);
-    DebugInfoElement debug_info_element(debug_loc);
+    DebugInfo debug_info_element(debug_loc);
 
     size_t index = builder.add_debug_info_element(debug_info_element);
 
@@ -32,7 +32,7 @@ TEST(DebugInfoPropagationTest, BlockPropagation_Node) {
     builder.add_computational_memlet(block1, tasklet_1, "_out", node2_1, {symbolic::integer(0)});
 
     analysis::AnalysisManager analysis_manager(builder.subject());
-    passes::DebugInfoPropagation debug_info_propagation_pass;
+    passes::DebugTablePropagation debug_info_propagation_pass;
     debug_info_propagation_pass.run(builder, analysis_manager);
 
     EXPECT_TRUE(builder.subject().root().debug_info().has());
@@ -44,15 +44,15 @@ TEST(DebugInfoPropagationTest, BlockPropagation_Node) {
     EXPECT_EQ(builder.subject().root().debug_info().end_column(), 1);
 }
 
-TEST(DebugInfoPropagationTest, BlockPropagation_Edge) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+TEST(DebugTablePropagationTest, BlockPropagation_Edge) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     DebugLoc debug_loc1("main.c", "main", 1, 1, true);
-    DebugInfoElement debug_info_element1(debug_loc1);
+    DebugInfo debug_info_element1(debug_loc1);
     size_t index1 = builder.add_debug_info_element(debug_info_element1);
 
     DebugLoc debug_loc2("main.c", "main", 2, 2, true);
-    DebugInfoElement debug_info_element2(debug_loc2);
+    DebugInfo debug_info_element2(debug_loc2);
     size_t index2 = builder.add_debug_info_element(debug_info_element2);
 
     DebugInfoRegion debug_info1({index1}, builder.debug_info().instructions());
@@ -72,7 +72,7 @@ TEST(DebugInfoPropagationTest, BlockPropagation_Edge) {
     builder.add_computational_memlet(block1, tasklet_1, "_out", node2_1, {symbolic::integer(0)}, debug_info2);
 
     analysis::AnalysisManager analysis_manager(builder.subject());
-    passes::DebugInfoPropagation debug_info_propagation_pass;
+    passes::DebugTablePropagation debug_info_propagation_pass;
     debug_info_propagation_pass.run(builder, analysis_manager);
 
     EXPECT_TRUE(builder.subject().root().debug_info().has());

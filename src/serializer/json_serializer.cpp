@@ -432,18 +432,18 @@ void JSONSerializer::structure_definition_to_json(nlohmann::json& j, const types
 }
 
 void JSONSerializer::debug_loc_to_json(nlohmann::json& j, const DebugLoc& loc) {
-    j["has"] = loc.has_;
-    if (!loc.has_) {
+    j["has"] = loc.has;
+    if (!loc.has) {
         return;
     }
-    j["filename"] = loc.filename_;
-    j["function"] = loc.function_;
-    j["line"] = loc.line_;
-    j["column"] = loc.column_;
+    j["filename"] = loc.filename;
+    j["function"] = loc.function;
+    j["line"] = loc.line;
+    j["column"] = loc.column;
 }
 
 
-void JSONSerializer::debug_info_element_to_json(nlohmann::json& j, const DebugInfoElement& debug_info_element) {
+void JSONSerializer::debug_info_element_to_json(nlohmann::json& j, const DebugInfo& debug_info_element) {
     j["has"] = debug_info_element.has();
     if (!debug_info_element.has()) {
         return;
@@ -471,7 +471,7 @@ void JSONSerializer::debug_info_region_to_json(nlohmann::json& j, const DebugInf
     }
 }
 
-void JSONSerializer::debug_info_to_json(nlohmann::json& j, const DebugInfo& debug_info) {
+void JSONSerializer::debug_info_to_json(nlohmann::json& j, const DebugTable& debug_info) {
     j["instructions"] = nlohmann::json::array();
     for (const auto& instruction : debug_info.instructions()) {
         nlohmann::json instruction_json;
@@ -493,7 +493,7 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
     assert(j.contains("debug_info"));
     assert(j["debug_info"].is_object());
 
-    DebugInfo debug_info = json_to_debug_info(j["debug_info"]);
+    DebugTable debug_info = json_to_debug_info(j["debug_info"]);
     debug_info_ = &debug_info;
 
     FunctionType function_type = function_type_from_string(j["type"].get<std::string>());
@@ -1098,11 +1098,11 @@ DebugLoc JSONSerializer::json_to_debug_loc(const nlohmann::json& j) {
     return DebugLoc(filename, function, line, column, true);
 }
 
-DebugInfoElement JSONSerializer::json_to_debug_info_element(const nlohmann::json& j) {
+DebugInfo JSONSerializer::json_to_debug_info_element(const nlohmann::json& j) {
     assert(j.contains("has"));
     assert(j["has"].is_boolean());
     if (!j["has"]) {
-        return DebugInfoElement();
+        return DebugInfo();
     }
     assert(j.contains("locations"));
     assert(j["locations"].is_array());
@@ -1110,10 +1110,10 @@ DebugInfoElement JSONSerializer::json_to_debug_info_element(const nlohmann::json
     for (const auto& loc_json : j["locations"]) {
         locations.push_back(json_to_debug_loc(loc_json));
     }
-    return DebugInfoElement(locations);
+    return DebugInfo(locations);
 }
 
-DebugInfoRegion JSONSerializer::json_to_debug_info_region(const nlohmann::json& j, const DebugInfo& debug_info) {
+DebugInfoRegion JSONSerializer::json_to_debug_info_region(const nlohmann::json& j, const DebugTable& debug_info) {
     assert(j.contains("has"));
     assert(j["has"].is_boolean());
     if (!j["has"]) {
@@ -1161,11 +1161,11 @@ DebugInfoRegion JSONSerializer::json_to_debug_info_region(const nlohmann::json& 
     return debug_info_region;
 }
 
-DebugInfo JSONSerializer::json_to_debug_info(const nlohmann::json& j) {
+DebugTable JSONSerializer::json_to_debug_info(const nlohmann::json& j) {
     assert(j.contains("instructions"));
     assert(j["instructions"].is_array());
-    DebugInfo debug_info;
-    std::vector<DebugInfoElement> instructions;
+    DebugTable debug_info;
+    std::vector<DebugInfo> instructions;
     for (const auto& instruction_json : j["instructions"]) {
         debug_info.add_element(json_to_debug_info_element(instruction_json));
     }

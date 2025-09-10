@@ -41,8 +41,6 @@ private:
 
     const control_flow::State* start_state_;
 
-    DebugInfo debug_info_;
-
 public:
     SDFG(const std::string& name, FunctionType type);
 
@@ -117,10 +115,6 @@ public:
 
     std::list<std::list<const control_flow::InterstateEdge*>>
     all_simple_paths(const control_flow::State& src, const control_flow::State& dst) const;
-
-    /***** Section: Debug Info *****/
-    DebugInfo& debug_info() { return this->debug_info_; };
-    const DebugInfo& debug_info() const { return this->debug_info_; };
 };
 
 } // namespace sdfg

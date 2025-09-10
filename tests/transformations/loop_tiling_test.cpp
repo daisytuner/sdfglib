@@ -10,7 +10,7 @@
 using namespace sdfg;
 
 TEST(LoopTilingTest, Basic) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugTable());
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();

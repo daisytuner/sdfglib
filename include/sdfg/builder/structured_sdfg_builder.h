@@ -69,7 +69,7 @@ protected:
 public:
     StructuredSDFGBuilder(std::unique_ptr<StructuredSDFG>& sdfg);
 
-    StructuredSDFGBuilder(const std::string& name, FunctionType type, const DebugInfo& debug_info);
+    StructuredSDFGBuilder(const std::string& name, FunctionType type, const DebugTable& debug_info);
 
     StructuredSDFGBuilder(const SDFG& sdfg);
 
@@ -404,9 +404,9 @@ public:
 
     void clear_node(structured_control_flow::Block& block, const data_flow::AccessNode& node);
 
-    size_t add_debug_info_element(const DebugInfoElement& element);
+    size_t add_debug_info_element(const DebugInfo& element);
 
-    const DebugInfo& debug_info() const;
+    const DebugTable& debug_info() const;
 };
 
 } // namespace builder

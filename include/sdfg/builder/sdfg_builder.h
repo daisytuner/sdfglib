@@ -15,7 +15,7 @@ class SDFGBuilder : public FunctionBuilder {
 private:
     std::unique_ptr<SDFG> sdfg_;
 
-    DebugInfoRegion fill_debug_info(const std::vector<DebugInfoElement>& debug_info_elements);
+    DebugInfoRegion fill_debug_info(const std::vector<DebugInfo>& debug_info_elements);
 
 protected:
     Function& function() const override;
@@ -40,39 +40,38 @@ public:
 
     /***** Section: Control-Flow Graph *****/
 
-    control_flow::State&
-    add_state(bool is_start_state = false, const std::vector<DebugInfoElement>& debug_info_elements = {});
+    control_flow::State& add_state(bool is_start_state = false, const std::vector<DebugInfo>& debug_info_elements = {});
 
     control_flow::State& add_state_before(
         const control_flow::State& state,
         bool is_start_state = false,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     control_flow::State& add_state_after(
         const control_flow::State& state,
         bool connect_states = true,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     control_flow::InterstateEdge& add_edge(
         const control_flow::State& src,
         const control_flow::State& dst,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     control_flow::InterstateEdge& add_edge(
         const control_flow::State& src,
         const control_flow::State& dst,
         const symbolic::Condition condition,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     control_flow::InterstateEdge& add_edge(
         const control_flow::State& src,
         const control_flow::State& dst,
         const control_flow::Assignments& assignments,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     control_flow::InterstateEdge& add_edge(
@@ -80,7 +79,7 @@ public:
         const control_flow::State& dst,
         const control_flow::Assignments& assignments,
         const symbolic::Condition condition,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     void remove_edge(const control_flow::InterstateEdge& edge);
@@ -91,15 +90,13 @@ public:
         sdfg::symbolic::Expression init,
         sdfg::symbolic::Condition cond,
         sdfg::symbolic::Expression update,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     /***** Section: Dataflow Graph *****/
 
     data_flow::AccessNode& add_access(
-        control_flow::State& state,
-        const std::string& data,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        control_flow::State& state, const std::string& data, const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     data_flow::Tasklet& add_tasklet(
@@ -107,7 +104,7 @@ public:
         const data_flow::TaskletCode code,
         const std::string& output,
         const std::vector<std::string>& inputs,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_memlet(
@@ -118,7 +115,7 @@ public:
         const std::string& dst_conn,
         const data_flow::Subset& subset,
         const types::IType& base_type,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_memlet(
@@ -130,7 +127,7 @@ public:
         const data_flow::Subset& begin_subset,
         const data_flow::Subset& end_subset,
         const types::IType& base_type,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_computational_memlet(
@@ -140,7 +137,7 @@ public:
         const std::string& dst_conn,
         const data_flow::Subset& subset,
         const types::IType& base_type,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_computational_memlet(
@@ -150,7 +147,7 @@ public:
         data_flow::AccessNode& dst,
         const data_flow::Subset& subset,
         const types::IType& base_type,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_computational_memlet(
@@ -159,7 +156,7 @@ public:
         data_flow::Tasklet& dst,
         const std::string& dst_conn,
         const data_flow::Subset& subset,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_computational_memlet(
@@ -168,7 +165,7 @@ public:
         const std::string& src_conn,
         data_flow::AccessNode& dst,
         const data_flow::Subset& subset,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_computational_memlet(
@@ -179,7 +176,7 @@ public:
         const data_flow::Subset& begin_subset,
         const data_flow::Subset& end_subset,
         const types::IType& base_type,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_computational_memlet(
@@ -190,7 +187,7 @@ public:
         const data_flow::Subset& begin_subset,
         const data_flow::Subset& end_subset,
         const types::IType& base_type,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_reference_memlet(
@@ -199,7 +196,7 @@ public:
         data_flow::AccessNode& dst,
         const data_flow::Subset& subset,
         const types::IType& base_type,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_dereference_memlet(
@@ -208,7 +205,7 @@ public:
         data_flow::AccessNode& dst,
         bool derefs_src,
         const types::IType& base_type,
-        const std::vector<DebugInfoElement>& debug_info_elements = {}
+        const std::vector<DebugInfo>& debug_info_elements = {}
     );
 
     template<typename T, typename... Args>
@@ -225,9 +222,9 @@ public:
         return static_cast<data_flow::LibraryNode&>(*(res.first->second));
     };
 
-    size_t add_debug_info_element(const DebugInfoElement& element);
+    size_t add_debug_info_element(const DebugInfo& element);
 
-    const DebugInfo& debug_info() const;
+    const DebugTable& debug_info() const;
 };
 
 } // namespace builder

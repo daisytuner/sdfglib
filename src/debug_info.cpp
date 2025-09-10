@@ -7,23 +7,23 @@
 
 namespace sdfg {
 
-/***** DebugInfoElement *****/
+/***** DebugInfo *****/
 
-DebugInfoElement::DebugInfoElement() { this->locations_ = {DebugLoc("", "", 0, 0, false)}; };
+DebugInfo::DebugInfo() { this->locations_ = {DebugLoc("", "", 0, 0, false)}; };
 
-DebugInfoElement::DebugInfoElement(DebugLoc loc) : locations_({loc}) {};
+DebugInfo::DebugInfo(DebugLoc loc) : locations_({loc}) {};
 
-DebugInfoElement::DebugInfoElement(DebugLoc loc, std::vector<DebugLoc> inlined_at) : locations_({loc}) {
+DebugInfo::DebugInfo(DebugLoc loc, std::vector<DebugLoc> inlined_at) : locations_({loc}) {
     for (auto& debug_loc : inlined_at) {
-        if (debug_loc.has_) {
+        if (debug_loc.has) {
             this->locations_.push_back(debug_loc);
         }
     }
 };
 
-DebugInfoElement::DebugInfoElement(std::vector<DebugLoc> inlined_at) {
+DebugInfo::DebugInfo(std::vector<DebugLoc> inlined_at) {
     for (auto& loc : inlined_at) {
-        if (loc.has_) {
+        if (loc.has) {
             this->locations_.push_back(loc);
         }
     }
@@ -32,17 +32,17 @@ DebugInfoElement::DebugInfoElement(std::vector<DebugLoc> inlined_at) {
     }
 }
 
-const std::vector<DebugLoc>& DebugInfoElement::locations() const { return this->locations_; }
+const std::vector<DebugLoc>& DebugInfo::locations() const { return this->locations_; }
 
-bool DebugInfoElement::has() const { return this->locations_.front().has_; };
+bool DebugInfo::has() const { return this->locations_.front().has; };
 
-std::string DebugInfoElement::filename() const { return this->locations_.front().filename_; };
+std::string DebugInfo::filename() const { return this->locations_.front().filename; };
 
-std::string DebugInfoElement::function() const { return this->locations_.front().function_; };
+std::string DebugInfo::function() const { return this->locations_.front().function; };
 
-size_t DebugInfoElement::line() const { return this->locations_.front().line_; };
+size_t DebugInfo::line() const { return this->locations_.front().line; };
 
-size_t DebugInfoElement::column() const { return this->locations_.front().column_; };
+size_t DebugInfo::column() const { return this->locations_.front().column; };
 
 
 /***** DebugInfoRegion *****/
@@ -52,7 +52,7 @@ DebugInfoRegion::DebugInfoRegion()
     this->has_ = false;
 };
 
-DebugInfoRegion::DebugInfoRegion(std::unordered_set<size_t> indices, const std::vector<DebugInfoElement>& all_instructions)
+DebugInfoRegion::DebugInfoRegion(std::unordered_set<size_t> indices, const std::vector<DebugInfo>& all_instructions)
     : indices_(indices) {
     if (this->indices_.empty()) {
         this->has_ = false;
@@ -65,7 +65,7 @@ DebugInfoRegion::DebugInfoRegion(std::unordered_set<size_t> indices, const std::
     }
 
     // filter instructions
-    std::vector<DebugInfoElement> instructions;
+    std::vector<DebugInfo> instructions;
     for (auto index : this->indices_) {
         if (index < all_instructions.size()) {
             auto instruction = all_instructions[index];
@@ -91,12 +91,12 @@ DebugInfoRegion::DebugInfoRegion(std::unordered_set<size_t> indices, const std::
 
     bool found = false;
     for (auto& loc : instructions.front().locations()) {
-        filename = loc.filename_;
-        function = loc.function_;
-        start_line = loc.line_;
-        start_column = loc.column_;
-        end_line = loc.line_;
-        end_column = loc.column_;
+        filename = loc.filename;
+        function = loc.function;
+        start_line = loc.line;
+        start_column = loc.column;
+        end_line = loc.line;
+        end_column = loc.column;
         int fitting = 0;
         for (const auto& instruction : instructions) {
             found = false;
@@ -118,7 +118,7 @@ DebugInfoRegion::DebugInfoRegion(std::unordered_set<size_t> indices, const std::
         }
     }
     if (!found) {
-        throw InvalidSDFGException("No valid debug locations found in DebugInfo");
+        throw InvalidSDFGException("No valid debug locations found in DebugTable");
     }
 
     this->filename_ = filename;
@@ -139,20 +139,20 @@ bool DebugInfoRegion::fuse_ranges(
     size_t& line_end,
     size_t& col_end
 ) {
-    if (loc.filename_ == filename && loc.function_ == function) {
-        if (line_start == loc.line_) {
-            col_start = std::min(col_start, loc.column_);
-        } else if (line_start > loc.line_) {
-            col_start = loc.column_;
+    if (loc.filename == filename && loc.function == function) {
+        if (line_start == loc.line) {
+            col_start = std::min(col_start, loc.column);
+        } else if (line_start > loc.line) {
+            col_start = loc.column;
         }
-        line_start = std::min(line_start, loc.line_);
+        line_start = std::min(line_start, loc.line);
 
-        if (line_end == loc.line_) {
-            col_end = std::max(col_end, loc.column_);
-        } else if (line_end < loc.line_) {
-            col_end = loc.column_;
+        if (line_end == loc.line) {
+            col_end = std::max(col_end, loc.column);
+        } else if (line_end < loc.line) {
+            col_end = loc.column;
         }
-        line_end = std::max(line_end, loc.line_);
+        line_end = std::max(line_end, loc.line);
         return true; // Same file and function, ranges fused
     }
     return false; // Different file or function, ranges not fused
@@ -160,9 +160,8 @@ bool DebugInfoRegion::fuse_ranges(
 
 std::unordered_set<size_t> DebugInfoRegion::indices() const { return this->indices_; }
 
-DebugInfoRegion DebugInfoRegion::merge(
-    const DebugInfoRegion& first, const DebugInfoRegion& second, const std::vector<DebugInfoElement>& all_instructions
-) {
+DebugInfoRegion DebugInfoRegion::
+    merge(const DebugInfoRegion& first, const DebugInfoRegion& second, const std::vector<DebugInfo>& all_instructions) {
     // Merge the two regions by combining their indices
     std::unordered_set<size_t> merged_indices = first.indices_;
     merged_indices.insert(second.indices_.begin(), second.indices_.end());
@@ -182,16 +181,16 @@ size_t DebugInfoRegion::start_column() const { return this->start_column_; }
 size_t DebugInfoRegion::end_line() const { return this->end_line_; }
 size_t DebugInfoRegion::end_column() const { return this->end_column_; }
 
-/***** DebugInfo *****/
+/***** DebugTable *****/
 
-const std::vector<DebugInfoElement>& DebugInfo::instructions() const { return this->instructions_; };
+const std::vector<DebugInfo>& DebugTable::instructions() const { return this->instructions_; };
 
-size_t DebugInfo::add_element(DebugInfoElement loc) {
+size_t DebugTable::add_element(DebugInfo loc) {
     this->instructions_.push_back(loc);
     return this->instructions_.size() - 1;
 };
 
-DebugInfoRegion DebugInfo::get_region(std::unordered_set<size_t> indices) const {
+DebugInfoRegion DebugTable::get_region(std::unordered_set<size_t> indices) const {
     return DebugInfoRegion(indices, this->instructions_);
 };
 

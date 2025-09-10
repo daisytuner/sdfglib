@@ -7,7 +7,7 @@
 
 namespace sdfg {
 
-StructuredSDFG::StructuredSDFG(const std::string& name, FunctionType type, const DebugInfo& debug_info)
+StructuredSDFG::StructuredSDFG(const std::string& name, FunctionType type, const DebugTable& debug_info)
     : Function(name, type) {
     this->debug_info_ = debug_info;
     this->root_ = std::unique_ptr<

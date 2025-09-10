@@ -29,10 +29,8 @@ class StructuredSDFG : public Function {
 private:
     std::unique_ptr<structured_control_flow::Sequence> root_;
 
-    DebugInfo debug_info_;
-
 public:
-    StructuredSDFG(const std::string& name, FunctionType type, const DebugInfo& debug_info);
+    StructuredSDFG(const std::string& name, FunctionType type, const DebugTable& debug_info);
 
     StructuredSDFG(const StructuredSDFG& sdfg) = delete;
     StructuredSDFG& operator=(const StructuredSDFG&) = delete;
@@ -46,10 +44,6 @@ public:
     std::unique_ptr<StructuredSDFG> clone() const;
 
     size_t num_nodes() const;
-
-    /***** Section: Debug Info *****/
-    DebugInfo& debug_info() { return this->debug_info_; };
-    const DebugInfo& debug_info() const { return this->debug_info_; };
 };
 
 } // namespace sdfg

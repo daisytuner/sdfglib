@@ -29,7 +29,7 @@ TEST(JSONSerializerTest, DatatypeToJSON_Scalar) {
     types::Scalar scalar_type(types::PrimitiveType::Int32);
     nlohmann::json j;
 
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
@@ -57,7 +57,7 @@ TEST(JSONSerializerTest, DatatypeToJSON_Pointer) {
     types::Pointer pointer_type(base_desc);
     nlohmann::json j;
 
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
@@ -86,7 +86,7 @@ TEST(JSONSerializerTest, DatatypeToJSON_Structure) {
     types::Structure structure_type("MyStruct");
     nlohmann::json j;
 
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
@@ -114,7 +114,7 @@ TEST(JSONSerializerTest, DatatypeToJSON_Array) {
     types::Array array_type(base_desc, {symbolic::symbol("N")});
     nlohmann::json j;
 
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
@@ -146,7 +146,7 @@ TEST(JSONSerializerTest, DatatypeToJSON_Function) {
     function_type.add_param(scalar_type);
     nlohmann::json j;
 
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
     auto sdfg = builder.move();
@@ -177,7 +177,7 @@ TEST(JSONSerializerTest, DatatypeToJSON_Function) {
 
 TEST(JSONSerializerTest, DataflowToJSON) {
     // Create a sample Block object
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& block = builder.add_block(builder.subject().root());
 
     types::Scalar base_desc(types::PrimitiveType::Float);
@@ -261,7 +261,7 @@ TEST(JSONSerializerTest, DataflowToJSON) {
 
 TEST(JSONSerializerTest, BlockToJSON) {
     // Create a sample Block object
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& block = builder.add_block(builder.subject().root());
 
     // Create a JSONSerializer object
@@ -280,7 +280,7 @@ TEST(JSONSerializerTest, BlockToJSON) {
 
 TEST(JSONSerializerTest, ForNodeToJSON) {
     // Create a sample For node
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -325,7 +325,7 @@ TEST(JSONSerializerTest, ForNodeToJSON) {
 
 TEST(JSONSerializerTest, IfElseToJSON) {
     // Create a sample IfElse node
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -364,7 +364,7 @@ TEST(JSONSerializerTest, IfElseToJSON) {
 
 TEST(JSONSerializerTest, WhileToJSON_break) {
     // Create a sample While node
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -396,7 +396,7 @@ TEST(JSONSerializerTest, WhileToJSON_break) {
 
 TEST(JSONSerializerTest, WhileToJSON_continue) {
     // Create a sample While node
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -428,7 +428,7 @@ TEST(JSONSerializerTest, WhileToJSON_continue) {
 
 TEST(JSONSerializerTest, ReturnToJSON) {
     // Create a sample Return node
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     auto& scope = builder.add_return(root);
@@ -449,7 +449,7 @@ TEST(JSONSerializerTest, ReturnToJSON) {
 
 TEST(JSONSerializerTest, SequenceToJSON) {
     // Create a sample Sequence node
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -498,7 +498,7 @@ TEST(JSONSerializerTest, SequenceToJSON) {
 
 TEST(JSONSerializerTest, MapToJSON) {
     // Create a sample Map node
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -546,7 +546,7 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Scalar) {
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto sdfg = builder.move();
     sdfg::serializer::JSONSerializer serializer;
 
@@ -575,7 +575,7 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Pointer) {
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto sdfg = builder.move();
     sdfg::serializer::JSONSerializer serializer;
 
@@ -614,7 +614,7 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Structure) {
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto sdfg = builder.move();
 
     sdfg::serializer::JSONSerializer serializer;
@@ -642,7 +642,7 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Array) {
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto sdfg = builder.move();
     sdfg::serializer::JSONSerializer serializer;
 
@@ -684,7 +684,7 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_Function) {
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto sdfg = builder.move();
     sdfg::serializer::JSONSerializer serializer;
 
@@ -721,7 +721,7 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_StructureDefinition) {
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto sdfg = builder.move();
     sdfg::serializer::JSONSerializer serializer;
 
@@ -729,7 +729,7 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_StructureDefinition) {
     serializer.structure_definition_to_json(j, structure_definition);
 
     // define sdfg builder for deserialization
-    sdfg::builder::StructuredSDFGBuilder builder_deserialize("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder_deserialize("test_sdfg", FunctionType_CPU, DebugTable());
 
     // Deserialize the JSON back into a StructureDefinition object
     serializer.json_to_structure_definition(j, builder_deserialize);
@@ -769,7 +769,7 @@ TEST(JSONSerializerTest, SerializeDeserializeDataType_StructureDefinition) {
 
 TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
     // Create a sample StructuredSDFG object
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     // Add containers
@@ -801,7 +801,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
     serializer.dataflow_to_json(j, block_new.dataflow());
 
     // Deserialize the JSON back into a DataflowGraph object
-    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugInfo());
+    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& block2 = des_builder.add_block(des_builder.subject().root());
 
     des_builder.add_container("A", opaque_desc);
@@ -904,7 +904,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
 
 TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
     // Create a sample StructuredSDFG object
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     // Add containers
@@ -936,7 +936,7 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
     serializer.block_to_json(j, block_new);
 
     // Deserialize the JSON back into a DataflowGraph object
-    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugInfo());
+    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugTable());
 
     des_builder.add_container("A", opaque_desc);
     des_builder.add_container("C", base_desc);
@@ -1041,7 +1041,7 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
 
 TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
     // Create a sample StructuredSDFG object
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     // Add containers
@@ -1073,7 +1073,7 @@ TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
     serializer.sequence_to_json(j, sdfg->root());
 
     // Deserialize the JSON back into a DataflowGraph object
-    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugInfo());
+    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugTable());
 
     des_builder.add_container("A", opaque_desc);
     des_builder.add_container("C", base_desc);
@@ -1182,7 +1182,7 @@ TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
 
 TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
     // Create a sample StructuredSDFG object
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     // Add containers
@@ -1320,7 +1320,7 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
 
 TEST(JSONSerializerTest, SerializeDeserialize_forloop) {
     // Create a sample StructuredSDFG object
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     // Add containers
@@ -1349,7 +1349,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_forloop) {
     serializer.for_to_json(j, for_loop);
 
     // Deserialize the JSON back into a DataflowGraph object
-    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugInfo());
+    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugTable());
 
     des_builder.add_container("i", base_desc);
     des_builder.add_container("N", base_desc);
@@ -1375,7 +1375,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_forloop) {
 
 TEST(JSONSerializerTest, SerializeDeserialize_ifelse) {
     // Create a sample IfElse node
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -1397,7 +1397,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_ifelse) {
     serializer.if_else_to_json(j, if_else);
 
     // Deserialize the JSON back into an IfElse node
-    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugInfo());
+    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugTable());
     des_builder.add_container("i", sym_desc);
     control_flow::Assignments assignments;
     serializer.json_to_if_else_node(j, des_builder, des_builder.subject().root(), assignments);
@@ -1424,7 +1424,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_ifelse) {
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize_sequence) {
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -1444,7 +1444,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_sequence) {
     serializer.sequence_to_json(j, scope);
 
     // Deserialize the JSON back into a Sequence node
-    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugInfo());
+    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugTable());
     des_builder.add_container("i", sym_desc);
     serializer.json_to_sequence(j, des_builder, des_builder.subject().root());
     auto des_sdfg = des_builder.move();
@@ -1465,7 +1465,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_sequence) {
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize_while) {
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -1485,7 +1485,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_while) {
     serializer.while_node_to_json(j, while1);
 
     // Deserialize the JSON back into a Sequence node
-    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugInfo());
+    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugTable());
     des_builder.add_container("i", sym_desc);
 
     control_flow::Assignments assignments;
@@ -1503,7 +1503,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_while) {
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize_while_break) {
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -1523,7 +1523,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_while_break) {
     serializer.while_node_to_json(j, while1);
 
     // Deserialize the JSON back into a Sequence node
-    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugInfo());
+    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugTable());
     des_builder.add_container("i", sym_desc);
 
     control_flow::Assignments assignments;
@@ -1542,7 +1542,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_while_break) {
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize_while_continue) {
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     types::Scalar sym_desc(types::PrimitiveType::UInt64);
@@ -1562,7 +1562,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_while_continue) {
     serializer.while_node_to_json(j, while1);
 
     // Deserialize the JSON back into a Sequence node
-    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugInfo());
+    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugTable());
     des_builder.add_container("i", sym_desc);
 
     control_flow::Assignments assignments;
@@ -1580,7 +1580,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_while_continue) {
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize_Map) {
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     auto& map = builder.add_map(
@@ -1602,7 +1602,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_Map) {
     serializer.map_to_json(j, map);
 
     // Deserialize the JSON back into a Sequence node
-    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugInfo());
+    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugTable());
 
     control_flow::Assignments assignments;
 
@@ -1624,7 +1624,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_Map) {
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize_return) {
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     auto& ret = builder.add_return(root);
@@ -1639,7 +1639,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_return) {
     serializer.return_node_to_json(j, ret);
 
     // Deserialize the JSON back into a Sequence node
-    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugInfo());
+    auto des_builder = sdfg::builder::StructuredSDFGBuilder("test_sdfg", FunctionType_CPU, DebugTable());
 
     control_flow::Assignments assignments;
 
@@ -1654,7 +1654,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_return) {
 
 TEST(JSONSerializerTest, SerializeDeserialize) {
     // Create a sample StructuredSDFG object
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto sdfg = builder.move();
 
     sdfg->add_metadata("key", "value");
@@ -1677,7 +1677,7 @@ TEST(JSONSerializerTest, SerializeDeserialize) {
 
 TEST(JSONSerializerTest, SerializeDeserialize_Arguments) {
     // Create a sample StructuredSDFG object
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
@@ -1712,7 +1712,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_Arguments) {
 
 TEST(JSONSerializerTest, SerializeDeserialize_Externals) {
     // Create a sample StructuredSDFG object
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
 
     // Add containers
     types::Scalar base_desc(types::PrimitiveType::Float);
@@ -1747,7 +1747,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_Externals) {
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
-    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugInfo());
+    sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU, DebugTable());
     auto& root = builder.subject().root();
 
     auto& block = builder.add_block(root);
@@ -1783,11 +1783,11 @@ TEST(JSONSerializerTest, SerializeDeserialize_DebugLoc) {
 
     DebugLoc des_debug_loc = serializer.json_to_debug_loc(j);
 
-    EXPECT_TRUE(des_debug_loc.has_);
-    EXPECT_EQ(des_debug_loc.filename_, "test_file.cpp");
-    EXPECT_EQ(des_debug_loc.function_, "test_function");
-    EXPECT_EQ(des_debug_loc.line_, 42);
-    EXPECT_EQ(des_debug_loc.column_, 1);
+    EXPECT_TRUE(des_debug_loc.has);
+    EXPECT_EQ(des_debug_loc.filename, "test_file.cpp");
+    EXPECT_EQ(des_debug_loc.function, "test_function");
+    EXPECT_EQ(des_debug_loc.line, 42);
+    EXPECT_EQ(des_debug_loc.column, 1);
 
     EXPECT_EQ(
         j.dump(2),
@@ -1796,29 +1796,29 @@ TEST(JSONSerializerTest, SerializeDeserialize_DebugLoc) {
     );
 }
 
-TEST(JSONSerializerTest, SerializeDeserialize_DebugInfoElement) {
+TEST(JSONSerializerTest, SerializeDeserialize_DebugInfo) {
     nlohmann::json j;
-    DebugInfoElement
+    DebugInfo
         debug_info_element({DebugLoc("file1.cpp", "func1", 10, 1, true), DebugLoc("file1.cpp", "func2", 20, 2, true)});
 
     sdfg::serializer::JSONSerializer serializer;
     serializer.debug_info_element_to_json(j, debug_info_element);
 
-    DebugInfoElement des_debug_info_element = serializer.json_to_debug_info_element(j);
+    DebugInfo des_debug_info_element = serializer.json_to_debug_info_element(j);
 
     EXPECT_EQ(des_debug_info_element.locations().size(), 2);
 
-    EXPECT_EQ(des_debug_info_element.locations()[0].filename_, "file1.cpp");
-    EXPECT_EQ(des_debug_info_element.locations()[0].function_, "func1");
-    EXPECT_EQ(des_debug_info_element.locations()[0].line_, 10);
-    EXPECT_EQ(des_debug_info_element.locations()[0].column_, 1);
-    EXPECT_TRUE(des_debug_info_element.locations()[0].has_);
+    EXPECT_EQ(des_debug_info_element.locations()[0].filename, "file1.cpp");
+    EXPECT_EQ(des_debug_info_element.locations()[0].function, "func1");
+    EXPECT_EQ(des_debug_info_element.locations()[0].line, 10);
+    EXPECT_EQ(des_debug_info_element.locations()[0].column, 1);
+    EXPECT_TRUE(des_debug_info_element.locations()[0].has);
 
-    EXPECT_EQ(des_debug_info_element.locations()[1].filename_, "file1.cpp");
-    EXPECT_EQ(des_debug_info_element.locations()[1].function_, "func2");
-    EXPECT_EQ(des_debug_info_element.locations()[1].line_, 20);
-    EXPECT_EQ(des_debug_info_element.locations()[1].column_, 2);
-    EXPECT_TRUE(des_debug_info_element.locations()[1].has_);
+    EXPECT_EQ(des_debug_info_element.locations()[1].filename, "file1.cpp");
+    EXPECT_EQ(des_debug_info_element.locations()[1].function, "func2");
+    EXPECT_EQ(des_debug_info_element.locations()[1].line, 20);
+    EXPECT_EQ(des_debug_info_element.locations()[1].column, 2);
+    EXPECT_TRUE(des_debug_info_element.locations()[1].has);
 
     EXPECT_EQ(des_debug_info_element.filename(), "file1.cpp");
     EXPECT_EQ(des_debug_info_element.function(), "func1");
@@ -1838,10 +1838,10 @@ TEST(JSONSerializerTest, SerializeDeserialize_DebugInfoElement) {
 TEST(JSONSerializerTest, SerializeDeserialize_DebugInfoRegion_inner) {
     nlohmann::json j;
 
-    DebugInfo debug_info;
-    DebugInfoElement
+    DebugTable debug_info;
+    DebugInfo
         debug_info_element({DebugLoc("file1.cpp", "func1", 10, 1, true), DebugLoc("file1.cpp", "func2", 20, 2, true)});
-    DebugInfoElement debug_info_element2({DebugLoc("file1.cpp", "func2", 30, 3, true)});
+    DebugInfo debug_info_element2({DebugLoc("file1.cpp", "func2", 30, 3, true)});
 
     debug_info.add_element(debug_info_element);
     debug_info.add_element(debug_info_element2);
@@ -1873,11 +1873,11 @@ TEST(JSONSerializerTest, SerializeDeserialize_DebugInfoRegion_inner) {
 
 TEST(JSONSerializerTest, SerializeDeserialize_DebugInfoRegion_outer) {
     nlohmann::json j;
-    DebugInfoElement
+    DebugInfo
         debug_info_element({DebugLoc("file1.cpp", "func1", 10, 1, true), DebugLoc("file1.cpp", "func2", 20, 2, true)});
-    DebugInfoElement
+    DebugInfo
         debug_info_element2({DebugLoc("file1.cpp", "func1", 10, 1, true), DebugLoc("file1.cpp", "func2", 30, 3, true)});
-    DebugInfo debug_info;
+    DebugTable debug_info;
 
     debug_info.add_element(debug_info_element);
     debug_info.add_element(debug_info_element2);
@@ -1906,13 +1906,13 @@ TEST(JSONSerializerTest, SerializeDeserialize_DebugInfoRegion_outer) {
     );
 }
 
-TEST(JSONSerializerTest, SerializeDeserialize_DebugInfo) {
+TEST(JSONSerializerTest, SerializeDeserialize_DebugTable) {
     nlohmann::json j;
-    DebugInfoElement
+    DebugInfo
         debug_info_element({DebugLoc("file1.cpp", "func1", 10, 1, true), DebugLoc("file1.cpp", "func2", 20, 2, true)});
-    DebugInfoElement
+    DebugInfo
         debug_info_element2({DebugLoc("file1.cpp", "func1", 10, 1, true), DebugLoc("file1.cpp", "func2", 30, 3, true)});
-    DebugInfo debug_info;
+    DebugTable debug_info;
 
     debug_info.add_element(debug_info_element);
     debug_info.add_element(debug_info_element2);
@@ -1921,35 +1921,35 @@ TEST(JSONSerializerTest, SerializeDeserialize_DebugInfo) {
     sdfg::serializer::JSONSerializer serializer;
     serializer.debug_info_to_json(j, debug_info);
 
-    DebugInfo des_debug_info = serializer.json_to_debug_info(j);
+    DebugTable des_debug_info = serializer.json_to_debug_info(j);
 
     EXPECT_EQ(des_debug_info.instructions().size(), 2);
 
     EXPECT_EQ(des_debug_info.instructions()[0].locations().size(), 2);
-    EXPECT_EQ(des_debug_info.instructions()[0].locations()[0].filename_, "file1.cpp");
-    EXPECT_EQ(des_debug_info.instructions()[0].locations()[0].function_, "func1");
-    EXPECT_EQ(des_debug_info.instructions()[0].locations()[0].line_, 10);
-    EXPECT_EQ(des_debug_info.instructions()[0].locations()[0].column_, 1);
-    EXPECT_TRUE(des_debug_info.instructions()[0].locations()[0].has_);
+    EXPECT_EQ(des_debug_info.instructions()[0].locations()[0].filename, "file1.cpp");
+    EXPECT_EQ(des_debug_info.instructions()[0].locations()[0].function, "func1");
+    EXPECT_EQ(des_debug_info.instructions()[0].locations()[0].line, 10);
+    EXPECT_EQ(des_debug_info.instructions()[0].locations()[0].column, 1);
+    EXPECT_TRUE(des_debug_info.instructions()[0].locations()[0].has);
 
-    EXPECT_EQ(des_debug_info.instructions()[0].locations()[1].filename_, "file1.cpp");
-    EXPECT_EQ(des_debug_info.instructions()[0].locations()[1].function_, "func2");
-    EXPECT_EQ(des_debug_info.instructions()[0].locations()[1].line_, 20);
-    EXPECT_EQ(des_debug_info.instructions()[0].locations()[1].column_, 2);
-    EXPECT_TRUE(des_debug_info.instructions()[0].locations()[1].has_);
+    EXPECT_EQ(des_debug_info.instructions()[0].locations()[1].filename, "file1.cpp");
+    EXPECT_EQ(des_debug_info.instructions()[0].locations()[1].function, "func2");
+    EXPECT_EQ(des_debug_info.instructions()[0].locations()[1].line, 20);
+    EXPECT_EQ(des_debug_info.instructions()[0].locations()[1].column, 2);
+    EXPECT_TRUE(des_debug_info.instructions()[0].locations()[1].has);
 
     EXPECT_EQ(des_debug_info.instructions()[1].locations().size(), 2);
-    EXPECT_EQ(des_debug_info.instructions()[1].locations()[0].filename_, "file1.cpp");
-    EXPECT_EQ(des_debug_info.instructions()[1].locations()[0].function_, "func1");
-    EXPECT_EQ(des_debug_info.instructions()[1].locations()[0].line_, 10);
-    EXPECT_EQ(des_debug_info.instructions()[1].locations()[0].column_, 1);
-    EXPECT_TRUE(des_debug_info.instructions()[1].locations()[0].has_);
+    EXPECT_EQ(des_debug_info.instructions()[1].locations()[0].filename, "file1.cpp");
+    EXPECT_EQ(des_debug_info.instructions()[1].locations()[0].function, "func1");
+    EXPECT_EQ(des_debug_info.instructions()[1].locations()[0].line, 10);
+    EXPECT_EQ(des_debug_info.instructions()[1].locations()[0].column, 1);
+    EXPECT_TRUE(des_debug_info.instructions()[1].locations()[0].has);
 
-    EXPECT_EQ(des_debug_info.instructions()[1].locations()[1].filename_, "file1.cpp");
-    EXPECT_EQ(des_debug_info.instructions()[1].locations()[1].function_, "func2");
-    EXPECT_EQ(des_debug_info.instructions()[1].locations()[1].line_, 30);
-    EXPECT_EQ(des_debug_info.instructions()[1].locations()[1].column_, 3);
-    EXPECT_TRUE(des_debug_info.instructions()[1].locations()[1].has_);
+    EXPECT_EQ(des_debug_info.instructions()[1].locations()[1].filename, "file1.cpp");
+    EXPECT_EQ(des_debug_info.instructions()[1].locations()[1].function, "func2");
+    EXPECT_EQ(des_debug_info.instructions()[1].locations()[1].line, 30);
+    EXPECT_EQ(des_debug_info.instructions()[1].locations()[1].column, 3);
+    EXPECT_TRUE(des_debug_info.instructions()[1].locations()[1].has);
 
     EXPECT_EQ(
         j.dump(2),

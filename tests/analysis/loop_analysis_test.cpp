@@ -8,7 +8,7 @@
 using namespace sdfg;
 
 TEST(LoopAnalysisTest, Monotonic) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("N", types::Scalar(types::PrimitiveType::Int32));
 
@@ -30,7 +30,7 @@ TEST(LoopAnalysisTest, Monotonic) {
 }
 
 TEST(LoopAnalysisTest, Contiguous) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("N", types::Scalar(types::PrimitiveType::Int32));
 
@@ -52,7 +52,7 @@ TEST(LoopAnalysisTest, Contiguous) {
 }
 
 TEST(LoopAnalysisTest, CanonicalBound_Lt) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("N", types::Scalar(types::PrimitiveType::Int32));
 
@@ -73,7 +73,7 @@ TEST(LoopAnalysisTest, CanonicalBound_Lt) {
 }
 
 TEST(LoopAnalysisTest, CanonicalBound_Lt_And) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("N", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("M", types::Scalar(types::PrimitiveType::Int32));
@@ -96,7 +96,7 @@ TEST(LoopAnalysisTest, CanonicalBound_Lt_And) {
 }
 
 TEST(LoopAnalysisTest, CanonicalBound_Le_And) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
     builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("N", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("M", types::Scalar(types::PrimitiveType::Int32));

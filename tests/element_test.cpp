@@ -2,7 +2,7 @@
 #include "sdfg/debug_info.h"
 using namespace sdfg;
 
-TEST(DebugInfoTest, Empty) {
+TEST(DebugTableTest, Empty) {
     DebugInfoRegion debug_info;
     EXPECT_FALSE(debug_info.has());
     EXPECT_EQ(debug_info.filename(), "");
@@ -13,10 +13,10 @@ TEST(DebugInfoTest, Empty) {
     EXPECT_EQ(debug_info.end_column(), 0);
 }
 
-TEST(DebugInfoTest, Basic) {
+TEST(DebugTableTest, Basic) {
     DebugLoc debug_loc("test.cpp", "test_function", 10, 2, true);
-    DebugInfoElement debug_info_element(debug_loc);
-    DebugInfo debug_info;
+    DebugInfo debug_info_element(debug_loc);
+    DebugTable debug_info;
 
     debug_info.add_element(debug_info_element);
 
@@ -31,10 +31,10 @@ TEST(DebugInfoTest, Basic) {
     EXPECT_EQ(debug_info_region.end_column(), 2);
 }
 
-TEST(DebugInfoTest, Merge_Left) {
-    DebugInfo debug_info;
+TEST(DebugTableTest, Merge_Left) {
+    DebugTable debug_info;
     DebugLoc debug_loc("test.cpp", "test_function", 10, 2, true);
-    DebugInfoElement debug_info_element(debug_loc);
+    DebugInfo debug_info_element(debug_loc);
 
     debug_info.add_element(debug_info_element);
 
@@ -51,10 +51,10 @@ TEST(DebugInfoTest, Merge_Left) {
     EXPECT_EQ(merged.end_column(), 2);
 }
 
-TEST(DebugInfoTest, Merge_Right) {
-    DebugInfo debug_info;
+TEST(DebugTableTest, Merge_Right) {
+    DebugTable debug_info;
     DebugLoc debug_loc("test.cpp", "test_function", 10, 2, true);
-    DebugInfoElement debug_info_element(debug_loc);
+    DebugInfo debug_info_element(debug_loc);
 
     debug_info.add_element(debug_info_element);
 
@@ -71,14 +71,14 @@ TEST(DebugInfoTest, Merge_Right) {
     EXPECT_EQ(merged.end_column(), 2);
 }
 
-TEST(DebugInfoTest, Merge_LeftRight) {
+TEST(DebugTableTest, Merge_LeftRight) {
     DebugLoc debug_loc_left("test.cpp", "test_function", 10, 2, true);
-    DebugInfoElement debug_info_element_left(debug_loc_left);
+    DebugInfo debug_info_element_left(debug_loc_left);
 
     DebugLoc debug_loc_right("test.cpp", "test_function", 25, 5, true);
-    DebugInfoElement debug_info_element_right(debug_loc_right);
+    DebugInfo debug_info_element_right(debug_loc_right);
 
-    DebugInfo debug_info;
+    DebugTable debug_info;
 
     debug_info.add_element(debug_info_element_left);
     debug_info.add_element(debug_info_element_right);
@@ -96,14 +96,14 @@ TEST(DebugInfoTest, Merge_LeftRight) {
     EXPECT_EQ(merged.end_column(), 5);
 }
 
-TEST(DebugInfoTest, Merge_RightLeft) {
+TEST(DebugTableTest, Merge_RightLeft) {
     DebugLoc debug_loc_right("test.cpp", "test_function", 10, 2, true);
-    DebugInfoElement debug_info_element_right(debug_loc_right);
+    DebugInfo debug_info_element_right(debug_loc_right);
 
     DebugLoc debug_loc_left("test.cpp", "test_function", 25, 5, true);
-    DebugInfoElement debug_info_element_left(debug_loc_left);
+    DebugInfo debug_info_element_left(debug_loc_left);
 
-    DebugInfo debug_info;
+    DebugTable debug_info;
 
     debug_info.add_element(debug_info_element_right);
     debug_info.add_element(debug_info_element_left);
@@ -121,14 +121,14 @@ TEST(DebugInfoTest, Merge_RightLeft) {
     EXPECT_EQ(merged.end_column(), 5);
 }
 
-TEST(DebugInfoTest, Merge_same_line) {
+TEST(DebugTableTest, Merge_same_line) {
     DebugLoc debug_loc_right("test.cpp", "test_function", 10, 2, true);
-    DebugInfoElement debug_info_element_right(debug_loc_right);
+    DebugInfo debug_info_element_right(debug_loc_right);
 
     DebugLoc debug_loc_left("test.cpp", "test_function", 10, 5, true);
-    DebugInfoElement debug_info_element_left(debug_loc_left);
+    DebugInfo debug_info_element_left(debug_loc_left);
 
-    DebugInfo debug_info;
+    DebugTable debug_info;
 
     debug_info.add_element(debug_info_element_right);
     debug_info.add_element(debug_info_element_left);
@@ -146,15 +146,15 @@ TEST(DebugInfoTest, Merge_same_line) {
     EXPECT_EQ(merged.end_column(), 5);
 }
 
-TEST(DebugInfoTest, Merge_multiple_locations) {
+TEST(DebugTableTest, Merge_multiple_locations) {
     DebugLoc debug_loc_right("test.cpp", "test_call", 200, 2, true);
     DebugLoc debug_loc_right2("test.cpp", "test_function", 8, 5, true);
-    DebugInfoElement debug_info_element_right({debug_loc_right, debug_loc_right2});
+    DebugInfo debug_info_element_right({debug_loc_right, debug_loc_right2});
 
     DebugLoc debug_loc_left("test.cpp", "test_function", 10, 2, true);
-    DebugInfoElement debug_info_element_left(debug_loc_left);
+    DebugInfo debug_info_element_left(debug_loc_left);
 
-    DebugInfo debug_info;
+    DebugTable debug_info;
 
     debug_info.add_element(debug_info_element_right);
     debug_info.add_element(debug_info_element_left);

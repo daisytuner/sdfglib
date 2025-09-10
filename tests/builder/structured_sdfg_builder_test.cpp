@@ -11,7 +11,7 @@
 using namespace sdfg;
 
 TEST(StructuredSDFGBuilderTest, Empty) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     auto sdfg = builder.move();
 
@@ -20,7 +20,7 @@ TEST(StructuredSDFGBuilderTest, Empty) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddBlock) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("N", desc);
@@ -43,7 +43,7 @@ TEST(StructuredSDFGBuilderTest, AddBlock) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddBlockBefore) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("N", desc);
@@ -71,7 +71,7 @@ TEST(StructuredSDFGBuilderTest, AddBlockBefore) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddBlockAfter) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("N", desc);
@@ -104,7 +104,7 @@ TEST(StructuredSDFGBuilderTest, AddBlockAfter) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::UInt64);
     builder.add_container("N", desc);
@@ -136,7 +136,7 @@ TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddIfElse) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
@@ -167,7 +167,7 @@ TEST(StructuredSDFGBuilderTest, AddIfElse) {
 }
 
 TEST(StructuredSDFGBuilderTest, AddIfElseBefore) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     auto& root = builder.subject().root();
     auto& block_base =
@@ -192,7 +192,7 @@ TEST(StructuredSDFGBuilderTest, AddIfElseBefore) {
 }
 
 TEST(StructuredSDFGBuilderTest, addWhile) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
@@ -219,7 +219,7 @@ TEST(StructuredSDFGBuilderTest, addWhile) {
 }
 
 TEST(StructuredSDFGBuilderTest, addFor) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
@@ -249,7 +249,7 @@ TEST(StructuredSDFGBuilderTest, addFor) {
 }
 
 TEST(StructuredSDFGBuilderTest, addMap) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
@@ -283,7 +283,7 @@ TEST(StructuredSDFGBuilderTest, addMap) {
 }
 
 TEST(StructuredSDFGBuilderTest, addForBefore) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     auto& root = builder.subject().root();
     auto& block_base =
@@ -311,7 +311,7 @@ TEST(StructuredSDFGBuilderTest, addForBefore) {
 }
 
 TEST(StructuredSDFGBuilderTest, addForAfter) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     auto& root = builder.subject().root();
     auto& block_base =
@@ -564,7 +564,7 @@ TEST(SDFG2StructuredSDFGTest, While) {
 }
 
 TEST(StructuredSDFGBuilderTest, FindElementById_Root) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     auto& root = builder.subject().root();
 
@@ -574,7 +574,7 @@ TEST(StructuredSDFGBuilderTest, FindElementById_Root) {
 }
 
 TEST(StructuredSDFGBuilderTest, FindElementById_Block) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
 
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);

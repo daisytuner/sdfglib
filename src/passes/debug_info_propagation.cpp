@@ -4,9 +4,9 @@
 namespace sdfg {
 namespace passes {
 
-DebugInfoPropagation::DebugInfoPropagation() : Pass() {}
+DebugTablePropagation::DebugTablePropagation() : Pass() {}
 
-void DebugInfoPropagation::
+void DebugTablePropagation::
     propagate(builder::StructuredSDFGBuilder& builder, structured_control_flow::ControlFlowNode* current) {
     auto current_debug_info = current->debug_info();
 
@@ -67,12 +67,12 @@ void DebugInfoPropagation::
     current->set_debug_info(current_debug_info);
 }
 
-bool DebugInfoPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
+bool DebugTablePropagation::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     this->propagate(builder, &builder.subject().root());
     return true;
 }
 
-std::string DebugInfoPropagation::name() { return "DebugInfoPropagation"; }
+std::string DebugTablePropagation::name() { return "DebugTablePropagation"; }
 
 } // namespace passes
 } // namespace sdfg

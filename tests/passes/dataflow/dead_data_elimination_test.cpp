@@ -8,7 +8,7 @@
 using namespace sdfg;
 
 TEST(DeadDataEliminationTest, Unused) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -30,7 +30,7 @@ TEST(DeadDataEliminationTest, Unused) {
 }
 
 TEST(DeadDataEliminationTest, WriteWithoutRead_Transition) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -60,7 +60,7 @@ TEST(DeadDataEliminationTest, WriteWithoutRead_Transition) {
 }
 
 TEST(DeadDataEliminationTest, WriteWithoutRead_Dataflow) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("j", desc);
@@ -94,7 +94,7 @@ TEST(DeadDataEliminationTest, WriteWithoutRead_Dataflow) {
 }
 
 TEST(DeadDataEliminationTest, WriteAfterWrite_For) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -131,7 +131,7 @@ TEST(DeadDataEliminationTest, WriteAfterWrite_For) {
 }
 
 TEST(DeadDataEliminationTest, WriteAfterWrite_WhileBody) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -171,7 +171,7 @@ TEST(DeadDataEliminationTest, WriteAfterWrite_WhileBody) {
 }
 
 TEST(DeadDataEliminationTest, WriteAfterWrite_ClosedBranches) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -214,7 +214,7 @@ TEST(DeadDataEliminationTest, WriteAfterWrite_ClosedBranches) {
 }
 
 TEST(DeadDataEliminationTest, WriteAfterWrite_OpenBranches) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -257,7 +257,7 @@ TEST(DeadDataEliminationTest, WriteAfterWrite_OpenBranches) {
 }
 
 TEST(DeadDataEliminationTest, WriteAfterWrite_IncompleteBranches) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -298,7 +298,7 @@ TEST(DeadDataEliminationTest, WriteAfterWrite_IncompleteBranches) {
 }
 
 TEST(DeadDataEliminationTest, WriteAfterWrite_ContinueBreak_NoReads) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -350,7 +350,7 @@ TEST(DeadDataEliminationTest, WriteAfterWrite_ContinueBreak_NoReads) {
 }
 
 TEST(DeadDataEliminationTest, WriteAfterWrite_ContinueBreak_Read) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
@@ -409,7 +409,7 @@ TEST(DeadDataEliminationTest, WriteAfterWrite_ContinueBreak_Read) {
 }
 
 TEST(DeadDataEliminationTest, WriteAfterWrite_ContinueBreak_OpenRead) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugInfo());
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU, DebugTable());
 
     types::Scalar desc(types::PrimitiveType::UInt32);
     builder.add_container("i", desc);
