@@ -237,10 +237,14 @@ void LibraryNodeDispatcher::
         stream << " = ";
 
         // Reinterpret cast for opaque pointers
-        if (iedge.base_type().type_id() == types::TypeID::Pointer) {
-            stream << "(" << this->language_extension_.type_cast(src_name, iedge.base_type()) << ")";
-        } else {
+        if (dynamic_cast<const data_flow::ConstantNode*>(&src)) {
             stream << src_name;
+        } else {
+            if (iedge.base_type().type_id() == types::TypeID::Pointer) {
+                stream << "(" << this->language_extension_.type_cast(src_name, iedge.base_type()) << ")";
+            } else {
+                stream << src_name;
+            }
         }
 
         stream << this->language_extension_.subset(function_, iedge.base_type(), iedge.subset()) << ";";
