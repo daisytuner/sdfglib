@@ -5,7 +5,7 @@
 using namespace sdfg;
 
 TEST(ParallelizationPassTest, Map_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();

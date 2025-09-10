@@ -1,5 +1,6 @@
 #include "sdfg/debug_info.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -44,6 +45,15 @@ size_t DebugInfo::line() const { return this->locations_.front().line; };
 
 size_t DebugInfo::column() const { return this->locations_.front().column; };
 
+bool DebugInfo::operator==(const DebugInfo& other) const {
+    bool result = true;
+    if (this->locations_.size() != other.locations_.size()) return false;
+    for (size_t i = 0; i < this->locations_.size(); i++) {
+        result &= (this->locations_[i] == other.locations_[i]);
+    }
+    return result;
+}
+
 
 /***** DebugInfoRegion *****/
 
@@ -52,7 +62,7 @@ DebugInfoRegion::DebugInfoRegion()
     this->has_ = false;
 };
 
-DebugInfoRegion::DebugInfoRegion(std::unordered_set<size_t> indices, const std::vector<DebugInfo>& all_instructions)
+DebugInfoRegion::DebugInfoRegion(std::unordered_set<size_t> indices, const DebugInfos& all_instructions)
     : indices_(indices) {
     if (this->indices_.empty()) {
         this->has_ = false;
@@ -65,7 +75,7 @@ DebugInfoRegion::DebugInfoRegion(std::unordered_set<size_t> indices, const std::
     }
 
     // filter instructions
-    std::vector<DebugInfo> instructions;
+    DebugInfos instructions;
     for (auto index : this->indices_) {
         if (index < all_instructions.size()) {
             auto instruction = all_instructions[index];
@@ -161,7 +171,7 @@ bool DebugInfoRegion::fuse_ranges(
 std::unordered_set<size_t> DebugInfoRegion::indices() const { return this->indices_; }
 
 DebugInfoRegion DebugInfoRegion::
-    merge(const DebugInfoRegion& first, const DebugInfoRegion& second, const std::vector<DebugInfo>& all_instructions) {
+    merge(const DebugInfoRegion& first, const DebugInfoRegion& second, const DebugInfos& all_instructions) {
     // Merge the two regions by combining their indices
     std::unordered_set<size_t> merged_indices = first.indices_;
     merged_indices.insert(second.indices_.begin(), second.indices_.end());
@@ -183,15 +193,26 @@ size_t DebugInfoRegion::end_column() const { return this->end_column_; }
 
 /***** DebugTable *****/
 
-const std::vector<DebugInfo>& DebugTable::instructions() const { return this->instructions_; };
+const DebugInfos& DebugTable::elements() const { return this->elements_; };
 
-size_t DebugTable::add_element(DebugInfo loc) {
-    this->instructions_.push_back(loc);
-    return this->instructions_.size() - 1;
+size_t DebugTable::add_element(DebugInfo element) {
+    auto entry = std::find(this->elements_.begin(), this->elements_.end(), element);
+    if (entry != this->elements_.end()) {
+        // Element already exists, return its index
+        return std::distance(this->elements_.begin(), entry);
+    }
+    this->elements_.push_back(element);
+    return this->elements_.size() - 1;
 };
 
-DebugInfoRegion DebugTable::get_region(std::unordered_set<size_t> indices) const {
-    return DebugInfoRegion(indices, this->instructions_);
+DebugInfos DebugTable::get_region(std::unordered_set<size_t> indices) const {
+    DebugInfos elements;
+    for (auto index : indices) {
+        if (index < this->elements_.size()) {
+            elements.push_back(this->elements_[index]);
+        }
+    }
+    return elements;
 };
 
 } // namespace sdfg

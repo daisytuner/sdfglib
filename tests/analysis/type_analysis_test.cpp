@@ -11,7 +11,7 @@
 using namespace sdfg;
 
 TEST(TypeAnalysisTest, ScalarType) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar scalar_type(types::PrimitiveType::Int32);
     builder.add_container("i", scalar_type);
@@ -26,7 +26,7 @@ TEST(TypeAnalysisTest, ScalarType) {
 }
 
 TEST(TypeAnalysisTest, TypedPointerType) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar scalar_type(types::PrimitiveType::Int32);
     types::Pointer ptr(scalar_type);
@@ -43,7 +43,7 @@ TEST(TypeAnalysisTest, TypedPointerType) {
 }
 
 TEST(TypeAnalysisTest, ArrayType) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Array arr(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10));
 
@@ -59,7 +59,7 @@ TEST(TypeAnalysisTest, ArrayType) {
 }
 
 TEST(TypeAnalysisTest, StructureType) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Structure struct_type("MyStruct");
 
@@ -69,7 +69,7 @@ TEST(TypeAnalysisTest, StructureType) {
 }
 
 TEST(TypeAnalysisTest, OpaquePointerTypeRead) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Pointer ptr;
     types::Scalar base_desc(types::PrimitiveType::Int32);
@@ -99,7 +99,7 @@ TEST(TypeAnalysisTest, OpaquePointerTypeRead) {
 }
 
 TEST(TypeAnalysisTest, OpaquePointerTypeWrite) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Pointer ptr;
     types::Scalar base_desc(types::PrimitiveType::Int32);
@@ -130,7 +130,7 @@ TEST(TypeAnalysisTest, OpaquePointerTypeWrite) {
 }
 
 TEST(TypeAnalysisTest, OpaquePointerTypeView) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Pointer ptr;
     types::Scalar base_desc(types::PrimitiveType::Int32);
@@ -161,7 +161,7 @@ TEST(TypeAnalysisTest, OpaquePointerTypeView) {
 }
 
 TEST(TypeAnalysisTest, TaskletReadWrite) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Pointer ptr;
     types::Scalar base_desc(types::PrimitiveType::Int32);
@@ -195,7 +195,7 @@ TEST(TypeAnalysisTest, TaskletReadWrite) {
 }
 
 TEST(TypeAnalysisTest, Dereference_Chain) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Pointer ptr;
     types::Scalar base_desc(types::PrimitiveType::Int32);

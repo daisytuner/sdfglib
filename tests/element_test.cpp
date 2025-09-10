@@ -20,7 +20,7 @@ TEST(DebugTableTest, Basic) {
 
     debug_info.add_element(debug_info_element);
 
-    DebugInfoRegion debug_info_region({0}, debug_info.instructions());
+    DebugInfoRegion debug_info_region({0}, debug_info.elements());
 
     EXPECT_TRUE(debug_info_region.has());
     EXPECT_EQ(debug_info_region.filename(), "test.cpp");
@@ -38,10 +38,10 @@ TEST(DebugTableTest, Merge_Left) {
 
     debug_info.add_element(debug_info_element);
 
-    DebugInfoRegion debug_info_region_left({0}, debug_info.instructions());
+    DebugInfoRegion debug_info_region_left({0}, debug_info.elements());
     DebugInfoRegion debug_info_region_right;
 
-    auto merged = DebugInfoRegion::merge(debug_info_region_left, debug_info_region_right, debug_info.instructions());
+    auto merged = DebugInfoRegion::merge(debug_info_region_left, debug_info_region_right, debug_info.elements());
     EXPECT_TRUE(merged.has());
     EXPECT_EQ(merged.filename(), "test.cpp");
     EXPECT_EQ(merged.function(), "test_function");
@@ -58,10 +58,10 @@ TEST(DebugTableTest, Merge_Right) {
 
     debug_info.add_element(debug_info_element);
 
-    DebugInfoRegion debug_info_region_right({0}, debug_info.instructions());
+    DebugInfoRegion debug_info_region_right({0}, debug_info.elements());
     DebugInfoRegion debug_info_region_left;
 
-    auto merged = DebugInfoRegion::merge(debug_info_region_left, debug_info_region_right, debug_info.instructions());
+    auto merged = DebugInfoRegion::merge(debug_info_region_left, debug_info_region_right, debug_info.elements());
     EXPECT_TRUE(merged.has());
     EXPECT_EQ(merged.filename(), "test.cpp");
     EXPECT_EQ(merged.function(), "test_function");
@@ -83,10 +83,10 @@ TEST(DebugTableTest, Merge_LeftRight) {
     debug_info.add_element(debug_info_element_left);
     debug_info.add_element(debug_info_element_right);
 
-    DebugInfoRegion debug_info_region_right({1}, debug_info.instructions());
-    DebugInfoRegion debug_info_region_left({0}, debug_info.instructions());
+    DebugInfoRegion debug_info_region_right({1}, debug_info.elements());
+    DebugInfoRegion debug_info_region_left({0}, debug_info.elements());
 
-    auto merged = DebugInfoRegion::merge(debug_info_region_left, debug_info_region_right, debug_info.instructions());
+    auto merged = DebugInfoRegion::merge(debug_info_region_left, debug_info_region_right, debug_info.elements());
     EXPECT_TRUE(merged.has());
     EXPECT_EQ(merged.filename(), "test.cpp");
     EXPECT_EQ(merged.function(), "test_function");
@@ -108,10 +108,10 @@ TEST(DebugTableTest, Merge_RightLeft) {
     debug_info.add_element(debug_info_element_right);
     debug_info.add_element(debug_info_element_left);
 
-    DebugInfoRegion debug_info_region_right({0}, debug_info.instructions());
-    DebugInfoRegion debug_info_region_left({1}, debug_info.instructions());
+    DebugInfoRegion debug_info_region_right({0}, debug_info.elements());
+    DebugInfoRegion debug_info_region_left({1}, debug_info.elements());
 
-    auto merged = DebugInfoRegion::merge(debug_info_region_left, debug_info_region_right, debug_info.instructions());
+    auto merged = DebugInfoRegion::merge(debug_info_region_left, debug_info_region_right, debug_info.elements());
     EXPECT_TRUE(merged.has());
     EXPECT_EQ(merged.filename(), "test.cpp");
     EXPECT_EQ(merged.function(), "test_function");
@@ -133,10 +133,10 @@ TEST(DebugTableTest, Merge_same_line) {
     debug_info.add_element(debug_info_element_right);
     debug_info.add_element(debug_info_element_left);
 
-    DebugInfoRegion debug_info_region_right({0}, debug_info.instructions());
-    DebugInfoRegion debug_info_region_left({1}, debug_info.instructions());
+    DebugInfoRegion debug_info_region_right({0}, debug_info.elements());
+    DebugInfoRegion debug_info_region_left({1}, debug_info.elements());
 
-    auto merged = DebugInfoRegion::merge(debug_info_region_left, debug_info_region_right, debug_info.instructions());
+    auto merged = DebugInfoRegion::merge(debug_info_region_left, debug_info_region_right, debug_info.elements());
     EXPECT_TRUE(merged.has());
     EXPECT_EQ(merged.filename(), "test.cpp");
     EXPECT_EQ(merged.function(), "test_function");
@@ -159,10 +159,10 @@ TEST(DebugTableTest, Merge_multiple_locations) {
     debug_info.add_element(debug_info_element_right);
     debug_info.add_element(debug_info_element_left);
 
-    DebugInfoRegion debug_info_region_right({0}, debug_info.instructions());
-    DebugInfoRegion debug_info_region_left({1}, debug_info.instructions());
+    DebugInfoRegion debug_info_region_right({0}, debug_info.elements());
+    DebugInfoRegion debug_info_region_left({1}, debug_info.elements());
 
-    auto merged = DebugInfoRegion::merge(debug_info_region_left, debug_info_region_right, debug_info.instructions());
+    auto merged = DebugInfoRegion::merge(debug_info_region_left, debug_info_region_right, debug_info.elements());
     EXPECT_TRUE(merged.has());
     EXPECT_EQ(merged.filename(), "test.cpp");
     EXPECT_EQ(merged.function(), "test_function");

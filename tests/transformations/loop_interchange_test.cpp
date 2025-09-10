@@ -5,7 +5,7 @@
 using namespace sdfg;
 
 TEST(LoopInterchangeTest, Map_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -85,7 +85,7 @@ TEST(LoopInterchangeTest, Map_2D) {
 }
 
 TEST(LoopInterchangeTest, DependentLoops) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -147,7 +147,7 @@ TEST(LoopInterchangeTest, DependentLoops) {
 }
 
 TEST(LoopInterchangeTest, OuterLoopHasOuterBlocks) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();

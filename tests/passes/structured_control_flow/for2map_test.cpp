@@ -8,7 +8,7 @@
 using namespace sdfg;
 
 TEST(For2MapTest, Basic) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -59,7 +59,7 @@ TEST(For2MapTest, Basic) {
 }
 
 TEST(For2MapTest, MultiBound) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -111,7 +111,7 @@ TEST(For2MapTest, MultiBound) {
 }
 
 TEST(For2MapTest, NonContiguous) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -162,7 +162,7 @@ TEST(For2MapTest, NonContiguous) {
 }
 
 TEST(For2MapTest, NonCanonicalBound) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -213,7 +213,7 @@ TEST(For2MapTest, NonCanonicalBound) {
 }
 
 TEST(For2MapTest, Shift) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -264,7 +264,7 @@ TEST(For2MapTest, Shift) {
 }
 
 TEST(For2MapTest, LastValue) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -315,7 +315,7 @@ TEST(For2MapTest, LastValue) {
 }
 
 TEST(For2MapTest, Tiled) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();

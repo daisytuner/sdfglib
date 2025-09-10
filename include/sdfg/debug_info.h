@@ -15,6 +15,11 @@ struct DebugLoc {
     size_t column;
 
     bool has;
+
+    bool operator==(const DebugLoc& other) const {
+        return this->filename == other.filename && this->function == other.function && this->line == other.line &&
+               this->column == other.column && this->has == other.has;
+    }
 };
 
 class DebugInfo {
@@ -41,7 +46,11 @@ public:
     size_t column() const;
 
     const std::vector<DebugLoc>& locations() const;
+
+    bool operator==(const DebugInfo& other) const;
 };
+
+typedef std::vector<DebugInfo> DebugInfos;
 
 class DebugInfoRegion {
 private:
@@ -69,12 +78,12 @@ private:
 public:
     DebugInfoRegion();
 
-    DebugInfoRegion(std::unordered_set<size_t> indices, const std::vector<DebugInfo>& all_instructions);
+    DebugInfoRegion(std::unordered_set<size_t> indices, const DebugInfos& all_instructions);
 
     std::unordered_set<size_t> indices() const;
 
     static DebugInfoRegion
-    merge(const DebugInfoRegion& first, const DebugInfoRegion& second, const std::vector<DebugInfo>& all_instructions);
+    merge(const DebugInfoRegion& first, const DebugInfoRegion& second, const DebugInfos& all_instructions);
 
     bool has() const;
 
@@ -88,15 +97,14 @@ public:
 
 class DebugTable {
 private:
-    std::vector<DebugInfo> instructions_;
+    DebugInfos elements_;
 
 public:
-    size_t add_element(DebugInfo loc);
+    size_t add_element(DebugInfo element);
 
-    DebugInfoRegion get_region(std::unordered_set<size_t> indices) const;
+    DebugInfos get_region(std::unordered_set<size_t> indices) const;
 
-    const std::vector<DebugInfo>& instructions() const;
+    const DebugInfos& elements() const;
 };
-
 
 } // namespace sdfg

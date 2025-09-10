@@ -8,7 +8,7 @@
 using namespace sdfg;
 
 TEST(ExpansionPassTest, Simple) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
 
@@ -34,7 +34,7 @@ TEST(ExpansionPassTest, Simple) {
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
-        block.debug_info()
+        builder.debug_info().get_region(block.debug_info().indices())
     );
     builder.add_computational_memlet(
         block,
@@ -44,7 +44,7 @@ TEST(ExpansionPassTest, Simple) {
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
-        block.debug_info()
+        builder.debug_info().get_region(block.debug_info().indices())
     );
 
     analysis::AnalysisManager analysis_manager(sdfg);

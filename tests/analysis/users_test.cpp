@@ -8,7 +8,7 @@
 using namespace sdfg;
 
 TEST(UsersTest, Transition_WAR) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     auto sym1 = symbolic::symbol("A");
@@ -53,7 +53,7 @@ TEST(UsersTest, Transition_WAR) {
 }
 
 TEST(UsersTest, Transition_WAW) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     auto sym1 = symbolic::symbol("A");
@@ -104,7 +104,7 @@ TEST(UsersTest, Transition_WAW) {
 }
 
 TEST(UsersTest, Transition_RAW) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -153,7 +153,7 @@ TEST(UsersTest, Transition_RAW) {
 }
 
 TEST(UsersTest, AccessNode_Scalar_WAR) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
 
@@ -203,7 +203,7 @@ TEST(UsersTest, AccessNode_Scalar_WAR) {
 }
 
 TEST(UsersTest, AccessNode_Scalar_WAW) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
 
@@ -257,7 +257,7 @@ TEST(UsersTest, AccessNode_Scalar_WAW) {
 }
 
 TEST(UsersTest, AccessNode_Scalar_RAW) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -308,7 +308,7 @@ TEST(UsersTest, AccessNode_Scalar_RAW) {
 }
 
 TEST(UsersTest, For_Definition) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
     builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
@@ -370,7 +370,7 @@ TEST(UsersTest, For_Definition) {
 }
 
 TEST(UsersTest, Locals_Argument) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("a", types::Scalar(types::PrimitiveType::Int32), true);
 
@@ -385,7 +385,7 @@ TEST(UsersTest, Locals_Argument) {
 }
 
 TEST(UsersTest, Locals_External) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("a", types::Scalar(types::PrimitiveType::Int32), false, true);
 
@@ -400,7 +400,7 @@ TEST(UsersTest, Locals_External) {
 }
 
 TEST(UsersTest, Locals_Transient) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("a", types::Scalar(types::PrimitiveType::Int32));
 
@@ -427,7 +427,7 @@ TEST(UsersTest, Locals_Transient) {
 }
 
 TEST(UsersTest, Locals_Transient2) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     builder.add_container("a", types::Scalar(types::PrimitiveType::Int32));
 

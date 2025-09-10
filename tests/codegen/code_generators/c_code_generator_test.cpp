@@ -12,7 +12,7 @@
 using namespace sdfg;
 
 TEST(CCodeGeneratorTest, FunctionDefintion) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto sdfg = builder.move();
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
@@ -22,7 +22,7 @@ TEST(CCodeGeneratorTest, FunctionDefintion) {
 }
 
 TEST(CCodeGeneratorTest, Dispatch_Includes) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     auto sdfg = builder.move();
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
@@ -38,7 +38,7 @@ TEST(CCodeGeneratorTest, Dispatch_Includes) {
 }
 
 TEST(CCodeGeneratorTest, DispatchStructures_Basic) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
@@ -59,7 +59,7 @@ char member_0;
 }
 
 TEST(CCodeGeneratorTest, DispatchStructures_Nested) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     auto& struct_def_A = builder.add_structure("MyStructA", false);
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
@@ -88,7 +88,7 @@ MyStructA member_0;
 }
 
 TEST(CCodeGeneratorTest, DispatchGlobals) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     sdfg::types::Scalar base_type(sdfg::types::PrimitiveType::Int32);
     sdfg::types::Pointer ptr_type(base_type);
@@ -105,7 +105,7 @@ TEST(CCodeGeneratorTest, DispatchGlobals) {
 }
 
 TEST(CCodeGeneratorTest, CaptureInstrumentationInit) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     auto sdfg = builder.move();
 
@@ -124,7 +124,7 @@ static void __attribute__((constructor(1000))) __capture_ctx_init(void) {
 }
 
 TEST(CCodeGeneratorTest, EmitArgInCaptures) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     builder.add_container("arg0", types::Scalar(types::PrimitiveType::Int64), true, false);
     auto innerType = types::Array(types::Scalar(types::PrimitiveType::Float), symbolic::integer(210));
     builder.add_container("arg1", types::Pointer(static_cast<types::IType&>(innerType)), true, false);
@@ -164,7 +164,7 @@ if (__daisy_cap_en) {
 }
 
 TEST(CCodeGeneratorTest, EmitArgOutCaptures) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
     builder.add_container("arg0", types::Scalar(types::PrimitiveType::Int64), true, false);
     auto innerType = types::Array(types::Scalar(types::PrimitiveType::Float), symbolic::integer(210));
     builder.add_container("arg1", types::Pointer(static_cast<types::IType&>(innerType)), true, false);
@@ -210,7 +210,7 @@ TEST(CCodeGeneratorTest, EmitArgOutCaptures) {
  * any of its code.
  */
 TEST(CCodeGeneratorTest, CreateCapturePlans) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     types::Scalar sym_type(types::PrimitiveType::Int64);
     types::Scalar value_type(types::PrimitiveType::Float);

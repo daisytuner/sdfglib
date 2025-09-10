@@ -47,7 +47,8 @@ bool ElementWiseUnaryNode::expand(builder::StructuredSDFGBuilder& builder, analy
     }
 
     // Add new graph after the current block
-    auto& new_sequence = builder.add_sequence_before(parent, block, block.debug_info()).first;
+    auto& new_sequence =
+        builder.add_sequence_before(parent, block, builder.debug_info().get_region(block.debug_info().indices())).first;
 
     // Add maps
     auto& begin_subsets_out = oedge.begin_subset();
@@ -74,7 +75,7 @@ bool ElementWiseUnaryNode::expand(builder::StructuredSDFGBuilder& builder, analy
             update,
             structured_control_flow::ScheduleType_Sequential,
             {},
-            block.debug_info()
+            builder.debug_info().get_region(block.debug_info().indices())
         );
         last_scope = &last_map->root();
 
@@ -150,7 +151,8 @@ bool ElementWiseBinaryNode::expand(builder::StructuredSDFGBuilder& builder, anal
     }
 
     // Add new graph after the current block
-    auto& new_sequence = builder.add_sequence_before(parent, block, block.debug_info()).first;
+    auto& new_sequence =
+        builder.add_sequence_before(parent, block, builder.debug_info().get_region(block.debug_info().indices())).first;
 
     // Add maps
     auto& begin_subsets_out = oedge.begin_subset();
@@ -177,7 +179,7 @@ bool ElementWiseBinaryNode::expand(builder::StructuredSDFGBuilder& builder, anal
             update,
             structured_control_flow::ScheduleType_Sequential,
             {},
-            block.debug_info()
+            builder.debug_info().get_region(block.debug_info().indices())
         );
         last_scope = &last_map->root();
 

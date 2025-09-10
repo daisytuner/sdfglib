@@ -30,7 +30,7 @@ private:
     std::unique_ptr<structured_control_flow::Sequence> root_;
 
 public:
-    StructuredSDFG(const std::string& name, FunctionType type, const DebugTable& debug_info);
+    StructuredSDFG(const std::string& name, FunctionType type);
 
     StructuredSDFG(const StructuredSDFG& sdfg) = delete;
     StructuredSDFG& operator=(const StructuredSDFG&) = delete;

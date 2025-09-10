@@ -14,7 +14,7 @@
 using namespace sdfg;
 
 TEST(MathTest, ReLU) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
 
@@ -40,7 +40,7 @@ TEST(MathTest, ReLU) {
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
-        block.debug_info()
+        builder.debug_info().get_region(block.debug_info().indices())
     );
     builder.add_computational_memlet(
         block,
@@ -50,7 +50,7 @@ TEST(MathTest, ReLU) {
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
-        block.debug_info()
+        builder.debug_info().get_region(block.debug_info().indices())
     );
 
     EXPECT_EQ(block.dataflow().nodes().size(), 3);
@@ -83,7 +83,7 @@ TEST(MathTest, ReLU) {
 }
 
 TEST(MathTest, Gemm) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
 
@@ -230,7 +230,7 @@ TEST(MathTest, Gemm) {
 }
 
 TEST(MathTest, Conv_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     // Define scalar and tensor descriptors
@@ -287,9 +287,36 @@ TEST(MathTest, Conv_2D) {
     data_flow::Subset y_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(1), symbolic::integer(1)};
 
     // Connect memlets
-    builder.add_computational_memlet(block, X_acc, conv_node, "X", x_begin, x_end, x_desc, block.debug_info());
-    builder.add_computational_memlet(block, W_acc, conv_node, "W", w_begin, w_end, w_desc, block.debug_info());
-    builder.add_computational_memlet(block, conv_node, "Y", Y_acc, y_begin, y_end, y_desc, block.debug_info());
+    builder.add_computational_memlet(
+        block,
+        X_acc,
+        conv_node,
+        "X",
+        x_begin,
+        x_end,
+        x_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
+    builder.add_computational_memlet(
+        block,
+        W_acc,
+        conv_node,
+        "W",
+        w_begin,
+        w_end,
+        w_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
+    builder.add_computational_memlet(
+        block,
+        conv_node,
+        "Y",
+        Y_acc,
+        y_begin,
+        y_end,
+        y_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
 
     EXPECT_EQ(block.dataflow().nodes().size(), 4);
 
@@ -298,7 +325,7 @@ TEST(MathTest, Conv_2D) {
 }
 
 TEST(MathTest, Conv_2D_Strides) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     // Define scalar and tensor descriptors
@@ -355,9 +382,36 @@ TEST(MathTest, Conv_2D_Strides) {
     data_flow::Subset y_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(1), symbolic::integer(1)};
 
     // Connect memlets
-    builder.add_computational_memlet(block, X_acc, conv_node, "X", x_begin, x_end, x_desc, block.debug_info());
-    builder.add_computational_memlet(block, W_acc, conv_node, "W", w_begin, w_end, w_desc, block.debug_info());
-    builder.add_computational_memlet(block, conv_node, "Y", Y_acc, y_begin, y_end, y_desc, block.debug_info());
+    builder.add_computational_memlet(
+        block,
+        X_acc,
+        conv_node,
+        "X",
+        x_begin,
+        x_end,
+        x_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
+    builder.add_computational_memlet(
+        block,
+        W_acc,
+        conv_node,
+        "W",
+        w_begin,
+        w_end,
+        w_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
+    builder.add_computational_memlet(
+        block,
+        conv_node,
+        "Y",
+        Y_acc,
+        y_begin,
+        y_end,
+        y_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
 
     EXPECT_EQ(block.dataflow().nodes().size(), 4);
 
@@ -366,7 +420,7 @@ TEST(MathTest, Conv_2D_Strides) {
 }
 
 TEST(MathTest, MaxPool_2D) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& sdfg = builder.subject();
 
     // Define scalar and tensor descriptors
@@ -411,8 +465,26 @@ TEST(MathTest, MaxPool_2D) {
     data_flow::Subset y_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(1), symbolic::integer(1)};
 
     // Memlets
-    builder.add_computational_memlet(block, X_acc, pool_node, "X", x_begin, x_end, x_desc, block.debug_info());
-    builder.add_computational_memlet(block, pool_node, "Y", Y_acc, y_begin, y_end, y_desc, block.debug_info());
+    builder.add_computational_memlet(
+        block,
+        X_acc,
+        pool_node,
+        "X",
+        x_begin,
+        x_end,
+        x_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
+    builder.add_computational_memlet(
+        block,
+        pool_node,
+        "Y",
+        Y_acc,
+        y_begin,
+        y_end,
+        y_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
 
     EXPECT_EQ(block.dataflow().nodes().size(), 3);
 
@@ -421,7 +493,7 @@ TEST(MathTest, MaxPool_2D) {
 }
 
 TEST(MathTest, Dot) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
 
@@ -454,7 +526,7 @@ TEST(MathTest, Dot) {
         {symbolic::zero()},
         {symbolic::sub(n, symbolic::integer(1))},
         array_desc,
-        block.debug_info()
+        builder.debug_info().get_region(block.debug_info().indices())
     );
     builder.add_computational_memlet(
         block,
@@ -464,9 +536,11 @@ TEST(MathTest, Dot) {
         {symbolic::zero()},
         {symbolic::sub(n, symbolic::integer(1))},
         array_desc,
-        block.debug_info()
+        builder.debug_info().get_region(block.debug_info().indices())
     );
-    builder.add_computational_memlet(block, dot_node, "res", c_node, {}, {}, desc, block.debug_info());
+    builder.add_computational_memlet(
+        block, dot_node, "res", c_node, {}, {}, desc, builder.debug_info().get_region(block.debug_info().indices())
+    );
 
     EXPECT_EQ(block.dataflow().nodes().size(), 4);
 

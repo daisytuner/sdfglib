@@ -137,5 +137,7 @@ public:
     /***** Section: Debug Info *****/
     DebugTable& debug_info() { return this->debug_info_; };
     const DebugTable& debug_info() const { return this->debug_info_; };
+
+    void debug_info(const DebugTable& debug_info) { this->debug_info_ = debug_info; };
 };
 } // namespace sdfg

@@ -72,7 +72,10 @@ bool BatchNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, ana
     std::string output_name = static_cast<const data_flow::AccessNode &>(oedge_output->dst()).data();
 
     // Create new sequence before
-    auto &new_sequence = builder.add_sequence_before(parent, block, block.debug_info()).first;
+    auto &new_sequence =
+        builder
+            .add_sequence_before(parent, block, builder.subject().debug_info().get_region(block.debug_info().indices()))
+            .first;
     structured_control_flow::Sequence *last_scope = &new_sequence;
 
     // Create maps over output subset dims (parallel dims)
@@ -96,7 +99,7 @@ bool BatchNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, ana
             update,
             structured_control_flow::ScheduleType_Sequential,
             {},
-            block.debug_info()
+            builder.subject().debug_info().get_region(block.debug_info().indices())
         );
         last_scope = &last_map->root();
         loop_syms.push_back(indvar);

@@ -9,7 +9,7 @@
 using namespace sdfg;
 
 TEST(BlockFusionTest, Computational_Chain) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc_element(types::PrimitiveType::Double);
     types::Array desc_array(desc_element, symbolic::integer(10));
@@ -51,7 +51,7 @@ TEST(BlockFusionTest, Computational_Chain) {
 }
 
 TEST(BlockFusionTest, SymbolUsedInSubset_Dataflow) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc_element(types::PrimitiveType::Int32);
     types::Array desc_array(desc_element, symbolic::integer(10));
@@ -84,7 +84,7 @@ TEST(BlockFusionTest, SymbolUsedInSubset_Dataflow) {
 }
 
 TEST(BlockFusionTest, SymbolUsedWithSubset_Transition) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc_element(types::PrimitiveType::Int32);
     types::Array desc_array(desc_element, symbolic::integer(10));
@@ -113,7 +113,7 @@ TEST(BlockFusionTest, SymbolUsedWithSubset_Transition) {
 }
 
 TEST(BlockFusionTest, Computational_IndependentSubgraphs) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc_element(types::PrimitiveType::Double);
     types::Array desc_array(desc_element, symbolic::integer(10));
@@ -158,7 +158,7 @@ TEST(BlockFusionTest, Computational_IndependentSubgraphs) {
 }
 
 TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::Double);
     types::Array array_desc(desc, symbolic::integer(10));
@@ -182,7 +182,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
-        block_1.debug_info()
+        builder.debug_info().get_region(block_1.debug_info().indices())
     );
     builder.add_computational_memlet(
         block_1,
@@ -192,7 +192,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
-        block_1.debug_info()
+        builder.debug_info().get_region(block_1.debug_info().indices())
     );
 
     auto& block_2 = builder.add_block(builder.subject().root());
@@ -209,7 +209,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
-        block_2.debug_info()
+        builder.debug_info().get_region(block_2.debug_info().indices())
     );
     builder.add_computational_memlet(
         block_2,
@@ -219,7 +219,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
-        block_2.debug_info()
+        builder.debug_info().get_region(block_2.debug_info().indices())
     );
 
     auto sdfg = builder.move();
@@ -240,7 +240,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
 }
 
 TEST(BlockFusionTest, Reference) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc_element(types::PrimitiveType::Double);
     types::Pointer desc_pointer(desc_element);
@@ -278,7 +278,7 @@ TEST(BlockFusionTest, Reference) {
 }
 
 TEST(BlockFusionTest, Dereference) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Pointer opaque_ptr;
     builder.add_container("A", opaque_ptr);

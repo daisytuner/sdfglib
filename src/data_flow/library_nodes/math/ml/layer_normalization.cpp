@@ -67,7 +67,10 @@ bool LayerNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, ana
     std::string output_name = static_cast<const data_flow::AccessNode &>(oedge_output->dst()).data();
 
     // Create new sequence before
-    auto &new_sequence = builder.add_sequence_before(parent, block, block.debug_info()).first;
+    auto &new_sequence =
+        builder
+            .add_sequence_before(parent, block, builder.subject().debug_info().get_region(block.debug_info().indices()))
+            .first;
     structured_control_flow::Sequence *last_scope = &new_sequence;
 
     // Create maps over output subset dims (parallel dims)
@@ -91,7 +94,7 @@ bool LayerNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, ana
             update,
             structured_control_flow::ScheduleType_Sequential,
             {},
-            block.debug_info()
+            builder.subject().debug_info().get_region(block.debug_info().indices())
         );
         last_scope = &last_map->root();
         loop_syms.push_back(indvar);
@@ -133,7 +136,15 @@ bool LayerNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, ana
     auto red_init = red_begin;
     auto red_update = symbolic::add(red_indvar, symbolic::one());
     auto red_cond = symbolic::Lt(red_indvar, symbolic::add(red_end, symbolic::one()));
-    auto red_map = &builder.add_for(*last_scope, red_indvar, red_cond, red_init, red_update, {}, block.debug_info());
+    auto red_map = &builder.add_for(
+        *last_scope,
+        red_indvar,
+        red_cond,
+        red_init,
+        red_update,
+        {},
+        builder.subject().debug_info().get_region(block.debug_info().indices())
+    );
 
     // Create innermost block for mean and variance computation
     auto &compute_block = builder.add_block(red_map->root());

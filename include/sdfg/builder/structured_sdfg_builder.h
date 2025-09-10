@@ -63,13 +63,15 @@ private:
 
     void add_dataflow(const data_flow::DataFlowGraph& from, Block& to);
 
+    DebugInfoRegion fill_debug_info(const DebugInfos& debug_info_elements);
+
 protected:
     Function& function() const override;
 
 public:
     StructuredSDFGBuilder(std::unique_ptr<StructuredSDFG>& sdfg);
 
-    StructuredSDFGBuilder(const std::string& name, FunctionType type, const DebugTable& debug_info);
+    StructuredSDFGBuilder(const std::string& name, FunctionType type);
 
     StructuredSDFGBuilder(const SDFG& sdfg);
 
@@ -82,12 +84,11 @@ public:
     Sequence& add_sequence(
         Sequence& parent,
         const sdfg::control_flow::Assignments& assignments = {},
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
-    std::pair<Sequence&, Transition&> add_sequence_before(
-        Sequence& parent, ControlFlowNode& block, const DebugInfoRegion& debug_info = DebugInfoRegion()
-    );
+    std::pair<Sequence&, Transition&>
+    add_sequence_before(Sequence& parent, ControlFlowNode& block, const DebugInfos& debug_info_elements = {});
 
     void remove_child(Sequence& parent, size_t i);
 
@@ -95,41 +96,39 @@ public:
 
     void insert_children(Sequence& parent, Sequence& other, size_t i);
 
-    void insert(
-        ControlFlowNode& node, Sequence& source, Sequence& target, const DebugInfoRegion& debug_info = DebugInfoRegion()
-    );
+    void insert(ControlFlowNode& node, Sequence& source, Sequence& target, const DebugInfos& debug_info_elements = {});
 
     Block& add_block(
         Sequence& parent,
         const sdfg::control_flow::Assignments& assignments = {},
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     Block& add_block(
         Sequence& parent,
         const data_flow::DataFlowGraph& data_flow_graph,
         const sdfg::control_flow::Assignments& assignments = {},
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     std::pair<Block&, Transition&>
-    add_block_before(Sequence& parent, ControlFlowNode& block, const DebugInfoRegion& debug_info = DebugInfoRegion());
+    add_block_before(Sequence& parent, ControlFlowNode& block, const DebugInfos& debug_info_elements = {});
 
     std::pair<Block&, Transition&> add_block_before(
         Sequence& parent,
         ControlFlowNode& block,
         data_flow::DataFlowGraph& data_flow_graph,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     std::pair<Block&, Transition&>
-    add_block_after(Sequence& parent, ControlFlowNode& block, const DebugInfoRegion& debug_info = DebugInfoRegion());
+    add_block_after(Sequence& parent, ControlFlowNode& block, const DebugInfos& debug_info_elements = {});
 
     std::pair<Block&, Transition&> add_block_after(
         Sequence& parent,
         ControlFlowNode& block,
         data_flow::DataFlowGraph& data_flow_graph,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     For& add_for(
@@ -139,7 +138,7 @@ public:
         const symbolic::Expression& init,
         const symbolic::Expression& update,
         const sdfg::control_flow::Assignments& assignments = {},
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     std::pair<For&, Transition&> add_for_before(
@@ -149,7 +148,7 @@ public:
         const symbolic::Condition& condition,
         const symbolic::Expression& init,
         const symbolic::Expression& update,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     std::pair<For&, Transition&> add_for_after(
@@ -159,46 +158,38 @@ public:
         const symbolic::Condition& condition,
         const symbolic::Expression& init,
         const symbolic::Expression& update,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
-    IfElse& add_if_else(Sequence& parent, const DebugInfoRegion& debug_info = DebugInfoRegion());
+    IfElse& add_if_else(Sequence& parent, const DebugInfos& debug_info_elements = {});
 
     IfElse& add_if_else(
-        Sequence& parent,
-        const sdfg::control_flow::Assignments& assignments,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfos& debug_info_elements = {}
     );
 
     std::pair<IfElse&, Transition&>
-    add_if_else_before(Sequence& parent, ControlFlowNode& block, const DebugInfoRegion& debug_info = DebugInfoRegion());
+    add_if_else_before(Sequence& parent, ControlFlowNode& block, const DebugInfos& debug_info_elements = {});
 
-    Sequence& add_case(
-        IfElse& scope, const sdfg::symbolic::Condition cond, const DebugInfoRegion& debug_info = DebugInfoRegion()
-    );
+    Sequence& add_case(IfElse& scope, const sdfg::symbolic::Condition cond, const DebugInfos& debug_info_elements = {});
 
-    void remove_case(IfElse& scope, size_t i, const DebugInfoRegion& debug_info = DebugInfoRegion());
+    void remove_case(IfElse& scope, size_t i, const DebugInfos& debug_info_elements = {});
 
     While& add_while(
         Sequence& parent,
         const sdfg::control_flow::Assignments& assignments = {},
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
-    Continue& add_continue(Sequence& parent, const DebugInfoRegion& debug_info = DebugInfoRegion());
+    Continue& add_continue(Sequence& parent, const DebugInfos& debug_info_elements = {});
 
     Continue& add_continue(
-        Sequence& parent,
-        const sdfg::control_flow::Assignments& assignments,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfos& debug_info_elements = {}
     );
 
-    Break& add_break(Sequence& parent, const DebugInfoRegion& debug_info = DebugInfoRegion());
+    Break& add_break(Sequence& parent, const DebugInfos& debug_info_elements = {});
 
     Break& add_break(
-        Sequence& parent,
-        const sdfg::control_flow::Assignments& assignments,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfos& debug_info_elements = {}
     );
 
     Map& add_map(
@@ -209,7 +200,7 @@ public:
         const symbolic::Expression& update,
         const ScheduleType& schedule_type,
         const sdfg::control_flow::Assignments& assignments = {},
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     std::pair<Map&, Transition&> add_map_after(
@@ -221,7 +212,7 @@ public:
         const symbolic::Expression& update,
         const ScheduleType& schedule_type,
         const sdfg::control_flow::Assignments& assignments = {},
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     std::pair<Map&, Transition&> add_map_before(
@@ -233,13 +224,13 @@ public:
         const symbolic::Expression& update,
         const ScheduleType& schedule_type,
         const sdfg::control_flow::Assignments& assignments = {},
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     Return& add_return(
         Sequence& parent,
         const sdfg::control_flow::Assignments& assignments = {},
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     For& convert_while(
@@ -261,9 +252,7 @@ public:
     /***** Section: Dataflow Graph *****/
 
     data_flow::AccessNode& add_access(
-        structured_control_flow::Block& block,
-        const std::string& data,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        structured_control_flow::Block& block, const std::string& data, const DebugInfos& debug_info_elements = {}
     );
 
     data_flow::Tasklet& add_tasklet(
@@ -271,7 +260,7 @@ public:
         const data_flow::TaskletCode code,
         const std::string& output,
         const std::vector<std::string>& inputs,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_memlet(
@@ -282,7 +271,7 @@ public:
         const std::string& dst_conn,
         const data_flow::Subset& subset,
         const types::IType& base_type,
-        const DebugInfoRegion& debug_info
+        const DebugInfos& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_memlet(
@@ -294,7 +283,7 @@ public:
         const data_flow::Subset& begin_subset,
         const data_flow::Subset& end_subset,
         const types::IType& base_type,
-        const DebugInfoRegion& debug_info
+        const DebugInfos& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_computational_memlet(
@@ -304,7 +293,7 @@ public:
         const std::string& dst_conn,
         const data_flow::Subset& subset,
         const types::IType& base_type,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_computational_memlet(
@@ -314,7 +303,7 @@ public:
         data_flow::AccessNode& dst,
         const data_flow::Subset& subset,
         const types::IType& base_type,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_computational_memlet(
@@ -323,7 +312,7 @@ public:
         data_flow::Tasklet& dst,
         const std::string& dst_conn,
         const data_flow::Subset& subset,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_computational_memlet(
@@ -332,7 +321,7 @@ public:
         const std::string& src_conn,
         data_flow::AccessNode& dst,
         const data_flow::Subset& subset,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_computational_memlet(
@@ -343,7 +332,7 @@ public:
         const data_flow::Subset& begin_subset,
         const data_flow::Subset& end_subset,
         const types::IType& base_type,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_computational_memlet(
@@ -354,7 +343,7 @@ public:
         const data_flow::Subset& begin_subset,
         const data_flow::Subset& end_subset,
         const types::IType& base_type,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_reference_memlet(
@@ -363,7 +352,7 @@ public:
         data_flow::AccessNode& dst,
         const data_flow::Subset& subset,
         const types::IType& base_type,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     data_flow::Memlet& add_dereference_memlet(
@@ -372,7 +361,7 @@ public:
         data_flow::AccessNode& dst,
         bool derefs_src,
         const types::IType& base_type,
-        const DebugInfoRegion& debug_info = DebugInfoRegion()
+        const DebugInfos& debug_info_elements = {}
     );
 
     template<typename T, typename... Args>

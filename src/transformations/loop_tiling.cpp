@@ -81,7 +81,7 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
     loop_.init() = inner_init;
 
     // Step 3: Move inner loop body to outer loop body
-    builder.insert(loop_, *parent, outer_loop->root(), loop_.debug_info());
+    builder.insert(loop_, *parent, outer_loop->root(), builder.debug_info().get_region(loop_.debug_info().indices()));
 
     analysis_manager.invalidate_all();
 };

@@ -7,13 +7,13 @@
 using namespace sdfg;
 
 TEST(StructuredSDFGDeepCopy, Block) {
-    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU);
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
     auto& block = builder_source.add_block(root_source);
 
-    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
     auto& root_target = sdfg_target.root();
 
@@ -32,7 +32,7 @@ TEST(StructuredSDFGDeepCopy, Block) {
 }
 
 TEST(StructuredSDFGDeepCopy, Block_WithAssignments) {
-    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU);
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
@@ -40,7 +40,7 @@ TEST(StructuredSDFGDeepCopy, Block_WithAssignments) {
     builder_source.add_container("b", types::Scalar(types::PrimitiveType::Int32));
     auto& block = builder_source.add_block(root_source, {{symbolic::symbol("a"), symbolic::symbol("b")}});
 
-    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
     auto& root_target = sdfg_target.root();
 
@@ -59,14 +59,14 @@ TEST(StructuredSDFGDeepCopy, Block_WithAssignments) {
 }
 
 TEST(StructuredSDFGDeepCopy, Block_WithLibraryNodebarrier_local) {
-    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU);
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
     auto& block = builder_source.add_block(root_source);
     auto& barrier = builder_source.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfoRegion());
 
-    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
     auto& root_target = sdfg_target.root();
 
@@ -92,13 +92,13 @@ TEST(StructuredSDFGDeepCopy, Block_WithLibraryNodebarrier_local) {
 }
 
 TEST(StructuredSDFGDeepCopy, Sequence) {
-    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU);
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
     auto& sequence = builder_source.add_sequence(root_source);
 
-    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
     auto& root_target = sdfg_target.root();
 
@@ -117,7 +117,7 @@ TEST(StructuredSDFGDeepCopy, Sequence) {
 }
 
 TEST(StructuredSDFGDeepCopy, Sequence_WithAssignments) {
-    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU);
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
@@ -125,7 +125,7 @@ TEST(StructuredSDFGDeepCopy, Sequence_WithAssignments) {
     builder_source.add_container("b", types::Scalar(types::PrimitiveType::Int32));
     auto& sequence = builder_source.add_sequence(root_source, {{symbolic::symbol("a"), symbolic::symbol("b")}});
 
-    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
     auto& root_target = sdfg_target.root();
 
@@ -144,13 +144,13 @@ TEST(StructuredSDFGDeepCopy, Sequence_WithAssignments) {
 }
 
 TEST(StructuredSDFGDeepCopy, Return) {
-    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU);
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
     auto& sequence = builder_source.add_return(root_source);
 
-    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
     auto& root_target = sdfg_target.root();
 
@@ -169,13 +169,13 @@ TEST(StructuredSDFGDeepCopy, Return) {
 }
 
 TEST(StructuredSDFGDeepCopy, While) {
-    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU);
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
     auto& loop = builder_source.add_while(root_source);
 
-    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
     auto& root_target = sdfg_target.root();
 
@@ -194,14 +194,14 @@ TEST(StructuredSDFGDeepCopy, While) {
 }
 
 TEST(StructuredSDFGDeepCopy, Break) {
-    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU);
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
     auto& loop = builder_source.add_while(root_source);
     auto& break_node = builder_source.add_break(loop.root());
 
-    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
     auto& root_target = sdfg_target.root();
 
@@ -225,14 +225,14 @@ TEST(StructuredSDFGDeepCopy, Break) {
 }
 
 TEST(StructuredSDFGDeepCopy, Continue) {
-    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU);
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
     auto& loop = builder_source.add_while(root_source);
     auto& continue_node = builder_source.add_continue(loop.root());
 
-    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
     auto& root_target = sdfg_target.root();
 
@@ -256,7 +256,7 @@ TEST(StructuredSDFGDeepCopy, Continue) {
 }
 
 TEST(StructuredSDFGDeepCopy, For) {
-    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU);
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
@@ -267,7 +267,7 @@ TEST(StructuredSDFGDeepCopy, For) {
 
     auto& loop = builder_source.add_for(root_source, loopvar, bound, init, update);
 
-    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
     auto& root_target = sdfg_target.root();
 
@@ -293,7 +293,7 @@ TEST(StructuredSDFGDeepCopy, For) {
 }
 
 TEST(StructuredSDFGDeepCopy, Map) {
-    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_source("sdfg_source", FunctionType_CPU);
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
@@ -306,7 +306,7 @@ TEST(StructuredSDFGDeepCopy, Map) {
         structured_control_flow::ScheduleType_Sequential
     );
 
-    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU, DebugTable());
+    builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
     auto& root_target = sdfg_target.root();
 
