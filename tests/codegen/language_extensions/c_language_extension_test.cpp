@@ -4,6 +4,7 @@
 
 #include "sdfg/builder/sdfg_builder.h"
 
+#include "sdfg/debug_info.h"
 #include "sdfg/types/structure.h"
 #include "sdfg/types/utils.h"
 

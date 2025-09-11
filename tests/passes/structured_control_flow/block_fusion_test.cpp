@@ -2,11 +2,9 @@
 
 #include <gtest/gtest.h>
 
-#include <ostream>
-
-#include "sdfg/builder/sdfg_builder.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/library_nodes/math/math.h"
+#include "sdfg/debug_info.h"
 
 using namespace sdfg;
 
@@ -197,7 +195,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
     auto& input_node = builder.add_access(block_1, "input");
     auto& tmp_node_out = builder.add_access(block_1, "tmp");
     auto& relu_node = static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(
-        block_1, DebugInfo(), std::vector<symbolic::Expression>{symbolic::integer(10), symbolic::integer(20)}
+        block_1, DebugInfoRegion(), std::vector<symbolic::Expression>{symbolic::integer(10), symbolic::integer(20)}
     ));
 
     builder.add_computational_memlet(
@@ -207,7 +205,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
         "X",
         {symbolic::integer(0), symbolic::integer(0)},
         array_desc_2,
-        block_1.debug_info()
+        builder.debug_info().get_region(block_1.debug_info().indices())
     );
     builder.add_computational_memlet(
         block_1,
@@ -216,7 +214,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
         tmp_node_out,
         {symbolic::integer(0), symbolic::integer(0)},
         array_desc_2,
-        block_1.debug_info()
+        builder.debug_info().get_region(block_1.debug_info().indices())
     );
 
     auto& block_2 = builder.add_block(builder.subject().root());
@@ -224,7 +222,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
     auto& tmp_node_in = builder.add_access(block_2, "tmp");
     auto& output_node = builder.add_access(block_2, "output");
     auto& relu_node_2 = static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(
-        block_2, DebugInfo(), std::vector<symbolic::Expression>{symbolic::integer(10), symbolic::integer(20)}
+        block_2, DebugInfoRegion(), std::vector<symbolic::Expression>{symbolic::integer(10), symbolic::integer(20)}
     ));
     builder.add_computational_memlet(
         block_2,
@@ -233,7 +231,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
         "X",
         {symbolic::integer(0), symbolic::integer(0)},
         array_desc_2,
-        block_2.debug_info()
+        builder.debug_info().get_region(block_2.debug_info().indices())
     );
     builder.add_computational_memlet(
         block_2,
@@ -242,7 +240,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
         output_node,
         {symbolic::integer(0), symbolic::integer(0)},
         array_desc_2,
-        block_2.debug_info()
+        builder.debug_info().get_region(block_2.debug_info().indices())
     );
 
     auto sdfg = builder.move();

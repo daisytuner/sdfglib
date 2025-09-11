@@ -157,20 +157,23 @@ void BlockFusion::apply(
                 // Connect by replacement
                 node_mapping[access_node] = connectors[access_node];
             } else {
+                auto& debug_info = builder_.debug_info().get_region(access_node->debug_info().indices());
                 if (auto const_node = dynamic_cast<data_flow::ConstantNode*>(access_node)) {
                     // Add new
                     node_mapping[const_node] =
-                        &builder_
-                             .add_constant(first_block, const_node->data(), const_node->type(), const_node->debug_info());
+                        &builder_.add_constant(first_block, const_node->data(), const_node->type(), debug_info);
                 } else {
                     // Add new
-                    node_mapping[access_node] =
-                        &builder_.add_access(first_block, access_node->data(), access_node->debug_info());
+                    node_mapping[access_node] = &builder_.add_access(first_block, access_node->data(), debug_info);
                 }
             }
         } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(&node)) {
             node_mapping[tasklet] = &builder_.add_tasklet(
-                first_block, tasklet->code(), tasklet->output(), tasklet->inputs(), tasklet->debug_info()
+                first_block,
+                tasklet->code(),
+                tasklet->output(),
+                tasklet->inputs(),
+                builder_.debug_info().get_region(tasklet->debug_info().indices())
             );
         } else if (auto library_node = dynamic_cast<data_flow::LibraryNode*>(&node)) {
             node_mapping[library_node] = &builder_.copy_library_node(first_block, *library_node);
@@ -192,7 +195,7 @@ void BlockFusion::apply(
             edge.dst_conn(),
             edge.subset(),
             edge.base_type(),
-            edge.debug_info()
+            builder_.debug_info().get_region(edge.debug_info().indices())
         );
     }
 };

@@ -64,7 +64,7 @@ TEST(StructuredSDFGDeepCopy, Block_WithLibraryNodebarrier_local) {
     auto& root_source = sdfg_source.root();
 
     auto& block = builder_source.add_block(root_source);
-    auto& barrier = builder_source.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfo());
+    auto& barrier = builder_source.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfoRegion());
 
     builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();

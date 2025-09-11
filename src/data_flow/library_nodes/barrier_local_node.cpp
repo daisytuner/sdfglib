@@ -7,8 +7,9 @@
 namespace sdfg {
 namespace data_flow {
 
-BarrierLocalNode::
-    BarrierLocalNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent)
+BarrierLocalNode::BarrierLocalNode(
+    size_t element_id, const DebugInfoRegion& debug_info, const graph::Vertex vertex, DataFlowGraph& parent
+)
     : LibraryNode(
           element_id, debug_info, vertex, parent, LibraryNodeType_BarrierLocal, {}, {}, true, ImplementationType_NONE
       ) {
@@ -46,7 +47,7 @@ data_flow::LibraryNode& BarrierLocalNodeSerializer::deserialize(
     if (code != data_flow::LibraryNodeType_BarrierLocal.value()) {
         throw std::runtime_error("Invalid library node code");
     }
-    return builder.add_library_node<data_flow::BarrierLocalNode>(parent, DebugInfo());
+    return builder.add_library_node<data_flow::BarrierLocalNode>(parent, DebugInfoRegion());
 };
 
 void BarrierLocalNodeDispatcher::dispatch(

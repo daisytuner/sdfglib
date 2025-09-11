@@ -3,7 +3,7 @@
 namespace sdfg {
 namespace structured_control_flow {
 
-Return::Return(size_t element_id, const DebugInfo& debug_info, const std::string& data, bool unreachable)
+Return::Return(size_t element_id, const DebugInfoRegion& debug_info, const std::string& data, bool unreachable)
     : ControlFlowNode(element_id, debug_info), data_(data), unreachable_(unreachable) {}
 
 bool Return::has_data() const { return !data_.empty(); }

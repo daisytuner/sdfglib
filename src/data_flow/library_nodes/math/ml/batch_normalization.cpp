@@ -10,7 +10,7 @@ namespace ml {
 
 BatchNormalizationNode::BatchNormalizationNode(
     size_t element_id,
-    const DebugInfo &debug_info,
+    const DebugInfoRegion &debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph &parent,
     const std::vector<symbolic::Expression> &shape,
@@ -92,7 +92,9 @@ bool BatchNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, ana
     std::string output_name = static_cast<const data_flow::AccessNode &>(oedge_output->dst()).data();
 
     // Create new sequence before
-    auto &new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
+    auto &new_sequence = builder.add_sequence_before(
+        parent, block, transition.assignments(), builder.debug_info().get_region(block.debug_info().indices())
+    );
     structured_control_flow::Sequence *last_scope = &new_sequence;
 
     std::vector<symbolic::Expression> loop_syms;
@@ -112,7 +114,7 @@ bool BatchNormalizationNode::expand(builder::StructuredSDFGBuilder &builder, ana
             update,
             structured_control_flow::ScheduleType_Sequential::create(),
             {},
-            block.debug_info()
+            builder.subject().debug_info().get_region(block.debug_info().indices())
         );
         last_scope = &last_map->root();
         loop_syms.push_back(indvar);
@@ -232,7 +234,7 @@ data_flow::LibraryNode &BatchNormalizationNodeSerializer::deserialize(
     }
 
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
 
     std::vector<symbolic::Expression> shape;
     for (const auto &dim : j["shape"]) {

@@ -17,7 +17,7 @@ private:
     std::string data_;
     bool unreachable_;
 
-    Return(size_t element_id, const DebugInfo& debug_info, const std::string& data, bool unreachable);
+    Return(size_t element_id, const DebugInfoRegion& debug_info, const std::string& data, bool unreachable);
 
 public:
     Return(const Return& Return) = delete;

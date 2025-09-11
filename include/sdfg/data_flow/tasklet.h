@@ -588,7 +588,7 @@ private:
 
     Tasklet(
         size_t element_id,
-        const DebugInfo& debug_info,
+        const DebugInfoRegion& debug_info_region,
         const graph::Vertex vertex,
         DataFlowGraph& parent,
         const TaskletCode code,

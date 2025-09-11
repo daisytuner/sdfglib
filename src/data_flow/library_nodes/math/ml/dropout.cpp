@@ -10,7 +10,7 @@ namespace math {
 namespace ml {
 
 DropoutNode::DropoutNode(
-    size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
+    size_t element_id, const DebugInfoRegion& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
 )
     : MathNode(
           element_id,
@@ -59,7 +59,9 @@ bool DropoutNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Anal
     }
 
     // Add new graph after the current block
-    auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
+    auto& new_sequence = builder.add_sequence_before(
+        parent, block, transition.assignments(), builder.debug_info().get_region(block.debug_info().indices())
+    );
 
     // Add maps
     auto& begin_subsets_out = oedge_output->begin_subset();
@@ -86,7 +88,7 @@ bool DropoutNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Anal
             update,
             structured_control_flow::ScheduleType_Sequential::create(),
             {},
-            block.debug_info()
+            builder.debug_info().get_region(block.debug_info().indices())
         );
         last_scope = &last_map->root();
 
@@ -95,16 +97,33 @@ bool DropoutNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Anal
 
     // output = data, mask = 1
     {
-        auto& code_block = builder.add_block(*last_scope, {}, block.debug_info());
-        auto& input_node_new = builder.add_access(code_block, input_node.data(), input_node.debug_info());
-        auto& output_node_output_new =
-            builder.add_access(code_block, output_node_output.data(), output_node_output.debug_info());
-        auto& output_node_mask_new =
-            builder.add_access(code_block, output_node_mask.data(), output_node_mask.debug_info());
+        auto& code_block =
+            builder.add_block(*last_scope, {}, builder.debug_info().get_region(block.debug_info().indices()));
+        auto& input_node_new = builder.add_access(
+            code_block, input_node.data(), builder.debug_info().get_region(input_node.debug_info().indices())
+        );
+        auto& output_node_output_new = builder.add_access(
+            code_block,
+            output_node_output.data(),
+            builder.debug_info().get_region(output_node_output.debug_info().indices())
+        );
+        auto& output_node_mask_new = builder.add_access(
+            code_block,
+            output_node_mask.data(),
+            builder.debug_info().get_region(output_node_mask.debug_info().indices())
+        );
 
-        auto& tasklet_output = builder.add_tasklet(code_block, data_flow::assign, "_out", {"_in"}, block.debug_info());
+        auto& tasklet_output = builder.add_tasklet(
+            code_block, data_flow::assign, "_out", {"_in"}, builder.debug_info().get_region(block.debug_info().indices())
+        );
         builder.add_computational_memlet(
-            code_block, input_node_new, tasklet_output, "_in", new_subset, iedge.base_type(), block.debug_info()
+            code_block,
+            input_node_new,
+            tasklet_output,
+            "_in",
+            new_subset,
+            iedge.base_type(),
+            builder.debug_info().get_region(block.debug_info().indices())
         );
         builder.add_computational_memlet(
             code_block,
@@ -113,10 +132,12 @@ bool DropoutNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Anal
             output_node_output_new,
             new_subset,
             oedge_output->base_type(),
-            block.debug_info()
+            builder.debug_info().get_region(block.debug_info().indices())
         );
 
-        auto& tasklet_mask = builder.add_tasklet(code_block, data_flow::assign, "_out", {"1"}, block.debug_info());
+        auto& tasklet_mask = builder.add_tasklet(
+            code_block, data_flow::assign, "_out", {"1"}, builder.debug_info().get_region(block.debug_info().indices())
+        );
         builder.add_computational_memlet(
             code_block,
             tasklet_mask,
@@ -124,7 +145,7 @@ bool DropoutNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Anal
             output_node_mask_new,
             new_subset,
             oedge_mask->base_type(),
-            block.debug_info()
+            builder.debug_info().get_region(block.debug_info().indices())
         );
     }
 

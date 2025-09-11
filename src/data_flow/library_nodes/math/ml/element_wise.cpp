@@ -11,7 +11,7 @@ namespace ml {
 
 ElementWiseUnaryNode::ElementWiseUnaryNode(
     size_t element_id,
-    const DebugInfo& debug_info,
+    const DebugInfoRegion& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     const data_flow::LibraryNodeCode& code,
@@ -65,7 +65,9 @@ bool ElementWiseUnaryNode::expand(builder::StructuredSDFGBuilder& builder, analy
     }
 
     // Add new graph after the current block
-    auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
+    auto& new_sequence = builder.add_sequence_before(
+        parent, block, transition.assignments(), builder.debug_info().get_region(block.debug_info().indices())
+    );
 
     // Add maps
     data_flow::Subset new_subset;
@@ -87,7 +89,7 @@ bool ElementWiseUnaryNode::expand(builder::StructuredSDFGBuilder& builder, analy
             update,
             structured_control_flow::ScheduleType_Sequential::create(),
             {},
-            block.debug_info()
+            builder.debug_info().get_region(block.debug_info().indices())
         );
         last_scope = &last_map->root();
 
@@ -121,7 +123,7 @@ bool ElementWiseUnaryNode::expand(builder::StructuredSDFGBuilder& builder, analy
 
 ElementWiseBinaryNode::ElementWiseBinaryNode(
     size_t element_id,
-    const DebugInfo& debug_info,
+    const DebugInfoRegion& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     const data_flow::LibraryNodeCode& code,
@@ -181,7 +183,9 @@ bool ElementWiseBinaryNode::expand(builder::StructuredSDFGBuilder& builder, anal
     }
 
     // Add new graph after the current block
-    auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
+    auto& new_sequence = builder.add_sequence_before(
+        parent, block, transition.assignments(), builder.debug_info().get_region(block.debug_info().indices())
+    );
 
     // Add maps
     data_flow::Subset new_subset;
@@ -203,7 +207,7 @@ bool ElementWiseBinaryNode::expand(builder::StructuredSDFGBuilder& builder, anal
             update,
             structured_control_flow::ScheduleType_Sequential::create(),
             {},
-            block.debug_info()
+            builder.debug_info().get_region(block.debug_info().indices())
         );
         last_scope = &last_map->root();
 

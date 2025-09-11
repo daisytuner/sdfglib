@@ -2,7 +2,6 @@
 
 #include "sdfg/data_flow/library_nodes/math/math_node.h"
 
-#include "sdfg/codegen/dispatchers/block_dispatcher.h"
 #include "sdfg/serializer/json_serializer.h"
 
 namespace sdfg {
@@ -17,7 +16,7 @@ protected:
 public:
     ElementWiseUnaryNode(
         size_t element_id,
-        const DebugInfo& debug_info,
+        const DebugInfoRegion& debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph& parent,
         const data_flow::LibraryNodeCode& code,
@@ -90,7 +89,7 @@ public:
 
         // Extract debug info using JSONSerializer
         sdfg::serializer::JSONSerializer serializer;
-        DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+        DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
 
         auto& node = static_cast<ElementWiseUnaryNode&>(builder.add_library_node<T>(parent, debug_info, shape));
         node.set_attributes(attributes);
@@ -107,7 +106,7 @@ protected:
 public:
     ElementWiseBinaryNode(
         size_t element_id,
-        const DebugInfo& debug_info,
+        const DebugInfoRegion& debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph& parent,
         const data_flow::LibraryNodeCode& code,
@@ -182,7 +181,7 @@ public:
 
         // Extract debug info using JSONSerializer
         sdfg::serializer::JSONSerializer serializer;
-        DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+        DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
 
         auto& node = static_cast<ElementWiseBinaryNode&>(builder.add_library_node<T>(parent, debug_info, shape));
         node.set_attributes(attributes);

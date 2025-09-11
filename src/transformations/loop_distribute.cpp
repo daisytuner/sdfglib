@@ -96,7 +96,15 @@ void LoopDistribute::apply(builder::StructuredSDFGBuilder& builder, analysis::An
         schedule_type = map_stmt->schedule_type();
     }
     auto& new_map = builder.add_map_before(
-        *parent, this->loop_, indvar, condition, init, update, schedule_type, {}, this->loop_.debug_info()
+        *parent,
+        this->loop_,
+        indvar,
+        condition,
+        init,
+        update,
+        schedule_type,
+        {},
+        builder.debug_info().get_region(this->loop_.debug_info().indices())
     );
     builder.move_child(this->loop_.root(), 0, new_map.root());
 

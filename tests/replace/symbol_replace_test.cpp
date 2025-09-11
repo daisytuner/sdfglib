@@ -90,7 +90,7 @@ TEST(SymbolReplaceTest, LibraryNodeTest) {
                                           {write_expr, write_expr2});
 
     auto& library_node =
-        builder.add_library_node(block, DebugInfo());
+        builder.add_library_node(block);
 
     library_node.replace(symbolic::symbol("scalar_1"), symbolic::symbol("scalar_42"));
 

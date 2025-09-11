@@ -5,7 +5,7 @@ namespace data_flow {
 
 MetadataNode::MetadataNode(
     size_t element_id,
-    const DebugInfo& debug_info,
+    const DebugInfoRegion& debug_info,
     const graph::Vertex vertex,
     DataFlowGraph& parent,
     const std::vector<std::string>& outputs,
@@ -66,7 +66,7 @@ LibraryNode& MetadataNodeSerializer::deserialize(
 
     // Extract debug info using JSONSerializer
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
 
     // Extract properties
     auto outputs = j.at("outputs").get<std::vector<std::string>>();

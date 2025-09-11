@@ -186,7 +186,10 @@ bool SymbolEvolution::eliminate_symbols(
         // Apply by inserting redefinition before the loop body
         auto& old_first_block = loop.root().at(0).first;
         builder.add_block_before(
-            loop.root(), old_first_block, {{symbolic::symbol(sym), evolution}}, old_first_block.debug_info()
+            loop.root(),
+            old_first_block,
+            {{symbolic::symbol(sym), evolution}},
+            builder.debug_info().get_region(old_first_block.debug_info().indices())
         );
         update_transition.assignments().erase(symbolic::symbol(sym));
         transition.assignments().insert({symbolic::symbol(sym), update_sym});

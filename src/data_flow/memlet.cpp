@@ -11,7 +11,7 @@ namespace data_flow {
 
 Memlet::Memlet(
     size_t element_id,
-    const DebugInfo& debug_info,
+    const DebugInfoRegion& debug_info,
     const graph::Edge& edge,
     DataFlowGraph& parent,
     DataFlowNode& src,

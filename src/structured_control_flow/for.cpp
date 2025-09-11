@@ -8,7 +8,7 @@ namespace structured_control_flow {
 
 For::
     For(size_t element_id,
-        const DebugInfo& debug_info,
+        const DebugInfoRegion& debug_info,
         symbolic::Symbol indvar,
         symbolic::Expression init,
         symbolic::Expression update,

@@ -15,7 +15,7 @@ class ReLUNode : public ElementWiseUnaryNode {
 public:
     ReLUNode(
         size_t element_id,
-        const DebugInfo& debug_info,
+        const DebugInfoRegion& debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph& parent,
         const std::vector<symbolic::Expression>& shape
