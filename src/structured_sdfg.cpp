@@ -1,9 +1,6 @@
 #include "sdfg/structured_sdfg.h"
 
-#include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/data_flow/access_node.h"
-#include "sdfg/data_flow/tasklet.h"
-#include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
+#include "sdfg/debug_info.h"
 #include "sdfg/element.h"
 
 #include "sdfg/serializer/json_serializer.h"
@@ -12,7 +9,8 @@ namespace sdfg {
 
 StructuredSDFG::StructuredSDFG(const std::string& name, FunctionType type) : Function(name, type) {
     this->root_ = std::unique_ptr<
-        structured_control_flow::Sequence>(new structured_control_flow::Sequence(this->element_counter_, DebugInfo()));
+        structured_control_flow::Sequence>(new structured_control_flow::Sequence(this->element_counter_, DebugInfoRegion())
+    );
 };
 
 const structured_control_flow::Sequence& StructuredSDFG::root() const { return *this->root_; };

@@ -6,6 +6,7 @@
 
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
+#include "sdfg/debug_info.h"
 #include "sdfg/element.h"
 #include "sdfg/serializer/json_serializer.h"
 #include "sdfg/structured_control_flow/block.h"
@@ -1751,7 +1752,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
     auto& root = builder.subject().root();
 
     auto& block = builder.add_block(root);
-    auto& lib_node = builder.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfo());
+    auto& lib_node = builder.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfoRegion());
 
     // Get the library node serializer
     auto lib_node_serializer_fn = serializer::LibraryNodeSerializerRegistry::instance()
@@ -1773,6 +1774,196 @@ TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
 
     EXPECT_TRUE(dynamic_cast<data_flow::BarrierLocalNode*>(&lib_node_new));
     auto barrier_local_node = dynamic_cast<data_flow::BarrierLocalNode*>(&lib_node_new);
+}
+
+TEST(JSONSerializerTest, SerializeDeserialize_DebugLoc) {
+    nlohmann::json j;
+    DebugLoc debug_loc("test_file.cpp", "test_function", 42, 1, true);
+    sdfg::serializer::JSONSerializer serializer;
+    serializer.debug_loc_to_json(j, debug_loc);
+
+    DebugLoc des_debug_loc = serializer.json_to_debug_loc(j);
+
+    EXPECT_TRUE(des_debug_loc.has);
+    EXPECT_EQ(des_debug_loc.filename, "test_file.cpp");
+    EXPECT_EQ(des_debug_loc.function, "test_function");
+    EXPECT_EQ(des_debug_loc.line, 42);
+    EXPECT_EQ(des_debug_loc.column, 1);
+
+    EXPECT_EQ(
+        j.dump(2),
+        "{\n  \"column\": 1,\n  \"filename\": \"test_file.cpp\",\n  \"function\": \"test_function\",\n  \"has\": "
+        "true,\n  \"line\": 42\n}"
+    );
+}
+
+TEST(JSONSerializerTest, SerializeDeserialize_DebugInfo) {
+    nlohmann::json j;
+    DebugInfo
+        debug_info_element({DebugLoc("file1.cpp", "func1", 10, 1, true), DebugLoc("file1.cpp", "func2", 20, 2, true)});
+
+    sdfg::serializer::JSONSerializer serializer;
+    serializer.debug_info_element_to_json(j, debug_info_element);
+
+    DebugInfo des_debug_info_element = serializer.json_to_debug_info_element(j);
+
+    EXPECT_EQ(des_debug_info_element.locations().size(), 2);
+
+    EXPECT_EQ(des_debug_info_element.locations()[0].filename, "file1.cpp");
+    EXPECT_EQ(des_debug_info_element.locations()[0].function, "func1");
+    EXPECT_EQ(des_debug_info_element.locations()[0].line, 10);
+    EXPECT_EQ(des_debug_info_element.locations()[0].column, 1);
+    EXPECT_TRUE(des_debug_info_element.locations()[0].has);
+
+    EXPECT_EQ(des_debug_info_element.locations()[1].filename, "file1.cpp");
+    EXPECT_EQ(des_debug_info_element.locations()[1].function, "func2");
+    EXPECT_EQ(des_debug_info_element.locations()[1].line, 20);
+    EXPECT_EQ(des_debug_info_element.locations()[1].column, 2);
+    EXPECT_TRUE(des_debug_info_element.locations()[1].has);
+
+    EXPECT_EQ(des_debug_info_element.filename(), "file1.cpp");
+    EXPECT_EQ(des_debug_info_element.function(), "func1");
+    EXPECT_EQ(des_debug_info_element.line(), 10);
+    EXPECT_EQ(des_debug_info_element.column(), 1);
+    EXPECT_TRUE(des_debug_info_element.has());
+
+    EXPECT_EQ(
+        j.dump(2),
+        "{\n  \"has\": true,\n  \"locations\": [\n    {\n      \"column\": 1,\n      \"filename\": \"file1.cpp\",\n    "
+        "  \"function\": \"func1\",\n      \"has\": true,\n      \"line\": 10\n    },\n    {\n      \"column\": 2,\n   "
+        "   \"filename\": \"file1.cpp\",\n      \"function\": \"func2\",\n      \"has\": true,\n      \"line\": 20\n   "
+        " }\n  ]\n}"
+    );
+}
+
+TEST(JSONSerializerTest, SerializeDeserialize_DebugInfoRegion_inner) {
+    nlohmann::json j;
+
+    DebugTable debug_info;
+    DebugInfo
+        debug_info_element({DebugLoc("file1.cpp", "func1", 10, 1, true), DebugLoc("file1.cpp", "func2", 20, 2, true)});
+    DebugInfo debug_info_element2({DebugLoc("file1.cpp", "func2", 30, 3, true)});
+
+    debug_info.add_element(debug_info_element);
+    debug_info.add_element(debug_info_element2);
+
+    DebugInfoRegion debug_info_region({0, 1}, debug_info.elements());
+
+    sdfg::serializer::JSONSerializer serializer;
+    serializer.debug_info_region_to_json(j, debug_info_region);
+
+    DebugInfoRegion des_debug_info_region = serializer.json_to_debug_info_region(j, debug_info);
+
+    EXPECT_EQ(des_debug_info_region.indices().size(), 2);
+
+
+    EXPECT_EQ(des_debug_info_region.filename(), "file1.cpp");
+    EXPECT_EQ(des_debug_info_region.function(), "func2");
+    EXPECT_EQ(des_debug_info_region.start_line(), 20);
+    EXPECT_EQ(des_debug_info_region.start_column(), 2);
+    EXPECT_EQ(des_debug_info_region.end_line(), 30);
+    EXPECT_EQ(des_debug_info_region.end_column(), 3);
+    EXPECT_TRUE(des_debug_info_region.has());
+
+    EXPECT_EQ(
+        j.dump(2),
+        "{\n  \"end_column\": 3,\n  \"end_line\": 30,\n  \"filename\": \"file1.cpp\",\n  \"function\": \"func2\",\n  "
+        "\"has\": true,\n  \"indices\": [\n    1,\n    0\n  ],\n  \"start_column\": 2,\n  \"start_line\": 20\n}"
+    );
+}
+
+TEST(JSONSerializerTest, SerializeDeserialize_DebugInfoRegion_outer) {
+    nlohmann::json j;
+    DebugInfo
+        debug_info_element({DebugLoc("file1.cpp", "func1", 10, 1, true), DebugLoc("file1.cpp", "func2", 20, 2, true)});
+    DebugInfo
+        debug_info_element2({DebugLoc("file1.cpp", "func1", 10, 1, true), DebugLoc("file1.cpp", "func2", 30, 3, true)});
+    DebugTable debug_info;
+
+    debug_info.add_element(debug_info_element);
+    debug_info.add_element(debug_info_element2);
+
+    DebugInfoRegion debug_info_region({0, 1}, debug_info.elements());
+
+    sdfg::serializer::JSONSerializer serializer;
+    serializer.debug_info_region_to_json(j, debug_info_region);
+
+    DebugInfoRegion des_debug_info_region = serializer.json_to_debug_info_region(j, debug_info);
+
+    EXPECT_EQ(des_debug_info_region.indices().size(), 2);
+
+    EXPECT_EQ(des_debug_info_region.filename(), "file1.cpp");
+    EXPECT_EQ(des_debug_info_region.function(), "func1");
+    EXPECT_EQ(des_debug_info_region.start_line(), 10);
+    EXPECT_EQ(des_debug_info_region.start_column(), 1);
+    EXPECT_EQ(des_debug_info_region.end_line(), 10);
+    EXPECT_EQ(des_debug_info_region.end_column(), 1);
+    EXPECT_TRUE(des_debug_info_region.has());
+
+    EXPECT_EQ(
+        j.dump(2),
+        "{\n  \"end_column\": 1,\n  \"end_line\": 10,\n  \"filename\": \"file1.cpp\",\n  \"function\": \"func1\",\n  "
+        "\"has\": true,\n  \"indices\": [\n    1,\n    0\n  ],\n  \"start_column\": 1,\n  \"start_line\": 10\n}"
+    );
+}
+
+TEST(JSONSerializerTest, SerializeDeserialize_DebugTable) {
+    nlohmann::json j;
+    DebugInfo
+        debug_info_element({DebugLoc("file1.cpp", "func1", 10, 1, true), DebugLoc("file1.cpp", "func2", 20, 2, true)});
+    DebugInfo
+        debug_info_element2({DebugLoc("file1.cpp", "func1", 10, 1, true), DebugLoc("file1.cpp", "func2", 30, 3, true)});
+    DebugTable debug_info;
+
+    debug_info.add_element(debug_info_element);
+    debug_info.add_element(debug_info_element2);
+
+
+    sdfg::serializer::JSONSerializer serializer;
+    serializer.debug_table_to_json(j, debug_info);
+
+    DebugTable des_debug_info = serializer.json_to_debug_table(j);
+
+    EXPECT_EQ(des_debug_info.elements().size(), 2);
+
+    EXPECT_EQ(des_debug_info.elements()[0].locations().size(), 2);
+    EXPECT_EQ(des_debug_info.elements()[0].locations()[0].filename, "file1.cpp");
+    EXPECT_EQ(des_debug_info.elements()[0].locations()[0].function, "func1");
+    EXPECT_EQ(des_debug_info.elements()[0].locations()[0].line, 10);
+    EXPECT_EQ(des_debug_info.elements()[0].locations()[0].column, 1);
+    EXPECT_TRUE(des_debug_info.elements()[0].locations()[0].has);
+
+    EXPECT_EQ(des_debug_info.elements()[0].locations()[1].filename, "file1.cpp");
+    EXPECT_EQ(des_debug_info.elements()[0].locations()[1].function, "func2");
+    EXPECT_EQ(des_debug_info.elements()[0].locations()[1].line, 20);
+    EXPECT_EQ(des_debug_info.elements()[0].locations()[1].column, 2);
+    EXPECT_TRUE(des_debug_info.elements()[0].locations()[1].has);
+
+    EXPECT_EQ(des_debug_info.elements()[1].locations().size(), 2);
+    EXPECT_EQ(des_debug_info.elements()[1].locations()[0].filename, "file1.cpp");
+    EXPECT_EQ(des_debug_info.elements()[1].locations()[0].function, "func1");
+    EXPECT_EQ(des_debug_info.elements()[1].locations()[0].line, 10);
+    EXPECT_EQ(des_debug_info.elements()[1].locations()[0].column, 1);
+    EXPECT_TRUE(des_debug_info.elements()[1].locations()[0].has);
+
+    EXPECT_EQ(des_debug_info.elements()[1].locations()[1].filename, "file1.cpp");
+    EXPECT_EQ(des_debug_info.elements()[1].locations()[1].function, "func2");
+    EXPECT_EQ(des_debug_info.elements()[1].locations()[1].line, 30);
+    EXPECT_EQ(des_debug_info.elements()[1].locations()[1].column, 3);
+    EXPECT_TRUE(des_debug_info.elements()[1].locations()[1].has);
+
+    EXPECT_EQ(
+        j.dump(2),
+        "{\n  \"elements\": [\n    {\n      \"has\": true,\n      \"locations\": [\n        {\n          "
+        "\"column\": 1,\n          \"filename\": \"file1.cpp\",\n          \"function\": \"func1\",\n          "
+        "\"has\": true,\n          \"line\": 10\n        },\n        {\n          \"column\": 2,\n          "
+        "\"filename\": \"file1.cpp\",\n          \"function\": \"func2\",\n          \"has\": true,\n          "
+        "\"line\": 20\n        }\n      ]\n    },\n    {\n      \"has\": true,\n      \"locations\": [\n        {\n    "
+        "      \"column\": 1,\n          \"filename\": \"file1.cpp\",\n          \"function\": \"func1\",\n          "
+        "\"has\": true,\n          \"line\": 10\n        },\n        {\n          \"column\": 3,\n          "
+        "\"filename\": \"file1.cpp\",\n          \"function\": \"func2\",\n          \"has\": true,\n          "
+        "\"line\": 30\n        }\n      ]\n    }\n  ]\n}"
+    );
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize_ScheduleType) {

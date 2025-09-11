@@ -53,7 +53,7 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
             outer_update,
             map->schedule_type(),
             transition.assignments(),
-            loop_.debug_info()
+            builder.debug_info().get_region(loop_.debug_info().indices())
         );
     } else {
         outer_loop = &builder.add_for_before(
@@ -64,7 +64,7 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
             loop_.init(),
             outer_update,
             transition.assignments(),
-            loop_.debug_info()
+            builder.debug_info().get_region(loop_.debug_info().indices())
         );
     }
 

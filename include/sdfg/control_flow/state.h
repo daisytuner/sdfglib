@@ -2,11 +2,11 @@
 
 #include <boost/lexical_cast.hpp>
 #include <nlohmann/json.hpp>
-#include <string>
 
 #include "sdfg/data_flow/data_flow_graph.h"
 #include "sdfg/element.h"
 #include "sdfg/graph/graph.h"
+#include "sdfg/types/type.h"
 
 using json = nlohmann::json;
 
@@ -26,7 +26,7 @@ private:
     const graph::Vertex vertex_;
     std::unique_ptr<data_flow::DataFlowGraph> dataflow_;
 
-    State(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex);
+    State(size_t element_id, const DebugInfoRegion& debug_info_region, const graph::Vertex vertex);
 
 public:
     // Remark: Exclusive resource

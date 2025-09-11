@@ -8,6 +8,7 @@
 #include "sdfg/data_flow/library_nodes/math/ml/maxpool.h"
 
 #include "sdfg/data_flow/library_nodes/math/blas/gemm.h"
+#include "sdfg/debug_info.h"
 #include "sdfg/visualizer/dot_visualizer.h"
 
 using namespace sdfg;
@@ -28,8 +29,8 @@ TEST(MathTest, ReLU) {
 
     auto& input_node = builder.add_access(block, "input");
     auto& output_node = builder.add_access(block, "output");
-    auto& relu_node = static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block, DebugInfo())
-    );
+    auto& relu_node =
+        static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block, DebugInfoRegion()));
 
     builder.add_computational_memlet(
         block,
@@ -39,7 +40,7 @@ TEST(MathTest, ReLU) {
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
-        block.debug_info()
+        builder.debug_info().get_region(block.debug_info().indices())
     );
     builder.add_computational_memlet(
         block,
@@ -49,7 +50,7 @@ TEST(MathTest, ReLU) {
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
-        block.debug_info()
+        builder.debug_info().get_region(block.debug_info().indices())
     );
 
     EXPECT_EQ(block.dataflow().nodes().size(), 3);
@@ -110,7 +111,7 @@ TEST(MathTest, Gemm) {
     auto& output_node = builder.add_access(block, c_var_name);
     auto& gemm_node = static_cast<math::blas::GEMMNode&>(builder.add_library_node<math::blas::GEMMNode>(
         block,
-        DebugInfo(),
+        DebugInfoRegion(),
         data_flow::ImplementationType_NONE,
         math::blas::BLAS_Precision::s,
         math::blas::BLAS_Layout::RowMajor,
@@ -271,9 +272,9 @@ TEST(MathTest, Conv_2D) {
     std::vector<size_t> pads = {0, 0, 0, 0};
     std::vector<size_t> strides = {1, 1};
 
-    auto& conv_node = static_cast<
-        math::ml::ConvNode&>(builder.add_library_node<
-                             math::ml::ConvNode>(block, DebugInfo(), has_bias, dilations, kernel_shape, pads, strides));
+    auto& conv_node = static_cast<math::ml::ConvNode&>(builder.add_library_node<math::ml::ConvNode>(
+        block, DebugInfoRegion(), has_bias, dilations, kernel_shape, pads, strides
+    ));
 
     // Memlet subsets
     data_flow::Subset x_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
@@ -286,9 +287,36 @@ TEST(MathTest, Conv_2D) {
     data_flow::Subset y_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(1), symbolic::integer(1)};
 
     // Connect memlets
-    builder.add_computational_memlet(block, X_acc, conv_node, "X", x_begin, x_end, x_desc, block.debug_info());
-    builder.add_computational_memlet(block, W_acc, conv_node, "W", w_begin, w_end, w_desc, block.debug_info());
-    builder.add_computational_memlet(block, conv_node, "Y", Y_acc, y_begin, y_end, y_desc, block.debug_info());
+    builder.add_computational_memlet(
+        block,
+        X_acc,
+        conv_node,
+        "X",
+        x_begin,
+        x_end,
+        x_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
+    builder.add_computational_memlet(
+        block,
+        W_acc,
+        conv_node,
+        "W",
+        w_begin,
+        w_end,
+        w_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
+    builder.add_computational_memlet(
+        block,
+        conv_node,
+        "Y",
+        Y_acc,
+        y_begin,
+        y_end,
+        y_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
 
     EXPECT_EQ(block.dataflow().nodes().size(), 4);
 
@@ -339,9 +367,9 @@ TEST(MathTest, Conv_2D_Strides) {
     std::vector<size_t> pads = {0, 0, 0, 0};
     std::vector<size_t> strides = {2, 2};
 
-    auto& conv_node = static_cast<
-        math::ml::ConvNode&>(builder.add_library_node<
-                             math::ml::ConvNode>(block, DebugInfo(), has_bias, dilations, kernel_shape, pads, strides));
+    auto& conv_node = static_cast<math::ml::ConvNode&>(builder.add_library_node<math::ml::ConvNode>(
+        block, DebugInfoRegion(), has_bias, dilations, kernel_shape, pads, strides
+    ));
 
     // Memlet subsets
     data_flow::Subset x_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
@@ -354,9 +382,36 @@ TEST(MathTest, Conv_2D_Strides) {
     data_flow::Subset y_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(1), symbolic::integer(1)};
 
     // Connect memlets
-    builder.add_computational_memlet(block, X_acc, conv_node, "X", x_begin, x_end, x_desc, block.debug_info());
-    builder.add_computational_memlet(block, W_acc, conv_node, "W", w_begin, w_end, w_desc, block.debug_info());
-    builder.add_computational_memlet(block, conv_node, "Y", Y_acc, y_begin, y_end, y_desc, block.debug_info());
+    builder.add_computational_memlet(
+        block,
+        X_acc,
+        conv_node,
+        "X",
+        x_begin,
+        x_end,
+        x_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
+    builder.add_computational_memlet(
+        block,
+        W_acc,
+        conv_node,
+        "W",
+        w_begin,
+        w_end,
+        w_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
+    builder.add_computational_memlet(
+        block,
+        conv_node,
+        "Y",
+        Y_acc,
+        y_begin,
+        y_end,
+        y_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
 
     EXPECT_EQ(block.dataflow().nodes().size(), 4);
 
@@ -399,7 +454,8 @@ TEST(MathTest, MaxPool_2D) {
 
     auto& pool_node =
         static_cast<math::ml::MaxPoolNode&>(builder.add_library_node<
-                                            math::ml::MaxPoolNode>(block, DebugInfo(), kernel_shape, pads, strides));
+                                            math::ml::MaxPoolNode>(block, DebugInfoRegion(), kernel_shape, pads, strides)
+        );
 
     // Subsets
     data_flow::Subset x_begin{symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)};
@@ -409,8 +465,26 @@ TEST(MathTest, MaxPool_2D) {
     data_flow::Subset y_end{symbolic::integer(0), symbolic::integer(0), symbolic::integer(1), symbolic::integer(1)};
 
     // Memlets
-    builder.add_computational_memlet(block, X_acc, pool_node, "X", x_begin, x_end, x_desc, block.debug_info());
-    builder.add_computational_memlet(block, pool_node, "Y", Y_acc, y_begin, y_end, y_desc, block.debug_info());
+    builder.add_computational_memlet(
+        block,
+        X_acc,
+        pool_node,
+        "X",
+        x_begin,
+        x_end,
+        x_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
+    builder.add_computational_memlet(
+        block,
+        pool_node,
+        "Y",
+        Y_acc,
+        y_begin,
+        y_end,
+        y_desc,
+        builder.debug_info().get_region(block.debug_info().indices())
+    );
 
     EXPECT_EQ(block.dataflow().nodes().size(), 3);
 
@@ -441,7 +515,7 @@ TEST(MathTest, Dot) {
     auto& c_node = builder.add_access(block, "c");
 
     auto& dot_node = static_cast<math::blas::DotNode&>(builder.add_library_node<math::blas::DotNode>(
-        block, DebugInfo(), math::blas::ImplementationType_BLAS, math::blas::BLAS_Precision::d, n, stride_a, stride_b
+        block, DebugInfoRegion(), math::blas::ImplementationType_BLAS, math::blas::BLAS_Precision::d, n, stride_a, stride_b
     ));
 
     builder.add_computational_memlet(
@@ -452,7 +526,7 @@ TEST(MathTest, Dot) {
         {symbolic::zero()},
         {symbolic::sub(n, symbolic::integer(1))},
         array_desc,
-        block.debug_info()
+        builder.debug_info().get_region(block.debug_info().indices())
     );
     builder.add_computational_memlet(
         block,
@@ -462,9 +536,11 @@ TEST(MathTest, Dot) {
         {symbolic::zero()},
         {symbolic::sub(n, symbolic::integer(1))},
         array_desc,
-        block.debug_info()
+        builder.debug_info().get_region(block.debug_info().indices())
     );
-    builder.add_computational_memlet(block, dot_node, "res", c_node, {}, {}, desc, block.debug_info());
+    builder.add_computational_memlet(
+        block, dot_node, "res", c_node, {}, {}, desc, builder.debug_info().get_region(block.debug_info().indices())
+    );
 
     EXPECT_EQ(block.dataflow().nodes().size(), 4);
 

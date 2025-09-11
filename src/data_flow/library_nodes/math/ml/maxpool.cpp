@@ -3,6 +3,7 @@
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/debug_info.h"
 
 namespace sdfg {
 namespace math {
@@ -11,7 +12,7 @@ namespace ml {
 /*************** Constructor ***************/
 MaxPoolNode::MaxPoolNode(
     size_t element_id,
-    const DebugInfo &debug_info,
+    const DebugInfoRegion &debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph &parent,
     std::vector<size_t> kernel_shape,
@@ -59,7 +60,9 @@ bool MaxPoolNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Anal
     std::string Y_name = static_cast<const data_flow::AccessNode &>(oedge_Y->dst()).data();
 
     // Create new sequence before
-    auto &new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
+    auto &new_sequence = builder.add_sequence_before(
+        parent, block, transition.assignments(), builder.debug_info().get_region(block.debug_info().indices())
+    );
     structured_control_flow::Sequence *last_scope = &new_sequence;
 
     // Create maps over output subset dims (parallel dims)
@@ -83,7 +86,7 @@ bool MaxPoolNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Anal
             update,
             structured_control_flow::ScheduleType_Sequential::create(),
             {},
-            block.debug_info()
+            builder.subject().debug_info().get_region(block.debug_info().indices())
         );
         last_scope = &last_map->root();
         out_subset.push_back(indvar);
@@ -100,7 +103,15 @@ bool MaxPoolNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Anal
         auto init = symbolic::integer(0);
         auto update = symbolic::add(indvar, symbolic::one());
         auto cond = symbolic::Lt(indvar, symbolic::integer(static_cast<int64_t>(kernel_shape_[d])));
-        last_for = &builder.add_for(*last_scope, indvar, cond, init, update, {}, block.debug_info());
+        last_for = &builder.add_for(
+            *last_scope,
+            indvar,
+            cond,
+            init,
+            update,
+            {},
+            builder.subject().debug_info().get_region(block.debug_info().indices())
+        );
         last_scope = &last_for->root();
         kernel_syms.push_back(indvar);
     }
@@ -118,10 +129,11 @@ bool MaxPoolNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Anal
     };
 
     // Create innermost block
-    auto &code_block = builder.add_block(*last_scope, {}, block.debug_info());
+    auto &code_block =
+        builder.add_block(*last_scope, {}, builder.subject().debug_info().get_region(block.debug_info().indices()));
 
     // Access nodes
-    const DebugInfo dbg = block.debug_info();
+    const DebugInfos dbg = builder.subject().debug_info().get_region(block.debug_info().indices());
     auto &X_acc = builder.add_access(code_block, X_name, dbg);
     auto &Y_acc_in = builder.add_access(code_block, Y_name, dbg);
     auto &Y_acc_out = builder.add_access(code_block, Y_name, dbg);
@@ -185,7 +197,7 @@ data_flow::LibraryNode &MaxPoolNodeSerializer::deserialize(
         throw std::runtime_error("Invalid library node code");
     }
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
 
     auto kernel_shape = j["kernel_shape"].get<std::vector<size_t>>();
     auto pads = j["pads"].get<std::vector<size_t>>();

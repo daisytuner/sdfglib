@@ -1,13 +1,8 @@
 #pragma once
 
 #include <cassert>
-#include <functional>
-#include <list>
 #include <memory>
-#include <ranges>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 
 #include "sdfg/element.h"
 #include "sdfg/function.h"
