@@ -449,12 +449,15 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
     assert(j["type"].is_string());
     assert(j.contains("element_counter"));
     assert(j["element_counter"].is_number_integer());
-    assert(j.contains("return_type"));
-    assert(j["return_type"].is_object());
+
+    std::unique_ptr<types::IType> return_type;
+    if (j.contains("return_type")) {
+        return_type = json_to_type(j["return_type"]);
+    } else {
+        return_type = std::make_unique<types::Scalar>(types::PrimitiveType::Void);
+    }
 
     FunctionType function_type = function_type_from_string(j["type"].get<std::string>());
-    auto return_type = json_to_type(j["return_type"]);
-
     builder::StructuredSDFGBuilder builder(j["name"], function_type, *return_type);
 
     size_t element_counter = j["element_counter"];
@@ -906,13 +909,21 @@ void JSONSerializer::json_to_return_node(
     assert(j.contains("type"));
     assert(j["type"].is_string());
     assert(j["type"] == "return");
-    assert(j.contains("data"));
-    assert(j["data"].is_string());
-    assert(j.contains("unreachable"));
-    assert(j["unreachable"].is_boolean());
 
-    std::string data = j["data"];
-    bool unreachable = j["unreachable"];
+    std::string data;
+    if (j.contains("data") && j["data"].is_string()) {
+        data = j["data"];
+    } else {
+        data = "";
+    }
+
+    bool unreachable = false;
+    if (j.contains("unreachable") && j["unreachable"].is_boolean()) {
+        unreachable = j["unreachable"];
+    } else {
+        unreachable = false;
+    }
+
     auto& node = builder.add_return(parent, data, unreachable, assignments, json_to_debug_info(j["debug_info"]));
     node.element_id_ = j["element_id"];
 }
