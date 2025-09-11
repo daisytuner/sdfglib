@@ -657,8 +657,13 @@ void JSONSerializer::json_to_dataflow(
 
             auto type = json_to_type(node["data_type"]);
 
-            auto& constant_node =
-                builder.add_constant(parent, node["data"], *type, json_to_debug_info(node["debug_info"]));
+            auto& constant_node = builder.add_constant(
+                parent,
+                node["data"],
+                *type,
+                builder.subject().debug_info().get_region(json_to_debug_info_region(node["debug_info"], *debug_info_)
+                                                              .indices())
+            );
             constant_node.element_id_ = node["element_id"];
             nodes_map.insert({node["element_id"], constant_node});
         } else {

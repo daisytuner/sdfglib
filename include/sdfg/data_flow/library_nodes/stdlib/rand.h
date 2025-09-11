@@ -12,7 +12,12 @@ inline data_flow::LibraryNodeCode LibraryNodeType_Rand("Rand");
 
 class RandNode : public data_flow::LibraryNode {
 public:
-    RandNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
+    RandNode(
+        size_t element_id,
+        const DebugInfoRegion& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent
+    );
 
     void validate(const Function& function) const override;
 

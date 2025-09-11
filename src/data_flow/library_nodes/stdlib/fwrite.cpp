@@ -5,7 +5,7 @@ namespace stdlib {
 
 FWriteNode::FWriteNode(
     size_t element_id,
-    const DebugInfo& debug_info,
+    const DebugInfoRegion& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     const symbolic::Expression& size,
@@ -75,7 +75,7 @@ data_flow::LibraryNode& FWriteNodeSerializer::deserialize(
     }
 
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
 
     SymEngine::Expression size(j.at("size"));
     SymEngine::Expression count(j.at("count"));

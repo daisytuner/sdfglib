@@ -5,7 +5,7 @@ namespace data_flow {
 
 CallNode::CallNode(
     size_t element_id,
-    const DebugInfo& debug_info,
+    const DebugInfoRegion& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     const std::string& function_name,
@@ -102,7 +102,7 @@ data_flow::LibraryNode& CallNodeSerializer::deserialize(
     }
 
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
 
     std::string function_name = j["function_name"].get<std::string>();
     auto outputs = j["outputs"].get<std::vector<std::string>>();

@@ -34,16 +34,10 @@ TEST(MathTest, ReLU) {
     ));
 
     builder.add_computational_memlet(
-        block, input_node, relu_node, "X", {symbolic::integer(0), symbolic::integer(0)}, array_desc_2, block.debug_info()
+        block, input_node, relu_node, "X", {symbolic::integer(0), symbolic::integer(0)}, array_desc_2
     );
     builder.add_computational_memlet(
-        block,
-        relu_node,
-        "Y",
-        output_node,
-        {symbolic::integer(0), symbolic::integer(0)},
-        array_desc_2,
-        builder.debug_info().get_region(block.debug_info().indices())
+        block, relu_node, "Y", output_node, {symbolic::integer(0), symbolic::integer(0)}, array_desc_2
     );
 
     EXPECT_EQ(block.dataflow().nodes().size(), 3);

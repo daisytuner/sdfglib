@@ -12,7 +12,12 @@ inline data_flow::LibraryNodeCode LibraryNodeType_Free("Free");
 
 class FreeNode : public data_flow::LibraryNode {
 public:
-    FreeNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
+    FreeNode(
+        size_t element_id,
+        const DebugInfoRegion& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent
+    );
 
     void validate(const Function& function) const override;
 

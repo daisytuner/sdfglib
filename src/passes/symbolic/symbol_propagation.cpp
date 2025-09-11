@@ -230,9 +230,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                     auto block = static_cast<structured_control_flow::Block*>(graph->get_parent());
 
                     // Replace with const node
-                    auto& const_node =
-                        builder
-                            .add_constant(*block, std::to_string(new_int->as_int()), type, read->element()->debug_info());
+                    auto& const_node = builder.add_constant(*block, std::to_string(new_int->as_int()), type);
 
                     std::unordered_set<data_flow::Memlet*> replace_edges;
                     for (auto& oedge : graph->out_edges(*access_node)) {
@@ -243,8 +241,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                             oedge.dst(),
                             oedge.dst_conn(),
                             oedge.subset(),
-                            oedge.base_type(),
-                            oedge.debug_info()
+                            oedge.base_type()
                         );
                         replace_edges.insert(&oedge);
                     }
@@ -256,8 +253,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                             const_node,
                             iedge.dst_conn(),
                             iedge.subset(),
-                            iedge.base_type(),
-                            iedge.debug_info()
+                            iedge.base_type()
                         );
                     }
 

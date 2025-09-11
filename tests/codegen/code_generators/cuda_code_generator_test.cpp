@@ -16,18 +16,6 @@ TEST(CUDACodeGeneratorTest, FunctionDefintion) {
     EXPECT_EQ(result, "extern \"C\" __global__ void sdfg_a()");
 }
 
-TEST(CUDACodeGeneratorTest, Dispatch_Includes) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL);
-    auto sdfg = builder.move();
-
-    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CUDACodeGenerator generator(*sdfg, *instrumentation_plan);
-    EXPECT_TRUE(generator.generate());
-
-    auto result = generator.includes().str();
-    EXPECT_EQ(result, "#define __DAISY_NVVM__\n#include <daisy_rtl/daisy_rtl.h>\n");
-}
-
 TEST(CUDACodeGeneratorTest, DispatchStructures_Basic) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL);
 

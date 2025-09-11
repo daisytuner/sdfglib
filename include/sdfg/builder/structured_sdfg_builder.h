@@ -333,7 +333,7 @@ public:
         structured_control_flow::Block& block,
         const std::string& data,
         const types::IType& type,
-        const DebugInfo& debug_info = DebugInfo()
+        const DebugInfos& debug_info_elements = {}
     );
 
     data_flow::Tasklet& add_tasklet(

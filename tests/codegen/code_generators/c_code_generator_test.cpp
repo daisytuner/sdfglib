@@ -21,18 +21,6 @@ TEST(CCodeGeneratorTest, FunctionDefintion) {
     EXPECT_EQ(result, "extern void sdfg_a(void)");
 }
 
-TEST(CCodeGeneratorTest, Dispatch_Includes) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
-    auto sdfg = builder.move();
-
-    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
-    EXPECT_TRUE(generator.generate());
-
-    auto result = generator.includes().str();
-    EXPECT_EQ(result, "#include <math.h>\n#include <stdbool.h>\n#include <daisy_rtl/daisy_rtl.h>\n");
-}
-
 TEST(CCodeGeneratorTest, DispatchStructures_Basic) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 

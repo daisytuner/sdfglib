@@ -217,11 +217,19 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
 
         // Case 1: Sink node
         if (out_degree == 0) {
-            this->add_block(scope, curr->dataflow(), {}, curr->debug_info());
+            this->add_block(
+                scope, curr->dataflow(), {}, structured_sdfg_->debug_info_.get_region(curr->debug_info().indices())
+            );
 
             auto return_state = dynamic_cast<const control_flow::ReturnState*>(curr);
             assert(return_state != nullptr);
-            this->add_return(scope, return_state->data(), return_state->unreachable(), {}, structured_sdfg_->debug_info_.get_region(curr->debug_info().indices());
+            this->add_return(
+                scope,
+                return_state->data(),
+                return_state->unreachable(),
+                {},
+                structured_sdfg_->debug_info_.get_region(curr->debug_info().indices())
+            );
             continue;
         }
 
@@ -1335,14 +1343,17 @@ data_flow::AccessNode& StructuredSDFGBuilder::
 };
 
 data_flow::ConstantNode& StructuredSDFGBuilder::add_constant(
-    structured_control_flow::Block& block, const std::string& data, const types::IType& type, const DebugInfo& debug_info
+    structured_control_flow::Block& block,
+    const std::string& data,
+    const types::IType& type,
+    const DebugInfos& debug_info_elements
 ) {
     auto vertex = boost::add_vertex(block.dataflow_->graph_);
     auto res = block.dataflow_->nodes_.insert(
         {vertex,
-         std::unique_ptr<data_flow::ConstantNode>(
-             new data_flow::ConstantNode(this->new_element_id(), debug_info, vertex, block.dataflow(), data, type)
-         )}
+         std::unique_ptr<data_flow::ConstantNode>(new data_flow::ConstantNode(
+             this->new_element_id(), fill_debug_info(debug_info_elements), vertex, block.dataflow(), data, type
+         ))}
     );
 
     return dynamic_cast<data_flow::ConstantNode&>(*(res.first->second));

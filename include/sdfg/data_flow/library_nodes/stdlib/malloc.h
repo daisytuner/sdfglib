@@ -17,7 +17,7 @@ private:
 public:
     MallocNode(
         size_t element_id,
-        const DebugInfo& debug_info,
+        const DebugInfoRegion& debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph& parent,
         const symbolic::Expression& size

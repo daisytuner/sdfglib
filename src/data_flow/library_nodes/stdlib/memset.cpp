@@ -5,7 +5,7 @@ namespace stdlib {
 
 MemsetNode::MemsetNode(
     size_t element_id,
-    const DebugInfo& debug_info,
+    const DebugInfoRegion& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     const symbolic::Expression& value,
@@ -73,9 +73,8 @@ data_flow::LibraryNode& MemsetNodeSerializer::deserialize(
         throw InvalidSDFGException("Invalid library node code");
     }
 
-    // Extract debug info using JSONSerializer
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
 
     // Extract properties
     SymEngine::Expression value(j.at("value"));

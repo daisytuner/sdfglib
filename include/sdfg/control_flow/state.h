@@ -26,6 +26,7 @@ private:
     const graph::Vertex vertex_;
     std::unique_ptr<data_flow::DataFlowGraph> dataflow_;
 
+protected:
     State(size_t element_id, const DebugInfoRegion& debug_info_region, const graph::Vertex vertex);
 
 public:
@@ -53,7 +54,7 @@ private:
 
     ReturnState(
         size_t element_id,
-        const DebugInfo& debug_info,
+        const DebugInfoRegion& debug_info,
         const graph::Vertex vertex,
         const std::string& data,
         bool unreachable

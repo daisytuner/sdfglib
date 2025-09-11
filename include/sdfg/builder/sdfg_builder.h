@@ -55,18 +55,17 @@ public:
     );
 
     control_flow::ReturnState&
-    add_return_state(const std::string& data, bool unreachable = false, , const DebugInfos& debug_info_elements = {});
+    add_return_state(const std::string& data, bool unreachable = false, const DebugInfos& debug_info_elements = {});
 
     control_flow::ReturnState& add_return_state_after(
         const control_flow::State& state,
         const std::string& data,
         bool unreachable = false,
-        ,
         const DebugInfos& debug_info_elements = {}
     );
 
     control_flow::InterstateEdge& add_edge(
-        const control_flow::State& src, const control_flow::State& dst, , const DebugInfos& debug_info_elements = {}
+        const control_flow::State& src, const control_flow::State& dst, const DebugInfos& debug_info_elements = {}
     );
 
     control_flow::InterstateEdge& add_edge(
@@ -111,7 +110,7 @@ public:
         control_flow::State& state,
         const std::string& data,
         const types::IType& type,
-        const DebugInfo& debug_info = DebugInfo()
+        const DebugInfos& debug_info_elements = {}
     );
 
     data_flow::Tasklet& add_tasklet(

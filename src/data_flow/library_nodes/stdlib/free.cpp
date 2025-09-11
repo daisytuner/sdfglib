@@ -4,7 +4,7 @@ namespace sdfg {
 namespace stdlib {
 
 FreeNode::FreeNode(
-    size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
+    size_t element_id, const DebugInfoRegion& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
 )
     : LibraryNode(
           element_id,
@@ -54,7 +54,7 @@ data_flow::LibraryNode& FreeNodeSerializer::deserialize(
     }
 
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
+    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
 
     return builder.add_library_node<FreeNode>(parent, debug_info);
 }

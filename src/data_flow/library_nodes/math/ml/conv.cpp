@@ -105,7 +105,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     std::string W_name = static_cast<const data_flow::AccessNode&>(iedge_W->src()).data();
     std::string Y_name = static_cast<const data_flow::AccessNode&>(oedge_Y->dst()).data();
 
-    auto& debug_info = builder.debug_info().get_region(block.debug_info().indices());
+    auto debug_info = builder.debug_info().get_region(block.debug_info().indices());
     auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), debug_info);
     structured_control_flow::Sequence* last_scope = &new_sequence;
 

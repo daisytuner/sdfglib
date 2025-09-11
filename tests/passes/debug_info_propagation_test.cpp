@@ -28,9 +28,9 @@ TEST(DebugTablePropagationTest, BlockPropagation_Node) {
     auto& node2_1 = builder.add_access(block1, "A");
     auto& tasklet_1 = builder.add_tasklet(
         block1,
-        data_flow::TaskletCode::fma,
+        data_flow::TaskletCode::assign,
         "_out",
-        {"2", "_in", "1"},
+        {"_in"},
         builder.debug_info().get_region(debug_info_region.indices())
     );
     builder.add_computational_memlet(block1, node1_1, tasklet_1, "_in", {symbolic::integer(0)});

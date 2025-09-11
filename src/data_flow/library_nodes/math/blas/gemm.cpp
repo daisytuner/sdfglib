@@ -154,7 +154,7 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 
 
     // Add new graph after the current block
-    auto& debug_info = builder.subject().debug_info().get_region(block.debug_info().indices());
+    auto debug_info = builder.subject().debug_info().get_region(block.debug_info().indices());
     auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), debug_info);
 
     // Add maps
@@ -200,11 +200,8 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 
 
     // Add code
-    auto& init_block = builder.add_block_before(
-        output_loop->root(), *last_map, {}, debug_info)
-    );
-    auto& sum_init =
-        builder.add_access(init_block, sum_var, debug_info));
+    auto& init_block = builder.add_block_before(output_loop->root(), *last_map, {}, debug_info);
+    auto& sum_init = builder.add_access(init_block, sum_var, debug_info);
 
     auto& zero_node = builder.add_constant(init_block, "0.0", alpha_edge->base_type(), debug_info);
     auto& init_tasklet = builder.add_tasklet(init_block, data_flow::assign, "_out", {"_in"}, debug_info);
@@ -253,11 +250,8 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         builder.subject().debug_info().get_region(oedge.debug_info().indices())
     );
 
-    auto& flush_block = builder.add_block_after(
-        output_loop->root(), *last_map, {}, debug_info)
-    );
-    auto& sum_final =
-        builder.add_access(flush_block, sum_var, debug_info));
+    auto& flush_block = builder.add_block_after(output_loop->root(), *last_map, {}, debug_info);
+    auto& sum_final = builder.add_access(flush_block, sum_var, debug_info);
     auto& input_node_c_new =
         builder.add_access(flush_block, C_in_var, builder.debug_info().get_region(input_node_c->debug_info().indices()));
     symbolic::Expression c_idx = symbolic::add(symbolic::mul(ldc(), new_subset[0]), new_subset[1]);

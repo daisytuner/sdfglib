@@ -122,13 +122,13 @@ control_flow::State& SDFGBuilder::
 };
 
 control_flow::ReturnState& SDFGBuilder::
-    add_return_state(const std::string& data, bool unreachable, const DebugInfo& debug_info) {
+    add_return_state(const std::string& data, bool unreachable, const DebugInfos& debug_info_elements) {
     auto vertex = boost::add_vertex(this->sdfg_->graph_);
     auto res = this->sdfg_->states_.insert(
         {vertex,
-         std::unique_ptr<control_flow::State>(
-             new control_flow::ReturnState(this->new_element_id(), debug_info, vertex, data, unreachable)
-         )}
+         std::unique_ptr<control_flow::State>(new control_flow::ReturnState(
+             this->new_element_id(), fill_debug_info(debug_info_elements), vertex, data, unreachable
+         ))}
     );
 
     assert(res.second);
@@ -138,9 +138,9 @@ control_flow::ReturnState& SDFGBuilder::
 };
 
 control_flow::ReturnState& SDFGBuilder::add_return_state_after(
-    const control_flow::State& state, const std::string& data, bool unreachable, const DebugInfo& debug_info
+    const control_flow::State& state, const std::string& data, bool unreachable, const DebugInfos& debug_info_elements
 ) {
-    auto& new_state = this->add_return_state(data, unreachable, debug_info);
+    auto& new_state = this->add_return_state(data, unreachable, debug_info_elements);
 
     std::vector<const control_flow::InterstateEdge*> to_redirect;
     for (auto& e : this->sdfg_->out_edges(state)) to_redirect.push_back(&e);
@@ -299,15 +299,15 @@ data_flow::AccessNode& SDFGBuilder::
 };
 
 data_flow::ConstantNode& SDFGBuilder::add_constant(
-    control_flow::State& state, const std::string& data, const types::IType& type, const DebugInfo& debug_info
+    control_flow::State& state, const std::string& data, const types::IType& type, const DebugInfos& debug_info_elements
 ) {
     auto& dataflow = state.dataflow();
     auto vertex = boost::add_vertex(dataflow.graph_);
     auto res = dataflow.nodes_.insert(
         {vertex,
-         std::unique_ptr<data_flow::ConstantNode>(
-             new data_flow::ConstantNode(this->new_element_id(), debug_info, vertex, dataflow, data, type)
-         )}
+         std::unique_ptr<data_flow::ConstantNode>(new data_flow::ConstantNode(
+             this->new_element_id(), fill_debug_info(debug_info_elements), vertex, dataflow, data, type
+         ))}
     );
 
     return static_cast<data_flow::ConstantNode&>(*(res.first->second));

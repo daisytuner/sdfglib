@@ -157,7 +157,7 @@ void BlockFusion::apply(
                 // Connect by replacement
                 node_mapping[access_node] = connectors[access_node];
             } else {
-                auto& debug_info = builder_.debug_info().get_region(access_node->debug_info().indices());
+                auto debug_info = builder_.debug_info().get_region(access_node->debug_info().indices());
                 if (auto const_node = dynamic_cast<data_flow::ConstantNode*>(access_node)) {
                     // Add new
                     node_mapping[const_node] =
