@@ -126,6 +126,15 @@ void CallNodeDispatcher::dispatch_code(
 ) {
     auto& node = static_cast<const CallNode&>(node_);
 
+    // Declare function
+    if (this->language_extension_.language() == "C") {
+        globals_stream << "extern ";
+    } else if (this->language_extension_.language() == "C++") {
+        globals_stream << "extern \"C\" ";
+    }
+    globals_stream << language_extension_.declaration(node.function_name(), node.function_type(this->function_)) << ";"
+                   << std::endl;
+
     if (!node.is_void(function_)) {
         stream << node.outputs().at(0) << " = ";
     }
