@@ -159,6 +159,7 @@ TEST(LoopAnalysisTest, Children_nested3) {
     auto children_j = loop_analysis.children(&loop_j);
     EXPECT_EQ(children_j.size(), 1);
     EXPECT_EQ(children_j.at(0), &loop_k);
+    manager.invalidate_all();
 }
 
 TEST(LoopAnalysisTest, Children_nested2) {
@@ -204,6 +205,7 @@ TEST(LoopAnalysisTest, Children_nested2) {
     }
     EXPECT_TRUE(found_j);
     EXPECT_TRUE(found_k);
+    manager.invalidate_all();
 }
 
 TEST(LoopAnalysisTest, LoopTreePath_single) {
@@ -242,6 +244,7 @@ TEST(LoopAnalysisTest, LoopTreePath_single) {
     EXPECT_EQ(path.back().at(0), &loop_i);
     EXPECT_EQ(path.back().at(1), &loop_j);
     EXPECT_EQ(path.back().at(2), &loop_k);
+    manager.invalidate_all();
 }
 
 TEST(LoopAnalysisTest, LoopTreePath_split) {
@@ -286,6 +289,7 @@ TEST(LoopAnalysisTest, LoopTreePath_split) {
         path.front().at(1) == &loop_j && path.back().at(1) == &loop_k ||
         path.front().at(1) == &loop_k && path.back().at(1) == &loop_j
     );
+    manager.invalidate_all();
 }
 
 TEST(LoopAnalysisTest, descendants_nested) {
@@ -331,6 +335,7 @@ TEST(LoopAnalysisTest, descendants_nested) {
     }
     EXPECT_TRUE(found_j);
     EXPECT_TRUE(found_k);
+    manager.invalidate_all();
 }
 
 TEST(LoopAnalysisTest, descendants_concatenated) {
@@ -367,7 +372,7 @@ TEST(LoopAnalysisTest, descendants_concatenated) {
     EXPECT_EQ(path.size(), 2);
     bool found_j = false;
     bool found_k = false;
-    for (auto& node : path) {
+    for (auto node : path) {
         if (node == &loop_j) {
             found_j = true;
         } else if (node == &loop_k) {
@@ -376,4 +381,5 @@ TEST(LoopAnalysisTest, descendants_concatenated) {
     }
     EXPECT_TRUE(found_j);
     EXPECT_TRUE(found_k);
+    manager.invalidate_all();
 }
