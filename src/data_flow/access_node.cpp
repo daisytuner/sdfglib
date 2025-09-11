@@ -8,12 +8,12 @@ namespace data_flow {
 
 AccessNode::AccessNode(
     size_t element_id,
-    const DebugInfoRegion& debug_info_region,
+    const DebugInfo& debug_info,
     const graph::Vertex vertex,
     DataFlowGraph& parent,
     const std::string& data
 )
-    : DataFlowNode(element_id, debug_info_region, vertex, parent), data_(data) {
+    : DataFlowNode(element_id, debug_info, vertex, parent), data_(data) {
 
       };
 

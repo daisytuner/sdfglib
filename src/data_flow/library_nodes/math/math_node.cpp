@@ -5,7 +5,7 @@ namespace math {
 
 MathNode::MathNode(
     size_t element_id,
-    const DebugInfoRegion& debug_info,
+    const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     const data_flow::LibraryNodeCode& code,

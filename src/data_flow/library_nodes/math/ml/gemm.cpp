@@ -10,7 +10,7 @@ namespace ml {
 
 GemmNode::GemmNode(
     size_t element_id,
-    const DebugInfoRegion &debug_info,
+    const DebugInfo &debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph &parent,
     const std::string &alpha,
@@ -72,9 +72,7 @@ bool GemmNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Analysi
     std::string C_out_name = static_cast<const data_flow::AccessNode &>(oedge_Y->dst()).data();
 
     // Create new sequence before
-    auto &new_sequence = builder.add_sequence_before(
-        parent, block, transition.assignments(), builder.debug_info().get_region(block.debug_info().indices())
-    );
+    auto &new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
     structured_control_flow::Sequence *last_scope = &new_sequence;
 
     // Create maps over output subset dims (parallel dims)
@@ -106,7 +104,7 @@ bool GemmNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Analysi
             update,
             structured_control_flow::ScheduleType_Sequential::create(),
             {},
-            builder.debug_info().get_region(block.debug_info().indices())
+            block.debug_info()
         );
         last_scope = &last_map->root();
         out_syms.push_back(indvar);
@@ -114,21 +112,14 @@ bool GemmNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Analysi
 
     // Create innermost block
     auto &code_block = builder.add_block(*last_scope);
-    auto &tasklet = builder.add_tasklet(
-        code_block,
-        data_flow::TaskletCode::fma,
-        "_out",
-        {"_in1", "_in2", "_in3"},
-        builder.debug_info().get_region(block.debug_info().indices())
-    );
+    auto &tasklet =
+        builder
+            .add_tasklet(code_block, data_flow::TaskletCode::fma, "_out", {"_in1", "_in2", "_in3"}, block.debug_info());
 
-    auto &A_in = builder.add_access(code_block, A_name, builder.debug_info().get_region(block.debug_info().indices()));
-    auto &B_in = builder.add_access(code_block, B_name, builder.debug_info().get_region(block.debug_info().indices()));
-    auto &C_in = builder.add_access(
-        code_block, has_C_in ? C_in_name : C_out_name, builder.debug_info().get_region(block.debug_info().indices())
-    );
-    auto &C_out =
-        builder.add_access(code_block, C_out_name, builder.debug_info().get_region(block.debug_info().indices()));
+    auto &A_in = builder.add_access(code_block, A_name, block.debug_info());
+    auto &B_in = builder.add_access(code_block, B_name, block.debug_info());
+    auto &C_in = builder.add_access(code_block, has_C_in ? C_in_name : C_out_name, block.debug_info());
+    auto &C_out = builder.add_access(code_block, C_out_name, block.debug_info());
 
     data_flow::Subset subset_A;
     if (trans_a_) {
@@ -144,42 +135,14 @@ bool GemmNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Analysi
     }
     data_flow::Subset subset_C = {out_syms[0], out_syms[1]};
 
-    builder.add_computational_memlet(
-        code_block,
-        A_in,
-        tasklet,
-        "_in1",
-        subset_A,
-        iedge_A->base_type(),
-        builder.debug_info().get_region(block.debug_info().indices())
-    );
-    builder.add_computational_memlet(
-        code_block,
-        B_in,
-        tasklet,
-        "_in2",
-        subset_B,
-        iedge_B->base_type(),
-        builder.debug_info().get_region(block.debug_info().indices())
-    );
-    builder.add_computational_memlet(
-        code_block,
-        C_in,
-        tasklet,
-        "_in3",
-        subset_C,
-        oedge_Y->base_type(),
-        builder.debug_info().get_region(block.debug_info().indices())
-    );
-    builder.add_computational_memlet(
-        code_block,
-        tasklet,
-        "_out",
-        C_out,
-        subset_C,
-        oedge_Y->base_type(),
-        builder.debug_info().get_region(block.debug_info().indices())
-    );
+    builder
+        .add_computational_memlet(code_block, A_in, tasklet, "_in1", subset_A, iedge_A->base_type(), block.debug_info());
+    builder
+        .add_computational_memlet(code_block, B_in, tasklet, "_in2", subset_B, iedge_B->base_type(), block.debug_info());
+    builder
+        .add_computational_memlet(code_block, C_in, tasklet, "_in3", subset_C, oedge_Y->base_type(), block.debug_info());
+    builder
+        .add_computational_memlet(code_block, tasklet, "_out", C_out, subset_C, oedge_Y->base_type(), block.debug_info());
 
     // Cleanup old block
     builder.remove_memlet(block, *iedge_A);
@@ -223,7 +186,7 @@ data_flow::LibraryNode &GemmNodeSerializer::deserialize(
     }
 
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
+    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
     auto alpha = j["alpha"].get<std::string>();
     auto beta = j["beta"].get<std::string>();

@@ -2,7 +2,7 @@
 
 #include "sdfg/data_flow/library_nodes/math/math_node.h"
 
-#include "sdfg/debug_info.h"
+#include "sdfg/codegen/dispatchers/block_dispatcher.h"
 #include "sdfg/serializer/json_serializer.h"
 
 namespace sdfg {
@@ -20,7 +20,7 @@ private:
 public:
     MaxPoolNode(
         size_t element_id,
-        const DebugInfoRegion &debug_info,
+        const DebugInfo &debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph &parent,
         std::vector<size_t> kernel_shape,

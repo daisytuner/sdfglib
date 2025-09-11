@@ -1,6 +1,5 @@
 #include "sdfg/control_flow/interstate_edge.h"
 
-#include "sdfg/debug_info.h"
 #include "sdfg/function.h"
 
 namespace sdfg {
@@ -8,14 +7,14 @@ namespace control_flow {
 
 InterstateEdge::InterstateEdge(
     size_t element_id,
-    const DebugInfoRegion& debug_info_region,
+    const DebugInfo& debug_info,
     const graph::Edge& edge,
     const control_flow::State& src,
     const control_flow::State& dst,
     const symbolic::Condition& condition,
     const sdfg::control_flow::Assignments& assignments
 )
-    : Element(element_id, debug_info_region), edge_(edge), src_(src), dst_(dst), condition_(condition),
+    : Element(element_id, debug_info), edge_(edge), src_(src), dst_(dst), condition_(condition),
       assignments_(assignments) {
 
       };

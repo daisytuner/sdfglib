@@ -4,8 +4,6 @@
 #include <vector>
 
 #include "sdfg/data_flow/code_node.h"
-#include "sdfg/debug_info.h"
-#include "sdfg/exceptions.h"
 #include "sdfg/graph/graph.h"
 
 namespace sdfg {
@@ -33,7 +31,7 @@ protected:
 
     LibraryNode(
         size_t element_id,
-        const DebugInfoRegion& debug_info_region,
+        const DebugInfo& debug_info,
         const graph::Vertex vertex,
         DataFlowGraph& parent,
         const LibraryNodeCode& code,

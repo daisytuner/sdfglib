@@ -7,7 +7,7 @@ namespace data_flow {
 
 LibraryNode::LibraryNode(
     size_t element_id,
-    const DebugInfoRegion& debug_info,
+    const DebugInfo& debug_info,
     const graph::Vertex vertex,
     DataFlowGraph& parent,
     const LibraryNodeCode& code,

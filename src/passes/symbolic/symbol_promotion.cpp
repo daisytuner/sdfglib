@@ -209,8 +209,7 @@ void SymbolPromotion::apply(
     }
 
     // Split states and set transition
-    builder
-        .add_block_before(sequence, block, {{lhs, rhs}}, builder.debug_info().get_region(block.debug_info().indices()));
+    builder.add_block_before(sequence, block, {{lhs, rhs}}, block.debug_info());
     builder.clear_node(block, *tasklet);
 };
 

@@ -17,7 +17,7 @@ private:
 public:
     MetadataNode(
         size_t element_id,
-        const DebugInfoRegion& debug_info,
+        const DebugInfo& debug_info,
         const graph::Vertex vertex,
         DataFlowGraph& parent,
         const std::vector<std::string>& outputs,

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "sdfg/data_flow/library_node.h"
 
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
@@ -13,9 +15,7 @@ inline LibraryNodeCode LibraryNodeType_BarrierLocal{"barrier_local"};
 
 class BarrierLocalNode : public LibraryNode {
 public:
-    BarrierLocalNode(
-        size_t element_id, const DebugInfoRegion& debug_info, const graph::Vertex vertex, DataFlowGraph& parent
-    );
+    BarrierLocalNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, DataFlowGraph& parent);
 
     void validate(const Function& function) const override;
 

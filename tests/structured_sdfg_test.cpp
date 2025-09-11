@@ -16,7 +16,8 @@ TEST(StructuredSDFGTest, Clone) {
     builder.add_container("S", desc_struct);
 
     auto& root = builder.subject().root();
-    auto& block = builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+    auto& block = builder.add_block(
+        root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
 
     auto sdfg = builder.move();
 
@@ -33,7 +34,8 @@ TEST(StructuredSDFGTest, Clone) {
     auto cloned_block = cloned_root.at(0);
     EXPECT_TRUE(dynamic_cast<const structured_control_flow::Block*>(&cloned_block.first));
     EXPECT_EQ(cloned_block.second.size(), 1);
-    EXPECT_TRUE(symbolic::eq(cloned_block.second.assignments().at(symbolic::symbol("N")), symbolic::integer(10)));
+    EXPECT_TRUE(symbolic::eq(cloned_block.second.assignments().at(symbolic::symbol("N")),
+                             symbolic::integer(10)));
 }
 
 TEST(StructuredSDFGTest, Metadata) {

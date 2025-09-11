@@ -9,7 +9,7 @@ namespace math {
 namespace ml {
 
 MatMulNode::MatMulNode(
-    size_t element_id, const DebugInfoRegion &debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph &parent
+    size_t element_id, const DebugInfo &debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph &parent
 )
     : MathNode(
           element_id,
@@ -57,9 +57,7 @@ bool MatMulNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Analy
     std::string C_name = static_cast<const data_flow::AccessNode &>(oedge_C->dst()).data();
 
     // Create new sequence before
-    auto &new_sequence = builder.add_sequence_before(
-        parent, block, transition.assignments(), builder.debug_info().get_region(block.debug_info().indices())
-    );
+    auto &new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
     structured_control_flow::Sequence *last_scope = &new_sequence;
 
     // Create maps over output subset dims (parallel dims)
@@ -91,7 +89,7 @@ bool MatMulNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Analy
             update,
             structured_control_flow::ScheduleType_Sequential::create(),
             {},
-            builder.debug_info().get_region(block.debug_info().indices())
+            block.debug_info()
         );
         last_scope = &last_map->root();
         out_syms.push_back(indvar);
@@ -99,54 +97,26 @@ bool MatMulNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Analy
 
     // Create innermost block
     auto &code_block = builder.add_block(*last_scope);
-    auto &tasklet = builder.add_tasklet(
-        code_block,
-        data_flow::TaskletCode::fma,
-        "_out",
-        {"_in1", "_in2", "_in3"},
-        builder.debug_info().get_region(block.debug_info().indices())
-    );
+    auto &tasklet =
+        builder
+            .add_tasklet(code_block, data_flow::TaskletCode::fma, "_out", {"_in1", "_in2", "_in3"}, block.debug_info());
 
-    auto &A_in = builder.add_access(code_block, A_name, builder.debug_info().get_region(block.debug_info().indices()));
-    auto &B_in = builder.add_access(code_block, B_name, builder.debug_info().get_region(block.debug_info().indices()));
-    auto &C_in = builder.add_access(code_block, C_name, builder.debug_info().get_region(block.debug_info().indices()));
-    auto &C_out = builder.add_access(code_block, C_name, builder.debug_info().get_region(block.debug_info().indices()));
+    auto &A_in = builder.add_access(code_block, A_name, block.debug_info());
+    auto &B_in = builder.add_access(code_block, B_name, block.debug_info());
+    auto &C_in = builder.add_access(code_block, C_name, block.debug_info());
+    auto &C_out = builder.add_access(code_block, C_name, block.debug_info());
 
     builder.add_computational_memlet(
-        code_block,
-        A_in,
-        tasklet,
-        "_in1",
-        {out_syms[0], out_syms[2]},
-        iedge_A->base_type(),
-        builder.debug_info().get_region(block.debug_info().indices())
+        code_block, A_in, tasklet, "_in1", {out_syms[0], out_syms[2]}, iedge_A->base_type(), block.debug_info()
     );
     builder.add_computational_memlet(
-        code_block,
-        B_in,
-        tasklet,
-        "_in2",
-        {out_syms[1], out_syms[2]},
-        iedge_B->base_type(),
-        builder.debug_info().get_region(block.debug_info().indices())
+        code_block, B_in, tasklet, "_in2", {out_syms[1], out_syms[2]}, iedge_B->base_type(), block.debug_info()
     );
     builder.add_computational_memlet(
-        code_block,
-        C_in,
-        tasklet,
-        "_in3",
-        {out_syms[0], out_syms[1]},
-        oedge_C->base_type(),
-        builder.debug_info().get_region(block.debug_info().indices())
+        code_block, C_in, tasklet, "_in3", {out_syms[0], out_syms[1]}, oedge_C->base_type(), block.debug_info()
     );
     builder.add_computational_memlet(
-        code_block,
-        tasklet,
-        "_out",
-        C_out,
-        {out_syms[0], out_syms[1]},
-        oedge_C->base_type(),
-        builder.debug_info().get_region(block.debug_info().indices())
+        code_block, tasklet, "_out", C_out, {out_syms[0], out_syms[1]}, oedge_C->base_type(), block.debug_info()
     );
 
     // Cleanup old block
@@ -182,7 +152,7 @@ data_flow::LibraryNode &MatMulNodeSerializer::deserialize(
     }
 
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
+    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
     return builder.add_library_node<MatMulNode>(parent, debug_info);
 }
