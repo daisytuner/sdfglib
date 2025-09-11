@@ -17,14 +17,7 @@ private:
     std::string epsilon_;
 
 public:
-    BatchNormalizationNode(
-        size_t element_id,
-        const DebugInfoRegion& debug_info,
-        const graph::Vertex vertex,
-        data_flow::DataFlowGraph& parent,
-        int axis = -1,
-        const std::string& epsilon = "0.00001f"
-    );
+    BatchNormalizationNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent, int axis = -1, const std::string& epsilon = "0.00001f");
 
     int axis() const { return axis_; }
 
@@ -39,12 +32,12 @@ public:
 };
 
 class BatchNormalizationNodeSerializer : public serializer::LibraryNodeSerializer {
-public:
-    nlohmann::json serialize(const data_flow::LibraryNode& library_node) override;
-
-    data_flow::LibraryNode& deserialize(
-        const nlohmann::json& j, builder::StructuredSDFGBuilder& builder, structured_control_flow::Block& parent
-    ) override;
+    public:
+        nlohmann::json serialize(const data_flow::LibraryNode &library_node) override;
+    
+        data_flow::LibraryNode &deserialize(
+            const nlohmann::json &j, builder::StructuredSDFGBuilder &builder, structured_control_flow::Block &parent
+        ) override;
 };
 
 } // namespace ml

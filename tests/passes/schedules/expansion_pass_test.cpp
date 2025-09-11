@@ -23,8 +23,8 @@ TEST(ExpansionPassTest, Simple) {
 
     auto& input_node = builder.add_access(block, "input");
     auto& output_node = builder.add_access(block, "output");
-    auto& relu_node =
-        static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block, DebugInfoRegion()));
+    auto& relu_node = static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block, DebugInfo())
+    );
 
     builder.add_computational_memlet(
         block,
@@ -34,7 +34,7 @@ TEST(ExpansionPassTest, Simple) {
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
-        builder.debug_info().get_region(block.debug_info().indices())
+        block.debug_info()
     );
     builder.add_computational_memlet(
         block,
@@ -44,7 +44,7 @@ TEST(ExpansionPassTest, Simple) {
         {symbolic::integer(0), symbolic::integer(0)},
         {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
-        builder.debug_info().get_region(block.debug_info().indices())
+        block.debug_info()
     );
 
     analysis::AnalysisManager analysis_manager(sdfg);

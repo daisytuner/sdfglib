@@ -13,12 +13,7 @@ inline data_flow::LibraryNodeCode LibraryNodeType_Tanh("ml::Tanh");
 
 class TanhNode : public ElementWiseUnaryNode {
 public:
-    TanhNode(
-        size_t element_id,
-        const DebugInfoRegion& debug_info,
-        const graph::Vertex vertex,
-        data_flow::DataFlowGraph& parent
-    );
+    TanhNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
 
     bool expand_operation(
         builder::StructuredSDFGBuilder& builder,

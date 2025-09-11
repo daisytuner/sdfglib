@@ -14,10 +14,7 @@ inline data_flow::LibraryNodeCode LibraryNodeType_Sigmoid("ml::Sigmoid");
 class SigmoidNode : public ElementWiseUnaryNode {
 public:
     SigmoidNode(
-        size_t element_id,
-        const DebugInfoRegion& debug_info,
-        const graph::Vertex vertex,
-        data_flow::DataFlowGraph& parent
+        size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
     );
 
     bool expand_operation(

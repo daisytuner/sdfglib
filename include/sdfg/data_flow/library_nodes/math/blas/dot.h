@@ -24,7 +24,7 @@ private:
 public:
     DotNode(
         size_t element_id,
-        const DebugInfoRegion& debug_info,
+        const DebugInfo& debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph& parent,
         const data_flow::ImplementationType& implementation_type,

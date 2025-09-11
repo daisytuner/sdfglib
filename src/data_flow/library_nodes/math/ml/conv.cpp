@@ -4,7 +4,6 @@
 #include "sdfg/builder/structured_sdfg_builder.h"
 
 #include "sdfg/analysis/scope_analysis.h"
-#include "sdfg/debug_info.h"
 
 namespace sdfg {
 namespace math {
@@ -12,7 +11,7 @@ namespace ml {
 
 ConvNode::ConvNode(
     size_t element_id,
-    const DebugInfoRegion& debug_info,
+    const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     bool has_bias,
@@ -95,9 +94,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     }
     data_flow::Subset dims_Y = oedge_Y->end_subset();
 
-    auto& new_sequence = builder.add_sequence_before(
-        parent, block, transition.assignments(), builder.debug_info().get_region(block.debug_info().indices())
-    );
+    auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
     structured_control_flow::Sequence* last_scope = &new_sequence;
 
     /************************
@@ -130,7 +127,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
             update,
             structured_control_flow::ScheduleType_Sequential::create(),
             {},
-            builder.debug_info().get_region(block.debug_info().indices())
+            block.debug_info()
         );
         last_scope = &last_map->root();
         out_subset.push_back(indvar);
@@ -159,30 +156,19 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         auto update = symbolic::add(indvar, symbolic::one());
         auto condition = symbolic::Lt(indvar, symbolic::add(dim_end, symbolic::one()));
 
-        last_for = &builder.add_for(
-            *last_scope,
-            indvar,
-            condition,
-            init,
-            update,
-            {},
-            builder.debug_info().get_region(block.debug_info().indices())
-        );
+        last_for = &builder.add_for(*last_scope, indvar, condition, init, update, {}, block.debug_info());
         last_scope = &last_for->root();
         reduction_syms.push_back(indvar);
     }
 
     // Add innermost code block – convolution computation.
-    auto& code_block =
-        builder.add_block(*last_scope, {}, builder.debug_info().get_region(block.debug_info().indices()));
+    auto& code_block = builder.add_block(*last_scope, {}, block.debug_info());
 
     // Reuse debug infos from original access nodes (if available).
-    const DebugInfos& dbg_X = builder.debug_info().get_region(iedge_X->src().debug_info().indices());
-    const DebugInfos& dbg_W = builder.debug_info().get_region(iedge_W->src().debug_info().indices());
-    const DebugInfos& dbg_Y = builder.debug_info().get_region(oedge_Y->dst().debug_info().indices());
-    const DebugInfos& dbg_B = (iedge_B != nullptr)
-                                  ? builder.debug_info().get_region(iedge_B->src().debug_info().indices())
-                                  : DebugInfos();
+    const DebugInfo& dbg_X = iedge_X->src().debug_info();
+    const DebugInfo& dbg_W = iedge_W->src().debug_info();
+    const DebugInfo& dbg_Y = oedge_Y->dst().debug_info();
+    const DebugInfo dbg_B = (iedge_B != nullptr) ? iedge_B->src().debug_info() : DebugInfo();
 
     // Create new access nodes inside the innermost block.
     auto& X_acc = builder.add_access(code_block, X_name, dbg_X);
@@ -276,50 +262,18 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         // Bias will be added after reduction, so no change here.
     }
 
-    auto& tasklet = builder.add_tasklet(
-        code_block,
-        data_flow::TaskletCode::fma,
-        "_out",
-        {"_x", "_w", "_y"},
-        builder.debug_info().get_region(block.debug_info().indices())
-    );
+    auto& tasklet =
+        builder.add_tasklet(code_block, data_flow::TaskletCode::fma, "_out", {"_x", "_w", "_y"}, block.debug_info());
 
     // Connect memlets.
+    builder
+        .add_computational_memlet(code_block, X_acc, tasklet, "_x", subset_X, iedge_X->base_type(), block.debug_info());
+    builder
+        .add_computational_memlet(code_block, W_acc, tasklet, "_w", subset_W, iedge_W->base_type(), block.debug_info());
+    builder
+        .add_computational_memlet(code_block, Y_acc_in, tasklet, "_y", subset_Y, oedge_Y->base_type(), block.debug_info());
     builder.add_computational_memlet(
-        code_block,
-        X_acc,
-        tasklet,
-        "_x",
-        subset_X,
-        iedge_X->base_type(),
-        builder.debug_info().get_region(block.debug_info().indices())
-    );
-    builder.add_computational_memlet(
-        code_block,
-        W_acc,
-        tasklet,
-        "_w",
-        subset_W,
-        iedge_W->base_type(),
-        builder.debug_info().get_region(block.debug_info().indices())
-    );
-    builder.add_computational_memlet(
-        code_block,
-        Y_acc_in,
-        tasklet,
-        "_y",
-        subset_Y,
-        oedge_Y->base_type(),
-        builder.debug_info().get_region(block.debug_info().indices())
-    );
-    builder.add_computational_memlet(
-        code_block,
-        tasklet,
-        "_out",
-        Y_acc_out,
-        subset_Y,
-        oedge_Y->base_type(),
-        builder.debug_info().get_region(block.debug_info().indices())
+        code_block, tasklet, "_out", Y_acc_out, subset_Y, oedge_Y->base_type(), block.debug_info()
     );
 
     // Bias: add once per output element outside reduction loops.
@@ -327,45 +281,21 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         // Insert after the reduction loops (i.e., right after they finish).
         // We add a single tasklet in the parent scope (last_map root).
         std::string B_name = static_cast<const data_flow::AccessNode&>(iedge_B->src()).data();
-        auto& bias_block =
-            builder.add_block(last_map->root(), {}, builder.debug_info().get_region(block.debug_info().indices()));
+        auto& bias_block = builder.add_block(last_map->root(), {}, block.debug_info());
         auto& B_acc_local = builder.add_access(bias_block, B_name, dbg_B);
         auto& Y_acc2_in = builder.add_access(bias_block, Y_name, dbg_Y);
         auto& Y_acc2_out = builder.add_access(bias_block, Y_name, dbg_Y);
 
-        auto& bias_tasklet = builder.add_tasklet(
-            bias_block,
-            data_flow::TaskletCode::add,
-            "_out",
-            {"_bias", "_y"},
-            builder.debug_info().get_region(block.debug_info().indices())
+        auto& bias_tasklet =
+            builder.add_tasklet(bias_block, data_flow::TaskletCode::add, "_out", {"_bias", "_y"}, block.debug_info());
+        builder.add_computational_memlet(
+            bias_block, B_acc_local, bias_tasklet, "_bias", subset_B, iedge_B->base_type(), block.debug_info()
         );
         builder.add_computational_memlet(
-            bias_block,
-            B_acc_local,
-            bias_tasklet,
-            "_bias",
-            subset_B,
-            iedge_B->base_type(),
-            builder.debug_info().get_region(block.debug_info().indices())
+            bias_block, Y_acc2_in, bias_tasklet, "_y", subset_Y, oedge_Y->base_type(), block.debug_info()
         );
         builder.add_computational_memlet(
-            bias_block,
-            Y_acc2_in,
-            bias_tasklet,
-            "_y",
-            subset_Y,
-            oedge_Y->base_type(),
-            builder.debug_info().get_region(block.debug_info().indices())
-        );
-        builder.add_computational_memlet(
-            bias_block,
-            bias_tasklet,
-            "_out",
-            Y_acc2_out,
-            subset_Y,
-            oedge_Y->base_type(),
-            builder.debug_info().get_region(block.debug_info().indices())
+            bias_block, bias_tasklet, "_out", Y_acc2_out, subset_Y, oedge_Y->base_type(), block.debug_info()
         );
     }
 
@@ -422,7 +352,7 @@ data_flow::LibraryNode& ConvNodeSerializer::deserialize(
     }
 
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
+    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
     auto outputs = j.at("outputs").get<std::vector<std::string>>();
     auto inputs = j.at("inputs").get<std::vector<std::string>>();

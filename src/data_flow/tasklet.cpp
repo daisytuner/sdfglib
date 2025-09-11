@@ -8,7 +8,7 @@ namespace data_flow {
 
 Tasklet::Tasklet(
     size_t element_id,
-    const DebugInfoRegion& debug_info,
+    const DebugInfo& debug_info,
     const graph::Vertex vertex,
     DataFlowGraph& parent,
     const TaskletCode code,

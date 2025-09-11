@@ -166,19 +166,12 @@ void BlockFusion::apply(
                 node_mapping[access_node] = connectors[access_node];
             } else {
                 // Add new
-                node_mapping[access_node] = &builder_.add_access(
-                    first_block,
-                    access_node->data(),
-                    builder_.debug_info().get_region(access_node->debug_info().indices())
-                );
+                node_mapping[access_node] =
+                    &builder_.add_access(first_block, access_node->data(), access_node->debug_info());
             }
         } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(&node)) {
             node_mapping[tasklet] = &builder_.add_tasklet(
-                first_block,
-                tasklet->code(),
-                tasklet->output(),
-                tasklet->inputs(),
-                builder_.debug_info().get_region(tasklet->debug_info().indices())
+                first_block, tasklet->code(), tasklet->output(), tasklet->inputs(), tasklet->debug_info()
             );
         } else if (auto library_node = dynamic_cast<data_flow::LibraryNode*>(&node)) {
             node_mapping[library_node] = &builder_.copy_library_node(first_block, *library_node);
@@ -201,7 +194,7 @@ void BlockFusion::apply(
             edge.begin_subset(),
             edge.end_subset(),
             edge.base_type(),
-            builder_.debug_info().get_region(edge.debug_info().indices())
+            edge.debug_info()
         );
     }
 };

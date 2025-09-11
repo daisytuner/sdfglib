@@ -20,7 +20,7 @@ class For : public StructuredLoop {
 
 private:
     For(size_t element_id,
-        const DebugInfoRegion& debug_info,
+        const DebugInfo& debug_info,
         symbolic::Symbol indvar,
         symbolic::Expression init,
         symbolic::Expression update,

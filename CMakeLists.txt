@@ -189,7 +189,6 @@ set(SOURCE_FILES
     src/types/utils.cpp
     src/visualizer/dot_visualizer.cpp
     src/visualizer/visualizer.cpp
-    src/debug_info.cpp
     src/element.cpp
     src/function.cpp
     src/sdfg.cpp

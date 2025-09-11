@@ -11,7 +11,7 @@ namespace structured_control_flow {
 
 Map::
     Map(size_t element_id,
-        const DebugInfoRegion& debug_info,
+        const DebugInfo& debug_info,
         symbolic::Symbol indvar,
         symbolic::Expression init,
         symbolic::Expression update,

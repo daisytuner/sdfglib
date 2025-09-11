@@ -63,8 +63,8 @@ TEST(LoopNormalizationTest, AndUnequality) {
     pass.run(builder, analysis_manager);
 
     // Check
-    EXPECT_TRUE(SymEngine::eq(*loop.condition(), *symbolic::And(symbolic::Lt(indvar, bound), symbolic::Lt(indvar, bound2)))
-    );
+    EXPECT_TRUE(SymEngine::eq(*loop.condition(), *symbolic::And(symbolic::Lt(indvar, bound),
+                                                                symbolic::Lt(indvar, bound2))));
 }
 
 TEST(LoopNormalizationTest, OrUnequality) {
@@ -96,6 +96,6 @@ TEST(LoopNormalizationTest, OrUnequality) {
     pass.run(builder, analysis_manager);
 
     // Check
-    EXPECT_TRUE(SymEngine::eq(*loop.condition(), *symbolic::Or(symbolic::Lt(indvar, bound), symbolic::Lt(indvar, bound2)))
-    );
+    EXPECT_TRUE(SymEngine::eq(*loop.condition(), *symbolic::Or(symbolic::Lt(indvar, bound),
+                                                               symbolic::Lt(indvar, bound2))));
 }

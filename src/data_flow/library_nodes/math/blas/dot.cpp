@@ -11,7 +11,7 @@ namespace blas {
 
 DotNode::DotNode(
     size_t element_id,
-    const DebugInfoRegion& debug_info,
+    const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     const data_flow::ImplementationType& implementation_type,
@@ -112,9 +112,7 @@ bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
         return false;
     }
 
-    auto& new_sequence = builder.add_sequence_before(
-        parent, block, transition.assignments(), builder.debug_info().get_region(block.debug_info().indices())
-    );
+    auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
 
     std::string loop_var = builder.find_new_name("_i");
     builder.add_container(loop_var, types::Scalar(types::PrimitiveType::UInt64));
@@ -124,15 +122,8 @@ bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
     auto loop_condition = symbolic::Lt(loop_indvar, this->n_);
     auto loop_update = symbolic::add(loop_indvar, symbolic::integer(1));
 
-    auto& loop = builder.add_for(
-        new_sequence,
-        loop_indvar,
-        loop_condition,
-        loop_init,
-        loop_update,
-        {},
-        builder.subject().debug_info().get_region(block.debug_info().indices())
-    );
+    auto& loop =
+        builder.add_for(new_sequence, loop_indvar, loop_condition, loop_init, loop_update, {}, block.debug_info());
     auto& body = loop.root();
 
     auto& new_block = builder.add_block(body);
@@ -151,7 +142,7 @@ bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
         "_in1",
         {symbolic::mul(loop_indvar, this->incx_)},
         iedge_x->base_type(),
-        builder.subject().debug_info().get_region(iedge_x->debug_info().indices())
+        iedge_x->debug_info()
     );
     builder.add_computational_memlet(
         new_block,
@@ -160,25 +151,12 @@ bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
         "_in2",
         {symbolic::mul(loop_indvar, this->incy_)},
         iedge_y->base_type(),
-        builder.subject().debug_info().get_region(iedge_y->debug_info().indices())
+        iedge_y->debug_info()
     );
+    builder
+        .add_computational_memlet(new_block, res_in, tasklet, "_in3", {}, oedge_res->base_type(), oedge_res->debug_info());
     builder.add_computational_memlet(
-        new_block,
-        res_in,
-        tasklet,
-        "_in3",
-        {},
-        oedge_res->base_type(),
-        builder.subject().debug_info().get_region(oedge_res->debug_info().indices())
-    );
-    builder.add_computational_memlet(
-        new_block,
-        tasklet,
-        "_out",
-        res_out,
-        {},
-        oedge_res->base_type(),
-        builder.subject().debug_info().get_region(oedge_res->debug_info().indices())
+        new_block, tasklet, "_out", res_out, {}, oedge_res->base_type(), oedge_res->debug_info()
     );
 
     // Clean up
@@ -239,7 +217,7 @@ data_flow::LibraryNode& DotNodeSerializer::deserialize(
 
     // Extract debug info using JSONSerializer
     sdfg::serializer::JSONSerializer serializer;
-    DebugInfoRegion debug_info = serializer.json_to_debug_info_region(j["debug_info"], builder.debug_info());
+    DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
     auto precision = j.at("precision").get<BLAS_Precision>();
     auto n = SymEngine::Expression(j.at("n"));

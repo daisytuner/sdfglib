@@ -1,6 +1,8 @@
 #include "sdfg/sdfg.h"
 
+#include "sdfg/codegen/language_extensions/c_language_extension.h"
 #include "sdfg/element.h"
+#include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
 

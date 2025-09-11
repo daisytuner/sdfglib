@@ -3,7 +3,6 @@
 #include <boost/lexical_cast.hpp>
 #include <nlohmann/json.hpp>
 
-#include "sdfg/debug_info.h"
 #include "sdfg/element.h"
 #include "sdfg/graph/graph.h"
 
@@ -14,7 +13,7 @@ namespace sdfg {
 namespace builder {
 class SDFGBuilder;
 class StructuredSDFGBuilder;
-} // namespace builder
+}  // namespace builder
 
 namespace data_flow {
 
@@ -24,18 +23,17 @@ class DataFlowNode : public Element {
     friend class sdfg::builder::SDFGBuilder;
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-private:
+   private:
     // Remark: Exclusive resource
     graph::Vertex vertex_;
 
     DataFlowGraph* parent_;
 
-protected:
-    DataFlowNode(
-        size_t element_id, const DebugInfoRegion& debug_info_region, const graph::Vertex vertex, DataFlowGraph& parent
-    );
+   protected:
+    DataFlowNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex,
+                 DataFlowGraph& parent);
 
-public:
+   public:
     // Remark: Exclusive resource
     DataFlowNode(const DataFlowNode& data_node) = delete;
     DataFlowNode& operator=(const DataFlowNode&) = delete;
@@ -46,8 +44,8 @@ public:
 
     DataFlowGraph& get_parent();
 
-    virtual std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
-        const = 0;
+    virtual std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex,
+                                                DataFlowGraph& parent) const = 0;
 };
-} // namespace data_flow
-} // namespace sdfg
+}  // namespace data_flow
+}  // namespace sdfg

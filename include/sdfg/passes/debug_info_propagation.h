@@ -5,12 +5,12 @@
 namespace sdfg {
 namespace passes {
 
-class DebugTablePropagation : public Pass {
+class DebugInfoPropagation : public Pass {
 private:
-    void propagate(builder::StructuredSDFGBuilder& builder, structured_control_flow::ControlFlowNode* current);
+    void propagate(structured_control_flow::ControlFlowNode* current);
 
 public:
-    DebugTablePropagation();
+    DebugInfoPropagation();
 
     std::string name() override;
 

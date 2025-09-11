@@ -4,7 +4,6 @@
 
 #include "sdfg/builder/sdfg_builder.h"
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
-#include "sdfg/debug_info.h"
 #include "sdfg/element.h"
 #include "sdfg/symbolic/symbolic.h"
 
@@ -116,7 +115,7 @@ TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
     EXPECT_EQ(block.element_id(), 1);
     EXPECT_EQ(root.at(0).second.element_id(), 2);
 
-    auto& lib_node = builder.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfoRegion());
+    auto& lib_node = builder.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfo());
     EXPECT_EQ(lib_node.element_id(), 3);
 
     auto sdfg = builder.move();
@@ -497,14 +496,14 @@ TEST(SDFG2StructuredSDFGTest, IfElse) {
         if_state,
         {{symbolic::symbol("i"), symbolic::integer(0)}},
         symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-        {}
+        DebugInfo()
     );
     builder.add_edge(
         init_state,
         else_state,
         {{symbolic::symbol("i"), symbolic::integer(1)}},
         symbolic::Ge(symbolic::symbol("i"), symbolic::integer(10)),
-        {}
+        DebugInfo()
     );
     builder.add_edge(if_state, end_state);
     builder.add_edge(else_state, end_state);
