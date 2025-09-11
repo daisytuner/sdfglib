@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_set>
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 
@@ -14,6 +15,20 @@ private:
     std::unordered_map<structured_control_flow::ControlFlowNode*, structured_control_flow::ControlFlowNode*> loop_tree_;
 
     void run(structured_control_flow::ControlFlowNode& scope, structured_control_flow::ControlFlowNode* parent_loop);
+
+    std::vector<sdfg::structured_control_flow::ControlFlowNode*> children(
+        sdfg::structured_control_flow::ControlFlowNode* node,
+        const std::unordered_map<
+            sdfg::structured_control_flow::ControlFlowNode*,
+            sdfg::structured_control_flow::ControlFlowNode*>& tree
+    ) const;
+
+    std::list<std::vector<sdfg::structured_control_flow::ControlFlowNode*>> loop_tree_paths(
+        sdfg::structured_control_flow::ControlFlowNode* loop,
+        const std::unordered_map<
+            sdfg::structured_control_flow::ControlFlowNode*,
+            sdfg::structured_control_flow::ControlFlowNode*>& tree
+    ) const;
 
 protected:
     void run(analysis::AnalysisManager& analysis_manager) override;
@@ -34,19 +49,14 @@ public:
 
     const std::vector<structured_control_flow::ControlFlowNode*> outermost_maps() const;
 
-    std::vector<sdfg::structured_control_flow::ControlFlowNode*> children(
-        sdfg::structured_control_flow::ControlFlowNode* node,
-        const std::unordered_map<
-            sdfg::structured_control_flow::ControlFlowNode*,
-            sdfg::structured_control_flow::ControlFlowNode*>& tree
-    ) const;
+    std::vector<sdfg::structured_control_flow::ControlFlowNode*> children(sdfg::structured_control_flow::ControlFlowNode*
+                                                                              node) const;
 
-    std::list<std::vector<sdfg::structured_control_flow::ControlFlowNode*>> loop_tree_paths(
-        sdfg::structured_control_flow::ControlFlowNode* loop,
-        const std::unordered_map<
-            sdfg::structured_control_flow::ControlFlowNode*,
-            sdfg::structured_control_flow::ControlFlowNode*>& tree
-    ) const;
+    std::list<std::vector<sdfg::structured_control_flow::ControlFlowNode*>>
+    loop_tree_paths(sdfg::structured_control_flow::ControlFlowNode* loop) const;
+
+    std::unordered_set<sdfg::structured_control_flow::ControlFlowNode*>
+    descendants(sdfg::structured_control_flow::ControlFlowNode* loop) const;
 
     /**
      * @brief Checks if a loop's update is a strictly monotonic function (positive).
