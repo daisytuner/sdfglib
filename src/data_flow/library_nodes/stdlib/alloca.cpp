@@ -65,7 +65,7 @@ data_flow::LibraryNode& AllocaNodeSerializer::deserialize(
     sdfg::serializer::JSONSerializer serializer;
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
-    SymEngine::Expression size(j.at("size"));
+    auto size = symbolic::parse(j.at("size"));
 
     return builder.add_library_node<AllocaNode>(parent, debug_info, size);
 }

@@ -77,8 +77,8 @@ data_flow::LibraryNode& FWriteNodeSerializer::deserialize(
     sdfg::serializer::JSONSerializer serializer;
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
-    SymEngine::Expression size(j.at("size"));
-    SymEngine::Expression count(j.at("count"));
+    auto size = symbolic::parse(j.at("size"));
+    auto count = symbolic::parse(j.at("count"));
 
     return builder.add_library_node<FWriteNode>(parent, debug_info, size, count);
 }

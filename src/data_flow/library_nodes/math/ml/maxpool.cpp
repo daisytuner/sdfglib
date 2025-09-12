@@ -215,7 +215,7 @@ data_flow::LibraryNode &MaxPoolNodeSerializer::deserialize(
 
     std::vector<symbolic::Expression> shape;
     for (const auto &dim : j["shape"]) {
-        shape.push_back(SymEngine::Expression(dim.get<std::string>()));
+        shape.push_back(symbolic::parse(dim.get<std::string>()));
     }
 
     return builder.add_library_node<MaxPoolNode>(parent, debug_info, shape, kernel_shape, pads, strides);

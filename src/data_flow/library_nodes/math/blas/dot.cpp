@@ -177,9 +177,9 @@ data_flow::LibraryNode& DotNodeSerializer::deserialize(
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
     auto precision = j.at("precision").get<BLAS_Precision>();
-    auto n = SymEngine::Expression(j.at("n"));
-    auto incx = SymEngine::Expression(j.at("incx"));
-    auto incy = SymEngine::Expression(j.at("incy"));
+    auto n = symbolic::parse(j.at("n"));
+    auto incx = symbolic::parse(j.at("incx"));
+    auto incy = symbolic::parse(j.at("incy"));
 
     auto implementation_type = j.at("implementation_type").get<std::string>();
 

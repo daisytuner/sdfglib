@@ -377,12 +377,12 @@ data_flow::LibraryNode& GEMMNodeSerializer::deserialize(
     auto layout = j.at("layout").get<BLAS_Layout>();
     auto trans_a = j.at("trans_a").get<BLAS_Transpose>();
     auto trans_b = j.at("trans_b").get<BLAS_Transpose>();
-    auto m = SymEngine::Expression(j.at("m"));
-    auto n = SymEngine::Expression(j.at("n"));
-    auto k = SymEngine::Expression(j.at("k"));
-    auto lda = SymEngine::Expression(j.at("lda"));
-    auto ldb = SymEngine::Expression(j.at("ldb"));
-    auto ldc = SymEngine::Expression(j.at("ldc"));
+    auto m = symbolic::parse(j.at("m"));
+    auto n = symbolic::parse(j.at("n"));
+    auto k = symbolic::parse(j.at("k"));
+    auto lda = symbolic::parse(j.at("lda"));
+    auto ldb = symbolic::parse(j.at("ldb"));
+    auto ldc = symbolic::parse(j.at("ldc"));
 
     auto implementation_type = j.at("implementation_type").get<std::string>();
 

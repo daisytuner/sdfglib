@@ -16,7 +16,11 @@ Transition::Transition(
       };
 
 void Transition::validate(const Function& function) const {
-    // TODO: Implement validation
+    for (const auto& entry : this->assignments_) {
+        if (entry.first.is_null() || entry.second.is_null()) {
+            throw InvalidSDFGException("Transition: Assignments cannot have null expressions");
+        }
+    }
 };
 
 const control_flow::Assignments& Transition::assignments() const { return this->assignments_; };

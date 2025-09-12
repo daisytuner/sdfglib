@@ -16,7 +16,23 @@ StructuredLoop::StructuredLoop(
 }
 
 void StructuredLoop::validate(const Function& function) const {
-    // TODO: Implement validation
+    if (this->indvar_.is_null()) {
+        throw InvalidSDFGException("StructuredLoop: Induction variable cannot be null");
+    }
+    if (this->init_.is_null()) {
+        throw InvalidSDFGException("StructuredLoop: Initialization expression cannot be null");
+    }
+    if (this->update_.is_null()) {
+        throw InvalidSDFGException("StructuredLoop: Update expression cannot be null");
+    }
+    if (this->condition_.is_null()) {
+        throw InvalidSDFGException("StructuredLoop: Condition expression cannot be null");
+    }
+    if (!SymEngine::is_a_Boolean(*this->condition_)) {
+        throw InvalidSDFGException("StructuredLoop: Condition expression must be a boolean expression");
+    }
+
+    this->root_->validate(function);
 };
 
 const symbolic::Symbol& StructuredLoop::indvar() const { return this->indvar_; };

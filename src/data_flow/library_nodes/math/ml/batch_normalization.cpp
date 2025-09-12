@@ -236,7 +236,7 @@ data_flow::LibraryNode &BatchNormalizationNodeSerializer::deserialize(
 
     std::vector<symbolic::Expression> shape;
     for (const auto &dim : j["shape"]) {
-        shape.push_back(SymEngine::Expression(dim.get<std::string>()));
+        shape.push_back(symbolic::parse(dim.get<std::string>()));
     }
 
     auto axis = j["axis"].get<int>();

@@ -27,6 +27,15 @@ Memlet::Memlet(
       };
 
 void Memlet::validate(const Function& function) const {
+    // Validate subset
+    for (const auto& dim : this->subset_) {
+        // Null ptr check
+        if (dim.is_null()) {
+            throw InvalidSDFGException("Memlet: Subset dimensions cannot be null");
+        }
+    }
+
+    // Validate connections
     switch (this->type()) {
         case MemletType::Computational: {
             // Criterion: Must connect a code node and an access node with void connector at access node

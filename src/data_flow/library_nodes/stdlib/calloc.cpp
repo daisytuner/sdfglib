@@ -78,8 +78,8 @@ data_flow::LibraryNode& CallocNodeSerializer::deserialize(
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
     // Extract properties
-    SymEngine::Expression size(j.at("size"));
-    SymEngine::Expression num(j.at("num"));
+    auto size = symbolic::parse(j.at("size"));
+    auto num = symbolic::parse(j.at("num"));
 
     return builder.add_library_node<CallocNode>(parent, debug_info, num, size);
 }

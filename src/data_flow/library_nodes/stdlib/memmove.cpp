@@ -70,7 +70,7 @@ data_flow::LibraryNode& MemmoveNodeSerializer::deserialize(
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
     // Extract properties
-    SymEngine::Expression count(j.at("count"));
+    auto count = symbolic::parse(j.at("count"));
 
     return builder.add_library_node<MemmoveNode>(parent, debug_info, count);
 }

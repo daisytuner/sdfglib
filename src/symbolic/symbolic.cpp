@@ -2,10 +2,12 @@
 
 #include <string>
 
+#include <symengine/parser.h>
 #include "sdfg/exceptions.h"
 #include "sdfg/types/type.h"
 #include "symengine/functions.h"
 #include "symengine/logic.h"
+
 
 namespace sdfg {
 namespace symbolic {
@@ -204,6 +206,8 @@ Condition subs(const Condition& expr, const Expression& old_expr, const Expressi
 
     return SymEngine::rcp_static_cast<const SymEngine::Boolean>(expr->subs(d));
 };
+
+Expression parse(const std::string& expr_str) { return SymEngine::parse(expr_str); };
 
 /***** NV Symbols *****/
 

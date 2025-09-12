@@ -78,8 +78,8 @@ data_flow::LibraryNode& MemsetNodeSerializer::deserialize(
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
     // Extract properties
-    SymEngine::Expression value(j.at("value"));
-    SymEngine::Expression num(j.at("num"));
+    auto value = symbolic::parse(j.at("value"));
+    auto num = symbolic::parse(j.at("num"));
 
     return builder.add_library_node<MemsetNode>(parent, debug_info, value, num);
 }

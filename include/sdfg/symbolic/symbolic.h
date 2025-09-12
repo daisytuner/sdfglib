@@ -168,5 +168,7 @@ Symbol gridDim_y();
 
 Symbol gridDim_z();
 
+Expression parse(const std::string& expr_str);
+
 } // namespace symbolic
 } // namespace sdfg

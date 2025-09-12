@@ -19,7 +19,7 @@ Map::
         const ScheduleType& schedule_type)
     : StructuredLoop(element_id, debug_info, indvar, init, update, condition), schedule_type_(schedule_type) {};
 
-void Map::validate(const Function& function) const { this->root_->validate(function); };
+void Map::validate(const Function& function) const { StructuredLoop::validate(function); };
 
 ScheduleType& Map::schedule_type() { return this->schedule_type_; };
 
@@ -35,7 +35,7 @@ const symbolic::Expression ScheduleType_CPU_Parallel::num_threads(const Schedule
         return SymEngine::null;
     }
     std::string expr_str = schedule.properties().at("num_threads");
-    SymEngine::Expression expr(expr_str);
+    auto expr = symbolic::parse(expr_str);
     return expr;
 }
 void ScheduleType_CPU_Parallel::set_dynamic(ScheduleType& schedule) { schedule.set_property("dynamic", "true"); }

@@ -21,6 +21,13 @@ InterstateEdge::InterstateEdge(
 
 void InterstateEdge::validate(const Function& function) const {
     for (auto& entry : this->assignments_) {
+        if (entry.first.is_null()) {
+            throw InvalidSDFGException("Assignment - LHS: cannot be null");
+        }
+        if (entry.second.is_null()) {
+            throw InvalidSDFGException("Assignment - RHS: cannot be null");
+        }
+
         auto& lhs = entry.first;
         auto& type = function.type(lhs->get_name());
         if (type.type_id() != types::TypeID::Scalar) {
@@ -39,6 +46,12 @@ void InterstateEdge::validate(const Function& function) const {
         }
     }
 
+    if (this->condition_.is_null()) {
+        throw InvalidSDFGException("InterstateEdge: Condition cannot be null");
+    }
+    if (!SymEngine::is_a_Boolean(*this->condition_)) {
+        throw InvalidSDFGException("InterstateEdge: Condition must be a boolean expression");
+    }
     for (auto& atom : symbolic::atoms(this->condition_)) {
         if (symbolic::is_nullptr(atom)) {
             continue;

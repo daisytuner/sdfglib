@@ -636,10 +636,11 @@ void JSONSerializer::json_to_dataflow(
         assert(edge.contains("subset"));
         assert(edge["subset"].is_array());
         std::vector<symbolic::Expression> subset;
-        for (const auto& subset_str : edge["subset"]) {
-            assert(subset_str.is_string());
-            SymEngine::Expression subset_expr(subset_str);
-            subset.push_back(subset_expr);
+        for (const auto& subset_ : edge["subset"]) {
+            assert(subset_.is_string());
+            std::string subset_str = subset_;
+            auto expr = symbolic::parse(subset_str);
+            subset.push_back(expr);
         }
         auto& memlet = builder.add_memlet(
             parent,
@@ -687,7 +688,7 @@ void JSONSerializer::json_to_sequence(
                 assert(assignment["symbol"].is_string());
                 assert(assignment.contains("expression"));
                 assert(assignment["expression"].is_string());
-                SymEngine::Expression expr(assignment["expression"]);
+                auto expr = symbolic::parse(assignment["expression"].get<std::string>());
                 assignments.insert({symbolic::symbol(assignment["symbol"]), expr});
             }
 
@@ -764,11 +765,15 @@ void JSONSerializer::json_to_for_node(
     assert(j["root"].is_object());
 
     symbolic::Symbol indvar = symbolic::symbol(j["indvar"]);
-    SymEngine::Expression init(j["init"]);
-    SymEngine::Expression condition_expr(j["condition"]);
-    assert(!SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic()).is_null());
-    symbolic::Condition condition = SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic());
-    SymEngine::Expression update(j["update"]);
+    auto init = symbolic::parse(j["init"].get<std::string>());
+    auto update = symbolic::parse(j["update"].get<std::string>());
+
+    auto condition_expr = symbolic::parse(j["condition"].get<std::string>());
+    symbolic::Condition condition = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(condition_expr);
+    if (condition.is_null()) {
+        throw InvalidSDFGException("For loop condition is not a boolean expression");
+    }
+
     auto& for_node =
         builder.add_for(parent, indvar, condition, init, update, assignments, json_to_debug_info(j["debug_info"]));
     for_node.element_id_ = j["element_id"];
@@ -797,10 +802,12 @@ void JSONSerializer::json_to_if_else_node(
         assert(branch["condition"].is_string());
         assert(branch.contains("root"));
         assert(branch["root"].is_object());
-        SymEngine::Expression condition_expr(branch["condition"]);
-        assert(!SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic()).is_null());
-        symbolic::Condition condition = SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic()
-        );
+
+        auto condition_expr = symbolic::parse(branch["condition"].get<std::string>());
+        symbolic::Condition condition = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(condition_expr);
+        if (condition.is_null()) {
+            throw InvalidSDFGException("If condition is not a boolean expression");
+        }
         auto& branch_node = builder.add_case(if_else_node, condition);
         assert(branch["root"].contains("type"));
         assert(branch["root"]["type"].is_string());
@@ -883,11 +890,13 @@ void JSONSerializer::json_to_map_node(
     structured_control_flow::ScheduleType schedule_type = json_to_schedule_type(j["schedule_type"]);
 
     symbolic::Symbol indvar = symbolic::symbol(j["indvar"]);
-    SymEngine::Expression init(j["init"]);
-    SymEngine::Expression condition_expr(j["condition"]);
-    assert(!SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic()).is_null());
-    symbolic::Condition condition = SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic());
-    SymEngine::Expression update(j["update"]);
+    auto init = symbolic::parse(j["init"].get<std::string>());
+    auto update = symbolic::parse(j["update"].get<std::string>());
+    auto condition_expr = symbolic::parse(j["condition"].get<std::string>());
+    symbolic::Condition condition = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(condition_expr);
+    if (condition.is_null()) {
+        throw InvalidSDFGException("Map condition is not a boolean expression");
+    }
 
     auto& map_node = builder.add_map(
         parent, indvar, condition, init, update, schedule_type, assignments, json_to_debug_info(j["debug_info"])
@@ -948,7 +957,7 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             assert(j.contains("num_elements"));
             std::string num_elements_str = j["num_elements"];
             // Convert num_elements_str to symbolic::Expression
-            SymEngine::Expression num_elements(num_elements_str);
+            auto num_elements = symbolic::parse(num_elements_str);
             assert(j.contains("storage_type"));
             types::StorageType storage_type = storage_type_from_string(j["storage_type"].get<std::string>());
             assert(j.contains("initializer"));

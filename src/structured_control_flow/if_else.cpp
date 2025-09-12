@@ -14,6 +14,17 @@ void IfElse::validate(const Function& function) const {
     for (auto& entry : this->cases_) {
         entry->validate(function);
     }
+    for (auto& entry : this->conditions_) {
+        if (entry.is_null()) {
+            throw InvalidSDFGException("IfElse: Conditions cannot be null");
+        }
+        if (!SymEngine::is_a_Boolean(*entry)) {
+            throw InvalidSDFGException("IfElse: Conditions must be boolean expressions");
+        }
+    }
+    if (this->cases_.size() != this->conditions_.size()) {
+        throw InvalidSDFGException("IfElse: Number of cases must be equal to number of conditions");
+    }
 };
 
 size_t IfElse::size() const { return this->cases_.size(); };

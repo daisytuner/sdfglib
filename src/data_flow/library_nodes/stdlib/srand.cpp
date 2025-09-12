@@ -58,7 +58,7 @@ data_flow::LibraryNode& SrandNodeSerializer::deserialize(
     sdfg::serializer::JSONSerializer serializer;
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
-    SymEngine::Expression seed(j.at("seed"));
+    auto seed = symbolic::parse(j.at("seed"));
 
     return builder.add_library_node<SrandNode>(parent, debug_info, seed);
 }
