@@ -14,9 +14,9 @@ TEST(CPU_PARALLELScheduleTypeTest, ScheduleTypeTest) {
 
     EXPECT_TRUE(symbolic::eq(ScheduleType_CPU_Parallel::num_threads(cpu_parallel_schedule), symbolic::integer(256)));
 
-    EXPECT_FALSE(ScheduleType_CPU_Parallel::dynamic(cpu_parallel_schedule));
-    ScheduleType_CPU_Parallel::set_dynamic(cpu_parallel_schedule);
-    EXPECT_TRUE(ScheduleType_CPU_Parallel::dynamic(cpu_parallel_schedule));
+    EXPECT_EQ(ScheduleType_CPU_Parallel::omp_schedule(cpu_parallel_schedule), OpenMPSchedule::Static);
+    ScheduleType_CPU_Parallel::omp_schedule(cpu_parallel_schedule, OpenMPSchedule::Dynamic);
+    EXPECT_EQ(ScheduleType_CPU_Parallel::omp_schedule(cpu_parallel_schedule), OpenMPSchedule::Dynamic);
 }
 
 } // namespace sdfg::structured_control_flow
