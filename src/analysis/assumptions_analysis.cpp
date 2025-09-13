@@ -107,8 +107,8 @@ void AssumptionsAnalysis::
             }
 
             for (auto& sym : symbols) {
-                symbolic::Expression ub = symbolic::infty(1);
-                symbolic::Expression lb = symbolic::infty(-1);
+                symbolic::Expression ub = SymEngine::Inf;
+                symbolic::Expression lb = SymEngine::NegInf;
                 for (auto& clause : cnf) {
                     auto& literal = clause[0];
                     // Literal does not use symbol
@@ -134,13 +134,13 @@ void AssumptionsAnalysis::
                         auto lhs = lt->get_args()[0];
                         auto rhs = lt->get_args()[1];
                         if (SymEngine::eq(*lhs, *sym) && !symbolic::uses(rhs, sym)) {
-                            if (symbolic::eq(ub, symbolic::infty(1))) {
+                            if (symbolic::eq(ub, SymEngine::Inf)) {
                                 ub = rhs;
                             } else {
                                 ub = symbolic::min(ub, rhs);
                             }
                         } else if (SymEngine::eq(*rhs, *sym) && !symbolic::uses(lhs, sym)) {
-                            if (symbolic::eq(lb, symbolic::infty(-1))) {
+                            if (symbolic::eq(lb, SymEngine::NegInf)) {
                                 lb = lhs;
                             } else {
                                 lb = symbolic::max(lb, lhs);
@@ -151,13 +151,13 @@ void AssumptionsAnalysis::
                         auto lhs = lt->get_args()[0];
                         auto rhs = lt->get_args()[1];
                         if (SymEngine::eq(*lhs, *sym) && !symbolic::uses(rhs, sym)) {
-                            if (symbolic::eq(ub, symbolic::infty(1))) {
+                            if (symbolic::eq(ub, SymEngine::Inf)) {
                                 ub = rhs;
                             } else {
                                 ub = symbolic::min(ub, rhs);
                             }
                         } else if (SymEngine::eq(*rhs, *sym) && !symbolic::uses(lhs, sym)) {
-                            if (symbolic::eq(lb, symbolic::infty(-1))) {
+                            if (symbolic::eq(lb, SymEngine::NegInf)) {
                                 lb = lhs;
                             } else {
                                 lb = symbolic::max(lb, lhs);
@@ -167,7 +167,7 @@ void AssumptionsAnalysis::
                 }
 
                 // Failed to infer anything
-                if (symbolic::eq(ub, symbolic::infty(1)) && symbolic::eq(lb, symbolic::infty(-1))) {
+                if (symbolic::eq(ub, SymEngine::Inf) && symbolic::eq(lb, SymEngine::NegInf)) {
                     continue;
                 }
 
@@ -180,10 +180,10 @@ void AssumptionsAnalysis::
                 }
 
                 scope_assumptions[sym].constant(true);
-                if (!symbolic::eq(ub, symbolic::infty(1))) {
+                if (!symbolic::eq(ub, SymEngine::Inf)) {
                     scope_assumptions[sym].upper_bound(ub);
                 }
-                if (!symbolic::eq(lb, symbolic::infty(-1))) {
+                if (!symbolic::eq(lb, SymEngine::NegInf)) {
                     scope_assumptions[sym].lower_bound(lb);
                 }
             }

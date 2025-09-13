@@ -6,13 +6,14 @@ namespace sdfg {
 namespace symbolic {
 
 Assumption::Assumption()
-    : symbol_(symbolic::symbol("")), lower_bound_(infty(-1)), upper_bound_(infty(1)), constant_(false),
+    : symbol_(symbolic::symbol("")), lower_bound_(SymEngine::NegInf), upper_bound_(SymEngine::Inf), constant_(false),
       map_(SymEngine::null) {
 
       };
 
 Assumption::Assumption(const Symbol symbol)
-    : symbol_(symbol), lower_bound_(infty(-1)), upper_bound_(infty(1)), constant_(false), map_(SymEngine::null) {
+    : symbol_(symbol), lower_bound_(SymEngine::NegInf), upper_bound_(SymEngine::Inf), constant_(false),
+      map_(SymEngine::null) {
 
       };
 
@@ -77,12 +78,12 @@ Assumption Assumption::create(const Symbol symbol, const types::IType& type) {
             }
             case types::PrimitiveType::UInt64: {
                 assum.lower_bound(integer(std::numeric_limits<uint64_t>::min()));
-                assum.upper_bound(infty(1));
+                assum.upper_bound(SymEngine::Inf);
                 break;
             }
             case types::PrimitiveType::UInt128: {
                 assum.lower_bound(integer(0));
-                assum.upper_bound(infty(1));
+                assum.upper_bound(SymEngine::Inf);
                 break;
             }
             case types::PrimitiveType::Int8: {
@@ -101,13 +102,13 @@ Assumption Assumption::create(const Symbol symbol, const types::IType& type) {
                 break;
             }
             case types::PrimitiveType::Int64: {
-                assum.lower_bound(infty(-1));
-                assum.upper_bound(infty(1));
+                assum.lower_bound(SymEngine::NegInf);
+                assum.upper_bound(SymEngine::Inf);
                 break;
             }
             case types::PrimitiveType::Int128: {
-                assum.lower_bound(infty(-1));
-                assum.upper_bound(infty(1));
+                assum.lower_bound(SymEngine::NegInf);
+                assum.upper_bound(SymEngine::Inf);
                 break;
             }
             default: {

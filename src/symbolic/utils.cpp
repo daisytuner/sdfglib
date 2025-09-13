@@ -430,7 +430,7 @@ ExpressionSet generate_constraints(SymbolSet& syms, const Assumptions& assums, S
 
         auto ub = assums.at(sym).upper_bound();
         auto lb = assums.at(sym).lower_bound();
-        if (!symbolic::eq(ub, symbolic::infty(1))) {
+        if (!symbolic::eq(ub, SymEngine::Inf)) {
             if (SymEngine::is_a<SymEngine::Min>(*ub)) {
                 auto min = SymEngine::rcp_static_cast<const SymEngine::Min>(ub);
                 auto args = min->get_args();
@@ -451,7 +451,7 @@ ExpressionSet generate_constraints(SymbolSet& syms, const Assumptions& assums, S
                 constraints.insert(con_cons.begin(), con_cons.end());
             }
         }
-        if (!symbolic::eq(lb, symbolic::infty(-1))) {
+        if (!symbolic::eq(lb, SymEngine::NegInf)) {
             if (SymEngine::is_a<SymEngine::Max>(*lb)) {
                 auto max = SymEngine::rcp_static_cast<const SymEngine::Max>(lb);
                 auto args = max->get_args();

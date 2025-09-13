@@ -31,8 +31,6 @@ Integer zero() { return symbolic::integer(0); };
 
 Integer one() { return symbolic::integer(1); };
 
-Infty infty(int direction) { return SymEngine::infty(direction); };
-
 Condition __false__() { return SymEngine::boolean(false); };
 
 Condition __true__() { return SymEngine::boolean(true); };
