@@ -219,16 +219,16 @@ void DotNodeDispatcher_BLAS::dispatch_code(
             throw std::runtime_error("Invalid BLAS_Precision value");
     }
 
-    stream << "res = ";
+    stream << dot_node.outputs().at(0) << " = ";
     stream << "cblas_" << BLAS_Precision_to_string(dot_node.precision()) << "dot(";
     stream.setIndent(stream.indent() + 4);
     stream << this->language_extension_.expression(dot_node.n());
     stream << ", ";
-    stream << "x";
+    stream << dot_node.inputs().at(0);
     stream << ", ";
     stream << this->language_extension_.expression(dot_node.incx());
     stream << ", ";
-    stream << "y";
+    stream << dot_node.inputs().at(1);
     stream << ", ";
     stream << this->language_extension_.expression(dot_node.incy());
     stream.setIndent(stream.indent() - 4);
