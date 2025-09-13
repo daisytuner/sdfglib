@@ -17,6 +17,8 @@ public:
 
     CUDALanguageExtension(const std::vector<std::string>& external_variables) : LanguageExtension(external_variables) {}
 
+    const std::string language() const override { return "CUDA"; }
+
     std::string primitive_type(const types::PrimitiveType prim_type) override;
 
     std::string declaration(
@@ -27,7 +29,7 @@ public:
 
     std::string subset(const Function& function, const types::IType& type, const data_flow::Subset& subset) override;
 
-    std::string expression(const symbolic::Expression& expr) override;
+    std::string expression(const symbolic::Expression expr) override;
 
     std::string access_node(const data_flow::AccessNode& node) override;
 

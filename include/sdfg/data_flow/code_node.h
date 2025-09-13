@@ -46,7 +46,7 @@ public:
 
     const std::string& input(size_t index) const;
 
-    virtual bool needs_connector(size_t index) const = 0;
+    bool has_constant_input(size_t index) const;
 
     virtual std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
         const = 0;

@@ -24,9 +24,7 @@ GEMMNode::GEMMNode(
     symbolic::Expression k,
     symbolic::Expression lda,
     symbolic::Expression ldb,
-    symbolic::Expression ldc,
-    const std::string& alpha,
-    const std::string& beta
+    symbolic::Expression ldc
 )
     : MathNode(
           element_id,
@@ -35,7 +33,7 @@ GEMMNode::GEMMNode(
           parent,
           LibraryNodeType_GEMM,
           {"C"},
-          {"A", "B", "C", alpha, beta},
+          {"A", "B", "C", "alpha", "beta"},
           implementation_type
       ),
       precision_(precision), layout_(layout), trans_a_(trans_a), trans_b_(trans_b), m_(m), n_(n), k_(k), lda_(lda),
@@ -61,83 +59,7 @@ symbolic::Expression GEMMNode::ldb() const { return this->ldb_; };
 
 symbolic::Expression GEMMNode::ldc() const { return this->ldc_; };
 
-const std::string& GEMMNode::alpha() const { return this->inputs_.at(3); };
-
-const std::string& GEMMNode::beta() const { return this->inputs_.at(4); };
-
-void GEMMNode::validate(const Function& function) const {
-    auto& graph = this->get_parent();
-
-    if (this->inputs_.size() != 5) {
-        throw InvalidSDFGException("GEMMNode must have 5 inputs: A, B, C, (alpha), (beta)");
-    }
-
-    int input_edge_count = graph.in_degree(*this);
-    if (input_edge_count < 3 || input_edge_count > 5) {
-        throw InvalidSDFGException("GEMMNode must have 3-5 inputs");
-    }
-    if (graph.out_degree(*this) != 1) {
-        throw InvalidSDFGException("GEMMNode must have 1 output");
-    }
-
-    // // Check if all inputs are connected A, B, C, (alpha), (beta)
-    std::unordered_map<std::string, const data_flow::Memlet*> memlets;
-    for (auto& input : this->inputs_) {
-        bool found = false;
-        for (auto& iedge : graph.in_edges(*this)) {
-            if (iedge.dst_conn() == input) {
-                found = true;
-                memlets[input] = &iedge;
-                break;
-            }
-        }
-        if (!found && (input == "A" || input == "B" || input == "C")) {
-            throw InvalidSDFGException("GEMMNode input " + input + " not found");
-        }
-    }
-
-    // Check if output is connected to C
-    auto& oedge = *graph.out_edges(*this).begin();
-    if (oedge.src_conn() != this->outputs_.at(0)) {
-        throw InvalidSDFGException("GEMMNode output " + this->outputs_.at(0) + " not found");
-    }
-
-    // Check dimensions of A, B, C
-    auto& a_memlet = memlets.at("A");
-    auto& a_subset_begin = a_memlet->begin_subset();
-    auto& a_subset_end = a_memlet->end_subset();
-    if (a_subset_begin.size() != 1) {
-        throw InvalidSDFGException("GEMMNode input A must have 1 dimensions");
-    }
-    data_flow::Subset a_dims;
-    for (size_t i = 0; i < a_subset_begin.size(); i++) {
-        a_dims.push_back(symbolic::sub(a_subset_end[i], a_subset_begin[i]));
-    }
-
-    auto& b_memlet = memlets.at("B");
-    auto& b_subset_begin = b_memlet->begin_subset();
-    auto& b_subset_end = b_memlet->end_subset();
-    if (b_subset_begin.size() != 1) {
-        throw InvalidSDFGException("GEMMNode input B must have 1 dimensions");
-    }
-    data_flow::Subset b_dims;
-    for (size_t i = 0; i < b_subset_begin.size(); i++) {
-        b_dims.push_back(symbolic::sub(b_subset_end[i], b_subset_begin[i]));
-    }
-
-    auto& c_memlet = memlets.at("C");
-    auto& c_subset_begin = c_memlet->begin_subset();
-    auto& c_subset_end = c_memlet->end_subset();
-    if (c_subset_begin.size() != 1) {
-        throw InvalidSDFGException("GEMMNode input C must have 1 dimensions");
-    }
-    data_flow::Subset c_dims;
-    for (size_t i = 0; i < c_subset_begin.size(); i++) {
-        c_dims.push_back(symbolic::sub(c_subset_end[i], c_subset_begin[i]));
-    }
-
-    // TODO: Check if dimensions of A, B, C are valid
-}
+void GEMMNode::validate(const Function& function) const {}
 
 types::PrimitiveType GEMMNode::scalar_primitive() const {
     switch (this->precision_) {
@@ -165,9 +87,6 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         return false;
     }
 
-    auto& alpha = this->alpha();
-    auto& beta = this->beta();
-
     auto primitive_type = scalar_primitive();
     if (primitive_type == types::PrimitiveType::Void) {
         return false;
@@ -192,9 +111,9 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
             iedge_b = &edge;
         } else if (dst_conn == "C") {
             iedge_c = &edge;
-        } else if (dst_conn == alpha) {
+        } else if (dst_conn == "alpha") {
             alpha_edge = &edge;
-        } else if (dst_conn == beta) {
+        } else if (dst_conn == "beta") {
             beta_edge = &edge;
         } else {
             throw InvalidSDFGException("GEMMNode has unexpected input: " + dst_conn);
@@ -205,19 +124,12 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& oedge = *dataflow.out_edges(*this).begin();
 
     // Checks if legal
-    auto* input_node_a = dynamic_cast<data_flow::AccessNode*>(&iedge_a->src());
-    auto* input_node_b = dynamic_cast<data_flow::AccessNode*>(&iedge_b->src());
-    auto* input_node_c = dynamic_cast<data_flow::AccessNode*>(&iedge_c->src());
-    auto* output_node = dynamic_cast<data_flow::AccessNode*>(&oedge.dst());
-    data_flow::AccessNode* alpha_node = nullptr;
-    data_flow::AccessNode* beta_node = nullptr;
-
-    if (alpha_edge) {
-        alpha_node = dynamic_cast<data_flow::AccessNode*>(&alpha_edge->src());
-    }
-    if (beta_edge) {
-        beta_node = dynamic_cast<data_flow::AccessNode*>(&beta_edge->src());
-    }
+    auto* input_node_a = static_cast<data_flow::AccessNode*>(&iedge_a->src());
+    auto* input_node_b = static_cast<data_flow::AccessNode*>(&iedge_b->src());
+    auto* input_node_c = static_cast<data_flow::AccessNode*>(&iedge_c->src());
+    auto* output_node = static_cast<data_flow::AccessNode*>(&oedge.dst());
+    auto* alpha_node = static_cast<data_flow::AccessNode*>(&alpha_edge->src());
+    auto* beta_node = static_cast<data_flow::AccessNode*>(&beta_edge->src());
 
     // we must be the only thing in this block, as we do not support splitting a block into pre, expanded lib-node, post
     if (!input_node_a || dataflow.in_degree(*input_node_a) != 0 || !input_node_b ||
@@ -225,7 +137,7 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         !output_node || dataflow.out_degree(*output_node) != 0) {
         return false; // data nodes are not standalone
     }
-    if ((alpha_node && dataflow.in_degree(*alpha_node) != 0) || (beta_node && dataflow.in_degree(*beta_node) != 0)) {
+    if (dataflow.in_degree(*alpha_node) != 0 || dataflow.in_degree(*beta_node) != 0) {
         return false; // alpha and beta are not standalone
     }
     for (auto* nd : dataflow.data_nodes()) {
@@ -246,10 +158,6 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 
     // Add maps
     std::vector<symbolic::Expression> indvar_ends{this->m(), this->n(), this->k()};
-    auto& begin_subsets_out = oedge.begin_subset();
-    auto& end_subsets_out = oedge.end_subset();
-    auto& begin_subsets_in_a = iedge_a->begin_subset();
-    auto& end_subsets_in_a = iedge_a->end_subset();
     data_flow::Subset new_subset;
     structured_control_flow::Sequence* last_scope = &new_sequence;
     structured_control_flow::Map* last_map = nullptr;
@@ -294,8 +202,9 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& init_block = builder.add_block_before(output_loop->root(), *last_map, {}, block.debug_info());
     auto& sum_init = builder.add_access(init_block, sum_var, block.debug_info());
 
-    auto& init_tasklet = builder.add_tasklet(init_block, data_flow::assign, "_out", {"0.0"}, block.debug_info());
-
+    auto& zero_node = builder.add_constant(init_block, "0.0", alpha_edge->base_type(), block.debug_info());
+    auto& init_tasklet = builder.add_tasklet(init_block, data_flow::assign, "_out", {"_in"}, block.debug_info());
+    builder.add_computational_memlet(init_block, zero_node, init_tasklet, "_in", {}, block.debug_info());
     builder.add_computational_memlet(init_block, init_tasklet, "_out", sum_init, {}, block.debug_info());
 
     auto& code_block = builder.add_block(*last_scope, {}, block.debug_info());
@@ -324,11 +233,15 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     symbolic::Expression c_idx = symbolic::add(symbolic::mul(ldc(), new_subset[0]), new_subset[1]);
 
     auto& scale_sum_tasklet =
-        builder.add_tasklet(flush_block, data_flow::mul, "_out", {"_in1", alpha}, block.debug_info());
+        builder.add_tasklet(flush_block, data_flow::mul, "_out", {"_in1", "_in2"}, block.debug_info());
     builder.add_computational_memlet(flush_block, sum_final, scale_sum_tasklet, "_in1", {}, block.debug_info());
-    if (alpha_node) {
+    if (auto const_node = dynamic_cast<data_flow::ConstantNode*>(alpha_node)) {
+        auto& alpha_node_new =
+            builder.add_constant(flush_block, const_node->data(), const_node->type(), block.debug_info());
+        builder.add_computational_memlet(flush_block, alpha_node_new, scale_sum_tasklet, "_in2", {}, block.debug_info());
+    } else {
         auto& alpha_node_new = builder.add_access(flush_block, alpha_node->data(), block.debug_info());
-        builder.add_computational_memlet(flush_block, scale_sum_tasklet, alpha, alpha_node_new, {}, block.debug_info());
+        builder.add_computational_memlet(flush_block, alpha_node_new, scale_sum_tasklet, "_in2", {}, block.debug_info());
     }
 
     std::string scaled_sum_temp = builder.find_new_name("scaled_sum_temp");
@@ -339,15 +252,19 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     );
 
     auto& scale_input_tasklet =
-        builder.add_tasklet(flush_block, data_flow::mul, "_out", {"_in1", beta}, block.debug_info());
+        builder.add_tasklet(flush_block, data_flow::mul, "_out", {"_in1", "_in2"}, block.debug_info());
     builder.add_computational_memlet(
         flush_block, input_node_c_new, scale_input_tasklet, "_in1", {c_idx}, iedge_c->base_type(), iedge_c->debug_info()
     );
-    if (beta_node) {
+    if (auto const_node = dynamic_cast<data_flow::ConstantNode*>(beta_node)) {
+        auto& beta_node_new =
+            builder.add_constant(flush_block, const_node->data(), const_node->type(), block.debug_info());
+        builder
+            .add_computational_memlet(flush_block, beta_node_new, scale_input_tasklet, "_in2", {}, block.debug_info());
+    } else {
         auto& beta_node_new = builder.add_access(flush_block, beta_node->data(), block.debug_info());
-        builder.add_computational_memlet(
-            flush_block, scale_sum_tasklet, beta, beta_node_new, {}, scalar_type, block.debug_info()
-        );
+        builder
+            .add_computational_memlet(flush_block, beta_node_new, scale_input_tasklet, "_in2", {}, block.debug_info());
     }
 
     std::string scaled_input_temp = builder.find_new_name("scaled_input_temp");
@@ -375,14 +292,10 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     builder.remove_memlet(block, *iedge_a);
     builder.remove_memlet(block, *iedge_b);
     builder.remove_memlet(block, *iedge_c);
-    if (alpha_edge) {
-        builder.remove_memlet(block, *alpha_edge);
-        builder.remove_node(block, *alpha_node);
-    }
-    if (beta_edge) {
-        builder.remove_memlet(block, *beta_edge);
-        builder.remove_node(block, *beta_node);
-    }
+    builder.remove_memlet(block, *alpha_edge);
+    builder.remove_node(block, *alpha_node);
+    builder.remove_memlet(block, *beta_edge);
+    builder.remove_node(block, *beta_node);
     builder.remove_memlet(block, oedge);
     builder.remove_node(block, *input_node_a);
     builder.remove_node(block, *input_node_b);
@@ -411,9 +324,7 @@ std::unique_ptr<data_flow::DataFlowNode> GEMMNode::
         this->k_,
         this->lda_,
         this->ldb_,
-        this->ldc_,
-        this->alpha(),
-        this->beta()
+        this->ldc_
     ));
     return std::move(node_clone);
 }
@@ -441,8 +352,6 @@ nlohmann::json GEMMNodeSerializer::serialize(const data_flow::LibraryNode& libra
     j["lda"] = serializer.expression(gemm_node.lda());
     j["ldb"] = serializer.expression(gemm_node.ldb());
     j["ldc"] = serializer.expression(gemm_node.ldc());
-    j["alpha"] = gemm_node.alpha();
-    j["beta"] = gemm_node.beta();
 
     return j;
 }
@@ -468,20 +377,17 @@ data_flow::LibraryNode& GEMMNodeSerializer::deserialize(
     auto layout = j.at("layout").get<BLAS_Layout>();
     auto trans_a = j.at("trans_a").get<BLAS_Transpose>();
     auto trans_b = j.at("trans_b").get<BLAS_Transpose>();
-    auto m = SymEngine::Expression(j.at("m"));
-    auto n = SymEngine::Expression(j.at("n"));
-    auto k = SymEngine::Expression(j.at("k"));
-    auto lda = SymEngine::Expression(j.at("lda"));
-    auto ldb = SymEngine::Expression(j.at("ldb"));
-    auto ldc = SymEngine::Expression(j.at("ldc"));
-    auto alpha = j.at("alpha").get<std::string>();
-    auto beta = j.at("beta").get<std::string>();
+    auto m = symbolic::parse(j.at("m"));
+    auto n = symbolic::parse(j.at("n"));
+    auto k = symbolic::parse(j.at("k"));
+    auto lda = symbolic::parse(j.at("lda"));
+    auto ldb = symbolic::parse(j.at("ldb"));
+    auto ldc = symbolic::parse(j.at("ldc"));
 
     auto implementation_type = j.at("implementation_type").get<std::string>();
 
-    return builder.add_library_node<GEMMNode>(
-        parent, debug_info, implementation_type, precision, layout, trans_a, trans_b, m, n, k, lda, ldb, ldc, alpha, beta
-    );
+    return builder.add_library_node<
+        GEMMNode>(parent, debug_info, implementation_type, precision, layout, trans_a, trans_b, m, n, k, lda, ldb, ldc);
 }
 
 GEMMNodeDispatcher_BLAS::GEMMNodeDispatcher_BLAS(
@@ -492,7 +398,7 @@ GEMMNodeDispatcher_BLAS::GEMMNodeDispatcher_BLAS(
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void GEMMNodeDispatcher_BLAS::dispatch(
+void GEMMNodeDispatcher_BLAS::dispatch_code(
     codegen::PrettyPrinter& stream,
     codegen::PrettyPrinter& globals_stream,
     codegen::CodeSnippetFactory& library_snippet_factory
@@ -515,26 +421,6 @@ void GEMMNodeDispatcher_BLAS::dispatch(
             break;
         default:
             throw std::runtime_error("Invalid BLAS_Precision value");
-    }
-
-    auto& graph = this->node_.get_parent();
-    for (auto& iedge : graph.in_edges(this->node_)) {
-        auto& access_node = static_cast<const data_flow::AccessNode&>(iedge.src());
-        std::string name = access_node.data();
-        auto& type = this->function_.type(name);
-
-        stream << this->language_extension_.declaration(iedge.dst_conn(), type);
-        stream << " = " << name << ";" << std::endl;
-    }
-
-    if (std::find(gemm_node.inputs().begin(), gemm_node.inputs().end(), "alpha") ==
-        gemm_node.inputs().end()) { // TODO obsolute, must be an input!
-        stream << this->language_extension_.declaration("alpha", base_type);
-        stream << " = " << gemm_node.alpha() << ";" << std::endl;
-    }
-    if (std::find(gemm_node.inputs().begin(), gemm_node.inputs().end(), "beta") == gemm_node.inputs().end()) {
-        stream << this->language_extension_.declaration("beta", base_type);
-        stream << " = " << gemm_node.beta() << ";" << std::endl;
     }
 
     stream << "cblas_" << BLAS_Precision_to_string(gemm_node.precision()) << "gemm(";
@@ -582,7 +468,7 @@ GEMMNodeDispatcher_CUBLAS::GEMMNodeDispatcher_CUBLAS(
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void GEMMNodeDispatcher_CUBLAS::dispatch(
+void GEMMNodeDispatcher_CUBLAS::dispatch_code(
     codegen::PrettyPrinter& stream,
     codegen::PrettyPrinter& globals_stream,
     codegen::CodeSnippetFactory& library_snippet_factory

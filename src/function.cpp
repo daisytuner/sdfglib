@@ -12,7 +12,8 @@ const std::unique_ptr<types::Scalar> Function::NVPTX_SYMBOL_TYPE =
 const std::unique_ptr<types::Pointer> Function::CONST_POINTER_TYPE =
     std::make_unique<types::Pointer>(types::Scalar(types::PrimitiveType::Void));
 
-Function::Function(const std::string& name, FunctionType type) : element_counter_(0), name_(name), type_(type) {
+Function::Function(const std::string& name, FunctionType type, const types::IType& return_type)
+    : element_counter_(0), name_(name), type_(type), return_type_(return_type.clone()) {
     if (this->type_ == FunctionType_NV_GLOBAL) {
         this->assumptions_[symbolic::threadIdx_x()] =
             symbolic::Assumption::create(symbolic::threadIdx_x(), *NVPTX_SYMBOL_TYPE);
@@ -41,11 +42,16 @@ Function::Function(const std::string& name, FunctionType type) : element_counter
     }
 };
 
+Function::Function(const std::string& name, FunctionType type)
+    : Function(name, type, types::Scalar(types::PrimitiveType::Void)) {}
+
 const std::string& Function::name() const { return this->name_; };
 
 std::string& Function::name() { return this->name_; };
 
 FunctionType Function::type() const { return this->type_; };
+
+const types::IType& Function::return_type() const { return *this->return_type_; };
 
 size_t Function::element_counter() const { return this->element_counter_; };
 
@@ -57,18 +63,10 @@ void Function::validate() const {
 };
 
 bool Function::exists(const std::string& name) const {
-    return this->containers_.find(name) != this->containers_.end() || symbolic::is_pointer(symbolic::symbol(name)) ||
-           helpers::is_number(name) || symbolic::is_nv(symbolic::symbol(name));
+    return this->containers_.find(name) != this->containers_.end();
 };
 
 const types::IType& Function::type(const std::string& name) const {
-    if (symbolic::is_nv(symbolic::symbol(name))) {
-        return *NVPTX_SYMBOL_TYPE;
-    }
-    if (symbolic::is_pointer(symbolic::symbol(name)) || helpers::is_number(name)) {
-        return *CONST_POINTER_TYPE;
-    }
-
     auto entry = this->containers_.find(name);
     if (entry == this->containers_.end()) {
         throw InvalidSDFGException("Type: Container " + name + " not found");
@@ -129,11 +127,11 @@ symbolic::SymbolSet Function::parameters() const {
     return params;
 };
 
-bool Function::has_assumption(const symbolic::Symbol& symbol) const {
+bool Function::has_assumption(const symbolic::Symbol symbol) const {
     return this->assumptions_.find(symbol) != this->assumptions_.end();
 };
 
-const symbolic::Assumption& Function::assumption(const symbolic::Symbol& symbol) const {
+const symbolic::Assumption& Function::assumption(const symbolic::Symbol symbol) const {
     auto entry = this->assumptions_.find(symbol);
     if (entry == this->assumptions_.end()) {
         throw InvalidSDFGException("Assumption does not exist in SDFG");
@@ -141,7 +139,7 @@ const symbolic::Assumption& Function::assumption(const symbolic::Symbol& symbol)
     return entry->second;
 };
 
-symbolic::Assumption& Function::assumption(const symbolic::Symbol& symbol) {
+symbolic::Assumption& Function::assumption(const symbolic::Symbol symbol) {
     auto entry = this->assumptions_.find(symbol);
     if (entry == this->assumptions_.end()) {
         throw InvalidSDFGException("Assumption does not exist in SDFG");

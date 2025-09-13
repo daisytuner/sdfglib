@@ -42,7 +42,7 @@ private:
         const graph::Edge& edge,
         const control_flow::State& src,
         const control_flow::State& dst,
-        const symbolic::Condition& condition,
+        const symbolic::Condition condition,
         const control_flow::Assignments& assignments
     );
 
@@ -59,13 +59,13 @@ public:
 
     const control_flow::State& dst() const;
 
-    const symbolic::Condition& condition() const;
+    const symbolic::Condition condition() const;
 
     bool is_unconditional() const;
 
     const control_flow::Assignments& assignments() const;
 
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 };
 
 } // namespace control_flow

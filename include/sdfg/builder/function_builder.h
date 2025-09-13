@@ -20,6 +20,8 @@ public:
 
     /***** Section: Containers *****/
 
+    void set_return_type(const types::IType& type) const;
+
     const types::IType& add_container(
         const std::string& name, const types::IType& type, bool is_argument = false, bool is_external = false
     ) const;
@@ -30,9 +32,9 @@ public:
 
     void change_type(const std::string& name, const types::IType& type) const;
 
-    types::StructureDefinition& add_structure(const std::string& name, bool is_packed) const;
+    virtual void rename_container(const std::string& old_name, const std::string& new_name) const;
 
-    void make_array(const std::string& name, const symbolic::Expression& size) const;
+    types::StructureDefinition& add_structure(const std::string& name, bool is_packed) const;
 
     std::string find_new_name(std::string prefix = "tmp_") const;
 

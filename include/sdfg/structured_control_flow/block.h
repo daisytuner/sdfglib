@@ -33,7 +33,7 @@ public:
 
     data_flow::DataFlowGraph& dataflow();
 
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 };
 
 } // namespace structured_control_flow

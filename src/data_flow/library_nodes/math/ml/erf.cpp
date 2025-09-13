@@ -10,9 +10,13 @@ namespace math {
 namespace ml {
 
 ErfNode::ErfNode(
-    size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
+    size_t element_id,
+    const DebugInfo& debug_info,
+    const graph::Vertex vertex,
+    data_flow::DataFlowGraph& parent,
+    const std::vector<symbolic::Expression>& shape
 )
-    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Erf, {}) {}
+    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Erf, shape, {}) {}
 
 bool ErfNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,
@@ -38,7 +42,8 @@ bool ErfNode::expand_operation(
 
 std::unique_ptr<data_flow::DataFlowNode> ErfNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
-    return std::unique_ptr<data_flow::DataFlowNode>(new ErfNode(element_id, this->debug_info(), vertex, parent));
+    return std::unique_ptr<
+        data_flow::DataFlowNode>(new ErfNode(element_id, this->debug_info(), vertex, parent, this->shape_));
 }
 
 } // namespace ml

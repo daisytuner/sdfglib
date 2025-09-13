@@ -59,41 +59,41 @@ Condition __true__();
 
 Symbol __nullptr__();
 
-bool is_nullptr(const Symbol& symbol);
+bool is_nullptr(const Symbol symbol);
 
-bool is_pointer(const Symbol& symbol);
+bool is_pointer(const Symbol symbol);
 
-bool is_nv(const Symbol& symbol);
+bool is_nv(const Symbol symbol);
 
 /***** Logical Expressions *****/
 
-Condition And(const Condition& lhs, const Condition& rhs);
+Condition And(const Condition lhs, const Condition rhs);
 
-Condition Or(const Condition& lhs, const Condition& rhs);
+Condition Or(const Condition lhs, const Condition rhs);
 
-Condition Not(const Condition& expr);
+Condition Not(const Condition expr);
 
-bool is_true(const Expression& expr);
+bool is_true(const Expression expr);
 
-bool is_false(const Expression& expr);
+bool is_false(const Expression expr);
 
 /***** Integer Functions *****/
 
-Expression add(const Expression& lhs, const Expression& rhs);
+Expression add(const Expression lhs, const Expression rhs);
 
-Expression sub(const Expression& lhs, const Expression& rhs);
+Expression sub(const Expression lhs, const Expression rhs);
 
-Expression mul(const Expression& lhs, const Expression& rhs);
+Expression mul(const Expression lhs, const Expression rhs);
 
-Expression div(const Expression& lhs, const Expression& rhs);
+Expression div(const Expression lhs, const Expression rhs);
 
-Expression min(const Expression& lhs, const Expression& rhs);
+Expression min(const Expression lhs, const Expression rhs);
 
-Expression max(const Expression& lhs, const Expression& rhs);
+Expression max(const Expression lhs, const Expression rhs);
 
-Expression mod(const Expression& lhs, const Expression& rhs);
+Expression mod(const Expression lhs, const Expression rhs);
 
-Expression pow(const Expression& base, const Expression& exp);
+Expression pow(const Expression base, const Expression exp);
 
 Expression size_of_type(const types::IType& type);
 
@@ -110,37 +110,37 @@ public:
 
 /***** Comparisions *****/
 
-Condition Eq(const Expression& lhs, const Expression& rhs);
+Condition Eq(const Expression lhs, const Expression rhs);
 
-Condition Ne(const Expression& lhs, const Expression& rhs);
+Condition Ne(const Expression lhs, const Expression rhs);
 
-Condition Lt(const Expression& lhs, const Expression& rhs);
+Condition Lt(const Expression lhs, const Expression rhs);
 
-Condition Gt(const Expression& lhs, const Expression& rhs);
+Condition Gt(const Expression lhs, const Expression rhs);
 
-Condition Le(const Expression& lhs, const Expression& rhs);
+Condition Le(const Expression lhs, const Expression rhs);
 
-Condition Ge(const Expression& lhs, const Expression& rhs);
+Condition Ge(const Expression lhs, const Expression rhs);
 
 /***** Modification *****/
 
-Expression expand(const Expression& expr);
+Expression expand(const Expression expr);
 
-Expression simplify(const Expression& expr);
+Expression simplify(const Expression expr);
 
-bool eq(const Expression& lhs, const Expression& rhs);
+bool eq(const Expression lhs, const Expression rhs);
 
-bool uses(const Expression& expr, const Symbol& sym);
+bool uses(const Expression expr, const Symbol sym);
 
-bool uses(const Expression& expr, const std::string& name);
+bool uses(const Expression expr, const std::string& name);
 
-SymbolSet atoms(const Expression& expr);
+SymbolSet atoms(const Expression expr);
 
-ExpressionSet muls(const Expression& expr);
+ExpressionSet muls(const Expression expr);
 
-Expression subs(const Expression& expr, const Expression& old_expr, const Expression& new_expr);
+Expression subs(const Expression expr, const Expression old_expr, const Expression new_expr);
 
-Condition subs(const Condition& expr, const Expression& old_expr, const Expression& new_expr);
+Condition subs(const Condition expr, const Expression old_expr, const Expression new_expr);
 
 /***** NV Symbols *****/
 
@@ -167,6 +167,8 @@ Symbol gridDim_x();
 Symbol gridDim_y();
 
 Symbol gridDim_z();
+
+Expression parse(const std::string& expr_str);
 
 } // namespace symbolic
 } // namespace sdfg

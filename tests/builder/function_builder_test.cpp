@@ -130,27 +130,6 @@ TEST(FunctionBuilderTest, AddStructure) {
     EXPECT_EQ(sdfg->structure("struct_1").name(), "struct_1");
 }
 
-TEST(FunctionBuilderTest, MakeArrayTransient) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64));
-
-    builder.make_array("i", symbolic::integer(10));
-
-    auto sdfg = builder.move();
-
-    EXPECT_EQ(sdfg->containers().size(), 1);
-    EXPECT_EQ(sdfg->type("i"), types::Array(types::Scalar(types::PrimitiveType::UInt64), symbolic::integer(10)));
-}
-
-TEST(FunctionBuilderTest, MakeArrayArgument) {
-    builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    auto& container = builder.add_container("i", types::Scalar(types::PrimitiveType::UInt64), true);
-
-    EXPECT_THROW(builder.make_array("i", symbolic::integer(10)), sdfg::InvalidSDFGException);
-}
-
 TEST(FunctionBuilderTest, FindNewName) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 

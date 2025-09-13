@@ -147,7 +147,7 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
 std::tuple<std::string, std::string, std::string> expressions_to_intersection_map_str(
     const MultiExpression& expr1,
     const MultiExpression& expr2,
-    const Symbol& indvar,
+    const Symbol indvar,
     const Assumptions& assums1,
     const Assumptions& assums2
 ) {
@@ -476,7 +476,7 @@ ExpressionSet generate_constraints(SymbolSet& syms, const Assumptions& assums, S
     return constraints;
 }
 
-std::string constraint_to_isl_str(const Expression& con) {
+std::string constraint_to_isl_str(const Expression con) {
     codegen::CLanguageExtension language_extension;
 
     if (SymEngine::is_a<SymEngine::StrictLessThan>(*con)) {

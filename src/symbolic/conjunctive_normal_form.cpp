@@ -19,7 +19,7 @@ CNF distribute_or(const CNF& C, const CNF& D) {
     return out;
 }
 
-CNF conjunctive_normal_form(const Condition& cond) {
+CNF conjunctive_normal_form(const Condition cond) {
     // Goal: Convert a condition into ANDs of ORs
 
     // Case: Comparison with boolean literals

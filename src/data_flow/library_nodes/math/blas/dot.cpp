@@ -20,7 +20,7 @@ DotNode::DotNode(
     symbolic::Expression incx,
     symbolic::Expression incy
 )
-    : MathNode(element_id, debug_info, vertex, parent, LibraryNodeType_DOT, {"res"}, {"x", "y"}, implementation_type),
+    : MathNode(element_id, debug_info, vertex, parent, LibraryNodeType_DOT, {"_out"}, {"x", "y"}, implementation_type),
       precision_(precision), n_(n), incx_(incx), incy_(incy) {}
 
 BLAS_Precision DotNode::precision() const { return this->precision_; };
@@ -31,50 +31,7 @@ symbolic::Expression DotNode::incx() const { return this->incx_; };
 
 symbolic::Expression DotNode::incy() const { return this->incy_; };
 
-void DotNode::validate(const Function& function) const {
-    auto& graph = this->get_parent();
-
-    if (graph.in_degree(*this) != this->inputs_.size()) {
-        throw InvalidSDFGException("DotNode must have " + std::to_string(this->inputs_.size()) + " inputs");
-    }
-    if (graph.out_degree(*this) != 1) {
-        throw InvalidSDFGException("DotNode must have 1 output");
-    }
-
-    std::unordered_map<std::string, const data_flow::Memlet*> memlets;
-    for (auto& input : this->inputs_) {
-        bool found = false;
-        for (auto& iedge : graph.in_edges(*this)) {
-            if (iedge.dst_conn() == input) {
-                found = true;
-                memlets[input] = &iedge;
-                break;
-            }
-        }
-        if (!found) {
-            throw InvalidSDFGException("DotNode input " + input + " not found");
-        }
-    }
-
-    auto& oedge = *graph.out_edges(*this).begin();
-    if (oedge.src_conn() != this->outputs_.at(0)) {
-        throw InvalidSDFGException("DotNode output " + this->outputs_.at(0) + " not found");
-    }
-
-    auto& x_memlet = memlets.at("x");
-    auto& x_subset_begin = x_memlet->begin_subset();
-    auto& x_subset_end = x_memlet->end_subset();
-    if (x_subset_begin.size() != 1) {
-        throw InvalidSDFGException("DotNode input x must have 1 dimensions");
-    }
-
-    auto& y_memlet = memlets.at("y");
-    auto& y_subset_begin = y_memlet->begin_subset();
-    auto& y_subset_end = y_memlet->end_subset();
-    if (y_subset_begin.size() != 1) {
-        throw InvalidSDFGException("DotNode input y must have 1 dimensions");
-    }
-}
+void DotNode::validate(const Function& function) const {}
 
 bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
@@ -97,7 +54,7 @@ bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
 
     const data_flow::Memlet* oedge_res = nullptr;
     for (const auto& oedge : dataflow.out_edges(*this)) {
-        if (oedge.src_conn() == "res") {
+        if (oedge.src_conn() == "_out") {
             oedge_res = &oedge;
             break;
         }
@@ -220,9 +177,9 @@ data_flow::LibraryNode& DotNodeSerializer::deserialize(
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
     auto precision = j.at("precision").get<BLAS_Precision>();
-    auto n = SymEngine::Expression(j.at("n"));
-    auto incx = SymEngine::Expression(j.at("incx"));
-    auto incy = SymEngine::Expression(j.at("incy"));
+    auto n = symbolic::parse(j.at("n"));
+    auto incx = symbolic::parse(j.at("incx"));
+    auto incy = symbolic::parse(j.at("incy"));
 
     auto implementation_type = j.at("implementation_type").get<std::string>();
 
@@ -237,7 +194,7 @@ DotNodeDispatcher_BLAS::DotNodeDispatcher_BLAS(
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void DotNodeDispatcher_BLAS::dispatch(
+void DotNodeDispatcher_BLAS::dispatch_code(
     codegen::PrettyPrinter& stream,
     codegen::PrettyPrinter& globals_stream,
     codegen::CodeSnippetFactory& library_snippet_factory
@@ -262,26 +219,7 @@ void DotNodeDispatcher_BLAS::dispatch(
             throw std::runtime_error("Invalid BLAS_Precision value");
     }
 
-    auto& graph = this->node_.get_parent();
-    for (auto& iedge : graph.in_edges(this->node_)) {
-        auto& access_node = static_cast<const data_flow::AccessNode&>(iedge.src());
-        std::string name = access_node.data();
-        auto& type = this->function_.type(name);
-
-        stream << this->language_extension_.declaration(iedge.dst_conn(), type);
-        stream << " = " << name << ";" << std::endl;
-    }
-    for (auto& oedge : graph.out_edges(this->node_)) {
-        auto& access_node = static_cast<const data_flow::AccessNode&>(oedge.dst());
-        std::string name = access_node.data();
-        auto& type = this->function_.type(name);
-
-        stream << this->language_extension_.declaration(oedge.src_conn(), type);
-        stream << ";" << std::endl;
-    }
-
-    std::string res_name = this->node_.outputs().at(0);
-    stream << res_name << " = ";
+    stream << "res = ";
     stream << "cblas_" << BLAS_Precision_to_string(dot_node.precision()) << "dot(";
     stream.setIndent(stream.indent() + 4);
     stream << this->language_extension_.expression(dot_node.n());
@@ -296,13 +234,6 @@ void DotNodeDispatcher_BLAS::dispatch(
     stream.setIndent(stream.indent() - 4);
     stream << ");" << std::endl;
 
-    for (auto& oedge : graph.out_edges(this->node_)) {
-        auto& access_node = static_cast<const data_flow::AccessNode&>(oedge.dst());
-        std::string name = access_node.data();
-        auto& type = this->function_.type(name);
-        stream << name << " = " << oedge.src_conn() << ";" << std::endl;
-    }
-
     stream.setIndent(stream.indent() - 4);
     stream << "}" << std::endl;
 }
@@ -315,7 +246,7 @@ DotNodeDispatcher_CUBLAS::DotNodeDispatcher_CUBLAS(
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void DotNodeDispatcher_CUBLAS::dispatch(
+void DotNodeDispatcher_CUBLAS::dispatch_code(
     codegen::PrettyPrinter& stream,
     codegen::PrettyPrinter& globals_stream,
     codegen::CodeSnippetFactory& library_snippet_factory

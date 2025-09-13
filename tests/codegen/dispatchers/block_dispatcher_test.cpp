@@ -160,7 +160,7 @@ TEST(DataFlowDispatcherTest, DispatchRef_Empty) {
     codegen::CodeSnippetFactory snippet_factory;
     dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
-    EXPECT_EQ(main_stream.str(), "{\n    b = &((int *) a);\n}\n");
+    EXPECT_EQ(main_stream.str(), "{\n    b = &a;\n}\n");
 }
 
 TEST(DataFlowDispatcherTest, DispatchRef_Subset) {
@@ -205,7 +205,7 @@ TEST(DataFlowDispatcherTest, DispatchRef_Nullptr) {
     builder.add_container("b", opaque_desc);
 
     auto& block = builder.add_block(root);
-    auto& access_node_1 = builder.add_access(block, symbolic::__nullptr__()->get_name());
+    auto& access_node_1 = builder.add_constant(block, symbolic::__nullptr__()->get_name(), types::Pointer());
     auto& access_node_2 = builder.add_access(block, "b");
     builder.add_reference_memlet(block, access_node_1, access_node_2, {}, pointer_type);
 
@@ -234,7 +234,7 @@ TEST(DataFlowDispatcherTest, DispatchRef_Address) {
     builder.add_container("b", opaque_desc);
 
     auto& block = builder.add_block(root);
-    auto& access_node_1 = builder.add_access(block, "100");
+    auto& access_node_1 = builder.add_constant(block, "100", types::Scalar(types::PrimitiveType::Int64));
     auto& access_node_2 = builder.add_access(block, "b");
     builder.add_reference_memlet(block, access_node_1, access_node_2, {}, pointer_type);
 
@@ -326,7 +326,7 @@ TEST(DataFlowDispatcherTest, DispatchDeref_Store_Nullptr) {
     builder.add_container("b", opaque_desc);
 
     auto& block = builder.add_block(root);
-    auto& access_node_1 = builder.add_access(block, symbolic::__nullptr__()->get_name());
+    auto& access_node_1 = builder.add_constant(block, symbolic::__nullptr__()->get_name(), types::Pointer());
     auto& access_node_2 = builder.add_access(block, "b");
     builder.add_dereference_memlet(block, access_node_1, access_node_2, false, pointer_type_2);
 

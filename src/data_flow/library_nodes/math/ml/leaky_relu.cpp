@@ -14,9 +14,11 @@ LeakyReLUNode::LeakyReLUNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
+    const std::vector<symbolic::Expression>& shape,
     const std::string& alpha
 )
-    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_LeakyReLU, {{"alpha", alpha}}) {}
+    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_LeakyReLU, shape, {{"alpha", alpha}}) {
+}
 
 bool LeakyReLUNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,
@@ -54,7 +56,7 @@ bool LeakyReLUNode::expand_operation(
 std::unique_ptr<data_flow::DataFlowNode> LeakyReLUNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
     return std::unique_ptr<data_flow::DataFlowNode>(
-        new LeakyReLUNode(element_id, this->debug_info(), vertex, parent, this->attributes_.at("alpha"))
+        new LeakyReLUNode(element_id, this->debug_info(), vertex, parent, this->shape_, this->attributes_.at("alpha"))
     );
 }
 

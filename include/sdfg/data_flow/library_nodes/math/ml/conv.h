@@ -13,6 +13,7 @@ inline data_flow::LibraryNodeCode LibraryNodeType_Conv("ml::Conv");
 
 class ConvNode : public math::MathNode {
 private:
+    std::vector<symbolic::Expression> shape_;
     bool has_bias_;
     std::vector<size_t> dilations_;
     std::vector<size_t> kernel_shape_;
@@ -25,12 +26,15 @@ public:
         const DebugInfo& debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph& parent,
+        std::vector<symbolic::Expression> shape,
         bool has_bias,
         std::vector<size_t> dilations,
         std::vector<size_t> kernel_shape,
         std::vector<size_t> pads,
         std::vector<size_t> strides
     );
+
+    const std::vector<symbolic::Expression>& shape() const;
 
     bool has_bias() const;
 
@@ -41,6 +45,10 @@ public:
     std::vector<size_t> pads() const;
 
     std::vector<size_t> strides() const;
+
+    symbolic::SymbolSet symbols() const override;
+
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 
     void validate(const Function& function) const override;
 

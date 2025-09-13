@@ -18,6 +18,10 @@ AccessNode::AccessNode(
       };
 
 void AccessNode::validate(const Function& function) const {
+    if (!function.exists(this->data_)) {
+        throw InvalidSDFGException("Access node " + this->data_ + " uses non-existent variable");
+    }
+
     auto& graph = this->get_parent();
 
     if (graph.out_degree(*this) > 1) {
@@ -48,7 +52,7 @@ std::unique_ptr<DataFlowNode> AccessNode::clone(size_t element_id, const graph::
     return std::unique_ptr<AccessNode>(new AccessNode(element_id, this->debug_info_, vertex, parent, this->data_));
 };
 
-void AccessNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void AccessNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     if (SymEngine::is_a<SymEngine::Symbol>(*old_expression) && SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
         auto old_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(old_expression);
         if (this->data_ == old_symbol->get_name()) {
@@ -56,6 +60,35 @@ void AccessNode::replace(const symbolic::Expression& old_expression, const symbo
             this->data_ = new_symbol->get_name();
         }
     }
+};
+
+ConstantNode::ConstantNode(
+    size_t element_id,
+    const DebugInfo& debug_info,
+    const graph::Vertex vertex,
+    DataFlowGraph& parent,
+    const std::string& data,
+    const types::IType& type
+)
+    : AccessNode(element_id, debug_info, vertex, parent, data), type_(type.clone()) {};
+
+void ConstantNode::validate(const Function& function) const {
+    if (function.exists(this->data_)) {
+        throw InvalidSDFGException("ConstantNode " + this->data_ + " uses variable");
+    }
+
+    auto& graph = this->get_parent();
+    if (graph.in_degree(*this) > 0) {
+        throw InvalidSDFGException("ConstantNode " + this->data_ + " has incoming edges");
+    }
+}
+
+const types::IType& ConstantNode::type() const { return *this->type_; };
+
+std::unique_ptr<DataFlowNode> ConstantNode::clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
+    const {
+    return std::unique_ptr<
+        ConstantNode>(new ConstantNode(element_id, this->debug_info_, vertex, parent, this->data(), *this->type_));
 };
 
 } // namespace data_flow

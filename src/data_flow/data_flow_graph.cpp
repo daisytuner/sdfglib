@@ -6,6 +6,15 @@ namespace data_flow {
 void DataFlowGraph::validate(const Function& function) const {
     for (auto& node : this->nodes_) {
         node.second->validate(function);
+
+        if (auto code_node = dynamic_cast<const data_flow::CodeNode*>(node.second.get())) {
+            if (this->in_degree(*code_node) != code_node->inputs().size()) {
+                throw InvalidSDFGException("DataFlowGraph: Number of input edges does not match number of inputs.");
+            }
+            if (this->out_degree(*code_node) != code_node->outputs().size()) {
+                throw InvalidSDFGException("DataFlowGraph: Number of output edges does not match number of outputs.");
+            }
+        }
     }
     for (auto& edge : this->edges_) {
         edge.second->validate(function);
@@ -24,7 +33,7 @@ size_t DataFlowGraph::out_degree(const data_flow::DataFlowNode& node) const {
     return boost::out_degree(node.vertex(), this->graph_);
 };
 
-void DataFlowGraph::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void DataFlowGraph::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     for (auto& node : this->nodes_) {
         node.second->replace(old_expression, new_expression);
     }

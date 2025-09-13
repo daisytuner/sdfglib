@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/bimap.hpp>
+#include <boost/functional/hash.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/connected_components.hpp>
 #include <boost/graph/copy.hpp>
@@ -10,7 +11,6 @@
 #include <boost/graph/reverse_graph.hpp>
 #include <boost/graph/strong_components.hpp>
 #include <boost/graph/topological_sort.hpp>
-#include <boost/functional/hash.hpp>
 #include <list>
 #include <ranges>
 #include <set>
@@ -37,8 +37,7 @@ struct DFSVisitor : boost::default_dfs_visitor {
     std::list<Vertex>& nodes_;
     std::list<Edge>& back_edges_;
 
-    DFSVisitor(std::list<Edge>& back_edges, std::list<Vertex>& nodes)
-        : nodes_(nodes), back_edges_(back_edges){};
+    DFSVisitor(std::list<Edge>& back_edges, std::list<Vertex>& nodes) : nodes_(nodes), back_edges_(back_edges) {};
 
     void discover_vertex(Vertex v, const Graph& g) { nodes_.push_back(v); };
 
@@ -47,21 +46,21 @@ struct DFSVisitor : boost::default_dfs_visitor {
 
 const ReverseGraph reverse(const Graph& graph);
 
-const std::tuple<std::unique_ptr<const UndirectedGraph>, const std::unordered_map<Vertex, Vertex>,
-                 const std::unordered_map<Vertex, Vertex>>
+const std::tuple<
+    std::unique_ptr<const UndirectedGraph>,
+    const std::unordered_map<Vertex, Vertex>,
+    const std::unordered_map<Vertex, Vertex>>
 undirected(const Graph& graph);
 
 const std::list<Vertex> depth_first_search(const Graph& graph, const graph::Vertex start);
 
-std::pair<int, std::unordered_map<Vertex, size_t>> strongly_connected_components(
-    const Graph& graph);
+std::pair<int, std::unordered_map<Vertex, size_t>> strongly_connected_components(const Graph& graph);
 
-std::pair<size_t, const std::unordered_map<Vertex, size_t>> weakly_connected_components(
-    const Graph& graph);
+std::pair<size_t, const std::unordered_map<Vertex, size_t>> weakly_connected_components(const Graph& graph);
 
 const std::unordered_map<Vertex, Vertex> dominator_tree(const Graph& graph, const Vertex src);
 
-const std::unordered_map<Vertex, Vertex> post_dominator_tree(const Graph& graph, const Vertex src);
+const std::unordered_map<Vertex, Vertex> post_dominator_tree(Graph& graph);
 
 const std::list<graph::Vertex> topological_sort(const Graph& graph);
 
@@ -69,12 +68,16 @@ bool is_acyclic(const Graph& graph);
 
 const std::list<Edge> back_edges(const Graph& graph, const graph::Vertex start);
 
-void all_simple_paths_dfs(const Graph& graph, const Edge edge, const Vertex v,
-                          std::list<std::list<Edge>>& all_paths, std::list<Edge>& current_path,
-                          std::set<Vertex>& visited);
+void all_simple_paths_dfs(
+    const Graph& graph,
+    const Edge edge,
+    const Vertex v,
+    std::list<std::list<Edge>>& all_paths,
+    std::list<Edge>& current_path,
+    std::set<Vertex>& visited
+);
 
-const std::list<std::list<Edge>> all_simple_paths(const Graph& graph, const Vertex src,
-                                                  const Vertex dst);
+const std::list<std::list<Edge>> all_simple_paths(const Graph& graph, const Vertex src, const Vertex dst);
 
-}  // namespace graph
-}  // namespace sdfg
+} // namespace graph
+} // namespace sdfg

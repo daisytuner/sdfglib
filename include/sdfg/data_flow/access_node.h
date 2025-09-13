@@ -16,7 +16,7 @@ class AccessNode : public DataFlowNode {
     friend class sdfg::builder::SDFGBuilder;
     friend class sdfg::builder::StructuredSDFGBuilder;
 
-private:
+protected:
     std::string data_;
 
     AccessNode(
@@ -40,7 +40,37 @@ public:
     virtual std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
         const override;
 
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 };
+
+class ConstantNode : public AccessNode {
+    friend class sdfg::builder::SDFGBuilder;
+    friend class sdfg::builder::StructuredSDFGBuilder;
+
+private:
+    std::unique_ptr<types::IType> type_;
+
+    ConstantNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        DataFlowGraph& parent,
+        const std::string& data,
+        const types::IType& type
+    );
+
+public:
+    ConstantNode(const ConstantNode& data_node) = delete;
+    ConstantNode& operator=(const ConstantNode&) = delete;
+
+    const types::IType& type() const;
+
+    void validate(const Function& function) const override;
+
+    virtual std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
+        const override;
+};
+
+
 } // namespace data_flow
 } // namespace sdfg

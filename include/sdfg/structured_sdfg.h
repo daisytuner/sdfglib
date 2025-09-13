@@ -36,6 +36,7 @@ private:
 
 public:
     StructuredSDFG(const std::string& name, FunctionType type);
+    StructuredSDFG(const std::string& name, FunctionType type, const types::IType& return_type);
 
     StructuredSDFG(const StructuredSDFG& sdfg) = delete;
     StructuredSDFG& operator=(const StructuredSDFG&) = delete;

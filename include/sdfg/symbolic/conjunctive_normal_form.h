@@ -9,11 +9,11 @@ namespace sdfg {
 namespace symbolic {
 
 class CNFException : public std::exception {
-   public:
+public:
     CNFException(const std::string& message) : message_(message) {}
     const char* what() const noexcept override { return message_.c_str(); }
 
-   private:
+private:
     std::string message_;
 };
 
@@ -25,7 +25,7 @@ typedef std::vector<std::vector<Condition>> CNF;
  * @param cond The condition to convert.
  * @return The conjunctive normal form of the condition.
  */
-CNF conjunctive_normal_form(const Condition& cond);
+CNF conjunctive_normal_form(const Condition cond);
 
-}  // namespace symbolic
-}  // namespace sdfg
+} // namespace symbolic
+} // namespace sdfg

@@ -23,18 +23,12 @@ TEST(ExpansionPassTest, Simple) {
 
     auto& input_node = builder.add_access(block, "input");
     auto& output_node = builder.add_access(block, "output");
-    auto& relu_node = static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(block, DebugInfo())
-    );
+    auto& relu_node = static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(
+        block, DebugInfo(), std::vector<symbolic::Expression>{symbolic::integer(10), symbolic::integer(20)}
+    ));
 
     builder.add_computational_memlet(
-        block,
-        input_node,
-        relu_node,
-        "X",
-        {symbolic::integer(0), symbolic::integer(0)},
-        {symbolic::integer(10), symbolic::integer(20)},
-        array_desc_2,
-        block.debug_info()
+        block, input_node, relu_node, "X", {symbolic::integer(0), symbolic::integer(0)}, array_desc_2, block.debug_info()
     );
     builder.add_computational_memlet(
         block,
@@ -42,7 +36,6 @@ TEST(ExpansionPassTest, Simple) {
         "Y",
         output_node,
         {symbolic::integer(0), symbolic::integer(0)},
-        {symbolic::integer(10), symbolic::integer(20)},
         array_desc_2,
         block.debug_info()
     );
@@ -65,12 +58,12 @@ TEST(ExpansionPassTest, Simple) {
 
     auto block_1 = dynamic_cast<structured_control_flow::Block*>(&map_2->root().at(0).first);
     EXPECT_NE(block_1, nullptr);
-    EXPECT_EQ(block_1->dataflow().nodes().size(), 3);
+    EXPECT_EQ(block_1->dataflow().nodes().size(), 4);
 
     auto tasklet = *block_1->dataflow().tasklets().begin();
     EXPECT_EQ(tasklet->code(), data_flow::TaskletCode::max);
     EXPECT_EQ(tasklet->inputs().size(), 2);
-    EXPECT_EQ(tasklet->inputs().at(0), "0.0f");
-    EXPECT_EQ(tasklet->inputs().at(1), "_in");
+    EXPECT_EQ(tasklet->inputs().at(0), "_in1");
+    EXPECT_EQ(tasklet->inputs().at(1), "_in2");
     EXPECT_EQ(tasklet->output(), "_out");
 }

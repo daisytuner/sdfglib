@@ -83,7 +83,7 @@ TEST(ReturnDispatcherTest, DispatchNode) {
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
-    auto& return_node = builder.add_return(root);
+    auto& return_node = builder.add_return(root, "", false);
 
     auto final_sdfg = builder.move();
 
@@ -98,5 +98,5 @@ TEST(ReturnDispatcherTest, DispatchNode) {
 
     EXPECT_EQ(globals_stream.str(), "");
     EXPECT_TRUE(library_factory.snippets().empty());
-    EXPECT_EQ(main_stream.str(), "return;\n");
+    EXPECT_EQ(main_stream.str(), "return ;\n");
 }

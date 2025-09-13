@@ -15,16 +15,16 @@ TEST(SDFGTest, InAndOutDegree) {
     auto& edge_3 = builder.add_edge(state_2, state_4);
     auto& edge_4 = builder.add_edge(state_3, state_4);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
-    EXPECT_EQ(sdfg->in_degree(state_1), 0);
-    EXPECT_EQ(sdfg->out_degree(state_1), 2);
-    EXPECT_EQ(sdfg->in_degree(state_2), 1);
-    EXPECT_EQ(sdfg->out_degree(state_2), 1);
-    EXPECT_EQ(sdfg->in_degree(state_3), 1);
-    EXPECT_EQ(sdfg->out_degree(state_3), 1);
-    EXPECT_EQ(sdfg->in_degree(state_4), 2);
-    EXPECT_EQ(sdfg->out_degree(state_4), 0);
+    EXPECT_EQ(sdfg.in_degree(state_1), 0);
+    EXPECT_EQ(sdfg.out_degree(state_1), 2);
+    EXPECT_EQ(sdfg.in_degree(state_2), 1);
+    EXPECT_EQ(sdfg.out_degree(state_2), 1);
+    EXPECT_EQ(sdfg.in_degree(state_3), 1);
+    EXPECT_EQ(sdfg.out_degree(state_3), 1);
+    EXPECT_EQ(sdfg.in_degree(state_4), 2);
+    EXPECT_EQ(sdfg.out_degree(state_4), 0);
 }
 
 TEST(SDFGTest, IsAdjacent) {
@@ -39,14 +39,14 @@ TEST(SDFGTest, IsAdjacent) {
     auto& edge_3 = builder.add_edge(state_2, state_4);
     auto& edge_4 = builder.add_edge(state_3, state_4);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
-    EXPECT_TRUE(sdfg->is_adjacent(state_1, state_2));
-    EXPECT_TRUE(sdfg->is_adjacent(state_1, state_3));
-    EXPECT_TRUE(sdfg->is_adjacent(state_2, state_4));
-    EXPECT_TRUE(sdfg->is_adjacent(state_3, state_4));
-    EXPECT_FALSE(sdfg->is_adjacent(state_1, state_4));
-    EXPECT_FALSE(sdfg->is_adjacent(state_2, state_3));
+    EXPECT_TRUE(sdfg.is_adjacent(state_1, state_2));
+    EXPECT_TRUE(sdfg.is_adjacent(state_1, state_3));
+    EXPECT_TRUE(sdfg.is_adjacent(state_2, state_4));
+    EXPECT_TRUE(sdfg.is_adjacent(state_3, state_4));
+    EXPECT_FALSE(sdfg.is_adjacent(state_1, state_4));
+    EXPECT_FALSE(sdfg.is_adjacent(state_2, state_3));
 }
 
 TEST(SDFGTest, Edge) {
@@ -61,12 +61,12 @@ TEST(SDFGTest, Edge) {
     auto& edge_3 = builder.add_edge(state_2, state_4);
     auto& edge_4 = builder.add_edge(state_3, state_4);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
-    EXPECT_EQ(&sdfg->edge(state_1, state_2), &edge_1);
-    EXPECT_EQ(&sdfg->edge(state_1, state_3), &edge_2);
-    EXPECT_EQ(&sdfg->edge(state_2, state_4), &edge_3);
-    EXPECT_EQ(&sdfg->edge(state_3, state_4), &edge_4);
+    EXPECT_EQ(&sdfg.edge(state_1, state_2), &edge_1);
+    EXPECT_EQ(&sdfg.edge(state_1, state_3), &edge_2);
+    EXPECT_EQ(&sdfg.edge(state_2, state_4), &edge_3);
+    EXPECT_EQ(&sdfg.edge(state_3, state_4), &edge_4);
 }
 
 TEST(SDFGTest, DominatorTree) {
@@ -83,9 +83,9 @@ TEST(SDFGTest, DominatorTree) {
     auto& edge_4 = builder.add_edge(state_3, state_4);
     auto& edge_5 = builder.add_edge(state_4, state_5);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
-    auto dominator_tree = sdfg->dominator_tree();
+    auto dominator_tree = sdfg.dominator_tree();
     EXPECT_EQ(dominator_tree.size(), 5);
 
     EXPECT_EQ(dominator_tree.at(&state_1), nullptr);
@@ -109,9 +109,9 @@ TEST(SDFGTest, PostDominatorTree) {
     auto& edge_4 = builder.add_edge(state_3, state_4);
     auto& edge_5 = builder.add_edge(state_4, state_5);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
-    auto post_dominator_tree = sdfg->post_dominator_tree();
+    auto post_dominator_tree = sdfg.post_dominator_tree();
     EXPECT_EQ(post_dominator_tree.size(), 5);
 
     EXPECT_EQ(post_dominator_tree.at(&state_1), &state_4);
@@ -135,9 +135,9 @@ TEST(SDFGTest, AllSimplePaths) {
     auto& edge_4 = builder.add_edge(state_3, state_4);
     auto& edge_5 = builder.add_edge(state_4, state_5);
 
-    auto sdfg = builder.move();
+    auto& sdfg = builder.subject();
 
-    auto paths = sdfg->all_simple_paths(state_1, state_5);
+    auto paths = sdfg.all_simple_paths(state_1, state_5);
     EXPECT_EQ(paths.size(), 2);
 
     auto path_1 = paths.begin();
@@ -178,11 +178,11 @@ TEST(SDFGTest, AllSimplePaths) {
 TEST(SDFGTest, Metadata) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
-    auto sdfg = builder.move();
-    sdfg->add_metadata("key", "value");
+    auto& sdfg = builder.subject();
+    sdfg.add_metadata("key", "value");
 
-    EXPECT_EQ(sdfg->metadata("key"), "value");
+    EXPECT_EQ(sdfg.metadata("key"), "value");
 
-    sdfg->remove_metadata("key");
-    EXPECT_THROW(sdfg->metadata("key"), std::out_of_range);
+    sdfg.remove_metadata("key");
+    EXPECT_THROW(sdfg.metadata("key"), std::out_of_range);
 }

@@ -26,7 +26,7 @@ std::unique_ptr<DataFlowNode> BarrierLocalNode::clone(size_t element_id, const g
     return std::unique_ptr<BarrierLocalNode>(new BarrierLocalNode(element_id, this->debug_info_, vertex, parent));
 };
 
-void BarrierLocalNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void BarrierLocalNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     // Do nothing
 };
 
