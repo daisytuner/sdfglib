@@ -8,7 +8,7 @@ MemcpyNode::MemcpyNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
-    const symbolic::Expression& count
+    const symbolic::Expression count
 )
     : LibraryNode(
           element_id,
@@ -23,7 +23,7 @@ MemcpyNode::MemcpyNode(
       ),
       count_(count) {}
 
-const symbolic::Expression& MemcpyNode::count() const { return count_; }
+const symbolic::Expression MemcpyNode::count() const { return count_; }
 
 void MemcpyNode::validate(const Function& function) const {}
 
@@ -37,7 +37,7 @@ std::unique_ptr<data_flow::DataFlowNode> MemcpyNode::
     return std::make_unique<MemcpyNode>(element_id, debug_info_, vertex, parent, count_);
 }
 
-void MemcpyNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void MemcpyNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     this->count_ = symbolic::subs(this->count_, old_expression, new_expression);
 }
 

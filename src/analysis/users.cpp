@@ -295,7 +295,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(structured_control_flow:
 
         std::unordered_set<std::string> used;
         for (size_t i = 0; i < if_else_stmt->size(); i++) {
-            auto& condition = if_else_stmt->at(i).second;
+            auto condition = if_else_stmt->at(i).second;
             for (auto atom : symbolic::atoms(condition)) {
                 if (used.find(atom->get_name()) != used.end()) {
                     continue;

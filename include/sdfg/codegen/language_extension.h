@@ -40,7 +40,7 @@ public:
 
     virtual std::string subset(const Function& function, const types::IType& type, const data_flow::Subset& subset) = 0;
 
-    virtual std::string expression(const symbolic::Expression& expr) = 0;
+    virtual std::string expression(const symbolic::Expression expr) = 0;
 
     virtual std::string access_node(const data_flow::AccessNode& node) = 0;
 

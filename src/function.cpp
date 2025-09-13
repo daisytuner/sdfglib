@@ -127,11 +127,11 @@ symbolic::SymbolSet Function::parameters() const {
     return params;
 };
 
-bool Function::has_assumption(const symbolic::Symbol& symbol) const {
+bool Function::has_assumption(const symbolic::Symbol symbol) const {
     return this->assumptions_.find(symbol) != this->assumptions_.end();
 };
 
-const symbolic::Assumption& Function::assumption(const symbolic::Symbol& symbol) const {
+const symbolic::Assumption& Function::assumption(const symbolic::Symbol symbol) const {
     auto entry = this->assumptions_.find(symbol);
     if (entry == this->assumptions_.end()) {
         throw InvalidSDFGException("Assumption does not exist in SDFG");
@@ -139,7 +139,7 @@ const symbolic::Assumption& Function::assumption(const symbolic::Symbol& symbol)
     return entry->second;
 };
 
-symbolic::Assumption& Function::assumption(const symbolic::Symbol& symbol) {
+symbolic::Assumption& Function::assumption(const symbolic::Symbol symbol) {
     auto entry = this->assumptions_.find(symbol);
     if (entry == this->assumptions_.end()) {
         throw InvalidSDFGException("Assumption does not exist in SDFG");

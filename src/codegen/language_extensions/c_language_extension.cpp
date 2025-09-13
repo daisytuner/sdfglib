@@ -512,7 +512,7 @@ std::string CLanguageExtension::subset(const Function& function, const types::IT
     throw std::invalid_argument("Invalid subset type");
 };
 
-std::string CLanguageExtension::expression(const symbolic::Expression& expr) {
+std::string CLanguageExtension::expression(const symbolic::Expression expr) {
     CSymbolicPrinter printer;
     return printer.apply(expr);
 };

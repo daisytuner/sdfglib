@@ -50,7 +50,7 @@ symbolic::SymbolSet ConvNode::symbols() const {
     return syms;
 }
 
-void ConvNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void ConvNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     for (auto& dim : shape_) {
         dim = symbolic::subs(dim, old_expression, new_expression);
     }

@@ -50,7 +50,7 @@ public:
 
 class ScheduleType_CPU_Parallel {
 public:
-    static void num_threads(ScheduleType& schedule, const symbolic::Expression& num_threads);
+    static void num_threads(ScheduleType& schedule, const symbolic::Expression num_threads);
     static const symbolic::Expression num_threads(const ScheduleType& schedule);
     static void set_dynamic(ScheduleType& schedule);
     static bool dynamic(const ScheduleType& schedule);
@@ -77,8 +77,6 @@ public:
     Map& operator=(const Map&) = delete;
 
     void validate(const Function& function) const override;
-
-    ScheduleType& schedule_type();
 
     const ScheduleType& schedule_type() const;
 };

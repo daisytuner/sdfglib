@@ -40,7 +40,7 @@ symbolic::SymbolSet MaxPoolNode::symbols() const {
     return syms;
 }
 
-void MaxPoolNode::replace(const symbolic::Expression &old_expression, const symbolic::Expression &new_expression) {
+void MaxPoolNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     for (auto &dim : shape_) {
         dim = symbolic::subs(dim, old_expression, new_expression);
     }

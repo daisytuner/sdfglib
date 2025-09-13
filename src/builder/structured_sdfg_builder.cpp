@@ -870,10 +870,10 @@ While& StructuredSDFGBuilder::
 
 For& StructuredSDFGBuilder::add_for(
     Sequence& parent,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
 ) {
@@ -893,10 +893,10 @@ For& StructuredSDFGBuilder::add_for(
 For& StructuredSDFGBuilder::add_for_before(
     Sequence& parent,
     ControlFlowNode& child,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
 ) {
@@ -924,10 +924,10 @@ For& StructuredSDFGBuilder::add_for_before(
 For& StructuredSDFGBuilder::add_for_after(
     Sequence& parent,
     ControlFlowNode& child,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
 ) {
@@ -954,10 +954,10 @@ For& StructuredSDFGBuilder::add_for_after(
 
 Map& StructuredSDFGBuilder::add_map(
     Sequence& parent,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
     const ScheduleType& schedule_type,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
@@ -979,10 +979,10 @@ Map& StructuredSDFGBuilder::add_map(
 Map& StructuredSDFGBuilder::add_map_before(
     Sequence& parent,
     ControlFlowNode& child,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
     const ScheduleType& schedule_type,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
@@ -1012,10 +1012,10 @@ Map& StructuredSDFGBuilder::add_map_before(
 Map& StructuredSDFGBuilder::add_map_after(
     Sequence& parent,
     ControlFlowNode& child,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
     const ScheduleType& schedule_type,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
@@ -1120,10 +1120,10 @@ Return& StructuredSDFGBuilder::add_return(
 For& StructuredSDFGBuilder::convert_while(
     Sequence& parent,
     While& loop,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update
 ) {
     int index = parent.index(loop);
     if (index == -1) {
@@ -1179,6 +1179,30 @@ Map& StructuredSDFGBuilder::convert_for(Sequence& parent, For& loop) {
 
     return map;
 };
+
+void StructuredSDFGBuilder::update_if_else_condition(IfElse& if_else, size_t index, const symbolic::Condition condition) {
+    if (index >= if_else.conditions_.size()) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Index out of range");
+    }
+    if_else.conditions_.at(index) = condition;
+};
+
+void StructuredSDFGBuilder::update_loop(
+    StructuredLoop& loop,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update
+) {
+    loop.indvar_ = indvar;
+    loop.condition_ = condition;
+    loop.init_ = init;
+    loop.update_ = update;
+};
+
+void StructuredSDFGBuilder::update_schedule_type(Map& map, const ScheduleType& schedule_type) {
+    map.schedule_type_ = schedule_type;
+}
 
 Sequence& StructuredSDFGBuilder::parent(const ControlFlowNode& node) {
     std::list<structured_control_flow::ControlFlowNode*> queue = {&this->structured_sdfg_->root()};

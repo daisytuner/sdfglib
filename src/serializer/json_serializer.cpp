@@ -1068,7 +1068,7 @@ ScheduleType JSONSerializer::json_to_schedule_type(const nlohmann::json& j) {
     return schedule_type;
 }
 
-std::string JSONSerializer::expression(const symbolic::Expression& expr) {
+std::string JSONSerializer::expression(const symbolic::Expression expr) {
     JSONSymbolicPrinter printer;
     return printer.apply(expr);
 };

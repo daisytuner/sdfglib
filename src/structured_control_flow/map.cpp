@@ -21,11 +21,9 @@ Map::
 
 void Map::validate(const Function& function) const { StructuredLoop::validate(function); };
 
-ScheduleType& Map::schedule_type() { return this->schedule_type_; };
-
 const ScheduleType& Map::schedule_type() const { return this->schedule_type_; };
 
-void ScheduleType_CPU_Parallel::num_threads(ScheduleType& schedule, const symbolic::Expression& num_threads) {
+void ScheduleType_CPU_Parallel::num_threads(ScheduleType& schedule, const symbolic::Expression num_threads) {
     serializer::JSONSerializer serializer;
     schedule.set_property("num_threads", serializer.expression(num_threads));
 }

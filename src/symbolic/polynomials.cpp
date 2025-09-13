@@ -5,7 +5,7 @@
 namespace sdfg {
 namespace symbolic {
 
-Polynomial polynomial(const Expression& expr, SymbolVec& symbols) {
+Polynomial polynomial(const Expression expr, SymbolVec& symbols) {
     try {
         ExpressionSet gens;
         for (auto& symbol : symbols) {
@@ -17,7 +17,7 @@ Polynomial polynomial(const Expression& expr, SymbolVec& symbols) {
     }
 };
 
-AffineCoeffs affine_coefficients(Polynomial& poly, SymbolVec& symbols) {
+AffineCoeffs affine_coefficients(Polynomial poly, SymbolVec& symbols) {
     AffineCoeffs coeffs;
     for (auto& symbol : symbols) {
         coeffs[symbol] = symbolic::zero();

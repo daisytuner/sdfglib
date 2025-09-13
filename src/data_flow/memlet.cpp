@@ -300,10 +300,12 @@ std::unique_ptr<Memlet> Memlet::clone(
     ));
 };
 
-void Memlet::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void Memlet::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
+    Subset new_subset;
     for (auto& dim : this->subset_) {
-        dim = symbolic::subs(dim, old_expression, new_expression);
+        new_subset.push_back(symbolic::subs(dim, old_expression, new_expression));
     }
+    this->subset_ = new_subset;
 };
 
 } // namespace data_flow

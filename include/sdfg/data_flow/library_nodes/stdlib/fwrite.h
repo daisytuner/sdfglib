@@ -21,13 +21,13 @@ public:
         const DebugInfo& debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph& parent,
-        const symbolic::Expression& size,
-        const symbolic::Expression& count
+        const symbolic::Expression size,
+        const symbolic::Expression count
     );
 
-    const symbolic::Expression& size() const;
+    const symbolic::Expression size() const;
 
-    const symbolic::Expression& count() const;
+    const symbolic::Expression count() const;
 
     void validate(const Function& function) const override;
 
@@ -36,7 +36,7 @@ public:
     std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent)
         const override;
 
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 };
 
 class FWriteNodeSerializer : public serializer::LibraryNodeSerializer {

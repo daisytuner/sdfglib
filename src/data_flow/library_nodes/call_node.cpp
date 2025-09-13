@@ -73,7 +73,7 @@ std::unique_ptr<data_flow::DataFlowNode> CallNode::
     return std::make_unique<CallNode>(element_id, debug_info_, vertex, parent, function_name_, outputs_, inputs_);
 }
 
-void CallNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {}
+void CallNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {}
 
 nlohmann::json CallNodeSerializer::serialize(const data_flow::LibraryNode& library_node) {
     const CallNode& node = static_cast<const CallNode&>(library_node);

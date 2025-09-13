@@ -20,16 +20,16 @@ public:
         const DebugInfo& debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph& parent,
-        const symbolic::Expression& count
+        const symbolic::Expression count
     );
 
-    const symbolic::Expression& count() const;
+    const symbolic::Expression count() const;
 
     void validate(const Function& function) const override;
 
     symbolic::SymbolSet symbols() const override;
 
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 
     std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent)
         const override;

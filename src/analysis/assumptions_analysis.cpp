@@ -13,7 +13,7 @@
 namespace sdfg {
 namespace analysis {
 
-symbolic::Expression AssumptionsAnalysis::cnf_to_upper_bound(const symbolic::CNF& cnf, const symbolic::Symbol& indvar) {
+symbolic::Expression AssumptionsAnalysis::cnf_to_upper_bound(const symbolic::CNF& cnf, const symbolic::Symbol indvar) {
     std::vector<symbolic::Expression> candidates;
 
     for (const auto& clause : cnf) {

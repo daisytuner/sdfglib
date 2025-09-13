@@ -27,7 +27,7 @@ std::unique_ptr<data_flow::DataFlowNode> FputcNode::
     return std::make_unique<FputcNode>(element_id, debug_info_, vertex, parent);
 }
 
-void FputcNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {}
+void FputcNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {}
 
 nlohmann::json FputcNodeSerializer::serialize(const data_flow::LibraryNode& library_node) {
     const FputcNode& node = static_cast<const FputcNode&>(library_node);

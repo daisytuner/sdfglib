@@ -8,7 +8,7 @@ MemmoveNode::MemmoveNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
-    const symbolic::Expression& count
+    const symbolic::Expression count
 )
     : LibraryNode(
           element_id,
@@ -23,7 +23,7 @@ MemmoveNode::MemmoveNode(
       ),
       count_(count) {}
 
-const symbolic::Expression& MemmoveNode::count() const { return count_; }
+const symbolic::Expression MemmoveNode::count() const { return count_; }
 
 void MemmoveNode::validate(const Function& function) const {}
 
@@ -37,7 +37,7 @@ std::unique_ptr<data_flow::DataFlowNode> MemmoveNode::
     return std::make_unique<MemmoveNode>(element_id, debug_info_, vertex, parent, count_);
 }
 
-void MemmoveNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void MemmoveNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     this->count_ = symbolic::subs(this->count_, old_expression, new_expression);
 }
 

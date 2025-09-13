@@ -27,7 +27,7 @@ public:
 
     std::string subset(const Function& function, const types::IType& type, const data_flow::Subset& subset) override;
 
-    std::string expression(const symbolic::Expression& expr) override;
+    std::string expression(const symbolic::Expression expr) override;
 
     std::string access_node(const data_flow::AccessNode& node) override;
 

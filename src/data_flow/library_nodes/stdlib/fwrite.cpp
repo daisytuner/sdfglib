@@ -8,8 +8,8 @@ FWriteNode::FWriteNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
-    const symbolic::Expression& size,
-    const symbolic::Expression& count
+    const symbolic::Expression size,
+    const symbolic::Expression count
 )
     : LibraryNode(
           element_id,
@@ -24,9 +24,9 @@ FWriteNode::FWriteNode(
       ),
       size_(size), count_(count) {}
 
-const symbolic::Expression& FWriteNode::size() const { return size_; }
+const symbolic::Expression FWriteNode::size() const { return size_; }
 
-const symbolic::Expression& FWriteNode::count() const { return count_; }
+const symbolic::Expression FWriteNode::count() const { return count_; }
 
 void FWriteNode::validate(const Function& function) const {}
 
@@ -43,7 +43,7 @@ std::unique_ptr<data_flow::DataFlowNode> FWriteNode::
     return std::make_unique<FWriteNode>(element_id, debug_info_, vertex, parent, size_, count_);
 }
 
-void FWriteNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void FWriteNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     this->size_ = symbolic::subs(this->size_, old_expression, new_expression);
     this->count_ = symbolic::subs(this->count_, old_expression, new_expression);
 }

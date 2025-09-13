@@ -36,7 +36,7 @@ std::unique_ptr<data_flow::DataFlowNode> FprintfNode::
     return std::make_unique<FprintfNode>(element_id, debug_info_, vertex, parent, this->args_);
 }
 
-void FprintfNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {}
+void FprintfNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {}
 
 nlohmann::json FprintfNodeSerializer::serialize(const data_flow::LibraryNode& library_node) {
     const FprintfNode& node = static_cast<const FprintfNode&>(library_node);

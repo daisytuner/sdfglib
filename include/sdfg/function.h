@@ -119,11 +119,11 @@ public:
 
     symbolic::SymbolSet parameters() const;
 
-    bool has_assumption(const symbolic::Symbol& symbol) const;
+    bool has_assumption(const symbolic::Symbol symbol) const;
 
-    const symbolic::Assumption& assumption(const symbolic::Symbol& symbol) const;
+    const symbolic::Assumption& assumption(const symbolic::Symbol symbol) const;
 
-    symbolic::Assumption& assumption(const symbolic::Symbol& symbol);
+    symbolic::Assumption& assumption(const symbolic::Symbol symbol);
 
     const symbolic::Assumptions& assumptions() const;
 

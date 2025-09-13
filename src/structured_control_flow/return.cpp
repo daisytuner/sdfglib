@@ -14,7 +14,7 @@ bool Return::unreachable() const { return unreachable_; }
 
 void Return::validate(const Function& function) const {};
 
-void Return::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void Return::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     if (has_data() && data_ == old_expression->__str__()) {
         data_ = new_expression->__str__();
     }

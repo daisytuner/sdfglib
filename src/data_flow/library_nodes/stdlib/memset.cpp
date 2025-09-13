@@ -8,8 +8,8 @@ MemsetNode::MemsetNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
-    const symbolic::Expression& value,
-    const symbolic::Expression& num
+    const symbolic::Expression value,
+    const symbolic::Expression num
 )
     : LibraryNode(
           element_id,
@@ -24,9 +24,9 @@ MemsetNode::MemsetNode(
       ),
       num_(num), value_(value) {}
 
-const symbolic::Expression& MemsetNode::value() const { return value_; }
+const symbolic::Expression MemsetNode::value() const { return value_; }
 
-const symbolic::Expression& MemsetNode::num() const { return num_; }
+const symbolic::Expression MemsetNode::num() const { return num_; }
 
 void MemsetNode::validate(const Function& function) const {}
 
@@ -42,7 +42,7 @@ std::unique_ptr<data_flow::DataFlowNode> MemsetNode::
     return std::make_unique<MemsetNode>(element_id, debug_info_, vertex, parent, value_, num_);
 }
 
-void MemsetNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void MemsetNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     this->value_ = symbolic::subs(this->value_, old_expression, new_expression);
     this->num_ = symbolic::subs(this->num_, old_expression, new_expression);
 }

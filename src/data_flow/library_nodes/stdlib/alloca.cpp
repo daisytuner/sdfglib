@@ -8,7 +8,7 @@ AllocaNode::AllocaNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
-    const symbolic::Expression& size
+    const symbolic::Expression size
 )
     : LibraryNode(
           element_id,
@@ -23,7 +23,7 @@ AllocaNode::AllocaNode(
       ),
       size_(size) {}
 
-const symbolic::Expression& AllocaNode::size() const { return size_; }
+const symbolic::Expression AllocaNode::size() const { return size_; }
 
 void AllocaNode::validate(const Function& function) const {}
 
@@ -34,7 +34,7 @@ std::unique_ptr<data_flow::DataFlowNode> AllocaNode::
     return std::make_unique<AllocaNode>(element_id, debug_info_, vertex, parent, size_);
 }
 
-void AllocaNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void AllocaNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     this->size_ = symbolic::subs(this->size_, old_expression, new_expression);
 }
 

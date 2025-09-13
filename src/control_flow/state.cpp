@@ -18,7 +18,7 @@ const data_flow::DataFlowGraph& State::dataflow() const { return *this->dataflow
 
 data_flow::DataFlowGraph& State::dataflow() { return *this->dataflow_; };
 
-void State::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void State::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     this->dataflow_->replace(old_expression, new_expression);
 };
 
@@ -40,7 +40,7 @@ void ReturnState::validate(const Function& function) const {
     }
 }
 
-void ReturnState::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void ReturnState::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     State::replace(old_expression, new_expression);
 
     if (this->data_ == old_expression->__str__()) {

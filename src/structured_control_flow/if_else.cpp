@@ -29,11 +29,11 @@ void IfElse::validate(const Function& function) const {
 
 size_t IfElse::size() const { return this->cases_.size(); };
 
-std::pair<const Sequence&, const symbolic::Condition&> IfElse::at(size_t i) const {
+std::pair<const Sequence&, const symbolic::Condition> IfElse::at(size_t i) const {
     return {*this->cases_.at(i), this->conditions_.at(i)};
 };
 
-std::pair<Sequence&, symbolic::Condition&> IfElse::at(size_t i) {
+std::pair<Sequence&, const symbolic::Condition> IfElse::at(size_t i) {
     return {*this->cases_.at(i), this->conditions_.at(i)};
 };
 
@@ -45,7 +45,7 @@ bool IfElse::is_complete() const {
     return symbolic::is_true(condition);
 };
 
-void IfElse::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void IfElse::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     for (size_t i = 0; i < this->cases_.size(); ++i) {
         this->cases_.at(i)->replace(old_expression, new_expression);
         this->conditions_.at(i) = symbolic::subs(this->conditions_.at(i), old_expression, new_expression);

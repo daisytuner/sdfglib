@@ -3,6 +3,7 @@
 #include <string>
 
 #include <symengine/parser.h>
+#include <symengine/subs.h>
 #include "sdfg/exceptions.h"
 #include "sdfg/types/type.h"
 #include "symengine/functions.h"
@@ -38,11 +39,11 @@ Condition __true__() { return SymEngine::boolean(true); };
 
 Symbol __nullptr__() { return SymEngine::symbol("__daisy_nullptr"); };
 
-bool is_nullptr(const Symbol& symbol) { return symbol->get_name() == "__daisy_nullptr"; };
+bool is_nullptr(const Symbol symbol) { return symbol->get_name() == "__daisy_nullptr"; };
 
-bool is_pointer(const Symbol& symbol) { return is_nullptr(symbol); };
+bool is_pointer(const Symbol symbol) { return is_nullptr(symbol); };
 
-bool is_nv(const Symbol& symbol) {
+bool is_nv(const Symbol symbol) {
     if (symbol == threadIdx_x() || symbol == threadIdx_y() || symbol == threadIdx_z() || symbol == blockIdx_x() ||
         symbol == blockIdx_y() || symbol == blockIdx_z() || symbol == blockDim_x() || symbol == blockDim_y() ||
         symbol == blockDim_z() || symbol == gridDim_x() || symbol == gridDim_y() || symbol == gridDim_z()) {
@@ -54,25 +55,25 @@ bool is_nv(const Symbol& symbol) {
 
 /***** Logical Expressions *****/
 
-Condition And(const Condition& lhs, const Condition& rhs) { return SymEngine::logical_and({lhs, rhs}); };
+Condition And(const Condition lhs, const Condition rhs) { return SymEngine::logical_and({lhs, rhs}); };
 
-Condition Or(const Condition& lhs, const Condition& rhs) { return SymEngine::logical_or({lhs, rhs}); };
+Condition Or(const Condition lhs, const Condition rhs) { return SymEngine::logical_or({lhs, rhs}); };
 
-Condition Not(const Condition& expr) { return expr->logical_not(); };
+Condition Not(const Condition expr) { return expr->logical_not(); };
 
-bool is_true(const Expression& expr) { return SymEngine::eq(*SymEngine::boolTrue, *expr); };
+bool is_true(const Expression expr) { return SymEngine::eq(*SymEngine::boolTrue, *expr); };
 
-bool is_false(const Expression& expr) { return SymEngine::eq(*SymEngine::boolFalse, *expr); };
+bool is_false(const Expression expr) { return SymEngine::eq(*SymEngine::boolFalse, *expr); };
 
 /***** Integer Functions *****/
 
-Expression add(const Expression& lhs, const Expression& rhs) { return SymEngine::add(lhs, rhs); };
+Expression add(const Expression lhs, const Expression rhs) { return SymEngine::add(lhs, rhs); };
 
-Expression sub(const Expression& lhs, const Expression& rhs) { return SymEngine::sub(lhs, rhs); };
+Expression sub(const Expression lhs, const Expression rhs) { return SymEngine::sub(lhs, rhs); };
 
-Expression mul(const Expression& lhs, const Expression& rhs) { return SymEngine::mul(lhs, rhs); };
+Expression mul(const Expression lhs, const Expression rhs) { return SymEngine::mul(lhs, rhs); };
 
-Expression div(const Expression& lhs, const Expression& rhs) {
+Expression div(const Expression lhs, const Expression rhs) {
     if (eq(rhs, integer(1))) {
         return lhs;
     } else if (SymEngine::is_a<SymEngine::Integer>(*lhs) && SymEngine::is_a<SymEngine::Integer>(*rhs)) {
@@ -84,11 +85,11 @@ Expression div(const Expression& lhs, const Expression& rhs) {
     return idiv;
 };
 
-Expression min(const Expression& lhs, const Expression& rhs) { return SymEngine::min({lhs, rhs}); };
+Expression min(const Expression lhs, const Expression rhs) { return SymEngine::min({lhs, rhs}); };
 
-Expression max(const Expression& lhs, const Expression& rhs) { return SymEngine::max({lhs, rhs}); };
+Expression max(const Expression lhs, const Expression rhs) { return SymEngine::max({lhs, rhs}); };
 
-Expression mod(const Expression& lhs, const Expression& rhs) {
+Expression mod(const Expression lhs, const Expression rhs) {
     if (SymEngine::is_a<SymEngine::Integer>(*lhs) && SymEngine::is_a<SymEngine::Integer>(*rhs)) {
         auto a = SymEngine::rcp_static_cast<const SymEngine::Integer>(lhs)->as_int();
         auto b = SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs)->as_int();
@@ -98,7 +99,7 @@ Expression mod(const Expression& lhs, const Expression& rhs) {
     return imod;
 };
 
-Expression pow(const Expression& base, const Expression& exp) { return SymEngine::pow(base, exp); };
+Expression pow(const Expression base, const Expression exp) { return SymEngine::pow(base, exp); };
 
 Expression size_of_type(const types::IType& type) {
     auto so = SymEngine::make_rcp<SizeOfTypeFunction>(type);
@@ -107,26 +108,26 @@ Expression size_of_type(const types::IType& type) {
 
 /***** Comparisions *****/
 
-Condition Eq(const Expression& lhs, const Expression& rhs) { return SymEngine::Eq(lhs, rhs); };
+Condition Eq(const Expression lhs, const Expression rhs) { return SymEngine::Eq(lhs, rhs); };
 
-Condition Ne(const Expression& lhs, const Expression& rhs) { return SymEngine::Ne(lhs, rhs); };
+Condition Ne(const Expression lhs, const Expression rhs) { return SymEngine::Ne(lhs, rhs); };
 
-Condition Lt(const Expression& lhs, const Expression& rhs) { return SymEngine::Lt(lhs, rhs); };
+Condition Lt(const Expression lhs, const Expression rhs) { return SymEngine::Lt(lhs, rhs); };
 
-Condition Gt(const Expression& lhs, const Expression& rhs) { return SymEngine::Gt(lhs, rhs); };
+Condition Gt(const Expression lhs, const Expression rhs) { return SymEngine::Gt(lhs, rhs); };
 
-Condition Le(const Expression& lhs, const Expression& rhs) { return SymEngine::Le(lhs, rhs); };
+Condition Le(const Expression lhs, const Expression rhs) { return SymEngine::Le(lhs, rhs); };
 
-Condition Ge(const Expression& lhs, const Expression& rhs) { return SymEngine::Ge(lhs, rhs); };
+Condition Ge(const Expression lhs, const Expression rhs) { return SymEngine::Ge(lhs, rhs); };
 
 /***** Modification *****/
 
-Expression expand(const Expression& expr) {
+Expression expand(const Expression expr) {
     auto new_expr = SymEngine::expand(expr);
     return new_expr;
 };
 
-Expression simplify(const Expression& expr) {
+Expression simplify(const Expression expr) {
     if (SymEngine::is_a<SymEngine::FunctionSymbol>(*expr)) {
         auto func_sym = SymEngine::rcp_static_cast<const SymEngine::FunctionSymbol>(expr);
         auto func_id = func_sym->get_name();
@@ -175,13 +176,13 @@ Expression simplify(const Expression& expr) {
     }
 };
 
-bool eq(const Expression& lhs, const Expression& rhs) { return SymEngine::eq(*lhs, *rhs); };
+bool eq(const Expression lhs, const Expression rhs) { return SymEngine::eq(*lhs, *rhs); };
 
-bool uses(const Expression& expr, const Symbol& sym) { return SymEngine::has_symbol(*expr, *sym); };
+bool uses(const Expression expr, const Symbol sym) { return SymEngine::has_symbol(*expr, *sym); };
 
-bool uses(const Expression& expr, const std::string& name) { return symbolic::uses(expr, symbol(name)); };
+bool uses(const Expression expr, const std::string& name) { return symbolic::uses(expr, symbol(name)); };
 
-SymbolSet atoms(const Expression& expr) {
+SymbolSet atoms(const Expression expr) {
     SymbolSet atoms;
     for (auto& atom : SymEngine::atoms<const SymEngine::Basic>(*expr)) {
         if (SymEngine::is_a<SymEngine::Symbol>(*atom)) {
@@ -191,20 +192,20 @@ SymbolSet atoms(const Expression& expr) {
     return atoms;
 };
 
-ExpressionSet muls(const Expression& expr) { return SymEngine::atoms<const SymEngine::Mul>(*expr); };
+ExpressionSet muls(const Expression expr) { return SymEngine::atoms<const SymEngine::Mul>(*expr); };
 
-Expression subs(const Expression& expr, const Expression& old_expr, const Expression& new_expr) {
+Expression subs(const Expression expr, const Expression old_expr, const Expression new_expr) {
     SymEngine::map_basic_basic d;
     d[old_expr] = new_expr;
 
-    return expr->subs(d);
+    return SymEngine::subs(expr, d);
 };
 
-Condition subs(const Condition& expr, const Expression& old_expr, const Expression& new_expr) {
+Condition subs(const Condition expr, const Expression old_expr, const Expression new_expr) {
     SymEngine::map_basic_basic d;
     d[old_expr] = new_expr;
 
-    return SymEngine::rcp_static_cast<const SymEngine::Boolean>(expr->subs(d));
+    return SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(subs(expr, d));
 };
 
 Expression parse(const std::string& expr_str) { return SymEngine::parse(expr_str); };

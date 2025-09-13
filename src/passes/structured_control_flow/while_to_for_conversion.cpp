@@ -6,9 +6,11 @@
 namespace sdfg {
 namespace passes {
 
-bool WhileToForConversion::can_be_applied(builder::StructuredSDFGBuilder& builder,
-                                          analysis::AnalysisManager& analysis_manager,
-                                          structured_control_flow::While& loop) {
+bool WhileToForConversion::can_be_applied(
+    builder::StructuredSDFGBuilder& builder,
+    analysis::AnalysisManager& analysis_manager,
+    structured_control_flow::While& loop
+) {
     auto& sdfg = builder.subject();
     auto& body = loop.root();
     if (loop.root().size() < 2) {
@@ -31,7 +33,7 @@ bool WhileToForConversion::can_be_applied(builder::StructuredSDFGBuilder& builde
     if (first_branch.size() != 1) {
         return false;
     }
-    auto& first_condition = if_else_stmt->at(0).second;
+    auto first_condition = if_else_stmt->at(0).second;
     if (dynamic_cast<structured_control_flow::Break*>(&first_branch.at(0).first)) {
         first_is_break = true;
     } else if (dynamic_cast<structured_control_flow::Continue*>(&first_branch.at(0).first)) {
@@ -47,7 +49,7 @@ bool WhileToForConversion::can_be_applied(builder::StructuredSDFGBuilder& builde
     if (second_branch.size() != 1) {
         return false;
     }
-    auto& second_condition = if_else_stmt->at(1).second;
+    auto second_condition = if_else_stmt->at(1).second;
     if (dynamic_cast<structured_control_flow::Break*>(&second_branch.at(0).first)) {
         second_is_break = true;
     } else if (dynamic_cast<structured_control_flow::Continue*>(&second_branch.at(0).first)) {
@@ -98,8 +100,7 @@ bool WhileToForConversion::can_be_applied(builder::StructuredSDFGBuilder& builde
         return false;
     }
     auto indvar = symbolic::symbol(update_write->container());
-    auto update_element =
-        dynamic_cast<structured_control_flow::Transition*>(update_write->element());
+    auto update_element = dynamic_cast<structured_control_flow::Transition*>(update_write->element());
     ;
     auto update = update_element->assignments().at(indvar);
 
@@ -112,8 +113,7 @@ bool WhileToForConversion::can_be_applied(builder::StructuredSDFGBuilder& builde
     // Check that we can replace all post-usages of iterator (after increment)
     auto users_after = body_users.all_uses_after(*update_write);
     for (auto use : users_after) {
-        if (use->use() == analysis::Use::WRITE &&
-            update_symbols.find(use->container()) != update_symbols.end()) {
+        if (use->use() == analysis::Use::WRITE && update_symbols.find(use->container()) != update_symbols.end()) {
             return false;
         }
     }
@@ -149,10 +149,12 @@ bool WhileToForConversion::can_be_applied(builder::StructuredSDFGBuilder& builde
     return true;
 }
 
-void WhileToForConversion::apply(builder::StructuredSDFGBuilder& builder,
-                                 analysis::AnalysisManager& analysis_manager,
-                                 structured_control_flow::Sequence& parent,
-                                 structured_control_flow::While& loop) {
+void WhileToForConversion::apply(
+    builder::StructuredSDFGBuilder& builder,
+    analysis::AnalysisManager& analysis_manager,
+    structured_control_flow::Sequence& parent,
+    structured_control_flow::While& loop
+) {
     auto& sdfg = builder.subject();
     auto& body = loop.root();
 
@@ -180,8 +182,7 @@ void WhileToForConversion::apply(builder::StructuredSDFGBuilder& builder,
             continue;
         }
     }
-    auto update_element =
-        dynamic_cast<structured_control_flow::Transition*>(write_to_indvar->element());
+    auto update_element = dynamic_cast<structured_control_flow::Transition*>(write_to_indvar->element());
 
     auto indvar = symbolic::symbol(write_to_indvar->container());
     auto update = update_element->assignments().at(indvar);
@@ -205,12 +206,10 @@ void WhileToForConversion::apply(builder::StructuredSDFGBuilder& builder,
     update_element->assignments()[pseudo_indvar] = update;
 
     if (second_is_break) {
-        auto& for_loop =
-            builder.convert_while(parent, loop, indvar, first_condition, indvar, update);
+        auto& for_loop = builder.convert_while(parent, loop, indvar, first_condition, indvar, update);
         builder.remove_child(for_loop.root(), for_loop.root().size() - 1);
     } else {
-        auto& for_loop =
-            builder.convert_while(parent, loop, indvar, second_condition, indvar, update);
+        auto& for_loop = builder.convert_while(parent, loop, indvar, second_condition, indvar, update);
         builder.remove_child(for_loop.root(), for_loop.root().size() - 1);
     }
 };
@@ -222,8 +221,7 @@ WhileToForConversion::WhileToForConversion()
 
 std::string WhileToForConversion::name() { return "WhileToForConversion"; };
 
-bool WhileToForConversion::run_pass(builder::StructuredSDFGBuilder& builder,
-                                    analysis::AnalysisManager& analysis_manager) {
+bool WhileToForConversion::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     // Traverse structured SDFG
@@ -235,8 +233,7 @@ bool WhileToForConversion::run_pass(builder::StructuredSDFGBuilder& builder,
         // Add children to queue
         if (auto sequence_stmt = dynamic_cast<structured_control_flow::Sequence*>(current)) {
             for (size_t i = 0; i < sequence_stmt->size(); i++) {
-                if (auto match = dynamic_cast<structured_control_flow::While*>(
-                        &sequence_stmt->at(i).first)) {
+                if (auto match = dynamic_cast<structured_control_flow::While*>(&sequence_stmt->at(i).first)) {
                     if (this->can_be_applied(builder, analysis_manager, *match)) {
                         this->apply(builder, analysis_manager, *sequence_stmt, *match);
                         applied = true;
@@ -251,8 +248,7 @@ bool WhileToForConversion::run_pass(builder::StructuredSDFGBuilder& builder,
             }
         } else if (auto loop_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
             queue.push_back(&loop_stmt->root());
-        } else if (auto sloop_stmt =
-                       dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
+        } else if (auto sloop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
             queue.push_back(&sloop_stmt->root());
         }
     }
@@ -260,5 +256,5 @@ bool WhileToForConversion::run_pass(builder::StructuredSDFGBuilder& builder,
     return applied;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

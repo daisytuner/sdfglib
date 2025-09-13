@@ -27,7 +27,7 @@ std::unique_ptr<data_flow::DataFlowNode> RandNode::
     return std::make_unique<RandNode>(element_id, debug_info_, vertex, parent);
 }
 
-void RandNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {}
+void RandNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {}
 
 nlohmann::json RandNodeSerializer::serialize(const data_flow::LibraryNode& library_node) {
     const RandNode& node = static_cast<const RandNode&>(library_node);

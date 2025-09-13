@@ -28,7 +28,7 @@ std::unique_ptr<data_flow::DataFlowNode> FreeNode::
     return std::make_unique<FreeNode>(element_id, debug_info_, vertex, parent);
 }
 
-void FreeNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void FreeNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     // Do nothing
     return;
 }

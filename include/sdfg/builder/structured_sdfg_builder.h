@@ -223,10 +223,10 @@ public:
 
     For& add_for(
         Sequence& parent,
-        const symbolic::Symbol& indvar,
-        const symbolic::Condition& condition,
-        const symbolic::Expression& init,
-        const symbolic::Expression& update,
+        const symbolic::Symbol indvar,
+        const symbolic::Condition condition,
+        const symbolic::Expression init,
+        const symbolic::Expression update,
         const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfo& debug_info = DebugInfo()
     );
@@ -234,10 +234,10 @@ public:
     For& add_for_before(
         Sequence& parent,
         ControlFlowNode& child,
-        const symbolic::Symbol& indvar,
-        const symbolic::Condition& condition,
-        const symbolic::Expression& init,
-        const symbolic::Expression& update,
+        const symbolic::Symbol indvar,
+        const symbolic::Condition condition,
+        const symbolic::Expression init,
+        const symbolic::Expression update,
         const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfo& debug_info = DebugInfo()
     );
@@ -245,20 +245,20 @@ public:
     For& add_for_after(
         Sequence& parent,
         ControlFlowNode& child,
-        const symbolic::Symbol& indvar,
-        const symbolic::Condition& condition,
-        const symbolic::Expression& init,
-        const symbolic::Expression& update,
+        const symbolic::Symbol indvar,
+        const symbolic::Condition condition,
+        const symbolic::Expression init,
+        const symbolic::Expression update,
         const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfo& debug_info = DebugInfo()
     );
 
     Map& add_map(
         Sequence& parent,
-        const symbolic::Symbol& indvar,
-        const symbolic::Condition& condition,
-        const symbolic::Expression& init,
-        const symbolic::Expression& update,
+        const symbolic::Symbol indvar,
+        const symbolic::Condition condition,
+        const symbolic::Expression init,
+        const symbolic::Expression update,
         const ScheduleType& schedule_type,
         const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfo& debug_info = DebugInfo()
@@ -267,10 +267,10 @@ public:
     Map& add_map_after(
         Sequence& parent,
         ControlFlowNode& child,
-        const symbolic::Symbol& indvar,
-        const symbolic::Condition& condition,
-        const symbolic::Expression& init,
-        const symbolic::Expression& update,
+        const symbolic::Symbol indvar,
+        const symbolic::Condition condition,
+        const symbolic::Expression init,
+        const symbolic::Expression update,
         const ScheduleType& schedule_type,
         const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfo& debug_info = DebugInfo()
@@ -279,10 +279,10 @@ public:
     Map& add_map_before(
         Sequence& parent,
         ControlFlowNode& child,
-        const symbolic::Symbol& indvar,
-        const symbolic::Condition& condition,
-        const symbolic::Expression& init,
-        const symbolic::Expression& update,
+        const symbolic::Symbol indvar,
+        const symbolic::Condition condition,
+        const symbolic::Expression init,
+        const symbolic::Expression update,
         const ScheduleType& schedule_type,
         const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfo& debug_info = DebugInfo()
@@ -311,13 +311,25 @@ public:
     For& convert_while(
         Sequence& parent,
         While& loop,
-        const symbolic::Symbol& indvar,
-        const symbolic::Condition& condition,
-        const symbolic::Expression& init,
-        const symbolic::Expression& update
+        const symbolic::Symbol indvar,
+        const symbolic::Condition condition,
+        const symbolic::Expression init,
+        const symbolic::Expression update
     );
 
     Map& convert_for(Sequence& parent, For& loop);
+
+    void update_if_else_condition(IfElse& if_else, size_t branch, const symbolic::Condition cond);
+
+    void update_loop(
+        StructuredLoop& loop,
+        const symbolic::Symbol indvar,
+        const symbolic::Condition condition,
+        const symbolic::Expression init,
+        const symbolic::Expression update
+    );
+
+    void update_schedule_type(Map& map, const ScheduleType& schedule_type);
 
     [[deprecated("use ScopeAnalysis instead")]]
     Sequence& parent(const ControlFlowNode& node);

@@ -8,8 +8,8 @@ CallocNode::CallocNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
-    const symbolic::Expression& num,
-    const symbolic::Expression& size
+    const symbolic::Expression num,
+    const symbolic::Expression size
 )
     : LibraryNode(
           element_id,
@@ -24,9 +24,9 @@ CallocNode::CallocNode(
       ),
       num_(num), size_(size) {}
 
-const symbolic::Expression& CallocNode::num() const { return num_; }
+const symbolic::Expression CallocNode::num() const { return num_; }
 
-const symbolic::Expression& CallocNode::size() const { return size_; }
+const symbolic::Expression CallocNode::size() const { return size_; }
 
 void CallocNode::validate(const Function& function) const {}
 
@@ -42,7 +42,7 @@ std::unique_ptr<data_flow::DataFlowNode> CallocNode::
     return std::make_unique<CallocNode>(element_id, debug_info_, vertex, parent, num_, size_);
 }
 
-void CallocNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void CallocNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     this->size_ = symbolic::subs(this->size_, old_expression, new_expression);
     this->num_ = symbolic::subs(this->num_, old_expression, new_expression);
 }

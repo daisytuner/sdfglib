@@ -7,15 +7,20 @@ namespace sdfg {
 namespace types {
 
 class Array : public IType {
-   private:
+private:
     std::unique_ptr<IType> element_type_;
     symbolic::Expression num_elements_;
 
-   public:
-    Array(const IType& element_type, const symbolic::Expression& num_elements);
+public:
+    Array(const IType& element_type, const symbolic::Expression num_elements);
 
-    Array(StorageType storage_type, size_t alignment, const std::string& initializer,
-          const IType& element_type, const symbolic::Expression& num_elements);
+    Array(
+        StorageType storage_type,
+        size_t alignment,
+        const std::string& initializer,
+        const IType& element_type,
+        const symbolic::Expression num_elements
+    );
 
     virtual PrimitiveType primitive_type() const override;
 
@@ -25,7 +30,7 @@ class Array : public IType {
 
     const IType& element_type() const;
 
-    const symbolic::Expression& num_elements() const;
+    const symbolic::Expression num_elements() const;
 
     virtual bool operator==(const IType& other) const override;
 
@@ -34,5 +39,5 @@ class Array : public IType {
     virtual std::string print() const override;
 };
 
-}  // namespace types
-}  // namespace sdfg
+} // namespace types
+} // namespace sdfg

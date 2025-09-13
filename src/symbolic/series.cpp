@@ -7,7 +7,7 @@ namespace sdfg {
 namespace symbolic {
 namespace series {
 
-bool is_monotonic_affine(const Expression& expr, const Symbol& sym, const Assumptions& assums) {
+bool is_monotonic_affine(const Expression expr, const Symbol sym, const Assumptions& assums) {
     SymbolVec symbols = {sym};
     auto poly = polynomial(expr, symbols);
     if (poly == SymEngine::null) {
@@ -37,7 +37,7 @@ bool is_monotonic_affine(const Expression& expr, const Symbol& sym, const Assump
     return true;
 }
 
-bool is_monotonic_pow(const Expression& expr, const Symbol& sym, const Assumptions& assums) {
+bool is_monotonic_pow(const Expression expr, const Symbol sym, const Assumptions& assums) {
     if (SymEngine::is_a<SymEngine::Pow>(*expr)) {
         auto pow = SymEngine::rcp_dynamic_cast<const SymEngine::Pow>(expr);
         auto base = pow->get_base();
@@ -60,14 +60,14 @@ bool is_monotonic_pow(const Expression& expr, const Symbol& sym, const Assumptio
     return false;
 }
 
-bool is_monotonic(const Expression& expr, const Symbol& sym, const Assumptions& assums) {
+bool is_monotonic(const Expression expr, const Symbol sym, const Assumptions& assums) {
     if (is_monotonic_affine(expr, sym, assums)) {
         return true;
     }
     return is_monotonic_pow(expr, sym, assums);
 }
 
-bool is_contiguous(const Expression& expr, const Symbol& sym, const Assumptions& assums) {
+bool is_contiguous(const Expression expr, const Symbol sym, const Assumptions& assums) {
     SymbolVec symbols = {sym};
     auto poly = polynomial(expr, symbols);
     if (poly == SymEngine::null) {

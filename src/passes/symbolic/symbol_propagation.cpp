@@ -5,7 +5,7 @@
 namespace sdfg {
 namespace passes {
 
-symbolic::Expression inverse(const symbolic::Symbol& lhs, const symbolic::Expression& rhs) {
+symbolic::Expression inverse(const symbolic::Symbol lhs, const symbolic::Expression rhs) {
     if (!symbolic::uses(rhs, lhs)) {
         return SymEngine::null;
     }
@@ -202,7 +202,8 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                 for (size_t i = 0; i < if_else_stmt->size(); i++) {
                     auto child = if_else_stmt->at(i);
                     if (symbolic::uses(child.second, lhs)) {
-                        child.second = symbolic::subs(child.second, lhs, rhs_modified);
+                        builder
+                            .update_if_else_condition(*if_else_stmt, i, symbolic::subs(child.second, lhs, rhs_modified));
                         applied = true;
                     }
                 }
@@ -277,13 +278,31 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
             } else if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(read->element())) {
                 auto for_user = dynamic_cast<analysis::ForUser*>(read);
                 if (for_user->is_init() && symbolic::uses(for_loop->init(), lhs)) {
-                    for_loop->init() = symbolic::subs(for_loop->init(), lhs, rhs_modified);
+                    builder.update_loop(
+                        *for_loop,
+                        for_loop->indvar(),
+                        for_loop->condition(),
+                        symbolic::subs(for_loop->init(), lhs, rhs_modified),
+                        for_loop->update()
+                    );
                     applied = true;
                 } else if (for_user->is_condition() && symbolic::uses(for_loop->condition(), lhs)) {
-                    for_loop->condition() = symbolic::subs(for_loop->condition(), lhs, rhs_modified);
+                    builder.update_loop(
+                        *for_loop,
+                        for_loop->indvar(),
+                        symbolic::subs(for_loop->condition(), lhs, rhs_modified),
+                        for_loop->init(),
+                        for_loop->update()
+                    );
                     applied = true;
                 } else if (for_user->is_update() && symbolic::uses(for_loop->update(), lhs)) {
-                    for_loop->update() = symbolic::subs(for_loop->update(), lhs, rhs_modified);
+                    builder.update_loop(
+                        *for_loop,
+                        for_loop->indvar(),
+                        for_loop->condition(),
+                        for_loop->init(),
+                        symbolic::subs(for_loop->update(), lhs, rhs_modified)
+                    );
                     applied = true;
                 }
             }

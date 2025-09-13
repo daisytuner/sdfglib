@@ -39,8 +39,7 @@ symbolic::SymbolSet BatchNormalizationNode::symbols() const {
     return syms;
 }
 
-void BatchNormalizationNode::
-    replace(const symbolic::Expression &old_expression, const symbolic::Expression &new_expression) {
+void BatchNormalizationNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     for (auto &dim : shape_) {
         dim = symbolic::subs(dim, old_expression, new_expression);
     }

@@ -92,7 +92,7 @@ public:
         size_t element_id, const graph::Edge& edge, DataFlowGraph& parent, DataFlowNode& src, DataFlowNode& dst
     ) const;
 
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 };
 } // namespace data_flow
 } // namespace sdfg

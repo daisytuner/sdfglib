@@ -8,14 +8,14 @@ SrandNode::SrandNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
-    const symbolic::Expression& seed
+    const symbolic::Expression seed
 )
     : LibraryNode(
           element_id, debug_info, vertex, parent, LibraryNodeType_Srand, {}, {}, true, data_flow::ImplementationType_NONE
       ),
       seed_(seed) {}
 
-const symbolic::Expression& SrandNode::seed() const { return seed_; }
+const symbolic::Expression SrandNode::seed() const { return seed_; }
 
 void SrandNode::validate(const Function& function) const {}
 
@@ -26,7 +26,7 @@ std::unique_ptr<data_flow::DataFlowNode> SrandNode::
     return std::make_unique<SrandNode>(element_id, debug_info_, vertex, parent, seed_);
 }
 
-void SrandNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void SrandNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     this->seed_ = symbolic::subs(this->seed_, old_expression, new_expression);
 }
 

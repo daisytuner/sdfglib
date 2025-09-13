@@ -31,7 +31,7 @@ symbolic::SymbolSet ElementWiseUnaryNode::symbols() const {
     return syms;
 }
 
-void ElementWiseUnaryNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void ElementWiseUnaryNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     for (auto& dim : shape_) {
         dim = symbolic::subs(dim, old_expression, new_expression);
     }
@@ -141,7 +141,7 @@ symbolic::SymbolSet ElementWiseBinaryNode::symbols() const {
     return syms;
 }
 
-void ElementWiseBinaryNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void ElementWiseBinaryNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     for (auto& dim : shape_) {
         dim = symbolic::subs(dim, old_expression, new_expression);
     }

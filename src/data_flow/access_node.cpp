@@ -52,7 +52,7 @@ std::unique_ptr<DataFlowNode> AccessNode::clone(size_t element_id, const graph::
     return std::unique_ptr<AccessNode>(new AccessNode(element_id, this->debug_info_, vertex, parent, this->data_));
 };
 
-void AccessNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void AccessNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     if (SymEngine::is_a<SymEngine::Symbol>(*old_expression) && SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
         auto old_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(old_expression);
         if (this->data_ == old_symbol->get_name()) {

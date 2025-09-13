@@ -51,7 +51,7 @@ std::unique_ptr<DataFlowNode> Tasklet::clone(size_t element_id, const graph::Ver
     );
 };
 
-void Tasklet::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {};
+void Tasklet::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {};
 
 } // namespace data_flow
 } // namespace sdfg

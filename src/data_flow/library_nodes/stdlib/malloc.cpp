@@ -8,7 +8,7 @@ MallocNode::MallocNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
-    const symbolic::Expression& size
+    const symbolic::Expression size
 )
     : LibraryNode(
           element_id,
@@ -23,7 +23,7 @@ MallocNode::MallocNode(
       ),
       size_(size) {}
 
-const symbolic::Expression& MallocNode::size() const { return size_; }
+const symbolic::Expression MallocNode::size() const { return size_; }
 
 void MallocNode::validate(const Function& function) const {}
 
@@ -34,7 +34,7 @@ std::unique_ptr<data_flow::DataFlowNode> MallocNode::
     return std::make_unique<MallocNode>(element_id, debug_info_, vertex, parent, size_);
 }
 
-void MallocNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void MallocNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     this->size_ = symbolic::subs(this->size_, old_expression, new_expression);
 }
 

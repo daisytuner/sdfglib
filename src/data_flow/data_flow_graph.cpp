@@ -33,7 +33,7 @@ size_t DataFlowGraph::out_degree(const data_flow::DataFlowNode& node) const {
     return boost::out_degree(node.vertex(), this->graph_);
 };
 
-void DataFlowGraph::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void DataFlowGraph::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     for (auto& node : this->nodes_) {
         node.second->replace(old_expression, new_expression);
     }

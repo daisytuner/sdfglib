@@ -526,7 +526,7 @@ std::string CUDALanguageExtension::subset(const Function& function, const types:
     throw std::invalid_argument("Invalid subset type");
 };
 
-std::string CUDALanguageExtension::expression(const symbolic::Expression& expr) {
+std::string CUDALanguageExtension::expression(const symbolic::Expression expr) {
     CPPSymbolicPrinter printer;
     return printer.apply(expr);
 };
