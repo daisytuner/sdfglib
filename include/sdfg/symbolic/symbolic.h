@@ -51,8 +51,6 @@ Integer zero();
 
 Integer one();
 
-Infty infty(int direction);
-
 Condition __false__();
 
 Condition __true__();
