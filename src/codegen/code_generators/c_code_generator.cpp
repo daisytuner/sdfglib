@@ -43,6 +43,7 @@ void CCodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#include <stdio.h>" << std::endl;
     this->includes_stream_ << "#include <stdlib.h>" << std::endl;
     this->includes_stream_ << "#include <string.h>" << std::endl;
+    this->includes_stream_ << "#include <cblas.h>" << std::endl;
     this->includes_stream_ << "#include <daisy_rtl/daisy_rtl.h>" << std::endl;
 };
 

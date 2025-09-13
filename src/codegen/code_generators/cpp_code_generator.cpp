@@ -39,6 +39,7 @@ void CPPCodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#include <cstdio>" << std::endl;
     this->includes_stream_ << "#include <cstdlib>" << std::endl;
     this->includes_stream_ << "#include <cstring>" << std::endl;
+    this->includes_stream_ << "#include <cblas.h>" << std::endl;
     this->includes_stream_ << "#include <daisy_rtl/daisy_rtl.h>" << std::endl;
 };
 
