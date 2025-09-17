@@ -63,6 +63,7 @@ def test_instrumentation(event):
 
     result = json.load(open(workdir / "data_cpu.json"))
     events = result["traceEvents"]
+    assert(len(events) > 0)
     for i in range(len(events)):
         assert events[i]["name"].startswith("main")
         assert events[i]["cat"] == "region,daisy"
@@ -133,6 +134,7 @@ def test_instrumentation_cuda(event):
 
     result = json.load(open(workdir / "data_cuda.json"))
     events = result["traceEvents"]
+    assert(len(events) > 0)
     for i in range(len(events)):
         assert events[i]["name"].startswith("main")
         assert events[i]["cat"] == "region,daisy"
