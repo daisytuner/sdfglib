@@ -64,11 +64,6 @@ void CStyleBaseCodeGenerator::append_function_source(std::ofstream& ofs_source) 
     ofs_source << this->function_definition() << std::endl;
     ofs_source << "{" << std::endl;
 
-    if (!instrumentation_plan_.is_empty()) {
-        ofs_source << "__daisy_instrumentation_t* __daisy_instrumentation_ctx = __daisy_instrumentation_init();"
-                   << std::endl;
-    }
-
     if (capturePlan) {
         this->emit_arg_captures(ofs_source, *capturePlan, false);
     }
@@ -87,10 +82,6 @@ void CStyleBaseCodeGenerator::append_function_source(std::ofstream& ofs_source) 
 
     if (capturePlan) {
         this->emit_arg_captures(ofs_source, *capturePlan, true);
-    }
-
-    if (!instrumentation_plan_.is_empty()) {
-        ofs_source << "__daisy_instrumentation_finalize(__daisy_instrumentation_ctx);" << std::endl;
     }
 
     ofs_source << "}" << std::endl;
