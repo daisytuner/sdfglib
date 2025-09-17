@@ -67,7 +67,7 @@ TEST(CPU_PARALLELMapDispatcherTest, DispatchNode) {
 
     EXPECT_EQ(globals_stream.str(), "");
     EXPECT_TRUE(library_factory.snippets().empty());
-    EXPECT_EQ(main_stream.str(), "#pragma omp parallel for schedule(static)\n// Map\nfor(i = 0;i < 10;i = 1 + i)\n{\n}\n");
+    EXPECT_EQ(main_stream.str(), "// Map\n#pragma omp parallel for schedule(static)\nfor(i = 0;i < 10;i = 1 + i)\n{\n}\n");
 }
 
 TEST(CPU_PARALLELMapDispatcherTest, DispatchNodeScheduleDynamic) {
@@ -105,7 +105,7 @@ TEST(CPU_PARALLELMapDispatcherTest, DispatchNodeScheduleDynamic) {
     EXPECT_EQ(globals_stream.str(), "");
     EXPECT_TRUE(library_factory.snippets().empty());
     EXPECT_EQ(
-        main_stream.str(), "#pragma omp parallel for schedule(dynamic)\n// Map\nfor(i = 0;i < 10;i = 1 + i)\n{\n}\n"
+        main_stream.str(), "// Map\n#pragma omp parallel for schedule(dynamic)\nfor(i = 0;i < 10;i = 1 + i)\n{\n}\n"
     );
 }
 
@@ -146,6 +146,6 @@ TEST(CPU_PARALLELMapDispatcherTest, DispatchNodeNumThreads) {
     EXPECT_TRUE(library_factory.snippets().empty());
     EXPECT_EQ(
         main_stream.str(),
-        "#pragma omp parallel for schedule(dynamic) num_threads(4)\n// Map\nfor(i = 0;i < 10;i = 1 + i)\n{\n}\n"
+        "// Map\n#pragma omp parallel for schedule(dynamic) num_threads(4)\nfor(i = 0;i < 10;i = 1 + i)\n{\n}\n"
     );
 }
