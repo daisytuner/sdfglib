@@ -3,6 +3,7 @@
 #include "sdfg/analysis/users.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 #include "sdfg/codegen/dispatchers/sequence_dispatcher.h"
+#include "sdfg/structured_control_flow/map.h"
 
 namespace sdfg {
 namespace codegen {
@@ -92,6 +93,29 @@ void CPUParallelMapDispatcher::dispatch_node(
 
     // Generate code
     main_stream << "#pragma omp parallel for";
+
+    main_stream << " schedule(";
+    if (structured_control_flow::ScheduleType_CPU_Parallel::omp_schedule(node_.schedule_type()) ==
+        structured_control_flow::OpenMPSchedule::Static) {
+        main_stream << "static)";
+    } else if (structured_control_flow::ScheduleType_CPU_Parallel::omp_schedule(node_.schedule_type()) ==
+               structured_control_flow::OpenMPSchedule::Dynamic) {
+        main_stream << "dynamic)";
+    } else if (structured_control_flow::ScheduleType_CPU_Parallel::omp_schedule(node_.schedule_type()) ==
+               structured_control_flow::OpenMPSchedule::Guided) {
+        main_stream << "guided)";
+    } else {
+        throw std::runtime_error("Unsupported OpenMP schedule type");
+    }
+
+    if (structured_control_flow::ScheduleType_CPU_Parallel::num_threads(node_.schedule_type()) != SymEngine::null) {
+        main_stream << " num_threads(";
+        main_stream
+            << language_extension_
+                   .expression(structured_control_flow::ScheduleType_CPU_Parallel::num_threads(node_.schedule_type()));
+        main_stream << ")";
+    }
+
     if (locals.size() > 0) {
         main_stream << " private(" << helpers::join(locals, ", ") << ")";
     }
