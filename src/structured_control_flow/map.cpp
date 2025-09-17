@@ -36,14 +36,12 @@ const symbolic::Expression ScheduleType_CPU_Parallel::num_threads(const Schedule
     auto expr = symbolic::parse(expr_str);
     return expr;
 }
-void ScheduleType_CPU_Parallel::omp_schedule(ScheduleType& schedule, OpenMPSchedule omp_schedule) {
-    schedule.set_property("omp_schedule", std::to_string(omp_schedule));
-}
-OpenMPSchedule ScheduleType_CPU_Parallel::omp_schedule(const ScheduleType& schedule) {
-    if (schedule.properties().find("omp_schedule") == schedule.properties().end()) {
-        return OpenMPSchedule::Static;
+void ScheduleType_CPU_Parallel::set_dynamic(ScheduleType& schedule) { schedule.set_property("dynamic", "true"); }
+bool ScheduleType_CPU_Parallel::dynamic(const ScheduleType& schedule) {
+    if (schedule.properties().find("dynamic") == schedule.properties().end()) {
+        return false;
     }
-    return static_cast<OpenMPSchedule>(std::stoi(schedule.properties().at("omp_schedule")));
+    return schedule.properties().at("dynamic") == "true";
 }
 
 } // namespace structured_control_flow
