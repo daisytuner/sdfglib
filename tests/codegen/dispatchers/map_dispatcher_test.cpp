@@ -85,7 +85,11 @@ TEST(CPU_PARALLELMapDispatcherTest, DispatchNodeScheduleDynamic) {
         structured_control_flow::ScheduleType_CPU_Parallel::create()
     );
 
-    ScheduleType_CPU_Parallel::omp_schedule(loop.schedule_type(), OpenMPSchedule::Dynamic);
+    ScheduleType schedule = structured_control_flow::ScheduleType_CPU_Parallel::create();
+
+    ScheduleType_CPU_Parallel::omp_schedule(schedule, OpenMPSchedule::Dynamic);
+
+    builder.update_schedule_type(loop, schedule);
 
     auto final_sdfg = builder.move();
 
@@ -120,8 +124,12 @@ TEST(CPU_PARALLELMapDispatcherTest, DispatchNodeNumThreads) {
         structured_control_flow::ScheduleType_CPU_Parallel::create()
     );
 
-    ScheduleType_CPU_Parallel::omp_schedule(loop.schedule_type(), OpenMPSchedule::Dynamic);
-    ScheduleType_CPU_Parallel::num_threads(loop.schedule_type(), symbolic::integer(4));
+    ScheduleType schedule = structured_control_flow::ScheduleType_CPU_Parallel::create();
+
+    ScheduleType_CPU_Parallel::omp_schedule(schedule, OpenMPSchedule::Dynamic);
+    ScheduleType_CPU_Parallel::num_threads(schedule, symbolic::integer(4));
+
+    builder.update_schedule_type(loop, schedule);
 
     auto final_sdfg = builder.move();
 

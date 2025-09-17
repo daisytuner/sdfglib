@@ -54,7 +54,7 @@ class ScheduleType_CPU_Parallel {
 public:
     static void num_threads(ScheduleType& schedule, const symbolic::Expression num_threads);
     static const symbolic::Expression num_threads(const ScheduleType& schedule);
-    static void omp_schedule(ScheduleType& schedule, OpenMPSchedule schedule_type);
+    static void omp_schedule(ScheduleType& schedule, const OpenMPSchedule schedule_type);
     static OpenMPSchedule omp_schedule(const ScheduleType& schedule);
     static const std::string value() { return "CPU_PARALLEL"; }
     static ScheduleType create() { return ScheduleType(value()); }
