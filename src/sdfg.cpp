@@ -6,7 +6,10 @@
 
 namespace sdfg {
 
-SDFG::SDFG(const std::string& name, FunctionType type) : Function(name, type), start_state_(nullptr) {};
+SDFG::SDFG(const std::string& name, FunctionType type, const types::IType& return_type)
+    : Function(name, type, return_type), start_state_(nullptr) {};
+
+SDFG::SDFG(const std::string& name, FunctionType type) : SDFG(name, type, types::Scalar(types::PrimitiveType::Void)) {};
 
 void SDFG::validate() const {
     // Call parent validate
@@ -19,6 +22,16 @@ void SDFG::validate() const {
     for (auto& edge : this->edges()) {
         edge.validate(*this);
     }
+
+    for (auto& term : this->terminal_states()) {
+        if (!dynamic_cast<const control_flow::ReturnState*>(&term)) {
+            throw InvalidSDFGException("Terminal state is not a valid State");
+        }
+    }
+};
+
+size_t SDFG::num_terminal_states() const {
+    return std::distance(this->terminal_states().begin(), this->terminal_states().end());
 };
 
 size_t SDFG::in_degree(const control_flow::State& state) const {
@@ -64,19 +77,20 @@ std::unordered_map<const control_flow::State*, const control_flow::State*> SDFG:
     return dom_tree;
 };
 
-std::unordered_map<const control_flow::State*, const control_flow::State*> SDFG::post_dominator_tree() const {
-    auto terminal_state = this->terminal_states();
-    if (std::distance(terminal_state.begin(), terminal_state.end()) != 1) {
-        throw InvalidSDFGException("SDFG: Multiple terminal states");
-    }
-
-    auto pdom_tree_ = graph::post_dominator_tree(this->graph_, (*terminal_state.begin()).vertex());
+std::unordered_map<const control_flow::State*, const control_flow::State*> SDFG::post_dominator_tree() {
+    auto pdom_tree_ = graph::post_dominator_tree(this->graph_);
 
     std::unordered_map<const control_flow::State*, const control_flow::State*> pdom_tree;
     for (auto& entry : pdom_tree_) {
+        if (this->states_.find(entry.first) == this->states_.end()) {
+            // This is the synthetic super-terminal, skip it
+            continue;
+        }
+
         control_flow::State* first = this->states_.at(entry.first).get();
         control_flow::State* second = nullptr;
-        if (entry.second != boost::graph_traits<graph::Graph>::null_vertex()) {
+        if (entry.second != boost::graph_traits<graph::Graph>::null_vertex() &&
+            this->states_.find(entry.second) != this->states_.end()) {
             second = this->states_.at(entry.second).get();
         }
         pdom_tree.insert({first, second});

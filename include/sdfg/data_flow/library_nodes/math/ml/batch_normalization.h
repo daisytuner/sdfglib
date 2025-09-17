@@ -13,15 +13,30 @@ inline data_flow::LibraryNodeCode LibraryNodeType_BatchNormalization("ml::BatchN
 
 class BatchNormalizationNode : public MathNode {
 private:
+    std::vector<symbolic::Expression> shape_;
     int axis_;
     std::string epsilon_;
 
 public:
-    BatchNormalizationNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent, int axis = -1, const std::string& epsilon = "0.00001f");
+    BatchNormalizationNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent,
+        const std::vector<symbolic::Expression>& shape,
+        int axis = -1,
+        const std::string& epsilon = "0.00001f"
+    );
+
+    const std::vector<symbolic::Expression>& shape() const { return shape_; }
 
     int axis() const { return axis_; }
 
     const std::string& epsilon() const { return epsilon_; }
+
+    symbolic::SymbolSet symbols() const override;
+
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 
     void validate(const Function& function) const override;
 
@@ -32,12 +47,12 @@ public:
 };
 
 class BatchNormalizationNodeSerializer : public serializer::LibraryNodeSerializer {
-    public:
-        nlohmann::json serialize(const data_flow::LibraryNode &library_node) override;
-    
-        data_flow::LibraryNode &deserialize(
-            const nlohmann::json &j, builder::StructuredSDFGBuilder &builder, structured_control_flow::Block &parent
-        ) override;
+public:
+    nlohmann::json serialize(const data_flow::LibraryNode& library_node) override;
+
+    data_flow::LibraryNode& deserialize(
+        const nlohmann::json& j, builder::StructuredSDFGBuilder& builder, structured_control_flow::Block& parent
+    ) override;
 };
 
 } // namespace ml

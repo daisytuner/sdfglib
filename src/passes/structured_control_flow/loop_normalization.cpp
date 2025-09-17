@@ -8,9 +8,11 @@
 namespace sdfg {
 namespace passes {
 
-bool LoopNormalization::apply(builder::StructuredSDFGBuilder& builder,
-                              analysis::AnalysisManager& analysis_manager,
-                              structured_control_flow::For& loop) {
+bool LoopNormalization::apply(
+    builder::StructuredSDFGBuilder& builder,
+    analysis::AnalysisManager& analysis_manager,
+    structured_control_flow::For& loop
+) {
     auto condition = loop.condition();
 
     bool applied = false;
@@ -27,7 +29,7 @@ bool LoopNormalization::apply(builder::StructuredSDFGBuilder& builder,
             new_condition = symbolic::And(new_condition, new_clause);
         }
         if (!symbolic::eq(new_condition, condition)) {
-            loop.condition() = new_condition;
+            builder.update_loop(loop, loop.indvar(), new_condition, loop.init(), loop.update());
             applied = true;
         }
 
@@ -79,7 +81,7 @@ bool LoopNormalization::apply(builder::StructuredSDFGBuilder& builder,
             new_condition = symbolic::And(new_condition, new_clause);
         }
         if (!symbolic::eq(new_condition, condition)) {
-            loop.condition() = new_condition;
+            builder.update_loop(loop, loop.indvar(), new_condition, loop.init(), loop.update());
             applied = true;
         }
         condition = new_condition;
@@ -96,8 +98,7 @@ LoopNormalization::LoopNormalization()
 
 std::string LoopNormalization::name() { return "LoopNormalization"; };
 
-bool LoopNormalization::run_pass(builder::StructuredSDFGBuilder& builder,
-                                 analysis::AnalysisManager& analysis_manager) {
+bool LoopNormalization::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
@@ -110,5 +111,5 @@ bool LoopNormalization::run_pass(builder::StructuredSDFGBuilder& builder,
     return applied;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

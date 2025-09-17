@@ -14,11 +14,12 @@ HardSigmoidNode::HardSigmoidNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
+    const std::vector<symbolic::Expression>& shape,
     const std::string& alpha,
     const std::string& beta
 )
     : ElementWiseUnaryNode(
-          element_id, debug_info, vertex, parent, LibraryNodeType_HardSigmoid, {{"alpha", alpha}, {"beta", beta}}
+          element_id, debug_info, vertex, parent, LibraryNodeType_HardSigmoid, shape, {{"alpha", alpha}, {"beta", beta}}
       ) {}
 
 bool HardSigmoidNode::expand_operation(
@@ -68,7 +69,13 @@ bool HardSigmoidNode::expand_operation(
 std::unique_ptr<data_flow::DataFlowNode> HardSigmoidNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
     return std::unique_ptr<data_flow::DataFlowNode>(new HardSigmoidNode(
-        element_id, this->debug_info(), vertex, parent, this->attributes_.at("alpha"), this->attributes_.at("beta")
+        element_id,
+        this->debug_info(),
+        vertex,
+        parent,
+        this->shape_,
+        this->attributes_.at("alpha"),
+        this->attributes_.at("beta")
     ));
 }
 

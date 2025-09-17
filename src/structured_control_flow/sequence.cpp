@@ -16,7 +16,11 @@ Transition::Transition(
       };
 
 void Transition::validate(const Function& function) const {
-    // TODO: Implement validation
+    for (const auto& entry : this->assignments_) {
+        if (entry.first.is_null() || entry.second.is_null()) {
+            throw InvalidSDFGException("Transition: Assignments cannot have null expressions");
+        }
+    }
 };
 
 const control_flow::Assignments& Transition::assignments() const { return this->assignments_; };
@@ -31,7 +35,7 @@ bool Transition::empty() const { return this->assignments_.empty(); };
 
 size_t Transition::size() const { return this->assignments_.size(); };
 
-void Transition::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void Transition::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     if (SymEngine::is_a<SymEngine::Symbol>(*old_expression) && SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
         auto old_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(old_expression);
         auto new_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(new_expression);
@@ -96,7 +100,7 @@ int Sequence::index(const Transition& transition) const {
     return -1;
 };
 
-void Sequence::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void Sequence::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     for (auto& child : this->children_) {
         child->replace(old_expression, new_expression);
     }

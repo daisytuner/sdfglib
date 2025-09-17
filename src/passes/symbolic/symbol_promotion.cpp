@@ -8,18 +8,18 @@ namespace passes {
 
 symbolic::Expression SymbolPromotion::
     as_symbol(const data_flow::DataFlowGraph& dataflow, const data_flow::Tasklet& tasklet, const std::string& op) {
-    if (op.compare(0, 3, "_in") == 0) {
-        for (auto& iedge : dataflow.in_edges(tasklet)) {
-            if (iedge.dst_conn() == op) {
-                auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
+    for (auto& iedge : dataflow.in_edges(tasklet)) {
+        if (iedge.dst_conn() == op) {
+            auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
+            if (dynamic_cast<const data_flow::ConstantNode*>(&iedge.src()) != nullptr) {
+                int64_t value = helpers::parse_number(src.data());
+                return symbolic::integer(value);
+            } else {
                 return symbolic::symbol(src.data());
             }
         }
-        throw std::invalid_argument("Invalid input connector");
-    } else {
-        int64_t value = std::stoll(op);
-        return symbolic::integer(value);
     }
+    return SymEngine::null;
 };
 
 bool SymbolPromotion::can_be_applied(
@@ -88,7 +88,7 @@ bool SymbolPromotion::can_be_applied(
         case data_flow::TaskletCode::shift_right:
         case data_flow::TaskletCode::shift_left: {
             // Shift is constant
-            return !tasklet->needs_connector(1);
+            return !tasklet->has_constant_input(1);
         }
         case data_flow::TaskletCode::bitwise_and:
         case data_flow::TaskletCode::bitwise_or:

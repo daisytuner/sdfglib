@@ -30,13 +30,13 @@ public:
 
     size_t size() const;
 
-    std::pair<const Sequence&, const symbolic::Condition&> at(size_t i) const;
+    std::pair<const Sequence&, const symbolic::Condition> at(size_t i) const;
 
-    std::pair<Sequence&, symbolic::Condition&> at(size_t i);
+    std::pair<Sequence&, const symbolic::Condition> at(size_t i);
 
     bool is_complete() const;
 
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 };
 
 } // namespace structured_control_flow

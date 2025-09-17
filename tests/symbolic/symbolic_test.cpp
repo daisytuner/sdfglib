@@ -22,10 +22,10 @@ TEST(SymbolicTest, Integers) {
     auto one = symbolic::one();
     EXPECT_EQ(one->as_int(), 1);
 
-    auto infty = symbolic::infty(1);
+    auto infty = SymEngine::Inf;
     EXPECT_TRUE(SymEngine::eq(*infty, *SymEngine::infty(1)));
 
-    infty = symbolic::infty(-1);
+    infty = SymEngine::NegInf;
     EXPECT_TRUE(SymEngine::eq(*infty, *SymEngine::infty(-1)));
 }
 

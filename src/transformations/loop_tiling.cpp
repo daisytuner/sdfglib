@@ -91,9 +91,7 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
         inner_condition = symbolic::And(inner_condition_tile, loop_.condition());
     }
     auto inner_update = symbolic::add(inner_indvar, symbolic::integer(1));
-    loop_.update() = inner_update;
-    loop_.condition() = inner_condition;
-    loop_.init() = inner_init;
+    builder.update_loop(loop_, inner_indvar, inner_condition, inner_init, inner_update);
 
     // Step 3: Move loop into tiling loop
     transition.assignments().clear();

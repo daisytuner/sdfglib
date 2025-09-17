@@ -5,16 +5,20 @@
 #include <dlfcn.h>
 #include <filesystem>
 #include <iterator>
+#include <list>
 #include <mutex>
 #include <sstream>
 #include <string>
 #include <unistd.h>
+#include <unordered_map>
 #include <vector>
+
 #include "daisy_rtl/daisy_rtl.h"
 
 // -----------------------------------------------------------------------------
 //  Dynamic PAPI loading – we avoid a hard dependency on the library at link time
 // -----------------------------------------------------------------------------
+namespace {
 static int (*_PAPI_library_init)(int) = nullptr;
 static int (*_PAPI_create_eventset)(int*) = nullptr;
 static int (*_PAPI_add_named_event)(int, const char*) = nullptr;
@@ -41,42 +45,122 @@ static void load_papi_symbols() {
     _PAPI_strerror = reinterpret_cast<const char* (*) (int)>(dlsym(handle, "PAPI_strerror"));
     _PAPI_get_real_nsec = reinterpret_cast<long long (*)(void)>(dlsym(handle, "PAPI_get_real_nsec"));
 }
+} // namespace
 
-// -----------------------------------------------------------------------------
-//  Helpers / globals
-// -----------------------------------------------------------------------------
-namespace {
-std::vector<std::string> g_event_names_cpu;
-std::vector<std::string> g_event_names_cuda;
-int g_eventset_cpu = -1;
-int g_eventset_cuda = -1;
-bool g_papi_available = false;
-const char* g_output_file = nullptr;
-bool g_header_written = false;
-bool g_trace_closed = false;
-static std::once_flag g_init_once;
-std::mutex g_trace_mutex;
+struct DaisyRegion {
+    __daisy_metadata metadata;
+    enum __daisy_event_set event_set;
 
-long long ns_to_us(long long ns) { return ns / 1000; }
+    std::vector<long long> starts;
+    std::vector<long long> durations;
+    std::vector<std::vector<long long>> counts;
+};
 
-void split_env_list(const char* str, std::vector<std::string>& out) {
-    if (!str) return;
-    std::string s(str);
-    size_t start = 0, end = 0;
-    while ((end = s.find(',', start)) != std::string::npos) {
-        out.push_back(s.substr(start, end - start));
-        start = end + 1;
+class DaisyInstrumentationState {
+private:
+    size_t next_region_id = 1;
+    std::unordered_map<size_t, DaisyRegion> regions;
+
+    std::string output_file;
+
+    int eventset_cpu = -1;
+    std::vector<std::string> event_names_cpu;
+
+    int eventset_cuda = -1;
+    std::vector<std::string> event_names_cuda;
+    bool papi_available = false;
+
+    std::mutex mutex;
+
+    long long ns_to_us(long long ns) { return ns / 1000; }
+
+    void split_string(const char* str, std::vector<std::string>& out) {
+        if (!str) return;
+        std::string s(str);
+        size_t start = 0, end = 0;
+        while ((end = s.find(',', start)) != std::string::npos) {
+            out.push_back(s.substr(start, end - start));
+            start = end + 1;
+        }
+        if (s.empty()) return;
+        out.push_back(s.substr(start));
     }
-    if (s.empty()) return;
-    out.push_back(s.substr(start));
-}
 
-void ensure_global_init() {
-    std::call_once(g_init_once, []() {
+    void append_event(
+        FILE* f,
+        const __daisy_metadata* md,
+        long long start_ns,
+        long long dur_ns,
+        const std::vector<long long>& counts,
+        const std::vector<std::string>& event_names
+    ) {
+        // Writes one event as a row in the Chrome trace format
+
+        // Target format:
+        // "ph": "X",
+        // "cat": "region,daisy",
+        // "name": "main  [L110–118]",
+        // "pid": 9535,
+        // "tid": 0,
+        // "ts": 11657,
+        // "dur": 613913,
+        // "args": {
+        // "region_id": "__daisy_correlation18122842100848744318_0_0_1396",
+        // "function": "main",
+        // "loopnest_index": 0,
+        // "module": "correlation",
+        // "build_id": "",
+        // "source_ranges": [
+        //     {
+        //     "file": "/home/lukas/repos/docc/tests/polybench/datamining/correlation/correlation.c",
+        //     "from": { "line": 110, "col": 17 },
+        //     "to":   { "line": 118, "col": 24 }
+        //     }
+        // ],
+        // "metrics": { "CYCLES": 2834021434 } }
+
+        std::stringstream entry;
+        entry << "{";
+        entry << "\"ph\":\"X\",";
+        entry << "\"cat\":\"region,daisy\",";
+        entry << "\"name\":\"" << md->function_name << " [L" << md->line_begin << "-" << md->line_end << "]\",";
+        entry << "\"pid\":" << getpid() << ",";
+        entry << "\"tid\":" << gettid() << ",";
+        entry << "\"ts\":" << ns_to_us(start_ns) << ",";
+        entry << "\"dur\":" << ns_to_us(dur_ns) << ",";
+        entry << "\"args\":{";
+        entry << "\"region_id\":\"" << md->region_name << "\",";
+        entry << "\"function\":\"" << md->function_name << "\",";
+        entry << "\"loopnest_index\":" << md->loopnest_index << ",";
+        entry << "\"module\":\"" << std::filesystem::path(md->file_name).filename().string() << "\",";
+        entry << "\"build_id\":\"\",";
+        entry << "\"source_ranges\":[";
+        entry << "{\"file\":\"" << md->file_name << "\",";
+        entry << "\"from\":{\"line\":" << md->line_begin << ",\"col\":" << md->column_begin << "},";
+        entry << "\"to\":{\"line\":" << md->line_end << ",\"col\":" << md->column_end << "}";
+        entry << "}";
+        entry << "],\"metrics\":{";
+        // PAPI counters
+        for (size_t i = 0; i < counts.size(); ++i) {
+            entry << "\"" << event_names[i] << "\":" << counts[i];
+            if (i < counts.size() - 1) {
+                entry << ",";
+            }
+        }
+        entry << "}";
+        entry << "}";
+        entry << "}";
+
+        std::fprintf(f, "%s", entry.str().c_str());
+    }
+
+public:
+    DaisyInstrumentationState() {
         load_papi_symbols();
-        g_papi_available = _PAPI_library_init && _PAPI_create_eventset && _PAPI_add_named_event && _PAPI_start &&
-                           _PAPI_stop && _PAPI_reset && _PAPI_get_real_nsec;
-        if (!g_papi_available) {
+
+        this->papi_available = _PAPI_library_init && _PAPI_create_eventset && _PAPI_add_named_event && _PAPI_start &&
+                               _PAPI_stop && _PAPI_reset && _PAPI_get_real_nsec;
+        if (!this->papi_available) {
             std::fprintf(stderr, "[daisy-rtl] PAPI not available.\n");
             exit(EXIT_FAILURE);
         }
@@ -86,208 +170,189 @@ void ensure_global_init() {
         if (!ver_str) {
             std::fprintf(stderr, "[daisy-rtl] __DAISY_PAPI_VERSION not set.\n");
             exit(EXIT_FAILURE);
-        } else {
-            int ver = std::strtol(ver_str, nullptr, 0);
-            int retval = _PAPI_library_init(ver);
-            if (retval != ver) {
-                std::fprintf(
-                    stderr, "[daisy-rtl] PAPI init failed: %s.\n", _PAPI_strerror ? _PAPI_strerror(retval) : "unknown"
-                );
-                exit(EXIT_FAILURE);
-            }
+        }
+        int ver = std::strtol(ver_str, nullptr, 0);
+        int retval = _PAPI_library_init(ver);
+        if (retval != ver) {
+            std::fprintf(
+                stderr, "[daisy-rtl] PAPI init failed: %s.\n", _PAPI_strerror ? _PAPI_strerror(retval) : "unknown"
+            );
+            exit(EXIT_FAILURE);
         }
 
         // Output file
-        g_output_file = std::getenv("__DAISY_INSTRUMENTATION_FILE");
-        if (!g_output_file) g_output_file = "daisy_trace.json";
+        const char* output_file_env = std::getenv("__DAISY_INSTRUMENTATION_FILE");
+        if (!output_file_env) {
+            this->output_file = "daisy_trace.json";
+        } else {
+            this->output_file = output_file_env;
+        }
 
         // Events - CPU
         const char* env_events_cpu = std::getenv("__DAISY_INSTRUMENTATION_EVENTS");
         if (env_events_cpu) {
-            split_env_list(env_events_cpu, g_event_names_cpu);
+            split_string(env_events_cpu, this->event_names_cpu);
+        }
+        if (_PAPI_create_eventset(&this->eventset_cpu) != 0) {
+            std::fprintf(stderr, "[daisy-rtl] Failed to create PAPI CPU eventset.\n");
+            exit(EXIT_FAILURE);
+        }
+        if (this->event_names_cpu.size() > 0) {
+            for (const auto& ev : this->event_names_cpu) {
+                if (_PAPI_add_named_event(this->eventset_cpu, ev.c_str()) != 0) {
+                    std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
+                    exit(EXIT_FAILURE);
+                }
+            }
         }
 
         // Events - CUDA
         const char* env_events_cuda = std::getenv("__DAISY_INSTRUMENTATION_EVENTS_CUDA");
         if (env_events_cuda) {
-            split_env_list(env_events_cuda, g_event_names_cuda);
+            split_string(env_events_cuda, this->event_names_cuda);
         }
+        if (_PAPI_create_eventset(&this->eventset_cuda) != 0) {
+            std::fprintf(stderr, "[daisy-rtl] Failed to create PAPI CUDA eventset.\n");
+            exit(EXIT_FAILURE);
+        }
+        if (this->event_names_cuda.size() > 0) {
+            for (const auto& ev : this->event_names_cuda) {
+                if (_PAPI_add_named_event(this->eventset_cuda, ev.c_str()) != 0) {
+                    std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
+                    exit(EXIT_FAILURE);
+                }
+            }
+        }
+    }
 
-        if (_PAPI_create_eventset(&g_eventset_cpu) != 0 || _PAPI_create_eventset(&g_eventset_cuda) != 0) {
-            std::fprintf(stderr, "[daisy-rtl] Failed to create PAPI eventset.\n");
+    ~DaisyInstrumentationState() {
+        FILE* f = std::fopen(this->output_file.c_str(), "w");
+        if (!f) {
+            std::perror("[daisy-rtl] Failed to open output file");
             exit(EXIT_FAILURE);
         }
 
-        if (g_event_names_cpu.size() > 0) {
-            for (const auto& ev : g_event_names_cpu) {
-                if (_PAPI_add_named_event(g_eventset_cpu, ev.c_str()) != 0) {
-                    std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
-                    exit(EXIT_FAILURE);
-                }
-            }
-        }
-
-        if (g_event_names_cuda.size() > 0) {
-            for (const auto& ev : g_event_names_cuda) {
-                if (_PAPI_add_named_event(g_eventset_cuda, ev.c_str()) != 0) {
-                    std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
-                    exit(EXIT_FAILURE);
-                }
-            }
-        }
-    });
-}
-
-void write_event_json(
-    const __daisy_metadata* md,
-    long long start_ns,
-    long long dur_ns,
-    const std::vector<long long>& counts,
-    enum __daisy_event_set event_set
-) {
-    std::lock_guard<std::mutex> guard(g_trace_mutex);
-    FILE* f = std::fopen(g_output_file, g_header_written ? "a" : "w");
-    if (!f) {
-        std::perror("[daisy-rtl] fopen");
-        return;
-    }
-    if (!g_header_written) {
+        // Output file header
         std::fprintf(f, "{\"traceEvents\":[\n");
-        g_header_written = true;
-    } else {
-        std::fprintf(f, ",\n");
+
+        // Output all events
+        for (auto iter = regions.begin(); iter != regions.end(); ++iter) {
+            const auto& region = iter->second;
+            for (size_t i = 0; i < region.starts.size(); ++i) {
+                auto start = region.starts.at(i);
+                auto dur = region.durations.at(i);
+
+                std::vector<long long> counts;
+                if (region.counts.size() > i) {
+                    counts = region.counts.at(i);
+                }
+                append_event(
+                    f,
+                    &region.metadata,
+                    start,
+                    dur,
+                    counts,
+                    region.event_set == __DAISY_EVENT_SET_CPU ? event_names_cpu : event_names_cuda
+                );
+
+                if (i < region.starts.size() - 1) {
+                    std::fprintf(f, ",\n");
+                }
+            }
+
+            if (std::next(iter) != regions.end()) {
+                std::fprintf(f, ",\n");
+            }
+        }
+
+        // Output file footer
+        std::fprintf(f, "\n]}\n");
+
+        // Close output file
+        std::fclose(f);
     }
 
-    // Target format:
-    // "ph": "X",
-    // "cat": "region,daisy",
-    // "name": "main  [L110–118]",
-    // "pid": 9535,
-    // "tid": 0,
-    // "ts": 11657,
-    // "dur": 613913,
-    // "args": {
-    // "region_id": "__daisy_correlation18122842100848744318_0_0_1396",
-    // "function": "main",
-    // "loopnest_index": 0,
-    // "module": "correlation",
-    // "build_id": "",
-    // "source_ranges": [
-    //     {
-    //     "file": "/home/lukas/repos/docc/tests/polybench/datamining/correlation/correlation.c",
-    //     "from": { "line": 110, "col": 17 },
-    //     "to":   { "line": 118, "col": 24 }
-    //     }
-    // ],
-    // "metrics": { "CYCLES": 2834021434 } }
+    size_t register_region(const __daisy_metadata* metadata, enum __daisy_event_set event_set) {
+        std::lock_guard<std::mutex> lock(mutex);
 
-    std::stringstream entry;
-    entry << "{\"ph\":\"X\",";
-    entry << "\"cat\":\"region,daisy\",";
-    entry << "\"name\":\"" << md->function_name << " [L" << md->line_begin << "-" << md->line_end << "]\",";
-    entry << "\"pid\":" << getpid() << ",";
-    entry << "\"tid\":" << gettid() << ",";
-    entry << "\"ts\":" << ns_to_us(start_ns) << ",";
-    entry << "\"dur\":" << ns_to_us(dur_ns) << ",";
-    entry << "\"args\":{";
-    entry << "\"region_id\":\"" << md->region_name << "\",";
-    entry << "\"function\":\"" << md->function_name << "\",";
-    entry << "\"loopnest_index\":" << md->loopnest_index << ",";
-    entry << "\"module\":\"" << std::filesystem::path(md->file_name).filename().string() << "\",";
-    entry << "\"build_id\":\"\",";
-    entry << "\"source_ranges\":[";
-    entry << "{\"file\":\"" << md->file_name << "\",";
-    entry << "\"from\":{\"line\":" << md->line_begin << ",\"col\":" << md->column_begin << "},";
-    entry << "\"to\":{\"line\":" << md->line_end << ",\"col\":" << md->column_end << "}";
-    entry << "}";
-    entry << "],\"metrics\":{";
-    // PAPI counters
-    size_t num_events = event_set == __DAISY_EVENT_SET_CPU ? g_event_names_cpu.size() : g_event_names_cuda.size();
-    for (size_t i = 0; i < num_events; ++i) {
-        if (event_set == __DAISY_EVENT_SET_CPU) {
-            entry << "\"" << g_event_names_cpu[i] << "\":" << counts[i];
-        } else {
-            entry << "\"" << g_event_names_cuda[i] << "\":" << counts[i];
+        DaisyRegion region;
+        std::memcpy(&region.metadata, metadata, sizeof(__daisy_metadata));
+        region.event_set = event_set;
+
+        size_t region_id = next_region_id++;
+        regions[region_id] = region;
+        return region_id;
+    }
+
+    void enter_region(size_t region_id) {
+        std::lock_guard<std::mutex> lock(mutex);
+
+        auto it = regions.find(region_id);
+        if (it == regions.end()) {
+            std::fprintf(stderr, "[daisy-rtl] Warning: entering unknown region %zu\n", region_id);
+            exit(EXIT_FAILURE);
         }
-        if (i < num_events - 1) {
-            entry << ",";
+
+        DaisyRegion& region = it->second;
+        long long start_ns = _PAPI_get_real_nsec();
+        region.starts.push_back(start_ns);
+
+        if (region.event_set == __DAISY_EVENT_SET_CPU && this->event_names_cpu.size() > 0) {
+            _PAPI_reset(eventset_cpu);
+            _PAPI_start(eventset_cpu);
+        } else if (region.event_set == __DAISY_EVENT_SET_CUDA && this->event_names_cuda.size() > 0) {
+            _PAPI_reset(eventset_cuda);
+            _PAPI_start(eventset_cuda);
         }
     }
-    entry << "}";
-    entry << "}";
-    entry << "}";
 
-    std::fprintf(f, "%s", entry.str().c_str());
-    std::fclose(f);
-}
-} // anonymous namespace
+    void exit_region(size_t region_id) {
+        std::lock_guard<std::mutex> lock(mutex);
+        auto it = regions.find(region_id);
+        if (it == regions.end()) {
+            std::fprintf(stderr, "[daisy-rtl] Warning: exiting unknown region %zu\n", region_id);
+            exit(EXIT_FAILURE);
+        }
 
-// -----------------------------------------------------------------------------
-//  Daisy RTL instrumentation C interface implementation
-// -----------------------------------------------------------------------------
+        DaisyRegion& region = it->second;
 
-struct DaisyInstrumentationContext {
-    long long start_ns;
-    std::string region_name;
+        long long end_ns = _PAPI_get_real_nsec();
+        long long duration_ns = end_ns - region.starts.back();
+        region.durations.push_back(duration_ns);
+
+        if (region.event_set == __DAISY_EVENT_SET_CPU && this->event_names_cpu.size() > 0) {
+            std::vector<long long> counts(this->event_names_cpu.size(), 0);
+            _PAPI_stop(eventset_cpu, counts.data());
+            region.counts.push_back(counts);
+        } else if (region.event_set == __DAISY_EVENT_SET_CUDA && this->event_names_cuda.size() > 0) {
+            std::vector<long long> counts(this->event_names_cuda.size(), 0);
+            _PAPI_stop(eventset_cuda, counts.data());
+            region.counts.push_back(counts);
+        }
+    }
 };
 
+static DaisyInstrumentationState g_daisy_state;
+
+#ifdef __cplusplus
 extern "C" {
+#endif
 
-__daisy_instrumentation_t* __daisy_instrumentation_init() {
-    ensure_global_init();
-    auto* ctx = reinterpret_cast<DaisyInstrumentationContext*>(std::calloc(1, sizeof(DaisyInstrumentationContext)));
-    return reinterpret_cast<__daisy_instrumentation_t*>(ctx);
-}
-
-void __daisy_instrumentation_enter(
-    __daisy_instrumentation_t* context, __daisy_metadata* metadata, enum __daisy_event_set event_set
-) {
-    auto* ctx = reinterpret_cast<DaisyInstrumentationContext*>(context);
-    if (!ctx || !metadata) return;
-
-    ctx->start_ns = _PAPI_get_real_nsec();
-    ctx->region_name = metadata->region_name;
-
-    if (event_set == __DAISY_EVENT_SET_CPU && g_event_names_cpu.size() > 0) {
-        _PAPI_reset(g_eventset_cpu);
-        _PAPI_start(g_eventset_cpu);
-    } else if (event_set == __DAISY_EVENT_SET_CUDA && g_event_names_cuda.size() > 0) {
-        _PAPI_reset(g_eventset_cuda);
-        _PAPI_start(g_eventset_cuda);
+size_t __daisy_instrumentation_init(__daisy_metadata* metadata, enum __daisy_event_set event_set) {
+    if (!metadata) {
+        return 0;
     }
+    return g_daisy_state.register_region(metadata, event_set);
 }
 
-void __daisy_instrumentation_exit(
-    __daisy_instrumentation_t* context, __daisy_metadata* metadata, enum __daisy_event_set event_set
-) {
-    auto* ctx = reinterpret_cast<DaisyInstrumentationContext*>(context);
-    if (!ctx || !metadata) return;
+void __daisy_instrumentation_enter(size_t region_id) { g_daisy_state.enter_region(region_id); }
 
-    long long end_ns = _PAPI_get_real_nsec();
-    long long duration_ns = end_ns - ctx->start_ns;
+void __daisy_instrumentation_exit(size_t region_id) { g_daisy_state.exit_region(region_id); }
 
-    size_t num_events = event_set == __DAISY_EVENT_SET_CPU ? g_event_names_cpu.size() : g_event_names_cuda.size();
-    std::vector<long long> counts(num_events, 0);
-    if (event_set == __DAISY_EVENT_SET_CPU && g_event_names_cpu.size() > 0) {
-        _PAPI_stop(g_eventset_cpu, counts.data());
-    } else if (event_set == __DAISY_EVENT_SET_CUDA && g_event_names_cuda.size() > 0) {
-        _PAPI_stop(g_eventset_cuda, counts.data());
-    }
-
-    write_event_json(metadata, ctx->start_ns, duration_ns, counts, event_set);
+void __daisy_instrumentation_finalize(size_t region_id) {
+    // No-op: keep global cache until library unload
 }
 
-void __daisy_instrumentation_finalize(__daisy_instrumentation_t* context) {
-    std::free(context);
-    std::lock_guard<std::mutex> guard(g_trace_mutex);
-    if (!g_trace_closed && g_header_written) {
-        FILE* f = std::fopen(g_output_file, "a");
-        if (f) {
-            std::fprintf(f, "\n]}\n");
-            std::fclose(f);
-        }
-        g_trace_closed = true;
-    }
-}
-
+#ifdef __cplusplus
 } // extern "C"
+#endif

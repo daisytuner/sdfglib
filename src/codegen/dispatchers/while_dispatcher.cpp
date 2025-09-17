@@ -72,7 +72,17 @@ ReturnDispatcher::ReturnDispatcher(
 void ReturnDispatcher::dispatch_node(
     PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
 ) {
-    main_stream << "return;" << std::endl;
+    if (node_.unreachable()) {
+        main_stream << "/* unreachable return */" << std::endl;
+        return;
+    }
+
+    if (symbolic::is_nullptr(symbolic::symbol(node_.data()))) {
+        main_stream << "return " << this->language_extension_.expression(symbolic::symbol(node_.data())) << ";"
+                    << std::endl;
+    } else {
+        main_stream << "return " << node_.data() << ";" << std::endl;
+    }
 };
 
 } // namespace codegen

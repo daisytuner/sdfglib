@@ -17,8 +17,13 @@ std::string CCodeGenerator::function_definition() {
     }
     std::stringstream arglist;
     arglist << sdfg::helpers::join(args, ", ");
+    std::string arglist_str = arglist.str();
+    if (arglist_str.empty()) {
+        arglist_str = "void";
+    }
 
-    return "extern void " + sdfg_.name() + "(" + arglist.str() + ")";
+    return "extern " + this->language_extension_.declaration("", sdfg_.return_type()) + sdfg_.name() + "(" +
+           arglist_str + ")";
 };
 
 void CCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const {
@@ -33,9 +38,12 @@ void CCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const {
 
 void CCodeGenerator::dispatch_includes() {
     this->includes_stream_ << "#include <math.h>" << std::endl;
-    this->includes_stream_ << "#include <cblas.h>" << std::endl;
+    this->includes_stream_ << "#include <alloca.h>" << std::endl;
     this->includes_stream_ << "#include <stdbool.h>" << std::endl;
+    this->includes_stream_ << "#include <stdio.h>" << std::endl;
     this->includes_stream_ << "#include <stdlib.h>" << std::endl;
+    this->includes_stream_ << "#include <string.h>" << std::endl;
+    this->includes_stream_ << "#include <cblas.h>" << std::endl;
     this->includes_stream_ << "#include <daisy_rtl/daisy_rtl.h>" << std::endl;
 };
 
@@ -108,8 +116,19 @@ void CCodeGenerator::dispatch_structures() {
 };
 
 void CCodeGenerator::dispatch_globals() {
-    // Externals are pointers. However, we need to declare them as the base type.
+    // Declare globals
+    const std::unordered_set<std::string> reserved_symbols = {"stderr", "stdin", "stdout"};
     for (auto& container : sdfg_.externals()) {
+        // Function declarations
+        if (dynamic_cast<const types::Function*>(&sdfg_.type(container))) {
+            continue;
+        }
+        // Reserved symbols
+        if (reserved_symbols.find(container) != reserved_symbols.end()) {
+            continue;
+        }
+
+        // Other types must be pointers
         auto& type = dynamic_cast<const types::Pointer&>(sdfg_.type(container));
         assert(type.has_pointee_type() && "Externals must have a pointee type");
         auto& base_type = type.pointee_type();

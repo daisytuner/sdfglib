@@ -22,6 +22,8 @@ public:
 
     SDFGBuilder(const std::string& name, FunctionType type);
 
+    SDFGBuilder(const std::string& name, FunctionType type, const types::IType& return_type);
+
     SDFG& subject() const;
 
     sdfg::control_flow::State* get_non_const_state(const sdfg::control_flow::State* state) const {
@@ -35,6 +37,8 @@ public:
 
     std::unique_ptr<SDFG> move();
 
+    void rename_container(const std::string& old_name, const std::string& new_name) const override;
+
     /***** Section: Control-Flow Graph *****/
 
     control_flow::State& add_state(bool is_start_state = false, const DebugInfo& debug_info = DebugInfo());
@@ -45,6 +49,16 @@ public:
 
     control_flow::State& add_state_after(
         const control_flow::State& state, bool connect_states = true, const DebugInfo& debug_info = DebugInfo()
+    );
+
+    control_flow::ReturnState&
+    add_return_state(const std::string& data, bool unreachable = false, const DebugInfo& debug_info = DebugInfo());
+
+    control_flow::ReturnState& add_return_state_after(
+        const control_flow::State& state,
+        const std::string& data,
+        bool unreachable = false,
+        const DebugInfo& debug_info = DebugInfo()
     );
 
     control_flow::InterstateEdge&
@@ -88,6 +102,13 @@ public:
     data_flow::AccessNode&
     add_access(control_flow::State& state, const std::string& data, const DebugInfo& debug_info = DebugInfo());
 
+    data_flow::ConstantNode& add_constant(
+        control_flow::State& state,
+        const std::string& data,
+        const types::IType& type,
+        const DebugInfo& debug_info = DebugInfo()
+    );
+
     data_flow::Tasklet& add_tasklet(
         control_flow::State& state,
         const data_flow::TaskletCode code,
@@ -103,18 +124,6 @@ public:
         data_flow::DataFlowNode& dst,
         const std::string& dst_conn,
         const data_flow::Subset& subset,
-        const types::IType& base_type,
-        const DebugInfo& debug_info
-    );
-
-    data_flow::Memlet& add_memlet(
-        control_flow::State& state,
-        data_flow::DataFlowNode& src,
-        const std::string& src_conn,
-        data_flow::DataFlowNode& dst,
-        const std::string& dst_conn,
-        const data_flow::Subset& begin_subset,
-        const data_flow::Subset& end_subset,
         const types::IType& base_type,
         const DebugInfo& debug_info
     );
@@ -162,8 +171,7 @@ public:
         data_flow::AccessNode& src,
         data_flow::LibraryNode& dst,
         const std::string& dst_conn,
-        const data_flow::Subset& begin_subset,
-        const data_flow::Subset& end_subset,
+        const data_flow::Subset& subset,
         const types::IType& base_type,
         const DebugInfo& debug_info = DebugInfo()
     );
@@ -173,8 +181,7 @@ public:
         data_flow::LibraryNode& src,
         const std::string& src_conn,
         data_flow::AccessNode& dst,
-        const data_flow::Subset& begin_subset,
-        const data_flow::Subset& end_subset,
+        const data_flow::Subset& subset,
         const types::IType& base_type,
         const DebugInfo& debug_info = DebugInfo()
     );

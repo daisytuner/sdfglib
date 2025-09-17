@@ -52,7 +52,7 @@ enum OpenMPSchedule { Static, Dynamic, Guided };
 
 class ScheduleType_CPU_Parallel {
 public:
-    static void num_threads(ScheduleType& schedule, const symbolic::Expression& num_threads);
+    static void num_threads(ScheduleType& schedule, const symbolic::Expression num_threads);
     static const symbolic::Expression num_threads(const ScheduleType& schedule);
     static void omp_schedule(ScheduleType& schedule, OpenMPSchedule schedule_type);
     static OpenMPSchedule omp_schedule(const ScheduleType& schedule);
@@ -79,8 +79,6 @@ public:
     Map& operator=(const Map&) = delete;
 
     void validate(const Function& function) const override;
-
-    ScheduleType& schedule_type();
 
     const ScheduleType& schedule_type() const;
 };

@@ -3,7 +3,6 @@
 #include <vector>
 
 #include "sdfg/analysis/assumptions_analysis.h"
-#include "sdfg/exceptions.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/conjunctive_normal_form.h"
 #include "sdfg/symbolic/series.h"
@@ -214,6 +213,12 @@ const std::vector<structured_control_flow::ControlFlowNode*> LoopAnalysis::outer
     return outermost_maps_;
 }
 
+std::vector<sdfg::structured_control_flow::ControlFlowNode*> LoopAnalysis::
+    children(sdfg::structured_control_flow::ControlFlowNode* node) const {
+    // Find unique child
+    return this->children(node, this->loop_tree_);
+};
+
 std::vector<sdfg::structured_control_flow::ControlFlowNode*> LoopAnalysis::children(
     sdfg::structured_control_flow::ControlFlowNode* node,
     const std::unordered_map<
@@ -228,6 +233,11 @@ std::vector<sdfg::structured_control_flow::ControlFlowNode*> LoopAnalysis::child
         }
     }
     return c;
+};
+
+std::list<std::vector<sdfg::structured_control_flow::ControlFlowNode*>> LoopAnalysis::
+    loop_tree_paths(sdfg::structured_control_flow::ControlFlowNode* loop) const {
+    return this->loop_tree_paths(loop, this->loop_tree_);
 };
 
 std::list<std::vector<sdfg::structured_control_flow::ControlFlowNode*>> LoopAnalysis::loop_tree_paths(
@@ -254,6 +264,24 @@ std::list<std::vector<sdfg::structured_control_flow::ControlFlowNode*>> LoopAnal
 
     return paths;
 };
+
+std::unordered_set<sdfg::structured_control_flow::ControlFlowNode*> LoopAnalysis::
+    descendants(sdfg::structured_control_flow::ControlFlowNode* loop) const {
+    std::unordered_set<sdfg::structured_control_flow::ControlFlowNode*> desc;
+    std::list<sdfg::structured_control_flow::ControlFlowNode*> queue = {loop};
+    while (!queue.empty()) {
+        auto current = queue.front();
+        queue.pop_front();
+        auto children = this->children(current, this->loop_tree_);
+        for (auto& child : children) {
+            if (desc.find(child) == desc.end()) {
+                desc.insert(child);
+                queue.push_back(child);
+            }
+        }
+    }
+    return desc;
+}
 
 } // namespace analysis
 } // namespace sdfg

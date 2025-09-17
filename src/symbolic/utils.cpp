@@ -147,7 +147,7 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
 std::tuple<std::string, std::string, std::string> expressions_to_intersection_map_str(
     const MultiExpression& expr1,
     const MultiExpression& expr2,
-    const Symbol& indvar,
+    const Symbol indvar,
     const Assumptions& assums1,
     const Assumptions& assums2
 ) {
@@ -430,7 +430,7 @@ ExpressionSet generate_constraints(SymbolSet& syms, const Assumptions& assums, S
 
         auto ub = assums.at(sym).upper_bound();
         auto lb = assums.at(sym).lower_bound();
-        if (!symbolic::eq(ub, symbolic::infty(1))) {
+        if (!symbolic::eq(ub, SymEngine::Inf)) {
             if (SymEngine::is_a<SymEngine::Min>(*ub)) {
                 auto min = SymEngine::rcp_static_cast<const SymEngine::Min>(ub);
                 auto args = min->get_args();
@@ -451,7 +451,7 @@ ExpressionSet generate_constraints(SymbolSet& syms, const Assumptions& assums, S
                 constraints.insert(con_cons.begin(), con_cons.end());
             }
         }
-        if (!symbolic::eq(lb, symbolic::infty(-1))) {
+        if (!symbolic::eq(lb, SymEngine::NegInf)) {
             if (SymEngine::is_a<SymEngine::Max>(*lb)) {
                 auto max = SymEngine::rcp_static_cast<const SymEngine::Max>(lb);
                 auto args = max->get_args();
@@ -476,7 +476,7 @@ ExpressionSet generate_constraints(SymbolSet& syms, const Assumptions& assums, S
     return constraints;
 }
 
-std::string constraint_to_isl_str(const Expression& con) {
+std::string constraint_to_isl_str(const Expression con) {
     codegen::CLanguageExtension language_extension;
 
     if (SymEngine::is_a<SymEngine::StrictLessThan>(*con)) {

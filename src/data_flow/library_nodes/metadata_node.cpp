@@ -30,7 +30,7 @@ std::unique_ptr<DataFlowNode> MetadataNode::clone(size_t element_id, const graph
     return std::make_unique<MetadataNode>(element_id, debug_info_, vertex, parent, outputs_, inputs_, metadata_);
 }
 
-void MetadataNode::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void MetadataNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     // Do nothing
     return;
 }

@@ -6,10 +6,10 @@ namespace sdfg {
 namespace symbolic {
 
 size_t MAX_DEPTH = 100;
-Expression minimum(const Expression& expr, const SymbolSet& parameters, const Assumptions& assumptions, const size_t depth);
-Expression maximum(const Expression& expr, const SymbolSet& parameters, const Assumptions& assumptions, const size_t depth);
+Expression minimum(const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions, const size_t depth);
+Expression maximum(const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions, const size_t depth);
 
-Expression minimum(const Expression& expr, const SymbolSet& parameters, const Assumptions& assumptions, const size_t depth) {
+Expression minimum(const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions, const size_t depth) {
     // Base Cases
     if (depth > MAX_DEPTH) {
         return expr;
@@ -135,7 +135,7 @@ Expression minimum(const Expression& expr, const SymbolSet& parameters, const As
     return SymEngine::null;
 }
 
-Expression maximum(const Expression& expr, const SymbolSet& parameters, const Assumptions& assumptions, const size_t depth) {
+Expression maximum(const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions, const size_t depth) {
     if (depth > MAX_DEPTH) {
         return expr;
     }
@@ -261,11 +261,11 @@ Expression maximum(const Expression& expr, const SymbolSet& parameters, const As
     return SymEngine::null;
 }
 
-Expression minimum(const Expression& expr, const SymbolSet& parameters, const Assumptions& assumptions) {
+Expression minimum(const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions) {
     return minimum(expr, parameters, assumptions, 0);
 }
 
-Expression maximum(const Expression& expr, const SymbolSet& parameters, const Assumptions& assumptions) {
+Expression maximum(const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions) {
     return maximum(expr, parameters, assumptions, 0);
 }
 

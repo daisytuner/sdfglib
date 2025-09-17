@@ -437,8 +437,11 @@ std::string CLanguageExtension::
             if (i + 1 < function_type->num_params()) params << ", ";
         }
         if (function_type->is_var_arg()) {
-            if (function_type->num_params() > 0) params << ", ";
-            params << "...";
+            // ISO C forbids empty parameter lists before ...
+            if (function_type->num_params() > 0) {
+                params << ", ";
+                params << "...";
+            }
         }
 
         const std::string fun_name = name + "(" + params.str() + ")";
@@ -509,17 +512,25 @@ std::string CLanguageExtension::subset(const Function& function, const types::IT
     throw std::invalid_argument("Invalid subset type");
 };
 
-std::string CLanguageExtension::expression(const symbolic::Expression& expr) {
+std::string CLanguageExtension::expression(const symbolic::Expression expr) {
     CSymbolicPrinter printer;
     return printer.apply(expr);
 };
 
 std::string CLanguageExtension::access_node(const data_flow::AccessNode& node) {
-    std::string name = node.data();
-    if (this->external_variables_.find(name) != this->external_variables_.end()) {
-        return "(&" + name + ")";
+    if (dynamic_cast<const data_flow::ConstantNode*>(&node)) {
+        std::string name = node.data();
+        if (symbolic::is_nullptr(symbolic::symbol(name))) {
+            return this->expression(symbolic::__nullptr__());
+        }
+        return name;
+    } else {
+        std::string name = node.data();
+        if (this->external_variables_.find(name) != this->external_variables_.end()) {
+            return "(&" + name + ")";
+        }
+        return name;
     }
-    return name;
 };
 
 std::string CLanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {

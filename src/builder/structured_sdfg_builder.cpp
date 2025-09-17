@@ -17,7 +17,7 @@ namespace sdfg {
 namespace builder {
 
 std::unordered_set<const control_flow::State*> StructuredSDFGBuilder::
-    determine_loop_nodes(const SDFG& sdfg, const control_flow::State& start, const control_flow::State& end) const {
+    determine_loop_nodes(SDFG& sdfg, const control_flow::State& start, const control_flow::State& end) const {
     std::unordered_set<const control_flow::State*> nodes;
     std::unordered_set<const control_flow::State*> visited;
     std::list<const control_flow::State*> queue = {&start};
@@ -63,13 +63,17 @@ bool post_dominates(
 }
 
 const control_flow::State* StructuredSDFGBuilder::find_end_of_if_else(
-    const SDFG& sdfg,
+    SDFG& sdfg,
     const State* current,
     std::vector<const InterstateEdge*>& out_edges,
     const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
 ) {
     // Best-effort approach: Check if post-dominator of current dominates all out edges
     auto pdom = pdom_tree.at(current);
+    if (pdom == nullptr) {
+        return nullptr;
+    }
+
     for (auto& edge : out_edges) {
         if (!post_dominates(pdom, &edge->dst(), pdom_tree)) {
             return nullptr;
@@ -79,7 +83,7 @@ const control_flow::State* StructuredSDFGBuilder::find_end_of_if_else(
     return pdom;
 }
 
-void StructuredSDFGBuilder::traverse(const SDFG& sdfg) {
+void StructuredSDFGBuilder::traverse(SDFG& sdfg) {
     // Start of SDFGS
     Sequence& root = *structured_sdfg_->root_;
     const State* start_state = &sdfg.start_state();
@@ -97,7 +101,7 @@ void StructuredSDFGBuilder::traverse(const SDFG& sdfg) {
 };
 
 void StructuredSDFGBuilder::traverse_with_loop_detection(
-    const SDFG& sdfg,
+    SDFG& sdfg,
     Sequence& scope,
     const State* current,
     const State* end,
@@ -174,7 +178,7 @@ void StructuredSDFGBuilder::traverse_with_loop_detection(
 };
 
 void StructuredSDFGBuilder::traverse_without_loop_detection(
-    const SDFG& sdfg,
+    SDFG& sdfg,
     Sequence& scope,
     const State* current,
     const State* end,
@@ -202,7 +206,10 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
         // Case 1: Sink node
         if (out_degree == 0) {
             this->add_block(scope, curr->dataflow(), {}, curr->debug_info());
-            this->add_return(scope, {}, curr->debug_info());
+
+            auto return_state = dynamic_cast<const control_flow::ReturnState*>(curr);
+            assert(return_state != nullptr);
+            this->add_return(scope, return_state->data(), return_state->unreachable(), {}, return_state->debug_info());
             continue;
         }
 
@@ -300,8 +307,11 @@ StructuredSDFGBuilder::StructuredSDFGBuilder(std::unique_ptr<StructuredSDFG>& sd
 StructuredSDFGBuilder::StructuredSDFGBuilder(const std::string& name, FunctionType type)
     : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name, type)) {};
 
-StructuredSDFGBuilder::StructuredSDFGBuilder(const SDFG& sdfg)
-    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(sdfg.name(), sdfg.type())) {
+StructuredSDFGBuilder::StructuredSDFGBuilder(const std::string& name, FunctionType type, const types::IType& return_type)
+    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name, type, return_type)) {};
+
+StructuredSDFGBuilder::StructuredSDFGBuilder(SDFG& sdfg)
+    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(sdfg.name(), sdfg.type(), sdfg.return_type())) {
     for (auto& entry : sdfg.structures_) {
         this->structured_sdfg_->structures_.insert({entry.first, entry.second->clone()});
     }
@@ -338,6 +348,12 @@ std::unique_ptr<StructuredSDFG> StructuredSDFGBuilder::move() {
 #endif
 
     return std::move(this->structured_sdfg_);
+};
+
+void StructuredSDFGBuilder::rename_container(const std::string& old_name, const std::string& new_name) const {
+    FunctionBuilder::rename_container(old_name, new_name);
+
+    this->structured_sdfg_->root_->replace(symbolic::symbol(old_name), symbolic::symbol(new_name));
 };
 
 Element* StructuredSDFGBuilder::find_element_by_id(const size_t& element_id) const {
@@ -854,10 +870,10 @@ While& StructuredSDFGBuilder::
 
 For& StructuredSDFGBuilder::add_for(
     Sequence& parent,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
 ) {
@@ -877,10 +893,10 @@ For& StructuredSDFGBuilder::add_for(
 For& StructuredSDFGBuilder::add_for_before(
     Sequence& parent,
     ControlFlowNode& child,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
 ) {
@@ -908,10 +924,10 @@ For& StructuredSDFGBuilder::add_for_before(
 For& StructuredSDFGBuilder::add_for_after(
     Sequence& parent,
     ControlFlowNode& child,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
 ) {
@@ -938,10 +954,10 @@ For& StructuredSDFGBuilder::add_for_after(
 
 Map& StructuredSDFGBuilder::add_map(
     Sequence& parent,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
     const ScheduleType& schedule_type,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
@@ -963,10 +979,10 @@ Map& StructuredSDFGBuilder::add_map(
 Map& StructuredSDFGBuilder::add_map_before(
     Sequence& parent,
     ControlFlowNode& child,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
     const ScheduleType& schedule_type,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
@@ -996,10 +1012,10 @@ Map& StructuredSDFGBuilder::add_map_before(
 Map& StructuredSDFGBuilder::add_map_after(
     Sequence& parent,
     ControlFlowNode& child,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
     const ScheduleType& schedule_type,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
@@ -1084,9 +1100,15 @@ Break& StructuredSDFGBuilder::
     return static_cast<Break&>(*parent.children_.back().get());
 };
 
-Return& StructuredSDFGBuilder::
-    add_return(Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfo& debug_info) {
-    parent.children_.push_back(std::unique_ptr<Return>(new Return(this->new_element_id(), debug_info)));
+Return& StructuredSDFGBuilder::add_return(
+    Sequence& parent,
+    const std::string& data,
+    bool unreachable,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    parent.children_.push_back(std::unique_ptr<Return>(new Return(this->new_element_id(), debug_info, data, unreachable)
+    ));
 
     parent.transitions_
         .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
@@ -1098,10 +1120,10 @@ Return& StructuredSDFGBuilder::
 For& StructuredSDFGBuilder::convert_while(
     Sequence& parent,
     While& loop,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update
 ) {
     int index = parent.index(loop);
     if (index == -1) {
@@ -1158,6 +1180,30 @@ Map& StructuredSDFGBuilder::convert_for(Sequence& parent, For& loop) {
     return map;
 };
 
+void StructuredSDFGBuilder::update_if_else_condition(IfElse& if_else, size_t index, const symbolic::Condition condition) {
+    if (index >= if_else.conditions_.size()) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Index out of range");
+    }
+    if_else.conditions_.at(index) = condition;
+};
+
+void StructuredSDFGBuilder::update_loop(
+    StructuredLoop& loop,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update
+) {
+    loop.indvar_ = indvar;
+    loop.condition_ = condition;
+    loop.init_ = init;
+    loop.update_ = update;
+};
+
+void StructuredSDFGBuilder::update_schedule_type(Map& map, const ScheduleType& schedule_type) {
+    map.schedule_type_ = schedule_type;
+}
+
 Sequence& StructuredSDFGBuilder::parent(const ControlFlowNode& node) {
     std::list<structured_control_flow::ControlFlowNode*> queue = {&this->structured_sdfg_->root()};
     while (!queue.empty()) {
@@ -1200,6 +1246,21 @@ data_flow::AccessNode& StructuredSDFGBuilder::
     return dynamic_cast<data_flow::AccessNode&>(*(res.first->second));
 };
 
+data_flow::ConstantNode& StructuredSDFGBuilder::add_constant(
+    structured_control_flow::Block& block, const std::string& data, const types::IType& type, const DebugInfo& debug_info
+) {
+    auto vertex = boost::add_vertex(block.dataflow_->graph_);
+    auto res = block.dataflow_->nodes_.insert(
+        {vertex,
+         std::unique_ptr<data_flow::ConstantNode>(
+             new data_flow::ConstantNode(this->new_element_id(), debug_info, vertex, block.dataflow(), data, type)
+         )}
+    );
+
+    return dynamic_cast<data_flow::ConstantNode&>(*(res.first->second));
+};
+
+
 data_flow::Tasklet& StructuredSDFGBuilder::add_tasklet(
     structured_control_flow::Block& block,
     const data_flow::TaskletCode code,
@@ -1210,9 +1271,9 @@ data_flow::Tasklet& StructuredSDFGBuilder::add_tasklet(
     auto vertex = boost::add_vertex(block.dataflow_->graph_);
     auto res = block.dataflow_->nodes_.insert(
         {vertex,
-         std::unique_ptr<data_flow::Tasklet>(new data_flow::Tasklet(
-             this->new_element_id(), debug_info, vertex, block.dataflow(), code, output, inputs, symbolic::__true__()
-         ))}
+         std::unique_ptr<data_flow::Tasklet>(
+             new data_flow::Tasklet(this->new_element_id(), debug_info, vertex, block.dataflow(), code, output, inputs)
+         )}
     );
 
     return dynamic_cast<data_flow::Tasklet&>(*(res.first->second));
@@ -1233,43 +1294,6 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
         {edge.first,
          std::unique_ptr<data_flow::Memlet>(new data_flow::Memlet(
              this->new_element_id(), debug_info, edge.first, block.dataflow(), src, src_conn, dst, dst_conn, subset, base_type
-         ))}
-    );
-
-    auto& memlet = dynamic_cast<data_flow::Memlet&>(*(res.first->second));
-#ifndef NDEBUG
-    memlet.validate(*this->structured_sdfg_);
-#endif
-
-    return memlet;
-};
-
-data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
-    structured_control_flow::Block& block,
-    data_flow::DataFlowNode& src,
-    const std::string& src_conn,
-    data_flow::DataFlowNode& dst,
-    const std::string& dst_conn,
-    const data_flow::Subset& begin_subset,
-    const data_flow::Subset& end_subset,
-    const types::IType& base_type,
-    const DebugInfo& debug_info
-) {
-    auto edge = boost::add_edge(src.vertex_, dst.vertex_, block.dataflow_->graph_);
-    auto res = block.dataflow_->edges_.insert(
-        {edge.first,
-         std::unique_ptr<data_flow::Memlet>(new data_flow::Memlet(
-             this->new_element_id(),
-             debug_info,
-             edge.first,
-             block.dataflow(),
-             src,
-             src_conn,
-             dst,
-             dst_conn,
-             begin_subset,
-             end_subset,
-             base_type
          ))}
     );
 
@@ -1313,12 +1337,17 @@ data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
     const data_flow::Subset& subset,
     const DebugInfo& debug_info
 ) {
-    auto& src_type = this->structured_sdfg_->type(src.data());
-    auto& base_type = types::infer_type(*this->structured_sdfg_, src_type, subset);
+    const types::IType* src_type = nullptr;
+    if (auto cnode = dynamic_cast<data_flow::ConstantNode*>(&src)) {
+        src_type = &cnode->type();
+    } else {
+        src_type = &this->structured_sdfg_->type(src.data());
+    }
+    auto& base_type = types::infer_type(*this->structured_sdfg_, *src_type, subset);
     if (base_type.type_id() != types::TypeID::Scalar) {
         throw InvalidSDFGException("Computational memlet must have a scalar type");
     }
-    return this->add_memlet(block, src, "void", dst, dst_conn, subset, src_type, debug_info);
+    return this->add_memlet(block, src, "void", dst, dst_conn, subset, *src_type, debug_info);
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
@@ -1342,12 +1371,11 @@ data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
     data_flow::AccessNode& src,
     data_flow::LibraryNode& dst,
     const std::string& dst_conn,
-    const data_flow::Subset& begin_subset,
-    const data_flow::Subset& end_subset,
+    const data_flow::Subset& subset,
     const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(block, src, "void", dst, dst_conn, begin_subset, end_subset, base_type, debug_info);
+    return this->add_memlet(block, src, "void", dst, dst_conn, subset, base_type, debug_info);
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
@@ -1355,12 +1383,11 @@ data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
     data_flow::LibraryNode& src,
     const std::string& src_conn,
     data_flow::AccessNode& dst,
-    const data_flow::Subset& begin_subset,
-    const data_flow::Subset& end_subset,
+    const data_flow::Subset& subset,
     const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(block, src, src_conn, dst, "void", begin_subset, end_subset, base_type, debug_info);
+    return this->add_memlet(block, src, src_conn, dst, "void", subset, base_type, debug_info);
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_reference_memlet(

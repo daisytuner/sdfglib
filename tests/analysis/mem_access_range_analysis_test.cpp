@@ -53,8 +53,10 @@ TEST(MemAccessRangeTest, Arg_Index_Write) {
     auto& root = builder.subject().root();
 
     auto& block = builder.add_block(root);
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& zero_node = builder.add_constant(block, "0", base_desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
     auto& writeAccess = builder.add_access(block, "A");
+    builder.add_computational_memlet(block, zero_node, tasklet, "_in", {});
     auto& writeArg = builder.add_computational_memlet(block, tasklet, "_out", writeAccess, {sym_idx}, ptr_desc);
 
     auto sdfg = builder.move();
@@ -170,8 +172,10 @@ TEST(MemAccessRangeTest, Incomplete_2D_Line_Sum) {
 
     auto& root = builder.subject().root();
     auto& init_block = builder.add_block(root);
-    auto& initTasklet = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& zero_node = builder.add_constant(init_block, "0", base_desc);
+    auto& initTasklet = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, "_out", {"_in"});
     auto& sumInitAccess = builder.add_access(init_block, "sum");
+    builder.add_computational_memlet(init_block, zero_node, initTasklet, "_in", {});
     builder.add_computational_memlet(init_block, initTasklet, "_out", sumInitAccess, {});
     auto& b_access = builder.add_access(init_block, "B");
     auto& init_i_tasklet = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, "_out", {"_in"});

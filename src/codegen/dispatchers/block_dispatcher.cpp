@@ -61,30 +61,28 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
     stream.setIndent(stream.indent() + 4);
 
     auto& src = dynamic_cast<const data_flow::AccessNode&>(memlet.src());
-    auto& src_type = this->function_.type(src.data());
     auto& dst = dynamic_cast<const data_flow::AccessNode&>(memlet.dst());
-    auto& dst_type = this->function_.type(dst.data());
 
     auto& subset = memlet.subset();
-
     auto& base_type = memlet.base_type();
 
-    std::string src_name = this->language_extension_.access_node(src);
-    std::string dst_name = this->language_extension_.access_node(dst);
-
-    stream << dst_name;
+    stream << this->language_extension_.access_node(dst);
     stream << " = ";
 
-    if (symbolic::is_nullptr(symbolic::symbol(src.data())) || helpers::is_number(src.data())) {
-        stream << this->language_extension_.expression(symbolic::symbol(src.data()));
-    } else if (base_type.type_id() == types::TypeID::Pointer) {
-        stream << "&";
-        stream << "(" + this->language_extension_.type_cast(src_name, base_type) + ")";
-        stream << this->language_extension_.subset(function_, base_type, subset);
-    } else {
-        stream << "&";
+    std::string src_name = this->language_extension_.access_node(src);
+    if (dynamic_cast<const data_flow::ConstantNode*>(&src)) {
         stream << src_name;
         stream << this->language_extension_.subset(function_, base_type, subset);
+    } else {
+        if (base_type.type_id() == types::TypeID::Pointer && !subset.empty()) {
+            stream << "&";
+            stream << "(" + this->language_extension_.type_cast(src_name, base_type) + ")";
+            stream << this->language_extension_.subset(function_, base_type, subset);
+        } else {
+            stream << "&";
+            stream << src_name;
+            stream << this->language_extension_.subset(function_, base_type, subset);
+        }
     }
 
     stream << ";";
@@ -99,15 +97,11 @@ void DataFlowDispatcher::dispatch_deref(PrettyPrinter& stream, const data_flow::
     stream.setIndent(stream.indent() + 4);
 
     auto& src = dynamic_cast<const data_flow::AccessNode&>(memlet.src());
-    auto& src_type = this->function_.type(src.data());
     auto& dst = dynamic_cast<const data_flow::AccessNode&>(memlet.dst());
-    auto& dst_type = this->function_.type(dst.data());
 
     auto& base_type = static_cast<const types::Pointer&>(memlet.base_type());
 
-    std::string src_name = this->language_extension_.access_node(src);
     std::string dst_name = this->language_extension_.access_node(dst);
-
     if (memlet.dst_conn() == "void") {
         stream << "(" << this->language_extension_.type_cast(dst_name, base_type) << ")";
         stream << this->language_extension_.subset(function_, base_type, memlet.subset());
@@ -116,8 +110,9 @@ void DataFlowDispatcher::dispatch_deref(PrettyPrinter& stream, const data_flow::
     }
     stream << " = ";
 
-    if (symbolic::is_nullptr(symbolic::symbol(src.data()))) {
-        stream << this->language_extension_.expression(symbolic::__nullptr__());
+    std::string src_name = this->language_extension_.access_node(src);
+    if (dynamic_cast<const data_flow::ConstantNode*>(&src)) {
+        stream << src_name;
         stream << ";" << std::endl;
 
         stream.setIndent(stream.indent() - 4);
@@ -138,16 +133,11 @@ void DataFlowDispatcher::dispatch_deref(PrettyPrinter& stream, const data_flow::
 };
 
 void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow::Tasklet& tasklet) {
-    if (tasklet.is_conditional()) {
-        stream << "if (" << language_extension_.expression(tasklet.condition()) << ") ";
-    }
     stream << "{" << std::endl;
     stream.setIndent(stream.indent() + 4);
 
     for (auto& iedge : this->data_flow_graph_.in_edges(tasklet)) {
         auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
-        auto& src_type = this->function_.type(src.data());
-
         std::string src_name = this->language_extension_.access_node(src);
 
         std::string conn = iedge.dst_conn();
@@ -157,7 +147,7 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow
         stream << " = ";
 
         // Reinterpret cast for opaque pointers
-        if (src_type.type_id() == types::TypeID::Pointer) {
+        if (iedge.base_type().type_id() == types::TypeID::Pointer) {
             stream << "(" << this->language_extension_.type_cast(src_name, iedge.base_type()) << ")";
         } else {
             stream << src_name;
@@ -182,12 +172,11 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow
     // Write back
     for (auto& oedge : this->data_flow_graph_.out_edges(tasklet)) {
         auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
-        auto& dst_type = this->function_.type(dst.data());
 
         std::string dst_name = this->language_extension_.access_node(dst);
 
         // Reinterpret cast for opaque pointers
-        if (dst_type.type_id() == types::TypeID::Pointer) {
+        if (oedge.base_type().type_id() == types::TypeID::Pointer) {
             stream << "(" << this->language_extension_.type_cast(dst_name, oedge.base_type()) << ")";
         } else {
             stream << dst_name;
@@ -231,44 +220,85 @@ LibraryNodeDispatcher::LibraryNodeDispatcher(
 
 void LibraryNodeDispatcher::
     dispatch(PrettyPrinter& stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory) {
+    auto& graph = this->node_.get_parent();
+
     stream << "{" << std::endl;
     stream.setIndent(stream.indent() + 4);
 
-    auto& node = node_;
-    std::vector<std::string> inputs_by_order;
-    std::vector<std::optional<std::string>> outputs_by_order;
+    // Define and initialize inputs
+    for (auto& iedge : graph.in_edges(this->node_)) {
+        auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
+        std::string src_name = this->language_extension_.access_node(src);
 
-    std::unordered_map<std::string, const data_flow::Memlet*> in_edges;
-    for (auto& iedge : this->data_flow_graph_.in_edges(node)) {
-        in_edges[iedge.dst_conn()] = &iedge;
-    }
+        std::string conn = iedge.dst_conn();
+        auto& conn_type = iedge.result_type(this->function_);
 
-    for (auto& input : node.inputs()) {
-        if (in_edges.find(input) == in_edges.end()) {
-            inputs_by_order.push_back(input);
+        stream << this->language_extension_.declaration(conn, conn_type);
+        stream << " = ";
+
+        // Reinterpret cast for opaque pointers
+        if (dynamic_cast<const data_flow::ConstantNode*>(&src)) {
+            stream << src_name;
         } else {
-            auto& iedge = *in_edges[input];
-            auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
-            inputs_by_order.push_back(src.data());
+            if (iedge.base_type().type_id() == types::TypeID::Pointer) {
+                stream << "(" << this->language_extension_.type_cast(src_name, iedge.base_type()) << ")";
+            } else {
+                stream << src_name;
+            }
         }
+
+        stream << this->language_extension_.subset(function_, iedge.base_type(), iedge.subset()) << ";";
+        stream << std::endl;
     }
 
-    std::unordered_map<std::string, const data_flow::Memlet*> out_edges;
-    for (auto& oedge : this->data_flow_graph_.out_edges(node)) {
-        out_edges[oedge.src_conn()] = &oedge;
-    }
-    for (auto& output : node.outputs()) {
-        auto it = out_edges.find(output);
-        if (it == out_edges.end()) {
-            outputs_by_order.push_back(std::nullopt);
+    // Define outputs
+    for (auto& oedge : graph.out_edges(this->node_)) {
+        if (std::find(this->node_.inputs().begin(), this->node_.inputs().end(), oedge.src_conn()) !=
+            this->node_.inputs().end()) {
+            continue;
+        }
+
+        auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
+        std::string dst_name = this->language_extension_.access_node(dst);
+
+        std::string conn = oedge.src_conn();
+        auto& conn_type = oedge.result_type(this->function_);
+        stream << this->language_extension_.declaration(conn, conn_type);
+
+        stream << " = ";
+
+        // Reinterpret cast for opaque pointers
+        if (oedge.base_type().type_id() == types::TypeID::Pointer) {
+            stream << "(" << this->language_extension_.type_cast(dst_name, oedge.base_type()) << ")";
         } else {
-            auto& oedge = *it->second;
-            auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
-            outputs_by_order.push_back(dst.data());
+            stream << dst_name;
         }
+
+        stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << ";";
+        stream << std::endl;
     }
 
-    dispatch_code(stream, globals_stream, library_snippet_factory, inputs_by_order, outputs_by_order);
+    stream << std::endl;
+
+    this->dispatch_code(stream, globals_stream, library_snippet_factory);
+
+    stream << std::endl;
+
+    for (auto& oedge : this->data_flow_graph_.out_edges(this->node_)) {
+        auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
+        if (this->function_.is_external(dst.data())) {
+            continue;
+        }
+
+        std::string dst_name = this->language_extension_.access_node(dst);
+
+        auto& result_type = oedge.result_type(this->function_);
+
+        stream << dst_name;
+        stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << " = ";
+        stream << oedge.src_conn();
+        stream << ";" << std::endl;
+    }
 
     stream.setIndent(stream.indent() - 4);
     stream << "}" << std::endl;
