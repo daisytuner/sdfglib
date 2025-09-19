@@ -36,7 +36,7 @@ public:
 
     types::StructureDefinition& add_structure(const std::string& name, bool is_packed) const;
 
-    void add_external_function(const std::string& name) const;
+    void add_offloaded_function(const std::string& name) const;
 
     std::string find_new_name(std::string prefix = "tmp_") const;
 

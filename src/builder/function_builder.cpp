@@ -180,8 +180,8 @@ types::StructureDefinition& FunctionBuilder::add_structure(const std::string& na
     return *(*res.first).second;
 };
 
-void FunctionBuilder::add_external_function(const std::string& name) const {
-    this->function().external_functions_.insert(name);
+void FunctionBuilder::add_offloaded_function(const std::string& name) const {
+    this->function().offloaded_functions_.insert(name);
 };
 
 std::string FunctionBuilder::find_new_name(std::string prefix) const {
