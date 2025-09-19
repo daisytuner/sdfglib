@@ -337,8 +337,8 @@ StructuredSDFGBuilder::StructuredSDFGBuilder(SDFG& sdfg)
         this->structured_sdfg_->metadata_[entry.first] = entry.second;
     }
 
-    for (auto& func : sdfg.external_functions_) {
-        this->structured_sdfg_->external_functions_.insert(func);
+    for (auto& func : sdfg.offloaded_functions_) {
+        this->structured_sdfg_->offloaded_functions_.insert(func);
     }
 
     this->traverse(sdfg);
