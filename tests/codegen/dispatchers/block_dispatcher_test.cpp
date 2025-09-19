@@ -279,7 +279,7 @@ TEST(DataFlowDispatcherTest, DispatchDeref_Load) {
     codegen::CodeSnippetFactory snippet_factory;
     dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
-    EXPECT_EQ(main_stream.str(), "{\n    b = ((int **) a)[0];\n}\n");
+    EXPECT_EQ(main_stream.str(), "{\n    b = *((int **) a);\n}\n");
 }
 
 TEST(DataFlowDispatcherTest, DispatchDeref_Store) {
@@ -310,7 +310,7 @@ TEST(DataFlowDispatcherTest, DispatchDeref_Store) {
     codegen::CodeSnippetFactory snippet_factory;
     dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
-    EXPECT_EQ(main_stream.str(), "{\n    ((int **) b)[0] = (int *) a;\n}\n");
+    EXPECT_EQ(main_stream.str(), "{\n    *((int **) b) = a;\n}\n");
 }
 
 TEST(DataFlowDispatcherTest, DispatchDeref_Store_Nullptr) {
@@ -340,5 +340,5 @@ TEST(DataFlowDispatcherTest, DispatchDeref_Store_Nullptr) {
     codegen::CodeSnippetFactory snippet_factory;
     dispatcher.dispatch(main_stream, globals_printer, snippet_factory);
 
-    EXPECT_EQ(main_stream.str(), "{\n    ((int **) b)[0] = NULL;\n}\n");
+    EXPECT_EQ(main_stream.str(), "{\n    *((int **) b) = NULL;\n}\n");
 }

@@ -164,13 +164,6 @@ void Memlet::validate(const Function& function) const {
                 }
             }
 
-            // Criterion: Destination must be a pointer to source type
-            auto dst_data = dst_node->data();
-            auto& dst_type = function.type(dst_data);
-            if (dst_type.type_id() != types::TypeID::Pointer) {
-                throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer destination");
-            }
-
             // Criterion: Must be typed pointer
             auto base_pointer_type = dynamic_cast<const types::Pointer*>(this->base_type_.get());
             if (!base_pointer_type) {
@@ -216,13 +209,6 @@ void Memlet::validate(const Function& function) const {
                 if (src_type.type_id() != types::TypeID::Pointer) {
                     throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer source");
                 }
-            }
-
-            // Criterion: Destination must be a pointer to source type
-            auto dst_data = dst_node->data();
-            auto& dst_type = function.type(dst_data);
-            if (dst_type.type_id() != types::TypeID::Pointer) {
-                throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer destination");
             }
 
             // Criterion: Must be typed pointer
