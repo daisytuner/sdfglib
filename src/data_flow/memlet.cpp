@@ -197,18 +197,14 @@ void Memlet::validate(const Function& function) const {
                 throw InvalidSDFGException("Memlet: Dereference memlets must have '0' as the only dimension");
             }
 
-            // Criterion: Source must be a pointer
-            if (auto const_node = dynamic_cast<const ConstantNode*>(src_node)) {
-                if (const_node->type().type_id() != types::TypeID::Pointer &&
-                    const_node->type().type_id() != types::TypeID::Scalar) {
-                    throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer source");
-                }
-            } else {
-                auto src_data = src_node->data();
-                auto& src_type = function.type(src_data);
-                if (src_type.type_id() != types::TypeID::Pointer) {
-                    throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer source");
-                }
+            // Criterion: Destination must be a pointer
+            if (auto const_node = dynamic_cast<const ConstantNode*>(dst_node)) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have a non-constant destination");
+            }
+            auto dst_data = dst_node->data();
+            auto& dst_type = function.type(dst_data);
+            if (dst_type.type_id() != types::TypeID::Pointer) {
+                throw InvalidSDFGException("Memlet: Dereference memlets must have a pointer destination");
             }
 
             // Criterion: Must be typed pointer
