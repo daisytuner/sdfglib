@@ -1179,20 +1179,8 @@ void register_default_serializers() {
             return std::make_unique<stdlib::CallocNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(stdlib::LibraryNodeType_Fprintf.value(), []() {
-            return std::make_unique<stdlib::FprintfNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(stdlib::LibraryNodeType_Fputc.value(), []() {
-            return std::make_unique<stdlib::FputcNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(stdlib::LibraryNodeType_Free.value(), []() {
             return std::make_unique<stdlib::FreeNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(stdlib::LibraryNodeType_FWrite.value(), []() {
-            return std::make_unique<stdlib::FWriteNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(stdlib::LibraryNodeType_Malloc.value(), []() {
@@ -1209,14 +1197,6 @@ void register_default_serializers() {
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(stdlib::LibraryNodeType_Memset.value(), []() {
             return std::make_unique<stdlib::MemsetNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(stdlib::LibraryNodeType_Rand.value(), []() {
-            return std::make_unique<stdlib::RandNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(stdlib::LibraryNodeType_Srand.value(), []() {
-            return std::make_unique<stdlib::SrandNodeSerializer>();
         });
 
     // Metadata
