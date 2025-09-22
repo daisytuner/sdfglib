@@ -176,28 +176,6 @@ void register_default_dispatchers() {
         }
     );
     LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
-        stdlib::LibraryNodeType_Fprintf.value() + "::" + data_flow::ImplementationType_NONE.value(),
-        [](LanguageExtension& language_extension,
-           const Function& function,
-           const data_flow::DataFlowGraph& data_flow_graph,
-           const data_flow::LibraryNode& node) {
-            return std::make_unique<stdlib::FprintfNodeDispatcher>(
-                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::FprintfNode&>(node)
-            );
-        }
-    );
-    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
-        stdlib::LibraryNodeType_Fputc.value() + "::" + data_flow::ImplementationType_NONE.value(),
-        [](LanguageExtension& language_extension,
-           const Function& function,
-           const data_flow::DataFlowGraph& data_flow_graph,
-           const data_flow::LibraryNode& node) {
-            return std::make_unique<stdlib::FputcNodeDispatcher>(
-                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::FputcNode&>(node)
-            );
-        }
-    );
-    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
         stdlib::LibraryNodeType_Free.value() + "::" + data_flow::ImplementationType_NONE.value(),
         [](LanguageExtension& language_extension,
            const Function& function,
@@ -205,17 +183,6 @@ void register_default_dispatchers() {
            const data_flow::LibraryNode& node) {
             return std::make_unique<stdlib::FreeNodeDispatcher>(
                 language_extension, function, data_flow_graph, dynamic_cast<const stdlib::FreeNode&>(node)
-            );
-        }
-    );
-    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
-        stdlib::LibraryNodeType_FWrite.value() + "::" + data_flow::ImplementationType_NONE.value(),
-        [](LanguageExtension& language_extension,
-           const Function& function,
-           const data_flow::DataFlowGraph& data_flow_graph,
-           const data_flow::LibraryNode& node) {
-            return std::make_unique<stdlib::FWriteNodeDispatcher>(
-                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::FWriteNode&>(node)
             );
         }
     );
@@ -260,28 +227,6 @@ void register_default_dispatchers() {
            const data_flow::LibraryNode& node) {
             return std::make_unique<stdlib::MemsetNodeDispatcher>(
                 language_extension, function, data_flow_graph, dynamic_cast<const stdlib::MemsetNode&>(node)
-            );
-        }
-    );
-    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
-        stdlib::LibraryNodeType_Rand.value() + "::" + data_flow::ImplementationType_NONE.value(),
-        [](LanguageExtension& language_extension,
-           const Function& function,
-           const data_flow::DataFlowGraph& data_flow_graph,
-           const data_flow::LibraryNode& node) {
-            return std::make_unique<stdlib::RandNodeDispatcher>(
-                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::RandNode&>(node)
-            );
-        }
-    );
-    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
-        stdlib::LibraryNodeType_Srand.value() + "::" + data_flow::ImplementationType_NONE.value(),
-        [](LanguageExtension& language_extension,
-           const Function& function,
-           const data_flow::DataFlowGraph& data_flow_graph,
-           const data_flow::LibraryNode& node) {
-            return std::make_unique<stdlib::SrandNodeDispatcher>(
-                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::SrandNode&>(node)
             );
         }
     );
