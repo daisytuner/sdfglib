@@ -15,19 +15,30 @@ class Return : public ControlFlowNode {
 
 private:
     std::string data_;
+    std::unique_ptr<types::IType> type_;
     bool unreachable_;
 
-    Return(size_t element_id, const DebugInfo& debug_info, const std::string& data, bool unreachable);
+    Return(size_t element_id, const DebugInfo& debug_info, const std::string& data);
+
+    Return(size_t element_id, const DebugInfo& debug_info);
+
+    Return(size_t element_id, const DebugInfo& debug_info, const std::string& constant, const types::IType& type);
 
 public:
     Return(const Return& Return) = delete;
     Return& operator=(const Return&) = delete;
 
-    bool has_data() const;
-
     const std::string& data() const;
 
+    const types::IType& type() const;
+
     bool unreachable() const;
+
+    bool is_data() const;
+
+    bool is_unreachable() const;
+
+    bool is_constant() const;
 
     void validate(const Function& function) const override;
 

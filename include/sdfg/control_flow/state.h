@@ -50,14 +50,19 @@ class ReturnState : public State {
 
 private:
     std::string data_;
+    std::unique_ptr<types::IType> type_;
     bool unreachable_;
+
+    ReturnState(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, const std::string& data);
+
+    ReturnState(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex);
 
     ReturnState(
         size_t element_id,
         const DebugInfo& debug_info,
         const graph::Vertex vertex,
         const std::string& data,
-        bool unreachable
+        const types::IType& type
     );
 
 public:
@@ -67,7 +72,15 @@ public:
 
     const std::string& data() const;
 
+    const types::IType& type() const;
+
     bool unreachable() const;
+
+    bool is_data() const;
+
+    bool is_unreachable() const;
+
+    bool is_constant() const;
 
     void validate(const Function& function) const override;
 

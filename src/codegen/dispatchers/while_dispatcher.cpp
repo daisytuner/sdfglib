@@ -74,14 +74,15 @@ void ReturnDispatcher::dispatch_node(
 ) {
     if (node_.unreachable()) {
         main_stream << "/* unreachable return */" << std::endl;
-        return;
-    }
-
-    if (symbolic::is_nullptr(symbolic::symbol(node_.data()))) {
-        main_stream << "return " << this->language_extension_.expression(symbolic::symbol(node_.data())) << ";"
-                    << std::endl;
-    } else {
+    } else if (node_.is_data()) {
         main_stream << "return " << node_.data() << ";" << std::endl;
+    } else if (node_.is_constant()) {
+        if (symbolic::is_nullptr(symbolic::symbol(node_.data()))) {
+            main_stream << "return " << this->language_extension_.expression(symbolic::symbol(node_.data())) << ";"
+                        << std::endl;
+        } else {
+            main_stream << "return " << node_.data() << ";" << std::endl;
+        }
     }
 };
 

@@ -582,7 +582,7 @@ void DataDependencyAnalysis::visit_return(
     std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions
 ) {
-    if (return_statement.has_data()) {
+    if (return_statement.is_data()) {
         auto current_user = users.get_user(return_statement.data(), &return_statement, Use::READ);
 
         bool found = false;

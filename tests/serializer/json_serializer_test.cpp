@@ -431,7 +431,7 @@ TEST(JSONSerializerTest, ReturnToJSON) {
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU);
     auto& root = builder.subject().root();
 
-    auto& scope = builder.add_return(root, "_ret", false);
+    auto& scope = builder.add_return(root, "");
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
@@ -446,9 +446,10 @@ TEST(JSONSerializerTest, ReturnToJSON) {
     EXPECT_TRUE(j.contains("type"));
     EXPECT_EQ(j["type"], "return");
     EXPECT_TRUE(j.contains("data"));
-    EXPECT_EQ(j["data"], "_ret");
+    EXPECT_EQ(j["data"], "");
     EXPECT_TRUE(j.contains("unreachable"));
     EXPECT_EQ(j["unreachable"], false);
+    EXPECT_FALSE(j.contains("data_type"));
 }
 
 TEST(JSONSerializerTest, SequenceToJSON) {
@@ -1599,7 +1600,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_return) {
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU);
     auto& root = builder.subject().root();
 
-    auto& ret = builder.add_return(root, "_ret", false);
+    auto& ret = builder.add_return(root, "");
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
@@ -1623,7 +1624,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_return) {
 
     EXPECT_TRUE(dynamic_cast<sdfg::structured_control_flow::Return*>(&des_sdfg->root().at(0).first) != nullptr);
     auto& des_ret = dynamic_cast<sdfg::structured_control_flow::Return&>(des_sdfg->root().at(0).first);
-    EXPECT_EQ(des_ret.data(), "_ret");
+    EXPECT_EQ(des_ret.data(), "");
     EXPECT_EQ(des_ret.unreachable(), false);
 }
 
