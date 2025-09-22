@@ -164,6 +164,9 @@ std::unique_ptr<std::vector<CaptureVarPlan>> CodeGenerator::create_capture_plans
     }
 
     for (auto& argName : exts) {
+        if (sdfg_.type(argName).type_id() == types::TypeID::Function) {
+            continue;
+        }
         ++argIdx;
 
         working &= add_capture_plan(argName, argIdx, true, *plan.get(), ranges);
