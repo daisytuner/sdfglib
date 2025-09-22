@@ -103,7 +103,14 @@ bool CodeGenerator::add_capture_plan(
     std::vector<CaptureVarPlan>& plan,
     const analysis::MemAccessRanges& ranges
 ) {
-    auto& type = sdfg_.type(varName);
+    const types::IType* type = nullptr;
+    if (isExternal) {
+        auto& pointer_type = dynamic_cast<const types::Pointer&>(sdfg_.type(varName));
+        assert(pointer_type.has_pointee_type() && "Externals must have a pointee type");
+        type = &pointer_type.pointee_type();
+    } else {
+        type = &sdfg_.type(varName);
+    }
 
     const auto* range = ranges.get(varName);
 
@@ -114,7 +121,8 @@ bool CodeGenerator::add_capture_plan(
     int dimCount = 0;
     types::PrimitiveType innerPrim;
 
-    std::tie(dimCount, innerPrim) = analyze_type_rec(dims, 3, 0, type, argIdx, range, analysis_manager, sdfg_, varName);
+    std::tie(dimCount, innerPrim) =
+        analyze_type_rec(dims, 3, 0, *type, argIdx, range, analysis_manager, sdfg_, varName);
 
     bool isRead = range ? range->saw_read() : true;
     bool isWritten = range ? range->saw_write() : true;
