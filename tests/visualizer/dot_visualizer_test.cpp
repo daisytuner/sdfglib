@@ -568,7 +568,7 @@ TEST(DotVisualizerTest, test_return) {
     auto& case1 = builder.add_case(if_else, symbolic::Ge(symbolic::symbol("i"), symbolic::symbol("N")));
     auto& case2 = builder.add_case(if_else, symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")));
 
-    auto& return_node = builder.add_return(case1, "", false);
+    auto& return_node = builder.add_return(case1, "");
 
     auto& block2 = builder.add_block(case2);
     auto& input2 = builder.add_access(block2, "A");

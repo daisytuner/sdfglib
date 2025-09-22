@@ -40,7 +40,8 @@ bool DeadCFGElimination::run_pass(builder::StructuredSDFGBuilder& builder, analy
     auto last = root.at(root.size() - 1);
     if (last.second.empty()) {
         if (auto return_node = dynamic_cast<structured_control_flow::Return*>(&last.first)) {
-            if (!return_node->has_data()) {
+            // void node or unreachable
+            if (return_node->is_data() && return_node->data().empty() || return_node->is_unreachable()) {
                 builder.remove_child(root, root.size() - 1);
                 return true;
             }

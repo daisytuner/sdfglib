@@ -108,14 +108,12 @@ control_flow::State& SDFGBuilder::
     return new_state;
 };
 
-control_flow::ReturnState& SDFGBuilder::
-    add_return_state(const std::string& data, bool unreachable, const DebugInfo& debug_info) {
+control_flow::ReturnState& SDFGBuilder::add_return_state(const std::string& data, const DebugInfo& debug_info) {
     auto vertex = boost::add_vertex(this->sdfg_->graph_);
     auto res = this->sdfg_->states_.insert(
         {vertex,
-         std::unique_ptr<control_flow::State>(
-             new control_flow::ReturnState(this->new_element_id(), debug_info, vertex, data, unreachable)
-         )}
+         std::unique_ptr<
+             control_flow::State>(new control_flow::ReturnState(this->new_element_id(), debug_info, vertex, data))}
     );
 
     assert(res.second);
@@ -124,10 +122,80 @@ control_flow::ReturnState& SDFGBuilder::
     return static_cast<control_flow::ReturnState&>(*(*res.first).second);
 };
 
-control_flow::ReturnState& SDFGBuilder::add_return_state_after(
-    const control_flow::State& state, const std::string& data, bool unreachable, const DebugInfo& debug_info
+control_flow::ReturnState& SDFGBuilder::
+    add_return_state_after(const control_flow::State& state, const std::string& data, const DebugInfo& debug_info) {
+    auto& new_state = this->add_return_state(data, debug_info);
+
+    std::vector<const control_flow::InterstateEdge*> to_redirect;
+    for (auto& e : this->sdfg_->out_edges(state)) to_redirect.push_back(&e);
+
+    // Redirect control-flow
+    for (auto& edge : to_redirect) {
+        this->add_edge(new_state, edge->dst(), edge->condition());
+
+        auto desc = edge->edge();
+        this->sdfg_->edges_.erase(desc);
+        boost::remove_edge(desc, this->sdfg_->graph_);
+    }
+    this->add_edge(state, new_state);
+
+    return new_state;
+};
+
+control_flow::ReturnState& SDFGBuilder::add_unreachable_state(const DebugInfo& debug_info) {
+    auto vertex = boost::add_vertex(this->sdfg_->graph_);
+    auto res = this->sdfg_->states_.insert(
+        {vertex,
+         std::unique_ptr<control_flow::State>(new control_flow::ReturnState(this->new_element_id(), debug_info, vertex))
+        }
+    );
+
+    assert(res.second);
+    (*res.first).second->dataflow_->parent_ = (*res.first).second.get();
+
+    return static_cast<control_flow::ReturnState&>(*(*res.first).second);
+};
+
+control_flow::ReturnState& SDFGBuilder::
+    add_unreachable_state_after(const control_flow::State& state, const DebugInfo& debug_info) {
+    auto& new_state = this->add_unreachable_state(debug_info);
+
+    std::vector<const control_flow::InterstateEdge*> to_redirect;
+    for (auto& e : this->sdfg_->out_edges(state)) to_redirect.push_back(&e);
+
+    // Redirect control-flow
+    for (auto& edge : to_redirect) {
+        this->add_edge(new_state, edge->dst(), edge->condition());
+
+        auto desc = edge->edge();
+        this->sdfg_->edges_.erase(desc);
+        boost::remove_edge(desc, this->sdfg_->graph_);
+    }
+    this->add_edge(state, new_state);
+
+    return new_state;
+};
+
+control_flow::ReturnState& SDFGBuilder::
+    add_constant_return_state(const std::string& data, const types::IType& type, const DebugInfo& debug_info) {
+    auto vertex = boost::add_vertex(this->sdfg_->graph_);
+    auto res = this->sdfg_->states_.insert(
+        {vertex,
+         std::unique_ptr<
+             control_flow::State>(new control_flow::ReturnState(this->new_element_id(), debug_info, vertex, data, type))
+        }
+    );
+
+    assert(res.second);
+    (*res.first).second->dataflow_->parent_ = (*res.first).second.get();
+
+    return static_cast<control_flow::ReturnState&>(*(*res.first).second);
+};
+
+control_flow::ReturnState& SDFGBuilder::add_constant_return_state_after(
+    const control_flow::State& state, const std::string& data, const types::IType& type, const DebugInfo& debug_info
 ) {
-    auto& new_state = this->add_return_state(data, unreachable, debug_info);
+    auto& new_state = this->add_constant_return_state(data, type, debug_info);
 
     std::vector<const control_flow::InterstateEdge*> to_redirect;
     for (auto& e : this->sdfg_->out_edges(state)) to_redirect.push_back(&e);

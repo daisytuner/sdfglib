@@ -442,7 +442,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(structured_control_flow:
         this->exits_.insert({br_stmt, this->users_.at(v).get()});
         return {v, v};
     } else if (auto ret_stmt = dynamic_cast<structured_control_flow::Return*>(&node)) {
-        if (!ret_stmt->has_data()) {
+        if (!ret_stmt->is_data()) {
             auto v = boost::add_vertex(this->graph_);
             this->users_.insert({v, std::make_unique<User>(v, "", ret_stmt, Use::NOP)});
             this->entries_.insert({ret_stmt, this->users_.at(v).get()});

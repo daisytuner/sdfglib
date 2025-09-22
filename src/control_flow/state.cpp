@@ -22,14 +22,32 @@ void State::replace(const symbolic::Expression old_expression, const symbolic::E
     this->dataflow_->replace(old_expression, new_expression);
 };
 
+ReturnState::ReturnState(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, const std::string& data)
+    : State(element_id, debug_info, vertex), data_(data), unreachable_(false), type_(nullptr) {};
+
+ReturnState::ReturnState(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex)
+    : State(element_id, debug_info, vertex), data_(""), unreachable_(true), type_(nullptr) {};
+
 ReturnState::ReturnState(
-    size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, const std::string& data, bool unreachable
+    size_t element_id,
+    const DebugInfo& debug_info,
+    const graph::Vertex vertex,
+    const std::string& data,
+    const types::IType& type
 )
-    : State(element_id, debug_info, vertex), data_(data), unreachable_(unreachable) {};
+    : State(element_id, debug_info, vertex), data_(data), unreachable_(false), type_(type.clone()) {};
 
 const std::string& ReturnState::data() const { return this->data_; };
 
+const types::IType& ReturnState::type() const { return *(this->type_); };
+
 bool ReturnState::unreachable() const { return this->unreachable_; };
+
+bool ReturnState::is_data() const { return !this->unreachable_ && type_ == nullptr; };
+
+bool ReturnState::is_unreachable() const { return this->unreachable_; };
+
+bool ReturnState::is_constant() const { return !this->unreachable_ && type_ != nullptr; };
 
 void ReturnState::validate(const Function& function) const {
     State::validate(function);
@@ -37,6 +55,36 @@ void ReturnState::validate(const Function& function) const {
     auto& sdfg = static_cast<const SDFG&>(function);
     if (sdfg.out_degree(*this) > 0) {
         throw InvalidSDFGException("ReturnState must not have outgoing transitions");
+    }
+
+    if (is_data()) {
+        if (data_ != "" && !function.exists(data_)) {
+            throw InvalidSDFGException("Return node with data '" + data_ + "' does not correspond to any container");
+        }
+        if (unreachable_) {
+            throw InvalidSDFGException("Return node cannot be both data and unreachable");
+        }
+        if (type_ != nullptr) {
+            throw InvalidSDFGException("Return node with data cannot have a type");
+        }
+    } else if (is_constant()) {
+        if (function.exists(data_)) {
+            throw InvalidSDFGException(
+                "Return node with constant data '" + data_ + "' cannot correspond to any container"
+            );
+        }
+        if (type_ == nullptr) {
+            throw InvalidSDFGException("Return node with constant data must have a type");
+        }
+    } else if (is_unreachable()) {
+        if (!data_.empty()) {
+            throw InvalidSDFGException("Unreachable return node cannot have data");
+        }
+        if (type_ != nullptr) {
+            throw InvalidSDFGException("Unreachable return node cannot have a type");
+        }
+    } else {
+        throw InvalidSDFGException("Return node must be either data, constant, or unreachable");
     }
 }
 

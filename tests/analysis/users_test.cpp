@@ -386,8 +386,8 @@ TEST(UsersTest, Returns_Diverging) {
     auto& branch1 = builder.add_case(ifelse, symbolic::__true__());
     auto& branch2 = builder.add_case(ifelse, symbolic::__true__());
 
-    auto& ret1 = builder.add_return(branch1, "A", false);
-    auto& ret2 = builder.add_return(branch2, "B", true);
+    auto& ret1 = builder.add_return(branch1, "A");
+    auto& ret2 = builder.add_return(branch2, "B");
 
     auto sdfg = builder.move();
 
