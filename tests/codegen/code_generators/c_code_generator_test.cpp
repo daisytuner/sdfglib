@@ -264,7 +264,7 @@ TEST(CCodeGeneratorTest, CreateCapturePlans) {
         << "dim2: " << (*capturePlan)[1].dim2->__str__() << std::endl;
 
     EXPECT_EQ((*capturePlan)[2].capture_input, false);
-    EXPECT_EQ((*capturePlan)[2].capture_output, false);
+    EXPECT_EQ((*capturePlan)[2].capture_output, true);
     EXPECT_EQ((*capturePlan)[2].type, codegen::CaptureVarType::CapRaw);
     EXPECT_EQ((*capturePlan)[2].arg_idx, 2);
     EXPECT_EQ((*capturePlan)[2].is_external, true);

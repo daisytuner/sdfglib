@@ -128,7 +128,7 @@ bool CodeGenerator::add_capture_plan(
     bool isWritten = range ? range->saw_write() : true;
 
     if (dimCount == 0) {
-        plan.emplace_back(isRead, false, CaptureVarType::CapRaw, argIdx, isExternal, innerPrim);
+        plan.emplace_back(isRead, isWritten && isExternal, CaptureVarType::CapRaw, argIdx, isExternal, innerPrim);
     } else if (dimCount == 1) {
         plan.emplace_back(isRead, isWritten, CaptureVarType::Cap1D, argIdx, isExternal, innerPrim, dims[0]);
     } else if (dimCount == 2) {
