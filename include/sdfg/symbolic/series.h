@@ -7,6 +7,9 @@ namespace sdfg {
 namespace symbolic {
 namespace series {
 
+std::pair<bool, std::pair<Integer, Integer>>
+affine_int_coeffs(const Expression expr, const Symbol sym, const Assumptions& assums);
+
 bool is_monotonic(const Expression expr, const Symbol sym, const Assumptions& assums);
 
 bool is_contiguous(const Expression expr, const Symbol sym, const Assumptions& assums);
