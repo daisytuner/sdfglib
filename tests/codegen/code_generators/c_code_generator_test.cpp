@@ -204,7 +204,6 @@ TEST(CCodeGeneratorTest, CreateCapturePlans) {
 
     builder.add_container("arg0", sym_type, true, false);
     builder.add_container("arg1", ptr_inner_type, true, false);
-    builder.add_container("ext0", sym_type, false, true);
     builder.add_container("ext1", ptr_value_type, false, true);
 
     auto sym_i = symbolic::symbol("i");
@@ -243,7 +242,7 @@ TEST(CCodeGeneratorTest, CreateCapturePlans) {
     codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, true);
     auto capturePlan = generator.create_capture_plans();
 
-    EXPECT_EQ(capturePlan->size(), 4);
+    EXPECT_EQ(capturePlan->size(), 3);
 
     EXPECT_EQ((*capturePlan)[0].capture_input, true);
     EXPECT_EQ((*capturePlan)[0].capture_output, false);
@@ -264,17 +263,10 @@ TEST(CCodeGeneratorTest, CreateCapturePlans) {
     EXPECT_TRUE(symbolic::eq((*capturePlan)[1].dim2, symbolic::integer(210)))
         << "dim2: " << (*capturePlan)[1].dim2->__str__() << std::endl;
 
-    EXPECT_EQ((*capturePlan)[2].capture_input, true);
+    EXPECT_EQ((*capturePlan)[2].capture_input, false);
     EXPECT_EQ((*capturePlan)[2].capture_output, false);
     EXPECT_EQ((*capturePlan)[2].type, codegen::CaptureVarType::CapRaw);
     EXPECT_EQ((*capturePlan)[2].arg_idx, 2);
     EXPECT_EQ((*capturePlan)[2].is_external, true);
-
-    EXPECT_EQ((*capturePlan)[3].capture_input, false);
-    EXPECT_EQ((*capturePlan)[3].capture_output, true);
-    EXPECT_EQ((*capturePlan)[3].type, codegen::CaptureVarType::Cap1D);
-    EXPECT_EQ((*capturePlan)[3].arg_idx, 3);
-    EXPECT_EQ((*capturePlan)[3].is_external, true);
-    EXPECT_EQ((*capturePlan)[3].inner_type, types::PrimitiveType::Float);
-    EXPECT_TRUE(symbolic::eq((*capturePlan)[3].dim1, symbolic::integer(1)));
+    EXPECT_EQ((*capturePlan)[2].inner_type, types::PrimitiveType::Float);
 }
