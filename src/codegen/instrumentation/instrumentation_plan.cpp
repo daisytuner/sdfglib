@@ -71,13 +71,13 @@ std::unique_ptr<InstrumentationPlan> InstrumentationPlan::outermost_loops_plan(S
     std::unordered_map<const structured_control_flow::ControlFlowNode*, size_t> loopnest_indices;
     for (size_t i = 0; i < ols.size(); i++) {
         auto& loop = ols[i];
+        loopnest_indices[loop] = i;
         if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(loop)) {
             if (map_node->schedule_type().value() == "CUDA") {
                 nodes.insert({loop, InstrumentationEventType::CUDA});
                 continue;
             }
         }
-        loopnest_indices[loop] = i;
         nodes.insert({loop, InstrumentationEventType::CPU}); // Default to CPU if not CUDA
     }
     return std::make_unique<InstrumentationPlan>(sdfg, nodes, loopnest_indices);
