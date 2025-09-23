@@ -7,34 +7,57 @@ namespace sdfg {
 namespace symbolic {
 namespace series {
 
-bool is_monotonic_affine(const Expression expr, const Symbol sym, const Assumptions& assums) {
+std::pair<bool, std::pair<Integer, Integer>>
+affine_int_coeffs(const Expression expr, const Symbol sym, const Assumptions& assums) {
     SymbolVec symbols = {sym};
     auto poly = polynomial(expr, symbols);
     if (poly == SymEngine::null) {
-        return false;
+        return {false, {integer(0), integer(0)}};
     }
     auto coeffs = affine_coefficients(poly, symbols);
     if (coeffs.empty()) {
-        return false;
+        return {false, {integer(0), integer(0)}};
     }
     auto mul = minimum(coeffs[sym], {}, assums);
     if (mul == SymEngine::null) {
-        return false;
+        return {false, {integer(0), integer(0)}};
     }
     auto offset = minimum(coeffs[symbol("__daisy_constant__")], {}, assums);
     if (offset == SymEngine::null) {
-        return false;
+        return {false, {integer(0), integer(0)}};
     }
     if (!SymEngine::is_a<SymEngine::Integer>(*mul) || !SymEngine::is_a<SymEngine::Integer>(*offset)) {
-        return false;
+        return {false, {integer(0), integer(0)}};
     }
     auto mul_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(mul);
     auto offset_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(offset);
+    return {true, {mul_int, offset_int}};
+}
+
+bool is_monotonic_affine(const Expression expr, const Symbol sym, const Assumptions& assums) {
+    auto [success, coeffs] = affine_int_coeffs(expr, sym, assums);
+    if (!success) {
+        return false;
+    }
+    auto [mul_int, offset_int] = coeffs;
     if (mul_int->as_int() <= 0 || offset_int->as_int() <= 0) {
         return false;
     }
 
     return true;
+}
+
+bool is_contiguous_affine(const Expression expr, const Symbol sym, const Assumptions& assums) {
+    auto [success, coeffs] = affine_int_coeffs(expr, sym, assums);
+    if (!success) {
+        return false;
+    }
+    auto [mul_int, offset_int] = coeffs;
+    if (mul_int->as_int() == 1 && offset_int->as_int() == 1) {
+        return true;
+    }
+
+    return false;
 }
 
 bool is_monotonic_pow(const Expression expr, const Symbol sym, const Assumptions& assums) {
@@ -68,32 +91,9 @@ bool is_monotonic(const Expression expr, const Symbol sym, const Assumptions& as
 }
 
 bool is_contiguous(const Expression expr, const Symbol sym, const Assumptions& assums) {
-    SymbolVec symbols = {sym};
-    auto poly = polynomial(expr, symbols);
-    if (poly == SymEngine::null) {
-        return false;
-    }
-    auto coeffs = affine_coefficients(poly, symbols);
-    if (coeffs.empty()) {
-        return false;
-    }
-    auto mul = minimum(coeffs[sym], {}, assums);
-    if (mul == SymEngine::null) {
-        return false;
-    }
-    auto offset = minimum(coeffs[symbol("__daisy_constant__")], {}, assums);
-    if (offset == SymEngine::null) {
-        return false;
-    }
-    if (!SymEngine::is_a<SymEngine::Integer>(*mul) || !SymEngine::is_a<SymEngine::Integer>(*offset)) {
-        return false;
-    }
-    auto mul_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(mul);
-    auto offset_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(offset);
-    if (mul_int->as_int() == 1 && offset_int->as_int() == 1) {
+    if (is_contiguous_affine(expr, sym, assums)) {
         return true;
     }
-
     return false;
 }
 
