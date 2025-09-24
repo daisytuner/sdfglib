@@ -74,9 +74,6 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
     auto inner_condition_tile =
         symbolic::Lt(inner_indvar, symbolic::add(outer_indvar, symbolic::integer(this->tile_size_)));
 
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto old_bound = analysis::LoopAnalysis::canonical_bound(&loop_, assumptions_analysis);
-
     symbolic::Condition inner_condition = symbolic::And(inner_condition_tile, loop_.condition());
 
     auto inner_update = symbolic::add(inner_indvar, symbolic::integer(1));
