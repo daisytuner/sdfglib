@@ -9,25 +9,41 @@ namespace analysis {
 
 class AssumptionsAnalysis;
 
+struct DFSLoopComparator {
+    const std::vector<structured_control_flow::ControlFlowNode*>* loops_order_;
+
+    DFSLoopComparator(const std::vector<structured_control_flow::ControlFlowNode*>* loops_order)
+        : loops_order_(loops_order) {}
+
+    bool operator()(const structured_control_flow::ControlFlowNode* lhs, const structured_control_flow::ControlFlowNode* rhs)
+        const {
+        return std::find(loops_order_->begin(), loops_order_->end(), lhs) <
+               std::find(loops_order_->begin(), loops_order_->end(), rhs);
+    }
+};
+
 class LoopAnalysis : public Analysis {
 private:
-    std::unordered_set<structured_control_flow::ControlFlowNode*> loops_;
-    std::unordered_map<structured_control_flow::ControlFlowNode*, structured_control_flow::ControlFlowNode*> loop_tree_;
+    std::vector<structured_control_flow::ControlFlowNode*> loops_;
+    std::map<structured_control_flow::ControlFlowNode*, structured_control_flow::ControlFlowNode*, DFSLoopComparator>
+        loop_tree_;
 
     void run(structured_control_flow::ControlFlowNode& scope, structured_control_flow::ControlFlowNode* parent_loop);
 
     std::vector<sdfg::structured_control_flow::ControlFlowNode*> children(
         sdfg::structured_control_flow::ControlFlowNode* node,
-        const std::unordered_map<
+        const std::map<
             sdfg::structured_control_flow::ControlFlowNode*,
-            sdfg::structured_control_flow::ControlFlowNode*>& tree
+            sdfg::structured_control_flow::ControlFlowNode*,
+            DFSLoopComparator>& tree
     ) const;
 
     std::list<std::vector<sdfg::structured_control_flow::ControlFlowNode*>> loop_tree_paths(
         sdfg::structured_control_flow::ControlFlowNode* loop,
-        const std::unordered_map<
+        const std::map<
             sdfg::structured_control_flow::ControlFlowNode*,
-            sdfg::structured_control_flow::ControlFlowNode*>& tree
+            sdfg::structured_control_flow::ControlFlowNode*,
+            DFSLoopComparator>& tree
     ) const;
 
 protected:
@@ -36,11 +52,11 @@ protected:
 public:
     LoopAnalysis(StructuredSDFG& sdfg);
 
-    const std::unordered_set<structured_control_flow::ControlFlowNode*> loops() const;
+    const std::vector<structured_control_flow::ControlFlowNode*> loops() const;
 
     structured_control_flow::ControlFlowNode* find_loop_by_indvar(const std::string& indvar);
 
-    const std::unordered_map<structured_control_flow::ControlFlowNode*, structured_control_flow::ControlFlowNode*>&
+    const std::map<structured_control_flow::ControlFlowNode*, structured_control_flow::ControlFlowNode*, DFSLoopComparator>&
     loop_tree() const;
 
     structured_control_flow::ControlFlowNode* parent_loop(structured_control_flow::ControlFlowNode* loop) const;
