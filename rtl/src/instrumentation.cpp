@@ -4,6 +4,7 @@
 #include <ctime>
 #include <dlfcn.h>
 #include <filesystem>
+#include <iostream>
 #include <iterator>
 #include <list>
 #include <mutex>
@@ -14,6 +15,8 @@
 #include <vector>
 
 #include "daisy_rtl/daisy_rtl.h"
+
+#define REGION_CACHE_SIZE 10
 
 // -----------------------------------------------------------------------------
 //  Dynamic PAPI loading – we avoid a hard dependency on the library at link time
@@ -69,6 +72,11 @@ class DaisyInstrumentationState {
 private:
     size_t next_region_id = 1;
     std::unordered_map<size_t, DaisyRegion> regions;
+
+    // Keep a small cache of "sleeping" regions, i.e., after finalize we don't destroy the PAPI eventset immediately
+    // This avoids re-creating PAPI eventsets for regions that are frequently re-entered
+    std::list<std::string> sleeping_regions_by_name;
+    std::unordered_map<std::string, size_t> sleeping_regions_id_lookup;
 
     bool papi_available = false;
     std::string output_file;
@@ -209,6 +217,25 @@ public:
     }
 
     ~DaisyInstrumentationState() {
+        // Cleanup cached regions
+        for (auto& region_name : this->sleeping_regions_by_name) {
+            size_t region_id = this->sleeping_regions_id_lookup[region_name];
+            auto& region = this->regions[region_id];
+
+            if (_PAPI_cleanup_eventset(region.papi_eventset) != 0) {
+                std::fprintf(stderr, "[daisy-rtl] Failed to clean up PAPI eventset.\n");
+                exit(EXIT_FAILURE);
+            }
+            if (_PAPI_destroy_eventset(&region.papi_eventset) != 0) {
+                std::fprintf(stderr, "[daisy-rtl] Failed to destroy PAPI eventset.\n");
+                exit(EXIT_FAILURE);
+            }
+            region.papi_eventset = -1;
+        }
+        this->sleeping_regions_id_lookup.clear();
+        this->sleeping_regions_by_name.clear();
+
+        // Write output file
         FILE* f = std::fopen(this->output_file.c_str(), "w");
         if (!f) {
             std::perror("[daisy-rtl] Failed to open output file");
@@ -257,6 +284,21 @@ public:
 
     size_t register_region(const __daisy_metadata* metadata, enum __daisy_event_set event_set) {
         std::lock_guard<std::mutex> lock(mutex);
+
+        // Check cache first
+        if (this->sleeping_regions_id_lookup.find(metadata->region_name) != this->sleeping_regions_id_lookup.end()) {
+            auto region_id = this->sleeping_regions_id_lookup[metadata->region_name];
+
+            // Remove from sleeping regions
+            this->sleeping_regions_by_name.remove(metadata->region_name);
+            this->sleeping_regions_id_lookup.erase(metadata->region_name);
+
+            // start region
+            auto& region = this->regions[region_id];
+            _PAPI_start(region.papi_eventset);
+
+            return region_id;
+        }
 
         DaisyRegion region;
         std::memcpy(&region.metadata, metadata, sizeof(__daisy_metadata));
@@ -318,6 +360,7 @@ public:
 
     void exit_region(size_t region_id) {
         std::lock_guard<std::mutex> lock(mutex);
+
         auto it = regions.find(region_id);
         if (it == regions.end()) {
             std::fprintf(stderr, "[daisy-rtl] Warning: exiting unknown region %zu\n", region_id);
@@ -355,6 +398,7 @@ public:
 
     void finalize(size_t region_id) {
         std::lock_guard<std::mutex> lock(mutex);
+
         auto it = regions.find(region_id);
         if (it == regions.end()) {
             std::fprintf(stderr, "[daisy-rtl] Warning: finalizing unknown region %zu\n", region_id);
@@ -372,16 +416,34 @@ public:
             _PAPI_stop(region.papi_eventset, counts.data());
         }
 
-        // Cleanup
-        if (_PAPI_cleanup_eventset(region.papi_eventset) != 0) {
-            std::fprintf(stderr, "[daisy-rtl] Failed to clean up PAPI eventset.\n");
-            exit(EXIT_FAILURE);
+        // Append to cache
+        if (this->sleeping_regions_id_lookup.find(region.metadata.region_name) ==
+            this->sleeping_regions_id_lookup.end()) {
+            // Not in cache, add it
+            this->sleeping_regions_id_lookup.insert({region.metadata.region_name, region_id});
+            this->sleeping_regions_by_name.push_back(region.metadata.region_name);
         }
-        if (_PAPI_destroy_eventset(&region.papi_eventset) != 0) {
-            std::fprintf(stderr, "[daisy-rtl] Failed to destroy PAPI eventset.\n");
-            exit(EXIT_FAILURE);
+
+        // Check if cache has grown to large
+        if (this->sleeping_regions_by_name.size() > REGION_CACHE_SIZE) {
+            std::string evict_region_name = this->sleeping_regions_by_name.front();
+            this->sleeping_regions_by_name.pop_front();
+
+            size_t evict_region_id = this->sleeping_regions_id_lookup[evict_region_name];
+            this->sleeping_regions_id_lookup.erase(evict_region_name);
+
+            auto& evict_region = this->regions[evict_region_id];
+
+            if (_PAPI_cleanup_eventset(evict_region.papi_eventset) != 0) {
+                std::fprintf(stderr, "[daisy-rtl] EFailed to clean up PAPI eventset.\n");
+                exit(EXIT_FAILURE);
+            }
+            if (_PAPI_destroy_eventset(&evict_region.papi_eventset) != 0) {
+                std::fprintf(stderr, "[daisy-rtl] Failed to destroy PAPI eventset.\n");
+                exit(EXIT_FAILURE);
+            }
+            evict_region.papi_eventset = -1;
         }
-        region.papi_eventset = -1;
     }
 };
 
