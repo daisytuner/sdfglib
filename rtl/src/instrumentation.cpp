@@ -27,6 +27,7 @@ static int (*_PAPI_add_named_event)(int, const char*) = nullptr;
 static int (*_PAPI_start)(int) = nullptr;
 static int (*_PAPI_stop)(int, long long*) = nullptr;
 static int (*_PAPI_reset)(int) = nullptr;
+static int (*_PAPI_read)(int, long long*) = nullptr;
 static const char* (*_PAPI_strerror)(int) = nullptr;
 static long long (*_PAPI_get_real_nsec)(void) = nullptr;
 
@@ -46,6 +47,7 @@ static void load_papi_symbols() {
     _PAPI_start = reinterpret_cast<int (*)(int)>(dlsym(handle, "PAPI_start"));
     _PAPI_stop = reinterpret_cast<int (*)(int, long long*)>(dlsym(handle, "PAPI_stop"));
     _PAPI_reset = reinterpret_cast<int (*)(int)>(dlsym(handle, "PAPI_reset"));
+    _PAPI_read = reinterpret_cast<int (*)(int, long long*)>(dlsym(handle, "PAPI_read"));
     _PAPI_strerror = reinterpret_cast<const char* (*) (int)>(dlsym(handle, "PAPI_strerror"));
     _PAPI_get_real_nsec = reinterpret_cast<long long (*)(void)>(dlsym(handle, "PAPI_get_real_nsec"));
 }
@@ -58,6 +60,8 @@ struct DaisyRegion {
     int papi_eventset = -1;
     std::vector<long long> starts;
     std::vector<long long> durations;
+
+    std::vector<long long> last_counts;
     std::vector<std::vector<long long>> counts;
 };
 
@@ -161,7 +165,7 @@ public:
         load_papi_symbols();
 
         this->papi_available = _PAPI_library_init && _PAPI_create_eventset && _PAPI_add_named_event && _PAPI_start &&
-                               _PAPI_stop && _PAPI_reset && _PAPI_get_real_nsec && _PAPI_strerror &&
+                               _PAPI_stop && _PAPI_reset && _PAPI_read && _PAPI_get_real_nsec && _PAPI_strerror &&
                                _PAPI_cleanup_eventset && _PAPI_destroy_eventset;
         if (!this->papi_available) {
             std::fprintf(stderr, "[daisy-rtl] PAPI not available.\n");
@@ -262,14 +266,14 @@ public:
             std::fprintf(stderr, "[daisy-rtl] Failed to create PAPI eventset.\n");
             exit(EXIT_FAILURE);
         }
-        if (region.event_set == __DAISY_EVENT_SET_CPU && this->event_names_cpu.size() > 0) {
+        if (region.event_set == __DAISY_EVENT_SET_CPU) {
             for (const auto& ev : this->event_names_cpu) {
                 if (_PAPI_add_named_event(region.papi_eventset, ev.c_str()) != 0) {
                     std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
                     exit(EXIT_FAILURE);
                 }
             }
-        } else if (region.event_set == __DAISY_EVENT_SET_CUDA && this->event_names_cuda.size() > 0) {
+        } else if (region.event_set == __DAISY_EVENT_SET_CUDA) {
             for (const auto& ev : this->event_names_cuda) {
                 if (_PAPI_add_named_event(region.papi_eventset, ev.c_str()) != 0) {
                     std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
@@ -281,7 +285,7 @@ public:
         size_t region_id = next_region_id++;
         regions[region_id] = region;
 
-        _PAPI_reset(region.papi_eventset);
+        _PAPI_start(region.papi_eventset);
         return region_id;
     }
 
@@ -295,11 +299,21 @@ public:
         }
 
         DaisyRegion& region = it->second;
+
+        // Save start counters (before timing)
+        if (region.event_set == __DAISY_EVENT_SET_CPU && this->event_names_cpu.size() > 0) {
+            std::vector<long long> counts(this->event_names_cpu.size(), 0);
+            _PAPI_read(region.papi_eventset, counts.data());
+            region.last_counts = counts;
+        } else if (region.event_set == __DAISY_EVENT_SET_CUDA && this->event_names_cuda.size() > 0) {
+            std::vector<long long> counts(this->event_names_cuda.size(), 0);
+            _PAPI_read(region.papi_eventset, counts.data());
+            region.last_counts = counts;
+        }
+
+        // Save start time
         long long start_ns = _PAPI_get_real_nsec();
         region.starts.push_back(start_ns);
-
-        _PAPI_reset(region.papi_eventset);
-        _PAPI_start(region.papi_eventset);
     }
 
     void exit_region(size_t region_id) {
@@ -312,17 +326,29 @@ public:
 
         DaisyRegion& region = it->second;
 
+        // Save duration (before counters)
         long long end_ns = _PAPI_get_real_nsec();
         long long duration_ns = end_ns - region.starts.back();
         region.durations.push_back(duration_ns);
 
+        // Save end counters
         if (region.event_set == __DAISY_EVENT_SET_CPU && this->event_names_cpu.size() > 0) {
             std::vector<long long> counts(this->event_names_cpu.size(), 0);
-            _PAPI_stop(region.papi_eventset, counts.data());
+            _PAPI_read(region.papi_eventset, counts.data());
+
+            for (size_t i = 0; i < counts.size(); ++i) {
+                counts[i] -= region.last_counts[i];
+            }
+
             region.counts.push_back(counts);
         } else if (region.event_set == __DAISY_EVENT_SET_CUDA && this->event_names_cuda.size() > 0) {
             std::vector<long long> counts(this->event_names_cuda.size(), 0);
-            _PAPI_stop(region.papi_eventset, counts.data());
+            _PAPI_read(region.papi_eventset, counts.data());
+
+            for (size_t i = 0; i < counts.size(); ++i) {
+                counts[i] -= region.last_counts[i];
+            }
+
             region.counts.push_back(counts);
         }
     }
@@ -336,6 +362,17 @@ public:
         }
 
         DaisyRegion& region = it->second;
+
+        // Stop counters
+        if (region.event_set == __DAISY_EVENT_SET_CPU && this->event_names_cpu.size() > 0) {
+            std::vector<long long> counts(this->event_names_cpu.size(), 0);
+            _PAPI_stop(region.papi_eventset, counts.data());
+        } else if (region.event_set == __DAISY_EVENT_SET_CUDA && this->event_names_cuda.size() > 0) {
+            std::vector<long long> counts(this->event_names_cuda.size(), 0);
+            _PAPI_stop(region.papi_eventset, counts.data());
+        }
+
+        // Cleanup
         if (_PAPI_cleanup_eventset(region.papi_eventset) != 0) {
             std::fprintf(stderr, "[daisy-rtl] Failed to clean up PAPI eventset.\n");
             exit(EXIT_FAILURE);
