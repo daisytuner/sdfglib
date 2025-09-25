@@ -272,12 +272,6 @@ constexpr const char* code_to_string(data_flow::TaskletCode c) {
             return "log1pf";
         case data_flow::TaskletCode::log1pl:
             return "log1pl";
-        case data_flow::TaskletCode::modf:
-            return "modf";
-        case data_flow::TaskletCode::modff:
-            return "modff";
-        case data_flow::TaskletCode::modfl:
-            return "modfl";
         case data_flow::TaskletCode::nearbyint:
             return "nearbyint";
         case data_flow::TaskletCode::nearbyintf:
