@@ -37,6 +37,9 @@ public:
 };
 
 class CSymbolicPrinter : public SymEngine::BaseVisitor<CSymbolicPrinter, SymEngine::CodePrinter> {
+private:
+    const std::unordered_set<std::string>& external_variables_;
+
 public:
     using SymEngine::CodePrinter::apply;
     using SymEngine::CodePrinter::bvisit;
@@ -64,6 +67,9 @@ public:
         const SymEngine::RCP<const SymEngine::Basic>& a,
         const SymEngine::RCP<const SymEngine::Basic>& b
     ) override;
+
+    CSymbolicPrinter(const std::unordered_set<std::string>& external_variables)
+        : external_variables_(external_variables) {}
 };
 
 } // namespace codegen

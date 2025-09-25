@@ -507,7 +507,7 @@ std::string CLanguageExtension::subset(const Function& function, const types::IT
 };
 
 std::string CLanguageExtension::expression(const symbolic::Expression expr) {
-    CSymbolicPrinter printer;
+    CSymbolicPrinter printer(this->external_variables_);
     return printer.apply(expr);
 };
 
@@ -607,7 +607,11 @@ void CSymbolicPrinter::bvisit(const SymEngine::Symbol& x) {
         str_ = "NULL";
         return;
     }
-    str_ = x.get_name();
+    std::string name = x.get_name();
+    if (this->external_variables_.find(name) != this->external_variables_.end()) {
+        name = "(&" + name + ")";
+    }
+    str_ = name;
 };
 
 void CSymbolicPrinter::bvisit(const SymEngine::And& x) {

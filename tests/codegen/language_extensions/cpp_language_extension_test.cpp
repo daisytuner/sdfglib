@@ -185,3 +185,11 @@ TEST(CPPLanguageExtensionTest, Expression_Pow2_Mul) {
     auto result = generator.expression(symbolic::mul(sym, sym));
     EXPECT_EQ(result, "((x) * (x))");
 }
+
+TEST(CPPLanguageExtensionTest, Expression_External) {
+    codegen::CPPLanguageExtension generator({"EXT1"});
+
+    auto sym = symbolic::symbol("EXT1");
+    auto result = generator.expression(sym);
+    EXPECT_EQ(result, "(&EXT1)");
+}
