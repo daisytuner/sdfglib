@@ -150,9 +150,6 @@ enum TaskletCode {
     log1p,
     log1pf,
     log1pl,
-    modf,
-    modff,
-    modfl,
     nearbyint,
     nearbyintf,
     nearbyintl,
@@ -304,11 +301,11 @@ constexpr size_t arity(TaskletCode c) {
         case TaskletCode::atanl:
             return 1;
         case TaskletCode::atan2:
-            return 1;
+            return 2;
         case TaskletCode::atan2f:
-            return 1;
+            return 2;
         case TaskletCode::atan2l:
-            return 1;
+            return 2;
         case TaskletCode::atanh:
             return 1;
         case TaskletCode::atanhf:
@@ -458,12 +455,6 @@ constexpr size_t arity(TaskletCode c) {
         case TaskletCode::log1pf:
             return 1;
         case TaskletCode::log1pl:
-            return 1;
-        case TaskletCode::modf:
-            return 1;
-        case TaskletCode::modff:
-            return 1;
-        case TaskletCode::modfl:
             return 1;
         case TaskletCode::nearbyint:
             return 1;
