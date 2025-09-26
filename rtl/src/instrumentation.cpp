@@ -4,6 +4,7 @@
 #include <ctime>
 #include <dlfcn.h>
 #include <filesystem>
+#include <iostream>
 #include <iterator>
 #include <list>
 #include <mutex>
@@ -14,6 +15,8 @@
 #include <vector>
 
 #include "daisy_rtl/daisy_rtl.h"
+
+#define REGION_CACHE_SIZE 10
 
 // -----------------------------------------------------------------------------
 //  Dynamic PAPI loading – we avoid a hard dependency on the library at link time
@@ -27,6 +30,7 @@ static int (*_PAPI_add_named_event)(int, const char*) = nullptr;
 static int (*_PAPI_start)(int) = nullptr;
 static int (*_PAPI_stop)(int, long long*) = nullptr;
 static int (*_PAPI_reset)(int) = nullptr;
+static int (*_PAPI_read)(int, long long*) = nullptr;
 static const char* (*_PAPI_strerror)(int) = nullptr;
 static long long (*_PAPI_get_real_nsec)(void) = nullptr;
 
@@ -46,6 +50,7 @@ static void load_papi_symbols() {
     _PAPI_start = reinterpret_cast<int (*)(int)>(dlsym(handle, "PAPI_start"));
     _PAPI_stop = reinterpret_cast<int (*)(int, long long*)>(dlsym(handle, "PAPI_stop"));
     _PAPI_reset = reinterpret_cast<int (*)(int)>(dlsym(handle, "PAPI_reset"));
+    _PAPI_read = reinterpret_cast<int (*)(int, long long*)>(dlsym(handle, "PAPI_read"));
     _PAPI_strerror = reinterpret_cast<const char* (*) (int)>(dlsym(handle, "PAPI_strerror"));
     _PAPI_get_real_nsec = reinterpret_cast<long long (*)(void)>(dlsym(handle, "PAPI_get_real_nsec"));
 }
@@ -58,6 +63,8 @@ struct DaisyRegion {
     int papi_eventset = -1;
     std::vector<long long> starts;
     std::vector<long long> durations;
+
+    std::vector<long long> last_counts;
     std::vector<std::vector<long long>> counts;
 };
 
@@ -65,6 +72,11 @@ class DaisyInstrumentationState {
 private:
     size_t next_region_id = 1;
     std::unordered_map<size_t, DaisyRegion> regions;
+
+    // Keep a small cache of "sleeping" regions, i.e., after finalize we don't destroy the PAPI eventset immediately
+    // This avoids re-creating PAPI eventsets for regions that are frequently re-entered
+    std::list<std::string> sleeping_regions_by_name;
+    std::unordered_map<std::string, size_t> sleeping_regions_id_lookup;
 
     bool papi_available = false;
     std::string output_file;
@@ -161,7 +173,7 @@ public:
         load_papi_symbols();
 
         this->papi_available = _PAPI_library_init && _PAPI_create_eventset && _PAPI_add_named_event && _PAPI_start &&
-                               _PAPI_stop && _PAPI_reset && _PAPI_get_real_nsec && _PAPI_strerror &&
+                               _PAPI_stop && _PAPI_reset && _PAPI_read && _PAPI_get_real_nsec && _PAPI_strerror &&
                                _PAPI_cleanup_eventset && _PAPI_destroy_eventset;
         if (!this->papi_available) {
             std::fprintf(stderr, "[daisy-rtl] PAPI not available.\n");
@@ -205,6 +217,25 @@ public:
     }
 
     ~DaisyInstrumentationState() {
+        // Cleanup cached regions
+        for (auto& region_name : this->sleeping_regions_by_name) {
+            size_t region_id = this->sleeping_regions_id_lookup[region_name];
+            auto& region = this->regions[region_id];
+
+            if (_PAPI_cleanup_eventset(region.papi_eventset) != 0) {
+                std::fprintf(stderr, "[daisy-rtl] Failed to clean up PAPI eventset.\n");
+                exit(EXIT_FAILURE);
+            }
+            if (_PAPI_destroy_eventset(&region.papi_eventset) != 0) {
+                std::fprintf(stderr, "[daisy-rtl] Failed to destroy PAPI eventset.\n");
+                exit(EXIT_FAILURE);
+            }
+            region.papi_eventset = -1;
+        }
+        this->sleeping_regions_id_lookup.clear();
+        this->sleeping_regions_by_name.clear();
+
+        // Write output file
         FILE* f = std::fopen(this->output_file.c_str(), "w");
         if (!f) {
             std::perror("[daisy-rtl] Failed to open output file");
@@ -254,6 +285,21 @@ public:
     size_t register_region(const __daisy_metadata* metadata, enum __daisy_event_set event_set) {
         std::lock_guard<std::mutex> lock(mutex);
 
+        // Check cache first
+        if (this->sleeping_regions_id_lookup.find(metadata->region_name) != this->sleeping_regions_id_lookup.end()) {
+            auto region_id = this->sleeping_regions_id_lookup[metadata->region_name];
+
+            // Remove from sleeping regions
+            this->sleeping_regions_by_name.remove(metadata->region_name);
+            this->sleeping_regions_id_lookup.erase(metadata->region_name);
+
+            // start region
+            auto& region = this->regions[region_id];
+            _PAPI_start(region.papi_eventset);
+
+            return region_id;
+        }
+
         DaisyRegion region;
         std::memcpy(&region.metadata, metadata, sizeof(__daisy_metadata));
         region.event_set = event_set;
@@ -262,14 +308,14 @@ public:
             std::fprintf(stderr, "[daisy-rtl] Failed to create PAPI eventset.\n");
             exit(EXIT_FAILURE);
         }
-        if (region.event_set == __DAISY_EVENT_SET_CPU && this->event_names_cpu.size() > 0) {
+        if (region.event_set == __DAISY_EVENT_SET_CPU) {
             for (const auto& ev : this->event_names_cpu) {
                 if (_PAPI_add_named_event(region.papi_eventset, ev.c_str()) != 0) {
                     std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
                     exit(EXIT_FAILURE);
                 }
             }
-        } else if (region.event_set == __DAISY_EVENT_SET_CUDA && this->event_names_cuda.size() > 0) {
+        } else if (region.event_set == __DAISY_EVENT_SET_CUDA) {
             for (const auto& ev : this->event_names_cuda) {
                 if (_PAPI_add_named_event(region.papi_eventset, ev.c_str()) != 0) {
                     std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
@@ -281,7 +327,7 @@ public:
         size_t region_id = next_region_id++;
         regions[region_id] = region;
 
-        _PAPI_reset(region.papi_eventset);
+        _PAPI_start(region.papi_eventset);
         return region_id;
     }
 
@@ -295,15 +341,26 @@ public:
         }
 
         DaisyRegion& region = it->second;
+
+        // Save start counters (before timing)
+        if (region.event_set == __DAISY_EVENT_SET_CPU && this->event_names_cpu.size() > 0) {
+            std::vector<long long> counts(this->event_names_cpu.size(), 0);
+            _PAPI_read(region.papi_eventset, counts.data());
+            region.last_counts = counts;
+        } else if (region.event_set == __DAISY_EVENT_SET_CUDA && this->event_names_cuda.size() > 0) {
+            std::vector<long long> counts(this->event_names_cuda.size(), 0);
+            _PAPI_read(region.papi_eventset, counts.data());
+            region.last_counts = counts;
+        }
+
+        // Save start time
         long long start_ns = _PAPI_get_real_nsec();
         region.starts.push_back(start_ns);
-
-        _PAPI_reset(region.papi_eventset);
-        _PAPI_start(region.papi_eventset);
     }
 
     void exit_region(size_t region_id) {
         std::lock_guard<std::mutex> lock(mutex);
+
         auto it = regions.find(region_id);
         if (it == regions.end()) {
             std::fprintf(stderr, "[daisy-rtl] Warning: exiting unknown region %zu\n", region_id);
@@ -312,23 +369,36 @@ public:
 
         DaisyRegion& region = it->second;
 
+        // Save duration (before counters)
         long long end_ns = _PAPI_get_real_nsec();
         long long duration_ns = end_ns - region.starts.back();
         region.durations.push_back(duration_ns);
 
+        // Save end counters
         if (region.event_set == __DAISY_EVENT_SET_CPU && this->event_names_cpu.size() > 0) {
             std::vector<long long> counts(this->event_names_cpu.size(), 0);
-            _PAPI_stop(region.papi_eventset, counts.data());
+            _PAPI_read(region.papi_eventset, counts.data());
+
+            for (size_t i = 0; i < counts.size(); ++i) {
+                counts[i] -= region.last_counts[i];
+            }
+
             region.counts.push_back(counts);
         } else if (region.event_set == __DAISY_EVENT_SET_CUDA && this->event_names_cuda.size() > 0) {
             std::vector<long long> counts(this->event_names_cuda.size(), 0);
-            _PAPI_stop(region.papi_eventset, counts.data());
+            _PAPI_read(region.papi_eventset, counts.data());
+
+            for (size_t i = 0; i < counts.size(); ++i) {
+                counts[i] -= region.last_counts[i];
+            }
+
             region.counts.push_back(counts);
         }
     }
 
     void finalize(size_t region_id) {
         std::lock_guard<std::mutex> lock(mutex);
+
         auto it = regions.find(region_id);
         if (it == regions.end()) {
             std::fprintf(stderr, "[daisy-rtl] Warning: finalizing unknown region %zu\n", region_id);
@@ -336,15 +406,44 @@ public:
         }
 
         DaisyRegion& region = it->second;
-        if (_PAPI_cleanup_eventset(region.papi_eventset) != 0) {
-            std::fprintf(stderr, "[daisy-rtl] Failed to clean up PAPI eventset.\n");
-            exit(EXIT_FAILURE);
+
+        // Stop counters
+        if (region.event_set == __DAISY_EVENT_SET_CPU && this->event_names_cpu.size() > 0) {
+            std::vector<long long> counts(this->event_names_cpu.size(), 0);
+            _PAPI_stop(region.papi_eventset, counts.data());
+        } else if (region.event_set == __DAISY_EVENT_SET_CUDA && this->event_names_cuda.size() > 0) {
+            std::vector<long long> counts(this->event_names_cuda.size(), 0);
+            _PAPI_stop(region.papi_eventset, counts.data());
         }
-        if (_PAPI_destroy_eventset(&region.papi_eventset) != 0) {
-            std::fprintf(stderr, "[daisy-rtl] Failed to destroy PAPI eventset.\n");
-            exit(EXIT_FAILURE);
+
+        // Append to cache
+        if (this->sleeping_regions_id_lookup.find(region.metadata.region_name) ==
+            this->sleeping_regions_id_lookup.end()) {
+            // Not in cache, add it
+            this->sleeping_regions_id_lookup.insert({region.metadata.region_name, region_id});
+            this->sleeping_regions_by_name.push_back(region.metadata.region_name);
         }
-        region.papi_eventset = -1;
+
+        // Check if cache has grown to large
+        if (this->sleeping_regions_by_name.size() > REGION_CACHE_SIZE) {
+            std::string evict_region_name = this->sleeping_regions_by_name.front();
+            this->sleeping_regions_by_name.pop_front();
+
+            size_t evict_region_id = this->sleeping_regions_id_lookup[evict_region_name];
+            this->sleeping_regions_id_lookup.erase(evict_region_name);
+
+            auto& evict_region = this->regions[evict_region_id];
+
+            if (_PAPI_cleanup_eventset(evict_region.papi_eventset) != 0) {
+                std::fprintf(stderr, "[daisy-rtl] EFailed to clean up PAPI eventset.\n");
+                exit(EXIT_FAILURE);
+            }
+            if (_PAPI_destroy_eventset(&evict_region.papi_eventset) != 0) {
+                std::fprintf(stderr, "[daisy-rtl] Failed to destroy PAPI eventset.\n");
+                exit(EXIT_FAILURE);
+            }
+            evict_region.papi_eventset = -1;
+        }
     }
 };
 

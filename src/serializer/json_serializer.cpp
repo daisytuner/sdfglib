@@ -294,6 +294,12 @@ void JSONSerializer::return_node_to_json(nlohmann::json& j, const structured_con
     j["data"] = return_node.data();
     j["unreachable"] = return_node.unreachable();
 
+    if (return_node.is_constant()) {
+        nlohmann::json type_json;
+        type_to_json(type_json, return_node.type());
+        j["data_type"] = type_json;
+    }
+
     j["debug_info"] = nlohmann::json::object();
     debug_info_to_json(j["debug_info"], return_node.debug_info());
 }
@@ -919,22 +925,24 @@ void JSONSerializer::json_to_return_node(
     assert(j["type"].is_string());
     assert(j["type"] == "return");
 
-    std::string data;
-    if (j.contains("data") && j["data"].is_string()) {
-        data = j["data"];
-    } else {
-        data = "";
+    std::string data = j["data"];
+    bool unreachable = j["unreachable"];
+    std::unique_ptr<types::IType> data_type = nullptr;
+    if (j.contains("data_type")) {
+        data_type = json_to_type(j["data_type"]);
     }
 
-    bool unreachable = false;
-    if (j.contains("unreachable") && j["unreachable"].is_boolean()) {
-        unreachable = j["unreachable"];
+    if (unreachable) {
+        auto& node = builder.add_unreachable(parent, assignments, json_to_debug_info(j["debug_info"]));
+        node.element_id_ = j["element_id"];
+    } else if (data_type == nullptr) {
+        auto& node = builder.add_return(parent, data, assignments, json_to_debug_info(j["debug_info"]));
+        node.element_id_ = j["element_id"];
     } else {
-        unreachable = false;
+        auto& node =
+            builder.add_constant_return(parent, data, *data_type, assignments, json_to_debug_info(j["debug_info"]));
+        node.element_id_ = j["element_id"];
     }
-
-    auto& node = builder.add_return(parent, data, unreachable, assignments, json_to_debug_info(j["debug_info"]));
-    node.element_id_ = j["element_id"];
 }
 
 std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json& j) {
@@ -1171,20 +1179,8 @@ void register_default_serializers() {
             return std::make_unique<stdlib::CallocNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(stdlib::LibraryNodeType_Fprintf.value(), []() {
-            return std::make_unique<stdlib::FprintfNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(stdlib::LibraryNodeType_Fputc.value(), []() {
-            return std::make_unique<stdlib::FputcNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(stdlib::LibraryNodeType_Free.value(), []() {
             return std::make_unique<stdlib::FreeNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(stdlib::LibraryNodeType_FWrite.value(), []() {
-            return std::make_unique<stdlib::FWriteNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(stdlib::LibraryNodeType_Malloc.value(), []() {
@@ -1201,14 +1197,6 @@ void register_default_serializers() {
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(stdlib::LibraryNodeType_Memset.value(), []() {
             return std::make_unique<stdlib::MemsetNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(stdlib::LibraryNodeType_Rand.value(), []() {
-            return std::make_unique<stdlib::RandNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(stdlib::LibraryNodeType_Srand.value(), []() {
-            return std::make_unique<stdlib::SrandNodeSerializer>();
         });
 
     // Metadata

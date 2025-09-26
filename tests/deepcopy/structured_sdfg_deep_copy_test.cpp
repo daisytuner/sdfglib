@@ -148,7 +148,7 @@ TEST(StructuredSDFGDeepCopy, Return) {
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
-    auto& sequence = builder_source.add_return(root_source, "", false);
+    auto& sequence = builder_source.add_return(root_source, "");
 
     builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();

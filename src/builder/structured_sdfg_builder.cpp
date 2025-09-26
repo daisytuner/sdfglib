@@ -209,7 +209,18 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
 
             auto return_state = dynamic_cast<const control_flow::ReturnState*>(curr);
             assert(return_state != nullptr);
-            this->add_return(scope, return_state->data(), return_state->unreachable(), {}, return_state->debug_info());
+            if (return_state->is_data()) {
+                this->add_return(scope, return_state->data(), {}, return_state->debug_info());
+            } else if (return_state->is_unreachable()) {
+                this->add_unreachable(scope, {}, return_state->debug_info());
+            } else if (return_state->is_constant()) {
+                this->add_constant_return(
+                    scope, return_state->data(), return_state->type(), {}, return_state->debug_info()
+                );
+            } else {
+                assert(false && "Unknown return state type");
+            }
+
             continue;
         }
 
@@ -1103,12 +1114,37 @@ Break& StructuredSDFGBuilder::
 Return& StructuredSDFGBuilder::add_return(
     Sequence& parent,
     const std::string& data,
-    bool unreachable,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
 ) {
-    parent.children_.push_back(std::unique_ptr<Return>(new Return(this->new_element_id(), debug_info, data, unreachable)
-    ));
+    parent.children_.push_back(std::unique_ptr<Return>(new Return(this->new_element_id(), debug_info, data)));
+
+    parent.transitions_
+        .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+        );
+
+    return static_cast<Return&>(*parent.children_.back().get());
+};
+
+Return& StructuredSDFGBuilder::
+    add_unreachable(Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfo& debug_info) {
+    parent.children_.push_back(std::unique_ptr<Return>(new Return(this->new_element_id(), debug_info)));
+
+    parent.transitions_
+        .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+        );
+
+    return static_cast<Return&>(*parent.children_.back().get());
+};
+
+Return& StructuredSDFGBuilder::add_constant_return(
+    Sequence& parent,
+    const std::string& data,
+    const types::IType& type,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    parent.children_.push_back(std::unique_ptr<Return>(new Return(this->new_element_id(), debug_info, data, type)));
 
     parent.transitions_
         .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))

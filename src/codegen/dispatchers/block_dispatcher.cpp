@@ -44,10 +44,12 @@ void DataFlowDispatcher::
             this->dispatch_library_node(stream, globals_stream, library_snippet_factory, *libnode);
         } else if (auto access_node = dynamic_cast<const data_flow::AccessNode*>(node)) {
             for (auto& edge : this->data_flow_graph_.out_edges(*access_node)) {
-                if (edge.dst_conn() == "ref" && edge.src_conn() == "void") {
+                if (edge.type() == data_flow::MemletType::Reference) {
                     this->dispatch_ref(stream, edge);
-                } else if (edge.src_conn() == "deref" || edge.dst_conn() == "deref") {
-                    this->dispatch_deref(stream, edge);
+                } else if (edge.type() == data_flow::MemletType::Dereference_Src) {
+                    this->dispatch_deref_src(stream, edge);
+                } else if (edge.type() == data_flow::MemletType::Dereference_Dst) {
+                    this->dispatch_deref_dst(stream, edge);
                 }
             }
         } else {
@@ -92,39 +94,98 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
     stream << "}" << std::endl;
 };
 
-void DataFlowDispatcher::dispatch_deref(PrettyPrinter& stream, const data_flow::Memlet& memlet) {
+void DataFlowDispatcher::dispatch_deref_src(PrettyPrinter& stream, const data_flow::Memlet& memlet) {
     stream << "{" << std::endl;
     stream.setIndent(stream.indent() + 4);
 
     auto& src = dynamic_cast<const data_flow::AccessNode&>(memlet.src());
     auto& dst = dynamic_cast<const data_flow::AccessNode&>(memlet.dst());
-
+    auto& dst_type = this->function_.type(dst.data());
     auto& base_type = static_cast<const types::Pointer&>(memlet.base_type());
 
-    std::string dst_name = this->language_extension_.access_node(dst);
-    if (memlet.dst_conn() == "void") {
-        stream << "(" << this->language_extension_.type_cast(dst_name, base_type) << ")";
-        stream << this->language_extension_.subset(function_, base_type, memlet.subset());
-    } else {
-        stream << dst_name;
+    switch (dst_type.type_id()) {
+        // first-class values
+        case types::TypeID::Scalar:
+        case types::TypeID::Pointer: {
+            stream << this->language_extension_.access_node(dst);
+            stream << " = ";
+            stream << "*";
+
+            std::string src_name = this->language_extension_.access_node(src);
+            stream << "(" << this->language_extension_.type_cast(src_name, base_type) << ")";
+            break;
+        }
+        // composite values
+        case types::TypeID::Array:
+        case types::TypeID::Structure: {
+            // Memcpy
+            std::string dst_name = this->language_extension_.access_node(dst);
+            std::string src_name = this->language_extension_.access_node(src);
+            stream << "memcpy(" << "&" << dst_name;
+            stream << ", ";
+            stream << "(" << src_name << ")";
+            stream << ", ";
+            stream << "sizeof " << dst_name;
+            stream << ")";
+            break;
+        }
+        case types::TypeID::Reference:
+        case types::TypeID::Function: {
+            throw InvalidSDFGException("Memlet: Dereference memlets cannot have reference or function destination types"
+            );
+        }
     }
-    stream << " = ";
+    stream << ";" << std::endl;
 
-    std::string src_name = this->language_extension_.access_node(src);
-    if (dynamic_cast<const data_flow::ConstantNode*>(&src)) {
-        stream << src_name;
-        stream << ";" << std::endl;
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
+};
 
-        stream.setIndent(stream.indent() - 4);
-        stream << "}" << std::endl;
-        return;
-    }
+void DataFlowDispatcher::dispatch_deref_dst(PrettyPrinter& stream, const data_flow::Memlet& memlet) {
+    stream << "{" << std::endl;
+    stream.setIndent(stream.indent() + 4);
 
-    if (memlet.src_conn() == "void") {
-        stream << "(" << this->language_extension_.type_cast(src_name, base_type) << ")";
-        stream << this->language_extension_.subset(function_, base_type, memlet.subset());
+    auto& src = dynamic_cast<const data_flow::AccessNode&>(memlet.src());
+    auto& dst = dynamic_cast<const data_flow::AccessNode&>(memlet.dst());
+    const sdfg::types::IType* src_type;
+    if (auto const_node = dynamic_cast<const data_flow::ConstantNode*>(&src)) {
+        src_type = &const_node->type();
     } else {
-        stream << this->language_extension_.type_cast(src_name, base_type.pointee_type());
+        src_type = &this->function_.type(src.data());
+    }
+    auto& base_type = static_cast<const types::Pointer&>(memlet.base_type());
+
+    switch (src_type->type_id()) {
+        // first-class values
+        case types::TypeID::Scalar:
+        case types::TypeID::Pointer: {
+            stream << "*";
+            std::string dst_name = this->language_extension_.access_node(dst);
+            stream << "(" << this->language_extension_.type_cast(dst_name, base_type) << ")";
+            stream << " = ";
+
+            stream << this->language_extension_.access_node(src);
+            break;
+        }
+        // composite values
+        case types::TypeID::Array:
+        case types::TypeID::Structure: {
+            // Memcpy
+            std::string src_name = this->language_extension_.access_node(src);
+            std::string dst_name = this->language_extension_.access_node(dst);
+            stream << "memcpy(";
+            stream << "(" << dst_name << ")";
+            stream << ", ";
+            stream << "&" << src_name;
+            stream << ", ";
+            stream << "sizeof " << src_name;
+            stream << ")";
+            break;
+        }
+        case types::TypeID::Function:
+        case types::TypeID::Reference: {
+            throw InvalidSDFGException("Memlet: Dereference memlets cannot have source of type Function or Reference");
+        }
     }
     stream << ";" << std::endl;
 

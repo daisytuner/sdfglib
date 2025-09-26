@@ -34,8 +34,9 @@ def test_instrumentation(event):
         universal_newlines=True,
     )
     stdout, stderr = process.communicate()
-    print(stdout)
-    print(stderr)
+    if process.returncode != 0:
+        print(stdout)
+        print(stderr)
     assert process.returncode == 0
 
     (workdir / "data_cpu.json").unlink(missing_ok=True)
@@ -53,8 +54,9 @@ def test_instrumentation(event):
         universal_newlines=True,
     )
     stdout, stderr = process.communicate()
-    print(stdout)
-    print(stderr)
+    if process.returncode != 0:
+        print(stdout)
+        print(stderr)
     assert process.returncode == 0
 
     event_names = []
@@ -64,6 +66,8 @@ def test_instrumentation(event):
     result = json.load(open(workdir / "data_cpu.json"))
     events = result["traceEvents"]
     assert(len(events) > 0)
+
+    print(events)
     for i in range(len(events)):
         assert events[i]["name"].startswith("main")
         assert events[i]["cat"] == "region,daisy"
@@ -82,7 +86,7 @@ def test_instrumentation(event):
     "event",
     [
         pytest.param(""),
-        # pytest.param("cuda:::dram__bytes,cuda:::sm__inst_executed_pipe_fma"),
+        pytest.param("nvml:::NVIDIA_GeForce_RTX_5060_Ti:device_0:gpu_utilization,nvml:::NVIDIA_GeForce_RTX_5060_Ti:device_0:memory_utilization"),
     ],
 )
 def test_instrumentation_cuda(event):
@@ -107,8 +111,9 @@ def test_instrumentation_cuda(event):
         universal_newlines=True,
     )
     stdout, stderr = process.communicate()
-    print(stdout)
-    print(stderr)
+    if process.returncode != 0:
+        print(stdout)
+        print(stderr)
     assert process.returncode == 0
 
     (workdir / "data_cuda.json").unlink(missing_ok=True)
@@ -126,6 +131,9 @@ def test_instrumentation_cuda(event):
         universal_newlines=True,
     )
     stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        print(stdout)
+        print(stderr)
     assert process.returncode == 0
 
     event_names = []
@@ -135,6 +143,8 @@ def test_instrumentation_cuda(event):
     result = json.load(open(workdir / "data_cuda.json"))
     events = result["traceEvents"]
     assert(len(events) > 0)
+
+    print(events)
     for i in range(len(events)):
         assert events[i]["name"].startswith("main")
         assert events[i]["cat"] == "region,daisy"

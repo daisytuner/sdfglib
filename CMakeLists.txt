@@ -130,16 +130,11 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/ml/tanh.cpp
     src/data_flow/library_nodes/stdlib/alloca.cpp
     src/data_flow/library_nodes/stdlib/calloc.cpp
-    src/data_flow/library_nodes/stdlib/fprintf.cpp
-    src/data_flow/library_nodes/stdlib/fputc.cpp
     src/data_flow/library_nodes/stdlib/free.cpp
-    src/data_flow/library_nodes/stdlib/fwrite.cpp
     src/data_flow/library_nodes/stdlib/malloc.cpp
     src/data_flow/library_nodes/stdlib/memcpy.cpp
     src/data_flow/library_nodes/stdlib/memmove.cpp
     src/data_flow/library_nodes/stdlib/memset.cpp
-    src/data_flow/library_nodes/stdlib/rand.cpp
-    src/data_flow/library_nodes/stdlib/srand.cpp
     src/deepcopy/structured_sdfg_deep_copy.cpp
     src/graph/graph.cpp
     src/visitor/structured_sdfg_visitor.cpp

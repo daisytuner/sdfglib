@@ -35,25 +35,32 @@ void InstrumentationPlan::begin_instrumentation(const structured_control_flow::C
         stream << metadata_var << ".loopnest_index = " << this->loopnest_indices_.at(&node) << ";" << std::endl;
     }
 
+    // Initialize region
     if (this->nodes_.at(&node) == InstrumentationEventType::CPU) {
         stream << "long long " << region_id_var << " = __daisy_instrumentation_init(&" << metadata_var
                << ", __DAISY_EVENT_SET_CPU);" << std::endl;
-        stream << "__daisy_instrumentation_enter(" << region_id_var << ");" << std::endl;
     } else {
         stream << "long long " << region_id_var << " = __daisy_instrumentation_init(&" << metadata_var
                << ", __DAISY_EVENT_SET_CUDA);" << std::endl;
-        stream << "__daisy_instrumentation_enter(" << region_id_var << ");" << std::endl;
     }
+
+    // Enter region
+    stream << "__daisy_instrumentation_enter(" << region_id_var << ");" << std::endl;
 }
 
 void InstrumentationPlan::end_instrumentation(const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream)
     const {
     std::string region_id_var = sdfg_.name() + "_" + std::to_string(node.element_id()) + "_id";
+
+    // Exit region
     if (this->nodes_.at(&node) == InstrumentationEventType::CPU) {
         stream << "__daisy_instrumentation_exit(" << region_id_var << ");" << std::endl;
     } else {
         stream << "__daisy_instrumentation_exit(" << region_id_var << ");" << std::endl;
     }
+
+    // Finalize region
+    stream << "__daisy_instrumentation_finalize(" << region_id_var << ");" << std::endl;
 }
 
 std::unique_ptr<InstrumentationPlan> InstrumentationPlan::none(StructuredSDFG& sdfg) {
@@ -71,13 +78,13 @@ std::unique_ptr<InstrumentationPlan> InstrumentationPlan::outermost_loops_plan(S
     std::unordered_map<const structured_control_flow::ControlFlowNode*, size_t> loopnest_indices;
     for (size_t i = 0; i < ols.size(); i++) {
         auto& loop = ols[i];
+        loopnest_indices[loop] = i;
         if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(loop)) {
             if (map_node->schedule_type().value() == "CUDA") {
                 nodes.insert({loop, InstrumentationEventType::CUDA});
                 continue;
             }
         }
-        loopnest_indices[loop] = i;
         nodes.insert({loop, InstrumentationEventType::CPU}); // Default to CPU if not CUDA
     }
     return std::make_unique<InstrumentationPlan>(sdfg, nodes, loopnest_indices);

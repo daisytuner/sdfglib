@@ -303,7 +303,20 @@ public:
     Return& add_return(
         Sequence& parent,
         const std::string& data,
-        bool unreachable = false,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfo& debug_info = DebugInfo()
+    );
+
+    Return& add_unreachable(
+        Sequence& parent,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfo& debug_info = DebugInfo()
+    );
+
+    Return& add_constant_return(
+        Sequence& parent,
+        const std::string& data,
+        const types::IType& type,
         const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfo& debug_info = DebugInfo()
     );

@@ -270,12 +270,6 @@ constexpr const char* code_to_string(data_flow::TaskletCode c) {
             return "log1pf";
         case data_flow::TaskletCode::log1pl:
             return "log1pl";
-        case data_flow::TaskletCode::modf:
-            return "modf";
-        case data_flow::TaskletCode::modff:
-            return "modff";
-        case data_flow::TaskletCode::modfl:
-            return "modfl";
         case data_flow::TaskletCode::nearbyint:
             return "nearbyint";
         case data_flow::TaskletCode::nearbyintf:
@@ -508,7 +502,7 @@ std::string CPPLanguageExtension::subset(const Function& function, const types::
 };
 
 std::string CPPLanguageExtension::expression(const symbolic::Expression expr) {
-    CPPSymbolicPrinter printer;
+    CPPSymbolicPrinter printer(this->external_variables_);
     return printer.apply(expr);
 };
 
@@ -608,7 +602,11 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::Symbol& x) {
         str_ = "nullptr";
         return;
     }
-    str_ = x.get_name();
+    std::string name = x.get_name();
+    if (this->external_variables_.find(name) != this->external_variables_.end()) {
+        name = "(&" + name + ")";
+    }
+    str_ = name;
 };
 
 void CPPSymbolicPrinter::bvisit(const SymEngine::And& x) {

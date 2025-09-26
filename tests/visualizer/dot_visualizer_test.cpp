@@ -568,7 +568,7 @@ TEST(DotVisualizerTest, test_return) {
     auto& case1 = builder.add_case(if_else, symbolic::Ge(symbolic::symbol("i"), symbolic::symbol("N")));
     auto& case2 = builder.add_case(if_else, symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")));
 
-    auto& return_node = builder.add_return(case1, "", false);
+    auto& return_node = builder.add_return(case1, "");
 
     auto& block2 = builder.add_block(case2);
     auto& input2 = builder.add_access(block2, "A");
@@ -811,9 +811,6 @@ TEST(DotVisualizerTest, test_handleTasklet) {
         {data_flow::TaskletCode::log1p, "log1p"},
         {data_flow::TaskletCode::log1pf, "log1pf"},
         {data_flow::TaskletCode::log1pl, "log1pl"},
-        {data_flow::TaskletCode::modf, "modf"},
-        {data_flow::TaskletCode::modff, "modff"},
-        {data_flow::TaskletCode::modfl, "modfl"},
         {data_flow::TaskletCode::nearbyint, "nearbyint"},
         {data_flow::TaskletCode::nearbyintf, "nearbyintf"},
         {data_flow::TaskletCode::nearbyintl, "nearbyintl"},
