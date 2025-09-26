@@ -94,8 +94,6 @@ LinkageType Function::linkage_type(const std::string& name) const {
     return entry->second;
 };
 
-const std::unordered_set<std::string>& Function::offloaded_functions() const { return this->offloaded_functions_; };
-
 bool Function::is_argument(const std::string& name) const {
     return std::find(this->arguments_.begin(), this->arguments_.end(), name) != this->arguments_.end();
 };
@@ -106,10 +104,6 @@ bool Function::is_external(const std::string& name) const {
 
 bool Function::is_transient(const std::string& name) const {
     return !this->is_argument(name) && !this->is_external(name);
-};
-
-bool Function::is_offloaded_function(const std::string& name) const {
-    return this->offloaded_functions_.find(name) != this->offloaded_functions_.end();
 };
 
 symbolic::SymbolSet Function::parameters() const {

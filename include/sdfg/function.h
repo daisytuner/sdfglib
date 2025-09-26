@@ -57,7 +57,6 @@ protected:
     std::vector<std::string> arguments_;
     std::vector<std::string> externals_;
     std::unordered_map<std::string, LinkageType> externals_linkage_types_;
-    std::unordered_set<std::string> offloaded_functions_;
 
     // Symbolic assumptions
     symbolic::Assumptions assumptions_;
@@ -110,15 +109,11 @@ public:
 
     const std::vector<std::string>& externals() const;
 
-    const std::unordered_set<std::string>& offloaded_functions() const;
-
     bool is_argument(const std::string& name) const;
 
     bool is_external(const std::string& name) const;
 
     bool is_transient(const std::string& name) const;
-
-    bool is_offloaded_function(const std::string& name) const;
 
     LinkageType linkage_type(const std::string& name) const;
 

@@ -10,7 +10,8 @@ CallNode::CallNode(
     data_flow::DataFlowGraph& parent,
     const std::string& function_name,
     const std::vector<std::string>& outputs,
-    const std::vector<std::string>& inputs
+    const std::vector<std::string>& inputs,
+    bool offloadable
 )
     : LibraryNode(
           element_id,
@@ -23,7 +24,7 @@ CallNode::CallNode(
           true,
           data_flow::ImplementationType_NONE
       ),
-      function_name_(function_name) {}
+      function_name_(function_name), offloadable_(offloadable) {}
 
 const std::string& CallNode::function_name() const { return this->function_name_; }
 
@@ -31,6 +32,8 @@ const types::Function& CallNode::function_type(const Function& sdfg) const {
     // function_name is a symbol referring to a global variable of type Function
     return dynamic_cast<const types::Function&>(sdfg.type(this->function_name_));
 }
+
+bool CallNode::offloadable() const { return this->offloadable_; }
 
 bool CallNode::is_void(const Function& sdfg) const {
     auto& func_type = this->function_type(sdfg);
