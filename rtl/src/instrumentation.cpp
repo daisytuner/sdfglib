@@ -64,8 +64,18 @@ struct DaisyRegion {
     std::vector<long long> starts;
     std::vector<long long> durations;
 
+    long long first_start;
     std::vector<long long> last_counts;
+
+    // Full results
     std::vector<std::vector<long long>> counts;
+
+    // Aggregated results
+    std::vector<long long> n_;
+    std::vector<double> mean_;
+    std::vector<double> variance_;
+    std::vector<long long> min_;
+    std::vector<long long> max_;
 };
 
 class DaisyInstrumentationState {
@@ -78,6 +88,7 @@ private:
     std::list<std::string> sleeping_regions_by_name;
     std::unordered_map<std::string, size_t> sleeping_regions_id_lookup;
 
+    bool aggregate_events = false;
     bool papi_available = false;
     std::string output_file;
 
@@ -168,6 +179,84 @@ private:
         std::fprintf(f, "%s", entry.str().c_str());
     }
 
+    void append_event_aggregated(
+        FILE* f,
+        const __daisy_metadata* md,
+        long long start_ns,
+        long long dur_ns,
+        const std::vector<double>& means,
+        const std::vector<double>& variances,
+        const std::vector<long long>& mins,
+        const std::vector<long long>& maxs,
+        const std::vector<long long>& ns,
+        const std::vector<std::string>& event_names
+    ) {
+        // Writes one event as a row in the Chrome trace format
+
+        // Target format:
+        // "ph": "X",
+        // "cat": "region,daisy",
+        // "name": "main  [L110–118]",
+        // "pid": 9535,
+        // "tid": 0,
+        // "ts": 11657,
+        // "dur": 613913,
+        // "args": {
+        // "region_id": "__daisy_correlation18122842100848744318_0_0_1396",
+        // "function": "main",
+        // "loopnest_index": 0,
+        // "module": "correlation",
+        // "build_id": "",
+        // "source_ranges": [
+        //     {
+        //     "file": "/home/lukas/repos/docc/tests/polybench/datamining/correlation/correlation.c",
+        //     "from": { "line": 110, "col": 17 },
+        //     "to":   { "line": 118, "col": 24 }
+        //     }
+        // ],
+        // "metrics": { "CYCLES": 2834021434 } }
+
+        std::stringstream entry;
+        entry << "{";
+        entry << "\"ph\":\"X\",";
+        entry << "\"cat\":\"region,daisy\",";
+        entry << "\"name\":\"" << md->function_name << " [L" << md->line_begin << "-" << md->line_end << "]\",";
+        entry << "\"pid\":" << getpid() << ",";
+        entry << "\"tid\":" << gettid() << ",";
+        entry << "\"ts\":" << ns_to_us(start_ns) << ",";
+        entry << "\"dur\":" << ns_to_us(dur_ns) << ",";
+        entry << "\"args\":{";
+        entry << "\"region_id\":\"" << md->region_name << "\",";
+        entry << "\"function\":\"" << md->function_name << "\",";
+        entry << "\"loopnest_index\":" << md->loopnest_index << ",";
+        entry << "\"module\":\"" << std::filesystem::path(md->file_name).filename().string() << "\",";
+        entry << "\"build_id\":\"\",";
+        entry << "\"source_ranges\":[";
+        entry << "{\"file\":\"" << md->file_name << "\",";
+        entry << "\"from\":{\"line\":" << md->line_begin << ",\"col\":" << md->column_begin << "},";
+        entry << "\"to\":{\"line\":" << md->line_end << ",\"col\":" << md->column_end << "}";
+        entry << "}";
+        entry << "],\"metrics\":{";
+        // PAPI counters
+        for (size_t i = 0; i < event_names.size(); ++i) {
+            entry << "\"" << event_names[i] << "\":{";
+            entry << "\"mean\":" << means[i] << ",";
+            entry << "\"variance\":" << variances[i] << ",";
+            entry << "\"count\":" << ns[i] << ",";
+            entry << "\"min\":" << mins[i] << ",";
+            entry << "\"max\":" << maxs[i];
+            entry << "}";
+            if (i < event_names.size() - 1) {
+                entry << ",";
+            }
+        }
+        entry << "}";
+        entry << "}";
+        entry << "}";
+
+        std::fprintf(f, "%s", entry.str().c_str());
+    }
+
 public:
     DaisyInstrumentationState() {
         load_papi_symbols();
@@ -193,6 +282,14 @@ public:
                 stderr, "[daisy-rtl] PAPI init failed: %s.\n", _PAPI_strerror ? _PAPI_strerror(retval) : "unknown"
             );
             exit(EXIT_FAILURE);
+        }
+
+        // Aggregate events
+        const char* aggregate_events_env = std::getenv("__DAISY_INSTRUMENTATION_MODE");
+        if (aggregate_events_env && std::strcmp(aggregate_events_env, "aggregate") == 0) {
+            this->aggregate_events = true;
+        } else {
+            this->aggregate_events = false;
         }
 
         // Output file
@@ -252,18 +349,33 @@ public:
                 auto start = region.starts.at(i);
                 auto dur = region.durations.at(i);
 
-                std::vector<long long> counts;
-                if (region.counts.size() > i) {
-                    counts = region.counts.at(i);
+                if (this->aggregate_events) {
+                    append_event_aggregated(
+                        f,
+                        &region.metadata,
+                        start,
+                        dur,
+                        region.mean_,
+                        region.variance_,
+                        region.n_,
+                        region.min_,
+                        region.max_,
+                        region.event_set == __DAISY_EVENT_SET_CPU ? event_names_cpu : event_names_cuda
+                    );
+                } else {
+                    std::vector<long long> counts;
+                    if (region.counts.size() > i) {
+                        counts = region.counts.at(i);
+                    }
+                    append_event(
+                        f,
+                        &region.metadata,
+                        start,
+                        dur,
+                        counts,
+                        region.event_set == __DAISY_EVENT_SET_CPU ? event_names_cpu : event_names_cuda
+                    );
                 }
-                append_event(
-                    f,
-                    &region.metadata,
-                    start,
-                    dur,
-                    counts,
-                    region.event_set == __DAISY_EVENT_SET_CPU ? event_names_cpu : event_names_cuda
-                );
 
                 if (i < region.starts.size() - 1) {
                     std::fprintf(f, ",\n");
@@ -355,7 +467,16 @@ public:
 
         // Save start time
         long long start_ns = _PAPI_get_real_nsec();
-        region.starts.push_back(start_ns);
+        if (this->aggregate_events) {
+            if (region.starts.empty()) {
+                region.first_start = start_ns;
+                region.starts.push_back(start_ns);
+            } else {
+                region.starts[0] = start_ns;
+            }
+        } else {
+            region.starts.push_back(start_ns);
+        }
     }
 
     void exit_region(size_t region_id) {
@@ -372,7 +493,15 @@ public:
         // Save duration (before counters)
         long long end_ns = _PAPI_get_real_nsec();
         long long duration_ns = end_ns - region.starts.back();
-        region.durations.push_back(duration_ns);
+        if (this->aggregate_events) {
+            if (region.durations.empty())
+                region.durations.push_back(duration_ns);
+            else
+                region.durations[0] += duration_ns;
+            region.starts[0] = region.first_start;
+        } else {
+            region.durations.push_back(duration_ns);
+        }
 
         // Save end counters
         if (region.event_set == __DAISY_EVENT_SET_CPU && this->event_names_cpu.size() > 0) {
@@ -383,7 +512,40 @@ public:
                 counts[i] -= region.last_counts[i];
             }
 
-            region.counts.push_back(counts);
+            if (!this->aggregate_events) {
+                region.counts.push_back(counts);
+                return;
+            }
+
+            // If aggregating, update mean/variance/min/max
+            if (region.mean_.empty()) {
+                region.n_.resize(counts.size(), 0);
+                region.mean_.resize(counts.size(), 0.0);
+                region.variance_.resize(counts.size(), 0.0);
+                region.min_.resize(counts.size(), std::numeric_limits<long long>::max());
+                region.max_.resize(counts.size(), std::numeric_limits<long long>::min());
+            }
+            for (size_t i = 0; i < counts.size(); ++i) {
+                region.n_[i] += 1;
+
+                // Mean/variance using Welford's algorithm
+
+                // delta_1 = x_n - mean_{n-1}
+                double delta1 = counts[i] - region.mean_[i];
+
+                // mean_n = mean_{n-1} + (x_n - mean_{n-1}) / n
+                region.mean_[i] += delta1 / region.n_[i];
+
+                // delta_2 = x_n - mean_n
+                double delta2 = counts[i] - region.mean_[i];
+
+                // variance_n = variance_{n-1} + (delta_1 * delta_2 - variance_{n-1}) / n
+                region.variance_[i] += (delta1 * delta2 - region.variance_[i]) / region.n_[i];
+
+                // Min/max
+                if (counts[i] < region.min_[i]) region.min_[i] = counts[i];
+                if (counts[i] > region.max_[i]) region.max_[i] = counts[i];
+            }
         } else if (region.event_set == __DAISY_EVENT_SET_CUDA && this->event_names_cuda.size() > 0) {
             std::vector<long long> counts(this->event_names_cuda.size(), 0);
             _PAPI_read(region.papi_eventset, counts.data());
@@ -392,7 +554,40 @@ public:
                 counts[i] -= region.last_counts[i];
             }
 
-            region.counts.push_back(counts);
+            if (!this->aggregate_events) {
+                region.counts.push_back(counts);
+                return;
+            }
+
+            // If aggregating, update mean/variance/min/max
+            if (region.mean_.empty()) {
+                region.n_.resize(counts.size(), 0);
+                region.mean_.resize(counts.size(), 0.0);
+                region.variance_.resize(counts.size(), 0.0);
+                region.min_.resize(counts.size(), std::numeric_limits<long long>::max());
+                region.max_.resize(counts.size(), std::numeric_limits<long long>::min());
+            }
+            for (size_t i = 0; i < counts.size(); ++i) {
+                region.n_[i] += 1;
+
+                // Mean/variance using Welford's algorithm
+
+                // delta_1 = x_n - mean_{n-1}
+                double delta1 = counts[i] - region.mean_[i];
+
+                // mean_n = mean_{n-1} + (x_n - mean_{n-1}) / n
+                region.mean_[i] += delta1 / region.n_[i];
+
+                // delta_2 = x_n - mean_n
+                double delta2 = counts[i] - region.mean_[i];
+
+                // variance_n = variance_{n-1} + (delta_1 * delta_2 - variance_{n-1}) / n
+                region.variance_[i] += (delta1 * delta2 - region.variance_[i]) / region.n_[i];
+
+                // Min/max
+                if (counts[i] < region.min_[i]) region.min_[i] = counts[i];
+                if (counts[i] > region.max_[i]) region.max_[i] = counts[i];
+            }
         }
     }
 
