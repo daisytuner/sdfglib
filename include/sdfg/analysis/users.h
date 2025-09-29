@@ -164,6 +164,8 @@ class Users : public Analysis {
     const std::unordered_set<User*> all_uses_between(User& user1, User& user2);
 
     const std::unordered_set<User*> all_uses_after(User& user);
+
+    const std::vector<std::string> all_containers_in_order();
 };
 
 class UsersView {
@@ -211,6 +213,8 @@ class UsersView {
     std::unordered_set<User*> all_uses_between(User& user1, User& user2);
 
     std::unordered_set<User*> all_uses_after(User& user);
+
+    const std::vector<std::string> all_containers_in_order();
 };
 
 }  // namespace analysis
