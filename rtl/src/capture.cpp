@@ -10,6 +10,7 @@
 #include <ctime>
 #include <iostream>
 #include <string>
+#include <utility>
 
 #ifndef DEBUG_LOG
 #define DEBUG_LOG false
@@ -17,13 +18,18 @@
 
 using namespace arg_capture;
 
+constexpr uint32_t ALL_INVOCATIONS = -1;
+
 class DaisyRtlCapture : public ArgCaptureIO {
 protected:
+    uint32_t invocation_no_only_ = ALL_INVOCATIONS;
     std::filesystem::path output_dir_;
 
 public:
-    explicit DaisyRtlCapture(const char* name, std::filesystem::path base_dir = "arg_captures")
-        : ArgCaptureIO(name), output_dir_(base_dir) {}
+    explicit DaisyRtlCapture(
+        const char* name, uint32_t invocation_no_only = ALL_INVOCATIONS, std::filesystem::path base_dir = "arg_captures"
+    )
+        : ArgCaptureIO(name), invocation_no_only_(invocation_no_only), output_dir_(std::move(base_dir)) {}
 
     const std::filesystem::path& get_output_dir() const;
 
@@ -60,7 +66,8 @@ bool DaisyRtlCapture::enter() {
 
     invocation();
 
-    return true;
+    auto specific_invocation_only = this->invocation_no_only_;
+    return (specific_invocation_only == ALL_INVOCATIONS) || (invokes_ == specific_invocation_only);
 }
 
 void DaisyRtlCapture::capture_raw(int arg_idx, const void* data, size_t size, int primitive_type, bool after) {
@@ -124,7 +131,25 @@ extern "C" {
 #endif
 
 struct __daisy_capture* __daisy_capture_init(const char* name) {
-    DaisyRtlCapture* ctx = new DaisyRtlCapture(name);
+    auto* default_strat = getenv("__DAISY_CAPTURE_STRATEGY_DEFAULT");
+
+    DaisyRtlCapture* ctx;
+
+    if (default_strat && std::strcmp(default_strat, "all") == 0) {
+        ctx = new DaisyRtlCapture(name, ALL_INVOCATIONS);
+    } else if (default_strat && std::strcmp(default_strat, "never") == 0) {
+        return nullptr;
+    } else if (!default_strat || std::strcmp(default_strat, "once") == 0) {
+        ctx = nullptr;
+    } else {
+        fprintf(stderr, "Unknown capture strategy: '%s' for ctx '%s'\n", default_strat, name);
+        ctx = nullptr;
+    }
+
+    if (!ctx) { // default
+        ctx = new DaisyRtlCapture(name, 0);
+    }
+
     return (__daisy_capture_t*) ctx;
 }
 
