@@ -22,14 +22,16 @@ constexpr uint32_t ALL_INVOCATIONS = -1;
 
 class DaisyRtlCapture : public ArgCaptureIO {
 protected:
-    uint32_t invocation_no_only_ = ALL_INVOCATIONS;
+    uint32_t invocation_to_capture_ = ALL_INVOCATIONS;
     std::filesystem::path output_dir_;
 
 public:
     explicit DaisyRtlCapture(
-        const char* name, uint32_t invocation_no_only = ALL_INVOCATIONS, std::filesystem::path base_dir = "arg_captures"
+        const char* name,
+        uint32_t invocation_to_capture = ALL_INVOCATIONS,
+        std::filesystem::path base_dir = "arg_captures"
     )
-        : ArgCaptureIO(name), invocation_no_only_(invocation_no_only), output_dir_(std::move(base_dir)) {}
+        : ArgCaptureIO(name), invocation_to_capture_(invocation_to_capture), output_dir_(std::move(base_dir)) {}
 
     const std::filesystem::path& get_output_dir() const;
 
@@ -66,7 +68,7 @@ bool DaisyRtlCapture::enter() {
 
     invocation();
 
-    auto specific_invocation_only = this->invocation_no_only_;
+    auto specific_invocation_only = this->invocation_to_capture_;
     return (specific_invocation_only == ALL_INVOCATIONS) || (invokes_ == specific_invocation_only);
 }
 
