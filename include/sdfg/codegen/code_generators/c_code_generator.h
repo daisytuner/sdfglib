@@ -30,10 +30,10 @@ public:
     explicit CCodeGenerator(
         StructuredSDFG& sdfg,
         InstrumentationPlan& instrumentation_plan,
-        bool capture_args_results = false,
+        ArgCaptureType arg_capture_type = ARG_CAPTURE_NONE,
         const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr
     )
-        : CStyleBaseCodeGenerator(sdfg, instrumentation_plan, capture_args_results, output_and_header_paths),
+        : CStyleBaseCodeGenerator(sdfg, instrumentation_plan, arg_capture_type, output_and_header_paths),
           language_extension_(sdfg.externals()) {}
 
     std::string function_definition() override;

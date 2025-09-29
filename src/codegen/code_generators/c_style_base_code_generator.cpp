@@ -6,10 +6,10 @@ namespace sdfg::codegen {
 CStyleBaseCodeGenerator::CStyleBaseCodeGenerator(
     StructuredSDFG& sdfg,
     InstrumentationPlan& instrumentation_plan,
-    bool capture_args_results,
+    ArgCaptureType arg_capture_type,
     const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths
 )
-    : CodeGenerator(sdfg, instrumentation_plan, capture_args_results, output_and_header_paths) {
+    : CodeGenerator(sdfg, instrumentation_plan, arg_capture_type, output_and_header_paths) {
     if (sdfg.type() != FunctionType_CPU) {
         throw std::runtime_error("CStyleBaseCodeGenerator can only be used for CPU SDFGs");
     }
@@ -51,7 +51,7 @@ bool CStyleBaseCodeGenerator::as_source(const std::filesystem::path& header_path
 
 void CStyleBaseCodeGenerator::append_function_source(std::ofstream& ofs_source) {
     std::unique_ptr<std::vector<CaptureVarPlan>> capturePlan;
-    if (capture_args_results_) {
+    if (arg_capture_type_ != ArgCaptureType::ARG_CAPTURE_NONE) {
         capturePlan = create_capture_plans();
         if (capturePlan) {
             this->emit_capture_context_init(ofs_source);
@@ -65,6 +65,7 @@ void CStyleBaseCodeGenerator::append_function_source(std::ofstream& ofs_source) 
     ofs_source << "{" << std::endl;
 
     if (capturePlan) {
+        ofs_source << "\tstatic bool __daisy_cap_once = false;" << std::endl;
         this->emit_arg_captures(ofs_source, *capturePlan, false);
     }
 
@@ -82,6 +83,9 @@ void CStyleBaseCodeGenerator::append_function_source(std::ofstream& ofs_source) 
 
     if (capturePlan) {
         this->emit_arg_captures(ofs_source, *capturePlan, true);
+        if (arg_capture_type_ == ArgCaptureType::ARG_CAPTURE_ONCE) {
+            ofs_source << "\t__daisy_cap_once = true;" << std::endl;
+        }
     }
 
     ofs_source << "}" << std::endl;
@@ -98,7 +102,7 @@ void CStyleBaseCodeGenerator::
     const auto& args = sdfg_.arguments();
     const auto& exts = sdfg_.externals();
 
-    ofs_source << "if (__daisy_cap_en) {" << std::endl;
+    ofs_source << "if (__daisy_cap_en && !__daisy_cap_once) {" << std::endl;
 
     auto afterBoolStr = after ? "true" : "false";
 

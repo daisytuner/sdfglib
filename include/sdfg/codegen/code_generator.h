@@ -15,6 +15,12 @@
 namespace sdfg {
 namespace codegen {
 
+enum ArgCaptureType {
+    ARG_CAPTURE_NONE,
+    ARG_CAPTURE_ONCE,
+    ARG_CAPTURE_ALWAYS
+};
+
 /**
  * @brief Base class for code generators
  *
@@ -45,7 +51,7 @@ protected:
     PrettyPrinter main_stream_;
 
     /// @brief Emit instrumentation code to capture runtime contents of inputs and outputs
-    bool capture_args_results_;
+    ArgCaptureType arg_capture_type_;
 
     std::tuple<int, types::PrimitiveType> analyze_type_rec(
         symbolic::Expression* curr_dim,
@@ -71,11 +77,11 @@ public:
     CodeGenerator(
         StructuredSDFG& sdfg,
         InstrumentationPlan& instrumentation_plan,
-        bool capture_args_results = false,
+        ArgCaptureType arg_capture_type = ARG_CAPTURE_NONE,
         const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr
     )
         : sdfg_(sdfg), instrumentation_plan_(instrumentation_plan), library_snippet_factory_(output_and_header_paths),
-          capture_args_results_(capture_args_results) {};
+          arg_capture_type_(arg_capture_type) {};
 
 
     virtual ~CodeGenerator() = default;

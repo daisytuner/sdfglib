@@ -94,7 +94,7 @@ TEST(CCodeGeneratorTest, CaptureInstrumentationInit) {
     auto sdfg = builder.move();
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, true);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, codegen::ArgCaptureType::ARG_CAPTURE_ALWAYS);
     std::stringstream output;
 
     generator.emit_capture_context_init(output);
@@ -117,7 +117,7 @@ TEST(CCodeGeneratorTest, EmitArgInCaptures) {
     auto sdfg = builder.move();
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, true);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, codegen::ArgCaptureType::ARG_CAPTURE_ALWAYS);
     std::stringstream output;
 
     std::vector<codegen::CaptureVarPlan> plan = {
@@ -138,7 +138,7 @@ TEST(CCodeGeneratorTest, EmitArgInCaptures) {
     EXPECT_EQ(
         output.str(),
         R"(const bool __daisy_cap_en = __daisy_capture_enter(__capture_ctx);
-if (__daisy_cap_en) {
+if (__daisy_cap_en && !__daisy_cap_once) {
 	__daisy_capture_raw(__capture_ctx, 0, &arg0, sizeof(arg0), 5, false);
 	__daisy_capture_2d(__capture_ctx, 1, arg1, sizeof(float), 14, 190, 210, false);
 	__daisy_capture_raw(__capture_ctx, 2, &ext0, sizeof(ext0), 5, false);
@@ -159,7 +159,7 @@ TEST(CCodeGeneratorTest, EmitArgOutCaptures) {
     auto sdfg = builder.move();
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, true);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, codegen::ArgCaptureType::ARG_CAPTURE_ALWAYS);
     std::stringstream output;
 
     std::vector<codegen::CaptureVarPlan> plan = {
@@ -180,7 +180,7 @@ TEST(CCodeGeneratorTest, EmitArgOutCaptures) {
 
     EXPECT_EQ(
         output.str(),
-        R"(if (__daisy_cap_en) {
+        R"(if (__daisy_cap_en && !__daisy_cap_once) {
 	__daisy_capture_2d(__capture_ctx, 1, arg1, sizeof(float), 14, 190, 210, true);
 	__daisy_capture_1d(__capture_ctx, 3, ext1, sizeof(long long), 5, 1, true);
 	__daisy_capture_end(__capture_ctx);
@@ -239,7 +239,7 @@ TEST(CCodeGeneratorTest, CreateCapturePlans) {
     auto sdfg = builder.move();
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, true);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, codegen::ArgCaptureType::ARG_CAPTURE_ALWAYS);
     auto capturePlan = generator.create_capture_plans();
 
     EXPECT_EQ(capturePlan->size(), 3);

@@ -9,15 +9,15 @@ namespace codegen {
 CUDACodeGenerator::CUDACodeGenerator(
     StructuredSDFG& sdfg,
     InstrumentationPlan& instrumentation_plan,
-    bool capture_args_results,
+    ArgCaptureType arg_capture_type,
     const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths
 )
-    : CodeGenerator(sdfg, instrumentation_plan, capture_args_results, output_and_header_paths),
+    : CodeGenerator(sdfg, instrumentation_plan, arg_capture_type, output_and_header_paths),
       language_extension_(sdfg.externals()) {
     if (sdfg.type() != FunctionType_NV_GLOBAL) {
         throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
     }
-    if (capture_args_results) {
+    if (arg_capture_type != ARG_CAPTURE_NONE) {
         std::cerr << "CUDACodeGenerator does not support capturing args/results!";
     }
 };
