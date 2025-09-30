@@ -106,10 +106,13 @@ bool CodeGenerator::add_capture_plan(
     const analysis::MemAccessRanges& ranges
 ) {
     const types::IType* type = nullptr;
+
+    size_t dim_offset = 0;
     if (is_external) {
         auto& pointer_type = dynamic_cast<const types::Pointer&>(sdfg_.type(var_name));
         assert(pointer_type.has_pointee_type() && "Externals must have a pointee type");
         type = &pointer_type.pointee_type();
+        dim_offset = 1;
     } else {
         type = &sdfg_.type(var_name);
     }
@@ -124,7 +127,7 @@ bool CodeGenerator::add_capture_plan(
     types::PrimitiveType inner_type;
 
     std::tie(dim_count, inner_type) =
-        analyze_type_rec(dims, 3, 0, *type, arg_idx, range, analysis_manager, sdfg_, var_name);
+        analyze_type_rec(dims, 3, dim_offset, *type, arg_idx, range, analysis_manager, sdfg_, var_name);
 
     bool is_read = range ? range->saw_read() : true;
     bool is_written = range ? range->saw_write() : true;
