@@ -39,63 +39,64 @@ std::tuple<int, types::PrimitiveType> CodeGenerator::analyze_type_rec(
 
         return analyze_type_rec(dims, max_dim, dim_idx + 1, inner, arg_idx, range, analysis_manager, sdfg, var_name);
     } else if (auto* ptrType = dynamic_cast<const types::Pointer*>(&type)) {
-        if (range && !range->is_undefined()) {
-            const auto& dim = range->dims()[dim_idx];
-
-            if (symbolic::eq(symbolic::zero(), dim.first)) {
-                dims[dim_idx] = symbolic::add(dim.second, symbolic::one());
-                const types::IType* inner = nullptr;
-                if (ptrType->has_pointee_type()) {
-                    inner = &(ptrType->pointee_type());
-                } else {
-                    if (dim_idx > 0) {
-                        std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
-                                  << ": missing pointee type for dim > 0, cannot capture!" << std::endl;
-                        return std::make_tuple(-2, types::Void);
-                    } else {
-                        auto& type_analysis = analysis_manager.get<analysis::TypeAnalysis>();
-                        auto outer = type_analysis.get_outer_type(var_name);
-                        if (outer != nullptr) {
-                            if (auto* ptrType_new = dynamic_cast<const types::Pointer*>(outer)) {
-                                if (ptrType_new->has_pointee_type()) {
-                                    inner = &(ptrType_new->pointee_type());
-                                } else {
-                                    std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
-                                              << ": missing pointee type, cannot capture!" << std::endl;
-                                    return std::make_tuple(-2, types::Void);
-                                }
-                            }
-                        } else {
-                            std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
-                                      << ": could not infer type from container, cannot capture!" << std::endl;
-                            return std::make_tuple(-2, types::Void);
-                        }
-                    }
-                    if (inner == nullptr) {
-                        std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
-                                  << ": could not infer type from container, cannot capture!" << std::endl;
-                        return std::make_tuple(-2, types::Void);
-                    }
-                }
-
-                return analyze_type_rec(
-                    dims, max_dim, dim_idx + 1, *inner, arg_idx, range, analysis_manager, sdfg, var_name
-                );
-            } else {
-                std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx << ": has upper bound "
-                          << dim.second->__str__() << ", but does not start at 0, cannot capture" << std::endl;
-                return std::make_tuple(-2, types::Void);
-            }
-        } else {
+        if (!range || range->is_undefined()) {
             std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
                       << ": missing range, cannot capture!" << std::endl;
             return std::make_tuple(-2, types::Void);
         }
-    } else {
-        std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << ": unsupported type " << type.print()
-                  << ", cannot capture!" << std::endl;
-        return std::make_tuple(-1, types::Void);
+        if (range->dims().size() <= dim_idx) {
+            std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
+                      << ": missing dimension in range, cannot capture!" << std::endl;
+            return std::make_tuple(-2, types::Void);
+        }
+        const auto& dim = range->dims().at(dim_idx);
+        if (!symbolic::eq(dim.first, symbolic::zero())) {
+            std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx << ": has upper bound "
+                      << dim.second->__str__() << ", but does not start at 0, cannot capture" << std::endl;
+            return std::make_tuple(-2, types::Void);
+        }
+
+        dims[dim_idx] = symbolic::add(dim.second, symbolic::one());
+        const types::IType* inner = nullptr;
+        if (ptrType->has_pointee_type()) {
+            inner = &(ptrType->pointee_type());
+        } else {
+            if (dim_idx > 0) {
+                std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
+                          << ": missing pointee type for dim > 0, cannot capture!" << std::endl;
+                return std::make_tuple(-2, types::Void);
+            } else {
+                auto& type_analysis = analysis_manager.get<analysis::TypeAnalysis>();
+                auto outer = type_analysis.get_outer_type(var_name);
+                if (outer != nullptr) {
+                    if (auto* ptrType_new = dynamic_cast<const types::Pointer*>(outer)) {
+                        if (ptrType_new->has_pointee_type()) {
+                            inner = &(ptrType_new->pointee_type());
+                        } else {
+                            std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
+                                      << ": missing pointee type, cannot capture!" << std::endl;
+                            return std::make_tuple(-2, types::Void);
+                        }
+                    }
+                } else {
+                    std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
+                              << ": could not infer type from container, cannot capture!" << std::endl;
+                    return std::make_tuple(-2, types::Void);
+                }
+            }
+            if (inner == nullptr) {
+                std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
+                          << ": could not infer type from container, cannot capture!" << std::endl;
+                return std::make_tuple(-2, types::Void);
+            }
+        }
+
+        return analyze_type_rec(dims, max_dim, dim_idx + 1, *inner, arg_idx, range, analysis_manager, sdfg, var_name);
     }
+
+    std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << ": unsupported type " << type.print()
+              << ", cannot capture!" << std::endl;
+    return std::make_tuple(-1, types::Void);
 }
 
 bool CodeGenerator::add_capture_plan(
