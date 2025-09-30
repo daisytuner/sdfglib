@@ -92,6 +92,8 @@ TEST(CCodeGeneratorTest, CaptureInstrumentationInit) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     auto sdfg = builder.move();
+    sdfg->add_metadata("sdfg_file", "sdfg_a.sdfg");
+    sdfg->add_metadata("arg_capture_path", "./arg_captures");
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
     codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, true);
@@ -101,7 +103,7 @@ TEST(CCodeGeneratorTest, CaptureInstrumentationInit) {
 
     EXPECT_EQ(output.str(), R"(static void* __capture_ctx;
 static void __attribute__((constructor(1000))) __capture_ctx_init(void) {
-	__capture_ctx = __daisy_capture_init("sdfg_a");
+	__capture_ctx = __daisy_capture_init("sdfg_a", "./arg_captures");
 }
 
 )");

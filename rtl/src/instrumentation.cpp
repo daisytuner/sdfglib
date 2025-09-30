@@ -184,7 +184,7 @@ private:
         entry << "\"sdfg_name\":\"" << md.sdfg_name << "\",";
         entry << "\"sdfg_file\":\"" << md.sdfg_file << "\",";
         entry << "\"arg_capture_path\":\"" << md.arg_capture_path << "\",";
-        entry << "\"element_id\":\"" << md.element_id << "\",";
+        entry << "\"element_id\":" << md.element_id << ",";
         entry << "\"loopnest_index\":" << md.loopnest_index;
 
         entry << "},";
@@ -268,7 +268,7 @@ private:
         entry << "\"sdfg_name\":\"" << md.sdfg_name << "\",";
         entry << "\"sdfg_file\":\"" << md.sdfg_file << "\",";
         entry << "\"arg_capture_path\":\"" << md.arg_capture_path << "\",";
-        entry << "\"element_id\":\"" << md.element_id << "\",";
+        entry << "\"element_id\":" << md.element_id << ",";
         entry << "\"loopnest_index\":" << md.loopnest_index;
 
         entry << "},";

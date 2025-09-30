@@ -31,7 +31,7 @@ typedef struct __daisy_metadata {
 
     // Element-scope
     size_t element_id;
-    size_t loopnest_index;
+    int loopnest_index;
 
     // sdfg_name + element_id
     const char* region_uuid;

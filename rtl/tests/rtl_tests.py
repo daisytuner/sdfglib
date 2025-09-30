@@ -89,7 +89,7 @@ def test_instrumentation(event):
         assert docc_metadata["sdfg_name"] == "__daisy_instrumentation_test_0"
         assert docc_metadata["sdfg_file"] == "/tmp/DOCC/0000-0000/123456789/sdfg_0.json"
         assert docc_metadata["arg_capture_path"] == ""
-        assert docc_metadata["element_id"] == "10"
+        assert docc_metadata["element_id"] == 10
         assert docc_metadata["loopnest_index"] == 0
 
         # Event metrics checks
@@ -180,7 +180,7 @@ def test_instrumentation_aggregate(event):
     assert docc_metadata["sdfg_name"] == "__daisy_instrumentation_test_0"
     assert docc_metadata["sdfg_file"] == "/tmp/DOCC/0000-0000/123456789/sdfg_0.json"
     assert docc_metadata["arg_capture_path"] == ""
-    assert docc_metadata["element_id"] == "10"
+    assert docc_metadata["element_id"] == 10
     assert docc_metadata["loopnest_index"] == 0
 
     assert len(event["args"]["metrics"]) == len(event_names) + 1
@@ -284,7 +284,7 @@ def test_instrumentation_cuda(event):
         assert docc_metadata["sdfg_name"] == "__daisy_instrumentation_cuda_test_0"
         assert docc_metadata["sdfg_file"] == "/tmp/DOCC/0000-0000/123456789/sdfg_0.json"
         assert docc_metadata["arg_capture_path"] == ""
-        assert docc_metadata["element_id"] == "10"
+        assert docc_metadata["element_id"] == 10
         assert docc_metadata["loopnest_index"] == 0
 
         for event_name in event_names:
