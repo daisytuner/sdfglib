@@ -14,14 +14,28 @@ enum __daisy_event_set {
 };
 
 typedef struct __daisy_metadata {
+    // Source location
     const char* file_name;
     const char* function_name;
     long line_begin;
     long line_end;
     long column_begin;
     long column_end;
-    const char* region_name;
-    size_t loopnest_index;
+
+    // Docc metadata
+
+    // SDFG-scope
+    const char* sdfg_name;
+    const char* sdfg_file;
+    const char* arg_capture_path;
+
+    // Element-scope
+    size_t element_id;
+    int loopnest_index;
+
+    // sdfg_name + element_id
+    const char* region_uuid;
+
 } __daisy_metadata_t;
 
 // Registers a region and returns a region ID
@@ -38,7 +52,7 @@ void __daisy_instrumentation_exit(size_t region_id);
 
 typedef struct __daisy_capture __daisy_capture_t;
 
-__daisy_capture_t* __daisy_capture_init(const char* name);
+__daisy_capture_t* __daisy_capture_init(const char* name, const char* base_dir);
 
 bool __daisy_capture_enter(__daisy_capture_t* context);
 

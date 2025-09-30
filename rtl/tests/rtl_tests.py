@@ -68,20 +68,32 @@ def test_instrumentation(event):
 
     result = json.load(open(workdir / "data_cpu.json"))
     events = result["traceEvents"]
-    assert(len(events) > 0)
+    assert len(events) == 10
 
-    print(events)
     for i in range(len(events)):
-        assert events[i]["name"].startswith("main")
-        assert events[i]["cat"] == "region,daisy"
+        # General checks
         assert events[i]["ph"] == "X"
+        assert events[i]["cat"] == "region,daisy"
+        assert events[i]["name"] == "main [L18-31]"
+
+        # Source Metadata checks
         assert events[i]["args"]["module"] == "instrumentation_test.c"
         assert events[i]["args"]["function"] == "main"
         assert events[i]["args"]["source_ranges"][0]["from"]["line"] == 18
         assert events[i]["args"]["source_ranges"][0]["to"]["line"] == 31
         assert events[i]["args"]["source_ranges"][0]["from"]["col"] == 4
         assert events[i]["args"]["source_ranges"][0]["to"]["col"] == 5
-        assert events[i]["args"]["loopnest_index"] == 0
+
+        # DOCC Metadata checks
+        docc_metadata = events[i]["args"]["docc"]
+        assert docc_metadata["sdfg_name"] == "__daisy_instrumentation_test_0"
+        assert docc_metadata["sdfg_file"] == "/tmp/DOCC/0000-0000/123456789/sdfg_0.json"
+        assert docc_metadata["arg_capture_path"] == ""
+        assert docc_metadata["element_id"] == 10
+        assert docc_metadata["loopnest_index"] == 0
+
+        # Event metrics checks
+        assert len(events[i]["args"]["metrics"]) == len(event_names)
         for event_name in event_names:
             assert event_name in events[i]["args"]["metrics"]
             assert events[i]["args"]["metrics"][event_name] > 0
@@ -89,6 +101,7 @@ def test_instrumentation(event):
 @pytest.mark.parametrize(
     "event",
     [
+        pytest.param(""),
         pytest.param("perf::BRANCHES,perf::CYCLES"),
     ],
 )
@@ -146,26 +159,47 @@ def test_instrumentation_aggregate(event):
 
     result = json.load(open(workdir / "data_cpu.json"))
     events = result["traceEvents"]
-    assert(len(events) > 0)
+    assert len(events) == 1
 
-    print(events)
-    for i in range(len(events)):
-        assert events[i]["name"].startswith("main")
-        assert events[i]["cat"] == "region,daisy"
-        assert events[i]["ph"] == "X"
-        assert events[i]["args"]["module"] == "instrumentation_test.c"
-        assert events[i]["args"]["function"] == "main"
-        assert events[i]["args"]["source_ranges"][0]["from"]["line"] == 18
-        assert events[i]["args"]["source_ranges"][0]["to"]["line"] == 31
-        assert events[i]["args"]["source_ranges"][0]["from"]["col"] == 4
-        assert events[i]["args"]["source_ranges"][0]["to"]["col"] == 5
-        assert events[i]["args"]["loopnest_index"] == 0
-        for event_name in event_names:
-            assert event_name in events[i]["args"]["metrics"]
-            assert events[i]["args"]["metrics"][event_name]["mean"] > 0
-            assert events[i]["args"]["metrics"][event_name]["min"] > 0
-            assert events[i]["args"]["metrics"][event_name]["max"] > 0
-            assert events[i]["args"]["metrics"][event_name]["variance"] >= 0
+    event = events[0]
+    # General checks
+    assert event["ph"] == "X"
+    assert event["cat"] == "aggregated_region,daisy"
+    assert event["name"] == "main [L18-31]"
+
+    # Source Metadata checks
+    assert event["args"]["module"] == "instrumentation_test.c"
+    assert event["args"]["function"] == "main"
+    assert event["args"]["source_ranges"][0]["from"]["line"] == 18
+    assert event["args"]["source_ranges"][0]["to"]["line"] == 31
+    assert event["args"]["source_ranges"][0]["from"]["col"] == 4
+    assert event["args"]["source_ranges"][0]["to"]["col"] == 5
+
+    # DOCC Metadata checks
+    docc_metadata = event["args"]["docc"]
+    assert docc_metadata["sdfg_name"] == "__daisy_instrumentation_test_0"
+    assert docc_metadata["sdfg_file"] == "/tmp/DOCC/0000-0000/123456789/sdfg_0.json"
+    assert docc_metadata["arg_capture_path"] == ""
+    assert docc_metadata["element_id"] == 10
+    assert docc_metadata["loopnest_index"] == 0
+
+    assert len(event["args"]["metrics"]) == len(event_names) + 1
+    for event_name in event_names:
+        assert event_name in event["args"]["metrics"]
+        assert event["args"]["metrics"][event_name]["mean"] > 0
+        assert event["args"]["metrics"][event_name]["min"] > 0
+        assert event["args"]["metrics"][event_name]["max"] > 0
+        assert event["args"]["metrics"][event_name]["count"] == 10
+        assert event["args"]["metrics"][event_name]["variance"] >= 0
+
+    assert "runtime" in event["args"]["metrics"]
+    assert event["args"]["metrics"]["runtime"]["mean"] > 0
+    assert event["args"]["metrics"]["runtime"]["min"] > 0
+    assert event["args"]["metrics"]["runtime"]["max"] > 0
+    assert event["args"]["metrics"]["runtime"]["variance"] >= 0
+    assert event["args"]["metrics"]["runtime"]["count"] == 10
+
+    assert np.allclose(event["dur"], event["args"]["metrics"]["runtime"]["mean"] * event["args"]["metrics"]["runtime"]["count"])
 
 @pytest.mark.parametrize(
     "event",
@@ -232,16 +266,27 @@ def test_instrumentation_cuda(event):
 
     print(events)
     for i in range(len(events)):
-        assert events[i]["name"].startswith("main")
-        assert events[i]["cat"] == "region,daisy"
+        # General checks
         assert events[i]["ph"] == "X"
+        assert events[i]["cat"] == "region,daisy"
+        assert events[i]["name"] == "main [L18-31]"
+
+        # Source Metadata checks
         assert events[i]["args"]["module"] == "instrumentation_cuda_test.cu"
         assert events[i]["args"]["function"] == "main"
         assert events[i]["args"]["source_ranges"][0]["from"]["line"] == 18
         assert events[i]["args"]["source_ranges"][0]["to"]["line"] == 31
         assert events[i]["args"]["source_ranges"][0]["from"]["col"] == 4
         assert events[i]["args"]["source_ranges"][0]["to"]["col"] == 5
-        assert events[i]["args"]["loopnest_index"] == 0
+
+        # DOCC Metadata checks
+        docc_metadata = events[i]["args"]["docc"]
+        assert docc_metadata["sdfg_name"] == "__daisy_instrumentation_cuda_test_0"
+        assert docc_metadata["sdfg_file"] == "/tmp/DOCC/0000-0000/123456789/sdfg_0.json"
+        assert docc_metadata["arg_capture_path"] == ""
+        assert docc_metadata["element_id"] == 10
+        assert docc_metadata["loopnest_index"] == 0
+
         for event_name in event_names:
             assert event_name in events[i]["args"]["metrics"]
 
