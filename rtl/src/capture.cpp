@@ -28,10 +28,10 @@ protected:
 public:
     explicit DaisyRtlCapture(
         const char* name,
-        uint32_t invocation_to_capture = ALL_INVOCATIONS,
-        std::filesystem::path base_dir = "arg_captures"
+        std::filesystem::path base_dir,
+        uint32_t invocation_to_capture = ALL_INVOCATIONS
     )
-        : ArgCaptureIO(name), invocation_to_capture_(invocation_to_capture), output_dir_(std::move(base_dir)) {}
+        : ArgCaptureIO(name), output_dir_(std::move(base_dir)), invocation_to_capture_(invocation_to_capture) {}
 
     const std::filesystem::path& get_output_dir() const;
 
@@ -132,13 +132,18 @@ std::filesystem::path DaisyRtlCapture::generate_arg_capture_output_filename(int 
 extern "C" {
 #endif
 
-struct __daisy_capture* __daisy_capture_init(const char* name) {
+struct __daisy_capture* __daisy_capture_init(const char* name, const char* base_dir) {
     auto* default_strat = getenv("__DAISY_CAPTURE_STRATEGY_DEFAULT");
 
     DaisyRtlCapture* ctx;
 
+    std::filesystem::path base_dir_path = "arg_captures";
+    if (base_dir) {
+        base_dir_path = base_dir;
+    }
+
     if (default_strat && std::strcmp(default_strat, "all") == 0) {
-        ctx = new DaisyRtlCapture(name, ALL_INVOCATIONS);
+        ctx = new DaisyRtlCapture(name, base_dir_path, ALL_INVOCATIONS);
     } else if (default_strat && std::strcmp(default_strat, "never") == 0) {
         return nullptr;
     } else if (!default_strat || std::strcmp(default_strat, "once") == 0) {
@@ -149,7 +154,7 @@ struct __daisy_capture* __daisy_capture_init(const char* name) {
     }
 
     if (!ctx) { // default
-        ctx = new DaisyRtlCapture(name, 0);
+        ctx = new DaisyRtlCapture(name, base_dir_path, 0);
     }
 
     return (__daisy_capture_t*) ctx;

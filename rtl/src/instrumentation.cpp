@@ -78,9 +78,9 @@ struct DaisyRegion {
     // Runtime
     long long first_start = 0;
     long long last_start;
-    long long runtime_n;
-    double runtime_mean;
-    double runtime_variance;
+    long long runtime_n = 0;
+    double runtime_mean = 0.0;
+    double runtime_variance = 0.0;
     long long runtime_min;
     long long runtime_max;
 
@@ -167,18 +167,30 @@ private:
         entry << "\"ts\":" << (region.starts.at(index) / 1000) << ",";
         entry << "\"dur\":" << ns_to_us(region.durations.at(index)) << ",";
         entry << "\"args\":{";
-        entry << "\"region_id\":\"" << md.region_name << "\",";
+
+        // Source location
         entry << "\"function\":\"" << md.function_name << "\",";
-        entry << "\"loopnest_index\":" << md.loopnest_index << ",";
         entry << "\"module\":\"" << std::filesystem::path(md.file_name).filename().string() << "\",";
-        entry << "\"build_id\":\"\",";
         entry << "\"source_ranges\":[";
         entry << "{\"file\":\"" << md.file_name << "\",";
         entry << "\"from\":{\"line\":" << md.line_begin << ",\"col\":" << md.column_begin << "},";
         entry << "\"to\":{\"line\":" << md.line_end << ",\"col\":" << md.column_end << "}";
-        entry << "}";
+        entry << "}],";
+
+        // docc metadata
+        entry << "\"docc\":";
+        entry << "{";
+    
+        entry << "\"sdfg_name\":\"" << md.sdfg_name << "\",";
+        entry << "\"sdfg_file\":\"" << md.sdfg_file << "\",";
+        entry << "\"arg_capture_path\":\"" << md.arg_capture_path << "\",";
+        entry << "\"element_id\":\"" << md.element_id << "\",";
+        entry << "\"loopnest_index\":" << md.loopnest_index;
+
+        entry << "},";
         
-        entry << "],\"metrics\":{";
+        // Metrics
+        entry << "\"metrics\":{";
         if (index < region.counts.size()) {
             auto& counts = region.counts.at(index);
             for (size_t i = 0; i < counts.size(); ++i) {
@@ -239,17 +251,29 @@ private:
         // Total duration
         entry << "\"dur\":" << ns_to_us(region.runtime_mean * region.runtime_n) << ",";
         entry << "\"args\":{";
-        entry << "\"region_id\":\"" << md.region_name << "\",";
+
+        // Source location
         entry << "\"function\":\"" << md.function_name << "\",";
-        entry << "\"loopnest_index\":" << md.loopnest_index << ",";
         entry << "\"module\":\"" << std::filesystem::path(md.file_name).filename().string() << "\",";
-        entry << "\"build_id\":\"\",";
         entry << "\"source_ranges\":[";
         entry << "{\"file\":\"" << md.file_name << "\",";
         entry << "\"from\":{\"line\":" << md.line_begin << ",\"col\":" << md.column_begin << "},";
         entry << "\"to\":{\"line\":" << md.line_end << ",\"col\":" << md.column_end << "}";
-        entry << "}";
-        entry << "],\"metrics\":{";
+        entry << "}],";
+
+        // docc metadata
+        entry << "\"docc\":";
+        entry << "{";
+    
+        entry << "\"sdfg_name\":\"" << md.sdfg_name << "\",";
+        entry << "\"sdfg_file\":\"" << md.sdfg_file << "\",";
+        entry << "\"arg_capture_path\":\"" << md.arg_capture_path << "\",";
+        entry << "\"element_id\":\"" << md.element_id << "\",";
+        entry << "\"loopnest_index\":" << md.loopnest_index;
+
+        entry << "},";
+
+        entry << "\"metrics\":{";
         // PAPI counters
         for (size_t i = 0; i < event_names.size(); ++i) {
             entry << "\"" << event_names[i] << "\":{";
@@ -335,8 +359,8 @@ public:
 
     ~DaisyInstrumentationState() {
         // Cleanup cached regions
-        for (auto& region_name : this->sleeping_regions_by_name) {
-            size_t region_id = this->sleeping_regions_id_lookup[region_name];
+        for (auto& region_uuid : this->sleeping_regions_by_name) {
+            size_t region_id = this->sleeping_regions_id_lookup[region_uuid];
             auto& region = this->regions[region_id];
 
             if (_PAPI_cleanup_eventset(region.papi_eventset) != 0) {
@@ -408,12 +432,12 @@ public:
         std::lock_guard<std::mutex> lock(mutex);
 
         // Check cache first
-        if (this->sleeping_regions_id_lookup.find(metadata->region_name) != this->sleeping_regions_id_lookup.end()) {
-            auto region_id = this->sleeping_regions_id_lookup[metadata->region_name];
+        if (this->sleeping_regions_id_lookup.find(metadata->region_uuid) != this->sleeping_regions_id_lookup.end()) {
+            auto region_id = this->sleeping_regions_id_lookup[metadata->region_uuid];
 
             // Remove from sleeping regions
-            this->sleeping_regions_by_name.remove(metadata->region_name);
-            this->sleeping_regions_id_lookup.erase(metadata->region_name);
+            this->sleeping_regions_by_name.remove(metadata->region_uuid);
+            this->sleeping_regions_id_lookup.erase(metadata->region_uuid);
 
             // start region
             auto& region = this->regions[region_id];
@@ -633,20 +657,20 @@ public:
         }
 
         // Append to cache
-        if (this->sleeping_regions_id_lookup.find(region.metadata.region_name) ==
+        if (this->sleeping_regions_id_lookup.find(region.metadata.region_uuid) ==
             this->sleeping_regions_id_lookup.end()) {
             // Not in cache, add it
-            this->sleeping_regions_id_lookup.insert({region.metadata.region_name, region_id});
-            this->sleeping_regions_by_name.push_back(region.metadata.region_name);
+            this->sleeping_regions_id_lookup.insert({region.metadata.region_uuid, region_id});
+            this->sleeping_regions_by_name.push_back(region.metadata.region_uuid);
         }
 
         // Check if cache has grown to large
         if (this->sleeping_regions_by_name.size() > REGION_CACHE_SIZE) {
-            std::string evict_region_name = this->sleeping_regions_by_name.front();
+            std::string evict_region_uuid = this->sleeping_regions_by_name.front();
             this->sleeping_regions_by_name.pop_front();
 
-            size_t evict_region_id = this->sleeping_regions_id_lookup[evict_region_name];
-            this->sleeping_regions_id_lookup.erase(evict_region_name);
+            size_t evict_region_id = this->sleeping_regions_id_lookup[evict_region_uuid];
+            this->sleeping_regions_id_lookup.erase(evict_region_uuid);
 
             auto& evict_region = this->regions[evict_region_id];
 

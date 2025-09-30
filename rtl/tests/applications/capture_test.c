@@ -5,7 +5,7 @@
 
 static void* __capture_ctx;
 static void __attribute__((constructor(1000))) __capture_ctx_init(void) {
-    __capture_ctx = __daisy_capture_init("__daisy_capture_test_function");
+    __capture_ctx = __daisy_capture_init("__daisy_capture_test_function", NULL);
 }
 
 
