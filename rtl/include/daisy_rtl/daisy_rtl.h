@@ -28,6 +28,7 @@ typedef struct __daisy_metadata {
     const char* sdfg_name;
     const char* sdfg_file;
     const char* arg_capture_path;
+    const char* features_file;
 
     // Element-scope
     size_t element_id;

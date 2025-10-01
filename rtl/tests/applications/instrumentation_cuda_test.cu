@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
         .sdfg_name = "__daisy_instrumentation_cuda_test_0",
         .sdfg_file = "/tmp/DOCC/0000-0000/123456789/sdfg_0.json",
         .arg_capture_path = "",
+        .features_file = "",
         .element_id = 10,
         .loopnest_index = 0,
         .region_uuid = "__daisy_instrumentation_cuda_test_0_10"
