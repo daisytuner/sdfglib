@@ -339,7 +339,8 @@ void DataDependencyAnalysis::visit_for(
     bool is_monotonic = LoopAnalysis::is_monotonic(&for_loop, assumptions_analysis);
     if (is_monotonic) {
         // Case: Can analyze
-        assert(this->loop_carried_dependencies_.insert({&for_loop, {}}).second);
+        bool success = this->loop_carried_dependencies_.insert({&for_loop, {}}).second;
+        assert(success);
         auto& dependencies = this->loop_carried_dependencies_.at(&for_loop);
 
         // We can focus on written containers
@@ -368,7 +369,8 @@ void DataDependencyAnalysis::visit_for(
         }
     } else {
         // Case: Cannot analyze
-        assert(this->loop_carried_dependencies_.insert({&for_loop, {}}).second);
+        bool success = this->loop_carried_dependencies_.insert({&for_loop, {}}).second;
+        assert(success);
         auto& dependencies = this->loop_carried_dependencies_.at(&for_loop);
 
         // Over-Approximation:
