@@ -5,6 +5,7 @@
 
 #include "sdfg/codegen/utils.h"
 #include "sdfg/function.h"
+#include "sdfg/helpers/helpers.h"
 #include "sdfg/symbolic/symbolic.h"
 
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
@@ -154,8 +155,10 @@ symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_tim
             return symbolic::integer(size_of_type);
         } else {
             codegen::CLanguageExtension lang;
-            std::cerr << "Unexpected primitive_type " << primitive_type_to_string(prim_type) << " of "
-                      << lang.declaration("", type) << ", unknown size";
+            DEBUG_PRINTLN(
+                "Unexpected primitive_type " << primitive_type_to_string(prim_type) << " of "
+                                             << lang.declaration("", type) << ", unknown size"
+            );
             return {};
         }
     }

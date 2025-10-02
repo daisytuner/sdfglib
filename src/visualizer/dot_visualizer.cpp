@@ -291,7 +291,7 @@ void DotVisualizer::writeToFile(const StructuredSDFG& sdfg, const std::filesyste
 
     dotOutput << viz.getStream().str();
     dotOutput.close();
-    std::cout << "Wrote graph to : " << fileName << std::endl;
 }
+
 } // namespace visualizer
 } // namespace sdfg
