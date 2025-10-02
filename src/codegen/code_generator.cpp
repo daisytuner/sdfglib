@@ -6,6 +6,7 @@
 #include "sdfg/analysis/mem_access_range_analysis.h"
 #include "sdfg/analysis/type_analysis.h"
 #include "sdfg/codegen/instrumentation/capture_var_plan.h"
+#include "sdfg/helpers/helpers.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/types/structure.h"
 
@@ -24,8 +25,9 @@ std::tuple<int, types::PrimitiveType> CodeGenerator::analyze_type_rec(
     std::string var_name
 ) {
     if (dim_idx > max_dim) {
-        std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << ": data nesting deeper than " << max_dim
-                  << ", ignoring" << std::endl;
+        DEBUG_PRINTLN(
+            "In '" << sdfg_.name() << "', arg" << arg_idx << ": data nesting deeper than " << max_dim << ", ignoring"
+        );
         return std::make_tuple(-1, types::Void);
     }
 
@@ -40,19 +42,24 @@ std::tuple<int, types::PrimitiveType> CodeGenerator::analyze_type_rec(
         return analyze_type_rec(dims, max_dim, dim_idx + 1, inner, arg_idx, range, analysis_manager, sdfg, var_name);
     } else if (auto* ptrType = dynamic_cast<const types::Pointer*>(&type)) {
         if (!range || range->is_undefined()) {
-            std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
-                      << ": missing range, cannot capture!" << std::endl;
+            DEBUG_PRINTLN(
+                "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx << ": missing range, cannot capture!"
+            );
             return std::make_tuple(-2, types::Void);
         }
         if (range->dims().size() <= dim_idx) {
-            std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
-                      << ": missing dimension in range, cannot capture!" << std::endl;
+            DEBUG_PRINTLN(
+                "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
+                       << ": missing dimension in range, cannot capture!"
+            );
             return std::make_tuple(-2, types::Void);
         }
         const auto& dim = range->dims().at(dim_idx);
         if (!symbolic::eq(dim.first, symbolic::zero())) {
-            std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx << ": has upper bound "
-                      << dim.second->__str__() << ", but does not start at 0, cannot capture" << std::endl;
+            DEBUG_PRINTLN(
+                "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx << ": has upper bound "
+                       << dim.second->__str__() << ", but does not start at 0, cannot capture"
+            );
             return std::make_tuple(-2, types::Void);
         }
 
@@ -62,8 +69,10 @@ std::tuple<int, types::PrimitiveType> CodeGenerator::analyze_type_rec(
             inner = &(ptrType->pointee_type());
         } else {
             if (dim_idx > 0) {
-                std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
-                          << ": missing pointee type for dim > 0, cannot capture!" << std::endl;
+                DEBUG_PRINTLN(
+                    "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
+                           << ": missing pointee type for dim > 0, cannot capture!"
+                );
                 return std::make_tuple(-2, types::Void);
             } else {
                 auto& type_analysis = analysis_manager.get<analysis::TypeAnalysis>();
@@ -73,20 +82,26 @@ std::tuple<int, types::PrimitiveType> CodeGenerator::analyze_type_rec(
                         if (ptrType_new->has_pointee_type()) {
                             inner = &(ptrType_new->pointee_type());
                         } else {
-                            std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
-                                      << ": missing pointee type, cannot capture!" << std::endl;
+                            DEBUG_PRINTLN(
+                                "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
+                                       << ": missing pointee type, cannot capture!"
+                            );
                             return std::make_tuple(-2, types::Void);
                         }
                     }
                 } else {
-                    std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
-                              << ": could not infer type from container, cannot capture!" << std::endl;
+                    DEBUG_PRINTLN(
+                        "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
+                               << ": could not infer type from container, cannot capture!"
+                    );
                     return std::make_tuple(-2, types::Void);
                 }
             }
             if (inner == nullptr) {
-                std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
-                          << ": could not infer type from container, cannot capture!" << std::endl;
+                DEBUG_PRINTLN(
+                    "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
+                           << ": could not infer type from container, cannot capture!"
+                );
                 return std::make_tuple(-2, types::Void);
             }
         }
@@ -94,8 +109,9 @@ std::tuple<int, types::PrimitiveType> CodeGenerator::analyze_type_rec(
         return analyze_type_rec(dims, max_dim, dim_idx + 1, *inner, arg_idx, range, analysis_manager, sdfg, var_name);
     }
 
-    std::cerr << "In '" << sdfg_.name() << "', arg" << arg_idx << ": unsupported type " << type.print()
-              << ", cannot capture!" << std::endl;
+    DEBUG_PRINTLN(
+        "In '" << sdfg_.name() << "', arg" << arg_idx << ": unsupported type " << type.print() << ", cannot capture!"
+    );
     return std::make_tuple(-1, types::Void);
 }
 
@@ -178,7 +194,7 @@ std::unique_ptr<std::vector<CaptureVarPlan>> CodeGenerator::create_capture_plans
     }
 
     if (!working) {
-        std::cerr << "In '" << name << "': could not create capture plan, returning empty plan" << std::endl;
+        DEBUG_PRINTLN("In '" << name << "': could not create capture plan, returning empty plan");
         return std::make_unique<std::vector<CaptureVarPlan>>();
     }
 

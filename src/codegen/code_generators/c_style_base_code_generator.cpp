@@ -1,5 +1,7 @@
 
-#include "../../../include/sdfg/codegen/code_generators/c_style_base_code_generator.h"
+#include "sdfg/codegen/code_generators/c_style_base_code_generator.h"
+
+#include "sdfg/helpers/helpers.h"
 
 namespace sdfg::codegen {
 
@@ -56,8 +58,7 @@ void CStyleBaseCodeGenerator::append_function_source(std::ofstream& ofs_source) 
         if (capturePlan) {
             this->emit_capture_context_init(ofs_source);
         } else {
-            std::cerr << "Cannot capture all args for SDFG '" << sdfg_.name() << "'. Skpping capture instrumentation!"
-                      << std::endl;
+            DEBUG_PRINTLN("Cannot capture all args for SDFG '" << sdfg_.name() << "'. Skipping capture instrumentation!");
         }
     }
 
@@ -138,10 +139,11 @@ void CStyleBaseCodeGenerator::
                                << std::endl;
                     break;
                 }
-                default:
-                    std::cerr << "Unknown capture type " << static_cast<int>(varPlan.type) << " for arg " << argIdx
-                              << " at " << (after ? "result" : "input") << " time" << std::endl;
+                default: {
+                    DEBUG_PRINTLN("Unknown capture type " << static_cast<int>(varPlan.type) << " for arg " << argIdx
+                              << " at " << (after ? "result" : "input") << " time");
                     break;
+                }
             }
         }
     }

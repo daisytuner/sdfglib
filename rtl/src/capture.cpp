@@ -12,10 +12,6 @@
 #include <string>
 #include <utility>
 
-#ifndef DEBUG_LOG
-#define DEBUG_LOG false
-#endif
-
 using namespace arg_capture;
 
 constexpr uint32_t ALL_INVOCATIONS = -1;
@@ -112,9 +108,6 @@ bool DaisyRtlCapture::write_capture_to_file(arg_capture::ArgCapture& capture, co
 }
 
 void DaisyRtlCapture::exit() {
-    if (DEBUG_LOG) {
-        std::cout << "Finalizing capture of '" << name_ << std::endl;
-    }
     if (!current_captures_.empty()) {
         auto path = output_dir_ / (name_ + "_inv" + std::to_string(invokes_) + ".index.json");
         write_index(path);
