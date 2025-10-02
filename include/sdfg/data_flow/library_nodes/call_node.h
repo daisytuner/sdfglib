@@ -13,6 +13,7 @@ inline LibraryNodeCode LibraryNodeType_Call("Call");
 class CallNode : public LibraryNode {
 private:
     std::string function_name_;
+    bool offloadable_;
 
 public:
     CallNode(
@@ -22,12 +23,15 @@ public:
         DataFlowGraph& parent,
         const std::string& function_name,
         const std::vector<std::string>& outputs,
-        const std::vector<std::string>& inputs
+        const std::vector<std::string>& inputs,
+        bool offloadable = true
     );
 
     const std::string& function_name() const;
 
     const types::Function& function_type(const Function& sdfg) const;
+
+    bool offloadable() const;
 
     bool is_void(const Function& sdfg) const;
 
