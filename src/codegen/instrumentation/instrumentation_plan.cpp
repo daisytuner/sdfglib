@@ -50,10 +50,10 @@ void InstrumentationPlan::begin_instrumentation(const structured_control_flow::C
         stream << metadata_var << ".target_type = \"" << map_node->schedule_type().value() << "\";" << std::endl;
     } else if (dynamic_cast<const structured_control_flow::For*>(&node)) {
         stream << metadata_var << ".element_type = \"for\";" << std::endl;
-        stream << metadata_var << ".target_type = \"sequential\";" << std::endl;
+        stream << metadata_var << ".target_type = \"SEQUENTIAL\";" << std::endl;
     } else if (dynamic_cast<const structured_control_flow::While*>(&node)) {
         stream << metadata_var << ".element_type = \"while\";" << std::endl;
-        stream << metadata_var << ".target_type = \"sequential\";" << std::endl;
+        stream << metadata_var << ".target_type = \"SEQUENTIAL\";" << std::endl;
     } else {
         stream << metadata_var << ".element_type = \"\";" << std::endl;
         stream << metadata_var << ".target_type = \"\";" << std::endl;
