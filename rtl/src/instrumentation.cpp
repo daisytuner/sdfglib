@@ -186,6 +186,8 @@ private:
         entry << "\"arg_capture_path\":\"" << md.arg_capture_path << "\",";
         entry << "\"features_file\":\"" << md.features_file << "\",";
         entry << "\"element_id\":" << md.element_id << ",";
+        entry << "\"element_type\":\"" << md.element_type << "\",";
+        entry << "\"target_type\":\"" << md.target_type << "\",";
         entry << "\"loopnest_index\":" << md.loopnest_index;
 
         entry << "},";
@@ -271,6 +273,8 @@ private:
         entry << "\"arg_capture_path\":\"" << md.arg_capture_path << "\",";
         entry << "\"features_file\":\"" << md.features_file << "\",";
         entry << "\"element_id\":" << md.element_id << ",";
+        entry << "\"element_type\":\"" << md.element_type << "\",";
+        entry << "\"target_type\":\"" << md.target_type << "\",";
         entry << "\"loopnest_index\":" << md.loopnest_index;
 
         entry << "},";

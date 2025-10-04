@@ -15,6 +15,8 @@ void main(int argc, char** argv) {
         .arg_capture_path = "",
         .features_file = "",
         .element_id = 10,
+        .element_type = "for",
+        .target_type = "sequential",
         .loopnest_index = 0,
         .region_uuid = "__daisy_instrumentation_test_0_10"
     };
