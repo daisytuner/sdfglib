@@ -45,6 +45,19 @@ void InstrumentationPlan::begin_instrumentation(const structured_control_flow::C
     stream << metadata_var << ".arg_capture_path = \"" << arg_capture_path << "\";" << std::endl;
     stream << metadata_var << ".features_file = \"" << features_file << "\";" << std::endl;
     stream << metadata_var << ".element_id = " << node.element_id() << ";" << std::endl;
+    if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(&node)) {
+        stream << metadata_var << ".element_type = \"map\";" << std::endl;
+        stream << metadata_var << ".target_type = \"" << map_node->schedule_type().value() << "\";" << std::endl;
+    } else if (dynamic_cast<const structured_control_flow::For*>(&node)) {
+        stream << metadata_var << ".element_type = \"for\";" << std::endl;
+        stream << metadata_var << ".target_type = \"sequential\";" << std::endl;
+    } else if (dynamic_cast<const structured_control_flow::While*>(&node)) {
+        stream << metadata_var << ".element_type = \"while\";" << std::endl;
+        stream << metadata_var << ".target_type = \"sequential\";" << std::endl;
+    } else {
+        stream << metadata_var << ".element_type = \"\";" << std::endl;
+        stream << metadata_var << ".target_type = \"\";" << std::endl;
+    }
     if (!this->loopnest_indices_.empty()) {
         stream << metadata_var << ".loopnest_index = " << this->loopnest_indices_.at(&node) << ";" << std::endl;
     } else {

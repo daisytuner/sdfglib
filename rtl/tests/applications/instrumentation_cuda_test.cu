@@ -45,6 +45,8 @@ int main(int argc, char **argv) {
         .arg_capture_path = "",
         .features_file = "",
         .element_id = 10,
+        .element_type = "for",
+        .target_type = "cuda",
         .loopnest_index = 0,
         .region_uuid = "__daisy_instrumentation_cuda_test_0_10"
     };
