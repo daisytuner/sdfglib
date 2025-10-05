@@ -9,11 +9,16 @@ namespace sdfg {
 namespace symbolic {
 namespace maps {
 
-bool is_monotonic(const Expression& expr, const Symbol& sym, const Assumptions& assums);
+bool is_monotonic(const Expression expr, const Symbol sym, const Assumptions& assums);
 
-bool intersects(const MultiExpression& expr1, const MultiExpression& expr2, const Symbol& indvar,
-                const Assumptions& assums1, const Assumptions& assums2);
+bool intersects(
+    const MultiExpression& expr1,
+    const MultiExpression& expr2,
+    const Symbol indvar,
+    const Assumptions& assums1,
+    const Assumptions& assums2
+);
 
-}  // namespace maps
-}  // namespace symbolic
-}  // namespace sdfg
+} // namespace maps
+} // namespace symbolic
+} // namespace sdfg

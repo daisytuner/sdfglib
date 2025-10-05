@@ -41,6 +41,9 @@ bool ByteReferenceElimination::
             continue;
         }
         auto& move_pointer_type = static_cast<const types::Pointer&>(move_type);
+        if (!move_pointer_type.has_pointee_type()) {
+            continue;
+        }
         auto& move_pointee_type = move_pointer_type.pointee_type();
         if (move_pointee_type.type_id() == types::TypeID::Scalar) {
             if (move_pointee_type.primitive_type() == types::PrimitiveType::Int8) {

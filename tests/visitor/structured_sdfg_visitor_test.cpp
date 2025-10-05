@@ -31,7 +31,7 @@ TEST(StructuredSDFGVisitorTest, None) {
         symbolic::integer(1),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
     );
-    auto& ret = builder.add_return(sequence);
+    auto& ret = builder.add_return(sequence, "");
 
     NoneVisitor visitor(builder, analysis_manager);
     EXPECT_FALSE(visitor.visit());
@@ -211,7 +211,7 @@ TEST(StructuredSDFGVisitorTest, Return) {
 
     auto& root = builder.subject().root();
 
-    auto& return_ = builder.add_return(root);
+    auto& return_ = builder.add_return(root, "");
 
     ReturnVisitor visitor(builder, analysis_manager);
     EXPECT_TRUE(visitor.visit());

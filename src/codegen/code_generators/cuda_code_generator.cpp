@@ -2,6 +2,7 @@
 
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 #include "sdfg/codegen/instrumentation/instrumentation_plan.h"
+#include "sdfg/helpers/helpers.h"
 
 namespace sdfg {
 namespace codegen {
@@ -18,7 +19,7 @@ CUDACodeGenerator::CUDACodeGenerator(
         throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
     }
     if (capture_args_results) {
-        std::cerr << "CUDACodeGenerator does not support capturing args/results!";
+        DEBUG_PRINTLN("CUDACodeGenerator does not support capturing args/results!");
     }
 };
 

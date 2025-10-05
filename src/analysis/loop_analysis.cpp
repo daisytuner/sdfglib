@@ -3,7 +3,6 @@
 #include <vector>
 
 #include "sdfg/analysis/assumptions_analysis.h"
-#include "sdfg/exceptions.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/conjunctive_normal_form.h"
 #include "sdfg/symbolic/series.h"
@@ -11,7 +10,7 @@
 namespace sdfg {
 namespace analysis {
 
-LoopAnalysis::LoopAnalysis(StructuredSDFG& sdfg) : Analysis(sdfg) {}
+LoopAnalysis::LoopAnalysis(StructuredSDFG& sdfg) : Analysis(sdfg), loops_(), loop_tree_(DFSLoopComparator(&loops_)) {}
 
 void LoopAnalysis::
     run(structured_control_flow::ControlFlowNode& scope, structured_control_flow::ControlFlowNode* parent_loop) {
@@ -22,10 +21,10 @@ void LoopAnalysis::
 
         // Loop detected
         if (auto while_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
-            this->loops_.insert(while_stmt);
+            this->loops_.push_back(while_stmt);
             this->loop_tree_[while_stmt] = parent_loop;
         } else if (auto loop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
-            this->loops_.insert(loop_stmt);
+            this->loops_.push_back(loop_stmt);
             this->loop_tree_[loop_stmt] = parent_loop;
         }
 
@@ -61,7 +60,7 @@ void LoopAnalysis::run(AnalysisManager& analysis_manager) {
     this->run(this->sdfg_.root(), nullptr);
 }
 
-const std::unordered_set<structured_control_flow::ControlFlowNode*> LoopAnalysis::loops() const { return this->loops_; }
+const std::vector<structured_control_flow::ControlFlowNode*> LoopAnalysis::loops() const { return this->loops_; }
 
 structured_control_flow::ControlFlowNode* LoopAnalysis::find_loop_by_indvar(const std::string& indvar) {
     for (auto& loop : this->loops_) {
@@ -174,7 +173,7 @@ symbolic::Integer LoopAnalysis::stride(structured_control_flow::StructuredLoop* 
     return SymEngine::null;
 }
 
-const std::unordered_map<structured_control_flow::ControlFlowNode*, structured_control_flow::ControlFlowNode*>&
+const std::map<structured_control_flow::ControlFlowNode*, structured_control_flow::ControlFlowNode*, DFSLoopComparator>&
 LoopAnalysis::loop_tree() const {
     return this->loop_tree_;
 }
@@ -214,11 +213,18 @@ const std::vector<structured_control_flow::ControlFlowNode*> LoopAnalysis::outer
     return outermost_maps_;
 }
 
+std::vector<sdfg::structured_control_flow::ControlFlowNode*> LoopAnalysis::
+    children(sdfg::structured_control_flow::ControlFlowNode* node) const {
+    // Find unique child
+    return this->children(node, this->loop_tree_);
+};
+
 std::vector<sdfg::structured_control_flow::ControlFlowNode*> LoopAnalysis::children(
     sdfg::structured_control_flow::ControlFlowNode* node,
-    const std::unordered_map<
+    const std::map<
         sdfg::structured_control_flow::ControlFlowNode*,
-        sdfg::structured_control_flow::ControlFlowNode*>& tree
+        sdfg::structured_control_flow::ControlFlowNode*,
+        DFSLoopComparator>& tree
 ) const {
     // Find unique child
     std::vector<sdfg::structured_control_flow::ControlFlowNode*> c;
@@ -230,11 +236,17 @@ std::vector<sdfg::structured_control_flow::ControlFlowNode*> LoopAnalysis::child
     return c;
 };
 
+std::list<std::vector<sdfg::structured_control_flow::ControlFlowNode*>> LoopAnalysis::
+    loop_tree_paths(sdfg::structured_control_flow::ControlFlowNode* loop) const {
+    return this->loop_tree_paths(loop, this->loop_tree_);
+};
+
 std::list<std::vector<sdfg::structured_control_flow::ControlFlowNode*>> LoopAnalysis::loop_tree_paths(
     sdfg::structured_control_flow::ControlFlowNode* loop,
-    const std::unordered_map<
+    const std::map<
         sdfg::structured_control_flow::ControlFlowNode*,
-        sdfg::structured_control_flow::ControlFlowNode*>& tree
+        sdfg::structured_control_flow::ControlFlowNode*,
+        DFSLoopComparator>& tree
 ) const {
     // Collect all paths in tree starting from loop recursively (DFS)
     std::list<std::vector<sdfg::structured_control_flow::ControlFlowNode*>> paths;
@@ -254,6 +266,24 @@ std::list<std::vector<sdfg::structured_control_flow::ControlFlowNode*>> LoopAnal
 
     return paths;
 };
+
+std::unordered_set<sdfg::structured_control_flow::ControlFlowNode*> LoopAnalysis::
+    descendants(sdfg::structured_control_flow::ControlFlowNode* loop) const {
+    std::unordered_set<sdfg::structured_control_flow::ControlFlowNode*> desc;
+    std::list<sdfg::structured_control_flow::ControlFlowNode*> queue = {loop};
+    while (!queue.empty()) {
+        auto current = queue.front();
+        queue.pop_front();
+        auto children = this->children(current, this->loop_tree_);
+        for (auto& child : children) {
+            if (desc.find(child) == desc.end()) {
+                desc.insert(child);
+                queue.push_back(child);
+            }
+        }
+    }
+    return desc;
+}
 
 } // namespace analysis
 } // namespace sdfg

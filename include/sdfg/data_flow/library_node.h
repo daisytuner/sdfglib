@@ -55,8 +55,6 @@ public:
 
     bool side_effect() const;
 
-    bool needs_connector(size_t index) const override;
-
     virtual std::string toStr() const;
 
     virtual symbolic::SymbolSet symbols() const = 0;

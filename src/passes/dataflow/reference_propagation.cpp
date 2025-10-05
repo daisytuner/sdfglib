@@ -121,7 +121,11 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
 
                 bool safe = true;
                 for (auto& oedge : use_graph->out_edges(use_node)) {
-                    if (oedge.type() != data_flow::MemletType::Computational || oedge.has_range()) {
+                    if (oedge.subset().empty()) {
+                        safe = false;
+                        break;
+                    }
+                    if (oedge.type() != data_flow::MemletType::Computational) {
                         safe = false;
                         break;
                     }
@@ -134,7 +138,11 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                     continue;
                 }
                 for (auto& iedge : use_graph->in_edges(use_node)) {
-                    if (iedge.type() != data_flow::MemletType::Computational || iedge.has_range()) {
+                    if (iedge.subset().empty()) {
+                        safe = false;
+                        break;
+                    }
+                    if (iedge.type() != data_flow::MemletType::Computational) {
                         safe = false;
                         break;
                     }

@@ -210,12 +210,16 @@ TEST(UsersTest, AccessNode_Scalar_WAW) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& zero_node1 = builder.add_constant(block, "0", types::Scalar(types::PrimitiveType::Int32));
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, zero_node1, tasklet, "_in", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto& block2 = builder.add_block(root);
     auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& zero_node2 = builder.add_constant(block2, "0", types::Scalar(types::PrimitiveType::Int32));
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block2, zero_node2, tasklet2, "_in", {});
     builder.add_computational_memlet(block2, tasklet2, "_out", output_node2, {});
 
     auto sdfg = builder.move();
@@ -265,7 +269,9 @@ TEST(UsersTest, AccessNode_Scalar_RAW) {
     auto& root = builder.subject().root();
     auto& block = builder.add_block(root);
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& zero_node = builder.add_constant(block, "0", types::Scalar(types::PrimitiveType::Int32));
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, zero_node, tasklet, "_in", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
 
     auto& output_node2 = builder.add_access(block, "B");
@@ -367,6 +373,46 @@ TEST(UsersTest, For_Definition) {
     EXPECT_TRUE(users.dominates(*write1, *write2));
 
     EXPECT_TRUE(users.dominates(*read2, *write2));
+}
+
+TEST(UsersTest, Returns_Diverging) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
+    builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
+
+    auto& root = builder.subject().root();
+    auto& ifelse = builder.add_if_else(root);
+    auto& branch1 = builder.add_case(ifelse, symbolic::__true__());
+    auto& branch2 = builder.add_case(ifelse, symbolic::__true__());
+
+    auto& ret1 = builder.add_return(branch1, "A");
+    auto& ret2 = builder.add_return(branch2, "B");
+
+    auto sdfg = builder.move();
+
+    // Run analysis
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    auto& users = analysis_manager.get<analysis::Users>();
+
+    // Check result
+    auto reads_A = users.reads("A");
+    auto reads_B = users.reads("B");
+    EXPECT_EQ(reads_A.size(), 1);
+    EXPECT_EQ(reads_B.size(), 1);
+    EXPECT_EQ(users.uses("A").size(), 1);
+    EXPECT_EQ(users.uses("B").size(), 1);
+
+    auto read1 = dynamic_cast<analysis::User*>(reads_A.at(0));
+    EXPECT_TRUE(dynamic_cast<const structured_control_flow::Return*>(read1->element()) != nullptr);
+    auto read2 = dynamic_cast<analysis::User*>(reads_B.at(0));
+    EXPECT_TRUE(dynamic_cast<const structured_control_flow::Return*>(read2->element()) != nullptr);
+
+    EXPECT_FALSE(users.dominates(*read1, *read2));
+    EXPECT_FALSE(users.dominates(*read2, *read1));
+    EXPECT_FALSE(users.post_dominates(*read1, *read2));
+    EXPECT_FALSE(users.post_dominates(*read2, *read1));
 }
 
 TEST(UsersTest, Locals_Argument) {

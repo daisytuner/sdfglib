@@ -281,12 +281,6 @@ constexpr const char* code_to_string(data_flow::TaskletCode c) {
             return "log1pf";
         case data_flow::TaskletCode::log1pl:
             return "log1pl";
-        case data_flow::TaskletCode::modf:
-            return "modf";
-        case data_flow::TaskletCode::modff:
-            return "modff";
-        case data_flow::TaskletCode::modfl:
-            return "modfl";
         case data_flow::TaskletCode::nearbyint:
             return "nearbyint";
         case data_flow::TaskletCode::nearbyintf:
@@ -456,59 +450,47 @@ void Visualizer::visualizeForBounds(
                   << this->expression(update->__str__());
 }
 
-std::string Visualizer::
-    subsetRangeString(data_flow::Subset const& begin_subset, data_flow::Subset const& end_subset, int subIdx) {
-    auto& begin = begin_subset.at(subIdx);
-    auto& end = end_subset.at(subIdx);
-
-    if (symbolic::eq(begin, end)) {
-        return this->expression(begin->__str__());
-    } else {
-        return this->expression(begin->__str__()) + ".." + this->expression(end->__str__());
-    }
+std::string Visualizer::subsetRangeString(data_flow::Subset const& subset, int subIdx) {
+    auto& dim = subset.at(subIdx);
+    return this->expression(dim->__str__());
 }
 
 /// @brief If known, use the type to better visualize structures. Then track the type as far as it goes.
-void Visualizer::visualizeSubset(
-    Function const& function,
-    data_flow::Subset const& begin_sub,
-    data_flow::Subset const& end_sub,
-    types::IType const* type,
-    int subIdx
-) {
-    if (static_cast<int>(begin_sub.size()) <= subIdx) {
+void Visualizer::
+    visualizeSubset(Function const& function, data_flow::Subset const& sub, types::IType const* type, int subIdx) {
+    if (static_cast<int>(sub.size()) <= subIdx) {
         return;
     }
     if (auto structure_type = dynamic_cast<const types::Structure*>(type)) {
         types::StructureDefinition const& definition = function.structure(structure_type->name());
 
-        this->stream_ << ".member_" << this->expression(begin_sub.at(subIdx)->__str__());
-        auto member = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(begin_sub.at(0));
+        this->stream_ << ".member_" << this->expression(sub.at(subIdx)->__str__());
+        auto member = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(sub.at(0));
         types::IType const& member_type = definition.member_type(member);
-        this->visualizeSubset(function, begin_sub, end_sub, &member_type, subIdx + 1);
+        this->visualizeSubset(function, sub, &member_type, subIdx + 1);
     } else if (auto array_type = dynamic_cast<const types::Array*>(type)) {
-        this->stream_ << "[" << subsetRangeString(begin_sub, end_sub, subIdx) << "]";
+        this->stream_ << "[" << subsetRangeString(sub, subIdx) << "]";
         types::IType const& element_type = array_type->element_type();
-        this->visualizeSubset(function, begin_sub, end_sub, &element_type, subIdx + 1);
+        this->visualizeSubset(function, sub, &element_type, subIdx + 1);
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(type)) {
-        this->stream_ << "[" << subsetRangeString(begin_sub, end_sub, subIdx) << "]";
+        this->stream_ << "[" << subsetRangeString(sub, subIdx) << "]";
         const types::IType* pointee_type;
         if (pointer_type->has_pointee_type()) {
             pointee_type = &pointer_type->pointee_type();
         } else {
             auto z = symbolic::zero();
-            if (!symbolic::eq(begin_sub.at(subIdx), z) || !symbolic::eq(end_sub.at(subIdx), z)) {
+            if (!symbolic::eq(sub.at(subIdx), z)) {
                 this->stream_ << "#illgl";
             }
             pointee_type = nullptr;
         }
-        this->visualizeSubset(function, begin_sub, end_sub, pointee_type, subIdx + 1);
+        this->visualizeSubset(function, sub, pointee_type, subIdx + 1);
     } else {
         if (type == nullptr) {
             this->stream_ << "(rogue)";
         }
-        this->stream_ << "[" << subsetRangeString(begin_sub, end_sub, subIdx) << "]";
-        visualizeSubset(function, begin_sub, end_sub, nullptr, subIdx + 1);
+        this->stream_ << "[" << subsetRangeString(sub, subIdx) << "]";
+        visualizeSubset(function, sub, nullptr, subIdx + 1);
     }
 }
 

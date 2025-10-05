@@ -14,6 +14,7 @@ MaxPoolNode::MaxPoolNode(
     const DebugInfo &debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph &parent,
+    std::vector<symbolic::Expression> shape,
     std::vector<size_t> kernel_shape,
     std::vector<size_t> pads,
     std::vector<size_t> strides
@@ -21,14 +22,31 @@ MaxPoolNode::MaxPoolNode(
     : MathNode(
           element_id, debug_info, vertex, parent, LibraryNodeType_MaxPool, {"Y"}, {"X"}, data_flow::ImplementationType_NONE
       ),
-      kernel_shape_(std::move(kernel_shape)), pads_(std::move(pads)), strides_(std::move(strides)) {}
+      shape_(shape), kernel_shape_(std::move(kernel_shape)), pads_(std::move(pads)), strides_(std::move(strides)) {}
 
 /*************** Accessors ***************/
+const std::vector<symbolic::Expression> &MaxPoolNode::shape() const { return shape_; }
 std::vector<size_t> MaxPoolNode::kernel_shape() const { return kernel_shape_; }
 std::vector<size_t> MaxPoolNode::pads() const { return pads_; }
 std::vector<size_t> MaxPoolNode::strides() const { return strides_; }
 
-void MaxPoolNode::validate(const Function &) const { /* TODO */ }
+symbolic::SymbolSet MaxPoolNode::symbols() const {
+    symbolic::SymbolSet syms;
+    for (const auto &dim : shape_) {
+        for (auto &atom : symbolic::atoms(dim)) {
+            syms.insert(atom);
+        }
+    }
+    return syms;
+}
+
+void MaxPoolNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
+    for (auto &dim : shape_) {
+        dim = symbolic::subs(dim, old_expression, new_expression);
+    }
+}
+
+void MaxPoolNode::validate(const Function &) const {}
 
 /*************** Expand ***************/
 bool MaxPoolNode::expand(builder::StructuredSDFGBuilder &builder, analysis::AnalysisManager &analysis_manager) {
@@ -63,18 +81,16 @@ bool MaxPoolNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Anal
     structured_control_flow::Sequence *last_scope = &new_sequence;
 
     // Create maps over output subset dims (parallel dims)
-    const auto &begin_Y = oedge_Y->begin_subset();
-    const auto &end_Y = oedge_Y->end_subset();
     data_flow::Subset out_subset;
     std::vector<symbolic::Expression> out_syms;
     structured_control_flow::Map *last_map = nullptr;
-    for (size_t d = 0; d < begin_Y.size(); ++d) {
+    for (size_t d = 0; d < this->shape_.size(); ++d) {
         std::string indvar_str = builder.find_new_name("_i");
         builder.add_container(indvar_str, types::Scalar(types::PrimitiveType::UInt64));
         auto indvar = symbolic::symbol(indvar_str);
-        auto init = begin_Y[d];
+        auto init = symbolic::zero();
         auto update = symbolic::add(indvar, symbolic::one());
-        auto cond = symbolic::Lt(indvar, symbolic::add(end_Y[d], symbolic::one()));
+        auto cond = symbolic::Lt(indvar, this->shape_[d]);
         last_map = &builder.add_map(
             *last_scope,
             indvar,
@@ -106,7 +122,6 @@ bool MaxPoolNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Anal
     }
 
     // Build subsets
-    const auto &begin_X = iedge_X->begin_subset();
     // infer: X dims N,C,H,W => assume same dims as Y except spatial dims with stride/pad
 
     auto int_expr = [](size_t v) { return symbolic::integer(static_cast<int64_t>(v)); };
@@ -160,7 +175,7 @@ bool MaxPoolNode::expand(builder::StructuredSDFGBuilder &builder, analysis::Anal
 std::unique_ptr<data_flow::DataFlowNode> MaxPoolNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph &parent) const {
     return std::unique_ptr<data_flow::DataFlowNode>(new MaxPoolNode(
-        element_id, this->debug_info(), vertex, parent, this->kernel_shape_, this->pads_, this->strides_
+        element_id, this->debug_info(), vertex, parent, this->shape_, this->kernel_shape_, this->pads_, this->strides_
     ));
 }
 
@@ -174,6 +189,13 @@ nlohmann::json MaxPoolNodeSerializer::serialize(const data_flow::LibraryNode &li
     j["kernel_shape"] = node.kernel_shape();
     j["pads"] = node.pads();
     j["strides"] = node.strides();
+
+    serializer::JSONSerializer serializer;
+    j["shape"] = nlohmann::json::array();
+    for (auto &dim : node.shape()) {
+        j["shape"].push_back(serializer.expression(dim));
+    }
+
     return j;
 }
 
@@ -191,7 +213,12 @@ data_flow::LibraryNode &MaxPoolNodeSerializer::deserialize(
     auto pads = j["pads"].get<std::vector<size_t>>();
     auto strides = j["strides"].get<std::vector<size_t>>();
 
-    return builder.add_library_node<MaxPoolNode>(parent, debug_info, kernel_shape, pads, strides);
+    std::vector<symbolic::Expression> shape;
+    for (const auto &dim : j["shape"]) {
+        shape.push_back(symbolic::parse(dim.get<std::string>()));
+    }
+
+    return builder.add_library_node<MaxPoolNode>(parent, debug_info, shape, kernel_shape, pads, strides);
 }
 
 } // namespace ml

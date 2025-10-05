@@ -33,8 +33,6 @@ int main(int argc, char **argv) {
     dim3 blockSize = {256, 1, 1};
     dim3 gridSize = {(unsigned int) ((N + blockSize.x - 1) / blockSize.x), 1, 1};
 
-    __daisy_instrumentation_t *context = __daisy_instrumentation_init();
-
     __daisy_metadata_t metadata = {
         .file_name = "instrumentation_cuda_test.cu",
         .function_name = "main",
@@ -42,17 +40,26 @@ int main(int argc, char **argv) {
         .line_end = 31,
         .column_begin = 4,
         .column_end = 5,
-        .region_name = "instrumentation_cuda_test_main",
+        .sdfg_name = "__daisy_instrumentation_cuda_test_0",
+        .sdfg_file = "/tmp/DOCC/0000-0000/123456789/sdfg_0.json",
+        .arg_capture_path = "",
+        .features_file = "",
+        .element_id = 10,
+        .element_type = "for",
+        .target_type = "cuda",
+        .loopnest_index = 0,
+        .region_uuid = "__daisy_instrumentation_cuda_test_0_10"
     };
+    unsigned long long region_id = __daisy_instrumentation_init(&metadata, __DAISY_EVENT_SET_CUDA);
 
     for (size_t rep = 0; rep < 10; rep++) {
-        __daisy_instrumentation_enter(context, &metadata, __DAISY_EVENT_SET_CUDA);
+        __daisy_instrumentation_enter(region_id);
 
         initKernel<<<gridSize, blockSize>>>(dA, dB, dC, N);
         addKernel<<<gridSize, blockSize>>>(dA, dB, dC, N);
         cudaDeviceSynchronize();
 
-        __daisy_instrumentation_exit(context, &metadata, __DAISY_EVENT_SET_CUDA);
+        __daisy_instrumentation_exit(region_id);
 
         // Copy result back to host for verification/printing
         cudaMemcpy(hC, dC, bytes, cudaMemcpyDeviceToHost);
@@ -66,5 +73,5 @@ int main(int argc, char **argv) {
     cudaFree(dC);
     free(hC);
 
-    __daisy_instrumentation_finalize(context);
+    __daisy_instrumentation_finalize(region_id);
 }

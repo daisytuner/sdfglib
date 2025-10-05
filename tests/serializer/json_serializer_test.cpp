@@ -431,7 +431,7 @@ TEST(JSONSerializerTest, ReturnToJSON) {
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU);
     auto& root = builder.subject().root();
 
-    auto& scope = builder.add_return(root);
+    auto& scope = builder.add_return(root, "");
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
@@ -445,6 +445,11 @@ TEST(JSONSerializerTest, ReturnToJSON) {
     // Check if the JSON contains the expected keys
     EXPECT_TRUE(j.contains("type"));
     EXPECT_EQ(j["type"], "return");
+    EXPECT_TRUE(j.contains("data"));
+    EXPECT_EQ(j["data"], "");
+    EXPECT_TRUE(j.contains("unreachable"));
+    EXPECT_EQ(j["unreachable"], false);
+    EXPECT_FALSE(j.contains("data_type"));
 }
 
 TEST(JSONSerializerTest, SequenceToJSON) {
@@ -873,14 +878,6 @@ TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
                 auto& subset = memlet->subset();
                 EXPECT_EQ(subset.size(), 1);
                 EXPECT_TRUE(symbolic::eq(subset[0], symbolic::symbol("i")));
-
-                auto& begin_subset = memlet->begin_subset();
-                EXPECT_EQ(begin_subset.size(), 1);
-                EXPECT_TRUE(symbolic::eq(begin_subset[0], symbolic::symbol("i")));
-
-                auto& end_subset = memlet->end_subset();
-                EXPECT_EQ(end_subset.size(), 1);
-                EXPECT_TRUE(symbolic::eq(end_subset[0], symbolic::symbol("i")));
             } else if (memlet->dst_conn() == "_in2") {
                 found_memlet_in2 = true;
                 auto& src = memlet->src();
@@ -1010,14 +1007,6 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
                 auto& subset = memlet->subset();
                 EXPECT_EQ(subset.size(), 1);
                 EXPECT_TRUE(symbolic::eq(subset[0], symbolic::symbol("i")));
-
-                auto& begin_subset = memlet->begin_subset();
-                EXPECT_EQ(begin_subset.size(), 1);
-                EXPECT_TRUE(symbolic::eq(begin_subset[0], symbolic::symbol("i")));
-
-                auto& end_subset = memlet->end_subset();
-                EXPECT_EQ(end_subset.size(), 1);
-                EXPECT_TRUE(symbolic::eq(end_subset[0], symbolic::symbol("i")));
             } else if (memlet->dst_conn() == "_in2") {
                 found_memlet_in2 = true;
                 auto& src = memlet->src();
@@ -1151,14 +1140,6 @@ TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
                 auto& subset = memlet->subset();
                 EXPECT_EQ(subset.size(), 1);
                 EXPECT_TRUE(symbolic::eq(subset[0], symbolic::symbol("i")));
-
-                auto& begin_subset = memlet->begin_subset();
-                EXPECT_EQ(begin_subset.size(), 1);
-                EXPECT_TRUE(symbolic::eq(begin_subset[0], symbolic::symbol("i")));
-
-                auto& end_subset = memlet->end_subset();
-                EXPECT_EQ(end_subset.size(), 1);
-                EXPECT_TRUE(symbolic::eq(end_subset[0], symbolic::symbol("i")));
             } else if (memlet->dst_conn() == "_in2") {
                 found_memlet_in2 = true;
                 auto& src = memlet->src();
@@ -1286,14 +1267,6 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
                 auto& subset = memlet->subset();
                 EXPECT_EQ(subset.size(), 1);
                 EXPECT_TRUE(symbolic::eq(subset[0], symbolic::symbol("i")));
-
-                auto& begin_subset = memlet->begin_subset();
-                EXPECT_EQ(begin_subset.size(), 1);
-                EXPECT_TRUE(symbolic::eq(begin_subset[0], symbolic::symbol("i")));
-
-                auto& end_subset = memlet->end_subset();
-                EXPECT_EQ(end_subset.size(), 1);
-                EXPECT_TRUE(symbolic::eq(end_subset[0], symbolic::symbol("i")));
 
                 auto& base_type = memlet->base_type();
                 EXPECT_EQ(base_type, pointer_type);
@@ -1627,7 +1600,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_return) {
     sdfg::builder::StructuredSDFGBuilder builder("test_sdfg", FunctionType_CPU);
     auto& root = builder.subject().root();
 
-    auto& ret = builder.add_return(root);
+    auto& ret = builder.add_return(root, "");
 
     // Create a JSONSerializer object
     std::string filename = "test_sdfg.json";
@@ -1650,6 +1623,9 @@ TEST(JSONSerializerTest, SerializeDeserialize_return) {
     EXPECT_EQ(des_sdfg->root().size(), 1);
 
     EXPECT_TRUE(dynamic_cast<sdfg::structured_control_flow::Return*>(&des_sdfg->root().at(0).first) != nullptr);
+    auto& des_ret = dynamic_cast<sdfg::structured_control_flow::Return&>(des_sdfg->root().at(0).first);
+    EXPECT_EQ(des_ret.data(), "");
+    EXPECT_EQ(des_ret.unreachable(), false);
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize) {

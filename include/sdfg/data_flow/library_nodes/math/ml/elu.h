@@ -18,6 +18,7 @@ public:
         const DebugInfo& debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph& parent,
+        const std::vector<symbolic::Expression>& shape,
         const std::string& alpha = "1.0f"
     );
 

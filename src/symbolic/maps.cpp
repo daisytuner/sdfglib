@@ -13,7 +13,7 @@ namespace sdfg {
 namespace symbolic {
 namespace maps {
 
-bool is_monotonic_affine(const Expression& expr, const Symbol& sym, const Assumptions& assums) {
+bool is_monotonic_affine(const Expression expr, const Symbol sym, const Assumptions& assums) {
     SymbolVec symbols = {sym};
     auto poly = polynomial(expr, symbols);
     if (poly == SymEngine::null) {
@@ -38,7 +38,7 @@ bool is_monotonic_affine(const Expression& expr, const Symbol& sym, const Assump
     return true;
 }
 
-bool is_monotonic_pow(const Expression& expr, const Symbol& sym, const Assumptions& assums) {
+bool is_monotonic_pow(const Expression expr, const Symbol sym, const Assumptions& assums) {
     if (SymEngine::is_a<SymEngine::Pow>(*expr)) {
         auto pow = SymEngine::rcp_dynamic_cast<const SymEngine::Pow>(expr);
         auto base = pow->get_base();
@@ -61,7 +61,7 @@ bool is_monotonic_pow(const Expression& expr, const Symbol& sym, const Assumptio
     return false;
 }
 
-bool is_monotonic(const Expression& expr, const Symbol& sym, const Assumptions& assums) {
+bool is_monotonic(const Expression expr, const Symbol sym, const Assumptions& assums) {
     if (is_monotonic_affine(expr, sym, assums)) {
         return true;
     }
@@ -71,7 +71,7 @@ bool is_monotonic(const Expression& expr, const Symbol& sym, const Assumptions& 
 bool is_disjoint_isl(
     const MultiExpression& expr1,
     const MultiExpression& expr2,
-    const Symbol& indvar,
+    const Symbol indvar,
     const Assumptions& assums1,
     const Assumptions& assums2
 ) {
@@ -146,7 +146,7 @@ bool is_disjoint_isl(
 bool is_disjoint_monotonic(
     const MultiExpression& expr1,
     const MultiExpression& expr2,
-    const Symbol& indvar,
+    const Symbol indvar,
     const Assumptions& assums1,
     const Assumptions& assums2
 ) {
@@ -194,7 +194,7 @@ bool is_disjoint_monotonic(
 bool is_disjoint_interval(
     const MultiExpression& expr1,
     const MultiExpression& expr2,
-    const Symbol& indvar,
+    const Symbol indvar,
     const Assumptions& assums1,
     const Assumptions& assums2
 ) {
@@ -206,19 +206,19 @@ bool is_disjoint_interval(
         auto& dim2 = expr2[i];
 
         auto lb1 = minimum(dim1, {}, assums1);
-        if (lb1 == SymEngine::null) {
+        if (lb1 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*lb1)) {
             continue;
         }
         auto ub1 = maximum(dim1, {}, assums1);
-        if (ub1 == SymEngine::null) {
+        if (ub1 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*ub1)) {
             continue;
         }
         auto lb2 = minimum(dim2, {}, assums2);
-        if (lb2 == SymEngine::null) {
+        if (lb2 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*lb2)) {
             continue;
         }
         auto ub2 = maximum(dim2, {}, assums2);
-        if (ub2 == SymEngine::null) {
+        if (ub2 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*ub2)) {
             continue;
         }
 
@@ -235,7 +235,7 @@ bool is_disjoint_interval(
 bool intersects(
     const MultiExpression& expr1,
     const MultiExpression& expr2,
-    const Symbol& indvar,
+    const Symbol indvar,
     const Assumptions& assums1,
     const Assumptions& assums2
 ) {

@@ -110,7 +110,7 @@ public:
 
     ScheduleType json_to_schedule_type(const nlohmann::json& j);
 
-    std::string expression(const symbolic::Expression& expr);
+    std::string expression(const symbolic::Expression expr);
 };
 
 class JSONSymbolicPrinter : public SymEngine::BaseVisitor<JSONSymbolicPrinter, SymEngine::CodePrinter> {

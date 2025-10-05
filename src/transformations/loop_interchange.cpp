@@ -21,9 +21,9 @@ bool LoopInterchange::can_be_applied(builder::StructuredSDFGBuilder& builder, an
     auto& outer_indvar = this->outer_loop_.indvar();
 
     // Criterion: Inner loop must not depend on outer loop
-    auto& inner_loop_init = this->inner_loop_.init();
-    auto& inner_loop_condition = this->inner_loop_.condition();
-    auto& inner_loop_update = this->inner_loop_.update();
+    auto inner_loop_init = this->inner_loop_.init();
+    auto inner_loop_condition = this->inner_loop_.condition();
+    auto inner_loop_update = this->inner_loop_.update();
     if (symbolic::uses(inner_loop_init, outer_indvar->get_name()) ||
         symbolic::uses(inner_loop_condition, outer_indvar->get_name()) ||
         symbolic::uses(inner_loop_update, outer_indvar->get_name())) {

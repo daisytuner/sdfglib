@@ -32,7 +32,7 @@ public:
 
     Sequence& root();
 
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 };
 
 class Break : public ControlFlowNode {
@@ -44,7 +44,7 @@ private:
 public:
     void validate(const Function& function) const override;
 
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 };
 
 class Continue : public ControlFlowNode {
@@ -56,7 +56,7 @@ private:
 public:
     void validate(const Function& function) const override;
 
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 };
 
 } // namespace structured_control_flow

@@ -150,9 +150,6 @@ enum TaskletCode {
     log1p,
     log1pf,
     log1pl,
-    modf,
-    modff,
-    modfl,
     nearbyint,
     nearbyintf,
     nearbyintl,
@@ -304,11 +301,11 @@ constexpr size_t arity(TaskletCode c) {
         case TaskletCode::atanl:
             return 1;
         case TaskletCode::atan2:
-            return 1;
+            return 2;
         case TaskletCode::atan2f:
-            return 1;
+            return 2;
         case TaskletCode::atan2l:
-            return 1;
+            return 2;
         case TaskletCode::atanh:
             return 1;
         case TaskletCode::atanhf:
@@ -459,12 +456,6 @@ constexpr size_t arity(TaskletCode c) {
             return 1;
         case TaskletCode::log1pl:
             return 1;
-        case TaskletCode::modf:
-            return 1;
-        case TaskletCode::modff:
-            return 1;
-        case TaskletCode::modfl:
-            return 1;
         case TaskletCode::nearbyint:
             return 1;
         case TaskletCode::nearbyintf:
@@ -472,11 +463,11 @@ constexpr size_t arity(TaskletCode c) {
         case TaskletCode::nearbyintl:
             return 1;
         case TaskletCode::pow:
-            return 1;
+            return 2;
         case TaskletCode::powf:
-            return 1;
+            return 2;
         case TaskletCode::powl:
-            return 1;
+            return 2;
         case TaskletCode::lrint:
             return 1;
         case TaskletCode::llrint:
@@ -585,7 +576,6 @@ class Tasklet : public CodeNode {
 
 private:
     TaskletCode code_;
-    symbolic::Condition condition_;
 
     Tasklet(
         size_t element_id,
@@ -594,8 +584,7 @@ private:
         DataFlowGraph& parent,
         const TaskletCode code,
         const std::string& output,
-        const std::vector<std::string>& inputs,
-        const symbolic::Condition& condition
+        const std::vector<std::string>& inputs
     );
 
 public:
@@ -608,18 +597,10 @@ public:
 
     const std::string& output() const;
 
-    bool needs_connector(size_t index) const override;
-
-    const symbolic::Condition& condition() const;
-
-    symbolic::Condition& condition();
-
-    bool is_conditional() const;
-
     virtual std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
         const override;
 
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 };
 } // namespace data_flow
 } // namespace sdfg

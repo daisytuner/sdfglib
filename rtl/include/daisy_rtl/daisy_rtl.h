@@ -14,32 +14,51 @@ enum __daisy_event_set {
 };
 
 typedef struct __daisy_metadata {
+    // Source location
     const char* file_name;
     const char* function_name;
     long line_begin;
     long line_end;
     long column_begin;
     long column_end;
-    const char* region_name;
-    size_t loopnest_index;
+
+    // Docc metadata
+
+    // SDFG-scope
+    const char* sdfg_name;
+    const char* sdfg_file;
+    const char* arg_capture_path;
+    const char* features_file;
+
+    // Element-scope
+    size_t element_id;
+    const char* element_type;
+    const char* target_type;
+    int loopnest_index;
+
+    // sdfg_name + element_id
+    const char* region_uuid;
+
 } __daisy_metadata_t;
 
-typedef struct __daisy_instrumentation __daisy_instrumentation_t;
+// Registers a region and returns a region ID
+size_t __daisy_instrumentation_init(__daisy_metadata_t* metadata, enum __daisy_event_set event_set);
 
-__daisy_instrumentation_t* __daisy_instrumentation_init();
-void __daisy_instrumentation_finalize(__daisy_instrumentation_t* context);
-void __daisy_instrumentation_enter(
-    __daisy_instrumentation_t* context, __daisy_metadata_t* metadata, enum __daisy_event_set event_set
-);
-void __daisy_instrumentation_exit(
-    __daisy_instrumentation_t* context, __daisy_metadata_t* metadata, enum __daisy_event_set event_set
-);
+// Finalizes a region (may be a no-op or free resources for the region)
+void __daisy_instrumentation_finalize(size_t region_id);
+
+// Enter a region, resetting counters for the given event set
+void __daisy_instrumentation_enter(size_t region_id);
+
+// Exit a region, storing values for the given event set into the cache
+void __daisy_instrumentation_exit(size_t region_id);
 
 typedef struct __daisy_capture __daisy_capture_t;
 
-__daisy_capture_t* __daisy_capture_init(const char* name);
+__daisy_capture_t* __daisy_capture_init(const char* name, const char* base_dir);
 
 bool __daisy_capture_enter(__daisy_capture_t* context);
+
 void __daisy_capture_end(__daisy_capture_t* context);
 
 void __daisy_capture_raw(

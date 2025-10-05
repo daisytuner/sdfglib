@@ -62,6 +62,10 @@ void DataDependencyAnalysis::visit_block(
     auto& dataflow = block.dataflow();
 
     for (auto node : dataflow.topological_sort()) {
+        if (dynamic_cast<data_flow::ConstantNode*>(node) != nullptr) {
+            continue;
+        }
+
         if (auto access_node = dynamic_cast<data_flow::AccessNode*>(node)) {
             if (!symbolic::is_pointer(symbolic::symbol(access_node->data()))) {
                 if (dataflow.in_degree(*node) > 0) {
@@ -126,32 +130,6 @@ void DataDependencyAnalysis::visit_block(
                             if (!supersedes_all) {
                                 undefined.insert(current_user);
                             }
-                        }
-                    }
-                }
-            }
-        } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(node)) {
-            if (tasklet->is_conditional()) {
-                auto& condition = tasklet->condition();
-                for (auto& atom : symbolic::atoms(condition)) {
-                    auto current_user = users.get_user(atom->get_name(), tasklet, Use::READ);
-                    {
-                        // Find all definitions that we read from
-                        bool found = false;
-                        bool superseded_all = false;
-                        for (auto& user : open_definitions) {
-                            if (intersects(*user.first, *current_user, assumptions_analysis)) {
-                                user.second.insert(current_user);
-                                if (!found) {
-                                    found = true;
-                                    superseded_all = true;
-                                }
-
-                                superseded_all &= supersedes(*current_user, *user.first, assumptions_analysis);
-                            }
-                        }
-                        if (!superseded_all) {
-                            undefined.insert(current_user);
                         }
                     }
                 }
@@ -361,7 +339,8 @@ void DataDependencyAnalysis::visit_for(
     bool is_monotonic = LoopAnalysis::is_monotonic(&for_loop, assumptions_analysis);
     if (is_monotonic) {
         // Case: Can analyze
-        assert(this->loop_carried_dependencies_.insert({&for_loop, {}}).second);
+        bool success = this->loop_carried_dependencies_.insert({&for_loop, {}}).second;
+        assert(success);
         auto& dependencies = this->loop_carried_dependencies_.at(&for_loop);
 
         // We can focus on written containers
@@ -390,7 +369,8 @@ void DataDependencyAnalysis::visit_for(
         }
     } else {
         // Case: Cannot analyze
-        assert(this->loop_carried_dependencies_.insert({&for_loop, {}}).second);
+        bool success = this->loop_carried_dependencies_.insert({&for_loop, {}}).second;
+        assert(success);
         auto& dependencies = this->loop_carried_dependencies_.at(&for_loop);
 
         // Over-Approximation:
@@ -604,6 +584,21 @@ void DataDependencyAnalysis::visit_return(
     std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions
 ) {
+    if (return_statement.is_data() && !return_statement.data().empty()) {
+        auto current_user = users.get_user(return_statement.data(), &return_statement, Use::READ);
+
+        bool found = false;
+        for (auto& user : open_definitions) {
+            if (user.first->container() == return_statement.data()) {
+                user.second.insert(current_user);
+                found = true;
+            }
+        }
+        if (!found) {
+            undefined.insert(current_user);
+        }
+    }
+
     // close all open reads_after_writes
     for (auto& entry : open_definitions) {
         closed_definitions.insert(entry);

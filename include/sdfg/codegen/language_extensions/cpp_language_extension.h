@@ -17,6 +17,8 @@ public:
 
     CPPLanguageExtension(const std::vector<std::string>& external_variables) : LanguageExtension(external_variables) {}
 
+    const std::string language() const override { return "C++"; }
+
     std::string primitive_type(const types::PrimitiveType prim_type) override;
 
     std::string declaration(
@@ -27,7 +29,7 @@ public:
 
     std::string subset(const Function& function, const types::IType& type, const data_flow::Subset& subset) override;
 
-    std::string expression(const symbolic::Expression& expr) override;
+    std::string expression(const symbolic::Expression expr) override;
 
     std::string access_node(const data_flow::AccessNode& node) override;
 
@@ -37,6 +39,9 @@ public:
 };
 
 class CPPSymbolicPrinter : public SymEngine::BaseVisitor<CPPSymbolicPrinter, SymEngine::CodePrinter> {
+private:
+    const std::unordered_set<std::string>& external_variables_;
+
 public:
     using SymEngine::CodePrinter::apply;
     using SymEngine::CodePrinter::bvisit;
@@ -64,6 +69,9 @@ public:
         const SymEngine::RCP<const SymEngine::Basic>& a,
         const SymEngine::RCP<const SymEngine::Basic>& b
     ) override;
+
+    CPPSymbolicPrinter(const std::unordered_set<std::string>& external_variables)
+        : external_variables_(external_variables) {}
 };
 
 } // namespace codegen

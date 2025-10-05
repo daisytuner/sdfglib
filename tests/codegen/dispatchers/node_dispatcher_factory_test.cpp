@@ -99,7 +99,7 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Return) {
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
 
-    auto& return_node = builder.add_return(root);
+    auto& return_node = builder.add_return(root, "");
 
     auto final_sdfg = builder.move();
 

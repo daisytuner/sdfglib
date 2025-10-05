@@ -13,7 +13,13 @@ inline data_flow::LibraryNodeCode LibraryNodeType_Pow("ml::Pow");
 
 class PowNode : public ElementWiseBinaryNode {
 public:
-    PowNode(size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent);
+    PowNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent,
+        const std::vector<symbolic::Expression>& shape
+    );
 
     bool expand_operation(
         builder::StructuredSDFGBuilder& builder,

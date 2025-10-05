@@ -7,10 +7,13 @@ namespace sdfg {
 namespace symbolic {
 namespace series {
 
-bool is_monotonic(const Expression& expr, const Symbol& sym, const Assumptions& assums);
+std::pair<bool, std::pair<Integer, Integer>>
+affine_int_coeffs(const Expression expr, const Symbol sym, const Assumptions& assums);
 
-bool is_contiguous(const Expression& expr, const Symbol& sym, const Assumptions& assums);
+bool is_monotonic(const Expression expr, const Symbol sym, const Assumptions& assums);
 
-}  // namespace series
-}  // namespace symbolic
-}  // namespace sdfg
+bool is_contiguous(const Expression expr, const Symbol sym, const Assumptions& assums);
+
+} // namespace series
+} // namespace symbolic
+} // namespace sdfg

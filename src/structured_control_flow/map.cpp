@@ -19,13 +19,11 @@ Map::
         const ScheduleType& schedule_type)
     : StructuredLoop(element_id, debug_info, indvar, init, update, condition), schedule_type_(schedule_type) {};
 
-void Map::validate(const Function& function) const { this->root_->validate(function); };
-
-ScheduleType& Map::schedule_type() { return this->schedule_type_; };
+void Map::validate(const Function& function) const { StructuredLoop::validate(function); };
 
 const ScheduleType& Map::schedule_type() const { return this->schedule_type_; };
 
-void ScheduleType_CPU_Parallel::num_threads(ScheduleType& schedule, const symbolic::Expression& num_threads) {
+void ScheduleType_CPU_Parallel::num_threads(ScheduleType& schedule, const symbolic::Expression num_threads) {
     serializer::JSONSerializer serializer;
     schedule.set_property("num_threads", serializer.expression(num_threads));
 }
@@ -35,15 +33,17 @@ const symbolic::Expression ScheduleType_CPU_Parallel::num_threads(const Schedule
         return SymEngine::null;
     }
     std::string expr_str = schedule.properties().at("num_threads");
-    SymEngine::Expression expr(expr_str);
+    auto expr = symbolic::parse(expr_str);
     return expr;
 }
-void ScheduleType_CPU_Parallel::set_dynamic(ScheduleType& schedule) { schedule.set_property("dynamic", "true"); }
-bool ScheduleType_CPU_Parallel::dynamic(const ScheduleType& schedule) {
-    if (schedule.properties().find("dynamic") == schedule.properties().end()) {
-        return false;
+void ScheduleType_CPU_Parallel::omp_schedule(ScheduleType& schedule, OpenMPSchedule omp_schedule) {
+    schedule.set_property("omp_schedule", std::to_string(omp_schedule));
+}
+OpenMPSchedule ScheduleType_CPU_Parallel::omp_schedule(const ScheduleType& schedule) {
+    if (schedule.properties().find("omp_schedule") == schedule.properties().end()) {
+        return OpenMPSchedule::Static;
     }
-    return schedule.properties().at("dynamic") == "true";
+    return static_cast<OpenMPSchedule>(std::stoi(schedule.properties().at("omp_schedule")));
 }
 
 } // namespace structured_control_flow

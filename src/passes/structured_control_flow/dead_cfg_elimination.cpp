@@ -38,9 +38,14 @@ bool DeadCFGElimination::run_pass(builder::StructuredSDFGBuilder& builder, analy
         return false;
     }
     auto last = root.at(root.size() - 1);
-    if (last.second.empty() && dynamic_cast<structured_control_flow::Return*>(&last.first)) {
-        builder.remove_child(root, root.size() - 1);
-        applied = true;
+    if (auto return_node = dynamic_cast<structured_control_flow::Return*>(&last.first)) {
+        if (return_node->is_data() && return_node->data().empty() // void return
+            || return_node->is_unreachable() // unreachable return
+            || return_node->is_constant() && return_node->data().empty() // undef return
+        ) {
+            builder.remove_child(root, root.size() - 1);
+            return true;
+        }
     }
 
     std::list<structured_control_flow::ControlFlowNode*> queue = {&sdfg.root()};
@@ -53,6 +58,22 @@ bool DeadCFGElimination::run_pass(builder::StructuredSDFGBuilder& builder, analy
             size_t i = 0;
             while (i < sequence_stmt->size()) {
                 auto child = sequence_stmt->at(i);
+
+                // Return node found, everything after is dead
+                if (auto return_node = dynamic_cast<structured_control_flow::Return*>(&child.first)) {
+                    if (child.second.assignments().size() > 0) {
+                        // Clear assignments
+                        child.second.assignments().clear();
+                        applied = true;
+                    }
+                    for (size_t j = i + 1; j < sequence_stmt->size();) {
+                        builder.remove_child(*sequence_stmt, i + 1);
+                        applied = true;
+                    }
+                    break;
+                }
+
+                // Non-empty transitions are not safe to remove
                 if (!child.second.empty()) {
                     i++;
                     continue;

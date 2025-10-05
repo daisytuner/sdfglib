@@ -5,7 +5,7 @@
 namespace sdfg {
 namespace passes {
 
-symbolic::Expression inverse(const symbolic::Symbol& lhs, const symbolic::Expression& rhs) {
+symbolic::Expression inverse(const symbolic::Symbol lhs, const symbolic::Expression rhs) {
     if (!symbolic::uses(rhs, lhs)) {
         return SymEngine::null;
     }
@@ -202,7 +202,8 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                 for (size_t i = 0; i < if_else_stmt->size(); i++) {
                     auto child = if_else_stmt->at(i);
                     if (symbolic::uses(child.second, lhs)) {
-                        child.second = symbolic::subs(child.second, lhs, rhs_modified);
+                        builder
+                            .update_if_else_condition(*if_else_stmt, i, symbolic::subs(child.second, lhs, rhs_modified));
                         applied = true;
                     }
                 }
@@ -229,30 +230,42 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                     auto graph = read->parent();
                     auto block = static_cast<structured_control_flow::Block*>(graph->get_parent());
 
-                    std::unordered_set<data_flow::Memlet*> to_remove;
+                    // Replace with const node
+                    auto& const_node =
+                        builder
+                            .add_constant(*block, std::to_string(new_int->as_int()), type, read->element()->debug_info());
+
+                    std::unordered_set<data_flow::Memlet*> replace_edges;
                     for (auto& oedge : graph->out_edges(*access_node)) {
-                        auto& dst = oedge.dst();
-                        if (auto code_node = dynamic_cast<data_flow::CodeNode*>(&dst)) {
-                            for (auto& entry : code_node->inputs()) {
-                                if (entry == oedge.dst_conn()) {
-                                    entry = std::to_string(new_int->as_int());
-                                    to_remove.insert(&oedge);
-                                    break;
-                                }
-                            }
-                        }
+                        builder.add_memlet(
+                            *block,
+                            const_node,
+                            oedge.src_conn(),
+                            oedge.dst(),
+                            oedge.dst_conn(),
+                            oedge.subset(),
+                            oedge.base_type(),
+                            oedge.debug_info()
+                        );
+                        replace_edges.insert(&oedge);
                     }
-                    for (auto& edge : to_remove) {
+                    for (auto& iedge : graph->in_edges(*access_node)) {
+                        builder.add_memlet(
+                            *block,
+                            iedge.src(),
+                            iedge.src_conn(),
+                            const_node,
+                            iedge.dst_conn(),
+                            iedge.subset(),
+                            iedge.base_type(),
+                            iedge.debug_info()
+                        );
+                    }
+
+                    for (auto& edge : replace_edges) {
                         builder.remove_memlet(*block, *edge);
                     }
-                    if (graph->in_degree(*access_node) == 0 && graph->out_degree(*access_node) == 0) {
-                        builder.remove_node(*block, *access_node);
-                    }
-                }
-            } else if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(read->element())) {
-                auto& condition = tasklet->condition();
-                if (symbolic::uses(condition, lhs)) {
-                    tasklet->condition() = symbolic::subs(condition, lhs, rhs_modified);
+                    builder.remove_node(*block, *access_node);
                     applied = true;
                 }
             } else if (auto library_node = dynamic_cast<data_flow::LibraryNode*>(read->element())) {
@@ -265,13 +278,31 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
             } else if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(read->element())) {
                 auto for_user = dynamic_cast<analysis::ForUser*>(read);
                 if (for_user->is_init() && symbolic::uses(for_loop->init(), lhs)) {
-                    for_loop->init() = symbolic::subs(for_loop->init(), lhs, rhs_modified);
+                    builder.update_loop(
+                        *for_loop,
+                        for_loop->indvar(),
+                        for_loop->condition(),
+                        symbolic::subs(for_loop->init(), lhs, rhs_modified),
+                        for_loop->update()
+                    );
                     applied = true;
                 } else if (for_user->is_condition() && symbolic::uses(for_loop->condition(), lhs)) {
-                    for_loop->condition() = symbolic::subs(for_loop->condition(), lhs, rhs_modified);
+                    builder.update_loop(
+                        *for_loop,
+                        for_loop->indvar(),
+                        symbolic::subs(for_loop->condition(), lhs, rhs_modified),
+                        for_loop->init(),
+                        for_loop->update()
+                    );
                     applied = true;
                 } else if (for_user->is_update() && symbolic::uses(for_loop->update(), lhs)) {
-                    for_loop->update() = symbolic::subs(for_loop->update(), lhs, rhs_modified);
+                    builder.update_loop(
+                        *for_loop,
+                        for_loop->indvar(),
+                        for_loop->condition(),
+                        for_loop->init(),
+                        symbolic::subs(for_loop->update(), lhs, rhs_modified)
+                    );
                     applied = true;
                 }
             }
