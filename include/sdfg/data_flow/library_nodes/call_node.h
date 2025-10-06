@@ -13,6 +13,11 @@ inline LibraryNodeCode LibraryNodeType_Call("Call");
 class CallNode : public LibraryNode {
 private:
     std::string function_name_;
+
+    // Flags
+
+    // Whether the compiler can replace this call node
+    // with specialized functions (symbols of a library, etc.)
     bool offloadable_;
 
 public:
@@ -24,7 +29,7 @@ public:
         const std::string& function_name,
         const std::vector<std::string>& outputs,
         const std::vector<std::string>& inputs,
-        bool offloadable = true
+        bool offloadable = false
     );
 
     const std::string& function_name() const;
