@@ -781,6 +781,37 @@ const std::unordered_set<User*> Users::all_uses_after(User& user) {
     return uses;
 };
 
+const std::vector<std::string> Users::all_containers_in_order() {
+    std::unordered_set<std::string> unique_containers;
+    std::vector<std::string> containers;
+
+    // BFS traversal
+    std::unordered_set<User*> visited;
+    std::list<User*> queue = {this->source_};
+    while (!queue.empty()) {
+        auto current = queue.front();
+        queue.pop_front();
+        if (visited.find(current) != visited.end()) {
+            continue;
+        }
+        visited.insert(current);
+
+        if ((current->container() != "" || current->use() != Use::NOP) &&
+            unique_containers.find(current->container()) == unique_containers.end()) {
+            unique_containers.insert(current->container());
+            containers.push_back(current->container());
+        }
+
+        auto [eb, ee] = boost::out_edges(current->vertex_, this->graph_);
+        auto edges = std::ranges::subrange(eb, ee);
+        for (auto edge : edges) {
+            auto v = boost::target(edge, this->graph_);
+            queue.push_back(this->users_.at(v).get());
+        }
+    }
+    return containers;
+}
+
 UsersView::UsersView(Users& users, const structured_control_flow::ControlFlowNode& node) : users_(users) {
     this->entry_ = users.entries_.at(&node);
     this->exit_ = users.exits_.at(&node);
@@ -1128,6 +1159,42 @@ std::unordered_set<std::string> Users::locals(structured_control_flow::ControlFl
 
     return locals;
 };
+
+const std::vector<std::string> UsersView::all_containers_in_order() {
+    std::unordered_set<std::string> unique_containers;
+    std::vector<std::string> containers;
+
+    // BFS traversal
+    std::unordered_set<User*> visited;
+    std::list<User*> queue = {this->entry_};
+    while (!queue.empty()) {
+        auto current = queue.front();
+        queue.pop_front();
+        if (visited.find(current) != visited.end()) {
+            continue;
+        }
+        visited.insert(current);
+
+        if ((current->container() != "" || current->use() != Use::NOP) &&
+            unique_containers.find(current->container()) == unique_containers.end()) {
+            unique_containers.insert(current->container());
+            containers.push_back(current->container());
+        }
+
+        if (current == this->exit_) {
+            continue;
+        }
+
+        auto [eb, ee] = boost::out_edges(current->vertex_, this->users_.graph_);
+        auto edges = std::ranges::subrange(eb, ee);
+        for (auto edge : edges) {
+            auto v = boost::target(edge, this->users_.graph_);
+            queue.push_back(this->users_.users_.at(v).get());
+        }
+    }
+
+    return containers;
+}
 
 } // namespace analysis
 } // namespace sdfg

@@ -10,7 +10,15 @@ void main(int argc, char** argv) {
         .line_end = 31,
         .column_begin = 4,
         .column_end = 5,
-        .region_name = "instrumentation_test_main",
+        .sdfg_name = "__daisy_instrumentation_test_0",
+        .sdfg_file = "/tmp/DOCC/0000-0000/123456789/sdfg_0.json",
+        .arg_capture_path = "",
+        .features_file = "",
+        .element_id = 10,
+        .element_type = "for",
+        .target_type = "sequential",
+        .loopnest_index = 0,
+        .region_uuid = "__daisy_instrumentation_test_0_10"
     };
     unsigned long long region_id = __daisy_instrumentation_init(&metadata, __DAISY_EVENT_SET_CPU);
 

@@ -1,0 +1,62 @@
+name: Unit Tests - Release
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  schedule:
+    - cron: "0 4 * * *"
+
+jobs:
+  build:
+    runs-on:
+      group: dahlia
+      labels: cuda
+    container:
+      image: daisytuner/docc-v2:latest
+      options: >-
+        --cap-add=PERFMON
+        --gpus=all
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Mark GitHub Actions workdir as safe
+        run: git config --global --add safe.directory /__w/sdfglib/sdfglib
+
+      - name: Formatting
+        run: clang-format-19 -style=file --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
+
+      - name: CMAKE Setup
+        run: |
+          mkdir build
+          cd build
+
+          # Enable coverage
+          cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Release -DWITH_SYMENGINE_THREAD_SAFE=ON -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
+          ln -s compile_commands.json ../compile_commands.json
+
+      - name: Build and test
+        run: |
+          cd build
+          ninja -j$(nproc)
+          ninja install
+
+          ./tests/sdfglib_test
+
+      - name: Test RTL
+        run: |
+          export CPATH=/usr/local/include:$CPATH
+          export LIBRARY_PATH=/usr/local/lib:$LIBRARY_PATH
+          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+          export PATH=/usr/local/bin:$PATH
+
+          pip install pytest==7.1.3 --break-system-packages
+          pip install pytest-parallel --break-system-packages
+
+          cd rtl/tests
+          pytest -v -s rtl_tests.py

@@ -25,10 +25,11 @@ std::string CPPCodeGenerator::function_definition() {
 
 void CPPCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const {
     std::string name = sdfg_.name();
+    std::string arg_capture_path = sdfg_.metadata().at("arg_capture_path");
 
-    ofs_source << "static void* __capture_ctx;" << std::endl;
+    ofs_source << "static __daisy_capture_t* __capture_ctx;" << std::endl;
     ofs_source << "static void __attribute__((constructor(1000))) __capture_ctx_init(void) {" << std::endl;
-    ofs_source << "\t__capture_ctx = __daisy_capture_init(\"" << name << "\");" << std::endl;
+    ofs_source << "\t__capture_ctx = __daisy_capture_init(\"" << name << "\", \"" << arg_capture_path << "\");" << std::endl;
     ofs_source << "}" << std::endl;
     ofs_source << std::endl;
 }
