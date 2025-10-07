@@ -407,11 +407,11 @@ constexpr size_t arity(TaskletCode c) {
         case TaskletCode::fminl:
             return 1;
         case TaskletCode::fmod:
-            return 1;
+            return 2;
         case TaskletCode::fmodf:
-            return 1;
+            return 2;
         case TaskletCode::fmodl:
-            return 1;
+            return 2;
         case TaskletCode::frexp:
             return 1;
         case TaskletCode::frexpf:
