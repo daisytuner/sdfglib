@@ -117,6 +117,8 @@ bool SymbolPromotion::can_be_applied(
         case data_flow::TaskletCode::int_mul:
         case data_flow::TaskletCode::int_sdiv:
         case data_flow::TaskletCode::int_srem:
+        case data_flow::TaskletCode::int_smin:
+        case data_flow::TaskletCode::int_smax:
             return true;
         case data_flow::TaskletCode::int_ashr:
         case data_flow::TaskletCode::int_shl: {
@@ -187,6 +189,18 @@ void SymbolPromotion::apply(
             auto op_1 = as_symbol(dataflow, *tasklet, tasklet->input(0));
             auto op_2 = as_symbol(dataflow, *tasklet, tasklet->input(1));
             rhs = symbolic::mod(op_1, op_2);
+            break;
+        }
+        case data_flow::TaskletCode::int_smin: {
+            auto op_1 = as_symbol(dataflow, *tasklet, tasklet->input(0));
+            auto op_2 = as_symbol(dataflow, *tasklet, tasklet->input(1));
+            rhs = symbolic::min(op_1, op_2);
+            break;
+        }
+        case data_flow::TaskletCode::int_smax: {
+            auto op_1 = as_symbol(dataflow, *tasklet, tasklet->input(0));
+            auto op_2 = as_symbol(dataflow, *tasklet, tasklet->input(1));
+            rhs = symbolic::max(op_1, op_2);
             break;
         }
         case data_flow::TaskletCode::int_ashr: {

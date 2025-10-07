@@ -37,9 +37,6 @@ void Tasklet::validate(const Function& function) const {
         if (is_floating_point(this->code_) && !types::is_floating_point(input_type)) {
             throw InvalidSDFGException("Tasklet: Floating point operation with integer input type");
         }
-        if (is_unsigned(this->code_) && !(types::is_integer(input_type) && types::is_unsigned(input_type))) {
-            throw InvalidSDFGException("Tasklet: Unsigned integer operation with non-integer input type");
-        }
     }
 
     // Validate: Graph - No two access nodes for same data

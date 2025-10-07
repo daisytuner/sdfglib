@@ -269,6 +269,24 @@ std::string CLanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
             return tasklet.inputs().at(0) + " >> " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_ashr:
             return tasklet.inputs().at(0) + " >> " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_smin:
+            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1) + " ? " + tasklet.inputs().at(0) + " : " +
+                   tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_smax:
+            return tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1) + " ? " + tasklet.inputs().at(0) + " : " +
+                   tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_scmp:
+            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1) + " ? -1 : (" +
+                   tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1) + " ? 1 : 0)";
+        case data_flow::TaskletCode::int_umin:
+            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1) + " ? " + tasklet.inputs().at(0) + " : " +
+                   tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_umax:
+            return tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1) + " ? " + tasklet.inputs().at(0) + " : " +
+                   tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_ucmp:
+            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1) + " ? -1 : (" +
+                   tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1) + " ? 1 : 0)";
         case data_flow::TaskletCode::int_eq:
             return tasklet.inputs().at(0) + " == " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_ne:

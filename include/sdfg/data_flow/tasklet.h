@@ -56,6 +56,12 @@ enum TaskletCode {
     int_shl,
     int_ashr,
     int_lshr,
+    int_smin,
+    int_smax,
+    int_scmp,
+    int_umin,
+    int_umax,
+    int_ucmp,
     // Comparisions
     int_eq,
     int_ne,
@@ -87,6 +93,12 @@ constexpr size_t arity(TaskletCode c) {
         case TaskletCode::int_shl:
         case TaskletCode::int_ashr:
         case TaskletCode::int_lshr:
+        case TaskletCode::int_smin:
+        case TaskletCode::int_smax:
+        case TaskletCode::int_umin:
+        case TaskletCode::int_scmp:
+        case TaskletCode::int_umax:
+        case TaskletCode::int_ucmp:
             return 2;
         // Comparisions
         case TaskletCode::int_eq:
@@ -136,6 +148,9 @@ constexpr bool is_unsigned(TaskletCode c) {
         case TaskletCode::int_udiv:
         case TaskletCode::int_urem:
         case TaskletCode::int_lshr:
+        case TaskletCode::int_umin:
+        case TaskletCode::int_umax:
+        case TaskletCode::int_ucmp:
         case TaskletCode::int_uge:
         case TaskletCode::int_ugt:
         case TaskletCode::int_ule:
@@ -162,6 +177,12 @@ constexpr bool is_integer(TaskletCode c) {
         case TaskletCode::int_shl:
         case TaskletCode::int_ashr:
         case TaskletCode::int_lshr:
+        case TaskletCode::int_smin:
+        case TaskletCode::int_smax:
+        case TaskletCode::int_scmp:
+        case TaskletCode::int_umin:
+        case TaskletCode::int_umax:
+        case TaskletCode::int_ucmp:
         // Comparisions
         case TaskletCode::int_eq:
         case TaskletCode::int_ne:

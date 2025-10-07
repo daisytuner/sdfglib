@@ -197,15 +197,22 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow
     stream << "{" << std::endl;
     stream.setIndent(stream.indent() + 4);
 
+    bool is_unsigned = data_flow::is_unsigned(tasklet.code());
+
     for (auto& iedge : this->data_flow_graph_.in_edges(tasklet)) {
         auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
         std::string src_name = this->language_extension_.access_node(src);
 
         std::string conn = iedge.dst_conn();
-        auto& conn_type = iedge.result_type(this->function_);
-
-        stream << this->language_extension_.declaration(conn, conn_type);
-        stream << " = ";
+        auto& conn_type = dynamic_cast<const types::Scalar&>(iedge.result_type(this->function_));
+        if (is_unsigned) {
+            types::Scalar conn_type_unsigned(types::as_unsigned(conn_type.primitive_type()));
+            stream << this->language_extension_.declaration(conn, conn_type_unsigned);
+            stream << " = ";
+        } else {
+            stream << this->language_extension_.declaration(conn, conn_type);
+            stream << " = ";
+        }
 
         // Reinterpret cast for opaque pointers
         if (iedge.base_type().type_id() == types::TypeID::Pointer) {
@@ -220,10 +227,16 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow
 
     auto& oedge = *this->data_flow_graph_.out_edges(tasklet).begin();
     std::string out_conn = oedge.src_conn();
-    auto& out_conn_type = oedge.result_type(this->function_);
+    auto& out_conn_type = dynamic_cast<const types::Scalar&>(oedge.result_type(this->function_));
+    if (is_unsigned) {
+        types::Scalar out_conn_type_unsigned(types::as_unsigned(out_conn_type.primitive_type()));
+        stream << this->language_extension_.declaration(out_conn, out_conn_type_unsigned);
+        stream << ";" << std::endl;
+    } else {
+        stream << this->language_extension_.declaration(out_conn, out_conn_type);
+        stream << ";" << std::endl;
+    }
 
-    stream << this->language_extension_.declaration(out_conn, out_conn_type);
-    stream << ";" << std::endl;
 
     stream << std::endl;
     stream << out_conn << " = ";
