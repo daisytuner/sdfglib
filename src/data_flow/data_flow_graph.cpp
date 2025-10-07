@@ -67,6 +67,28 @@ std::unordered_set<data_flow::Tasklet*> DataFlowGraph::tasklets() {
     return ts;
 };
 
+std::unordered_set<const data_flow::LibraryNode*> DataFlowGraph::library_nodes() const {
+    std::unordered_set<const data_flow::LibraryNode*> ls;
+    for (auto& node : this->nodes_) {
+        if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(node.second.get())) {
+            ls.insert(lib_node);
+        }
+    }
+
+    return ls;
+};
+
+std::unordered_set<data_flow::LibraryNode*> DataFlowGraph::library_nodes() {
+    std::unordered_set<data_flow::LibraryNode*> ls;
+    for (auto& node : this->nodes_) {
+        if (auto lib_node = dynamic_cast<data_flow::LibraryNode*>(node.second.get())) {
+            ls.insert(lib_node);
+        }
+    }
+
+    return ls;
+};
+
 std::unordered_set<const data_flow::AccessNode*> DataFlowGraph::data_nodes() const {
     std::unordered_set<const data_flow::AccessNode*> dnodes;
     for (auto& node : this->nodes_) {
