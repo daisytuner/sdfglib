@@ -407,7 +407,7 @@ TEST(MemAccessRangeAnalysisTest, Incomplete_2D_Line_Sum) {
     );
 
     auto& inner_block = builder.add_block(inner_for.root());
-    auto& tasklet = builder.add_tasklet(inner_block, data_flow::TaskletCode::add, "_out", {"_in0", "_in1"});
+    auto& tasklet = builder.add_tasklet(inner_block, data_flow::TaskletCode::int_add, "_out", {"_in0", "_in1"});
     auto& prevSumAccess = builder.add_access(inner_block, "sum");
     auto& readPrevSum = builder.add_computational_memlet(inner_block, prevSumAccess, tasklet, "_in0", {});
     auto& readAAccess = builder.add_access(inner_block, "A");

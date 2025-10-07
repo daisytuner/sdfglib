@@ -90,7 +90,7 @@ bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
     auto& x = builder.add_access(new_block, input_node_x.data());
     auto& y = builder.add_access(new_block, input_node_y.data());
 
-    auto& tasklet = builder.add_tasklet(new_block, data_flow::TaskletCode::fma, "_out", {"_in1", "_in2", "_in3"});
+    auto& tasklet = builder.add_tasklet(new_block, data_flow::TaskletCode::fp_fma, "_out", {"_in1", "_in2", "_in3"});
 
     builder.add_computational_memlet(
         new_block,

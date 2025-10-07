@@ -5,6 +5,8 @@
 
 #include "sdfg/analysis/scope_analysis.h"
 
+#include "sdfg/data_flow/library_nodes/math/intrinsic.h"
+
 namespace sdfg {
 namespace math {
 namespace ml {
@@ -16,7 +18,7 @@ SigmoidNode::SigmoidNode(
     data_flow::DataFlowGraph& parent,
     const std::vector<symbolic::Expression>& shape
 )
-    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Sigmoid, shape, {}) {}
+    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Sigmoid, shape) {}
 
 bool SigmoidNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,
@@ -38,27 +40,31 @@ bool SigmoidNode::expand_operation(
 
     // -x
     {
-        auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::mul, "_out", {"-1.0f", "_in"});
+        auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::fp_neg, "_out", {"_in"});
         builder.add_computational_memlet(code_block, input_node, tasklet, "_in", subset, input_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_neg, subset, output_type);
     }
     // exp(x)
     {
-        auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::expf, "_out", {"_in"});
-        builder.add_computational_memlet(code_block, output_node_neg, tasklet, "_in", subset, output_type);
+        auto& tasklet = builder.add_library_node<math::IntrinsicNode>(code_block, code_block.debug_info(), "erff", 1);
+        builder.add_computational_memlet(code_block, output_node_neg, tasklet, "_in1", subset, output_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_exp, subset, output_type);
     }
 
     // 1 + x
     {
-        auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::add, "_out", {"1.0f", "_in"});
-        builder.add_computational_memlet(code_block, output_node_exp, tasklet, "_in", subset, output_type);
+        auto& one_node = builder.add_constant(code_block, "1.0f", types::Scalar(input_type.primitive_type()));
+        auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
+        builder.add_computational_memlet(code_block, one_node, tasklet, "_in1", {}, output_type);
+        builder.add_computational_memlet(code_block, output_node_exp, tasklet, "_in2", subset, output_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_add, subset, output_type);
     }
     // 1.0f / x
     {
-        auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::div, "_out", {"1.0f", "_in"});
-        builder.add_computational_memlet(code_block, output_node_add, tasklet, "_in", subset, output_type);
+        auto& one_node = builder.add_constant(code_block, "1.0f", types::Scalar(input_type.primitive_type()));
+        auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::fp_div, "_out", {"1.0f", "_in"});
+        builder.add_computational_memlet(code_block, one_node, tasklet, "1.0f", {}, output_type);
+        builder.add_computational_memlet(code_block, output_node_add, tasklet, "_in2", subset, output_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_div, subset, output_type);
     }
 

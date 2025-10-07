@@ -46,7 +46,7 @@ TEST(OutLocalStorage, Scalar) {
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "C");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block, access_in, tasklet, "_in1", {symbolic::symbol("i")}, desc);
     builder.add_computational_memlet(block, access_in2, tasklet, "_in2", {});
     builder.add_computational_memlet(block, tasklet, "_out", access_out, {});
@@ -182,7 +182,7 @@ TEST(OutLocalStorage, Array) {
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "C");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block, access_in, tasklet, "_in1", {symbolic::symbol("i")});
     builder.add_computational_memlet(block, access_in2, tasklet, "_in2", {symbolic::symbol("i")});
     builder.add_computational_memlet(block, tasklet, "_out", access_out, {symbolic::symbol("i")});

@@ -8,348 +8,6 @@
 namespace sdfg {
 namespace codegen {
 
-constexpr const char* code_to_string(data_flow::TaskletCode c) {
-    switch (c) {
-        case data_flow::TaskletCode::assign:
-            return "=";
-        case data_flow::TaskletCode::neg:
-            return "-";
-        case data_flow::TaskletCode::add:
-            return "+";
-        case data_flow::TaskletCode::sub:
-            return "-";
-        case data_flow::TaskletCode::mul:
-            return "*";
-        case data_flow::TaskletCode::div:
-            return "/";
-        case data_flow::TaskletCode::fma:
-            return "__daisy_fma";
-        case data_flow::TaskletCode::mod:
-            return "%";
-        case data_flow::TaskletCode::max:
-            return "__daisy_max";
-        case data_flow::TaskletCode::min:
-            return "__daisy_min";
-        case data_flow::TaskletCode::minnum:
-            return "minnum";
-        case data_flow::TaskletCode::maxnum:
-            return "maxnum";
-        case data_flow::TaskletCode::minimum:
-            return "minimum";
-        case data_flow::TaskletCode::maximum:
-            return "maximum";
-        case data_flow::TaskletCode::trunc:
-            return "trunc";
-        case data_flow::TaskletCode::logical_and:
-            return "&&";
-        case data_flow::TaskletCode::logical_or:
-            return "||";
-        case data_flow::TaskletCode::bitwise_and:
-            return "&";
-        case data_flow::TaskletCode::bitwise_or:
-            return "|";
-        case data_flow::TaskletCode::bitwise_xor:
-            return "^";
-        case data_flow::TaskletCode::bitwise_not:
-            return "~";
-        case data_flow::TaskletCode::shift_left:
-            return "<<";
-        case data_flow::TaskletCode::shift_right:
-            return ">>";
-        case data_flow::TaskletCode::olt:
-            return "<";
-        case data_flow::TaskletCode::ole:
-            return "<=";
-        case data_flow::TaskletCode::oeq:
-            return "==";
-        case data_flow::TaskletCode::one:
-            return "!=";
-        case data_flow::TaskletCode::oge:
-            return ">=";
-        case data_flow::TaskletCode::ogt:
-            return ">";
-        case data_flow::TaskletCode::ord:
-            return "==";
-        case data_flow::TaskletCode::ult:
-            return "<";
-        case data_flow::TaskletCode::ule:
-            return "<=";
-        case data_flow::TaskletCode::ueq:
-            return "==";
-        case data_flow::TaskletCode::une:
-            return "!=";
-        case data_flow::TaskletCode::uge:
-            return ">=";
-        case data_flow::TaskletCode::ugt:
-            return ">";
-        case data_flow::TaskletCode::uno:
-            return "!=";
-        case data_flow::TaskletCode::abs:
-            return "abs";
-        case data_flow::TaskletCode::acos:
-            return "acos";
-        case data_flow::TaskletCode::acosf:
-            return "acosf";
-        case data_flow::TaskletCode::acosl:
-            return "acosl";
-        case data_flow::TaskletCode::acosh:
-            return "acosh";
-        case data_flow::TaskletCode::acoshf:
-            return "acoshf";
-        case data_flow::TaskletCode::acoshl:
-            return "acoshl";
-        case data_flow::TaskletCode::asin:
-            return "asin";
-        case data_flow::TaskletCode::asinf:
-            return "asinf";
-        case data_flow::TaskletCode::asinl:
-            return "asinl";
-        case data_flow::TaskletCode::asinh:
-            return "asinh";
-        case data_flow::TaskletCode::asinhf:
-            return "asinhf";
-        case data_flow::TaskletCode::asinhl:
-            return "asinhl";
-        case data_flow::TaskletCode::atan:
-            return "atan";
-        case data_flow::TaskletCode::atanf:
-            return "atanf";
-        case data_flow::TaskletCode::atanl:
-            return "atanl";
-        case data_flow::TaskletCode::atan2:
-            return "atan2";
-        case data_flow::TaskletCode::atan2f:
-            return "atan2f";
-        case data_flow::TaskletCode::atan2l:
-            return "atan2l";
-        case data_flow::TaskletCode::atanh:
-            return "atanh";
-        case data_flow::TaskletCode::atanhf:
-            return "atanhf";
-        case data_flow::TaskletCode::atanhl:
-            return "atanhl";
-        case data_flow::TaskletCode::cabs:
-            return "cabs";
-        case data_flow::TaskletCode::cabsf:
-            return "cabsf";
-        case data_flow::TaskletCode::cabsl:
-            return "cabsl";
-        case data_flow::TaskletCode::ceil:
-            return "ceil";
-        case data_flow::TaskletCode::ceilf:
-            return "ceilf";
-        case data_flow::TaskletCode::ceill:
-            return "ceill";
-        case data_flow::TaskletCode::copysign:
-            return "copysign";
-        case data_flow::TaskletCode::copysignf:
-            return "copysignf";
-        case data_flow::TaskletCode::copysignl:
-            return "copysignl";
-        case data_flow::TaskletCode::cos:
-            return "cos";
-        case data_flow::TaskletCode::cosf:
-            return "cosf";
-        case data_flow::TaskletCode::cosl:
-            return "cosl";
-        case data_flow::TaskletCode::cosh:
-            return "cosh";
-        case data_flow::TaskletCode::coshf:
-            return "coshf";
-        case data_flow::TaskletCode::coshl:
-            return "coshl";
-        case data_flow::TaskletCode::cbrt:
-            return "cbrt";
-        case data_flow::TaskletCode::cbrtf:
-            return "cbrtf";
-        case data_flow::TaskletCode::cbrtl:
-            return "cbrtl";
-        case data_flow::TaskletCode::erf:
-            return "erf";
-        case data_flow::TaskletCode::erff:
-            return "erff";
-        case data_flow::TaskletCode::erfl:
-            return "erfl";
-        case data_flow::TaskletCode::exp10:
-            return "exp10";
-        case data_flow::TaskletCode::exp10f:
-            return "exp10f";
-        case data_flow::TaskletCode::exp10l:
-            return "exp10l";
-        case data_flow::TaskletCode::exp2:
-            return "exp2";
-        case data_flow::TaskletCode::exp2f:
-            return "exp2f";
-        case data_flow::TaskletCode::exp2l:
-            return "exp2l";
-        case data_flow::TaskletCode::exp:
-            return "exp";
-        case data_flow::TaskletCode::expf:
-            return "expf";
-        case data_flow::TaskletCode::expl:
-            return "expl";
-        case data_flow::TaskletCode::expm1:
-            return "expm1";
-        case data_flow::TaskletCode::expm1f:
-            return "expm1f";
-        case data_flow::TaskletCode::expm1l:
-            return "expm1l";
-        case data_flow::TaskletCode::fabs:
-            return "fabs";
-        case data_flow::TaskletCode::fabsf:
-            return "fabsf";
-        case data_flow::TaskletCode::fabsl:
-            return "fabsl";
-        case data_flow::TaskletCode::floor:
-            return "floor";
-        case data_flow::TaskletCode::floorf:
-            return "floorf";
-        case data_flow::TaskletCode::floorl:
-            return "floorl";
-        case data_flow::TaskletCode::fls:
-            return "fls";
-        case data_flow::TaskletCode::flsl:
-            return "flsl";
-        case data_flow::TaskletCode::fmax:
-            return "fmax";
-        case data_flow::TaskletCode::fmaxf:
-            return "fmaxf";
-        case data_flow::TaskletCode::fmaxl:
-            return "fmaxl";
-        case data_flow::TaskletCode::fmin:
-            return "fmin";
-        case data_flow::TaskletCode::fminf:
-            return "fminf";
-        case data_flow::TaskletCode::fminl:
-            return "fminl";
-        case data_flow::TaskletCode::fmod:
-            return "fmod";
-        case data_flow::TaskletCode::fmodf:
-            return "fmodf";
-        case data_flow::TaskletCode::fmodl:
-            return "fmodl";
-        case data_flow::TaskletCode::frexp:
-            return "frexp";
-        case data_flow::TaskletCode::frexpf:
-            return "frexpf";
-        case data_flow::TaskletCode::frexpl:
-            return "frexpl";
-        case data_flow::TaskletCode::labs:
-            return "labs";
-        case data_flow::TaskletCode::ldexp:
-            return "ldexp";
-        case data_flow::TaskletCode::ldexpf:
-            return "ldexpf";
-        case data_flow::TaskletCode::ldexpl:
-            return "ldexpl";
-        case data_flow::TaskletCode::log10:
-            return "log10";
-        case data_flow::TaskletCode::log10f:
-            return "log10f";
-        case data_flow::TaskletCode::log10l:
-            return "log10l";
-        case data_flow::TaskletCode::log2:
-            return "log2";
-        case data_flow::TaskletCode::log2f:
-            return "log2f";
-        case data_flow::TaskletCode::log2l:
-            return "log2l";
-        case data_flow::TaskletCode::log:
-            return "log";
-        case data_flow::TaskletCode::logf:
-            return "logf";
-        case data_flow::TaskletCode::logl:
-            return "logl";
-        case data_flow::TaskletCode::logb:
-            return "logb";
-        case data_flow::TaskletCode::logbf:
-            return "logbf";
-        case data_flow::TaskletCode::logbl:
-            return "logbl";
-        case data_flow::TaskletCode::log1p:
-            return "log1p";
-        case data_flow::TaskletCode::log1pf:
-            return "log1pf";
-        case data_flow::TaskletCode::log1pl:
-            return "log1pl";
-        case data_flow::TaskletCode::nearbyint:
-            return "nearbyint";
-        case data_flow::TaskletCode::nearbyintf:
-            return "nearbyintf";
-        case data_flow::TaskletCode::nearbyintl:
-            return "nearbyintl";
-        case data_flow::TaskletCode::pow:
-            return "pow";
-        case data_flow::TaskletCode::powf:
-            return "powf";
-        case data_flow::TaskletCode::powl:
-            return "powl";
-        case data_flow::TaskletCode::rint:
-            return "rint";
-        case data_flow::TaskletCode::rintf:
-            return "rintf";
-        case data_flow::TaskletCode::rintl:
-            return "rintl";
-        case data_flow::TaskletCode::lrint:
-            return "lrint";
-        case data_flow::TaskletCode::llrint:
-            return "llrint";
-        case data_flow::TaskletCode::lround:
-            return "lround";
-        case data_flow::TaskletCode::llround:
-            return "llround";
-        case data_flow::TaskletCode::round:
-            return "round";
-        case data_flow::TaskletCode::roundf:
-            return "roundf";
-        case data_flow::TaskletCode::roundl:
-            return "roundl";
-        case data_flow::TaskletCode::roundeven:
-            return "roundeven";
-        case data_flow::TaskletCode::roundevenf:
-            return "roundevenf";
-        case data_flow::TaskletCode::roundevenl:
-            return "roundevenl";
-        case data_flow::TaskletCode::sin:
-            return "sin";
-        case data_flow::TaskletCode::sinf:
-            return "sinf";
-        case data_flow::TaskletCode::sinl:
-            return "sinl";
-        case data_flow::TaskletCode::sinh:
-            return "sinh";
-        case data_flow::TaskletCode::sinhf:
-            return "sinhf";
-        case data_flow::TaskletCode::sinhl:
-            return "sinhl";
-        case data_flow::TaskletCode::sqrt:
-            return "sqrt";
-        case data_flow::TaskletCode::sqrtf:
-            return "sqrtf";
-        case data_flow::TaskletCode::sqrtl:
-            return "sqrtl";
-        case data_flow::TaskletCode::rsqrt:
-            return "rsqrt";
-        case data_flow::TaskletCode::rsqrtf:
-            return "rsqrtf";
-        case data_flow::TaskletCode::rsqrtl:
-            return "rsqrtl";
-        case data_flow::TaskletCode::tan:
-            return "tan";
-        case data_flow::TaskletCode::tanf:
-            return "tanf";
-        case data_flow::TaskletCode::tanl:
-            return "tanl";
-        case data_flow::TaskletCode::tanh:
-            return "tanh";
-        case data_flow::TaskletCode::tanhf:
-            return "tanhf";
-        case data_flow::TaskletCode::tanhl:
-            return "tanhl";
-    };
-    throw std::invalid_argument("Invalid tasklet code");
-};
-
 std::string CUDALanguageExtension::primitive_type(const types::PrimitiveType prim_type) {
     switch (prim_type) {
         case types::PrimitiveType::Void:
@@ -542,26 +200,105 @@ std::string CUDALanguageExtension::access_node(const data_flow::AccessNode& node
 };
 
 std::string CUDALanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
-    std::string op = code_to_string(tasklet.code());
-    std::vector<std::string> arguments;
-    for (size_t i = 0; i < tasklet.inputs().size(); ++i) {
-        arguments.push_back(tasklet.input(i));
-    }
-
-    if (tasklet.code() == data_flow::TaskletCode::assign) {
-        return arguments.at(0);
-    } else if (data_flow::is_infix(tasklet.code())) {
-        switch (data_flow::arity(tasklet.code())) {
-            case 1:
-                return op + arguments.at(0);
-            case 2:
-                return arguments.at(0) + " " + op + " " + arguments.at(1);
-            default:
-                throw std::runtime_error("Unsupported arity");
-        }
-    } else {
-        return op + "(" + helpers::join(arguments, ", ") + ")";
-    }
+    switch (tasklet.code()) {
+        case data_flow::TaskletCode::assign:
+            return tasklet.inputs().at(0);
+        case data_flow::TaskletCode::fp_neg:
+            return "-" + tasklet.inputs().at(0);
+        case data_flow::TaskletCode::fp_add:
+            return tasklet.inputs().at(0) + " + " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_sub:
+            return tasklet.inputs().at(0) + " - " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_mul:
+            return tasklet.inputs().at(0) + " * " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_div:
+            return tasklet.inputs().at(0) + " / " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_rem:
+            return "remainder(" + tasklet.inputs().at(0) + ", " + tasklet.inputs().at(1) + ")";
+        case data_flow::TaskletCode::fp_fma:
+            return tasklet.inputs().at(0) + " * " + tasklet.inputs().at(1) + " + " + tasklet.inputs().at(2);
+        case data_flow::TaskletCode::fp_oeq:
+            return tasklet.inputs().at(0) + " == " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_one:
+            return tasklet.inputs().at(0) + " != " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_ogt:
+            return tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_oge:
+            return tasklet.inputs().at(0) + " >= " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_olt:
+            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_ole:
+            return tasklet.inputs().at(0) + " <= " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_ord:
+            return "isnan(" + tasklet.inputs().at(0) + ") && isnan(" + tasklet.inputs().at(1) + ")";
+        case data_flow::TaskletCode::fp_ueq:
+            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
+                   tasklet.inputs().at(0) + " == " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_une:
+            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
+                   tasklet.inputs().at(0) + " != " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_ugt:
+            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
+                   tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_uge:
+            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
+                   tasklet.inputs().at(0) + " >= " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_ult:
+            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
+                   tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_ule:
+            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
+                   tasklet.inputs().at(0) + " <= " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_uno:
+            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")";
+        case data_flow::TaskletCode::int_add:
+            return tasklet.inputs().at(0) + " + " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_sub:
+            return tasklet.inputs().at(0) + " - " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_mul:
+            return tasklet.inputs().at(0) + " * " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_sdiv:
+            return tasklet.inputs().at(0) + " / " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_srem:
+            return tasklet.inputs().at(0) + " % " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_udiv:
+            return tasklet.inputs().at(0) + " / " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_urem:
+            return tasklet.inputs().at(0) + " % " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_and:
+            return tasklet.inputs().at(0) + " & " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_or:
+            return tasklet.inputs().at(0) + " | " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_xor:
+            return tasklet.inputs().at(0) + " ^ " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_shl:
+            return tasklet.inputs().at(0) + " << " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_lshr:
+            return tasklet.inputs().at(0) + " >> " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_ashr:
+            return tasklet.inputs().at(0) + " >> " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_eq:
+            return tasklet.inputs().at(0) + " == " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_ne:
+            return tasklet.inputs().at(0) + " != " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_sgt:
+            return tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_sge:
+            return tasklet.inputs().at(0) + " >= " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_slt:
+            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_sle:
+            return tasklet.inputs().at(0) + " <= " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_ugt:
+            return tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_uge:
+            return tasklet.inputs().at(0) + " >= " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_ult:
+            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_ule:
+            return tasklet.inputs().at(0) + " <= " + tasklet.inputs().at(1);
+    };
+    throw std::invalid_argument("Invalid tasklet code");
 };
 
 std::string CUDALanguageExtension::zero(const types::PrimitiveType prim_type) {

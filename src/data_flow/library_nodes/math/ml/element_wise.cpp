@@ -15,11 +15,10 @@ ElementWiseUnaryNode::ElementWiseUnaryNode(
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     const data_flow::LibraryNodeCode& code,
-    const std::vector<symbolic::Expression>& shape,
-    const std::unordered_map<std::string, std::string>& attributes
+    const std::vector<symbolic::Expression>& shape
 )
     : MathNode(element_id, debug_info, vertex, parent, code, {"Y"}, {"X"}, data_flow::ImplementationType_NONE),
-      shape_(shape), attributes_(attributes) {}
+      shape_(shape) {}
 
 symbolic::SymbolSet ElementWiseUnaryNode::symbols() const {
     symbolic::SymbolSet syms;
@@ -125,11 +124,10 @@ ElementWiseBinaryNode::ElementWiseBinaryNode(
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     const data_flow::LibraryNodeCode& code,
-    const std::vector<symbolic::Expression>& shape,
-    const std::unordered_map<std::string, std::string>& attributes
+    const std::vector<symbolic::Expression>& shape
 )
     : MathNode(element_id, debug_info, vertex, parent, code, {"C"}, {"A", "B"}, data_flow::ImplementationType_NONE),
-      shape_(shape), attributes_(attributes) {}
+      shape_(shape) {}
 
 symbolic::SymbolSet ElementWiseBinaryNode::symbols() const {
     symbolic::SymbolSet syms;

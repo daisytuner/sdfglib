@@ -90,7 +90,7 @@ TEST(DataFlowDispatcherTest, DispatchTasklet) {
     auto& access_node_1 = builder.add_access(block, "a");
     auto& access_node_2 = builder.add_access(block, "b");
     auto& access_node_3 = builder.add_access(block, "c");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_add, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block, access_node_1, tasklet, "_in1", {});
     builder.add_computational_memlet(block, access_node_2, tasklet, "_in2", {});
     builder.add_computational_memlet(block, tasklet, "_out", access_node_3, {});

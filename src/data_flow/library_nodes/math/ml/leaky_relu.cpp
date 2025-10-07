@@ -5,6 +5,8 @@
 
 #include "sdfg/analysis/scope_analysis.h"
 
+#include "sdfg/data_flow/library_nodes/math/intrinsic.h"
+
 namespace sdfg {
 namespace math {
 namespace ml {
@@ -14,10 +16,10 @@ LeakyReLUNode::LeakyReLUNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
-    const std::vector<symbolic::Expression>& shape,
-    const std::string& alpha
+    const std::vector<symbolic::Expression>& shape
 )
-    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_LeakyReLU, shape, {{"alpha", alpha}}) {
+    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_LeakyReLU, shape) {
+        this->inputs_.push_back("alpha");
 }
 
 bool LeakyReLUNode::expand_operation(
@@ -38,15 +40,17 @@ bool LeakyReLUNode::expand_operation(
 
     // max(x, 0)
     {
-        auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::fma, "_out", {"0.0f", "_in"});
-        builder.add_computational_memlet(code_block, input_node, tasklet, "_in", subset, input_type);
+        auto& zero_node = builder.add_constant(code_block, "0.0", types::Scalar(input_type.primitive_type()));
+        auto& tasklet = builder.add_library_node<math::IntrinsicNode>(code_block, code_block.debug_info(), "fmax", 2);
+        builder.add_computational_memlet(code_block, input_node, tasklet, "_in1", subset, input_type);
+        builder.add_computational_memlet(code_block, zero_node, tasklet, "_in2", subset, input_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_max, subset, output_type);
     }
     // alpha * x
     {
         auto& tasklet =
-            builder.add_tasklet(code_block, data_flow::TaskletCode::mul, "_out", {this->attributes_.at("alpha"), "_in"});
-        builder.add_computational_memlet(code_block, output_node_max, tasklet, "_in", subset, output_type);
+            builder.add_tasklet(code_block, data_flow::TaskletCode::fp_mul, "_out", {"_in1", "_in2"});
+        builder.add_computational_memlet(code_block, output_node_max, tasklet, "_in2", subset, output_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_mul, subset, output_type);
     }
 
@@ -56,7 +60,7 @@ bool LeakyReLUNode::expand_operation(
 std::unique_ptr<data_flow::DataFlowNode> LeakyReLUNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
     return std::unique_ptr<data_flow::DataFlowNode>(
-        new LeakyReLUNode(element_id, this->debug_info(), vertex, parent, this->shape_, this->attributes_.at("alpha"))
+        new LeakyReLUNode(element_id, this->debug_info(), vertex, parent, this->shape_)
     );
 }
 
