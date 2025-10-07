@@ -162,7 +162,7 @@ TEST(PrimitiveTypeTest, Unsigned) {
     EXPECT_FALSE(types::is_unsigned(types::PrimitiveType::Int32));
     EXPECT_FALSE(types::is_unsigned(types::PrimitiveType::Int64));
     EXPECT_FALSE(types::is_unsigned(types::PrimitiveType::Int128));
-    EXPECT_TRUE(types::is_unsigned(types::PrimitiveType::Bool));
+    EXPECT_FALSE(types::is_unsigned(types::PrimitiveType::Bool));
     EXPECT_TRUE(types::is_unsigned(types::PrimitiveType::UInt8));
     EXPECT_TRUE(types::is_unsigned(types::PrimitiveType::UInt16));
     EXPECT_TRUE(types::is_unsigned(types::PrimitiveType::UInt32));
