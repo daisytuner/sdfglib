@@ -91,8 +91,11 @@ void IntrinsicNodeDispatcher::dispatch_code(
 
     stream << node.outputs().at(0) << " = ";
     stream << node.name() << "(";
-    for (auto& input : node.inputs()) {
-        stream << input << ", ";
+    for (size_t i = 0; i < node.inputs().size(); i++) {
+        stream << node.inputs().at(i);
+        if (i < node.inputs().size() - 1) {
+            stream << ", ";
+        }
     }
     stream << ");" << std::endl;
 
