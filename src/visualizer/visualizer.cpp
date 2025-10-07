@@ -36,7 +36,7 @@ constexpr const char* code_to_string(data_flow::TaskletCode c) {
         case data_flow::TaskletCode::int_udiv:
         case data_flow::TaskletCode::int_sdiv:
         case data_flow::TaskletCode::fp_div:
-        return "/";
+            return "/";
         case data_flow::TaskletCode::fp_fma:
             return "fma";
     };

@@ -54,7 +54,6 @@ void Tasklet::validate(const Function& function) const {
             input_names.insert({src.data(), &src});
         }
     }
-
 }
 
 TaskletCode Tasklet::code() const { return this->code_; };
