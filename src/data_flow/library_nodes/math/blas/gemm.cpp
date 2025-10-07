@@ -212,7 +212,7 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& input_node_b_new = builder.add_access(code_block, B_var, input_node_b->debug_info());
 
     auto& core_fma =
-        builder.add_tasklet(code_block, data_flow::fma, "_out", {"_in1", "_in2", "_in3"}, block.debug_info());
+        builder.add_tasklet(code_block, data_flow::fp_fma, "_out", {"_in1", "_in2", "_in3"}, block.debug_info());
     auto& sum_in = builder.add_access(code_block, sum_var, block.debug_info());
     auto& sum_out = builder.add_access(code_block, sum_var, block.debug_info());
     builder.add_computational_memlet(code_block, sum_in, core_fma, "_in3", {}, block.debug_info());

@@ -18,6 +18,7 @@ Tasklet::Tasklet(
     : CodeNode(element_id, debug_info, vertex, parent, {output}, inputs), code_(code) {};
 
 void Tasklet::validate(const Function& function) const {
+    // Validate arity
     if (arity(this->code_) != this->inputs_.size()) {
         throw InvalidSDFGException(
             "Tasklet: Invalid number of inputs for code " + std::to_string(this->code_) + ": expected " +
@@ -25,8 +26,8 @@ void Tasklet::validate(const Function& function) const {
         );
     }
 
+    // Validate unique input names
     auto& graph = this->get_parent();
-
     std::unordered_map<std::string, const AccessNode*> input_names;
     for (auto& iedge : graph.in_edges(*this)) {
         auto& src = static_cast<const AccessNode&>(iedge.src());
@@ -37,6 +38,28 @@ void Tasklet::validate(const Function& function) const {
         } else {
             input_names.insert({src.data(), &src});
         }
+    }
+
+    // Validate all inputs have same primitive type
+    types::PrimitiveType input_type = types::PrimitiveType::Void;
+    for (auto& iedge : graph.in_edges(*this)) {
+        auto& src = static_cast<const AccessNode&>(iedge.src());
+        if (input_type == types::PrimitiveType::Void) {
+            input_type = iedge.base_type().primitive_type();
+        } else if (input_type != iedge.base_type().primitive_type()) {
+            throw InvalidSDFGException("Tasklet: Input types do not match");
+        }
+    
+        // Validate unsigned and signed operations have correctly signed inputs
+    }
+    if (is_integer(this->code_) && !types::is_integer(input_type)) {
+        throw InvalidSDFGException("Tasklet: Integer operation with non-integer input type");
+    }
+    if (is_fp(this->code_) && types::is_integer(input_type)) {
+        throw InvalidSDFGException("Tasklet: Floating point operation with integer input type");
+    }
+    if (is_unsigned(this->code_) && !(types::is_integer(input_type) && types::is_unsigned(input_type))) {
+        throw InvalidSDFGException("Tasklet: Unsigned integer operation with non-integer input type");
     }
 }
 

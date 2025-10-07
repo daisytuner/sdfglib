@@ -16,7 +16,7 @@ MulNode::MulNode(
     data_flow::DataFlowGraph& parent,
     const std::vector<symbolic::Expression>& shape
 )
-    : ElementWiseBinaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Mul, shape, {}) {}
+    : ElementWiseBinaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Mul, shape) {}
 
 bool MulNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,

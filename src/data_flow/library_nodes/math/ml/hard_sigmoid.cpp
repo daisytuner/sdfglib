@@ -5,6 +5,8 @@
 
 #include "sdfg/analysis/scope_analysis.h"
 
+#include "sdfg/data_flow/library_nodes/math/intrinsic.h"
+
 namespace sdfg {
 namespace math {
 namespace ml {
@@ -14,13 +16,14 @@ HardSigmoidNode::HardSigmoidNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
-    const std::vector<symbolic::Expression>& shape,
-    const std::string& alpha,
-    const std::string& beta
+    const std::vector<symbolic::Expression>& shape
 )
     : ElementWiseUnaryNode(
-          element_id, debug_info, vertex, parent, LibraryNodeType_HardSigmoid, shape, {{"alpha", alpha}, {"beta", beta}}
-      ) {}
+          element_id, debug_info, vertex, parent, LibraryNodeType_HardSigmoid, shape
+      ) {
+        this->inputs_.push_back("alpha");
+        this->inputs_.push_back("beta");
+      }
 
 bool HardSigmoidNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,
@@ -43,23 +46,27 @@ bool HardSigmoidNode::expand_operation(
     {
         auto& tasklet = builder.add_tasklet(
             code_block,
-            data_flow::TaskletCode::fma,
+            data_flow::TaskletCode::fp_fma,
             "_out",
-            {this->attributes_.at("alpha"), "_in", this->attributes_.at("beta")}
+            {"_in1", "_in2", "_in3"}
         );
-        builder.add_computational_memlet(code_block, input_node, tasklet, "_in", subset, input_type);
+        builder.add_computational_memlet(code_block, input_node, tasklet, "_in1", subset, input_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_fma, subset, output_type);
     }
     // min(1, x)
     {
-        auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::min, "_out", {"1.0f", "_in"});
-        builder.add_computational_memlet(code_block, output_node_fma, tasklet, "_in", subset, output_type);
+        auto& one_node = builder.add_constant(code_block, "1.0f", types::Scalar(output_type.primitive_type()));
+        auto& tasklet = builder.add_library_node<math::IntrinsicNode>(code_block, code_block.debug_info(), "fmin", 2);
+        builder.add_computational_memlet(code_block, output_node_fma, tasklet, "_in1", subset, output_type);
+        builder.add_computational_memlet(code_block, one_node, tasklet, "_in2", subset, output_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_min, subset, output_type);
     }
     // max(0, x)
     {
-        auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::max, "_out", {"0.0f", "_in"});
-        builder.add_computational_memlet(code_block, output_node_min, tasklet, "_in", subset, output_type);
+        auto& zero_node = builder.add_constant(code_block, "0.0f", types::Scalar(output_type.primitive_type()));
+        auto& tasklet = builder.add_library_node<math::IntrinsicNode>(code_block, code_block.debug_info(), "fmax", 2);
+        builder.add_computational_memlet(code_block, output_node_min, tasklet, "_in1", subset, output_type);
+        builder.add_computational_memlet(code_block, zero_node, tasklet, "_in2", subset, output_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_max, subset, output_type);
     }
 
@@ -73,9 +80,7 @@ std::unique_ptr<data_flow::DataFlowNode> HardSigmoidNode::
         this->debug_info(),
         vertex,
         parent,
-        this->shape_,
-        this->attributes_.at("alpha"),
-        this->attributes_.at("beta")
+        this->shape_
     ));
 }
 

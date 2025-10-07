@@ -16,7 +16,7 @@ SubNode::SubNode(
     data_flow::DataFlowGraph& parent,
     const std::vector<symbolic::Expression>& shape
 )
-    : ElementWiseBinaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Sub, shape, {}) {}
+    : ElementWiseBinaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Sub, shape) {}
 
 bool SubNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,

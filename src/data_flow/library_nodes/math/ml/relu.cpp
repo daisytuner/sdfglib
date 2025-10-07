@@ -5,6 +5,8 @@
 
 #include "sdfg/analysis/scope_analysis.h"
 
+#include "sdfg/data_flow/library_nodes/math/intrinsic.h"
+
 namespace sdfg {
 namespace math {
 namespace ml {
@@ -16,7 +18,7 @@ ReLUNode::ReLUNode(
     data_flow::DataFlowGraph& parent,
     const std::vector<symbolic::Expression>& shape
 )
-    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_ReLU, shape, {}) {}
+    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_ReLU, shape) {}
 
 bool ReLUNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,
@@ -35,7 +37,9 @@ bool ReLUNode::expand_operation(
     auto& input_node_new = builder.add_access(code_block, input_name);
     auto& output_node_new = builder.add_access(code_block, output_name);
     auto& zero_node = builder.add_constant(code_block, "0.0", base_type);
-    auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::max, "_out", {"_in1", "_in2"});
+    
+    auto& tasklet = builder.add_library_node<math::IntrinsicNode>(code_block, code_block.debug_info(), "fmax", 2);
+    
     builder.add_computational_memlet(code_block, zero_node, tasklet, "_in1", {}, base_type);
     builder.add_computational_memlet(code_block, input_node_new, tasklet, "_in2", subset, input_type);
     builder.add_computational_memlet(code_block, tasklet, "_out", output_node_new, subset, output_type);

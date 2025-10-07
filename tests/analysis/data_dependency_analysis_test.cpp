@@ -2506,7 +2506,7 @@ TEST(LoopDependencyAnalysisTest, Stencil_1D) {
     auto& A2 = builder.add_access(block, "A");
     auto& A3 = builder.add_access(block, "A");
     auto& B = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fma, "_out", {"_in1", "_in2", "_in3"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_fma, "_out", {"_in1", "_in2", "_in3"});
     builder.add_computational_memlet(
         block, A1, tasklet, "_in1", {symbolic::sub(symbolic::symbol("i"), symbolic::integer(1))}, edge_desc
     );
@@ -3239,7 +3239,7 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
         auto& block_303_1 = builder.add_block(body_303);
         auto& _1_in = builder.add_access(block_303_1, "_1");
         auto& _330_out = builder.add_access(block_303_1, "_330");
-        auto& tasklet = builder.add_tasklet(block_303_1, data_flow::TaskletCode::neg, "_out", {"_in"});
+        auto& tasklet = builder.add_tasklet(block_303_1, data_flow::TaskletCode::fp_neg, "_out", {"_in"});
         builder.add_computational_memlet(block_303_1, _1_in, tasklet, "_in", {subset_in}, edge_desc);
         builder.add_computational_memlet(block_303_1, tasklet, "_out", _330_out, {});
 
@@ -3265,7 +3265,7 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
         auto& _330_in_2 = builder.add_access(block_303_2, "_330");
         auto& _1_out_2 = builder.add_access(block_303_2, "_1");
         auto& tasklet_2 =
-            builder.add_tasklet(block_303_2, data_flow::TaskletCode::fma, "_out", {"_in0", "_in1", "_in2"});
+            builder.add_tasklet(block_303_2, data_flow::TaskletCode::fp_fma, "_out", {"_in0", "_in1", "_in2"});
         builder.add_computational_memlet(block_303_2, _1_in_2, tasklet_2, "_in0", {subset_in_2}, edge_desc);
         builder.add_computational_memlet(block_303_2, _1_in_3, tasklet_2, "_in1", {subset_out}, edge_desc);
         builder.add_computational_memlet(block_303_2, _330_in_2, tasklet_2, "_in2", {});
@@ -3339,7 +3339,7 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
         auto& block_267_1 = builder.add_block(body_267);
         auto& _1_in_1 = builder.add_access(block_267_1, "_1");
         auto& _298_out = builder.add_access(block_267_1, "_298");
-        auto& tasklet = builder.add_tasklet(block_267_1, data_flow::TaskletCode::neg, "_out", {"_in"});
+        auto& tasklet = builder.add_tasklet(block_267_1, data_flow::TaskletCode::fp_neg, "_out", {"_in"});
         builder.add_computational_memlet(block_267_1, _1_in_1, tasklet, "_in", {subset_in_1}, edge_desc);
         builder.add_computational_memlet(block_267_1, tasklet, "_out", _298_out, {});
 
@@ -3349,7 +3349,7 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
         auto& _298_in_2 = builder.add_access(block_267_2, "_298");
         auto& _1_out_2 = builder.add_access(block_267_2, "_1");
         auto& tasklet_2 =
-            builder.add_tasklet(block_267_2, data_flow::TaskletCode::fma, "_out", {"_in0", "_in1", "_in2"});
+            builder.add_tasklet(block_267_2, data_flow::TaskletCode::fp_fma, "_out", {"_in0", "_in1", "_in2"});
         builder.add_computational_memlet(block_267_2, _298_in_2, tasklet_2, "_in0", {});
         builder.add_computational_memlet(block_267_2, _1_in_2, tasklet_2, "_in1", {subset_in_2}, edge_desc);
         builder.add_computational_memlet(block_267_2, _1_in_3, tasklet_2, "_in2", {subset_in_3}, edge_desc);

@@ -684,12 +684,12 @@ TEST(DotVisualizerTest, test_return) {
 TEST(DotVisualizerTest, test_handleTasklet) {
     const std::vector<std::pair<const data_flow::TaskletCode, const std::string>> codes = {
         {data_flow::TaskletCode::assign, "="},
-        {data_flow::TaskletCode::neg, "-"},
+        {data_flow::TaskletCode::fp_neg, "-"},
         {data_flow::TaskletCode::add, "+"},
         {data_flow::TaskletCode::sub, "-"},
         {data_flow::TaskletCode::mul, "*"},
         {data_flow::TaskletCode::div, "/"},
-        {data_flow::TaskletCode::fma, "fma"},
+        {data_flow::TaskletCode::fp_fma, "fma"},
         {data_flow::TaskletCode::mod, "%"},
         {data_flow::TaskletCode::max, "max"},
         {data_flow::TaskletCode::min, "min"},

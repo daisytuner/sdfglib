@@ -5,6 +5,8 @@
 
 #include "sdfg/analysis/scope_analysis.h"
 
+#include "sdfg/data_flow/library_nodes/math/intrinsic.h"
+
 namespace sdfg {
 namespace math {
 namespace ml {
@@ -16,7 +18,7 @@ TanhNode::TanhNode(
     data_flow::DataFlowGraph& parent,
     const std::vector<symbolic::Expression>& shape
 )
-    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Tanh, shape, {}) {}
+    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Tanh, shape) {}
 
 bool TanhNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,
@@ -32,7 +34,9 @@ bool TanhNode::expand_operation(
     auto& code_block = builder.add_block(body);
     auto& input_node = builder.add_access(code_block, input_name);
     auto& output_node = builder.add_access(code_block, output_name);
-    auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::tanhf, "_out", {"_in"});
+
+    auto& tasklet = builder.add_library_node<math::IntrinsicNode>(code_block, code_block.debug_info(), "tanhf", 1);
+
     builder.add_computational_memlet(code_block, input_node, tasklet, "_in", subset, input_type);
     builder.add_computational_memlet(code_block, tasklet, "_out", output_node, subset, output_type);
 
