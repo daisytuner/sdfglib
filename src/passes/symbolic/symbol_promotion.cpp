@@ -40,10 +40,15 @@ bool SymbolPromotion::can_be_applied(
     }
     auto tasklet = *dataflow.tasklets().begin();
 
+    // Criterion: Tasklet is not a fp operation
+    if (data_flow::is_floating_point(tasklet->code())) {
+        return false;
+    }
+
     // Symbolic expressions and operators are per-default
     // interpreted as signed, unless specified otherwise.
 
-    // Criterion: Tasklet is not an explicitly unsigned operation
+    // Criterion: Tasklet is not an unsigned operation
     if (data_flow::is_unsigned(tasklet->code())) {
         return false;
     }
@@ -55,11 +60,11 @@ bool SymbolPromotion::can_be_applied(
         }
 
         // Connector type must be a signed integer
-        if (!types::is_integer(iedge.base_type().primitive_type()) || types::is_unsigned(iedge.base_type().primitive_type())) {
+        if (types::is_unsigned(iedge.base_type().primitive_type())) {
             return false;
         }
 
-        // No cast between src and connector
+        // No cast on memlet
         auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
         const types::IType* src_type = nullptr;
         if (auto const_node = dynamic_cast<const data_flow::ConstantNode*>(&src)) {
@@ -81,11 +86,11 @@ bool SymbolPromotion::can_be_applied(
     if (oedge.subset().size() > 0) {
         return false;
     }
-    if (!types::is_integer(oedge.base_type().primitive_type()) || types::is_unsigned(oedge.base_type().primitive_type())) {
+    if (types::is_unsigned(oedge.base_type().primitive_type())) {
         return false;
     }
     
-    // No cast between src and connector
+    // No cast on memlet
     auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
     const types::IType* dst_type = nullptr;
     if (auto const_node = dynamic_cast<const data_flow::ConstantNode*>(&dst)) {
@@ -107,9 +112,9 @@ bool SymbolPromotion::can_be_applied(
     // Criterion: Known tasklet class. To be extended on the go.
     switch (tasklet->code()) {
         case data_flow::TaskletCode::assign:
-        case data_flow::TaskletCode::add:
-        case data_flow::TaskletCode::sub:
-        case data_flow::TaskletCode::mul:
+        case data_flow::TaskletCode::int_add:
+        case data_flow::TaskletCode::int_sub:
+        case data_flow::TaskletCode::int_mul:
         case data_flow::TaskletCode::int_sdiv:
         case data_flow::TaskletCode::int_srem:
             return true;
@@ -121,7 +126,7 @@ bool SymbolPromotion::can_be_applied(
         case data_flow::TaskletCode::int_and:
         case data_flow::TaskletCode::int_or:
         case data_flow::TaskletCode::int_xor: {
-            // Bitwise operation is constant for boolean inputs
+            // Only for booleans
             for (auto& iedge : dataflow.in_edges(*tasklet)) {
                 auto& type = iedge.result_type(sdfg);
                 if (type.primitive_type() != types::PrimitiveType::Bool) {
@@ -158,17 +163,17 @@ void SymbolPromotion::apply(
             rhs = as_symbol(dataflow, *tasklet, tasklet->input(0));
             break;
         }
-        case data_flow::TaskletCode::add: {
+        case data_flow::TaskletCode::int_add: {
             rhs = symbolic::
                 add(as_symbol(dataflow, *tasklet, tasklet->input(0)), as_symbol(dataflow, *tasklet, tasklet->input(1)));
             break;
         }
-        case data_flow::TaskletCode::sub: {
+        case data_flow::TaskletCode::int_sub: {
             rhs = symbolic::
                 sub(as_symbol(dataflow, *tasklet, tasklet->input(0)), as_symbol(dataflow, *tasklet, tasklet->input(1)));
             break;
         }
-        case data_flow::TaskletCode::mul: {
+        case data_flow::TaskletCode::int_mul: {
             rhs = symbolic::
                 mul(as_symbol(dataflow, *tasklet, tasklet->input(0)), as_symbol(dataflow, *tasklet, tasklet->input(1)));
             break;

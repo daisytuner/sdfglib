@@ -438,7 +438,7 @@ TEST(LoopAnalysisTest, outermost_loops) {
         auto& u1_node = builder.add_access(block, "u1");
         auto& v1_node = builder.add_access(block, "v1");
         auto& tmp_node = builder.add_access(block, "tmp_1");
-        auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::mul, "_out", {"_in1", "_in2"});
+        auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_mul, "_out", {"_in1", "_in2"});
         builder.add_computational_memlet(block, u1_node, tasklet, "_in1", {symbolic::symbol("i_1")});
         builder.add_computational_memlet(block, v1_node, tasklet, "_in2", {symbolic::symbol("j_1")});
         builder.add_computational_memlet(block, tasklet, "_out", tmp_node, {});
@@ -449,7 +449,7 @@ TEST(LoopAnalysisTest, outermost_loops) {
         auto& u2_node = builder.add_access(block2, "u2");
         auto& v2_node = builder.add_access(block2, "v2");
         auto& tmp2_node = builder.add_access(block2, "tmp_2");
-        auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::mul, "_out", {"_in1", "_in2"});
+        auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_mul, "_out", {"_in1", "_in2"});
         builder.add_computational_memlet(block2, u2_node, tasklet2, "_in1", {symbolic::symbol("i_1")});
         builder.add_computational_memlet(block2, v2_node, tasklet2, "_in2", {symbolic::symbol("j_1")});
         builder.add_computational_memlet(block2, tasklet2, "_out", tmp2_node, {});
@@ -460,14 +460,14 @@ TEST(LoopAnalysisTest, outermost_loops) {
         auto& tmp_node_1 = builder.add_access(block3, "tmp_1");
         auto& tmp2_node_1 = builder.add_access(block3, "tmp_2");
         auto& tmp3_node = builder.add_access(block3, "tmp_3");
-        auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+        auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
         builder.add_computational_memlet(block3, tmp_node_1, tasklet3, "_in1", {});
         builder.add_computational_memlet(block3, tmp2_node_1, tasklet3, "_in2", {});
         builder.add_computational_memlet(block3, tasklet3, "_out", tmp3_node, {});
 
         auto& A_node = builder.add_access(block3, "A");
         auto& A_node_out = builder.add_access(block3, "A");
-        auto& tasklet4 = builder.add_tasklet(block3, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+        auto& tasklet4 = builder.add_tasklet(block3, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
         builder.add_computational_memlet(
             block3, A_node, tasklet4, "_in1", {symbolic::symbol("i_1"), symbolic::symbol("j_1")}
         );
@@ -522,7 +522,7 @@ TEST(LoopAnalysisTest, outermost_loops) {
         auto& x_node_in = builder.add_access(block, "x");
         auto& x_node_out = builder.add_access(block, "x");
         auto& z_node = builder.add_access(block, "z");
-        auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+        auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
         builder.add_computational_memlet(block, x_node_in, tasklet, "_in1", {symbolic::symbol("i_3")});
         builder.add_computational_memlet(block, z_node, tasklet, "_in2", {symbolic::symbol("i_3")});
         builder.add_computational_memlet(block, tasklet, "_out", x_node_out, {symbolic::symbol("i_3")});

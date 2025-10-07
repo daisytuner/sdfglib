@@ -233,7 +233,7 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     symbolic::Expression c_idx = symbolic::add(symbolic::mul(ldc(), new_subset[0]), new_subset[1]);
 
     auto& scale_sum_tasklet =
-        builder.add_tasklet(flush_block, data_flow::mul, "_out", {"_in1", "_in2"}, block.debug_info());
+        builder.add_tasklet(flush_block, data_flow::TaskletCode::fp_mul, "_out", {"_in1", "_in2"}, block.debug_info());
     builder.add_computational_memlet(flush_block, sum_final, scale_sum_tasklet, "_in1", {}, block.debug_info());
     if (auto const_node = dynamic_cast<data_flow::ConstantNode*>(alpha_node)) {
         auto& alpha_node_new =
@@ -252,7 +252,7 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     );
 
     auto& scale_input_tasklet =
-        builder.add_tasklet(flush_block, data_flow::mul, "_out", {"_in1", "_in2"}, block.debug_info());
+        builder.add_tasklet(flush_block, data_flow::TaskletCode::fp_mul, "_out", {"_in1", "_in2"}, block.debug_info());
     builder.add_computational_memlet(
         flush_block, input_node_c_new, scale_input_tasklet, "_in1", {c_idx}, iedge_c->base_type(), iedge_c->debug_info()
     );
@@ -275,7 +275,7 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     );
 
     auto& flush_add_tasklet =
-        builder.add_tasklet(flush_block, data_flow::add, "_out", {"_in1", "_in2"}, block.debug_info());
+        builder.add_tasklet(flush_block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"}, block.debug_info());
     auto& output_node_new = builder.add_access(flush_block, C_out_var, output_node->debug_info());
     builder.add_computational_memlet(
         flush_block, scaled_sum_final, flush_add_tasklet, "_in1", {}, scalar_type, block.debug_info()

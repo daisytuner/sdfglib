@@ -49,7 +49,7 @@ bool LeakyReLUNode::expand_operation(
     // alpha * x
     {
         auto& tasklet =
-            builder.add_tasklet(code_block, data_flow::TaskletCode::mul, "_out", {"_in1", "_in2"});
+            builder.add_tasklet(code_block, data_flow::TaskletCode::fp_mul, "_out", {"_in1", "_in2"});
         builder.add_computational_memlet(code_block, output_node_max, tasklet, "_in2", subset, output_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_mul, subset, output_type);
     }

@@ -146,7 +146,7 @@ TEST(MathTest, Gemm) {
     auto flush_tasklets = block_flush->dataflow().tasklets();
     EXPECT_EQ(flush_tasklets.size(), 3);
     for (auto* tasklet : flush_tasklets) {
-        if (tasklet->code() == data_flow::add) {
+        if (tasklet->code() == data_flow::TaskletCode::fp_add) {
             EXPECT_EQ(tasklet->output(), "_out");
             auto& final_edge = *block_flush->dataflow().out_edges(*tasklet).begin();
             auto* final_access = dynamic_cast<data_flow::AccessNode*>(&final_edge.dst());

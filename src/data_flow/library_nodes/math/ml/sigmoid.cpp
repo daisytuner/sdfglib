@@ -54,7 +54,7 @@ bool SigmoidNode::expand_operation(
     // 1 + x
     {
         auto& one_node = builder.add_constant(code_block, "1.0f", types::Scalar(input_type.primitive_type()));
-        auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+        auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
         builder.add_computational_memlet(code_block, one_node, tasklet, "_in1", {}, output_type);
         builder.add_computational_memlet(code_block, output_node_exp, tasklet, "_in2", subset, output_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_add, subset, output_type);

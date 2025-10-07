@@ -1833,7 +1833,7 @@ TEST(LoopDependencyAnalysisTest, Sum_1D) {
     auto& a1 = builder.add_access(block, "A");
     auto& b_in = builder.add_access(block, "B");
     auto& b_out = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block, a1, tasklet, "_in1", {indvar}, edge_desc);
     builder.add_computational_memlet(block, b_in, tasklet, "_in2", {});
     builder.add_computational_memlet(block, tasklet, "_out", b_out, {});
@@ -1923,7 +1923,7 @@ TEST(LoopDependencyAnalysisTest, PartialSum_1D) {
     auto& A1 = builder.add_access(block, "A");
     auto& A2 = builder.add_access(block, "A");
     auto& A3 = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     builder
         .add_computational_memlet(block, A1, tasklet, "_in1", {symbolic::sub(indvar, symbolic::integer(1))}, edge_desc);
     builder.add_computational_memlet(block, A2, tasklet, "_in2", {indvar}, edge_desc);
@@ -2200,11 +2200,11 @@ TEST(LoopDependencyAnalysisTest, Map_1D) {
     // Add computation
     auto& block = builder.add_block(body);
     auto& a_in = builder.add_access(block, "A");
-    auto& i = builder.add_access(block, "i");
+    auto& one_node = builder.add_constant(block, "1.0", base_desc);
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block, a_in, tasklet, "_in1", {symbolic::symbol("i")}, edge_desc);
-    builder.add_computational_memlet(block, i, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, one_node, tasklet, "_in2", {});
     builder.add_computational_memlet(block, tasklet, "_out", a_out, {symbolic::symbol("i")}, edge_desc);
 
     // Analysis
@@ -2244,11 +2244,11 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Disjoint) {
     // Add computation
     auto& block = builder.add_block(body);
     auto& a_in = builder.add_access(block, "A");
-    auto& i = builder.add_access(block, "i");
+    auto& one_node = builder.add_constant(block, "1.0", base_desc);
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block, a_in, tasklet, "_in1", {symbolic::zero()}, edge_desc);
-    builder.add_computational_memlet(block, i, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, one_node, tasklet, "_in2", {});
     builder.add_computational_memlet(
         block, tasklet, "_out", a_out, {symbolic::add(symbolic::symbol("i"), symbolic::one())}, edge_desc
     );
@@ -2390,11 +2390,11 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Tiled) {
     // Add computation
     auto& block = builder.add_block(body_inner);
     auto& a_in = builder.add_access(block, "A");
-    auto& i = builder.add_access(block, "i");
+    auto& one_node = builder.add_constant(block, "1.0", base_desc);
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block, a_in, tasklet, "_in1", {symbolic::symbol("i")}, edge_desc);
-    builder.add_computational_memlet(block, i, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, one_node, tasklet, "_in2", {});
     builder.add_computational_memlet(block, tasklet, "_out", a_out, {symbolic::symbol("i")}, edge_desc);
 
     // Analysis
@@ -2717,12 +2717,12 @@ TEST(LoopDependencyAnalysisTest, Map_2D) {
     // Add computation
     auto& block = builder.add_block(body_2);
     auto& a_in = builder.add_access(block, "A");
-    auto& i = builder.add_access(block, "i");
+    auto& one_node = builder.add_constant(block, "1.0", base_desc);
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     builder
         .add_computational_memlet(block, a_in, tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")}, edge_desc);
-    builder.add_computational_memlet(block, i, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, one_node, tasklet, "_in2", {});
     builder
         .add_computational_memlet(block, tasklet, "_out", a_out, {symbolic::symbol("i"), symbolic::symbol("j")}, edge_desc);
 
@@ -2783,7 +2783,7 @@ TEST(LoopDependencyAnalysisTest, PartialSumInner_2D) {
     auto& A = builder.add_access(block, "A");
     auto& B1 = builder.add_access(block, "B");
     auto& B2 = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     builder
         .add_computational_memlet(block, A, tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")}, edge_desc);
     builder.add_computational_memlet(block, B1, tasklet, "_in2", {symbolic::symbol("i")}, array_desc);
@@ -2845,7 +2845,7 @@ TEST(LoopDependencyAnalysisTest, PartialSumOuter_2D) {
     auto& A = builder.add_access(block, "A");
     auto& B1 = builder.add_access(block, "B");
     auto& B2 = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block, A, tasklet, "_in1", {indvar1, indvar2}, edge_desc);
     builder.add_computational_memlet(block, B1, tasklet, "_in2", {indvar2}, array_desc);
     builder.add_computational_memlet(block, tasklet, "_out", B2, {indvar2}, array_desc);
@@ -2908,7 +2908,7 @@ TEST(LoopDependencyAnalysisTest, PartialSum_1D_Triangle) {
     auto& block = builder.add_block(body2);
     auto& A_in = builder.add_access(block, "A");
     auto& A_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block, A_in, tasklet, "_in1", {indvar2}, ptr_desc);
     builder.add_computational_memlet(block, A_in, tasklet, "_in2", {indvar1}, ptr_desc);
     builder.add_computational_memlet(block, tasklet, "_out", A_out, {indvar1}, ptr_desc);
@@ -3285,8 +3285,10 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
         auto& block_19 = builder.add_block(body_19);
         auto& _1_in = builder.add_access(block_19, "_1");
         auto& _258_out = builder.add_access(block_19, "_258");
-        auto& tasklet = builder.add_tasklet(block_19, data_flow::TaskletCode::mul, "_out", {"1.0f", "_in1"});
+        auto& one_node = builder.add_constant(block_19, "1.0", base_desc);
+        auto& tasklet = builder.add_tasklet(block_19, data_flow::TaskletCode::fp_mul, "_out", {"_in1", "_in2"});
         builder.add_computational_memlet(block_19, _1_in, tasklet, "_in1", {subset}, edge_desc);
+        builder.add_computational_memlet(block_19, one_node, tasklet, "_in2", {});
         builder.add_computational_memlet(block_19, tasklet, "_out", _258_out, {});
     }
 
@@ -3370,7 +3372,7 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
         auto& _1_in = builder.add_access(block_260, "_1");
         auto& _1_out = builder.add_access(block_260, "_1");
         auto& _258_in = builder.add_access(block_260, "_258");
-        auto& tasklet = builder.add_tasklet(block_260, data_flow::TaskletCode::mul, "_out", {"_in0", "_in1"});
+        auto& tasklet = builder.add_tasklet(block_260, data_flow::TaskletCode::fp_mul, "_out", {"_in0", "_in1"});
         builder.add_computational_memlet(block_260, _258_in, tasklet, "_in0", {});
         builder.add_computational_memlet(block_260, _1_in, tasklet, "_in1", {subset}, edge_desc);
         builder.add_computational_memlet(block_260, tasklet, "_out", _1_out, {subset}, edge_desc);

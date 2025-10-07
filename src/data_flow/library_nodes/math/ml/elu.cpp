@@ -48,7 +48,7 @@ bool EluNode::expand_operation(
     // 2. x - 1.0f
     {
         auto& one_node = builder.add_constant(code_block, "1.0f", types::Scalar(output_type.primitive_type()));
-        auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::sub, "_out", {"_in1", "_in2"});
+        auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::fp_sub, "_out", {"_in1", "_in2"});
         builder.add_computational_memlet(code_block, output_node_exp, tasklet, "_in1", subset, output_type);
         builder.add_computational_memlet(code_block, one_node, tasklet, "_in2", subset, output_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_sub, subset, output_type);
@@ -75,7 +75,7 @@ bool EluNode::expand_operation(
         }
         
         auto& tasklet =
-            builder.add_tasklet(code_block, data_flow::TaskletCode::mul, "_out", {"_in1", "_in2"});
+            builder.add_tasklet(code_block, data_flow::TaskletCode::fp_mul, "_out", {"_in1", "_in2"});
         builder.add_computational_memlet(code_block, output_node_sub, tasklet, "_in1", subset, output_type);
         builder.add_computational_memlet(code_block, *alpha_node, tasklet, "_in2", alpha_memlet->subset(), alpha_memlet->base_type());
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_mul, subset, output_type);

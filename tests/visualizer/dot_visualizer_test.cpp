@@ -164,7 +164,7 @@ TEST(DotVisualizerTest, syrk) {
     auto& C_in_node_1 = sdfg.add_access(block1, "C");
     auto& C_out_node_1 = sdfg.add_access(block1, "C");
     auto& beta_node = sdfg.add_access(block1, "beta");
-    auto& tasklet1 = sdfg.add_tasklet(block1, data_flow::TaskletCode::mul, "_out", {"_in1", "_in2"});
+    auto& tasklet1 = sdfg.add_tasklet(block1, data_flow::TaskletCode::fp_mul, "_out", {"_in1", "_in2"});
     sdfg.add_computational_memlet(
         block1, C_in_node_1, tasklet1, "_in1", {symbolic::symbol("i"), symbolic::symbol("j_1")}, desc_2d
     );
@@ -192,7 +192,7 @@ TEST(DotVisualizerTest, syrk) {
     auto& block2 = sdfg.add_block(loop_j_2.root());
     auto& A_node = sdfg.add_access(block2, "A");
     auto& tmp_node = sdfg.add_access(block2, "tmp");
-    auto& tasklet2 = sdfg.add_tasklet(block2, data_flow::TaskletCode::mul, "_out", {"_in1", "_in2"});
+    auto& tasklet2 = sdfg.add_tasklet(block2, data_flow::TaskletCode::fp_mul, "_out", {"_in1", "_in2"});
     sdfg.add_computational_memlet(
         block2, A_node, tasklet2, "_in1", {symbolic::symbol("j_2"), symbolic::symbol("k")}, desc_2d
     );
@@ -205,7 +205,7 @@ TEST(DotVisualizerTest, syrk) {
     auto& C_in_node_2 = sdfg.add_access(block3, "C");
     auto& C_out_node_2 = sdfg.add_access(block3, "C");
     auto& tmp_node_2 = sdfg.add_access(block3, "tmp");
-    auto& tasklet3 = sdfg.add_tasklet(block3, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet3 = sdfg.add_tasklet(block3, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     sdfg.add_computational_memlet(
         block3, C_in_node_2, tasklet3, "_in1", {symbolic::symbol("i"), symbolic::symbol("j_2")}, desc_2d
     );
@@ -238,7 +238,7 @@ TEST(DotVisualizerTest, syrk) {
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
         << escapeDotId(beta_node.element_id(), "n_") << " [penwidth=3.0,label=\"beta\"];" << std::endl
         << escapeDotId(C_in_node_1.element_id(), "n_") << " [penwidth=3.0,label=\"C\"];" << std::endl
-        << escapeDotId(tasklet1.element_id(), "n_") << " [shape=octagon,label=\"_out = _in1 * _in2\"];" << std::endl
+        << escapeDotId(tasklet1.element_id(), "n_") << " [shape=octagon,label=\"_out = *(_in1, _in2)\"];" << std::endl
         << escapeDotId(C_in_node_1.element_id(), "n_") << " -> " << escapeDotId(tasklet1.element_id(), "n_")
         << " [label=\"   _in1 = C[i][j_1]   \"];" << std::endl
         << escapeDotId(beta_node.element_id(), "n_") << " -> " << escapeDotId(tasklet1.element_id(), "n_")
@@ -262,7 +262,7 @@ TEST(DotVisualizerTest, syrk) {
     exp.setIndent(24);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
         << escapeDotId(A_node.element_id(), "n_") << " [penwidth=3.0,label=\"A\"];" << std::endl
-        << escapeDotId(tasklet2.element_id(), "n_") << " [shape=octagon,label=\"_out = _in1 * _in2\"];" << std::endl
+        << escapeDotId(tasklet2.element_id(), "n_") << " [shape=octagon,label=\"_out = *(_in1, _in2)\"];" << std::endl
         << escapeDotId(A_node.element_id(), "n_") << " -> " << escapeDotId(tasklet2.element_id(), "n_")
         << " [label=\"   _in1 = A[j_2][k]   \"];" << std::endl
         << escapeDotId(A_node.element_id(), "n_") << " -> " << escapeDotId(tasklet2.element_id(), "n_")
@@ -278,7 +278,7 @@ TEST(DotVisualizerTest, syrk) {
         << escapeDotId(tmp_node_2.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"tmp\"];"
         << std::endl
         << escapeDotId(C_in_node_2.element_id(), "n_") << " [penwidth=3.0,label=\"C\"];" << std::endl
-        << escapeDotId(tasklet3.element_id(), "n_") << " [shape=octagon,label=\"_out = _in1 + _in2\"];" << std::endl
+        << escapeDotId(tasklet3.element_id(), "n_") << " [shape=octagon,label=\"_out = +(_in1, _in2)\"];" << std::endl
         << escapeDotId(C_in_node_2.element_id(), "n_") << " -> " << escapeDotId(tasklet3.element_id(), "n_")
         << " [label=\"   _in1 = C[i][j_2]   \"];" << std::endl
         << escapeDotId(tmp_node_2.element_id(), "n_") << " -> " << escapeDotId(tasklet3.element_id(), "n_")
@@ -574,7 +574,7 @@ TEST(DotVisualizerTest, test_return) {
     auto& input2 = builder.add_access(block2, "A");
     auto& output2 = builder.add_access(block2, "A");
     auto& two_node = builder.add_constant(block2, "2.0", base_desc);
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::mul, "_out", {"_in1", "_in2"});
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_mul, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block2, input2, tasklet2, "_in1", {symbolic::symbol("i")});
     builder.add_computational_memlet(block2, two_node, tasklet2, "_in2", {});
     builder.add_computational_memlet(block2, tasklet2, "_out", output2, {symbolic::symbol("i")});
@@ -583,7 +583,7 @@ TEST(DotVisualizerTest, test_return) {
     auto& input3 = builder.add_access(block3, "i");
     auto& output3 = builder.add_access(block3, "i");
     auto& one_node = builder.add_constant(block3, "1", sym_desc);
-    auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::int_add, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block3, input3, tasklet3, "_in1", {});
     builder.add_computational_memlet(block3, one_node, tasklet3, "_in2", {});
     builder.add_computational_memlet(block3, tasklet3, "_out", output3, {});
@@ -632,7 +632,7 @@ TEST(DotVisualizerTest, test_return) {
         << escapeDotId(two_node.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"2.0\"];"
         << std::endl
         << escapeDotId(input2.element_id(), "n_") << " [penwidth=3.0,label=\"A\"];" << std::endl
-        << escapeDotId(tasklet2.element_id(), "n_") << " [shape=octagon,label=\"_out = _in1 * _in2\"];" << std::endl
+        << escapeDotId(tasklet2.element_id(), "n_") << " [shape=octagon,label=\"_out = *(_in1, _in2)\"];" << std::endl
         << escapeDotId(input2.element_id(), "n_") << " -> " << escapeDotId(tasklet2.element_id(), "n_")
         << " [label=\"   _in1 = A[i]   \"];" << std::endl
         << escapeDotId(two_node.element_id(), "n_") << " -> " << escapeDotId(tasklet2.element_id(), "n_")
@@ -647,7 +647,7 @@ TEST(DotVisualizerTest, test_return) {
         << escapeDotId(one_node.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"1\"];"
         << std::endl
         << escapeDotId(input3.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"i\"];" << std::endl
-        << escapeDotId(tasklet3.element_id(), "n_") << " [shape=octagon,label=\"_out = _in1 + _in2\"];" << std::endl
+        << escapeDotId(tasklet3.element_id(), "n_") << " [shape=octagon,label=\"_out = +(_in1, _in2)\"];" << std::endl
         << escapeDotId(input3.element_id(), "n_") << " -> " << escapeDotId(tasklet3.element_id(), "n_")
         << " [label=\"   _in1 = i   \"];" << std::endl
         << escapeDotId(one_node.element_id(), "n_") << " -> " << escapeDotId(tasklet3.element_id(), "n_")
@@ -684,10 +684,9 @@ TEST(DotVisualizerTest, test_return) {
 TEST(DotVisualizerTest, test_handleTasklet) {
     const std::vector<std::pair<const data_flow::TaskletCode, const std::string>> codes = {
         {data_flow::TaskletCode::assign, "="},
-        {data_flow::TaskletCode::fp_neg, "-"},
-        {data_flow::TaskletCode::add, "+"},
-        {data_flow::TaskletCode::sub, "-"},
-        {data_flow::TaskletCode::mul, "*"},
+        {data_flow::TaskletCode::fp_add, "+"},
+        {data_flow::TaskletCode::fp_sub, "-"},
+        {data_flow::TaskletCode::fp_mul, "*"},
         {data_flow::TaskletCode::fp_fma, "fma"},
     };
     for (const std::pair<const data_flow::TaskletCode, const std::string> code : codes) {

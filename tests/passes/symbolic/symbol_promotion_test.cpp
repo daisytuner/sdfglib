@@ -219,7 +219,7 @@ TEST(SymbolPromotionTest, Add_Signed) {
     auto& input_node1 = builder.add_access(block, "i");
     auto& input_node2 = builder.add_access(block, "j");
     auto& output_node = builder.add_access(block, "j");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_add, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block, input_node1, tasklet, "_in1", {});
     builder.add_computational_memlet(block, input_node2, tasklet, "_in2", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
@@ -262,7 +262,7 @@ TEST(SymbolPromotionTest, Add_Signed_Constant) {
     auto& output_node = builder.add_access(block, "i");
     auto& zero_node = builder.add_constant(block, "0", desc);
     auto& one_node = builder.add_constant(block, "1", desc);
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_add, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block, zero_node, tasklet, "_in1", {});
     builder.add_computational_memlet(block, one_node, tasklet, "_in2", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
@@ -308,7 +308,7 @@ TEST(SymbolPromotionTest, Sub_Signed) {
     auto& input_node1 = builder.add_access(block, "i");
     auto& input_node2 = builder.add_access(block, "j");
     auto& output_node = builder.add_access(block, "j");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::sub, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_sub, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block, input_node1, tasklet, "_in1", {});
     builder.add_computational_memlet(block, input_node2, tasklet, "_in2", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
@@ -351,7 +351,7 @@ TEST(SymbolPromotionTest, Sub_Signed_Constant) {
     auto& output_node = builder.add_access(block, "i");
     auto& zero_node = builder.add_constant(block, "0", desc);
     auto& one_node = builder.add_constant(block, "1", desc);
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::sub, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_sub, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block, zero_node, tasklet, "_in1", {});
     builder.add_computational_memlet(block, one_node, tasklet, "_in2", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
@@ -397,7 +397,7 @@ TEST(SymbolPromotionTest, Mul_Signed) {
     auto& input_node1 = builder.add_access(block, "i");
     auto& input_node2 = builder.add_access(block, "j");
     auto& output_node = builder.add_access(block, "j");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::mul, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_mul, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block, input_node1, tasklet, "_in1", {});
     builder.add_computational_memlet(block, input_node2, tasklet, "_in2", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
@@ -440,7 +440,7 @@ TEST(SymbolPromotionTest, Mul_Signed_Constant) {
     auto& output_node = builder.add_access(block, "i");
     auto& zero_node = builder.add_constant(block, "0", desc);
     auto& one_node = builder.add_constant(block, "1", desc);
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::mul, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_mul, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(block, zero_node, tasklet, "_in1", {});
     builder.add_computational_memlet(block, one_node, tasklet, "_in2", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {});

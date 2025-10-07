@@ -35,7 +35,7 @@ bool SubNode::expand_operation(
     auto& input_node_a = builder.add_access(code_block, input_name_a);
     auto& input_node_b = builder.add_access(code_block, input_name_b);
     auto& output_node = builder.add_access(code_block, output_name);
-    auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::sub, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::fp_sub, "_out", {"_in1", "_in2"});
     builder.add_computational_memlet(code_block, input_node_a, tasklet, "_in1", subset, input_type_a);
     builder.add_computational_memlet(code_block, input_node_b, tasklet, "_in2", subset, input_type_b);
     builder.add_computational_memlet(code_block, tasklet, "_out", output_node, subset, output_type);

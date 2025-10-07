@@ -193,22 +193,26 @@ std::string CLanguageExtension::access_node(const data_flow::AccessNode& node) {
 
 std::string CLanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
     switch (tasklet.code()) {
-        case data_flow::TaskletCode::add:
-            return tasklet.inputs().at(0) + " + " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::assign:
             return tasklet.inputs().at(0);
-        case data_flow::TaskletCode::mul:
-            return tasklet.inputs().at(0) + " * " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::sub:
-            return tasklet.inputs().at(0) + " - " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::fp_div:
-            return tasklet.inputs().at(0) + " / " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::fp_fma:
-            return tasklet.inputs().at(0) + " * " + tasklet.inputs().at(1) + " + " + tasklet.inputs().at(2);
         case data_flow::TaskletCode::fp_neg:
             return "-" + tasklet.inputs().at(0);
+        case data_flow::TaskletCode::fp_add:
+            return tasklet.inputs().at(0) + " + " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_sub:
+            return tasklet.inputs().at(0) + " - " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_mul:
+            return tasklet.inputs().at(0) + " * " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_div:
+            return tasklet.inputs().at(0) + " / " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_rem:
+            return "remainder(" + tasklet.inputs().at(0) + ", " + tasklet.inputs().at(1) + ")";
+        case data_flow::TaskletCode::fp_fma:
+            return tasklet.inputs().at(0) + " * " + tasklet.inputs().at(1) + " + " + tasklet.inputs().at(2);
         case data_flow::TaskletCode::fp_oeq:
             return tasklet.inputs().at(0) + " == " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_one:
+            return tasklet.inputs().at(0) + " != " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::fp_ogt:
             return tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::fp_oge:
@@ -217,15 +221,14 @@ std::string CLanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
             return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::fp_ole:
             return tasklet.inputs().at(0) + " <= " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::fp_one:
-            return tasklet.inputs().at(0) + " != " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::fp_ord:
             return "isnan(" + tasklet.inputs().at(0) + ") && isnan(" + tasklet.inputs().at(1) + ")";
-        case data_flow::TaskletCode::fp_rem:
-            return "remainder(" + tasklet.inputs().at(0) + ", " + tasklet.inputs().at(1) + ")";
         case data_flow::TaskletCode::fp_ueq:
             return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
                    tasklet.inputs().at(0) + " == " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::fp_une:
+            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
+                   tasklet.inputs().at(0) + " != " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::fp_ugt:
             return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
                    tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1);
@@ -238,31 +241,38 @@ std::string CLanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
         case data_flow::TaskletCode::fp_ule:
             return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
                    tasklet.inputs().at(0) + " <= " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::fp_une:
-            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
-                   tasklet.inputs().at(0) + " != " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::fp_uno:
             return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")";
+        case data_flow::TaskletCode::int_add:
+            return tasklet.inputs().at(0) + " + " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_sub:
+            return tasklet.inputs().at(0) + " - " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_mul:
+            return tasklet.inputs().at(0) + " * " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_sdiv:
+            return tasklet.inputs().at(0) + " / " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_srem:
+            return tasklet.inputs().at(0) + " % " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_udiv:
+            return tasklet.inputs().at(0) + " / " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_urem:
+            return tasklet.inputs().at(0) + " % " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_and:
             return tasklet.inputs().at(0) + " & " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::int_ashr:
-            return tasklet.inputs().at(0) + " >> " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_or:
             return tasklet.inputs().at(0) + " | " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_xor:
             return tasklet.inputs().at(0) + " ^ " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_shl:
+            return tasklet.inputs().at(0) + " << " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_lshr:
+            return tasklet.inputs().at(0) + " >> " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_ashr:
+            return tasklet.inputs().at(0) + " >> " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_eq:
             return tasklet.inputs().at(0) + " == " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_ne:
             return tasklet.inputs().at(0) + " != " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::int_ugt:
-            return tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::int_uge:
-            return tasklet.inputs().at(0) + " >= " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::int_ult:
-            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::int_ule:
-            return tasklet.inputs().at(0) + " <= " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_sgt:
             return tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_sge:
@@ -271,18 +281,14 @@ std::string CLanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
             return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_sle:
             return tasklet.inputs().at(0) + " <= " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::int_lshr:
-            return tasklet.inputs().at(0) + " >> " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::int_sdiv:
-            return tasklet.inputs().at(0) + " / " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::int_shl:
-            return tasklet.inputs().at(0) + " << " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::int_srem:
-            return tasklet.inputs().at(0) + " % " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::int_udiv:
-            return tasklet.inputs().at(0) + " / " + tasklet.inputs().at(1);
-        case data_flow::TaskletCode::int_urem:
-            return tasklet.inputs().at(0) + " % " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_ugt:
+            return tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_uge:
+            return tasklet.inputs().at(0) + " >= " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_ult:
+            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1);
+        case data_flow::TaskletCode::int_ule:
+            return tasklet.inputs().at(0) + " <= " + tasklet.inputs().at(1);
     };
     throw std::invalid_argument("Invalid tasklet code");
 };

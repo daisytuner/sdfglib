@@ -27,20 +27,28 @@ constexpr const char* code_to_string(data_flow::TaskletCode c) {
     switch (c) {
         case data_flow::TaskletCode::assign:
             return "=";
-        case data_flow::TaskletCode::add:
+        case data_flow::TaskletCode::int_add:
+        case data_flow::TaskletCode::fp_add:
             return "+";
-        case data_flow::TaskletCode::sub:
+        case data_flow::TaskletCode::int_sub:
+        case data_flow::TaskletCode::fp_sub:
             return "-";
-        case data_flow::TaskletCode::mul:
+        case data_flow::TaskletCode::int_mul:
+        case data_flow::TaskletCode::fp_mul:
             return "*";
         case data_flow::TaskletCode::int_udiv:
         case data_flow::TaskletCode::int_sdiv:
         case data_flow::TaskletCode::fp_div:
             return "/";
+        case data_flow::TaskletCode::int_urem:
+        case data_flow::TaskletCode::int_srem:
+        case data_flow::TaskletCode::fp_rem:
+            return "/";
         case data_flow::TaskletCode::fp_fma:
             return "fma";
+        default:
+            return "?";
     };
-    return "?";
 };
 
 std::string Visualizer::expression(const std::string expr) {
