@@ -205,6 +205,33 @@ TEST(SymbolPromotionTest, Assign_Unsigned_Tasklet) {
     EXPECT_FALSE(s2spass.run(builder_opt, analysis_manager));
 }
 
+TEST(SymbolPromotionTest, Assign_FP) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::UInt32);
+    types::Scalar fdesc(types::PrimitiveType::Float);
+    builder.add_container("i", fdesc);
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& zero_node = builder.add_constant(block, "0", desc);
+    auto& output_node = builder.add_access(block, "i");
+    
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+
+    builder.add_computational_memlet(block, zero_node, tasklet, "_in", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_FALSE(s2spass.run(builder_opt, analysis_manager));
+}
+
+
 TEST(SymbolPromotionTest, Add_Signed) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 

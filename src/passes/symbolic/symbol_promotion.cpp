@@ -60,7 +60,7 @@ bool SymbolPromotion::can_be_applied(
         }
 
         // Connector type must be a signed integer
-        if (types::is_unsigned(iedge.base_type().primitive_type())) {
+        if (!types::is_integer(iedge.base_type().primitive_type()) || types::is_unsigned(iedge.base_type().primitive_type())) {
             return false;
         }
 
@@ -86,7 +86,7 @@ bool SymbolPromotion::can_be_applied(
     if (oedge.subset().size() > 0) {
         return false;
     }
-    if (types::is_unsigned(oedge.base_type().primitive_type())) {
+    if (!types::is_integer(oedge.base_type().primitive_type()) || types::is_unsigned(oedge.base_type().primitive_type())) {
         return false;
     }
     
