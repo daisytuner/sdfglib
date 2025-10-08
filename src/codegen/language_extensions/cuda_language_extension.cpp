@@ -230,27 +230,27 @@ std::string CUDALanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
         case data_flow::TaskletCode::fp_ole:
             return tasklet.inputs().at(0) + " <= " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::fp_ord:
-            return "isnan(" + tasklet.inputs().at(0) + ") && isnan(" + tasklet.inputs().at(1) + ")";
+            return "std::isnan(" + tasklet.inputs().at(0) + ") && std::isnan(" + tasklet.inputs().at(1) + ")";
         case data_flow::TaskletCode::fp_ueq:
-            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
+            return "std::isnan(" + tasklet.inputs().at(0) + ") || std::isnan(" + tasklet.inputs().at(1) + ")" + " || " +
                    tasklet.inputs().at(0) + " == " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::fp_une:
-            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
+            return "std::isnan(" + tasklet.inputs().at(0) + ") || std::isnan(" + tasklet.inputs().at(1) + ")" + " || " +
                    tasklet.inputs().at(0) + " != " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::fp_ugt:
-            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
+            return "std::isnan(" + tasklet.inputs().at(0) + ") || std::isnan(" + tasklet.inputs().at(1) + ")" + " || " +
                    tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::fp_uge:
-            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
+            return "std::isnan(" + tasklet.inputs().at(0) + ") || std::isnan(" + tasklet.inputs().at(1) + ")" + " || " +
                    tasklet.inputs().at(0) + " >= " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::fp_ult:
-            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
+            return "std::isnan(" + tasklet.inputs().at(0) + ") || std::isnan(" + tasklet.inputs().at(1) + ")" + " || " +
                    tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::fp_ule:
-            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")" + " || " +
+            return "std::isnan(" + tasklet.inputs().at(0) + ") || std::isnan(" + tasklet.inputs().at(1) + ")" + " || " +
                    tasklet.inputs().at(0) + " <= " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::fp_uno:
-            return "isnan(" + tasklet.inputs().at(0) + ") || isnan(" + tasklet.inputs().at(1) + ")";
+            return "std::isnan(" + tasklet.inputs().at(0) + ") || std::isnan(" + tasklet.inputs().at(1) + ")";
         case data_flow::TaskletCode::int_add:
             return tasklet.inputs().at(0) + " + " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_sub:
