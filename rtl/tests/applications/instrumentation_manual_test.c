@@ -10,6 +10,7 @@ void main(int argc, char** argv) {
         .line_end = 31,
         .column_begin = 4,
         .column_end = 5,
+        .target_type = "SEQUENTIAL",
         .region_uuid = "__daisy_instrumentation_test_0_10"
     };
     unsigned long long region_id = __daisy_instrumentation_init(&metadata, __DAISY_EVENT_SET_CPU);

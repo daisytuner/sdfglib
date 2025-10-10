@@ -203,12 +203,17 @@ private:
             }
             entry << "\"element_id\":" << md.element_id << ",";
             entry << "\"element_type\":\"" << md.element_type << "\",";
-            entry << "\"target_type\":\"" << md.target_type << "\",";
             entry << "\"loopnest_index\":" << md.loopnest_index;
 
             entry << "},";
         }
-        
+
+        if (md.target_type) {
+            entry << "\"target_type\":\"" << md.target_type << "\",";
+        } else {
+            entry << "\"target_type\":\"\",";
+        }
+
         // Metrics
         entry << "\"metrics\":{";
         if (index < region.counts.size()) {
@@ -300,10 +305,15 @@ private:
             }
             entry << "\"element_id\":" << md.element_id << ",";
             entry << "\"element_type\":\"" << md.element_type << "\",";
-            entry << "\"target_type\":\"" << md.target_type << "\",";
             entry << "\"loopnest_index\":" << md.loopnest_index;
 
             entry << "},";
+        }
+
+        if (md.target_type) {
+            entry << "\"target_type\":\"" << md.target_type << "\",";
+        } else {
+            entry << "\"target_type\":\"\",";
         }
 
         entry << "\"metrics\":{";

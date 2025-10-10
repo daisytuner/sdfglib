@@ -92,6 +92,8 @@ def test_instrumentation(event):
         assert docc_metadata["element_id"] == 10
         assert docc_metadata["loopnest_index"] == 0
 
+        assert events[i]["args"]["target_type"] == "sequential"
+
         # Event metrics checks
         assert len(events[i]["args"]["metrics"]) == len(event_names)
         for event_name in event_names:
@@ -182,8 +184,9 @@ def test_instrumentation_aggregate(event):
     assert docc_metadata["arg_capture_path"] == ""
     assert docc_metadata["element_id"] == 10
     assert docc_metadata["element_type"] == "for"
-    assert docc_metadata["target_type"] == "sequential"
     assert docc_metadata["loopnest_index"] == 0
+
+    assert event["args"]["target_type"] == "sequential"
 
     assert len(event["args"]["metrics"]) == len(event_names) + 1
     for event_name in event_names:
@@ -288,8 +291,9 @@ def test_instrumentation_cuda(event):
         assert docc_metadata["arg_capture_path"] == ""
         assert docc_metadata["element_id"] == 10
         assert docc_metadata["element_type"] == "for"
-        assert docc_metadata["target_type"] == "cuda"
         assert docc_metadata["loopnest_index"] == 0
+
+        assert events[i]["args"]["target_type"] == "cuda"
 
         for event_name in event_names:
             assert event_name in events[i]["args"]["metrics"]
