@@ -414,3 +414,136 @@ def test_capture_strats(strat, expected_reports):
     finally:
         # Cleanup
         subprocess.run(["rm", "-rf", str(workdir / "arg_captures")])
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        pytest.param(""),
+    ],
+)
+def test_instrumentation_static(event):
+    workdir = Path(__file__).parent / "applications"
+
+    benchmark_path = workdir / "instrumentation_static_test.c"
+    output_path = workdir / "instrumentation_test.out"
+    cmd = [
+        "gcc",
+        str(benchmark_path),
+        "-o",
+        str(output_path),
+        "-ldaisy_rtl",
+        "-larg_capture_io",
+        "-lstdc++"
+    ]
+
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        print(stdout)
+        print(stderr)
+    assert process.returncode == 0
+
+    (workdir / "data_static.json").unlink(missing_ok=True)
+
+    ## THIS VERSION IS RUNNER-SPECIFIC and points to CI version of PAPI
+    os.environ["__DAISY_PAPI_VERSION"] = "0x07020000"
+    os.environ["__DAISY_INSTRUMENTATION_FILE"] = str(workdir / "data_static.json")
+    os.environ["__DAISY_INSTRUMENTATION_EVENTS"] = event
+    os.environ["__DAISY_INSTRUMENTATION_MODE"] = "aggregate"
+
+    # Run benchmark
+    process = subprocess.Popen(
+        [str(output_path)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        print(stdout)
+        print(stderr)
+    assert process.returncode == 0
+
+    result = json.load(open(workdir / "data_static.json"))
+    events = result["traceEvents"]
+    assert len(events) == 1
+
+    event = events[0]
+    assert "static:::foo" in event["args"]["metrics"]
+    assert event["args"]["metrics"]["static:::foo"]["mean"] == 4.5
+    assert event["args"]["metrics"]["static:::foo"]["min"] == 0
+    assert event["args"]["metrics"]["static:::foo"]["max"] == 9
+    assert event["args"]["metrics"]["static:::foo"]["count"] == 10
+    assert event["args"]["metrics"]["static:::foo"]["variance"] == 8.25
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        pytest.param(""),
+    ],
+)
+def test_instrumentation_manual(event):
+    workdir = Path(__file__).parent / "applications"
+
+    benchmark_path = workdir / "instrumentation_manual_test.c"
+    output_path = workdir / "instrumentation_test.out"
+    cmd = [
+        "gcc",
+        str(benchmark_path),
+        "-o",
+        str(output_path),
+        "-ldaisy_rtl",
+        "-larg_capture_io",
+        "-lstdc++"
+    ]
+
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        print(stdout)
+        print(stderr)
+    assert process.returncode == 0
+
+    (workdir / "data_manual.json").unlink(missing_ok=True)
+
+    ## THIS VERSION IS RUNNER-SPECIFIC and points to CI version of PAPI
+    os.environ["__DAISY_PAPI_VERSION"] = "0x07020000"
+    os.environ["__DAISY_INSTRUMENTATION_FILE"] = str(workdir / "data_manual.json")
+    os.environ["__DAISY_INSTRUMENTATION_EVENTS"] = event
+    os.environ["__DAISY_INSTRUMENTATION_MODE"] = "aggregate"
+
+    # Run benchmark
+    process = subprocess.Popen(
+        [str(output_path)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        print(stdout)
+        print(stderr)
+    assert process.returncode == 0
+
+    result = json.load(open(workdir / "data_static.json"))
+    events = result["traceEvents"]
+    assert len(events) == 1
+
+    event = events[0]
+    assert "static:::foo" in event["args"]["metrics"]
+    assert event["args"]["metrics"]["static:::foo"]["mean"] == 4.5
+    assert event["args"]["metrics"]["static:::foo"]["min"] == 0
+    assert event["args"]["metrics"]["static:::foo"]["max"] == 9
+    assert event["args"]["metrics"]["static:::foo"]["count"] == 10
+    assert event["args"]["metrics"]["static:::foo"]["variance"] == 8.25
+

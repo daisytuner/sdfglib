@@ -90,6 +90,13 @@ struct DaisyRegion {
     std::vector<double> variance;
     std::vector<long long> min;
     std::vector<long long> max;
+
+    // Static counters
+    std::unordered_map<std::string, long long> static_counters_n;
+    std::unordered_map<std::string, double> static_counters_mean;
+    std::unordered_map<std::string, double> static_counters_variance;
+    std::unordered_map<std::string, long long> static_counters_min;
+    std::unordered_map<std::string, long long> static_counters_max;
 };
 
 class DaisyInstrumentationState {
@@ -178,19 +185,29 @@ private:
         entry << "}],";
 
         // docc metadata
-        entry << "\"docc\":";
-        entry << "{";
-    
-        entry << "\"sdfg_name\":\"" << md.sdfg_name << "\",";
-        entry << "\"sdfg_file\":\"" << md.sdfg_file << "\",";
-        entry << "\"arg_capture_path\":\"" << md.arg_capture_path << "\",";
-        entry << "\"features_file\":\"" << md.features_file << "\",";
-        entry << "\"element_id\":" << md.element_id << ",";
-        entry << "\"element_type\":\"" << md.element_type << "\",";
-        entry << "\"target_type\":\"" << md.target_type << "\",";
-        entry << "\"loopnest_index\":" << md.loopnest_index;
+        if (md.sdfg_name && md.sdfg_file) {
+            entry << "\"docc\":";
+            entry << "{";
+        
+            entry << "\"sdfg_name\":\"" << md.sdfg_name << "\",";
+            entry << "\"sdfg_file\":\"" << md.sdfg_file << "\",";
+            if (md.arg_capture_path) {
+                entry << "\"arg_capture_path\":\"" << md.arg_capture_path << "\",";
+            } else {
+                entry << "\"arg_capture_path\":\"\",";
+            }
+            if (md.features_file) {
+                entry << "\"features_file\":\"" << md.features_file << "\",";
+            } else {
+                entry << "\"features_file\":\"\",";
+            }
+            entry << "\"element_id\":" << md.element_id << ",";
+            entry << "\"element_type\":\"" << md.element_type << "\",";
+            entry << "\"target_type\":\"" << md.target_type << "\",";
+            entry << "\"loopnest_index\":" << md.loopnest_index;
 
-        entry << "},";
+            entry << "},";
+        }
         
         // Metrics
         entry << "\"metrics\":{";
@@ -265,19 +282,29 @@ private:
         entry << "}],";
 
         // docc metadata
-        entry << "\"docc\":";
-        entry << "{";
-    
-        entry << "\"sdfg_name\":\"" << md.sdfg_name << "\",";
-        entry << "\"sdfg_file\":\"" << md.sdfg_file << "\",";
-        entry << "\"arg_capture_path\":\"" << md.arg_capture_path << "\",";
-        entry << "\"features_file\":\"" << md.features_file << "\",";
-        entry << "\"element_id\":" << md.element_id << ",";
-        entry << "\"element_type\":\"" << md.element_type << "\",";
-        entry << "\"target_type\":\"" << md.target_type << "\",";
-        entry << "\"loopnest_index\":" << md.loopnest_index;
+        if (md.sdfg_name && md.sdfg_file) {
+            entry << "\"docc\":";
+            entry << "{";
+        
+            entry << "\"sdfg_name\":\"" << md.sdfg_name << "\",";
+            entry << "\"sdfg_file\":\"" << md.sdfg_file << "\",";
+            if (md.arg_capture_path) {
+                entry << "\"arg_capture_path\":\"" << md.arg_capture_path << "\",";
+            } else {
+                entry << "\"arg_capture_path\":\"\",";
+            }
+            if (md.features_file) {
+                entry << "\"features_file\":\"" << md.features_file << "\",";
+            } else {
+                entry << "\"features_file\":\"\",";
+            }
+            entry << "\"element_id\":" << md.element_id << ",";
+            entry << "\"element_type\":\"" << md.element_type << "\",";
+            entry << "\"target_type\":\"" << md.target_type << "\",";
+            entry << "\"loopnest_index\":" << md.loopnest_index;
 
-        entry << "},";
+            entry << "},";
+        }
 
         entry << "\"metrics\":{";
         // PAPI counters
@@ -291,6 +318,18 @@ private:
             entry << "}";
             entry << ",";
         }
+        // Static counters
+        for (auto& [name, mean] : region.static_counters_mean) {
+            entry << "\"static:::" << name << "\":{";
+            entry << "\"mean\":" << mean << ",";
+            entry << "\"variance\":" << region.static_counters_variance[name] << ",";
+            entry << "\"count\":" << region.static_counters_n[name] << ",";
+            entry << "\"min\":" << region.static_counters_min[name] << ",";
+            entry << "\"max\":" << region.static_counters_max[name];
+            entry << "}";
+            entry << ",";
+        }
+
         // Runtime stats
         entry << "\"runtime\":{";
         entry << "\"mean\":" << ns_to_us(region.runtime_mean) << ",";
@@ -642,6 +681,55 @@ public:
         }
     }
 
+    void increment(size_t region_id, const char* name, long long value) {
+        std::lock_guard<std::mutex> lock(mutex);
+
+        auto it = regions.find(region_id);
+        if (it == regions.end()) {
+            std::fprintf(stderr, "[daisy-rtl] Warning: incrementing unknown region %zu\n", region_id);
+            exit(EXIT_FAILURE);
+        }
+
+        DaisyRegion& region = it->second;
+
+        if (region.static_counters_n.find(name) == region.static_counters_n.end()) {
+            // Initialize counter
+            region.static_counters_n[name] = 1;
+            region.static_counters_mean[name] = value;
+            region.static_counters_variance[name] = 0.0;
+            region.static_counters_min[name] = value;
+            region.static_counters_max[name] = value;
+            return;
+        }
+
+        // Update static counter
+        auto& n = region.static_counters_n[name];
+        auto& mean = region.static_counters_mean[name];
+        auto& variance = region.static_counters_variance[name];
+        auto& min = region.static_counters_min[name];
+        auto& max = region.static_counters_max[name];
+
+        n += 1;
+
+        // Mean/variance using Welford's algorithm
+
+        // delta_1 = x_n - mean_{n-1}
+        double delta1 = value - mean;
+
+        // mean_n = mean_{n-1} + (x_n - mean_{n-1}) / n
+        mean += delta1 / n;
+
+        // delta_2 = x_n - mean_n
+        double delta2 = value - mean;
+
+        // variance_n = variance_{n-1} + (delta_1 * delta_2 - variance_{n-1}) / n
+        variance += (delta1 * delta2 - variance) / n;
+
+        // Min/max
+        if (value < min) min = value;
+        if (value > max) max = value;
+    }
+
     void finalize(size_t region_id) {
         std::lock_guard<std::mutex> lock(mutex);
 
@@ -711,6 +799,10 @@ void __daisy_instrumentation_enter(size_t region_id) { g_daisy_state.enter_regio
 void __daisy_instrumentation_exit(size_t region_id) { g_daisy_state.exit_region(region_id); }
 
 void __daisy_instrumentation_finalize(size_t region_id) { g_daisy_state.finalize(region_id); }
+
+void __daisy_instrumentation_increment(size_t region_id, const char* name, long long value) {
+    g_daisy_state.increment(region_id, name, value);
+}
 
 #ifdef __cplusplus
 } // extern "C"

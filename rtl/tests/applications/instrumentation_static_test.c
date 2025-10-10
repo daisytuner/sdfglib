@@ -12,6 +12,8 @@ void main(int argc, char** argv) {
         .column_end = 5,
         .sdfg_name = "__daisy_instrumentation_test_0",
         .sdfg_file = "/tmp/DOCC/0000-0000/123456789/sdfg_0.json",
+        .arg_capture_path = "",
+        .features_file = "",
         .element_id = 10,
         .element_type = "for",
         .target_type = "sequential",
@@ -38,6 +40,7 @@ void main(int argc, char** argv) {
         }
 
         __daisy_instrumentation_exit(region_id);
+        __daisy_instrumentation_increment(region_id, "foo", rep);
 
         for (int i = 0; i < 1000; i++) {
             printf("%f\n", C[i]);

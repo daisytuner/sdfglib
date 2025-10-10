@@ -36,22 +36,25 @@ typedef struct __daisy_metadata {
     const char* target_type;
     int loopnest_index;
 
-    // sdfg_name + element_id
+    // Example: sdfg_name + element_id
     const char* region_uuid;
-
 } __daisy_metadata_t;
 
 // Registers a region and returns a region ID
 size_t __daisy_instrumentation_init(__daisy_metadata_t* metadata, enum __daisy_event_set event_set);
 
-// Finalizes a region (may be a no-op or free resources for the region)
+// Finalizes a region
 void __daisy_instrumentation_finalize(size_t region_id);
 
-// Enter a region, resetting counters for the given event set
+// Enter a region, starts measurement
 void __daisy_instrumentation_enter(size_t region_id);
 
-// Exit a region, storing values for the given event set into the cache
+// Exit a region, stops measurement and saves data
 void __daisy_instrumentation_exit(size_t region_id);
+
+// Increments a counter with name statically
+// The counters appear with the "static:::" prefix in the output
+void __daisy_instrumentation_increment(size_t region_id, const char* name, long long value);
 
 typedef struct __daisy_capture __daisy_capture_t;
 
