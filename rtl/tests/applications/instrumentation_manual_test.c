@@ -13,7 +13,7 @@ void main(int argc, char** argv) {
         .target_type = "SEQUENTIAL",
         .region_uuid = "__daisy_instrumentation_test_0_10"
     };
-    unsigned long long region_id = __daisy_instrumentation_init(&metadata, __DAISY_EVENT_SET_CPU);
+    unsigned long long region_id = __daisy_instrumentation_init(&metadata, __DAISY_EVENT_SET_NONE);
 
     for (size_t rep = 0; rep < 10; rep++) {
         __daisy_instrumentation_enter(region_id);

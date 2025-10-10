@@ -11,6 +11,7 @@ extern "C" {
 enum __daisy_event_set {
     __DAISY_EVENT_SET_CPU = 0,
     __DAISY_EVENT_SET_CUDA = 1,
+    __DAISY_EVENT_SET_NONE = 2,
 };
 
 typedef struct __daisy_metadata {
