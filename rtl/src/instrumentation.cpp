@@ -447,10 +447,16 @@ public:
 
             // Print one aggregated event
             if (this->aggregate_events) {
+                std::vector<std::string> event_names = {};
+                if (region.event_set == __DAISY_EVENT_SET_CPU) {
+                    event_names = this->event_names_cpu;
+                } else if (region.event_set == __DAISY_EVENT_SET_CUDA) {
+                    event_names = this->event_names_cuda;
+                }
                 append_event_aggregated(
                     f,
                     region,
-                    region.event_set == __DAISY_EVENT_SET_CPU ? event_names_cpu : event_names_cuda
+                    event_names
                 );
 
                 if (std::next(iter) != regions.end()) {
@@ -461,11 +467,17 @@ public:
 
             // Print all individual events
             for (size_t event_index = 0; event_index < region.starts.size(); ++event_index) {
+                std::vector<std::string> event_names = {};
+                if (region.event_set == __DAISY_EVENT_SET_CPU) {
+                    event_names = this->event_names_cpu;
+                } else if (region.event_set == __DAISY_EVENT_SET_CUDA) {
+                    event_names = this->event_names_cuda;
+                }
                 append_event(
                     f,
                     region,
                     event_index,
-                    region.event_set == __DAISY_EVENT_SET_CPU ? event_names_cpu : event_names_cuda
+                    event_names
                 );
                 if (event_index < region.starts.size() - 1) {
                     std::fprintf(f, ",\n");
