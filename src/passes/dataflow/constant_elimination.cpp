@@ -37,6 +37,9 @@ inputs(const std::string& container, structured_control_flow::Transition* transi
     std::unordered_set<analysis::User*> inputs;
     auto& assign = transition->assignments().at(symbolic::symbol(container));
     for (auto& sym : symbolic::atoms(assign)) {
+        if (symbolic::eq(sym, symbolic::__nullptr__())) {
+            continue;
+        }
         inputs.insert(users.get_user(sym->get_name(), transition, analysis::Use::READ));
     }
     return inputs;
