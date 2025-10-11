@@ -5,6 +5,16 @@
 namespace sdfg {
 namespace passes {
 
+/**
+ * @brief A pass that eliminates duplicate defines with the same constant value.
+ * 
+ * For example, in the following code, the second definition of `a` inside the loop is redundant and will be removed.
+ * a = 5
+ * while (cond) {
+ *     a = 5  # this define is redundant and will be removed
+ *     ...
+ * }
+ */
 class ConstantElimination : public Pass {
    public:
     ConstantElimination();
