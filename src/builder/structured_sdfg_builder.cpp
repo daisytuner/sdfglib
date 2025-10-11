@@ -1053,6 +1053,85 @@ Map& StructuredSDFGBuilder::add_map_after(
     return static_cast<Map&>(*parent.children_.at(index + 1).get());
 };
 
+ForEach& StructuredSDFGBuilder::add_for_each(
+    Sequence& parent,
+    const symbolic::Symbol iterator,
+    const symbolic::Symbol end,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    parent.children_
+        .push_back(std::unique_ptr<
+                   ForEach>(new ForEach(this->new_element_id(), debug_info, iterator, end)));
+
+    // Increment element id for body node
+    this->new_element_id();
+
+    parent.transitions_
+        .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+        );
+
+    return static_cast<ForEach&>(*parent.children_.back().get());
+};
+
+ForEach& StructuredSDFGBuilder::add_for_each_before(
+    Sequence& parent,
+    ControlFlowNode& child,
+    const symbolic::Symbol iterator,
+    const symbolic::Symbol end,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
+    }
+
+    parent.children_.insert(
+        parent.children_.begin() + index,
+        std::unique_ptr<ForEach>(new ForEach(this->new_element_id(), debug_info, iterator, end))
+    );
+
+    // Increment element id for body node
+    this->new_element_id();
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+    );
+
+    return static_cast<ForEach&>(*parent.children_.at(index).get());
+};
+
+ForEach& StructuredSDFGBuilder::add_for_each_after(
+    Sequence& parent,
+    ControlFlowNode& child,
+    const symbolic::Symbol iterator,
+    const symbolic::Symbol end,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
+    }
+
+    parent.children_.insert(
+        parent.children_.begin() + index + 1,
+        std::unique_ptr<ForEach>(new ForEach(this->new_element_id(), debug_info, iterator, end))
+    );
+
+    // Increment element id for body node
+    this->new_element_id();
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index + 1,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+    );
+
+    return static_cast<ForEach&>(*parent.children_.at(index + 1).get());
+};
+
 Continue& StructuredSDFGBuilder::
     add_continue(Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfo& debug_info) {
     // Check if continue is in a loop

@@ -15,6 +15,7 @@ class StructuredSDFGBuilder;
 
 namespace structured_control_flow {
 
+class ForEach;
 class While;
 class StructuredLoop;
 class Sequence;
@@ -58,6 +59,7 @@ class Sequence : public ControlFlowNode {
 
     friend class sdfg::StructuredSDFG;
 
+    friend class sdfg::structured_control_flow::ForEach;
     friend class sdfg::structured_control_flow::While;
     friend class sdfg::structured_control_flow::StructuredLoop;
 

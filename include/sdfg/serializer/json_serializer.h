@@ -8,6 +8,7 @@
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/map.h"
+#include "sdfg/structured_control_flow/for_each.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
 #include "sdfg/structured_sdfg.h"
@@ -39,6 +40,7 @@ public:
     void continue_node_to_json(nlohmann::json& j, const sdfg::structured_control_flow::Continue& continue_node);
     void return_node_to_json(nlohmann::json& j, const sdfg::structured_control_flow::Return& return_node);
     void map_to_json(nlohmann::json& j, const sdfg::structured_control_flow::Map& map_node);
+    void for_each_to_json(nlohmann::json& j, const sdfg::structured_control_flow::ForEach& for_each_node);
 
     void debug_info_to_json(nlohmann::json& j, const sdfg::DebugInfo& debug_info);
 
@@ -99,6 +101,12 @@ public:
         control_flow::Assignments& assignments
     );
     void json_to_map_node(
+        const nlohmann::json& j,
+        sdfg::builder::StructuredSDFGBuilder& builder,
+        sdfg::structured_control_flow::Sequence& parent,
+        control_flow::Assignments& assignments
+    );
+    void json_to_for_each_node(
         const nlohmann::json& j,
         sdfg::builder::StructuredSDFGBuilder& builder,
         sdfg::structured_control_flow::Sequence& parent,

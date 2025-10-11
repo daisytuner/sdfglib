@@ -14,6 +14,7 @@
 #include "sdfg/structured_control_flow/return.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
+#include "sdfg/structured_control_flow/for_each.h"
 #include "sdfg/structured_sdfg.h"
 #include "sdfg/types/scalar.h"
 
@@ -284,6 +285,32 @@ public:
         const symbolic::Expression init,
         const symbolic::Expression update,
         const ScheduleType& schedule_type,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfo& debug_info = DebugInfo()
+    );
+
+    ForEach& add_for_each(
+        Sequence& parent,
+        const symbolic::Symbol iterator,
+        const symbolic::Symbol end,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfo& debug_info = DebugInfo()
+    );
+
+    ForEach& add_for_each_after(
+        Sequence& parent,
+        ControlFlowNode& child,
+        const symbolic::Symbol iterator,
+        const symbolic::Symbol end,
+        const sdfg::control_flow::Assignments& assignments = {},
+        const DebugInfo& debug_info = DebugInfo()
+    );
+
+    ForEach& add_for_each_before(
+        Sequence& parent,
+        ControlFlowNode& child,
+        const symbolic::Symbol iterator,
+        const symbolic::Symbol end,
         const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfo& debug_info = DebugInfo()
     );
