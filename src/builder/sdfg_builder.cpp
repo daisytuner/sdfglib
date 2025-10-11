@@ -267,7 +267,7 @@ control_flow::InterstateEdge& SDFGBuilder::add_edge(
                 continue;
             }
             auto& atom_type = this->function().type(atom->get_name());
-            
+
             // Scalar integers
             if (atom_type.type_id() == types::TypeID::Scalar) {
                 if (!types::is_integer(atom_type.primitive_type())) {

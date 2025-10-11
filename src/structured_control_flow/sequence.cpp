@@ -44,7 +44,7 @@ void Transition::validate(const Function& function) const {
                 continue;
             }
             auto& atom_type = function.type(atom->get_name());
-            
+
             // Scalar integers
             if (atom_type.type_id() == types::TypeID::Scalar) {
                 if (!types::is_integer(atom_type.primitive_type())) {
