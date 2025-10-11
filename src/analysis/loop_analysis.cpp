@@ -26,6 +26,9 @@ void LoopAnalysis::
         } else if (auto loop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
             this->loops_.push_back(loop_stmt);
             this->loop_tree_[loop_stmt] = parent_loop;
+        } else if (auto for_each_stmt = dynamic_cast<structured_control_flow::ForEach*>(current)) {
+            this->loops_.push_back(for_each_stmt);
+            this->loop_tree_[for_each_stmt] = parent_loop;
         }
 
         if (dynamic_cast<structured_control_flow::Block*>(current)) {
@@ -42,6 +45,8 @@ void LoopAnalysis::
             this->run(while_stmt->root(), while_stmt);
         } else if (auto for_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
             this->run(for_stmt->root(), for_stmt);
+        } else if (auto for_each_stmt = dynamic_cast<structured_control_flow::ForEach*>(current)) {
+            this->run(for_each_stmt->root(), for_each_stmt);
         } else if (dynamic_cast<structured_control_flow::Break*>(current)) {
             continue;
         } else if (dynamic_cast<structured_control_flow::Continue*>(current)) {
@@ -66,6 +71,10 @@ structured_control_flow::ControlFlowNode* LoopAnalysis::find_loop_by_indvar(cons
     for (auto& loop : this->loops_) {
         if (auto loop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(loop)) {
             if (loop_stmt->indvar()->get_name() == indvar) {
+                return loop;
+            }
+        } else if (auto for_each_stmt = dynamic_cast<structured_control_flow::ForEach*>(loop)) {
+            if (for_each_stmt->iterator()->get_name() == indvar) {
                 return loop;
             }
         }

@@ -18,6 +18,8 @@ class ForEach : public ControlFlowNode {
 protected:
     symbolic::Symbol iterator_;
     symbolic::Symbol end_;
+    symbolic::Symbol update_;
+    symbolic::Symbol init_;
 
     std::unique_ptr<Sequence> root_;
 
@@ -25,7 +27,9 @@ protected:
         size_t element_id,
         const DebugInfo& debug_info,
         symbolic::Symbol iterator,
-        symbolic::Symbol end
+        symbolic::Symbol end,
+        symbolic::Symbol update,
+        symbolic::Symbol init = SymEngine::null
     );
 
 public:
@@ -39,6 +43,12 @@ public:
     const symbolic::Symbol iterator() const;
 
     const symbolic::Symbol end() const;
+
+    const symbolic::Symbol update() const;
+
+    const symbolic::Symbol init() const;
+
+    bool has_init() const;
 
     Sequence& root() const;
 

@@ -44,9 +44,12 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
         // Eliminate views
         auto uses = users.uses(container);
         for (auto& move : moves) {
-            auto& access_node = static_cast<data_flow::AccessNode&>(*move->element());
+            auto access_node = dynamic_cast<data_flow::AccessNode*>(move->element());
+            if (!access_node) {
+                continue;
+            }
             auto& dataflow = *move->parent();
-            auto& move_edge = *dataflow.in_edges(access_node).begin();
+            auto& move_edge = *dataflow.in_edges(*access_node).begin();
 
             // Criterion: Must be a reference memlet
             if (move_edge.type() != data_flow::MemletType::Reference) {

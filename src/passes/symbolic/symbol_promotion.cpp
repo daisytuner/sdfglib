@@ -289,6 +289,8 @@ bool SymbolPromotion::run_pass(builder::StructuredSDFGBuilder& builder, analysis
             queue.push_back(&loop_stmt->root());
         } else if (auto sloop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
             queue.push_back(&sloop_stmt->root());
+        } else if (auto for_each_stmt = dynamic_cast<structured_control_flow::ForEach*>(current)) {
+            queue.push_back(&for_each_stmt->root());
         }
     }
 

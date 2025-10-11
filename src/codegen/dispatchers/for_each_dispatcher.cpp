@@ -21,16 +21,14 @@ void ForEachDispatcher::dispatch_node(
 
     std::string iterator = language_extension_.expression(node_.iterator());
 
-    // Update
-    // Offset to 'next' element pointer
-    std::string iterator_offseted = iterator + " + 0";
-    // Reinterpret as pointer to pointer
-    std::string iterator_ptr = language_extension_.type_cast(iterator_offseted, ptr_ptr_type);
-    // Dereference to get next element
-    std::string update = "*(" + iterator_ptr + " + 1)";
-
     main_stream << "for";
     main_stream << "(";
+    if (node_.has_init()) {
+        main_stream << iterator;
+        main_stream << " = ";
+        main_stream << "*(" << language_extension_.type_cast(language_extension_.expression(node_.init()), ptr_ptr_type) << ")";
+        main_stream << "; ";
+    }
     main_stream << ";";
     main_stream << iterator;
     main_stream << " != ";
@@ -38,7 +36,7 @@ void ForEachDispatcher::dispatch_node(
     main_stream << ";";
     main_stream << iterator;
     main_stream << " = ";
-    main_stream << update;
+    main_stream << "*(" << language_extension_.type_cast(language_extension_.expression(node_.update()), ptr_ptr_type) << ")";
     main_stream << ")" << std::endl;
     main_stream << "{" << std::endl;
 

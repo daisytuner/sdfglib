@@ -297,6 +297,10 @@ void JSONSerializer::for_each_to_json(nlohmann::json& j, const structured_contro
 
     j["iterator"] = expression(for_each_node.iterator());
     j["end"] = expression(for_each_node.end());
+    j["update"] = expression(for_each_node.update());
+    if (for_each_node.has_init()) {
+        j["init"] = expression(for_each_node.init());
+    }
 
     nlohmann::json body_json;
     sequence_to_json(body_json, for_each_node.root());
@@ -338,6 +342,8 @@ void JSONSerializer::sequence_to_json(nlohmann::json& j, const structured_contro
             block_to_json(child_json, *block);
         } else if (auto for_node = dynamic_cast<const structured_control_flow::For*>(&child)) {
             for_to_json(child_json, *for_node);
+        } else if (auto for_each_node = dynamic_cast<const structured_control_flow::ForEach*>(&child)) {
+            for_each_to_json(child_json, *for_each_node);
         } else if (auto sequence_node = dynamic_cast<const structured_control_flow::Sequence*>(&child)) {
             sequence_to_json(child_json, *sequence_node);
         } else if (auto condition_node = dynamic_cast<const structured_control_flow::IfElse*>(&child)) {
@@ -945,14 +951,24 @@ void JSONSerializer::json_to_for_each_node(
     assert(j["iterator"].is_string());
     assert(j.contains("end"));
     assert(j["end"].is_string());
+    assert(j.contains("update"));
+    assert(j["update"].is_string());
+    if (j.contains("init")) {
+        assert(j["init"].is_string());
+    }
     assert(j.contains("root"));
     assert(j["root"].is_object());
 
     symbolic::Symbol iterator = symbolic::symbol(j["iterator"]);
     symbolic::Symbol end = symbolic::symbol(j["end"]);
+    symbolic::Symbol update = symbolic::symbol(j["update"]);
+    symbolic::Symbol init = SymEngine::null;
+    if (j.contains("init")) {
+        init = symbolic::symbol(j["init"]);
+    }
 
     auto& for_each_node = builder.add_for_each(
-        parent, iterator, end, assignments, json_to_debug_info(j["debug_info"])
+        parent, iterator, end, update, init, assignments, json_to_debug_info(j["debug_info"])
     );
     for_each_node.element_id_ = j["element_id"];
 

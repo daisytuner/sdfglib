@@ -1057,12 +1057,14 @@ ForEach& StructuredSDFGBuilder::add_for_each(
     Sequence& parent,
     const symbolic::Symbol iterator,
     const symbolic::Symbol end,
+    const symbolic::Symbol update,
+    const symbolic::Symbol init,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
 ) {
     parent.children_
         .push_back(std::unique_ptr<
-                   ForEach>(new ForEach(this->new_element_id(), debug_info, iterator, end)));
+                   ForEach>(new ForEach(this->new_element_id(), debug_info, iterator, end, update, init)));
 
     // Increment element id for body node
     this->new_element_id();
@@ -1079,6 +1081,8 @@ ForEach& StructuredSDFGBuilder::add_for_each_before(
     ControlFlowNode& child,
     const symbolic::Symbol iterator,
     const symbolic::Symbol end,
+    const symbolic::Symbol update,
+    const symbolic::Symbol init,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
 ) {
@@ -1089,7 +1093,7 @@ ForEach& StructuredSDFGBuilder::add_for_each_before(
 
     parent.children_.insert(
         parent.children_.begin() + index,
-        std::unique_ptr<ForEach>(new ForEach(this->new_element_id(), debug_info, iterator, end))
+        std::unique_ptr<ForEach>(new ForEach(this->new_element_id(), debug_info, iterator, end, update, init))
     );
 
     // Increment element id for body node
@@ -1108,6 +1112,8 @@ ForEach& StructuredSDFGBuilder::add_for_each_after(
     ControlFlowNode& child,
     const symbolic::Symbol iterator,
     const symbolic::Symbol end,
+    const symbolic::Symbol update,
+    const symbolic::Symbol init,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
 ) {
@@ -1118,7 +1124,7 @@ ForEach& StructuredSDFGBuilder::add_for_each_after(
 
     parent.children_.insert(
         parent.children_.begin() + index + 1,
-        std::unique_ptr<ForEach>(new ForEach(this->new_element_id(), debug_info, iterator, end))
+        std::unique_ptr<ForEach>(new ForEach(this->new_element_id(), debug_info, iterator, end, update, init))
     );
 
     // Increment element id for body node

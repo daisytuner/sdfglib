@@ -43,6 +43,14 @@ bool StructuredSDFGVisitor::visit(structured_control_flow::Sequence& parent) {
             if (this->visit(for_stmt->root())) {
                 return true;
             }
+        } else if (auto for_each_stmt = dynamic_cast<structured_control_flow::ForEach*>(&current)) {
+            if (this->accept(*for_each_stmt)) {
+                return true;
+            }
+
+            if (this->visit(for_each_stmt->root())) {
+                return true;
+            }
         } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&current)) {
             if (this->accept(*map_stmt)) {
                 return true;
@@ -92,6 +100,8 @@ bool StructuredSDFGVisitor::accept(structured_control_flow::Continue& node) { re
 bool StructuredSDFGVisitor::accept(structured_control_flow::Break& node) { return false; };
 
 bool StructuredSDFGVisitor::accept(structured_control_flow::For& node) { return false; };
+
+bool StructuredSDFGVisitor::accept(structured_control_flow::ForEach& node) { return false; };
 
 bool StructuredSDFGVisitor::accept(structured_control_flow::Map& node) { return false; };
 

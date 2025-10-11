@@ -33,6 +33,9 @@ void DebugInfoPropagation::propagate(structured_control_flow::ControlFlowNode* c
     } else if (auto loop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
         this->propagate(&loop_stmt->root());
         current_debug_info = DebugInfo::merge(current_debug_info, loop_stmt->root().debug_info());
+    } else if (auto for_each_stmt = dynamic_cast<structured_control_flow::ForEach*>(current)) {
+        this->propagate(&for_each_stmt->root());
+        current_debug_info = DebugInfo::merge(current_debug_info, for_each_stmt->root().debug_info());
     } else if (auto break_stmt = dynamic_cast<structured_control_flow::Break*>(current)) {
         current_debug_info = DebugInfo::merge(current_debug_info, break_stmt->debug_info());
     } else if (auto continue_stmt = dynamic_cast<structured_control_flow::Continue*>(current)) {

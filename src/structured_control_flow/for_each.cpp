@@ -9,8 +9,11 @@ ForEach::
     ForEach(size_t element_id,
         const DebugInfo& debug_info,
         symbolic::Symbol iterator,
-        symbolic::Symbol end)
-    : ControlFlowNode(element_id, debug_info), iterator_(iterator), end_(end) {
+        symbolic::Symbol end,
+        symbolic::Symbol update,
+        symbolic::Symbol init
+    )
+    : ControlFlowNode(element_id, debug_info), iterator_(iterator), update_(update), end_(end), init_(init) {
         this->root_ = std::unique_ptr<Sequence>(new Sequence(++element_id, debug_info));
     }
 
@@ -22,6 +25,12 @@ void ForEach::validate(const Function& function) const {
     }
     if (end_.is_null()) {
         throw InvalidSDFGException("ForEach node has a null end.");
+    }
+    if (update_.is_null()) {
+        throw InvalidSDFGException("ForEach node has a null update.");
+    }
+    if (!init_.is_null() && symbolic::eq(init_, end_)) {
+        throw InvalidSDFGException("ForEach node has identical init and end symbols.");
     }
 
     // Criterion: Iterator must be pointer
@@ -37,6 +46,20 @@ void ForEach::validate(const Function& function) const {
             throw InvalidSDFGException("ForEach end must be of pointer type.");
         }
     }
+
+    // Criterion: Update must be pointer
+    auto& update_type = function.type(update_->get_name());
+    if (update_type.type_id() != types::TypeID::Pointer) {
+        throw InvalidSDFGException("ForEach update must be of pointer type.");
+    }
+
+    // Criterion: Init must be pointer
+    if (!init_.is_null()) {
+        auto& init_type = function.type(init_->get_name());
+        if (init_type.type_id() != types::TypeID::Pointer) {
+            throw InvalidSDFGException("ForEach init must be of pointer type.");
+        }
+    }
 };
 
 const symbolic::Symbol ForEach::iterator() const {
@@ -45,6 +68,18 @@ const symbolic::Symbol ForEach::iterator() const {
 
 const symbolic::Symbol ForEach::end() const {
     return end_;
+}
+
+const symbolic::Symbol ForEach::update() const {
+    return update_;
+}
+
+const symbolic::Symbol ForEach::init() const {
+    return init_;
+}
+
+bool ForEach::has_init() const {
+    return !init_.is_null();
 }
 
 Sequence& ForEach::root() const {
@@ -60,6 +95,14 @@ void ForEach::replace(const symbolic::Expression old_expression, const symbolic:
 
     if (symbolic::eq(end_, old_expression)) {
         end_ = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(new_expression);
+    }
+
+    if (symbolic::eq(update_, old_expression)) {
+        update_ = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(new_expression);
+    }
+
+    if (symbolic::eq(init_, old_expression)) {
+        init_ = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(new_expression);
     }
 }
 

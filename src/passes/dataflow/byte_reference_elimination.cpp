@@ -34,6 +34,9 @@ bool ByteReferenceElimination::
         }
         auto move = *moves.begin();
         auto move_node = dynamic_cast<data_flow::AccessNode*>(move->element());
+        if (!move_node) {
+            continue;
+        }
         auto& move_graph = move_node->get_parent();
         auto& move_edge = *move_graph.in_edges(*move_node).begin();
         auto& move_type = move_edge.base_type();

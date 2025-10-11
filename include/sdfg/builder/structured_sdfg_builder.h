@@ -293,6 +293,8 @@ public:
         Sequence& parent,
         const symbolic::Symbol iterator,
         const symbolic::Symbol end,
+        const symbolic::Symbol update,
+        const symbolic::Symbol init = SymEngine::null,
         const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfo& debug_info = DebugInfo()
     );
@@ -302,6 +304,8 @@ public:
         ControlFlowNode& child,
         const symbolic::Symbol iterator,
         const symbolic::Symbol end,
+        const symbolic::Symbol update,
+        const symbolic::Symbol init = SymEngine::null,
         const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfo& debug_info = DebugInfo()
     );
@@ -311,6 +315,8 @@ public:
         ControlFlowNode& child,
         const symbolic::Symbol iterator,
         const symbolic::Symbol end,
+        const symbolic::Symbol update,
+        const symbolic::Symbol init = SymEngine::null,
         const sdfg::control_flow::Assignments& assignments = {},
         const DebugInfo& debug_info = DebugInfo()
     );

@@ -397,6 +397,109 @@ void DataDependencyAnalysis::visit_for(
     }
 }
 
+void DataDependencyAnalysis::visit_for_each(
+    analysis::Users& users,
+    analysis::AssumptionsAnalysis& assumptions_analysis,
+    structured_control_flow::ForEach& for_each,
+    std::unordered_set<User*>& undefined,
+    std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
+    std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions
+) {
+    // Init - Read
+    if (for_each.has_init()) {
+        auto sym = for_each.init();
+        auto current_user = users.get_user(sym->get_name(), &for_each, Use::READ);
+
+        bool found = false;
+        for (auto& user : open_definitions) {
+            if (user.first->container() == sym->get_name()) {
+                user.second.insert(current_user);
+                found = true;
+            }
+        }
+        if (!found) {
+            undefined.insert(current_user);
+        }
+    }
+
+    // Condition - Read
+    if (!symbolic::eq(for_each.end(), symbolic::__nullptr__())){
+        auto end = for_each.end();
+        auto current_user = users.get_user(end->get_name(), &for_each, Use::READ);
+
+        bool found = false;
+        for (auto& user : open_definitions) {
+            if (user.first->container() == end->get_name()) {
+                user.second.insert(current_user);
+                found = true;
+            }
+        }
+        if (!found) {
+            undefined.insert(current_user);
+        }
+    }
+
+    std::unordered_map<User*, std::unordered_set<User*>> open_definitions_for_each;
+    std::unordered_map<User*, std::unordered_set<User*>> closed_definitions_for_each;
+    std::unordered_set<User*> undefined_for_each;
+
+    // Add assumptions for body
+    visit_sequence(
+        users, assumptions_analysis, for_each.root(), undefined_for_each, open_definitions_for_each, closed_definitions_for_each
+    );
+
+    // Update - Read
+    {
+        auto update = for_each.update();
+        auto current_user = users.get_user(update->get_name(), &for_each, Use::READ);
+
+        bool found = false;
+        for (auto& user : open_definitions_for_each) {
+            if (user.first->container() == update->get_name()) {
+                user.second.insert(current_user);
+                found = true;
+            }
+        }
+        if (!found) {
+            undefined_for_each.insert(current_user);
+        }
+    }
+
+    // Merge for with outside
+
+    // Scope-local closed definitions
+    for (auto& entry : closed_definitions_for_each) {
+        closed_definitions.insert(entry);
+    }
+
+    for (auto open_read : undefined_for_each) {
+        // Over-Approximation: Add loop-carried dependencies for all open reads
+        for (auto& entry : open_definitions_for_each) {
+            if (entry.first->container() == open_read->container()) {
+                entry.second.insert(open_read);
+            }
+        }
+
+        // Connect to outside
+        bool found = false;
+        for (auto& entry : open_definitions) {
+            if (entry.first->container() == open_read->container()) {
+                entry.second.insert(open_read);
+                found = true;
+            }
+        }
+        if (!found) {
+            undefined.insert(open_read);
+        }
+    }
+
+    // Add open definitions from while to outside
+    for (auto& entry : open_definitions_for_each) {
+        open_definitions.insert(entry);
+    }
+
+}
+
 void DataDependencyAnalysis::visit_if_else(
     analysis::Users& users,
     analysis::AssumptionsAnalysis& assumptions_analysis,
@@ -620,6 +723,8 @@ void DataDependencyAnalysis::visit_sequence(
             visit_block(users, assumptions_analysis, *block, undefined, open_definitions, closed_definitions);
         } else if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(&child.first)) {
             visit_for(users, assumptions_analysis, *for_loop, undefined, open_definitions, closed_definitions);
+        } else if (auto for_each = dynamic_cast<structured_control_flow::ForEach*>(&child.first)) {
+            visit_for_each(users, assumptions_analysis, *for_each, undefined, open_definitions, closed_definitions);
         } else if (auto if_else = dynamic_cast<structured_control_flow::IfElse*>(&child.first)) {
             visit_if_else(users, assumptions_analysis, *if_else, undefined, open_definitions, closed_definitions);
         } else if (auto while_loop = dynamic_cast<structured_control_flow::While*>(&child.first)) {
