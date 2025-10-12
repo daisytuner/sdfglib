@@ -29,9 +29,6 @@ void ForEach::validate(const Function& function) const {
     if (update_.is_null()) {
         throw InvalidSDFGException("ForEach node has a null update.");
     }
-    if (!init_.is_null() && symbolic::eq(init_, end_)) {
-        throw InvalidSDFGException("ForEach node has identical init and end symbols.");
-    }
 
     // Criterion: Iterator must be pointer
     auto& iterator_type = function.type(iterator_->get_name());
