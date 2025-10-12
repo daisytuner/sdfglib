@@ -27,7 +27,6 @@ void ForEachDispatcher::dispatch_node(
         main_stream << iterator;
         main_stream << " = ";
         main_stream << "*(" << language_extension_.type_cast(language_extension_.expression(node_.init()), ptr_ptr_type) << ")";
-        main_stream << "; ";
     }
     main_stream << ";";
     main_stream << iterator;
