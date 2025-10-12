@@ -423,7 +423,7 @@ void DataDependencyAnalysis::visit_for_each(
     }
 
     // Condition - Read
-    if (!symbolic::eq(for_each.end(), symbolic::__nullptr__())){
+    if (!symbolic::eq(for_each.end(), symbolic::__nullptr__())) {
         auto end = for_each.end();
         auto current_user = users.get_user(end->get_name(), &for_each, Use::READ);
 
@@ -445,7 +445,12 @@ void DataDependencyAnalysis::visit_for_each(
 
     // Add assumptions for body
     visit_sequence(
-        users, assumptions_analysis, for_each.root(), undefined_for_each, open_definitions_for_each, closed_definitions_for_each
+        users,
+        assumptions_analysis,
+        for_each.root(),
+        undefined_for_each,
+        open_definitions_for_each,
+        closed_definitions_for_each
     );
 
     // Update - Read
@@ -497,7 +502,6 @@ void DataDependencyAnalysis::visit_for_each(
     for (auto& entry : open_definitions_for_each) {
         open_definitions.insert(entry);
     }
-
 }
 
 void DataDependencyAnalysis::visit_if_else(

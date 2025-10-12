@@ -688,17 +688,11 @@ TEST(StructuredSDFGBuilderTest, addForEach) {
      *  value: ...
      * }
      * for (auto iter = *list; iter != list; iter = *iter) {
-     * 
+     *
      * }
      */
 
-    auto& scope = builder.add_for_each(
-        root,
-        sym_iter,
-        sym_list,
-        sym_iter,
-        sym_list
-    );
+    auto& scope = builder.add_for_each(root, sym_iter, sym_list, sym_iter, sym_list);
     EXPECT_EQ(scope.element_id(), 1);
     EXPECT_EQ(scope.root().element_id(), 2);
     EXPECT_EQ(root.at(0).second.element_id(), 3);
@@ -740,18 +734,12 @@ TEST(StructuredSDFGBuilderTest, addForEach_Transition) {
      *  value: ...
      * }
      * for (auto iter = *list; iter != list; iter = *iter) {
-     * 
+     *
      * }
      */
 
-    auto& scope = builder.add_for_each(
-        root,
-        sym_iter,
-        sym_list,
-        sym_iter,
-        sym_list,
-        {{symbolic::symbol("N"), symbolic::zero()}}
-    );
+    auto& scope =
+        builder.add_for_each(root, sym_iter, sym_list, sym_iter, sym_list, {{symbolic::symbol("N"), symbolic::zero()}});
     EXPECT_EQ(scope.element_id(), 1);
     EXPECT_EQ(scope.root().element_id(), 2);
     EXPECT_EQ(root.at(0).second.element_id(), 3);
@@ -789,15 +777,9 @@ TEST(StructuredSDFGBuilderTest, addForEachBefore) {
 
     auto& block_base =
         builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
-    
+
     auto& scope = builder.add_for_each_before(
-        root,
-        block_base,
-        sym_iter,
-        sym_list,
-        sym_iter,
-        SymEngine::null,
-        {{symbolic::symbol("N"), symbolic::zero()}}
+        root, block_base, sym_iter, sym_list, sym_iter, SymEngine::null, {{symbolic::symbol("N"), symbolic::zero()}}
     );
 
     EXPECT_EQ(scope.has_init(), false);
@@ -833,7 +815,7 @@ TEST(StructuredSDFGBuilderTest, addForEachAfter) {
         builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
     auto& block_base2 =
         builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
-    
+
     /**
      * Doubled linked list with start and end 'list'
      * iter: {
@@ -841,18 +823,12 @@ TEST(StructuredSDFGBuilderTest, addForEachAfter) {
      *  value: ...
      * }
      * for (auto iter = *list; iter != list; iter = *iter) {
-     * 
+     *
      * }
      */
 
     auto& scope = builder.add_for_each_after(
-        root,
-        block_base,
-        sym_iter,
-        sym_list,
-        sym_iter,
-        SymEngine::null,
-        {{symbolic::symbol("N"), symbolic::zero()}}
+        root, block_base, sym_iter, sym_list, sym_iter, SymEngine::null, {{symbolic::symbol("N"), symbolic::zero()}}
     );
 
     EXPECT_EQ(scope.has_init(), false);

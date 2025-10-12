@@ -967,9 +967,8 @@ void JSONSerializer::json_to_for_each_node(
         init = symbolic::symbol(j["init"]);
     }
 
-    auto& for_each_node = builder.add_for_each(
-        parent, iterator, end, update, init, assignments, json_to_debug_info(j["debug_info"])
-    );
+    auto& for_each_node =
+        builder.add_for_each(parent, iterator, end, update, init, assignments, json_to_debug_info(j["debug_info"]));
     for_each_node.element_id_ = j["element_id"];
 
     assert(j["root"].contains("type"));

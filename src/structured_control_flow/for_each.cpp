@@ -5,19 +5,19 @@
 namespace sdfg {
 namespace structured_control_flow {
 
-ForEach::
-    ForEach(size_t element_id,
-        const DebugInfo& debug_info,
-        symbolic::Symbol iterator,
-        symbolic::Symbol end,
-        symbolic::Symbol update,
-        symbolic::Symbol init
-    )
+ForEach::ForEach(
+    size_t element_id,
+    const DebugInfo& debug_info,
+    symbolic::Symbol iterator,
+    symbolic::Symbol end,
+    symbolic::Symbol update,
+    symbolic::Symbol init
+)
     : ControlFlowNode(element_id, debug_info), iterator_(iterator), update_(update), end_(end), init_(init) {
-        this->root_ = std::unique_ptr<Sequence>(new Sequence(++element_id, debug_info));
-    }
+    this->root_ = std::unique_ptr<Sequence>(new Sequence(++element_id, debug_info));
+}
 
-void ForEach::validate(const Function& function) const { 
+void ForEach::validate(const Function& function) const {
     root_->validate(function);
 
     if (iterator_.is_null()) {
@@ -59,29 +59,17 @@ void ForEach::validate(const Function& function) const {
     }
 };
 
-const symbolic::Symbol ForEach::iterator() const {
-    return iterator_;
-}
+const symbolic::Symbol ForEach::iterator() const { return iterator_; }
 
-const symbolic::Symbol ForEach::end() const {
-    return end_;
-}
+const symbolic::Symbol ForEach::end() const { return end_; }
 
-const symbolic::Symbol ForEach::update() const {
-    return update_;
-}
+const symbolic::Symbol ForEach::update() const { return update_; }
 
-const symbolic::Symbol ForEach::init() const {
-    return init_;
-}
+const symbolic::Symbol ForEach::init() const { return init_; }
 
-bool ForEach::has_init() const {
-    return !init_.is_null();
-}
+bool ForEach::has_init() const { return !init_.is_null(); }
 
-Sequence& ForEach::root() const {
-    return *root_;
-}
+Sequence& ForEach::root() const { return *root_; }
 
 void ForEach::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     root_->replace(old_expression, new_expression);

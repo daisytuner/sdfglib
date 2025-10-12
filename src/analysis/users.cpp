@@ -479,14 +479,16 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(structured_control_flow:
             last = v_init;
 
             auto v_iter = boost::add_vertex(this->graph_);
-            this->add_user(std::make_unique<User>(v_iter, for_each_stmt->iterator()->get_name(), for_each_stmt, Use::MOVE));
+            this->add_user(std::make_unique<User>(v_iter, for_each_stmt->iterator()->get_name(), for_each_stmt, Use::MOVE)
+            );
             boost::add_edge(last, v_iter, this->graph_);
             last = v_iter;
         }
 
         // Condition
         auto v_cond_iterator = boost::add_vertex(this->graph_);
-        this->add_user(std::make_unique<User>(v_cond_iterator, for_each_stmt->iterator()->get_name(), for_each_stmt, Use::READ));
+        this->add_user(std::make_unique<
+                       User>(v_cond_iterator, for_each_stmt->iterator()->get_name(), for_each_stmt, Use::READ));
         boost::add_edge(last, v_cond_iterator, this->graph_);
         last = v_cond_iterator;
 
@@ -515,7 +517,8 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(structured_control_flow:
         last = v_update;
 
         auto v_update_iter = boost::add_vertex(this->graph_);
-        this->add_user(std::make_unique<User>(v_update_iter, for_each_stmt->iterator()->get_name(), for_each_stmt, Use::MOVE));
+        this->add_user(std::make_unique<
+                       User>(v_update_iter, for_each_stmt->iterator()->get_name(), for_each_stmt, Use::MOVE));
         boost::add_edge(last, v_update_iter, this->graph_);
         last = v_update_iter;
 

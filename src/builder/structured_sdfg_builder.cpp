@@ -1063,8 +1063,8 @@ ForEach& StructuredSDFGBuilder::add_for_each(
     const DebugInfo& debug_info
 ) {
     parent.children_
-        .push_back(std::unique_ptr<
-                   ForEach>(new ForEach(this->new_element_id(), debug_info, iterator, end, update, init)));
+        .push_back(std::unique_ptr<ForEach>(new ForEach(this->new_element_id(), debug_info, iterator, end, update, init)
+        ));
 
     // Increment element id for body node
     this->new_element_id();
