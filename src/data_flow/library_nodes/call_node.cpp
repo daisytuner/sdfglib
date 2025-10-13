@@ -129,18 +129,6 @@ void CallNodeDispatcher::dispatch_code(
 ) {
     auto& node = static_cast<const CallNode&>(node_);
 
-    auto& callee_type = function_.type(node.callee_name());
-    if (!node.is_indirect_call(function_)) {
-        // Declare function
-        if (this->language_extension_.language() == "C") {
-            globals_stream << "extern ";
-        } else if (this->language_extension_.language() == "C++") {
-            globals_stream << "extern \"C\" ";
-        }
-        globals_stream << language_extension_.declaration(node.callee_name(), callee_type) << ";"
-                    << std::endl;
-    }
-
     if (!node.is_void(function_)) {
         stream << node.outputs().at(0) << " = ";
     }
