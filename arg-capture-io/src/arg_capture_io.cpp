@@ -174,6 +174,8 @@ bool ArgCaptureIO::write_capture_to_file(ArgCapture& capture, std::filesystem::p
 }
 
 void ArgCaptureIO::write_index(std::filesystem::path file) {
+    std::filesystem::create_directories(file.parent_path());
+
     std::ofstream ofs(file);
     if (!ofs.is_open()) {
         throw std::runtime_error("Failed to open index file for writing: " + file.string());
