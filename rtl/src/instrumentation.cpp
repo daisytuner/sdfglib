@@ -803,7 +803,10 @@ public:
     }
 };
 
-static DaisyInstrumentationState g_daisy_state;
+static DaisyInstrumentationState& get_daisy_state() {
+    static DaisyInstrumentationState instance;
+    return instance;
+}
 
 #ifdef __cplusplus
 extern "C" {
@@ -813,17 +816,17 @@ size_t __daisy_instrumentation_init(__daisy_metadata* metadata, enum __daisy_eve
     if (!metadata) {
         return 0;
     }
-    return g_daisy_state.register_region(metadata, event_set);
+    return get_daisy_state().register_region(metadata, event_set);
 }
 
-void __daisy_instrumentation_enter(size_t region_id) { g_daisy_state.enter_region(region_id); }
+void __daisy_instrumentation_enter(size_t region_id) { get_daisy_state().enter_region(region_id); }
 
-void __daisy_instrumentation_exit(size_t region_id) { g_daisy_state.exit_region(region_id); }
+void __daisy_instrumentation_exit(size_t region_id) { get_daisy_state().exit_region(region_id); }
 
-void __daisy_instrumentation_finalize(size_t region_id) { g_daisy_state.finalize(region_id); }
+void __daisy_instrumentation_finalize(size_t region_id) { get_daisy_state().finalize(region_id); }
 
 void __daisy_instrumentation_increment(size_t region_id, const char* name, long long value) {
-    g_daisy_state.increment(region_id, name, value);
+    get_daisy_state().increment(region_id, name, value);
 }
 
 #ifdef __cplusplus
