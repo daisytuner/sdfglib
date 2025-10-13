@@ -8,7 +8,7 @@ CallNode::CallNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
-    const std::string& function_name,
+    const std::string& callee_name,
     const std::vector<std::string>& outputs,
     const std::vector<std::string>& inputs,
     bool offloadable
@@ -24,56 +24,58 @@ CallNode::CallNode(
           true,
           data_flow::ImplementationType_NONE
       ),
-      function_name_(function_name), offloadable_(offloadable) {}
+      callee_name_(callee_name), offloadable_(offloadable) {}
 
-const std::string& CallNode::function_name() const { return this->function_name_; }
-
-const types::Function& CallNode::function_type(const Function& sdfg) const {
-    // function_name is a symbol referring to a global variable of type Function
-    return dynamic_cast<const types::Function&>(sdfg.type(this->function_name_));
-}
+const std::string& CallNode::callee_name() const { return this->callee_name_; }
 
 bool CallNode::offloadable() const { return this->offloadable_; }
 
 bool CallNode::is_void(const Function& sdfg) const {
-    auto& func_type = this->function_type(sdfg);
-    if (func_type.return_type().type_id() == types::TypeID::Scalar) {
-        auto& ret_type = static_cast<const types::Scalar&>(func_type.return_type());
-        if (ret_type.primitive_type() == types::PrimitiveType::Void) {
-            return true;
-        }
-    }
-    return false;
+    return outputs_.at(0) != "_ret";
+}
+
+bool CallNode::is_indirect_call(const Function& sdfg) const {
+    auto& type = sdfg.type(this->callee_name_);
+    return dynamic_cast<const types::Pointer*>(&type) != nullptr;
 }
 
 void CallNode::validate(const Function& function) const {
-    if (!function.exists(this->function_name_)) {
-        throw InvalidSDFGException("CallNode: Function '" + this->function_name_ + "' does not exist.");
+    if (!function.exists(this->callee_name_)) {
+        throw InvalidSDFGException("CallNode: Function '" + this->callee_name_ + "' does not exist.");
     }
-    auto& type = function.type(this->function_name_);
-    if (!dynamic_cast<const types::Function*>(&type)) {
-        throw InvalidSDFGException("CallNode: '" + this->function_name_ + "' is not a function.");
+    auto& type = function.type(this->callee_name_);
+    if (!dynamic_cast<const types::Function*>(&type) && !dynamic_cast<const types::Pointer*>(&type)) {
+        throw InvalidSDFGException("CallNode: '" + this->callee_name_ + "' is not a function or pointer.");
     }
-    auto& func_type = static_cast<const types::Function&>(type);
 
-    if (inputs_.size() != func_type.num_params()) {
-        throw InvalidSDFGException(
-            "CallNode: Number of inputs does not match number of function parameters. Expected " +
-            std::to_string(func_type.num_params()) + ", got " + std::to_string(inputs_.size())
-        );
-    }
-    if (!this->is_void(function) && outputs_.size() < 1) {
-        throw InvalidSDFGException(
-            "CallNode: Non-void function must have at least one output to store the return value."
-        );
+    if (auto func_type = dynamic_cast<const types::Function*>(&type)) {
+        if (!function.is_external(this->callee_name_)) {
+            throw InvalidSDFGException("CallNode: Function '" + this->callee_name_ +
+                                        "' must be declared.");
+        }
+        if (inputs_.size() != func_type->num_params()) {
+            throw InvalidSDFGException(
+                "CallNode: Number of inputs does not match number of function parameters. Expected " +
+                std::to_string(func_type->num_params()) + ", got " + std::to_string(inputs_.size())
+            );
+        }
+        if (!this->is_void(function) && outputs_.size() < 1) {
+            throw InvalidSDFGException(
+                "CallNode: Non-void function must have at least one output to store the return value."
+            );
+        }
+    } else if (auto ptr_type = dynamic_cast<const types::Pointer*>(&type)) {
+        // TODO: Handle pointer function calls verification
     }
 }
 
-symbolic::SymbolSet CallNode::symbols() const { return {}; }
+symbolic::SymbolSet CallNode::symbols() const { 
+    return { symbolic::symbol(this->callee_name_) };
+}
 
 std::unique_ptr<data_flow::DataFlowNode> CallNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
-    return std::make_unique<CallNode>(element_id, debug_info_, vertex, parent, function_name_, outputs_, inputs_);
+    return std::make_unique<CallNode>(element_id, debug_info_, vertex, parent, callee_name_, outputs_, inputs_);
 }
 
 void CallNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {}
@@ -83,7 +85,7 @@ nlohmann::json CallNodeSerializer::serialize(const data_flow::LibraryNode& libra
 
     nlohmann::json j;
     j["code"] = node.code().value();
-    j["function_name"] = node.function_name();
+    j["callee_name"] = node.callee_name();
     j["outputs"] = node.outputs();
     j["inputs"] = node.inputs();
 
@@ -94,7 +96,7 @@ data_flow::LibraryNode& CallNodeSerializer::deserialize(
     const nlohmann::json& j, builder::StructuredSDFGBuilder& builder, structured_control_flow::Block& parent
 ) {
     assert(j.contains("code"));
-    assert(j.contains("function_name"));
+    assert(j.contains("callee_name"));
     assert(j.contains("outputs"));
     assert(j.contains("inputs"));
     assert(j.contains("debug_info"));
@@ -107,11 +109,11 @@ data_flow::LibraryNode& CallNodeSerializer::deserialize(
     sdfg::serializer::JSONSerializer serializer;
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
-    std::string function_name = j["function_name"].get<std::string>();
+    std::string callee_name = j["callee_name"].get<std::string>();
     auto outputs = j["outputs"].get<std::vector<std::string>>();
     auto inputs = j["inputs"].get<std::vector<std::string>>();
 
-    return builder.add_library_node<CallNode>(parent, debug_info, function_name, outputs, inputs);
+    return builder.add_library_node<CallNode>(parent, debug_info, callee_name, outputs, inputs);
 }
 
 CallNodeDispatcher::CallNodeDispatcher(
@@ -129,19 +131,71 @@ void CallNodeDispatcher::dispatch_code(
 ) {
     auto& node = static_cast<const CallNode&>(node_);
 
-    // Declare function
-    if (this->language_extension_.language() == "C") {
-        globals_stream << "extern ";
-    } else if (this->language_extension_.language() == "C++") {
-        globals_stream << "extern \"C\" ";
+    auto& callee_type = function_.type(node.callee_name());
+    if (!node.is_indirect_call(function_)) {
+        // Declare function
+        if (this->language_extension_.language() == "C") {
+            globals_stream << "extern ";
+        } else if (this->language_extension_.language() == "C++") {
+            globals_stream << "extern \"C\" ";
+        }
+        globals_stream << language_extension_.declaration(node.callee_name(), callee_type) << ";"
+                    << std::endl;
     }
-    globals_stream << language_extension_.declaration(node.function_name(), node.function_type(this->function_)) << ";"
-                   << std::endl;
 
     if (!node.is_void(function_)) {
         stream << node.outputs().at(0) << " = ";
     }
-    stream << node.function_name() << "(";
+    if (node.is_indirect_call(function_)) {
+        auto& graph = node.get_parent();
+
+        // Collect return memlet
+        const data_flow::Memlet* ret_memlet = nullptr;
+        for (auto& oedge : graph.out_edges(node)) {
+            if (oedge.src_conn() == "_ret") {
+                ret_memlet = &oedge;
+                break;
+            }
+        }
+
+        // Collect input memlets
+        std::unordered_map<std::string, const data_flow::Memlet*> input_memlets;
+        for (auto& iedge : graph.in_edges(node)) {
+            input_memlets[iedge.dst_conn()] = &iedge;
+        }
+
+        // Cast callee to function pointer type
+        std::string func_ptr_type;
+
+        // Return type
+        if (ret_memlet) {
+            auto& ret_type = ret_memlet->result_type(function_);
+            func_ptr_type = language_extension_.declaration("", ret_type) + " (*)";
+        } else {
+            func_ptr_type = "void (*)";
+        }
+
+        // Parameters
+        func_ptr_type += "(";
+        for (size_t i = 0; i < node.inputs().size(); i++) {
+            auto memlet_in = input_memlets.find(node.inputs().at(i));
+            assert(memlet_in != input_memlets.end());
+            auto& in_type = memlet_in->second->result_type(function_);
+            func_ptr_type += language_extension_.declaration("", in_type);
+            if (i < node.inputs().size() - 1) {
+                func_ptr_type += ", ";
+            }
+        }
+        func_ptr_type += ")";
+
+        if (this->language_extension_.language() == "C") {
+            stream << "((" << func_ptr_type << ") " << node.callee_name() << ")" << "(";
+        } else if (this->language_extension_.language() == "C++") {
+            stream << "reinterpret_cast<" << func_ptr_type << ">(" << node.callee_name() << ")" << "(";
+        }
+    } else {
+        stream << node.callee_name() << "(";
+    }
     for (size_t i = 0; i < node.inputs().size(); ++i) {
         stream << node.inputs().at(i);
         if (i < node.inputs().size() - 1) {
