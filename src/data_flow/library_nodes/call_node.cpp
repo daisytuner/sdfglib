@@ -31,7 +31,7 @@ const std::string& CallNode::callee_name() const { return this->callee_name_; }
 bool CallNode::offloadable() const { return this->offloadable_; }
 
 bool CallNode::is_void(const Function& sdfg) const {
-    return outputs_.at(0) != "_ret";
+    return outputs_.empty() || outputs_.at(0) != "_ret";
 }
 
 bool CallNode::is_indirect_call(const Function& sdfg) const {
