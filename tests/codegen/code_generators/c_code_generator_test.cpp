@@ -272,3 +272,18 @@ TEST(CCodeGeneratorTest, CreateCapturePlans) {
     EXPECT_EQ((*capturePlan)[2].is_external, true);
     EXPECT_EQ((*capturePlan)[2].inner_type, types::PrimitiveType::Float);
 }
+
+TEST(CCodeGeneratorTest, CreateCapturePlans_Failure_OpaquePointer) {
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+
+    types::Pointer opaque_desc;
+    builder.add_container("arg0", opaque_desc, true, false);
+
+    types::Pointer ptr_ptr_desc(static_cast<types::IType&>(opaque_desc));
+    builder.add_container("ext1", ptr_ptr_desc, false, true);
+
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(builder.subject());
+    codegen::CCodeGenerator generator(builder.subject(), *instrumentation_plan, true);
+    auto capturePlan = generator.create_capture_plans();
+    EXPECT_EQ(capturePlan->size(), 0);
+}
