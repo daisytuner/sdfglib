@@ -121,7 +121,11 @@ void CPPCodeGenerator::dispatch_globals() {
         "memset",
         "stderr",
         "stdin",
-        "stdout"
+        "stdout",
+        "cblas_sdot",
+        "cblas_ddot",
+        "cblas_sgemm",
+        "cblas_dgemm"
     };
     for (auto& container : sdfg_.externals()) {
         // Reserved symbols
