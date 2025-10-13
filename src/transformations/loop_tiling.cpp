@@ -29,6 +29,8 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
 
     auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto parent = static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&loop_));
+    size_t index = parent->index(loop_);
+    auto& transition = parent->at(index).second;
 
     auto indvar = loop_.indvar();
 
@@ -42,15 +44,28 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
 
     structured_control_flow::StructuredLoop* outer_loop = nullptr;
     if (auto map = dynamic_cast<structured_control_flow::Map*>(&loop_)) {
-        outer_loop =
-            &builder
-                 .add_map_before(
-                     *parent, loop_, outer_indvar, outer_condition, loop_.init(), outer_update, map->schedule_type()
-                 )
-                 .first;
+        outer_loop = &builder.add_map_before(
+            *parent,
+            loop_,
+            outer_indvar,
+            outer_condition,
+            loop_.init(),
+            outer_update,
+            map->schedule_type(),
+            transition.assignments(),
+            loop_.debug_info()
+        );
     } else {
-        outer_loop =
-            &builder.add_for_before(*parent, loop_, outer_indvar, outer_condition, loop_.init(), outer_update).first;
+        outer_loop = &builder.add_for_before(
+            *parent,
+            loop_,
+            outer_indvar,
+            outer_condition,
+            loop_.init(),
+            outer_update,
+            transition.assignments(),
+            loop_.debug_info()
+        );
     }
 
     // Step 2: Redefine inner loop
@@ -59,29 +74,14 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
     auto inner_condition_tile =
         symbolic::Lt(inner_indvar, symbolic::add(outer_indvar, symbolic::integer(this->tile_size_)));
 
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto old_bound = analysis::LoopAnalysis::canonical_bound(&loop_, assumptions_analysis);
+    symbolic::Condition inner_condition = symbolic::And(inner_condition_tile, loop_.condition());
 
-    symbolic::Condition inner_condition = inner_condition_tile;
-    if (old_bound == SymEngine::null) {
-        inner_condition = symbolic::And(inner_condition_tile, loop_.condition());
-    } else if (SymEngine::is_a<SymEngine::Integer>(*old_bound)) {
-        size_t old_bound_int = SymEngine::rcp_static_cast<const SymEngine::Integer>(old_bound)->as_uint();
-        if ((old_bound_int % this->tile_size_) == 0) {
-            inner_condition = inner_condition_tile;
-        } else {
-            inner_condition = symbolic::And(inner_condition_tile, loop_.condition());
-        }
-    } else {
-        inner_condition = symbolic::And(inner_condition_tile, loop_.condition());
-    }
     auto inner_update = symbolic::add(inner_indvar, symbolic::integer(1));
-    loop_.update() = inner_update;
-    loop_.condition() = inner_condition;
-    loop_.init() = inner_init;
+    builder.update_loop(loop_, inner_indvar, inner_condition, inner_init, inner_update);
 
-    // Step 3: Move inner loop body to outer loop body
-    builder.insert(loop_, *parent, outer_loop->root(), loop_.debug_info());
+    // Step 3: Move loop into tiling loop
+    transition.assignments().clear();
+    builder.move_child(*parent, index + 1, outer_loop->root());
 
     analysis_manager.invalidate_all();
 };

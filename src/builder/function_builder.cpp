@@ -59,6 +59,8 @@ void FunctionBuilder::set_element_counter(size_t element_counter) {
     this->function().element_counter_ = element_counter;
 };
 
+void FunctionBuilder::set_return_type(const types::IType& type) const { this->function().return_type_ = type.clone(); };
+
 const types::IType& FunctionBuilder::
     add_container(const std::string& name, const types::IType& type, bool is_argument, bool is_external) const {
     if (is_argument && is_external) {
@@ -115,6 +117,45 @@ void FunctionBuilder::remove_container(const std::string& name) const {
     function.containers_.erase(name);
 };
 
+void FunctionBuilder::rename_container(const std::string& old_name, const std::string& new_name) const {
+    auto& function = this->function();
+    if (!function.exists(old_name)) {
+        throw InvalidSDFGException("Container " + old_name + " does not exist");
+    }
+
+    // Move type
+    function.containers_[new_name] = std::move(function.containers_[old_name]);
+    function.containers_.erase(old_name);
+
+    // Handling of argument
+    if (function.is_argument(old_name)) {
+        auto it = std::find(function.arguments_.begin(), function.arguments_.end(), old_name);
+        assert(it != function.arguments_.end());
+        *it = new_name;
+    }
+    // Handling of external
+    if (function.is_external(old_name)) {
+        auto it = std::find(function.externals_.begin(), function.externals_.end(), old_name);
+        assert(it != function.externals_.end());
+        *it = new_name;
+        function.externals_linkage_types_[new_name] = function.externals_linkage_types_[old_name];
+        function.externals_linkage_types_.erase(old_name);
+    }
+    // Handling of assumption
+    if (function.assumptions().find(symbolic::symbol(old_name)) != function.assumptions().end()) {
+        auto assumption = function.assumption(symbolic::symbol(old_name));
+
+        symbolic::Assumption new_assumption(symbolic::symbol(new_name));
+        new_assumption.lower_bound(assumption.lower_bound());
+        new_assumption.upper_bound(assumption.upper_bound());
+        new_assumption.constant(assumption.constant());
+        new_assumption.map(assumption.map());
+
+        function.assumptions_.erase(symbolic::symbol(old_name));
+        function.assumptions_.insert({new_assumption.symbol(), new_assumption});
+    }
+};
+
 void FunctionBuilder::change_type(const std::string& name, const types::IType& type) const {
     auto& function = this->function();
     if (!function.is_transient(name)) {
@@ -139,23 +180,6 @@ types::StructureDefinition& FunctionBuilder::add_structure(const std::string& na
     return *(*res.first).second;
 };
 
-void FunctionBuilder::make_array(const std::string& name, const symbolic::Expression& size) const {
-    auto& function = this->function();
-    if (!function.is_transient(name)) {
-        throw InvalidSDFGException("Container " + name + " is not transient");
-    }
-    if (function.containers_.find(name) == function.containers_.end()) {
-        throw InvalidSDFGException("Container " + name + " does not exist");
-    }
-
-    auto& old_type = function.containers_[name];
-    if (old_type->is_symbol() && dynamic_cast<const types::Scalar*>(old_type.get())) {
-        function.assumptions_.erase(symbolic::symbol(name));
-    }
-
-    function.containers_[name] = std::make_unique<types::Array>(*old_type, size);
-};
-
 std::string FunctionBuilder::find_new_name(std::string prefix) const {
     size_t i = 0;
     std::string new_name = prefix + std::to_string(i);
@@ -165,6 +189,10 @@ std::string FunctionBuilder::find_new_name(std::string prefix) const {
     }
     return new_name;
 };
+
+void FunctionBuilder::update_tasklet(data_flow::Tasklet& tasklet, const data_flow::TaskletCode code) {
+    tasklet.code_ = code;
+}
 
 } // namespace builder
 } // namespace sdfg

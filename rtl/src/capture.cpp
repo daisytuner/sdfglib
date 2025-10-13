@@ -10,20 +10,24 @@
 #include <ctime>
 #include <iostream>
 #include <string>
-
-#ifndef DEBUG_LOG
-#define DEBUG_LOG false
-#endif
+#include <utility>
 
 using namespace arg_capture;
 
+constexpr uint32_t ALL_INVOCATIONS = -1;
+
 class DaisyRtlCapture : public ArgCaptureIO {
 protected:
+    uint32_t invocation_to_capture_ = ALL_INVOCATIONS;
     std::filesystem::path output_dir_;
 
 public:
-    explicit DaisyRtlCapture(const char* name, std::filesystem::path base_dir = "arg_captures")
-        : ArgCaptureIO(name), output_dir_(base_dir) {}
+    explicit DaisyRtlCapture(
+        const char* name,
+        std::filesystem::path base_dir,
+        uint32_t invocation_to_capture = ALL_INVOCATIONS
+    )
+        : ArgCaptureIO(name), output_dir_(std::move(base_dir)), invocation_to_capture_(invocation_to_capture) {}
 
     const std::filesystem::path& get_output_dir() const;
 
@@ -60,7 +64,8 @@ bool DaisyRtlCapture::enter() {
 
     invocation();
 
-    return true;
+    auto specific_invocation_only = this->invocation_to_capture_;
+    return (specific_invocation_only == ALL_INVOCATIONS) || (invokes_ == specific_invocation_only);
 }
 
 void DaisyRtlCapture::capture_raw(int arg_idx, const void* data, size_t size, int primitive_type, bool after) {
@@ -103,9 +108,6 @@ bool DaisyRtlCapture::write_capture_to_file(arg_capture::ArgCapture& capture, co
 }
 
 void DaisyRtlCapture::exit() {
-    if (DEBUG_LOG) {
-        std::cout << "Finalizing capture of '" << name_ << std::endl;
-    }
     if (!current_captures_.empty()) {
         auto path = output_dir_ / (name_ + "_inv" + std::to_string(invokes_) + ".index.json");
         write_index(path);
@@ -123,8 +125,31 @@ std::filesystem::path DaisyRtlCapture::generate_arg_capture_output_filename(int 
 extern "C" {
 #endif
 
-struct __daisy_capture* __daisy_capture_init(const char* name) {
-    DaisyRtlCapture* ctx = new DaisyRtlCapture(name);
+struct __daisy_capture* __daisy_capture_init(const char* name, const char* base_dir) {
+    auto* default_strat = getenv("__DAISY_CAPTURE_STRATEGY_DEFAULT");
+
+    DaisyRtlCapture* ctx;
+
+    std::filesystem::path base_dir_path = "arg_captures";
+    if (base_dir) {
+        base_dir_path = base_dir;
+    }
+
+    if (default_strat && std::strcmp(default_strat, "all") == 0) {
+        ctx = new DaisyRtlCapture(name, base_dir_path, ALL_INVOCATIONS);
+    } else if (default_strat && std::strcmp(default_strat, "never") == 0) {
+        return nullptr;
+    } else if (!default_strat || std::strcmp(default_strat, "once") == 0) {
+        ctx = nullptr;
+    } else {
+        fprintf(stderr, "Unknown capture strategy: '%s' for ctx '%s'\n", default_strat, name);
+        ctx = nullptr;
+    }
+
+    if (!ctx) { // default
+        ctx = new DaisyRtlCapture(name, base_dir_path, 0);
+    }
+
     return (__daisy_capture_t*) ctx;
 }
 

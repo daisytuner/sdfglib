@@ -12,8 +12,7 @@ SequenceFusion::SequenceFusion()
 
 std::string SequenceFusion::name() { return "SequenceFusion"; };
 
-bool SequenceFusion::run_pass(builder::StructuredSDFGBuilder& builder,
-                              analysis::AnalysisManager& analysis_manager) {
+bool SequenceFusion::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     // Traverse structured SDFG
@@ -32,7 +31,7 @@ bool SequenceFusion::run_pass(builder::StructuredSDFGBuilder& builder,
                     i++;
                     continue;
                 }
-                builder.insert_children(*seq, *subseq, i + 1);
+                builder.move_children(*subseq, *seq, i + 1);
                 builder.remove_child(*seq, i);
                 applied = true;
             }
@@ -49,8 +48,7 @@ bool SequenceFusion::run_pass(builder::StructuredSDFGBuilder& builder,
             }
         } else if (auto loop_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
             queue.push_back(&loop_stmt->root());
-        } else if (auto sloop_stmt =
-                       dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
+        } else if (auto sloop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
             queue.push_back(&sloop_stmt->root());
         }
     }
@@ -58,5 +56,5 @@ bool SequenceFusion::run_pass(builder::StructuredSDFGBuilder& builder,
     return applied;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

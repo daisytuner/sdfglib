@@ -5,14 +5,20 @@
 
 #include "sdfg/analysis/scope_analysis.h"
 
+#include "sdfg/data_flow/library_nodes/math/intrinsic.h"
+
 namespace sdfg {
 namespace math {
 namespace ml {
 
 ReLUNode::ReLUNode(
-    size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
+    size_t element_id,
+    const DebugInfo& debug_info,
+    const graph::Vertex vertex,
+    data_flow::DataFlowGraph& parent,
+    const std::vector<symbolic::Expression>& shape
 )
-    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_ReLU, {}) {}
+    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_ReLU, shape) {}
 
 bool ReLUNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,
@@ -25,11 +31,17 @@ bool ReLUNode::expand_operation(
     const data_flow::Subset& subset
 ) {
     // Add code
+    types::Scalar base_type(input_type.primitive_type());
+
     auto& code_block = builder.add_block(body);
     auto& input_node_new = builder.add_access(code_block, input_name);
     auto& output_node_new = builder.add_access(code_block, output_name);
-    auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::max, "_out", {"0.0f", "_in"});
-    builder.add_computational_memlet(code_block, input_node_new, tasklet, "_in", subset, input_type);
+    auto& zero_node = builder.add_constant(code_block, "0.0", base_type);
+    
+    auto& tasklet = builder.add_library_node<math::IntrinsicNode>(code_block, code_block.debug_info(), "fmax", 2);
+    
+    builder.add_computational_memlet(code_block, zero_node, tasklet, "_in1", {}, base_type);
+    builder.add_computational_memlet(code_block, input_node_new, tasklet, "_in2", subset, input_type);
     builder.add_computational_memlet(code_block, tasklet, "_out", output_node_new, subset, output_type);
 
     return true;
@@ -37,7 +49,8 @@ bool ReLUNode::expand_operation(
 
 std::unique_ptr<data_flow::DataFlowNode> ReLUNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
-    return std::unique_ptr<data_flow::DataFlowNode>(new ReLUNode(element_id, this->debug_info(), vertex, parent));
+    return std::unique_ptr<
+        data_flow::DataFlowNode>(new ReLUNode(element_id, this->debug_info(), vertex, parent, this->shape_));
 }
 
 } // namespace ml

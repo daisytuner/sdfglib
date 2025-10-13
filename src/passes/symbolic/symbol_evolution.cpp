@@ -30,26 +30,40 @@ symbolic::Expression scalar_evolution(
         }
     }
 
-    // Pattern 1: Loop Alias
-    if (symbolic::eq(sym_update, indvar_update) && symbolic::eq(sym_init, indvar_init)) {
-        return indvar;
-    }
-
-    if (symbolic::uses(sym_update, indvar)) {
-        return SymEngine::null;
-    }
-
-    // Pattern 2: Constant
+    // Pattern 1: Constant
     if (!symbolic::uses(sym_update, sym) && symbolic::eq(sym_update, sym_init)) {
         return sym_update;
     }
 
-    // Pattern 3: Affine update
+    // Pattern 2: Loop Alias
+    if (symbolic::eq(sym_update, indvar_update) && symbolic::eq(sym_init, indvar_init)) {
+        return indvar;
+    }
+
     auto stride = analysis::LoopAnalysis::stride(&loop);
     if (stride == SymEngine::null) {
         return SymEngine::null;
     }
 
+    // Pattern 3: Loop Alias for indvar_(n-1)
+    if (symbolic::uses(sym_update, indvar) && !symbolic::uses(sym_update, sym)) {
+        if (stride->as_int() <= 0) {
+            return SymEngine::null;
+        }
+
+        // Hypothesis: sym_update = f(indvar_(n-1)) = f(indvar - stride)
+        auto sym_update_prev = symbolic::subs(sym_update, indvar, symbolic::sub(indvar, stride));
+
+        // Condition: that iter_0 equals sym init
+        auto sym_update_0 = symbolic::subs(sym_update, indvar, symbolic::sub(indvar_init, stride));
+        if (!symbolic::eq(sym_update_0, sym_init)) {
+            return SymEngine::null;
+        }
+
+        return sym_update_prev;
+    }
+
+    // Pattern 3: Affine update
     symbolic::SymbolVec gens = {sym};
     auto poly = symbolic::polynomial(sym_update, gens);
     auto coeffs = symbolic::affine_coefficients(poly, gens);
@@ -100,11 +114,9 @@ bool SymbolEvolution::eliminate_symbols(
         candidates.insert(entry->container());
     }
 
-    // Filter out candidates that are not loop-dependent
-    std::unordered_map<std::string, structured_control_flow::Transition*> aliases;
-    std::unordered_map<std::string, structured_control_flow::Transition*> pseudo_iterators;
+    // Try to eliminate each candidate
     for (auto& sym : candidates) {
-        // Criterion: Must have place after loop
+        // Criterion: We need to set the final value after the loop
         if (transition.assignments().find(symbolic::symbol(sym)) != transition.assignments().end()) {
             continue;
         }
@@ -185,8 +197,9 @@ bool SymbolEvolution::eliminate_symbols(
 
         // Apply by inserting redefinition before the loop body
         auto& old_first_block = loop.root().at(0).first;
-        auto new_first_block = builder.add_block_before(loop.root(), old_first_block);
-        new_first_block.second.assignments().insert({symbolic::symbol(sym), evolution});
+        builder.add_block_before(
+            loop.root(), old_first_block, {{symbolic::symbol(sym), evolution}}, old_first_block.debug_info()
+        );
         update_transition.assignments().erase(symbolic::symbol(sym));
         transition.assignments().insert({symbolic::symbol(sym), update_sym});
 

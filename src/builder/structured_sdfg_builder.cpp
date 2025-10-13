@@ -17,7 +17,7 @@ namespace sdfg {
 namespace builder {
 
 std::unordered_set<const control_flow::State*> StructuredSDFGBuilder::
-    determine_loop_nodes(const SDFG& sdfg, const control_flow::State& start, const control_flow::State& end) const {
+    determine_loop_nodes(SDFG& sdfg, const control_flow::State& start, const control_flow::State& end) const {
     std::unordered_set<const control_flow::State*> nodes;
     std::unordered_set<const control_flow::State*> visited;
     std::list<const control_flow::State*> queue = {&start};
@@ -63,13 +63,17 @@ bool post_dominates(
 }
 
 const control_flow::State* StructuredSDFGBuilder::find_end_of_if_else(
-    const SDFG& sdfg,
+    SDFG& sdfg,
     const State* current,
     std::vector<const InterstateEdge*>& out_edges,
     const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
 ) {
     // Best-effort approach: Check if post-dominator of current dominates all out edges
     auto pdom = pdom_tree.at(current);
+    if (pdom == nullptr) {
+        return nullptr;
+    }
+
     for (auto& edge : out_edges) {
         if (!post_dominates(pdom, &edge->dst(), pdom_tree)) {
             return nullptr;
@@ -79,7 +83,7 @@ const control_flow::State* StructuredSDFGBuilder::find_end_of_if_else(
     return pdom;
 }
 
-void StructuredSDFGBuilder::traverse(const SDFG& sdfg) {
+void StructuredSDFGBuilder::traverse(SDFG& sdfg) {
     // Start of SDFGS
     Sequence& root = *structured_sdfg_->root_;
     const State* start_state = &sdfg.start_state();
@@ -97,7 +101,7 @@ void StructuredSDFGBuilder::traverse(const SDFG& sdfg) {
 };
 
 void StructuredSDFGBuilder::traverse_with_loop_detection(
-    const SDFG& sdfg,
+    SDFG& sdfg,
     Sequence& scope,
     const State* current,
     const State* end,
@@ -174,7 +178,7 @@ void StructuredSDFGBuilder::traverse_with_loop_detection(
 };
 
 void StructuredSDFGBuilder::traverse_without_loop_detection(
-    const SDFG& sdfg,
+    SDFG& sdfg,
     Sequence& scope,
     const State* current,
     const State* end,
@@ -202,7 +206,21 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
         // Case 1: Sink node
         if (out_degree == 0) {
             this->add_block(scope, curr->dataflow(), {}, curr->debug_info());
-            this->add_return(scope, {}, curr->debug_info());
+
+            auto return_state = dynamic_cast<const control_flow::ReturnState*>(curr);
+            assert(return_state != nullptr);
+            if (return_state->is_data()) {
+                this->add_return(scope, return_state->data(), {}, return_state->debug_info());
+            } else if (return_state->is_unreachable()) {
+                this->add_unreachable(scope, {}, return_state->debug_info());
+            } else if (return_state->is_constant()) {
+                this->add_constant_return(
+                    scope, return_state->data(), return_state->type(), {}, return_state->debug_info()
+                );
+            } else {
+                assert(false && "Unknown return state type");
+            }
+
             continue;
         }
 
@@ -215,9 +233,9 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
             this->add_block(scope, curr->dataflow(), oedge.assignments(), curr->debug_info());
 
             if (continues.find(&oedge) != continues.end()) {
-                this->add_continue(scope, oedge.debug_info());
+                this->add_continue(scope, {}, oedge.debug_info());
             } else if (breaks.find(&oedge) != breaks.end()) {
-                this->add_break(scope, oedge.debug_info());
+                this->add_break(scope, {}, oedge.debug_info());
             } else {
                 bool starts_loop = false;
                 for (auto& iedge : sdfg.in_edges(oedge.dst())) {
@@ -253,7 +271,7 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
                 local_end = end;
             }
 
-            auto& if_else = this->add_if_else(scope, curr->debug_info());
+            auto& if_else = this->add_if_else(scope, {}, curr->debug_info());
             for (size_t i = 0; i < out_degree; i++) {
                 auto& out_edge = out_edges_vec[i];
 
@@ -262,9 +280,9 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
                     this->add_block(branch, out_edge->assignments(), out_edge->debug_info());
                 }
                 if (continues.find(out_edge) != continues.end()) {
-                    this->add_continue(branch, out_edge->debug_info());
+                    this->add_continue(branch, {}, out_edge->debug_info());
                 } else if (breaks.find(out_edge) != breaks.end()) {
-                    this->add_break(branch, out_edge->debug_info());
+                    this->add_break(branch, {}, out_edge->debug_info());
                 } else {
                     std::unordered_set<const control_flow::State*> branch_visited(visited);
                     this->traverse_with_loop_detection(
@@ -300,8 +318,11 @@ StructuredSDFGBuilder::StructuredSDFGBuilder(std::unique_ptr<StructuredSDFG>& sd
 StructuredSDFGBuilder::StructuredSDFGBuilder(const std::string& name, FunctionType type)
     : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name, type)) {};
 
-StructuredSDFGBuilder::StructuredSDFGBuilder(const SDFG& sdfg)
-    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(sdfg.name(), sdfg.type())) {
+StructuredSDFGBuilder::StructuredSDFGBuilder(const std::string& name, FunctionType type, const types::IType& return_type)
+    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name, type, return_type)) {};
+
+StructuredSDFGBuilder::StructuredSDFGBuilder(SDFG& sdfg)
+    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(sdfg.name(), sdfg.type(), sdfg.return_type())) {
     for (auto& entry : sdfg.structures_) {
         this->structured_sdfg_->structures_.insert({entry.first, entry.second->clone()});
     }
@@ -338,6 +359,12 @@ std::unique_ptr<StructuredSDFG> StructuredSDFGBuilder::move() {
 #endif
 
     return std::move(this->structured_sdfg_);
+};
+
+void StructuredSDFGBuilder::rename_container(const std::string& old_name, const std::string& new_name) const {
+    FunctionBuilder::rename_container(old_name, new_name);
+
+    this->structured_sdfg_->root_->replace(symbolic::symbol(old_name), symbolic::symbol(new_name));
 };
 
 Element* StructuredSDFGBuilder::find_element_by_id(const size_t& element_id) const {
@@ -397,18 +424,58 @@ Sequence& StructuredSDFGBuilder::
     return static_cast<Sequence&>(*parent.children_.back().get());
 };
 
-std::pair<Sequence&, Transition&> StructuredSDFGBuilder::
-    add_sequence_before(Sequence& parent, ControlFlowNode& block, const DebugInfo& debug_info) {
-    // Insert block before current block
-    int index = -1;
-    for (size_t i = 0; i < parent.children_.size(); i++) {
-        if (parent.children_.at(i).get() == &block) {
-            index = i;
-            break;
-        }
-    }
+Sequence& StructuredSDFGBuilder::add_sequence_before(
+    Sequence& parent,
+    ControlFlowNode& child,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    int index = parent.index(child);
     if (index == -1) {
-        throw InvalidSDFGException("StructuredSDFGBuilder: Block not found");
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
+    }
+
+    parent.children_.insert(
+        parent.children_.begin() + index, std::unique_ptr<Sequence>(new Sequence(this->new_element_id(), debug_info))
+    );
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+    );
+
+    return static_cast<Sequence&>(*parent.children_.at(index).get());
+};
+
+Sequence& StructuredSDFGBuilder::add_sequence_after(
+    Sequence& parent,
+    ControlFlowNode& child,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
+    }
+
+    parent.children_.insert(
+        parent.children_.begin() + index + 1,
+        std::unique_ptr<Sequence>(new Sequence(this->new_element_id(), debug_info))
+    );
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index + 1,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+    );
+
+    return static_cast<Sequence&>(*parent.children_.at(index + 1).get());
+};
+
+std::pair<Sequence&, Transition&> StructuredSDFGBuilder::
+    add_sequence_before(Sequence& parent, ControlFlowNode& child, const DebugInfo& debug_info) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
     }
 
     parent.children_.insert(
@@ -426,62 +493,51 @@ std::pair<Sequence&, Transition&> StructuredSDFGBuilder::
     return {new_block, new_entry.second};
 };
 
-void StructuredSDFGBuilder::remove_child(Sequence& parent, size_t i) {
-    parent.children_.erase(parent.children_.begin() + i);
-    parent.transitions_.erase(parent.transitions_.begin() + i);
-};
-
-void StructuredSDFGBuilder::remove_child(Sequence& parent, ControlFlowNode& child) {
-    int index = -1;
-    for (size_t i = 0; i < parent.children_.size(); i++) {
-        if (parent.children_.at(i).get() == &child) {
-            index = i;
-            break;
-        }
-    }
-
+void StructuredSDFGBuilder::remove_child(Sequence& parent, size_t index) {
     parent.children_.erase(parent.children_.begin() + index);
     parent.transitions_.erase(parent.transitions_.begin() + index);
 };
 
-void StructuredSDFGBuilder::insert_children(Sequence& parent, Sequence& other, size_t i) {
-    parent.children_.insert(
-        parent.children_.begin() + i,
-        std::make_move_iterator(other.children_.begin()),
-        std::make_move_iterator(other.children_.end())
-    );
-    parent.transitions_.insert(
-        parent.transitions_.begin() + i,
-        std::make_move_iterator(other.transitions_.begin()),
-        std::make_move_iterator(other.transitions_.end())
-    );
-    for (auto& trans : parent.transitions_) {
-        trans->parent_ = &parent;
-    }
-    other.children_.clear();
-    other.transitions_.clear();
+void StructuredSDFGBuilder::remove_children(Sequence& parent) {
+    parent.children_.clear();
+    parent.transitions_.clear();
 };
 
-void StructuredSDFGBuilder::insert(ControlFlowNode& node, Sequence& source, Sequence& target, const DebugInfo& debug_info) {
-    // Insert node into target sequence
-    int index = -1;
-    for (size_t i = 0; i < source.children_.size(); i++) {
-        if (source.children_.at(i).get() == &node) {
-            index = i;
-            break;
-        }
-    }
-    if (index == -1) {
-        throw InvalidSDFGException("StructuredSDFGBuilder: Node not found in source sequence");
-    }
+void StructuredSDFGBuilder::move_child(Sequence& source, size_t source_index, Sequence& target) {
+    this->move_child(source, source_index, target, target.size());
+};
 
-    auto node_ptr = std::move(source.children_.at(index));
-    source.children_.erase(source.children_.begin() + index);
-    source.transitions_.erase(source.transitions_.begin() + index);
+void StructuredSDFGBuilder::move_child(Sequence& source, size_t source_index, Sequence& target, size_t target_index) {
+    auto node_ptr = std::move(source.children_.at(source_index));
+    auto trans_ptr = std::move(source.transitions_.at(source_index));
+    source.children_.erase(source.children_.begin() + source_index);
+    source.transitions_.erase(source.transitions_.begin() + source_index);
 
-    target.children_.push_back(std::move(node_ptr));
-    target.transitions_.push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, target)
-    ));
+    trans_ptr->parent_ = &target;
+    target.children_.insert(target.children_.begin() + target_index, std::move(node_ptr));
+    target.transitions_.insert(target.transitions_.begin() + target_index, std::move(trans_ptr));
+};
+
+void StructuredSDFGBuilder::move_children(Sequence& source, Sequence& target) {
+    this->move_children(source, target, target.size());
+};
+
+void StructuredSDFGBuilder::move_children(Sequence& source, Sequence& target, size_t target_index) {
+    target.children_.insert(
+        target.children_.begin() + target_index,
+        std::make_move_iterator(source.children_.begin()),
+        std::make_move_iterator(source.children_.end())
+    );
+    target.transitions_.insert(
+        target.transitions_.begin() + target_index,
+        std::make_move_iterator(source.transitions_.begin()),
+        std::make_move_iterator(source.transitions_.end())
+    );
+    for (auto& trans : target.transitions_) {
+        trans->parent_ = &target;
+    }
+    source.children_.clear();
+    source.transitions_.clear();
 };
 
 Block& StructuredSDFGBuilder::
@@ -492,7 +548,7 @@ Block& StructuredSDFGBuilder::
         .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
         );
 
-    auto& new_block = dynamic_cast<structured_control_flow::Block&>(*parent.children_.back().get());
+    auto& new_block = static_cast<structured_control_flow::Block&>(*parent.children_.back());
     (*new_block.dataflow_).parent_ = &new_block;
 
     return new_block;
@@ -510,7 +566,7 @@ Block& StructuredSDFGBuilder::add_block(
         .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
         );
 
-    auto& new_block = dynamic_cast<structured_control_flow::Block&>(*parent.children_.back().get());
+    auto& new_block = static_cast<structured_control_flow::Block&>(*parent.children_.back());
     (*new_block.dataflow_).parent_ = &new_block;
 
     this->add_dataflow(data_flow_graph, new_block);
@@ -518,17 +574,118 @@ Block& StructuredSDFGBuilder::add_block(
     return new_block;
 };
 
-std::pair<Block&, Transition&> StructuredSDFGBuilder::
-    add_block_before(Sequence& parent, ControlFlowNode& block, const DebugInfo& debug_info) {
-    // Insert block before current block
-    int index = -1;
-    for (size_t i = 0; i < parent.children_.size(); i++) {
-        if (parent.children_.at(i).get() == &block) {
-            index = i;
-            break;
-        }
+Block& StructuredSDFGBuilder::add_block_before(
+    Sequence& parent,
+    ControlFlowNode& child,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
     }
-    assert(index > -1);
+
+    parent.children_
+        .insert(parent.children_.begin() + index, std::unique_ptr<Block>(new Block(this->new_element_id(), debug_info)));
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+    );
+
+    auto& new_block = static_cast<structured_control_flow::Block&>(*parent.children_.at(index));
+    (*new_block.dataflow_).parent_ = &new_block;
+
+    return new_block;
+};
+
+Block& StructuredSDFGBuilder::add_block_before(
+    Sequence& parent,
+    ControlFlowNode& child,
+    data_flow::DataFlowGraph& data_flow_graph,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
+    }
+
+    parent.children_
+        .insert(parent.children_.begin() + index, std::unique_ptr<Block>(new Block(this->new_element_id(), debug_info)));
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+    );
+
+    auto& new_block = static_cast<structured_control_flow::Block&>(*parent.children_.at(index));
+    (*new_block.dataflow_).parent_ = &new_block;
+    this->add_dataflow(data_flow_graph, new_block);
+
+    return new_block;
+};
+
+Block& StructuredSDFGBuilder::add_block_after(
+    Sequence& parent,
+    ControlFlowNode& child,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
+    }
+
+    parent.children_.insert(
+        parent.children_.begin() + index + 1, std::unique_ptr<Block>(new Block(this->new_element_id(), debug_info))
+    );
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index + 1,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+    );
+
+    auto& new_block = static_cast<structured_control_flow::Block&>(*parent.children_.at(index + 1));
+    (*new_block.dataflow_).parent_ = &new_block;
+
+    return new_block;
+};
+
+Block& StructuredSDFGBuilder::add_block_after(
+    Sequence& parent,
+    ControlFlowNode& child,
+    data_flow::DataFlowGraph& data_flow_graph,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
+    }
+
+    parent.children_.insert(
+        parent.children_.begin() + index + 1, std::unique_ptr<Block>(new Block(this->new_element_id(), debug_info))
+    );
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index + 1,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+    );
+
+    auto& new_block = static_cast<structured_control_flow::Block&>(*parent.children_.at(index + 1));
+    (*new_block.dataflow_).parent_ = &new_block;
+    this->add_dataflow(data_flow_graph, new_block);
+
+    return new_block;
+};
+
+std::pair<Block&, Transition&> StructuredSDFGBuilder::
+    add_block_before(Sequence& parent, ControlFlowNode& child, const DebugInfo& debug_info) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
+    }
 
     parent.children_
         .insert(parent.children_.begin() + index, std::unique_ptr<Block>(new Block(this->new_element_id(), debug_info)));
@@ -539,24 +696,19 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::
     );
 
     auto new_entry = parent.at(index);
-    auto& new_block = dynamic_cast<structured_control_flow::Block&>(new_entry.first);
+    auto& new_block = static_cast<structured_control_flow::Block&>(new_entry.first);
     (*new_block.dataflow_).parent_ = &new_block;
 
     return {new_block, new_entry.second};
 };
 
 std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_before(
-    Sequence& parent, ControlFlowNode& block, data_flow::DataFlowGraph& data_flow_graph, const DebugInfo& debug_info
+    Sequence& parent, ControlFlowNode& child, data_flow::DataFlowGraph& data_flow_graph, const DebugInfo& debug_info
 ) {
-    // Insert block before current block
-    int index = -1;
-    for (size_t i = 0; i < parent.children_.size(); i++) {
-        if (parent.children_.at(i).get() == &block) {
-            index = i;
-            break;
-        }
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
     }
-    assert(index > -1);
 
     parent.children_
         .insert(parent.children_.begin() + index, std::unique_ptr<Block>(new Block(this->new_element_id(), debug_info)));
@@ -576,16 +728,11 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_before(
 };
 
 std::pair<Block&, Transition&> StructuredSDFGBuilder::
-    add_block_after(Sequence& parent, ControlFlowNode& block, const DebugInfo& debug_info) {
-    // Insert block before current block
-    int index = -1;
-    for (size_t i = 0; i < parent.children_.size(); i++) {
-        if (parent.children_.at(i).get() == &block) {
-            index = i;
-            break;
-        }
+    add_block_after(Sequence& parent, ControlFlowNode& child, const DebugInfo& debug_info) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
     }
-    assert(index > -1);
 
     parent.children_.insert(
         parent.children_.begin() + index + 1, std::unique_ptr<Block>(new Block(this->new_element_id(), debug_info))
@@ -604,16 +751,12 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::
 };
 
 std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_after(
-    Sequence& parent, ControlFlowNode& block, data_flow::DataFlowGraph& data_flow_graph, const DebugInfo& debug_info
+    Sequence& parent, ControlFlowNode& child, data_flow::DataFlowGraph& data_flow_graph, const DebugInfo& debug_info
 ) {
-    int index = -1;
-    for (size_t i = 0; i < parent.children_.size(); i++) {
-        if (parent.children_.at(i).get() == &block) {
-            index = i;
-            break;
-        }
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
     }
-    assert(index > -1);
 
     parent.children_.insert(
         parent.children_.begin() + index + 1, std::unique_ptr<Block>(new Block(this->new_element_id(), debug_info))
@@ -633,108 +776,6 @@ std::pair<Block&, Transition&> StructuredSDFGBuilder::add_block_after(
     return {new_block, new_entry.second};
 };
 
-For& StructuredSDFGBuilder::add_for(
-    Sequence& parent,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
-    const sdfg::control_flow::Assignments& assignments,
-    const DebugInfo& debug_info
-) {
-    parent.children_
-        .push_back(std::unique_ptr<For>(new For(this->new_element_id(), debug_info, indvar, init, update, condition)));
-
-    // Increment element id for body node
-    this->new_element_id();
-
-    parent.transitions_
-        .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
-        );
-
-    return static_cast<For&>(*parent.children_.back().get());
-};
-
-std::pair<For&, Transition&> StructuredSDFGBuilder::add_for_before(
-    Sequence& parent,
-    ControlFlowNode& block,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
-    const DebugInfo& debug_info
-) {
-    // Insert block before current block
-    int index = -1;
-    for (size_t i = 0; i < parent.children_.size(); i++) {
-        if (parent.children_.at(i).get() == &block) {
-            index = i;
-            break;
-        }
-    }
-    assert(index > -1);
-
-    parent.children_.insert(
-        parent.children_.begin() + index,
-        std::unique_ptr<For>(new For(this->new_element_id(), debug_info, indvar, init, update, condition))
-    );
-
-    // Increment element id for body node
-    this->new_element_id();
-
-    parent.transitions_.insert(
-        parent.transitions_.begin() + index,
-        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent))
-    );
-
-    auto new_entry = parent.at(index);
-    auto& new_block = dynamic_cast<structured_control_flow::For&>(new_entry.first);
-
-    return {new_block, new_entry.second};
-};
-
-std::pair<For&, Transition&> StructuredSDFGBuilder::add_for_after(
-    Sequence& parent,
-    ControlFlowNode& block,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
-    const DebugInfo& debug_info
-) {
-    // Insert block before current block
-    int index = -1;
-    for (size_t i = 0; i < parent.children_.size(); i++) {
-        if (parent.children_.at(i).get() == &block) {
-            index = i;
-            break;
-        }
-    }
-    assert(index > -1);
-
-    parent.children_.insert(
-        parent.children_.begin() + index + 1,
-        std::unique_ptr<For>(new For(this->new_element_id(), debug_info, indvar, init, update, condition))
-    );
-
-    // Increment element id for body node
-    this->new_element_id();
-
-    parent.transitions_.insert(
-        parent.transitions_.begin() + index + 1,
-        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent))
-    );
-
-    auto new_entry = parent.at(index + 1);
-    auto& new_block = dynamic_cast<structured_control_flow::For&>(new_entry.first);
-
-    return {new_block, new_entry.second};
-};
-
-IfElse& StructuredSDFGBuilder::add_if_else(Sequence& parent, const DebugInfo& debug_info) {
-    return this->add_if_else(parent, control_flow::Assignments{}, debug_info);
-};
-
 IfElse& StructuredSDFGBuilder::
     add_if_else(Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfo& debug_info) {
     parent.children_.push_back(std::unique_ptr<IfElse>(new IfElse(this->new_element_id(), debug_info)));
@@ -746,17 +787,57 @@ IfElse& StructuredSDFGBuilder::
     return static_cast<IfElse&>(*parent.children_.back().get());
 };
 
-std::pair<IfElse&, Transition&> StructuredSDFGBuilder::
-    add_if_else_before(Sequence& parent, ControlFlowNode& block, const DebugInfo& debug_info) {
-    // Insert block before current block
-    int index = -1;
-    for (size_t i = 0; i < parent.children_.size(); i++) {
-        if (parent.children_.at(i).get() == &block) {
-            index = i;
-            break;
-        }
+IfElse& StructuredSDFGBuilder::add_if_else_before(
+    Sequence& parent,
+    ControlFlowNode& child,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
     }
-    assert(index > -1);
+
+    parent.children_
+        .insert(parent.children_.begin() + index, std::unique_ptr<IfElse>(new IfElse(this->new_element_id(), debug_info)));
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+    );
+
+    return static_cast<IfElse&>(*parent.children_.at(index));
+};
+
+IfElse& StructuredSDFGBuilder::add_if_else_after(
+    Sequence& parent,
+    ControlFlowNode& child,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
+    }
+
+    parent.children_.insert(
+        parent.children_.begin() + index + 1, std::unique_ptr<IfElse>(new IfElse(this->new_element_id(), debug_info))
+    );
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index + 1,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+    );
+
+    return static_cast<IfElse&>(*parent.children_.at(index + 1));
+};
+
+std::pair<IfElse&, Transition&> StructuredSDFGBuilder::
+    add_if_else_before(Sequence& parent, ControlFlowNode& child, const DebugInfo& debug_info) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
+    }
 
     parent.children_
         .insert(parent.children_.begin() + index, std::unique_ptr<IfElse>(new IfElse(this->new_element_id(), debug_info)));
@@ -779,9 +860,9 @@ Sequence& StructuredSDFGBuilder::add_case(IfElse& scope, const sdfg::symbolic::C
     return *scope.cases_.back();
 };
 
-void StructuredSDFGBuilder::remove_case(IfElse& scope, size_t i, const DebugInfo& debug_info) {
-    scope.cases_.erase(scope.cases_.begin() + i);
-    scope.conditions_.erase(scope.conditions_.begin() + i);
+void StructuredSDFGBuilder::remove_case(IfElse& scope, size_t index, const DebugInfo& debug_info) {
+    scope.cases_.erase(scope.cases_.begin() + index);
+    scope.conditions_.erase(scope.conditions_.begin() + index);
 };
 
 While& StructuredSDFGBuilder::
@@ -798,8 +879,178 @@ While& StructuredSDFGBuilder::
     return static_cast<While&>(*parent.children_.back().get());
 };
 
-Continue& StructuredSDFGBuilder::add_continue(Sequence& parent, const DebugInfo& debug_info) {
-    return this->add_continue(parent, control_flow::Assignments{}, debug_info);
+For& StructuredSDFGBuilder::add_for(
+    Sequence& parent,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    parent.children_
+        .push_back(std::unique_ptr<For>(new For(this->new_element_id(), debug_info, indvar, init, update, condition)));
+
+    // Increment element id for body node
+    this->new_element_id();
+
+    parent.transitions_
+        .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+        );
+
+    return static_cast<For&>(*parent.children_.back().get());
+};
+
+For& StructuredSDFGBuilder::add_for_before(
+    Sequence& parent,
+    ControlFlowNode& child,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
+    }
+
+    parent.children_.insert(
+        parent.children_.begin() + index,
+        std::unique_ptr<For>(new For(this->new_element_id(), debug_info, indvar, init, update, condition))
+    );
+
+    // Increment element id for body node
+    this->new_element_id();
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+    );
+
+    return static_cast<For&>(*parent.children_.at(index).get());
+};
+
+For& StructuredSDFGBuilder::add_for_after(
+    Sequence& parent,
+    ControlFlowNode& child,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
+    }
+
+    parent.children_.insert(
+        parent.children_.begin() + index + 1,
+        std::unique_ptr<For>(new For(this->new_element_id(), debug_info, indvar, init, update, condition))
+    );
+
+    // Increment element id for body node
+    this->new_element_id();
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index + 1,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+    );
+
+    return static_cast<For&>(*parent.children_.at(index + 1).get());
+};
+
+Map& StructuredSDFGBuilder::add_map(
+    Sequence& parent,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
+    const ScheduleType& schedule_type,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    parent.children_
+        .push_back(std::unique_ptr<
+                   Map>(new Map(this->new_element_id(), debug_info, indvar, init, update, condition, schedule_type)));
+
+    // Increment element id for body node
+    this->new_element_id();
+
+    parent.transitions_
+        .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+        );
+
+    return static_cast<Map&>(*parent.children_.back().get());
+};
+
+Map& StructuredSDFGBuilder::add_map_before(
+    Sequence& parent,
+    ControlFlowNode& child,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
+    const ScheduleType& schedule_type,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
+    }
+
+    parent.children_.insert(
+        parent.children_.begin() + index,
+        std::unique_ptr<Map>(new Map(this->new_element_id(), debug_info, indvar, init, update, condition, schedule_type)
+        )
+    );
+
+    // Increment element id for body node
+    this->new_element_id();
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+    );
+
+    return static_cast<Map&>(*parent.children_.at(index).get());
+};
+
+Map& StructuredSDFGBuilder::add_map_after(
+    Sequence& parent,
+    ControlFlowNode& child,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update,
+    const ScheduleType& schedule_type,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    int index = parent.index(child);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
+    }
+
+    parent.children_.insert(
+        parent.children_.begin() + index + 1,
+        std::unique_ptr<Map>(new Map(this->new_element_id(), debug_info, indvar, init, update, condition, schedule_type)
+        )
+    );
+
+    // Increment element id for body node
+    this->new_element_id();
+
+    parent.transitions_.insert(
+        parent.transitions_.begin() + index + 1,
+        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+    );
+
+    return static_cast<Map&>(*parent.children_.at(index + 1).get());
 };
 
 Continue& StructuredSDFGBuilder::
@@ -831,10 +1082,6 @@ Continue& StructuredSDFGBuilder::
     return static_cast<Continue&>(*parent.children_.back().get());
 };
 
-Break& StructuredSDFGBuilder::add_break(Sequence& parent, const DebugInfo& debug_info) {
-    return this->add_break(parent, control_flow::Assignments{}, debug_info);
-};
-
 Break& StructuredSDFGBuilder::
     add_break(Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfo& debug_info) {
     // Check if break is in a loop
@@ -864,8 +1111,23 @@ Break& StructuredSDFGBuilder::
     return static_cast<Break&>(*parent.children_.back().get());
 };
 
+Return& StructuredSDFGBuilder::add_return(
+    Sequence& parent,
+    const std::string& data,
+    const sdfg::control_flow::Assignments& assignments,
+    const DebugInfo& debug_info
+) {
+    parent.children_.push_back(std::unique_ptr<Return>(new Return(this->new_element_id(), debug_info, data)));
+
+    parent.transitions_
+        .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
+        );
+
+    return static_cast<Return&>(*parent.children_.back().get());
+};
+
 Return& StructuredSDFGBuilder::
-    add_return(Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfo& debug_info) {
+    add_unreachable(Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfo& debug_info) {
     parent.children_.push_back(std::unique_ptr<Return>(new Return(this->new_element_id(), debug_info)));
 
     parent.transitions_
@@ -875,128 +1137,35 @@ Return& StructuredSDFGBuilder::
     return static_cast<Return&>(*parent.children_.back().get());
 };
 
-Map& StructuredSDFGBuilder::add_map(
+Return& StructuredSDFGBuilder::add_constant_return(
     Sequence& parent,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
-    const ScheduleType& schedule_type,
+    const std::string& data,
+    const types::IType& type,
     const sdfg::control_flow::Assignments& assignments,
     const DebugInfo& debug_info
 ) {
-    parent.children_
-        .push_back(std::unique_ptr<
-                   Map>(new Map(this->new_element_id(), debug_info, indvar, init, update, condition, schedule_type)));
-
-    // Increment element id for body node
-    this->new_element_id();
+    parent.children_.push_back(std::unique_ptr<Return>(new Return(this->new_element_id(), debug_info, data, type)));
 
     parent.transitions_
         .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
         );
 
-    return static_cast<Map&>(*parent.children_.back().get());
-};
-
-std::pair<Map&, Transition&> StructuredSDFGBuilder::add_map_before(
-    Sequence& parent,
-    ControlFlowNode& block,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
-    const ScheduleType& schedule_type,
-    const sdfg::control_flow::Assignments& assignments,
-    const DebugInfo& debug_info
-) {
-    // Insert block before current block
-    int index = -1;
-    for (size_t i = 0; i < parent.children_.size(); i++) {
-        if (parent.children_.at(i).get() == &block) {
-            index = i;
-            break;
-        }
-    }
-    assert(index > -1);
-
-    parent.children_.insert(
-        parent.children_.begin() + index,
-        std::unique_ptr<Map>(new Map(this->new_element_id(), debug_info, indvar, init, update, condition, schedule_type)
-        )
-    );
-
-    // Increment element id for body node
-    this->new_element_id();
-
-    parent.transitions_.insert(
-        parent.transitions_.begin() + index,
-        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent))
-    );
-
-    auto new_entry = parent.at(index);
-    auto& new_block = dynamic_cast<structured_control_flow::Map&>(new_entry.first);
-
-    return {new_block, new_entry.second};
-};
-
-std::pair<Map&, Transition&> StructuredSDFGBuilder::add_map_after(
-    Sequence& parent,
-    ControlFlowNode& block,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update,
-    const ScheduleType& schedule_type,
-    const sdfg::control_flow::Assignments& assignments,
-    const DebugInfo& debug_info
-) {
-    // Insert block before current block
-    int index = -1;
-    for (size_t i = 0; i < parent.children_.size(); i++) {
-        if (parent.children_.at(i).get() == &block) {
-            index = i;
-            break;
-        }
-    }
-    assert(index > -1);
-
-    parent.children_.insert(
-        parent.children_.begin() + index + 1,
-        std::unique_ptr<Map>(new Map(this->new_element_id(), debug_info, indvar, init, update, condition, schedule_type)
-        )
-    );
-
-    // Increment element id for body node
-    this->new_element_id();
-
-    parent.transitions_.insert(
-        parent.transitions_.begin() + index + 1,
-        std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent))
-    );
-
-    auto new_entry = parent.at(index + 1);
-    auto& new_block = dynamic_cast<structured_control_flow::Map&>(new_entry.first);
-
-    return {new_block, new_entry.second};
+    return static_cast<Return&>(*parent.children_.back().get());
 };
 
 For& StructuredSDFGBuilder::convert_while(
     Sequence& parent,
     While& loop,
-    const symbolic::Symbol& indvar,
-    const symbolic::Condition& condition,
-    const symbolic::Expression& init,
-    const symbolic::Expression& update
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update
 ) {
-    // Insert for loop
-    size_t index = 0;
-    for (auto& entry : parent.children_) {
-        if (entry.get() == &loop) {
-            break;
-        }
-        index++;
+    int index = parent.index(loop);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
     }
+
     auto iter = parent.children_.begin() + index;
     auto& new_iter = *parent.children_.insert(
         iter + 1,
@@ -1007,7 +1176,7 @@ For& StructuredSDFGBuilder::convert_while(
     this->new_element_id();
 
     auto& for_loop = dynamic_cast<For&>(*new_iter);
-    this->insert_children(for_loop.root(), loop.root(), 0);
+    this->move_children(loop.root(), for_loop.root());
 
     // Remove while loop
     parent.children_.erase(parent.children_.begin() + index);
@@ -1016,14 +1185,11 @@ For& StructuredSDFGBuilder::convert_while(
 };
 
 Map& StructuredSDFGBuilder::convert_for(Sequence& parent, For& loop) {
-    // Insert for loop
-    size_t index = 0;
-    for (auto& entry : parent.children_) {
-        if (entry.get() == &loop) {
-            break;
-        }
-        index++;
+    int index = parent.index(loop);
+    if (index == -1) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Child not found");
     }
+
     auto iter = parent.children_.begin() + index;
     auto& new_iter = *parent.children_.insert(
         iter + 1,
@@ -1034,7 +1200,7 @@ Map& StructuredSDFGBuilder::convert_for(Sequence& parent, For& loop) {
             loop.init(),
             loop.update(),
             loop.condition(),
-            ScheduleType_Sequential
+            ScheduleType_Sequential::create()
         ))
     );
 
@@ -1042,7 +1208,7 @@ Map& StructuredSDFGBuilder::convert_for(Sequence& parent, For& loop) {
     this->new_element_id();
 
     auto& map = dynamic_cast<Map&>(*new_iter);
-    this->insert_children(map.root(), loop.root(), 0);
+    this->move_children(loop.root(), map.root());
 
     // Remove for loop
     parent.children_.erase(parent.children_.begin() + index);
@@ -1050,10 +1216,29 @@ Map& StructuredSDFGBuilder::convert_for(Sequence& parent, For& loop) {
     return map;
 };
 
-void StructuredSDFGBuilder::clear_sequence(Sequence& parent) {
-    parent.children_.clear();
-    parent.transitions_.clear();
+void StructuredSDFGBuilder::update_if_else_condition(IfElse& if_else, size_t index, const symbolic::Condition condition) {
+    if (index >= if_else.conditions_.size()) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Index out of range");
+    }
+    if_else.conditions_.at(index) = condition;
 };
+
+void StructuredSDFGBuilder::update_loop(
+    StructuredLoop& loop,
+    const symbolic::Symbol indvar,
+    const symbolic::Condition condition,
+    const symbolic::Expression init,
+    const symbolic::Expression update
+) {
+    loop.indvar_ = indvar;
+    loop.condition_ = condition;
+    loop.init_ = init;
+    loop.update_ = update;
+};
+
+void StructuredSDFGBuilder::update_schedule_type(Map& map, const ScheduleType& schedule_type) {
+    map.schedule_type_ = schedule_type;
+}
 
 Sequence& StructuredSDFGBuilder::parent(const ControlFlowNode& node) {
     std::list<structured_control_flow::ControlFlowNode*> queue = {&this->structured_sdfg_->root()};
@@ -1097,6 +1282,21 @@ data_flow::AccessNode& StructuredSDFGBuilder::
     return dynamic_cast<data_flow::AccessNode&>(*(res.first->second));
 };
 
+data_flow::ConstantNode& StructuredSDFGBuilder::add_constant(
+    structured_control_flow::Block& block, const std::string& data, const types::IType& type, const DebugInfo& debug_info
+) {
+    auto vertex = boost::add_vertex(block.dataflow_->graph_);
+    auto res = block.dataflow_->nodes_.insert(
+        {vertex,
+         std::unique_ptr<data_flow::ConstantNode>(
+             new data_flow::ConstantNode(this->new_element_id(), debug_info, vertex, block.dataflow(), data, type)
+         )}
+    );
+
+    return dynamic_cast<data_flow::ConstantNode&>(*(res.first->second));
+};
+
+
 data_flow::Tasklet& StructuredSDFGBuilder::add_tasklet(
     structured_control_flow::Block& block,
     const data_flow::TaskletCode code,
@@ -1107,9 +1307,9 @@ data_flow::Tasklet& StructuredSDFGBuilder::add_tasklet(
     auto vertex = boost::add_vertex(block.dataflow_->graph_);
     auto res = block.dataflow_->nodes_.insert(
         {vertex,
-         std::unique_ptr<data_flow::Tasklet>(new data_flow::Tasklet(
-             this->new_element_id(), debug_info, vertex, block.dataflow(), code, output, inputs, symbolic::__true__()
-         ))}
+         std::unique_ptr<data_flow::Tasklet>(
+             new data_flow::Tasklet(this->new_element_id(), debug_info, vertex, block.dataflow(), code, output, inputs)
+         )}
     );
 
     return dynamic_cast<data_flow::Tasklet&>(*(res.first->second));
@@ -1130,43 +1330,6 @@ data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
         {edge.first,
          std::unique_ptr<data_flow::Memlet>(new data_flow::Memlet(
              this->new_element_id(), debug_info, edge.first, block.dataflow(), src, src_conn, dst, dst_conn, subset, base_type
-         ))}
-    );
-
-    auto& memlet = dynamic_cast<data_flow::Memlet&>(*(res.first->second));
-#ifndef NDEBUG
-    memlet.validate(*this->structured_sdfg_);
-#endif
-
-    return memlet;
-};
-
-data_flow::Memlet& StructuredSDFGBuilder::add_memlet(
-    structured_control_flow::Block& block,
-    data_flow::DataFlowNode& src,
-    const std::string& src_conn,
-    data_flow::DataFlowNode& dst,
-    const std::string& dst_conn,
-    const data_flow::Subset& begin_subset,
-    const data_flow::Subset& end_subset,
-    const types::IType& base_type,
-    const DebugInfo& debug_info
-) {
-    auto edge = boost::add_edge(src.vertex_, dst.vertex_, block.dataflow_->graph_);
-    auto res = block.dataflow_->edges_.insert(
-        {edge.first,
-         std::unique_ptr<data_flow::Memlet>(new data_flow::Memlet(
-             this->new_element_id(),
-             debug_info,
-             edge.first,
-             block.dataflow(),
-             src,
-             src_conn,
-             dst,
-             dst_conn,
-             begin_subset,
-             end_subset,
-             base_type
          ))}
     );
 
@@ -1210,12 +1373,17 @@ data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
     const data_flow::Subset& subset,
     const DebugInfo& debug_info
 ) {
-    auto& src_type = this->structured_sdfg_->type(src.data());
-    auto& base_type = types::infer_type(*this->structured_sdfg_, src_type, subset);
+    const types::IType* src_type = nullptr;
+    if (auto cnode = dynamic_cast<data_flow::ConstantNode*>(&src)) {
+        src_type = &cnode->type();
+    } else {
+        src_type = &this->structured_sdfg_->type(src.data());
+    }
+    auto& base_type = types::infer_type(*this->structured_sdfg_, *src_type, subset);
     if (base_type.type_id() != types::TypeID::Scalar) {
         throw InvalidSDFGException("Computational memlet must have a scalar type");
     }
-    return this->add_memlet(block, src, "void", dst, dst_conn, subset, src_type, debug_info);
+    return this->add_memlet(block, src, "void", dst, dst_conn, subset, *src_type, debug_info);
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
@@ -1239,12 +1407,11 @@ data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
     data_flow::AccessNode& src,
     data_flow::LibraryNode& dst,
     const std::string& dst_conn,
-    const data_flow::Subset& begin_subset,
-    const data_flow::Subset& end_subset,
+    const data_flow::Subset& subset,
     const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(block, src, "void", dst, dst_conn, begin_subset, end_subset, base_type, debug_info);
+    return this->add_memlet(block, src, "void", dst, dst_conn, subset, base_type, debug_info);
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
@@ -1252,12 +1419,11 @@ data_flow::Memlet& StructuredSDFGBuilder::add_computational_memlet(
     data_flow::LibraryNode& src,
     const std::string& src_conn,
     data_flow::AccessNode& dst,
-    const data_flow::Subset& begin_subset,
-    const data_flow::Subset& end_subset,
+    const data_flow::Subset& subset,
     const types::IType& base_type,
     const DebugInfo& debug_info
 ) {
-    return this->add_memlet(block, src, src_conn, dst, "void", begin_subset, end_subset, base_type, debug_info);
+    return this->add_memlet(block, src, src_conn, dst, "void", subset, base_type, debug_info);
 };
 
 data_flow::Memlet& StructuredSDFGBuilder::add_reference_memlet(

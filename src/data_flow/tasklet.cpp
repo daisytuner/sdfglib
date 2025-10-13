@@ -13,14 +13,33 @@ Tasklet::Tasklet(
     DataFlowGraph& parent,
     const TaskletCode code,
     const std::string& output,
-    const std::vector<std::string>& inputs,
-    const symbolic::Condition& condition
+    const std::vector<std::string>& inputs
 )
-    : CodeNode(element_id, debug_info, vertex, parent, {output}, inputs), code_(code), condition_(condition) {};
+    : CodeNode(element_id, debug_info, vertex, parent, {output}, inputs), code_(code) {};
 
 void Tasklet::validate(const Function& function) const {
     auto& graph = this->get_parent();
 
+    // Validate: inputs match arity
+    if (arity(this->code_) != this->inputs_.size()) {
+        throw InvalidSDFGException(
+            "Tasklet: Invalid number of inputs for code " + std::to_string(this->code_) + ": expected " +
+            std::to_string(arity(this->code_)) + ", got " + std::to_string(this->inputs_.size())
+        );
+    }
+
+    // Validate: inputs match type of operation
+    for (auto& iedge : graph.in_edges(*this)) {
+        types::PrimitiveType input_type = iedge.base_type().primitive_type();
+        if (is_integer(this->code_) && !types::is_integer(input_type)) {
+            throw InvalidSDFGException("Tasklet: Integer operation with non-integer input type");
+        }
+        if (is_floating_point(this->code_) && !types::is_floating_point(input_type)) {
+            throw InvalidSDFGException("Tasklet: Floating point operation with integer input type");
+        }
+    }
+
+    // Validate: Graph - No two access nodes for same data
     std::unordered_map<std::string, const AccessNode*> input_names;
     for (auto& iedge : graph.in_edges(*this)) {
         auto& src = static_cast<const AccessNode&>(iedge.src());
@@ -38,30 +57,14 @@ TaskletCode Tasklet::code() const { return this->code_; };
 
 const std::string& Tasklet::output() const { return this->outputs_[0]; };
 
-bool Tasklet::needs_connector(size_t index) const {
-    // Is non-constant, if starts with _in prefix
-    if (this->inputs_[index].compare(0, 3, "_in") == 0) {
-        return true;
-    }
-    return false;
-};
-
-const symbolic::Condition& Tasklet::condition() const { return this->condition_; };
-
-symbolic::Condition& Tasklet::condition() { return this->condition_; };
-
-bool Tasklet::is_conditional() const { return !symbolic::is_true(this->condition_); };
-
 std::unique_ptr<DataFlowNode> Tasklet::clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
     const {
-    return std::unique_ptr<Tasklet>(new Tasklet(
-        element_id, this->debug_info_, vertex, parent, this->code_, this->outputs_.at(0), this->inputs_, this->condition_
-    ));
+    return std::unique_ptr<Tasklet>(
+        new Tasklet(element_id, this->debug_info_, vertex, parent, this->code_, this->outputs_.at(0), this->inputs_)
+    );
 };
 
-void Tasklet::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
-    this->condition_ = symbolic::subs(this->condition_, old_expression, new_expression);
-};
+void Tasklet::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {};
 
 } // namespace data_flow
 } // namespace sdfg

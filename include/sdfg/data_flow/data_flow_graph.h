@@ -125,11 +125,17 @@ public:
 
     size_t out_degree(const data_flow::DataFlowNode& node) const;
 
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression);
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression);
 
     /***** Section: Analysis *****/
 
     std::unordered_set<const data_flow::Tasklet*> tasklets() const;
+
+    std::unordered_set<data_flow::Tasklet*> tasklets();
+
+    std::unordered_set<const data_flow::LibraryNode*> library_nodes() const;
+
+    std::unordered_set<data_flow::LibraryNode*> library_nodes();
 
     std::unordered_set<const data_flow::AccessNode*> data_nodes() const;
 

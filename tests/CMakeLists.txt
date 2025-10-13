@@ -32,20 +32,21 @@ set(TEST_FILES
     codegen/language_extensions/cuda_language_extension_test.cpp
     codegen/utils_test.cpp
     data_flow/data_flow_graph_test.cpp
-    data_flow/library_nodes/math_test.cpp
+    data_flow/library_nodes/math/blas_test.cpp
     deepcopy/structured_sdfg_deep_copy_test.cpp
     element_test.cpp
     graph/graph_algorithms_test.cpp
     helpers/helpers_test.cpp
+    passes/dataflow/constant_elimination_test.cpp
     passes/dataflow/dead_data_elimination_test.cpp
     passes/dataflow/redundant_array_elimination_test.cpp
     passes/dataflow/trivial_array_elimination_test.cpp
     passes/dataflow/reference_propagation_test.cpp
     passes/pipeline_test.cpp
-    passes/schedules/expansion_pass_test.cpp
     passes/schedules/parallelization_pass_test.cpp
     passes/structured_control_flow/block_fusion_test.cpp
     passes/structured_control_flow/condition_elimination_test.cpp
+    passes/structured_control_flow/dead_cfg_elimination_test.cpp
     passes/structured_control_flow/for2map_test.cpp
     passes/structured_control_flow/loop_normalization_test.cpp
     passes/debug_info_propagation_test.cpp
@@ -54,6 +55,7 @@ set(TEST_FILES
     replace/symbol_replace_test.cpp
     sdfg_test.cpp
     serializer/json_serializer_test.cpp
+    structured_control_flow/map_test.cpp
     structured_sdfg_test.cpp
     symbolic/assumptions_test.cpp
     symbolic/conjunctive_normal_form_test.cpp
@@ -62,7 +64,6 @@ set(TEST_FILES
     symbolic/symbolic_test.cpp
     symbolic/sets_test.cpp
     transformations/loop_interchange_test.cpp
-    transformations/loop_slicing_test.cpp
     transformations/loop_tiling_test.cpp
     transformations/out_local_storage_test.cpp
     transformations/parallelization_test.cpp

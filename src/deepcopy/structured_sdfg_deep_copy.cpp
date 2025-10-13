@@ -39,8 +39,19 @@ void StructuredSDFGDeepCopy::append(structured_control_flow::Sequence& root, str
             auto& new_br = this->builder_.add_break(root, trans.assignments(), br_stmt->debug_info());
             this->node_mapping[br_stmt] = &new_br;
         } else if (auto ret_stmt = dynamic_cast<structured_control_flow::Return*>(&node)) {
-            auto& new_ret = this->builder_.add_return(root, trans.assignments(), ret_stmt->debug_info());
-            this->node_mapping[ret_stmt] = &new_ret;
+            if (ret_stmt->is_data()) {
+                auto& new_ret =
+                    this->builder_.add_return(root, ret_stmt->data(), trans.assignments(), ret_stmt->debug_info());
+                this->node_mapping[ret_stmt] = &new_ret;
+            } else if (ret_stmt->is_unreachable()) {
+                auto& new_ret = this->builder_.add_unreachable(root, trans.assignments(), ret_stmt->debug_info());
+                this->node_mapping[ret_stmt] = &new_ret;
+            } else if (ret_stmt->is_constant()) {
+                auto& new_ret = this->builder_.add_constant_return(
+                    root, ret_stmt->data(), ret_stmt->type(), trans.assignments(), ret_stmt->debug_info()
+                );
+                this->node_mapping[ret_stmt] = &new_ret;
+            }
         } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(&node)) {
             auto& new_scope = this->builder_.add_for(
                 root,
@@ -107,14 +118,23 @@ void StructuredSDFGDeepCopy::
         this->node_mapping[for_stmt] = &new_scope;
         this->append(new_scope.root(), for_stmt->root());
     } else if (auto cont_stmt = dynamic_cast<structured_control_flow::Continue*>(&source)) {
-        auto& new_cont = this->builder_.add_continue(root, cont_stmt->debug_info());
+        auto& new_cont = this->builder_.add_continue(root, {}, cont_stmt->debug_info());
         this->node_mapping[cont_stmt] = &new_cont;
     } else if (auto br_stmt = dynamic_cast<structured_control_flow::Break*>(&source)) {
-        auto& new_br = this->builder_.add_break(root, br_stmt->debug_info());
+        auto& new_br = this->builder_.add_break(root, {}, br_stmt->debug_info());
         this->node_mapping[br_stmt] = &new_br;
     } else if (auto ret_stmt = dynamic_cast<structured_control_flow::Return*>(&source)) {
-        auto& new_ret = this->builder_.add_return(root, {}, ret_stmt->debug_info());
-        this->node_mapping[ret_stmt] = &new_ret;
+        if (ret_stmt->is_data()) {
+            auto& new_ret = this->builder_.add_return(root, ret_stmt->data(), {}, ret_stmt->debug_info());
+            this->node_mapping[ret_stmt] = &new_ret;
+        } else if (ret_stmt->is_unreachable()) {
+            auto& new_ret = this->builder_.add_unreachable(root, {}, ret_stmt->debug_info());
+            this->node_mapping[ret_stmt] = &new_ret;
+        } else if (ret_stmt->is_constant()) {
+            auto& new_ret =
+                this->builder_.add_constant_return(root, ret_stmt->data(), ret_stmt->type(), {}, ret_stmt->debug_info());
+            this->node_mapping[ret_stmt] = &new_ret;
+        }
     } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&source)) {
         auto& new_scope = this->builder_.add_map(
             root,

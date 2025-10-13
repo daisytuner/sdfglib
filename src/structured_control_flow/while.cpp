@@ -13,7 +13,7 @@ const Sequence& While::root() const { return *this->root_; };
 
 Sequence& While::root() { return *this->root_; };
 
-void While::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void While::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     this->root_->replace(old_expression, new_expression);
 };
 
@@ -24,7 +24,7 @@ Break::Break(size_t element_id, const DebugInfo& debug_info)
 
 void Break::validate(const Function& function) const {};
 
-void Break::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void Break::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
 
 };
 
@@ -35,7 +35,7 @@ Continue::Continue(size_t element_id, const DebugInfo& debug_info)
 
 void Continue::validate(const Function& function) const {};
 
-void Continue::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void Continue::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
 
 };
 

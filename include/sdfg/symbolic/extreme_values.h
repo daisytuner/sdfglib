@@ -14,8 +14,7 @@ namespace symbolic {
  * @param assumptions A set of assumptions about bounds of symbols.
  * @return The minimum of the expression, or null if the expression is not bounded.
  */
-Expression minimum(const Expression& expr, const SymbolSet& parameters,
-                   const Assumptions& assumptions);
+Expression minimum(const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions);
 
 /**
  * @brief Compute the maximum of an expression.
@@ -25,8 +24,7 @@ Expression minimum(const Expression& expr, const SymbolSet& parameters,
  * @param assumptions A set of assumptions about bounds of symbols.
  * @return The maximum of the expression, or null if the expression is not bounded.
  */
-Expression maximum(const Expression& expr, const SymbolSet& parameters,
-                   const Assumptions& assumptions);
+Expression maximum(const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions);
 
-}  // namespace symbolic
-}  // namespace sdfg
+} // namespace symbolic
+} // namespace sdfg

@@ -31,7 +31,9 @@ private:
 
     void dispatch_ref(PrettyPrinter& stream, const data_flow::Memlet& memlet);
 
-    void dispatch_deref(PrettyPrinter& stream, const data_flow::Memlet& memlet);
+    void dispatch_deref_src(PrettyPrinter& stream, const data_flow::Memlet& memlet);
+
+    void dispatch_deref_dst(PrettyPrinter& stream, const data_flow::Memlet& memlet);
 
     void dispatch_tasklet(PrettyPrinter& stream, const data_flow::Tasklet& tasklet);
 
@@ -70,13 +72,8 @@ public:
     virtual void
     dispatch(PrettyPrinter& stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory);
 
-    virtual void dispatch_code(
-        PrettyPrinter& stream,
-        PrettyPrinter& globals_stream,
-        CodeSnippetFactory& library_snippet_factory,
-        std::vector<std::string>& inputs_by_order,
-        std::vector<std::optional<std::string>>& outputs_by_order
-    ) {}
+    virtual void
+    dispatch_code(PrettyPrinter& stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory) {}
 };
 
 } // namespace codegen

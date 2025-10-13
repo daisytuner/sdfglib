@@ -6,6 +6,15 @@ namespace data_flow {
 void DataFlowGraph::validate(const Function& function) const {
     for (auto& node : this->nodes_) {
         node.second->validate(function);
+
+        if (auto code_node = dynamic_cast<const data_flow::CodeNode*>(node.second.get())) {
+            if (this->in_degree(*code_node) != code_node->inputs().size()) {
+                throw InvalidSDFGException("DataFlowGraph: Number of input edges does not match number of inputs.");
+            }
+            if (this->out_degree(*code_node) != code_node->outputs().size()) {
+                throw InvalidSDFGException("DataFlowGraph: Number of output edges does not match number of outputs.");
+            }
+        }
     }
     for (auto& edge : this->edges_) {
         edge.second->validate(function);
@@ -24,7 +33,7 @@ size_t DataFlowGraph::out_degree(const data_flow::DataFlowNode& node) const {
     return boost::out_degree(node.vertex(), this->graph_);
 };
 
-void DataFlowGraph::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void DataFlowGraph::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     for (auto& node : this->nodes_) {
         node.second->replace(old_expression, new_expression);
     }
@@ -45,6 +54,39 @@ std::unordered_set<const data_flow::Tasklet*> DataFlowGraph::tasklets() const {
     }
 
     return ts;
+};
+
+std::unordered_set<data_flow::Tasklet*> DataFlowGraph::tasklets() {
+    std::unordered_set<data_flow::Tasklet*> ts;
+    for (auto& node : this->nodes_) {
+        if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(node.second.get())) {
+            ts.insert(tasklet);
+        }
+    }
+
+    return ts;
+};
+
+std::unordered_set<const data_flow::LibraryNode*> DataFlowGraph::library_nodes() const {
+    std::unordered_set<const data_flow::LibraryNode*> ls;
+    for (auto& node : this->nodes_) {
+        if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(node.second.get())) {
+            ls.insert(lib_node);
+        }
+    }
+
+    return ls;
+};
+
+std::unordered_set<data_flow::LibraryNode*> DataFlowGraph::library_nodes() {
+    std::unordered_set<data_flow::LibraryNode*> ls;
+    for (auto& node : this->nodes_) {
+        if (auto lib_node = dynamic_cast<data_flow::LibraryNode*>(node.second.get())) {
+            ls.insert(lib_node);
+        }
+    }
+
+    return ls;
 };
 
 std::unordered_set<const data_flow::AccessNode*> DataFlowGraph::data_nodes() const {

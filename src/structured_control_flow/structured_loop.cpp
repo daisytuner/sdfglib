@@ -16,28 +16,36 @@ StructuredLoop::StructuredLoop(
 }
 
 void StructuredLoop::validate(const Function& function) const {
-    // TODO: Implement validation
+    if (this->indvar_.is_null()) {
+        throw InvalidSDFGException("StructuredLoop: Induction variable cannot be null");
+    }
+    if (this->init_.is_null()) {
+        throw InvalidSDFGException("StructuredLoop: Initialization expression cannot be null");
+    }
+    if (this->update_.is_null()) {
+        throw InvalidSDFGException("StructuredLoop: Update expression cannot be null");
+    }
+    if (this->condition_.is_null()) {
+        throw InvalidSDFGException("StructuredLoop: Condition expression cannot be null");
+    }
+    if (!SymEngine::is_a_Boolean(*this->condition_)) {
+        throw InvalidSDFGException("StructuredLoop: Condition expression must be a boolean expression");
+    }
+
+    this->root_->validate(function);
 };
 
-const symbolic::Symbol& StructuredLoop::indvar() const { return this->indvar_; };
+const symbolic::Symbol StructuredLoop::indvar() const { return this->indvar_; };
 
-symbolic::Symbol& StructuredLoop::indvar() { return this->indvar_; };
+const symbolic::Expression StructuredLoop::init() const { return this->init_; };
 
-const symbolic::Expression& StructuredLoop::init() const { return this->init_; };
+const symbolic::Expression StructuredLoop::update() const { return this->update_; };
 
-symbolic::Expression& StructuredLoop::init() { return this->init_; };
-
-const symbolic::Expression& StructuredLoop::update() const { return this->update_; };
-
-symbolic::Expression& StructuredLoop::update() { return this->update_; };
-
-const symbolic::Condition& StructuredLoop::condition() const { return this->condition_; };
-
-symbolic::Condition& StructuredLoop::condition() { return this->condition_; };
+const symbolic::Condition StructuredLoop::condition() const { return this->condition_; };
 
 Sequence& StructuredLoop::root() const { return *this->root_; };
 
-void StructuredLoop::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void StructuredLoop::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     if (symbolic::eq(this->indvar_, old_expression) && SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
         this->indvar_ = SymEngine::rcp_static_cast<const SymEngine::Symbol>(new_expression);
     }

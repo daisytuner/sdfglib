@@ -13,19 +13,7 @@ TEST(CPPCodeGeneratorTest, FunctionDefintion) {
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
     codegen::CPPCodeGenerator generator(*sdfg, *instrumentation_plan);
     auto result = generator.function_definition();
-    EXPECT_EQ(result, "extern \"C\" void sdfg_a()");
-}
-
-TEST(CPPCodeGeneratorTest, Dispatch_Includes) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
-    auto sdfg = builder.move();
-
-    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CPPCodeGenerator generator(*sdfg, *instrumentation_plan);
-    EXPECT_TRUE(generator.generate());
-
-    auto result = generator.includes().str();
-    EXPECT_EQ(result, "#include <cmath>\n#include <cblas.h>\n#include <daisy_rtl/daisy_rtl.h>\n");
+    EXPECT_EQ(result, "extern \"C\" void sdfg_a(void)");
 }
 
 TEST(CPPCodeGeneratorTest, DispatchStructures_Basic) {

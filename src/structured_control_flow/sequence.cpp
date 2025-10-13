@@ -1,5 +1,7 @@
 #include "sdfg/structured_control_flow/sequence.h"
 
+#include "sdfg/function.h"
+
 namespace sdfg {
 namespace structured_control_flow {
 
@@ -16,7 +18,50 @@ Transition::Transition(
       };
 
 void Transition::validate(const Function& function) const {
-    // TODO: Implement validation
+    for (const auto& entry : this->assignments_) {
+        if (entry.first.is_null() || entry.second.is_null()) {
+            throw InvalidSDFGException("Transition: Assignments cannot have null expressions");
+        }
+    }
+
+    for (auto& entry : this->assignments_) {
+        auto& lhs = entry.first;
+        auto& type = function.type(lhs->get_name());
+        if (type.type_id() != types::TypeID::Scalar) {
+            throw InvalidSDFGException("Assignment - LHS: must be integer type");
+        }
+        if (!types::is_integer(type.primitive_type())) {
+            throw InvalidSDFGException("Assignment - LHS: must be integer type");
+        }
+
+        auto& rhs = entry.second;
+        bool is_relational = SymEngine::is_a_Relational(*rhs);
+        for (auto& atom : symbolic::atoms(rhs)) {
+            if (symbolic::is_nullptr(atom)) {
+                if (!is_relational) {
+                    throw InvalidSDFGException("Assignment - RHS: nullptr can only be used in comparisons");
+                }
+                continue;
+            }
+            auto& atom_type = function.type(atom->get_name());
+
+            // Scalar integers
+            if (atom_type.type_id() == types::TypeID::Scalar) {
+                if (!types::is_integer(atom_type.primitive_type())) {
+                    throw InvalidSDFGException("Assignment - RHS: must evaluate to integer type");
+                }
+                continue;
+            }
+
+            // Pointer types (only in comparisons)
+            if (atom_type.type_id() == types::TypeID::Pointer) {
+                if (!is_relational) {
+                    throw InvalidSDFGException("Assignment - RHS: pointer types can only be used in comparisons");
+                }
+                continue;
+            }
+        }
+    }
 };
 
 const control_flow::Assignments& Transition::assignments() const { return this->assignments_; };
@@ -31,7 +76,7 @@ bool Transition::empty() const { return this->assignments_.empty(); };
 
 size_t Transition::size() const { return this->assignments_.size(); };
 
-void Transition::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+void Transition::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     if (SymEngine::is_a<SymEngine::Symbol>(*old_expression) && SymEngine::is_a<SymEngine::Symbol>(*new_expression)) {
         auto old_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(old_expression);
         auto new_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(new_expression);
@@ -53,6 +98,11 @@ Sequence::Sequence(size_t element_id, const DebugInfo& debug_info)
       };
 
 void Sequence::validate(const Function& function) const {
+    // children and transition have same length
+    if (this->children_.size() != this->transitions_.size()) {
+        throw InvalidSDFGException("Sequence must have the same number of children and transitions");
+    }
+
     for (auto& child : this->children_) {
         child->validate(function);
     }
@@ -71,7 +121,27 @@ std::pair<ControlFlowNode&, Transition&> Sequence::at(size_t i) {
     return {*this->children_.at(i), *this->transitions_.at(i)};
 };
 
-void Sequence::replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) {
+int Sequence::index(const ControlFlowNode& child) const {
+    for (size_t i = 0; i < this->children_.size(); i++) {
+        if (this->children_.at(i).get() == &child) {
+            return static_cast<int>(i);
+        }
+    }
+
+    return -1;
+};
+
+int Sequence::index(const Transition& transition) const {
+    for (size_t i = 0; i < this->transitions_.size(); i++) {
+        if (this->transitions_.at(i).get() == &transition) {
+            return static_cast<int>(i);
+        }
+    }
+
+    return -1;
+};
+
+void Sequence::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     for (auto& child : this->children_) {
         child->replace(old_expression, new_expression);
     }

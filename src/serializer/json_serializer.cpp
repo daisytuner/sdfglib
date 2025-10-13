@@ -6,10 +6,11 @@
 #include <utility>
 #include <vector>
 
-#include "sdfg/data_flow/library_nodes/math/math.h"
-
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
+#include "sdfg/data_flow/library_nodes/call_node.h"
+#include "sdfg/data_flow/library_nodes/math/math.h"
 #include "sdfg/data_flow/library_nodes/metadata_node.h"
+#include "sdfg/data_flow/library_nodes/stdlib/stdlib.h"
 
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/library_node.h"
@@ -17,6 +18,7 @@
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
+#include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/return.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/while.h"
@@ -60,16 +62,6 @@ types::StorageType storage_type_from_string(const std::string& str) {
     return types::StorageType(str);
 }
 
-structured_control_flow::ScheduleType schedule_type_from_string(const std::string& str) {
-    if (str == structured_control_flow::ScheduleType_Sequential.value()) {
-        return structured_control_flow::ScheduleType_Sequential;
-    } else if (str == structured_control_flow::ScheduleType_CPU_Parallel.value()) {
-        return structured_control_flow::ScheduleType_CPU_Parallel;
-    }
-
-    return structured_control_flow::ScheduleType(str);
-}
-
 /*
  * * JSONSerializer class
  * * Serialization logic
@@ -81,6 +73,10 @@ nlohmann::json JSONSerializer::serialize(const sdfg::StructuredSDFG& sdfg) {
     j["name"] = sdfg.name();
     j["element_counter"] = sdfg.element_counter();
     j["type"] = std::string(sdfg.type().value());
+
+    nlohmann::json return_type_json;
+    type_to_json(return_type_json, sdfg.return_type());
+    j["return_type"] = return_type_json;
 
     j["structures"] = nlohmann::json::array();
     for (const auto& structure_name : sdfg.structures()) {
@@ -143,10 +139,6 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
                 node_json["inputs"].push_back(input);
             }
             node_json["output"] = tasklet->output();
-            // node_json["conditional"] = tasklet->is_conditional();
-            // if (tasklet->is_conditional()) {
-            //     node_json["condition"] = dumps_expression(tasklet->condition());
-            // }
         } else if (auto lib_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
             node_json["type"] = "library_node";
             node_json["implementation_type"] = std::string(lib_node->implementation_type().value());
@@ -158,6 +150,13 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
             auto serializer = serializer_fn();
             auto lib_node_json = serializer->serialize(*lib_node);
             node_json.merge_patch(lib_node_json);
+        } else if (auto code_node = dynamic_cast<const data_flow::ConstantNode*>(&node)) {
+            node_json["type"] = "constant_node";
+            node_json["data"] = code_node->data();
+
+            nlohmann::json type_json;
+            type_to_json(type_json, code_node->type());
+            node_json["data_type"] = type_json;
         } else if (auto code_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
             node_json["type"] = "access_node";
             node_json["data"] = code_node->data();
@@ -184,16 +183,6 @@ void JSONSerializer::dataflow_to_json(nlohmann::json& j, const data_flow::DataFl
         edge_json["subset"] = nlohmann::json::array();
         for (auto& subset : edge.subset()) {
             edge_json["subset"].push_back(expression(subset));
-        }
-
-        edge_json["begin_subset"] = nlohmann::json::array();
-        for (auto& subset : edge.begin_subset()) {
-            edge_json["begin_subset"].push_back(expression(subset));
-        }
-
-        edge_json["end_subset"] = nlohmann::json::array();
-        for (auto& subset : edge.end_subset()) {
-            edge_json["end_subset"].push_back(expression(subset));
         }
 
         nlohmann::json base_type_json;
@@ -291,7 +280,8 @@ void JSONSerializer::map_to_json(nlohmann::json& j, const structured_control_flo
     j["condition"] = expression(map_node.condition());
     j["update"] = expression(map_node.update());
 
-    j["schedule_type"] = std::string(map_node.schedule_type().value());
+    j["schedule_type"] = nlohmann::json::object();
+    schedule_type_to_json(j["schedule_type"], map_node.schedule_type());
 
     nlohmann::json body_json;
     sequence_to_json(body_json, map_node.root());
@@ -301,6 +291,14 @@ void JSONSerializer::map_to_json(nlohmann::json& j, const structured_control_flo
 void JSONSerializer::return_node_to_json(nlohmann::json& j, const structured_control_flow::Return& return_node) {
     j["type"] = "return";
     j["element_id"] = return_node.element_id();
+    j["data"] = return_node.data();
+    j["unreachable"] = return_node.unreachable();
+
+    if (return_node.is_constant()) {
+        nlohmann::json type_json;
+        type_to_json(type_json, return_node.type());
+        j["data_type"] = type_json;
+    }
 
     j["debug_info"] = nlohmann::json::object();
     debug_info_to_json(j["debug_info"], return_node.debug_info());
@@ -438,6 +436,14 @@ void JSONSerializer::debug_info_to_json(nlohmann::json& j, const DebugInfo& debu
     j["end_column"] = debug_info.end_column();
 }
 
+void JSONSerializer::schedule_type_to_json(nlohmann::json& j, const ScheduleType& schedule_type) {
+    j["value"] = schedule_type.value();
+    j["properties"] = nlohmann::json::object();
+    for (const auto& prop : schedule_type.properties()) {
+        j["properties"][prop.first] = prop.second;
+    }
+}
+
 /*
  * * Deserialization logic
  */
@@ -447,10 +453,18 @@ std::unique_ptr<StructuredSDFG> JSONSerializer::deserialize(nlohmann::json& j) {
     assert(j["name"].is_string());
     assert(j.contains("type"));
     assert(j["type"].is_string());
+    assert(j.contains("element_counter"));
     assert(j["element_counter"].is_number_integer());
 
+    std::unique_ptr<types::IType> return_type;
+    if (j.contains("return_type")) {
+        return_type = json_to_type(j["return_type"]);
+    } else {
+        return_type = std::make_unique<types::Scalar>(types::PrimitiveType::Void);
+    }
+
     FunctionType function_type = function_type_from_string(j["type"].get<std::string>());
-    builder::StructuredSDFGBuilder builder(j["name"], function_type);
+    builder::StructuredSDFGBuilder builder(j["name"], function_type, *return_type);
 
     size_t element_counter = j["element_counter"];
     builder.set_element_counter(element_counter);
@@ -589,6 +603,16 @@ void JSONSerializer::json_to_dataflow(
             auto& access_node = builder.add_access(parent, node["data"], json_to_debug_info(node["debug_info"]));
             access_node.element_id_ = node["element_id"];
             nodes_map.insert({node["element_id"], access_node});
+        } else if (type == "constant_node") {
+            assert(node.contains("data"));
+            assert(node.contains("data_type"));
+
+            auto type = json_to_type(node["data_type"]);
+
+            auto& constant_node =
+                builder.add_constant(parent, node["data"], *type, json_to_debug_info(node["debug_info"]));
+            constant_node.element_id_ = node["element_id"];
+            nodes_map.insert({node["element_id"], constant_node});
         } else {
             throw std::runtime_error("Unknown node type");
         }
@@ -615,55 +639,26 @@ void JSONSerializer::json_to_dataflow(
 
         auto base_type = json_to_type(edge["base_type"]);
 
-        if (edge.contains("begin_subset") && edge.contains("end_subset")) {
-            assert(edge["begin_subset"].is_array());
-            assert(edge["end_subset"].is_array());
-            std::vector<symbolic::Expression> begin_subset;
-            std::vector<symbolic::Expression> end_subset;
-            for (const auto& subset_str : edge["begin_subset"]) {
-                assert(subset_str.is_string());
-                SymEngine::Expression subset_expr(subset_str);
-                begin_subset.push_back(subset_expr);
-            }
-            for (const auto& subset_str : edge["end_subset"]) {
-                assert(subset_str.is_string());
-                SymEngine::Expression subset_expr(subset_str);
-                end_subset.push_back(subset_expr);
-            }
-            auto& memlet = builder.add_memlet(
-                parent,
-                source,
-                edge["src_conn"],
-                target,
-                edge["dst_conn"],
-                begin_subset,
-                end_subset,
-                *base_type,
-                json_to_debug_info(edge["debug_info"])
-            );
-            memlet.element_id_ = edge["element_id"];
-        } else if (edge.contains("subset")) {
-            assert(edge["subset"].is_array());
-            std::vector<symbolic::Expression> subset;
-            for (const auto& subset_str : edge["subset"]) {
-                assert(subset_str.is_string());
-                SymEngine::Expression subset_expr(subset_str);
-                subset.push_back(subset_expr);
-            }
-            auto& memlet = builder.add_memlet(
-                parent,
-                source,
-                edge["src_conn"],
-                target,
-                edge["dst_conn"],
-                subset,
-                *base_type,
-                json_to_debug_info(edge["debug_info"])
-            );
-            memlet.element_id_ = edge["element_id"];
-        } else {
-            throw std::runtime_error("Subsets not specified in json");
+        assert(edge.contains("subset"));
+        assert(edge["subset"].is_array());
+        std::vector<symbolic::Expression> subset;
+        for (const auto& subset_ : edge["subset"]) {
+            assert(subset_.is_string());
+            std::string subset_str = subset_;
+            auto expr = symbolic::parse(subset_str);
+            subset.push_back(expr);
         }
+        auto& memlet = builder.add_memlet(
+            parent,
+            source,
+            edge["src_conn"],
+            target,
+            edge["dst_conn"],
+            subset,
+            *base_type,
+            json_to_debug_info(edge["debug_info"])
+        );
+        memlet.element_id_ = edge["element_id"];
     }
 }
 
@@ -699,7 +694,7 @@ void JSONSerializer::json_to_sequence(
                 assert(assignment["symbol"].is_string());
                 assert(assignment.contains("expression"));
                 assert(assignment["expression"].is_string());
-                SymEngine::Expression expr(assignment["expression"]);
+                auto expr = symbolic::parse(assignment["expression"].get<std::string>());
                 assignments.insert({symbolic::symbol(assignment["symbol"]), expr});
             }
 
@@ -776,11 +771,15 @@ void JSONSerializer::json_to_for_node(
     assert(j["root"].is_object());
 
     symbolic::Symbol indvar = symbolic::symbol(j["indvar"]);
-    SymEngine::Expression init(j["init"]);
-    SymEngine::Expression condition_expr(j["condition"]);
-    assert(!SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic()).is_null());
-    symbolic::Condition condition = SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic());
-    SymEngine::Expression update(j["update"]);
+    auto init = symbolic::parse(j["init"].get<std::string>());
+    auto update = symbolic::parse(j["update"].get<std::string>());
+
+    auto condition_expr = symbolic::parse(j["condition"].get<std::string>());
+    symbolic::Condition condition = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(condition_expr);
+    if (condition.is_null()) {
+        throw InvalidSDFGException("For loop condition is not a boolean expression");
+    }
+
     auto& for_node =
         builder.add_for(parent, indvar, condition, init, update, assignments, json_to_debug_info(j["debug_info"]));
     for_node.element_id_ = j["element_id"];
@@ -809,10 +808,12 @@ void JSONSerializer::json_to_if_else_node(
         assert(branch["condition"].is_string());
         assert(branch.contains("root"));
         assert(branch["root"].is_object());
-        SymEngine::Expression condition_expr(branch["condition"]);
-        assert(!SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic()).is_null());
-        symbolic::Condition condition = SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic()
-        );
+
+        auto condition_expr = symbolic::parse(branch["condition"].get<std::string>());
+        symbolic::Condition condition = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(condition_expr);
+        if (condition.is_null()) {
+            throw InvalidSDFGException("If condition is not a boolean expression");
+        }
         auto& branch_node = builder.add_case(if_else_node, condition);
         assert(branch["root"].contains("type"));
         assert(branch["root"]["type"].is_string());
@@ -890,17 +891,18 @@ void JSONSerializer::json_to_map_node(
     assert(j.contains("root"));
     assert(j["root"].is_object());
     assert(j.contains("schedule_type"));
-    assert(j["schedule_type"].is_string());
+    assert(j["schedule_type"].is_object());
 
-    structured_control_flow::ScheduleType schedule_type =
-        schedule_type_from_string(j["schedule_type"].get<std::string>());
+    structured_control_flow::ScheduleType schedule_type = json_to_schedule_type(j["schedule_type"]);
 
     symbolic::Symbol indvar = symbolic::symbol(j["indvar"]);
-    SymEngine::Expression init(j["init"]);
-    SymEngine::Expression condition_expr(j["condition"]);
-    assert(!SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic()).is_null());
-    symbolic::Condition condition = SymEngine::rcp_static_cast<const SymEngine::Boolean>(condition_expr.get_basic());
-    SymEngine::Expression update(j["update"]);
+    auto init = symbolic::parse(j["init"].get<std::string>());
+    auto update = symbolic::parse(j["update"].get<std::string>());
+    auto condition_expr = symbolic::parse(j["condition"].get<std::string>());
+    symbolic::Condition condition = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(condition_expr);
+    if (condition.is_null()) {
+        throw InvalidSDFGException("Map condition is not a boolean expression");
+    }
 
     auto& map_node = builder.add_map(
         parent, indvar, condition, init, update, schedule_type, assignments, json_to_debug_info(j["debug_info"])
@@ -923,8 +925,24 @@ void JSONSerializer::json_to_return_node(
     assert(j["type"].is_string());
     assert(j["type"] == "return");
 
-    auto& node = builder.add_return(parent, assignments, json_to_debug_info(j["debug_info"]));
-    node.element_id_ = j["element_id"];
+    std::string data = j["data"];
+    bool unreachable = j["unreachable"];
+    std::unique_ptr<types::IType> data_type = nullptr;
+    if (j.contains("data_type")) {
+        data_type = json_to_type(j["data_type"]);
+    }
+
+    if (unreachable) {
+        auto& node = builder.add_unreachable(parent, assignments, json_to_debug_info(j["debug_info"]));
+        node.element_id_ = j["element_id"];
+    } else if (data_type == nullptr) {
+        auto& node = builder.add_return(parent, data, assignments, json_to_debug_info(j["debug_info"]));
+        node.element_id_ = j["element_id"];
+    } else {
+        auto& node =
+            builder.add_constant_return(parent, data, *data_type, assignments, json_to_debug_info(j["debug_info"]));
+        node.element_id_ = j["element_id"];
+    }
 }
 
 std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json& j) {
@@ -947,7 +965,7 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             assert(j.contains("num_elements"));
             std::string num_elements_str = j["num_elements"];
             // Convert num_elements_str to symbolic::Expression
-            SymEngine::Expression num_elements(num_elements_str);
+            auto num_elements = symbolic::parse(num_elements_str);
             assert(j.contains("storage_type"));
             types::StorageType storage_type = storage_type_from_string(j["storage_type"].get<std::string>());
             assert(j.contains("initializer"));
@@ -1045,7 +1063,20 @@ DebugInfo JSONSerializer::json_to_debug_info(const nlohmann::json& j) {
     return DebugInfo(filename, function, start_line, start_column, end_line, end_column);
 }
 
-std::string JSONSerializer::expression(const symbolic::Expression& expr) {
+ScheduleType JSONSerializer::json_to_schedule_type(const nlohmann::json& j) {
+    assert(j.contains("value"));
+    assert(j["value"].is_string());
+    assert(j.contains("properties"));
+    assert(j["properties"].is_object());
+    ScheduleType schedule_type(j["value"].get<std::string>());
+    for (const auto& [key, value] : j["properties"].items()) {
+        assert(value.is_string());
+        schedule_type.set_property(key, value.get<std::string>());
+    }
+    return schedule_type;
+}
+
+std::string JSONSerializer::expression(const symbolic::Expression expr) {
     JSONSymbolicPrinter printer;
     return printer.apply(expr);
 };
@@ -1138,6 +1169,36 @@ LibraryNodeSerializerFn LibraryNodeSerializerRegistry::get_library_node_serializ
 size_t LibraryNodeSerializerRegistry::size() const { return factory_map_.size(); }
 
 void register_default_serializers() {
+    // stdlib
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Alloca.value(), []() {
+            return std::make_unique<stdlib::AllocaNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Calloc.value(), []() {
+            return std::make_unique<stdlib::CallocNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Free.value(), []() {
+            return std::make_unique<stdlib::FreeNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Malloc.value(), []() {
+            return std::make_unique<stdlib::MallocNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Memcpy.value(), []() {
+            return std::make_unique<stdlib::MemcpyNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Memmove.value(), []() {
+            return std::make_unique<stdlib::MemmoveNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Memset.value(), []() {
+            return std::make_unique<stdlib::MemsetNodeSerializer>();
+        });
+
     // Metadata
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(data_flow::LibraryNodeType_Metadata.value(), []() {
@@ -1150,6 +1211,28 @@ void register_default_serializers() {
             return std::make_unique<data_flow::BarrierLocalNodeSerializer>();
         });
 
+    // Call Node
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(data_flow::LibraryNodeType_Call.value(), []() {
+            return std::make_unique<data_flow::CallNodeSerializer>();
+        });
+
+    // Intrinsic
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::LibraryNodeType_Intrinsic.value(), []() {
+            return std::make_unique<math::IntrinsicNodeSerializer>();
+        });
+
+    // BLAS
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::blas::LibraryNodeType_DOT.value(), []() {
+            return std::make_unique<math::blas::DotNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::blas::LibraryNodeType_GEMM.value(), []() {
+            return std::make_unique<math::blas::GEMMNodeSerializer>();
+        });
+
     // ML
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_Abs.value(), []() {
@@ -1160,24 +1243,8 @@ void register_default_serializers() {
             return std::make_unique<math::ml::AddNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_BatchNormalization.value(), []() {
-            return std::make_unique<math::ml::BatchNormalizationNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Clip.value(), []() {
-            return std::make_unique<math::ml::ClipNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Conv.value(), []() {
-            return std::make_unique<math::ml::ConvNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_Div.value(), []() {
             return std::make_unique<math::ml::DivNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Dropout.value(), []() {
-            return std::make_unique<math::ml::DropoutSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_Elu.value(), []() {
@@ -1188,32 +1255,12 @@ void register_default_serializers() {
             return std::make_unique<math::ml::ErfNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Gemm.value(), []() {
-            return std::make_unique<math::ml::GemmNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_HardSigmoid.value(), []() {
             return std::make_unique<math::ml::HardSigmoidNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_LayerNormalization.value(), []() {
-            return std::make_unique<math::ml::LayerNormalizationNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_LeakyReLU.value(), []() {
             return std::make_unique<math::ml::LeakyReLUNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_LogSoftmax.value(), []() {
-            return std::make_unique<math::ml::LogSoftmaxNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_MatMul.value(), []() {
-            return std::make_unique<math::ml::MatMulNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_MaxPool.value(), []() {
-            return std::make_unique<math::ml::MaxPoolNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_Mul.value(), []() {
@@ -1224,20 +1271,12 @@ void register_default_serializers() {
             return std::make_unique<math::ml::PowNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_ReduceMean.value(), []() {
-            return std::make_unique<math::ml::ReduceMeanNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_ReLU.value(), []() {
             return std::make_unique<math::ml::ReLUNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_Sigmoid.value(), []() {
             return std::make_unique<math::ml::SigmoidNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Softmax.value(), []() {
-            return std::make_unique<math::ml::SoftmaxNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_Sqrt.value(), []() {
@@ -1250,16 +1289,6 @@ void register_default_serializers() {
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::ml::LibraryNodeType_Tanh.value(), []() {
             return std::make_unique<math::ml::TanhNodeSerializer>();
-        });
-
-    // BLAS
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::blas::LibraryNodeType_DOT.value(), []() {
-            return std::make_unique<math::blas::DotNodeSerializer>();
-        });
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::blas::LibraryNodeType_GEMM.value(), []() {
-            return std::make_unique<math::blas::GEMMNodeSerializer>();
         });
 }
 

@@ -34,19 +34,19 @@ TEST(ParallelizationTest, Map_2D) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     auto& body = loop.root();
 
     // Add computation
     auto& block = builder.add_block(body);
     auto& a_in = builder.add_access(block, "A");
-    auto& i = builder.add_access(block, "i");
+    auto& one_node = builder.add_constant(block, "1.0", base_desc);
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     builder
         .add_computational_memlet(block, a_in, tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")}, desc_2);
-    builder.add_computational_memlet(block, i, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, one_node, tasklet, "_in2", {});
     builder
         .add_computational_memlet(block, tasklet, "_out", a_out, {symbolic::symbol("i"), symbolic::symbol("j")}, desc_2);
 
@@ -55,5 +55,5 @@ TEST(ParallelizationTest, Map_2D) {
     EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
     transformation.apply(builder, analysis_manager);
 
-    EXPECT_EQ(loop.schedule_type(), structured_control_flow::ScheduleType_CPU_Parallel);
+    EXPECT_EQ(loop.schedule_type().value(), structured_control_flow::ScheduleType_CPU_Parallel::value());
 }

@@ -11,35 +11,58 @@ extern "C" {
 enum __daisy_event_set {
     __DAISY_EVENT_SET_CPU = 0,
     __DAISY_EVENT_SET_CUDA = 1,
+    __DAISY_EVENT_SET_NONE = 2,
 };
 
 typedef struct __daisy_metadata {
+    // Source location
     const char* file_name;
     const char* function_name;
     long line_begin;
     long line_end;
     long column_begin;
     long column_end;
-    const char* region_name;
-    size_t loopnest_index;
+
+    // Docc metadata
+
+    // SDFG-scope
+    const char* sdfg_name;
+    const char* sdfg_file;
+    const char* arg_capture_path;
+    const char* features_file;
+
+    // Element-scope
+    size_t element_id;
+    const char* element_type;
+    const char* target_type;
+    int loopnest_index;
+
+    // Example: sdfg_name + element_id
+    const char* region_uuid;
 } __daisy_metadata_t;
 
-typedef struct __daisy_instrumentation __daisy_instrumentation_t;
+// Registers a region and returns a region ID
+size_t __daisy_instrumentation_init(__daisy_metadata_t* metadata, enum __daisy_event_set event_set);
 
-__daisy_instrumentation_t* __daisy_instrumentation_init();
-void __daisy_instrumentation_finalize(__daisy_instrumentation_t* context);
-void __daisy_instrumentation_enter(
-    __daisy_instrumentation_t* context, __daisy_metadata_t* metadata, enum __daisy_event_set event_set
-);
-void __daisy_instrumentation_exit(
-    __daisy_instrumentation_t* context, __daisy_metadata_t* metadata, enum __daisy_event_set event_set
-);
+// Finalizes a region
+void __daisy_instrumentation_finalize(size_t region_id);
+
+// Enter a region, starts measurement
+void __daisy_instrumentation_enter(size_t region_id);
+
+// Exit a region, stops measurement and saves data
+void __daisy_instrumentation_exit(size_t region_id);
+
+// Increments a counter with name statically
+// The counters appear with the "static:::" prefix in the output
+void __daisy_instrumentation_increment(size_t region_id, const char* name, long long value);
 
 typedef struct __daisy_capture __daisy_capture_t;
 
-__daisy_capture_t* __daisy_capture_init(const char* name);
+__daisy_capture_t* __daisy_capture_init(const char* name, const char* base_dir);
 
 bool __daisy_capture_enter(__daisy_capture_t* context);
+
 void __daisy_capture_end(__daisy_capture_t* context);
 
 void __daisy_capture_raw(

@@ -152,7 +152,7 @@ TEST(GraphAlgorithmsTest, PostDominatorTree) {
     boost::add_edge(s, t, graph);
     boost::add_edge(t, z, graph);
 
-    auto pdom_tree = sdfg::graph::post_dominator_tree(graph, z);
+    auto pdom_tree = sdfg::graph::post_dominator_tree(graph);
     EXPECT_EQ(pdom_tree.size(), 5);
     EXPECT_EQ(pdom_tree.at(z), boost::graph_traits<sdfg::graph::Graph>::null_vertex());
     EXPECT_EQ(pdom_tree.at(t), z);

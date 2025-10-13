@@ -3,6 +3,7 @@
 #include "sdfg/analysis/users.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 #include "sdfg/codegen/dispatchers/sequence_dispatcher.h"
+#include "sdfg/structured_control_flow/map.h"
 
 namespace sdfg {
 namespace codegen {
@@ -85,20 +86,61 @@ void CPUParallelMapDispatcher::dispatch_node(
 
     std::vector<std::string> locals;
     for (auto& entry : users.locals(node_.root())) {
-        if (users_view.writes(entry).size() > 0) {
+        if (users_view.writes(entry).size() > 0 || users_view.moves(entry).size() > 0) {
             locals.push_back(entry);
         }
     }
 
     // Generate code
+    main_stream << "// Map" << std::endl;
     main_stream << "#pragma omp parallel for";
+
+    main_stream << " schedule(";
+    if (structured_control_flow::ScheduleType_CPU_Parallel::omp_schedule(node_.schedule_type()) ==
+        structured_control_flow::OpenMPSchedule::Static) {
+        main_stream << "static)";
+    } else if (structured_control_flow::ScheduleType_CPU_Parallel::omp_schedule(node_.schedule_type()) ==
+               structured_control_flow::OpenMPSchedule::Dynamic) {
+        main_stream << "dynamic)";
+    } else if (structured_control_flow::ScheduleType_CPU_Parallel::omp_schedule(node_.schedule_type()) ==
+               structured_control_flow::OpenMPSchedule::Guided) {
+        main_stream << "guided)";
+    } else {
+        throw std::runtime_error("Unsupported OpenMP schedule type");
+    }
+
+    if (structured_control_flow::ScheduleType_CPU_Parallel::num_threads(node_.schedule_type()) != SymEngine::null) {
+        main_stream << " num_threads(";
+        main_stream
+            << language_extension_
+                   .expression(structured_control_flow::ScheduleType_CPU_Parallel::num_threads(node_.schedule_type()));
+        main_stream << ")";
+    }
+
     if (locals.size() > 0) {
         main_stream << " private(" << helpers::join(locals, ", ") << ")";
     }
     main_stream << std::endl;
+    main_stream << "for";
+    main_stream << "(";
+    main_stream << node_.indvar()->get_name();
+    main_stream << " = ";
+    main_stream << language_extension_.expression(node_.init());
+    main_stream << ";";
+    main_stream << language_extension_.expression(node_.condition());
+    main_stream << ";";
+    main_stream << node_.indvar()->get_name();
+    main_stream << " = ";
+    main_stream << language_extension_.expression(node_.update());
+    main_stream << ")" << std::endl;
+    main_stream << "{" << std::endl;
 
-    SequentialMapDispatcher dispatcher(language_extension_, sdfg_, node_, instrumentation_plan_);
+    main_stream.setIndent(main_stream.indent() + 4);
+    SequenceDispatcher dispatcher(language_extension_, sdfg_, node_.root(), instrumentation_plan_);
     dispatcher.dispatch(main_stream, globals_stream, library_snippet_factory);
+    main_stream.setIndent(main_stream.indent() - 4);
+
+    main_stream << "}" << std::endl;
 };
 
 } // namespace codegen

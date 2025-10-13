@@ -148,7 +148,7 @@ TEST(StructuredSDFGDeepCopy, Return) {
     auto& sdfg_source = builder_source.subject();
     auto& root_source = sdfg_source.root();
 
-    auto& sequence = builder_source.add_return(root_source);
+    auto& sequence = builder_source.add_return(root_source, "");
 
     builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
     auto& sdfg_target = builder_target.subject();
@@ -303,7 +303,7 @@ TEST(StructuredSDFGDeepCopy, Map) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_Sequential
+        structured_control_flow::ScheduleType_Sequential::create()
     );
 
     builder::StructuredSDFGBuilder builder_target("sdfg_target", FunctionType_CPU);
@@ -330,5 +330,5 @@ TEST(StructuredSDFGDeepCopy, Map) {
     EXPECT_TRUE(symbolic::eq(inserted_map->condition(), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10))));
     EXPECT_TRUE(symbolic::eq(inserted_map->init(), symbolic::integer(0)));
     EXPECT_TRUE(symbolic::eq(inserted_map->update(), symbolic::add(symbolic::symbol("i"), symbolic::integer(1))));
-    EXPECT_EQ(inserted_map->schedule_type(), structured_control_flow::ScheduleType_Sequential);
+    EXPECT_EQ(inserted_map->schedule_type().value(), structured_control_flow::ScheduleType_Sequential::value());
 }

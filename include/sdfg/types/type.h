@@ -227,7 +227,6 @@ constexpr bool is_signed(PrimitiveType e) noexcept {
 
 constexpr bool is_unsigned(PrimitiveType e) noexcept {
     switch (e) {
-        case PrimitiveType::Bool:
         case PrimitiveType::UInt8:
         case PrimitiveType::UInt16:
         case PrimitiveType::UInt32:

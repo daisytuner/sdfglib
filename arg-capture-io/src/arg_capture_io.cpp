@@ -11,8 +11,16 @@
 #include "daisy_rtl/base64.h"
 #include "daisy_rtl/primitive_types.h"
 
-#ifndef DEBUG_LOG
-#define DEBUG_LOG false
+#ifdef DEBUG
+  #define DEBUG_PRINTLN(msg) \
+      do { std::cout << "[DEBUG] " << msg << std::endl; } while (0)
+  #define DEBUG_PRINT(msg) \
+      do { std::cout << "[DEBUG] " << msg; } while (0)
+#else
+  #define DEBUG_PRINTLN(msg) \
+      do { } while (0)
+  #define DEBUG_PRINT(msg) \
+      do { } while (0)
 #endif
 
 namespace arg_capture {
@@ -67,9 +75,7 @@ uint32_t ArgCaptureIO::get_current_invocation() const { return invokes_; }
 void ArgCaptureIO::invocation() {
     ++invokes_;
 
-    if (DEBUG_LOG) {
-        std::cout << "Invoking '" << name_ << "' (" << invokes_ << ")" << std::endl;
-    }
+    DEBUG_PRINTLN("Invoking '" << name_ << "' (" << invokes_ << ")");
 }
 
 void ArgCaptureIO::clear() { current_captures_.clear(); }
@@ -106,30 +112,24 @@ bool ArgCaptureIO::create_and_capture_to_file(
 bool ArgCaptureIO::capture_inline(ArgCapture& capture, const void* data) {
     auto size = std::accumulate(capture.dims.begin(), capture.dims.end(), 1, std::multiplies<size_t>());
 
-    if (DEBUG_LOG) {
-        auto capType = capture.after ? "result" : "input";
+    DEBUG_PRINT("Capturing " << (capture.dims.size() - 1) << "D arg" << capture.arg_idx << " as " << capType
+                << ": type " << primitive_type_names[capture.primitive_type] << "(" << size << " bytes): 0x"
+                << std::hex);
+    int perGroup = 0;
+    for (int i = 0; i < size; ++i) {
+        const uint8_t* ptr = static_cast<const uint8_t*>(data) + i;
+        uint32_t byte = *ptr;
+        DEBUG_PRINT(byte);
 
-        std::cout << "Capturing " << (capture.dims.size() - 1) << "D arg" << capture.arg_idx << " as " << capType
-                  << ": type " << primitive_type_names[capture.primitive_type] << "(" << size << " bytes): 0x"
-                  << std::hex;
-
-        int perGroup = 0;
-        for (int i = 0; i < size; ++i) {
-            const uint8_t* ptr = static_cast<const uint8_t*>(data) + i;
-            uint32_t byte = *ptr;
-            std::cout << byte;
-
-            ++perGroup;
-            if (perGroup == 16) {
-                perGroup = 0;
-                std::cout << "\n\t";
-            } else if (perGroup % 4 == 0) {
-                std::cout << " ";
-            }
+        ++perGroup;
+        if (perGroup == 16) {
+            perGroup = 0;
+            DEBUG_PRINT("\n\t");
+        } else if (perGroup % 4 == 0) {
+            DEBUG_PRINT(" ");
         }
-
-        std::cout << std::dec << std::endl;
     }
+    DEBUG_PRINTLN(std::dec);
 
     auto capturedData = std::make_shared<std::vector<uint8_t>>(size);
     std::memcpy(capturedData.get()->data(), data, size);
@@ -140,22 +140,17 @@ bool ArgCaptureIO::capture_inline(ArgCapture& capture, const void* data) {
 }
 
 bool ArgCaptureIO::write_capture_to_file(ArgCapture& capture, std::filesystem::path file, const void* data) {
-    if (DEBUG_LOG) {
-        auto capType = capture.after ? "result" : "input";
+    DEBUG_PRINT("Capturing " << (capture.dims.size() - 1) << "D arg" << capture.arg_idx << " as " << (capture.after ? "result" : "input")
+                << ": type " << primitive_type_names[capture.primitive_type] << ": 0x" << std::hex << data << std::dec << ", ");
+    for (size_t i = 0; i < capture.dims.size(); ++i) {
+        auto dim = capture.dims.at(i);
+        DEBUG_PRINT(dim);
 
-        std::cout << "Capturing " << (capture.dims.size() - 1) << "D arg" << capture.arg_idx << " as " << capType
-                  << ": type " << primitive_type_names[capture.primitive_type] << ": 0x" << std::hex << data << std::dec
-                  << ", ";
-        for (int i = 0; i < capture.dims.size(); ++i) {
-            auto dim = capture.dims[i];
-            std::cout << dim;
-
-            if (i < capture.dims.size() - 1) {
-                std::cout << " * ";
-            }
+        if (i < capture.dims.size() - 1) {
+            DEBUG_PRINT(" * ");
         }
-        std::cout << " bytes" << std::endl;
     }
+    DEBUG_PRINTLN(" bytes");
 
     std::filesystem::create_directories(file.parent_path());
 
@@ -179,6 +174,8 @@ bool ArgCaptureIO::write_capture_to_file(ArgCapture& capture, std::filesystem::p
 }
 
 void ArgCaptureIO::write_index(std::filesystem::path file) {
+    std::filesystem::create_directories(file.parent_path());
+
     std::ofstream ofs(file);
     if (!ofs.is_open()) {
         throw std::runtime_error("Failed to open index file for writing: " + file.string());
@@ -201,9 +198,7 @@ void ArgCaptureIO::write_index(std::filesystem::path file) {
 
     ofs.close();
 
-    if (DEBUG_LOG) {
-        std::cout << "Wrote capture index to " << file.string() << std::endl;
-    }
+    DEBUG_PRINTLN("Wrote capture index to " << file.string());
 }
 
 

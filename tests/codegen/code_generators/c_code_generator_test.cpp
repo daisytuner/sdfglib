@@ -18,23 +18,7 @@ TEST(CCodeGeneratorTest, FunctionDefintion) {
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
     codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
     auto result = generator.function_definition();
-    EXPECT_EQ(result, "extern void sdfg_a()");
-}
-
-TEST(CCodeGeneratorTest, Dispatch_Includes) {
-    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
-    auto sdfg = builder.move();
-
-    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
-    EXPECT_TRUE(generator.generate());
-
-    auto result = generator.includes().str();
-    EXPECT_EQ(
-        result,
-        "#include <math.h>\n#include <cblas.h>\n#include <stdbool.h>\n#include <stdlib.h>\n#include "
-        "<daisy_rtl/daisy_rtl.h>\n"
-    );
+    EXPECT_EQ(result, "extern void sdfg_a(void)");
 }
 
 TEST(CCodeGeneratorTest, DispatchStructures_Basic) {
@@ -108,6 +92,8 @@ TEST(CCodeGeneratorTest, CaptureInstrumentationInit) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     auto sdfg = builder.move();
+    sdfg->add_metadata("sdfg_file", "sdfg_a.sdfg");
+    sdfg->add_metadata("arg_capture_path", "./arg_captures");
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
     codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, true);
@@ -117,7 +103,7 @@ TEST(CCodeGeneratorTest, CaptureInstrumentationInit) {
 
     EXPECT_EQ(output.str(), R"(static void* __capture_ctx;
 static void __attribute__((constructor(1000))) __capture_ctx_init(void) {
-	__capture_ctx = __daisy_capture_init("sdfg_a");
+	__capture_ctx = __daisy_capture_init("sdfg_a", "./arg_captures");
 }
 
 )");
@@ -220,7 +206,6 @@ TEST(CCodeGeneratorTest, CreateCapturePlans) {
 
     builder.add_container("arg0", sym_type, true, false);
     builder.add_container("arg1", ptr_inner_type, true, false);
-    builder.add_container("ext0", sym_type, false, true);
     builder.add_container("ext1", ptr_value_type, false, true);
 
     auto sym_i = symbolic::symbol("i");
@@ -239,15 +224,19 @@ TEST(CCodeGeneratorTest, CreateCapturePlans) {
     );
 
     auto& block = builder.add_block(inner_for.root());
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "__out", {"__in0", "__in1"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "__out", {"__in0"});
     auto& readArr = builder.add_access(block, "arg1");
     auto& readPrev = builder.add_computational_memlet(block, readArr, tasklet, "__in0", {sym_i, sym_j}, ptr_inner_type);
     auto& writeArr = builder.add_access(block, "arg1");
     auto& writeEntry =
         builder.add_computational_memlet(block, tasklet, "__out", writeArr, {sym_i, sym_j}, ptr_inner_type);
+
+    auto& zero_node = builder.add_constant(block, "0", value_type);
+    auto& tasklet_ext = builder.add_tasklet(block, data_flow::TaskletCode::assign, "__out", {"__in0"});
+    builder.add_computational_memlet(block, zero_node, tasklet_ext, "__in0", {}, value_type);
     auto& writeOut = builder.add_access(block, "ext1");
     auto& writeLast =
-        builder.add_computational_memlet(block, tasklet, "__out", writeOut, {symbolic::zero()}, ptr_value_type);
+        builder.add_computational_memlet(block, tasklet_ext, "__out", writeOut, {symbolic::zero()}, ptr_value_type);
 
     auto sdfg = builder.move();
 
@@ -255,7 +244,7 @@ TEST(CCodeGeneratorTest, CreateCapturePlans) {
     codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan, true);
     auto capturePlan = generator.create_capture_plans();
 
-    EXPECT_EQ(capturePlan->size(), 4);
+    EXPECT_EQ(capturePlan->size(), 3);
 
     EXPECT_EQ((*capturePlan)[0].capture_input, true);
     EXPECT_EQ((*capturePlan)[0].capture_output, false);
@@ -277,16 +266,24 @@ TEST(CCodeGeneratorTest, CreateCapturePlans) {
         << "dim2: " << (*capturePlan)[1].dim2->__str__() << std::endl;
 
     EXPECT_EQ((*capturePlan)[2].capture_input, true);
-    EXPECT_EQ((*capturePlan)[2].capture_output, false);
+    EXPECT_EQ((*capturePlan)[2].capture_output, true);
     EXPECT_EQ((*capturePlan)[2].type, codegen::CaptureVarType::CapRaw);
     EXPECT_EQ((*capturePlan)[2].arg_idx, 2);
     EXPECT_EQ((*capturePlan)[2].is_external, true);
+    EXPECT_EQ((*capturePlan)[2].inner_type, types::PrimitiveType::Float);
+}
 
-    EXPECT_EQ((*capturePlan)[3].capture_input, false);
-    EXPECT_EQ((*capturePlan)[3].capture_output, true);
-    EXPECT_EQ((*capturePlan)[3].type, codegen::CaptureVarType::Cap1D);
-    EXPECT_EQ((*capturePlan)[3].arg_idx, 3);
-    EXPECT_EQ((*capturePlan)[3].is_external, true);
-    EXPECT_EQ((*capturePlan)[3].inner_type, types::PrimitiveType::Float);
-    EXPECT_TRUE(symbolic::eq((*capturePlan)[3].dim1, symbolic::integer(1)));
+TEST(CCodeGeneratorTest, CreateCapturePlans_Failure_OpaquePointer) {
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+
+    types::Pointer opaque_desc;
+    builder.add_container("arg0", opaque_desc, true, false);
+
+    types::Pointer ptr_ptr_desc(static_cast<types::IType&>(opaque_desc));
+    builder.add_container("ext1", ptr_ptr_desc, false, true);
+
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(builder.subject());
+    codegen::CCodeGenerator generator(builder.subject(), *instrumentation_plan, true);
+    auto capturePlan = generator.create_capture_plans();
+    EXPECT_EQ(capturePlan->size(), 0);
 }

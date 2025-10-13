@@ -41,11 +41,6 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
             continue;
         }
 
-        // Criterion: No sub-views (will be eliminated iteratively)
-        if (users.views(container).size() > 0) {
-            continue;
-        }
-
         // Eliminate views
         auto uses = users.uses(container);
         for (auto& move : moves) {
@@ -75,6 +70,11 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
 
             // Replace all uses of the view by the pointer
             for (auto& user : uses) {
+                // Criterion: Cannot be a move
+                if (user->use() == analysis::Use::MOVE) {
+                    continue;
+                }
+
                 // Criterion: Must be an access node
                 if (!dynamic_cast<data_flow::AccessNode*>(user->element())) {
                     continue;
@@ -84,7 +84,8 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                 if (!users.dominates(*move, *user)) {
                     continue;
                 }
-                // Criterion: Pointer and view are constant
+
+                // Criterion: No reassignment of pointer or view in between
                 auto uses_between = users.all_uses_between(*move, *user);
                 bool unsafe = false;
                 for (auto& use : uses_between) {
@@ -106,26 +107,36 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                     continue;
                 }
 
-                auto& use_node = static_cast<data_flow::AccessNode&>(*user->element());
+                auto& user_node = static_cast<data_flow::AccessNode&>(*user->element());
 
-                // Criterion: Must be a typed-pointer at this point, no empty subset / constant data
-                auto& base_type = move_edge.base_type();
-                auto& pointer_type = dynamic_cast<const types::Pointer&>(base_type);
+                // Simple case: No arithmetic on pointer, just replace container
+                if (move_subset.size() == 1 && symbolic::eq(move_subset[0], symbolic::zero())) {
+                    user_node.data() = viewed_container;
+                    applied = true;
+                    reduced.insert(viewed_container);
+                    continue;
+                }
 
-                // Criterion: Must strictly propagate into computational memlets
-                // Criterion: Types must match
-                auto use_graph = user->parent();
+                // General case: Arithmetic on pointer, need to update memlet subsets
 
-                auto& result_base_type = types::infer_type(builder.subject(), move_edge.base_type(), move_subset);
-                sdfg::types::Pointer result_type(static_cast<const types::IType&>(result_base_type));
+                // Criterion: Must be computational memlets
+                // Criterion: No type casting
+
+                auto& deref_type = move_edge.result_type(builder.subject());
+                sdfg::types::Pointer ref_type(static_cast<const types::IType&>(deref_type));
 
                 bool safe = true;
-                for (auto& oedge : use_graph->out_edges(use_node)) {
-                    if (oedge.type() != data_flow::MemletType::Computational || oedge.has_range()) {
+                auto user_graph = user->parent();
+                for (auto& oedge : user_graph->out_edges(user_node)) {
+                    if (oedge.type() != data_flow::MemletType::Computational) {
                         safe = false;
                         break;
                     }
-                    if (result_base_type.type_id() != types::TypeID::Pointer && oedge.base_type() != result_type) {
+                    if (oedge.subset().empty()) {
+                        safe = false;
+                        break;
+                    }
+                    if (oedge.base_type() != ref_type) {
                         safe = false;
                         break;
                     }
@@ -133,12 +144,16 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                 if (!safe) {
                     continue;
                 }
-                for (auto& iedge : use_graph->in_edges(use_node)) {
-                    if (iedge.type() != data_flow::MemletType::Computational || iedge.has_range()) {
+                for (auto& iedge : user_graph->in_edges(user_node)) {
+                    if (iedge.type() != data_flow::MemletType::Computational) {
                         safe = false;
                         break;
                     }
-                    if (result_base_type.type_id() != types::TypeID::Pointer && iedge.base_type() != result_type) {
+                    if (iedge.subset().empty()) {
+                        safe = false;
+                        break;
+                    }
+                    if (iedge.base_type() != ref_type) {
                         safe = false;
                         break;
                     }
@@ -150,10 +165,10 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                 // Propagate pointer type
 
                 // Step 1: Replace container
-                use_node.data() = viewed_container;
+                user_node.data() = viewed_container;
 
                 // Step 2: Update edges
-                for (auto& oedge : use_graph->out_edges(use_node)) {
+                for (auto& oedge : user_graph->out_edges(user_node)) {
                     // Compute new subset
                     data_flow::Subset new_subset;
                     for (auto dim : move_subset) {
@@ -184,7 +199,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                     }
                 }
 
-                for (auto& iedge : use_graph->in_edges(use_node)) {
+                for (auto& iedge : user_graph->in_edges(user_node)) {
                     // Compute new subset
                     data_flow::Subset new_subset;
                     for (auto dim : move_subset) {

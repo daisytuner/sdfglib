@@ -5,6 +5,7 @@
 
 #include "sdfg/codegen/utils.h"
 #include "sdfg/function.h"
+#include "sdfg/helpers/helpers.h"
 #include "sdfg/symbolic/symbolic.h"
 
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
@@ -124,8 +125,7 @@ symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_tim
 
     auto id = type.type_id();
     if (id == TypeID::Pointer || id == TypeID::Reference || id == TypeID::Function) {
-        // TODO NEED target info to know pointer size (4 or 8 bytes?) !!
-        only_symbolic = true;
+        return symbolic::integer(8); // assume 64-bit pointers
     } else if (id == TypeID::Structure) {
         // TODO if we have the target definition, we could evaluate the StructureDefinition to a size
         only_symbolic = true;
@@ -155,8 +155,10 @@ symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_tim
             return symbolic::integer(size_of_type);
         } else {
             codegen::CLanguageExtension lang;
-            std::cerr << "Unexpected primitive_type " << primitive_type_to_string(prim_type) << " of "
-                      << lang.declaration("", type) << ", unknown size";
+            DEBUG_PRINTLN(
+                "Unexpected primitive_type " << primitive_type_to_string(prim_type) << " of "
+                                             << lang.declaration("", type) << ", unknown size"
+            );
             return {};
         }
     }

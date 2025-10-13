@@ -40,25 +40,17 @@ public:
 
     void validate(const Function& function) const override;
 
-    const symbolic::Symbol& indvar() const;
+    const symbolic::Symbol indvar() const;
 
-    symbolic::Symbol& indvar();
+    const symbolic::Expression init() const;
 
-    const symbolic::Expression& init() const;
+    const symbolic::Expression update() const;
 
-    symbolic::Expression& init();
-
-    const symbolic::Expression& update() const;
-
-    symbolic::Expression& update();
-
-    const symbolic::Condition& condition() const;
-
-    symbolic::Condition& condition();
+    const symbolic::Condition condition() const;
 
     Sequence& root() const;
 
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 };
 
 } // namespace structured_control_flow

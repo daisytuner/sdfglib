@@ -9,51 +9,48 @@ namespace sdfg {
 namespace symbolic {
 
 class Assumption {
-   private:
+private:
     Symbol symbol_;
     Expression lower_bound_;
     Expression upper_bound_;
     bool constant_;
     Expression map_;
 
-   public:
+public:
     Assumption();
 
-    Assumption(const Symbol& symbol);
+    Assumption(const Symbol symbol);
 
     Assumption(const Assumption& a);
 
     Assumption& operator=(const Assumption& a);
 
-    const Symbol& symbol() const;
+    const Symbol symbol() const;
 
-    const Expression& lower_bound() const;
+    const Expression lower_bound() const;
 
-    void lower_bound(const Expression& lower_bound);
+    void lower_bound(const Expression lower_bound);
 
-    const Expression& upper_bound() const;
+    const Expression upper_bound() const;
 
-    void upper_bound(const Expression& upper_bound);
+    void upper_bound(const Expression upper_bound);
 
     bool constant() const;
 
     void constant(bool constant);
 
-    const Expression& map() const;
+    const Expression map() const;
 
-    void map(const Expression& map);
+    void map(const Expression map);
 
-    static Assumption create(const symbolic::Symbol& symbol, const types::IType& type);
+    static Assumption create(const Symbol symbol, const types::IType& type);
 };
 
-typedef std::unordered_map<Symbol, Assumption, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq>
-    Assumptions;
+typedef std::unordered_map<Symbol, Assumption, SymEngine::RCPBasicHash, SymEngine::RCPBasicKeyEq> Assumptions;
 
-void upper_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
-                  symbolic::ExpressionSet& ubs);
+void upper_bounds(const Symbol sym, const Assumptions& assumptions, ExpressionSet& ubs);
 
-void lower_bounds(const symbolic::Symbol& sym, const Assumptions& assumptions,
-                  symbolic::ExpressionSet& lbs);
+void lower_bounds(const Symbol sym, const Assumptions& assumptions, ExpressionSet& lbs);
 
-}  // namespace symbolic
-}  // namespace sdfg
+} // namespace symbolic
+} // namespace sdfg

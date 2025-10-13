@@ -119,7 +119,30 @@ const std::unordered_map<Vertex, Vertex> dominator_tree(const Graph& graph, cons
     return dom_tree;
 };
 
-const std::unordered_map<Vertex, Vertex> post_dominator_tree(const Graph& graph, const Vertex src) {
+const std::unordered_map<Vertex, Vertex> post_dominator_tree(Graph& graph) {
+    // Determine terminal vertices
+    std::unordered_set<Vertex> terminal_vertices;
+    for (auto [vb, ve] = boost::vertices(graph); vb != ve; ++vb) {
+        if (boost::out_degree(*vb, graph) == 0) {
+            terminal_vertices.insert(*vb);
+        }
+    }
+    assert(!terminal_vertices.empty());
+
+    // add synthetic super-terminal if needed
+    bool modified = false;
+    graph::Vertex src;
+    if (terminal_vertices.size() == 1) {
+        src = *terminal_vertices.begin();
+        modified = false;
+    } else {
+        src = boost::add_vertex(graph);
+        for (const auto& v : terminal_vertices) {
+            boost::add_edge(v, src, graph);
+        }
+        modified = true;
+    }
+
     auto& rgraph = reverse(graph);
 
     std::unordered_map<Vertex, Vertex> pdom_tree;
@@ -149,6 +172,11 @@ const std::unordered_map<Vertex, Vertex> post_dominator_tree(const Graph& graph,
 
     for (const auto& entry : vertex_index_map) {
         pdom_tree.insert({entry.first, pdom_tree_vec[entry.second]});
+    }
+
+    // Remove synthetic super-terminal if added
+    if (modified) {
+        boost::clear_vertex(src, graph);
     }
 
     return pdom_tree;

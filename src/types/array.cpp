@@ -3,7 +3,7 @@
 namespace sdfg {
 namespace types {
 
-Array::Array(const IType& element_type, const symbolic::Expression& num_elements)
+Array::Array(const IType& element_type, const symbolic::Expression num_elements)
     : element_type_(element_type.clone()), num_elements_(num_elements) {};
 
 Array::Array(
@@ -11,7 +11,7 @@ Array::Array(
     size_t alignment,
     const std::string& initializer,
     const IType& element_type,
-    const symbolic::Expression& num_elements
+    const symbolic::Expression num_elements
 )
     : IType(storage_type, alignment, initializer), element_type_(element_type.clone()), num_elements_(num_elements) {};
 
@@ -21,7 +21,7 @@ bool Array::is_symbol() const { return false; };
 
 const IType& Array::element_type() const { return *this->element_type_; };
 
-const symbolic::Expression& Array::num_elements() const { return this->num_elements_; };
+const symbolic::Expression Array::num_elements() const { return this->num_elements_; };
 
 TypeID Array::type_id() const { return TypeID::Array; };
 

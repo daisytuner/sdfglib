@@ -5,14 +5,20 @@
 
 #include "sdfg/analysis/scope_analysis.h"
 
+#include "sdfg/data_flow/library_nodes/math/intrinsic.h"
+
 namespace sdfg {
 namespace math {
 namespace ml {
 
 PowNode::PowNode(
-    size_t element_id, const DebugInfo& debug_info, const graph::Vertex vertex, data_flow::DataFlowGraph& parent
+    size_t element_id,
+    const DebugInfo& debug_info,
+    const graph::Vertex vertex,
+    data_flow::DataFlowGraph& parent,
+    const std::vector<symbolic::Expression>& shape
 )
-    : ElementWiseBinaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Pow, {}) {}
+    : ElementWiseBinaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Pow, shape) {}
 
 bool PowNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,
@@ -31,7 +37,9 @@ bool PowNode::expand_operation(
     auto& input_node_a = builder.add_access(code_block, input_name_a);
     auto& input_node_b = builder.add_access(code_block, input_name_b);
     auto& output_node = builder.add_access(code_block, output_name);
-    auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::powf, "_out", {"_in1", "_in2"});
+    
+    auto& tasklet = builder.add_library_node<math::IntrinsicNode>(code_block, code_block.debug_info(), "powf", 1);
+    
     builder.add_computational_memlet(code_block, input_node_a, tasklet, "_in1", subset, input_type_a);
     builder.add_computational_memlet(code_block, input_node_b, tasklet, "_in2", subset, input_type_b);
     builder.add_computational_memlet(code_block, tasklet, "_out", output_node, subset, output_type);
@@ -41,7 +49,8 @@ bool PowNode::expand_operation(
 
 std::unique_ptr<data_flow::DataFlowNode> PowNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
-    return std::unique_ptr<data_flow::DataFlowNode>(new PowNode(element_id, this->debug_info(), vertex, parent));
+    return std::unique_ptr<
+        data_flow::DataFlowNode>(new PowNode(element_id, this->debug_info(), vertex, parent, this->shape_));
 }
 
 } // namespace ml

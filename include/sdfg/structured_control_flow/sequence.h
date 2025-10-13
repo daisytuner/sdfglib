@@ -50,7 +50,7 @@ public:
 
     size_t size() const;
 
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 };
 
 class Sequence : public ControlFlowNode {
@@ -79,7 +79,11 @@ public:
 
     std::pair<ControlFlowNode&, Transition&> at(size_t i);
 
-    void replace(const symbolic::Expression& old_expression, const symbolic::Expression& new_expression) override;
+    int index(const ControlFlowNode& child) const;
+
+    int index(const Transition& transition) const;
+
+    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 };
 
 } // namespace structured_control_flow

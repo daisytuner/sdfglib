@@ -17,6 +17,7 @@
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/mem_access_range_analysis_internal.h"
 #include "sdfg/analysis/users.h"
+#include "sdfg/helpers/helpers.h"
 #include "sdfg/symbolic/extreme_values.h"
 #include "sdfg/symbolic/symbolic.h"
 
@@ -134,15 +135,13 @@ void MemAccessRangesBuilder::process_workItem(WorkItem* item) {
 
     const auto& views = users_.views(*varName);
     if (!views.empty()) {
-#ifndef NDEBUG
-        std::cerr << "Found views for " << *varName << " => not rangeable!" << std::endl;
-#endif
+        DEBUG_PRINTLN("Found views for " << *varName << " => not rangeable!");
         item->undefined = true;
     }
 
     const auto& moves = users_.moves(*varName);
     if (!moves.empty()) {
-        std::cerr << "Found moves for " << *varName << " => not rangeable!" << std::endl;
+        DEBUG_PRINTLN("Found moves for " << *varName << " => not rangeable!");
         item->undefined = true;
     }
 
@@ -176,20 +175,6 @@ void MemAccessRangesBuilder::process_workItem(WorkItem* item) {
 
             finalDims.emplace_back(std::move(lb), std::move(ub));
         }
-
-#if !defined(NDEBUG)
-        // std::cout << "RangeAna: " << *varName << ": (" << (item->saw_read? "r" : "") <<
-        // (item->saw_write? "w" : "") << ") " << (!item->undefined? "ranged" : "undef")
-        //           << ", " << finalDims.size() << "D: [\n";
-        // for (size_t i = 0; i < finalDims.size(); ++i) {
-        //     const auto& dim = finalDims[i];
-        //     std::cout << "\t(" << (!dim.first.is_null()? dim.first->__str__() : "null")
-        //               << " .. " << (!dim.second.is_null()? dim.second->__str__() : "null") <<
-        //               ")";
-        //     std::cout << "\n";
-        // }
-        // std::cout << "]" << std::endl;
-#endif
 
         this->ranges_.emplace(
             std::piecewise_construct,
