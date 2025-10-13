@@ -64,8 +64,6 @@ void CallNode::validate(const Function& function) const {
                 "CallNode: Non-void function must have at least one output to store the return value."
             );
         }
-    } else if (auto ptr_type = dynamic_cast<const types::Pointer*>(&type)) {
-        // TODO: Handle pointer function calls verification
     }
 }
 
