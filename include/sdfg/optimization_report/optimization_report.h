@@ -5,6 +5,7 @@
 #include <string>
 #include <tuple>
 
+#include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_sdfg.h"
 
 
@@ -13,47 +14,22 @@ namespace sdfg {
 
 class OptimizationReport {
 private:
+    StructuredSDFG& sdfg_;
+    nlohmann::json report_;
     bool aggregate_;
 
-    std::map<std::string, std::tuple<nlohmann::json, nlohmann::json>> structure_;
-
-    nlohmann::json& get_report_json_internal(const std::string& sdfg_name);
-
-    nlohmann::json& get_loop_list_internal(const std::string& sdfg_name);
-
-    void add_pass_entry_internal(const std::string& pass_name, long duration, bool applied, const std::string& sdfg_name);
-
-    void add_transformation_entry_internal(
-        const std::string& transformation_name,
-        long apply_duration,
-        const nlohmann::json& transformation_desc,
-        const std::string& sdfg_name
-    );
-
-    OptimizationReport();
-
-    nlohmann::json get_report_internal(const std::string& sdfg_name);
-
 public:
-    static void add_pass_entry(const std::string& pass_name, long duration, bool applied, const std::string& sdfg_name);
+    OptimizationReport(StructuredSDFG& sdfg, bool aggregate = true);
 
-    static void add_transformation_entry(
-        const std::string& transformation_name,
-        long apply_duration,
-        const nlohmann::json& transformation_desc,
-        const std::string& sdfg_name
+    void add_pass_entry(const std::string& pass_name, long duration, bool applied);
+
+    void add_transformation_entry(
+        const std::string& transformation_name, long apply_duration, const nlohmann::json& transformation_desc
     );
 
-    static bool applicable();
+    nlohmann::json get_report();
 
-    static void initialize();
-
-    static nlohmann::json get_report(const std::string& sdfg_name);
-
-    static void add_sdfg_structure(StructuredSDFG& sdfg);
-
-    static void
-    add_target_test(const std::string& target_name, const std::string& sdfg_name, size_t loopnest_index, bool success);
+    void add_target_test(size_t loopnest_index, structured_control_flow::ScheduleType schedule_type, bool success);
 };
 
 } // namespace sdfg

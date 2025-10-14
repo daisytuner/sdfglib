@@ -5,81 +5,19 @@
 #include <sdfg/analysis/loop_analysis.h>
 #include "sdfg/serializer/json_serializer.h"
 #include "sdfg/structured_control_flow/map.h"
+#include "sdfg/structured_sdfg.h"
 
 
 namespace sdfg {
 
-static OptimizationReport* instance_;
-
-void OptimizationReport::
-    add_pass_entry_internal(const std::string& pass_name, long duration, bool applied, const std::string& sdfg_name) {
-    // TODO
-}
-
-void OptimizationReport::add_transformation_entry_internal(
-    const std::string& transformation_name,
-    long apply_duration,
-    const nlohmann::json& transformation_desc,
-    const std::string& sdfg_name
-) {
-    // TODO
-}
-
-OptimizationReport::OptimizationReport() {}
-
-nlohmann::json& OptimizationReport::get_report_json_internal(const std::string& sdfg_name) {
-    return std::get<0>(structure_[sdfg_name]);
-}
-
-nlohmann::json& OptimizationReport::get_loop_list_internal(const std::string& sdfg_name) {
-    return std::get<1>(structure_[sdfg_name]);
-}
-
-nlohmann::json OptimizationReport::get_report_internal(const std::string& sdfg_name) {
-    nlohmann::json report;
-    report["Timings"] = get_report_json_internal(sdfg_name);
-    report["Loops"] = get_loop_list_internal(sdfg_name);
-    return report;
-}
-
-void OptimizationReport::
-    add_pass_entry(const std::string& pass_name, long duration, bool applied, const std::string& sdfg_name) {
-    instance_->add_pass_entry_internal(pass_name, duration, applied, sdfg_name);
-}
-
-void OptimizationReport::add_transformation_entry(
-    const std::string& transformation_name,
-    long apply_duration,
-    const nlohmann::json& transformation_desc,
-    const std::string& sdfg_name
-) {
-    instance_->add_transformation_entry_internal(transformation_name, apply_duration, transformation_desc, sdfg_name);
-}
-
-bool OptimizationReport::applicable() { return instance_ != nullptr; }
-
-void OptimizationReport::initialize() {
-    std::cout << "Initializing OptimizationReport" << std::endl;
-    if (instance_ == nullptr) {
-        instance_ = new OptimizationReport();
-    }
-}
-
-nlohmann::json OptimizationReport::get_report(const std::string& sdfg_name) {
-    std::cout << "Getting optimization report for SDFG: " << sdfg_name << std::endl;
-    if (instance_ != nullptr) {
-        return instance_->get_report_internal(sdfg_name);
-    }
-    std::cerr << "Warning: OptimizationReport not initialized." << std::endl;
-    return nlohmann::json();
-}
-
-void OptimizationReport::add_sdfg_structure(StructuredSDFG& sdfg) {
+OptimizationReport::OptimizationReport(StructuredSDFG& sdfg, bool aggregate)
+    : sdfg_(sdfg), report_(nlohmann::json::object()), aggregate_(aggregate) {
     analysis::AnalysisManager manager(sdfg);
     auto& loop_analysis = manager.get<analysis::LoopAnalysis>();
 
     // Add outermost loops
-    instance_->get_loop_list_internal(sdfg.name()) = nlohmann::json::array();
+    report_["regions"] = nlohmann::json::array();
+    report_["type"] = aggregate ? "aggregate" : "detailed";
 
     for (int i = 0; i < loop_analysis.outermost_loops().size(); i++) {
         nlohmann::json loop_json;
@@ -98,13 +36,72 @@ void OptimizationReport::add_sdfg_structure(StructuredSDFG& sdfg) {
         } else if (auto map = dynamic_cast<const structured_control_flow::Map*>(loop)) {
             loop_json["type"] = "map";
         }
-        instance_->get_loop_list_internal(sdfg.name()).push_back(loop_json);
+        report_["regions"].push_back(loop_json);
     }
 }
 
+
+nlohmann::json OptimizationReport::get_report() { return report_; }
+
+void OptimizationReport::add_pass_entry(const std::string& pass_name, long duration, bool applied) {
+    /* if (!aggregate_) {
+        if (!report_.contains("passes")) {
+            report_["passes"] = nlohmann::json::array();
+        }
+        nlohmann::json pass_json;
+        pass_json["name"] = pass_name;
+        pass_json["duration_us"] = duration;
+        pass_json["applied"] = applied;
+        report_["passes"].push_back(pass_json);
+    } else {
+        if (!report_.contains("passes")) {
+            report_["passes"] = nlohmann::json::object();
+        }
+        if (!report_["passes"].contains(pass_name)) {
+            report_["passes"][pass_name] = nlohmann::json::object();
+            report_["passes"][pass_name]["count"] = 0;
+            report_["passes"][pass_name]["total_duration_us"] = 0;
+        }
+        report_["passes"][pass_name]["count"] = report_["passes"][pass_name]["count"].get<int>() + 1;
+        report_["passes"][pass_name]["total_duration_us"] =
+    report_["passes"][pass_name]["total_duration_us"].get<long>() + duration;
+    } */
+}
+
+void OptimizationReport::add_transformation_entry(
+    const std::string& transformation_name, long apply_duration, const nlohmann::json& transformation_desc
+) {
+    /* if (!aggregate_) {
+        if (!report_.contains("transformations")) {
+            report_["transformations"] = nlohmann::json::array();
+        }
+        nlohmann::json transformation_json;
+        transformation_json["name"] = transformation_name;
+        transformation_json["duration_us"] = apply_duration;
+        transformation_json["description"] = transformation_desc;
+        report_["transformations"].push_back(transformation_json);
+    } else {
+        if (!report_.contains("transformations")) {
+            report_["transformations"] = nlohmann::json::object();
+        }
+        if (!report_["transformations"].contains(transformation_name)) {
+            report_["transformations"][transformation_name] = nlohmann::json::object();
+            report_["transformations"][transformation_name]["count"] = 0;
+            report_["transformations"][transformation_name]["total_duration_us"] = 0;
+        }
+        report_["transformations"][transformation_name]["count"] =
+    report_["transformations"][transformation_name]["count"].get<int>() + 1;
+        report_["transformations"][transformation_name]["total_duration_us"] =
+    report_["transformations"][transformation_name]["total_duration_us"].get<long>() + apply_duration;
+    } */
+}
+
 void OptimizationReport::
-    add_target_test(const std::string& target_name, const std::string& sdfg_name, size_t loopnest_index, bool success) {
-    instance_->get_loop_list_internal(sdfg_name).at(loopnest_index)["target_name"] = success ? "True" : "False";
+    add_target_test(size_t loopnest_index, structured_control_flow::ScheduleType schedule_type, bool success) {
+    if (!report_["regions"].at(loopnest_index).contains("targets")) {
+        report_["regions"].at(loopnest_index)["targets"] = nlohmann::json::object();
+    }
+    report_["regions"].at(loopnest_index)["targets"][schedule_type.value()] = success;
 }
 
 } // namespace sdfg
