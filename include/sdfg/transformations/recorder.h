@@ -48,7 +48,7 @@ public:
         if (OptimizationReport::applicable()) {
             std::chrono::time_point end_time = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
-            OptimizationReport::add_transformation_entry(transformation.name(), duration, desc);
+            OptimizationReport::add_transformation_entry(transformation.name(), duration, desc, builder.subject().name());
         }
     };
 

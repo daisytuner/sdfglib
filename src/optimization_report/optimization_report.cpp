@@ -59,15 +59,18 @@ void OptimizationReport::add_transformation_entry(
 bool OptimizationReport::applicable() { return instance_ != nullptr; }
 
 void OptimizationReport::initialize() {
+    std::cout << "Initializing OptimizationReport" << std::endl;
     if (instance_ == nullptr) {
         instance_ = new OptimizationReport();
     }
 }
 
 nlohmann::json OptimizationReport::get_report(const std::string& sdfg_name) {
+    std::cout << "Getting optimization report for SDFG: " << sdfg_name << std::endl;
     if (instance_ != nullptr) {
         return instance_->get_report_internal(sdfg_name);
     }
+    std::cerr << "Warning: OptimizationReport not initialized." << std::endl;
     return nlohmann::json();
 }
 
