@@ -15,18 +15,19 @@ class OptimizationReport {
 private:
     bool aggregate_;
 
-    std::map<std::string, std::tuple<nlohmann::json, nlohmann::json, nlohmann::json>> structure_;
+    std::map<std::string, std::tuple<nlohmann::json, nlohmann::json>> structure_;
 
     nlohmann::json& get_report_json_internal(const std::string& sdfg_name);
 
     nlohmann::json& get_loop_list_internal(const std::string& sdfg_name);
 
-    nlohmann::json& get_map_list_internal(const std::string& sdfg_name);
-
     void add_pass_entry_internal(const std::string& pass_name, long duration, bool applied, const std::string& sdfg_name);
 
     void add_transformation_entry_internal(
-        const std::string& transformation_name, long apply_duration, const nlohmann::json& transformation_desc, const std::string& sdfg_name
+        const std::string& transformation_name,
+        long apply_duration,
+        const nlohmann::json& transformation_desc,
+        const std::string& sdfg_name
     );
 
     OptimizationReport();
@@ -37,7 +38,10 @@ public:
     static void add_pass_entry(const std::string& pass_name, long duration, bool applied, const std::string& sdfg_name);
 
     static void add_transformation_entry(
-        const std::string& transformation_name, long apply_duration, const nlohmann::json& transformation_desc, const std::string& sdfg_name
+        const std::string& transformation_name,
+        long apply_duration,
+        const nlohmann::json& transformation_desc,
+        const std::string& sdfg_name
     );
 
     static bool applicable();
@@ -48,7 +52,8 @@ public:
 
     static void add_sdfg_structure(StructuredSDFG& sdfg);
 
-    static void add_target_test(const std::string& target_name, const std::string& sdfg_name, size_t mapnest_index, bool success);
+    static void
+    add_target_test(const std::string& target_name, const std::string& sdfg_name, size_t loopnest_index, bool success);
 };
 
 } // namespace sdfg
