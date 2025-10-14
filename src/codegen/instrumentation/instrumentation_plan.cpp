@@ -20,6 +20,7 @@ void InstrumentationPlan::begin_instrumentation(const structured_control_flow::C
     std::string sdfg_file = metadata.at("sdfg_file");
     std::string arg_capture_path = metadata.at("arg_capture_path");
     std::string features_file = metadata.at("features_file");
+    std::string opt_report_file = metadata.at("opt_report_file");
 
     std::string region_uuid = sdfg_name + "_" + std::to_string(node.element_id());
 
@@ -44,6 +45,7 @@ void InstrumentationPlan::begin_instrumentation(const structured_control_flow::C
     stream << metadata_var << ".sdfg_file = \"" << sdfg_file << "\";" << std::endl;
     stream << metadata_var << ".arg_capture_path = \"" << arg_capture_path << "\";" << std::endl;
     stream << metadata_var << ".features_file = \"" << features_file << "\";" << std::endl;
+    stream << metadata_var << ".opt_report_file = \"" << opt_report_file << "\";" << std::endl;
     stream << metadata_var << ".element_id = " << node.element_id() << ";" << std::endl;
     if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(&node)) {
         stream << metadata_var << ".element_type = \"map\";" << std::endl;

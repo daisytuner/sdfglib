@@ -132,12 +132,7 @@ private:
         out.push_back(s.substr(start));
     }
 
-    void append_event(
-        FILE* f,
-        DaisyRegion& region,
-        size_t index,
-        const std::vector<std::string>& event_names
-    ) {
+    void append_event(FILE* f, DaisyRegion& region, size_t index, const std::vector<std::string>& event_names) {
         // Writes one event as a row in the Chrome trace format
 
         // Target format:
@@ -188,7 +183,7 @@ private:
         if (md.sdfg_name && md.sdfg_file) {
             entry << "\"docc\":";
             entry << "{";
-        
+
             entry << "\"sdfg_name\":\"" << md.sdfg_name << "\",";
             entry << "\"sdfg_file\":\"" << md.sdfg_file << "\",";
             if (md.arg_capture_path) {
@@ -200,6 +195,11 @@ private:
                 entry << "\"features_file\":\"" << md.features_file << "\",";
             } else {
                 entry << "\"features_file\":\"\",";
+            }
+            if (md.opt_report_file) {
+                entry << "\"opt_report_file\":\"" << md.opt_report_file << "\",";
+            } else {
+                entry << "\"opt_report_file\":\"\",";
             }
             entry << "\"element_id\":" << md.element_id << ",";
             entry << "\"element_type\":\"" << md.element_type << "\",";
@@ -233,11 +233,7 @@ private:
         std::fprintf(f, "%s", entry.str().c_str());
     }
 
-    void append_event_aggregated(
-        FILE* f,
-        DaisyRegion& region,
-        const std::vector<std::string>& event_names
-    ) {
+    void append_event_aggregated(FILE* f, DaisyRegion& region, const std::vector<std::string>& event_names) {
         // Writes one event as a row in the Chrome trace format
 
         // Target format:
@@ -290,7 +286,7 @@ private:
         if (md.sdfg_name && md.sdfg_file) {
             entry << "\"docc\":";
             entry << "{";
-        
+
             entry << "\"sdfg_name\":\"" << md.sdfg_name << "\",";
             entry << "\"sdfg_file\":\"" << md.sdfg_file << "\",";
             if (md.arg_capture_path) {
@@ -302,6 +298,11 @@ private:
                 entry << "\"features_file\":\"" << md.features_file << "\",";
             } else {
                 entry << "\"features_file\":\"\",";
+            }
+            if (md.opt_report_file) {
+                entry << "\"opt_report_file\":\"" << md.opt_report_file << "\",";
+            } else {
+                entry << "\"opt_report_file\":\"\",";
             }
             entry << "\"element_id\":" << md.element_id << ",";
             entry << "\"element_type\":\"" << md.element_type << "\",";
@@ -453,11 +454,7 @@ public:
                 } else if (region.event_set == __DAISY_EVENT_SET_CUDA) {
                     event_names = this->event_names_cuda;
                 }
-                append_event_aggregated(
-                    f,
-                    region,
-                    event_names
-                );
+                append_event_aggregated(f, region, event_names);
 
                 if (std::next(iter) != regions.end()) {
                     std::fprintf(f, ",\n");
@@ -473,12 +470,7 @@ public:
                 } else if (region.event_set == __DAISY_EVENT_SET_CUDA) {
                     event_names = this->event_names_cuda;
                 }
-                append_event(
-                    f,
-                    region,
-                    event_index,
-                    event_names
-                );
+                append_event(f, region, event_index, event_names);
                 if (event_index < region.starts.size() - 1) {
                     std::fprintf(f, ",\n");
                 }

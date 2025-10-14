@@ -3,7 +3,7 @@
 namespace sdfg {
 namespace passes {
 
-bool Pass::run(builder::SDFGBuilder& builder) {
+bool Pass::run(builder::SDFGBuilder& builder, bool create_report) {
     bool applied = this->run_pass(builder);
 
 #ifndef NDEBUG
@@ -13,7 +13,7 @@ bool Pass::run(builder::SDFGBuilder& builder) {
     return applied;
 };
 
-bool Pass::run(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
+bool Pass::run(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager, bool create_report) {
     bool applied = this->run_pass(builder, analysis_manager);
     this->invalidates(analysis_manager, applied);
 

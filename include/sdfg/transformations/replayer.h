@@ -36,6 +36,7 @@ public:
             }
             return;
         }
+
         transformation.apply(builder, analysis_manager);
     };
 };
