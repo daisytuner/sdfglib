@@ -1,4 +1,5 @@
 #include "sdfg/data_flow/library_nodes/math/intrinsic.h"
+#include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
 namespace math {
@@ -13,10 +14,10 @@ IntrinsicNode::IntrinsicNode(
 )
     : MathNode(element_id, debug_info, vertex, parent, LibraryNodeType_Intrinsic, {"_out"}, {}, data_flow::ImplementationType_NONE),
       name_(name) {
-        for (size_t i = 0; i < arity; i++) {
-            this->inputs_.push_back("_in" + std::to_string(i + 1));
-        }
-      }
+    for (size_t i = 0; i < arity; i++) {
+        this->inputs_.push_back("_in" + std::to_string(i + 1));
+    }
+}
 
 const std::string& IntrinsicNode::name() const {
     return this->name_;
@@ -35,6 +36,8 @@ std::unique_ptr<data_flow::DataFlowNode> IntrinsicNode::
         this->inputs_.size()
     ));
 }
+
+symbolic::Expression IntrinsicNode::flop() const { return symbolic::one(); }
 
 nlohmann::json IntrinsicNodeSerializer::serialize(const data_flow::LibraryNode& library_node) {
     const IntrinsicNode& node = static_cast<const IntrinsicNode&>(library_node);

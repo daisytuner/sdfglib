@@ -9,6 +9,7 @@ FetchContent_MakeAvailable(googletest)
 set(TEST_FILES
     analysis/assumptions_analysis_test.cpp
     analysis/data_dependency_analysis_test.cpp
+    analysis/flop_analysis_test.cpp
     analysis/loop_analysis_test.cpp
     analysis/mem_access_range_analysis_test.cpp
     analysis/type_analysis_test.cpp

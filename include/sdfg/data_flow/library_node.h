@@ -5,6 +5,7 @@
 
 #include "sdfg/data_flow/code_node.h"
 #include "sdfg/graph/graph.h"
+#include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
 
@@ -58,6 +59,8 @@ public:
     virtual std::string toStr() const;
 
     virtual symbolic::SymbolSet symbols() const = 0;
+
+    virtual symbolic::Expression flop() const;
 };
 
 } // namespace data_flow

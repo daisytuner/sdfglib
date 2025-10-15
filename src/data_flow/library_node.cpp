@@ -1,6 +1,8 @@
 #include "sdfg/data_flow/library_node.h"
 
 #include <string>
+#include "sdfg/symbolic/symbolic.h"
+#include "symengine/symengine_rcp.h"
 
 namespace sdfg {
 namespace data_flow {
@@ -28,6 +30,8 @@ ImplementationType& LibraryNode::implementation_type() { return this->implementa
 bool LibraryNode::side_effect() const { return this->side_effect_; };
 
 std::string LibraryNode::toStr() const { return std::string(this->code_.value()); }
+
+symbolic::Expression LibraryNode::flop() const { return SymEngine::null; }
 
 } // namespace data_flow
 } // namespace sdfg
