@@ -109,7 +109,25 @@ void __daisy_capture_3d(
 
 #define __daisy_min(a, b) ((a) < (b) ? (a) : (b))
 #define __daisy_max(a, b) ((a) > (b) ? (a) : (b))
-#define __daisy_fma(a, b, c) a* b + c
+#define __daisy_fma(a, b, c) a * b + c
+
+// Implementation of integer functions for symbolic expressions
+inline int __daisy_sym_pow(int base, int exp)
+{
+    if (exp < 0) {
+        return 0;
+    }
+
+    int result = 1;
+    while (exp) {
+        if (exp & 1) {
+            result *= base;
+        }
+        exp >>= 1;
+        base *= base;
+    }
+    return result;
+}
 
 #ifdef __DAISY_NVVM__
 

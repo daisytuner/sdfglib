@@ -485,7 +485,7 @@ void CSymbolicPrinter::_print_pow(
     } else if (SymEngine::eq(*b, *SymEngine::integer(2))) {
         o << "((" + apply(a) + ") * (" + apply(a) + "))";
     } else {
-        o << "pow(" << apply(a) << ", " << apply(b) << ")";
+        o << "__daisy_sym_pow(" << apply(a) << ", " << apply(b) << ")";
     }
 };
 
