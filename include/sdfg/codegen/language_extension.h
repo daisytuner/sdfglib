@@ -19,14 +19,17 @@ namespace codegen {
 class LanguageExtension {
 protected:
     std::unordered_set<std::string> external_variables_;
+    std::string external_prefix_;
 
 public:
-    LanguageExtension() : external_variables_() {}
+    LanguageExtension() : external_variables_(), external_prefix_() {}
 
-    LanguageExtension(const std::vector<std::string>& external_variables)
-        : external_variables_(external_variables.begin(), external_variables.end()) {}
+    LanguageExtension(const std::vector<std::string>& external_variables, const std::string& external_prefix)
+        : external_variables_(external_variables.begin(), external_variables.end()), external_prefix_(external_prefix) {}
 
     virtual ~LanguageExtension() = default;
+
+    const std::string& external_prefix() const { return this->external_prefix_; }
 
     virtual const std::string language() const = 0;
 

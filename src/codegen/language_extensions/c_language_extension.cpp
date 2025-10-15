@@ -185,7 +185,7 @@ std::string CLanguageExtension::access_node(const data_flow::AccessNode& node) {
     } else {
         std::string name = node.data();
         if (this->external_variables_.find(name) != this->external_variables_.end()) {
-            return "(&" + name + ")";
+            return "(&" + this->external_prefix_ + name + ")";
         }
         return name;
     }
@@ -370,7 +370,7 @@ void CSymbolicPrinter::bvisit(const SymEngine::Symbol& x) {
     }
     std::string name = x.get_name();
     if (this->external_variables_.find(name) != this->external_variables_.end()) {
-        name = "(&" + name + ")";
+        name = "(&" + this->external_prefix_ + name + ")";
     }
     str_ = name;
 };

@@ -47,6 +47,9 @@ protected:
     /// @brief Emit instrumentation code to capture runtime contents of inputs and outputs
     bool capture_args_results_;
 
+    /// @brief Prefix to use for external functions
+    std::string externals_prefix_;
+
     std::tuple<int, types::PrimitiveType> analyze_type_rec(
         symbolic::Expression* curr_dim,
         int max_dim,
@@ -72,10 +75,11 @@ public:
         StructuredSDFG& sdfg,
         InstrumentationPlan& instrumentation_plan,
         bool capture_args_results = false,
-        const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr
+        const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr,
+        const std::string& externals_prefix = ""
     )
         : sdfg_(sdfg), instrumentation_plan_(instrumentation_plan), library_snippet_factory_(output_and_header_paths),
-          capture_args_results_(capture_args_results) {};
+          capture_args_results_(capture_args_results), externals_prefix_(externals_prefix) {};
 
 
     virtual ~CodeGenerator() = default;

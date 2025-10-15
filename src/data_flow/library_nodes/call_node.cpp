@@ -53,7 +53,7 @@ void CallNode::validate(const Function& function) const {
             throw InvalidSDFGException("CallNode: Function '" + this->callee_name_ +
                                         "' must be declared.");
         }
-        if (inputs_.size() != func_type->num_params()) {
+        if (!func_type->is_var_arg() && inputs_.size() != func_type->num_params()) {
             throw InvalidSDFGException(
                 "CallNode: Number of inputs does not match number of function parameters. Expected " +
                 std::to_string(func_type->num_params()) + ", got " + std::to_string(inputs_.size())
@@ -180,7 +180,7 @@ void CallNodeDispatcher::dispatch_code(
             stream << "reinterpret_cast<" << func_ptr_type << ">(" << node.callee_name() << ")" << "(";
         }
     } else {
-        stream << node.callee_name() << "(";
+        stream << this->language_extension_.external_prefix() << node.callee_name() << "(";
     }
     for (size_t i = 0; i < node.inputs().size(); ++i) {
         stream << node.inputs().at(i);
