@@ -25,6 +25,9 @@ void ScopeAnalysis::
     } else if (auto for_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
         this->scope_tree_[current] = parent_scope;
         this->run(&for_stmt->root(), current);
+    } else if (auto for_each_stmt = dynamic_cast<structured_control_flow::ForEach*>(current)) {
+        this->scope_tree_[current] = parent_scope;
+        this->run(&for_each_stmt->root(), current);
     } else if (dynamic_cast<structured_control_flow::Break*>(current)) {
         this->scope_tree_[current] = parent_scope;
     } else if (dynamic_cast<structured_control_flow::Continue*>(current)) {

@@ -85,6 +85,7 @@ set(SOURCE_FILES
     src/codegen/dispatchers/if_else_dispatcher.cpp
     src/codegen/dispatchers/sequence_dispatcher.cpp
     src/codegen/dispatchers/for_dispatcher.cpp
+    src/codegen/dispatchers/for_each_dispatcher.cpp
     src/codegen/dispatchers/map_dispatcher.cpp
     src/codegen/dispatchers/while_dispatcher.cpp
     src/control_flow/interstate_edge.cpp
@@ -151,11 +152,13 @@ set(SOURCE_FILES
     src/passes/structured_control_flow/loop_normalization.cpp
     src/passes/structured_control_flow/sequence_fusion.cpp
     src/passes/structured_control_flow/while_to_for_conversion.cpp
+    src/passes/structured_control_flow/while_to_for_each_conversion.cpp
     src/passes/debug_info_propagation.cpp
     src/serializer/json_serializer.cpp
     src/structured_control_flow/block.cpp
     src/structured_control_flow/control_flow_node.cpp
     src/structured_control_flow/for.cpp
+    src/structured_control_flow/for_each.cpp
     src/structured_control_flow/if_else.cpp
     src/structured_control_flow/map.cpp
     src/structured_control_flow/return.cpp

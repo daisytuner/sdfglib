@@ -41,6 +41,9 @@ bool DeadReferenceElimination::
 
         for (auto& move : moves) {
             auto access_node = dynamic_cast<data_flow::AccessNode*>(move->element());
+            if (!access_node) {
+                continue;
+            }
             auto& graph = dynamic_cast<data_flow::DataFlowGraph&>(access_node->get_parent());
             auto& block = dynamic_cast<structured_control_flow::Block&>(*graph.get_parent());
             builder.clear_node(block, *access_node);

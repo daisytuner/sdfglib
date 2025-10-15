@@ -288,6 +288,25 @@ void JSONSerializer::map_to_json(nlohmann::json& j, const structured_control_flo
     j["root"] = body_json;
 }
 
+void JSONSerializer::for_each_to_json(nlohmann::json& j, const structured_control_flow::ForEach& for_each_node) {
+    j["type"] = "for_each";
+    j["element_id"] = for_each_node.element_id();
+
+    j["debug_info"] = nlohmann::json::object();
+    debug_info_to_json(j["debug_info"], for_each_node.debug_info());
+
+    j["iterator"] = expression(for_each_node.iterator());
+    j["end"] = expression(for_each_node.end());
+    j["update"] = expression(for_each_node.update());
+    if (for_each_node.has_init()) {
+        j["init"] = expression(for_each_node.init());
+    }
+
+    nlohmann::json body_json;
+    sequence_to_json(body_json, for_each_node.root());
+    j["root"] = body_json;
+}
+
 void JSONSerializer::return_node_to_json(nlohmann::json& j, const structured_control_flow::Return& return_node) {
     j["type"] = "return";
     j["element_id"] = return_node.element_id();
@@ -323,6 +342,8 @@ void JSONSerializer::sequence_to_json(nlohmann::json& j, const structured_contro
             block_to_json(child_json, *block);
         } else if (auto for_node = dynamic_cast<const structured_control_flow::For*>(&child)) {
             for_to_json(child_json, *for_node);
+        } else if (auto for_each_node = dynamic_cast<const structured_control_flow::ForEach*>(&child)) {
+            for_each_to_json(child_json, *for_each_node);
         } else if (auto sequence_node = dynamic_cast<const structured_control_flow::Sequence*>(&child)) {
             sequence_to_json(child_json, *sequence_node);
         } else if (auto condition_node = dynamic_cast<const structured_control_flow::IfElse*>(&child)) {
@@ -702,6 +723,8 @@ void JSONSerializer::json_to_sequence(
                 json_to_block_node(child, builder, sequence, assignments);
             } else if (child["type"] == "for") {
                 json_to_for_node(child, builder, sequence, assignments);
+            } else if (child["type"] == "for_each") {
+                json_to_for_each_node(child, builder, sequence, assignments);
             } else if (child["type"] == "if_else") {
                 json_to_if_else_node(child, builder, sequence, assignments);
             } else if (child["type"] == "while") {
@@ -913,6 +936,45 @@ void JSONSerializer::json_to_map_node(
     assert(j["root"]["type"].is_string());
     assert(j["root"]["type"] == "sequence");
     json_to_sequence(j["root"], builder, map_node.root());
+}
+
+void JSONSerializer::json_to_for_each_node(
+    const nlohmann::json& j,
+    builder::StructuredSDFGBuilder& builder,
+    structured_control_flow::Sequence& parent,
+    control_flow::Assignments& assignments
+) {
+    assert(j.contains("type"));
+    assert(j["type"].is_string());
+    assert(j["type"] == "for_each");
+    assert(j.contains("iterator"));
+    assert(j["iterator"].is_string());
+    assert(j.contains("end"));
+    assert(j["end"].is_string());
+    assert(j.contains("update"));
+    assert(j["update"].is_string());
+    if (j.contains("init")) {
+        assert(j["init"].is_string());
+    }
+    assert(j.contains("root"));
+    assert(j["root"].is_object());
+
+    symbolic::Symbol iterator = symbolic::symbol(j["iterator"]);
+    symbolic::Symbol end = symbolic::symbol(j["end"]);
+    symbolic::Symbol update = symbolic::symbol(j["update"]);
+    symbolic::Symbol init = SymEngine::null;
+    if (j.contains("init")) {
+        init = symbolic::symbol(j["init"]);
+    }
+
+    auto& for_each_node =
+        builder.add_for_each(parent, iterator, end, update, init, assignments, json_to_debug_info(j["debug_info"]));
+    for_each_node.element_id_ = j["element_id"];
+
+    assert(j["root"].contains("type"));
+    assert(j["root"]["type"].is_string());
+    assert(j["root"]["type"] == "sequence");
+    json_to_sequence(j["root"], builder, for_each_node.root());
 }
 
 void JSONSerializer::json_to_return_node(

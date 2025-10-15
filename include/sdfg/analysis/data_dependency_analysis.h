@@ -79,6 +79,15 @@ public:
         std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions
     );
 
+    void visit_for_each(
+        analysis::Users& users,
+        analysis::AssumptionsAnalysis& assumptions_analysis,
+        structured_control_flow::ForEach& for_each,
+        std::unordered_set<User*>& undefined,
+        std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
+        std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions
+    );
+
     void visit_if_else(
         analysis::Users& users,
         analysis::AssumptionsAnalysis& assumptions_analysis,

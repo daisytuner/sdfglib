@@ -2,6 +2,7 @@
 
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 #include "sdfg/codegen/dispatchers/for_dispatcher.h"
+#include "sdfg/codegen/dispatchers/for_each_dispatcher.h"
 #include "sdfg/codegen/dispatchers/if_else_dispatcher.h"
 #include "sdfg/codegen/dispatchers/map_dispatcher.h"
 #include "sdfg/codegen/dispatchers/sequence_dispatcher.h"
@@ -84,6 +85,17 @@ void register_default_dispatchers() {
            InstrumentationPlan& instrumentation) {
             return std::make_unique<ForDispatcher>(
                 language_extension, sdfg, static_cast<structured_control_flow::For&>(node), instrumentation
+            );
+        }
+    );
+    NodeDispatcherRegistry::instance().register_dispatcher(
+        typeid(structured_control_flow::ForEach),
+        [](LanguageExtension& language_extension,
+           StructuredSDFG& sdfg,
+           structured_control_flow::ControlFlowNode& node,
+           InstrumentationPlan& instrumentation) {
+            return std::make_unique<ForEachDispatcher>(
+                language_extension, sdfg, static_cast<structured_control_flow::ForEach&>(node), instrumentation
             );
         }
     );

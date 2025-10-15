@@ -31,6 +31,8 @@ public:
 
     virtual bool accept(structured_control_flow::For& node);
 
+    virtual bool accept(structured_control_flow::ForEach& node);
+
     virtual bool accept(structured_control_flow::While& node);
 
     virtual bool accept(structured_control_flow::Continue& node);

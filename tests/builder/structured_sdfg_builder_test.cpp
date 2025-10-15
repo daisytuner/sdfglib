@@ -667,3 +667,179 @@ TEST(StructuredSDFGBuilderTest, FindElementById_Block) {
 
     EXPECT_EQ(builder.find_element_by_id(block.element_id()), &block);
 }
+
+TEST(StructuredSDFGBuilderTest, addForEach) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Pointer opaque_desc;
+    builder.add_container("list", opaque_desc, true);
+    builder.add_container("iter", opaque_desc);
+
+    auto sym_list = symbolic::symbol("list");
+    auto sym_iter = symbolic::symbol("iter");
+
+    auto& root = builder.subject().root();
+    EXPECT_EQ(root.element_id(), 0);
+
+    /**
+     * Doubled linked list with start and end 'list'
+     * iter: {
+     *  next: ptr;
+     *  value: ...
+     * }
+     * for (auto iter = *list; iter != list; iter = *iter) {
+     *
+     * }
+     */
+
+    auto& scope = builder.add_for_each(root, sym_iter, sym_list, sym_iter, sym_list);
+    EXPECT_EQ(scope.element_id(), 1);
+    EXPECT_EQ(scope.root().element_id(), 2);
+    EXPECT_EQ(root.at(0).second.element_id(), 3);
+
+    EXPECT_EQ(scope.has_init(), true);
+    EXPECT_TRUE(symbolic::eq(scope.init(), sym_list));
+    EXPECT_TRUE(symbolic::eq(scope.iterator(), sym_iter));
+    EXPECT_TRUE(symbolic::eq(scope.end(), sym_list));
+    EXPECT_TRUE(symbolic::eq(scope.update(), sym_iter));
+
+    auto sdfg = builder.move();
+
+    EXPECT_EQ(sdfg->root().size(), 1);
+    auto child = sdfg->root().at(0);
+    EXPECT_EQ(&child.first, &scope);
+    EXPECT_EQ(child.second.size(), 0);
+}
+
+TEST(StructuredSDFGBuilderTest, addForEach_Transition) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Pointer opaque_desc;
+    builder.add_container("list", opaque_desc, true);
+    builder.add_container("iter", opaque_desc);
+
+    types::Scalar int_desc(types::PrimitiveType::Int64);
+    builder.add_container("N", int_desc, true);
+
+    auto sym_list = symbolic::symbol("list");
+    auto sym_iter = symbolic::symbol("iter");
+
+    auto& root = builder.subject().root();
+    EXPECT_EQ(root.element_id(), 0);
+
+    /**
+     * Doubled linked list with start and end 'list'
+     * iter: {
+     *  next: ptr;
+     *  value: ...
+     * }
+     * for (auto iter = *list; iter != list; iter = *iter) {
+     *
+     * }
+     */
+
+    auto& scope =
+        builder.add_for_each(root, sym_iter, sym_list, sym_iter, sym_list, {{symbolic::symbol("N"), symbolic::zero()}});
+    EXPECT_EQ(scope.element_id(), 1);
+    EXPECT_EQ(scope.root().element_id(), 2);
+    EXPECT_EQ(root.at(0).second.element_id(), 3);
+
+    EXPECT_EQ(scope.has_init(), true);
+    EXPECT_TRUE(symbolic::eq(scope.init(), sym_list));
+    EXPECT_TRUE(symbolic::eq(scope.iterator(), sym_iter));
+    EXPECT_TRUE(symbolic::eq(scope.end(), sym_list));
+    EXPECT_TRUE(symbolic::eq(scope.update(), sym_iter));
+
+    auto sdfg = builder.move();
+
+    EXPECT_EQ(sdfg->root().size(), 1);
+    auto child = sdfg->root().at(0);
+    EXPECT_EQ(&child.first, &scope);
+    EXPECT_EQ(child.second.size(), 1);
+    EXPECT_TRUE(symbolic::eq(child.second.assignments().at(symbolic::symbol("N")), symbolic::zero()));
+}
+
+TEST(StructuredSDFGBuilderTest, addForEachBefore) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Pointer opaque_desc;
+    builder.add_container("list", opaque_desc, true);
+    builder.add_container("iter", opaque_desc);
+
+    types::Scalar int_desc(types::PrimitiveType::Int64);
+    builder.add_container("N", int_desc, true);
+
+    auto sym_list = symbolic::symbol("list");
+    auto sym_iter = symbolic::symbol("iter");
+
+    auto& root = builder.subject().root();
+    EXPECT_EQ(root.element_id(), 0);
+
+    auto& block_base =
+        builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+
+    auto& scope = builder.add_for_each_before(
+        root, block_base, sym_iter, sym_list, sym_iter, SymEngine::null, {{symbolic::symbol("N"), symbolic::zero()}}
+    );
+
+    EXPECT_EQ(scope.has_init(), false);
+    EXPECT_TRUE(symbolic::eq(scope.iterator(), sym_iter));
+    EXPECT_TRUE(symbolic::eq(scope.end(), sym_list));
+    EXPECT_TRUE(symbolic::eq(scope.update(), sym_iter));
+
+    auto sdfg = builder.move();
+
+    auto child = sdfg->root().at(0);
+    EXPECT_EQ(&child.first, &scope);
+    EXPECT_EQ(child.second.size(), 1);
+    EXPECT_TRUE(symbolic::eq(child.second.assignments().at(symbolic::symbol("N")), symbolic::zero()));
+}
+
+TEST(StructuredSDFGBuilderTest, addForEachAfter) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Pointer opaque_desc;
+    builder.add_container("list", opaque_desc, true);
+    builder.add_container("iter", opaque_desc);
+
+    types::Scalar int_desc(types::PrimitiveType::Int64);
+    builder.add_container("N", int_desc, true);
+
+    auto sym_list = symbolic::symbol("list");
+    auto sym_iter = symbolic::symbol("iter");
+
+    auto& root = builder.subject().root();
+    EXPECT_EQ(root.element_id(), 0);
+
+    auto& block_base =
+        builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+    auto& block_base2 =
+        builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+
+    /**
+     * Doubled linked list with start and end 'list'
+     * iter: {
+     *  next: ptr;
+     *  value: ...
+     * }
+     * for (auto iter = *list; iter != list; iter = *iter) {
+     *
+     * }
+     */
+
+    auto& scope = builder.add_for_each_after(
+        root, block_base, sym_iter, sym_list, sym_iter, SymEngine::null, {{symbolic::symbol("N"), symbolic::zero()}}
+    );
+
+    EXPECT_EQ(scope.has_init(), false);
+    EXPECT_TRUE(symbolic::eq(scope.iterator(), sym_iter));
+    EXPECT_TRUE(symbolic::eq(scope.end(), sym_list));
+    EXPECT_TRUE(symbolic::eq(scope.update(), sym_iter));
+
+    auto sdfg = builder.move();
+
+    auto child = sdfg->root().at(1);
+    EXPECT_EQ(&child.first, &scope);
+    EXPECT_EQ(child.second.size(), 1);
+    EXPECT_TRUE(symbolic::eq(child.second.assignments().at(symbolic::symbol("N")), symbolic::zero()));
+}
