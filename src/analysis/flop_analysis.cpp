@@ -44,13 +44,16 @@ symbolic::Expression FlopAnalysis::visit(structured_control_flow::ControlFlowNod
 symbolic::Expression FlopAnalysis::
     visit_sequence(structured_control_flow::Sequence& sequence, AnalysisManager& analysis_manager) {
     symbolic::Expression result = symbolic::zero();
+    bool is_null = false;
 
     for (size_t i = 0; i < sequence.size(); i++) {
         symbolic::Expression tmp = this->visit(sequence.at(i).first, analysis_manager);
-        if (tmp.is_null()) return SymEngine::null;
-        result = symbolic::add(result, tmp);
+        this->flops_[&sequence.at(i).first] = tmp;
+        if (tmp.is_null()) is_null = true;
+        if (!is_null) result = symbolic::add(result, tmp);
     }
 
+    if (is_null) return SymEngine::null;
     return result;
 }
 
@@ -91,6 +94,7 @@ symbolic::Expression FlopAnalysis::
     symbolic::Expression stride = update_coeffs[symbolic::symbol("__daisy_constant__")];
 
     symbolic::Expression tmp = this->visit_sequence(loop.root(), analysis_manager);
+    this->flops_[&loop.root()] = tmp;
     if (tmp.is_null()) return SymEngine::null;
     return symbolic::mul(symbolic::div(symbolic::sub(canonical_bound, loop.init()), stride), tmp);
 }
@@ -98,21 +102,29 @@ symbolic::Expression FlopAnalysis::
 symbolic::Expression FlopAnalysis::
     visit_if_else(structured_control_flow::IfElse& if_else, AnalysisManager& analysis_manager) {
     std::vector<symbolic::Expression> sub_flops;
+    bool is_null = false;
+
     for (size_t i = 0; i < if_else.size(); i++) {
         symbolic::Expression tmp = this->visit_sequence(if_else.at(i).first, analysis_manager);
-        if (tmp.is_null()) return SymEngine::null;
-        sub_flops.push_back(tmp);
+        this->flops_[&if_else.at(i).first] = tmp;
+        if (tmp.is_null()) is_null = true;
+        if (!is_null) sub_flops.push_back(tmp);
     }
+
+    if (is_null) return SymEngine::null;
     return SymEngine::max(sub_flops);
 }
 
 void FlopAnalysis::run(AnalysisManager& analysis_manager) {
-    this->flop_ = this->visit_sequence(this->sdfg_.root(), analysis_manager);
+    this->flops_.clear();
+    this->flops_[&this->sdfg_.root()] = this->visit_sequence(this->sdfg_.root(), analysis_manager);
 }
 
-FlopAnalysis::FlopAnalysis(StructuredSDFG& sdfg) : Analysis(sdfg), flop_(SymEngine::null) {}
+FlopAnalysis::FlopAnalysis(StructuredSDFG& sdfg) : Analysis(sdfg) {}
 
-symbolic::Expression FlopAnalysis::flop() { return this->flop_; }
+symbolic::Expression FlopAnalysis::get(const structured_control_flow::ControlFlowNode* node) {
+    return this->flops_[node];
+}
 
 } // namespace analysis
 } // namespace sdfg

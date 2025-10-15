@@ -38,7 +38,7 @@ TEST(FlopAnalysis, Tasklet) {
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    auto flop = analysis.flop();
+    auto flop = analysis.get(&root);
 
     // Check
     ASSERT_FALSE(flop.is_null());
@@ -81,7 +81,7 @@ TEST(FlopAnalysis, MultipleTasklets) {
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    auto flop = analysis.flop();
+    auto flop = analysis.get(&root);
 
     // Check
     ASSERT_FALSE(flop.is_null());
@@ -118,7 +118,7 @@ TEST(FlopAnalysis, Loop) {
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    auto flop = analysis.flop();
+    auto flop = analysis.get(&root);
 
     // Check
     ASSERT_FALSE(flop.is_null());
@@ -163,7 +163,7 @@ TEST(FlopAnalysis, LoopNest) {
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    auto flop = analysis.flop();
+    auto flop = analysis.get(&root);
 
     // Check
     ASSERT_FALSE(flop.is_null());
@@ -192,7 +192,7 @@ TEST(FlopAnalysis, Intrinsic) {
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    auto flop = analysis.flop();
+    auto flop = analysis.get(&root);
 
     // Check
     ASSERT_FALSE(flop.is_null());
@@ -246,7 +246,7 @@ TEST(FlopAnalysis, IfElse) {
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    auto flop = analysis.flop();
+    auto flop = analysis.get(&root);
 
     // Check
     ASSERT_FALSE(flop.is_null());

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
@@ -14,7 +15,7 @@ namespace analysis {
 
 class FlopAnalysis : public Analysis {
 private:
-    symbolic::Expression flop_;
+    std::map<const structured_control_flow::ControlFlowNode*, symbolic::Expression> flops_;
 
     symbolic::Expression visit(structured_control_flow::ControlFlowNode& node, AnalysisManager& analysis_manager);
 
@@ -33,7 +34,7 @@ protected:
 public:
     FlopAnalysis(StructuredSDFG& sdfg);
 
-    symbolic::Expression flop();
+    symbolic::Expression get(const structured_control_flow::ControlFlowNode* node);
 };
 
 } // namespace analysis

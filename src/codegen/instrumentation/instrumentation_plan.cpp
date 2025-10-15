@@ -1,5 +1,7 @@
 #include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 
+#include "sdfg/analysis/analysis.h"
+#include "sdfg/analysis/flop_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 
 namespace sdfg {
@@ -90,6 +92,12 @@ void InstrumentationPlan::end_instrumentation(const structured_control_flow::Con
     } else {
         stream << "__daisy_instrumentation_exit(" << region_id_var << ");" << std::endl;
     }
+
+    // Perform FlopAnalysis
+    analysis::AnalysisManager analysis_manager(this->sdfg_);
+    auto& flop_analysis = analysis_manager.get<analysis::FlopAnalysis>();
+    stream << "__daisy_instrumentation_increment(" << region_id_var << ", \"flop\", "
+           << flop_analysis.get(&node)->__str__() << ");" << std::endl;
 
     // Finalize region
     stream << "__daisy_instrumentation_finalize(" << region_id_var << ");" << std::endl;
