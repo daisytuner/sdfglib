@@ -90,7 +90,7 @@ void MemcpyNodeDispatcher::dispatch_code(
 ) {
     auto& node = static_cast<const MemcpyNode&>(node_);
 
-    stream << "memcpy(" << node.outputs().at(0) << ", " << node.inputs().at(0) << ", "
+    stream << language_extension_.external_prefix() << "memcpy(" << node.outputs().at(0) << ", " << node.inputs().at(0) << ", "
            << language_extension_.expression(node.count()) << ")" << ";";
     stream << std::endl;
 }

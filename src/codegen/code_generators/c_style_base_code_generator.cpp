@@ -106,7 +106,13 @@ void CStyleBaseCodeGenerator::
 
     for (auto& varPlan : plan) {
         auto argIdx = varPlan.arg_idx;
-        auto argName = varPlan.is_external ? exts[argIdx - args.size()] : args[argIdx];
+        std::string argName;
+        if (varPlan.is_external) {
+            argName = exts[argIdx - args.size()];
+            argName = this->externals_prefix_ + argName;
+        } else {
+            argName = args[argIdx];
+        }
 
         if ((!after && varPlan.capture_input) || (after && varPlan.capture_output)) {
             switch (varPlan.type) {
