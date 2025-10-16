@@ -1,6 +1,7 @@
 #include "sdfg/passes/dataflow/reference_propagation.h"
 
 #include "sdfg/analysis/users.h"
+#include "sdfg/analysis/dominance_analysis.h"
 #include "sdfg/types/utils.h"
 
 namespace sdfg {
@@ -19,56 +20,54 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
     auto& sdfg = builder.subject();
 
     // Replaces all views
-    auto& users = analysis_manager.get<analysis::Users>();
-    std::unordered_set<std::string> reduced;
+    auto& users_analysis = analysis_manager.get<analysis::Users>();
+    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
+
+    std::unordered_set<std::string> invalidated;
     for (auto& container : sdfg.containers()) {
-        if (reduced.find(container) != reduced.end()) {
-            continue;
-        }
-        if (!sdfg.is_transient(container)) {
+        if (invalidated.find(container) != invalidated.end()) {
             continue;
         }
 
-        // By definition, a view is a pointer
+        // Criterion: Must be a transient pointer
+        if (!sdfg.is_transient(container)) {
+            continue;
+        }
         auto& type = sdfg.type(container);
         if (type.type_id() != types::TypeID::Pointer) {
             continue;
         }
 
         // Criterion: Must have at least one move
-        auto moves = users.moves(container);
+        auto moves = users_analysis.moves(container);
         if (moves.empty()) {
             continue;
         }
 
         // Eliminate views
-        auto uses = users.uses(container);
         for (auto& move : moves) {
+            // Criterion: Must be moved by reference memlet
             auto& access_node = static_cast<data_flow::AccessNode&>(*move->element());
             auto& dataflow = *move->parent();
             auto& move_edge = *dataflow.in_edges(access_node).begin();
-
-            // Criterion: Must be a reference memlet
             if (move_edge.type() != data_flow::MemletType::Reference) {
                 continue;
             }
-
-            // Retrieve underlying container
-            auto& viewed_node = static_cast<const data_flow::AccessNode&>(move_edge.src());
-            auto& viewed_container = viewed_node.data();
-
-            // Criterion: Must not be constant data
-            if (helpers::is_number(viewed_container) || symbolic::is_nullptr(symbolic::symbol(viewed_container))) {
-                continue;
-            }
-
-            // Criterion: Must not be address of
+            // Criterion: Cannot be address of (&<scalar_type>)
             auto& move_subset = move_edge.subset();
             if (move_subset.empty()) {
                 continue;
             }
 
+            // Criterion: Must be viewing another container
+            auto& viewed_node = static_cast<const data_flow::AccessNode&>(move_edge.src());
+            if (dynamic_cast<const data_flow::ConstantNode*>(&viewed_node) != nullptr) {
+                continue;
+            }
+            auto& viewed_container = viewed_node.data();
+
             // Replace all uses of the view by the pointer
+            auto uses = users_analysis.uses(container);
             for (auto& user : uses) {
                 // Criterion: Cannot be a move
                 if (user->use() == analysis::Use::MOVE) {
@@ -81,12 +80,12 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                 }
 
                 // Criterion: Must be dominated by the move
-                if (!users.dominates(*move, *user)) {
+                if (!dominance_analysis.dominates(*move, *user)) {
                     continue;
                 }
 
                 // Criterion: No reassignment of pointer or view in between
-                auto uses_between = users.all_uses_between(*move, *user);
+                auto uses_between = users_analysis.all_uses_between(*move, *user);
                 bool unsafe = false;
                 for (auto& use : uses_between) {
                     if (use->use() != analysis::Use::MOVE) {
@@ -113,7 +112,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                 if (move_subset.size() == 1 && symbolic::eq(move_subset[0], symbolic::zero())) {
                     user_node.data() = viewed_container;
                     applied = true;
-                    reduced.insert(viewed_container);
+                    invalidated.insert(viewed_container);
                     continue;
                 }
 
@@ -231,7 +230,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                 }
 
                 applied = true;
-                reduced.insert(viewed_container);
+                invalidated.insert(viewed_container);
             }
         }
     }

@@ -180,7 +180,7 @@ std::string CPPLanguageExtension::access_node(const data_flow::AccessNode& node)
     } else {
         std::string name = node.data();
         if (this->external_variables_.find(name) != this->external_variables_.end()) {
-            return "(&" + name + ")";
+            return "(&" + this->external_prefix_ + name + ")";
         }
         return name;
     }
@@ -365,7 +365,7 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::Symbol& x) {
     }
     std::string name = x.get_name();
     if (this->external_variables_.find(name) != this->external_variables_.end()) {
-        name = "(&" + name + ")";
+        name = "(&" + this->external_prefix_ + name + ")";
     }
     str_ = name;
 };
@@ -480,7 +480,7 @@ void CPPSymbolicPrinter::_print_pow(
     } else if (SymEngine::eq(*b, *SymEngine::integer(2))) {
         o << "((" + apply(a) + ") * (" + apply(a) + "))";
     } else {
-        o << "pow(" << apply(a) << ", " << apply(b) << ")";
+        o << "__daisy_sym_pow(" << apply(a) << ", " << apply(b) << ")";
     }
 };
 

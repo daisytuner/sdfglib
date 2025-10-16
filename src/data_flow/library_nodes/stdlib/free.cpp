@@ -74,7 +74,7 @@ void FreeNodeDispatcher::dispatch_code(
 ) {
     auto& free_node = static_cast<const FreeNode&>(node_);
 
-    stream << "free(" << free_node.inputs().at(0) << ");" << std::endl;
+    stream << language_extension_.external_prefix() << "free(" << free_node.inputs().at(0) << ");" << std::endl;
 }
 
 } // namespace stdlib

@@ -14,6 +14,7 @@ namespace analysis {
 
 class Users;
 class UsersView;
+class DominanceAnalysis;
 
 enum Use {
     NOP,  // No-op
@@ -26,6 +27,7 @@ enum Use {
 class User {
     friend class Users;
     friend class UsersView;
+    friend class DominanceAnalysis;
 
    private:
     graph::Vertex vertex_;
@@ -75,12 +77,15 @@ class ForUser : public User {
 class Users : public Analysis {
     friend class AnalysisManager;
     friend class UsersView;
+    friend class DominanceAnalysis;
 
    private:
     structured_control_flow::ControlFlowNode& node_;
 
-    // Graph representation
     graph::Graph graph_;
+    User* source_;
+    User* sink_;
+
     std::unordered_map<graph::Vertex, std::unique_ptr<User>, boost::hash<graph::Vertex>> users_;
 
     std::unordered_map<const structured_control_flow::ControlFlowNode*, User*> entries_;
@@ -95,18 +100,10 @@ class Users : public Analysis {
     std::unordered_map<std::string, std::unordered_map<Element*, std::unordered_map<Use, User*>>>
         users_by_sdfg_loop_update_;
 
-    // Graph analysis
-    User* source_;
-    User* sink_;
-    std::unordered_map<User*, User*> dom_tree_;
-    std::unordered_map<User*, User*> pdom_tree_;
-
     std::unordered_map<std::string, std::vector<User*>> reads_;
     std::unordered_map<std::string, std::vector<User*>> writes_;
     std::unordered_map<std::string, std::vector<User*>> views_;
     std::unordered_map<std::string, std::vector<User*>> moves_;
-
-    void init_dom_tree();
 
     std::pair<graph::Vertex, graph::Vertex> traverse(data_flow::DataFlowGraph& dataflow);
 
@@ -151,15 +148,7 @@ class Users : public Analysis {
 
     static structured_control_flow::ControlFlowNode* scope(User* user);
 
-    /**** Scope ****/
-
     std::unordered_set<std::string> locals(structured_control_flow::ControlFlowNode& node);
-
-    /****** Domination Analysis ******/
-
-    bool dominates(User& user1, User& user);
-
-    bool post_dominates(User& user1, User& user);
 
     const std::unordered_set<User*> all_uses_between(User& user1, User& user2);
 
@@ -175,9 +164,6 @@ class UsersView {
     User* exit_;
 
     std::unordered_set<User*> sub_users_;
-
-    std::unordered_map<User*, User*> sub_dom_tree_;
-    std::unordered_map<User*, User*> sub_pdom_tree_;
 
    public:
     UsersView(Users& users, const structured_control_flow::ControlFlowNode& node);
@@ -203,12 +189,6 @@ class UsersView {
     std::vector<User*> moves() const;
 
     std::vector<User*> moves(const std::string& container) const;
-
-    /****** Domination Analysis ******/
-
-    bool dominates(User& user1, User& user);
-
-    bool post_dominates(User& user1, User& user);
 
     std::unordered_set<User*> all_uses_between(User& user1, User& user2);
 

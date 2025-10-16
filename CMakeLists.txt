@@ -60,6 +60,7 @@ set(SOURCE_FILES
     src/analysis/assumptions_analysis.cpp
     src/analysis/data_dependency_analysis.cpp
     src/analysis/flop_analysis.cpp
+    src/analysis/dominance_analysis.cpp
     src/analysis/loop_analysis.cpp
     src/analysis/mem_access_range_analysis.cpp
     src/analysis/scope_analysis.cpp

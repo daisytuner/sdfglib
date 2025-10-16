@@ -87,7 +87,7 @@ void MallocNodeDispatcher::dispatch_code(
 
     stream << malloc_node.outputs().at(0);
     stream << " = ";
-    stream << "malloc(" << language_extension_.expression(malloc_node.size()) << ")" << ";";
+    stream << language_extension_.external_prefix() << "malloc(" << language_extension_.expression(malloc_node.size()) << ")" << ";";
     stream << std::endl;
 }
 

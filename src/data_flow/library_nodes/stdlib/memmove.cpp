@@ -90,7 +90,7 @@ void MemmoveNodeDispatcher::dispatch_code(
 ) {
     auto& node = static_cast<const MemmoveNode&>(node_);
 
-    stream << "memmove(" << node.outputs().at(0) << ", " << node.inputs().at(0) << ", "
+    stream << language_extension_.external_prefix() << "memmove(" << node.outputs().at(0) << ", " << node.inputs().at(0) << ", "
            << language_extension_.expression(node.count()) << ")" << ";";
     stream << std::endl;
 }

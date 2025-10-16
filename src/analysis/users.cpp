@@ -88,33 +88,6 @@ bool ForUser::is_condition() const { return this->is_condition_; };
 
 bool ForUser::is_update() const { return this->is_update_; };
 
-void Users::init_dom_tree() {
-    this->dom_tree_.clear();
-    this->pdom_tree_.clear();
-
-    // Compute dominator-tree
-    auto dom_tree = graph::dominator_tree(this->graph_, this->source_->vertex_);
-    for (auto& entry : dom_tree) {
-        User* first = this->users_.at(entry.first).get();
-        User* second = nullptr;
-        if (entry.second != boost::graph_traits<graph::Graph>::null_vertex()) {
-            second = this->users_.at(entry.second).get();
-        }
-        this->dom_tree_.insert({first, second});
-    }
-
-    // Compute post-dominator-tree
-    auto pdom_tree = graph::post_dominator_tree(this->graph_);
-    for (auto& entry : pdom_tree) {
-        User* first = this->users_.at(entry.first).get();
-        User* second = nullptr;
-        if (entry.second != boost::graph_traits<graph::Graph>::null_vertex()) {
-            second = this->users_.at(entry.second).get();
-        }
-        this->pdom_tree_.insert({first, second});
-    }
-};
-
 std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph& dataflow) {
     graph::Vertex first = boost::graph_traits<graph::Graph>::null_vertex();
     graph::Vertex last = boost::graph_traits<graph::Graph>::null_vertex();
@@ -479,8 +452,6 @@ void Users::run(analysis::AnalysisManager& analysis_manager) {
     graph_.clear();
     source_ = nullptr;
     sink_ = nullptr;
-    dom_tree_.clear();
-    pdom_tree_.clear();
     users_by_sdfg_.clear();
     users_by_sdfg_loop_condition_.clear();
     users_by_sdfg_loop_init_.clear();
@@ -569,8 +540,6 @@ void Users::run(analysis::AnalysisManager& analysis_manager) {
                 break;
         }
     }
-
-    this->init_dom_tree();
 };
 
 std::vector<User*> Users::uses() const {
@@ -693,30 +662,6 @@ structured_control_flow::ControlFlowNode* Users::scope(User* user) {
         return user_element;
     }
 }
-
-/****** Domination Analysis ******/
-
-bool Users::dominates(User& user1, User& user) {
-    auto dominator = this->dom_tree_.at(&user);
-    while (dominator != nullptr) {
-        if (dominator == &user1) {
-            return true;
-        }
-        dominator = this->dom_tree_.at(dominator);
-    }
-    return false;
-};
-
-bool Users::post_dominates(User& user1, User& user) {
-    auto dominator = this->pdom_tree_.at(&user);
-    while (dominator != nullptr) {
-        if (dominator == &user1) {
-            return true;
-        }
-        dominator = this->pdom_tree_.at(dominator);
-    }
-    return false;
-};
 
 const std::unordered_set<User*> Users::all_uses_between(User& user1, User& user2) {
     std::unordered_set<User*> uses;
@@ -844,21 +789,6 @@ UsersView::UsersView(Users& users, const structured_control_flow::ControlFlowNod
             queue.push_back(users.users_.at(v).get());
         }
     }
-
-    // Collect sub dom tree
-    auto& dom_tree = this->users_.dom_tree_;
-
-    for (auto& user : this->sub_users_) {
-        this->sub_dom_tree_[user] = dom_tree[user];
-    }
-    this->sub_dom_tree_[this->entry_] = nullptr;
-
-    // Collect sub post dom tree
-    auto& pdom_tree = this->users_.pdom_tree_;
-    for (auto& user : this->sub_users_) {
-        this->sub_pdom_tree_[user] = pdom_tree[user];
-    }
-    this->sub_pdom_tree_[this->exit_] = nullptr;
 };
 
 std::vector<User*> UsersView::uses() const {
@@ -994,28 +924,6 @@ std::vector<User*> UsersView::moves(const std::string& container) const {
     }
 
     return us;
-};
-
-bool UsersView::dominates(User& user1, User& user) {
-    auto dominator = this->sub_dom_tree_[&user];
-    while (dominator != nullptr) {
-        if (dominator == &user1) {
-            return true;
-        }
-        dominator = this->sub_dom_tree_[dominator];
-    }
-    return false;
-};
-
-bool UsersView::post_dominates(User& user1, User& user) {
-    auto dominator = this->sub_pdom_tree_[&user];
-    while (dominator != nullptr) {
-        if (dominator == &user1) {
-            return true;
-        }
-        dominator = this->sub_pdom_tree_[dominator];
-    }
-    return false;
 };
 
 std::unordered_set<User*> UsersView::all_uses_between(User& user1, User& user2) {

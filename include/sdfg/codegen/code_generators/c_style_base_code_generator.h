@@ -27,7 +27,8 @@ public:
         StructuredSDFG& sdfg,
         InstrumentationPlan& instrumentation_plan,
         bool capture_args_results = false,
-        const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr
+        const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr,
+        const std::string& externals_prefix = ""
     );
 
     bool generate() override;
