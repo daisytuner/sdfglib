@@ -10,7 +10,7 @@ void DominanceAnalysis::run(AnalysisManager& analysis_manager) {
     this->pdom_tree_.clear();
 
     auto& users_analysis = analysis_manager.get<analysis::Users>();
-    
+
     this->dom_tree_ = graph::dominator_tree(users_analysis.graph_, users_analysis.source_->vertex_);
     this->pdom_tree_ = graph::post_dominator_tree(users_analysis.graph_);
 }

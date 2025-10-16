@@ -45,7 +45,6 @@ TEST(UsersTest, Transition_WAR) {
     EXPECT_EQ(write->element(), &transition1);
     EXPECT_EQ(write->subsets().size(), 1);
     EXPECT_TRUE(write->subsets().at(0).empty());
-
 }
 
 TEST(UsersTest, Transition_WAW) {
@@ -92,7 +91,6 @@ TEST(UsersTest, Transition_WAW) {
     EXPECT_EQ(write2->element(), &transition2);
     EXPECT_EQ(write2->subsets().size(), 1);
     EXPECT_TRUE(write2->subsets().at(0).empty());
-
 }
 
 TEST(UsersTest, Transition_RAW) {
@@ -137,7 +135,6 @@ TEST(UsersTest, Transition_RAW) {
     EXPECT_EQ(write->element(), &transition1);
     EXPECT_EQ(write->subsets().size(), 1);
     EXPECT_TRUE(write->subsets().at(0).empty());
-
 }
 
 TEST(UsersTest, AccessNode_Scalar_WAR) {
@@ -183,7 +180,6 @@ TEST(UsersTest, AccessNode_Scalar_WAR) {
     auto& write_subsets = write->subsets();
     EXPECT_EQ(write_subsets.size(), 1);
     EXPECT_TRUE(write_subsets.at(0).empty());
-
 }
 
 TEST(UsersTest, AccessNode_Scalar_WAW) {
@@ -237,7 +233,6 @@ TEST(UsersTest, AccessNode_Scalar_WAW) {
     EXPECT_EQ(write2->element(), &output_node2);
     EXPECT_EQ(write2->subsets().size(), 1);
     EXPECT_TRUE(write2->subsets().at(0).empty());
-
 }
 
 TEST(UsersTest, AccessNode_Scalar_RAW) {
@@ -286,7 +281,6 @@ TEST(UsersTest, AccessNode_Scalar_RAW) {
     EXPECT_EQ(write->element(), &output_node);
     EXPECT_EQ(write->subsets().size(), 1);
     EXPECT_TRUE(write->subsets().at(0).empty());
-
 }
 
 TEST(UsersTest, For_Definition) {
@@ -343,7 +337,6 @@ TEST(UsersTest, For_Definition) {
     EXPECT_TRUE(read2->is_update());
     EXPECT_EQ(read2->use(), analysis::Use::READ);
     EXPECT_EQ(read2->container(), "A");
-
 }
 
 TEST(UsersTest, Returns_Diverging) {
@@ -379,7 +372,6 @@ TEST(UsersTest, Returns_Diverging) {
     EXPECT_TRUE(dynamic_cast<const structured_control_flow::Return*>(read1->element()) != nullptr);
     auto read2 = dynamic_cast<analysis::User*>(reads_B.at(0));
     EXPECT_TRUE(dynamic_cast<const structured_control_flow::Return*>(read2->element()) != nullptr);
-
 }
 
 TEST(UsersTest, Locals_Argument) {
