@@ -1,6 +1,8 @@
 #include "sdfg/passes/symbolic/symbol_propagation.h"
 
+#include "sdfg/analysis/users.h"
 #include "sdfg/analysis/data_dependency_analysis.h"
+#include "sdfg/analysis/dominance_analysis.h"
 
 namespace sdfg {
 namespace passes {
@@ -55,6 +57,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
 
     auto& sdfg = builder.subject();
     auto& users = analysis_manager.get<analysis::Users>();
+    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
     auto& data_dependency_analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     for (auto& name : sdfg.containers()) {
         // Criterion: Only transients
@@ -100,7 +103,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
             }
 
             // Criterion: Write dominates read to not cause data races
-            if (!users.dominates(*write, *read)) {
+            if (!dominance_analysis.dominates(*write, *read)) {
                 continue;
             }
 
@@ -133,13 +136,13 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                 }
 
                 // Criterion: RHS must dominate modification
-                if (!users.dominates(*write, *user)) {
+                if (!dominance_analysis.dominates(*write, *user)) {
                     success = false;
                     break;
                 }
 
                 // Criterion: Modification must dominate read
-                if (!users.dominates(*user, *read)) {
+                if (!dominance_analysis.dominates(*user, *read)) {
                     success = false;
                     break;
                 }

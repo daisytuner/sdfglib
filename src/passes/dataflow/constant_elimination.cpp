@@ -1,6 +1,8 @@
 #include "sdfg/passes/dataflow/constant_elimination.h"
 
 #include "sdfg/analysis/data_dependency_analysis.h"
+#include "sdfg/analysis/dominance_analysis.h"
+#include "sdfg/analysis/users.h"
 
 namespace sdfg {
 namespace passes {
@@ -60,6 +62,7 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
 
     auto& sdfg = builder.subject();
     auto& users = analysis_manager.get<analysis::Users>();
+    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
     auto& data_dependency_analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
 
     std::unordered_set<std::string> dead;
@@ -105,10 +108,10 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
         }
 
         // Criterion: One dominates the other
-        if (!users.dominates(*define1, *define2)) {
+        if (!dominance_analysis.dominates(*define1, *define2)) {
             std::swap(define1, define2);
         }
-        if (!users.dominates(*define1, *define2)) {
+        if (!dominance_analysis.dominates(*define1, *define2)) {
             continue;
         }
 

@@ -46,10 +46,6 @@ TEST(UsersTest, Transition_WAR) {
     EXPECT_EQ(write->subsets().size(), 1);
     EXPECT_TRUE(write->subsets().at(0).empty());
 
-    EXPECT_TRUE(users.dominates(*read, *write));
-    EXPECT_FALSE(users.dominates(*write, *read));
-    EXPECT_TRUE(users.post_dominates(*write, *read));
-    EXPECT_FALSE(users.post_dominates(*read, *write));
 }
 
 TEST(UsersTest, Transition_WAW) {
@@ -97,10 +93,6 @@ TEST(UsersTest, Transition_WAW) {
     EXPECT_EQ(write2->subsets().size(), 1);
     EXPECT_TRUE(write2->subsets().at(0).empty());
 
-    EXPECT_TRUE(users.dominates(*write1, *write2));
-    EXPECT_FALSE(users.dominates(*write2, *write1));
-    EXPECT_TRUE(users.post_dominates(*write2, *write1));
-    EXPECT_FALSE(users.post_dominates(*write1, *write2));
 }
 
 TEST(UsersTest, Transition_RAW) {
@@ -146,10 +138,6 @@ TEST(UsersTest, Transition_RAW) {
     EXPECT_EQ(write->subsets().size(), 1);
     EXPECT_TRUE(write->subsets().at(0).empty());
 
-    EXPECT_TRUE(users.dominates(*write, *read));
-    EXPECT_FALSE(users.dominates(*read, *write));
-    EXPECT_TRUE(users.post_dominates(*read, *write));
-    EXPECT_FALSE(users.post_dominates(*write, *read));
 }
 
 TEST(UsersTest, AccessNode_Scalar_WAR) {
@@ -196,10 +184,6 @@ TEST(UsersTest, AccessNode_Scalar_WAR) {
     EXPECT_EQ(write_subsets.size(), 1);
     EXPECT_TRUE(write_subsets.at(0).empty());
 
-    EXPECT_TRUE(users.dominates(*read, *write));
-    EXPECT_FALSE(users.dominates(*write, *read));
-    EXPECT_TRUE(users.post_dominates(*write, *read));
-    EXPECT_FALSE(users.post_dominates(*read, *write));
 }
 
 TEST(UsersTest, AccessNode_Scalar_WAW) {
@@ -254,10 +238,6 @@ TEST(UsersTest, AccessNode_Scalar_WAW) {
     EXPECT_EQ(write2->subsets().size(), 1);
     EXPECT_TRUE(write2->subsets().at(0).empty());
 
-    EXPECT_TRUE(users.dominates(*write1, *write2));
-    EXPECT_FALSE(users.dominates(*write2, *write1));
-    EXPECT_TRUE(users.post_dominates(*write2, *write1));
-    EXPECT_FALSE(users.post_dominates(*write1, *write2));
 }
 
 TEST(UsersTest, AccessNode_Scalar_RAW) {
@@ -307,10 +287,6 @@ TEST(UsersTest, AccessNode_Scalar_RAW) {
     EXPECT_EQ(write->subsets().size(), 1);
     EXPECT_TRUE(write->subsets().at(0).empty());
 
-    EXPECT_TRUE(users.dominates(*write, *read));
-    EXPECT_FALSE(users.dominates(*read, *write));
-    EXPECT_TRUE(users.post_dominates(*read, *write));
-    EXPECT_FALSE(users.post_dominates(*write, *read));
 }
 
 TEST(UsersTest, For_Definition) {
@@ -368,11 +344,6 @@ TEST(UsersTest, For_Definition) {
     EXPECT_EQ(read2->use(), analysis::Use::READ);
     EXPECT_EQ(read2->container(), "A");
 
-    EXPECT_TRUE(users.dominates(*write1, *read1));
-    EXPECT_TRUE(users.dominates(*write1, *read2));
-    EXPECT_TRUE(users.dominates(*write1, *write2));
-
-    EXPECT_TRUE(users.dominates(*read2, *write2));
 }
 
 TEST(UsersTest, Returns_Diverging) {
@@ -409,10 +380,6 @@ TEST(UsersTest, Returns_Diverging) {
     auto read2 = dynamic_cast<analysis::User*>(reads_B.at(0));
     EXPECT_TRUE(dynamic_cast<const structured_control_flow::Return*>(read2->element()) != nullptr);
 
-    EXPECT_FALSE(users.dominates(*read1, *read2));
-    EXPECT_FALSE(users.dominates(*read2, *read1));
-    EXPECT_FALSE(users.post_dominates(*read1, *read2));
-    EXPECT_FALSE(users.post_dominates(*read2, *read1));
 }
 
 TEST(UsersTest, Locals_Argument) {
