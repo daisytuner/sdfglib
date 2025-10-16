@@ -197,15 +197,22 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow
     stream << "{" << std::endl;
     stream.setIndent(stream.indent() + 4);
 
+    bool is_unsigned = data_flow::is_unsigned(tasklet.code());
+
     for (auto& iedge : this->data_flow_graph_.in_edges(tasklet)) {
         auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
         std::string src_name = this->language_extension_.access_node(src);
 
         std::string conn = iedge.dst_conn();
-        auto& conn_type = iedge.result_type(this->function_);
-
-        stream << this->language_extension_.declaration(conn, conn_type);
-        stream << " = ";
+        auto& conn_type = dynamic_cast<const types::Scalar&>(iedge.result_type(this->function_));
+        if (is_unsigned) {
+            types::Scalar conn_type_unsigned(types::as_unsigned(conn_type.primitive_type()));
+            stream << this->language_extension_.declaration(conn, conn_type_unsigned);
+            stream << " = ";
+        } else {
+            stream << this->language_extension_.declaration(conn, conn_type);
+            stream << " = ";
+        }
 
         // Reinterpret cast for opaque pointers
         if (iedge.base_type().type_id() == types::TypeID::Pointer) {
@@ -220,10 +227,16 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow
 
     auto& oedge = *this->data_flow_graph_.out_edges(tasklet).begin();
     std::string out_conn = oedge.src_conn();
-    auto& out_conn_type = oedge.result_type(this->function_);
+    auto& out_conn_type = dynamic_cast<const types::Scalar&>(oedge.result_type(this->function_));
+    if (is_unsigned) {
+        types::Scalar out_conn_type_unsigned(types::as_unsigned(out_conn_type.primitive_type()));
+        stream << this->language_extension_.declaration(out_conn, out_conn_type_unsigned);
+        stream << ";" << std::endl;
+    } else {
+        stream << this->language_extension_.declaration(out_conn, out_conn_type);
+        stream << ";" << std::endl;
+    }
 
-    stream << this->language_extension_.declaration(out_conn, out_conn_type);
-    stream << ";" << std::endl;
 
     stream << std::endl;
     stream << out_conn << " = ";
@@ -293,23 +306,29 @@ void LibraryNodeDispatcher::
 
         std::string conn = iedge.dst_conn();
         auto& conn_type = iedge.result_type(this->function_);
-
-        stream << this->language_extension_.declaration(conn, conn_type);
-        stream << " = ";
-
-        // Reinterpret cast for opaque pointers
-        if (dynamic_cast<const data_flow::ConstantNode*>(&src)) {
-            stream << src_name;
+        if (conn_type.type_id() == types::TypeID::Array || conn_type.type_id() == types::TypeID::Structure) {
+            // Handle array and structure types
+            stream << this->language_extension_.declaration(conn, conn_type) << ";" << std::endl;
+            stream << "memcpy(" << "&" << conn << ", " << "&" << src_name << this->language_extension_.subset(function_, iedge.base_type(), iedge.subset())
+                   << ", sizeof " << conn << ");" << std::endl;
         } else {
-            if (iedge.base_type().type_id() == types::TypeID::Pointer) {
-                stream << "(" << this->language_extension_.type_cast(src_name, iedge.base_type()) << ")";
-            } else {
+            stream << this->language_extension_.declaration(conn, conn_type);
+            stream << " = ";
+        
+            // Reinterpret cast for opaque pointers
+            if (dynamic_cast<const data_flow::ConstantNode*>(&src)) {
                 stream << src_name;
+            } else {
+                if (iedge.base_type().type_id() == types::TypeID::Pointer) {
+                    stream << "(" << this->language_extension_.type_cast(src_name, iedge.base_type()) << ")";
+                } else {
+                    stream << src_name;
+                }
             }
-        }
 
-        stream << this->language_extension_.subset(function_, iedge.base_type(), iedge.subset()) << ";";
-        stream << std::endl;
+            stream << this->language_extension_.subset(function_, iedge.base_type(), iedge.subset()) << ";";
+            stream << std::endl;
+        }
     }
 
     // Define outputs
@@ -324,19 +343,25 @@ void LibraryNodeDispatcher::
 
         std::string conn = oedge.src_conn();
         auto& conn_type = oedge.result_type(this->function_);
-        stream << this->language_extension_.declaration(conn, conn_type);
-
-        stream << " = ";
-
-        // Reinterpret cast for opaque pointers
-        if (oedge.base_type().type_id() == types::TypeID::Pointer) {
-            stream << "(" << this->language_extension_.type_cast(dst_name, oedge.base_type()) << ")";
+        if (conn_type.type_id() == types::TypeID::Array || conn_type.type_id() == types::TypeID::Structure) {
+            // Handle array and structure types
+            stream << this->language_extension_.declaration(conn, conn_type) << ";" << std::endl;
+            stream << "memcpy(" << "&" << conn << ", " << "&" << dst_name << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset())
+                   << ", sizeof " << conn << ");" << std::endl;
         } else {
-            stream << dst_name;
-        }
+            stream << this->language_extension_.declaration(conn, conn_type);
+            stream << " = ";
 
-        stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << ";";
-        stream << std::endl;
+            // Reinterpret cast for opaque pointers
+            if (oedge.base_type().type_id() == types::TypeID::Pointer) {
+                stream << "(" << this->language_extension_.type_cast(dst_name, oedge.base_type()) << ")";
+            } else {
+                stream << dst_name;
+            }
+
+            stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << ";";
+            stream << std::endl;
+        }
     }
 
     stream << std::endl;
@@ -354,11 +379,15 @@ void LibraryNodeDispatcher::
         std::string dst_name = this->language_extension_.access_node(dst);
 
         auto& result_type = oedge.result_type(this->function_);
-
-        stream << dst_name;
-        stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << " = ";
-        stream << oedge.src_conn();
-        stream << ";" << std::endl;
+        if (result_type.type_id() == types::TypeID::Array || result_type.type_id() == types::TypeID::Structure) {
+            stream << "memcpy(" << "&" << dst_name << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset())
+                   << ", " << "&" << oedge.src_conn() << ", sizeof " << oedge.src_conn() << ");" << std::endl;
+        } else {
+            stream << dst_name;
+            stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << " = ";
+            stream << oedge.src_conn();
+            stream << ";" << std::endl;
+        }
     }
 
     stream.setIndent(stream.indent() - 4);

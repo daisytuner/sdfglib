@@ -18,6 +18,9 @@ Tasklet::Tasklet(
     : CodeNode(element_id, debug_info, vertex, parent, {output}, inputs), code_(code) {};
 
 void Tasklet::validate(const Function& function) const {
+    auto& graph = this->get_parent();
+
+    // Validate: inputs match arity
     if (arity(this->code_) != this->inputs_.size()) {
         throw InvalidSDFGException(
             "Tasklet: Invalid number of inputs for code " + std::to_string(this->code_) + ": expected " +
@@ -25,8 +28,18 @@ void Tasklet::validate(const Function& function) const {
         );
     }
 
-    auto& graph = this->get_parent();
+    // Validate: inputs match type of operation
+    for (auto& iedge : graph.in_edges(*this)) {
+        types::PrimitiveType input_type = iedge.base_type().primitive_type();
+        if (is_integer(this->code_) && !types::is_integer(input_type)) {
+            throw InvalidSDFGException("Tasklet: Integer operation with non-integer input type");
+        }
+        if (is_floating_point(this->code_) && !types::is_floating_point(input_type)) {
+            throw InvalidSDFGException("Tasklet: Floating point operation with integer input type");
+        }
+    }
 
+    // Validate: Graph - No two access nodes for same data
     std::unordered_map<std::string, const AccessNode*> input_names;
     for (auto& iedge : graph.in_edges(*this)) {
         auto& src = static_cast<const AccessNode&>(iedge.src());

@@ -24,7 +24,7 @@ TEST(BlockFusionTest, Computational_Chain) {
     auto& node2_1 = builder.add_access(block1, "A");
     auto& one_node_1 = builder.add_constant(block1, "1", desc_element);
     auto& two_node_1 = builder.add_constant(block1, "2", desc_element);
-    auto& tasklet_1 = builder.add_tasklet(block1, data_flow::TaskletCode::fma, "_out", {"_in1", "_in2", "_in3"});
+    auto& tasklet_1 = builder.add_tasklet(block1, data_flow::TaskletCode::fp_fma, "_out", {"_in1", "_in2", "_in3"});
     builder.add_computational_memlet(block1, one_node_1, tasklet_1, "_in1", {});
     builder.add_computational_memlet(block1, node1_1, tasklet_1, "_in2", {symbolic::integer(0)});
     builder.add_computational_memlet(block1, two_node_1, tasklet_1, "_in3", {});
@@ -36,7 +36,7 @@ TEST(BlockFusionTest, Computational_Chain) {
     auto& node2_2 = builder.add_access(block2, "A");
     auto& one_node_1_2 = builder.add_constant(block2, "1", desc_element);
     auto& two_node_1_2 = builder.add_constant(block2, "2", desc_element);
-    auto& tasklet_2 = builder.add_tasklet(block2, data_flow::TaskletCode::fma, "_out", {"_in1", "_in2", "_in3"});
+    auto& tasklet_2 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_fma, "_out", {"_in1", "_in2", "_in3"});
     builder.add_computational_memlet(block2, one_node_1_2, tasklet_2, "_in1", {});
     builder.add_computational_memlet(block2, node1_2, tasklet_2, "_in2", {symbolic::integer(0)});
     builder.add_computational_memlet(block2, two_node_1_2, tasklet_2, "_in3", {});
@@ -143,7 +143,7 @@ TEST(BlockFusionTest, Computational_IndependentSubgraphs) {
     auto& node2_1 = builder.add_access(block1, "A");
     auto& one_node_1 = builder.add_constant(block1, "1", desc_element);
     auto& two_node_1 = builder.add_constant(block1, "2", desc_element);
-    auto& tasklet_1 = builder.add_tasklet(block1, data_flow::TaskletCode::fma, "_out", {"_in1", "_in2", "_in3"});
+    auto& tasklet_1 = builder.add_tasklet(block1, data_flow::TaskletCode::fp_fma, "_out", {"_in1", "_in2", "_in3"});
     builder.add_computational_memlet(block1, one_node_1, tasklet_1, "_in1", {});
     builder.add_computational_memlet(block1, node1_1, tasklet_1, "_in2", {symbolic::integer(0)});
     builder.add_computational_memlet(block1, two_node_1, tasklet_1, "_in3", {});
@@ -155,7 +155,7 @@ TEST(BlockFusionTest, Computational_IndependentSubgraphs) {
     auto& node2_2 = builder.add_access(block2, "B");
     auto& one_node_2 = builder.add_constant(block2, "3", desc_element);
     auto& two_node_2 = builder.add_constant(block2, "4", desc_element);
-    auto& tasklet_2 = builder.add_tasklet(block2, data_flow::TaskletCode::fma, "_out", {"_in1", "_in2", "_in3"});
+    auto& tasklet_2 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_fma, "_out", {"_in1", "_in2", "_in3"});
     builder.add_computational_memlet(block2, one_node_2, tasklet_2, "_in1", {});
     builder.add_computational_memlet(block2, two_node_2, tasklet_2, "_in3", {});
     builder.add_computational_memlet(block2, node1_2, tasklet_2, "_in2", {symbolic::integer(0)});
@@ -283,7 +283,7 @@ TEST(BlockFusionTest, Reference) {
     auto& node2_2 = builder.add_access(block2, "B");
     auto& one_node = builder.add_constant(block2, "1", desc_element);
     auto& two_node = builder.add_constant(block2, "2", desc_element);
-    auto& tasklet_2 = builder.add_tasklet(block2, data_flow::TaskletCode::fma, "_out", {"_in1", "_in2", "_in3"});
+    auto& tasklet_2 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_fma, "_out", {"_in1", "_in2", "_in3"});
     builder.add_computational_memlet(block2, one_node, tasklet_2, "_in1", {});
     builder.add_computational_memlet(block2, two_node, tasklet_2, "_in3", {});
     builder.add_computational_memlet(block2, node1_2, tasklet_2, "_in2", {symbolic::integer(0)}, desc_pointer);
@@ -329,7 +329,7 @@ TEST(BlockFusionTest, Dereference) {
     auto& node2_2 = builder.add_access(block2, "B");
     auto& one_node = builder.add_constant(block2, "1", desc_element);
     auto& two_node = builder.add_constant(block2, "2", desc_element);
-    auto& tasklet_2 = builder.add_tasklet(block2, data_flow::TaskletCode::fma, "_out", {"_in1", "_in2", "_in3"});
+    auto& tasklet_2 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_fma, "_out", {"_in1", "_in2", "_in3"});
 
     builder.add_computational_memlet(block2, one_node, tasklet_2, "_in1", {});
     builder.add_computational_memlet(block2, two_node, tasklet_2, "_in3", {});

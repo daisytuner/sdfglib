@@ -133,6 +133,10 @@ public:
 
     std::unordered_set<data_flow::Tasklet*> tasklets();
 
+    std::unordered_set<const data_flow::LibraryNode*> library_nodes() const;
+
+    std::unordered_set<data_flow::LibraryNode*> library_nodes();
+
     std::unordered_set<const data_flow::AccessNode*> data_nodes() const;
 
     std::unordered_set<data_flow::AccessNode*> data_nodes();

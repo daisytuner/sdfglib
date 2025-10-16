@@ -8,33 +8,33 @@ namespace sdfg {
 namespace passes {
 
 class Pass {
-   public:
+public:
     virtual ~Pass() = default;
 
     virtual std::string name() = 0;
 
-    bool run(builder::SDFGBuilder& builder);
+    bool run(builder::SDFGBuilder& builder, bool create_report = false);
 
-    bool run(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
+    bool
+    run(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager, bool create_report = false
+    );
 
     virtual bool run_pass(builder::SDFGBuilder& builder);
 
-    virtual bool run_pass(builder::StructuredSDFGBuilder& builder,
-                          analysis::AnalysisManager& analysis_manager);
+    virtual bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
 
     virtual void invalidates(analysis::AnalysisManager& analysis_manager, bool applied);
 };
 
-template <typename T>
+template<typename T>
 class VisitorPass : public Pass {
     std::string name() override { return "VisitorPass"; };
 
-    bool run_pass(builder::StructuredSDFGBuilder& builder,
-                  analysis::AnalysisManager& analysis_manager) override {
+    bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override {
         T visitor(builder, analysis_manager);
         return visitor.visit();
     };
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

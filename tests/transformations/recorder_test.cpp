@@ -178,11 +178,12 @@ protected:
         auto& block = builder_->add_block(body2);
         auto& A_in = builder_->add_access(block, "A");
         auto& A_out = builder_->add_access(block, "A");
+        auto& one_node = builder_->add_constant(block, "1.0", base_desc);
 
-        auto& tasklet = builder_->add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in", "1"});
+        auto& tasklet = builder_->add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
 
-        builder_->add_computational_memlet(block, A_in, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
-
+        builder_->add_computational_memlet(block, A_in, tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")});
+        builder_->add_computational_memlet(block, one_node, tasklet, "_in2", {});
         builder_
             ->add_computational_memlet(block, tasklet, "_out", A_out, {symbolic::symbol("i"), symbolic::symbol("j")});
 
@@ -297,7 +298,7 @@ TEST_F(RecorderMultiTransformationTest, Apply_Transformations) {
 
     EXPECT_EQ(j[2]["transformation_type"], "LoopInterchange");
     EXPECT_EQ(j[2]["subgraph"]["0"]["element_id"], 1);
-    EXPECT_EQ(j[2]["subgraph"]["1"]["element_id"], 17);
+    EXPECT_EQ(j[2]["subgraph"]["1"]["element_id"], 19);
 }
 
 TEST_F(RecorderMultiTransformationTest, Replay_Transformations) {
@@ -318,7 +319,7 @@ TEST_F(RecorderMultiTransformationTest, Replay_Transformations) {
 
     nlohmann::json j2;
     j2["transformation_type"] = "LoopInterchange";
-    j2["subgraph"] = {{"0", {{"element_id", 1}, {"type", "for"}}}, {"1", {{"element_id", 17}, {"type", "map"}}}};
+    j2["subgraph"] = {{"0", {{"element_id", 1}, {"type", "for"}}}, {"1", {{"element_id", 19}, {"type", "map"}}}};
     j_array.push_back(j2);
 
     EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j_array));
@@ -401,11 +402,12 @@ protected:
         auto& block = builder_->add_block(body2);
         auto& A_in = builder_->add_access(block, "A");
         auto& A_out = builder_->add_access(block, "A");
+        auto& one_node = builder_->add_constant(block, "1.0", base_desc);
 
-        auto& tasklet = builder_->add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in", "1"});
+        auto& tasklet = builder_->add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
 
-        builder_->add_computational_memlet(block, A_in, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")});
-
+        builder_->add_computational_memlet(block, A_in, tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")});
+        builder_->add_computational_memlet(block, one_node, tasklet, "_in2", {});
         builder_
             ->add_computational_memlet(block, tasklet, "_out", A_out, {symbolic::symbol("i"), symbolic::symbol("j")});
 
@@ -430,7 +432,7 @@ TEST_F(ReplayerTest, Replay_Transformations) {
     );
     j.push_back(
         {{"transformation_type", "LoopInterchange"},
-         {"subgraph", {{"0", {{"element_id", 1}, {"type", "map"}}}, {"1", {{"element_id", 17}, {"type", "map"}}}}}}
+         {"subgraph", {{"0", {{"element_id", 1}, {"type", "map"}}}, {"1", {{"element_id", 19}, {"type", "map"}}}}}}
     );
 
     EXPECT_NO_THROW(recorder.replay(*builder_, *analysis_manager_, j));

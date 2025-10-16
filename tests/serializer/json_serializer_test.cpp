@@ -195,7 +195,7 @@ TEST(JSONSerializerTest, DataflowToJSON) {
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "D");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     auto& memlet_in =
         builder.add_computational_memlet(block, access_in, tasklet, "_in1", {symbolic::symbol("i")}, desc);
     auto& memlet_in2 = builder.add_computational_memlet(block, access_in2, tasklet, "_in2", {});
@@ -230,7 +230,7 @@ TEST(JSONSerializerTest, DataflowToJSON) {
         return node["type"] == "access_node" && node["data"] == "D";
     });
     auto tasklet_node = std::find_if(j["nodes"].begin(), j["nodes"].end(), [](const auto& node) {
-        return node["type"] == "tasklet" && node["code"] == data_flow::TaskletCode::add;
+        return node["type"] == "tasklet" && node["code"] == data_flow::TaskletCode::fp_add;
     });
 
     EXPECT_NE(access_node_A, j["nodes"].end());
@@ -789,7 +789,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "C");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     auto& memlet_in =
         builder.add_computational_memlet(block, access_in, tasklet, "_in1", {symbolic::symbol("i")}, pointer_type);
     auto& memlet_in2 = builder.add_computational_memlet(block, access_in2, tasklet, "_in2", {});
@@ -850,7 +850,7 @@ TEST(JSONSerializerTest, SerializeDeserialize_DataflowGraph) {
             }
 
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {
-            EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::add);
+            EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::fp_add);
             EXPECT_EQ(tasklet_node->inputs().size(), 2);
             EXPECT_EQ(tasklet_node->output(), "_out");
             EXPECT_EQ(tasklet_node->inputs().at(0), "_in1");
@@ -916,7 +916,7 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "C");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     auto& memlet_in =
         builder.add_computational_memlet(block, access_in, tasklet, "_in1", {symbolic::symbol("i")}, pointer_type);
     auto& memlet_in2 = builder.add_computational_memlet(block, access_in2, tasklet, "_in2", {});
@@ -979,7 +979,7 @@ TEST(JSONSerializerTest, SerializeDeserializeBlock_DataflowGraph) {
             }
 
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {
-            EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::add);
+            EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::fp_add);
             EXPECT_EQ(tasklet_node->inputs().size(), 2);
             EXPECT_EQ(tasklet_node->output(), "_out");
             EXPECT_EQ(tasklet_node->inputs().at(0), "_in1");
@@ -1045,7 +1045,7 @@ TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "C");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     auto& memlet_in =
         builder.add_computational_memlet(block, access_in, tasklet, "_in1", {symbolic::symbol("i")}, pointer_type);
     auto& memlet_in2 = builder.add_computational_memlet(block, access_in2, tasklet, "_in2", {});
@@ -1112,7 +1112,7 @@ TEST(JSONSerializerTest, SerializeDeserializeSequence_DataflowGraph) {
             }
 
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {
-            EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::add);
+            EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::fp_add);
             EXPECT_EQ(tasklet_node->inputs().size(), 2);
             EXPECT_EQ(tasklet_node->output(), "_out");
             EXPECT_EQ(tasklet_node->inputs().at(0), "_in1");
@@ -1178,7 +1178,7 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
     auto& access_in = builder.add_access(block, "A");
     auto& access_in2 = builder.add_access(block, "C");
     auto& access_out = builder.add_access(block, "C");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     auto& memlet_in =
         builder.add_computational_memlet(block, access_in, tasklet, "_in1", {symbolic::symbol("i")}, pointer_type);
     auto& memlet_in2 = builder.add_computational_memlet(block, access_in2, tasklet, "_in2", {});
@@ -1239,7 +1239,7 @@ TEST(JSONSerializerTest, SerializeDeserializeSDFG_DataflowGraph) {
             }
 
         } else if (auto tasklet_node = dynamic_cast<const sdfg::data_flow::Tasklet*>(&node)) {
-            EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::add);
+            EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::fp_add);
             EXPECT_EQ(tasklet_node->inputs().size(), 2);
             EXPECT_EQ(tasklet_node->inputs().at(0), "_in1");
             EXPECT_EQ(tasklet_node->inputs().at(1), "_in2");

@@ -6,6 +6,7 @@
 
 #include <concepts>
 #include <nlohmann/json.hpp>
+#include "sdfg/optimization_report/optimization_report.h"
 
 namespace sdfg {
 namespace transformations {

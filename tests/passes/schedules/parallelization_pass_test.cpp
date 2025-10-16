@@ -55,7 +55,7 @@ TEST(ParallelizationPassTest, Map_2D) {
     auto& a_in = builder.add_access(block, "A");
     auto& i = builder.add_access(block, "i");
     auto& a_out = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in1", "_in2"});
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     builder
         .add_computational_memlet(block, a_in, tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")}, desc_2);
     builder.add_computational_memlet(block, i, tasklet, "_in2", {}, sym_desc);

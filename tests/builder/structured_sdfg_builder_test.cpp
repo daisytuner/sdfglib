@@ -21,7 +21,7 @@ TEST(StructuredSDFGBuilderTest, Empty) {
 TEST(StructuredSDFGBuilderTest, AddBlock) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
-    types::Scalar desc(types::PrimitiveType::UInt64);
+    types::Scalar desc(types::PrimitiveType::Int64);
     builder.add_container("N", desc);
 
     auto& root = builder.subject().root();
@@ -44,7 +44,7 @@ TEST(StructuredSDFGBuilderTest, AddBlock) {
 TEST(StructuredSDFGBuilderTest, AddBlockBefore) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
-    types::Scalar desc(types::PrimitiveType::UInt64);
+    types::Scalar desc(types::PrimitiveType::Int64);
     builder.add_container("N", desc);
 
     auto& root = builder.subject().root();
@@ -72,7 +72,7 @@ TEST(StructuredSDFGBuilderTest, AddBlockBefore) {
 TEST(StructuredSDFGBuilderTest, AddBlockAfter) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
-    types::Scalar desc(types::PrimitiveType::UInt64);
+    types::Scalar desc(types::PrimitiveType::Int64);
     builder.add_container("N", desc);
 
     auto& root = builder.subject().root();
@@ -105,7 +105,7 @@ TEST(StructuredSDFGBuilderTest, AddBlockAfter) {
 TEST(StructuredSDFGBuilderTest, AddLibraryNode) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
-    types::Scalar desc(types::PrimitiveType::UInt64);
+    types::Scalar desc(types::PrimitiveType::Int64);
     builder.add_container("N", desc);
 
     auto& root = builder.subject().root();
@@ -168,6 +168,8 @@ TEST(StructuredSDFGBuilderTest, AddIfElse) {
 TEST(StructuredSDFGBuilderTest, AddIfElseBefore) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
+    builder.add_container("N", types::Scalar(types::PrimitiveType::Int64), true);
+
     auto& root = builder.subject().root();
     auto& block_base =
         builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
@@ -220,6 +222,8 @@ TEST(StructuredSDFGBuilderTest, addWhile) {
 TEST(StructuredSDFGBuilderTest, addFor) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
+    builder.add_container("N", types::Scalar(types::PrimitiveType::Int64), true);
+
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
 
@@ -249,6 +253,8 @@ TEST(StructuredSDFGBuilderTest, addFor) {
 
 TEST(StructuredSDFGBuilderTest, addFor_Transition) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    builder.add_container("i", types::Scalar(types::PrimitiveType::Int64), true);
 
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
@@ -317,6 +323,8 @@ TEST(StructuredSDFGBuilderTest, addMap) {
 TEST(StructuredSDFGBuilderTest, addMap_Transition) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
+    builder.add_container("i", types::Scalar(types::PrimitiveType::Int64), true);
+
     auto& root = builder.subject().root();
     EXPECT_EQ(root.element_id(), 0);
 
@@ -353,6 +361,9 @@ TEST(StructuredSDFGBuilderTest, addMap_Transition) {
 TEST(StructuredSDFGBuilderTest, addForBefore) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
+    builder.add_container("i", types::Scalar(types::PrimitiveType::Int64));
+    builder.add_container("N", types::Scalar(types::PrimitiveType::Int64), true);
+
     auto& root = builder.subject().root();
     auto& block_base =
         builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
@@ -378,6 +389,9 @@ TEST(StructuredSDFGBuilderTest, addForBefore) {
 
 TEST(StructuredSDFGBuilderTest, addForAfter) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    builder.add_container("i", types::Scalar(types::PrimitiveType::Int64));
+    builder.add_container("N", types::Scalar(types::PrimitiveType::Int64), true);
 
     auto& root = builder.subject().root();
     auto& block_base =
@@ -485,7 +499,7 @@ TEST(SDFG2StructuredSDFGTest, Sequence) {
 TEST(SDFG2StructuredSDFGTest, IfElse) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
-    types::Scalar desc(types::PrimitiveType::UInt64);
+    types::Scalar desc(types::PrimitiveType::Int64);
     builder.add_container("i", desc);
 
     auto& init_state = builder.add_state(true);
@@ -568,7 +582,7 @@ TEST(SDFG2StructuredSDFGTest, IfElse) {
 TEST(SDFG2StructuredSDFGTest, While) {
     builder::SDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
-    types::Scalar desc(types::PrimitiveType::UInt64);
+    types::Scalar desc(types::PrimitiveType::Int64);
     builder.add_container("i", desc);
 
     auto iter_sym = symbolic::symbol("i");

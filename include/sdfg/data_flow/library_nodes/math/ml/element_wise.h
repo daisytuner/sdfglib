@@ -12,7 +12,6 @@ namespace ml {
 class ElementWiseUnaryNode : public math::MathNode {
 protected:
     std::vector<symbolic::Expression> shape_;
-    std::unordered_map<std::string, std::string> attributes_;
 
 public:
     ElementWiseUnaryNode(
@@ -21,15 +20,10 @@ public:
         const graph::Vertex vertex,
         data_flow::DataFlowGraph& parent,
         const data_flow::LibraryNodeCode& code,
-        const std::vector<symbolic::Expression>& shape,
-        const std::unordered_map<std::string, std::string>& attributes
+        const std::vector<symbolic::Expression>& shape
     );
 
     const std::vector<symbolic::Expression>& shape() const { return shape_; }
-
-    void set_attributes(const std::unordered_map<std::string, std::string>& attributes) { attributes_ = attributes; }
-
-    const std::unordered_map<std::string, std::string>& attributes() const { return attributes_; }
 
     symbolic::SymbolSet symbols() const override;
 
@@ -59,7 +53,6 @@ public:
         nlohmann::json j;
 
         j["code"] = elem_node.code().value();
-        j["attributes"] = elem_node.attributes();
 
         serializer::JSONSerializer serializer;
         j["shape"] = nlohmann::json::array();
@@ -78,10 +71,8 @@ public:
         assert(j.contains("code"));
         assert(j.contains("debug_info"));
         assert(j.contains("shape"));
-        assert(j.contains("attributes"));
 
         auto code = j["code"].get<std::string>();
-        auto attributes = j["attributes"].get<std::unordered_map<std::string, std::string>>();
 
         std::vector<symbolic::Expression> shape;
         for (const auto& dim : j["shape"]) {
@@ -92,17 +83,13 @@ public:
         sdfg::serializer::JSONSerializer serializer;
         DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
-        auto& node = static_cast<ElementWiseUnaryNode&>(builder.add_library_node<T>(parent, debug_info, shape));
-        node.set_attributes(attributes);
-
-        return node;
+        return static_cast<ElementWiseUnaryNode&>(builder.add_library_node<T>(parent, debug_info, shape));
     }
 };
 
 class ElementWiseBinaryNode : public math::MathNode {
 protected:
     std::vector<symbolic::Expression> shape_;
-    std::unordered_map<std::string, std::string> attributes_;
 
 public:
     ElementWiseBinaryNode(
@@ -111,15 +98,10 @@ public:
         const graph::Vertex vertex,
         data_flow::DataFlowGraph& parent,
         const data_flow::LibraryNodeCode& code,
-        const std::vector<symbolic::Expression>& shape,
-        const std::unordered_map<std::string, std::string>& attributes
+        const std::vector<symbolic::Expression>& shape
     );
 
     const std::vector<symbolic::Expression>& shape() const { return shape_; }
-
-    void set_attributes(const std::unordered_map<std::string, std::string>& attributes) { attributes_ = attributes; }
-
-    const std::unordered_map<std::string, std::string>& attributes() const { return attributes_; }
 
     symbolic::SymbolSet symbols() const override;
 
@@ -151,7 +133,6 @@ public:
         nlohmann::json j;
 
         j["code"] = elem_node.code().value();
-        j["attributes"] = elem_node.attributes();
 
         serializer::JSONSerializer serializer;
         j["shape"] = nlohmann::json::array();
@@ -170,10 +151,8 @@ public:
         assert(j.contains("code"));
         assert(j.contains("debug_info"));
         assert(j.contains("shape"));
-        assert(j.contains("attributes"));
 
         auto code = j["code"].get<std::string>();
-        auto attributes = j["attributes"].get<std::unordered_map<std::string, std::string>>();
 
         std::vector<symbolic::Expression> shape;
         for (const auto& dim : j["shape"]) {
@@ -184,10 +163,7 @@ public:
         sdfg::serializer::JSONSerializer serializer;
         DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
-        auto& node = static_cast<ElementWiseBinaryNode&>(builder.add_library_node<T>(parent, debug_info, shape));
-        node.set_attributes(attributes);
-
-        return node;
+        return static_cast<ElementWiseBinaryNode&>(builder.add_library_node<T>(parent, debug_info, shape));
     }
 };
 

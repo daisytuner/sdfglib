@@ -142,10 +142,12 @@ bool CodeGenerator::add_capture_plan(
 
     std::tie(dim_count, inner_type) =
         analyze_type_rec(dims, 3, 0, *type, arg_idx, range, analysis_manager, sdfg_, var_name);
+    if (inner_type == types::Void || dim_count < 0 || dim_count > 3) {
+        return false;
+    }
 
     bool is_read = range ? range->saw_read() : true;
     bool is_written = range ? range->saw_write() : true;
-
     if (dim_count == 0) {
         plan.emplace_back(
             is_read || is_written, is_written && is_external, CaptureVarType::CapRaw, arg_idx, is_external, inner_type
@@ -158,8 +160,6 @@ bool CodeGenerator::add_capture_plan(
         plan.emplace_back(
             is_read, is_written, CaptureVarType::Cap3D, arg_idx, is_external, inner_type, dims[0], dims[1], dims[2]
         );
-    } else {
-        return false;
     }
 
     return true;

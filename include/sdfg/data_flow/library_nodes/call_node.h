@@ -12,7 +12,13 @@ inline LibraryNodeCode LibraryNodeType_Call("Call");
 
 class CallNode : public LibraryNode {
 private:
-    std::string function_name_;
+    std::string callee_name_;
+
+    // Flags
+
+    // Whether the compiler can replace this call node
+    // with specialized functions (symbols of a library, etc.)
+    bool offloadable_;
 
 public:
     CallNode(
@@ -20,16 +26,19 @@ public:
         const DebugInfo& debug_info,
         const graph::Vertex vertex,
         DataFlowGraph& parent,
-        const std::string& function_name,
+        const std::string& callee_name,
         const std::vector<std::string>& outputs,
-        const std::vector<std::string>& inputs
+        const std::vector<std::string>& inputs,
+        bool offloadable = false
     );
 
-    const std::string& function_name() const;
+    const std::string& callee_name() const;
 
-    const types::Function& function_type(const Function& sdfg) const;
+    bool offloadable() const;
 
     bool is_void(const Function& sdfg) const;
+
+    bool is_indirect_call(const Function& sdfg) const;
 
     void validate(const Function& function) const override;
 

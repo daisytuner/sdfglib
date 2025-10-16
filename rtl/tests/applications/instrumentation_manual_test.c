@@ -10,15 +10,10 @@ void main(int argc, char** argv) {
         .line_end = 31,
         .column_begin = 4,
         .column_end = 5,
-        .sdfg_name = "__daisy_instrumentation_test_0",
-        .sdfg_file = "/tmp/DOCC/0000-0000/123456789/sdfg_0.json",
-        .element_id = 10,
-        .element_type = "for",
-        .target_type = "sequential",
-        .loopnest_index = 0,
+        .target_type = "SEQUENTIAL",
         .region_uuid = "__daisy_instrumentation_test_0_10"
     };
-    unsigned long long region_id = __daisy_instrumentation_init(&metadata, __DAISY_EVENT_SET_CPU);
+    unsigned long long region_id = __daisy_instrumentation_init(&metadata, __DAISY_EVENT_SET_NONE);
 
     for (size_t rep = 0; rep < 10; rep++) {
         __daisy_instrumentation_enter(region_id);
@@ -38,6 +33,7 @@ void main(int argc, char** argv) {
         }
 
         __daisy_instrumentation_exit(region_id);
+        __daisy_instrumentation_increment(region_id, "foo", rep);
 
         for (int i = 0; i < 1000; i++) {
             printf("%f\n", C[i]);

@@ -5,6 +5,8 @@
 
 #include "sdfg/analysis/scope_analysis.h"
 
+#include "sdfg/data_flow/library_nodes/math/intrinsic.h"
+
 namespace sdfg {
 namespace math {
 namespace ml {
@@ -16,7 +18,7 @@ AbsNode::AbsNode(
     data_flow::DataFlowGraph& parent,
     const std::vector<symbolic::Expression>& shape
 )
-    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Abs, shape, {}) {}
+    : ElementWiseUnaryNode(element_id, debug_info, vertex, parent, LibraryNodeType_Abs, shape) {}
 
 bool AbsNode::expand_operation(
     builder::StructuredSDFGBuilder& builder,
@@ -30,11 +32,14 @@ bool AbsNode::expand_operation(
 ) {
     // Add code
     auto& code_block = builder.add_block(body);
+
     auto& input_node_new = builder.add_access(code_block, input_name);
     auto& output_node_new = builder.add_access(code_block, output_name);
-    auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::abs, "_out", {"_in"});
-    builder.add_computational_memlet(code_block, input_node_new, tasklet, "_in", subset, input_type);
-    builder.add_computational_memlet(code_block, tasklet, "_out", output_node_new, subset, output_type);
+    
+    auto& libnode = builder.add_library_node<math::IntrinsicNode>(code_block, body.debug_info(), "fabs", 1);
+    
+    builder.add_computational_memlet(code_block, input_node_new, libnode, "_in", subset, input_type);
+    builder.add_computational_memlet(code_block, libnode, "_out", output_node_new, subset, output_type);
 
     return true;
 }

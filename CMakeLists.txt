@@ -102,31 +102,21 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/call_node.cpp
     src/data_flow/library_nodes/metadata_node.cpp
     src/data_flow/library_nodes/math/math_node.cpp
+    src/data_flow/library_nodes/math/intrinsic.cpp
     src/data_flow/library_nodes/math/blas/dot.cpp
     src/data_flow/library_nodes/math/blas/gemm.cpp
     src/data_flow/library_nodes/math/ml/abs.cpp
     src/data_flow/library_nodes/math/ml/add.cpp
-    src/data_flow/library_nodes/math/ml/batch_normalization.cpp
-    src/data_flow/library_nodes/math/ml/clip.cpp
-    src/data_flow/library_nodes/math/ml/conv.cpp
     src/data_flow/library_nodes/math/ml/div.cpp
-    # src/data_flow/library_nodes/math/ml/dropout.cpp
     src/data_flow/library_nodes/math/ml/element_wise.cpp
     src/data_flow/library_nodes/math/ml/elu.cpp
     src/data_flow/library_nodes/math/ml/erf.cpp
-    # src/data_flow/library_nodes/math/ml/gemm.cpp
     src/data_flow/library_nodes/math/ml/hard_sigmoid.cpp
-    # src/data_flow/library_nodes/math/ml/layer_normalization.cpp
     src/data_flow/library_nodes/math/ml/leaky_relu.cpp
-    # src/data_flow/library_nodes/math/ml/log_softmax.cpp
-    # src/data_flow/library_nodes/math/ml/matmul.cpp
-    src/data_flow/library_nodes/math/ml/maxpool.cpp
     src/data_flow/library_nodes/math/ml/mul.cpp
     src/data_flow/library_nodes/math/ml/pow.cpp
-    # src/data_flow/library_nodes/math/ml/reduce_mean.cpp
     src/data_flow/library_nodes/math/ml/relu.cpp
     src/data_flow/library_nodes/math/ml/sigmoid.cpp
-    # src/data_flow/library_nodes/math/ml/softmax.cpp
     src/data_flow/library_nodes/math/ml/sqrt.cpp
     src/data_flow/library_nodes/math/ml/sub.cpp
     src/data_flow/library_nodes/math/ml/tanh.cpp
@@ -139,6 +129,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/stdlib/memset.cpp
     src/deepcopy/structured_sdfg_deep_copy.cpp
     src/graph/graph.cpp
+    src//optimization_report/optimization_report.cpp
     src/visitor/structured_sdfg_visitor.cpp
     src/passes/pass.cpp
     src/passes/pipeline.cpp

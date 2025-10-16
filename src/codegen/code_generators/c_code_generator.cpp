@@ -118,14 +118,34 @@ void CCodeGenerator::dispatch_structures() {
 
 void CCodeGenerator::dispatch_globals() {
     // Declare globals
-    const std::unordered_set<std::string> reserved_symbols = {"stderr", "stdin", "stdout"};
+    const std::unordered_set<std::string> reserved_symbols = {
+        "alloca",
+        "calloc",
+        "free",
+        "malloc",
+        "memcpy",
+        "memmove",
+        "memset",
+        "stderr",
+        "stdin",
+        "stdout",
+        "cblas_sdot",
+        "cblas_ddot",
+        "cblas_sgemm",
+        "cblas_dgemm"
+    };
     for (auto& container : sdfg_.externals()) {
-        // Function declarations
-        if (dynamic_cast<const types::Function*>(&sdfg_.type(container))) {
-            continue;
-        }
         // Reserved symbols
         if (reserved_symbols.find(container) != reserved_symbols.end()) {
+            continue;
+        }
+
+        // Function declarations
+        if (dynamic_cast<const types::Function*>(&sdfg_.type(container))) {
+            // Declare function
+            this->globals_stream_ << "extern ";
+            this->globals_stream_ << language_extension_.declaration(container, sdfg_.type(container)) << ";"
+                        << std::endl;
             continue;
         }
 
