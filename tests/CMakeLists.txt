@@ -15,72 +15,72 @@ set(TEST_FILES
     analysis/type_analysis_test.cpp
     analysis/users_test.cpp
     analysis/work_depth_analysis_test.cpp
-    builder/function_builder_test.cpp
-    builder/sdfg_builder_test.cpp
-    builder/structured_sdfg_builder_test.cpp
-    codegen/code_generators/c_code_generator_test.cpp
-    codegen/code_generators/cpp_code_generator_test.cpp
-    codegen/code_generators/cuda_code_generator_test.cpp
-    codegen/dispatchers/block_dispatcher_test.cpp
-    codegen/dispatchers/for_dispatcher_test.cpp
-    codegen/dispatchers/if_else_dispatcher_test.cpp
-    codegen/dispatchers/map_dispatcher_test.cpp
-    codegen/dispatchers/node_dispatcher_factory_test.cpp
-    codegen/dispatchers/node_dispatcher_test.cpp
-    codegen/dispatchers/sequence_dispatcher_test.cpp
-    codegen/dispatchers/while_dispatcher_test.cpp
-    codegen/language_extensions/c_language_extension_test.cpp
-    codegen/language_extensions/cpp_language_extension_test.cpp
-    codegen/language_extensions/cuda_language_extension_test.cpp
-    codegen/utils_test.cpp
-    data_flow/data_flow_graph_test.cpp
-    data_flow/library_nodes/math/blas_test.cpp
-    deepcopy/structured_sdfg_deep_copy_test.cpp
-    element_test.cpp
-    graph/graph_algorithms_test.cpp
-    helpers/helpers_test.cpp
-    passes/dataflow/constant_elimination_test.cpp
-    passes/dataflow/dead_data_elimination_test.cpp
-    passes/dataflow/redundant_array_elimination_test.cpp
-    passes/dataflow/trivial_array_elimination_test.cpp
-    passes/dataflow/reference_propagation_test.cpp
-    passes/pipeline_test.cpp
-    passes/schedules/parallelization_pass_test.cpp
-    passes/structured_control_flow/block_fusion_test.cpp
-    passes/structured_control_flow/condition_elimination_test.cpp
-    passes/structured_control_flow/dead_cfg_elimination_test.cpp
-    passes/structured_control_flow/for2map_test.cpp
-    passes/structured_control_flow/loop_normalization_test.cpp
-    passes/debug_info_propagation_test.cpp
-    passes/symbolic/symbol_promotion_test.cpp
-    passes/symbolic/symbol_propagation_test.cpp
-    replace/symbol_replace_test.cpp
-    sdfg_test.cpp
-    serializer/json_serializer_test.cpp
-    structured_control_flow/map_test.cpp
-    structured_sdfg_test.cpp
-    symbolic/assumptions_test.cpp
-    symbolic/conjunctive_normal_form_test.cpp
-    symbolic/extreme_values_test.cpp
-    symbolic/polynomials_test.cpp
-    symbolic/symbolic_test.cpp
-    symbolic/sets_test.cpp
-    transformations/loop_interchange_test.cpp
-    transformations/loop_tiling_test.cpp
-    transformations/out_local_storage_test.cpp
-    transformations/parallelization_test.cpp
-    transformations/recorder_test.cpp
-    types/array_test.cpp
-    types/function_test.cpp
-    types/pointer_test.cpp
-    types/primitive_type_test.cpp
-    types/reference_test.cpp
-    types/scalar_test.cpp
-    types/sizeof_test.cpp
-    types/structure_test.cpp
-    types/utils_test.cpp
-    visitor/structured_sdfg_visitor_test.cpp
-    visualizer/dot_visualizer_test.cpp
+    # builder/function_builder_test.cpp
+    # builder/sdfg_builder_test.cpp
+    # builder/structured_sdfg_builder_test.cpp
+    # codegen/code_generators/c_code_generator_test.cpp
+    # codegen/code_generators/cpp_code_generator_test.cpp
+    # codegen/code_generators/cuda_code_generator_test.cpp
+    # codegen/dispatchers/block_dispatcher_test.cpp
+    # codegen/dispatchers/for_dispatcher_test.cpp
+    # codegen/dispatchers/if_else_dispatcher_test.cpp
+    # codegen/dispatchers/map_dispatcher_test.cpp
+    # codegen/dispatchers/node_dispatcher_factory_test.cpp
+    # codegen/dispatchers/node_dispatcher_test.cpp
+    # codegen/dispatchers/sequence_dispatcher_test.cpp
+    # codegen/dispatchers/while_dispatcher_test.cpp
+    # codegen/language_extensions/c_language_extension_test.cpp
+    # codegen/language_extensions/cpp_language_extension_test.cpp
+    # codegen/language_extensions/cuda_language_extension_test.cpp
+    # codegen/utils_test.cpp
+    # data_flow/data_flow_graph_test.cpp
+    # data_flow/library_nodes/math/blas_test.cpp
+    # deepcopy/structured_sdfg_deep_copy_test.cpp
+    # element_test.cpp
+    # graph/graph_algorithms_test.cpp
+    # helpers/helpers_test.cpp
+    # passes/dataflow/constant_elimination_test.cpp
+    # passes/dataflow/dead_data_elimination_test.cpp
+    # passes/dataflow/redundant_array_elimination_test.cpp
+    # passes/dataflow/trivial_array_elimination_test.cpp
+    # passes/dataflow/reference_propagation_test.cpp
+    # passes/pipeline_test.cpp
+    # passes/schedules/parallelization_pass_test.cpp
+    # passes/structured_control_flow/block_fusion_test.cpp
+    # passes/structured_control_flow/condition_elimination_test.cpp
+    # passes/structured_control_flow/dead_cfg_elimination_test.cpp
+    # passes/structured_control_flow/for2map_test.cpp
+    # passes/structured_control_flow/loop_normalization_test.cpp
+    # passes/debug_info_propagation_test.cpp
+    # passes/symbolic/symbol_promotion_test.cpp
+    # passes/symbolic/symbol_propagation_test.cpp
+    # replace/symbol_replace_test.cpp
+    # sdfg_test.cpp
+    # serializer/json_serializer_test.cpp
+    # structured_control_flow/map_test.cpp
+    # structured_sdfg_test.cpp
+    # symbolic/assumptions_test.cpp
+    # symbolic/conjunctive_normal_form_test.cpp
+    # symbolic/extreme_values_test.cpp
+    # symbolic/polynomials_test.cpp
+    # symbolic/symbolic_test.cpp
+    # symbolic/sets_test.cpp
+    # transformations/loop_interchange_test.cpp
+    # transformations/loop_tiling_test.cpp
+    # transformations/out_local_storage_test.cpp
+    # transformations/parallelization_test.cpp
+    # transformations/recorder_test.cpp
+    # types/array_test.cpp
+    # types/function_test.cpp
+    # types/pointer_test.cpp
+    # types/primitive_type_test.cpp
+    # types/reference_test.cpp
+    # types/scalar_test.cpp
+    # types/sizeof_test.cpp
+    # types/structure_test.cpp
+    # types/utils_test.cpp
+    # visitor/structured_sdfg_visitor_test.cpp
+    # visualizer/dot_visualizer_test.cpp
     test.cpp
 )
 

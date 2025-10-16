@@ -487,7 +487,7 @@ TEST(DOKLoadTest, UnboundLoad) {
 
     auto& update_read = builder.add_access(block, "j");
     auto& update_write = builder.add_access(block, "j");
-    auto& update_tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in", "1"});
+    auto& update_tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in", "1"});
 
     builder.add_computational_memlet(block, update_read, update_tasklet, "_in", {});
     builder.add_computational_memlet(block, update_tasklet, "_out", update_write, {});
@@ -647,7 +647,7 @@ TEST(DOKBalanceTest, UnboundBalance) {
 
     auto& update_read = builder.add_access(block, "j");
     auto& update_write = builder.add_access(block, "j");
-    auto& update_tasklet = builder.add_tasklet(block, data_flow::TaskletCode::add, "_out", {"_in", "1"});
+    auto& update_tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in", "1"});
 
     builder.add_computational_memlet(block, update_read, update_tasklet, "_in", {});
     builder.add_computational_memlet(block, update_tasklet, "_out", update_write, {});
