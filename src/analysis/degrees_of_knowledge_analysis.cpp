@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <list>
 #include <string>
+#include <symengine/integer.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -27,6 +28,7 @@
 #include "sdfg/structured_control_flow/while.h"
 #include "sdfg/symbolic/sets.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "symengine/basic.h"
 #include "symengine/symengine_rcp.h"
 
 namespace sdfg {
@@ -205,6 +207,24 @@ bool contains_jump(const structured_control_flow::ControlFlowNode* node) {
     return false;
 }
 
+bool contains_dynamic_cost(
+    structured_control_flow::ControlFlowNode* node,
+    std::unordered_map<structured_control_flow::ControlFlowNode*, symbolic::Expression>& cost
+) {
+    if (auto while_loop = dynamic_cast<structured_control_flow::While*>(node)) {
+        return !SymEngine::is_a<SymEngine::Integer>(*cost.at(&while_loop->root()));
+    } else if (auto if_else_node = dynamic_cast<structured_control_flow::IfElse*>(node)) {
+        for (size_t i = 0; i < if_else_node->size(); i++) {
+            if (!SymEngine::is_a<SymEngine::Integer>(*cost.at(&if_else_node->at(i).first))) {
+                return true;
+            }
+        }
+    } else if (auto loop_node = dynamic_cast<structured_control_flow::StructuredLoop*>(node)) {
+        return !SymEngine::is_a<SymEngine::Integer>(*cost.at(&loop_node->root()));
+    }
+    return false;
+}
+
 std::unordered_set<User*> get_dependent_writes(
     AnalysisManager& analysis_manager,
     Users& users,
@@ -365,17 +385,35 @@ void DegreesOfKnowledgeAnalysis::balance_analysis(AnalysisManager& analysis_mana
 
                 if (auto loop_node = dynamic_cast<structured_control_flow::StructuredLoop*>(node)) {
                     std::unordered_set<User*> loop_reads;
-                    bool found = false;
                     symbolic::Expression total_cost = symbolic::one();
-                    if (writes.find(users.get_user(loop_node->indvar()->get_name(), loop_node, Use::WRITE, true)) !=
-                        writes.end()) {
-                        found = true;
-                        auto stride = analysis::LoopAnalysis::stride(loop_node);
-                        auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-                        auto bound = analysis::LoopAnalysis::canonical_bound(loop_node, assumptions_analysis);
-                        auto num_iterations = symbolic::sub(bound, loop_node->init());
+                    auto stride = analysis::LoopAnalysis::stride(loop_node);
+                    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+                    auto bound = analysis::LoopAnalysis::canonical_bound(loop_node, assumptions_analysis);
+                    auto num_iterations = symbolic::sub(bound, loop_node->init());
 
+                    bool is_dynamic = false;
+                    for (auto atom : symbolic::atoms(bound)) {
+                        if (reads.find(users.get_user(atom->get_name(), loop_node, Use::READ, false, true)) !=
+                            reads.end()) {
+                            is_dynamic = true;
+                            break;
+                        }
+                    }
+
+                    if (!is_dynamic) {
+                        for (auto atom : symbolic::atoms(loop_node->init())) {
+                            if (reads.find(users.get_user(atom->get_name(), loop_node, Use::READ, true)) !=
+                                reads.end()) {
+                                is_dynamic = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (is_dynamic) {
                         total_cost = symbolic::mul(num_iterations, cost.at(&loop_node->root()));
+                    } else if (contains_dynamic_cost(loop_node, cost)) {
+                        total_cost = symbolic::mul(total_cost, cost.at(&loop_node->root()));
                     }
                     cost.insert({node, total_cost});
 
@@ -389,28 +427,32 @@ void DegreesOfKnowledgeAnalysis::balance_analysis(AnalysisManager& analysis_mana
                 } else if (auto if_else_node = dynamic_cast<structured_control_flow::IfElse*>(node)) {
                     symbolic::Expression total_cost = symbolic::one();
                     bool is_dynamic = false;
-                    if (contains_jump(if_else_node)) {
-                        for (size_t i = 0; i < if_else_node->size(); ++i) {
-                            auto& condition = if_else_node->at(i).second;
-                            for (auto atom : symbolic::atoms(condition)) {
-                                if (reads.find(users.get_user(atom->get_name(), if_else_node, Use::READ)) !=
-                                    reads.end()) {
-                                    is_dynamic = true;
-                                    break;
-                                }
-                            }
-                            if (is_dynamic) {
+
+                    for (size_t i = 0; i < if_else_node->size(); ++i) {
+                        auto& condition = if_else_node->at(i).second;
+                        for (auto atom : symbolic::atoms(condition)) {
+                            if (reads.find(users.get_user(atom->get_name(), if_else_node, Use::READ)) != reads.end()) {
+                                is_dynamic = true;
                                 break;
                             }
                         }
                         if (is_dynamic) {
-                            for (size_t i = 0; i < if_else_node->size(); ++i) {
-                                auto& body = if_else_node->at(i).first;
-                                symbolic::Symbol if_else_symbol =
-                                    symbolic::symbol("if_else_" + std::to_string(if_else_node->element_id()));
-                                total_cost = symbolic::mul(symbolic::max(total_cost, cost.at(&body)), if_else_symbol);
-                                if_else_symbols.insert(if_else_symbol);
-                            }
+                            break;
+                        }
+                    }
+
+                    if (is_dynamic && contains_jump(if_else_node)) {
+                        for (size_t i = 0; i < if_else_node->size(); ++i) {
+                            auto& body = if_else_node->at(i).first;
+                            symbolic::Symbol if_else_symbol =
+                                symbolic::symbol("if_else_" + std::to_string(if_else_node->element_id()));
+                            total_cost = symbolic::mul(symbolic::max(total_cost, cost.at(&body)), if_else_symbol);
+                            if_else_symbols.insert(if_else_symbol);
+                        }
+                    } else if (is_dynamic || contains_dynamic_cost(if_else_node, cost)) {
+                        for (size_t i = 0; i < if_else_node->size(); ++i) {
+                            auto& body = if_else_node->at(i).first;
+                            total_cost = symbolic::max(total_cost, cost.at(&body));
                         }
                     }
                     cost.insert({node, total_cost});
@@ -430,6 +472,8 @@ void DegreesOfKnowledgeAnalysis::balance_analysis(AnalysisManager& analysis_mana
                             symbolic::symbol("while_" + std::to_string(while_loop->element_id()));
                         total_cost = symbolic::mul(while_symbol, body_cost);
                         while_symbols_.insert(while_symbol);
+                    } else if (contains_dynamic_cost(while_loop, cost)) {
+                        total_cost = symbolic::mul(total_cost, body_cost);
                     }
                     cost.insert({node, total_cost});
                 } else {

@@ -33,10 +33,10 @@ TEST(DOKSizeTest, StaticSize) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.size_of_a_map(map_node);
+    auto work = dok_analysis.size_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(10)));
 }
@@ -61,10 +61,10 @@ TEST(DOKSizeTest, StaticSizeOffset) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.size_of_a_map(map_node);
+    auto work = dok_analysis.size_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(5)));
 }
@@ -89,10 +89,10 @@ TEST(DOKSizeTest, StaticSizeStride) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.size_of_a_map(map_node);
+    auto work = dok_analysis.size_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(5)));
 }
@@ -118,10 +118,10 @@ TEST(DOKSizeTest, BoundSize) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.size_of_a_map(map_node);
+    auto work = dok_analysis.size_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Bound);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::symbol("N")));
 }
@@ -157,10 +157,10 @@ TEST(DOKSizeTest, UnboundSize) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.size_of_a_map(map_node);
+    auto work = dok_analysis.size_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Unbound);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::symbol("j")));
 }
@@ -195,10 +195,9 @@ TEST(DOKNumberTest, StaticNumber) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
-
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.number_of_maps(map_node);
+    auto work = dok_analysis.number_of_maps(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(10)));
 }
@@ -233,10 +232,10 @@ TEST(DOKNumberTest, StaticNumberOffset) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.number_of_maps(map_node);
+    auto work = dok_analysis.number_of_maps(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(5)));
 }
@@ -271,10 +270,10 @@ TEST(DOKNumberTest, StaticNumberStride) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.number_of_maps(map_node);
+    auto work = dok_analysis.number_of_maps(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(5)));
 }
@@ -310,10 +309,10 @@ TEST(DOKNumberTest, BoundNumber) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.number_of_maps(map_node);
+    auto work = dok_analysis.number_of_maps(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Bound);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::symbol("N")));
 }
@@ -343,10 +342,10 @@ TEST(DOKNumberTest, UnboundNumber) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.number_of_maps(map_node);
+    auto work = dok_analysis.number_of_maps(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Unbound);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::symbol(while_symbol_name)));
 }
@@ -383,10 +382,10 @@ TEST(DOKLoadTest, StaticLoad) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.load_of_a_map(map_node);
+    auto work = dok_analysis.load_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(1)));
 }
@@ -435,10 +434,10 @@ TEST(DOKLoadTest, BoundLoad) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.load_of_a_map(map_node);
+    auto work = dok_analysis.load_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Bound);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::symbol("N")));
 }
@@ -498,10 +497,10 @@ TEST(DOKLoadTest, UnboundLoad) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.load_of_a_map(map_node);
+    auto work = dok_analysis.load_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Unbound);
     EXPECT_TRUE(symbolic::eq(
         work.first,
@@ -541,10 +540,10 @@ TEST(DOKBalanceTest, StaticBalance) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.balance_of_a_map(map_node);
+    auto work = dok_analysis.balance_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Scalar);
     EXPECT_TRUE(symbolic::eq(work.first, symbolic::integer(2)));
 }
@@ -592,10 +591,10 @@ TEST(DOKBalanceTest, BoundBalance) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.balance_of_a_map(map_node);
+    auto work = dok_analysis.balance_of_a_map(map_node);
     EXPECT_EQ(work.second, analysis::DegreesOfKnowledgeClassification::Bound);
     EXPECT_TRUE(symbolic::
                     eq(work.first,
@@ -659,10 +658,10 @@ TEST(DOKBalanceTest, UnboundBalance) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& work_depth_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
 
     auto& root_node = sdfg.root();
-    auto work = work_depth_analysis.balance_of_a_map(map_node);
+    auto work = dok_analysis.balance_of_a_map(map_node);
     auto expected_balance = symbolic::add(
         symbolic::integer(2),
         symbolic::mul(

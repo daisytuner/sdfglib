@@ -53,10 +53,12 @@ bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
         }
 
         ScheduleType schedule_type = ScheduleType_CPU_Parallel::create();
-        if (symbolic::is_true(run_dynamic)) {
+        if (!symbolic::is_false(run_dynamic)) {
             ScheduleType_CPU_Parallel::omp_schedule(schedule_type, OpenMPSchedule::Dynamic);
+            ScheduleType_CPU_Parallel::num_threads(schedule_type, symbolic::integer(avail_threads));
+        } else {
+            ScheduleType_CPU_Parallel::num_threads(schedule_type, num_threads);
         }
-        ScheduleType_CPU_Parallel::num_threads(schedule_type, num_threads);
 
         builder.update_schedule_type(*map, schedule_type);
     }
