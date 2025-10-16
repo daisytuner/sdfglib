@@ -22,13 +22,13 @@ void NodeDispatcher::
     bool applied = begin_node(main_stream);
 
     if (this->instrumentation_plan_.should_instrument(node_)) {
-        this->instrumentation_plan_.begin_instrumentation(node_, main_stream);
+        this->instrumentation_plan_.begin_instrumentation(node_, main_stream, language_extension_);
     }
 
     dispatch_node(main_stream, globals_stream, library_snippet_factory);
 
     if (this->instrumentation_plan_.should_instrument(node_)) {
-        this->instrumentation_plan_.end_instrumentation(node_, main_stream);
+        this->instrumentation_plan_.end_instrumentation(node_, main_stream, language_extension_);
     }
 
     end_node(main_stream, applied);

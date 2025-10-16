@@ -1,6 +1,6 @@
 #pragma once
 
-#include <map>
+#include <unordered_map>
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
@@ -15,7 +15,7 @@ namespace analysis {
 
 class FlopAnalysis : public Analysis {
 private:
-    std::map<const structured_control_flow::ControlFlowNode*, symbolic::Expression> flops_;
+    std::unordered_map<const structured_control_flow::ControlFlowNode*, symbolic::Expression> flops_;
 
     symbolic::Expression visit(structured_control_flow::ControlFlowNode& node, AnalysisManager& analysis_manager);
 
@@ -39,6 +39,8 @@ public:
     bool contains(const structured_control_flow::ControlFlowNode* node);
 
     symbolic::Expression get(const structured_control_flow::ControlFlowNode* node);
+
+    std::unordered_map<const structured_control_flow::ControlFlowNode*, symbolic::Expression> get();
 };
 
 } // namespace analysis

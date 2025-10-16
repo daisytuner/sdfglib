@@ -1,8 +1,10 @@
 #include "sdfg/codegen/instrumentation/instrumentation_plan.h"
+#include <memory>
+#include <string>
 
 #include "sdfg/analysis/analysis.h"
-#include "sdfg/analysis/flop_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
+#include "sdfg/codegen/language_extension.h"
 
 namespace sdfg {
 namespace codegen {
@@ -15,8 +17,9 @@ bool InstrumentationPlan::should_instrument(const structured_control_flow::Contr
     return this->nodes_.count(&node);
 }
 
-void InstrumentationPlan::begin_instrumentation(const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream)
-    const {
+void InstrumentationPlan::begin_instrumentation(
+    const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream, LanguageExtension& language_extension
+) const {
     auto& metadata = sdfg_.metadata();
     std::string sdfg_name = sdfg_.name();
     std::string sdfg_file = metadata.at("sdfg_file");
@@ -82,8 +85,9 @@ void InstrumentationPlan::begin_instrumentation(const structured_control_flow::C
     stream << "__daisy_instrumentation_enter(" << region_id_var << ");" << std::endl;
 }
 
-void InstrumentationPlan::end_instrumentation(const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream)
-    const {
+void InstrumentationPlan::end_instrumentation(
+    const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream, LanguageExtension& language_extension
+) const {
     std::string region_id_var = sdfg_.name() + "_" + std::to_string(node.element_id()) + "_id";
 
     // Exit region
@@ -94,10 +98,14 @@ void InstrumentationPlan::end_instrumentation(const structured_control_flow::Con
     }
 
     // Perform FlopAnalysis
-    analysis::AnalysisManager analysis_manager(this->sdfg_);
-    auto& flop_analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    stream << "__daisy_instrumentation_increment(" << region_id_var << ", \"flop\", "
-           << flop_analysis.get(&node)->__str__() << ");" << std::endl;
+    if (this->flops_.contains(&node)) {
+        auto flop = this->flops_.at(&node);
+        if (!flop.is_null()) {
+            std::string flop_str = language_extension.expression(flop);
+            stream << "__daisy_instrumentation_increment(" << region_id_var << ", \"flop\", " << flop_str << ");"
+                   << std::endl;
+        }
+    }
 
     // Finalize region
     stream << "__daisy_instrumentation_finalize(" << region_id_var << ");" << std::endl;

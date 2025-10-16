@@ -1,6 +1,7 @@
 #include "sdfg/analysis/flop_analysis.h"
 #include <cassert>
 #include <cstddef>
+#include <unordered_map>
 #include <vector>
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/analysis/assumptions_analysis.h"
@@ -158,6 +159,8 @@ symbolic::Expression FlopAnalysis::
 
 symbolic::Expression FlopAnalysis::
     visit_if_else(structured_control_flow::IfElse& if_else, AnalysisManager& analysis_manager) {
+    if (if_else.size() == 0) return symbolic::zero();
+
     std::vector<symbolic::Expression> sub_flops;
     bool is_null = false;
 
@@ -191,6 +194,10 @@ bool FlopAnalysis::contains(const structured_control_flow::ControlFlowNode* node
 
 symbolic::Expression FlopAnalysis::get(const structured_control_flow::ControlFlowNode* node) {
     return this->flops_[node];
+}
+
+std::unordered_map<const structured_control_flow::ControlFlowNode*, symbolic::Expression> FlopAnalysis::get() {
+    return this->flops_;
 }
 
 } // namespace analysis
