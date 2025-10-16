@@ -165,9 +165,6 @@ class UsersView {
 
     std::unordered_set<User*> sub_users_;
 
-    std::unordered_map<User*, User*> sub_dom_tree_;
-    std::unordered_map<User*, User*> sub_pdom_tree_;
-
    public:
     UsersView(Users& users, const structured_control_flow::ControlFlowNode& node);
 
