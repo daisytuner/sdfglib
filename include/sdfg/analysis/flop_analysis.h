@@ -28,11 +28,15 @@ private:
 
     symbolic::Expression visit_if_else(structured_control_flow::IfElse& if_else, AnalysisManager& analysis_manager);
 
+    symbolic::Expression visit_while(structured_control_flow::While& loop, AnalysisManager& analysis_manager);
+
 protected:
     void run(AnalysisManager& analysis_manager) override;
 
 public:
     FlopAnalysis(StructuredSDFG& sdfg);
+
+    bool contains(const structured_control_flow::ControlFlowNode* node);
 
     symbolic::Expression get(const structured_control_flow::ControlFlowNode* node);
 };

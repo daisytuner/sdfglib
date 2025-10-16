@@ -38,9 +38,15 @@ TEST(FlopAnalysis, Tasklet) {
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    auto flop = analysis.get(&root);
-
+    
     // Check
+    symbolic::Expression flop;
+    ASSERT_TRUE(analysis.contains(&block));
+    flop = analysis.get(&block);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::one()));
+    ASSERT_TRUE(analysis.contains(&root));
+    flop = analysis.get(&root);
     ASSERT_FALSE(flop.is_null());
     EXPECT_TRUE(symbolic::eq(flop, symbolic::one()));
 }
@@ -81,9 +87,15 @@ TEST(FlopAnalysis, MultipleTasklets) {
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    auto flop = analysis.get(&root);
 
     // Check
+    symbolic::Expression flop;
+    ASSERT_TRUE(analysis.contains(&block));
+    flop = analysis.get(&block);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::integer(3)));
+    ASSERT_TRUE(analysis.contains(&root));
+    flop = analysis.get(&root);
     ASSERT_FALSE(flop.is_null());
     EXPECT_TRUE(symbolic::eq(flop, symbolic::integer(3)));
 }
@@ -118,9 +130,23 @@ TEST(FlopAnalysis, Loop) {
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    auto flop = analysis.get(&root);
 
     // Check
+    symbolic::Expression flop;
+    ASSERT_TRUE(analysis.contains(&block));
+    flop = analysis.get(&block);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::one()));
+    ASSERT_TRUE(analysis.contains(&loop.root()));
+    flop = analysis.get(&loop.root());
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::one()));
+    ASSERT_TRUE(analysis.contains(&loop));
+    flop = analysis.get(&loop);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::symbol("n")));
+    ASSERT_TRUE(analysis.contains(&root));
+    flop = analysis.get(&root);
     ASSERT_FALSE(flop.is_null());
     EXPECT_TRUE(symbolic::eq(flop, symbolic::symbol("n")));
 }
@@ -163,9 +189,31 @@ TEST(FlopAnalysis, LoopNest) {
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    auto flop = analysis.get(&root);
 
     // Check
+    symbolic::Expression flop;
+    ASSERT_TRUE(analysis.contains(&block));
+    flop = analysis.get(&block);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::integer(2)));
+    ASSERT_TRUE(analysis.contains(&loop2.root()));
+    flop = analysis.get(&loop2.root());
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::integer(2)));
+    ASSERT_TRUE(analysis.contains(&loop2));
+    flop = analysis.get(&loop2);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("idiv(min(m + 1, k) - 1, 2) * 2")));
+    ASSERT_TRUE(analysis.contains(&loop1.root()));
+    flop = analysis.get(&loop1.root());
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("idiv(min(m + 1, k) - 1, 2) * 2")));
+    ASSERT_TRUE(analysis.contains(&loop1));
+    flop = analysis.get(&loop1);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("n * idiv(min(m + 1, k) - 1, 2) * 2")));
+    ASSERT_TRUE(analysis.contains(&root));
+    flop = analysis.get(&root);
     ASSERT_FALSE(flop.is_null());
     EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("n * idiv(min(m + 1, k) - 1, 2) * 2")));
 }
@@ -192,9 +240,15 @@ TEST(FlopAnalysis, Intrinsic) {
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    auto flop = analysis.get(&root);
-
+    
     // Check
+    symbolic::Expression flop;
+    ASSERT_TRUE(analysis.contains(&block));
+    flop = analysis.get(&block);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::one()));
+    ASSERT_TRUE(analysis.contains(&root));
+    flop = analysis.get(&root);
     ASSERT_FALSE(flop.is_null());
     EXPECT_TRUE(symbolic::eq(flop, symbolic::one()));
 }
@@ -218,37 +272,105 @@ TEST(FlopAnalysis, IfElse) {
     auto& case2 = builder.add_case(if_else, symbolic::Ne(symbolic::symbol("a"), symbolic::zero()));
 
     // Add first block with tasklet
+    auto& block1 = builder.add_block(case1);
     {
-        auto& block = builder.add_block(case1);
-        auto& b = builder.add_access(block, "b");
-        auto& c = builder.add_access(block, "c");
-        auto& d = builder.add_access(block, "d");
-        auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
-        builder.add_computational_memlet(block, b, tasklet, "_in1", {});
-        builder.add_computational_memlet(block, c, tasklet, "_in2", {});
-        builder.add_computational_memlet(block, tasklet, "_out", d, {});
+        auto& b = builder.add_access(block1, "b");
+        auto& c = builder.add_access(block1, "c");
+        auto& d = builder.add_access(block1, "d");
+        auto& tasklet = builder.add_tasklet(block1, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+        builder.add_computational_memlet(block1, b, tasklet, "_in1", {});
+        builder.add_computational_memlet(block1, c, tasklet, "_in2", {});
+        builder.add_computational_memlet(block1, tasklet, "_out", d, {});
     }
 
     // Add second block with tasklet
+    auto& block2 = builder.add_block(case2);
     {
-        auto& block = builder.add_block(case2);
-        auto& a = builder.add_access(block, "a");
-        auto& b = builder.add_access(block, "b");
-        auto& c = builder.add_access(block, "c");
-        auto& d = builder.add_access(block, "d");
-        auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_fma, {"_out"}, {"_in1", "_in2", "_in3"});
-        builder.add_computational_memlet(block, a, tasklet, "_in1", {});
-        builder.add_computational_memlet(block, b, tasklet, "_in2", {});
-        builder.add_computational_memlet(block, c, tasklet, "_in3", {});
-        builder.add_computational_memlet(block, tasklet, "_out", d, {});
+        auto& a = builder.add_access(block2, "a");
+        auto& b = builder.add_access(block2, "b");
+        auto& c = builder.add_access(block2, "c");
+        auto& d = builder.add_access(block2, "d");
+        auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::fp_fma, {"_out"}, {"_in1", "_in2", "_in3"});
+        builder.add_computational_memlet(block2, a, tasklet, "_in1", {});
+        builder.add_computational_memlet(block2, b, tasklet, "_in2", {});
+        builder.add_computational_memlet(block2, c, tasklet, "_in3", {});
+        builder.add_computational_memlet(block2, tasklet, "_out", d, {});
     }
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    auto flop = analysis.get(&root);
-
+    
     // Check
+    symbolic::Expression flop;
+    ASSERT_TRUE(analysis.contains(&block1));
+    flop = analysis.get(&block1);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::one()));
+    ASSERT_TRUE(analysis.contains(&block2));
+    flop = analysis.get(&block2);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::integer(2)));
+    ASSERT_TRUE(analysis.contains(&if_else));
+    flop = analysis.get(&if_else);
     ASSERT_FALSE(flop.is_null());
     EXPECT_TRUE(symbolic::eq(flop, symbolic::max(symbolic::one(), symbolic::integer(2))));
+    ASSERT_TRUE(analysis.contains(&root));
+    flop = analysis.get(&root);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::max(symbolic::one(), symbolic::integer(2))));
+}
+
+TEST(FlopAnalysis, WhileLoop) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar desc(types::PrimitiveType::Float);
+    builder.add_container("a", desc);
+    builder.add_container("b", desc);
+    builder.add_container("c", desc);
+
+    // Add loop
+    auto& loop = builder.add_while(root);
+
+    // Add block with tasklet
+    auto& block = builder.add_block(loop.root());
+    auto& a = builder.add_access(block, "a");
+    auto& b = builder.add_access(block, "b");
+    auto& c = builder.add_access(block, "c");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+    builder.add_computational_memlet(block, a, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, b, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", c, {});
+
+    // Add break
+    auto& break_node = builder.add_break(loop.root());
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
+
+    // Check
+    symbolic::Expression flop;
+    ASSERT_TRUE(analysis.contains(&block));
+    flop = analysis.get(&block);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::one()));
+    ASSERT_TRUE(analysis.contains(&break_node));
+    flop = analysis.get(&break_node);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::zero()));
+    ASSERT_TRUE(analysis.contains(&loop.root()));
+    flop = analysis.get(&loop.root());
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::one()));
+    ASSERT_TRUE(analysis.contains(&loop));
+    flop = analysis.get(&loop);
+    ASSERT_TRUE(flop.is_null());
+    ASSERT_TRUE(analysis.contains(&root));
+    flop = analysis.get(&root);
+    ASSERT_TRUE(flop.is_null());
 }

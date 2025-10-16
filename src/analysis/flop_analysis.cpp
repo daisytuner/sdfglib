@@ -30,6 +30,8 @@ symbolic::Expression FlopAnalysis::visit(structured_control_flow::ControlFlowNod
         return this->visit_structured_loop(*structured_loop, analysis_manager);
     } else if (auto if_else = dynamic_cast<structured_control_flow::IfElse*>(&node)) {
         return this->visit_if_else(*if_else, analysis_manager);
+    } else if (auto while_loop = dynamic_cast<structured_control_flow::While*>(&node)) {
+        return this->visit_while(*while_loop, analysis_manager);
     } else if (dynamic_cast<structured_control_flow::Return*>(&node)) {
         return symbolic::zero();
     } else if (dynamic_cast<structured_control_flow::Break*>(&node)) {
@@ -115,12 +117,22 @@ symbolic::Expression FlopAnalysis::
     return SymEngine::max(sub_flops);
 }
 
+symbolic::Expression FlopAnalysis::visit_while(structured_control_flow::While& loop, AnalysisManager& analysis_manager) {
+    this->flops_[&loop.root()] = this->visit_sequence(loop.root(), analysis_manager);
+    // Return null because there is now good way to simply estimate the FLOPs of a while loop
+    return SymEngine::null;
+}
+
 void FlopAnalysis::run(AnalysisManager& analysis_manager) {
     this->flops_.clear();
     this->flops_[&this->sdfg_.root()] = this->visit_sequence(this->sdfg_.root(), analysis_manager);
 }
 
 FlopAnalysis::FlopAnalysis(StructuredSDFG& sdfg) : Analysis(sdfg) {}
+
+bool FlopAnalysis::contains(const structured_control_flow::ControlFlowNode* node) {
+    return this->flops_.contains(node);
+}
 
 symbolic::Expression FlopAnalysis::get(const structured_control_flow::ControlFlowNode* node) {
     return this->flops_[node];
