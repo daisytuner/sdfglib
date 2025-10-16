@@ -374,3 +374,67 @@ TEST(FlopAnalysis, WhileLoop) {
     flop = analysis.get(&root);
     ASSERT_TRUE(flop.is_null());
 }
+
+TEST(FlopAnalysis, LoopIndvarDependency) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar desc(types::PrimitiveType::Float);
+    builder.add_container("a", desc);
+    builder.add_container("b", desc);
+    builder.add_container("c", desc);
+
+    // Add first loop
+    auto i = symbolic::symbol("i");
+    auto n = symbolic::symbol("n");
+    auto& loop1 = builder.add_for(root, i, symbolic::Lt(i, n), symbolic::zero(), symbolic::add(i, symbolic::one()));
+
+    // Add second loop
+    auto j = symbolic::symbol("j");
+    auto m = symbolic::symbol("m");
+    auto& loop2 = builder.add_for(loop1.root(), j, symbolic::Lt(j, m), i, symbolic::add(j, symbolic::one()));
+
+    // Add block with tasklet
+    auto& block = builder.add_block(loop2.root());
+    auto& a = builder.add_access(block, "a");
+    auto& b = builder.add_access(block, "b");
+    auto& c = builder.add_access(block, "c");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+    builder.add_computational_memlet(block, a, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, b, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", c, {});
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
+
+    // Check
+    symbolic::Expression flop;
+    ASSERT_TRUE(analysis.contains(&block));
+    flop = analysis.get(&block);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::one()));
+    ASSERT_TRUE(analysis.contains(&loop2.root()));
+    flop = analysis.get(&loop2.root());
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::one()));
+    ASSERT_TRUE(analysis.contains(&loop2));
+    flop = analysis.get(&loop2);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("m - idiv(n - 1, 2)")));
+    ASSERT_TRUE(analysis.contains(&loop1.root()));
+    flop = analysis.get(&loop1.root());
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("m - idiv(n - 1, 2)")));
+    ASSERT_TRUE(analysis.contains(&loop1));
+    flop = analysis.get(&loop1);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("n * (m - idiv(n - 1, 2))")));
+    ASSERT_TRUE(analysis.contains(&root));
+    flop = analysis.get(&root);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("n * (m - idiv(n - 1, 2))")));
+}

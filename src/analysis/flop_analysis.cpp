@@ -14,6 +14,7 @@
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/structured_control_flow/while.h"
 #include "sdfg/structured_sdfg.h"
+#include "sdfg/symbolic/assumptions.h"
 #include "sdfg/symbolic/polynomials.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "symengine/symengine_rcp.h"
@@ -60,31 +61,53 @@ symbolic::Expression FlopAnalysis::
 }
 
 symbolic::Expression FlopAnalysis::visit_block(structured_control_flow::Block& block, AnalysisManager& analysis_manager) {
-    symbolic::Expression result = symbolic::zero();
     auto& dfg = block.dataflow();
 
+    symbolic::Expression tasklets_result = symbolic::zero();
     for (auto tasklet : dfg.tasklets()) {
         if (tasklet->code() == data_flow::TaskletCode::fp_fma) {
-            result = symbolic::add(result, symbolic::integer(2));
+            tasklets_result = symbolic::add(tasklets_result, symbolic::integer(2));
         } else if (data_flow::is_floating_point(tasklet->code())) {
-            result = symbolic::add(result, symbolic::one());
+            tasklets_result = symbolic::add(tasklets_result, symbolic::one());
         }
     }
 
+    symbolic::Expression libnodes_result = symbolic::zero();
     for (auto libnode : dfg.library_nodes()) {
         symbolic::Expression tmp = libnode->flop();
         if (tmp.is_null()) return SymEngine::null;
-        result = symbolic::add(result, tmp);
+        libnodes_result = symbolic::add(libnodes_result, tmp);
     }
 
-    return result;
+    // Filter the loop index variables in libnodes_result, and replace them by (upper_bound - lower_bound) / 2
+    auto& loop_analysis = analysis_manager.get<LoopAnalysis>();
+    auto& assumptions_analysis = analysis_manager.get<AssumptionsAnalysis>();
+    auto block_assumptions = assumptions_analysis.get(block);
+    auto libnodes_result_atoms = symbolic::atoms(libnodes_result);
+    for (auto sym : libnodes_result_atoms) {
+        if (!loop_analysis.find_loop_by_indvar(sym->__str__()) || !block_assumptions.contains(sym)) continue;
+        symbolic::Assumption assumption = block_assumptions.at(sym);
+        libnodes_result = symbolic::subs(
+            libnodes_result,
+            sym,
+            symbolic::div(symbolic::sub(assumption.upper_bound(), assumption.lower_bound()), symbolic::integer(2))
+        );
+    }
+
+    return symbolic::add(tasklets_result, libnodes_result);
 }
 
 symbolic::Expression FlopAnalysis::
     visit_structured_loop(structured_control_flow::StructuredLoop& loop, AnalysisManager& analysis_manager) {
+    symbolic::Expression tmp = this->visit_sequence(loop.root(), analysis_manager);
+    this->flops_[&loop.root()] = tmp;
+    if (tmp.is_null()) return SymEngine::null;
+
     auto& loop_analysis = analysis_manager.get<LoopAnalysis>();
     auto& assumptions_analysis = analysis_manager.get<AssumptionsAnalysis>();
-    auto canonical_bound = loop_analysis.canonical_bound(&loop, assumptions_analysis);
+    auto bound = loop_analysis.canonical_bound(&loop, assumptions_analysis);
+
+    auto init = loop.init();
 
     auto indvar = loop.indvar();
     symbolic::SymbolVec symbols = {indvar};
@@ -95,10 +118,40 @@ symbolic::Expression FlopAnalysis::
     assert(update_coeffs.contains(indvar) && symbolic::eq(update_coeffs[indvar], symbolic::one()));
     symbolic::Expression stride = update_coeffs[symbolic::symbol("__daisy_constant__")];
 
-    symbolic::Expression tmp = this->visit_sequence(loop.root(), analysis_manager);
-    this->flops_[&loop.root()] = tmp;
-    if (tmp.is_null()) return SymEngine::null;
-    return symbolic::mul(symbolic::div(symbolic::sub(canonical_bound, loop.init()), stride), tmp);
+    // Filter the loop index variables in bound, init, and stride, and replace them by (upper_bound - lower_bound) / 2
+    auto loop_assumptions = assumptions_analysis.get(loop.root());
+    auto bound_atoms = symbolic::atoms(bound);
+    for (auto sym : bound_atoms) {
+        if (!loop_analysis.find_loop_by_indvar(sym->__str__()) || !loop_assumptions.contains(sym)) continue;
+        symbolic::Assumption assumption = loop_assumptions.at(sym);
+        bound = symbolic::subs(
+            bound,
+            sym,
+            symbolic::div(symbolic::sub(assumption.upper_bound(), assumption.lower_bound()), symbolic::integer(2))
+        );
+    }
+    auto init_atoms = symbolic::atoms(init);
+    for (auto sym : init_atoms) {
+        if (!loop_analysis.find_loop_by_indvar(sym->__str__()) || !loop_assumptions.contains(sym)) continue;
+        symbolic::Assumption assumption = loop_assumptions.at(sym);
+        init = symbolic::subs(
+            init,
+            sym,
+            symbolic::div(symbolic::sub(assumption.upper_bound(), assumption.lower_bound()), symbolic::integer(2))
+        );
+    }
+    auto stride_atoms = symbolic::atoms(stride);
+    for (auto sym : stride_atoms) {
+        if (!loop_analysis.find_loop_by_indvar(sym->__str__()) || !loop_assumptions.contains(sym)) continue;
+        symbolic::Assumption assumption = loop_assumptions.at(sym);
+        stride = symbolic::subs(
+            stride,
+            sym,
+            symbolic::div(symbolic::sub(assumption.upper_bound(), assumption.lower_bound()), symbolic::integer(2))
+        );
+    }
+
+    return symbolic::mul(symbolic::div(symbolic::sub(bound, init), stride), tmp);
 }
 
 symbolic::Expression FlopAnalysis::
