@@ -118,7 +118,27 @@ void CCodeGenerator::dispatch_structures() {
 
 void CCodeGenerator::dispatch_globals() {
     // Declare globals
+    const std::unordered_set<std::string> reserved_symbols = {
+        "alloca",
+        "calloc",
+        "free",
+        "malloc",
+        "memcpy",
+        "memmove",
+        "memset",
+        "stderr",
+        "stdin",
+        "stdout",
+        "cblas_sdot",
+        "cblas_ddot",
+        "cblas_sgemm",
+        "cblas_dgemm"
+    };
     for (auto& container : sdfg_.externals()) {
+        if (reserved_symbols.find(container) != reserved_symbols.end()) {
+            continue;
+        }
+
         // Function declarations
         if (dynamic_cast<const types::Function*>(&sdfg_.type(container))) {
             // Declare function
