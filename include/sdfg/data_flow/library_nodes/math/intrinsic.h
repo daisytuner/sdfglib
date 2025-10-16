@@ -4,6 +4,7 @@
 
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 #include "sdfg/serializer/json_serializer.h"
+#include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
 namespace math {
@@ -38,6 +39,8 @@ public:
 
     std::unique_ptr<data_flow::DataFlowNode>
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override;
+
+    virtual symbolic::Expression flop() const override;
 };
 
 class IntrinsicNodeSerializer : public serializer::LibraryNodeSerializer {
