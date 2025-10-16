@@ -489,7 +489,24 @@ std::pair<symbolic::Expression, DegreesOfKnowledgeClassification> DegreesOfKnowl
     }
 
     auto expr = load_of_a_map_.at(&node);
-    if (!symbolic::intersects(symbolic::atoms(expr), while_symbols_)) {
+    std::queue<symbolic::Expression> args;
+    args.push(expr);
+    // Check if expr contains a max operator using SymEngine
+    bool contains_max = false;
+    while (!contains_max && !args.empty()) {
+        auto expr = args.front();
+        args.pop();
+        if (SymEngine::is_a<SymEngine::Max>(*expr)) {
+            contains_max = true;
+        } else {
+            auto sub_args = expr->get_args();
+            for (const auto& sub_arg : sub_args) {
+                args.push(sub_arg);
+            }
+        }
+    }
+
+    if ((!symbolic::intersects(symbolic::atoms(expr), while_symbols_)) && !contains_max) {
         if (SymEngine::is_a<SymEngine::Integer>(*expr)) {
             return {expr, DegreesOfKnowledgeClassification::Scalar};
         }
