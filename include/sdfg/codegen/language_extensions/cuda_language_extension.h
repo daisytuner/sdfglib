@@ -15,7 +15,10 @@ class CUDALanguageExtension : public LanguageExtension {
 public:
     CUDALanguageExtension() : LanguageExtension() {}
 
-    CUDALanguageExtension(const std::vector<std::string>& external_variables) : LanguageExtension(external_variables) {}
+    CUDALanguageExtension(
+        const std::vector<std::string>& external_variables,
+        const std::string& external_prefix = ""
+    ) : LanguageExtension(external_variables, external_prefix) {}
 
     const std::string language() const override { return "CUDA"; }
 

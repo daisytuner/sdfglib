@@ -128,7 +128,6 @@ void CPPCodeGenerator::dispatch_globals() {
         "cblas_dgemm"
     };
     for (auto& container : sdfg_.externals()) {
-        // Reserved symbols
         if (reserved_symbols.find(container) != reserved_symbols.end()) {
             continue;
         }
@@ -136,7 +135,7 @@ void CPPCodeGenerator::dispatch_globals() {
         // Function declarations
         if (dynamic_cast<const types::Function*>(&sdfg_.type(container))) {
             this->globals_stream_ << "extern \"C\" ";
-            this->globals_stream_ << language_extension_.declaration(container, sdfg_.type(container)) << ";"
+            this->globals_stream_ << language_extension_.declaration(this->externals_prefix_ + container, sdfg_.type(container)) << ";"
                         << std::endl;
             continue;
         }
@@ -147,10 +146,10 @@ void CPPCodeGenerator::dispatch_globals() {
         auto& base_type = type.pointee_type();
 
         if (sdfg_.linkage_type(container) == LinkageType_External) {
-            this->globals_stream_ << "extern " << language_extension_.declaration(container, base_type) << ";"
+            this->globals_stream_ << "extern " << language_extension_.declaration(this->externals_prefix_ + container, base_type) << ";"
                                   << std::endl;
         } else {
-            this->globals_stream_ << "static " << language_extension_.declaration(container, base_type);
+            this->globals_stream_ << "static " << language_extension_.declaration(this->externals_prefix_ + container, base_type);
             if (!type.initializer().empty()) {
                 this->globals_stream_ << " = " << type.initializer();
             }

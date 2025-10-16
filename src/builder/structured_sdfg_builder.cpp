@@ -2,7 +2,6 @@
 
 #include <cstddef>
 
-#include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/codegen/language_extensions/cpp_language_extension.h"
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/structured_control_flow/map.h"
@@ -1055,24 +1054,6 @@ Map& StructuredSDFGBuilder::add_map_after(
 
 Continue& StructuredSDFGBuilder::
     add_continue(Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfo& debug_info) {
-    // Check if continue is in a loop
-    analysis::AnalysisManager analysis_manager(this->subject());
-    auto& scope_tree_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
-    auto current_scope = scope_tree_analysis.parent_scope(&parent);
-    bool in_loop = false;
-    while (current_scope != nullptr) {
-        if (dynamic_cast<structured_control_flow::While*>(current_scope)) {
-            in_loop = true;
-            break;
-        } else if (dynamic_cast<structured_control_flow::For*>(current_scope)) {
-            throw UnstructuredControlFlowException();
-        }
-        current_scope = scope_tree_analysis.parent_scope(current_scope);
-    }
-    if (!in_loop) {
-        throw UnstructuredControlFlowException();
-    }
-
     parent.children_.push_back(std::unique_ptr<Continue>(new Continue(this->new_element_id(), debug_info)));
 
     parent.transitions_
@@ -1084,24 +1065,6 @@ Continue& StructuredSDFGBuilder::
 
 Break& StructuredSDFGBuilder::
     add_break(Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfo& debug_info) {
-    // Check if break is in a loop
-    analysis::AnalysisManager analysis_manager(this->subject());
-    auto& scope_tree_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
-    auto current_scope = scope_tree_analysis.parent_scope(&parent);
-    bool in_loop = false;
-    while (current_scope != nullptr) {
-        if (dynamic_cast<structured_control_flow::While*>(current_scope)) {
-            in_loop = true;
-            break;
-        } else if (dynamic_cast<structured_control_flow::For*>(current_scope)) {
-            throw UnstructuredControlFlowException();
-        }
-        current_scope = scope_tree_analysis.parent_scope(current_scope);
-    }
-    if (!in_loop) {
-        throw UnstructuredControlFlowException();
-    }
-
     parent.children_.push_back(std::unique_ptr<Break>(new Break(this->new_element_id(), debug_info)));
 
     parent.transitions_

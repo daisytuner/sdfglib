@@ -4,6 +4,7 @@
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/analysis/users.h"
+#include "sdfg/analysis/dominance_analysis.h"
 #include "sdfg/symbolic/polynomials.h"
 #include "sdfg/symbolic/series.h"
 
@@ -99,6 +100,7 @@ bool SymbolEvolution::eliminate_symbols(
     auto condition = loop.condition();
 
     auto& users = analysis_manager.get<analysis::Users>();
+    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
     analysis::UsersView body_users(users, loop.root());
 
     // Loop-dependent symbols are written in the loop body
@@ -179,7 +181,7 @@ bool SymbolEvolution::eliminate_symbols(
         if (init_write == update_write) {
             init_write = all_writes.at(1);
         }
-        if (!users.dominates(*init_write, *update_write)) {
+        if (!dominance_analysis.dominates(*init_write, *update_write)) {
             continue;
         }
         if (!dynamic_cast<structured_control_flow::Transition*>(init_write->element())) {

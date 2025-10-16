@@ -9,9 +9,10 @@ CStyleBaseCodeGenerator::CStyleBaseCodeGenerator(
     StructuredSDFG& sdfg,
     InstrumentationPlan& instrumentation_plan,
     bool capture_args_results,
-    const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths
+    const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths,
+    const std::string& externals_prefix
 )
-    : CodeGenerator(sdfg, instrumentation_plan, capture_args_results, output_and_header_paths) {
+    : CodeGenerator(sdfg, instrumentation_plan, capture_args_results, output_and_header_paths, externals_prefix) {
     if (sdfg.type() != FunctionType_CPU) {
         throw std::runtime_error("CStyleBaseCodeGenerator can only be used for CPU SDFGs");
     }
@@ -105,7 +106,13 @@ void CStyleBaseCodeGenerator::
 
     for (auto& varPlan : plan) {
         auto argIdx = varPlan.arg_idx;
-        auto argName = varPlan.is_external ? exts[argIdx - args.size()] : args[argIdx];
+        std::string argName;
+        if (varPlan.is_external) {
+            argName = exts[argIdx - args.size()];
+            argName = this->externals_prefix_ + argName;
+        } else {
+            argName = args[argIdx];
+        }
 
         if ((!after && varPlan.capture_input) || (after && varPlan.capture_output)) {
             switch (varPlan.type) {

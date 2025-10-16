@@ -1,6 +1,7 @@
 #include "sdfg/passes/dataflow/byte_reference_elimination.h"
 
 #include "sdfg/analysis/users.h"
+#include "sdfg/analysis/dominance_analysis.h"
 #include "sdfg/types/utils.h"
 
 namespace sdfg {
@@ -18,7 +19,8 @@ bool ByteReferenceElimination::
     bool applied = false;
 
     auto& sdfg = builder.subject();
-    auto& users = analysis_manager.get<analysis::Users>();
+    auto& users_analysis = analysis_manager.get<analysis::Users>();
+    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
 
     for (auto& name : sdfg.containers()) {
         if (!sdfg.is_transient(name)) {
@@ -27,8 +29,8 @@ bool ByteReferenceElimination::
         if (!dynamic_cast<const types::Pointer*>(&sdfg.type(name))) {
             continue;
         }
-        auto views = users.views(name);
-        auto moves = users.moves(name);
+        auto views = users_analysis.views(name);
+        auto moves = users_analysis.moves(name);
         if (moves.size() != 1) {
             continue;
         }
@@ -59,7 +61,7 @@ bool ByteReferenceElimination::
 
         for (auto& view : views) {
             auto view_node = dynamic_cast<data_flow::AccessNode*>(view->element());
-            if (!users.dominates(*move, *view)) {
+            if (!dominance_analysis.dominates(*move, *view)) {
                 continue;
             }
 
