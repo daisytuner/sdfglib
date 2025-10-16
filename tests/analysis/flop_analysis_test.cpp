@@ -38,7 +38,7 @@ TEST(FlopAnalysis, Tasklet) {
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    
+
     // Check
     symbolic::Expression flop;
     ASSERT_TRUE(analysis.contains(&block));
@@ -240,7 +240,7 @@ TEST(FlopAnalysis, Intrinsic) {
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    
+
     // Check
     symbolic::Expression flop;
     ASSERT_TRUE(analysis.contains(&block));
@@ -300,7 +300,7 @@ TEST(FlopAnalysis, IfElse) {
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
-    
+
     // Check
     symbolic::Expression flop;
     ASSERT_TRUE(analysis.contains(&block1));
