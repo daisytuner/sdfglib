@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "sdfg/analysis/analysis.h"
+#include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/structured_sdfg.h"
 #include "sdfg/symbolic/assumptions.h"
 #include "sdfg/symbolic/conjunctive_normal_form.h"
@@ -15,6 +16,8 @@ namespace analysis {
 class AssumptionsAnalysis : public Analysis {
 private:
     std::unordered_map<structured_control_flow::ControlFlowNode*, symbolic::Assumptions> assumptions_;
+
+    analysis::ScopeAnalysis* scope_analysis_;
 
     void traverse(structured_control_flow::Sequence& root, analysis::AnalysisManager& analysis_manager);
 
