@@ -4,7 +4,7 @@ namespace sdfg {
 namespace passes {
 
 BlockFusion::BlockFusion(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
-    : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
+    : visitor::NonStoppingStructuredSDFGVisitor(builder, analysis_manager) {}
 
 bool BlockFusion::can_be_applied(
     data_flow::DataFlowGraph& first_graph,

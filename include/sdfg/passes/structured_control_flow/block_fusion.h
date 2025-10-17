@@ -6,7 +6,7 @@
 namespace sdfg {
 namespace passes {
 
-class BlockFusion : public visitor::StructuredSDFGVisitor {
+class BlockFusion : public visitor::NonStoppingStructuredSDFGVisitor {
 private:
     bool can_be_applied(
         data_flow::DataFlowGraph& first_graph,
