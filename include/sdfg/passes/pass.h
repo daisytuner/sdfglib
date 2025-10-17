@@ -28,7 +28,7 @@ public:
 
 template<typename T>
 class VisitorPass : public Pass {
-    std::string name() override { return "VisitorPass"; };
+    std::string name() override { return T::name(); };
 
     bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override {
         T visitor(builder, analysis_manager);
