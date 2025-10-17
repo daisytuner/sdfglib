@@ -49,7 +49,7 @@ const std::vector<data_flow::Subset> User::subsets() const {
     }
 
     if (auto access_node = dynamic_cast<data_flow::AccessNode*>(this->element_)) {
-        auto& graph = *this->parent_;
+        auto& graph = access_node->get_parent();
         if (this->use_ == Use::READ || this->use_ == Use::VIEW) {
             std::vector<data_flow::Subset> subsets;
             for (auto& iedge : graph.out_edges(*access_node)) {

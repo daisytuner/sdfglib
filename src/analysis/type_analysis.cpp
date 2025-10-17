@@ -29,7 +29,7 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                 continue;
             }
 
-            for (auto& memlet : user->parent()->in_edges(*access_node)) {
+            for (auto& memlet : access_node->get_parent().in_edges(*access_node)) {
                 auto base_type = &memlet.base_type();
                 if (base_type->type_id() == types::TypeID::Pointer) {
                     auto pointer_type = dynamic_cast<const types::Pointer*>(base_type);
@@ -79,7 +79,7 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                 continue;
             }
 
-            for (auto& memlet : user->parent()->out_edges(*access_node)) {
+            for (auto& memlet : access_node->get_parent().out_edges(*access_node)) {
                 auto base_type = &memlet.base_type();
                 if (base_type->type_id() == types::TypeID::Pointer) {
                     auto pointer_type = dynamic_cast<const types::Pointer*>(base_type);
@@ -126,7 +126,7 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
             if (access_node == nullptr) {
                 continue;
             }
-            for (auto& memlet : user->parent()->out_edges(*access_node)) {
+            for (auto& memlet : access_node->get_parent().out_edges(*access_node)) {
                 auto base_type = &memlet.base_type();
                 if (base_type->type_id() == types::TypeID::Pointer) {
                     auto pointer_type = dynamic_cast<const types::Pointer*>(base_type);
@@ -165,7 +165,7 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
             if (access_node == nullptr) {
                 continue;
             }
-            for (auto& memlet : user->parent()->in_edges(*access_node)) {
+            for (auto& memlet : access_node->get_parent().in_edges(*access_node)) {
                 auto base_type = &memlet.base_type();
                 if (base_type->type_id() == types::TypeID::Pointer) {
                     auto pointer_type = dynamic_cast<const types::Pointer*>(base_type);

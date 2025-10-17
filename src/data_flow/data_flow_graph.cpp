@@ -6,6 +6,9 @@ namespace data_flow {
 void DataFlowGraph::validate(const Function& function) const {
     for (auto& node : this->nodes_) {
         node.second->validate(function);
+        if (&node.second->get_parent() != this) {
+            throw InvalidSDFGException("DataFlowGraph: Node parent mismatch.");
+        }
 
         if (auto code_node = dynamic_cast<const data_flow::CodeNode*>(node.second.get())) {
             if (this->in_degree(*code_node) != code_node->inputs().size()) {
