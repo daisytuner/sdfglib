@@ -17,7 +17,7 @@ class UsersView;
 class DominanceAnalysis;
 
 enum Use {
-    NOP,  // No-op
+    NOP, // No-op
     READ,
     WRITE,
     VIEW,
@@ -29,22 +29,18 @@ class User {
     friend class UsersView;
     friend class DominanceAnalysis;
 
-   private:
+private:
     graph::Vertex vertex_;
 
     std::string container_;
     Use use_;
 
     Element* element_;
-    data_flow::DataFlowGraph* parent_;
 
-   public:
+public:
     User(graph::Vertex vertex, const std::string& container, Element* element, Use use);
 
-    User(graph::Vertex vertex, const std::string& container, Element* element,
-         data_flow::DataFlowGraph* parent, Use use);
-
-    virtual ~User();
+    virtual ~User() = default;
 
     Use use() const;
 
@@ -52,20 +48,25 @@ class User {
 
     Element* element();
 
-    data_flow::DataFlowGraph* parent();
-
     const std::vector<data_flow::Subset> subsets() const;
 };
 
 class ForUser : public User {
-   private:
+private:
     bool is_init_;
     bool is_condition_;
     bool is_update_;
 
-   public:
-    ForUser(graph::Vertex vertex, const std::string& container, Element* element, Use use,
-            bool is_init, bool is_condition, bool is_update);
+public:
+    ForUser(
+        graph::Vertex vertex,
+        const std::string& container,
+        Element* element,
+        Use use,
+        bool is_init,
+        bool is_condition,
+        bool is_update
+    );
 
     bool is_init() const;
 
@@ -79,7 +80,7 @@ class Users : public Analysis {
     friend class UsersView;
     friend class DominanceAnalysis;
 
-   private:
+private:
     structured_control_flow::ControlFlowNode& node_;
 
     graph::Graph graph_;
@@ -91,8 +92,7 @@ class Users : public Analysis {
     std::unordered_map<const structured_control_flow::ControlFlowNode*, User*> entries_;
     std::unordered_map<const structured_control_flow::ControlFlowNode*, User*> exits_;
 
-    std::unordered_map<std::string, std::unordered_map<Element*, std::unordered_map<Use, User*>>>
-        users_by_sdfg_;
+    std::unordered_map<std::string, std::unordered_map<Element*, std::unordered_map<Use, User*>>> users_by_sdfg_;
     std::unordered_map<std::string, std::unordered_map<Element*, std::unordered_map<Use, User*>>>
         users_by_sdfg_loop_init_;
     std::unordered_map<std::string, std::unordered_map<Element*, std::unordered_map<Use, User*>>>
@@ -107,12 +107,11 @@ class Users : public Analysis {
 
     std::pair<graph::Vertex, graph::Vertex> traverse(data_flow::DataFlowGraph& dataflow);
 
-    std::pair<graph::Vertex, graph::Vertex> traverse(
-        structured_control_flow::ControlFlowNode& node);
+    std::pair<graph::Vertex, graph::Vertex> traverse(structured_control_flow::ControlFlowNode& node);
 
     void add_user(std::unique_ptr<User> user);
 
-   public:
+public:
     Users(StructuredSDFG& sdfg);
 
     Users(StructuredSDFG& sdfg, structured_control_flow::ControlFlowNode& node);
@@ -121,8 +120,14 @@ class Users : public Analysis {
 
     /**** Internals ****/
 
-    User* get_user(const std::string& container, Element* element, Use use, bool is_init = false,
-                   bool is_condition = false, bool is_update = false);
+    User* get_user(
+        const std::string& container,
+        Element* element,
+        Use use,
+        bool is_init = false,
+        bool is_condition = false,
+        bool is_update = false
+    );
 
     /**** Users ****/
 
@@ -158,14 +163,14 @@ class Users : public Analysis {
 };
 
 class UsersView {
-   private:
+private:
     Users& users_;
     User* entry_;
     User* exit_;
 
     std::unordered_set<User*> sub_users_;
 
-   public:
+public:
     UsersView(Users& users, const structured_control_flow::ControlFlowNode& node);
 
     /**** Users ****/
@@ -197,5 +202,5 @@ class UsersView {
     const std::vector<std::string> all_containers_in_order();
 };
 
-}  // namespace analysis
-}  // namespace sdfg
+} // namespace analysis
+} // namespace sdfg
