@@ -26,22 +26,11 @@ User::User(graph::Vertex vertex, const std::string& container, Element* element,
 
       };
 
-User::User(graph::Vertex vertex, const std::string& container, Element* element, data_flow::DataFlowGraph* parent, Use use)
-    : vertex_(vertex), container_(container), use_(use), element_(element), parent_(parent) {
-
-      };
-
-User::~User() {
-
-};
-
 Use User::use() const { return this->use_; };
 
 std::string& User::container() { return this->container_; };
 
 Element* User::element() { return this->element_; };
-
-data_flow::DataFlowGraph* User::parent() { return this->parent_; };
 
 const std::vector<data_flow::Subset> User::subsets() const {
     if (this->container_ == "") {
@@ -111,7 +100,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
                     }
 
                     auto v = boost::add_vertex(this->graph_);
-                    this->add_user(std::make_unique<User>(v, access_node->data(), access_node, &dataflow, use));
+                    this->add_user(std::make_unique<User>(v, access_node->data(), access_node, use));
 
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
                         boost::add_edge(last, v, this->graph_);
@@ -133,7 +122,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
                     }
 
                     auto v = boost::add_vertex(this->graph_);
-                    this->add_user(std::make_unique<User>(v, access_node->data(), access_node, &dataflow, use));
+                    this->add_user(std::make_unique<User>(v, access_node->data(), access_node, use));
 
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
                         boost::add_edge(last, v, this->graph_);
@@ -146,7 +135,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
         } else if (auto library_node = dynamic_cast<data_flow::LibraryNode*>(node)) {
             for (auto& symbol : library_node->symbols()) {
                 auto v = boost::add_vertex(this->graph_);
-                this->add_user(std::make_unique<User>(v, symbol->get_name(), library_node, &dataflow, Use::READ));
+                this->add_user(std::make_unique<User>(v, symbol->get_name(), library_node, Use::READ));
                 if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
                     boost::add_edge(last, v, this->graph_);
                 } else {
@@ -166,7 +155,7 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(data_flow::DataFlowGraph
                     used.insert(atom->get_name());
 
                     auto v = boost::add_vertex(this->graph_);
-                    this->add_user(std::make_unique<User>(v, atom->get_name(), &oedge, &dataflow, Use::READ));
+                    this->add_user(std::make_unique<User>(v, atom->get_name(), &oedge, Use::READ));
                     if (last != boost::graph_traits<graph::Graph>::null_vertex()) {
                         boost::add_edge(last, v, this->graph_);
                     } else {
