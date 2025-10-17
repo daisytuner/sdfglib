@@ -67,7 +67,7 @@ bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
         }
 
         if (symbolic::is_false(
-                symbolic::Le(symbolic::div(symbolic::mul(size.first, load.first), number.first), number_threshold)
+                symbolic::Ge(symbolic::div(symbolic::mul(size.first, load.first), number.first), number_threshold)
             )) {
             ScheduleType_CPU_Parallel::num_threads(schedule_type, symbolic::integer(1));
         }
