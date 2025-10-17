@@ -58,27 +58,28 @@ void ReferenceAnalysis::visit_block(
             continue;
         }
         auto access_node = static_cast<data_flow::AccessNode*>(node);
+        if (sdfg_.type(access_node->data()).type_id() != types::TypeID::Pointer) {
+            continue;
+        }
 
         // New definition (Move)
-        if (dataflow.in_degree(*node) == 1) {
-            auto& iedge = *dataflow.in_edges(*access_node).begin();
-            if (iedge.type() == data_flow::MemletType::Reference) {
-                auto current_user = users.get_user(access_node->data(), access_node, Use::MOVE);
-                // Close all definitions that we dominate
-                std::unordered_map<User*, std::unordered_set<User*>> to_close;
-                for (auto& user : open_definitions) {
-                    to_close.insert(user);
+        auto move_user = users.get_user(access_node->data(), access_node, Use::MOVE);
+        if (move_user != nullptr) {
+            // Close all definitions that we dominate
+            std::unordered_map<User*, std::unordered_set<User*>> to_close;
+            for (auto& user : open_definitions) {
+                if (user.first->container() != access_node->data()) {
+                    continue;
                 }
-                for (auto& user : to_close) {
-                    open_definitions.erase(user.first);
-                    closed_definitions.insert(user);
-                }
-
-                // Start new definition
-                open_definitions.insert({current_user, {}});
-
-                continue;
+                to_close.insert(user);
             }
+            for (auto& user : to_close) {
+                open_definitions.erase(user.first);
+                closed_definitions.insert(user);
+            }
+
+            // Start new definition
+            open_definitions.insert({move_user, {}});
         }
 
         auto read_user = users.get_user(access_node->data(), access_node, Use::READ);
@@ -131,12 +132,18 @@ void ReferenceAnalysis::visit_if_else(
     for (size_t i = 0; i < if_else.size(); i++) {
         auto child = if_else.at(i).second;
         for (auto sym : symbolic::atoms(child)) {
-            auto current_user = users.get_user(sym->get_name(), &if_else, Use::READ);
+            if (!sdfg_.exists(sym->get_name())) {
+                continue;
+            }
+            if (sdfg_.type(sym->get_name()).type_id() != types::TypeID::Pointer) {
+                continue;
+            }
 
+            auto current_user = users.get_user(sym->get_name(), &if_else, Use::READ);
             bool found = false;
-            for (auto& user : open_definitions) {
-                if (user.first->container() == sym->get_name()) {
-                    user.second.insert(current_user);
+            for (auto& entry : open_definitions) {
+                if (entry.first->container() == sym->get_name()) {
+                    entry.second.insert(current_user);
                     found = true;
                 }
             }
@@ -156,8 +163,8 @@ void ReferenceAnalysis::visit_if_else(
         );
     }
 
-    for (auto& closing : closed_definitions_branches) {
-        for (auto& entry : closing) {
+    for (auto& closed_definition_branch : closed_definitions_branches) {
+        for (auto& entry : closed_definition_branch) {
             closed_definitions.insert(entry);
         }
     }
@@ -173,62 +180,6 @@ void ReferenceAnalysis::visit_if_else(
             }
             if (!found) {
                 undefined.insert(entry);
-            }
-        }
-    }
-
-    // Close open reads_after_writes for complete branches
-    if (if_else.is_complete()) {
-        std::unordered_map<User*, std::unordered_set<User*>> to_close;
-        std::unordered_set<std::string> candidates;
-        std::unordered_set<std::string> candidates_tmp;
-
-        /* Complete close open reads_after_writes
-        1. get candidates from first iteration
-        2. iterate over all branches and prune candidates
-        3. find prior writes for remaining candidates
-        4. close open reads_after_writes for all candidates
-        */
-        for (auto& entry : open_definitions_branches.at(0)) {
-            candidates.insert(entry.first->container());
-        }
-        for (auto& entry : closed_definitions_branches.at(0)) {
-            candidates.insert(entry.first->container());
-        }
-
-        for (size_t i = 1; i < if_else.size(); i++) {
-            for (auto& entry : open_definitions_branches.at(i)) {
-                if (candidates.find(entry.first->container()) != candidates.end()) {
-                    candidates_tmp.insert(entry.first->container());
-                }
-            }
-            candidates.swap(candidates_tmp);
-            candidates_tmp.clear();
-        }
-
-        for (auto& entry : open_definitions) {
-            if (candidates.find(entry.first->container()) != candidates.end()) {
-                to_close.insert(entry);
-            }
-        }
-
-        for (auto& entry : to_close) {
-            open_definitions.erase(entry.first);
-            closed_definitions.insert(entry);
-        }
-    } else {
-        // Over-Approximation: Add all branch definitions to outer definitions or undefined
-        // Here we add writes to read sets as "anti-reads"
-        for (auto& branch : open_definitions_branches) {
-            for (auto& def : branch) {
-                bool found = false;
-                for (auto& entry : open_definitions) {
-                    entry.second.insert(def.first);
-                    found = true;
-                }
-                if (!found) {
-                    undefined.insert(def.first);
-                }
             }
         }
     }

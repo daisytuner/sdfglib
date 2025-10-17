@@ -501,23 +501,6 @@ void DataDependencyAnalysis::visit_if_else(
             open_definitions.erase(entry.first);
             closed_definitions.insert(entry);
         }
-    } else {
-        // Over-Approximation: Add all branch definitions to outer definitions or undefined
-        // Here we add writes to read sets as "anti-reads"
-        for (auto& branch : open_definitions_branches) {
-            for (auto& def : branch) {
-                bool found = false;
-                for (auto& entry : open_definitions) {
-                    if (intersects(*entry.first, *def.first, assumptions_analysis)) {
-                        entry.second.insert(def.first);
-                        found = true;
-                    }
-                }
-                if (!found) {
-                    undefined.insert(def.first);
-                }
-            }
-        }
     }
 
     // merge open reads_after_writes
