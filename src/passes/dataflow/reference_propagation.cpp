@@ -51,7 +51,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
 
             // Criterion: Must be moved by reference memlet
             auto& access_node = static_cast<data_flow::AccessNode&>(*move->element());
-            auto& dataflow = *move->parent();
+            auto& dataflow = access_node.get_parent();
             auto& move_edge = *dataflow.in_edges(access_node).begin();
             if (move_edge.type() != data_flow::MemletType::Reference) {
                 continue;
@@ -117,8 +117,8 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
             sdfg::types::Pointer ref_type(static_cast<const types::IType&>(deref_type));
 
             bool safe = true;
-            auto user_graph = user->parent();
-            for (auto& oedge : user_graph->out_edges(user_node)) {
+            auto& user_graph = user_node.get_parent();
+            for (auto& oedge : user_graph.out_edges(user_node)) {
                 if (oedge.type() != data_flow::MemletType::Computational) {
                     safe = false;
                     break;
@@ -135,7 +135,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
             if (!safe) {
                 continue;
             }
-            for (auto& iedge : user_graph->in_edges(user_node)) {
+            for (auto& iedge : user_graph.in_edges(user_node)) {
                 if (iedge.type() != data_flow::MemletType::Computational) {
                     safe = false;
                     break;
@@ -159,7 +159,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
             user_node.data() = viewed_container;
 
             // Step 2: Update edges
-            for (auto& oedge : user_graph->out_edges(user_node)) {
+            for (auto& oedge : user_graph.out_edges(user_node)) {
                 // Compute new subset
                 data_flow::Subset new_subset;
                 for (auto dim : move_subset) {
@@ -190,7 +190,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                 }
             }
 
-            for (auto& iedge : user_graph->in_edges(user_node)) {
+            for (auto& iedge : user_graph.in_edges(user_node)) {
                 // Compute new subset
                 data_flow::Subset new_subset;
                 for (auto dim : move_subset) {
