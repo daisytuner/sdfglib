@@ -49,8 +49,13 @@ bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
         symbolic::Condition run_dynamic;
         if (balance.second == analysis::DegreesOfKnowledgeClassification::Scalar) {
             run_dynamic = symbolic::__false__();
+        } else if (balance.second == analysis::DegreesOfKnowledgeClassification::Bound) {
+            /* if (balance_threshold > symbolic::atoms(balance.first).size()) {
+                run_dynamic = symbolic::__false__();
+            } */
+            run_dynamic = symbolic::__true__();
         } else {
-            run_dynamic = symbolic::Le(balance_threshold, symbolic::div(size.first, num_threads));
+            run_dynamic = symbolic::__true__();
         }
 
         ScheduleType schedule_type = ScheduleType_CPU_Parallel::create();
@@ -59,6 +64,12 @@ bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
             ScheduleType_CPU_Parallel::num_threads(schedule_type, symbolic::integer(avail_threads));
         } else {
             ScheduleType_CPU_Parallel::num_threads(schedule_type, symbolic::max(symbolic::one(), num_threads));
+        }
+
+        if (symbolic::is_false(
+                symbolic::Le(symbolic::div(symbolic::mul(size.first, load.first), number.first), number_threshold)
+            )) {
+            ScheduleType_CPU_Parallel::num_threads(schedule_type, symbolic::integer(1));
         }
 
         builder.update_schedule_type(*map, schedule_type);
@@ -70,7 +81,7 @@ bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
 void DOKScheduling::read_thresholds() {
     // Read thresholds from configuration or set default values
     load_threshold = symbolic::integer(100);
-    balance_threshold = symbolic::integer(50);
+    balance_threshold = 50;
     size_threshold = symbolic::integer(200); // Example value
     number_threshold = symbolic::integer(10); // Example value
 
@@ -85,7 +96,15 @@ void DOKScheduling::read_thresholds() {
     const char* balance_env = std::getenv("DOK_BALANCE_THRESHOLD");
     if (balance_env) {
         try {
-            balance_threshold = symbolic::integer(std::stoi(balance_env));
+            balance_threshold = std::stoi(balance_env);
+        } catch (const std::exception&) {
+        }
+    }
+
+    const char* number_env = std::getenv("DOK_NUMBER_THRESHOLD");
+    if (number_env) {
+        try {
+            number_threshold = symbolic::integer(std::stoi(number_env));
         } catch (const std::exception&) {
         }
     }

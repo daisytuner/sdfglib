@@ -5,6 +5,7 @@
 #include "sdfg/codegen/dispatchers/sequence_dispatcher.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "symengine/tribool.h"
 
 namespace sdfg {
 namespace codegen {
@@ -92,11 +93,18 @@ void CPUParallelMapDispatcher::dispatch_node(
         }
     }
 
+    bool print_parallel = true;
+    if (structured_control_flow::ScheduleType_CPU_Parallel::num_threads(node_.schedule_type()) != SymEngine::null) {
+        if (symbolic::
+                eq(structured_control_flow::ScheduleType_CPU_Parallel::num_threads(node_.schedule_type()),
+                   symbolic::one())) {
+            print_parallel = false;
+        }
+    }
+
     // Generate code
     main_stream << "// Map" << std::endl;
-    if (!symbolic::
-            eq(structured_control_flow::ScheduleType_CPU_Parallel::num_threads(node_.schedule_type()),
-               symbolic::one())) {
+    if (print_parallel) {
         main_stream << "#pragma omp parallel for";
 
         main_stream << " schedule(";
