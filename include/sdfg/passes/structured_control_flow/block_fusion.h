@@ -25,6 +25,8 @@ private:
 public:
     BlockFusion(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
 
+    static std::string name() { return "BlockFusion"; };
+
     bool accept(structured_control_flow::Sequence& node) override;
 };
 
