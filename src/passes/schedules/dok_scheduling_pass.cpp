@@ -35,7 +35,8 @@ bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
         if (load.second == analysis::DegreesOfKnowledgeClassification::Unbound) {
             size_threshold = symbolic::one();
         } else {
-            size_threshold = symbolic::max(symbolic::one(), symbolic::div(load_threshold, load.first));
+            auto load_first = symbolic::max(load.first, symbolic::one());
+            size_threshold = symbolic::max(symbolic::one(), symbolic::div(load_threshold, load_first));
         }
 
         symbolic::Expression num_threads;
@@ -57,7 +58,7 @@ bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
             ScheduleType_CPU_Parallel::omp_schedule(schedule_type, OpenMPSchedule::Dynamic);
             ScheduleType_CPU_Parallel::num_threads(schedule_type, symbolic::integer(avail_threads));
         } else {
-            ScheduleType_CPU_Parallel::num_threads(schedule_type, num_threads);
+            ScheduleType_CPU_Parallel::num_threads(schedule_type, symbolic::max(symbolic::one(), num_threads));
         }
 
         builder.update_schedule_type(*map, schedule_type);

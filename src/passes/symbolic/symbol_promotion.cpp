@@ -50,7 +50,7 @@ bool SymbolPromotion::can_be_applied(
 
     // Criterion: Tasklet is not an unsigned operation
     // TODO: reactivate when unsigned operations are supported
-    /* if (data_flow::is_unsigned(tasklet->code())) {
+    if (data_flow::is_unsigned(tasklet->code())) {
         return false;
     }
 
@@ -62,7 +62,8 @@ bool SymbolPromotion::can_be_applied(
 
         // Connector type must be a signed integer
         if (!types::is_integer(iedge.base_type().primitive_type()) ||
-    types::is_unsigned(iedge.base_type().primitive_type())) { return false;
+            types::is_unsigned(iedge.base_type().primitive_type())) {
+            return false;
         }
 
         // No cast on memlet
@@ -81,7 +82,7 @@ bool SymbolPromotion::can_be_applied(
         if (dataflow.in_degree(iedge.src()) > 0) {
             return false;
         }
-    } */
+    }
 
     auto& oedge = *dataflow.out_edges(*tasklet).begin();
     if (oedge.subset().size() > 0) {
