@@ -114,6 +114,10 @@ void Memlet::validate(const Function& function) const {
                 throw InvalidSDFGException("Memlet: Reference memlets must have an access node source");
             }
 
+            if (src_node->data() == dst_node->data()) {
+                throw InvalidSDFGException("Memlet: Reference memlet source and destination cannot be the same");
+            }
+
             // Case: Constant
             if (helpers::is_number(src_node->data()) || symbolic::is_nullptr(symbolic::symbol(src_node->data()))) {
                 if (!this->subset_.empty()) {

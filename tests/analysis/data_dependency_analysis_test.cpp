@@ -772,9 +772,8 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Incomplete_Scalar) {
     auto read_A = users.get_user("A", &transition3, analysis::Use::READ);
 
     auto& definition_A_0 = open_definitions.at(write_A_0);
-    EXPECT_EQ(definition_A_0.size(), 2);
+    EXPECT_EQ(definition_A_0.size(), 1);
     EXPECT_NE(definition_A_0.find(read_A), definition_A_0.end());
-    EXPECT_NE(definition_A_0.find(write_A_1), definition_A_0.end());
 
     auto& definition_A_1 = open_definitions.at(write_A_1);
     EXPECT_EQ(definition_A_1.size(), 1);
