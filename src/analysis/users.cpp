@@ -1012,6 +1012,12 @@ User* Users::
             return users_by_sdfg_loop_update_.at(container).at(for_loop).at(use);
         }
     }
+    if (users_by_sdfg_.find(container) == users_by_sdfg_.end() ||
+        users_by_sdfg_.at(container).find(element) == users_by_sdfg_.at(container).end() ||
+        users_by_sdfg_.at(container).at(element).find(use) == users_by_sdfg_.at(container).at(element).end()) {
+        return nullptr;
+    }
+
     auto tmp = users_by_sdfg_.at(container).at(element).at(use);
     return tmp;
 }
