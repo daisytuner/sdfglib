@@ -84,8 +84,6 @@ private:
     structured_control_flow::ControlFlowNode& node_;
 
     graph::Graph graph_;
-    User* source_;
-    User* sink_;
 
     std::unordered_map<graph::Vertex, std::unique_ptr<User>, boost::hash<graph::Vertex>> users_;
 

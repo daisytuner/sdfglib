@@ -406,14 +406,24 @@ void DataDependencyAnalysis::visit_if_else(
     std::unordered_map<User*, std::unordered_set<User*>>& closed_definitions
 ) {
     // Read Conditions
+    std::unordered_set<std::string> used;
     for (size_t i = 0; i < if_else.size(); i++) {
-        auto child = if_else.at(i).second;
-        for (auto atom : symbolic::atoms(child)) {
-            auto current_user = users.get_user(atom->get_name(), &if_else, Use::READ);
+        auto condition = if_else.at(i).second;
+        for (auto sym : symbolic::atoms(condition)) {
+            if (!sdfg_.exists(sym->get_name())) {
+                continue;
+            }
+            if (used.find(sym->get_name()) != used.end()) {
+                continue;
+            }
+            used.insert(sym->get_name());
+
+            auto current_user = users.get_user(sym->get_name(), &if_else, Use::READ);
+            assert(current_user != nullptr);
 
             bool found = false;
             for (auto& user : open_definitions) {
-                if (user.first->container() == atom->get_name()) {
+                if (user.first->container() == sym->get_name()) {
                     user.second.insert(current_user);
                     found = true;
                 }
@@ -611,6 +621,13 @@ void DataDependencyAnalysis::visit_sequence(
             visit_return(users, assumptions_analysis, *return_statement, undefined, open_definitions, closed_definitions);
         } else if (auto sequence = dynamic_cast<structured_control_flow::Sequence*>(&child.first)) {
             visit_sequence(users, assumptions_analysis, *sequence, undefined, open_definitions, closed_definitions);
+        }
+
+        // Early exit for break/continue/return
+        if (dynamic_cast<structured_control_flow::Break*>(&child.first) ||
+            dynamic_cast<structured_control_flow::Continue*>(&child.first) ||
+            dynamic_cast<structured_control_flow::Return*>(&child.first)) {
+            break;
         }
 
         // handle transitions read
