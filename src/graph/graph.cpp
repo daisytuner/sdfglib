@@ -143,6 +143,7 @@ const std::unordered_map<Vertex, Vertex> post_dominator_tree(Graph& graph) {
         modified = true;
     }
 
+
     auto& rgraph = reverse(graph);
 
     std::unordered_map<Vertex, Vertex> pdom_tree;
@@ -182,6 +183,80 @@ const std::unordered_map<Vertex, Vertex> post_dominator_tree(Graph& graph) {
     return pdom_tree;
 };
 
+const std::unordered_map<Vertex, std::unordered_set<Vertex>>
+dominance_frontiers(const Graph& graph, const std::unordered_map<Vertex, Vertex>& idom) {
+    // Build children list from idom relation
+    std::unordered_map<Vertex, std::vector<Vertex>> dom_children;
+    for (const auto& [v, i] : idom) {
+        if (i != boost::graph_traits<Graph>::null_vertex()) {
+            dom_children[i].push_back(v);
+        }
+    }
+
+    // Post-order traversal of dominator tree
+    std::vector<Vertex> post_order;
+    std::function<void(Vertex)> dfs_dom = [&](Vertex v) {
+        for (auto c : dom_children[v]) {
+            dfs_dom(c);
+        }
+        post_order.push_back(v);
+    };
+    // Find root (the one that is not dominated by anyone)
+    Vertex root = boost::graph_traits<Graph>::null_vertex();
+    for (const auto& [v, i] : idom) {
+        if (i == boost::graph_traits<Graph>::null_vertex()) {
+            root = v;
+            break;
+        }
+    }
+    if (root != boost::graph_traits<Graph>::null_vertex()) {
+        dfs_dom(root);
+    }
+
+    std::unordered_map<Vertex, std::unordered_set<Vertex>> frontiers;
+    for (const auto& [v, _] : idom) {
+        frontiers.emplace(v, std::unordered_set<Vertex>());
+    }
+
+    auto dominates = [&](Vertex a, Vertex b) -> bool {
+        if (a == b) return true;
+        auto it = idom.find(b);
+        while (it != idom.end() && it->second != boost::graph_traits<Graph>::null_vertex()) {
+            if (it->second == a) return true;
+            auto next = idom.find(it->second);
+            if (next == idom.end()) break;
+            it = next;
+        }
+        return false;
+    };
+
+    // Local frontiers: successors whose idom is not the node
+    for (const auto& [b, _] : idom) {
+        auto [eb, ee] = boost::out_edges(b, graph);
+        auto edges = std::ranges::subrange(eb, ee);
+        for (auto e : edges) {
+            Vertex succ = boost::target(e, graph);
+            if (idom.find(succ) == idom.end()) continue; // skip synthetic
+            if (idom.at(succ) != b) {
+                frontiers[b].insert(succ);
+            }
+        }
+    }
+
+    // Up frontiers: propagate from children with dominance check
+    for (auto b : post_order) {
+        for (auto c : dom_children[b]) {
+            for (auto w : frontiers[c]) {
+                if (!dominates(b, w) || b == w) {
+                    frontiers[b].insert(w);
+                }
+            }
+        }
+    }
+
+    return frontiers;
+}
+
 const std::list<graph::Vertex> topological_sort(const Graph& graph) {
     std::unordered_map<graph::Vertex, boost::default_color_type> vertex_colors;
     std::list<graph::Vertex> order;
@@ -212,54 +287,144 @@ const std::list<Edge> back_edges(const Graph& graph, const graph::Vertex start) 
     return back_edges;
 };
 
-void all_simple_paths_dfs(
-    const Graph& graph,
-    const Edge edge,
-    const Vertex v,
-    std::list<std::list<Edge>>& all_paths,
-    std::list<Edge>& current_path,
-    std::set<Vertex>& visited
-) {
-    const Vertex u = boost::target(edge, graph);
-    if (visited.find(u) != visited.end()) {
-        return;
+SCCInfo classify_sccs_irreducible(const Graph& graph, Vertex entry) {
+    // Strongly connected components
+    auto [num, comp_map] = strongly_connected_components(graph);
+    SCCInfo info;
+    info.num_components = num;
+    info.component_of = comp_map;
+
+    // Collect vertices per component
+    for (auto [v_it, v_end] = boost::vertices(graph); v_it != v_end; ++v_it) {
+        auto v = *v_it;
+        auto cid = comp_map.at(v);
+        info.component_vertices[cid].insert(v);
     }
 
-    current_path.push_back(edge);
-    visited.insert(u);
-
-    if (u == v) {
-        all_paths.push_back(std::list<Edge>(current_path));
-
-        current_path.pop_back();
-        visited.erase(u);
-        return;
+    // Count entry edges per component (edges from outside component to inside)
+    std::unordered_map<size_t, size_t> entry_edge_count;
+    for (const auto& [cid, verts] : info.component_vertices) {
+        entry_edge_count[cid] = 0;
+    }
+    for (auto [v_it, v_end] = boost::vertices(graph); v_it != v_end; ++v_it) {
+        auto v = *v_it;
+        auto [eb, ee] = boost::out_edges(v, graph);
+        for (auto e_it = eb; e_it != ee; ++e_it) {
+            auto tgt = boost::target(*e_it, graph);
+            auto c_src = comp_map.at(v);
+            auto c_tgt = comp_map.at(tgt);
+            if (c_src != c_tgt) {
+                // Edge crosses components -> counts toward target component entry edges
+                entry_edge_count[c_tgt] += 1;
+            }
+        }
     }
 
-    auto [eb, ee] = boost::out_edges(u, graph);
-    auto edges = std::ranges::subrange(eb, ee);
-    for (auto next_edge : edges) {
-        all_simple_paths_dfs(graph, next_edge, v, all_paths, current_path, visited);
+    // Mark irreducible: component is cyclic (size>1 or self-loop) and has >1 distinct entry edges
+    for (const auto& [cid, verts] : info.component_vertices) {
+        bool cyclic = false;
+        if (verts.size() > 1) {
+            cyclic = true;
+        } else {
+            // single vertex with self-loop
+            auto v = *verts.begin();
+            auto [eb, ee] = boost::out_edges(v, graph);
+            for (auto e_it = eb; e_it != ee; ++e_it) {
+                if (boost::target(*e_it, graph) == v) {
+                    cyclic = true;
+                    break;
+                }
+            }
+        }
+        if (!cyclic) continue;
+        if (entry_edge_count[cid] > 1) {
+            info.irreducible_components.insert(cid);
+        }
     }
 
-    current_path.pop_back();
-    visited.erase(u);
-};
+    return info;
+}
 
-const std::list<std::list<Edge>> all_simple_paths(const Graph& graph, const Vertex src, const Vertex dst) {
-    std::list<std::list<Edge>> all_paths;
+std::vector<NaturalLoop> natural_loops(const Graph& graph, Vertex entry) {
+    std::vector<NaturalLoop> loops;
+    auto idom = dominator_tree(graph, entry);
+    auto backs = back_edges(graph, entry);
+    auto scc_info = classify_sccs_irreducible(graph, entry);
 
-    std::set<Vertex> visited;
-    std::list<Edge> current_path;
-
-    auto [eb, ee] = boost::out_edges(src, graph);
-    auto edges = std::ranges::subrange(eb, ee);
-    for (auto edge : edges) {
-        all_simple_paths_dfs(graph, edge, dst, all_paths, current_path, visited);
+    // Group back edges by header
+    std::unordered_map<Vertex, std::vector<Vertex>> header_to_latches;
+    auto dominates = [&](Vertex a, Vertex b) -> bool { // a dominates b if walk via idom chain reaches a
+        if (a == b) return true;
+        auto it = idom.find(b);
+        while (it != idom.end() && it->second != boost::graph_traits<Graph>::null_vertex()) {
+            if (it->second == a) return true;
+            it = idom.find(it->second);
+        }
+        return false;
+    };
+    for (auto e : backs) {
+        Vertex tail = boost::source(e, graph);
+        Vertex head = boost::target(e, graph);
+        bool accept = false;
+        if (dominates(head, tail)) {
+            accept = true;
+        } else {
+            auto cid_head = scc_info.component_of.at(head);
+            auto cid_tail = scc_info.component_of.at(tail);
+            if (cid_head == cid_tail &&
+                scc_info.irreducible_components.find(cid_head) == scc_info.irreducible_components.end()) {
+                accept = true; // reducible cycle but dominance check failed; accept conservatively
+            }
+        }
+        if (!accept) continue;
+        header_to_latches[head].push_back(tail);
     }
 
-    return all_paths;
-};
+    // Build loop bodies
+    for (auto& [header, latches] : header_to_latches) {
+        std::unordered_set<Vertex> body;
+        body.insert(header);
+        for (auto latch : latches) body.insert(latch);
+
+        // Reverse DFS from each latch up to header collecting predecessors
+        std::function<void(Vertex)> collect = [&](Vertex v) {
+            if (body.find(v) != body.end()) return;
+            body.insert(v);
+            auto [ib, ie] = boost::in_edges(v, graph);
+            for (auto e_it = ib; e_it != ie; ++e_it) {
+                auto pred = boost::source(*e_it, graph);
+                // Only traverse if header dominates pred (stay within natural loop region)
+                Vertex cur = pred;
+                bool dominated = false;
+                while (cur != boost::graph_traits<Graph>::null_vertex()) {
+                    if (cur == header) {
+                        dominated = true;
+                        break;
+                    }
+                    auto it = idom.find(cur);
+                    if (it == idom.end()) break;
+                    cur = it->second;
+                }
+                if (dominated) collect(pred);
+            }
+        };
+        for (auto latch : latches) collect(latch);
+
+        // Determine exits
+        std::unordered_set<Vertex> exits;
+        for (auto v : body) {
+            auto [eb, ee] = boost::out_edges(v, graph);
+            for (auto e_it = eb; e_it != ee; ++e_it) {
+                auto succ = boost::target(*e_it, graph);
+                if (body.find(succ) == body.end()) exits.insert(succ);
+            }
+        }
+
+        loops.push_back(NaturalLoop{header, latches, std::move(body), std::move(exits)});
+    }
+
+    return loops;
+}
 
 } // namespace graph
 } // namespace sdfg

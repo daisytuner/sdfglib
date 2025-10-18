@@ -62,22 +62,36 @@ const std::unordered_map<Vertex, Vertex> dominator_tree(const Graph& graph, cons
 
 const std::unordered_map<Vertex, Vertex> post_dominator_tree(Graph& graph);
 
+// Dominance Frontiers
+// Returns mapping from a vertex to the set of vertices in its dominance frontier.
+// Requires the immediate dominator tree mapping (vertex -> idom(vertex)).
+const std::unordered_map<Vertex, std::unordered_set<Vertex>>
+dominance_frontiers(const Graph& graph, const std::unordered_map<Vertex, Vertex>& idom);
+
 const std::list<graph::Vertex> topological_sort(const Graph& graph);
 
 bool is_acyclic(const Graph& graph);
 
 const std::list<Edge> back_edges(const Graph& graph, const graph::Vertex start);
 
-void all_simple_paths_dfs(
-    const Graph& graph,
-    const Edge edge,
-    const Vertex v,
-    std::list<std::list<Edge>>& all_paths,
-    std::list<Edge>& current_path,
-    std::set<Vertex>& visited
-);
+// Returns component id mapping and a set of component ids that are irreducible (multi-entry)
+struct SCCInfo {
+    std::unordered_map<Vertex, size_t> component_of; // vertex -> component id
+    size_t num_components{0};
+    std::unordered_set<size_t> irreducible_components; // components with >1 entry edge
+    std::unordered_map<size_t, std::unordered_set<Vertex>> component_vertices; // component id -> vertices
+};
 
-const std::list<std::list<Edge>> all_simple_paths(const Graph& graph, const Vertex src, const Vertex dst);
+SCCInfo classify_sccs_irreducible(const Graph& graph, Vertex entry);
+
+struct NaturalLoop {
+    Vertex header;
+    std::vector<Vertex> latches; // tails of back edges
+    std::unordered_set<Vertex> body; // all vertices in loop
+    std::unordered_set<Vertex> exits; // successors outside body
+};
+
+std::vector<NaturalLoop> natural_loops(const Graph& graph, Vertex entry);
 
 } // namespace graph
 } // namespace sdfg
