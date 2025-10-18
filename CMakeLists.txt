@@ -147,6 +147,7 @@ set(SOURCE_FILES
     src/passes/symbolic/symbol_propagation.cpp
     src/passes/symbolic/symbol_promotion.cpp
     src/passes/structured_control_flow/block_fusion.cpp
+    src/passes/structured_control_flow/cfg_to_scf_conversion.cpp
     src/passes/structured_control_flow/common_assignment_elimination.cpp
     src/passes/structured_control_flow/condition_elimination.cpp
     src/passes/structured_control_flow/dead_cfg_elimination.cpp

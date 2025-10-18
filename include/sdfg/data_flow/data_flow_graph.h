@@ -167,8 +167,6 @@ public:
 
     std::unordered_map<std::string, data_flow::AccessNode*> post_dominators();
 
-    auto all_simple_paths(const data_flow::DataFlowNode& src, const data_flow::DataFlowNode& dst) const;
-
     const std::pair<size_t, const std::unordered_map<const data_flow::DataFlowNode*, size_t>> weakly_connected_components()
         const;
 };

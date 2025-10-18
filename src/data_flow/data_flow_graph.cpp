@@ -261,21 +261,6 @@ std::unordered_map<std::string, data_flow::AccessNode*> DataFlowGraph::post_domi
     return frontier;
 };
 
-auto DataFlowGraph::all_simple_paths(const data_flow::DataFlowNode& src, const data_flow::DataFlowNode& dst) const {
-    std::list<std::list<graph::Edge>> all_paths_raw = graph::all_simple_paths(this->graph_, src.vertex(), dst.vertex());
-
-    std::list<std::list<std::reference_wrapper<data_flow::Memlet>>> all_paths;
-    for (auto& path_raw : all_paths_raw) {
-        std::list<std::reference_wrapper<data_flow::Memlet>> path;
-        for (auto& edge : path_raw) {
-            path.push_back(*this->edges_.at(edge));
-        }
-        all_paths.push_back(path);
-    }
-
-    return all_paths;
-};
-
 const std::pair<size_t, const std::unordered_map<const data_flow::DataFlowNode*, size_t>> DataFlowGraph::
     weakly_connected_components() const {
     auto ccs_vertex = graph::weakly_connected_components(this->graph_);
