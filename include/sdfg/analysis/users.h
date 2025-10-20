@@ -118,7 +118,14 @@ public:
 
     void run(analysis::AnalysisManager& analysis_manager) override;
 
-    /**** Internals ****/
+    bool has_user(
+        const std::string& container,
+        Element* element,
+        Use use,
+        bool is_init = false,
+        bool is_condition = false,
+        bool is_update = false
+    );
 
     User* get_user(
         const std::string& container,

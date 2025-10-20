@@ -100,6 +100,11 @@ NonStoppingStructuredSDFGVisitor::NonStoppingStructuredSDFGVisitor(
 )
     : StructuredSDFGVisitor(builder, analysis_manager), applied_(false) {}
 
+bool NonStoppingStructuredSDFGVisitor::visit() {
+    this->visit_internal(builder_.subject().root());
+    return this->applied_;
+}
+
 bool NonStoppingStructuredSDFGVisitor::visit_internal(structured_control_flow::Sequence& parent) {
     applied_ |= this->accept(parent);
 
