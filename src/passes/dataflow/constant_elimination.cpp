@@ -188,12 +188,16 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
         auto write = define2->element();
         if (auto transition = dynamic_cast<structured_control_flow::Transition*>(write)) {
             transition->assignments().erase(symbolic::symbol(name));
+            applied = true;
         } else if (auto access_node = dynamic_cast<data_flow::AccessNode*>(write)) {
             auto& graph = access_node->get_parent();
+            if (graph.out_degree(*access_node) > 0) {
+                continue;
+            }
             auto& block = dynamic_cast<structured_control_flow::Block&>(*graph.get_parent());
             builder.clear_node(block, *access_node);
+            applied = true;
         }
-        applied = true;
     }
 
     return applied;

@@ -230,6 +230,8 @@ void AssumptionsAnalysis::run(analysis::AnalysisManager& analysis_manager) {
         this->assumptions_[&sdfg_.root()][entry.first] = entry.second;
     }
 
+    this->scope_analysis_ = &analysis_manager.get<ScopeAnalysis>();
+
     // Forward propagate for each node
     this->traverse(sdfg_.root(), analysis_manager);
 };
@@ -246,10 +248,7 @@ const symbolic::Assumptions AssumptionsAnalysis::
         }
     }
 
-    AnalysisManager manager(this->sdfg_);
-    auto& scope_analysis = manager.get<ScopeAnalysis>();
-
-    auto scope = scope_analysis.parent_scope(&node);
+    auto scope = scope_analysis_->parent_scope(&node);
     while (scope != nullptr) {
         if (this->assumptions_.find(scope) != this->assumptions_.end()) {
             for (auto& entry : this->assumptions_[scope]) {
@@ -275,7 +274,7 @@ const symbolic::Assumptions AssumptionsAnalysis::
                 }
             }
         }
-        scope = scope_analysis.parent_scope(scope);
+        scope = scope_analysis_->parent_scope(scope);
     }
 
     if (include_trivial_bounds) {

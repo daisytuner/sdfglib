@@ -10,6 +10,8 @@ class For2Map : public visitor::StructuredSDFGVisitor {
 public:
     For2Map(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
 
+    static std::string name() { return "For2Map"; };
+
     bool accept(structured_control_flow::For& node) override;
 
 private:

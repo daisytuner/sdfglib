@@ -7,12 +7,11 @@ namespace sdfg {
 namespace visitor {
 
 class StructuredSDFGVisitor {
-private:
-    bool visit(structured_control_flow::Sequence& parent);
-
 protected:
     builder::StructuredSDFGBuilder& builder_;
     analysis::AnalysisManager& analysis_manager_;
+
+    virtual bool visit_internal(structured_control_flow::Sequence& parent);
 
 public:
     StructuredSDFGVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
@@ -38,6 +37,17 @@ public:
     virtual bool accept(structured_control_flow::Break& node);
 
     virtual bool accept(structured_control_flow::Map& node);
+};
+
+class NonStoppingStructuredSDFGVisitor : public StructuredSDFGVisitor {
+private:
+    bool applied_;
+
+protected:
+    bool visit_internal(structured_control_flow::Sequence& parent) override;
+
+public:
+    NonStoppingStructuredSDFGVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
 };
 
 } // namespace visitor

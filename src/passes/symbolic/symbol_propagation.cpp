@@ -1,8 +1,8 @@
 #include "sdfg/passes/symbolic/symbol_propagation.h"
 
-#include "sdfg/analysis/users.h"
 #include "sdfg/analysis/data_dependency_analysis.h"
 #include "sdfg/analysis/dominance_analysis.h"
+#include "sdfg/analysis/users.h"
 
 namespace sdfg {
 namespace passes {
@@ -230,16 +230,15 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                     applied = true;
                 } else if (SymEngine::is_a<SymEngine::Integer>(*rhs_modified)) {
                     auto new_int = SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs_modified);
-                    auto graph = read->parent();
-                    auto block = static_cast<structured_control_flow::Block*>(graph->get_parent());
+                    auto& graph = access_node->get_parent();
+                    auto block = static_cast<structured_control_flow::Block*>(graph.get_parent());
 
                     // Replace with const node
                     auto& const_node =
-                        builder
-                            .add_constant(*block, std::to_string(new_int->as_int()), type, read->element()->debug_info());
+                        builder.add_constant(*block, std::to_string(new_int->as_int()), type, access_node->debug_info());
 
                     std::unordered_set<data_flow::Memlet*> replace_edges;
-                    for (auto& oedge : graph->out_edges(*access_node)) {
+                    for (auto& oedge : graph.out_edges(*access_node)) {
                         builder.add_memlet(
                             *block,
                             const_node,
@@ -252,7 +251,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                         );
                         replace_edges.insert(&oedge);
                     }
-                    for (auto& iedge : graph->in_edges(*access_node)) {
+                    for (auto& iedge : graph.in_edges(*access_node)) {
                         builder.add_memlet(
                             *block,
                             iedge.src(),
