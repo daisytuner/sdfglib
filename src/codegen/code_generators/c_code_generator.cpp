@@ -32,7 +32,8 @@ void CCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const {
 
     ofs_source << "static void* __capture_ctx;" << std::endl;
     ofs_source << "static void __attribute__((constructor(1000))) __capture_ctx_init(void) {" << std::endl;
-    ofs_source << "\t__capture_ctx = __daisy_capture_init(\"" << name << "\", \"" << arg_capture_path << "\");" << std::endl;
+    ofs_source << "\t__capture_ctx = __daisy_capture_init(\"" << name << "\", \"" << arg_capture_path << "\");"
+               << std::endl;
     ofs_source << "}" << std::endl;
     ofs_source << std::endl;
 }
@@ -118,33 +119,14 @@ void CCodeGenerator::dispatch_structures() {
 
 void CCodeGenerator::dispatch_globals() {
     // Declare globals
-    const std::unordered_set<std::string> reserved_symbols = {
-        "alloca",
-        "calloc",
-        "free",
-        "malloc",
-        "memcpy",
-        "memmove",
-        "memset",
-        "stderr",
-        "stdin",
-        "stdout",
-        "cblas_sdot",
-        "cblas_ddot",
-        "cblas_sgemm",
-        "cblas_dgemm"
-    };
     for (auto& container : sdfg_.externals()) {
-        if (reserved_symbols.find(container) != reserved_symbols.end()) {
-            continue;
-        }
-
         // Function declarations
         if (dynamic_cast<const types::Function*>(&sdfg_.type(container))) {
             // Declare function
             this->globals_stream_ << "extern ";
-            this->globals_stream_ << language_extension_.declaration(this->externals_prefix_ + container, sdfg_.type(container)) << ";"
-                        << std::endl;
+            this->globals_stream_
+                << language_extension_.declaration(this->externals_prefix_ + container, sdfg_.type(container)) << ";"
+                << std::endl;
             continue;
         }
 
@@ -154,10 +136,12 @@ void CCodeGenerator::dispatch_globals() {
         auto& base_type = type.pointee_type();
 
         if (sdfg_.linkage_type(container) == LinkageType_External) {
-            this->globals_stream_ << "extern " << language_extension_.declaration(this->externals_prefix_ + container, base_type) << ";"
-                                  << std::endl;
+            this->globals_stream_ << "extern "
+                                  << language_extension_.declaration(this->externals_prefix_ + container, base_type)
+                                  << ";" << std::endl;
         } else {
-            this->globals_stream_ << "static " << language_extension_.declaration(this->externals_prefix_ + container, base_type);
+            this->globals_stream_ << "static "
+                                  << language_extension_.declaration(this->externals_prefix_ + container, base_type);
             if (!type.initializer().empty()) {
                 this->globals_stream_ << " = " << type.initializer();
             }
