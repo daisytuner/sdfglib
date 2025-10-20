@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
+#include "sdfg/codegen/dispatchers/node_dispatcher.h"
 
 namespace sdfg {
 namespace codegen {
@@ -13,6 +13,7 @@ public:
     SequenceDispatcher(
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::Sequence& node,
         InstrumentationPlan& instrumentation_plan
     );

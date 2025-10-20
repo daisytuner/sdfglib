@@ -17,10 +17,11 @@ TEST(IfElseDispatcherTest, DispatchNode_Trivial) {
     auto& case_2 = builder.add_case(if_else, symbolic::__false__());
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::IfElseDispatcher dispatcher(language_extension, *final_sdfg, if_else, *instrumentation);
+    codegen::IfElseDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, if_else, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -44,10 +45,11 @@ TEST(IfElseDispatcherTest, DispatchNode) {
     auto& case_2 = builder.add_case(if_else, symbolic::Ne(symbolic::symbol("a"), symbolic::integer(0)));
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::IfElseDispatcher dispatcher(language_extension, *final_sdfg, if_else, *instrumentation);
+    codegen::IfElseDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, if_else, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

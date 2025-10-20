@@ -6,10 +6,11 @@ namespace codegen {
 WhileDispatcher::WhileDispatcher(
     LanguageExtension& language_extension,
     StructuredSDFG& sdfg,
+    analysis::AnalysisManager& analysis_manager,
     structured_control_flow::While& node,
     InstrumentationPlan& instrumentation_plan
 )
-    : NodeDispatcher(language_extension, sdfg, node, instrumentation_plan), node_(node) {
+    : NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan), node_(node) {
 
       };
 
@@ -20,7 +21,7 @@ void WhileDispatcher::dispatch_node(
     main_stream << "{" << std::endl;
 
     main_stream.setIndent(main_stream.indent() + 4);
-    SequenceDispatcher dispatcher(language_extension_, sdfg_, node_.root(), instrumentation_plan_);
+    SequenceDispatcher dispatcher(language_extension_, sdfg_, analysis_manager_, node_.root(), instrumentation_plan_);
     dispatcher.dispatch(main_stream, globals_stream, library_snippet_factory);
     main_stream.setIndent(main_stream.indent() - 4);
 
@@ -30,10 +31,11 @@ void WhileDispatcher::dispatch_node(
 BreakDispatcher::BreakDispatcher(
     LanguageExtension& language_extension,
     StructuredSDFG& sdfg,
+    analysis::AnalysisManager& analysis_manager,
     structured_control_flow::Break& node,
     InstrumentationPlan& instrumentation_plan
 )
-    : NodeDispatcher(language_extension, sdfg, node, instrumentation_plan), node_(node) {
+    : NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan), node_(node) {
 
       };
 
@@ -46,10 +48,11 @@ void BreakDispatcher::dispatch_node(
 ContinueDispatcher::ContinueDispatcher(
     LanguageExtension& language_extension,
     StructuredSDFG& sdfg,
+    analysis::AnalysisManager& analysis_manager,
     structured_control_flow::Continue& node,
     InstrumentationPlan& instrumentation_plan
 )
-    : NodeDispatcher(language_extension, sdfg, node, instrumentation_plan), node_(node) {
+    : NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan), node_(node) {
 
       };
 
@@ -62,10 +65,11 @@ void ContinueDispatcher::dispatch_node(
 ReturnDispatcher::ReturnDispatcher(
     LanguageExtension& language_extension,
     StructuredSDFG& sdfg,
+    analysis::AnalysisManager& analysis_manager,
     structured_control_flow::Return& node,
     InstrumentationPlan& instrumentation_plan
 )
-    : NodeDispatcher(language_extension, sdfg, node, instrumentation_plan), node_(node) {
+    : NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan), node_(node) {
 
       };
 

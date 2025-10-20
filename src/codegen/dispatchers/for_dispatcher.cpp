@@ -1,4 +1,8 @@
 #include "sdfg/codegen/dispatchers/for_dispatcher.h"
+#include "sdfg/analysis/analysis.h"
+#include "sdfg/analysis/loop_analysis.h"
+#include "sdfg/codegen/dispatchers/sequence_dispatcher.h"
+#include "sdfg/codegen/instrumentation/instrumentation_info.h"
 
 namespace sdfg {
 namespace codegen {
@@ -6,10 +10,11 @@ namespace codegen {
 ForDispatcher::ForDispatcher(
     LanguageExtension& language_extension,
     StructuredSDFG& sdfg,
+    analysis::AnalysisManager& analysis_manager,
     structured_control_flow::For& node,
     InstrumentationPlan& instrumentation_plan
 )
-    : NodeDispatcher(language_extension, sdfg, node, instrumentation_plan), node_(node) {
+    : NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan), node_(node) {
 
       };
 
@@ -31,11 +36,26 @@ void ForDispatcher::dispatch_node(
     main_stream << "{" << std::endl;
 
     main_stream.setIndent(main_stream.indent() + 4);
-    SequenceDispatcher dispatcher(language_extension_, sdfg_, node_.root(), instrumentation_plan_);
+    SequenceDispatcher dispatcher(language_extension_, sdfg_, analysis_manager_, node_.root(), instrumentation_plan_);
     dispatcher.dispatch(main_stream, globals_stream, library_snippet_factory);
     main_stream.setIndent(main_stream.indent() - 4);
 
     main_stream << "}" << std::endl;
+};
+
+InstrumentationInfo ForDispatcher::instrumentation_info() const {
+    size_t loopnest_index = -1;
+    auto& loop_tree_analysis = analysis_manager_.get<analysis::LoopAnalysis>();
+
+    auto outermost_loops = loop_tree_analysis.outermost_loops();
+    for (size_t i = 0; i < outermost_loops.size(); i++) {
+        if (outermost_loops[i] == &node_) {
+            loopnest_index = i;
+            break;
+        }
+    }
+
+    return InstrumentationInfo(ElementType_For, TargetType_SEQUENTIAL, loopnest_index, node_.element_id(), {});
 };
 
 } // namespace codegen

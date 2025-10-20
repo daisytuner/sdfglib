@@ -1,8 +1,6 @@
 #pragma once
 
-#include "sdfg/codegen/dispatchers/block_dispatcher.h"
-#include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
-#include "sdfg/codegen/dispatchers/sequence_dispatcher.h"
+#include "sdfg/codegen/dispatchers/node_dispatcher.h"
 
 namespace sdfg {
 namespace codegen {
@@ -15,6 +13,7 @@ public:
     ForDispatcher(
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::For& node,
         InstrumentationPlan& instrumentation_plan
     );
@@ -22,6 +21,8 @@ public:
     void dispatch_node(
         PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
     ) override;
+
+    InstrumentationInfo instrumentation_info() const override;
 };
 
 } // namespace codegen

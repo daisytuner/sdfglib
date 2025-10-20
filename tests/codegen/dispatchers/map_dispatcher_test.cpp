@@ -24,10 +24,11 @@ TEST(MapDispatcherTest, DispatchNode) {
     );
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::MapDispatcher dispatcher(language_extension, *final_sdfg, loop, *instrumentation);
+    codegen::MapDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -55,10 +56,12 @@ TEST(CPU_PARALLELMapDispatcherTest, DispatchNode) {
     );
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::CPUParallelMapDispatcher dispatcher(language_extension, *final_sdfg, loop, *instrumentation);
+    codegen::CPUParallelMapDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -92,10 +95,12 @@ TEST(CPU_PARALLELMapDispatcherTest, DispatchNodeScheduleDynamic) {
     builder.update_schedule_type(loop, schedule);
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::CPUParallelMapDispatcher dispatcher(language_extension, *final_sdfg, loop, *instrumentation);
+    codegen::CPUParallelMapDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -132,10 +137,12 @@ TEST(CPU_PARALLELMapDispatcherTest, DispatchNodeNumThreads) {
     builder.update_schedule_type(loop, schedule);
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::CPUParallelMapDispatcher dispatcher(language_extension, *final_sdfg, loop, *instrumentation);
+    codegen::CPUParallelMapDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

@@ -14,6 +14,7 @@ public:
     WhileDispatcher(
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::While& node,
         InstrumentationPlan& instrumentation_plan
     );
@@ -31,6 +32,7 @@ public:
     BreakDispatcher(
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::Break& node,
         InstrumentationPlan& instrumentation_plan
     );
@@ -48,6 +50,7 @@ public:
     ContinueDispatcher(
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::Continue& node,
         InstrumentationPlan& instrumentation_plan
     );
@@ -65,6 +68,7 @@ public:
     ReturnDispatcher(
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::Return& node,
         InstrumentationPlan& instrumentation_plan
     );

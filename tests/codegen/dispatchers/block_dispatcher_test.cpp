@@ -18,10 +18,11 @@ TEST(BlockDispatcherTest, DispatchNode_Empty) {
     auto& block = builder.add_block(root);
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::BlockDispatcher dispatcher(language_extension, *final_sdfg, block, *instrumentation);
+    codegen::BlockDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, block, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -56,10 +57,11 @@ TEST(BlockDispatcherTest, DispatchNode_TopologicalOrder) {
     builder.add_computational_memlet(block, tasklet_2, "_out", access_node_out2, {});
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::BlockDispatcher dispatcher(language_extension, *final_sdfg, block, *instrumentation);
+    codegen::BlockDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, block, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -96,9 +98,11 @@ TEST(DataFlowDispatcherTest, DispatchTasklet) {
     builder.add_computational_memlet(block, tasklet, "_out", access_node_3, {});
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_printer;
@@ -121,9 +125,11 @@ TEST(DataFlowDispatcherTest, DispatchLibraryNode) {
     builder.add_library_node<sdfg::data_flow::BarrierLocalNode>(block, DebugInfo());
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CUDALanguageExtension language_extension;
-    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_printer;
@@ -151,9 +157,11 @@ TEST(DataFlowDispatcherTest, DispatchRef_Empty) {
     builder.add_reference_memlet(block, access_node_1, access_node_2, {}, pointer_type);
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_printer;
@@ -181,9 +189,11 @@ TEST(DataFlowDispatcherTest, DispatchRef_Subset) {
     builder.add_reference_memlet(block, access_node_1, access_node_2, {symbolic::integer(1)}, pointer_type);
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_printer;
@@ -210,9 +220,11 @@ TEST(DataFlowDispatcherTest, DispatchRef_Nullptr) {
     builder.add_reference_memlet(block, access_node_1, access_node_2, {}, pointer_type);
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_printer;
@@ -239,9 +251,11 @@ TEST(DataFlowDispatcherTest, DispatchRef_Address) {
     builder.add_reference_memlet(block, access_node_1, access_node_2, {}, pointer_type);
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_printer;
@@ -270,9 +284,11 @@ TEST(DataFlowDispatcherTest, DispatchDeref_Load) {
     builder.add_dereference_memlet(block, access_node_1, access_node_2, true, pointer_type_2);
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_printer;
@@ -301,9 +317,11 @@ TEST(DataFlowDispatcherTest, DispatchDeref_Store) {
     builder.add_dereference_memlet(block, access_node_1, access_node_2, false, pointer_type_2);
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_printer;
@@ -331,9 +349,11 @@ TEST(DataFlowDispatcherTest, DispatchDeref_Store_Nullptr) {
     builder.add_dereference_memlet(block, access_node_1, access_node_2, false, pointer_type_2);
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
-    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow());
+    auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_printer;

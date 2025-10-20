@@ -1,10 +1,6 @@
 #include "sdfg/codegen/code_generators/c_code_generator.h"
 
-#include "sdfg/analysis/analysis.h"
-#include "sdfg/analysis/users.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
-#include "sdfg/codegen/instrumentation/capture_var_plan.h"
-#include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 
 namespace sdfg {
 namespace codegen {
@@ -32,7 +28,8 @@ void CCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const {
 
     ofs_source << "static void* __capture_ctx;" << std::endl;
     ofs_source << "static void __attribute__((constructor(1000))) __capture_ctx_init(void) {" << std::endl;
-    ofs_source << "\t__capture_ctx = __daisy_capture_init(\"" << name << "\", \"" << arg_capture_path << "\");" << std::endl;
+    ofs_source << "\t__capture_ctx = __daisy_capture_init(\"" << name << "\", \"" << arg_capture_path << "\");"
+               << std::endl;
     ofs_source << "}" << std::endl;
     ofs_source << std::endl;
 }
@@ -143,8 +140,9 @@ void CCodeGenerator::dispatch_globals() {
         if (dynamic_cast<const types::Function*>(&sdfg_.type(container))) {
             // Declare function
             this->globals_stream_ << "extern ";
-            this->globals_stream_ << language_extension_.declaration(this->externals_prefix_ + container, sdfg_.type(container)) << ";"
-                        << std::endl;
+            this->globals_stream_
+                << language_extension_.declaration(this->externals_prefix_ + container, sdfg_.type(container)) << ";"
+                << std::endl;
             continue;
         }
 
@@ -154,10 +152,12 @@ void CCodeGenerator::dispatch_globals() {
         auto& base_type = type.pointee_type();
 
         if (sdfg_.linkage_type(container) == LinkageType_External) {
-            this->globals_stream_ << "extern " << language_extension_.declaration(this->externals_prefix_ + container, base_type) << ";"
-                                  << std::endl;
+            this->globals_stream_ << "extern "
+                                  << language_extension_.declaration(this->externals_prefix_ + container, base_type)
+                                  << ";" << std::endl;
         } else {
-            this->globals_stream_ << "static " << language_extension_.declaration(this->externals_prefix_ + container, base_type);
+            this->globals_stream_ << "static "
+                                  << language_extension_.declaration(this->externals_prefix_ + container, base_type);
             if (!type.initializer().empty()) {
                 this->globals_stream_ << " = " << type.initializer();
             }
@@ -180,7 +180,8 @@ void CCodeGenerator::dispatch_schedule() {
         }
     }
 
-    auto dispatcher = create_dispatcher(language_extension_, sdfg_, sdfg_.root(), instrumentation_plan_);
+    auto dispatcher =
+        create_dispatcher(language_extension_, sdfg_, analysis_manager_, sdfg_.root(), instrumentation_plan_);
     dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_snippet_factory_);
 };
 

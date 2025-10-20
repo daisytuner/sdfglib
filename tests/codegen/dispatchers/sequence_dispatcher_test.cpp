@@ -13,10 +13,11 @@ TEST(SequenceDispatcherTest, DispatchNode_Empty) {
     auto& root = sdfg.root();
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, root, *instrumentation);
+    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, root, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -37,10 +38,11 @@ TEST(SequenceDispatcherTest, DispatchNode_Transition) {
     auto& block1 = builder.add_block(root, {{symbolic::symbol("i"), symbolic::integer(0)}}, DebugInfo());
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, root, *instrumentation);
+    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, root, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -62,10 +64,11 @@ TEST(SequenceDispatcherTest, DispatchNode_MultipleBlocks) {
     auto& block2 = builder.add_block(root, {{symbolic::symbol("i"), symbolic::integer(1)}}, DebugInfo());
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, root, *instrumentation);
+    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, root, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
