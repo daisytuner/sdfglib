@@ -1,6 +1,7 @@
 #include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
@@ -125,8 +126,41 @@ std::unique_ptr<InstrumentationPlan> InstrumentationPlan::outermost_loops_plan(S
         }
         nodes.insert({loop, InstrumentationEventType::CPU}); // Default to CPU if not CUDA
     }
+
+    auto sdfg_clone = sdfg.clone();
+    auto builder = builder::StructuredSDFGBuilder(sdfg_clone);
+    LibNodeFinder lib_node_finder(builder, analysis_manager);
+    lib_node_finder.visit();
+    for (auto& lib_node : lib_node_finder.get_lib_nodes_D2H()) {
+        nodes.insert({lib_node, InstrumentationEventType::D2H});
+    }
+    for (auto& lib_node : lib_node_finder.get_lib_nodes_H2D()) {
+        nodes.insert({lib_node, InstrumentationEventType::H2D});
+    }
+
     return std::make_unique<InstrumentationPlan>(sdfg, nodes);
 }
+
+bool LibNodeFinder::accept(structured_control_flow::Block& node) {
+    for (auto libnode : node.dataflow().library_nodes()) {
+        if (libnode->code().value() == "CUDAD2HTransfer" || libnode->code().value() == "TTEnqueueRead") {
+            lib_nodes_D2H.push_back(libnode);
+        }
+        if (libnode->code().value() == "CUDAH2DTransfer" || libnode->code().value() == "TTEnqueueWrite") {
+            lib_nodes_H2D.push_back(libnode);
+        }
+    }
+}
+
+bool LibNodeFinder::accept(structured_control_flow::Sequence& node) { return true; }
+
+bool LibNodeFinder::accept(structured_control_flow::IfElse& node) { return true; }
+
+bool LibNodeFinder::accept(structured_control_flow::For& node) { return true; }
+
+bool LibNodeFinder::accept(structured_control_flow::While& node) { return true; }
+
+bool LibNodeFinder::accept(structured_control_flow::Map& node) { return true; }
 
 } // namespace codegen
 } // namespace sdfg
