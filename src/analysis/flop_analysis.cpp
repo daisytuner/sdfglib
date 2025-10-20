@@ -106,12 +106,18 @@ symbolic::Expression FlopAnalysis::
 
     auto& assumptions_analysis = analysis_manager.get<AssumptionsAnalysis>();
     auto bound = LoopAnalysis::canonical_bound(&loop, assumptions_analysis);
+    if (bound.is_null()) {
+        return SymEngine::null;
+    }
 
     auto init = loop.init();
 
     auto indvar = loop.indvar();
     symbolic::SymbolVec symbols = {indvar};
     auto update_polynomial = symbolic::polynomial(loop.update(), symbols);
+    if (update_polynomial.is_null()) {
+        return SymEngine::null;
+    }
     auto update_coeffs = symbolic::affine_coefficients(update_polynomial, symbols);
 
     // For now, only allow polynomial of the form: 1 * indvar + n
