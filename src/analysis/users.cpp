@@ -441,6 +441,8 @@ void Users::run(analysis::AnalysisManager& analysis_manager) {
     graph_.clear();
     source_ = nullptr;
     sink_ = nullptr;
+    this->entries_.clear();
+    this->exits_.clear();
     users_by_sdfg_.clear();
     users_by_sdfg_loop_condition_.clear();
     users_by_sdfg_loop_init_.clear();
@@ -989,6 +991,46 @@ std::unordered_set<User*> UsersView::all_uses_after(User& user) {
     return uses;
 };
 
+bool Users::
+    has_user(const std::string& container, Element* element, Use use, bool is_init, bool is_condition, bool is_update) {
+    if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element)) {
+        if (is_init) {
+            if (users_by_sdfg_loop_init_.find(container) == users_by_sdfg_loop_init_.end() ||
+                users_by_sdfg_loop_init_.at(container).find(for_loop) == users_by_sdfg_loop_init_.at(container).end() ||
+                users_by_sdfg_loop_init_.at(container).at(for_loop).find(use) ==
+                    users_by_sdfg_loop_init_.at(container).at(for_loop).end()) {
+                return false;
+            }
+            return true;
+        } else if (is_condition) {
+            if (users_by_sdfg_loop_condition_.find(container) == users_by_sdfg_loop_condition_.end() ||
+                users_by_sdfg_loop_condition_.at(container).find(for_loop) ==
+                    users_by_sdfg_loop_condition_.at(container).end() ||
+                users_by_sdfg_loop_condition_.at(container).at(for_loop).find(use) ==
+                    users_by_sdfg_loop_condition_.at(container).at(for_loop).end()) {
+                return false;
+            }
+            return true;
+        } else if (is_update) {
+            if (users_by_sdfg_loop_update_.find(container) == users_by_sdfg_loop_update_.end() ||
+                users_by_sdfg_loop_update_.at(container).find(for_loop) ==
+                    users_by_sdfg_loop_update_.at(container).end() ||
+                users_by_sdfg_loop_update_.at(container).at(for_loop).find(use) ==
+                    users_by_sdfg_loop_update_.at(container).at(for_loop).end()) {
+                return false;
+            }
+            return true;
+        }
+    }
+    if (users_by_sdfg_.find(container) == users_by_sdfg_.end() ||
+        users_by_sdfg_.at(container).find(element) == users_by_sdfg_.at(container).end() ||
+        users_by_sdfg_.at(container).at(element).find(use) == users_by_sdfg_.at(container).at(element).end()) {
+        return false;
+    }
+
+    return true;
+}
+
 User* Users::
     get_user(const std::string& container, Element* element, Use use, bool is_init, bool is_condition, bool is_update) {
     if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element)) {
@@ -1000,11 +1042,6 @@ User* Users::
         } else if (is_update) {
             return users_by_sdfg_loop_update_.at(container).at(for_loop).at(use);
         }
-    }
-    if (users_by_sdfg_.find(container) == users_by_sdfg_.end() ||
-        users_by_sdfg_.at(container).find(element) == users_by_sdfg_.at(container).end() ||
-        users_by_sdfg_.at(container).at(element).find(use) == users_by_sdfg_.at(container).at(element).end()) {
-        return nullptr;
     }
 
     auto tmp = users_by_sdfg_.at(container).at(element).at(use);
