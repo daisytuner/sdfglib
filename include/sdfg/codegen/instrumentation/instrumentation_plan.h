@@ -11,6 +11,7 @@
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_sdfg.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/visitor/immutable_structured_sdfg_visitor.h"
 #include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {
@@ -65,7 +66,7 @@ public:
     static std::unique_ptr<InstrumentationPlan> outermost_loops_plan(StructuredSDFG& sdfg);
 };
 
-class LibNodeFinder : public visitor::StructuredSDFGVisitor {
+class LibNodeFinder : public visitor::ImmutableStructuredSDFGVisitor {
 private:
     std::vector<const data_flow::LibraryNode*> lib_nodes_H2D;
     std::vector<const data_flow::LibraryNode*> lib_nodes_D2H;
@@ -76,18 +77,8 @@ public:
 
     virtual bool accept(structured_control_flow::Block& node);
 
-    virtual bool accept(structured_control_flow::Sequence& node);
-
-    virtual bool accept(structured_control_flow::IfElse& node);
-
-    virtual bool accept(structured_control_flow::For& node);
-
-    virtual bool accept(structured_control_flow::While& node);
-
-    virtual bool accept(structured_control_flow::Map& node);
-
-    LibNodeFinder(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
-        : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
+    LibNodeFinder(StructuredSDFG& sdfg, analysis::AnalysisManager& analysis_manager)
+        : visitor::ImmutableStructuredSDFGVisitor(sdfg, analysis_manager) {}
 };
 
 } // namespace codegen

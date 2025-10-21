@@ -131,8 +131,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/stdlib/memset.cpp
     src/deepcopy/structured_sdfg_deep_copy.cpp
     src/graph/graph.cpp
-    src//optimization_report/optimization_report.cpp
-    src/visitor/structured_sdfg_visitor.cpp
+    src/optimization_report/optimization_report.cpp
     src/passes/pass.cpp
     src/passes/pipeline.cpp
     src/passes/dataflow/dead_data_elimination.cpp
@@ -189,6 +188,8 @@ set(SOURCE_FILES
     src/types/scalar.cpp
     src/types/structure.cpp
     src/types/utils.cpp
+    src/visitor/immutable_structured_sdfg_visitor.cpp
+    src/visitor/structured_sdfg_visitor.cpp
     src/visualizer/dot_visualizer.cpp
     src/visualizer/visualizer.cpp
     src/element.cpp
