@@ -102,6 +102,15 @@ void InstrumentationPlan::end_instrumentation(
                << entry.second << ");" << std::endl;
     }
 
+    if (InstrumentationEventType::H2D == this->nodes_.at(&node)) {
+        stream << "__daisy_instrumentation_increment(" << region_id_var << ", \"" << "count_H2D" << "\", " << 1 << ");"
+               << std::endl;
+    } else if (InstrumentationEventType::D2H == this->nodes_.at(&node)) {
+        stream << "__daisy_instrumentation_increment(" << region_id_var << ", \"" << "count_D2H" << "\", " << 1 << ");"
+               << std::endl;
+    }
+
+
     // Finalize region
     stream << "__daisy_instrumentation_finalize(" << region_id_var << ");" << std::endl;
 }
