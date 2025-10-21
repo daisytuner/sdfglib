@@ -8,6 +8,7 @@
 #include "sdfg/passes/dataflow/reference_propagation.h"
 #include "sdfg/passes/dataflow/trivial_array_elimination.h"
 #include "sdfg/passes/debug_info_propagation.h"
+#include "sdfg/passes/memory/allocation_hoisting.h"
 #include "sdfg/passes/pass.h"
 #include "sdfg/passes/structured_control_flow/block_fusion.h"
 #include "sdfg/passes/structured_control_flow/common_assignment_elimination.h"
@@ -49,6 +50,8 @@ public:
     static Pipeline controlflow_simplification();
 
     static Pipeline data_parallelism();
+
+    static Pipeline memory();
 
     static Pipeline expansion();
 };

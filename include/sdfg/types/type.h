@@ -359,9 +359,15 @@ public:
 
     StorageType storage_type() const { return storage_type_; };
 
+    void storage_type(const StorageType& storage_type) { storage_type_ = storage_type; };
+
     size_t alignment() const { return alignment_; };
 
+    void alignment(size_t alignment) { alignment_ = alignment; };
+
     std::string initializer() const { return initializer_; };
+
+    void initializer(const std::string& initializer) { initializer_ = initializer; };
 
     virtual PrimitiveType primitive_type() const = 0;
 
