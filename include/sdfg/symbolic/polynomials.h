@@ -27,5 +27,8 @@ Polynomial polynomial(const Expression expr, SymbolVec& symbols);
  */
 AffineCoeffs affine_coefficients(Polynomial poly, SymbolVec& symbols);
 
+/// Create the inverse function for AffineCoeffs
+Expression affine_inverse(AffineCoeffs coeffs, Symbol symbol);
+
 } // namespace symbolic
 } // namespace sdfg

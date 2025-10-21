@@ -117,7 +117,7 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
         if (symbolic::eq(arg1, symbolic::one())) {
             continue;
         }
-        auto lb = assums.at(sym).lower_bound();
+        auto lb = assums.at(sym).lower_bound_deprecated();
         if (!SymEngine::is_a<SymEngine::Integer>(*lb)) {
             continue;
         }
@@ -304,7 +304,7 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
         if (symbolic::eq(arg1, symbolic::one())) {
             continue;
         }
-        auto lb = assums2.at(sym).lower_bound();
+        auto lb = assums2.at(sym).lower_bound_deprecated();
         if (!SymEngine::is_a<SymEngine::Integer>(*lb)) {
             continue;
         }
@@ -361,7 +361,7 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
         if (symbolic::eq(arg1, symbolic::one())) {
             continue;
         }
-        auto lb = assums2.at(sym).lower_bound();
+        auto lb = assums2.at(sym).lower_bound_deprecated();
         if (!SymEngine::is_a<SymEngine::Integer>(*lb)) {
             continue;
         }
@@ -428,8 +428,8 @@ ExpressionSet generate_constraints(SymbolSet& syms, const Assumptions& assums, S
         }
         seen.insert(sym);
 
-        auto ub = assums.at(sym).upper_bound();
-        auto lb = assums.at(sym).lower_bound();
+        auto ub = assums.at(sym).upper_bound_deprecated();
+        auto lb = assums.at(sym).lower_bound_deprecated();
         if (!symbolic::eq(ub, SymEngine::Inf)) {
             if (SymEngine::is_a<SymEngine::Min>(*ub)) {
                 auto min = SymEngine::rcp_static_cast<const SymEngine::Min>(ub);

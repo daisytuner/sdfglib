@@ -6,41 +6,105 @@ namespace sdfg {
 namespace symbolic {
 
 Assumption::Assumption()
-    : symbol_(symbolic::symbol("")), lower_bound_(SymEngine::NegInf), upper_bound_(SymEngine::Inf), constant_(false),
-      map_(SymEngine::null) {
+    : symbol_(symbolic::symbol("")), lower_bound_deprecated_(SymEngine::NegInf),
+      upper_bound_deprecated_(SymEngine::Inf), lower_bounds_(), upper_bounds_(), tight_lower_bound_(SymEngine::null),
+      tight_upper_bound_(SymEngine::null), constant_(false), map_(SymEngine::null) {
 
       };
 
 Assumption::Assumption(const Symbol symbol)
-    : symbol_(symbol), lower_bound_(SymEngine::NegInf), upper_bound_(SymEngine::Inf), constant_(false),
-      map_(SymEngine::null) {
+    : symbol_(symbol), lower_bound_deprecated_(SymEngine::NegInf), upper_bound_deprecated_(SymEngine::Inf),
+      lower_bounds_(), upper_bounds_(), tight_lower_bound_(SymEngine::null), tight_upper_bound_(SymEngine::null),
+      constant_(false), map_(SymEngine::null) {
 
       };
 
 Assumption::Assumption(const Assumption& a)
-    : symbol_(a.symbol_), lower_bound_(a.lower_bound_), upper_bound_(a.upper_bound_), constant_(a.constant_),
-      map_(a.map_) {
+    : symbol_(a.symbol_), lower_bound_deprecated_(a.lower_bound_deprecated_),
+      upper_bound_deprecated_(a.upper_bound_deprecated_), lower_bounds_(a.lower_bounds_),
+      upper_bounds_(a.upper_bounds_), tight_lower_bound_(a.tight_lower_bound_),
+      tight_upper_bound_(a.tight_upper_bound_), constant_(a.constant_), map_(a.map_) {
 
       };
 
 Assumption& Assumption::operator=(const Assumption& a) {
-    symbol_ = a.symbol_;
-    lower_bound_ = a.lower_bound_;
-    upper_bound_ = a.upper_bound_;
-    constant_ = a.constant_;
-    map_ = a.map_;
+    this->symbol_ = a.symbol_;
+    this->lower_bound_deprecated_ = a.lower_bound_deprecated_;
+    this->upper_bound_deprecated_ = a.upper_bound_deprecated_;
+    this->lower_bounds_ = a.lower_bounds_;
+    this->upper_bounds_ = a.upper_bounds_;
+    this->tight_lower_bound_ = a.tight_lower_bound_;
+    this->tight_upper_bound_ = a.tight_upper_bound_;
+    this->constant_ = a.constant_;
+    this->map_ = a.map_;
     return *this;
 };
 
-const Symbol Assumption::symbol() const { return symbol_; };
+const Symbol Assumption::symbol() const { return this->symbol_; };
 
-const Expression Assumption::lower_bound() const { return lower_bound_; };
+const Expression Assumption::lower_bound_deprecated() const { return this->lower_bound_deprecated_; }
 
-void Assumption::lower_bound(const Expression lower_bound) { lower_bound_ = lower_bound; };
+void Assumption::lower_bound_deprecated(const Expression lower_bound) { this->lower_bound_deprecated_ = lower_bound; }
 
-const Expression Assumption::upper_bound() const { return upper_bound_; };
+const Expression Assumption::upper_bound_deprecated() const { return this->upper_bound_deprecated_; }
 
-void Assumption::upper_bound(const Expression upper_bound) { upper_bound_ = upper_bound; };
+void Assumption::upper_bound_deprecated(const Expression upper_bound) { this->upper_bound_deprecated_ = upper_bound; }
+
+const Expression Assumption::lower_bound() const {
+    Expression lb;
+    if (this->lower_bounds_.empty()) {
+        lb = SymEngine::NegInf;
+    } else {
+        lb = SymEngine::max(std::vector<Expression>(this->lower_bounds_.begin(), this->lower_bounds_.end()));
+    }
+    if (this->tight_lower_bound_.is_null()) {
+        return lb;
+    } else if (eq(lb, SymEngine::NegInf)) {
+        return this->tight_lower_bound_;
+    } else {
+        return max(this->tight_lower_bound_, lb);
+    }
+}
+
+const ExpressionSet& Assumption::lower_bounds() const { return this->lower_bounds_; }
+
+void Assumption::add_lower_bound(const Expression lb) { this->lower_bounds_.insert(lb); }
+
+bool Assumption::contains_lower_bound(const Expression lb) { return this->lower_bounds_.contains(lb); }
+
+bool Assumption::remove_lower_bound(const Expression lb) { return this->lower_bounds_.erase(lb) > 0; }
+
+const Expression Assumption::upper_bound() const {
+    Expression ub;
+    if (this->upper_bounds_.empty()) {
+        ub = SymEngine::Inf;
+    } else {
+        ub = SymEngine::min(std::vector<Expression>(this->upper_bounds_.begin(), this->upper_bounds_.end()));
+    }
+    if (this->tight_upper_bound_.is_null()) {
+        return ub;
+    } else if (eq(ub, SymEngine::Inf)) {
+        return this->tight_upper_bound_;
+    } else {
+        return min(this->tight_upper_bound_, ub);
+    }
+}
+
+const ExpressionSet& Assumption::upper_bounds() const { return this->upper_bounds_; }
+
+void Assumption::add_upper_bound(const Expression ub) { this->upper_bounds_.insert(ub); }
+
+bool Assumption::contains_upper_bound(const Expression ub) { return this->upper_bounds_.contains(ub); }
+
+bool Assumption::remove_upper_bound(const Expression ub) { return this->upper_bounds_.erase(ub) > 0; }
+
+const Expression Assumption::tight_lower_bound() const { return this->tight_lower_bound_; }
+
+void Assumption::tight_lower_bound(const Expression tight_lb) { this->tight_lower_bound_ = tight_lb; }
+
+const Expression Assumption::tight_upper_bound() const { return this->tight_upper_bound_; }
+
+void Assumption::tight_upper_bound(const Expression tight_ub) { this->tight_upper_bound_ = tight_ub; }
 
 bool Assumption::constant() const { return constant_; };
 
@@ -57,58 +121,80 @@ Assumption Assumption::create(const Symbol symbol, const types::IType& type) {
         types::PrimitiveType primitive_type = scalar_type->primitive_type();
         switch (primitive_type) {
             case types::PrimitiveType::Bool: {
-                assum.lower_bound(zero());
-                assum.upper_bound(one());
+                assum.add_lower_bound(zero());
+                assum.add_upper_bound(one());
+                assum.lower_bound_deprecated(zero());
+                assum.upper_bound_deprecated(one());
                 break;
             }
             case types::PrimitiveType::UInt8: {
-                assum.lower_bound(integer(std::numeric_limits<uint8_t>::min()));
-                assum.upper_bound(integer(std::numeric_limits<uint8_t>::max()));
+                assum.add_lower_bound(integer(std::numeric_limits<uint8_t>::min()));
+                assum.add_upper_bound(integer(std::numeric_limits<uint8_t>::max()));
+                assum.lower_bound_deprecated(integer(std::numeric_limits<uint8_t>::min()));
+                assum.upper_bound_deprecated(integer(std::numeric_limits<uint8_t>::max()));
                 break;
             }
             case types::PrimitiveType::UInt16: {
-                assum.lower_bound(integer(std::numeric_limits<uint16_t>::min()));
-                assum.upper_bound(integer(std::numeric_limits<uint16_t>::max()));
+                assum.add_lower_bound(integer(std::numeric_limits<uint16_t>::min()));
+                assum.add_upper_bound(integer(std::numeric_limits<uint16_t>::max()));
+                assum.lower_bound_deprecated(integer(std::numeric_limits<uint16_t>::min()));
+                assum.upper_bound_deprecated(integer(std::numeric_limits<uint16_t>::max()));
                 break;
             }
             case types::PrimitiveType::UInt32: {
-                assum.lower_bound(integer(std::numeric_limits<uint32_t>::min()));
-                assum.upper_bound(integer(std::numeric_limits<uint32_t>::max()));
+                assum.add_lower_bound(integer(std::numeric_limits<uint32_t>::min()));
+                assum.add_upper_bound(integer(std::numeric_limits<uint32_t>::max()));
+                assum.lower_bound_deprecated(integer(std::numeric_limits<uint32_t>::min()));
+                assum.upper_bound_deprecated(integer(std::numeric_limits<uint32_t>::max()));
                 break;
             }
             case types::PrimitiveType::UInt64: {
-                assum.lower_bound(integer(std::numeric_limits<uint64_t>::min()));
-                assum.upper_bound(SymEngine::Inf);
+                assum.add_lower_bound(integer(std::numeric_limits<uint64_t>::min()));
+                assum.add_upper_bound(SymEngine::Inf);
+                assum.lower_bound_deprecated(integer(std::numeric_limits<uint64_t>::min()));
+                assum.upper_bound_deprecated(SymEngine::Inf);
                 break;
             }
             case types::PrimitiveType::UInt128: {
-                assum.lower_bound(integer(0));
-                assum.upper_bound(SymEngine::Inf);
+                assum.add_lower_bound(integer(0));
+                assum.add_upper_bound(SymEngine::Inf);
+                assum.lower_bound_deprecated(integer(0));
+                assum.upper_bound_deprecated(SymEngine::Inf);
                 break;
             }
             case types::PrimitiveType::Int8: {
-                assum.lower_bound(integer(std::numeric_limits<int8_t>::min()));
-                assum.upper_bound(integer(std::numeric_limits<int8_t>::max()));
+                assum.add_lower_bound(integer(std::numeric_limits<int8_t>::min()));
+                assum.add_upper_bound(integer(std::numeric_limits<int8_t>::max()));
+                assum.lower_bound_deprecated(integer(std::numeric_limits<int8_t>::min()));
+                assum.upper_bound_deprecated(integer(std::numeric_limits<int8_t>::max()));
                 break;
             }
             case types::PrimitiveType::Int16: {
-                assum.lower_bound(integer(std::numeric_limits<int16_t>::min()));
-                assum.upper_bound(integer(std::numeric_limits<int16_t>::max()));
+                assum.add_lower_bound(integer(std::numeric_limits<int16_t>::min()));
+                assum.add_upper_bound(integer(std::numeric_limits<int16_t>::max()));
+                assum.lower_bound_deprecated(integer(std::numeric_limits<int16_t>::min()));
+                assum.upper_bound_deprecated(integer(std::numeric_limits<int16_t>::max()));
                 break;
             }
             case types::PrimitiveType::Int32: {
-                assum.lower_bound(integer(std::numeric_limits<int32_t>::min()));
-                assum.upper_bound(integer(std::numeric_limits<int32_t>::max()));
+                assum.add_lower_bound(integer(std::numeric_limits<int32_t>::min()));
+                assum.add_upper_bound(integer(std::numeric_limits<int32_t>::max()));
+                assum.lower_bound_deprecated(integer(std::numeric_limits<int32_t>::min()));
+                assum.upper_bound_deprecated(integer(std::numeric_limits<int32_t>::max()));
                 break;
             }
             case types::PrimitiveType::Int64: {
-                assum.lower_bound(SymEngine::NegInf);
-                assum.upper_bound(SymEngine::Inf);
+                assum.add_lower_bound(SymEngine::NegInf);
+                assum.add_upper_bound(SymEngine::Inf);
+                assum.lower_bound_deprecated(SymEngine::NegInf);
+                assum.upper_bound_deprecated(SymEngine::Inf);
                 break;
             }
             case types::PrimitiveType::Int128: {
-                assum.lower_bound(SymEngine::NegInf);
-                assum.upper_bound(SymEngine::Inf);
+                assum.add_lower_bound(SymEngine::NegInf);
+                assum.add_upper_bound(SymEngine::Inf);
+                assum.lower_bound_deprecated(SymEngine::NegInf);
+                assum.upper_bound_deprecated(SymEngine::Inf);
                 break;
             }
             default: {
@@ -119,82 +205,6 @@ Assumption Assumption::create(const Symbol symbol, const types::IType& type) {
     } else {
         throw std::runtime_error("Unsupported type");
     }
-};
-
-void upper_bounds(const Symbol sym, const Assumptions& assumptions, ExpressionSet& ubs, ExpressionSet& visited) {
-    if (visited.find(sym) != visited.end()) {
-        return;
-    }
-    visited.insert(sym);
-
-    auto ub = assumptions.at(sym).upper_bound();
-    if (SymEngine::is_a<SymEngine::Integer>(*ub)) {
-        ubs.insert(ub);
-    } else if (SymEngine::is_a<SymEngine::Symbol>(*ub)) {
-        auto ub_sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(ub);
-        ubs.insert(ub_sym);
-
-        upper_bounds(ub_sym, assumptions, ubs, visited);
-    } else if (SymEngine::is_a<SymEngine::Min>(*ub)) {
-        auto ub_min = SymEngine::rcp_static_cast<const SymEngine::Min>(ub);
-        for (auto& arg : ub_min->get_args()) {
-            if (SymEngine::is_a<SymEngine::Integer>(*ub)) {
-                ubs.insert(ub);
-            } else if (SymEngine::is_a<SymEngine::Symbol>(*ub)) {
-                auto ub_sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(ub);
-                ubs.insert(ub_sym);
-
-                upper_bounds(ub_sym, assumptions, ubs, visited);
-            } else {
-                ubs.insert(arg);
-            }
-        }
-    } else {
-        ubs.insert(ub);
-    }
-};
-
-void upper_bounds(const Symbol sym, const Assumptions& assumptions, ExpressionSet& ubs) {
-    ExpressionSet visited;
-    upper_bounds(sym, assumptions, ubs, visited);
-};
-
-void lower_bounds(const Symbol sym, const Assumptions& assumptions, ExpressionSet& lbs, ExpressionSet& visited) {
-    if (visited.find(sym) != visited.end()) {
-        return;
-    }
-    visited.insert(sym);
-
-    auto lb = assumptions.at(sym).lower_bound();
-    if (SymEngine::is_a<SymEngine::Integer>(*lb)) {
-        lbs.insert(lb);
-    } else if (SymEngine::is_a<SymEngine::Symbol>(*lb)) {
-        auto lb_sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(lb);
-        lbs.insert(lb_sym);
-
-        lower_bounds(lb_sym, assumptions, lbs, visited);
-    } else if (SymEngine::is_a<SymEngine::Max>(*lb)) {
-        auto lb_max = SymEngine::rcp_static_cast<const SymEngine::Max>(lb);
-        for (auto& arg : lb_max->get_args()) {
-            if (SymEngine::is_a<SymEngine::Integer>(*lb)) {
-                lbs.insert(lb);
-            } else if (SymEngine::is_a<SymEngine::Symbol>(*lb)) {
-                auto lb_sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(lb);
-                lbs.insert(lb_sym);
-
-                lower_bounds(lb_sym, assumptions, lbs, visited);
-            } else {
-                lbs.insert(arg);
-            }
-        }
-    } else {
-        lbs.insert(lb);
-    }
-};
-
-void lower_bounds(const Symbol sym, const Assumptions& assumptions, ExpressionSet& lbs) {
-    ExpressionSet visited;
-    lower_bounds(sym, assumptions, lbs, visited);
 };
 
 } // namespace symbolic
