@@ -151,21 +151,63 @@ void CCodeGenerator::dispatch_globals() {
 };
 
 void CCodeGenerator::dispatch_schedule() {
-    // Declare transient containers
+    // Allocate variables
     for (auto& container : sdfg_.containers()) {
-        if (!sdfg_.is_transient(container)) {
+        if (sdfg_.is_external(container)) {
             continue;
         }
+        auto& type = sdfg_.type(container);
 
-        std::string val = this->language_extension_.declaration(container, sdfg_.type(container), false, true);
-        if (!val.empty()) {
-            this->main_stream_ << val;
+        // Declare transient
+        if (sdfg_.is_transient(container)) {
+            std::string val = this->language_extension_.declaration(container, sdfg_.type(container), false, true);
+            if (!val.empty()) {
+                this->main_stream_ << val;
+                this->main_stream_ << ";" << std::endl;
+            }
+        }
+
+        // Allocate if needed
+        if (type.storage_type().is_cpu_stack()) {
+            if (type.storage_type().allocation_size().is_null()) {
+                continue;
+            }
+            this->main_stream_ << container << " = ";
+            this->main_stream_ << this->language_extension_.type_cast("", type);
+            this->main_stream_ << "alloca("
+                               << this->language_extension_.expression(type.storage_type().allocation_size()) << ")";
             this->main_stream_ << ";" << std::endl;
+        } else if (type.storage_type().is_cpu_heap()) {
+            if (type.storage_type().allocation_size().is_null()) {
+                continue;
+            }
+            this->main_stream_ << container << " = ";
+            this->main_stream_ << this->language_extension_.type_cast("", type);
+            this->main_stream_ << "malloc("
+                               << this->language_extension_.expression(type.storage_type().allocation_size()) << ")";
+            this->main_stream_ << ";" << std::endl;
+        } else {
+            assert(false && "Only CPU_Stack and CPU_Heap storage types are supported in C codegen");
         }
     }
 
     auto dispatcher = create_dispatcher(language_extension_, sdfg_, sdfg_.root(), instrumentation_plan_);
     dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_snippet_factory_);
+
+    // Free heap allocations
+    for (auto& container : sdfg_.containers()) {
+        if (sdfg_.is_external(container)) {
+            continue;
+        }
+        auto& type = sdfg_.type(container);
+
+        // Free if needed
+        if (type.storage_type().is_cpu_heap()) {
+            if (type.storage_type().allocation_lifetime() == types::StorageType::AllocationLifetime::Lifetime_SDFG) {
+                this->main_stream_ << "free(" << container << ");" << std::endl;
+            }
+        }
+    }
 };
 
 } // namespace codegen

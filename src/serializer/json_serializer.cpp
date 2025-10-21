@@ -44,24 +44,6 @@ FunctionType function_type_from_string(const std::string& str) {
     return FunctionType(str);
 }
 
-types::StorageType storage_type_from_string(const std::string& str) {
-    if (str == types::StorageType_CPU_Heap.value()) {
-        return types::StorageType_CPU_Heap;
-    } else if (str == types::StorageType_CPU_Stack.value()) {
-        return types::StorageType_CPU_Stack;
-    } else if (str == types::StorageType_NV_Global.value()) {
-        return types::StorageType_NV_Global;
-    } else if (str == types::StorageType_NV_Shared.value()) {
-        return types::StorageType_NV_Shared;
-    } else if (str == types::StorageType_NV_Constant.value()) {
-        return types::StorageType_NV_Constant;
-    } else if (str == types::StorageType_NV_Generic.value()) {
-        return types::StorageType_NV_Generic;
-    }
-
-    return types::StorageType(str);
-}
-
 /*
  * * JSONSerializer class
  * * Serialization logic
@@ -367,7 +349,8 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
     if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
         j["type"] = "scalar";
         j["primitive_type"] = scalar_type->primitive_type();
-        j["storage_type"] = std::string(scalar_type->storage_type().value());
+        j["storage_type"] = nlohmann::json::object();
+        storage_type_to_json(j["storage_type"], scalar_type->storage_type());
         j["initializer"] = scalar_type->initializer();
         j["alignment"] = scalar_type->alignment();
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
@@ -376,7 +359,8 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
         type_to_json(element_type_json, array_type->element_type());
         j["element_type"] = element_type_json;
         j["num_elements"] = expression(array_type->num_elements());
-        j["storage_type"] = std::string(array_type->storage_type().value());
+        j["storage_type"] = nlohmann::json::object();
+        storage_type_to_json(j["storage_type"], array_type->storage_type());
         j["initializer"] = array_type->initializer();
         j["alignment"] = array_type->alignment();
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
@@ -386,13 +370,15 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
             type_to_json(pointee_type_json, pointer_type->pointee_type());
             j["pointee_type"] = pointee_type_json;
         }
-        j["storage_type"] = std::string(pointer_type->storage_type().value());
+        j["storage_type"] = nlohmann::json::object();
+        storage_type_to_json(j["storage_type"], pointer_type->storage_type());
         j["initializer"] = pointer_type->initializer();
         j["alignment"] = pointer_type->alignment();
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
         j["type"] = "structure";
         j["name"] = structure_type->name();
-        j["storage_type"] = std::string(structure_type->storage_type().value());
+        j["storage_type"] = nlohmann::json::object();
+        storage_type_to_json(j["storage_type"], structure_type->storage_type());
         j["initializer"] = structure_type->initializer();
         j["alignment"] = structure_type->alignment();
     } else if (auto function_type = dynamic_cast<const types::Function*>(&type)) {
@@ -407,7 +393,8 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
             j["params"].push_back(param_json);
         }
         j["is_var_arg"] = function_type->is_var_arg();
-        j["storage_type"] = std::string(function_type->storage_type().value());
+        j["storage_type"] = nlohmann::json::object();
+        storage_type_to_json(j["storage_type"], function_type->storage_type());
         j["initializer"] = function_type->initializer();
         j["alignment"] = function_type->alignment();
     } else {
@@ -443,6 +430,15 @@ void JSONSerializer::schedule_type_to_json(nlohmann::json& j, const ScheduleType
         j["properties"][prop.first] = prop.second;
     }
 }
+
+void JSONSerializer::storage_type_to_json(nlohmann::json& j, const types::StorageType& storage_type) {
+    j["value"] = storage_type.value();
+    j["allocation_lifetime"] = storage_type.allocation_lifetime();
+    if (!storage_type.allocation_size().is_null()) {
+        j["allocation_size"] = expression(storage_type.allocation_size());
+    }
+}
+
 
 /*
  * * Deserialization logic
@@ -952,7 +948,7 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             assert(j.contains("primitive_type"));
             types::PrimitiveType primitive_type = j["primitive_type"];
             assert(j.contains("storage_type"));
-            types::StorageType storage_type = storage_type_from_string(j["storage_type"].get<std::string>());
+            types::StorageType storage_type = json_to_storage_type(j["storage_type"]);
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
@@ -967,7 +963,7 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             // Convert num_elements_str to symbolic::Expression
             auto num_elements = symbolic::parse(num_elements_str);
             assert(j.contains("storage_type"));
-            types::StorageType storage_type = storage_type_from_string(j["storage_type"].get<std::string>());
+            types::StorageType storage_type = json_to_storage_type(j["storage_type"]);
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
@@ -983,7 +979,7 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
                 pointee_type = std::nullopt;
             }
             assert(j.contains("storage_type"));
-            types::StorageType storage_type = storage_type_from_string(j["storage_type"].get<std::string>());
+            types::StorageType storage_type = json_to_storage_type(j["storage_type"]);
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
@@ -998,7 +994,7 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             assert(j.contains("name"));
             std::string name = j["name"];
             assert(j.contains("storage_type"));
-            types::StorageType storage_type = storage_type_from_string(j["storage_type"].get<std::string>());
+            types::StorageType storage_type = json_to_storage_type(j["storage_type"]);
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
@@ -1016,7 +1012,7 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             assert(j.contains("is_var_arg"));
             bool is_var_arg = j["is_var_arg"];
             assert(j.contains("storage_type"));
-            types::StorageType storage_type = storage_type_from_string(j["storage_type"].get<std::string>());
+            types::StorageType storage_type = json_to_storage_type(j["storage_type"]);
             assert(j.contains("initializer"));
             std::string initializer = j["initializer"];
             assert(j.contains("alignment"));
@@ -1074,6 +1070,20 @@ ScheduleType JSONSerializer::json_to_schedule_type(const nlohmann::json& j) {
         schedule_type.set_property(key, value.get<std::string>());
     }
     return schedule_type;
+}
+
+types::StorageType JSONSerializer::json_to_storage_type(const nlohmann::json& j) {
+    assert(j.contains("value"));
+    assert(j["value"].is_string());
+
+    symbolic::Expression allocation_size = SymEngine::null;
+    if (j.contains("allocation_size")) {
+        allocation_size = symbolic::parse(j["allocation_size"].get<std::string>());
+    }
+
+    types::StorageType::AllocationLifetime allocation_lifetime = j["allocation_lifetime"];
+
+    return types::StorageType(j["value"].get<std::string>(), allocation_size, allocation_lifetime);
 }
 
 std::string JSONSerializer::expression(const symbolic::Expression expr) {
