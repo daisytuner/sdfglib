@@ -96,7 +96,7 @@ TEST(CCodeGeneratorTest, Allocation_Heap_Argument_Global_Lifetime) {
 
     types::Scalar long_type(types::PrimitiveType::Int64);
     types::Pointer pointer_type(
-        types::StorageType::CPU_Heap(symbolic::integer(8), types::StorageType::AllocationLifetime::Lifetime_Global),
+        types::StorageType::CPU_Heap(symbolic::integer(8), types::StorageType::AllocationLifetime::Lifetime_Default),
         0,
         "",
         long_type
@@ -117,7 +117,7 @@ TEST(CCodeGeneratorTest, Allocation_Heap_Transient_Global_Lifetime) {
 
     types::Scalar long_type(types::PrimitiveType::Int64);
     types::Pointer pointer_type(
-        types::StorageType::CPU_Heap(symbolic::integer(8), types::StorageType::AllocationLifetime::Lifetime_Global),
+        types::StorageType::CPU_Heap(symbolic::integer(8), types::StorageType::AllocationLifetime::Lifetime_Default),
         0,
         "",
         long_type

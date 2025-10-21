@@ -42,8 +42,8 @@ enum PrimitiveType {
 class StorageType {
 public:
     enum AllocationLifetime {
+        Lifetime_Default,
         Lifetime_SDFG,
-        Lifetime_Global,
     };
 
 private:
@@ -53,7 +53,7 @@ private:
 
 public:
     StorageType(const std::string& value)
-        : value_(value), allocation_size_(SymEngine::null), allocation_lifetime_(Lifetime_SDFG) {}
+        : value_(value), allocation_size_(SymEngine::null), allocation_lifetime_(Lifetime_Default) {}
 
     StorageType(
         const std::string& value, const symbolic::Expression& allocation_size, AllocationLifetime allocation_lifetime
