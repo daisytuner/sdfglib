@@ -80,6 +80,10 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
 
         auto define1 = defines.begin()->first;
         auto define2 = (++defines.begin())->first;
+        if (data_dependency_analysis.is_undefined_user(*define1) ||
+            data_dependency_analysis.is_undefined_user(*define2)) {
+            continue;
+        }
 
         // Criterion: Identical define
         auto subsets1 = define1->subsets();
