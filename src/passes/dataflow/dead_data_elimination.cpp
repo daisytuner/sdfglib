@@ -41,6 +41,9 @@ bool DeadDataElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
             if (set.second.size() > 0) {
                 continue;
             }
+            if (data_dependency_analysis.is_undefined_user(*set.first)) {
+                continue;
+            }
 
             auto write = set.first;
             if (auto transition = dynamic_cast<structured_control_flow::Transition*>(write->element())) {

@@ -58,9 +58,9 @@ std::string CUDALanguageExtension::
     std::stringstream val;
 
     if (auto scalar_type = dynamic_cast<const types::Scalar*>(&type)) {
-        if (scalar_type->storage_type() == types::StorageType_NV_Shared) {
+        if (scalar_type->storage_type().is_nv_shared()) {
             val << "__shared__ ";
-        } else if (scalar_type->storage_type() == types::StorageType_NV_Constant) {
+        } else if (scalar_type->storage_type().is_nv_constant()) {
             val << "__constant__ ";
         }
         val << primitive_type(scalar_type->primitive_type());
@@ -87,9 +87,9 @@ std::string CUDALanguageExtension::
     } else if (auto ref_type = dynamic_cast<const Reference*>(&type)) {
         val << declaration("&" + name, ref_type->reference_type());
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
-        if (structure_type->storage_type() == types::StorageType_NV_Shared) {
+        if (structure_type->storage_type().is_nv_shared()) {
             val << "__shared__ ";
-        } else if (structure_type->storage_type() == types::StorageType_NV_Constant) {
+        } else if (structure_type->storage_type().is_nv_constant()) {
             val << "__constant__ ";
         }
         val << structure_type->name();
@@ -284,8 +284,8 @@ std::string CUDALanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
             return tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1) + " ? " + tasklet.inputs().at(0) + " : " +
                    tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_scmp:
-            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1) + " ? -1 : (" +
-                   tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1) + " ? 1 : 0)";
+            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1) + " ? -1 : (" + tasklet.inputs().at(0) +
+                   " > " + tasklet.inputs().at(1) + " ? 1 : 0)";
         case data_flow::TaskletCode::int_umin:
             return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1) + " ? " + tasklet.inputs().at(0) + " : " +
                    tasklet.inputs().at(1);
@@ -293,8 +293,8 @@ std::string CUDALanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
             return tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1) + " ? " + tasklet.inputs().at(0) + " : " +
                    tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_ucmp:
-            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1) + " ? -1 : (" +
-                   tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1) + " ? 1 : 0)";
+            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1) + " ? -1 : (" + tasklet.inputs().at(0) +
+                   " > " + tasklet.inputs().at(1) + " ? 1 : 0)";
         case data_flow::TaskletCode::int_eq:
             return tasklet.inputs().at(0) + " == " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_ne:

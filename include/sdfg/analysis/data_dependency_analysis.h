@@ -5,6 +5,7 @@
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/analysis/assumptions_analysis.h"
+#include "sdfg/analysis/dominance_analysis.h"
 #include "sdfg/analysis/users.h"
 #include "sdfg/structured_sdfg.h"
 
@@ -17,16 +18,16 @@ enum LoopCarriedDependency {
 };
 
 /**
- * @brief Analysis to compute data dependencies between definitions (writes) and uses (reads) of containers.
+ * @brief Computes the read-after-write relation between users.
  *
- * A definition is a write to a container.
- * A use is a read from that container after the definition.
- * A definition is closed when a new definition dominates it.
+ * This analysis computes for each definition (write) the set of users (reads).
  *
- * For scalar types, the analysis is straightforward.
- * For dimensional types, we use integer set analysis:
- *    - A read must intersect with the subset of the definition.
- *    - A new definition must supersede the previous definition.
+ * A definition open when a container is written to.
+ * A definition remains open until a new definition to the same container is encountered,
+ * that dominates the previous definition in terms of:
+ * - control-flow
+ * - subsets (multi-dimensional containers)
+ *
  */
 class DataDependencyAnalysis : public Analysis {
     friend class AnalysisManager;
@@ -38,6 +39,8 @@ private:
     std::unordered_map<structured_control_flow::StructuredLoop*, std::unordered_map<std::string, LoopCarriedDependency>>
         loop_carried_dependencies_;
 
+    std::list<std::unique_ptr<User>> undefined_users_;
+
     bool loop_depends(
         User& previous,
         User& current,
@@ -45,12 +48,24 @@ private:
         structured_control_flow::StructuredLoop& loop
     );
 
-    bool supersedes(User& previous, User& current, analysis::AssumptionsAnalysis& assumptions_analysis);
-
     bool supersedes_restrictive(User& previous, User& current, analysis::AssumptionsAnalysis& assumptions_analysis);
 
-
     bool intersects(User& previous, User& current, analysis::AssumptionsAnalysis& assumptions_analysis);
+
+    bool closes(
+        analysis::AssumptionsAnalysis& assumptions_analysis,
+        analysis::DominanceAnalysis& dominance_analysis,
+        User& previous,
+        User& current,
+        bool requires_dominance
+    );
+
+    bool depends(
+        analysis::AssumptionsAnalysis& assumptions_analysis,
+        analysis::DominanceAnalysis& dominance_analysis,
+        User& previous,
+        User& current
+    );
 
 public:
     DataDependencyAnalysis(StructuredSDFG& sdfg);
@@ -64,6 +79,7 @@ public:
     void visit_block(
         analysis::Users& users,
         analysis::AssumptionsAnalysis& assumptions_analysis,
+        analysis::DominanceAnalysis& dominance_analysis,
         structured_control_flow::Block& block,
         std::unordered_set<User*>& undefined,
         std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
@@ -73,6 +89,7 @@ public:
     void visit_for(
         analysis::Users& users,
         analysis::AssumptionsAnalysis& assumptions_analysis,
+        analysis::DominanceAnalysis& dominance_analysis,
         structured_control_flow::StructuredLoop& for_loop,
         std::unordered_set<User*>& undefined,
         std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
@@ -82,6 +99,7 @@ public:
     void visit_if_else(
         analysis::Users& users,
         analysis::AssumptionsAnalysis& assumptions_analysis,
+        analysis::DominanceAnalysis& dominance_analysis,
         structured_control_flow::IfElse& if_loop,
         std::unordered_set<User*>& undefined,
         std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
@@ -91,6 +109,7 @@ public:
     void visit_while(
         analysis::Users& users,
         analysis::AssumptionsAnalysis& assumptions_analysis,
+        analysis::DominanceAnalysis& dominance_analysis,
         structured_control_flow::While& while_loop,
         std::unordered_set<User*>& undefined,
         std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
@@ -100,6 +119,7 @@ public:
     void visit_return(
         analysis::Users& users,
         analysis::AssumptionsAnalysis& assumptions_analysis,
+        analysis::DominanceAnalysis& dominance_analysis,
         structured_control_flow::Return& return_statement,
         std::unordered_set<User*>& undefined,
         std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
@@ -109,6 +129,7 @@ public:
     void visit_sequence(
         analysis::Users& users,
         analysis::AssumptionsAnalysis& assumptions_analysis,
+        analysis::DominanceAnalysis& dominance_analysis,
         structured_control_flow::Sequence& sequence,
         std::unordered_set<User*>& undefined,
         std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
@@ -148,6 +169,8 @@ public:
      * @return The definitions (writes) of the user.
      */
     std::unordered_set<User*> defined_by(User& read);
+
+    bool is_undefined_user(User& user) const;
 
     /****** Loop-carried dependencies ******/
 

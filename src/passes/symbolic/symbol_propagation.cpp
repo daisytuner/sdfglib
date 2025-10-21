@@ -89,6 +89,9 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
 
             // Criterion: Write must be a transition
             auto write = *entry.second.begin();
+            if (data_dependency_analysis.is_undefined_user(*write)) {
+                continue;
+            }
             auto transition = dynamic_cast<structured_control_flow::Transition*>(write->element());
             if (!transition) {
                 continue;

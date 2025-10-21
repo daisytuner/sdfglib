@@ -44,6 +44,8 @@ public:
 
     void schedule_type_to_json(nlohmann::json& j, const sdfg::structured_control_flow::ScheduleType& schedule_type);
 
+    void storage_type_to_json(nlohmann::json& j, const sdfg::types::StorageType& storage_type);
+
     void json_to_structure_definition(const nlohmann::json& j, sdfg::builder::StructuredSDFGBuilder& builder);
     void json_to_dataflow(
         const nlohmann::json& j,
@@ -109,6 +111,8 @@ public:
     DebugInfo json_to_debug_info(const nlohmann::json& j);
 
     ScheduleType json_to_schedule_type(const nlohmann::json& j);
+
+    types::StorageType json_to_storage_type(const nlohmann::json& j);
 
     std::string expression(const symbolic::Expression expr);
 };
