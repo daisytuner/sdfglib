@@ -78,17 +78,11 @@ public:
 
     virtual bool accept(structured_control_flow::Sequence& node);
 
-    virtual bool accept(structured_control_flow::Return& node);
-
     virtual bool accept(structured_control_flow::IfElse& node);
 
     virtual bool accept(structured_control_flow::For& node);
 
     virtual bool accept(structured_control_flow::While& node);
-
-    virtual bool accept(structured_control_flow::Continue& node);
-
-    virtual bool accept(structured_control_flow::Break& node);
 
     virtual bool accept(structured_control_flow::Map& node);
 

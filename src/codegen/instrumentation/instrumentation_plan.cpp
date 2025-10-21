@@ -159,6 +159,7 @@ bool LibNodeFinder::accept(structured_control_flow::Block& node) {
             lib_nodes_H2D.push_back(libnode);
         }
     }
+    return true;
 }
 
 bool LibNodeFinder::accept(structured_control_flow::Sequence& node) { return true; }
