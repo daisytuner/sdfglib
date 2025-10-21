@@ -1073,8 +1073,10 @@ ScheduleType JSONSerializer::json_to_schedule_type(const nlohmann::json& j) {
 }
 
 types::StorageType JSONSerializer::json_to_storage_type(const nlohmann::json& j) {
-    assert(j.contains("value"));
-    assert(j["value"].is_string());
+    if (!j.contains("value")) {
+        return types::StorageType::CPU_Stack();
+    }
+    std::string value = j["value"].get<std::string>();
 
     symbolic::Expression allocation_size = SymEngine::null;
     if (j.contains("allocation_size")) {
