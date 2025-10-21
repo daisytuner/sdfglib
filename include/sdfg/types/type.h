@@ -39,13 +39,75 @@ enum PrimitiveType {
     PPC_FP128
 };
 
-typedef StringEnum StorageType;
-inline StorageType StorageType_CPU_Stack{"CPU_Stack"};
-inline StorageType StorageType_CPU_Heap{"CPU_Heap"};
-inline StorageType StorageType_NV_Generic{"NV_Generic"};
-inline StorageType StorageType_NV_Shared{"NV_Shared"};
-inline StorageType StorageType_NV_Global{"NV_Global"};
-inline StorageType StorageType_NV_Constant{"NV_Constant"};
+class StorageType {
+public:
+    enum AllocationLifetime {
+        Lifetime_Default,
+        Lifetime_SDFG,
+    };
+
+private:
+    std::string value_;
+    symbolic::Expression allocation_size_;
+    AllocationLifetime allocation_lifetime_;
+
+public:
+    StorageType(const std::string& value)
+        : value_(value), allocation_size_(SymEngine::null), allocation_lifetime_(Lifetime_Default) {}
+
+    StorageType(
+        const std::string& value, const symbolic::Expression& allocation_size, AllocationLifetime allocation_lifetime
+    )
+        : value_(value), allocation_size_(allocation_size), allocation_lifetime_(allocation_lifetime) {}
+
+    std::string value() const { return value_; }
+
+    symbolic::Expression allocation_size() const { return allocation_size_; }
+
+    AllocationLifetime allocation_lifetime() const { return allocation_lifetime_; }
+
+    bool operator==(const StorageType& other) const {
+        if (value_ != other.value_) {
+            return false;
+        }
+        if (allocation_lifetime_ != other.allocation_lifetime_) {
+            return false;
+        }
+        if (allocation_size_.is_null() && other.allocation_size_.is_null()) {
+            return true;
+        }
+        if (!allocation_size_.is_null() && !other.allocation_size_.is_null()) {
+            return symbolic::eq(allocation_size_, other.allocation_size_);
+        }
+        return false;
+    }
+
+    bool is_cpu_stack() const { return value_ == "CPU_Stack"; }
+
+    bool is_cpu_heap() const { return value_ == "CPU_Heap"; }
+
+    bool is_nv_generic() const { return value_ == "NV_Generic"; }
+
+    bool is_nv_global() const { return value_ == "NV_Global"; }
+
+    bool is_nv_shared() const { return value_ == "NV_Shared"; }
+
+    bool is_nv_constant() const { return value_ == "NV_Constant"; }
+
+    static StorageType CPU_Stack() { return StorageType("CPU_Stack"); }
+
+    static StorageType CPU_Heap(symbolic::Expression allocation_size, StorageType::AllocationLifetime allocation_lifetime) {
+        return StorageType("CPU_Heap", allocation_size, allocation_lifetime);
+    }
+
+    static StorageType NV_Generic() { return StorageType("NV_Generic"); }
+
+    static StorageType NV_Global() { return StorageType("NV_Global"); }
+
+    static StorageType NV_Shared() { return StorageType("NV_Shared"); }
+
+    static StorageType NV_Constant() { return StorageType("NV_Constant"); }
+};
 
 constexpr const char* primitive_type_to_string(PrimitiveType e) {
     switch (e) {
@@ -282,14 +344,13 @@ enum class TypeID {
 };
 
 class IType {
-   protected:
+protected:
     StorageType storage_type_;
     size_t alignment_;
     std::string initializer_;
 
-   public:
-    IType(StorageType storage_type = StorageType_CPU_Stack, size_t alignment = 0,
-          const std::string& initializer = "")
+public:
+    IType(StorageType storage_type = StorageType::CPU_Stack(), size_t alignment = 0, const std::string& initializer = "")
         : storage_type_(storage_type), alignment_(alignment), initializer_(initializer) {};
 
     virtual ~IType() = default;
@@ -318,5 +379,5 @@ class IType {
     };
 };
 
-}  // namespace types
-}  // namespace sdfg
+} // namespace types
+} // namespace sdfg

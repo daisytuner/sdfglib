@@ -151,7 +151,7 @@ void CUDACodeGenerator::dispatch_structures() {
 void CUDACodeGenerator::dispatch_globals() {
     for (auto& container : sdfg_.externals()) {
         auto& type = sdfg_.type(container);
-        if (type.storage_type() == types::StorageType_NV_Global) {
+        if (type.storage_type().is_nv_global()) {
             auto& base_type = dynamic_cast<const types::Pointer&>(type).pointee_type();
             if (sdfg_.linkage_type(container) == LinkageType_External) {
                 this->globals_stream_ << "extern " << language_extension_.declaration(container, base_type) << ";"
@@ -164,7 +164,7 @@ void CUDACodeGenerator::dispatch_globals() {
                 this->globals_stream_ << ";" << std::endl;
             }
         }
-        if (type.storage_type() == types::StorageType_NV_Constant) {
+        if (type.storage_type().is_nv_constant()) {
             assert(type.initializer().empty());
             auto& base_type = dynamic_cast<const types::Pointer&>(type).pointee_type();
             this->globals_stream_ << "__constant__ " << language_extension_.declaration(container, base_type, true)
@@ -177,7 +177,7 @@ void CUDACodeGenerator::dispatch_schedule() {
     // Declare shared memory
     for (auto& container : sdfg_.externals()) {
         auto& type = sdfg_.type(container);
-        if (type.storage_type() == types::StorageType_NV_Shared) {
+        if (type.storage_type().is_nv_shared()) {
             this->main_stream_ << language_extension_.declaration(container, sdfg_.type(container)) << ";" << std::endl;
         }
     }

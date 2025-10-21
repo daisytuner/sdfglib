@@ -21,6 +21,139 @@ TEST(CCodeGeneratorTest, FunctionDefintion) {
     EXPECT_EQ(result, "extern void sdfg_a(void)");
 }
 
+TEST(CCodeGeneratorTest, Allocation_Stack_Argument) {
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+
+    builder.add_container("arg0", types::Scalar(types::PrimitiveType::Int64), true, false);
+
+    auto sdfg = builder.move();
+
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
+    generator.generate();
+    auto result = generator.main().str();
+    EXPECT_EQ(result, "");
+}
+
+TEST(CCodeGeneratorTest, Allocation_Stack_Transient) {
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+
+    builder.add_container("t0", types::Scalar(types::PrimitiveType::Int64), false, false);
+
+    auto sdfg = builder.move();
+
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
+    generator.generate();
+    auto result = generator.main().str();
+    EXPECT_EQ(result, "long long t0;\n");
+}
+
+TEST(CCodeGeneratorTest, Allocation_Heap_Argument_SDFG_Lifetime) {
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+
+    types::Scalar long_type(types::PrimitiveType::Int64);
+    types::Pointer pointer_type(
+        types::StorageType::CPU_Heap(symbolic::integer(8), types::StorageType::AllocationLifetime::Lifetime_SDFG),
+        0,
+        "",
+        long_type
+    );
+    builder.add_container("arg0", pointer_type, true, false);
+
+    auto sdfg = builder.move();
+
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
+    generator.generate();
+    auto result = generator.main().str();
+    EXPECT_EQ(result, "arg0 = (long long *) malloc(8);\nfree(arg0);\n");
+}
+
+TEST(CCodeGeneratorTest, Allocation_Heap_Transient_SDFG_Lifetime) {
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+
+    types::Scalar long_type(types::PrimitiveType::Int64);
+    types::Pointer pointer_type(
+        types::StorageType::CPU_Heap(symbolic::integer(8), types::StorageType::AllocationLifetime::Lifetime_SDFG),
+        0,
+        "",
+        long_type
+    );
+    builder.add_container("t0", pointer_type, false, false);
+
+    auto sdfg = builder.move();
+
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
+    generator.generate();
+    auto result = generator.main().str();
+    EXPECT_EQ(result, "long long *t0;\nt0 = (long long *) malloc(8);\nfree(t0);\n");
+}
+
+TEST(CCodeGeneratorTest, Allocation_Heap_Argument_Global_Lifetime) {
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+
+    types::Scalar long_type(types::PrimitiveType::Int64);
+    types::Pointer pointer_type(
+        types::StorageType::CPU_Heap(symbolic::integer(8), types::StorageType::AllocationLifetime::Lifetime_Default),
+        0,
+        "",
+        long_type
+    );
+    builder.add_container("arg0", pointer_type, true, false);
+
+    auto sdfg = builder.move();
+
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
+    generator.generate();
+    auto result = generator.main().str();
+    EXPECT_EQ(result, "arg0 = (long long *) malloc(8);\n");
+}
+
+TEST(CCodeGeneratorTest, Allocation_Heap_Transient_Global_Lifetime) {
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+
+    types::Scalar long_type(types::PrimitiveType::Int64);
+    types::Pointer pointer_type(
+        types::StorageType::CPU_Heap(symbolic::integer(8), types::StorageType::AllocationLifetime::Lifetime_Default),
+        0,
+        "",
+        long_type
+    );
+    builder.add_container("t0", pointer_type, false, false);
+
+    auto sdfg = builder.move();
+
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
+    generator.generate();
+    auto result = generator.main().str();
+    EXPECT_EQ(result, "long long *t0;\nt0 = (long long *) malloc(8);\n");
+}
+
+TEST(CCodeGeneratorTest, Deallocation_Heap_Argument_SDFG_Lifetime) {
+    builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
+
+    types::Scalar long_type(types::PrimitiveType::Int64);
+    types::Pointer pointer_type(
+        types::StorageType::CPU_Heap(SymEngine::null, types::StorageType::AllocationLifetime::Lifetime_SDFG),
+        0,
+        "",
+        long_type
+    );
+    builder.add_container("arg0", pointer_type, true, false);
+
+    auto sdfg = builder.move();
+
+    auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
+    codegen::CCodeGenerator generator(*sdfg, *instrumentation_plan);
+    generator.generate();
+    auto result = generator.main().str();
+    EXPECT_EQ(result, "free(arg0);\n");
+}
+
 TEST(CCodeGeneratorTest, DispatchStructures_Basic) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
