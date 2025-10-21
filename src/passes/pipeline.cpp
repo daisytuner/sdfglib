@@ -93,6 +93,14 @@ Pipeline Pipeline::data_parallelism() {
     return p;
 };
 
+Pipeline Pipeline::memory() {
+    Pipeline p("Memory");
+
+    p.register_pass<AllocationHoistingPass>();
+
+    return p;
+};
+
 Pipeline Pipeline::expansion() {
     Pipeline p("Expansion");
 
