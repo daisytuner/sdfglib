@@ -29,7 +29,7 @@ class InstrumentationInfo {
 private:
     ElementType element_type_;
     TargetType target_type_;
-    size_t loopnest_index_;
+    long long loopnest_index_;
     size_t element_id_;
 
     std::unordered_map<std::string, std::string> metrics_;
@@ -38,7 +38,7 @@ public:
     InstrumentationInfo(
         const ElementType& element_type,
         const TargetType& target_type,
-        size_t loopnest_index,
+        long long loopnest_index,
         size_t element_id,
         const std::unordered_map<std::string, std::string>& metrics = {}
     );
@@ -47,7 +47,7 @@ public:
 
     const TargetType& target_type() const;
 
-    size_t loopnest_index() const;
+    long long loopnest_index() const;
 
     size_t element_id() const;
 

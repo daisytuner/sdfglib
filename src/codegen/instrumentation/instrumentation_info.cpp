@@ -8,7 +8,7 @@ namespace codegen {
 InstrumentationInfo::InstrumentationInfo(
     const ElementType& element_type,
     const TargetType& target_type,
-    size_t loopnest_index,
+    long long loopnest_index,
     size_t element_id,
     const std::unordered_map<std::string, std::string>& metrics
 )
@@ -19,7 +19,7 @@ const ElementType& InstrumentationInfo::element_type() const { return element_ty
 
 const TargetType& InstrumentationInfo::target_type() const { return target_type_; }
 
-size_t InstrumentationInfo::loopnest_index() const { return loopnest_index_; }
+long long InstrumentationInfo::loopnest_index() const { return loopnest_index_; }
 
 size_t InstrumentationInfo::element_id() const { return element_id_; }
 

@@ -12,7 +12,6 @@
 #include "sdfg/structured_sdfg.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/visitor/immutable_structured_sdfg_visitor.h"
-#include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {
 namespace codegen {
