@@ -15,6 +15,7 @@ namespace analysis {
 class Users;
 class UsersView;
 class DominanceAnalysis;
+class DataDependencyAnalysis;
 
 enum Use {
     NOP, // No-op
@@ -27,6 +28,7 @@ enum Use {
 class User {
     friend class Users;
     friend class UsersView;
+    friend class DataDependencyAnalysis;
     friend class DominanceAnalysis;
 
 private:
