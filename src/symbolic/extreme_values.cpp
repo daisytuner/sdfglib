@@ -32,7 +32,7 @@ Expression minimum(const Expression expr, const SymbolSet& parameters, const Ass
             return sym;
         }
         if (assumptions.find(sym) != assumptions.end()) {
-            return minimum(assumptions.at(sym).lower_bound(), parameters, assumptions, depth + 1);
+            return minimum(assumptions.at(sym).lower_bound_deprecated(), parameters, assumptions, depth + 1);
         }
         return SymEngine::null;
     }
@@ -158,7 +158,7 @@ Expression maximum(const Expression expr, const SymbolSet& parameters, const Ass
             return sym;
         }
         if (assumptions.find(sym) != assumptions.end()) {
-            return maximum(assumptions.at(sym).upper_bound(), parameters, assumptions, depth + 1);
+            return maximum(assumptions.at(sym).upper_bound_deprecated(), parameters, assumptions, depth + 1);
         }
         return SymEngine::null;
     }

@@ -13,8 +13,8 @@ TEST(ExtremeValuesTest, Symbol_Integral) {
     auto ub = symbolic::integer(2);
 
     symbolic::Assumption assum = symbolic::Assumption(a);
-    assum.lower_bound(lb);
-    assum.upper_bound(ub);
+    assum.lower_bound_deprecated(lb);
+    assum.upper_bound_deprecated(ub);
 
     symbolic::Assumptions assums;
     assums.insert({a, assum});
@@ -32,8 +32,8 @@ TEST(ExtremeValuesTest, Symbol_Symbolic) {
     auto M = symbolic::symbol("M");
 
     symbolic::Assumption assum_a = symbolic::Assumption(a);
-    assum_a.lower_bound(N);
-    assum_a.upper_bound(M);
+    assum_a.lower_bound_deprecated(N);
+    assum_a.upper_bound_deprecated(M);
 
     symbolic::Assumptions assums;
     assums.insert({a, assum_a});
@@ -52,8 +52,8 @@ TEST(ExtremeValuesTest, Linear_Integral) {
     auto ub = symbolic::integer(2);
 
     symbolic::Assumption assum = symbolic::Assumption(a);
-    assum.lower_bound(lb);
-    assum.upper_bound(ub);
+    assum.lower_bound_deprecated(lb);
+    assum.upper_bound_deprecated(ub);
 
     symbolic::Assumptions assums;
     assums.insert({a, assum});
@@ -73,8 +73,8 @@ TEST(ExtremeValuesTest, Linear_Symbolic) {
     auto M = symbolic::symbol("M");
 
     symbolic::Assumption assum = symbolic::Assumption(a);
-    assum.lower_bound(N);
-    assum.upper_bound(M);
+    assum.lower_bound_deprecated(N);
+    assum.upper_bound_deprecated(M);
 
     symbolic::Assumptions assums;
     assums.insert({a, assum});
@@ -105,12 +105,12 @@ TEST(ExtremeValuesTest, Max_Integral) {
     auto ub_b = symbolic::integer(4);
 
     symbolic::Assumption assum_a = symbolic::Assumption(a);
-    assum_a.lower_bound(lb_a);
-    assum_a.upper_bound(ub_a);
+    assum_a.lower_bound_deprecated(lb_a);
+    assum_a.upper_bound_deprecated(ub_a);
 
     symbolic::Assumption assum_b = symbolic::Assumption(b);
-    assum_b.lower_bound(lb_b);
-    assum_b.upper_bound(ub_b);
+    assum_b.lower_bound_deprecated(lb_b);
+    assum_b.upper_bound_deprecated(ub_b);
 
     symbolic::Assumptions assums;
     assums.insert({a, assum_a});
@@ -140,12 +140,12 @@ TEST(ExtremeValuesTest, Max_Symbolic) {
     auto ub_b = symbolic::symbol("M_");
 
     symbolic::Assumption assum_a = symbolic::Assumption(a);
-    assum_a.lower_bound(lb_a);
-    assum_a.upper_bound(ub_a);
+    assum_a.lower_bound_deprecated(lb_a);
+    assum_a.upper_bound_deprecated(ub_a);
 
     symbolic::Assumption assum_b = symbolic::Assumption(b);
-    assum_b.lower_bound(lb_b);
-    assum_b.upper_bound(ub_b);
+    assum_b.lower_bound_deprecated(lb_b);
+    assum_b.upper_bound_deprecated(ub_b);
 
     symbolic::Assumptions assums;
     assums.insert({a, assum_a});
@@ -171,12 +171,12 @@ TEST(ExtremeValuesTest, Min_Integral) {
     auto ub_b = symbolic::integer(4);
 
     symbolic::Assumption assum_a = symbolic::Assumption(a);
-    assum_a.lower_bound(lb_a);
-    assum_a.upper_bound(ub_a);
+    assum_a.lower_bound_deprecated(lb_a);
+    assum_a.upper_bound_deprecated(ub_a);
 
     symbolic::Assumption assum_b = symbolic::Assumption(b);
-    assum_b.lower_bound(lb_b);
-    assum_b.upper_bound(ub_b);
+    assum_b.lower_bound_deprecated(lb_b);
+    assum_b.upper_bound_deprecated(ub_b);
 
     symbolic::Assumptions assums;
     assums.insert({a, assum_a});
@@ -206,12 +206,12 @@ TEST(ExtremeValuesTest, Min_Symbolic) {
     auto ub_b = symbolic::symbol("M_");
 
     symbolic::Assumption assum_a = symbolic::Assumption(a);
-    assum_a.lower_bound(lb_a);
-    assum_a.upper_bound(ub_a);
+    assum_a.lower_bound_deprecated(lb_a);
+    assum_a.upper_bound_deprecated(ub_a);
 
     symbolic::Assumption assum_b = symbolic::Assumption(b);
-    assum_b.lower_bound(lb_b);
-    assum_b.upper_bound(ub_b);
+    assum_b.lower_bound_deprecated(lb_b);
+    assum_b.upper_bound_deprecated(ub_b);
 
     symbolic::Assumptions assums;
     assums.insert({a, assum_a});
@@ -243,16 +243,16 @@ TEST(ExtremeValuesTest, Recursive_Assumptions) {
     auto ub_j = symbolic::symbol("j_end_ex");
 
     symbolic::Assumption assum_i = symbolic::Assumption(i);
-    assum_i.lower_bound(lb_i);
-    assum_i.upper_bound(ub_i);
+    assum_i.lower_bound_deprecated(lb_i);
+    assum_i.upper_bound_deprecated(ub_i);
 
     symbolic::Assumption assum_i_init = symbolic::Assumption(i_init);
-    assum_i_init.lower_bound(lb_i_init);
-    assum_i_init.upper_bound(ub_i_init);
+    assum_i_init.lower_bound_deprecated(lb_i_init);
+    assum_i_init.upper_bound_deprecated(ub_i_init);
 
     symbolic::Assumption assum_j = symbolic::Assumption(j);
-    assum_j.lower_bound(lb_j);
-    assum_j.upper_bound(ub_j);
+    assum_j.lower_bound_deprecated(lb_j);
+    assum_j.upper_bound_deprecated(ub_j);
 
     auto assumptions = symbolic::Assumptions{{i, assum_i}, {i_init, assum_i_init}, {j, assum_j}};
 

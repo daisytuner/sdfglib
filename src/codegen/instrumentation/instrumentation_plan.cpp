@@ -5,6 +5,7 @@
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/codegen/language_extension.h"
+#include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
 namespace codegen {
@@ -101,9 +102,13 @@ void InstrumentationPlan::end_instrumentation(
     if (this->flops_.contains(&node)) {
         auto flop = this->flops_.at(&node);
         if (!flop.is_null()) {
-            std::string flop_str = language_extension.expression(flop);
-            stream << "__daisy_instrumentation_increment(" << region_id_var << ", \"flop\", " << flop_str << ");"
-                   << std::endl;
+            if (symbolic::contains_dynamic_sizeof(flop)) {
+                stream << "// Could not generate \"flop\": " << flop->__str__() << std::endl;
+            } else {
+                std::string flop_str = language_extension.expression(flop);
+                stream << "__daisy_instrumentation_increment(" << region_id_var << ", \"flop\", " << flop_str << ");"
+                       << std::endl;
+            }
         }
     }
 

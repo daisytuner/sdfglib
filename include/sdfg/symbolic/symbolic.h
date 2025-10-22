@@ -12,6 +12,7 @@
 #include <symengine/symbol.h>
 
 #include <unordered_map>
+#include "symengine/functions.h"
 
 namespace sdfg {
 
@@ -106,6 +107,15 @@ public:
     const types::IType& get_type() const { return type_; }
 };
 
+Expression dynamic_sizeof(const Symbol symbol);
+
+bool contains_dynamic_sizeof(const symbolic::Expression& expr);
+
+class DynamicSizeOfFunction : public SymEngine::FunctionSymbol {
+public:
+    explicit DynamicSizeOfFunction(const Symbol symbol) : FunctionSymbol("dynamic_sizeof", symbol) {}
+};
+
 /***** Comparisions *****/
 
 Condition Eq(const Expression lhs, const Expression rhs);
@@ -139,6 +149,8 @@ ExpressionSet muls(const Expression expr);
 Expression subs(const Expression expr, const Expression old_expr, const Expression new_expr);
 
 Condition subs(const Condition expr, const Expression old_expr, const Expression new_expr);
+
+Expression inverse(const Expression expr, const Symbol symbol);
 
 /***** NV Symbols *****/
 

@@ -2507,10 +2507,10 @@ TEST(LoopDependencyAnalysisTest, MapParameterized_1D) {
     builder.add_container("b", sym_desc, true);
 
     auto& assums_m = sdfg.assumption(symbolic::symbol("m"));
-    assums_m.lower_bound(symbolic::integer(1));
+    assums_m.lower_bound_deprecated(symbolic::integer(1));
     assums_m.constant(true);
     auto& assums_b = sdfg.assumption(symbolic::symbol("b"));
-    assums_b.lower_bound(symbolic::integer(1));
+    assums_b.lower_bound_deprecated(symbolic::integer(1));
     assums_b.constant(true);
 
     // Define loop

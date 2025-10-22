@@ -5,6 +5,7 @@
 #include <symengine/parser.h>
 #include <symengine/subs.h>
 #include "sdfg/exceptions.h"
+#include "sdfg/symbolic/polynomials.h"
 #include "sdfg/types/type.h"
 #include "symengine/functions.h"
 #include "symengine/logic.h"
@@ -102,6 +103,27 @@ Expression pow(const Expression base, const Expression exp) { return SymEngine::
 Expression size_of_type(const types::IType& type) {
     auto so = SymEngine::make_rcp<SizeOfTypeFunction>(type);
     return so;
+}
+
+Expression dynamic_sizeof(const Symbol symbol) {
+    auto so = SymEngine::make_rcp<DynamicSizeOfFunction>(symbol);
+    return so;
+}
+
+bool contains_dynamic_sizeof(const symbolic::Expression& expr) {
+    if (expr.is_null()) {
+        return false;
+    }
+    if (SymEngine::is_a<SymEngine::FunctionSymbol>(*expr) &&
+        SymEngine::rcp_static_cast<const SymEngine::FunctionSymbol>(expr)->get_name() == "dynamic_sizeof") {
+        return true;
+    }
+    for (auto& arg : expr->get_args()) {
+        if (contains_dynamic_sizeof(arg)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /***** Comparisions *****/
@@ -206,6 +228,17 @@ Condition subs(const Condition expr, const Expression old_expr, const Expression
 };
 
 Expression parse(const std::string& expr_str) { return SymEngine::parse(expr_str); };
+
+Expression inverse(const Expression expr, const Symbol symbol) {
+    // Currently only affine inverse is supported
+    SymbolVec symbols = {symbol};
+    Polynomial poly = polynomial(expr, symbols);
+    if (poly.is_null()) {
+        return SymEngine::null;
+    }
+    AffineCoeffs affine_coeffs = affine_coefficients(poly, symbols);
+    return affine_inverse(affine_coeffs, symbol);
+}
 
 /***** NV Symbols *****/
 
