@@ -153,21 +153,7 @@ symbolic::Expression FlopAnalysis::visit_block(structured_control_flow::Block& b
     // Filter the loop index variables in libnodes_result, and replace them by (upper_bound - lower_bound) / 2
     auto& assumptions_analysis = analysis_manager.get<AssumptionsAnalysis>();
     auto block_assumptions = assumptions_analysis.get(block);
-    auto libnodes_result_atoms = symbolic::atoms(libnodes_result);
-    for (auto sym : libnodes_result_atoms) {
-        if (assumptions_analysis.is_parameter(sym) || !block_assumptions.contains(sym)) continue;
-        symbolic::Assumption assumption = block_assumptions.at(sym);
-        symbolic::Expression new_expr;
-        if (assumptions_analysis.is_parameter(sym)) {
-            new_expr = symbolic::
-                div(symbolic::sub(assumption.tight_upper_bound(), assumption.tight_lower_bound()),
-                    symbolic::integer(2));
-        } else {
-            new_expr =
-                symbolic::div(symbolic::sub(assumption.upper_bound(), assumption.lower_bound()), symbolic::integer(2));
-        }
-        libnodes_result = symbolic::subs(libnodes_result, sym, new_expr);
-    }
+    libnodes_result = this->replace_loop_indices(libnodes_result, block_assumptions);
 
     return symbolic::add(tasklets_result, libnodes_result);
 }
