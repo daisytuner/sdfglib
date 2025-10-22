@@ -81,7 +81,7 @@ void ReturnDispatcher::dispatch_node(
     } else if (node_.is_data()) {
         std::string return_str = node_.data();
         if (sdfg_.is_external(node_.data())) {
-            return_str = "&" + return_str;
+            return_str = "&" + this->language_extension_.external_prefix() + return_str;
         }
         main_stream << "return " << return_str << ";" << std::endl;
     } else if (node_.is_constant()) {

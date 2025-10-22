@@ -24,13 +24,7 @@ SDFGBuilder::SDFGBuilder(const std::string& name, FunctionType type, const types
 
 SDFG& SDFGBuilder::subject() const { return *this->sdfg_; };
 
-std::unique_ptr<SDFG> SDFGBuilder::move() {
-#ifndef NDEBUG
-    this->sdfg_->validate();
-#endif
-
-    return std::move(this->sdfg_);
-};
+std::unique_ptr<SDFG> SDFGBuilder::move() { return std::move(this->sdfg_); };
 
 void SDFGBuilder::rename_container(const std::string& old_name, const std::string& new_name) const {
     FunctionBuilder::rename_container(old_name, new_name);
@@ -427,9 +421,6 @@ data_flow::Memlet& SDFGBuilder::add_memlet(
     );
 
     auto& memlet = static_cast<data_flow::Memlet&>(*(res.first->second));
-#ifndef NDEBUG
-    memlet.validate(*this->sdfg_);
-#endif
 
     return memlet;
 };
