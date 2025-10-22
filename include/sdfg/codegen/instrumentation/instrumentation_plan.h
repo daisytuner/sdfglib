@@ -19,20 +19,13 @@ namespace codegen {
 enum InstrumentationEventType { CPU = 0, CUDA = 1, NONE = 2 };
 
 class InstrumentationPlan {
-private:
-    std::unordered_map<const structured_control_flow::ControlFlowNode*, symbolic::Expression> flops_;
-
 protected:
     StructuredSDFG& sdfg_;
     std::unordered_map<const Element*, InstrumentationEventType> nodes_;
 
 public:
     InstrumentationPlan(StructuredSDFG& sdfg, const std::unordered_map<const Element*, InstrumentationEventType>& nodes)
-        : sdfg_(sdfg), nodes_(nodes) {
-        analysis::AnalysisManager analysis_manager(this->sdfg_);
-        auto& flop_analysis = analysis_manager.get<analysis::FlopAnalysis>();
-        this->flops_ = flop_analysis.get();
-    }
+        : sdfg_(sdfg), nodes_(nodes) {}
 
     InstrumentationPlan(const InstrumentationPlan& other) = delete;
     InstrumentationPlan(InstrumentationPlan&& other) = delete;

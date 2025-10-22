@@ -93,18 +93,6 @@ void InstrumentationPlan::end_instrumentation(
         stream << "__daisy_instrumentation_exit(" << region_id_var << ");" << std::endl;
     }
 
-    // Perform FlopAnalysis
-    if (auto structured_node = dynamic_cast<const structured_control_flow::ControlFlowNode*>(&node)) {
-        if (this->flops_.contains(structured_node)) {
-            auto flop = this->flops_.at(structured_node);
-            if (!flop.is_null()) {
-                std::string flop_str = language_extension.expression(flop);
-                stream << "__daisy_instrumentation_increment(" << region_id_var << ", \"flop\", " << flop_str << ");"
-                       << std::endl;
-            }
-        }
-    }
-
     for (auto entry : info.metrics()) {
         stream << "__daisy_instrumentation_increment(" << region_id_var << ", \"" << entry.first << "\", "
                << entry.second << ");" << std::endl;

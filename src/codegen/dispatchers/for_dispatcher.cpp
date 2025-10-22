@@ -55,7 +55,18 @@ InstrumentationInfo ForDispatcher::instrumentation_info() const {
         }
     }
 
-    return InstrumentationInfo(ElementType_For, TargetType_SEQUENTIAL, loopnest_index, node_.element_id(), {});
+    // Perform FlopAnalysis
+    std::unordered_map<std::string, std::string> metrics;
+    auto& flop_analysis = analysis_manager_.get<analysis::FlopAnalysis>();
+    if (flop_analysis.contains(&node_)) {
+        auto flop = flop_analysis.get(&node_);
+        if (!flop.is_null()) {
+            std::string flop_str = language_extension_.expression(flop);
+            metrics.insert({"flop", flop_str});
+        }
+    }
+
+    return InstrumentationInfo(ElementType_For, TargetType_SEQUENTIAL, loopnest_index, node_.element_id(), metrics);
 };
 
 } // namespace codegen

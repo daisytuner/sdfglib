@@ -26,14 +26,15 @@ void NodeDispatcher::
     dispatch(PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory) {
     bool applied = begin_node(main_stream);
 
-    auto instrumentation_info = this->instrumentation_info();
     if (this->instrumentation_plan_.should_instrument(node_)) {
+        auto instrumentation_info = this->instrumentation_info();
         this->instrumentation_plan_.begin_instrumentation(node_, main_stream, language_extension_, instrumentation_info);
     }
 
     dispatch_node(main_stream, globals_stream, library_snippet_factory);
 
     if (this->instrumentation_plan_.should_instrument(node_)) {
+        auto instrumentation_info = this->instrumentation_info();
         this->instrumentation_plan_.end_instrumentation(node_, main_stream, language_extension_, instrumentation_info);
     }
 
