@@ -115,12 +115,12 @@ bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
             ScheduleType_CPU_Parallel::omp_schedule(schedule_type, OpenMPSchedule::Dynamic);
         }
 
-        if (number.second == analysis::DegreesOfKnowledgeClassification::Unbound ||
+        /* if (number.second == analysis::DegreesOfKnowledgeClassification::Unbound ||
             number.second == analysis::DegreesOfKnowledgeClassification::Bound) {
             num_threads = symbolic::one();
         } else if (!symbolic::eq(number.first, symbolic::one())) {
             num_threads = symbolic::one();
-        }
+        } */
 
         ScheduleType_CPU_Parallel::num_threads(schedule_type, num_threads);
 
