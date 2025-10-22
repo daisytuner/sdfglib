@@ -19,10 +19,12 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Block) {
     auto& block = builder.add_block(root);
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    auto dispatcher = codegen::create_dispatcher(language_extension, *final_sdfg, block, *instrumentation);
+    auto dispatcher =
+        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, block, *instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::BlockDispatcher*>(dispatcher.get()));
 }
 
@@ -34,10 +36,12 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Sequence) {
     auto& sequence = builder.add_sequence(root);
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    auto dispatcher = codegen::create_dispatcher(language_extension, *final_sdfg, sequence, *instrumentation);
+    auto dispatcher =
+        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, sequence, *instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::SequenceDispatcher*>(dispatcher.get()));
 }
 
@@ -49,10 +53,12 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_IfElse) {
     auto& if_else = builder.add_if_else(root);
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    auto dispatcher = codegen::create_dispatcher(language_extension, *final_sdfg, if_else, *instrumentation);
+    auto dispatcher =
+        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, if_else, *instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::IfElseDispatcher*>(dispatcher.get()));
 }
 
@@ -64,10 +70,12 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_While) {
     auto& while_loop = builder.add_while(root);
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    auto dispatcher = codegen::create_dispatcher(language_extension, *final_sdfg, while_loop, *instrumentation);
+    auto dispatcher =
+        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, while_loop, *instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::WhileDispatcher*>(dispatcher.get()));
 }
 
@@ -87,10 +95,12 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_For) {
     );
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    auto dispatcher = codegen::create_dispatcher(language_extension, *final_sdfg, loop, *instrumentation);
+    auto dispatcher =
+        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::ForDispatcher*>(dispatcher.get()));
 }
 
@@ -102,10 +112,12 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Return) {
     auto& return_node = builder.add_return(root, "");
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    auto dispatcher = codegen::create_dispatcher(language_extension, *final_sdfg, return_node, *instrumentation);
+    auto dispatcher =
+        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, return_node, *instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::ReturnDispatcher*>(dispatcher.get()));
 }
 
@@ -118,10 +130,12 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Break) {
     auto& break_node = builder.add_break(while_loop.root());
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    auto dispatcher = codegen::create_dispatcher(language_extension, *final_sdfg, break_node, *instrumentation);
+    auto dispatcher =
+        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, break_node, *instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::BreakDispatcher*>(dispatcher.get()));
 }
 
@@ -134,9 +148,11 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Continue) {
     auto& continue_node = builder.add_continue(while_loop.root());
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    auto dispatcher = codegen::create_dispatcher(language_extension, *final_sdfg, continue_node, *instrumentation);
+    auto dispatcher =
+        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, continue_node, *instrumentation);
     EXPECT_TRUE(dynamic_cast<codegen::ContinueDispatcher*>(dispatcher.get()));
 }

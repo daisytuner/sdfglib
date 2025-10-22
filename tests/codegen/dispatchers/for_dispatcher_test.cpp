@@ -22,10 +22,11 @@ TEST(ForDispatcherTest, DispatchNode) {
     );
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::ForDispatcher dispatcher(language_extension, *final_sdfg, loop, *instrumentation);
+    codegen::ForDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

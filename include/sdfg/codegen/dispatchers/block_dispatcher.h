@@ -14,6 +14,7 @@ public:
     BlockDispatcher(
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::Block& node,
         InstrumentationPlan& instrumentation_plan
     );
@@ -28,6 +29,7 @@ private:
     LanguageExtension& language_extension_;
     const Function& function_;
     const data_flow::DataFlowGraph& data_flow_graph_;
+    const InstrumentationPlan& instrumentation_plan_;
 
     void dispatch_ref(PrettyPrinter& stream, const data_flow::Memlet& memlet);
 
@@ -46,7 +48,10 @@ private:
 
 public:
     DataFlowDispatcher(
-        LanguageExtension& language_extension, const Function& function, const data_flow::DataFlowGraph& data_flow_graph
+        LanguageExtension& language_extension,
+        const Function& function,
+        const data_flow::DataFlowGraph& data_flow_graph,
+        const InstrumentationPlan& instrumentation_plan
     );
 
     void dispatch(PrettyPrinter& stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory);
@@ -74,6 +79,8 @@ public:
 
     virtual void
     dispatch_code(PrettyPrinter& stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory) {}
+
+    virtual InstrumentationInfo instrumentation_info() const;
 };
 
 } // namespace codegen

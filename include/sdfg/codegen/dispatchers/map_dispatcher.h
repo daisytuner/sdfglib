@@ -15,6 +15,7 @@ public:
     MapDispatcher(
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::Map& node,
         InstrumentationPlan& instrumentation_plan
     );
@@ -22,6 +23,8 @@ public:
     void dispatch_node(
         PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
     ) override;
+
+    InstrumentationInfo instrumentation_info() const override;
 };
 
 class SequentialMapDispatcher : public NodeDispatcher {
@@ -32,6 +35,7 @@ public:
     SequentialMapDispatcher(
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::Map& node,
         InstrumentationPlan& instrumentation_plan
     );
@@ -39,6 +43,8 @@ public:
     void dispatch_node(
         PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
     ) override;
+
+    InstrumentationInfo instrumentation_info() const override;
 };
 
 class CPUParallelMapDispatcher : public NodeDispatcher {
@@ -49,6 +55,7 @@ public:
     CPUParallelMapDispatcher(
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::Map& node,
         InstrumentationPlan& instrumentation_plan
     );
@@ -56,6 +63,8 @@ public:
     void dispatch_node(
         PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
     ) override;
+
+    InstrumentationInfo instrumentation_info() const override;
 };
 
 } // namespace codegen

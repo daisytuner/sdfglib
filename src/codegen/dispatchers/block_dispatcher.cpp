@@ -1,6 +1,7 @@
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
+#include "sdfg/codegen/instrumentation/instrumentation_info.h"
 
 namespace sdfg {
 namespace codegen {
@@ -8,10 +9,12 @@ namespace codegen {
 BlockDispatcher::BlockDispatcher(
     LanguageExtension& language_extension,
     StructuredSDFG& sdfg,
+    analysis::AnalysisManager& analysis_manager,
     structured_control_flow::Block& node,
     InstrumentationPlan& instrumentation_plan
 )
-    : sdfg::codegen::NodeDispatcher(language_extension, sdfg, node, instrumentation_plan), node_(node) {
+    : sdfg::codegen::NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan),
+      node_(node) {
 
       };
 
@@ -22,14 +25,18 @@ void BlockDispatcher::dispatch_node(
         return;
     }
 
-    DataFlowDispatcher dispatcher(this->language_extension_, sdfg_, node_.dataflow());
+    DataFlowDispatcher dispatcher(this->language_extension_, sdfg_, node_.dataflow(), instrumentation_plan_);
     dispatcher.dispatch(main_stream, globals_stream, library_snippet_factory);
 };
 
 DataFlowDispatcher::DataFlowDispatcher(
-    LanguageExtension& language_extension, const Function& sdfg, const data_flow::DataFlowGraph& data_flow_graph
+    LanguageExtension& language_extension,
+    const Function& sdfg,
+    const data_flow::DataFlowGraph& data_flow_graph,
+    const InstrumentationPlan& instrumentation_plan
 )
-    : language_extension_(language_extension), function_(sdfg), data_flow_graph_(data_flow_graph) {
+    : language_extension_(language_extension), function_(sdfg), data_flow_graph_(data_flow_graph),
+      instrumentation_plan_(instrumentation_plan) {
 
       };
 
@@ -276,7 +283,17 @@ void DataFlowDispatcher::dispatch_library_node(
             .get_library_node_dispatcher(libnode.code().value() + "::" + libnode.implementation_type().value());
     if (dispatcher_fn) {
         auto dispatcher = dispatcher_fn(this->language_extension_, this->function_, this->data_flow_graph_, libnode);
+
+        auto instrument_info = dispatcher->instrumentation_info();
+        if (this->instrumentation_plan_.should_instrument(libnode)) {
+            this->instrumentation_plan_.begin_instrumentation(libnode, stream, language_extension_, instrument_info);
+        }
+
         dispatcher->dispatch(stream, globals_stream, library_snippet_factory);
+
+        if (this->instrumentation_plan_.should_instrument(libnode)) {
+            this->instrumentation_plan_.end_instrumentation(libnode, stream, language_extension_, instrument_info);
+        }
     } else {
         throw std::runtime_error(
             "No library node dispatcher found for library node code: " + std::string(libnode.code().value())
@@ -309,12 +326,13 @@ void LibraryNodeDispatcher::
         if (conn_type.type_id() == types::TypeID::Array || conn_type.type_id() == types::TypeID::Structure) {
             // Handle array and structure types
             stream << this->language_extension_.declaration(conn, conn_type) << ";" << std::endl;
-            stream << "memcpy(" << "&" << conn << ", " << "&" << src_name << this->language_extension_.subset(function_, iedge.base_type(), iedge.subset())
-                   << ", sizeof " << conn << ");" << std::endl;
+            stream << "memcpy(" << "&" << conn << ", " << "&" << src_name
+                   << this->language_extension_.subset(function_, iedge.base_type(), iedge.subset()) << ", sizeof "
+                   << conn << ");" << std::endl;
         } else {
             stream << this->language_extension_.declaration(conn, conn_type);
             stream << " = ";
-        
+
             // Reinterpret cast for opaque pointers
             if (dynamic_cast<const data_flow::ConstantNode*>(&src)) {
                 stream << src_name;
@@ -346,8 +364,9 @@ void LibraryNodeDispatcher::
         if (conn_type.type_id() == types::TypeID::Array || conn_type.type_id() == types::TypeID::Structure) {
             // Handle array and structure types
             stream << this->language_extension_.declaration(conn, conn_type) << ";" << std::endl;
-            stream << "memcpy(" << "&" << conn << ", " << "&" << dst_name << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset())
-                   << ", sizeof " << conn << ");" << std::endl;
+            stream << "memcpy(" << "&" << conn << ", " << "&" << dst_name
+                   << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << ", sizeof "
+                   << conn << ");" << std::endl;
         } else {
             stream << this->language_extension_.declaration(conn, conn_type);
             stream << " = ";
@@ -380,8 +399,9 @@ void LibraryNodeDispatcher::
 
         auto& result_type = oedge.result_type(this->function_);
         if (result_type.type_id() == types::TypeID::Array || result_type.type_id() == types::TypeID::Structure) {
-            stream << "memcpy(" << "&" << dst_name << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset())
-                   << ", " << "&" << oedge.src_conn() << ", sizeof " << oedge.src_conn() << ");" << std::endl;
+            stream << "memcpy(" << "&" << dst_name
+                   << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << ", " << "&"
+                   << oedge.src_conn() << ", sizeof " << oedge.src_conn() << ");" << std::endl;
         } else {
             stream << dst_name;
             stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << " = ";
@@ -393,6 +413,10 @@ void LibraryNodeDispatcher::
     stream.setIndent(stream.indent() - 4);
     stream << "}" << std::endl;
 }
+
+InstrumentationInfo LibraryNodeDispatcher::instrumentation_info() const {
+    return InstrumentationInfo(ElementType_Unknown, TargetType_SEQUENTIAL, -1, node_.element_id(), {});
+};
 
 
 } // namespace codegen

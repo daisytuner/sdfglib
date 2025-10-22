@@ -1,7 +1,6 @@
 #pragma once
 
 #include <filesystem>
-#include <sstream>
 #include <string>
 
 #include "code_snippet_factory.h"
@@ -25,6 +24,9 @@ class CodeGenerator {
 protected:
     /// @brief Reference to the schedule
     StructuredSDFG& sdfg_;
+
+    /// @brief Analysis manager for the SDFG
+    analysis::AnalysisManager& analysis_manager_;
 
     /// @brief Instrumentation strategy
     InstrumentationPlan& instrumentation_plan_;
@@ -73,13 +75,15 @@ protected:
 public:
     CodeGenerator(
         StructuredSDFG& sdfg,
+        analysis::AnalysisManager& analysis_manager,
         InstrumentationPlan& instrumentation_plan,
         bool capture_args_results = false,
         const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr,
         const std::string& externals_prefix = ""
     )
-        : sdfg_(sdfg), instrumentation_plan_(instrumentation_plan), library_snippet_factory_(output_and_header_paths),
-          capture_args_results_(capture_args_results), externals_prefix_(externals_prefix) {};
+        : sdfg_(sdfg), analysis_manager_(analysis_manager), instrumentation_plan_(instrumentation_plan),
+          library_snippet_factory_(output_and_header_paths), capture_args_results_(capture_args_results),
+          externals_prefix_(externals_prefix) {};
 
 
     virtual ~CodeGenerator() = default;

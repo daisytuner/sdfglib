@@ -9,11 +9,12 @@ namespace codegen {
 
 CUDACodeGenerator::CUDACodeGenerator(
     StructuredSDFG& sdfg,
+    analysis::AnalysisManager& analysis_manager,
     InstrumentationPlan& instrumentation_plan,
     bool capture_args_results,
     const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths
 )
-    : CodeGenerator(sdfg, instrumentation_plan, capture_args_results, output_and_header_paths),
+    : CodeGenerator(sdfg, analysis_manager, instrumentation_plan, capture_args_results, output_and_header_paths),
       language_extension_(sdfg.externals()) {
     if (sdfg.type() != FunctionType_NV_GLOBAL) {
         throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
@@ -195,7 +196,8 @@ void CUDACodeGenerator::dispatch_schedule() {
         }
     }
 
-    auto dispatcher = create_dispatcher(language_extension_, sdfg_, sdfg_.root(), instrumentation_plan_);
+    auto dispatcher =
+        create_dispatcher(language_extension_, sdfg_, analysis_manager_, sdfg_.root(), instrumentation_plan_);
     dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_snippet_factory_);
 };
 

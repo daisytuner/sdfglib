@@ -1,25 +1,13 @@
 #pragma once
 
-#include <filesystem>
-#include <fstream>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-
+#include "sdfg/analysis/analysis.h"
 #include "sdfg/codegen/code_snippet_factory.h"
 #include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 #include "sdfg/codegen/language_extension.h"
 #include "sdfg/codegen/utils.h"
-#include "sdfg/helpers/helpers.h"
-#include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
-#include "sdfg/structured_control_flow/for.h"
-#include "sdfg/structured_control_flow/if_else.h"
-#include "sdfg/structured_control_flow/return.h"
 #include "sdfg/structured_control_flow/sequence.h"
-#include "sdfg/structured_control_flow/while.h"
 #include "sdfg/structured_sdfg.h"
-#include "sdfg/types/utils.h"
 
 namespace sdfg {
 namespace codegen {
@@ -35,14 +23,19 @@ protected:
 
     InstrumentationPlan& instrumentation_plan_;
 
+    analysis::AnalysisManager& analysis_manager_;
+
     virtual bool begin_node(PrettyPrinter& stream);
 
     virtual void end_node(PrettyPrinter& stream, bool has_declaration);
+
+    virtual InstrumentationInfo instrumentation_info() const;
 
 public:
     NodeDispatcher(
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::ControlFlowNode& node,
         InstrumentationPlan& instrumentation_plan
     );

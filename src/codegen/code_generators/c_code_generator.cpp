@@ -1,10 +1,6 @@
 #include "sdfg/codegen/code_generators/c_code_generator.h"
 
-#include "sdfg/analysis/analysis.h"
-#include "sdfg/analysis/users.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
-#include "sdfg/codegen/instrumentation/capture_var_plan.h"
-#include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 
 namespace sdfg {
 namespace codegen {
@@ -189,7 +185,8 @@ void CCodeGenerator::dispatch_schedule() {
         }
     }
 
-    auto dispatcher = create_dispatcher(language_extension_, sdfg_, sdfg_.root(), instrumentation_plan_);
+    auto dispatcher =
+        create_dispatcher(language_extension_, sdfg_, analysis_manager_, sdfg_.root(), instrumentation_plan_);
     dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_snippet_factory_);
 
     // Free heap allocations

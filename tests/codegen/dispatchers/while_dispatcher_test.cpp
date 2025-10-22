@@ -15,10 +15,11 @@ TEST(WhileDispatcherTest, DispatchNode) {
     auto& loop = builder.add_while(root);
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::WhileDispatcher dispatcher(language_extension, *final_sdfg, loop, *instrumentation);
+    codegen::WhileDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -39,10 +40,11 @@ TEST(BreakDispatcherTest, DispatchNode) {
     auto& break_node = builder.add_break(loop.root());
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::BreakDispatcher dispatcher(language_extension, *final_sdfg, break_node, *instrumentation);
+    codegen::BreakDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, break_node, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -63,10 +65,12 @@ TEST(ContinueDispatcherTest, DispatchNode) {
     auto& continue_node = builder.add_continue(loop.root());
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::ContinueDispatcher dispatcher(language_extension, *final_sdfg, continue_node, *instrumentation);
+    codegen::ContinueDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, continue_node, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -86,10 +90,12 @@ TEST(ReturnDispatcherTest, DispatchNode) {
     auto& return_node = builder.add_return(root, "");
 
     auto final_sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*final_sdfg);
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::ReturnDispatcher dispatcher(language_extension, *final_sdfg, return_node, *instrumentation);
+    codegen::ReturnDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, return_node, *instrumentation);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

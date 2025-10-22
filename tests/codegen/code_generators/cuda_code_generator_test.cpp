@@ -9,9 +9,10 @@ using namespace sdfg;
 TEST(CUDACodeGeneratorTest, FunctionDefintion) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_NV_GLOBAL);
     auto sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*sdfg);
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CUDACodeGenerator generator(*sdfg, *instrumentation_plan);
+    codegen::CUDACodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan);
     auto result = generator.function_definition();
     EXPECT_EQ(result, "extern \"C\" __global__ void sdfg_a()");
 }
@@ -23,9 +24,10 @@ TEST(CUDACodeGeneratorTest, DispatchStructures_Basic) {
     struct_def_A.add_member(types::Scalar(types::PrimitiveType::UInt8));
 
     auto sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*sdfg);
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CUDACodeGenerator generator(*sdfg, *instrumentation_plan);
+    codegen::CUDACodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -47,9 +49,10 @@ TEST(CUDACodeGeneratorTest, DispatchStructures_Nested) {
     struct_def_B.add_member(types::Structure("MyStructA"));
 
     auto sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*sdfg);
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CUDACodeGenerator generator(*sdfg, *instrumentation_plan);
+    codegen::CUDACodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -75,9 +78,10 @@ TEST(CUDACodeGeneratorTest, DispatchGlobals) {
     builder.add_container("a", ptr_type, false, true);
 
     auto sdfg = builder.move();
+    analysis::AnalysisManager analysis_manager(*sdfg);
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CUDACodeGenerator generator(*sdfg, *instrumentation_plan);
+    codegen::CUDACodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.globals().str();

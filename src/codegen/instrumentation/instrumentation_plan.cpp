@@ -1,10 +1,13 @@
 #include "sdfg/codegen/instrumentation/instrumentation_plan.h"
+#include <iostream>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/codegen/language_extension.h"
+#include "sdfg/element.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
@@ -14,12 +17,10 @@ void InstrumentationPlan::update(const structured_control_flow::ControlFlowNode&
     this->nodes_[&node] = event_type;
 }
 
-bool InstrumentationPlan::should_instrument(const structured_control_flow::ControlFlowNode& node) const {
-    return this->nodes_.count(&node);
-}
+bool InstrumentationPlan::should_instrument(const Element& node) const { return this->nodes_.count(&node); }
 
 void InstrumentationPlan::begin_instrumentation(
-    const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream, LanguageExtension& language_extension
+    const Element& node, PrettyPrinter& stream, LanguageExtension& language_extension, const InstrumentationInfo& info
 ) const {
     auto& metadata = sdfg_.metadata();
     std::string sdfg_name = sdfg_.name();
@@ -52,34 +53,29 @@ void InstrumentationPlan::begin_instrumentation(
     stream << metadata_var << ".arg_capture_path = \"" << arg_capture_path << "\";" << std::endl;
     stream << metadata_var << ".features_file = \"" << features_file << "\";" << std::endl;
     stream << metadata_var << ".opt_report_file = \"" << opt_report_file << "\";" << std::endl;
-    stream << metadata_var << ".element_id = " << node.element_id() << ";" << std::endl;
-    if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(&node)) {
-        stream << metadata_var << ".element_type = \"map\";" << std::endl;
-        stream << metadata_var << ".target_type = \"" << map_node->schedule_type().value() << "\";" << std::endl;
-    } else if (dynamic_cast<const structured_control_flow::For*>(&node)) {
-        stream << metadata_var << ".element_type = \"for\";" << std::endl;
-        stream << metadata_var << ".target_type = \"SEQUENTIAL\";" << std::endl;
-    } else if (dynamic_cast<const structured_control_flow::While*>(&node)) {
-        stream << metadata_var << ".element_type = \"while\";" << std::endl;
-        stream << metadata_var << ".target_type = \"SEQUENTIAL\";" << std::endl;
-    } else {
-        stream << metadata_var << ".element_type = \"\";" << std::endl;
-        stream << metadata_var << ".target_type = \"\";" << std::endl;
-    }
-    if (!this->loopnest_indices_.empty()) {
-        stream << metadata_var << ".loopnest_index = " << this->loopnest_indices_.at(&node) << ";" << std::endl;
-    } else {
-        stream << metadata_var << ".loopnest_index = -1;" << std::endl;
-    }
+    stream << metadata_var << ".element_id = " << info.element_id() << ";" << std::endl;
+    stream << metadata_var << ".element_type = \"" << info.element_type().value() << "\";" << std::endl;
+    stream << metadata_var << ".target_type = \"" << info.target_type().value() << "\";" << std::endl;
+    stream << metadata_var << ".loopnest_index = " << info.loopnest_index() << ";" << std::endl;
     stream << metadata_var << ".region_uuid = \"" << region_uuid << "\";" << std::endl;
 
     // Initialize region
-    if (this->nodes_.at(&node) == InstrumentationEventType::CPU) {
-        stream << "long long " << region_id_var << " = __daisy_instrumentation_init(&" << metadata_var
-               << ", __DAISY_EVENT_SET_CPU);" << std::endl;
-    } else {
-        stream << "long long " << region_id_var << " = __daisy_instrumentation_init(&" << metadata_var
-               << ", __DAISY_EVENT_SET_CUDA);" << std::endl;
+    switch (this->nodes_.at(&node)) {
+        case InstrumentationEventType::CPU: {
+            stream << "long long " << region_id_var << " = __daisy_instrumentation_init(&" << metadata_var
+                   << ", __DAISY_EVENT_SET_CPU);" << std::endl;
+            break;
+        }
+        case InstrumentationEventType::CUDA: {
+            stream << "long long " << region_id_var << " = __daisy_instrumentation_init(&" << metadata_var
+                   << ", __DAISY_EVENT_SET_CUDA);" << std::endl;
+            break;
+        }
+        case InstrumentationEventType::NONE: {
+            stream << "long long " << region_id_var << " = __daisy_instrumentation_init(&" << metadata_var
+                   << ", __DAISY_EVENT_SET_NONE);" << std::endl;
+            break;
+        }
     }
 
     // Enter region
@@ -87,7 +83,7 @@ void InstrumentationPlan::begin_instrumentation(
 }
 
 void InstrumentationPlan::end_instrumentation(
-    const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream, LanguageExtension& language_extension
+    const Element& node, PrettyPrinter& stream, LanguageExtension& language_extension, const InstrumentationInfo& info
 ) const {
     std::string region_id_var = sdfg_.name() + "_" + std::to_string(node.element_id()) + "_id";
 
@@ -98,18 +94,9 @@ void InstrumentationPlan::end_instrumentation(
         stream << "__daisy_instrumentation_exit(" << region_id_var << ");" << std::endl;
     }
 
-    // Perform FlopAnalysis
-    if (this->flops_.contains(&node)) {
-        auto flop = this->flops_.at(&node);
-        if (!flop.is_null()) {
-            if (symbolic::contains_dynamic_sizeof(flop)) {
-                stream << "// Could not generate \"flop\": " << flop->__str__() << std::endl;
-            } else {
-                std::string flop_str = language_extension.expression(flop);
-                stream << "__daisy_instrumentation_increment(" << region_id_var << ", \"flop\", " << flop_str << ");"
-                       << std::endl;
-            }
-        }
+    for (auto entry : info.metrics()) {
+        stream << "__daisy_instrumentation_increment(" << region_id_var << ", \"" << entry.first << "\", "
+               << entry.second << ");" << std::endl;
     }
 
     // Finalize region
@@ -117,9 +104,7 @@ void InstrumentationPlan::end_instrumentation(
 }
 
 std::unique_ptr<InstrumentationPlan> InstrumentationPlan::none(StructuredSDFG& sdfg) {
-    return std::make_unique<InstrumentationPlan>(
-        sdfg, std::unordered_map<const structured_control_flow::ControlFlowNode*, InstrumentationEventType>{}
-    );
+    return std::make_unique<InstrumentationPlan>(sdfg, std::unordered_map<const Element*, InstrumentationEventType>{});
 }
 
 std::unique_ptr<InstrumentationPlan> InstrumentationPlan::outermost_loops_plan(StructuredSDFG& sdfg) {
@@ -127,11 +112,9 @@ std::unique_ptr<InstrumentationPlan> InstrumentationPlan::outermost_loops_plan(S
     auto& loop_tree_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto ols = loop_tree_analysis.outermost_loops();
 
-    std::unordered_map<const structured_control_flow::ControlFlowNode*, InstrumentationEventType> nodes;
-    std::unordered_map<const structured_control_flow::ControlFlowNode*, size_t> loopnest_indices;
+    std::unordered_map<const Element*, InstrumentationEventType> nodes;
     for (size_t i = 0; i < ols.size(); i++) {
         auto& loop = ols[i];
-        loopnest_indices[loop] = i;
         if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(loop)) {
             if (map_node->schedule_type().value() == "CUDA") {
                 nodes.insert({loop, InstrumentationEventType::CUDA});
@@ -140,7 +123,31 @@ std::unique_ptr<InstrumentationPlan> InstrumentationPlan::outermost_loops_plan(S
         }
         nodes.insert({loop, InstrumentationEventType::CPU}); // Default to CPU if not CUDA
     }
-    return std::make_unique<InstrumentationPlan>(sdfg, nodes, loopnest_indices);
+
+    LibNodeFinder lib_node_finder(sdfg, analysis_manager);
+    lib_node_finder.visit();
+    for (auto& lib_node : lib_node_finder.get_lib_nodes_D2H()) {
+        nodes.insert({lib_node, InstrumentationEventType::NONE});
+    }
+    for (auto& lib_node : lib_node_finder.get_lib_nodes_H2D()) {
+        nodes.insert({lib_node, InstrumentationEventType::NONE});
+    }
+
+    std::cout << "Created instrumentation plan for " << nodes.size() << " nodes." << std::endl;
+
+    return std::make_unique<InstrumentationPlan>(sdfg, nodes);
+}
+
+bool LibNodeFinder::accept(structured_control_flow::Block& node) {
+    for (auto libnode : node.dataflow().library_nodes()) {
+        if (libnode->code().value() == "CUDAD2HTransfer" || libnode->code().value() == "TTEnqueueRead") {
+            lib_nodes_D2H.push_back(libnode);
+        }
+        if (libnode->code().value() == "CUDAH2DTransfer" || libnode->code().value() == "TTEnqueueWrite") {
+            lib_nodes_H2D.push_back(libnode);
+        }
+    }
+    return false;
 }
 
 } // namespace codegen
