@@ -20,6 +20,14 @@ private:
 
     void read_thresholds();
 
+    void dynamic_balance_branch(
+        builder::StructuredSDFGBuilder& builder,
+        analysis::AnalysisManager& analysis_manager,
+        Map& map_node,
+        symbolic::Condition run_dynamic,
+        symbolic::Expression size
+    );
+
 public:
     DOKScheduling();
 

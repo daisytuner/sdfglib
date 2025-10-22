@@ -17,11 +17,12 @@ DOKScheduling::DOKScheduling() {}
 
 std::string DOKScheduling::name() { return "DOKScheduling"; }
 
-void dynamic_balance_branch(
+void DOKScheduling::dynamic_balance_branch(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
     Map& map_node,
-    symbolic::Condition run_dynamic
+    symbolic::Condition run_dynamic,
+    symbolic::Expression size
 ) {
     auto num_threads = ScheduleType_CPU_Parallel::num_threads(map_node.schedule_type());
     if (symbolic::eq(num_threads, symbolic::one())) {
@@ -69,6 +70,10 @@ void dynamic_balance_branch(
     ScheduleType_CPU_Parallel::num_threads(else_schedule_type, num_threads);
 
     ScheduleType_CPU_Parallel::omp_schedule(then_schedule_type, OpenMPSchedule::Dynamic);
+    // ScheduleType_CPU_Parallel::tasking(then_schedule_type, true);
+
+    ScheduleType_CPU_Parallel::
+        chunk_size(then_schedule_type, symbolic::div(size, symbolic::mul(num_threads, balance_threshold)));
 
     builder.update_schedule_type(*then_map, then_schedule_type);
     builder.update_schedule_type(*else_map, else_schedule_type);
@@ -131,11 +136,7 @@ bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
             (balance.second == analysis::DegreesOfKnowledgeClassification::Bound)) {
             auto balance_bound = symbolic::Ge(size.first, symbolic::mul(num_threads, balance_threshold));
 
-            dynamic_balance_branch(builder, analysis_manager, *map, balance_bound);
-        }
-
-        if (number.second == analysis::DegreesOfKnowledgeClassification::Bound) {
-            // TODO: generate new branch with static and dynamic schedules
+            dynamic_balance_branch(builder, analysis_manager, *map, balance_bound, size.first);
         }
     }
 

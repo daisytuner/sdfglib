@@ -28,7 +28,6 @@ void ScheduleType_CPU_Parallel::num_threads(ScheduleType& schedule, const symbol
     schedule.set_property("num_threads", serializer.expression(num_threads));
 }
 const symbolic::Expression ScheduleType_CPU_Parallel::num_threads(const ScheduleType& schedule) {
-    serializer::JSONSerializer serializer;
     if (schedule.properties().find("num_threads") == schedule.properties().end()) {
         return SymEngine::null;
     }
@@ -44,6 +43,30 @@ OpenMPSchedule ScheduleType_CPU_Parallel::omp_schedule(const ScheduleType& sched
         return OpenMPSchedule::Static;
     }
     return static_cast<OpenMPSchedule>(std::stoi(schedule.properties().at("omp_schedule")));
+}
+
+void ScheduleType_CPU_Parallel::tasking(ScheduleType& schedule, const bool enable) {
+    schedule.set_property("tasking", enable ? "1" : "0");
+}
+bool ScheduleType_CPU_Parallel::tasking(const ScheduleType& schedule) {
+    if (schedule.properties().find("tasking") == schedule.properties().end()) {
+        return false;
+    }
+    return schedule.properties().at("tasking") == "1";
+}
+
+void ScheduleType_CPU_Parallel::chunk_size(ScheduleType& schedule, const symbolic::Expression chunk_size) {
+    serializer::JSONSerializer serializer;
+    schedule.set_property("chunk_size", serializer.expression(chunk_size));
+}
+
+const symbolic::Expression ScheduleType_CPU_Parallel::chunk_size(const ScheduleType& schedule) {
+    if (schedule.properties().find("chunk_size") == schedule.properties().end()) {
+        return SymEngine::null;
+    }
+    std::string expr_str = schedule.properties().at("chunk_size");
+    auto expr = symbolic::parse(expr_str);
+    return expr;
 }
 
 } // namespace structured_control_flow

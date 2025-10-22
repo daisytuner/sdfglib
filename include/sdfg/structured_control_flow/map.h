@@ -56,6 +56,10 @@ public:
     static const symbolic::Expression num_threads(const ScheduleType& schedule);
     static void omp_schedule(ScheduleType& schedule, const OpenMPSchedule schedule_type);
     static OpenMPSchedule omp_schedule(const ScheduleType& schedule);
+    static void chunk_size(ScheduleType& schedule, const symbolic::Expression chunk_size);
+    static const symbolic::Expression chunk_size(const ScheduleType& schedule);
+    static void tasking(ScheduleType& schedule, const bool enable);
+    static bool tasking(const ScheduleType& schedule);
     static const std::string value() { return "CPU_PARALLEL"; }
     static ScheduleType create() { return ScheduleType(value()); }
 };
