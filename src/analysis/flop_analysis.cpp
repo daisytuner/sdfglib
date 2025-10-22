@@ -309,9 +309,7 @@ std::unordered_map<const structured_control_flow::ControlFlowNode*, symbolic::Ex
     return this->flops_;
 }
 
-bool FlopAnalysis::precise() {
-    return this->precise_;
-}
+bool FlopAnalysis::precise() { return this->precise_; }
 
 } // namespace analysis
 } // namespace sdfg
