@@ -171,7 +171,7 @@ std::string CLanguageExtension::subset(const Function& function, const types::IT
 };
 
 std::string CLanguageExtension::expression(const symbolic::Expression expr) {
-    CSymbolicPrinter printer(this->external_variables_);
+    CSymbolicPrinter printer(this->external_variables_, this->external_prefix_);
     return printer.apply(expr);
 };
 
@@ -276,8 +276,8 @@ std::string CLanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
             return tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1) + " ? " + tasklet.inputs().at(0) + " : " +
                    tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_scmp:
-            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1) + " ? -1 : (" +
-                   tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1) + " ? 1 : 0)";
+            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1) + " ? -1 : (" + tasklet.inputs().at(0) +
+                   " > " + tasklet.inputs().at(1) + " ? 1 : 0)";
         case data_flow::TaskletCode::int_umin:
             return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1) + " ? " + tasklet.inputs().at(0) + " : " +
                    tasklet.inputs().at(1);
@@ -285,8 +285,8 @@ std::string CLanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
             return tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1) + " ? " + tasklet.inputs().at(0) + " : " +
                    tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_ucmp:
-            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1) + " ? -1 : (" +
-                   tasklet.inputs().at(0) + " > " + tasklet.inputs().at(1) + " ? 1 : 0)";
+            return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1) + " ? -1 : (" + tasklet.inputs().at(0) +
+                   " > " + tasklet.inputs().at(1) + " ? 1 : 0)";
         case data_flow::TaskletCode::int_eq:
             return tasklet.inputs().at(0) + " == " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_ne:

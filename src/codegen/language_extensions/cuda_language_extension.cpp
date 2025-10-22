@@ -179,7 +179,7 @@ std::string CUDALanguageExtension::subset(const Function& function, const types:
 };
 
 std::string CUDALanguageExtension::expression(const symbolic::Expression expr) {
-    CPPSymbolicPrinter printer(this->external_variables_);
+    CPPSymbolicPrinter printer(this->external_variables_, this->external_prefix_);
     return printer.apply(expr);
 };
 
