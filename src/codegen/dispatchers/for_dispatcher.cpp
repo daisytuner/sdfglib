@@ -61,8 +61,10 @@ InstrumentationInfo ForDispatcher::instrumentation_info() const {
     if (flop_analysis.contains(&node_)) {
         auto flop = flop_analysis.get(&node_);
         if (!flop.is_null()) {
-            std::string flop_str = language_extension_.expression(flop);
-            metrics.insert({"flop", flop_str});
+            if (!symbolic::contains_dynamic_sizeof(flop)) {
+                std::string flop_str = language_extension_.expression(flop);
+                metrics.insert({"flop", flop_str});
+            }
         }
     }
 
