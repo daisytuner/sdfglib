@@ -47,5 +47,21 @@ AffineCoeffs affine_coefficients(Polynomial poly, SymbolVec& symbols) {
     return coeffs;
 }
 
+Expression affine_inverse(AffineCoeffs coeffs, Symbol symbol) {
+    if (!coeffs.contains(symbol) || eq(coeffs[symbol], zero())) {
+        return SymEngine::null;
+    }
+
+    Expression result = symbol;
+    for (auto& [sym, expr] : coeffs) {
+        if (eq(sym, symbol)) {
+            continue;
+        }
+        result = symbolic::add(result, SymEngine::neg(expr));
+    }
+
+    return symbolic::div(result, coeffs[symbol]);
+}
+
 } // namespace symbolic
 } // namespace sdfg

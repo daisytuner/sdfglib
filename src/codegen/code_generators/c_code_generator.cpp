@@ -169,7 +169,6 @@ void CCodeGenerator::dispatch_schedule() {
                 continue;
             }
             this->main_stream_ << container << " = ";
-            this->main_stream_ << this->language_extension_.type_cast("", type);
             this->main_stream_ << "alloca("
                                << this->language_extension_.expression(type.storage_type().allocation_size()) << ")";
             this->main_stream_ << ";" << std::endl;
@@ -178,8 +177,7 @@ void CCodeGenerator::dispatch_schedule() {
                 continue;
             }
             this->main_stream_ << container << " = ";
-            this->main_stream_ << this->language_extension_.type_cast("", type);
-            this->main_stream_ << "malloc("
+            this->main_stream_ << this->externals_prefix_ << "malloc("
                                << this->language_extension_.expression(type.storage_type().allocation_size()) << ")";
             this->main_stream_ << ";" << std::endl;
         } else {
@@ -201,7 +199,7 @@ void CCodeGenerator::dispatch_schedule() {
         // Free if needed
         if (type.storage_type().is_cpu_heap()) {
             if (type.storage_type().allocation_lifetime() == types::StorageType::AllocationLifetime::Lifetime_SDFG) {
-                this->main_stream_ << "free(" << container << ");" << std::endl;
+                this->main_stream_ << this->externals_prefix_ << "free(" << container << ");" << std::endl;
             }
         }
     }

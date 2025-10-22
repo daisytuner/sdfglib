@@ -146,8 +146,8 @@ void FunctionBuilder::rename_container(const std::string& old_name, const std::s
         auto assumption = function.assumption(symbolic::symbol(old_name));
 
         symbolic::Assumption new_assumption(symbolic::symbol(new_name));
-        new_assumption.lower_bound(assumption.lower_bound());
-        new_assumption.upper_bound(assumption.upper_bound());
+        new_assumption.lower_bound_deprecated(assumption.lower_bound_deprecated());
+        new_assumption.upper_bound_deprecated(assumption.upper_bound_deprecated());
         new_assumption.constant(assumption.constant());
         new_assumption.map(assumption.map());
 
@@ -158,9 +158,6 @@ void FunctionBuilder::rename_container(const std::string& old_name, const std::s
 
 void FunctionBuilder::change_type(const std::string& name, const types::IType& type) const {
     auto& function = this->function();
-    if (!function.is_transient(name)) {
-        throw InvalidSDFGException("Container " + name + " is not transient");
-    }
     if (function.containers_.find(name) == function.containers_.end()) {
         throw InvalidSDFGException("Container " + name + " does not exist");
     }

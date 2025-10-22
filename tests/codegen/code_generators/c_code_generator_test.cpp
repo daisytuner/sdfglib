@@ -72,7 +72,7 @@ TEST(CCodeGeneratorTest, Allocation_Heap_Argument_SDFG_Lifetime) {
     codegen::CCodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan);
     generator.generate();
     auto result = generator.main().str();
-    EXPECT_EQ(result, "arg0 = (long long *) malloc(8);\nfree(arg0);\n");
+    EXPECT_EQ(result, "arg0 = malloc(8);\nfree(arg0);\n");
 }
 
 TEST(CCodeGeneratorTest, Allocation_Heap_Transient_SDFG_Lifetime) {
@@ -94,10 +94,10 @@ TEST(CCodeGeneratorTest, Allocation_Heap_Transient_SDFG_Lifetime) {
     codegen::CCodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan);
     generator.generate();
     auto result = generator.main().str();
-    EXPECT_EQ(result, "long long *t0;\nt0 = (long long *) malloc(8);\nfree(t0);\n");
+    EXPECT_EQ(result, "long long *t0;\nt0 = malloc(8);\nfree(t0);\n");
 }
 
-TEST(CCodeGeneratorTest, Allocation_Heap_Argument_Global_Lifetime) {
+TEST(CCodeGeneratorTest, Allocation_Heap_Argument_Default_Lifetime) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     types::Scalar long_type(types::PrimitiveType::Int64);
@@ -116,10 +116,10 @@ TEST(CCodeGeneratorTest, Allocation_Heap_Argument_Global_Lifetime) {
     codegen::CCodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan);
     generator.generate();
     auto result = generator.main().str();
-    EXPECT_EQ(result, "arg0 = (long long *) malloc(8);\n");
+    EXPECT_EQ(result, "arg0 = malloc(8);\n");
 }
 
-TEST(CCodeGeneratorTest, Allocation_Heap_Transient_Global_Lifetime) {
+TEST(CCodeGeneratorTest, Allocation_Heap_Transient_Default_Lifetime) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     types::Scalar long_type(types::PrimitiveType::Int64);
@@ -138,7 +138,7 @@ TEST(CCodeGeneratorTest, Allocation_Heap_Transient_Global_Lifetime) {
     codegen::CCodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan);
     generator.generate();
     auto result = generator.main().str();
-    EXPECT_EQ(result, "long long *t0;\nt0 = (long long *) malloc(8);\n");
+    EXPECT_EQ(result, "long long *t0;\nt0 = malloc(8);\n");
 }
 
 TEST(CCodeGeneratorTest, Deallocation_Heap_Argument_SDFG_Lifetime) {

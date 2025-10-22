@@ -103,6 +103,14 @@ void CStyleBaseCodeGenerator::
     const auto& args = sdfg_.arguments();
     const auto& exts = sdfg_.externals();
 
+    // filter externals by removing functions
+    std::vector<std::string> filtered_exts;
+    for (const auto& ext_name : exts) {
+        if (sdfg_.type(ext_name).type_id() != types::TypeID::Function) {
+            filtered_exts.push_back(ext_name);
+        }
+    }
+
     ofs_source << "if (__daisy_cap_en) {" << std::endl;
 
     auto afterBoolStr = after ? "true" : "false";
@@ -111,7 +119,7 @@ void CStyleBaseCodeGenerator::
         auto argIdx = varPlan.arg_idx;
         std::string argName;
         if (varPlan.is_external) {
-            argName = exts[argIdx - args.size()];
+            argName = filtered_exts[argIdx - args.size()];
             argName = this->externals_prefix_ + argName;
         } else {
             argName = args[argIdx];

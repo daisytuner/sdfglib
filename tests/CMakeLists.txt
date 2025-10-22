@@ -43,6 +43,7 @@ set(TEST_FILES
     passes/dataflow/redundant_array_elimination_test.cpp
     passes/dataflow/trivial_array_elimination_test.cpp
     passes/dataflow/reference_propagation_test.cpp
+    passes/memory/allocation_hoisting_test.cpp
     passes/pipeline_test.cpp
     passes/schedules/parallelization_pass_test.cpp
     passes/structured_control_flow/block_fusion_test.cpp

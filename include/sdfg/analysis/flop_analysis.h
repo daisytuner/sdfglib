@@ -8,6 +8,7 @@
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/structured_sdfg.h"
+#include "sdfg/symbolic/assumptions.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
@@ -16,6 +17,16 @@ namespace analysis {
 class FlopAnalysis : public Analysis {
 private:
     std::unordered_map<const structured_control_flow::ControlFlowNode*, symbolic::Expression> flops_;
+
+    bool precise_;
+
+    symbolic::SymbolSet parameters_;
+
+    bool is_parameter_expression(const symbolic::Expression& expr);
+
+    symbolic::ExpressionSet choose_bounds(const symbolic::ExpressionSet& bounds);
+
+    symbolic::Expression replace_loop_indices(const symbolic::Expression expr, symbolic::Assumptions& assumptions);
 
     symbolic::Expression visit(structured_control_flow::ControlFlowNode& node, AnalysisManager& analysis_manager);
 
@@ -41,6 +52,8 @@ public:
     symbolic::Expression get(const structured_control_flow::ControlFlowNode* node);
 
     std::unordered_map<const structured_control_flow::ControlFlowNode*, symbolic::Expression> get();
+
+    bool precise();
 };
 
 } // namespace analysis

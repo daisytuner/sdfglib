@@ -42,6 +42,9 @@ void Tasklet::validate(const Function& function) const {
     // Validate: Graph - No two access nodes for same data
     std::unordered_map<std::string, const AccessNode*> input_names;
     for (auto& iedge : graph.in_edges(*this)) {
+        if (dynamic_cast<const ConstantNode*>(&iedge.src()) != nullptr) {
+            continue;
+        }
         auto& src = static_cast<const AccessNode&>(iedge.src());
         if (input_names.find(src.data()) != input_names.end()) {
             if (input_names.at(src.data()) != &src) {

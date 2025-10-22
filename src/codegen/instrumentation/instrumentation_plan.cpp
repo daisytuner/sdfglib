@@ -8,6 +8,7 @@
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/codegen/language_extension.h"
 #include "sdfg/element.h"
+#include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
 namespace codegen {
