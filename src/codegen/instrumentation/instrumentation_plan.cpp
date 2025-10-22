@@ -59,15 +59,22 @@ void InstrumentationPlan::begin_instrumentation(
     stream << metadata_var << ".region_uuid = \"" << region_uuid << "\";" << std::endl;
 
     // Initialize region
-    if (this->nodes_.at(&node) == InstrumentationEventType::CPU) {
-        stream << "long long " << region_id_var << " = __daisy_instrumentation_init(&" << metadata_var
-               << ", __DAISY_EVENT_SET_CPU);" << std::endl;
-    } else if (this->nodes_.at(&node) == InstrumentationEventType::CUDA) {
-        stream << "long long " << region_id_var << " = __daisy_instrumentation_init(&" << metadata_var
-               << ", __DAISY_EVENT_SET_CUDA);" << std::endl;
-    } else {
-        stream << "long long " << region_id_var << " = __daisy_instrumentation_init(&" << metadata_var
-               << ", __DAISY_EVENT_SET_NONE);" << std::endl;
+    switch (this->nodes_.at(&node)) {
+        case InstrumentationEventType::CPU: {
+            stream << "long long " << region_id_var << " = __daisy_instrumentation_init(&" << metadata_var
+                   << ", __DAISY_EVENT_SET_CPU);" << std::endl;
+            break;
+        }
+        case InstrumentationEventType::CUDA: {
+            stream << "long long " << region_id_var << " = __daisy_instrumentation_init(&" << metadata_var
+                   << ", __DAISY_EVENT_SET_CUDA);" << std::endl;
+            break;
+        }
+        case InstrumentationEventType::NONE: {
+            stream << "long long " << region_id_var << " = __daisy_instrumentation_init(&" << metadata_var
+                   << ", __DAISY_EVENT_SET_NONE);" << std::endl;
+            break;
+        }
     }
 
     // Enter region
@@ -131,10 +138,10 @@ std::unique_ptr<InstrumentationPlan> InstrumentationPlan::outermost_loops_plan(S
     LibNodeFinder lib_node_finder(sdfg, analysis_manager);
     lib_node_finder.visit();
     for (auto& lib_node : lib_node_finder.get_lib_nodes_D2H()) {
-        nodes.insert({lib_node, InstrumentationEventType::D2H});
+        nodes.insert({lib_node, InstrumentationEventType::NONE});
     }
     for (auto& lib_node : lib_node_finder.get_lib_nodes_H2D()) {
-        nodes.insert({lib_node, InstrumentationEventType::H2D});
+        nodes.insert({lib_node, InstrumentationEventType::NONE});
     }
 
     std::cout << "Created instrumentation plan for " << nodes.size() << " nodes." << std::endl;

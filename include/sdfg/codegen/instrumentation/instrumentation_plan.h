@@ -16,7 +16,7 @@
 namespace sdfg {
 namespace codegen {
 
-enum InstrumentationEventType { CPU = 0, CUDA = 1, TENSTORRENT = 2, H2D = 3, D2H = 4 };
+enum InstrumentationEventType { CPU = 0, CUDA = 1, NONE = 2 };
 
 class InstrumentationPlan {
 private:
