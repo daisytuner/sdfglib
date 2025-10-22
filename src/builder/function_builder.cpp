@@ -158,9 +158,6 @@ void FunctionBuilder::rename_container(const std::string& old_name, const std::s
 
 void FunctionBuilder::change_type(const std::string& name, const types::IType& type) const {
     auto& function = this->function();
-    if (!function.is_transient(name)) {
-        throw InvalidSDFGException("Container " + name + " is not transient");
-    }
     if (function.containers_.find(name) == function.containers_.end()) {
         throw InvalidSDFGException("Container " + name + " does not exist");
     }

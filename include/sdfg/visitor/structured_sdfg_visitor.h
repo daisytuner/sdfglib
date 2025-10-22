@@ -18,7 +18,7 @@ public:
 
     virtual ~StructuredSDFGVisitor() = default;
 
-    bool visit();
+    virtual bool visit();
 
     virtual bool accept(structured_control_flow::Block& node);
 
@@ -48,6 +48,8 @@ protected:
 
 public:
     NonStoppingStructuredSDFGVisitor(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
+
+    bool visit() override;
 };
 
 } // namespace visitor

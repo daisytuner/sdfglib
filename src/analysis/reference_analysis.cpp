@@ -63,8 +63,9 @@ void ReferenceAnalysis::visit_block(
         }
 
         // New definition (Move)
-        auto move_user = users.get_user(access_node->data(), access_node, Use::MOVE);
-        if (move_user != nullptr) {
+        if (users.has_user(access_node->data(), access_node, Use::MOVE)) {
+            auto move_user = users.get_user(access_node->data(), access_node, Use::MOVE);
+
             // Close all definitions that we dominate
             std::unordered_map<User*, std::unordered_set<User*>> to_close;
             for (auto& user : open_definitions) {
@@ -82,9 +83,18 @@ void ReferenceAnalysis::visit_block(
             open_definitions.insert({move_user, {}});
         }
 
-        auto read_user = users.get_user(access_node->data(), access_node, Use::READ);
-        auto write_user = users.get_user(access_node->data(), access_node, Use::WRITE);
-        auto view_user = users.get_user(access_node->data(), access_node, Use::VIEW);
+        User* read_user = nullptr;
+        if (users.has_user(access_node->data(), access_node, Use::READ)) {
+            read_user = users.get_user(access_node->data(), access_node, Use::READ);
+        }
+        User* write_user = nullptr;
+        if (users.has_user(access_node->data(), access_node, Use::WRITE)) {
+            write_user = users.get_user(access_node->data(), access_node, Use::WRITE);
+        }
+        User* view_user = nullptr;
+        if (users.has_user(access_node->data(), access_node, Use::VIEW)) {
+            view_user = users.get_user(access_node->data(), access_node, Use::VIEW);
+        }
         if (!read_user && !write_user && !view_user) {
             continue;
         }
