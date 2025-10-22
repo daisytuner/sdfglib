@@ -4,6 +4,7 @@
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/function.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/types/type.h"
 #include "sdfg/types/utils.h"
 
 namespace sdfg {
@@ -199,6 +200,17 @@ void Memlet::validate(const Function& function) const {
             }
             if (!symbolic::eq(this->subset_[0], symbolic::zero())) {
                 throw InvalidSDFGException("Memlet: Dereference memlets must have '0' as the only dimension");
+            }
+
+            // Criterion: src type cannot be a function
+            const sdfg::types::IType* src_type;
+            if (auto const_node = dynamic_cast<const data_flow::ConstantNode*>(src_node)) {
+                src_type = &const_node->type();
+            } else {
+                src_type = &function.type(src_node->data());
+            }
+            if (src_type->type_id() == types::TypeID::Function) {
+                throw InvalidSDFGException("Memlet: Dereference memlets cannot have source of type Function");
             }
 
             // Criterion: Destination must be a pointer
