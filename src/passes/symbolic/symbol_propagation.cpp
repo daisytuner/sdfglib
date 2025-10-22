@@ -112,9 +112,20 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
 
             // Collect all symbols used in the RHS
             std::unordered_set<std::string> rhs_symbols;
-            for (auto& atom : symbolic::atoms(rhs)) {
-                auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(atom);
+            bool pointer_in_rhs = false;
+            for (auto& sym : symbolic::atoms(rhs)) {
                 rhs_symbols.insert(sym->get_name());
+
+                if (sdfg.exists(sym->get_name())) {
+                    auto& atom_type = sdfg.type(sym->get_name());
+                    if (atom_type.type_id() == types::TypeID::Pointer) {
+                        pointer_in_rhs = true;
+                        break;
+                    }
+                }
+            }
+            if (pointer_in_rhs) {
+                continue;
             }
 
             // RHS' symbols may be written between write and read
