@@ -18,6 +18,8 @@ class FlopAnalysis : public Analysis {
 private:
     std::unordered_map<const structured_control_flow::ControlFlowNode*, symbolic::Expression> flops_;
 
+    bool precise_;
+
     symbolic::SymbolSet parameters_;
 
     bool is_parameter_expression(const symbolic::Expression& expr);
@@ -50,6 +52,8 @@ public:
     symbolic::Expression get(const structured_control_flow::ControlFlowNode* node);
 
     std::unordered_map<const structured_control_flow::ControlFlowNode*, symbolic::Expression> get();
+
+    bool precise();
 };
 
 } // namespace analysis

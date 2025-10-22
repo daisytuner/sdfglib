@@ -41,6 +41,7 @@ TEST(FlopAnalysis, Tasklet) {
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
 
     // Check
+    EXPECT_TRUE(analysis.precise());
     symbolic::Expression flop;
     ASSERT_TRUE(analysis.contains(&block));
     flop = analysis.get(&block);
@@ -90,6 +91,7 @@ TEST(FlopAnalysis, MultipleTasklets) {
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
 
     // Check
+    EXPECT_TRUE(analysis.precise());
     symbolic::Expression flop;
     ASSERT_TRUE(analysis.contains(&block));
     flop = analysis.get(&block);
@@ -108,10 +110,13 @@ TEST(FlopAnalysis, Loop) {
     auto& root = sdfg.root();
 
     // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::Int64);
+    builder.add_container("i", sym_desc);
+    builder.add_container("n", sym_desc, true);
     types::Scalar desc(types::PrimitiveType::Float);
-    builder.add_container("a", desc);
-    builder.add_container("b", desc);
-    builder.add_container("c", desc);
+    builder.add_container("a", desc, true);
+    builder.add_container("b", desc, true);
+    builder.add_container("c", desc, true);
 
     // Add loop
     auto i = symbolic::symbol("i");
@@ -133,6 +138,7 @@ TEST(FlopAnalysis, Loop) {
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
 
     // Check
+    EXPECT_TRUE(analysis.precise());
     symbolic::Expression flop;
     ASSERT_TRUE(analysis.contains(&block));
     flop = analysis.get(&block);
@@ -159,6 +165,12 @@ TEST(FlopAnalysis, LoopNest) {
     auto& root = sdfg.root();
 
     // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::Int64);
+    builder.add_container("i", sym_desc);
+    builder.add_container("j", sym_desc);
+    builder.add_container("n", sym_desc, true);
+    builder.add_container("m", sym_desc, true);
+    builder.add_container("k", sym_desc, true);
     types::Scalar desc(types::PrimitiveType::Float);
     builder.add_container("a", desc);
     builder.add_container("b", desc);
@@ -170,7 +182,7 @@ TEST(FlopAnalysis, LoopNest) {
     auto n = symbolic::symbol("n");
     auto& loop1 = builder.add_for(root, i, symbolic::Lt(i, n), symbolic::zero(), symbolic::add(i, symbolic::one()));
 
-    // Add second loop, bound: i <= N && i < M, update: j = j + 2
+    // Add second loop, bound: j <= m && j < k, update: j = j + 2
     auto j = symbolic::symbol("j");
     auto bound2 = symbolic::And(symbolic::Le(j, symbolic::symbol("m")), symbolic::Lt(j, symbolic::symbol("k")));
     auto& loop2 = builder.add_for(loop1.root(), j, bound2, symbolic::one(), symbolic::add(j, symbolic::integer(2)));
@@ -192,6 +204,7 @@ TEST(FlopAnalysis, LoopNest) {
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
 
     // Check
+    EXPECT_FALSE(analysis.precise()); // because of update j = j + 2
     symbolic::Expression flop;
     ASSERT_TRUE(analysis.contains(&block));
     flop = analysis.get(&block);
@@ -243,6 +256,7 @@ TEST(FlopAnalysis, Intrinsic) {
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
 
     // Check
+    EXPECT_TRUE(analysis.precise());
     symbolic::Expression flop;
     ASSERT_TRUE(analysis.contains(&block));
     flop = analysis.get(&block);
@@ -303,6 +317,7 @@ TEST(FlopAnalysis, IfElse) {
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
 
     // Check
+    EXPECT_FALSE(analysis.precise());
     symbolic::Expression flop;
     ASSERT_TRUE(analysis.contains(&block1));
     flop = analysis.get(&block1);
@@ -355,6 +370,7 @@ TEST(FlopAnalysis, WhileLoop) {
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
 
     // Check
+    EXPECT_FALSE(analysis.precise());
     symbolic::Expression flop;
     ASSERT_TRUE(analysis.contains(&block));
     flop = analysis.get(&block);
@@ -413,6 +429,7 @@ TEST(FlopAnalysis, LoopIndvarDependency) {
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
 
     // Check
+    EXPECT_FALSE(analysis.precise());
     symbolic::Expression flop;
     ASSERT_TRUE(analysis.contains(&block));
     flop = analysis.get(&block);
@@ -515,6 +532,7 @@ TEST(FlopAnalysis, SPMV) {
     auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
 
     // Check
+    EXPECT_FALSE(analysis.precise());
     symbolic::Expression flop;
     ASSERT_TRUE(analysis.contains(&block2));
     flop = analysis.get(&block2);

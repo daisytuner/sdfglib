@@ -89,6 +89,7 @@ symbolic::Expression FlopAnalysis::
             lb = assumption.tight_lower_bound();
         }
         result = symbolic::subs(result, sym, symbolic::div(symbolic::sub(ub, lb), symbolic::integer(2)));
+        this->precise_ = false;
     }
     return result;
 }
@@ -112,6 +113,7 @@ symbolic::Expression FlopAnalysis::visit(structured_control_flow::ControlFlowNod
         return symbolic::zero();
     } else {
         return SymEngine::null;
+        this->precise_ = false;
     }
 }
 
@@ -127,7 +129,10 @@ symbolic::Expression FlopAnalysis::
         if (!is_null) result = symbolic::add(result, tmp);
     }
 
-    if (is_null) return SymEngine::null;
+    if (is_null) {
+        this->precise_ = false;
+        return SymEngine::null;
+    }
     return result;
 }
 
@@ -146,7 +151,10 @@ symbolic::Expression FlopAnalysis::visit_block(structured_control_flow::Block& b
     symbolic::Expression libnodes_result = symbolic::zero();
     for (auto libnode : dfg.library_nodes()) {
         symbolic::Expression tmp = libnode->flop();
-        if (tmp.is_null()) return SymEngine::null;
+        if (tmp.is_null()) {
+            this->precise_ = false;
+            return SymEngine::null;
+        }
         libnodes_result = symbolic::add(libnodes_result, tmp);
     }
 
@@ -158,19 +166,12 @@ symbolic::Expression FlopAnalysis::visit_block(structured_control_flow::Block& b
     return symbolic::add(tasklets_result, libnodes_result);
 }
 
-std::string print_expr(symbolic::Expression expr) {
-    if (expr.is_null()) {
-        return "NULL";
-    } else {
-        return expr->__str__();
-    }
-}
-
 symbolic::Expression FlopAnalysis::
     visit_structured_loop(structured_control_flow::StructuredLoop& loop, AnalysisManager& analysis_manager) {
     symbolic::Expression tmp = this->visit_sequence(loop.root(), analysis_manager);
     this->flops_[&loop.root()] = tmp;
     if (tmp.is_null()) {
+        this->precise_ = false;
         return SymEngine::null;
     }
 
@@ -179,6 +180,7 @@ symbolic::Expression FlopAnalysis::
     auto& assumptions_analysis = analysis_manager.get<AssumptionsAnalysis>();
     auto loop_assumptions = assumptions_analysis.get(loop.root());
     if (!loop_assumptions.contains(indvar)) {
+        this->precise_ = false;
         return SymEngine::null;
     }
     bool done;
@@ -196,13 +198,16 @@ symbolic::Expression FlopAnalysis::
             init = this->replace_loop_indices(
                 SymEngine::max(std::vector<symbolic::Expression>(bounds.begin(), bounds.end())), loop_assumptions
             );
+            this->precise_ = false;
             done = this->is_parameter_expression(init);
         }
     }
     if (!done) {
         init = this->replace_loop_indices(loop.init(), loop_assumptions);
+        this->precise_ = false;
     }
     if (init.is_null()) {
+        this->precise_ = false;
         return SymEngine::null;
     }
 
@@ -219,6 +224,7 @@ symbolic::Expression FlopAnalysis::
             bound = this->replace_loop_indices(
                 SymEngine::min(std::vector<symbolic::Expression>(bounds.begin(), bounds.end())), loop_assumptions
             );
+            this->precise_ = false;
             done = this->is_parameter_expression(bound);
         }
     }
@@ -226,9 +232,11 @@ symbolic::Expression FlopAnalysis::
         auto canonical_bound = LoopAnalysis::canonical_bound(&loop, assumptions_analysis);
         if (!canonical_bound.is_null()) {
             bound = this->replace_loop_indices(symbolic::sub(canonical_bound, symbolic::one()), loop_assumptions);
+            this->precise_ = false;
         }
     }
     if (bound.is_null()) {
+        this->precise_ = false;
         return SymEngine::null;
     }
 
@@ -236,6 +244,7 @@ symbolic::Expression FlopAnalysis::
     symbolic::SymbolVec symbols = {indvar};
     auto update_polynomial = symbolic::polynomial(loop.update(), symbols);
     if (update_polynomial.is_null()) {
+        this->precise_ = false;
         return SymEngine::null;
     }
     auto update_coeffs = symbolic::affine_coefficients(update_polynomial, symbols);
@@ -262,18 +271,23 @@ symbolic::Expression FlopAnalysis::
         if (!is_null) sub_flops.push_back(tmp);
     }
 
-    if (is_null) return SymEngine::null;
+    this->precise_ = false;
+    if (is_null) {
+        return SymEngine::null;
+    }
     return SymEngine::max(sub_flops);
 }
 
 symbolic::Expression FlopAnalysis::visit_while(structured_control_flow::While& loop, AnalysisManager& analysis_manager) {
     this->flops_[&loop.root()] = this->visit_sequence(loop.root(), analysis_manager);
+    this->precise_ = false;
     // Return null because there is now good way to simply estimate the FLOPs of a while loop
     return SymEngine::null;
 }
 
 void FlopAnalysis::run(AnalysisManager& analysis_manager) {
     this->flops_.clear();
+    this->precise_ = true;
 
     auto& assumptions_analysis = analysis_manager.get<AssumptionsAnalysis>();
     this->parameters_ = assumptions_analysis.parameters();
@@ -293,6 +307,10 @@ symbolic::Expression FlopAnalysis::get(const structured_control_flow::ControlFlo
 
 std::unordered_map<const structured_control_flow::ControlFlowNode*, symbolic::Expression> FlopAnalysis::get() {
     return this->flops_;
+}
+
+bool FlopAnalysis::precise() {
+    return this->precise_;
 }
 
 } // namespace analysis
