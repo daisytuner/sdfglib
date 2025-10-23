@@ -99,7 +99,7 @@ TEST_F(RecorderLoopTilingTest, Save_SingleTransformation) {
     EXPECT_TRUE(j.is_array());
     EXPECT_EQ(j.size(), 1);
     EXPECT_EQ(j[0]["transformation_type"], "LoopTiling");
-    EXPECT_EQ(j[0]["tile_size"], 32);
+    EXPECT_EQ(j[0]["parameters"]["tile_size"], 32);
     EXPECT_EQ(j[0]["subgraph"]["0"]["element_id"], loop_id);
 }
 
@@ -112,7 +112,7 @@ TEST_F(RecorderLoopTilingTest, Replay_Transformations) {
     nlohmann::json j;
     j["transformation_type"] = "LoopTiling";
     j["subgraph"] = {{"0", {{"element_id", 1}, {"type", "for"}}}};
-    j["tile_size"] = 0;
+    j["parameters"] = {{"tile_size", 0}};
     j_array.push_back(j);
 
     EXPECT_NO_THROW(replayer.replay(*builder_, *analysis_manager_, j_array));
@@ -289,11 +289,11 @@ TEST_F(RecorderMultiTransformationTest, Apply_Transformations) {
     EXPECT_TRUE(j.is_array());
     EXPECT_EQ(j.size(), 3);
     EXPECT_EQ(j[0]["transformation_type"], "LoopTiling");
-    EXPECT_EQ(j[0]["tile_size"], 32);
+    EXPECT_EQ(j[0]["parameters"]["tile_size"], 32);
     EXPECT_EQ(j[0]["subgraph"]["0"]["element_id"], 1);
 
     EXPECT_EQ(j[1]["transformation_type"], "LoopTiling");
-    EXPECT_EQ(j[1]["tile_size"], 16);
+    EXPECT_EQ(j[1]["parameters"]["tile_size"], 16);
     EXPECT_EQ(j[1]["subgraph"]["0"]["element_id"], 4);
 
     EXPECT_EQ(j[2]["transformation_type"], "LoopInterchange");
@@ -308,13 +308,13 @@ TEST_F(RecorderMultiTransformationTest, Replay_Transformations) {
     nlohmann::json j;
     j["transformation_type"] = "LoopTiling";
     j["subgraph"] = {{"0", {{"element_id", 1}, {"type", "for"}}}};
-    j["tile_size"] = 32;
+    j["parameters"] = {{"tile_size", 32}};
     j_array.push_back(j);
 
     nlohmann::json j1;
     j1["transformation_type"] = "LoopTiling";
     j1["subgraph"] = {{"0", {{"element_id", 4}, {"type", "map"}}}};
-    j1["tile_size"] = 16;
+    j1["parameters"] = {{"tile_size", 16}};
     j_array.push_back(j1);
 
     nlohmann::json j2;
@@ -330,7 +330,7 @@ TEST_F(RecorderMultiTransformationTest, Replay_InvalidTransformation) {
     nlohmann::json j;
     j["transformation_type"] = "LoopTiling";
     j["subgraph"] = {{"0", {{"element_id", 1}, {"type", "for"}}}};
-    j["tile_size"] = 0;
+    j["parameters"] = {{"tile_size", 0}};
     j_array.push_back(j);
 
     transformations::Replayer replayer;
@@ -423,12 +423,12 @@ TEST_F(ReplayerTest, Replay_Transformations) {
     j.push_back(
         {{"transformation_type", "LoopTiling"},
          {"subgraph", {{"0", {{"element_id", 1}, {"type", "map"}}}}},
-         {"tile_size", 32}}
+         {"parameters", {{"tile_size", 32}}}}
     );
     j.push_back(
         {{"transformation_type", "LoopTiling"},
          {"subgraph", {{"0", {{"element_id", 4}, {"type", "map"}}}}},
-         {"tile_size", 16}}
+         {"parameters", {{"tile_size", 16}}}}
     );
     j.push_back(
         {{"transformation_type", "LoopInterchange"},
@@ -443,7 +443,7 @@ TEST_F(ReplayerTest, Replay_InvalidTransformation) {
     j.push_back(
         {{"transformation_type", "LoopTiling"},
          {"subgraph", {{"0", {{"element_id", 1}, {"type", "map"}}}}},
-         {"tile_size", 0}}
+         {"parameters", {{"tile_size", 0}}}}
     );
 
     transformations::Replayer recorder;
