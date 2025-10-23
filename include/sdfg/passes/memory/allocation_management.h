@@ -8,9 +8,13 @@ namespace passes {
 
 class AllocationManagement : public visitor::NonStoppingStructuredSDFGVisitor {
 private:
-    bool can_be_applied(data_flow::DataFlowGraph& graph, data_flow::LibraryNode& library_node);
+    bool can_be_applied_allocation(data_flow::DataFlowGraph& graph, data_flow::LibraryNode& library_node);
 
-    void apply(data_flow::DataFlowGraph& graph, data_flow::LibraryNode& library_node);
+    void apply_allocation(data_flow::DataFlowGraph& graph, data_flow::LibraryNode& library_node);
+
+    bool can_be_applied_deallocation(data_flow::DataFlowGraph& graph, data_flow::LibraryNode& library_node);
+
+    void apply_deallocation(data_flow::DataFlowGraph& graph, data_flow::LibraryNode& library_node);
 
 public:
     AllocationManagement(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
