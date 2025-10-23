@@ -433,7 +433,8 @@ void JSONSerializer::schedule_type_to_json(nlohmann::json& j, const ScheduleType
 
 void JSONSerializer::storage_type_to_json(nlohmann::json& j, const types::StorageType& storage_type) {
     j["value"] = storage_type.value();
-    j["allocation_lifetime"] = storage_type.allocation_lifetime();
+    j["allocation"] = storage_type.allocation();
+    j["deallocation"] = storage_type.deallocation();
     if (!storage_type.allocation_size().is_null()) {
         j["allocation_size"] = expression(storage_type.allocation_size());
     }
@@ -1083,9 +1084,10 @@ types::StorageType JSONSerializer::json_to_storage_type(const nlohmann::json& j)
         allocation_size = symbolic::parse(j["allocation_size"].get<std::string>());
     }
 
-    types::StorageType::AllocationLifetime allocation_lifetime = j["allocation_lifetime"];
+    types::StorageType::AllocationType allocation = j["allocation"];
+    types::StorageType::AllocationType deallocation = j["deallocation"];
 
-    return types::StorageType(j["value"].get<std::string>(), allocation_size, allocation_lifetime);
+    return types::StorageType(j["value"].get<std::string>(), allocation_size, allocation, deallocation);
 }
 
 std::string JSONSerializer::expression(const symbolic::Expression expr) {

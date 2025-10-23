@@ -163,25 +163,23 @@ void CCodeGenerator::dispatch_schedule() {
             }
         }
 
-        // Allocate if needed
-        if (type.storage_type().is_cpu_stack()) {
-            if (type.storage_type().allocation_size().is_null()) {
-                continue;
+        if (type.storage_type().allocation() == types::StorageType::AllocationType::Managed) {
+            assert(
+                !type.storage_type().allocation_size().is_null() &&
+                "Managed allocations must have a valid allocation size"
+            );
+            if (type.storage_type().is_cpu_stack()) {
+                this->main_stream_ << container << " = ";
+                this->main_stream_
+                    << "alloca(" << this->language_extension_.expression(type.storage_type().allocation_size()) << ")";
+                this->main_stream_ << ";" << std::endl;
+            } else if (type.storage_type().is_cpu_heap()) {
+                this->main_stream_ << container << " = ";
+                this->main_stream_ << this->externals_prefix_ << "malloc("
+                                   << this->language_extension_.expression(type.storage_type().allocation_size())
+                                   << ")";
+                this->main_stream_ << ";" << std::endl;
             }
-            this->main_stream_ << container << " = ";
-            this->main_stream_ << "alloca("
-                               << this->language_extension_.expression(type.storage_type().allocation_size()) << ")";
-            this->main_stream_ << ";" << std::endl;
-        } else if (type.storage_type().is_cpu_heap()) {
-            if (type.storage_type().allocation_size().is_null()) {
-                continue;
-            }
-            this->main_stream_ << container << " = ";
-            this->main_stream_ << this->externals_prefix_ << "malloc("
-                               << this->language_extension_.expression(type.storage_type().allocation_size()) << ")";
-            this->main_stream_ << ";" << std::endl;
-        } else {
-            assert(false && "Only CPU_Stack and CPU_Heap storage types are supported in C codegen");
         }
     }
 
@@ -197,8 +195,8 @@ void CCodeGenerator::dispatch_schedule() {
         auto& type = sdfg_.type(container);
 
         // Free if needed
-        if (type.storage_type().is_cpu_heap()) {
-            if (type.storage_type().allocation_lifetime() == types::StorageType::AllocationLifetime::Lifetime_SDFG) {
+        if (type.storage_type().deallocation() == types::StorageType::AllocationType::Managed) {
+            if (type.storage_type().is_cpu_heap()) {
                 this->main_stream_ << this->externals_prefix_ << "free(" << container << ");" << std::endl;
             }
         }

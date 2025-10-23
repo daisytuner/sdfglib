@@ -1,4 +1,4 @@
-#include "sdfg/passes/memory/allocation_hoisting.h"
+#include "sdfg/passes/memory/allocation_management.h"
 
 #include "sdfg/analysis/dominance_analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
@@ -9,10 +9,11 @@
 namespace sdfg {
 namespace passes {
 
-AllocationHoisting::AllocationHoisting(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
+AllocationManagement::
+    AllocationManagement(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
     : NonStoppingStructuredSDFGVisitor(builder, analysis_manager) {}
 
-bool AllocationHoisting::can_be_applied(data_flow::DataFlowGraph& graph, data_flow::LibraryNode& library_node) {
+bool AllocationManagement::can_be_applied(data_flow::DataFlowGraph& graph, data_flow::LibraryNode& library_node) {
     symbolic::Expression allocation_size = SymEngine::null;
     const data_flow::LibraryNode* libnode = nullptr;
     if (library_node.code() == stdlib::LibraryNodeType_Alloca) {
@@ -82,7 +83,7 @@ bool AllocationHoisting::can_be_applied(data_flow::DataFlowGraph& graph, data_fl
     return true;
 }
 
-void AllocationHoisting::apply(data_flow::DataFlowGraph& graph, data_flow::LibraryNode& library_node) {
+void AllocationManagement::apply(data_flow::DataFlowGraph& graph, data_flow::LibraryNode& library_node) {
     symbolic::Expression allocation_size = SymEngine::null;
     std::string storage_type_val;
     if (library_node.code() == stdlib::LibraryNodeType_Alloca) {
@@ -106,8 +107,12 @@ void AllocationHoisting::apply(data_flow::DataFlowGraph& graph, data_flow::Libra
     auto& type = sdfg.type(container);
 
     auto new_type = type.clone();
-    types::StorageType new_storage_type =
-        types::StorageType(storage_type_val, allocation_size, types::StorageType::AllocationLifetime::Lifetime_Default);
+    types::StorageType new_storage_type = types::StorageType(
+        storage_type_val,
+        allocation_size,
+        types::StorageType::AllocationType::Managed,
+        types::StorageType::AllocationType::Unmanaged
+    );
     new_type->storage_type(new_storage_type);
 
     builder_.change_type(container, *new_type);
@@ -117,7 +122,7 @@ void AllocationHoisting::apply(data_flow::DataFlowGraph& graph, data_flow::Libra
     builder_.clear_node(block, dst);
 }
 
-bool AllocationHoisting::accept(structured_control_flow::Block& node) {
+bool AllocationManagement::accept(structured_control_flow::Block& node) {
     bool applied = false;
 
     auto& graph = node.dataflow();
