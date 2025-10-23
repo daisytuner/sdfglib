@@ -98,12 +98,12 @@ void LoopTiling::to_json(nlohmann::json& j) const {
 
     j["transformation_type"] = this->name();
     j["subgraph"] = {{"0", {{"element_id", this->loop_.element_id()}, {"type", loop_type}}}};
-    j["tile_size"] = tile_size_;
+    j["parameters"] = {{"tile_size", tile_size_}};
 };
 
 LoopTiling LoopTiling::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
     auto loop_id = desc["subgraph"]["0"]["element_id"].get<size_t>();
-    size_t tile_size = desc["tile_size"].get<size_t>();
+    size_t tile_size = desc["parameters"]["tile_size"].get<size_t>();
     auto element = builder.find_element_by_id(loop_id);
     if (!element) {
         throw InvalidTransformationDescriptionException("Element with ID " + std::to_string(loop_id) + " not found.");
