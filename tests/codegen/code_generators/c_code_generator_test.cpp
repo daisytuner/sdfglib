@@ -53,12 +53,13 @@ TEST(CCodeGeneratorTest, Allocation_Stack_Transient) {
     EXPECT_EQ(result, "long long t0;\n");
 }
 
-TEST(CCodeGeneratorTest, Allocation_Heap_Argument_SDFG_Lifetime) {
+TEST(CCodeGeneratorTest, Allocation_Heap_Argument_Managed) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     types::Scalar long_type(types::PrimitiveType::Int64);
     types::Pointer pointer_type(
-        types::StorageType::CPU_Heap(symbolic::integer(8), types::StorageType::AllocationLifetime::Lifetime_SDFG),
+        types::StorageType::
+            CPU_Heap(symbolic::integer(8), types::StorageType::AllocationType::Managed, types::StorageType::Managed),
         0,
         "",
         long_type
@@ -75,12 +76,13 @@ TEST(CCodeGeneratorTest, Allocation_Heap_Argument_SDFG_Lifetime) {
     EXPECT_EQ(result, "arg0 = malloc(8);\nfree(arg0);\n");
 }
 
-TEST(CCodeGeneratorTest, Allocation_Heap_Transient_SDFG_Lifetime) {
+TEST(CCodeGeneratorTest, Allocation_Heap_Transient_Managed) {
     builder::StructuredSDFGBuilder builder("sdfg_a", FunctionType_CPU);
 
     types::Scalar long_type(types::PrimitiveType::Int64);
     types::Pointer pointer_type(
-        types::StorageType::CPU_Heap(symbolic::integer(8), types::StorageType::AllocationLifetime::Lifetime_SDFG),
+        types::StorageType::
+            CPU_Heap(symbolic::integer(8), types::StorageType::AllocationType::Managed, types::StorageType::Managed),
         0,
         "",
         long_type
@@ -102,7 +104,8 @@ TEST(CCodeGeneratorTest, Allocation_Heap_Argument_Default_Lifetime) {
 
     types::Scalar long_type(types::PrimitiveType::Int64);
     types::Pointer pointer_type(
-        types::StorageType::CPU_Heap(symbolic::integer(8), types::StorageType::AllocationLifetime::Lifetime_Default),
+        types::StorageType::
+            CPU_Heap(symbolic::integer(8), types::StorageType::AllocationType::Managed, types::StorageType::Unmanaged),
         0,
         "",
         long_type
@@ -124,7 +127,8 @@ TEST(CCodeGeneratorTest, Allocation_Heap_Transient_Default_Lifetime) {
 
     types::Scalar long_type(types::PrimitiveType::Int64);
     types::Pointer pointer_type(
-        types::StorageType::CPU_Heap(symbolic::integer(8), types::StorageType::AllocationLifetime::Lifetime_Default),
+        types::StorageType::
+            CPU_Heap(symbolic::integer(8), types::StorageType::AllocationType::Managed, types::StorageType::Unmanaged),
         0,
         "",
         long_type
@@ -146,7 +150,8 @@ TEST(CCodeGeneratorTest, Deallocation_Heap_Argument_SDFG_Lifetime) {
 
     types::Scalar long_type(types::PrimitiveType::Int64);
     types::Pointer pointer_type(
-        types::StorageType::CPU_Heap(SymEngine::null, types::StorageType::AllocationLifetime::Lifetime_SDFG),
+        types::StorageType::
+            CPU_Heap(SymEngine::null, types::StorageType::AllocationType::Unmanaged, types::StorageType::Managed),
         0,
         "",
         long_type

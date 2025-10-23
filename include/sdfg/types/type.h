@@ -41,36 +41,45 @@ enum PrimitiveType {
 
 class StorageType {
 public:
-    enum AllocationLifetime {
-        Lifetime_Default,
-        Lifetime_SDFG,
+    enum AllocationType {
+        Unmanaged,
+        Managed,
     };
 
 private:
     std::string value_;
     symbolic::Expression allocation_size_;
-    AllocationLifetime allocation_lifetime_;
+    AllocationType allocation_;
+    AllocationType deallocation_;
 
 public:
     StorageType(const std::string& value)
-        : value_(value), allocation_size_(SymEngine::null), allocation_lifetime_(Lifetime_Default) {}
+        : value_(value), allocation_size_(SymEngine::null), allocation_(Unmanaged), deallocation_(Unmanaged) {}
 
     StorageType(
-        const std::string& value, const symbolic::Expression& allocation_size, AllocationLifetime allocation_lifetime
+        const std::string& value,
+        const symbolic::Expression& allocation_size,
+        AllocationType allocation,
+        AllocationType deallocation
     )
-        : value_(value), allocation_size_(allocation_size), allocation_lifetime_(allocation_lifetime) {}
+        : value_(value), allocation_size_(allocation_size), allocation_(allocation), deallocation_(deallocation) {}
 
     std::string value() const { return value_; }
 
     symbolic::Expression allocation_size() const { return allocation_size_; }
 
-    AllocationLifetime allocation_lifetime() const { return allocation_lifetime_; }
+    AllocationType allocation() const { return allocation_; }
+
+    AllocationType deallocation() const { return deallocation_; }
 
     bool operator==(const StorageType& other) const {
         if (value_ != other.value_) {
             return false;
         }
-        if (allocation_lifetime_ != other.allocation_lifetime_) {
+        if (allocation_ != other.allocation_) {
+            return false;
+        }
+        if (deallocation_ != other.deallocation_) {
             return false;
         }
         if (allocation_size_.is_null() && other.allocation_size_.is_null()) {
@@ -94,10 +103,20 @@ public:
 
     bool is_nv_constant() const { return value_ == "NV_Constant"; }
 
-    static StorageType CPU_Stack() { return StorageType("CPU_Stack"); }
+    static StorageType CPU_Stack() {
+        return StorageType("CPU_Stack", SymEngine::null, StorageType::Unmanaged, StorageType::Unmanaged);
+    }
 
-    static StorageType CPU_Heap(symbolic::Expression allocation_size, StorageType::AllocationLifetime allocation_lifetime) {
-        return StorageType("CPU_Heap", allocation_size, allocation_lifetime);
+    static StorageType CPU_Heap() {
+        return StorageType("CPU_Heap", SymEngine::null, StorageType::Unmanaged, StorageType::Unmanaged);
+    }
+
+    static StorageType CPU_Heap(
+        symbolic::Expression allocation_size,
+        StorageType::AllocationType allocation,
+        StorageType::AllocationType deallocation
+    ) {
+        return StorageType("CPU_Heap", allocation_size, allocation, deallocation);
     }
 
     static StorageType NV_Generic() { return StorageType("NV_Generic"); }
