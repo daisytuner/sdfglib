@@ -24,9 +24,15 @@ bool DeadReferenceElimination::
         if (!sdfg.is_transient(name)) {
             continue;
         }
-        if (!dynamic_cast<const types::Pointer*>(&sdfg.type(name))) {
+        auto& type = sdfg.type(name);
+        if (!dynamic_cast<const types::Pointer*>(&type)) {
             continue;
         }
+        if (type.storage_type().allocation() == types::StorageType::AllocationType::Managed ||
+            type.storage_type().deallocation() == types::StorageType::AllocationType::Managed) {
+            continue;
+        }
+
         // Requirement: Pointer is only assigned
         auto reads = users.reads(name);
         auto writes = users.writes(name);
