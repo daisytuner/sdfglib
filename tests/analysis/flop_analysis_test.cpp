@@ -399,6 +399,11 @@ TEST(FlopAnalysis, LoopIndvarDependency) {
     auto& root = sdfg.root();
 
     // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::Int64);
+    builder.add_container("i", sym_desc);
+    builder.add_container("m", sym_desc);
+    builder.add_container("j", sym_desc);
+    builder.add_container("n", sym_desc);
     types::Scalar desc(types::PrimitiveType::Float);
     builder.add_container("a", desc);
     builder.add_container("b", desc);

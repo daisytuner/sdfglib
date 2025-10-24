@@ -1,7 +1,9 @@
 #include "sdfg/analysis/flop_analysis.h"
 #include <cassert>
 #include <cstddef>
+#include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/analysis/assumptions_analysis.h"
@@ -101,12 +103,13 @@ symbolic::Expression FlopAnalysis::replace_loop_indices(
 
 symbolic::SymbolSet FlopAnalysis::
     get_scope_parameters(const structured_control_flow::ControlFlowNode& scope, AnalysisManager& analysis_manager) {
-    symbolic::SymbolSet parameters;
     auto& users_analysis = analysis_manager.get<Users>();
-    for (auto& container : this->sdfg_.containers()) {
-        bool parameter = true;
+    analysis::UsersView users_view(users_analysis, scope);
+
+    std::unordered_set<std::string> all_uses, illegal_uses;
+    for (auto* user : users_view.uses()) {
         Use not_allowed;
-        switch (this->sdfg_.type(container).type_id()) {
+        switch (this->sdfg_.type(user->container()).type_id()) {
             case types::TypeID::Scalar:
                 not_allowed = Use::WRITE;
                 break;
@@ -117,17 +120,19 @@ symbolic::SymbolSet FlopAnalysis::
             default:
                 continue;
         }
-        analysis::UsersView users_view(users_analysis, scope);
-        for (auto* user : users_view.uses(container)) {
-            if (user->use() == not_allowed) {
-                parameter = false;
-                break;
-            }
+        all_uses.insert(user->container());
+        if (user->use() == not_allowed) {
+            illegal_uses.insert(user->container());
         }
-        if (parameter) {
+    }
+
+    symbolic::SymbolSet parameters;
+    for (auto& container : all_uses) {
+        if (!illegal_uses.contains(container)) {
             parameters.insert(symbolic::symbol(container));
         }
     }
+
     return parameters;
 }
 
