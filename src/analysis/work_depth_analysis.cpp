@@ -113,8 +113,8 @@ void WorkDepthAnalysis::run(AnalysisManager& analysis_manager) {
                 auto num_iterations = symbolic::sub(bound, for_loop->init());
                 num_iterations = symbolic::div(num_iterations, stride);
 
-                work = symbolic::mul(num_iterations, body_work);
-                depth = symbolic::mul(num_iterations, body_depth);
+                work = symbolic::mul(symbolic::max(num_iterations, symbolic::one()), body_work);
+                depth = symbolic::mul(symbolic::max(num_iterations, symbolic::one()), body_depth);
             }
         } else if (dynamic_cast<structured_control_flow::Map*>(node)) {
             auto* map_node = dynamic_cast<structured_control_flow::Map*>(node);
@@ -127,7 +127,7 @@ void WorkDepthAnalysis::run(AnalysisManager& analysis_manager) {
             auto num_iterations = symbolic::sub(bound, map_node->init());
             num_iterations = symbolic::div(num_iterations, stride);
 
-            work = symbolic::mul(num_iterations, body_work);
+            work = symbolic::mul(symbolic::max(num_iterations, symbolic::one()), body_work);
             depth = body_depth;
         } else if (dynamic_cast<structured_control_flow::IfElse*>(node)) {
             auto* if_else = dynamic_cast<structured_control_flow::IfElse*>(node);

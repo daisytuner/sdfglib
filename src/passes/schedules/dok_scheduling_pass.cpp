@@ -1,5 +1,7 @@
 #include "sdfg/passes/schedules/dok_scheduling_pass.h"
+#include <iostream>
 #include <thread>
+#include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/degrees_of_knowledge_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
@@ -7,7 +9,10 @@
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/return.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "symengine/constants.h"
 #include "symengine/dict.h"
+#include "symengine/nan.h"
+#include "symengine/symengine_rcp.h"
 
 
 namespace sdfg {
@@ -24,10 +29,20 @@ void DOKScheduling::dynamic_balance_branch(
     symbolic::Condition run_dynamic,
     symbolic::Expression size
 ) {
-    auto num_threads = ScheduleType_CPU_Parallel::num_threads(map_node.schedule_type());
+    auto num_threads = ScheduleType_CPU_Parallel::num_threads(map_node.schedule_type()
+    ); // symbolic::integer(avail_threads);
     if (symbolic::eq(num_threads, symbolic::one())) {
         return;
     }
+
+    ScheduleType schedule_type = ScheduleType_CPU_Parallel::create();
+
+    ScheduleType_CPU_Parallel::omp_schedule(schedule_type, OpenMPSchedule::Dynamic);
+    ScheduleType_CPU_Parallel::num_threads(schedule_type, num_threads);
+    ScheduleType_CPU_Parallel::
+        chunk_size(schedule_type, symbolic::div(size, symbolic::mul(num_threads, balance_threshold)));
+    builder.update_schedule_type(map_node, schedule_type);
+    return;
 
     auto& scope = analysis_manager.get<analysis::ScopeAnalysis>();
     auto parent = scope.parent_scope(&map_node);
@@ -66,7 +81,7 @@ void DOKScheduling::dynamic_balance_branch(
 
     ScheduleType then_schedule_type = ScheduleType_CPU_Parallel::create();
     ScheduleType else_schedule_type = ScheduleType_CPU_Parallel::create();
-    ScheduleType_CPU_Parallel::num_threads(then_schedule_type, num_threads);
+    ScheduleType_CPU_Parallel::num_threads(then_schedule_type, symbolic::integer(avail_threads));
     ScheduleType_CPU_Parallel::num_threads(else_schedule_type, num_threads);
 
     ScheduleType_CPU_Parallel::omp_schedule(then_schedule_type, OpenMPSchedule::Dynamic);
@@ -82,6 +97,7 @@ void DOKScheduling::dynamic_balance_branch(
 bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto& dok_analysis = analysis_manager.get<analysis::DegreesOfKnowledgeAnalysis>();
+    auto& assumptions = analysis_manager.get<analysis::AssumptionsAnalysis>();
 
     auto outermost_maps = loop_analysis.outermost_maps();
 
@@ -101,12 +117,28 @@ bool DOKScheduling::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
         if (load.second == analysis::DegreesOfKnowledgeClassification::Unbound ||
             load.second == analysis::DegreesOfKnowledgeClassification::Bound) {
             load_first = symbolic::subs(load.first, map->indvar(), symbolic::div(size.first, symbolic::integer(2)));
+            auto map_assumptions = assumptions.get(*map, true);
             for (auto atom : symbolic::atoms(load_first)) {
-                load_first = symbolic::subs(load_first, atom, symbolic::one());
+                auto lb = map_assumptions.at(atom).lower_bound();
+                if (lb == SymEngine::null) {
+                    lb = symbolic::one();
+                } else if (symbolic::eq(lb, SymEngine::NegInf)) {
+                    lb = symbolic::one();
+                }
+                auto ub = map_assumptions.at(atom).upper_bound();
+                if (ub == SymEngine::null) {
+                    ub = lb;
+                } else if (symbolic::eq(ub, SymEngine::Inf)) {
+                    ub = lb;
+                }
+                auto expectation = symbolic::div(symbolic::add(ub, lb), symbolic::integer(2));
+                load_first = symbolic::subs(load_first, atom, expectation);
+                load_first = symbolic::max(load_first, symbolic::one());
             }
         } else {
             load_first = symbolic::max(load.first, symbolic::one());
         }
+
         size_threshold = symbolic::max(symbolic::one(), symbolic::div(load_threshold, load_first));
 
         symbolic::Expression num_threads;
