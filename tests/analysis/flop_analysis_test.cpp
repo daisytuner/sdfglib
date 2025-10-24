@@ -477,7 +477,7 @@ TEST(FlopAnalysis, SPMV) {
     builder.add_container("i", sym_desc);
     builder.add_container("j", sym_desc);
     builder.add_container("start", sym_desc);
-    builder.add_container("stop", sym_desc);
+    builder.add_container("end", sym_desc);
     builder.add_container("tmp", sym_desc);
 
     // Add first loop
@@ -489,7 +489,7 @@ TEST(FlopAnalysis, SPMV) {
     auto& block1 = builder.add_block(loop1.root());
     auto& Arow = builder.add_access(block1, "Arow");
     auto& start1 = builder.add_access(block1, "start");
-    auto& end1 = builder.add_access(block1, "stop");
+    auto& end1 = builder.add_access(block1, "end");
     auto& tasklet1 = builder.add_tasklet(block1, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
     builder.add_computational_memlet(block1, Arow, tasklet1, "_in", {i});
     builder.add_computational_memlet(block1, tasklet1, "_out", start1, {});
@@ -549,14 +549,9 @@ TEST(FlopAnalysis, SPMV) {
     ASSERT_TRUE(analysis.contains(&loop2));
     flop = analysis.get(&loop2);
     ASSERT_FALSE(flop.is_null());
-    auto expected_flop_loop2 = symbolic::
-        mul(symbolic::integer(2),
-            symbolic::
-                add(symbolic::
-                        min(symbolic::sub(symbolic::dynamic_sizeof(symbolic::symbol("Aval")), symbolic::one()),
-                            symbolic::sub(symbolic::dynamic_sizeof(symbolic::symbol("Acol")), symbolic::one())),
-                    symbolic::one()));
-    EXPECT_TRUE(symbolic::eq(flop, expected_flop_loop2));
+    EXPECT_TRUE(symbolic::eq(
+        flop, symbolic::mul(symbolic::integer(2), symbolic::sub(symbolic::symbol("end"), symbolic::symbol("start")))
+    ));
     ASSERT_TRUE(analysis.contains(&block1));
     flop = analysis.get(&block1);
     ASSERT_FALSE(flop.is_null());
@@ -564,6 +559,13 @@ TEST(FlopAnalysis, SPMV) {
     ASSERT_TRUE(analysis.contains(&loop1.root()));
     flop = analysis.get(&loop1.root());
     ASSERT_FALSE(flop.is_null());
+    auto expected_flop_loop2 = symbolic::
+        mul(symbolic::integer(2),
+            symbolic::
+                add(symbolic::
+                        min(symbolic::sub(symbolic::dynamic_sizeof(symbolic::symbol("Aval")), symbolic::one()),
+                            symbolic::sub(symbolic::dynamic_sizeof(symbolic::symbol("Acol")), symbolic::one())),
+                    symbolic::one()));
     EXPECT_TRUE(symbolic::eq(flop, expected_flop_loop2));
     ASSERT_TRUE(analysis.contains(&loop1));
     flop = analysis.get(&loop1);
@@ -573,4 +575,105 @@ TEST(FlopAnalysis, SPMV) {
     flop = analysis.get(&root);
     ASSERT_FALSE(flop.is_null());
     EXPECT_TRUE(symbolic::eq(flop, symbolic::mul(expected_flop_loop2, symbolic::symbol("nrows"))));
+}
+
+TEST(FlopAnalysis, NestedParameters) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::Int64);
+    builder.add_container("n", sym_desc, true);
+    builder.add_container("nLocal", sym_desc);
+    builder.add_container("m", sym_desc, true);
+    builder.add_container("mLocal", sym_desc);
+    builder.add_container("i", sym_desc);
+    builder.add_container("j", sym_desc);
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Array desc(base_desc, symbolic::integer(42));
+    types::Pointer desc2(desc);
+    builder.add_container("A", desc2, true);
+
+    // nLocal = n
+    auto& block1 = builder.add_block(root);
+    auto& n = builder.add_access(block1, "n");
+    auto& nLocal = builder.add_access(block1, "nLocal");
+    auto& tasklet1 = builder.add_tasklet(block1, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+    builder.add_computational_memlet(block1, n, tasklet1, "_in", {});
+    builder.add_computational_memlet(block1, tasklet1, "_out", nLocal, {});
+
+    // for (i = 0; i < nLocal; i = 1 + i) { ... }
+    auto i = symbolic::symbol("i");
+    auto& loop1 = builder.add_for(
+        root, i, symbolic::Lt(i, symbolic::symbol("nLocal")), symbolic::zero(), symbolic::add(i, symbolic::one())
+    );
+
+    // mLocal = m
+    auto& block2 = builder.add_block(loop1.root());
+    auto& m = builder.add_access(block2, "m");
+    auto& mLocal = builder.add_access(block2, "mLocal");
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+    builder.add_computational_memlet(block2, m, tasklet2, "_in", {});
+    builder.add_computational_memlet(block2, tasklet2, "_out", mLocal, {});
+
+    // for (j = 0; j < mLocal; j = 1 + j) { ... }
+    auto j = symbolic::symbol("j");
+    auto& loop2 = builder.add_for(
+        loop1.root(), j, symbolic::Lt(j, symbolic::symbol("mLocal")), symbolic::zero(), symbolic::add(j, symbolic::one())
+    );
+
+    // A[i][j] *= 2
+    auto& block3 = builder.add_block(loop2.root());
+    auto& two = builder.add_constant(block3, "2.0", base_desc);
+    auto& A1 = builder.add_access(block3, "A");
+    auto& A2 = builder.add_access(block3, "A");
+    auto& tasklet3 = builder.add_tasklet(block3, data_flow::TaskletCode::fp_mul, {"_out"}, {"_in1", "_in2"});
+    builder.add_computational_memlet(block3, two, tasklet3, "_in1", {});
+    builder.add_computational_memlet(block3, A1, tasklet3, "_in2", {i, j});
+    builder.add_computational_memlet(block3, tasklet3, "_out", A2, {i, j});
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::FlopAnalysis>();
+
+    // Check
+    EXPECT_FALSE(analysis.precise());
+    symbolic::Expression flop;
+    ASSERT_TRUE(analysis.contains(&block3));
+    flop = analysis.get(&block3);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::one()));
+    ASSERT_TRUE(analysis.contains(&loop2.root()));
+    flop = analysis.get(&loop2.root());
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::one()));
+    ASSERT_TRUE(analysis.contains(&loop2));
+    flop = analysis.get(&loop2);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::symbol("mLocal")));
+    ASSERT_TRUE(analysis.contains(&block2));
+    flop = analysis.get(&block2);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::zero()));
+    ASSERT_TRUE(analysis.contains(&loop1.root()));
+    flop = analysis.get(&loop1.root());
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::dynamic_sizeof(symbolic::symbol("A"))));
+    ASSERT_TRUE(analysis.contains(&loop1));
+    flop = analysis.get(&loop1);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::
+                    eq(flop, symbolic::mul(symbolic::symbol("nLocal"), symbolic::dynamic_sizeof(symbolic::symbol("A"))))
+    );
+    ASSERT_TRUE(analysis.contains(&block1));
+    flop = analysis.get(&block1);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::zero()));
+    ASSERT_TRUE(analysis.contains(&root));
+    flop = analysis.get(&root);
+    ASSERT_FALSE(flop.is_null());
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::mul(symbolic::integer(42), symbolic::dynamic_sizeof(symbolic::symbol("A"))))
+    );
 }

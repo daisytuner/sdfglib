@@ -461,9 +461,10 @@ TEST(AssumptionsAnalysisTest, ArrayBounds) {
     // Check
     EXPECT_EQ(assumptions.size(), 4);
     EXPECT_TRUE(symbolic::eq(assumptions.at(indvar).lower_bound(), symbolic::zero()));
-    EXPECT_TRUE(symbolic::
-                    eq(assumptions.at(indvar).upper_bound(),
-                       symbolic::min(symbolic::integer(400), symbolic::sub(bound, symbolic::one()))));
+    EXPECT_TRUE(symbolic::eq(
+        assumptions.at(indvar).upper_bound(),
+        symbolic::min(symbolic::sub(symbolic::integer(400), symbolic::one()), symbolic::sub(bound, symbolic::one()))
+    ));
     EXPECT_TRUE(symbolic::eq(assumptions.at(indvar).tight_lower_bound(), symbolic::zero()));
     EXPECT_TRUE(symbolic::eq(assumptions.at(indvar).tight_upper_bound(), symbolic::sub(bound, symbolic::one())));
     EXPECT_TRUE(symbolic::eq(assumptions.at(indvar_2).lower_bound(), symbolic::zero()));
