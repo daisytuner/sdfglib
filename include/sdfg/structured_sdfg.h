@@ -48,8 +48,6 @@ public:
     structured_control_flow::Sequence& root();
 
     std::unique_ptr<StructuredSDFG> clone() const;
-
-    size_t num_nodes() const;
 };
 
 } // namespace sdfg

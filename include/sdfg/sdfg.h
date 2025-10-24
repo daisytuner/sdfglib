@@ -107,8 +107,6 @@ public:
                std::views::filter([this](const control_flow::State& state) { return this->out_degree(state) == 0; });
     };
 
-    size_t num_terminal_states() const;
-
     size_t in_degree(const control_flow::State& state) const;
 
     size_t out_degree(const control_flow::State& state) const;
