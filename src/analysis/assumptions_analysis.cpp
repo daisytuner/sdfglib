@@ -149,7 +149,7 @@ void AssumptionsAnalysis::
                         ));
                     }
                 } else {
-                    ubs.push_back(symbolic::subs(inverse, indvar, num_elements));
+                    ubs.push_back(symbolic::sub(symbolic::subs(inverse, indvar, num_elements), symbolic::one()));
                 }
             }
         }

@@ -20,13 +20,16 @@ private:
 
     bool precise_;
 
-    symbolic::SymbolSet parameters_;
+    bool is_parameter_expression(const symbolic::SymbolSet& parameters, const symbolic::Expression& expr);
 
-    bool is_parameter_expression(const symbolic::Expression& expr);
+    symbolic::ExpressionSet choose_bounds(const symbolic::SymbolSet& parameters, const symbolic::ExpressionSet& bounds);
 
-    symbolic::ExpressionSet choose_bounds(const symbolic::ExpressionSet& bounds);
+    symbolic::Expression replace_loop_indices(
+        const symbolic::SymbolSet& parameters, const symbolic::Expression expr, symbolic::Assumptions& assumptions
+    );
 
-    symbolic::Expression replace_loop_indices(const symbolic::Expression expr, symbolic::Assumptions& assumptions);
+    symbolic::SymbolSet
+    get_scope_parameters(const structured_control_flow::ControlFlowNode& scope, AnalysisManager& analysis_manager);
 
     symbolic::Expression visit(structured_control_flow::ControlFlowNode& node, AnalysisManager& analysis_manager);
 
@@ -36,6 +39,12 @@ private:
 
     symbolic::Expression
     visit_structured_loop(structured_control_flow::StructuredLoop& loop, AnalysisManager& analysis_manager);
+
+    symbolic::Expression visit_structured_loop_with_scope(
+        structured_control_flow::StructuredLoop& loop,
+        AnalysisManager& analysis_manager,
+        structured_control_flow::ControlFlowNode& scope
+    );
 
     symbolic::Expression visit_if_else(structured_control_flow::IfElse& if_else, AnalysisManager& analysis_manager);
 
