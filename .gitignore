@@ -39,3 +39,7 @@ _deps/
 *.exe
 *.out
 *.app
+
+
+# Matrices and other generated data files
+*.mtx
