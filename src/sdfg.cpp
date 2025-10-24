@@ -30,10 +30,6 @@ void SDFG::validate() const {
     }
 };
 
-size_t SDFG::num_terminal_states() const {
-    return std::distance(this->terminal_states().begin(), this->terminal_states().end());
-};
-
 size_t SDFG::in_degree(const control_flow::State& state) const {
     return boost::in_degree(state.vertex(), this->graph_);
 };
