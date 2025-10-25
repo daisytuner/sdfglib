@@ -71,3 +71,68 @@ TEST(ControlFlowAnalysisTest, IfElse) {
     EXPECT_TRUE(analysis.post_dominates(join_block, then_block));
     EXPECT_TRUE(analysis.post_dominates(join_block, else_block));
 }
+
+TEST(ControlFlowAnalysisTest, While) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Scalar base_desc(types::PrimitiveType::Int32);
+    builder.add_container("A", base_desc);
+
+    auto& root = builder.subject().root();
+
+    auto& init_block = builder.add_block(root);
+    auto& while_node = builder.add_while(root);
+    auto& body_block = builder.add_block(while_node.root());
+    auto& exit_block = builder.add_block(root);
+
+    // Run analysis
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    auto& analysis = analysis_manager.get<analysis::ControlFlowAnalysis>();
+
+    EXPECT_EQ(analysis.exits().size(), 1);
+    EXPECT_NE(analysis.exits().find(&exit_block), analysis.exits().end());
+    EXPECT_TRUE(analysis.dominates(init_block, exit_block));
+    EXPECT_TRUE(analysis.dominates(init_block, body_block));
+
+    EXPECT_FALSE(analysis.dominates(body_block, exit_block));
+    EXPECT_FALSE(analysis.post_dominates(body_block, init_block));
+
+    EXPECT_TRUE(analysis.post_dominates(exit_block, init_block));
+    EXPECT_TRUE(analysis.post_dominates(exit_block, body_block));
+}
+
+TEST(ControlFlowAnalysisTest, StructuredLoop) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Scalar base_desc(types::PrimitiveType::Int32);
+    builder.add_container("A", base_desc);
+    builder.add_container("i", base_desc);
+
+    auto& root = builder.subject().root();
+
+    auto& init_block = builder.add_block(root);
+    auto& for_node = builder.add_for(
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(1),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
+    auto& body_block = builder.add_block(for_node.root());
+    auto& exit_block = builder.add_block(root);
+
+    // Run analysis
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    auto& analysis = analysis_manager.get<analysis::ControlFlowAnalysis>();
+
+    EXPECT_EQ(analysis.exits().size(), 1);
+    EXPECT_NE(analysis.exits().find(&exit_block), analysis.exits().end());
+    EXPECT_TRUE(analysis.dominates(init_block, exit_block));
+    EXPECT_TRUE(analysis.dominates(init_block, body_block));
+
+    EXPECT_FALSE(analysis.dominates(body_block, exit_block));
+    EXPECT_FALSE(analysis.post_dominates(body_block, init_block));
+
+    EXPECT_TRUE(analysis.post_dominates(exit_block, init_block));
+    EXPECT_TRUE(analysis.post_dominates(exit_block, body_block));
+}
