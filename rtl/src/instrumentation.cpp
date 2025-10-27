@@ -305,10 +305,14 @@ private:
                 entry << "\"opt_report_file\":\"\",";
             }
             entry << "\"element_id\":" << md.element_id << ",";
-            entry << "\"element_type\":\"" << md.element_type << "\",";
             entry << "\"loopnest_index\":" << md.loopnest_index;
 
             entry << "},";
+        }
+        if (md.element_type) {
+            entry << "\"element_type\":\"" << md.element_type << "\",";
+        } else {
+            entry << "\"element_type\":\"\",";
         }
 
         if (md.target_type) {
