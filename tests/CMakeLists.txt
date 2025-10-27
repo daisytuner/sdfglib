@@ -8,6 +8,7 @@ FetchContent_MakeAvailable(googletest)
 
 set(TEST_FILES
     analysis/assumptions_analysis_test.cpp
+    analysis/control_flow_analysis_test.cpp
     analysis/data_dependency_analysis_test.cpp
     analysis/flop_analysis_test.cpp
     analysis/loop_analysis_test.cpp

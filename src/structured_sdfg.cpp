@@ -29,36 +29,6 @@ std::unique_ptr<StructuredSDFG> StructuredSDFG::clone() const {
     return serializer.deserialize(j);
 };
 
-size_t StructuredSDFG::num_nodes() const {
-    size_t count = 0;
-    std::set<const ControlFlowNode*> to_visit = {&this->root()};
-    while (!to_visit.empty()) {
-        auto current = *to_visit.begin();
-        to_visit.erase(to_visit.begin());
-        // if instance of block, add children to to_visit
-        if (auto block = dynamic_cast<const structured_control_flow::Block*>(current)) {
-            count += block->dataflow().nodes().size();
-        } else if (auto sloop_node = dynamic_cast<const structured_control_flow::StructuredLoop*>(current)) {
-            to_visit.insert(&sloop_node->root());
-        } else if (auto condition_node = dynamic_cast<const structured_control_flow::IfElse*>(current)) {
-            for (size_t i = 0; i < condition_node->size(); i++) {
-                to_visit.insert(&condition_node->at(i).first);
-            }
-        } else if (auto while_node = dynamic_cast<const structured_control_flow::While*>(current)) {
-            to_visit.insert(&while_node->root());
-        } else if (auto sequence_node = dynamic_cast<const structured_control_flow::Sequence*>(current)) {
-            for (size_t i = 0; i < sequence_node->size(); i++) {
-                to_visit.insert(&sequence_node->at(i).first);
-            }
-        } else if (dynamic_cast<const structured_control_flow::Return*>(current)) {
-            continue;
-        } else if (auto map_node = dynamic_cast<const structured_control_flow::Map*>(current)) {
-            to_visit.insert(&map_node->root());
-        }
-    }
-    return count;
-};
-
 void StructuredSDFG::validate() const {
     // Call parent validate
     Function::validate();
