@@ -30,9 +30,7 @@ const std::string& CallNode::callee_name() const { return this->callee_name_; }
 
 bool CallNode::offloadable() const { return this->offloadable_; }
 
-bool CallNode::is_void(const Function& sdfg) const {
-    return outputs_.empty() || outputs_.at(0) != "_ret";
-}
+bool CallNode::is_void(const Function& sdfg) const { return outputs_.empty() || outputs_.at(0) != "_ret"; }
 
 bool CallNode::is_indirect_call(const Function& sdfg) const {
     auto& type = sdfg.type(this->callee_name_);
@@ -50,8 +48,7 @@ void CallNode::validate(const Function& function) const {
 
     if (auto func_type = dynamic_cast<const types::Function*>(&type)) {
         if (!function.is_external(this->callee_name_)) {
-            throw InvalidSDFGException("CallNode: Function '" + this->callee_name_ +
-                                        "' must be declared.");
+            throw InvalidSDFGException("CallNode: Function '" + this->callee_name_ + "' must be declared.");
         }
         if (!func_type->is_var_arg() && inputs_.size() != func_type->num_params()) {
             throw InvalidSDFGException(
@@ -67,9 +64,7 @@ void CallNode::validate(const Function& function) const {
     }
 }
 
-symbolic::SymbolSet CallNode::symbols() const { 
-    return { symbolic::symbol(this->callee_name_) };
-}
+symbolic::SymbolSet CallNode::symbols() const { return {symbolic::symbol(this->callee_name_)}; }
 
 std::unique_ptr<data_flow::DataFlowNode> CallNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
@@ -180,7 +175,11 @@ void CallNodeDispatcher::dispatch_code(
             stream << "reinterpret_cast<" << func_ptr_type << ">(" << node.callee_name() << ")" << "(";
         }
     } else {
-        stream << this->language_extension_.external_prefix() << node.callee_name() << "(";
+        if (node.callee_name() == this->function_.name()) {
+            stream << node.callee_name() << "(";
+        } else {
+            stream << this->language_extension_.external_prefix() << node.callee_name() << "(";
+        }
     }
     for (size_t i = 0; i < node.inputs().size(); ++i) {
         stream << node.inputs().at(i);
