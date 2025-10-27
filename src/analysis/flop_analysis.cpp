@@ -108,6 +108,10 @@ symbolic::SymbolSet FlopAnalysis::
 
     std::unordered_set<std::string> all_uses, illegal_uses;
     for (auto* user : users_view.uses()) {
+        if (!sdfg_.exists(user->container())) {
+            continue;
+        }
+
         Use not_allowed;
         switch (this->sdfg_.type(user->container()).type_id()) {
             case types::TypeID::Scalar:
