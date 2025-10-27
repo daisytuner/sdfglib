@@ -8,9 +8,23 @@ namespace codegen {
 std::string CCodeGenerator::function_definition() {
     /********** Arglist **********/
     std::vector<std::string> args;
-    for (auto& container : sdfg_.arguments()) {
-        args.push_back(language_extension_.declaration(container, sdfg_.type(container)));
+    if (this->sdfg_.name() == "main" && this->sdfg_.arguments().size() != 0) {
+        auto& arg1 = this->sdfg_.arguments().at(0);
+        sdfg::types::Scalar arg1_type(sdfg::types::PrimitiveType::Int32);
+
+        auto& arg2 = this->sdfg_.arguments().at(1);
+        sdfg::types::Scalar arg2_base_type(sdfg::types::PrimitiveType::UInt8);
+        sdfg::types::Pointer arg2_ptr_type(arg2_base_type);
+        sdfg::types::Pointer arg2_ptr_ptr_type(static_cast<const sdfg::types::IType&>(arg2_ptr_type));
+
+        args.push_back(language_extension_.declaration(arg1, arg1_type));
+        args.push_back(language_extension_.declaration(arg2, arg2_ptr_ptr_type));
+    } else {
+        for (auto& container : this->sdfg_.arguments()) {
+            args.push_back(language_extension_.declaration(container, this->sdfg_.type(container)));
+        }
     }
+
     std::stringstream arglist;
     arglist << sdfg::helpers::join(args, ", ");
     std::string arglist_str = arglist.str();
