@@ -51,6 +51,7 @@ bool TaskletFusion::accept(structured_control_flow::Block& block) {
         if (iedge.base_type().type_id() != types::TypeID::Scalar) {
             continue;
         }
+        types::PrimitiveType iedge_base_type = iedge.base_type().primitive_type();
 
         // The source of the in edge must be a tasklet with an assignment
         auto* assign_tasklet = dynamic_cast<data_flow::Tasklet*>(&iedge.src());
@@ -64,11 +65,18 @@ bool TaskletFusion::accept(structured_control_flow::Block& block) {
         std::unordered_set<data_flow::Memlet*> oedges;
         for (auto& oedge : dfg.out_edges(*access_node)) {
             if (oedge.base_type().type_id() == types::TypeID::Scalar &&
+                oedge.base_type().primitive_type() == iedge_base_type &&
                 dynamic_cast<data_flow::Tasklet*>(&oedge.dst())) {
                 oedges.insert(&oedge);
             }
         }
         if (oedges.size() != dfg.out_degree(*access_node)) {
+            continue;
+        }
+
+        // The result tye of the in edge of the assignment tasklet must match with the base types
+        auto& result_type = assign_tasklet_iedge.result_type(this->builder_.subject());
+        if (result_type.type_id() != types::TypeID::Scalar || result_type.primitive_type() != iedge_base_type) {
             continue;
         }
 
@@ -81,6 +89,40 @@ bool TaskletFusion::accept(structured_control_flow::Block& block) {
         // tasklet
         for (auto* oedge : oedges) {
             auto& tasklet = dynamic_cast<data_flow::Tasklet&>(oedge->dst());
+            auto& new_access_node = dynamic_cast<data_flow::AccessNode&>(assign_tasklet_iedge.src());
+
+            // Prevent multiple access nodes with same container having in edges to the out edges's tasklet
+            std::unordered_set<data_flow::Memlet*> other_iedges;
+            for (auto& other_iedge : dfg.in_edges(tasklet)) {
+                other_iedges.insert(&other_iedge);
+            }
+            for (auto* other_iedge : other_iedges) {
+                if (dynamic_cast<data_flow::ConstantNode*>(&other_iedge->src())) {
+                    continue;
+                } else if (auto* other_access_node = dynamic_cast<data_flow::AccessNode*>(&other_iedge->src())) {
+                    if (other_access_node == access_node || other_access_node->data() != new_access_node.data()) {
+                        continue;
+                    }
+                    this->builder_.add_memlet(
+                        block,
+                        new_access_node,
+                        other_iedge->src_conn(),
+                        tasklet,
+                        other_iedge->dst_conn(),
+                        other_iedge->subset(),
+                        other_iedge->base_type(),
+                        other_iedge->debug_info()
+                    );
+                    this->builder_.remove_memlet(block, *other_iedge);
+                    new_access_node
+                        .set_debug_info(DebugInfo::merge(new_access_node.debug_info(), other_access_node->debug_info())
+                        );
+                    if (dfg.in_degree(*other_access_node) == 0 && dfg.out_degree(*other_access_node) == 0) {
+                        this->builder_.remove_node(block, *other_access_node);
+                    }
+                }
+            }
+
             DebugInfo debug_info = DebugInfo::merge(
                 assign_tasklet_iedge.debug_info(),
                 DebugInfo::merge(
@@ -88,12 +130,14 @@ bool TaskletFusion::accept(structured_control_flow::Block& block) {
                     DebugInfo::merge(iedge.debug_info(), DebugInfo::merge(access_node->debug_info(), oedge->debug_info()))
                 )
             );
-            this->builder_.add_computational_memlet(
+            this->builder_.add_memlet(
                 block,
-                dynamic_cast<data_flow::AccessNode&>(assign_tasklet_iedge.src()),
+                new_access_node,
+                assign_tasklet_iedge.src_conn(),
                 tasklet,
                 oedge->dst_conn(),
                 assign_tasklet_iedge.subset(),
+                assign_tasklet_iedge.base_type(),
                 debug_info
             );
             this->builder_.remove_memlet(block, *oedge);
@@ -143,6 +187,16 @@ bool TaskletFusion::accept(structured_control_flow::Block& block) {
         }
         auto& assign_tasklet_oedge = *dfg.out_edges(*assign_tasklet).begin();
 
+        // Types must match
+        if (iedge.base_type().primitive_type() != oedge.base_type().primitive_type()) {
+            continue;
+        }
+        auto& result_type = assign_tasklet_oedge.result_type(this->builder_.subject());
+        if (result_type.type_id() != types::TypeID::Scalar ||
+            result_type.primitive_type() != iedge.base_type().primitive_type()) {
+            continue;
+        }
+
         // Container is only read and written in this access node (SSA)
         if (!this->container_allowed_accesses(access_node->data(), access_node)) {
             continue;
@@ -159,12 +213,14 @@ bool TaskletFusion::accept(structured_control_flow::Block& block) {
                 )
             )
         );
-        this->builder_.add_computational_memlet(
+        this->builder_.add_memlet(
             block,
             *tasklet,
             iedge.src_conn(),
             dynamic_cast<data_flow::AccessNode&>(assign_tasklet_oedge.dst()),
+            assign_tasklet_oedge.dst_conn(),
             assign_tasklet_oedge.subset(),
+            assign_tasklet_oedge.base_type(),
             debug_info
         );
         this->builder_.remove_memlet(block, iedge);

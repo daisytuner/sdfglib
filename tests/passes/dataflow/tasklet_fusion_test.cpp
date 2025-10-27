@@ -93,6 +93,120 @@ TEST(TaskletFusionTest, InAssignWithExtraRead) {
     EXPECT_FALSE(pass.run(builder, analysis_manager));
 }
 
+TEST(TaskletFusionTest, InCasting) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::Int64);
+    types::Scalar desc(types::PrimitiveType::Float);
+    builder.add_container("a", sym_desc);
+    builder.add_container("b", desc);
+    builder.add_container("c", desc);
+    builder.add_container("d", desc);
+
+    // Add block with two tasklets
+    auto& block = builder.add_block(root);
+    auto& a = builder.add_access(block, "a");
+    auto& b = builder.add_access(block, "b");
+    auto& c = builder.add_access(block, "c");
+    auto& d = builder.add_access(block, "d");
+    auto& tasklet1 = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+    builder.add_computational_memlet(block, a, tasklet1, "_in", {});
+    builder.add_computational_memlet(block, tasklet1, "_out", b, {});
+    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+    builder.add_computational_memlet(block, b, tasklet2, "_in1", {});
+    builder.add_computational_memlet(block, c, tasklet2, "_in2", {});
+    builder.add_computational_memlet(block, tasklet2, "_out", d, {});
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::TaskletFusionPass pass;
+    EXPECT_FALSE(pass.run(builder, analysis_manager));
+}
+
+TEST(TaskletFusionTest, SimpleInAssignWithAccessNodeMerging) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar desc(types::PrimitiveType::Float);
+    builder.add_container("a", desc);
+    builder.add_container("b", desc);
+    builder.add_container("c", desc);
+
+    // Add block with two tasklets
+    auto& block = builder.add_block(root);
+    auto& a1 = builder.add_access(block, "a");
+    auto& a2 = builder.add_access(block, "a");
+    auto& b = builder.add_access(block, "b");
+    auto& c = builder.add_access(block, "c");
+    auto& tasklet1 = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+    builder.add_computational_memlet(block, a1, tasklet1, "_in", {});
+    builder.add_computational_memlet(block, tasklet1, "_out", b, {});
+    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+    builder.add_computational_memlet(block, b, tasklet2, "_in1", {});
+    builder.add_computational_memlet(block, a2, tasklet2, "_in2", {});
+    builder.add_computational_memlet(block, tasklet2, "_out", c, {});
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::TaskletFusionPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    // Check
+    auto& dfg = block.dataflow();
+    EXPECT_EQ(dfg.nodes().size(), 3);
+    EXPECT_EQ(dfg.tasklets(), std::unordered_set<data_flow::Tasklet*>({&tasklet2}));
+    EXPECT_EQ(dfg.data_nodes(), std::unordered_set<data_flow::AccessNode*>({&a1, &c}));
+}
+
+TEST(TaskletFusionTest, ComplexInAssignWithAccessNodeMerging) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar desc(types::PrimitiveType::Float);
+    builder.add_container("a", desc);
+    builder.add_container("b", desc);
+    builder.add_container("c", desc);
+    builder.add_container("d", desc);
+
+    // Add block with two tasklets
+    auto& block = builder.add_block(root);
+    auto& a = builder.add_access(block, "a");
+    auto& b = builder.add_access(block, "b");
+    auto& c = builder.add_access(block, "c");
+    auto& d = builder.add_access(block, "d");
+    auto& tasklet1 = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+    builder.add_computational_memlet(block, a, tasklet1, "_in", {});
+    builder.add_computational_memlet(block, tasklet1, "_out", b, {});
+    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+    builder.add_computational_memlet(block, a, tasklet2, "_in", {});
+    builder.add_computational_memlet(block, tasklet2, "_out", c, {});
+    auto& tasklet3 = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+    builder.add_computational_memlet(block, b, tasklet3, "_in1", {});
+    builder.add_computational_memlet(block, c, tasklet3, "_in2", {});
+    builder.add_computational_memlet(block, tasklet3, "_out", d, {});
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::TaskletFusionPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    // Check
+    auto& dfg = block.dataflow();
+    EXPECT_EQ(dfg.nodes().size(), 3);
+    EXPECT_EQ(dfg.tasklets(), std::unordered_set<data_flow::Tasklet*>({&tasklet3}));
+    EXPECT_EQ(dfg.data_nodes(), std::unordered_set<data_flow::AccessNode*>({&a, &d}));
+}
+
 TEST(TaskletFusionTest, SimpleOutAssign) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
@@ -167,6 +281,40 @@ TEST(TaskletFusionTest, OutAssignWithExtraRead) {
     auto& tasklet3 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
     builder.add_computational_memlet(block2, c2, tasklet3, "_in", {});
     builder.add_computational_memlet(block2, tasklet3, "_out", e, {});
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::TaskletFusionPass pass;
+    EXPECT_FALSE(pass.run(builder, analysis_manager));
+}
+
+TEST(TaskletFusionTest, OutCasting) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::Int64);
+    types::Scalar desc(types::PrimitiveType::Float);
+    builder.add_container("a", sym_desc);
+    builder.add_container("b", sym_desc);
+    builder.add_container("c", sym_desc);
+    builder.add_container("d", desc);
+
+    // Add block with two tasklets
+    auto& block = builder.add_block(root);
+    auto& a = builder.add_access(block, "a");
+    auto& b = builder.add_access(block, "b");
+    auto& c = builder.add_access(block, "c");
+    auto& d = builder.add_access(block, "d");
+    auto& tasklet1 = builder.add_tasklet(block, data_flow::TaskletCode::int_add, {"_out"}, {"_in1", "_in2"});
+    builder.add_computational_memlet(block, a, tasklet1, "_in1", {});
+    builder.add_computational_memlet(block, b, tasklet1, "_in2", {});
+    builder.add_computational_memlet(block, tasklet1, "_out", c, {});
+    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+    builder.add_computational_memlet(block, c, tasklet2, "_in", {});
+    builder.add_computational_memlet(block, tasklet2, "_out", d, {});
 
     // Apply pass
     analysis::AnalysisManager analysis_manager(sdfg);
