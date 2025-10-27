@@ -43,7 +43,8 @@ private:
     symbolic::Expression visit_structured_loop_with_scope(
         structured_control_flow::StructuredLoop& loop,
         AnalysisManager& analysis_manager,
-        structured_control_flow::ControlFlowNode& scope
+        structured_control_flow::ControlFlowNode& scope,
+        symbolic::Expression child_expr
     );
 
     symbolic::Expression visit_if_else(structured_control_flow::IfElse& if_else, AnalysisManager& analysis_manager);
