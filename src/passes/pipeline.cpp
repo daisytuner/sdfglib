@@ -1,5 +1,6 @@
 #include "sdfg/passes/pipeline.h"
 
+#include "sdfg/passes/dataflow/tasklet_fusion.h"
 #include "sdfg/passes/schedules/expansion_pass.h"
 
 namespace sdfg {
@@ -58,6 +59,7 @@ Pipeline Pipeline::expression_combine() {
     p.register_pass<ConstantElimination>();
     p.register_pass<DeadDataElimination>();
     p.register_pass<SymbolEvolution>();
+    p.register_pass<TaskletFusionPass>();
 
     return p;
 };
