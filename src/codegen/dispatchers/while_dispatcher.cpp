@@ -76,6 +76,24 @@ ReturnDispatcher::ReturnDispatcher(
 void ReturnDispatcher::dispatch_node(
     PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
 ) {
+    // Free heap allocations
+    for (auto& container : sdfg_.containers()) {
+        if (sdfg_.is_external(container)) {
+            continue;
+        }
+        auto& type = sdfg_.type(container);
+
+        // Free if needed
+        if (type.storage_type().deallocation() == types::StorageType::AllocationType::Managed) {
+            if (type.storage_type().is_cpu_heap()) {
+                main_stream << language_extension_.external_prefix() << "free(" << container << ");" << std::endl;
+            } else if (type.storage_type().is_nv_generic()) {
+                main_stream << "cudaSetDevice(0);" << std::endl;
+                main_stream << "cudaFree(" << container << ");" << std::endl;
+            }
+        }
+    }
+
     if (node_.unreachable()) {
         main_stream << "/* unreachable return */" << std::endl;
     } else if (node_.is_data()) {

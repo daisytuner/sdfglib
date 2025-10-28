@@ -66,7 +66,11 @@ public:
 
     std::string value() const { return value_; }
 
+    void value(const std::string& value) { value_ = value; }
+
     symbolic::Expression allocation_size() const { return allocation_size_; }
+
+    void allocation_size(const symbolic::Expression& allocation_size) { allocation_size_ = allocation_size; }
 
     AllocationType allocation() const { return allocation_; }
 
@@ -381,6 +385,8 @@ public:
     virtual TypeID type_id() const = 0;
 
     StorageType storage_type() const { return storage_type_; };
+
+    StorageType& storage_type() { return storage_type_; };
 
     void storage_type(const StorageType& storage_type) { storage_type_ = storage_type; };
 
