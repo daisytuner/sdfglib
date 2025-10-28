@@ -1,4 +1,9 @@
 #include "sdfg/passes/structured_control_flow/block_fusion.h"
+#include <cstddef>
+#include <unordered_set>
+#include <utility>
+#include "sdfg/data_flow/access_node.h"
+#include "sdfg/data_flow/data_flow_node.h"
 
 namespace sdfg {
 namespace passes {
@@ -81,29 +86,59 @@ bool BlockFusion::can_be_applied(
         }
     }
 
-    // Numerical stability: Unique order of nodes
-    auto pdoms = first_graph.post_dominators();
-    std::unordered_map<std::string, const data_flow::AccessNode*> connectors;
-    for (auto& node : second_graph.topological_sort()) {
-        if (!dynamic_cast<const data_flow::AccessNode*>(node)) {
+    // Determine sets of weakly connected components for first graph
+    auto [first_num_components, first_components] = first_graph.weakly_connected_components();
+    std::vector<std::unordered_set<const data_flow::AccessNode*>> first_weakly_connected(first_num_components);
+    for (auto comp : first_components) {
+        // Only handle access nodes of the first graph
+        if (dynamic_cast<const data_flow::ConstantNode*>(comp.first)) {
             continue;
+        } else if (auto* access_node = dynamic_cast<const data_flow::AccessNode*>(comp.first)) {
+            first_weakly_connected[comp.second].insert(access_node);
         }
-        auto access_node = static_cast<const data_flow::AccessNode*>(node);
+    }
 
-        // Not used in first graph
-        if (pdoms.find(access_node->data()) == pdoms.end()) {
+    // Determine sets of weakly connected components for second graph
+    auto [second_num_components, second_components] = second_graph.weakly_connected_components();
+    std::vector<std::unordered_set<const data_flow::AccessNode*>> second_weakly_connected(second_num_components);
+    for (auto comp : second_components) {
+        // Only handle access nodes of the second graph
+        if (dynamic_cast<const data_flow::ConstantNode*>(comp.first)) {
             continue;
+        } else if (auto* access_node = dynamic_cast<const data_flow::AccessNode*>(comp.first)) {
+            second_weakly_connected[comp.second].insert(access_node);
         }
-        // Already connected
-        if (connectors.find(access_node->data()) != connectors.end()) {
-            continue;
-        }
+    }
 
-        // Write-after-write
-        if (second_graph.in_degree(*access_node) > 0) {
-            return false;
+    // For each combination of weakly connected components:
+    for (size_t first = 0; first < first_num_components; first++) {
+        for (size_t second = 0; second < second_num_components; second++) {
+            // Match all access nodes with the same container
+            std::vector<std::pair<const data_flow::AccessNode*, const data_flow::AccessNode*>> matches;
+            for (auto* first_access_node : first_weakly_connected[first]) {
+                for (auto* second_access_node : second_weakly_connected[second]) {
+                    if (first_access_node->data() == second_access_node->data()) {
+                        matches.push_back({first_access_node, second_access_node});
+                    }
+                }
+            }
+            // Skip if there are no matches
+            if (matches.empty()) {
+                continue;
+            }
+            // There must be at least one sink in the first graph and one source in the second graph that match
+            bool connection = false;
+            for (auto [first_access_node, second_access_node] : matches) {
+                if (first_graph.out_degree(*first_access_node) == 0 &&
+                    second_graph.in_degree(*second_access_node) == 0) {
+                    connection = true;
+                    break;
+                }
+            }
+            if (!connection) {
+                return false;
+            }
         }
-        connectors[access_node->data()] = pdoms.at(access_node->data());
     }
 
     return true;
@@ -125,35 +160,26 @@ void BlockFusion::apply(
 
     // Collect nodes to connect to
     auto pdoms = first_graph.post_dominators();
-    std::unordered_set<std::string> already_connected;
     std::unordered_map<data_flow::AccessNode*, data_flow::AccessNode*> connectors;
-    for (auto& node : second_graph.topological_sort()) {
+    for (auto& node : second_graph.sources()) {
         if (!dynamic_cast<data_flow::AccessNode*>(node)) {
             continue;
         }
         auto access_node = static_cast<data_flow::AccessNode*>(node);
 
         // Not used in first graph
-        if (pdoms.find(access_node->data()) == pdoms.end()) {
+        if (!pdoms.contains(access_node->data())) {
             continue;
         }
-        // Already connected
-        if (already_connected.find(access_node->data()) != already_connected.end()) {
-            continue;
-        }
-        // Write-after-write
-        if (second_graph.in_degree(*access_node) > 0) {
-            throw InvalidSDFGException("BlockFusion: Write-after-write");
-        }
+
         connectors[access_node] = pdoms.at(access_node->data());
-        already_connected.insert(access_node->data());
     }
 
     // Copy nodes from second to first
     std::unordered_map<data_flow::DataFlowNode*, data_flow::DataFlowNode*> node_mapping;
     for (auto& node : second_graph.nodes()) {
         if (auto access_node = dynamic_cast<data_flow::AccessNode*>(&node)) {
-            if (connectors.find(access_node) != connectors.end()) {
+            if (connectors.contains(access_node)) {
                 // Connect by replacement
                 node_mapping[access_node] = connectors[access_node];
             } else {
