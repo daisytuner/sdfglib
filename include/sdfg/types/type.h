@@ -70,7 +70,11 @@ public:
 
     AllocationType allocation() const { return allocation_; }
 
+    void allocation(AllocationType allocation) { allocation_ = allocation; }
+
     AllocationType deallocation() const { return deallocation_; }
+
+    void deallocation(AllocationType deallocation) { deallocation_ = deallocation; }
 
     bool operator==(const StorageType& other) const {
         if (value_ != other.value_) {
