@@ -202,7 +202,8 @@ void CPPCodeGenerator::dispatch_schedule() {
         create_dispatcher(language_extension_, sdfg_, analysis_manager_, sdfg_.root(), instrumentation_plan_);
     dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_snippet_factory_);
 
-    if (!dynamic_cast<const structured_control_flow::Return*>(&(sdfg_.root().at(sdfg_.root().size() - 1)).first)) {
+    if (sdfg_.root().size() == 0 ||
+        !dynamic_cast<const structured_control_flow::Return*>(&(sdfg_.root().at(sdfg_.root().size() - 1)).first)) {
         // Free heap allocations
         for (auto& container : sdfg_.containers()) {
             if (sdfg_.is_external(container)) {
