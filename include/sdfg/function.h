@@ -80,7 +80,7 @@ public:
 
     const std::string& name() const;
 
-    std::string& name();
+    void name(const std::string& name);
 
     FunctionType type() const;
 
