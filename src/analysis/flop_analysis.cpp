@@ -108,6 +108,10 @@ symbolic::SymbolSet FlopAnalysis::
 
     std::unordered_set<std::string> all_uses, illegal_uses;
     for (auto* user : users_view.uses()) {
+        if (!sdfg_.exists(user->container())) {
+            continue;
+        }
+
         Use not_allowed;
         switch (this->sdfg_.type(user->container()).type_id()) {
             case types::TypeID::Scalar:
@@ -220,26 +224,27 @@ symbolic::Expression FlopAnalysis::visit_block(structured_control_flow::Block& b
 
 symbolic::Expression FlopAnalysis::
     visit_structured_loop(structured_control_flow::StructuredLoop& loop, AnalysisManager& analysis_manager) {
-    auto& scope_analysis = analysis_manager.get<ScopeAnalysis>();
-    structured_control_flow::ControlFlowNode* parent = scope_analysis.parent_scope(&loop);
-    if (!parent) {
-        throw InvalidSDFGException("FlopAnalysis: Could not find parent scope of structured loop");
-    }
-    this->flops_[&loop] = this->visit_structured_loop_with_scope(loop, analysis_manager, loop);
-    return this->visit_structured_loop_with_scope(loop, analysis_manager, *parent);
-}
-
-symbolic::Expression FlopAnalysis::visit_structured_loop_with_scope(
-    structured_control_flow::StructuredLoop& loop,
-    AnalysisManager& analysis_manager,
-    structured_control_flow::ControlFlowNode& scope
-) {
     symbolic::Expression child = this->visit_sequence(loop.root(), analysis_manager);
     if (child.is_null()) {
         this->precise_ = false;
         return SymEngine::null;
     }
 
+    auto& scope_analysis = analysis_manager.get<ScopeAnalysis>();
+    structured_control_flow::ControlFlowNode* parent = scope_analysis.parent_scope(&loop);
+    if (!parent) {
+        throw InvalidSDFGException("FlopAnalysis: Could not find parent scope of structured loop");
+    }
+    this->flops_[&loop] = this->visit_structured_loop_with_scope(loop, analysis_manager, loop, child);
+    return this->visit_structured_loop_with_scope(loop, analysis_manager, *parent, child);
+}
+
+symbolic::Expression FlopAnalysis::visit_structured_loop_with_scope(
+    structured_control_flow::StructuredLoop& loop,
+    AnalysisManager& analysis_manager,
+    structured_control_flow::ControlFlowNode& scope,
+    symbolic::Expression child_expr
+) {
     // Determine scope parameters
     symbolic::SymbolSet parameters = this->get_scope_parameters(scope, analysis_manager);
 
@@ -327,7 +332,7 @@ symbolic::Expression FlopAnalysis::visit_structured_loop_with_scope(
     symbolic::Expression stride =
         this->replace_loop_indices(parameters, update_coeffs[symbolic::symbol("__daisy_constant__")], loop_assumptions);
 
-    return symbolic::mul(symbolic::div(symbolic::add(symbolic::sub(bound, init), symbolic::one()), stride), child);
+    return symbolic::mul(symbolic::div(symbolic::add(symbolic::sub(bound, init), symbolic::one()), stride), child_expr);
 }
 
 symbolic::Expression FlopAnalysis::
