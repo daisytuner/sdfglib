@@ -32,26 +32,23 @@ void ReferencePropagation::merge_access_nodes(builder::StructuredSDFGBuilder& bu
             for (auto* iedge : iedges) {
                 if (dynamic_cast<data_flow::ConstantNode*>(&iedge->src())) {
                     continue;
-                } else if (auto* access_node = dynamic_cast<data_flow::AccessNode*>(&iedge->src())) {
-                    if (access_node == &user_node || access_node->data() != user_node.data()) {
-                        continue;
-                    }
-                    builder.add_memlet(
-                        *block,
-                        user_node,
-                        iedge->src_conn(),
-                        *tasklet,
-                        iedge->dst_conn(),
-                        iedge->subset(),
-                        iedge->base_type(),
-                        iedge->debug_info()
-                    );
-                    builder.remove_memlet(*block, *iedge);
-                    user_node.set_debug_info(DebugInfo::merge(user_node.debug_info(), access_node->debug_info()));
-                    if (user_graph.in_degree(*access_node) == 0 && user_graph.out_degree(*access_node)) {
-                        builder.remove_node(*block, *access_node);
-                    }
                 }
+                auto* access_node = static_cast<data_flow::AccessNode*>(&iedge->src());
+                if (access_node == &user_node || access_node->data() != user_node.data()) {
+                    continue;
+                }
+                builder.add_memlet(
+                    *block,
+                    user_node,
+                    iedge->src_conn(),
+                    *tasklet,
+                    iedge->dst_conn(),
+                    iedge->subset(),
+                    iedge->base_type(),
+                    iedge->debug_info()
+                );
+                builder.remove_memlet(*block, *iedge);
+                user_node.set_debug_info(DebugInfo::merge(user_node.debug_info(), access_node->debug_info()));
             }
         }
     }
@@ -74,6 +71,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
     auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
     auto& reference_analysis = analysis_manager.get<analysis::ReferenceAnalysis>();
 
+    std::unordered_set<data_flow::AccessNode*> replaced_nodes;
     std::unordered_set<std::string> invalidated;
     for (auto& container : sdfg.containers()) {
         if (invalidated.find(container) != invalidated.end()) {
@@ -152,9 +150,9 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
             // Simple case: No arithmetic on pointer, just replace container
             if (move_subset.size() == 1 && symbolic::eq(move_subset[0], symbolic::zero())) {
                 user_node.data() = viewed_container;
-                this->merge_access_nodes(builder, user_node);
                 applied = true;
                 invalidated.insert(viewed_container);
+                replaced_nodes.insert(&user_node);
                 continue;
             }
 
@@ -271,10 +269,24 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                 }
             }
 
-            this->merge_access_nodes(builder, user_node);
-
             applied = true;
             invalidated.insert(viewed_container);
+            replaced_nodes.insert(&user_node);
+        }
+    }
+
+    // Post-processing: Merge access nodes and remove dangling nodes
+    // Avoid removing elements while iterating above
+    for (auto* node : replaced_nodes) {
+        this->merge_access_nodes(builder, *node);
+    }
+    for (auto* node : replaced_nodes) {
+        auto& graph = node->get_parent();
+        auto* block = static_cast<structured_control_flow::Block*>(graph.get_parent());
+        for (auto& dnode : graph.data_nodes()) {
+            if (graph.in_degree(*dnode) == 0 && graph.out_degree(*dnode) == 0) {
+                builder.remove_node(*block, *dnode);
+            }
         }
     }
 
