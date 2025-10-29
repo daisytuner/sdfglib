@@ -181,7 +181,6 @@ def test_instrumentation_aggregate(event):
     docc_metadata = event["args"]["docc"]
     assert docc_metadata["sdfg_name"] == "__daisy_instrumentation_test_0"
     assert docc_metadata["sdfg_file"] == "/tmp/DOCC/0000-0000/123456789/sdfg_0.json"
-    assert docc_metadata["arg_capture_path"] == ""
     assert docc_metadata["element_id"] == 10
     assert docc_metadata["element_type"] == "for"
     assert docc_metadata["loopnest_index"] == 0
@@ -550,4 +549,3 @@ def test_instrumentation_manual(event):
     assert event["args"]["metrics"]["static:::foo"]["max"] == 9
     assert event["args"]["metrics"]["static:::foo"]["count"] == 10
     assert event["args"]["metrics"]["static:::foo"]["variance"] == 8.25
-

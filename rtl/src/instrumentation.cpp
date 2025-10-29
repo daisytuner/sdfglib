@@ -282,39 +282,44 @@ private:
         entry << "\"to\":{\"line\":" << md.line_end << ",\"col\":" << md.column_end << "}";
         entry << "}],";
 
+
         // docc metadata
-        if (md.sdfg_name && md.sdfg_file) {
-            entry << "\"docc\":";
-            entry << "{";
 
+        entry << "\"docc\":";
+        entry << "{";
+        if (md.sdfg_name) {
             entry << "\"sdfg_name\":\"" << md.sdfg_name << "\",";
-            entry << "\"sdfg_file\":\"" << md.sdfg_file << "\",";
-            if (md.arg_capture_path) {
-                entry << "\"arg_capture_path\":\"" << md.arg_capture_path << "\",";
-            } else {
-                entry << "\"arg_capture_path\":\"\",";
-            }
-            if (md.features_file) {
-                entry << "\"features_file\":\"" << md.features_file << "\",";
-            } else {
-                entry << "\"features_file\":\"\",";
-            }
-            if (md.opt_report_file) {
-                entry << "\"opt_report_file\":\"" << md.opt_report_file << "\",";
-            } else {
-                entry << "\"opt_report_file\":\"\",";
-            }
-            entry << "\"element_id\":" << md.element_id << ",";
-            entry << "\"element_type\":\"" << md.element_type << "\",";
-            entry << "\"loopnest_index\":" << md.loopnest_index;
-
-            entry << "},";
         }
+        if (md.sdfg_file) {
+            entry << "\"sdfg_file\":\"" << md.sdfg_file << "\",";
+        }
+
+        if (md.arg_capture_path) {
+            entry << "\"arg_capture_path\":\"" << md.arg_capture_path << "\",";
+        }
+        if (md.features_file) {
+            entry << "\"features_file\":\"" << md.features_file << "\",";
+        }
+        if (md.opt_report_file) {
+            entry << "\"opt_report_file\":\"" << md.opt_report_file << "\",";
+        }
+
+        if (md.sdfg_name && md.sdfg_file) {
+            entry << "\"element_id\":" << md.element_id << ",";
+        }
+        if (md.element_type) {
+            entry << "\"element_type\":\"" << md.element_type << "\",";
+        }
+        if (md.sdfg_name && md.sdfg_file) {
+            entry << "\"loopnest_index\":" << md.loopnest_index;
+        } else {
+            entry << "\"loopnest_index\":-1";
+        }
+
+        entry << "},";
 
         if (md.target_type) {
             entry << "\"target_type\":\"" << md.target_type << "\",";
-        } else {
-            entry << "\"target_type\":\"\",";
         }
 
         entry << "\"metrics\":{";
