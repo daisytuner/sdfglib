@@ -166,8 +166,12 @@ private:
         entry << "\"name\":\"" << md.function_name << " [L" << md.line_begin << "-" << md.line_end << "]\",";
         entry << "\"pid\":" << getpid() << ",";
         entry << "\"tid\":" << gettid() << ",";
-        entry << "\"ts\":" << (region.starts.at(index) / 1000) << ",";
-        entry << "\"dur\":" << ns_to_us(region.durations.at(index)) << ",";
+        if (region.starts.size() > index) {
+            entry << "\"ts\":" << (region.starts.at(index) / 1000) << ",";
+        }
+        if (region.starts.size() > index) {
+            entry << "\"dur\":" << ns_to_us(region.durations.at(index)) << ",";
+        }
         entry << "\"args\":{";
 
         // Source location
