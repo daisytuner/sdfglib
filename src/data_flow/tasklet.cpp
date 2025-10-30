@@ -30,11 +30,11 @@ void Tasklet::validate(const Function& function) const {
 
     // Validate: inputs match type of operation
     for (auto& iedge : graph.in_edges(*this)) {
-        types::PrimitiveType input_type = iedge.base_type().primitive_type();
-        if (is_integer(this->code_) && !types::is_integer(input_type)) {
+        auto& input_type = iedge.result_type(function);
+        if (is_integer(this->code_) && !types::is_integer(input_type.primitive_type())) {
             throw InvalidSDFGException("Tasklet: Integer operation with non-integer input type");
         }
-        if (is_floating_point(this->code_) && !types::is_floating_point(input_type)) {
+        if (is_floating_point(this->code_) && !types::is_floating_point(input_type.primitive_type())) {
             throw InvalidSDFGException("Tasklet: Floating point operation with integer input type");
         }
     }
