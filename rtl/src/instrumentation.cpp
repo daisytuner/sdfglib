@@ -169,7 +169,7 @@ private:
         if (region.starts.size() > index) {
             entry << "\"ts\":" << (region.starts.at(index) / 1000) << ",";
         }
-        if (region.starts.size() > index) {
+        if (region.durations.size() > index) {
             entry << "\"dur\":" << ns_to_us(region.durations.at(index)) << ",";
         }
         entry << "\"args\":{";
