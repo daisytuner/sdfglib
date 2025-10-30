@@ -32,8 +32,8 @@ std::string CCodeGenerator::function_definition() {
         arglist_str = "void";
     }
 
-    return "extern " + this->language_extension_.declaration("", sdfg_.return_type()) + sdfg_.name() + "(" +
-           arglist_str + ")";
+    return "extern " + this->language_extension_.declaration("", sdfg_.return_type()) + this->externals_prefix_ +
+           sdfg_.name() + "(" + arglist_str + ")";
 };
 
 void CCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const {

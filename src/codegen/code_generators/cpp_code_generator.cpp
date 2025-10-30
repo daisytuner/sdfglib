@@ -32,8 +32,8 @@ std::string CPPCodeGenerator::function_definition() {
         arglist_str = "void";
     }
 
-    return "extern \"C\" " + this->language_extension_.declaration("", sdfg_.return_type()) + sdfg_.name() + "(" +
-           arglist_str + ")";
+    return "extern \"C\" " + this->language_extension_.declaration("", sdfg_.return_type()) + this->externals_prefix_ +
+           sdfg_.name() + "(" + arglist_str + ")";
 };
 
 void CPPCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const {

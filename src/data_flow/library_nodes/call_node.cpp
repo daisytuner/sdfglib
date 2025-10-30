@@ -175,11 +175,7 @@ void CallNodeDispatcher::dispatch_code(
             stream << "reinterpret_cast<" << func_ptr_type << ">(" << node.callee_name() << ")" << "(";
         }
     } else {
-        if (node.callee_name() == this->function_.name()) {
-            stream << node.callee_name() << "(";
-        } else {
-            stream << this->language_extension_.external_prefix() << node.callee_name() << "(";
-        }
+        stream << this->language_extension_.external_prefix() << node.callee_name() << "(";
     }
     for (size_t i = 0; i < node.inputs().size(); ++i) {
         stream << node.inputs().at(i);
