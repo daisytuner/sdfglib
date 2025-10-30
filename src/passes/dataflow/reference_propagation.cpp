@@ -167,7 +167,8 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
             bool safe = true;
             auto& user_graph = user_node.get_parent();
             for (auto& oedge : user_graph.out_edges(user_node)) {
-                if (oedge.type() != data_flow::MemletType::Computational) {
+                if (oedge.type() != data_flow::MemletType::Computational &&
+                    oedge.type() != data_flow::MemletType::Reference) {
                     safe = false;
                     break;
                 }
@@ -184,7 +185,8 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                 continue;
             }
             for (auto& iedge : user_graph.in_edges(user_node)) {
-                if (iedge.type() != data_flow::MemletType::Computational) {
+                if (iedge.type() != data_flow::MemletType::Computational &&
+                    iedge.type() != data_flow::MemletType::Reference) {
                     safe = false;
                     break;
                 }

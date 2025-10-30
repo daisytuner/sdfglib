@@ -355,12 +355,17 @@ TEST(ReferencePropagationTest, PointerIteration) {
     auto& block2 = builder.add_block(root);
     auto& a_input = builder.add_access(block2, "tmp");
     auto& a_output = builder.add_access(block2, "A");
-    builder.add_reference_memlet(block2, a_input, a_output, {symbolic::zero()}, ptr_desc);
+    auto& ref_edge = builder.add_reference_memlet(block2, a_input, a_output, {symbolic::zero()}, ptr_desc);
 
     // Apply pass
     analysis::AnalysisManager analysis_manager(builder.subject());
     passes::ReferencePropagation pass;
-    EXPECT_FALSE(pass.run(builder, analysis_manager));
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    EXPECT_EQ(a_input.data(), "A");
+    EXPECT_EQ(a_output.data(), "A");
+    EXPECT_EQ(ref_edge.subset().size(), 1);
+    EXPECT_TRUE(symbolic::eq(ref_edge.subset()[0], symbolic::one()));
 }
 
 TEST(ReferencePropagationTest, PointerIteration2) {
@@ -397,4 +402,7 @@ TEST(ReferencePropagationTest, PointerIteration2) {
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
     EXPECT_EQ(a_input.data(), "A");
+    EXPECT_EQ(a_output.data(), "A");
+    EXPECT_EQ(ref_edge.subset().size(), 1);
+    EXPECT_TRUE(symbolic::eq(ref_edge.subset()[0], symbolic::one()));
 }
