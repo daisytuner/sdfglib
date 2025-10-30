@@ -133,6 +133,10 @@ bool LoopNormalization::apply(
     }
 
     // Step 3: Rotate loop if stride is negative
+
+    // Unsafe: Associate and commutative operations only
+    return applied;
+
     if (stride != -1) {
         return applied;
     }
@@ -163,6 +167,7 @@ bool LoopNormalization::apply(
     loop.root().replace(indvar, symbolic::sub(loop.init(), symbolic::sub(indvar, new_init)));
 
     builder.update_loop(loop, loop.indvar(), new_condition, new_init, new_update);
+    applied = true;
 
     return applied;
 };
