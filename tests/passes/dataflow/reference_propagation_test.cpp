@@ -295,3 +295,106 @@ TEST(ReferencePropagationTest, ReferenceToReference_SameContainer) {
     EXPECT_EQ(a_output.data(), "a");
 }
 
+TEST(ReferencePropagationTest, StoreIntoSelf) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Pointer opaque_desc;
+    types::Pointer ptr_desc(static_cast<const types::IType&>(opaque_desc));
+
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("a", opaque_desc);
+
+    auto& root = builder.subject().root();
+
+    // a = A + 1
+    {
+        auto& block1 = builder.add_block(root);
+        auto& a_input = builder.add_access(block1, "A");
+        auto& a_output = builder.add_access(block1, "a");
+
+        types::Pointer opaque_desc;
+        types::Pointer ptr_desc(static_cast<const types::IType&>(opaque_desc));
+        builder.add_reference_memlet(block1, a_input, a_output, {symbolic::integer(1)}, ptr_desc);
+    }
+
+    // *a = a
+    auto& block2 = builder.add_block(root);
+    auto& a_input = builder.add_access(block2, "A");
+    auto& a_output = builder.add_access(block2, "a");
+    builder.add_dereference_memlet(block2, a_input, a_output, false, ptr_desc);
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    passes::ReferencePropagation pass;
+    EXPECT_FALSE(pass.run(builder, analysis_manager));
+}
+
+TEST(ReferencePropagationTest, PointerIteration) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Pointer opaque_desc;
+    types::Pointer ptr_desc(static_cast<const types::IType&>(opaque_desc));
+
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("tmp", opaque_desc);
+
+    auto& root = builder.subject().root();
+
+    // a = A + 1
+    {
+        auto& block1 = builder.add_block(root);
+        auto& a_input = builder.add_access(block1, "A");
+        auto& a_output = builder.add_access(block1, "tmp");
+
+        types::Pointer opaque_desc;
+        types::Pointer ptr_desc(static_cast<const types::IType&>(opaque_desc));
+        builder.add_reference_memlet(block1, a_input, a_output, {symbolic::one()}, ptr_desc);
+    }
+
+    // A = a
+    auto& block2 = builder.add_block(root);
+    auto& a_input = builder.add_access(block2, "tmp");
+    auto& a_output = builder.add_access(block2, "A");
+    builder.add_reference_memlet(block2, a_input, a_output, {symbolic::zero()}, ptr_desc);
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    passes::ReferencePropagation pass;
+    EXPECT_FALSE(pass.run(builder, analysis_manager));
+}
+
+TEST(ReferencePropagationTest, PointerIteration2) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Pointer opaque_desc;
+    types::Pointer ptr_desc(static_cast<const types::IType&>(opaque_desc));
+
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("tmp", opaque_desc);
+
+    auto& root = builder.subject().root();
+
+    // a = A + 1
+    {
+        auto& block1 = builder.add_block(root);
+        auto& a_input = builder.add_access(block1, "A");
+        auto& a_output = builder.add_access(block1, "tmp");
+
+        types::Pointer opaque_desc;
+        types::Pointer ptr_desc(static_cast<const types::IType&>(opaque_desc));
+        builder.add_reference_memlet(block1, a_input, a_output, {symbolic::zero()}, ptr_desc);
+    }
+
+    // A = a
+    auto& block2 = builder.add_block(root);
+    auto& a_input = builder.add_access(block2, "tmp");
+    auto& a_output = builder.add_access(block2, "A");
+    auto& ref_edge = builder.add_reference_memlet(block2, a_input, a_output, {symbolic::one()}, ptr_desc);
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    passes::ReferencePropagation pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    EXPECT_EQ(a_input.data(), "A");
+}
