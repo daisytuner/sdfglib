@@ -17,7 +17,9 @@ TEST(SequenceDispatcherTest, DispatchNode_Empty) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, root, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    codegen::SequenceDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, root, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -42,7 +44,9 @@ TEST(SequenceDispatcherTest, DispatchNode_Transition) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, root, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    codegen::SequenceDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, root, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -68,7 +72,9 @@ TEST(SequenceDispatcherTest, DispatchNode_MultipleBlocks) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::SequenceDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, root, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    codegen::SequenceDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, root, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

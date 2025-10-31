@@ -19,7 +19,9 @@ TEST(WhileDispatcherTest, DispatchNode) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::WhileDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    codegen::WhileDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -44,7 +46,9 @@ TEST(BreakDispatcherTest, DispatchNode) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::BreakDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, break_node, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    codegen::BreakDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, break_node, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -69,8 +73,9 @@ TEST(ContinueDispatcherTest, DispatchNode) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     codegen::ContinueDispatcher
-        dispatcher(language_extension, *final_sdfg, analysis_manager, continue_node, *instrumentation);
+        dispatcher(language_extension, *final_sdfg, analysis_manager, continue_node, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -94,8 +99,9 @@ TEST(ReturnDispatcherTest, DispatchNode) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     codegen::ReturnDispatcher
-        dispatcher(language_extension, *final_sdfg, analysis_manager, return_node, *instrumentation);
+        dispatcher(language_extension, *final_sdfg, analysis_manager, return_node, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

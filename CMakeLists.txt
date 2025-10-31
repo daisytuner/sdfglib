@@ -72,9 +72,8 @@ set(SOURCE_FILES
     src/builder/sdfg_builder.cpp
     src/builder/structured_sdfg_builder.cpp
     src/codegen/utils.cpp
-    src/codegen/code_generator.cpp
     src/codegen/code_snippet_factory.cpp
-    src/codegen/instrumentation/capture_var_plan.cpp
+    src/codegen/instrumentation/arg_capture_plan.cpp
     src/codegen/instrumentation/instrumentation_info.cpp
     src/codegen/instrumentation/instrumentation_plan.cpp
     src/codegen/language_extensions/c_language_extension.cpp

@@ -21,7 +21,9 @@ TEST(IfElseDispatcherTest, DispatchNode_Trivial) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::IfElseDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, if_else, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    codegen::IfElseDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, if_else, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -49,7 +51,9 @@ TEST(IfElseDispatcherTest, DispatchNode) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::IfElseDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, if_else, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    codegen::IfElseDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, if_else, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

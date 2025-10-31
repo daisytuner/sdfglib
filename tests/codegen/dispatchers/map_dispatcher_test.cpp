@@ -28,7 +28,9 @@ TEST(MapDispatcherTest, DispatchNode) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::MapDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    codegen::MapDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -60,8 +62,9 @@ TEST(CPU_PARALLELMapDispatcherTest, DispatchNode) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     codegen::CPUParallelMapDispatcher
-        dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation);
+        dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -99,8 +102,9 @@ TEST(CPU_PARALLELMapDispatcherTest, DispatchNodeScheduleDynamic) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     codegen::CPUParallelMapDispatcher
-        dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation);
+        dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -141,8 +145,9 @@ TEST(CPU_PARALLELMapDispatcherTest, DispatchNodeNumThreads) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     codegen::CPUParallelMapDispatcher
-        dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation);
+        dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;

@@ -27,17 +27,12 @@ public:
         StructuredSDFG& sdfg,
         analysis::AnalysisManager& analysis_manager,
         InstrumentationPlan& instrumentation_plan,
-        bool capture_args_results = false,
+        ArgCapturePlan& arg_capture_plan,
         const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr,
         const std::string& externals_prefix = ""
     )
         : CStyleBaseCodeGenerator(
-              sdfg,
-              analysis_manager,
-              instrumentation_plan,
-              capture_args_results,
-              output_and_header_paths,
-              externals_prefix
+              sdfg, analysis_manager, instrumentation_plan, arg_capture_plan, output_and_header_paths, externals_prefix
           ),
           language_extension_(sdfg.externals(), externals_prefix) {}
 

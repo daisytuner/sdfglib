@@ -16,7 +16,8 @@ public:
         StructuredSDFG& sdfg,
         analysis::AnalysisManager& analysis_manager,
         structured_control_flow::While& node,
-        InstrumentationPlan& instrumentation_plan
+        InstrumentationPlan& instrumentation_plan,
+        ArgCapturePlan& arg_capture_plan
     );
 
     void dispatch_node(
@@ -34,7 +35,8 @@ public:
         StructuredSDFG& sdfg,
         analysis::AnalysisManager& analysis_manager,
         structured_control_flow::Break& node,
-        InstrumentationPlan& instrumentation_plan
+        InstrumentationPlan& instrumentation_plan,
+        ArgCapturePlan& arg_capture_plan
     );
 
     void dispatch_node(
@@ -52,7 +54,8 @@ public:
         StructuredSDFG& sdfg,
         analysis::AnalysisManager& analysis_manager,
         structured_control_flow::Continue& node,
-        InstrumentationPlan& instrumentation_plan
+        InstrumentationPlan& instrumentation_plan,
+        ArgCapturePlan& arg_capture_plan
     );
 
     void dispatch_node(
@@ -70,7 +73,8 @@ public:
         StructuredSDFG& sdfg,
         analysis::AnalysisManager& analysis_manager,
         structured_control_flow::Return& node,
-        InstrumentationPlan& instrumentation_plan
+        InstrumentationPlan& instrumentation_plan,
+        ArgCapturePlan& arg_capture_plan
     );
 
     void dispatch_node(

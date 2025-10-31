@@ -12,7 +12,8 @@ TEST(CUDACodeGeneratorTest, FunctionDefintion) {
     analysis::AnalysisManager analysis_manager(*sdfg);
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CUDACodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan);
+    auto arg_capture_plan = codegen::ArgCapturePlan::none(*sdfg);
+    codegen::CUDACodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan, *arg_capture_plan);
     auto result = generator.function_definition();
     EXPECT_EQ(result, "extern \"C\" __global__ void sdfg_a()");
 }
@@ -27,7 +28,8 @@ TEST(CUDACodeGeneratorTest, DispatchStructures_Basic) {
     analysis::AnalysisManager analysis_manager(*sdfg);
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CUDACodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan);
+    auto arg_capture_plan = codegen::ArgCapturePlan::none(*sdfg);
+    codegen::CUDACodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan, *arg_capture_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -52,7 +54,8 @@ TEST(CUDACodeGeneratorTest, DispatchStructures_Nested) {
     analysis::AnalysisManager analysis_manager(*sdfg);
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CUDACodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan);
+    auto arg_capture_plan = codegen::ArgCapturePlan::none(*sdfg);
+    codegen::CUDACodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan, *arg_capture_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.classes().str();
@@ -81,7 +84,8 @@ TEST(CUDACodeGeneratorTest, DispatchGlobals) {
     analysis::AnalysisManager analysis_manager(*sdfg);
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    codegen::CUDACodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan);
+    auto arg_capture_plan = codegen::ArgCapturePlan::none(*sdfg);
+    codegen::CUDACodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan, *arg_capture_plan);
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.globals().str();

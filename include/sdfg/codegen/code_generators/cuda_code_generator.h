@@ -25,7 +25,7 @@ public:
         StructuredSDFG& sdfg,
         analysis::AnalysisManager& analysis_manager,
         InstrumentationPlan& instrumentation_plan,
-        bool capture_args_results = false,
+        ArgCapturePlan& arg_capture_plan,
         const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr
     );
 

@@ -22,7 +22,9 @@ TEST(BlockDispatcherTest, DispatchNode_Empty) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::BlockDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, block, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    codegen::BlockDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, block, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
@@ -61,7 +63,9 @@ TEST(BlockDispatcherTest, DispatchNode_TopologicalOrder) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::BlockDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, block, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    codegen::BlockDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, block, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
