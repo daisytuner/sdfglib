@@ -8,9 +8,6 @@ namespace sdfg {
 namespace passes {
 
 class ReferencePropagation : public Pass {
-private:
-    void merge_access_nodes(builder::StructuredSDFGBuilder& builder, data_flow::AccessNode& user_node);
-
 public:
     ReferencePropagation();
 

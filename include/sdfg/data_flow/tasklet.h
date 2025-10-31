@@ -72,12 +72,14 @@ enum TaskletCode {
     int_uge,
     int_ugt,
     int_ule,
-    int_ult
+    int_ult,
+    int_abs
 };
 
 constexpr size_t arity(TaskletCode c) {
     switch (c) {
         case TaskletCode::assign:
+        case TaskletCode::int_abs:
             return 1;
         // Integer Relational Ops
         case TaskletCode::int_add:
@@ -136,7 +138,7 @@ constexpr size_t arity(TaskletCode c) {
         case TaskletCode::fp_ult:
         case TaskletCode::fp_ule:
         case TaskletCode::fp_uno:
-        return 2;
+            return 2;
         case TaskletCode::fp_fma:
             return 3;
     };
@@ -183,6 +185,7 @@ constexpr bool is_integer(TaskletCode c) {
         case TaskletCode::int_umin:
         case TaskletCode::int_umax:
         case TaskletCode::int_ucmp:
+        case TaskletCode::int_abs:
         // Comparisions
         case TaskletCode::int_eq:
         case TaskletCode::int_ne:

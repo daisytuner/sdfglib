@@ -1535,5 +1535,44 @@ void StructuredSDFGBuilder::add_dataflow(const data_flow::DataFlowGraph& from, B
     }
 };
 
+void StructuredSDFGBuilder::merge_siblings(data_flow::AccessNode& source_node) {
+    auto& user_graph = source_node.get_parent();
+    auto* block = dynamic_cast<structured_control_flow::Block*>(user_graph.get_parent());
+    if (!block) {
+        throw InvalidSDFGException("Parent of user graph must be a block!");
+    }
+
+    // Merge access nodes if they access the same container on a tasklet
+    for (auto& oedge : user_graph.out_edges(source_node)) {
+        if (auto* tasklet = dynamic_cast<data_flow::Tasklet*>(&oedge.dst())) {
+            std::unordered_set<data_flow::Memlet*> iedges;
+            for (auto& iedge : user_graph.in_edges(*tasklet)) {
+                iedges.insert(&iedge);
+            }
+            for (auto* iedge : iedges) {
+                if (dynamic_cast<data_flow::ConstantNode*>(&iedge->src())) {
+                    continue;
+                }
+                auto* access_node = static_cast<data_flow::AccessNode*>(&iedge->src());
+                if (access_node == &source_node || access_node->data() != source_node.data()) {
+                    continue;
+                }
+                this->add_memlet(
+                    *block,
+                    source_node,
+                    iedge->src_conn(),
+                    *tasklet,
+                    iedge->dst_conn(),
+                    iedge->subset(),
+                    iedge->base_type(),
+                    iedge->debug_info()
+                );
+                this->remove_memlet(*block, *iedge);
+                source_node.set_debug_info(DebugInfo::merge(source_node.debug_info(), access_node->debug_info()));
+            }
+        }
+    }
+}
+
 } // namespace builder
 } // namespace sdfg

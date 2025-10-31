@@ -88,6 +88,11 @@ Expression min(const Expression lhs, const Expression rhs) { return SymEngine::m
 
 Expression max(const Expression lhs, const Expression rhs) { return SymEngine::max({lhs, rhs}); };
 
+Expression abs(const Expression expr) {
+    auto abs = SymEngine::function_symbol("iabs", {expr});
+    return abs;
+};
+
 Expression mod(const Expression lhs, const Expression rhs) {
     if (SymEngine::is_a<SymEngine::Integer>(*lhs) && SymEngine::is_a<SymEngine::Integer>(*rhs)) {
         auto a = SymEngine::rcp_static_cast<const SymEngine::Integer>(lhs)->as_int();
