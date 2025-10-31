@@ -15,9 +15,11 @@ MapDispatcher::MapDispatcher(
     StructuredSDFG& sdfg,
     analysis::AnalysisManager& analysis_manager,
     structured_control_flow::Map& node,
-    InstrumentationPlan& instrumentation_plan
+    InstrumentationPlan& instrumentation_plan,
+    ArgCapturePlan& arg_capture_plan
 )
-    : NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan), node_(node) {
+    : NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan, arg_capture_plan),
+      node_(node) {
 
       };
 
@@ -26,7 +28,8 @@ void MapDispatcher::dispatch_node(
 ) {
     auto dispatcher = MapDispatcherRegistry::instance().get_map_dispatcher(node_.schedule_type().value());
     if (dispatcher) {
-        auto dispatcher_ptr = dispatcher(language_extension_, sdfg_, analysis_manager_, node_, instrumentation_plan_);
+        auto dispatcher_ptr =
+            dispatcher(language_extension_, sdfg_, analysis_manager_, node_, instrumentation_plan_, arg_capture_plan_);
         dispatcher_ptr->dispatch_node(main_stream, globals_stream, library_snippet_factory);
     } else {
         throw std::runtime_error("Unsupported map schedule type: " + std::string(node_.schedule_type().value()));
@@ -38,9 +41,11 @@ SequentialMapDispatcher::SequentialMapDispatcher(
     StructuredSDFG& sdfg,
     analysis::AnalysisManager& analysis_manager,
     structured_control_flow::Map& node,
-    InstrumentationPlan& instrumentation_plan
+    InstrumentationPlan& instrumentation_plan,
+    ArgCapturePlan& arg_capture_plan
 )
-    : NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan), node_(node) {
+    : NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan, arg_capture_plan),
+      node_(node) {
 
       };
 
@@ -63,7 +68,8 @@ void SequentialMapDispatcher::dispatch_node(
     main_stream << "{" << std::endl;
 
     main_stream.setIndent(main_stream.indent() + 4);
-    SequenceDispatcher dispatcher(language_extension_, sdfg_, analysis_manager_, node_.root(), instrumentation_plan_);
+    SequenceDispatcher
+        dispatcher(language_extension_, sdfg_, analysis_manager_, node_.root(), instrumentation_plan_, arg_capture_plan_);
     dispatcher.dispatch(main_stream, globals_stream, library_snippet_factory);
     main_stream.setIndent(main_stream.indent() - 4);
 
@@ -75,9 +81,11 @@ CPUParallelMapDispatcher::CPUParallelMapDispatcher(
     StructuredSDFG& sdfg,
     analysis::AnalysisManager& analysis_manager,
     structured_control_flow::Map& node,
-    InstrumentationPlan& instrumentation_plan
+    InstrumentationPlan& instrumentation_plan,
+    ArgCapturePlan& arg_capture_plan
 )
-    : NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan), node_(node) {
+    : NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan, arg_capture_plan),
+      node_(node) {
 
       };
 
@@ -114,7 +122,7 @@ void CPUParallelMapDispatcher::dispatch_node(
         throw std::runtime_error("Unsupported OpenMP schedule type");
     }
 
-    if (structured_control_flow::ScheduleType_CPU_Parallel::num_threads(node_.schedule_type()) != SymEngine::null) {
+    if (!structured_control_flow::ScheduleType_CPU_Parallel::num_threads(node_.schedule_type()).is_null()) {
         main_stream << " num_threads(";
         main_stream
             << language_extension_
@@ -141,7 +149,8 @@ void CPUParallelMapDispatcher::dispatch_node(
     main_stream << "{" << std::endl;
 
     main_stream.setIndent(main_stream.indent() + 4);
-    SequenceDispatcher dispatcher(language_extension_, sdfg_, analysis_manager_, node_.root(), instrumentation_plan_);
+    SequenceDispatcher
+        dispatcher(language_extension_, sdfg_, analysis_manager_, node_.root(), instrumentation_plan_, arg_capture_plan_);
     dispatcher.dispatch(main_stream, globals_stream, library_snippet_factory);
     main_stream.setIndent(main_stream.indent() - 4);
 
@@ -151,7 +160,8 @@ void CPUParallelMapDispatcher::dispatch_node(
 InstrumentationInfo MapDispatcher::instrumentation_info() const {
     auto dispatcher = MapDispatcherRegistry::instance().get_map_dispatcher(node_.schedule_type().value());
     if (dispatcher) {
-        auto dispatcher_ptr = dispatcher(language_extension_, sdfg_, analysis_manager_, node_, instrumentation_plan_);
+        auto dispatcher_ptr =
+            dispatcher(language_extension_, sdfg_, analysis_manager_, node_, instrumentation_plan_, arg_capture_plan_);
         auto map_dispatcher_ptr = static_cast<MapDispatcher*>(dispatcher_ptr.get());
         return map_dispatcher_ptr->instrumentation_info();
     } else {

@@ -11,15 +11,15 @@ CUDACodeGenerator::CUDACodeGenerator(
     StructuredSDFG& sdfg,
     analysis::AnalysisManager& analysis_manager,
     InstrumentationPlan& instrumentation_plan,
-    bool capture_args_results,
+    ArgCapturePlan& arg_capture_plan,
     const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths
 )
-    : CodeGenerator(sdfg, analysis_manager, instrumentation_plan, capture_args_results, output_and_header_paths),
+    : CodeGenerator(sdfg, analysis_manager, instrumentation_plan, arg_capture_plan, output_and_header_paths),
       language_extension_(sdfg.externals()) {
     if (sdfg.type() != FunctionType_NV_GLOBAL) {
         throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
     }
-    if (capture_args_results) {
+    if (!arg_capture_plan_.is_empty()) {
         DEBUG_PRINTLN("CUDACodeGenerator does not support capturing args/results!");
     }
 };
@@ -196,8 +196,9 @@ void CUDACodeGenerator::dispatch_schedule() {
         }
     }
 
-    auto dispatcher =
-        create_dispatcher(language_extension_, sdfg_, analysis_manager_, sdfg_.root(), instrumentation_plan_);
+    auto dispatcher = create_dispatcher(
+        language_extension_, sdfg_, analysis_manager_, sdfg_.root(), instrumentation_plan_, arg_capture_plan_
+    );
     dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_snippet_factory_);
 };
 

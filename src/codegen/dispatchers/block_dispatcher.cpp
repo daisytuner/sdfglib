@@ -11,9 +11,11 @@ BlockDispatcher::BlockDispatcher(
     StructuredSDFG& sdfg,
     analysis::AnalysisManager& analysis_manager,
     structured_control_flow::Block& node,
-    InstrumentationPlan& instrumentation_plan
+    InstrumentationPlan& instrumentation_plan,
+    ArgCapturePlan& arg_capture_plan
 )
-    : sdfg::codegen::NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan),
+    : sdfg::codegen::
+          NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan, arg_capture_plan),
       node_(node) {
 
       };

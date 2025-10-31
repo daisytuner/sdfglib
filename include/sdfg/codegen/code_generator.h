@@ -5,7 +5,7 @@
 
 #include "code_snippet_factory.h"
 #include "sdfg/analysis/mem_access_range_analysis.h"
-#include "sdfg/codegen/instrumentation/capture_var_plan.h"
+#include "sdfg/codegen/instrumentation/arg_capture_plan.h"
 #include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 #include "sdfg/codegen/utils.h"
 #include "sdfg/structured_sdfg.h"
@@ -30,6 +30,7 @@ protected:
 
     /// @brief Instrumentation strategy
     InstrumentationPlan& instrumentation_plan_;
+    ArgCapturePlan& arg_capture_plan_;
 
     /// @brief Stream for includes
     PrettyPrinter includes_stream_;
@@ -46,43 +47,20 @@ protected:
     /// @brief Main stream
     PrettyPrinter main_stream_;
 
-    /// @brief Emit instrumentation code to capture runtime contents of inputs and outputs
-    bool capture_args_results_;
-
     /// @brief Prefix to use for external functions
     std::string externals_prefix_;
-
-    std::tuple<int, types::PrimitiveType> analyze_type_rec(
-        symbolic::Expression* curr_dim,
-        int max_dim,
-        int dim_idx,
-        const types::IType& type,
-        int arg_idx,
-        const analysis::MemAccessRange* range,
-        analysis::AnalysisManager& analysis_manager,
-        const StructuredSDFG& sdfg,
-        std::string var_name
-    );
-
-    bool add_capture_plan(
-        const std::string& name,
-        int argIdx,
-        bool isExternal,
-        std::vector<CaptureVarPlan>& plan,
-        const analysis::MemAccessRanges& ranges
-    );
 
 public:
     CodeGenerator(
         StructuredSDFG& sdfg,
         analysis::AnalysisManager& analysis_manager,
         InstrumentationPlan& instrumentation_plan,
-        bool capture_args_results = false,
+        ArgCapturePlan& arg_capture_plan,
         const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr,
         const std::string& externals_prefix = ""
     )
         : sdfg_(sdfg), analysis_manager_(analysis_manager), instrumentation_plan_(instrumentation_plan),
-          library_snippet_factory_(output_and_header_paths), capture_args_results_(capture_args_results),
+          arg_capture_plan_(arg_capture_plan), library_snippet_factory_(output_and_header_paths),
           externals_prefix_(externals_prefix) {};
 
 
@@ -121,8 +99,6 @@ public:
 
     /// @brief Get the main stream
     const PrettyPrinter& main() const { return this->main_stream_; };
-
-    std::unique_ptr<std::vector<CaptureVarPlan>> create_capture_plans();
 };
 
 } // namespace codegen

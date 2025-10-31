@@ -23,8 +23,9 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Block) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    auto dispatcher =
-        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, block, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    auto dispatcher = codegen::
+        create_dispatcher(language_extension, *final_sdfg, analysis_manager, block, *instrumentation, *arg_capture);
     EXPECT_TRUE(dynamic_cast<codegen::BlockDispatcher*>(dispatcher.get()));
 }
 
@@ -40,8 +41,9 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Sequence) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    auto dispatcher =
-        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, sequence, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    auto dispatcher = codegen::
+        create_dispatcher(language_extension, *final_sdfg, analysis_manager, sequence, *instrumentation, *arg_capture);
     EXPECT_TRUE(dynamic_cast<codegen::SequenceDispatcher*>(dispatcher.get()));
 }
 
@@ -57,8 +59,9 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_IfElse) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    auto dispatcher =
-        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, if_else, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    auto dispatcher = codegen::
+        create_dispatcher(language_extension, *final_sdfg, analysis_manager, if_else, *instrumentation, *arg_capture);
     EXPECT_TRUE(dynamic_cast<codegen::IfElseDispatcher*>(dispatcher.get()));
 }
 
@@ -74,8 +77,10 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_While) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    auto dispatcher =
-        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, while_loop, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    auto dispatcher = codegen::create_dispatcher(
+        language_extension, *final_sdfg, analysis_manager, while_loop, *instrumentation, *arg_capture
+    );
     EXPECT_TRUE(dynamic_cast<codegen::WhileDispatcher*>(dispatcher.get()));
 }
 
@@ -99,8 +104,9 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_For) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     auto dispatcher =
-        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation);
+        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation, *arg_capture);
     EXPECT_TRUE(dynamic_cast<codegen::ForDispatcher*>(dispatcher.get()));
 }
 
@@ -116,8 +122,10 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Return) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    auto dispatcher =
-        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, return_node, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    auto dispatcher = codegen::create_dispatcher(
+        language_extension, *final_sdfg, analysis_manager, return_node, *instrumentation, *arg_capture
+    );
     EXPECT_TRUE(dynamic_cast<codegen::ReturnDispatcher*>(dispatcher.get()));
 }
 
@@ -134,8 +142,10 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Break) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    auto dispatcher =
-        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, break_node, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    auto dispatcher = codegen::create_dispatcher(
+        language_extension, *final_sdfg, analysis_manager, break_node, *instrumentation, *arg_capture
+    );
     EXPECT_TRUE(dynamic_cast<codegen::BreakDispatcher*>(dispatcher.get()));
 }
 
@@ -152,7 +162,9 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Continue) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    auto dispatcher =
-        codegen::create_dispatcher(language_extension, *final_sdfg, analysis_manager, continue_node, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    auto dispatcher = codegen::create_dispatcher(
+        language_extension, *final_sdfg, analysis_manager, continue_node, *instrumentation, *arg_capture
+    );
     EXPECT_TRUE(dynamic_cast<codegen::ContinueDispatcher*>(dispatcher.get()));
 }

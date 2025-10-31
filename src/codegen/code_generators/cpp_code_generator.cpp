@@ -198,8 +198,9 @@ void CPPCodeGenerator::dispatch_schedule() {
         }
     }
 
-    auto dispatcher =
-        create_dispatcher(language_extension_, sdfg_, analysis_manager_, sdfg_.root(), instrumentation_plan_);
+    auto dispatcher = create_dispatcher(
+        language_extension_, sdfg_, analysis_manager_, sdfg_.root(), instrumentation_plan_, arg_capture_plan_
+    );
     dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_snippet_factory_);
 
     if (sdfg_.root().size() == 0 ||
