@@ -295,6 +295,9 @@ std::string CUDALanguageExtension::tasklet(const data_flow::Tasklet& tasklet) {
         case data_flow::TaskletCode::int_ucmp:
             return tasklet.inputs().at(0) + " < " + tasklet.inputs().at(1) + " ? -1 : (" + tasklet.inputs().at(0) +
                    " > " + tasklet.inputs().at(1) + " ? 1 : 0)";
+        case data_flow::TaskletCode::int_abs:
+            return "(" + tasklet.inputs().at(0) + " < 0 ? -" + tasklet.inputs().at(0) + " : " + tasklet.inputs().at(0) +
+                   ")";
         case data_flow::TaskletCode::int_eq:
             return tasklet.inputs().at(0) + " == " + tasklet.inputs().at(1);
         case data_flow::TaskletCode::int_ne:

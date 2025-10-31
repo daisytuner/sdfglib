@@ -90,6 +90,8 @@ Expression min(const Expression lhs, const Expression rhs);
 
 Expression max(const Expression lhs, const Expression rhs);
 
+Expression abs(const Expression expr);
+
 Expression mod(const Expression lhs, const Expression rhs);
 
 Expression pow(const Expression base, const Expression exp);

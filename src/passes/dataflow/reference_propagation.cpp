@@ -15,45 +15,6 @@
 namespace sdfg {
 namespace passes {
 
-void ReferencePropagation::merge_access_nodes(builder::StructuredSDFGBuilder& builder, data_flow::AccessNode& user_node) {
-    auto& user_graph = user_node.get_parent();
-    auto* block = dynamic_cast<structured_control_flow::Block*>(user_graph.get_parent());
-    if (!block) {
-        throw InvalidSDFGException("Parent of user graph must be a block!");
-    }
-
-    // Merge access nodes if they access the same container on a tasklet
-    for (auto& oedge : user_graph.out_edges(user_node)) {
-        if (auto* tasklet = dynamic_cast<data_flow::Tasklet*>(&oedge.dst())) {
-            std::unordered_set<data_flow::Memlet*> iedges;
-            for (auto& iedge : user_graph.in_edges(*tasklet)) {
-                iedges.insert(&iedge);
-            }
-            for (auto* iedge : iedges) {
-                if (dynamic_cast<data_flow::ConstantNode*>(&iedge->src())) {
-                    continue;
-                }
-                auto* access_node = static_cast<data_flow::AccessNode*>(&iedge->src());
-                if (access_node == &user_node || access_node->data() != user_node.data()) {
-                    continue;
-                }
-                builder.add_memlet(
-                    *block,
-                    user_node,
-                    iedge->src_conn(),
-                    *tasklet,
-                    iedge->dst_conn(),
-                    iedge->subset(),
-                    iedge->base_type(),
-                    iedge->debug_info()
-                );
-                builder.remove_memlet(*block, *iedge);
-                user_node.set_debug_info(DebugInfo::merge(user_node.debug_info(), access_node->debug_info()));
-            }
-        }
-    }
-}
-
 ReferencePropagation::ReferencePropagation()
     : Pass() {
 
@@ -280,7 +241,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
     // Post-processing: Merge access nodes and remove dangling nodes
     // Avoid removing elements while iterating above
     for (auto* node : replaced_nodes) {
-        this->merge_access_nodes(builder, *node);
+        builder.merge_siblings(*node);
     }
     for (auto* node : replaced_nodes) {
         auto& graph = node->get_parent();

@@ -59,6 +59,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
     auto& users = analysis_manager.get<analysis::Users>();
     auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
     auto& data_dependency_analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    std::unordered_set<data_flow::AccessNode*> replaced_nodes;
     for (auto& name : sdfg.containers()) {
         // Criterion: Only transients
         if (!sdfg.is_transient(name)) {
@@ -242,6 +243,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                     auto new_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(rhs_modified);
                     access_node->data() = new_symbol->get_name();
                     applied = true;
+                    replaced_nodes.insert(access_node);
                 } else if (SymEngine::is_a<SymEngine::Integer>(*rhs_modified)) {
                     auto new_int = SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs_modified);
                     auto& graph = access_node->get_parent();
@@ -321,6 +323,21 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                     );
                     applied = true;
                 }
+            }
+        }
+    }
+
+    // Post-processing: Merge access nodes and remove dangling nodes
+    // Avoid removing elements while iterating above
+    for (auto* node : replaced_nodes) {
+        builder.merge_siblings(*node);
+    }
+    for (auto* node : replaced_nodes) {
+        auto& graph = node->get_parent();
+        auto* block = static_cast<structured_control_flow::Block*>(graph.get_parent());
+        for (auto& dnode : graph.data_nodes()) {
+            if (graph.in_degree(*dnode) == 0 && graph.out_degree(*dnode) == 0) {
+                builder.remove_node(*block, *dnode);
             }
         }
     }

@@ -483,6 +483,8 @@ public:
     void clear_node(structured_control_flow::Block& block, const data_flow::CodeNode& node);
 
     void clear_node(structured_control_flow::Block& block, const data_flow::AccessNode& node);
+
+    void merge_siblings(data_flow::AccessNode& in_node);
 };
 
 } // namespace builder

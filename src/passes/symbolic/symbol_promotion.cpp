@@ -60,7 +60,8 @@ bool SymbolPromotion::can_be_applied(
         }
 
         // Connector type must be a signed integer
-        if (!types::is_integer(iedge.base_type().primitive_type()) || types::is_unsigned(iedge.base_type().primitive_type())) {
+        if (!types::is_integer(iedge.base_type().primitive_type()) ||
+            types::is_unsigned(iedge.base_type().primitive_type())) {
             return false;
         }
 
@@ -86,10 +87,11 @@ bool SymbolPromotion::can_be_applied(
     if (oedge.subset().size() > 0) {
         return false;
     }
-    if (!types::is_integer(oedge.base_type().primitive_type()) || types::is_unsigned(oedge.base_type().primitive_type())) {
+    if (!types::is_integer(oedge.base_type().primitive_type()) ||
+        types::is_unsigned(oedge.base_type().primitive_type())) {
         return false;
     }
-    
+
     // No cast on memlet
     auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
     const types::IType* dst_type = nullptr;
@@ -107,7 +109,7 @@ bool SymbolPromotion::can_be_applied(
         return false;
     }
 
-    // Furthermore, 
+    // Furthermore,
 
     // Criterion: Known tasklet class. To be extended on the go.
     switch (tasklet->code()) {
@@ -119,6 +121,7 @@ bool SymbolPromotion::can_be_applied(
         case data_flow::TaskletCode::int_srem:
         case data_flow::TaskletCode::int_smin:
         case data_flow::TaskletCode::int_smax:
+        case data_flow::TaskletCode::int_abs:
             return true;
         case data_flow::TaskletCode::int_ashr:
         case data_flow::TaskletCode::int_shl: {
@@ -201,6 +204,11 @@ void SymbolPromotion::apply(
             auto op_1 = as_symbol(dataflow, *tasklet, tasklet->input(0));
             auto op_2 = as_symbol(dataflow, *tasklet, tasklet->input(1));
             rhs = symbolic::max(op_1, op_2);
+            break;
+        }
+        case data_flow::TaskletCode::int_abs: {
+            auto op_1 = as_symbol(dataflow, *tasklet, tasklet->input(0));
+            rhs = symbolic::abs(op_1);
             break;
         }
         case data_flow::TaskletCode::int_ashr: {
