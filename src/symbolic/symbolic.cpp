@@ -73,15 +73,23 @@ Expression sub(const Expression lhs, const Expression rhs) { return SymEngine::s
 Expression mul(const Expression lhs, const Expression rhs) { return SymEngine::mul(lhs, rhs); };
 
 Expression div(const Expression lhs, const Expression rhs) {
+    if (eq(rhs, integer(0))) {
+        return SymEngine::function_symbol("idiv", {lhs, rhs});
+    }
+
     if (eq(rhs, integer(1))) {
         return lhs;
-    } else if (SymEngine::is_a<SymEngine::Integer>(*lhs) && SymEngine::is_a<SymEngine::Integer>(*rhs)) {
+    }
+    if (eq(lhs, integer(0))) {
+        return integer(0);
+    }
+    if (SymEngine::is_a<SymEngine::Integer>(*lhs) && SymEngine::is_a<SymEngine::Integer>(*rhs)) {
         auto a = SymEngine::rcp_static_cast<const SymEngine::Integer>(lhs)->as_int();
         auto b = SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs)->as_int();
         return integer(a / b);
     }
-    auto idiv = SymEngine::function_symbol("idiv", {lhs, rhs});
-    return idiv;
+
+    return SymEngine::function_symbol("idiv", {lhs, rhs});
 };
 
 Expression min(const Expression lhs, const Expression rhs) { return SymEngine::min({lhs, rhs}); };
@@ -159,6 +167,10 @@ Expression simplify(const Expression expr) {
         if (func_id == "idiv") {
             auto lhs = func_sym->get_args()[0];
             auto rhs = func_sym->get_args()[1];
+            if (symbolic::eq(rhs, symbolic::integer(0))) {
+                return expr;
+            }
+
             if (SymEngine::is_a<SymEngine::Mul>(*lhs) && SymEngine::is_a<SymEngine::Integer>(*rhs)) {
                 auto lhs_mul = SymEngine::rcp_static_cast<const SymEngine::Mul>(lhs);
                 auto rhs_int = SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs);
