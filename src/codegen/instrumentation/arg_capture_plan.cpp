@@ -10,6 +10,7 @@
 #include "sdfg/analysis/type_analysis.h"
 #include "sdfg/analysis/users.h"
 #include "sdfg/codegen/language_extension.h"
+#include "sdfg/helpers/helpers.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
@@ -166,7 +167,7 @@ std::tuple<int, types::PrimitiveType> ArgCapturePlan::analyze_type_rec(
 ) {
     if (dim_idx > max_dim) {
         DEBUG_PRINTLN(
-            "In '" << sdfg_.name() << "', arg" << arg_idx << ": data nesting deeper than " << max_dim << ", ignoring"
+            "arg" << arg_idx << ": data nesting deeper than " << max_dim << ", ignoring"
         );
         return std::make_tuple(-1, types::Void);
     }
@@ -183,13 +184,13 @@ std::tuple<int, types::PrimitiveType> ArgCapturePlan::analyze_type_rec(
     } else if (auto* ptrType = dynamic_cast<const types::Pointer*>(&type)) {
         if (!range || range->is_undefined()) {
             DEBUG_PRINTLN(
-                "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx << ": missing range, cannot capture!"
+                "arg" << arg_idx << " dim" << dim_idx << ": missing range, cannot capture!"
             );
             return std::make_tuple(-2, types::Void);
         }
         if (range->dims().size() <= dim_idx) {
             DEBUG_PRINTLN(
-                "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
+                "arg" << arg_idx << " dim" << dim_idx
                        << ": missing dimension in range, cannot capture!"
             );
             return std::make_tuple(-2, types::Void);
@@ -197,7 +198,7 @@ std::tuple<int, types::PrimitiveType> ArgCapturePlan::analyze_type_rec(
         const auto& dim = range->dims().at(dim_idx);
         if (!symbolic::eq(dim.first, symbolic::zero())) {
             DEBUG_PRINTLN(
-                "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx << ": has upper bound "
+                "arg" << arg_idx << " dim" << dim_idx << ": has upper bound "
                        << dim.second->__str__() << ", but does not start at 0, cannot capture"
             );
             return std::make_tuple(-2, types::Void);
@@ -210,7 +211,7 @@ std::tuple<int, types::PrimitiveType> ArgCapturePlan::analyze_type_rec(
         } else {
             if (dim_idx > 0) {
                 DEBUG_PRINTLN(
-                    "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
+                    "arg" << arg_idx << " dim" << dim_idx
                            << ": missing pointee type for dim > 0, cannot capture!"
                 );
                 return std::make_tuple(-2, types::Void);
@@ -223,7 +224,7 @@ std::tuple<int, types::PrimitiveType> ArgCapturePlan::analyze_type_rec(
                             inner = &(ptrType_new->pointee_type());
                         } else {
                             DEBUG_PRINTLN(
-                                "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
+                                "arg" << arg_idx << " dim" << dim_idx
                                        << ": missing pointee type, cannot capture!"
                             );
                             return std::make_tuple(-2, types::Void);
@@ -231,7 +232,7 @@ std::tuple<int, types::PrimitiveType> ArgCapturePlan::analyze_type_rec(
                     }
                 } else {
                     DEBUG_PRINTLN(
-                        "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
+                        "arg" << arg_idx << " dim" << dim_idx
                                << ": could not infer type from container, cannot capture!"
                     );
                     return std::make_tuple(-2, types::Void);
@@ -239,7 +240,7 @@ std::tuple<int, types::PrimitiveType> ArgCapturePlan::analyze_type_rec(
             }
             if (inner == nullptr) {
                 DEBUG_PRINTLN(
-                    "In '" << sdfg_.name() << "', arg" << arg_idx << " dim" << dim_idx
+                    "arg" << arg_idx << " dim" << dim_idx
                            << ": could not infer type from container, cannot capture!"
                 );
                 return std::make_tuple(-2, types::Void);
@@ -250,7 +251,7 @@ std::tuple<int, types::PrimitiveType> ArgCapturePlan::analyze_type_rec(
     }
 
     DEBUG_PRINTLN(
-        "In '" << sdfg_.name() << "', arg" << arg_idx << ": unsupported type " << type.print() << ", cannot capture!"
+        "arg" << arg_idx << ": unsupported type " << type.print() << ", cannot capture!"
     );
     return std::make_tuple(-1, types::Void);
 }
@@ -356,7 +357,7 @@ std::unordered_map<std::string, CaptureVarPlan> ArgCapturePlan::create_capture_p
         working &= add_capture_plan(sdfg, analysis_manager, node, arg_name, arg_idx, false, plan, ranges_analysis);
     }
     if (!working) {
-        DEBUG_PRINTLN("In '" << name << "': could not create capture plan, returning empty plan");
+        DEBUG_PRINTLN("could not create capture plan, returning empty plan");
         return std::unordered_map<std::string, CaptureVarPlan>{};
     }
 
