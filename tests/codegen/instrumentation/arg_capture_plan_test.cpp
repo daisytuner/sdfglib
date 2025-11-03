@@ -100,13 +100,13 @@ TEST(ArgCapturePlanTest, CreateCapturePlan_Arguments_Scalar) {
 
     auto& arg1_plan = arg_capture_plan.at("arg1");
     EXPECT_TRUE(arg1_plan.capture_input);
-    EXPECT_FALSE(arg1_plan.capture_output);
+    EXPECT_TRUE(arg1_plan.capture_output);
     EXPECT_EQ(arg1_plan.type, codegen::CaptureVarType::CapRaw);
     EXPECT_EQ(arg1_plan.inner_type, types::PrimitiveType::Int32);
 
     auto& arg2_plan = arg_capture_plan.at("arg2");
     EXPECT_TRUE(arg2_plan.capture_input);
-    EXPECT_FALSE(arg2_plan.capture_output);
+    EXPECT_TRUE(arg2_plan.capture_output);
     EXPECT_EQ(arg2_plan.type, codegen::CaptureVarType::CapRaw);
     EXPECT_EQ(arg2_plan.inner_type, types::PrimitiveType::Int32);
 }

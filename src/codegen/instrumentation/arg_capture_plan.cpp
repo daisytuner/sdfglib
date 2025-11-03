@@ -274,7 +274,7 @@ bool ArgCapturePlan::add_capture_plan(
         type = &sdfg.type(var_name);
     }
 
-    const auto* range = ranges.get(var_name, node, {});
+    const auto* range = ranges.get(var_name, node, {var_name});
 
     symbolic::Expression dims[3];
 
@@ -293,7 +293,7 @@ bool ArgCapturePlan::add_capture_plan(
         plan.insert(
             {var_name,
              CaptureVarPlan(
-                 is_read || is_written, is_written && is_external, CaptureVarType::CapRaw, arg_idx, is_external, inner_type
+                 is_read || is_written, is_written && (is_read || is_external), CaptureVarType::CapRaw, arg_idx, is_external, inner_type
              )}
         );
     } else if (dim_count == 1) {
