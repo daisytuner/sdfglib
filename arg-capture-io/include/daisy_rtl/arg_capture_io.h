@@ -47,8 +47,11 @@ struct ArgCapture {
 
     void serialize_into(nlohmann::json& j) const;
 
-    static void
-    parse_from(const nlohmann::json& entry, std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash>& map);
+    static void parse_from(
+        const nlohmann::json& entry,
+        std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash>& map,
+        std::filesystem::path base_path = std::filesystem::path()
+    );
 };
 
 
@@ -118,7 +121,7 @@ std::shared_ptr<T> ArgCaptureIO::from_index(const std::filesystem::path& file) {
     captureIO->invokes_ = invokes;
 
     for (const auto& entry : j["captures"]) {
-        ArgCapture::parse_from(entry, captureIO->current_captures_);
+        ArgCapture::parse_from(entry, captureIO->current_captures_, file.parent_path());
     }
 
     return captureIO;

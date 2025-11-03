@@ -42,14 +42,17 @@ void ArgCapture::serialize_into(nlohmann::json& j) const {
         std::string base64_data = base64_encode(data.get()->data(), data.get()->size());
         entry["data"] = base64_data;
     } else if (ext_file) {
-        entry["ext_file"] = ext_file->string();
+        entry["ext_file"] = ext_file->filename();
     }
 
     j.push_back(entry);
 }
 
-void ArgCapture::
-    parse_from(const nlohmann::json& entry, std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash>& map) {
+void ArgCapture::parse_from(
+    const nlohmann::json& entry,
+    std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash>& map,
+    std::filesystem::path base_path
+) {
     ArgCapture capture(
         entry["arg_idx"].get<int>(),
         entry["after"].get<bool>(),
@@ -62,7 +65,8 @@ void ArgCapture::
 
         capture.data = std::make_shared<std::vector<uint8_t>>(std::move(data));
     } else if (entry.contains("ext_file")) {
-        capture.ext_file = std::make_shared<std::filesystem::path>(entry["ext_file"].get<std::string>());
+        auto filename = entry["ext_file"].get<std::string>();
+        capture.ext_file = std::make_shared<std::filesystem::path>(base_path / filename);
     }
 
     map.emplace(std::make_pair(capture.arg_idx, capture.after), std::move(capture));
