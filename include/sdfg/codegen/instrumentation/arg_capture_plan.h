@@ -51,18 +51,6 @@ private:
     std::unordered_map<const structured_control_flow::ControlFlowNode*, std::unordered_map<std::string, CaptureVarPlan>>
         nodes_;
 
-    static std::unordered_map<std::string, CaptureVarPlan> create_capture_plan(
-        StructuredSDFG& sdfg,
-        analysis::AnalysisManager& analysis_manager,
-        structured_control_flow::ControlFlowNode& node
-    );
-
-    static std::unordered_map<std::string, std::pair<bool, bool>> find_arguments(
-        StructuredSDFG& sdfg,
-        analysis::AnalysisManager& analysis_manager,
-        structured_control_flow::ControlFlowNode& node
-    );
-
     static bool add_capture_plan(
         StructuredSDFG& sdfg,
         analysis::AnalysisManager& analysis_manager,
@@ -123,6 +111,18 @@ public:
     static std::unique_ptr<ArgCapturePlan> root(StructuredSDFG& sdfg);
 
     static std::unique_ptr<ArgCapturePlan> outermost_loops_plan(StructuredSDFG& sdfg);
+
+    static std::unordered_map<std::string, CaptureVarPlan> create_capture_plan(
+        StructuredSDFG& sdfg,
+        analysis::AnalysisManager& analysis_manager,
+        structured_control_flow::ControlFlowNode& node
+    );
+
+    static std::unordered_map<std::string, std::pair<bool, bool>> find_arguments(
+        StructuredSDFG& sdfg,
+        analysis::AnalysisManager& analysis_manager,
+        structured_control_flow::ControlFlowNode& node
+    );
 };
 
 } // namespace codegen

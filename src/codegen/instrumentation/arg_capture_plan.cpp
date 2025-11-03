@@ -334,7 +334,7 @@ std::unordered_map<std::string, CaptureVarPlan> ArgCapturePlan::create_capture_p
     std::cout << "Found " << args.size() << " arguments for region " << node.element_id() << std::endl;
 
     // Determine ranges per arguments
-    auto& ranges = analysis_manager.get<analysis::MemAccessRanges>();
+    auto& ranges_analysis = analysis_manager.get<analysis::MemAccessRanges>();
     bool working = true;
     int arg_idx = -1;
     std::unordered_map<std::string, CaptureVarPlan> plan;
@@ -344,19 +344,16 @@ std::unordered_map<std::string, CaptureVarPlan> ArgCapturePlan::create_capture_p
         }
 
         ++arg_idx;
-        working &= add_capture_plan(sdfg, analysis_manager, node, arg_name, arg_idx, false, plan, ranges);
+        working &= add_capture_plan(sdfg, analysis_manager, node, arg_name, arg_idx, false, plan, ranges_analysis);
     }
 
     for (auto& arg_name : args) {
-        if (!sdfg.is_external(arg_name)) {
-            continue;
-        }
-        if (sdfg.type(arg_name).type_id() == types::TypeID::Function) {
+        if (!sdfg.is_external(arg_name) || sdfg.type(arg_name).type_id() == types::TypeID::Function) {
             continue;
         }
 
         ++arg_idx;
-        working &= add_capture_plan(sdfg, analysis_manager, node, arg_name, arg_idx, true, plan, ranges);
+        working &= add_capture_plan(sdfg, analysis_manager, node, arg_name, arg_idx, false, plan, ranges_analysis);
     }
     if (!working) {
         DEBUG_PRINTLN("In '" << name << "': could not create capture plan, returning empty plan");
