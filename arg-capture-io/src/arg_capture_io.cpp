@@ -96,7 +96,7 @@ bool ArgCaptureIO::create_and_capture_inline(
 
     auto it = current_captures_[element_id].emplace(key, ArgCapture(arg_idx, after, primitive_type, dims));
 
-    return capture_inline(it.first->second, data);
+    return capture_inline(it.first->second, data, element_id);
 }
 
 bool ArgCaptureIO::create_and_capture_to_file(

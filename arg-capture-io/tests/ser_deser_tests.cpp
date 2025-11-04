@@ -24,10 +24,11 @@ TEST(SerDeserTests, SerializeAndDeserializeCaptures) {
         4, false, static_cast<int>(PrimitiveType::Int64), {1, 2, 4}, binFile, data, "123"
     ));
 
-    auto indexFile = get_outputs_base_path() / "SerDeser" / "index.json";
-    capture.write_index(indexFile);
+    auto index_path = get_outputs_base_path() / "SerDeser";
+    capture.write_index(index_path);
+    auto index_file = index_path / "some_function_inv1_123.index.json";
 
-    auto deser = ArgCaptureIO::from_index(indexFile);
+    auto deser = ArgCaptureIO::from_index(index_file);
 
     EXPECT_EQ(deser->get_name(), capture.get_name());
     EXPECT_EQ(deser->get_current_invocation("123"), capture.get_current_invocation("123"));
