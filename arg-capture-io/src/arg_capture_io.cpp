@@ -11,7 +11,7 @@
 #include "daisy_rtl/base64.h"
 #include "daisy_rtl/primitive_types.h"
 
-#ifdef DEBUG
+#ifndef NDEBUG
   #define DEBUG_PRINTLN(msg) \
       do { std::cout << "[DEBUG] " << msg << std::endl; } while (0)
   #define DEBUG_PRINT(msg) \
@@ -118,7 +118,7 @@ bool ArgCaptureIO::create_and_capture_to_file(
 bool ArgCaptureIO::capture_inline(ArgCapture& capture, const void* data, std::string element_id) {
     auto size = std::accumulate(capture.dims.begin(), capture.dims.end(), 1, std::multiplies<size_t>());
 
-    DEBUG_PRINT("Capturing " << (capture.dims.size() - 1) << "D arg" << capture.arg_idx << " as " << capType
+    DEBUG_PRINT("Capturing " << (capture.dims.size() - 1) << "D arg" << capture.arg_idx
                 << ": type " << primitive_type_names[capture.primitive_type] << "(" << size << " bytes): 0x"
                 << std::hex);
     int perGroup = 0;
