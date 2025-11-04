@@ -8,14 +8,14 @@
 namespace sdfg {
 namespace data_flow {
 
-inline LibraryNodeCode LibraryNodeType_Call("Call");
+inline LibraryNodeCode LibraryNodeType_Invoke("Invoke");
 
-class CallNode : public LibraryNode {
+class InvokeNode : public LibraryNode {
 protected:
     std::string callee_name_;
 
 public:
-    CallNode(
+    InvokeNode(
         size_t element_id,
         const DebugInfo& debug_info,
         const graph::Vertex vertex,
@@ -41,7 +41,7 @@ public:
         const override;
 };
 
-class CallNodeSerializer : public serializer::LibraryNodeSerializer {
+class InvokeNodeSerializer : public serializer::LibraryNodeSerializer {
 public:
     nlohmann::json serialize(const LibraryNode& library_node) override;
 
@@ -50,13 +50,13 @@ public:
     ) override;
 };
 
-class CallNodeDispatcher : public codegen::LibraryNodeDispatcher {
+class InvokeNodeDispatcher : public codegen::LibraryNodeDispatcher {
 public:
-    CallNodeDispatcher(
+    InvokeNodeDispatcher(
         codegen::LanguageExtension& language_extension,
         const Function& function,
         const DataFlowGraph& data_flow_graph,
-        const CallNode& node
+        const InvokeNode& node
     );
 
     void dispatch_code(

@@ -1,9 +1,9 @@
-#include "sdfg/data_flow/library_nodes/call_node.h"
+#include "sdfg/data_flow/library_nodes/invoke_node.h"
 
 namespace sdfg {
 namespace data_flow {
 
-CallNode::CallNode(
+InvokeNode::InvokeNode(
     size_t element_id,
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
@@ -17,39 +17,41 @@ CallNode::CallNode(
           debug_info,
           vertex,
           parent,
-          LibraryNodeType_Call,
+          LibraryNodeType_Invoke,
           outputs,
           inputs,
           true,
           data_flow::ImplementationType_NONE
       ),
-      callee_name_(callee_name) {}
+      callee_name_(callee_name) {
+    this->outputs_.push_back("_unwind"); // Add unwind output
+}
 
-const std::string& CallNode::callee_name() const { return this->callee_name_; }
+const std::string& InvokeNode::callee_name() const { return this->callee_name_; }
 
-bool CallNode::is_void(const Function& sdfg) const { return outputs_.empty() || outputs_.at(0) != "_ret"; }
+bool InvokeNode::is_void(const Function& sdfg) const { return outputs_.size() == 1 || outputs_.at(0) != "_ret"; }
 
-bool CallNode::is_indirect_call(const Function& sdfg) const {
+bool InvokeNode::is_indirect_call(const Function& sdfg) const {
     auto& type = sdfg.type(this->callee_name_);
     return dynamic_cast<const types::Pointer*>(&type) != nullptr;
 }
 
-void CallNode::validate(const Function& function) const {
+void InvokeNode::validate(const Function& function) const {
     if (!function.exists(this->callee_name_)) {
-        throw InvalidSDFGException("CallNode: Function '" + this->callee_name_ + "' does not exist.");
+        throw InvalidSDFGException("InvokeNode: Function '" + this->callee_name_ + "' does not exist.");
     }
     auto& type = function.type(this->callee_name_);
     if (!dynamic_cast<const types::Function*>(&type) && !dynamic_cast<const types::Pointer*>(&type)) {
-        throw InvalidSDFGException("CallNode: '" + this->callee_name_ + "' is not a function or pointer.");
+        throw InvalidSDFGException("InvokeNode: '" + this->callee_name_ + "' is not a function or pointer.");
     }
 
     if (auto func_type = dynamic_cast<const types::Function*>(&type)) {
         if (!function.is_external(this->callee_name_)) {
-            throw InvalidSDFGException("CallNode: Function '" + this->callee_name_ + "' must be declared.");
+            throw InvalidSDFGException("InvokeNode: Function '" + this->callee_name_ + "' must be declared.");
         }
         if (!func_type->is_var_arg() && inputs_.size() != func_type->num_params()) {
             throw InvalidSDFGException(
-                "CallNode: Number of inputs does not match number of function parameters. Expected " +
+                "InvokeNode: Number of inputs does not match number of function parameters. Expected " +
                 std::to_string(func_type->num_params()) + ", got " + std::to_string(inputs_.size())
             );
         }
@@ -61,17 +63,17 @@ void CallNode::validate(const Function& function) const {
     }
 }
 
-symbolic::SymbolSet CallNode::symbols() const { return {symbolic::symbol(this->callee_name_)}; }
+symbolic::SymbolSet InvokeNode::symbols() const { return {symbolic::symbol(this->callee_name_)}; }
 
-std::unique_ptr<data_flow::DataFlowNode> CallNode::
+std::unique_ptr<data_flow::DataFlowNode> InvokeNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
-    return std::make_unique<CallNode>(element_id, debug_info_, vertex, parent, callee_name_, outputs_, inputs_);
+    return std::make_unique<InvokeNode>(element_id, debug_info_, vertex, parent, callee_name_, outputs_, inputs_);
 }
 
-void CallNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {}
+void InvokeNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {}
 
-nlohmann::json CallNodeSerializer::serialize(const data_flow::LibraryNode& library_node) {
-    const CallNode& node = static_cast<const CallNode&>(library_node);
+nlohmann::json InvokeNodeSerializer::serialize(const data_flow::LibraryNode& library_node) {
+    const InvokeNode& node = static_cast<const InvokeNode&>(library_node);
 
     nlohmann::json j;
     j["code"] = node.code().value();
@@ -82,7 +84,7 @@ nlohmann::json CallNodeSerializer::serialize(const data_flow::LibraryNode& libra
     return j;
 }
 
-data_flow::LibraryNode& CallNodeSerializer::deserialize(
+data_flow::LibraryNode& InvokeNodeSerializer::deserialize(
     const nlohmann::json& j, builder::StructuredSDFGBuilder& builder, structured_control_flow::Block& parent
 ) {
     assert(j.contains("code"));
@@ -92,7 +94,7 @@ data_flow::LibraryNode& CallNodeSerializer::deserialize(
     assert(j.contains("debug_info"));
 
     auto code = j["code"].get<std::string>();
-    if (code != LibraryNodeType_Call.value()) {
+    if (code != LibraryNodeType_Invoke.value()) {
         throw InvalidSDFGException("Invalid library node code");
     }
 
@@ -103,23 +105,26 @@ data_flow::LibraryNode& CallNodeSerializer::deserialize(
     auto outputs = j["outputs"].get<std::vector<std::string>>();
     auto inputs = j["inputs"].get<std::vector<std::string>>();
 
-    return builder.add_library_node<CallNode>(parent, debug_info, callee_name, outputs, inputs);
+    return builder.add_library_node<InvokeNode>(parent, debug_info, callee_name, outputs, inputs);
 }
 
-CallNodeDispatcher::CallNodeDispatcher(
+InvokeNodeDispatcher::InvokeNodeDispatcher(
     codegen::LanguageExtension& language_extension,
     const Function& function,
     const data_flow::DataFlowGraph& data_flow_graph,
-    const CallNode& node
+    const InvokeNode& node
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void CallNodeDispatcher::dispatch_code(
+void InvokeNodeDispatcher::dispatch_code(
     codegen::PrettyPrinter& stream,
     codegen::PrettyPrinter& globals_stream,
     codegen::CodeSnippetFactory& library_snippet_factory
 ) {
-    auto& node = static_cast<const CallNode&>(node_);
+    auto& node = static_cast<const InvokeNode&>(node_);
+
+    stream << "try {" << std::endl;
+    stream.setIndent(stream.indent() + 4);
 
     if (!node.is_void(function_)) {
         stream << node.outputs().at(0) << " = ";
@@ -182,6 +187,14 @@ void CallNodeDispatcher::dispatch_code(
     }
     stream << ")" << ";";
     stream << std::endl;
+
+    stream << node_.outputs().at(node.outputs().size() - 1) << " = false;" << std::endl;
+    stream.setIndent(stream.indent() - 4);
+    stream << "} catch (...) {" << std::endl;
+    stream.setIndent(stream.indent() + 4);
+    stream << node_.outputs().at(node.outputs().size() - 1) << " = true;" << std::endl;
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
 }
 
 } // namespace data_flow

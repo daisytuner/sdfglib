@@ -9,6 +9,7 @@
 
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 #include "sdfg/data_flow/library_nodes/call_node.h"
+#include "sdfg/data_flow/library_nodes/invoke_node.h"
 #include "sdfg/data_flow/library_nodes/math/math.h"
 #include "sdfg/data_flow/library_nodes/metadata_node.h"
 #include "sdfg/data_flow/library_nodes/stdlib/stdlib.h"
@@ -290,6 +291,17 @@ void register_default_dispatchers() {
            const data_flow::LibraryNode& node) {
             return std::make_unique<data_flow::CallNodeDispatcher>(
                 language_extension, function, data_flow_graph, dynamic_cast<const data_flow::CallNode&>(node)
+            );
+        }
+    );
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        data_flow::LibraryNodeType_Invoke.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<data_flow::InvokeNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const data_flow::InvokeNode&>(node)
             );
         }
     );
