@@ -10,8 +10,7 @@ CallNode::CallNode(
     data_flow::DataFlowGraph& parent,
     const std::string& callee_name,
     const std::vector<std::string>& outputs,
-    const std::vector<std::string>& inputs,
-    bool offloadable
+    const std::vector<std::string>& inputs
 )
     : LibraryNode(
           element_id,
@@ -24,11 +23,9 @@ CallNode::CallNode(
           true,
           data_flow::ImplementationType_NONE
       ),
-      callee_name_(callee_name), offloadable_(offloadable) {}
+      callee_name_(callee_name) {}
 
 const std::string& CallNode::callee_name() const { return this->callee_name_; }
-
-bool CallNode::offloadable() const { return this->offloadable_; }
 
 bool CallNode::is_void(const Function& sdfg) const { return outputs_.empty() || outputs_.at(0) != "_ret"; }
 
