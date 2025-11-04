@@ -58,20 +58,25 @@ struct ArgCapture {
 class ArgCaptureIO {
 protected:
     std::string name_;
-    uint32_t invokes_ = -1;
-    std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash> current_captures_;
+    std::unordered_map<std::string,uint32_t> invokes_ = std::unordered_map<std::string,uint32_t>{};
+    std::unordered_map<std::string, std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash>> current_captures_;
 
 public:
     explicit ArgCaptureIO(const char* name) : name_(name) {}
     const std::string& get_name() const;
-    uint32_t get_current_invocation() const;
+    uint32_t get_current_invocation(std::string element_id) const;
 
-    void invocation();
+    void invocation(std::string element_id);
 
     void clear();
 
     bool create_and_capture_inline(
-        int arg_idx, bool after, int primitive_type, const std::vector<size_t>& dims, const void* data
+        int arg_idx,
+        bool after,
+        int primitive_type,
+        const std::vector<size_t>& dims,
+        const void* data,
+        std::string node_id = std::string{}
     );
     bool create_and_capture_to_file(
         int arg_idx,
@@ -79,15 +84,17 @@ public:
         int primitive_type,
         const std::vector<size_t>& dims,
         std::filesystem::path& file,
-        const void* data
+        const void* data,
+        std::string node_id = std::string{}
     );
 
-    bool capture_inline(ArgCapture& capture, const void* data);
+    bool capture_inline(ArgCapture& capture, const void* data, std::string node_id = std::string{});
     bool write_capture_to_file(ArgCapture& capture, std::filesystem::path file, const void* data);
 
-    void write_index(std::filesystem::path file);
+    void write_index(std::filesystem::path base_file);
 
-    const std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash>& get_captures() const;
+    const std::unordered_map<std::string, std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash>>& get_captures()
+        const;
 
     template<typename T = ArgCaptureIO>
     static std::shared_ptr<T> from_index(const std::filesystem::path& file);
@@ -116,12 +123,14 @@ std::shared_ptr<T> ArgCaptureIO::from_index(const std::filesystem::path& file) {
 
     auto name = j["target"].get<std::string>();
     auto invokes = j["invocation"].get<uint32_t>();
+    auto element_id = j["element_id"].get<std::string>();
 
     auto captureIO = std::make_shared<T>(name.c_str());
-    captureIO->invokes_ = invokes;
+    captureIO->invokes_[element_id] = invokes;
 
+    auto& capture_map = captureIO->current_captures_[element_id];
     for (const auto& entry : j["captures"]) {
-        ArgCapture::parse_from(entry, captureIO->current_captures_, file.parent_path());
+        ArgCapture::parse_from(entry, capture_map, file.parent_path());
     }
 
     return captureIO;

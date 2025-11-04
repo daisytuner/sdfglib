@@ -37,7 +37,7 @@ bool ArgCapturePlan::should_instrument(const structured_control_flow::ControlFlo
 void ArgCapturePlan::begin_instrumentation(
     const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream, LanguageExtension& language_extension
 ) const {
-    stream << "const bool __daisy_cap_en_" << node.element_id() << " = __daisy_capture_enter(__capture_ctx);"
+    stream << "const bool __daisy_cap_en_" << node.element_id() << " = __daisy_capture_enter(__capture_ctx, " << node.element_id() << ");"
            << std::endl;
 
     stream << "if (__daisy_cap_en_" << node.element_id() << ")";
@@ -46,7 +46,7 @@ void ArgCapturePlan::begin_instrumentation(
     auto& node_plan = this->nodes_.at(&node);
     std::cout << "Emitting begin instrumentation for node " << node.element_id() << " with " << node_plan.size()
               << " arguments." << std::endl;
-    this->emit_arg_captures(stream, language_extension, node_plan, false);
+    this->emit_arg_captures(stream, language_extension, node_plan, false, std::to_string(node.element_id()));
 
     stream << "}" << std::endl;
 }
@@ -58,7 +58,7 @@ void ArgCapturePlan::end_instrumentation(
     stream << "{" << std::endl;
 
     auto& node_plan = this->nodes_.at(&node);
-    this->emit_arg_captures(stream, language_extension, node_plan, true);
+    this->emit_arg_captures(stream, language_extension, node_plan, true, std::to_string(node.element_id()));
 
     stream << "}" << std::endl;
 
@@ -105,7 +105,8 @@ void ArgCapturePlan::emit_arg_captures(
     PrettyPrinter& stream,
     LanguageExtension& language_extension,
     const std::unordered_map<std::string, CaptureVarPlan>& plan,
-    bool after
+    bool after,
+    std::string element_id
 ) const {
     auto afterBoolStr = after ? "true" : "false";
     for (auto& [argName, varPlan] : plan) {
@@ -116,22 +117,23 @@ void ArgCapturePlan::emit_arg_captures(
             switch (varPlan.type) {
                 case CaptureVarType::CapRaw: {
                     stream << "\t__daisy_capture_raw(" << "__capture_ctx, " << argIdx << ", " << "&" << argName << ", "
-                           << "sizeof(" << argName << "), " << varPlan.inner_type << ", " << afterBoolStr << ");"
-                           << std::endl;
+                           << "sizeof(" << argName << "), " << varPlan.inner_type << ", " << afterBoolStr << ", "
+                           << element_id << ");" << std::endl;
                     break;
                 }
                 case CaptureVarType::Cap1D: {
                     stream << "\t__daisy_capture_1d(" << "__capture_ctx, " << argIdx << ", " << argName << ", "
                            << "sizeof(" << language_extension.primitive_type(varPlan.inner_type) << "), "
                            << varPlan.inner_type << ", " << language_extension.expression(varPlan.dim1) << ", "
-                           << afterBoolStr << ");" << std::endl;
+                           << afterBoolStr << ", " << element_id << ");" << std::endl;
                     break;
                 }
                 case CaptureVarType::Cap2D: {
                     stream << "\t__daisy_capture_2d(" << "__capture_ctx, " << argIdx << ", " << argName << ", "
                            << "sizeof(" << language_extension.primitive_type(varPlan.inner_type) << "), "
                            << varPlan.inner_type << ", " << language_extension.expression(varPlan.dim1) << ", "
-                           << language_extension.expression(varPlan.dim2) << ", " << afterBoolStr << ");" << std::endl;
+                           << language_extension.expression(varPlan.dim2) << ", " << afterBoolStr << ", " << element_id
+                           << ");" << std::endl;
                     break;
                 }
                 case CaptureVarType::Cap3D: {
@@ -139,7 +141,8 @@ void ArgCapturePlan::emit_arg_captures(
                            << "sizeof(" << language_extension.primitive_type(varPlan.inner_type) << "), "
                            << varPlan.inner_type << ", " << language_extension.expression(varPlan.dim1) << ", "
                            << language_extension.expression(varPlan.dim2) << ", "
-                           << language_extension.expression(varPlan.dim3) << ", " << afterBoolStr << ");" << std::endl;
+                           << language_extension.expression(varPlan.dim3) << ", " << afterBoolStr << ", " << element_id
+                           << ");" << std::endl;
                     break;
                 }
                 default: {
@@ -166,9 +169,7 @@ std::tuple<int, types::PrimitiveType> ArgCapturePlan::analyze_type_rec(
     std::string var_name
 ) {
     if (dim_idx > max_dim) {
-        DEBUG_PRINTLN(
-            "arg" << arg_idx << ": data nesting deeper than " << max_dim << ", ignoring"
-        );
+        DEBUG_PRINTLN("arg" << arg_idx << ": data nesting deeper than " << max_dim << ", ignoring");
         return std::make_tuple(-1, types::Void);
     }
 
@@ -183,23 +184,18 @@ std::tuple<int, types::PrimitiveType> ArgCapturePlan::analyze_type_rec(
         return analyze_type_rec(sdfg, analysis_manager, dims, max_dim, dim_idx + 1, inner, arg_idx, range, var_name);
     } else if (auto* ptrType = dynamic_cast<const types::Pointer*>(&type)) {
         if (!range || range->is_undefined()) {
-            DEBUG_PRINTLN(
-                "arg" << arg_idx << " dim" << dim_idx << ": missing range, cannot capture!"
-            );
+            DEBUG_PRINTLN("arg" << arg_idx << " dim" << dim_idx << ": missing range, cannot capture!");
             return std::make_tuple(-2, types::Void);
         }
         if (range->dims().size() <= dim_idx) {
-            DEBUG_PRINTLN(
-                "arg" << arg_idx << " dim" << dim_idx
-                       << ": missing dimension in range, cannot capture!"
-            );
+            DEBUG_PRINTLN("arg" << arg_idx << " dim" << dim_idx << ": missing dimension in range, cannot capture!");
             return std::make_tuple(-2, types::Void);
         }
         const auto& dim = range->dims().at(dim_idx);
         if (!symbolic::eq(dim.first, symbolic::zero())) {
             DEBUG_PRINTLN(
-                "arg" << arg_idx << " dim" << dim_idx << ": has upper bound "
-                       << dim.second->__str__() << ", but does not start at 0, cannot capture"
+                "arg" << arg_idx << " dim" << dim_idx << ": has upper bound " << dim.second->__str__()
+                      << ", but does not start at 0, cannot capture"
             );
             return std::make_tuple(-2, types::Void);
         }
@@ -211,8 +207,7 @@ std::tuple<int, types::PrimitiveType> ArgCapturePlan::analyze_type_rec(
         } else {
             if (dim_idx > 0) {
                 DEBUG_PRINTLN(
-                    "arg" << arg_idx << " dim" << dim_idx
-                           << ": missing pointee type for dim > 0, cannot capture!"
+                    "arg" << arg_idx << " dim" << dim_idx << ": missing pointee type for dim > 0, cannot capture!"
                 );
                 return std::make_tuple(-2, types::Void);
             } else {
@@ -224,8 +219,7 @@ std::tuple<int, types::PrimitiveType> ArgCapturePlan::analyze_type_rec(
                             inner = &(ptrType_new->pointee_type());
                         } else {
                             DEBUG_PRINTLN(
-                                "arg" << arg_idx << " dim" << dim_idx
-                                       << ": missing pointee type, cannot capture!"
+                                "arg" << arg_idx << " dim" << dim_idx << ": missing pointee type, cannot capture!"
                             );
                             return std::make_tuple(-2, types::Void);
                         }
@@ -233,15 +227,14 @@ std::tuple<int, types::PrimitiveType> ArgCapturePlan::analyze_type_rec(
                 } else {
                     DEBUG_PRINTLN(
                         "arg" << arg_idx << " dim" << dim_idx
-                               << ": could not infer type from container, cannot capture!"
+                              << ": could not infer type from container, cannot capture!"
                     );
                     return std::make_tuple(-2, types::Void);
                 }
             }
             if (inner == nullptr) {
                 DEBUG_PRINTLN(
-                    "arg" << arg_idx << " dim" << dim_idx
-                           << ": could not infer type from container, cannot capture!"
+                    "arg" << arg_idx << " dim" << dim_idx << ": could not infer type from container, cannot capture!"
                 );
                 return std::make_tuple(-2, types::Void);
             }
@@ -250,9 +243,7 @@ std::tuple<int, types::PrimitiveType> ArgCapturePlan::analyze_type_rec(
         return analyze_type_rec(sdfg, analysis_manager, dims, max_dim, dim_idx + 1, *inner, arg_idx, range, var_name);
     }
 
-    DEBUG_PRINTLN(
-        "arg" << arg_idx << ": unsupported type " << type.print() << ", cannot capture!"
-    );
+    DEBUG_PRINTLN("arg" << arg_idx << ": unsupported type " << type.print() << ", cannot capture!");
     return std::make_tuple(-1, types::Void);
 }
 
@@ -294,7 +285,12 @@ bool ArgCapturePlan::add_capture_plan(
         plan.insert(
             {var_name,
              CaptureVarPlan(
-                 is_read || is_written, is_written && (is_read || is_external), CaptureVarType::CapRaw, arg_idx, is_external, inner_type
+                 is_read || is_written,
+                 is_written && (is_read || is_external),
+                 CaptureVarType::CapRaw,
+                 arg_idx,
+                 is_external,
+                 inner_type
              )}
         );
     } else if (dim_count == 1) {

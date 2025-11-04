@@ -103,7 +103,8 @@ public:
         PrettyPrinter& stream,
         LanguageExtension& language_extension,
         const std::unordered_map<std::string, CaptureVarPlan>& plan,
-        bool after
+        bool after,
+        std::string element_id
     ) const;
 
     static std::unique_ptr<ArgCapturePlan> none(StructuredSDFG& sdfg);

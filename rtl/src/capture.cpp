@@ -31,12 +31,21 @@ public:
 
     const std::filesystem::path& get_output_dir() const;
 
-    bool enter();
+    bool enter(std::string element_id);
 
-    void capture_raw(int arg_idx, const void* data, size_t size, int primitive_type, bool after);
-    void capture_1d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_elements, bool after);
+    void capture_raw(int arg_idx, const void* data, size_t size, int primitive_type, bool after, size_t element_id);
+    void capture_1d(
+        int arg_idx, const void* data, size_t size, int primitive_type, size_t num_elements, bool after, size_t element_id
+    );
     void capture_2d(
-        int arg_idx, const void* data, size_t size, int primitive_type, size_t num_rows, size_t num_cols, bool after
+        int arg_idx,
+        const void* data,
+        size_t size,
+        int primitive_type,
+        size_t num_rows,
+        size_t num_cols,
+        bool after,
+        size_t element_id
     );
     void capture_3d(
         int arg_idx,
@@ -46,58 +55,83 @@ public:
         size_t num_x,
         size_t num_y,
         size_t num_z,
-        bool after
+        bool after,
+        size_t element_id
     );
 
     void exit();
 
 protected:
     bool write_capture_to_file(ArgCapture& capture, const void* data);
-    std::filesystem::path generate_arg_capture_output_filename(int arg_idx, bool after) const;
+    std::filesystem::path
+    generate_arg_capture_output_filename(int arg_idx, bool after, std::string element_id = std::string()) const;
 };
 
 
 const std::filesystem::path& DaisyRtlCapture::get_output_dir() const { return output_dir_; }
 
-bool DaisyRtlCapture::enter() {
+bool DaisyRtlCapture::enter(std::string element_id) {
     clear();
 
-    invocation();
+    invocation(element_id);
 
     auto specific_invocation_only = this->invocation_to_capture_;
-    return (specific_invocation_only == ALL_INVOCATIONS) || (invokes_ == specific_invocation_only);
-}
-
-void DaisyRtlCapture::capture_raw(int arg_idx, const void* data, size_t size, int primitive_type, bool after) {
-    create_and_capture_inline(arg_idx, after, primitive_type, {size}, data);
+    return (specific_invocation_only == ALL_INVOCATIONS) || (invokes_.at(element_id) == specific_invocation_only);
 }
 
 void DaisyRtlCapture::
-    capture_1d(int arg_idx, const void* data, size_t size, int primitive_type, size_t num_elements, bool after) {
-    auto file = generate_arg_capture_output_filename(arg_idx, after);
+    capture_raw(int arg_idx, const void* data, size_t size, int primitive_type, bool after, size_t element_id) {
+    create_and_capture_inline(arg_idx, after, primitive_type, {size}, data, std::to_string(element_id));
+}
 
-    if (!create_and_capture_to_file(arg_idx, after, primitive_type, {size, num_elements}, file, data)) {
+void DaisyRtlCapture::capture_1d(
+    int arg_idx, const void* data, size_t size, int primitive_type, size_t num_elements, bool after, size_t element_id
+) {
+    auto file = generate_arg_capture_output_filename(arg_idx, after, std::to_string(element_id));
+
+    if (!create_and_capture_to_file(
+            arg_idx, after, primitive_type, {size, num_elements}, file, data, std::to_string(element_id)
+        )) {
         throw std::runtime_error("Failed to write capture for arg" + std::to_string(arg_idx) + " to file");
     }
 }
 
 
 void DaisyRtlCapture::capture_2d(
-    int arg_idx, const void* data, size_t size, int primitive_type, size_t num_rows, size_t num_cols, bool after
+    int arg_idx,
+    const void* data,
+    size_t size,
+    int primitive_type,
+    size_t num_rows,
+    size_t num_cols,
+    bool after,
+    size_t element_id
 ) {
-    auto file = generate_arg_capture_output_filename(arg_idx, after);
+    auto file = generate_arg_capture_output_filename(arg_idx, after, std::to_string(element_id));
 
-    if (!create_and_capture_to_file(arg_idx, after, primitive_type, {size, num_rows, num_cols}, file, data)) {
+    if (!create_and_capture_to_file(
+            arg_idx, after, primitive_type, {size, num_rows, num_cols}, file, data, std::to_string(element_id)
+        )) {
         throw std::runtime_error("Failed to write capture for arg" + std::to_string(arg_idx) + " to file");
     }
 }
 
 void DaisyRtlCapture::capture_3d(
-    int arg_idx, const void* data, size_t size, int primitive_type, size_t num_x, size_t num_y, size_t num_z, bool after
+    int arg_idx,
+    const void* data,
+    size_t size,
+    int primitive_type,
+    size_t num_x,
+    size_t num_y,
+    size_t num_z,
+    bool after,
+    size_t element_id
 ) {
-    auto file = generate_arg_capture_output_filename(arg_idx, after);
+    auto file = generate_arg_capture_output_filename(arg_idx, after, std::to_string(element_id));
 
-    if (!create_and_capture_to_file(arg_idx, after, primitive_type, {size, num_x, num_y, num_z}, file, data)) {
+    if (!create_and_capture_to_file(
+            arg_idx, after, primitive_type, {size, num_x, num_y, num_z}, file, data, std::to_string(element_id)
+        )) {
         throw std::runtime_error("Failed to write capture for arg" + std::to_string(arg_idx) + " to file");
     }
 }
@@ -109,15 +143,16 @@ bool DaisyRtlCapture::write_capture_to_file(arg_capture::ArgCapture& capture, co
 
 void DaisyRtlCapture::exit() {
     if (!current_captures_.empty()) {
-        auto path = output_dir_ / (name_ + "_inv" + std::to_string(invokes_) + ".index.json");
-        write_index(path);
+        auto base_path = output_dir_;
+        write_index(base_path);
     }
 }
 
-std::filesystem::path DaisyRtlCapture::generate_arg_capture_output_filename(int arg_idx, bool after) const {
+std::filesystem::path DaisyRtlCapture::generate_arg_capture_output_filename(int arg_idx, bool after, std::string element_id)
+    const {
     std::string capType = after ? "out" : "in";
-    return output_dir_ /
-           (name_ + "_inv" + std::to_string(invokes_) + "_arg" + std::to_string(arg_idx) + "_" + capType + ".bin");
+    return output_dir_ / (name_ + "_inv" + std::to_string(invokes_.at(element_id)) + "_arg" + std::to_string(arg_idx) + "_" + capType +
+                          "_" + element_id + ".bin");
 }
 
 
@@ -153,19 +188,26 @@ struct __daisy_capture* __daisy_capture_init(const char* name, const char* base_
     return (__daisy_capture_t*) ctx;
 }
 
-bool __daisy_capture_enter(__daisy_capture_t* context) {
+bool __daisy_capture_enter(__daisy_capture_t* context, size_t element_id) {
+    std::cerr << "Entering capture context" << std::endl;
     if (context) {
-        return ((DaisyRtlCapture*) context)->enter();
+        return ((DaisyRtlCapture*) context)->enter(std::to_string(element_id));
     } else {
         return false;
     }
 }
 
 void __daisy_capture_raw(
-    __daisy_capture_t* context, int arg_idx, const void* data, size_t size, int primitive_type, bool after
+    __daisy_capture_t* context,
+    int arg_idx,
+    const void* data,
+    size_t size,
+    int primitive_type,
+    bool after,
+    size_t element_id
 ) {
     if (context) {
-        ((DaisyRtlCapture*) context)->capture_raw(arg_idx, data, size, primitive_type, after);
+        ((DaisyRtlCapture*) context)->capture_raw(arg_idx, data, size, primitive_type, after, element_id);
     }
 }
 
@@ -176,10 +218,11 @@ void __daisy_capture_1d(
     size_t size,
     int primitive_type,
     size_t num_elements,
-    bool after
+    bool after,
+    size_t element_id
 ) {
     if (context) {
-        ((DaisyRtlCapture*) context)->capture_1d(arg_idx, data, size, primitive_type, num_elements, after);
+        ((DaisyRtlCapture*) context)->capture_1d(arg_idx, data, size, primitive_type, num_elements, after, element_id);
     }
 }
 
@@ -191,10 +234,12 @@ void __daisy_capture_2d(
     int primitive_type,
     size_t num_rows,
     size_t num_cols,
-    bool after
+    bool after,
+    size_t element_id
 ) {
     if (context) {
-        ((DaisyRtlCapture*) context)->capture_2d(arg_idx, data, size, primitive_type, num_rows, num_cols, after);
+        ((DaisyRtlCapture*) context)
+            ->capture_2d(arg_idx, data, size, primitive_type, num_rows, num_cols, after, element_id);
     }
 }
 
@@ -207,10 +252,11 @@ void __daisy_capture_3d(
     size_t num_x,
     size_t num_y,
     size_t num_z,
-    bool after
+    bool after,
+    size_t element_id
 ) {
     if (context) {
-        ((DaisyRtlCapture*) context)->capture_3d(arg_idx, data, size, primitive_type, num_x, num_y, num_z, after);
+        ((DaisyRtlCapture*) context)->capture_3d(arg_idx, data, size, primitive_type, num_x, num_y, num_z, after, element_id);
     }
 }
 

@@ -74,26 +74,27 @@ void ArgCapture::parse_from(
 
 const std::string& ArgCaptureIO::get_name() const { return name_; }
 
-uint32_t ArgCaptureIO::get_current_invocation() const { return invokes_; }
+uint32_t ArgCaptureIO::get_current_invocation(std::string element_id) const { return invokes_.at(element_id); }
 
-void ArgCaptureIO::invocation() {
-    ++invokes_;
+void ArgCaptureIO::invocation(std::string element_id) {
+    invokes_[element_id] = (invokes_.count(element_id) > 0) ? invokes_[element_id] + 1 : 0;
 
-    DEBUG_PRINTLN("Invoking '" << name_ << "' (" << invokes_ << ")");
+    DEBUG_PRINTLN("Invoking '" << name_ << "' (" << invokes_[element_id] << ")");
 }
 
 void ArgCaptureIO::clear() { current_captures_.clear(); }
 
-const std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash>& ArgCaptureIO::get_captures() const {
+const std::unordered_map<std::string, std::unordered_map<std::pair<int32_t, bool>, ArgCapture, MyHash>>& ArgCaptureIO::
+    get_captures() const {
     return current_captures_;
 }
 
 bool ArgCaptureIO::create_and_capture_inline(
-    int arg_idx, bool after, int primitive_type, const std::vector<size_t>& dims, const void* data
+    int arg_idx, bool after, int primitive_type, const std::vector<size_t>& dims, const void* data, std::string element_id
 ) {
     auto key = std::make_pair(arg_idx, after);
 
-    auto it = current_captures_.emplace(key, ArgCapture(arg_idx, after, primitive_type, dims));
+    auto it = current_captures_[element_id].emplace(key, ArgCapture(arg_idx, after, primitive_type, dims));
 
     return capture_inline(it.first->second, data);
 }
@@ -104,16 +105,17 @@ bool ArgCaptureIO::create_and_capture_to_file(
     int primitive_type,
     const std::vector<size_t>& dims,
     std::filesystem::path& file,
-    const void* data
+    const void* data,
+    std::string element_id
 ) {
     auto key = std::make_pair(arg_idx, after);
 
-    auto it = current_captures_.emplace(key, ArgCapture(arg_idx, after, primitive_type, dims));
+    auto it = current_captures_[element_id].emplace(key, ArgCapture(arg_idx, after, primitive_type, dims));
 
     return write_capture_to_file(it.first->second, file, data);
 }
 
-bool ArgCaptureIO::capture_inline(ArgCapture& capture, const void* data) {
+bool ArgCaptureIO::capture_inline(ArgCapture& capture, const void* data, std::string element_id) {
     auto size = std::accumulate(capture.dims.begin(), capture.dims.end(), 1, std::multiplies<size_t>());
 
     DEBUG_PRINT("Capturing " << (capture.dims.size() - 1) << "D arg" << capture.arg_idx << " as " << capType
@@ -138,7 +140,7 @@ bool ArgCaptureIO::capture_inline(ArgCapture& capture, const void* data) {
     auto capturedData = std::make_shared<std::vector<uint8_t>>(size);
     std::memcpy(capturedData.get()->data(), data, size);
 
-    current_captures_[std::make_pair(capture.arg_idx, capture.after)].data = std::move(capturedData);
+    current_captures_[element_id][std::make_pair(capture.arg_idx, capture.after)].data = std::move(capturedData);
 
     return true;
 }
@@ -177,32 +179,38 @@ bool ArgCaptureIO::write_capture_to_file(ArgCapture& capture, std::filesystem::p
     return !ofs.bad();
 }
 
-void ArgCaptureIO::write_index(std::filesystem::path file) {
-    std::filesystem::create_directories(file.parent_path());
+void ArgCaptureIO::write_index(std::filesystem::path base_path) {
+    std::filesystem::create_directories(base_path.parent_path());
 
-    std::ofstream ofs(file);
-    if (!ofs.is_open()) {
-        throw std::runtime_error("Failed to open index file for writing: " + file.string());
+    for (const auto& [region_id, captures] : current_captures_) {
+        auto file = base_path / (name_ + "_inv" + std::to_string(invokes_.at(region_id)) + "_" + region_id + ".index.json");
+        std::cerr << "Writing index file for region '" << region_id << "' to " << file.string() << std::endl;
+
+        std::ofstream ofs(file);
+        if (!ofs.is_open()) {
+            throw std::runtime_error("Failed to open index file for writing: " + file.string());
+        }
+
+        nlohmann::json j;
+        j["format"] = INDEX_FORMAT_VERSION;
+        j["target"] = name_;
+        j["invocation"] = invokes_.at(region_id);
+        j["element_id"] = region_id;
+
+        auto arr = nlohmann::json::array();
+
+        for (const auto& [key, capture] : captures) {
+            capture.serialize_into(arr);
+        }
+
+        j["captures"] = arr;
+
+        ofs << j;
+
+        ofs.close();
+
+        DEBUG_PRINTLN("Wrote capture index to " << file.string());
     }
-
-    nlohmann::json j;
-    j["format"] = INDEX_FORMAT_VERSION;
-    j["target"] = name_;
-    j["invocation"] = invokes_;
-
-    auto arr = nlohmann::json::array();
-
-    for (const auto& [key, capture] : current_captures_) {
-        capture.serialize_into(arr);
-    }
-
-    j["captures"] = arr;
-
-    ofs << j;
-
-    ofs.close();
-
-    DEBUG_PRINTLN("Wrote capture index to " << file.string());
 }
 
 
