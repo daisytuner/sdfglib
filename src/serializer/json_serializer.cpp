@@ -8,6 +8,7 @@
 
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 #include "sdfg/data_flow/library_nodes/call_node.h"
+#include "sdfg/data_flow/library_nodes/invoke_node.h"
 #include "sdfg/data_flow/library_nodes/math/math.h"
 #include "sdfg/data_flow/library_nodes/metadata_node.h"
 #include "sdfg/data_flow/library_nodes/stdlib/stdlib.h"
@@ -1229,6 +1230,10 @@ void register_default_serializers() {
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(data_flow::LibraryNodeType_Call.value(), []() {
             return std::make_unique<data_flow::CallNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(data_flow::LibraryNodeType_Invoke.value(), []() {
+            return std::make_unique<data_flow::InvokeNodeSerializer>();
         });
 
     // Intrinsic
