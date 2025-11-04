@@ -359,10 +359,10 @@ def test_capture_strats(strat, expected_reports):
             for s in args:
                 has_minus = s.startswith("-")
                 num = int(s[1:]) if has_minus else int(s)
-                invocations.append((num, f"__daisy_capture_test_function_inv{num}.index.json", has_minus))
+                invocations.append((num, f"__daisy_capture_test_function_inv{num}_123.index.json", has_minus))
 
         def check_ext_file(cap, expected_array):
-            ext_file_path = workdir / cap["ext_file"]
+            ext_file_path = workdir / "arg_captures" / cap["ext_file"]
             assert ext_file_path.exists(), f"External file {cap['ext_file']} does not exist"
             arr = np.fromfile(ext_file_path, dtype=np.int32)
             np.testing.assert_array_equal(arr, expected_array)

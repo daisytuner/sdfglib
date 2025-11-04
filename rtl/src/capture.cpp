@@ -189,7 +189,6 @@ struct __daisy_capture* __daisy_capture_init(const char* name, const char* base_
 }
 
 bool __daisy_capture_enter(__daisy_capture_t* context, size_t element_id) {
-    std::cerr << "Entering capture context" << std::endl;
     if (context) {
         return ((DaisyRtlCapture*) context)->enter(std::to_string(element_id));
     } else {

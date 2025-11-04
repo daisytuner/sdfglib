@@ -180,11 +180,11 @@ bool ArgCaptureIO::write_capture_to_file(ArgCapture& capture, std::filesystem::p
 }
 
 void ArgCaptureIO::write_index(std::filesystem::path base_path) {
-    std::filesystem::create_directories(base_path.parent_path());
+    std::filesystem::create_directories(base_path);
 
     for (const auto& [region_id, captures] : current_captures_) {
-        auto file = base_path / (name_ + "_inv" + std::to_string(invokes_.at(region_id)) + "_" + region_id + ".index.json");
-        std::cerr << "Writing index file for region '" << region_id << "' to " << file.string() << std::endl;
+        auto file = base_path /
+                    (name_ + "_inv" + std::to_string(invokes_.at(region_id)) + "_" + region_id + ".index.json");
 
         std::ofstream ofs(file);
         if (!ofs.is_open()) {
