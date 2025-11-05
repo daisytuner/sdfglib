@@ -112,6 +112,7 @@ bool ArgCaptureIO::create_and_capture_to_file(
 
     auto it = current_captures_[element_id].emplace(key, ArgCapture(arg_idx, after, primitive_type, dims));
 
+    DEBUG_PRINTLN("Writing capture file " + file.string());
     return write_capture_to_file(it.first->second, file, data);
 }
 
@@ -185,6 +186,10 @@ void ArgCaptureIO::write_index(std::filesystem::path base_path) {
     for (const auto& [region_id, captures] : current_captures_) {
         auto file = base_path /
                     (name_ + "_inv" + std::to_string(invokes_.at(region_id)) + "_" + region_id + ".index.json");
+
+        std::filesystem::create_directories(file.parent_path());
+
+        DEBUG_PRINTLN("Writing index file " + file.string());
 
         std::ofstream ofs(file);
         if (!ofs.is_open()) {
