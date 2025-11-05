@@ -12,7 +12,7 @@ TEST(CPPCodeGeneratorTest, FunctionDefintion) {
     analysis::AnalysisManager analysis_manager(*sdfg);
 
     auto instrumentation_plan = codegen::InstrumentationPlan::none(*sdfg);
-    auto arg_capture_plan = codegen::ArgCapturePlan::none(*sdfg);
+    auto arg_capture_plan = codegen::ArgCapturePlan::outermost_loops_plan(*sdfg);
     codegen::CPPCodeGenerator generator(*sdfg, analysis_manager, *instrumentation_plan, *arg_capture_plan);
     auto result = generator.function_definition();
     EXPECT_EQ(result, "extern \"C\" void sdfg_a(void)");
