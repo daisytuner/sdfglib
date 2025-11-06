@@ -23,12 +23,27 @@ using namespace sdfg::structured_control_flow;
 namespace sdfg {
 namespace builder {
 
+template<typename T>
+struct ConditionalDeleter {
+    bool should_delete_;
+
+    ConditionalDeleter(bool should_delete = true) : should_delete_(should_delete) {}
+
+    void operator()(T* ptr) const {
+        if (should_delete_) {
+            delete ptr;
+        }
+    }
+};
+
 /**
  * Note: Even though the class references unique_ptr, it will never delete an SDFG it has a reference to
  */
 class StructuredSDFGBuilder : public FunctionBuilder {
 private:
-    StructuredSDFG* structured_sdfg_;
+    std::unique_ptr<StructuredSDFG, ConditionalDeleter<StructuredSDFG>> structured_sdfg_;
+
+    using owned = ConditionalDeleter<StructuredSDFG>;
 
     std::unordered_set<const control_flow::State*>
     determine_loop_nodes(SDFG& sdfg, const control_flow::State& start, const control_flow::State& end) const;
@@ -78,7 +93,7 @@ public:
     /**
      * Will take ownership of the SDFG
      * Increases compatibility with legacy code. Also more idiomatic for SDFGs that are being deserialized and are not
-     * yet owned by the registry
+     * yet owned_ by the registry
      */
     StructuredSDFGBuilder(std::unique_ptr<StructuredSDFG>& sdfg);
 
