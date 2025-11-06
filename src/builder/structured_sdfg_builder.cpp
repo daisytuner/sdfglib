@@ -311,17 +311,21 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
 
 Function& StructuredSDFGBuilder::function() const { return static_cast<Function&>(*this->structured_sdfg_); };
 
+StructuredSDFGBuilder::StructuredSDFGBuilder(StructuredSDFG& sdfg)
+    : FunctionBuilder(), structured_sdfg_(&sdfg, owned(false)) {};
+
 StructuredSDFGBuilder::StructuredSDFGBuilder(std::unique_ptr<StructuredSDFG>& sdfg)
-    : FunctionBuilder(), structured_sdfg_(std::move(sdfg)) {};
+    : FunctionBuilder(), structured_sdfg_(sdfg.release(), owned(true)) {};
 
 StructuredSDFGBuilder::StructuredSDFGBuilder(const std::string& name, FunctionType type)
-    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name, type)) {};
+    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name, type), owned(true)) {};
 
 StructuredSDFGBuilder::StructuredSDFGBuilder(const std::string& name, FunctionType type, const types::IType& return_type)
-    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name, type, return_type)) {};
+    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name, type, return_type), owned(true)) {};
 
 StructuredSDFGBuilder::StructuredSDFGBuilder(SDFG& sdfg)
-    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(sdfg.name(), sdfg.type(), sdfg.return_type())) {
+    : FunctionBuilder(),
+      structured_sdfg_(new StructuredSDFG(sdfg.name(), sdfg.type(), sdfg.return_type()), owned(true)) {
     for (auto& entry : sdfg.structures_) {
         this->structured_sdfg_->structures_.insert({entry.first, entry.second->clone()});
     }
@@ -357,7 +361,11 @@ std::unique_ptr<StructuredSDFG> StructuredSDFGBuilder::move() {
     this->structured_sdfg_->validate();
 #endif
 
-    return std::move(this->structured_sdfg_);
+    if (!structured_sdfg_.get_deleter().should_delete_) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Cannot move a non-owned SDFG");
+    }
+
+    return std::move(std::unique_ptr<StructuredSDFG>(structured_sdfg_.release()));
 };
 
 void StructuredSDFGBuilder::rename_container(const std::string& old_name, const std::string& new_name) const {
