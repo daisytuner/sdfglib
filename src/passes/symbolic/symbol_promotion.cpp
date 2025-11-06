@@ -126,7 +126,7 @@ bool SymbolPromotion::can_be_applied(
         case data_flow::TaskletCode::int_ashr:
         case data_flow::TaskletCode::int_shl: {
             // Shift is constant
-            return !tasklet->has_constant_input(1);
+            return tasklet->has_constant_input(1);
         }
         case data_flow::TaskletCode::int_and:
         case data_flow::TaskletCode::int_or:
