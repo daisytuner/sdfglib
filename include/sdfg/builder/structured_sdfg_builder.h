@@ -23,9 +23,12 @@ using namespace sdfg::structured_control_flow;
 namespace sdfg {
 namespace builder {
 
+/**
+ * Note: Even though the class references unique_ptr, it will never delete an SDFG it has a reference to
+ */
 class StructuredSDFGBuilder : public FunctionBuilder {
 private:
-    std::unique_ptr<StructuredSDFG> structured_sdfg_;
+    StructuredSDFG* structured_sdfg_;
 
     std::unordered_set<const control_flow::State*>
     determine_loop_nodes(SDFG& sdfg, const control_flow::State& start, const control_flow::State& end) const;
@@ -67,6 +70,16 @@ protected:
     Function& function() const override;
 
 public:
+    /**
+     * To modify an existing SDFG
+     */
+    StructuredSDFGBuilder(StructuredSDFG& sdfg);
+
+    /**
+     * Will take ownership of the SDFG
+     * Increases compatibility with legacy code. Also more idiomatic for SDFGs that are being deserialized and are not
+     * yet owned by the registry
+     */
     StructuredSDFGBuilder(std::unique_ptr<StructuredSDFG>& sdfg);
 
     StructuredSDFGBuilder(const std::string& name, FunctionType type);
@@ -77,6 +90,11 @@ public:
 
     StructuredSDFG& subject() const;
 
+    /**
+     * @deprecated the unique ptr required SDFGs were removed from the registry during modification to make sense.
+     * This builder does not change the pointer. But this will release any references the builder has to the SDFG to end
+     * any modification
+     */
     std::unique_ptr<StructuredSDFG> move();
 
     void rename_container(const std::string& old_name, const std::string& new_name) const override;

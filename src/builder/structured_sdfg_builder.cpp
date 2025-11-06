@@ -311,8 +311,10 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
 
 Function& StructuredSDFGBuilder::function() const { return static_cast<Function&>(*this->structured_sdfg_); };
 
+StructuredSDFGBuilder::StructuredSDFGBuilder(StructuredSDFG& sdfg) : FunctionBuilder(), structured_sdfg_(&sdfg) {};
+
 StructuredSDFGBuilder::StructuredSDFGBuilder(std::unique_ptr<StructuredSDFG>& sdfg)
-    : FunctionBuilder(), structured_sdfg_(std::move(sdfg)) {};
+    : FunctionBuilder(), structured_sdfg_(sdfg.release()) {};
 
 StructuredSDFGBuilder::StructuredSDFGBuilder(const std::string& name, FunctionType type)
     : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name, type)) {};
@@ -356,8 +358,10 @@ std::unique_ptr<StructuredSDFG> StructuredSDFGBuilder::move() {
 #ifndef NDEBUG
     this->structured_sdfg_->validate();
 #endif
+    auto* sdfg = structured_sdfg_;
+    structured_sdfg_ = nullptr;
 
-    return std::move(this->structured_sdfg_);
+    return std::move(std::unique_ptr<StructuredSDFG>(sdfg));
 };
 
 void StructuredSDFGBuilder::rename_container(const std::string& old_name, const std::string& new_name) const {
