@@ -361,6 +361,10 @@ std::unique_ptr<StructuredSDFG> StructuredSDFGBuilder::move() {
     this->structured_sdfg_->validate();
 #endif
 
+    if (!structured_sdfg_.get_deleter().should_delete_) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Cannot move a non-owned SDFG");
+    }
+
     return std::move(std::unique_ptr<StructuredSDFG>(structured_sdfg_.release()));
 };
 
