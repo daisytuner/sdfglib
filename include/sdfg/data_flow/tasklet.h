@@ -260,6 +260,30 @@ public:
 
     TaskletCode code() const;
 
+    bool is_assign() const;
+
+    bool is_trivial(const Function& function) const;
+
+    bool is_cast(const Function& function) const;
+
+    bool is_zext(const Function& function) const;
+
+    bool is_sext(const Function& function) const;
+
+    bool is_trunc(const Function& function) const;
+
+    bool is_fptoui(const Function& function) const;
+
+    bool is_fptosi(const Function& function) const;
+
+    bool is_uitofp(const Function& function) const;
+
+    bool is_sitofp(const Function& function) const;
+
+    bool is_fpext(const Function& function) const;
+
+    bool is_fptrunc(const Function& function) const;
+
     const std::string& output() const;
 
     virtual std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
