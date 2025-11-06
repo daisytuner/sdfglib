@@ -64,7 +64,7 @@ TEST(SymbolPromotionTest, Assign_Signed_Constant) {
     auto& block = builder.add_block(root);
     auto& zero_node = builder.add_constant(block, "0", desc);
     auto& output_node = builder.add_access(block, "i");
-    
+
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
     builder.add_computational_memlet(block, zero_node, tasklet, "_in", {});
@@ -108,7 +108,7 @@ TEST(SymbolPromotionTest, Assign_Unsigned) {
     auto& block = builder.add_block(root);
     auto& zero_node = builder.add_constant(block, "0", desc);
     auto& output_node = builder.add_access(block, "i");
-    
+
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
     builder.add_computational_memlet(block, zero_node, tasklet, "_in", {});
@@ -135,7 +135,7 @@ TEST(SymbolPromotionTest, Assign_Unsigned_Cast_Input) {
     auto& block = builder.add_block(root);
     auto& zero_node = builder.add_constant(block, "0", desc);
     auto& output_node = builder.add_access(block, "i");
-    
+
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
     builder.add_memlet(block, zero_node, "void", tasklet, "_in", {}, udesc, {});
@@ -162,7 +162,7 @@ TEST(SymbolPromotionTest, Assign_Unsigned_Cast_Output) {
     auto& block = builder.add_block(root);
     auto& zero_node = builder.add_constant(block, "0", desc);
     auto& output_node = builder.add_access(block, "i");
-    
+
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
     builder.add_computational_memlet(block, zero_node, tasklet, "_in", {});
@@ -189,7 +189,7 @@ TEST(SymbolPromotionTest, Assign_Unsigned_Tasklet) {
     auto& block = builder.add_block(root);
     auto& one_node = builder.add_constant(block, "1", desc);
     auto& output_node = builder.add_access(block, "i");
-    
+
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_udiv, "_out", {"_in1", "_in2"});
 
     builder.add_memlet(block, one_node, "void", tasklet, "_in1", {}, udesc, {});
@@ -216,7 +216,7 @@ TEST(SymbolPromotionTest, Assign_FP) {
     auto& block = builder.add_block(root);
     auto& zero_node = builder.add_constant(block, "0", desc);
     auto& output_node = builder.add_access(block, "i");
-    
+
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
     builder.add_computational_memlet(block, zero_node, tasklet, "_in", {});
@@ -497,4 +497,78 @@ TEST(SymbolPromotionTest, Mul_Signed_Constant) {
 
     EXPECT_EQ(block2->dataflow().nodes().size(), 0);
     EXPECT_EQ(child2.second.assignments().size(), 0);
+}
+
+TEST(SymbolPromotionTest, SHL_Constant) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    builder.add_container("j", desc);
+    auto sym = symbolic::symbol("i");
+    auto sym2 = symbolic::symbol("j");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& output_node = builder.add_access(block, "i");
+    auto& input_node = builder.add_access(block, "j");
+    auto& one_node = builder.add_constant(block, "1", desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_shl, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, input_node, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, one_node, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    s2spass.run(builder_opt, analysis_manager);
+    sdfg = builder_opt.move();
+
+    // Check result
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    auto block1 = dynamic_cast<const structured_control_flow::Block*>(&child1.first);
+    auto child2 = sdfg->root().at(1);
+    auto block2 = dynamic_cast<const structured_control_flow::Block*>(&child2.first);
+
+    EXPECT_NE(block1, nullptr);
+    EXPECT_NE(block2, nullptr);
+
+    auto rhs = symbolic::mul(sym2, symbolic::integer(2));
+    EXPECT_EQ(block1->dataflow().nodes().size(), 0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym), *rhs));
+
+    EXPECT_EQ(block2->dataflow().nodes().size(), 0);
+    EXPECT_EQ(child2.second.assignments().size(), 0);
+}
+
+TEST(SymbolPromotionTest, SHL_NonConstant) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    builder.add_container("j", desc);
+    builder.add_container("k", desc);
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& output_node = builder.add_access(block, "i");
+    auto& input_node = builder.add_access(block, "j");
+    auto& input2_node = builder.add_access(block, "k");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_shl, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, input_node, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, input2_node, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_FALSE(s2spass.run(builder_opt, analysis_manager));
 }

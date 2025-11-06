@@ -58,6 +58,216 @@ void Tasklet::validate(const Function& function) const {
 
 TaskletCode Tasklet::code() const { return this->code_; };
 
+
+bool Tasklet::is_assign() const { return this->code_ == TaskletCode::assign; }
+
+bool Tasklet::is_trivial(const Function& function) const {
+    if (!this->is_assign()) {
+        return false;
+    }
+
+    auto& graph = this->get_parent();
+    auto& iedge = *graph.in_edges(*this).begin();
+    auto& oedge = *graph.out_edges(*this).begin();
+    auto& input_type = iedge.result_type(function);
+    auto& output_type = oedge.result_type(function);
+
+    return input_type.primitive_type() == output_type.primitive_type();
+}
+
+bool Tasklet::is_cast(const Function& function) const {
+    if (!this->is_assign()) {
+        return false;
+    }
+
+    auto& graph = this->get_parent();
+    auto& iedge = *graph.in_edges(*this).begin();
+    auto& oedge = *graph.out_edges(*this).begin();
+    auto& input_type = iedge.result_type(function);
+    auto& output_type = oedge.result_type(function);
+
+    return input_type.primitive_type() != output_type.primitive_type();
+}
+
+bool Tasklet::is_zext(const Function& function) const {
+    if (!this->is_assign()) {
+        return false;
+    }
+
+    auto& graph = this->get_parent();
+    auto& iedge = *graph.in_edges(*this).begin();
+    auto& oedge = *graph.out_edges(*this).begin();
+    auto& input_type = iedge.result_type(function);
+    auto& output_type = oedge.result_type(function);
+
+    if (!types::is_unsigned(input_type.primitive_type()) || !types::is_unsigned(output_type.primitive_type())) {
+        return false;
+    }
+    if (types::bit_width(output_type.primitive_type()) <= types::bit_width(input_type.primitive_type())) {
+        return false;
+    }
+
+    return true;
+}
+
+bool Tasklet::is_sext(const Function& function) const {
+    if (!this->is_assign()) {
+        return false;
+    }
+
+    auto& graph = this->get_parent();
+    auto& iedge = *graph.in_edges(*this).begin();
+    auto& oedge = *graph.out_edges(*this).begin();
+    auto& input_type = iedge.result_type(function);
+    auto& output_type = oedge.result_type(function);
+
+    if (types::is_unsigned(input_type.primitive_type()) || types::is_unsigned(output_type.primitive_type())) {
+        return false;
+    }
+    if (types::bit_width(output_type.primitive_type()) <= types::bit_width(input_type.primitive_type())) {
+        return false;
+    }
+
+    return true;
+}
+
+bool Tasklet::is_trunc(const Function& function) const {
+    if (!this->is_assign()) {
+        return false;
+    }
+
+    auto& graph = this->get_parent();
+    auto& iedge = *graph.in_edges(*this).begin();
+    auto& oedge = *graph.out_edges(*this).begin();
+    auto& input_type = iedge.result_type(function);
+    auto& output_type = oedge.result_type(function);
+
+    if (types::is_unsigned(input_type.primitive_type()) != types::is_unsigned(output_type.primitive_type())) {
+        return false;
+    }
+    if (types::bit_width(output_type.primitive_type()) >= types::bit_width(input_type.primitive_type())) {
+        return false;
+    }
+
+    return true;
+}
+
+bool Tasklet::is_fptoui(const Function& function) const {
+    if (!this->is_assign()) {
+        return false;
+    }
+
+    auto& graph = this->get_parent();
+    auto& iedge = *graph.in_edges(*this).begin();
+    auto& oedge = *graph.out_edges(*this).begin();
+    auto& input_type = iedge.result_type(function);
+    auto& output_type = oedge.result_type(function);
+
+    if (!types::is_floating_point(input_type.primitive_type()) || !types::is_unsigned(output_type.primitive_type())) {
+        return false;
+    }
+
+    return true;
+}
+
+bool Tasklet::is_fptosi(const Function& function) const {
+    if (!this->is_assign()) {
+        return false;
+    }
+
+    auto& graph = this->get_parent();
+    auto& iedge = *graph.in_edges(*this).begin();
+    auto& oedge = *graph.out_edges(*this).begin();
+    auto& input_type = iedge.result_type(function);
+    auto& output_type = oedge.result_type(function);
+
+    if (!types::is_floating_point(input_type.primitive_type()) || !types::is_signed(output_type.primitive_type())) {
+        return false;
+    }
+
+    return true;
+}
+
+bool Tasklet::is_uitofp(const Function& function) const {
+    if (!this->is_assign()) {
+        return false;
+    }
+
+    auto& graph = this->get_parent();
+    auto& iedge = *graph.in_edges(*this).begin();
+    auto& oedge = *graph.out_edges(*this).begin();
+    auto& input_type = iedge.result_type(function);
+    auto& output_type = oedge.result_type(function);
+
+    if (!types::is_unsigned(input_type.primitive_type()) || !types::is_floating_point(output_type.primitive_type())) {
+        return false;
+    }
+
+    return true;
+}
+
+bool Tasklet::is_sitofp(const Function& function) const {
+    if (!this->is_assign()) {
+        return false;
+    }
+
+    auto& graph = this->get_parent();
+    auto& iedge = *graph.in_edges(*this).begin();
+    auto& oedge = *graph.out_edges(*this).begin();
+    auto& input_type = iedge.result_type(function);
+    auto& output_type = oedge.result_type(function);
+
+    if (!types::is_signed(input_type.primitive_type()) || !types::is_floating_point(output_type.primitive_type())) {
+        return false;
+    }
+
+    return true;
+}
+
+bool Tasklet::is_fpext(const Function& function) const {
+    if (!this->is_assign()) {
+        return false;
+    }
+
+    auto& graph = this->get_parent();
+    auto& iedge = *graph.in_edges(*this).begin();
+    auto& oedge = *graph.out_edges(*this).begin();
+    auto& input_type = iedge.result_type(function);
+    auto& output_type = oedge.result_type(function);
+
+    if (!types::is_floating_point(input_type.primitive_type()) ||
+        !types::is_floating_point(output_type.primitive_type())) {
+        return false;
+    }
+    if (types::bit_width(output_type.primitive_type()) <= types::bit_width(input_type.primitive_type())) {
+        return false;
+    }
+
+    return true;
+}
+
+bool Tasklet::is_fptrunc(const Function& function) const {
+    if (!this->is_assign()) {
+        return false;
+    }
+
+    auto& graph = this->get_parent();
+    auto& iedge = *graph.in_edges(*this).begin();
+    auto& oedge = *graph.out_edges(*this).begin();
+    auto& input_type = iedge.result_type(function);
+    auto& output_type = oedge.result_type(function);
+
+    if (!types::is_floating_point(input_type.primitive_type()) ||
+        !types::is_floating_point(output_type.primitive_type())) {
+        return false;
+    }
+    if (types::bit_width(output_type.primitive_type()) >= types::bit_width(input_type.primitive_type())) {
+        return false;
+    }
+
+    return true;
+}
+
 const std::string& Tasklet::output() const { return this->outputs_[0]; };
 
 std::unique_ptr<DataFlowNode> Tasklet::clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
