@@ -1213,6 +1213,14 @@ void register_default_serializers() {
         .register_library_node_serializer(stdlib::LibraryNodeType_Memset.value(), []() {
             return std::make_unique<stdlib::MemsetNodeSerializer>();
         });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Trap.value(), []() {
+            return std::make_unique<stdlib::TrapNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Unreachable.value(), []() {
+            return std::make_unique<stdlib::UnreachableNodeSerializer>();
+        });
 
     // Metadata
     LibraryNodeSerializerRegistry::instance()

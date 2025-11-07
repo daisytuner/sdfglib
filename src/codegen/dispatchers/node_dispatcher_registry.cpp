@@ -302,6 +302,28 @@ void register_default_dispatchers() {
             );
         }
     );
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        stdlib::LibraryNodeType_Trap.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<stdlib::TrapNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::TrapNode&>(node)
+            );
+        }
+    );
+    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        stdlib::LibraryNodeType_Unreachable.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        [](LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<stdlib::UnreachableNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const stdlib::UnreachableNode&>(node)
+            );
+        }
+    );
 
     // CallNode
     LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(

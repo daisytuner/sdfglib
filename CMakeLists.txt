@@ -130,6 +130,8 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/stdlib/memcpy.cpp
     src/data_flow/library_nodes/stdlib/memmove.cpp
     src/data_flow/library_nodes/stdlib/memset.cpp
+    src/data_flow/library_nodes/stdlib/trap.cpp
+    src/data_flow/library_nodes/stdlib/unreachable.cpp
     src/deepcopy/structured_sdfg_deep_copy.cpp
     src/graph/graph.cpp
     src/optimization_report/optimization_report.cpp

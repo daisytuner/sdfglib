@@ -7,3 +7,5 @@
 #include "sdfg/data_flow/library_nodes/stdlib/memcpy.h"
 #include "sdfg/data_flow/library_nodes/stdlib/memmove.h"
 #include "sdfg/data_flow/library_nodes/stdlib/memset.h"
+#include "sdfg/data_flow/library_nodes/stdlib/trap.h"
+#include "sdfg/data_flow/library_nodes/stdlib/unreachable.h"
