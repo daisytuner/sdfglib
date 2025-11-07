@@ -60,6 +60,9 @@ bool StructureDefinition::is_vector() const {
         return false;
     }
     auto& first_member_type = this->member_type(symbolic::zero());
+    if (first_member_type.type_id() != TypeID::Scalar) {
+        return false;
+    }
     for (size_t i = 1; i < this->num_members(); i++) {
         if (!(this->member_type(symbolic::integer(i)) == first_member_type)) {
             return false;
