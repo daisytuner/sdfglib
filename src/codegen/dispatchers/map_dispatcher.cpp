@@ -148,11 +148,37 @@ void CPUParallelMapDispatcher::dispatch_node(
     main_stream << ")" << std::endl;
     main_stream << "{" << std::endl;
 
+    for (auto& local : locals) {
+        auto& type = sdfg_.type(local);
+        if (type.storage_type().allocation() == types::StorageType::AllocationType::Managed) {
+            if (type.storage_type().is_cpu_stack()) {
+                main_stream << local << " = ";
+                main_stream << "alloca(" << language_extension_.expression(type.storage_type().allocation_size())
+                            << ")";
+                main_stream << ";" << std::endl;
+            } else if (type.storage_type().is_cpu_heap()) {
+                main_stream << local << " = ";
+                main_stream << language_extension_.external_prefix() << "malloc("
+                            << language_extension_.expression(type.storage_type().allocation_size()) << ")";
+                main_stream << ";" << std::endl;
+            }
+        }
+    }
+
     main_stream.setIndent(main_stream.indent() + 4);
     SequenceDispatcher
         dispatcher(language_extension_, sdfg_, analysis_manager_, node_.root(), instrumentation_plan_, arg_capture_plan_);
     dispatcher.dispatch(main_stream, globals_stream, library_snippet_factory);
     main_stream.setIndent(main_stream.indent() - 4);
+
+    for (auto& local : locals) {
+        auto& type = sdfg_.type(local);
+        if (type.storage_type().deallocation() == types::StorageType::AllocationType::Managed) {
+            if (type.storage_type().is_cpu_heap()) {
+                main_stream << language_extension_.external_prefix() << "free(" << local << ");" << std::endl;
+            }
+        }
+    }
 
     main_stream << "}" << std::endl;
 };
