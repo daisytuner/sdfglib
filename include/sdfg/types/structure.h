@@ -10,15 +10,20 @@ namespace sdfg {
 
 namespace types {
 
+class Scalar;
+
+namespace builder {
+class FunctionBuilder;
+} // namespace builder
+
 class Structure : public IType {
-   private:
+private:
     std::string name_;
 
-   public:
+public:
     Structure(const std::string& name);
 
-    Structure(StorageType storage_type, size_t alignment, const std::string& initializer,
-              const std::string& name);
+    Structure(StorageType storage_type, size_t alignment, const std::string& initializer, const std::string& name);
 
     virtual PrimitiveType primitive_type() const override;
 
@@ -36,12 +41,12 @@ class Structure : public IType {
 };
 
 class StructureDefinition {
-   private:
+private:
     std::string name_;
     bool is_packed_;
     std::vector<std::unique_ptr<IType>> members_;
 
-   public:
+public:
     StructureDefinition(const std::string& name, bool is_packed);
 
     std::unique_ptr<StructureDefinition> clone() const;
@@ -55,7 +60,16 @@ class StructureDefinition {
     const IType& member_type(symbolic::Integer index) const;
 
     void add_member(const IType& member_type);
+
+    bool is_vector() const;
+
+    const Scalar& vector_element_type() const;
+
+    const size_t vector_size() const;
+
+    static const Structure&
+    create_vector_type(const builder::FunctionBuilder& builder, const Scalar& element_type, size_t vector_size);
 };
 
-}  // namespace types
-}  // namespace sdfg
+} // namespace types
+} // namespace sdfg

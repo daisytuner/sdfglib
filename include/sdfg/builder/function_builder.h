@@ -36,6 +36,8 @@ public:
 
     types::StructureDefinition& add_structure(const std::string& name, bool is_packed) const;
 
+    std::unique_ptr<types::Structure> create_vector_type(const types::Scalar& element_type, size_t vector_size);
+
     std::string find_new_name(std::string prefix = "tmp_") const;
 
     void set_element_counter(size_t element_counter);
