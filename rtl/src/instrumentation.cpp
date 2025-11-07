@@ -146,7 +146,6 @@ private:
         // "args": {
         // "region_id": "__daisy_correlation18122842100848744318_0_0_1396",
         // "function": "main",
-        // "loopnest_index": 0,
         // "module": "correlation",
         // "build_id": "",
         // "source_ranges": [
@@ -207,7 +206,6 @@ private:
             }
             entry << "\"element_id\":" << md.element_id << ",";
             entry << "\"element_type\":\"" << md.element_type << "\",";
-            entry << "\"loopnest_index\":" << md.loopnest_index;
 
             entry << "},";
         }
@@ -251,7 +249,6 @@ private:
         // "args": {
         // "region_id": "__daisy_correlation18122842100848744318_0_0_1396",
         // "function": "main",
-        // "loopnest_index": 0,
         // "module": "correlation",
         // "build_id": "",
         // "source_ranges": [
@@ -313,11 +310,6 @@ private:
         }
         if (md.element_type) {
             entry << "\"element_type\":\"" << md.element_type << "\",";
-        }
-        if (md.sdfg_name && md.sdfg_file) {
-            entry << "\"loopnest_index\":" << md.loopnest_index;
-        } else {
-            entry << "\"loopnest_index\":-1";
         }
 
         entry << "},";

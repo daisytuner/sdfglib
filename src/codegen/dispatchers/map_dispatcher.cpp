@@ -170,16 +170,6 @@ InstrumentationInfo MapDispatcher::instrumentation_info() const {
 };
 
 InstrumentationInfo SequentialMapDispatcher::instrumentation_info() const {
-    size_t loopnest_index = -1;
-    auto& loop_tree_analysis = analysis_manager_.get<analysis::LoopAnalysis>();
-
-    auto outermost_loops = loop_tree_analysis.outermost_loops();
-    for (size_t i = 0; i < outermost_loops.size(); i++) {
-        if (outermost_loops[i] == &node_) {
-            loopnest_index = i;
-            break;
-        }
-    }
 
     // Perform FlopAnalysis
     std::unordered_map<std::string, std::string> metrics;
@@ -194,20 +184,10 @@ InstrumentationInfo SequentialMapDispatcher::instrumentation_info() const {
         }
     }
 
-    return InstrumentationInfo(ElementType_Map, TargetType_SEQUENTIAL, loopnest_index, node_.element_id(), metrics);
+    return InstrumentationInfo(ElementType_Map, TargetType_SEQUENTIAL, node_.element_id(), metrics);
 };
 
 InstrumentationInfo CPUParallelMapDispatcher::instrumentation_info() const {
-    size_t loopnest_index = -1;
-    auto& loop_tree_analysis = analysis_manager_.get<analysis::LoopAnalysis>();
-
-    auto outermost_loops = loop_tree_analysis.outermost_loops();
-    for (size_t i = 0; i < outermost_loops.size(); i++) {
-        if (outermost_loops[i] == &node_) {
-            loopnest_index = i;
-            break;
-        }
-    }
 
     // Perform FlopAnalysis
     std::unordered_map<std::string, std::string> metrics;
@@ -222,7 +202,7 @@ InstrumentationInfo CPUParallelMapDispatcher::instrumentation_info() const {
         }
     }
 
-    return InstrumentationInfo(ElementType_Map, TargetType_CPU_PARALLEL, loopnest_index, node_.element_id(), metrics);
+    return InstrumentationInfo(ElementType_Map, TargetType_CPU_PARALLEL, node_.element_id(), metrics);
 };
 
 } // namespace codegen

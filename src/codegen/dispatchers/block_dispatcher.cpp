@@ -417,7 +417,7 @@ void LibraryNodeDispatcher::
 }
 
 InstrumentationInfo LibraryNodeDispatcher::instrumentation_info() const {
-    return InstrumentationInfo(ElementType_Unknown, TargetType_SEQUENTIAL, -1, node_.element_id(), {});
+    return InstrumentationInfo(ElementType_Unknown, TargetType_SEQUENTIAL, node_.element_id(), {});
 };
 
 

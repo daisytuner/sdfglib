@@ -56,7 +56,6 @@ void InstrumentationPlan::begin_instrumentation(
     stream << metadata_var << ".element_id = " << info.element_id() << ";" << std::endl;
     stream << metadata_var << ".element_type = \"" << info.element_type().value() << "\";" << std::endl;
     stream << metadata_var << ".target_type = \"" << info.target_type().value() << "\";" << std::endl;
-    stream << metadata_var << ".loopnest_index = " << info.loopnest_index() << ";" << std::endl;
     stream << metadata_var << ".region_uuid = \"" << region_uuid << "\";" << std::endl;
 
     // Initialize region
