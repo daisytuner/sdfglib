@@ -1,5 +1,7 @@
 #include "sdfg/types/structure.h"
 
+#include "sdfg/types/scalar.h"
+
 namespace sdfg {
 namespace types {
 
@@ -52,6 +54,30 @@ const IType& StructureDefinition::member_type(symbolic::Integer index) const {
 };
 
 void StructureDefinition::add_member(const IType& member_type) { this->members_.push_back(member_type.clone()); };
+
+bool StructureDefinition::is_vector() const {
+    if (this->num_members() == 0) {
+        return false;
+    }
+    auto& first_member_type = this->member_type(symbolic::zero());
+    for (size_t i = 1; i < this->num_members(); i++) {
+        if (!(this->member_type(symbolic::integer(i)) == first_member_type)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+const Scalar& StructureDefinition::vector_element_type() const {
+    return dynamic_cast<const Scalar&>(this->member_type(symbolic::zero()));
+}
+
+const size_t StructureDefinition::vector_size() const {
+    if (!this->is_vector()) {
+        return 0;
+    }
+    return this->num_members();
+}
 
 } // namespace types
 } // namespace sdfg

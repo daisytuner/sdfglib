@@ -34,9 +34,12 @@ infer_type_internal(const sdfg::Function& function, const types::IType& type, co
     } else if (type.type_id() == TypeID::Structure) {
         auto& structure_type = static_cast<const types::Structure&>(type);
 
-        auto& definition = function.structure(structure_type.name());
-
         data_flow::Subset element_subset(subset.begin() + 1, subset.end());
+
+        auto& definition = function.structure(structure_type.name());
+        if (definition.is_vector()) {
+            return infer_type_internal(function, definition.vector_element_type(), element_subset);
+        }
         auto member = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(subset.at(0));
         return infer_type_internal(function, definition.member_type(member), element_subset);
     } else if (type.type_id() == TypeID::Pointer) {
