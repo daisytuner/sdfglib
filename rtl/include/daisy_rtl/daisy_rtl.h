@@ -62,12 +62,18 @@ typedef struct __daisy_capture __daisy_capture_t;
 
 __daisy_capture_t* __daisy_capture_init(const char* name, const char* base_dir);
 
-bool __daisy_capture_enter(__daisy_capture_t* context);
+bool __daisy_capture_enter(__daisy_capture_t* context, size_t element_id);
 
 void __daisy_capture_end(__daisy_capture_t* context);
 
 void __daisy_capture_raw(
-    __daisy_capture_t* context, int arg_idx, const void* data, size_t size, int primitive_type, bool after
+    __daisy_capture_t* context,
+    int arg_idx,
+    const void* data,
+    size_t size,
+    int primitive_type,
+    bool after,
+    size_t element_id
 );
 
 void __daisy_capture_1d(
@@ -77,7 +83,8 @@ void __daisy_capture_1d(
     size_t size,
     int primitive_type,
     size_t num_elements,
-    bool after
+    bool after,
+    size_t element_id
 );
 
 void __daisy_capture_2d(
@@ -88,7 +95,8 @@ void __daisy_capture_2d(
     int primitive_type,
     size_t num_rows,
     size_t num_cols,
-    bool after
+    bool after,
+    size_t element_id
 );
 
 void __daisy_capture_3d(
@@ -100,7 +108,8 @@ void __daisy_capture_3d(
     size_t num_x,
     size_t num_y,
     size_t num_z,
-    bool after
+    bool after,
+    size_t element_id
 );
 
 #ifdef __cplusplus

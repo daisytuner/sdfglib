@@ -7,6 +7,7 @@
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher.h"
+#include "sdfg/codegen/instrumentation/arg_capture_plan.h"
 #include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 #include "sdfg/codegen/language_extension.h"
 
@@ -14,7 +15,7 @@ namespace sdfg {
 namespace codegen {
 
 using NodeDispatcherFn = std::function<std::unique_ptr<
-    NodeDispatcher>(LanguageExtension&, StructuredSDFG&, analysis::AnalysisManager&, structured_control_flow::ControlFlowNode&, InstrumentationPlan&)>;
+    NodeDispatcher>(LanguageExtension&, StructuredSDFG&, analysis::AnalysisManager&, structured_control_flow::ControlFlowNode&, InstrumentationPlan&, ArgCapturePlan&)>;
 
 class NodeDispatcherRegistry {
 private:
@@ -51,11 +52,12 @@ std::unique_ptr<NodeDispatcher> create_dispatcher(
     StructuredSDFG& sdfg,
     analysis::AnalysisManager& analysis_manager,
     structured_control_flow::ControlFlowNode& node,
-    InstrumentationPlan& instrumentation_plan
+    InstrumentationPlan& instrumentation_plan,
+    ArgCapturePlan& arg_capture_plan
 );
 
 using MapDispatcherFn = std::function<std::unique_ptr<
-    NodeDispatcher>(LanguageExtension&, StructuredSDFG&, analysis::AnalysisManager&, structured_control_flow::Map&, InstrumentationPlan&)>;
+    NodeDispatcher>(LanguageExtension&, StructuredSDFG&, analysis::AnalysisManager&, structured_control_flow::Map&, InstrumentationPlan&, ArgCapturePlan&)>;
 
 class MapDispatcherRegistry {
 private:

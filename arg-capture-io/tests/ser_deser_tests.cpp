@@ -10,30 +10,31 @@ using namespace arg_capture;
 
 TEST(SerDeserTests, SerializeAndDeserializeCaptures) {
     ArgCaptureIO capture("some_function");
-    capture.invocation();
-    capture.invocation();
+    capture.invocation("123");
+    capture.invocation("123");
 
     uint8_t data[] = {1, 2, 3, 4, 5, 6, 7, 8};
 
-    EXPECT_TRUE(capture.create_and_capture_inline(3, false, static_cast<int>(PrimitiveType::Int64), {8}, data));
+    EXPECT_TRUE(capture.create_and_capture_inline(3, false, static_cast<int>(PrimitiveType::Int64), {8}, data, "123"));
     data[0] = 9;
-    EXPECT_TRUE(capture.create_and_capture_inline(3, true, static_cast<int>(PrimitiveType::Double), {8}, data));
+    EXPECT_TRUE(capture.create_and_capture_inline(3, true, static_cast<int>(PrimitiveType::Double), {8}, data, "123"));
     data[1] = 10;
     auto binFile = get_outputs_base_path() / "SerDeser" / "arg4_in.bin";
-    EXPECT_TRUE(capture
-                    .create_and_capture_to_file(4, false, static_cast<int>(PrimitiveType::Int64), {1, 2, 4}, binFile, data)
-    );
+    EXPECT_TRUE(capture.create_and_capture_to_file(
+        4, false, static_cast<int>(PrimitiveType::Int64), {1, 2, 4}, binFile, data, "123"
+    ));
 
-    auto indexFile = get_outputs_base_path() / "SerDeser" / "index.json";
-    capture.write_index(indexFile);
+    auto index_path = get_outputs_base_path() / "SerDeser";
+    capture.write_index(index_path);
+    auto index_file = index_path / "some_function_inv1_123.index.json";
 
-    auto deser = ArgCaptureIO::from_index(indexFile);
+    auto deser = ArgCaptureIO::from_index(index_file);
 
     EXPECT_EQ(deser->get_name(), capture.get_name());
-    EXPECT_EQ(deser->get_current_invocation(), capture.get_current_invocation());
-    EXPECT_EQ(deser->get_captures().size(), 3);
+    EXPECT_EQ(deser->get_current_invocation("123"), capture.get_current_invocation("123"));
+    EXPECT_EQ(deser->get_captures().at("123").size(), 3);
 
-    auto& elem1 = deser->get_captures().at(std::make_pair(3, false));
+    auto& elem1 = deser->get_captures().at("123").at(std::make_pair(3, false));
     EXPECT_EQ(elem1.arg_idx, 3);
     EXPECT_EQ(elem1.after, false);
     EXPECT_EQ(elem1.primitive_type, static_cast<int>(PrimitiveType::Int64));
@@ -43,7 +44,7 @@ TEST(SerDeserTests, SerializeAndDeserializeCaptures) {
     uint8_t ref_dat1[] = {1, 2, 3, 4, 5, 6, 7, 8};
     EXPECT_EQ(memcmp(elem1.data->data(), ref_dat1, 8), 0);
 
-    auto& elem2 = deser->get_captures().at(std::make_pair(3, true));
+    auto& elem2 = deser->get_captures().at("123").at(std::make_pair(3, true));
     EXPECT_EQ(elem2.arg_idx, 3);
     EXPECT_EQ(elem2.after, true);
     EXPECT_EQ(elem2.primitive_type, static_cast<int>(PrimitiveType::Double));
@@ -53,7 +54,7 @@ TEST(SerDeserTests, SerializeAndDeserializeCaptures) {
     uint8_t ref_dat2[] = {9, 2, 3, 4, 5, 6, 7, 8};
     EXPECT_EQ(memcmp(elem2.data->data(), ref_dat2, 8), 0);
 
-    auto& elem3 = deser->get_captures().at(std::make_pair(4, false));
+    auto& elem3 = deser->get_captures().at("123").at(std::make_pair(4, false));
     EXPECT_EQ(elem3.arg_idx, 4);
     EXPECT_EQ(elem3.after, false);
     EXPECT_EQ(elem3.primitive_type, static_cast<int>(PrimitiveType::Int64));

@@ -2,6 +2,7 @@
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/codegen/code_snippet_factory.h"
+#include "sdfg/codegen/instrumentation/arg_capture_plan.h"
 #include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 #include "sdfg/codegen/language_extension.h"
 #include "sdfg/codegen/utils.h"
@@ -23,6 +24,8 @@ protected:
 
     InstrumentationPlan& instrumentation_plan_;
 
+    ArgCapturePlan& arg_capture_plan_;
+
     analysis::AnalysisManager& analysis_manager_;
 
     virtual bool begin_node(PrettyPrinter& stream);
@@ -37,7 +40,8 @@ public:
         StructuredSDFG& sdfg,
         analysis::AnalysisManager& analysis_manager,
         structured_control_flow::ControlFlowNode& node,
-        InstrumentationPlan& instrumentation_plan
+        InstrumentationPlan& instrumentation_plan,
+        ArgCapturePlan& arg_capture_plan
     );
 
     virtual ~NodeDispatcher() = default;

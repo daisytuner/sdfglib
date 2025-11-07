@@ -10,11 +10,11 @@ static void __attribute__((constructor(1000))) __capture_ctx_init(void) {
 
 
 void __daisy_capture_test_function(const int32_t* arg_a, const int32_t* arg_b, int64_t arg_scalar, int32_t* arg_out) {
-    const bool __daisy_cap_en = __daisy_capture_enter(__capture_ctx);
+    const bool __daisy_cap_en = __daisy_capture_enter(__capture_ctx, 123);
     if (__daisy_cap_en) {
-        __daisy_capture_1d(__capture_ctx, 0, arg_a, 4, 4, 10, false);
-        __daisy_capture_1d(__capture_ctx, 1, arg_b, 4, 4, 10, false);
-        __daisy_capture_raw(__capture_ctx, 2, &arg_scalar, 8, 5, false);
+        __daisy_capture_1d(__capture_ctx, 0, arg_a, 4, 4, 10, false, 123);
+        __daisy_capture_1d(__capture_ctx, 1, arg_b, 4, 4, 10, false, 123);
+        __daisy_capture_raw(__capture_ctx, 2, &arg_scalar, 8, 5, false, 123);
     }
 
     for (int i = 0; i < 10; i++) {
@@ -24,7 +24,7 @@ void __daisy_capture_test_function(const int32_t* arg_a, const int32_t* arg_b, i
     }
 
     if (__daisy_cap_en) {
-        __daisy_capture_1d(__capture_ctx, 3, arg_out, 4, 4, 10, true);
+        __daisy_capture_1d(__capture_ctx, 3, arg_out, 4, 4, 10, true, 123);
         __daisy_capture_end(__capture_ctx);
     }
 }

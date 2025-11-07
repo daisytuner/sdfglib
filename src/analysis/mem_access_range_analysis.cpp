@@ -50,7 +50,7 @@ void MemAccessRanges::
         delete workItem;
     }
 
-    this->ranges_.insert({&node, std::move(builder.ranges_)});
+    this->ranges_.insert_or_assign(&node, std::move(builder.ranges_));
 }
 
 void MemAccessRanges::run(analysis::AnalysisManager& analysis_manager) {
@@ -92,12 +92,10 @@ const MemAccessRange* MemAccessRanges::
         structured_control_flow::ControlFlowNode& node,
         std::unordered_set<std::string> target_nodes) {
     auto ranges = this->ranges_.find(&node);
+    this->run(node, target_nodes);
+    ranges = this->ranges_.find(&node);
     if (ranges == this->ranges_.end()) {
-        this->run(node, target_nodes);
-        ranges = this->ranges_.find(&node);
-        if (ranges == this->ranges_.end()) {
-            return nullptr;
-        }
+        return nullptr;
     }
     auto res = ranges->second.find(varName);
     if (res != ranges->second.end()) {
