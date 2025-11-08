@@ -43,9 +43,6 @@ void StructuredSDFGDeepCopy::append(structured_control_flow::Sequence& root, str
                 auto& new_ret =
                     this->builder_.add_return(root, ret_stmt->data(), trans.assignments(), ret_stmt->debug_info());
                 this->node_mapping[ret_stmt] = &new_ret;
-            } else if (ret_stmt->is_unreachable()) {
-                auto& new_ret = this->builder_.add_unreachable(root, trans.assignments(), ret_stmt->debug_info());
-                this->node_mapping[ret_stmt] = &new_ret;
             } else if (ret_stmt->is_constant()) {
                 auto& new_ret = this->builder_.add_constant_return(
                     root, ret_stmt->data(), ret_stmt->type(), trans.assignments(), ret_stmt->debug_info()
@@ -126,9 +123,6 @@ void StructuredSDFGDeepCopy::
     } else if (auto ret_stmt = dynamic_cast<structured_control_flow::Return*>(&source)) {
         if (ret_stmt->is_data()) {
             auto& new_ret = this->builder_.add_return(root, ret_stmt->data(), {}, ret_stmt->debug_info());
-            this->node_mapping[ret_stmt] = &new_ret;
-        } else if (ret_stmt->is_unreachable()) {
-            auto& new_ret = this->builder_.add_unreachable(root, {}, ret_stmt->debug_info());
             this->node_mapping[ret_stmt] = &new_ret;
         } else if (ret_stmt->is_constant()) {
             auto& new_ret =
