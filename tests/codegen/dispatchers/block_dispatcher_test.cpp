@@ -20,7 +20,7 @@ TEST(BlockDispatcherTest, DispatchNode_Empty) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     codegen::BlockDispatcher
@@ -61,7 +61,7 @@ TEST(BlockDispatcherTest, DispatchNode_TopologicalOrder) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     codegen::BlockDispatcher
@@ -104,7 +104,7 @@ TEST(DataFlowDispatcherTest, DispatchTasklet) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
@@ -131,7 +131,7 @@ TEST(DataFlowDispatcherTest, DispatchLibraryNode) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CUDALanguageExtension language_extension;
+    codegen::CUDALanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
@@ -163,7 +163,7 @@ TEST(DataFlowDispatcherTest, DispatchRef_Empty) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
@@ -195,7 +195,7 @@ TEST(DataFlowDispatcherTest, DispatchRef_Subset) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
@@ -226,7 +226,7 @@ TEST(DataFlowDispatcherTest, DispatchRef_Nullptr) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
@@ -257,7 +257,7 @@ TEST(DataFlowDispatcherTest, DispatchRef_Address) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
@@ -290,7 +290,7 @@ TEST(DataFlowDispatcherTest, DispatchDeref_Load) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
@@ -323,7 +323,7 @@ TEST(DataFlowDispatcherTest, DispatchDeref_Store) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 
@@ -355,7 +355,7 @@ TEST(DataFlowDispatcherTest, DispatchDeref_Store_Nullptr) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     codegen::DataFlowDispatcher dispatcher(language_extension, *final_sdfg, block.dataflow(), *instrumentation);
 

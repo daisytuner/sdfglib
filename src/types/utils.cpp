@@ -157,11 +157,6 @@ symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_tim
         if (size_of_type != 0) {
             return symbolic::integer(size_of_type);
         } else {
-            codegen::CLanguageExtension lang;
-            DEBUG_PRINTLN(
-                "Unexpected primitive_type " << primitive_type_to_string(prim_type) << " of "
-                                             << lang.declaration("", type) << ", unknown size"
-            );
             return {};
         }
     }

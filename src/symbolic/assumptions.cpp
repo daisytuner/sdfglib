@@ -1,5 +1,6 @@
 #include "sdfg/symbolic/assumptions.h"
 
+#include "sdfg/types/pointer.h"
 #include "sdfg/types/scalar.h"
 
 namespace sdfg {
@@ -201,6 +202,14 @@ Assumption Assumption::create(const Symbol symbol, const types::IType& type) {
                 throw std::runtime_error("Unsupported type");
             }
         };
+        return assum;
+    } else if (auto ptr_type = dynamic_cast<const types::Pointer*>(&type)) {
+        auto assum = Assumption(symbol);
+        assum.add_lower_bound(integer(std::numeric_limits<uint64_t>::min()));
+        assum.add_upper_bound(SymEngine::Inf);
+        assum.lower_bound_deprecated(integer(std::numeric_limits<uint64_t>::min()));
+        assum.upper_bound_deprecated(SymEngine::Inf);
+
         return assum;
     } else {
         throw std::runtime_error("Unsupported type");

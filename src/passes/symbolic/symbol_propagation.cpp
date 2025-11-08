@@ -113,20 +113,8 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
 
             // Collect all symbols used in the RHS
             std::unordered_set<std::string> rhs_symbols;
-            bool pointer_in_rhs = false;
             for (auto& sym : symbolic::atoms(rhs)) {
                 rhs_symbols.insert(sym->get_name());
-
-                if (sdfg.exists(sym->get_name())) {
-                    auto& atom_type = sdfg.type(sym->get_name());
-                    if (atom_type.type_id() == types::TypeID::Pointer) {
-                        pointer_in_rhs = true;
-                        break;
-                    }
-                }
-            }
-            if (pointer_in_rhs) {
-                continue;
             }
 
             // RHS' symbols may be written between write and read
@@ -137,7 +125,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
 
             auto middle_users = users.all_uses_between(*write, *read);
             for (auto& user : middle_users) {
-                if (user->use() != analysis::Use::WRITE) {
+                if (user->use() != analysis::Use::WRITE && user->use() != analysis::Use::MOVE) {
                     continue;
                 }
                 if (rhs_symbols.find(user->container()) == rhs_symbols.end()) {
@@ -241,6 +229,10 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
             } else if (auto access_node = dynamic_cast<data_flow::AccessNode*>(read->element())) {
                 if (SymEngine::is_a<SymEngine::Symbol>(*rhs_modified)) {
                     auto new_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(rhs_modified);
+                    if (symbolic::is_nullptr(new_symbol) ||
+                        sdfg.type(new_symbol->get_name()).type_id() == types::TypeID::Pointer) {
+                        continue;
+                    }
                     access_node->data(new_symbol->get_name());
                     applied = true;
                     replaced_nodes.insert(access_node);

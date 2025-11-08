@@ -28,19 +28,15 @@ void Transition::validate(const Function& function) const {
         auto& lhs = entry.first;
         auto& type = function.type(lhs->get_name());
         if (type.type_id() != types::TypeID::Scalar) {
-            throw InvalidSDFGException("Assignment - LHS: must be integer type");
+            throw InvalidSDFGException("Assignment - LHS: must be scalar type");
         }
         if (!types::is_integer(type.primitive_type())) {
             throw InvalidSDFGException("Assignment - LHS: must be integer type");
         }
 
         auto& rhs = entry.second;
-        bool is_relational = SymEngine::is_a_Relational(*rhs);
         for (auto& atom : symbolic::atoms(rhs)) {
             if (symbolic::is_nullptr(atom)) {
-                if (!is_relational) {
-                    throw InvalidSDFGException("Assignment - RHS: nullptr can only be used in comparisons");
-                }
                 continue;
             }
             auto& atom_type = function.type(atom->get_name());
@@ -51,14 +47,10 @@ void Transition::validate(const Function& function) const {
                     throw InvalidSDFGException("Assignment - RHS: must evaluate to integer type");
                 }
                 continue;
-            }
-
-            // Pointer types (only in comparisons)
-            if (atom_type.type_id() == types::TypeID::Pointer) {
-                if (!is_relational) {
-                    throw InvalidSDFGException("Assignment - RHS: pointer types can only be used in comparisons");
-                }
+            } else if (atom_type.type_id() == types::TypeID::Pointer) {
                 continue;
+            } else {
+                throw InvalidSDFGException("Assignment - RHS: must evaluate to integer or pointer type");
             }
         }
     }

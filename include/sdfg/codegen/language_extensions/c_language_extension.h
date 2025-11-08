@@ -11,12 +11,8 @@ namespace codegen {
 
 class CLanguageExtension : public LanguageExtension {
 public:
-    CLanguageExtension() : LanguageExtension() {}
-
-    CLanguageExtension(
-        const std::vector<std::string>& external_variables,
-        const std::string& external_prefix = ""
-    ) : LanguageExtension(external_variables, external_prefix) {}
+    CLanguageExtension(sdfg::Function& function, const std::string& external_prefix = "")
+        : LanguageExtension(function, external_prefix) {}
 
     const std::string language() const override { return "C"; }
 
@@ -28,7 +24,7 @@ public:
 
     std::string type_cast(const std::string& name, const types::IType& type) override;
 
-    std::string subset(const Function& function, const types::IType& type, const data_flow::Subset& subset) override;
+    std::string subset(const types::IType& type, const data_flow::Subset& subset) override;
 
     std::string expression(const symbolic::Expression expr) override;
 
@@ -41,7 +37,7 @@ public:
 
 class CSymbolicPrinter : public SymEngine::BaseVisitor<CSymbolicPrinter, SymEngine::CodePrinter> {
 private:
-    const std::unordered_set<std::string>& external_variables_;
+    sdfg::Function& function_;
     std::string external_prefix_;
 
 public:
@@ -72,8 +68,8 @@ public:
         const SymEngine::RCP<const SymEngine::Basic>& b
     ) override;
 
-    CSymbolicPrinter(const std::unordered_set<std::string>& external_variables, const std::string& external_prefix = "")
-        : external_variables_(external_variables), external_prefix_(external_prefix) {}
+    CSymbolicPrinter(sdfg::Function& function, const std::string& external_prefix = "")
+        : function_(function), external_prefix_(external_prefix) {}
 };
 
 } // namespace codegen
