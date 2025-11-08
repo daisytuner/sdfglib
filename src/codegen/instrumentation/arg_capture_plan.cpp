@@ -37,8 +37,8 @@ bool ArgCapturePlan::should_instrument(const structured_control_flow::ControlFlo
 void ArgCapturePlan::begin_instrumentation(
     const structured_control_flow::ControlFlowNode& node, PrettyPrinter& stream, LanguageExtension& language_extension
 ) const {
-    stream << "const bool __daisy_cap_en_" << node.element_id() << " = __daisy_capture_enter(__capture_ctx, " << node.element_id() << ");"
-           << std::endl;
+    stream << "const bool __daisy_cap_en_" << node.element_id() << " = __daisy_capture_enter(__capture_ctx, "
+           << node.element_id() << ");" << std::endl;
 
     stream << "if (__daisy_cap_en_" << node.element_id() << ")";
     stream << "{" << std::endl;
@@ -370,6 +370,10 @@ std::unordered_map<std::string, std::pair<bool, bool>> ArgCapturePlan::find_argu
 
     std::unordered_map<std::string, std::pair<bool, bool>> all_containers;
     for (auto& user : scope_users.uses()) {
+        if (symbolic::is_nullptr(symbolic::symbol(user->container()))) {
+            continue;
+        }
+
         bool is_read, is_write;
         switch (user->use()) {
             case analysis::READ:
