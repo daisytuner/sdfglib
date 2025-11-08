@@ -103,9 +103,7 @@ void ReturnDispatcher::dispatch_node(
         }
     }
 
-    if (node_.unreachable()) {
-        main_stream << "/* unreachable return */" << std::endl;
-    } else if (node_.is_data()) {
+    if (node_.is_data()) {
         std::string return_str = node_.data();
         if (sdfg_.is_external(node_.data())) {
             return_str = "&" + this->language_extension_.external_prefix() + return_str;

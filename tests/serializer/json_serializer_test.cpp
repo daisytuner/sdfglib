@@ -447,8 +447,6 @@ TEST(JSONSerializerTest, ReturnToJSON) {
     EXPECT_EQ(j["type"], "return");
     EXPECT_TRUE(j.contains("data"));
     EXPECT_EQ(j["data"], "");
-    EXPECT_TRUE(j.contains("unreachable"));
-    EXPECT_EQ(j["unreachable"], false);
     EXPECT_FALSE(j.contains("data_type"));
 }
 
@@ -1625,7 +1623,6 @@ TEST(JSONSerializerTest, SerializeDeserialize_return) {
     EXPECT_TRUE(dynamic_cast<sdfg::structured_control_flow::Return*>(&des_sdfg->root().at(0).first) != nullptr);
     auto& des_ret = dynamic_cast<sdfg::structured_control_flow::Return&>(des_sdfg->root().at(0).first);
     EXPECT_EQ(des_ret.data(), "");
-    EXPECT_EQ(des_ret.unreachable(), false);
 }
 
 TEST(JSONSerializerTest, SerializeDeserialize) {

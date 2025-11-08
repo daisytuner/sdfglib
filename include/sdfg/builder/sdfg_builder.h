@@ -57,11 +57,6 @@ public:
         const control_flow::State& state, const std::string& data, const DebugInfo& debug_info = DebugInfo()
     );
 
-    control_flow::ReturnState& add_unreachable_state(const DebugInfo& debug_info = DebugInfo());
-
-    control_flow::ReturnState&
-    add_unreachable_state_after(const control_flow::State& state, const DebugInfo& debug_info = DebugInfo());
-
     control_flow::ReturnState& add_constant_return_state(
         const std::string& data, const types::IType& type, const DebugInfo& debug_info = DebugInfo()
     );

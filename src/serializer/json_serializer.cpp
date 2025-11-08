@@ -275,7 +275,6 @@ void JSONSerializer::return_node_to_json(nlohmann::json& j, const structured_con
     j["type"] = "return";
     j["element_id"] = return_node.element_id();
     j["data"] = return_node.data();
-    j["unreachable"] = return_node.unreachable();
 
     if (return_node.is_constant()) {
         nlohmann::json type_json;
@@ -924,16 +923,12 @@ void JSONSerializer::json_to_return_node(
     assert(j["type"] == "return");
 
     std::string data = j["data"];
-    bool unreachable = j["unreachable"];
     std::unique_ptr<types::IType> data_type = nullptr;
     if (j.contains("data_type")) {
         data_type = json_to_type(j["data_type"]);
     }
 
-    if (unreachable) {
-        auto& node = builder.add_unreachable(parent, assignments, json_to_debug_info(j["debug_info"]));
-        node.element_id_ = j["element_id"];
-    } else if (data_type == nullptr) {
+    if (data_type == nullptr) {
         auto& node = builder.add_return(parent, data, assignments, json_to_debug_info(j["debug_info"]));
         node.element_id_ = j["element_id"];
     } else {
@@ -1212,6 +1207,14 @@ void register_default_serializers() {
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(stdlib::LibraryNodeType_Memset.value(), []() {
             return std::make_unique<stdlib::MemsetNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Trap.value(), []() {
+            return std::make_unique<stdlib::TrapNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(stdlib::LibraryNodeType_Unreachable.value(), []() {
+            return std::make_unique<stdlib::UnreachableNodeSerializer>();
         });
 
     // Metadata
