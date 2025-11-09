@@ -406,3 +406,141 @@ TEST(ReferencePropagationTest, PointerIteration2) {
     EXPECT_EQ(ref_edge.subset().size(), 1);
     EXPECT_TRUE(symbolic::eq(ref_edge.subset()[0], symbolic::one()));
 }
+
+TEST(ReferencePropagationTest, AggregatePointers_Array) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Double);
+    types::Pointer desc_ptr(desc);
+    types::Array array_desc(desc, symbolic::integer(10));
+    types::Pointer array_desc_ptr(array_desc);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("a", opaque_desc);
+
+    auto& root = builder.subject().root();
+    auto& block1 = builder.add_block(root);
+    auto& a_input = builder.add_access(block1, "A");
+    auto& a_output = builder.add_access(block1, "a");
+    builder.add_reference_memlet(block1, a_input, a_output, {symbolic::one()}, array_desc_ptr);
+
+    auto& block2 = builder.add_block(root);
+    auto& input_node = builder.add_access(block2, "a");
+    auto& output_node = builder.add_access(block2, "a");
+    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"_in0"});
+    auto& iedge = builder.add_computational_memlet(block2, input_node, tasklet, "_in0", {symbolic::zero()}, desc_ptr);
+    auto& oedge = builder.add_computational_memlet(block2, tasklet, "_out", output_node, {symbolic::zero()}, desc_ptr);
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::ReferencePropagation pass;
+    EXPECT_TRUE(pass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result
+    EXPECT_EQ(input_node.data(), "A");
+    EXPECT_EQ(output_node.data(), "A");
+
+    EXPECT_EQ(iedge.subset().size(), 2);
+    EXPECT_TRUE(symbolic::eq(iedge.subset()[0], symbolic::one()));
+    EXPECT_TRUE(symbolic::eq(iedge.subset()[1], symbolic::zero()));
+    EXPECT_EQ(iedge.base_type(), array_desc_ptr);
+
+    EXPECT_EQ(oedge.subset().size(), 2);
+    EXPECT_TRUE(symbolic::eq(oedge.subset()[0], symbolic::one()));
+    EXPECT_TRUE(symbolic::eq(oedge.subset()[1], symbolic::zero()));
+    EXPECT_EQ(oedge.base_type(), array_desc_ptr);
+}
+
+TEST(ReferencePropagationTest, AggregatePointers_Structure) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    auto& struct_def = builder.add_structure("my_struct", false);
+    struct_def.add_member(types::Scalar(types::PrimitiveType::Double));
+
+    types::Scalar desc(types::PrimitiveType::Double);
+    types::Pointer desc_ptr(desc);
+    types::Structure struct_desc("my_struct");
+    types::Pointer struct_desc_ptr(struct_desc);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("a", opaque_desc);
+
+    auto& root = builder.subject().root();
+    auto& block1 = builder.add_block(root);
+    auto& a_input = builder.add_access(block1, "A");
+    auto& a_output = builder.add_access(block1, "a");
+    builder.add_reference_memlet(block1, a_input, a_output, {symbolic::one()}, struct_desc_ptr);
+
+    auto& block2 = builder.add_block(root);
+    auto& input_node = builder.add_access(block2, "a");
+    auto& output_node = builder.add_access(block2, "a");
+    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"_in0"});
+    auto& iedge = builder.add_computational_memlet(block2, input_node, tasklet, "_in0", {symbolic::zero()}, desc_ptr);
+    auto& oedge = builder.add_computational_memlet(block2, tasklet, "_out", output_node, {symbolic::zero()}, desc_ptr);
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::ReferencePropagation pass;
+    EXPECT_TRUE(pass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result
+    EXPECT_EQ(input_node.data(), "A");
+    EXPECT_EQ(output_node.data(), "A");
+
+    EXPECT_EQ(iedge.subset().size(), 2);
+    EXPECT_TRUE(symbolic::eq(iedge.subset()[0], symbolic::one()));
+    EXPECT_TRUE(symbolic::eq(iedge.subset()[1], symbolic::zero()));
+    EXPECT_EQ(iedge.base_type(), struct_desc_ptr);
+
+    EXPECT_EQ(oedge.subset().size(), 2);
+    EXPECT_TRUE(symbolic::eq(oedge.subset()[0], symbolic::one()));
+    EXPECT_TRUE(symbolic::eq(oedge.subset()[1], symbolic::zero()));
+    EXPECT_EQ(oedge.base_type(), struct_desc_ptr);
+}
+
+TEST(ReferencePropagationTest, AggregatePointers_Structure_Cast) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    auto& struct_def = builder.add_structure("my_struct", false);
+    struct_def.add_member(types::Scalar(types::PrimitiveType::Float));
+
+    types::Scalar desc(types::PrimitiveType::Double);
+    types::Pointer desc_ptr(desc);
+    types::Structure struct_desc("my_struct");
+    types::Pointer struct_desc_ptr(struct_desc);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("a", opaque_desc);
+
+    auto& root = builder.subject().root();
+    auto& block1 = builder.add_block(root);
+    auto& a_input = builder.add_access(block1, "A");
+    auto& a_output = builder.add_access(block1, "a");
+    builder.add_reference_memlet(block1, a_input, a_output, {symbolic::one()}, struct_desc_ptr);
+
+    auto& block2 = builder.add_block(root);
+    auto& input_node = builder.add_access(block2, "a");
+    auto& output_node = builder.add_access(block2, "a");
+    auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"_in0"});
+    auto& iedge = builder.add_computational_memlet(block2, input_node, tasklet, "_in0", {symbolic::zero()}, desc_ptr);
+    auto& oedge = builder.add_computational_memlet(block2, tasklet, "_out", output_node, {symbolic::zero()}, desc_ptr);
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::ReferencePropagation pass;
+    EXPECT_FALSE(pass.run(builder_opt, analysis_manager));
+}
