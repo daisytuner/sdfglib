@@ -158,6 +158,7 @@ set(SOURCE_FILES
     src/passes/structured_control_flow/for2map.cpp
     src/passes/structured_control_flow/loop_normalization.cpp
     src/passes/structured_control_flow/sequence_fusion.cpp
+    src/passes/structured_control_flow/unify_loop_exits.cpp
     src/passes/structured_control_flow/while_to_for_conversion.cpp
     src/passes/debug_info_propagation.cpp
     src/serializer/json_serializer.cpp
