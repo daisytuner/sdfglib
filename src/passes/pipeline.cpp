@@ -1,6 +1,7 @@
 #include "sdfg/passes/pipeline.h"
 
 #include "sdfg/passes/dataflow/block_hoisting.h"
+#include "sdfg/passes/dataflow/block_sorting.h"
 #include "sdfg/passes/dataflow/tasklet_fusion.h"
 #include "sdfg/passes/schedules/expansion_pass.h"
 
@@ -90,6 +91,7 @@ Pipeline Pipeline::code_motion() {
     Pipeline p("CodeMotion");
 
     p.register_pass<BlockHoistingPass>();
+    p.register_pass<BlockSortingPass>();
 
     return p;
 };

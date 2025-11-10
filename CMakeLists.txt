@@ -138,6 +138,7 @@ set(SOURCE_FILES
     src/passes/pass.cpp
     src/passes/pipeline.cpp
     src/passes/dataflow/block_hoisting.cpp
+    src/passes/dataflow/block_sorting.cpp
     src/passes/dataflow/dead_data_elimination.cpp
     src/passes/dataflow/dead_reference_elimination.cpp
     src/passes/dataflow/constant_elimination.cpp

@@ -42,6 +42,7 @@ set(TEST_FILES
     graph/graph_algorithms_test.cpp
     helpers/helpers_test.cpp
     passes/dataflow/block_hoisting_test.cpp
+    passes/dataflow/block_sorting_test.cpp
     passes/dataflow/bytes_reference_elimination_test.cpp
     passes/dataflow/constant_elimination_test.cpp
     passes/dataflow/dead_data_elimination_test.cpp
