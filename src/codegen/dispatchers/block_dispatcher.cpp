@@ -83,16 +83,16 @@ void DataFlowDispatcher::dispatch_ref(PrettyPrinter& stream, const data_flow::Me
     std::string src_name = this->language_extension_.access_node(src);
     if (dynamic_cast<const data_flow::ConstantNode*>(&src)) {
         stream << src_name;
-        stream << this->language_extension_.subset(function_, base_type, subset);
+        stream << this->language_extension_.subset(base_type, subset);
     } else {
         if (base_type.type_id() == types::TypeID::Pointer && !subset.empty()) {
             stream << "&";
             stream << "(" + this->language_extension_.type_cast(src_name, base_type) + ")";
-            stream << this->language_extension_.subset(function_, base_type, subset);
+            stream << this->language_extension_.subset(base_type, subset);
         } else {
             stream << "&";
             stream << src_name;
-            stream << this->language_extension_.subset(function_, base_type, subset);
+            stream << this->language_extension_.subset(base_type, subset);
         }
     }
 
@@ -230,7 +230,7 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow
             stream << src_name;
         }
 
-        stream << this->language_extension_.subset(function_, iedge.base_type(), iedge.subset()) << ";";
+        stream << this->language_extension_.subset(iedge.base_type(), iedge.subset()) << ";";
         stream << std::endl;
     }
 
@@ -265,7 +265,7 @@ void DataFlowDispatcher::dispatch_tasklet(PrettyPrinter& stream, const data_flow
             stream << dst_name;
         }
 
-        stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << " = ";
+        stream << this->language_extension_.subset(oedge.base_type(), oedge.subset()) << " = ";
         stream << oedge.src_conn();
         stream << ";" << std::endl;
     }
@@ -329,8 +329,8 @@ void LibraryNodeDispatcher::
             // Handle array and structure types
             stream << this->language_extension_.declaration(conn, conn_type) << ";" << std::endl;
             stream << "memcpy(" << "&" << conn << ", " << "&" << src_name
-                   << this->language_extension_.subset(function_, iedge.base_type(), iedge.subset()) << ", sizeof "
-                   << conn << ");" << std::endl;
+                   << this->language_extension_.subset(iedge.base_type(), iedge.subset()) << ", sizeof " << conn << ");"
+                   << std::endl;
         } else {
             stream << this->language_extension_.declaration(conn, conn_type);
             stream << " = ";
@@ -346,7 +346,7 @@ void LibraryNodeDispatcher::
                 }
             }
 
-            stream << this->language_extension_.subset(function_, iedge.base_type(), iedge.subset()) << ";";
+            stream << this->language_extension_.subset(iedge.base_type(), iedge.subset()) << ";";
             stream << std::endl;
         }
     }
@@ -367,8 +367,8 @@ void LibraryNodeDispatcher::
             // Handle array and structure types
             stream << this->language_extension_.declaration(conn, conn_type) << ";" << std::endl;
             stream << "memcpy(" << "&" << conn << ", " << "&" << dst_name
-                   << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << ", sizeof "
-                   << conn << ");" << std::endl;
+                   << this->language_extension_.subset(oedge.base_type(), oedge.subset()) << ", sizeof " << conn << ");"
+                   << std::endl;
         } else {
             stream << this->language_extension_.declaration(conn, conn_type);
             stream << " = ";
@@ -380,7 +380,7 @@ void LibraryNodeDispatcher::
                 stream << dst_name;
             }
 
-            stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << ";";
+            stream << this->language_extension_.subset(oedge.base_type(), oedge.subset()) << ";";
             stream << std::endl;
         }
     }
@@ -402,11 +402,11 @@ void LibraryNodeDispatcher::
         auto& result_type = oedge.result_type(this->function_);
         if (result_type.type_id() == types::TypeID::Array || result_type.type_id() == types::TypeID::Structure) {
             stream << "memcpy(" << "&" << dst_name
-                   << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << ", " << "&"
+                   << this->language_extension_.subset(oedge.base_type(), oedge.subset()) << ", " << "&"
                    << oedge.src_conn() << ", sizeof " << oedge.src_conn() << ");" << std::endl;
         } else {
             stream << dst_name;
-            stream << this->language_extension_.subset(function_, oedge.base_type(), oedge.subset()) << " = ";
+            stream << this->language_extension_.subset(oedge.base_type(), oedge.subset()) << " = ";
             stream << oedge.src_conn();
             stream << ";" << std::endl;
         }

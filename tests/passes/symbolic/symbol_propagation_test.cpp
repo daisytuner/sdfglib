@@ -160,8 +160,8 @@ TEST(SymbolPropagationTest, Transition2Memlet_Argument) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
-    types::Array array(desc, symbolic::integer(10));
-    builder.add_container("A", array);
+    types::Pointer pointer;
+    builder.add_container("A", pointer);
     builder.add_container("i", desc);
     auto sym1 = symbolic::symbol("i");
 
@@ -172,7 +172,9 @@ TEST(SymbolPropagationTest, Transition2Memlet_Argument) {
     auto& one_node = builder.add_constant(block2, "1", desc);
     auto& tasklet = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"_in"});
     builder.add_computational_memlet(block2, one_node, tasklet, "_in", {});
-    auto& edge = builder.add_computational_memlet(block2, tasklet, "_out", output_node, {sym1});
+    auto& edge = builder.add_computational_memlet(
+        block2, tasklet, "_out", output_node, {sym1}, types::Pointer(types::Scalar(types::PrimitiveType::UInt32))
+    );
 
     auto sdfg = builder.move();
 
@@ -180,7 +182,7 @@ TEST(SymbolPropagationTest, Transition2Memlet_Argument) {
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
     passes::SymbolPropagation pass;
-    pass.run(builder_opt, analysis_manager);
+    EXPECT_TRUE(pass.run(builder_opt, analysis_manager));
     sdfg = builder_opt.move();
 
     // Check result

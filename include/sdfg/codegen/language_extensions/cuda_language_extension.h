@@ -13,12 +13,8 @@ namespace codegen {
 
 class CUDALanguageExtension : public LanguageExtension {
 public:
-    CUDALanguageExtension() : LanguageExtension() {}
-
-    CUDALanguageExtension(
-        const std::vector<std::string>& external_variables,
-        const std::string& external_prefix = ""
-    ) : LanguageExtension(external_variables, external_prefix) {}
+    CUDALanguageExtension(sdfg::Function& function, const std::string& external_prefix = "")
+        : LanguageExtension(function, external_prefix) {}
 
     const std::string language() const override { return "CUDA"; }
 
@@ -30,7 +26,7 @@ public:
 
     std::string type_cast(const std::string& name, const types::IType& type) override;
 
-    std::string subset(const Function& function, const types::IType& type, const data_flow::Subset& subset) override;
+    std::string subset(const types::IType& type, const data_flow::Subset& subset) override;
 
     std::string expression(const symbolic::Expression expr) override;
 

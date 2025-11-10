@@ -130,7 +130,7 @@ std::string CLanguageExtension::type_cast(const std::string& name, const types::
     return val.str();
 };
 
-std::string CLanguageExtension::subset(const Function& function, const types::IType& type, const data_flow::Subset& sub) {
+std::string CLanguageExtension::subset(const types::IType& type, const data_flow::Subset& sub) {
     if (sub.empty()) {
         return "";
     }
@@ -143,7 +143,7 @@ std::string CLanguageExtension::subset(const Function& function, const types::IT
         if (sub.size() > 1) {
             data_flow::Subset element_subset(sub.begin() + 1, sub.end());
             auto& element_type = array_type->element_type();
-            return subset_str + subset(function, element_type, element_subset);
+            return subset_str + subset(element_type, element_subset);
         } else {
             return subset_str;
         }
@@ -152,16 +152,16 @@ std::string CLanguageExtension::subset(const Function& function, const types::IT
 
         data_flow::Subset element_subset(sub.begin() + 1, sub.end());
         auto& pointee_type = pointer_type->pointee_type();
-        return subset_str + subset(function, pointee_type, element_subset);
+        return subset_str + subset(pointee_type, element_subset);
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
-        auto& definition = function.structure(structure_type->name());
+        auto& definition = this->function_.structure(structure_type->name());
 
         std::string subset_str = ".member_" + this->expression(sub.at(0));
         if (sub.size() > 1) {
             auto member = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(sub.at(0));
             auto& member_type = definition.member_type(member);
             data_flow::Subset element_subset(sub.begin() + 1, sub.end());
-            return subset_str + subset(function, member_type, element_subset);
+            return subset_str + subset(member_type, element_subset);
         } else {
             return subset_str;
         }
@@ -171,7 +171,7 @@ std::string CLanguageExtension::subset(const Function& function, const types::IT
 };
 
 std::string CLanguageExtension::expression(const symbolic::Expression expr) {
-    CSymbolicPrinter printer(this->external_variables_, this->external_prefix_);
+    CSymbolicPrinter printer(this->function_, this->external_prefix_);
     return printer.apply(expr);
 };
 
@@ -179,12 +179,12 @@ std::string CLanguageExtension::access_node(const data_flow::AccessNode& node) {
     if (dynamic_cast<const data_flow::ConstantNode*>(&node)) {
         std::string name = node.data();
         if (symbolic::is_nullptr(symbolic::symbol(name))) {
-            return this->expression(symbolic::__nullptr__());
+            return "NULL";
         }
         return name;
     } else {
         std::string name = node.data();
-        if (this->external_variables_.find(name) != this->external_variables_.end()) {
+        if (this->function_.is_external(name)) {
             return "(&" + this->external_prefix_ + name + ")";
         }
         return name;
@@ -368,13 +368,19 @@ void CSymbolicPrinter::bvisit(const SymEngine::BooleanAtom& x) { str_ = x.get_va
 
 void CSymbolicPrinter::bvisit(const SymEngine::Symbol& x) {
     if (symbolic::is_nullptr(symbolic::symbol(x.get_name()))) {
-        str_ = "NULL";
+        str_ = "((uintptr_t) NULL)";
         return;
     }
+
     std::string name = x.get_name();
-    if (this->external_variables_.find(name) != this->external_variables_.end()) {
+
+    if (this->function_.is_external(name)) {
         name = "(&" + this->external_prefix_ + name + ")";
     }
+    if (this->function_.exists(name) && this->function_.type(name).type_id() == types::TypeID::Pointer) {
+        name = "((uintptr_t) " + name + ")";
+    }
+
     str_ = name;
 };
 
@@ -470,7 +476,7 @@ void CSymbolicPrinter::bvisit(const SymEngine::FunctionSymbol& x) {
     } else if (x.get_name() == "sizeof") {
         auto& so = dynamic_cast<const symbolic::SizeOfTypeFunction&>(x);
         auto& type = so.get_type();
-        CLanguageExtension lang;
+        CLanguageExtension lang(this->function_, this->external_prefix_);
         str_ = "sizeof(" + lang.declaration("", type) + ")";
     } else {
         throw std::runtime_error("Unsupported function symbol: " + x.get_name());

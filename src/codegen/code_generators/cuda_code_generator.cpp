@@ -15,7 +15,7 @@ CUDACodeGenerator::CUDACodeGenerator(
     const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths
 )
     : CodeGenerator(sdfg, analysis_manager, instrumentation_plan, arg_capture_plan, output_and_header_paths),
-      language_extension_(sdfg.externals()) {
+      language_extension_(sdfg) {
     if (sdfg.type() != FunctionType_NV_GLOBAL) {
         throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
     }
