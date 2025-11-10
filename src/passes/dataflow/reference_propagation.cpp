@@ -152,7 +152,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
 
             // Simple case: No arithmetic on pointer, just replace container
             if (move_subset.size() == 1 && symbolic::eq(move_subset[0], symbolic::zero())) {
-                user_node.data() = viewed_container;
+                user_node.data(viewed_container);
                 applied = true;
                 invalidated.insert(viewed_container);
                 replaced_nodes.insert(&user_node);
@@ -216,7 +216,7 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
             // Propagate pointer type
 
             // Step 1: Replace container
-            user_node.data() = viewed_container;
+            user_node.data(viewed_container);
 
             // Step 2: Update edges
             for (auto& oedge : user_graph.out_edges(user_node)) {

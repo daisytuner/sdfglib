@@ -241,7 +241,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
             } else if (auto access_node = dynamic_cast<data_flow::AccessNode*>(read->element())) {
                 if (SymEngine::is_a<SymEngine::Symbol>(*rhs_modified)) {
                     auto new_symbol = SymEngine::rcp_static_cast<const SymEngine::Symbol>(rhs_modified);
-                    access_node->data() = new_symbol->get_name();
+                    access_node->data(new_symbol->get_name());
                     applied = true;
                     replaced_nodes.insert(access_node);
                 } else if (SymEngine::is_a<SymEngine::Integer>(*rhs_modified)) {
