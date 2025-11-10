@@ -16,30 +16,10 @@ For2Map::For2Map(builder::StructuredSDFGBuilder& builder, analysis::AnalysisMana
       };
 
 bool For2Map::can_be_applied(structured_control_flow::For& for_stmt, analysis::AnalysisManager& analysis_manager) {
-    // Criterion: Loop must not have dereference memlets
-    auto& users = analysis_manager.get<analysis::Users>();
-    analysis::UsersView users_view(users, for_stmt);
-    for (auto& move : users_view.moves()) {
-        auto element = move->element();
-        if (auto node = dynamic_cast<data_flow::AccessNode*>(element)) {
-            auto& parent = node->get_parent();
-            for (auto& iedge : parent.in_edges(*node)) {
-                if (iedge.type() == data_flow::MemletType::Dereference_Src) {
-                    return false;
-                }
-            }
-        }
-    }
-    for (auto& view : users_view.views()) {
-        auto element = view->element();
-        if (auto node = dynamic_cast<data_flow::AccessNode*>(element)) {
-            auto& parent = node->get_parent();
-            for (auto& iedge : parent.out_edges(*node)) {
-                if (iedge.type() == data_flow::MemletType::Dereference_Dst) {
-                    return false;
-                }
-            }
-        }
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    bool is_monotonic = analysis::LoopAnalysis::is_monotonic(&for_stmt, assumptions_analysis);
+    if (!is_monotonic) {
+        return false;
     }
 
     // Criterion: Loop must not have side-effecting body
@@ -93,10 +73,39 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt, analysis::A
     }
 
     // b. False dependencies (WAW) are limited to loop-local variables
+    auto& users = analysis_manager.get<analysis::Users>();
     auto locals = users.locals(for_stmt.root());
     for (auto& dep : dependencies) {
         auto& container = dep.first;
+
+        // Must be loop-local variable
         if (locals.find(container) == locals.end()) {
+            return false;
+        }
+
+        // Check for pointers that they point to loop-local storage
+        auto& type = builder_.subject().type(container);
+        if (type.type_id() != types::TypeID::Pointer) {
+            continue;
+        }
+        if (type.storage_type().allocation() == types::StorageType::AllocationType::Managed) {
+            continue;
+        }
+
+        // or alias of loop-local storage
+        if (users.moves(container).size() != 1) {
+            return false;
+        }
+        auto move = users.moves(container).front();
+        auto move_node = static_cast<const data_flow::AccessNode*>(move->element());
+        auto& move_graph = move_node->get_parent();
+        auto& move_edge = *move_graph.in_edges(*move_node).begin();
+        auto& move_src = static_cast<const data_flow::AccessNode&>(move_edge.src());
+        if (locals.find(move_src.data()) == locals.end()) {
+            return false;
+        }
+        auto& move_type = builder_.subject().type(move_src.data());
+        if (move_type.storage_type().allocation() == types::StorageType::AllocationType::Unmanaged) {
             return false;
         }
     }

@@ -10,9 +10,11 @@ IfElseDispatcher::IfElseDispatcher(
     StructuredSDFG& sdfg,
     analysis::AnalysisManager& analysis_manager,
     structured_control_flow::IfElse& node,
-    InstrumentationPlan& instrumentation_plan
+    InstrumentationPlan& instrumentation_plan,
+    ArgCapturePlan& arg_capture_plan
 )
-    : NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan), node_(node) {
+    : NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan, arg_capture_plan),
+      node_(node) {
 
       };
 
@@ -35,7 +37,9 @@ void IfElseDispatcher::dispatch_node(
         main_stream << "{" << std::endl;
 
         main_stream.setIndent(main_stream.indent() + 4);
-        SequenceDispatcher dispatcher(language_extension_, sdfg_, analysis_manager_, child.first, instrumentation_plan_);
+        SequenceDispatcher dispatcher(
+            language_extension_, sdfg_, analysis_manager_, child.first, instrumentation_plan_, arg_capture_plan_
+        );
         dispatcher.dispatch(main_stream, globals_stream, library_snippet_factory);
         main_stream.setIndent(main_stream.indent() - 4);
 

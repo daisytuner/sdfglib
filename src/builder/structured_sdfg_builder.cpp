@@ -210,8 +210,6 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
             assert(return_state != nullptr);
             if (return_state->is_data()) {
                 this->add_return(scope, return_state->data(), {}, return_state->debug_info());
-            } else if (return_state->is_unreachable()) {
-                this->add_unreachable(scope, {}, return_state->debug_info());
             } else if (return_state->is_constant()) {
                 this->add_constant_return(
                     scope, return_state->data(), return_state->type(), {}, return_state->debug_info()
@@ -311,17 +309,21 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
 
 Function& StructuredSDFGBuilder::function() const { return static_cast<Function&>(*this->structured_sdfg_); };
 
+StructuredSDFGBuilder::StructuredSDFGBuilder(StructuredSDFG& sdfg)
+    : FunctionBuilder(), structured_sdfg_(&sdfg, owned(false)) {};
+
 StructuredSDFGBuilder::StructuredSDFGBuilder(std::unique_ptr<StructuredSDFG>& sdfg)
-    : FunctionBuilder(), structured_sdfg_(std::move(sdfg)) {};
+    : FunctionBuilder(), structured_sdfg_(sdfg.release(), owned(true)) {};
 
 StructuredSDFGBuilder::StructuredSDFGBuilder(const std::string& name, FunctionType type)
-    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name, type)) {};
+    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name, type), owned(true)) {};
 
 StructuredSDFGBuilder::StructuredSDFGBuilder(const std::string& name, FunctionType type, const types::IType& return_type)
-    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name, type, return_type)) {};
+    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(name, type, return_type), owned(true)) {};
 
 StructuredSDFGBuilder::StructuredSDFGBuilder(SDFG& sdfg)
-    : FunctionBuilder(), structured_sdfg_(new StructuredSDFG(sdfg.name(), sdfg.type(), sdfg.return_type())) {
+    : FunctionBuilder(),
+      structured_sdfg_(new StructuredSDFG(sdfg.name(), sdfg.type(), sdfg.return_type()), owned(true)) {
     for (auto& entry : sdfg.structures_) {
         this->structured_sdfg_->structures_.insert({entry.first, entry.second->clone()});
     }
@@ -357,7 +359,11 @@ std::unique_ptr<StructuredSDFG> StructuredSDFGBuilder::move() {
     this->structured_sdfg_->validate();
 #endif
 
-    return std::move(this->structured_sdfg_);
+    if (!structured_sdfg_.get_deleter().should_delete_) {
+        throw InvalidSDFGException("StructuredSDFGBuilder: Cannot move a non-owned SDFG");
+    }
+
+    return std::move(std::unique_ptr<StructuredSDFG>(structured_sdfg_.release()));
 };
 
 void StructuredSDFGBuilder::rename_container(const std::string& old_name, const std::string& new_name) const {
@@ -1081,17 +1087,6 @@ Return& StructuredSDFGBuilder::add_return(
     const DebugInfo& debug_info
 ) {
     parent.children_.push_back(std::unique_ptr<Return>(new Return(this->new_element_id(), debug_info, data)));
-
-    parent.transitions_
-        .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))
-        );
-
-    return static_cast<Return&>(*parent.children_.back().get());
-};
-
-Return& StructuredSDFGBuilder::
-    add_unreachable(Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfo& debug_info) {
-    parent.children_.push_back(std::unique_ptr<Return>(new Return(this->new_element_id(), debug_info)));
 
     parent.transitions_
         .push_back(std::unique_ptr<Transition>(new Transition(this->new_element_id(), debug_info, parent, assignments))

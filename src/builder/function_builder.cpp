@@ -191,5 +191,22 @@ void FunctionBuilder::update_tasklet(data_flow::Tasklet& tasklet, const data_flo
     tasklet.code_ = code;
 }
 
+std::unique_ptr<types::Structure> FunctionBuilder::
+    create_vector_type(const types::Scalar& element_type, size_t vector_size) {
+    std::string struct_name = "__daisy_vec_" + std::to_string(element_type.primitive_type()) + "_" +
+                              std::to_string(vector_size);
+    auto defined_structures = this->function().structures();
+    if (std::find(defined_structures.begin(), defined_structures.end(), struct_name) != defined_structures.end()) {
+        return std::make_unique<types::Structure>(struct_name);
+    }
+
+    auto& struct_def = this->add_structure(struct_name, true);
+    for (size_t i = 0; i < vector_size; i++) {
+        struct_def.add_member(element_type);
+    }
+
+    return std::make_unique<types::Structure>(struct_name);
+}
+
 } // namespace builder
 } // namespace sdfg

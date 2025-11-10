@@ -35,11 +35,11 @@ TEST(CaptureTests, CaptureInline) {
 
     uint8_t data[] = {1, 2, 3, 4, 5, 6, 7, 8};
 
-    EXPECT_TRUE(capture.create_and_capture_inline(3, true, static_cast<int>(PrimitiveType::Int64), {8}, data));
+    EXPECT_TRUE(capture.create_and_capture_inline(3, true, static_cast<int>(PrimitiveType::Int64), {8}, data, "123"));
 
     data[0] = 9;
 
-    auto& cap = capture.get_captures().at(std::make_pair(3, true));
+    auto& cap = capture.get_captures().at("123").at(std::make_pair(3, true));
 
     EXPECT_EQ(cap.arg_idx, 3);
     EXPECT_TRUE(cap.after);
@@ -58,9 +58,11 @@ TEST(CaptureTests, Capture3D) {
 
     uint8_t data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 
-    EXPECT_TRUE(capture.create_and_capture_inline(3, true, static_cast<int>(PrimitiveType::UInt8), {1, 2, 2, 3}, data));
+    EXPECT_TRUE(capture
+                    .create_and_capture_inline(3, true, static_cast<int>(PrimitiveType::UInt8), {1, 2, 2, 3}, data, "123")
+    );
 
-    auto& cap = capture.get_captures().at(std::make_pair(3, true));
+    auto& cap = capture.get_captures().at("123").at(std::make_pair(3, true));
 
     EXPECT_EQ(cap.data->size(), 12);
 }
@@ -74,9 +76,11 @@ TEST(CaptureTests, CaptureToFile) {
 
     std::filesystem::path file = base / "CaptureTests" / "test_capture.bin";
 
-    EXPECT_TRUE(capture.create_and_capture_to_file(3, true, static_cast<int>(PrimitiveType::Int64), {8}, file, data));
+    EXPECT_TRUE(capture
+                    .create_and_capture_to_file(3, true, static_cast<int>(PrimitiveType::Int64), {8}, file, data, "123")
+    );
 
-    auto& cap = capture.get_captures().at(std::make_pair(3, true));
+    auto& cap = capture.get_captures().at("123").at(std::make_pair(3, true));
 
     EXPECT_EQ(cap.arg_idx, 3);
     EXPECT_TRUE(cap.after);

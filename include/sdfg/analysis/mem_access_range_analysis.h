@@ -64,7 +64,7 @@ class MemAccessRanges : public Analysis {
     analysis::AnalysisManager* analysis_manager_;
 
     void run(structured_control_flow::ControlFlowNode& node,
-             std::unordered_set<std::string> target_nodes);
+             std::unordered_set<std::string> target_container);
 
    protected:
     void run(analysis::AnalysisManager& analysis_manager) override;
@@ -76,7 +76,7 @@ class MemAccessRanges : public Analysis {
 
     const MemAccessRange* get(const std::string& varName,
                               structured_control_flow::ControlFlowNode& node,
-                              std::unordered_set<std::string> target_nodes);
+                              std::unordered_set<std::string> target_container);
 };
 
 }  // namespace analysis

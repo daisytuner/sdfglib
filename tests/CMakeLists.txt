@@ -29,6 +29,7 @@ set(TEST_FILES
     codegen/dispatchers/node_dispatcher_test.cpp
     codegen/dispatchers/sequence_dispatcher_test.cpp
     codegen/dispatchers/while_dispatcher_test.cpp
+    codegen/instrumentation/arg_capture_plan_test.cpp
     codegen/language_extensions/c_language_extension_test.cpp
     codegen/language_extensions/cpp_language_extension_test.cpp
     codegen/language_extensions/cuda_language_extension_test.cpp

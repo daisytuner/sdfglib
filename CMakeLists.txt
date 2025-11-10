@@ -72,9 +72,8 @@ set(SOURCE_FILES
     src/builder/sdfg_builder.cpp
     src/builder/structured_sdfg_builder.cpp
     src/codegen/utils.cpp
-    src/codegen/code_generator.cpp
     src/codegen/code_snippet_factory.cpp
-    src/codegen/instrumentation/capture_var_plan.cpp
+    src/codegen/instrumentation/arg_capture_plan.cpp
     src/codegen/instrumentation/instrumentation_info.cpp
     src/codegen/instrumentation/instrumentation_plan.cpp
     src/codegen/language_extensions/c_language_extension.cpp
@@ -131,6 +130,8 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/stdlib/memcpy.cpp
     src/data_flow/library_nodes/stdlib/memmove.cpp
     src/data_flow/library_nodes/stdlib/memset.cpp
+    src/data_flow/library_nodes/stdlib/trap.cpp
+    src/data_flow/library_nodes/stdlib/unreachable.cpp
     src/deepcopy/structured_sdfg_deep_copy.cpp
     src/graph/graph.cpp
     src/optimization_report/optimization_report.cpp
@@ -157,6 +158,7 @@ set(SOURCE_FILES
     src/passes/structured_control_flow/for2map.cpp
     src/passes/structured_control_flow/loop_normalization.cpp
     src/passes/structured_control_flow/sequence_fusion.cpp
+    src/passes/structured_control_flow/unify_loop_exits.cpp
     src/passes/structured_control_flow/while_to_for_conversion.cpp
     src/passes/debug_info_propagation.cpp
     src/serializer/json_serializer.cpp

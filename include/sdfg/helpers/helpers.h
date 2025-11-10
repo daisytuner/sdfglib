@@ -8,7 +8,7 @@
 #include <unordered_set>
 #include <vector>
 
-#ifdef DEBUG
+#ifndef NDEBUG
   #define DEBUG_PRINTLN(msg) \
       do { std::cerr << "[DEBUG] " << msg << std::endl; } while (0)
   #define DEBUG_PRINT(msg) \

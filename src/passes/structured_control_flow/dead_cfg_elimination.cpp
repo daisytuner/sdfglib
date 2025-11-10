@@ -37,16 +37,6 @@ bool DeadCFGElimination::run_pass(builder::StructuredSDFGBuilder& builder, analy
     if (root.size() == 0) {
         return false;
     }
-    auto last = root.at(root.size() - 1);
-    if (auto return_node = dynamic_cast<structured_control_flow::Return*>(&last.first)) {
-        if (return_node->is_data() && return_node->data().empty() // void return
-            || return_node->is_unreachable() // unreachable return
-            || return_node->is_constant() && return_node->data().empty() // undef return
-        ) {
-            builder.remove_child(root, root.size() - 1);
-            return true;
-        }
-    }
 
     std::list<structured_control_flow::ControlFlowNode*> queue = {&sdfg.root()};
     while (!queue.empty()) {

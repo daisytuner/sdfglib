@@ -15,6 +15,48 @@
 namespace sdfg {
 namespace passes {
 
+bool ReferencePropagation::
+    compatible_type(const Function& function, const data_flow::Memlet& reference, const data_flow::Memlet& target) {
+    auto& ref_subset = reference.subset();
+    auto& ref_type = reference.base_type();
+    if (ref_type.type_id() != types::TypeID::Pointer) {
+        return false;
+    }
+    auto& ref_pointer_type = static_cast<const types::Pointer&>(ref_type);
+    if (ref_pointer_type.pointee_type().type_id() != types::TypeID::Array &&
+        ref_pointer_type.pointee_type().type_id() != types::TypeID::Structure) {
+        return false;
+    }
+
+    auto& tar_subset = target.subset();
+    auto& tar_type = target.base_type();
+    if (tar_type.type_id() != types::TypeID::Pointer) {
+        return false;
+    }
+    auto& tar_pointer_type = static_cast<const types::Pointer&>(tar_type);
+    if (tar_pointer_type.pointee_type().type_id() != types::TypeID::Scalar) {
+        return false;
+    }
+
+    // Check if trailing zeros yield compatible type
+    for (auto dim : tar_subset) {
+        if (!symbolic::eq(dim, symbolic::zero())) {
+            return false;
+        }
+    }
+    auto expanded_subset = ref_subset;
+    for (auto& dim : tar_subset) {
+        if (!symbolic::eq(dim, symbolic::zero())) {
+            return false;
+        }
+        expanded_subset.push_back(dim);
+    }
+    auto& new_res_type = types::infer_type(function, ref_type, expanded_subset);
+
+    auto& tar_res_type = target.result_type(function);
+    return new_res_type == tar_res_type;
+}
+
 ReferencePropagation::ReferencePropagation()
     : Pass() {
 
@@ -133,13 +175,17 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                     safe = false;
                     break;
                 }
-                if (oedge.subset().empty()) {
+                auto& old_subset = oedge.subset();
+                if (old_subset.empty()) {
                     safe = false;
                     break;
                 }
                 if (oedge.base_type() != ref_type) {
-                    safe = false;
-                    break;
+                    // Special case: compatible pointer types
+                    if (!compatible_type(builder.subject(), move_edge, oedge)) {
+                        safe = false;
+                        break;
+                    }
                 }
             }
             if (!safe) {
@@ -151,13 +197,16 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                     safe = false;
                     break;
                 }
-                if (iedge.subset().empty()) {
+                auto& old_subset = iedge.subset();
+                if (old_subset.empty()) {
                     safe = false;
                     break;
                 }
                 if (iedge.base_type() != ref_type) {
-                    safe = false;
-                    break;
+                    if (!compatible_type(builder.subject(), move_edge, iedge)) {
+                        safe = false;
+                        break;
+                    }
                 }
             }
             if (!safe) {
@@ -179,26 +228,27 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
 
                 auto old_subset = oedge.subset();
 
-                // Handle first trailing dimensions
-                auto& trail_dim = old_subset.front();
-                auto& current_dim = new_subset.back();
-                auto new_dim = symbolic::add(current_dim, trail_dim);
-                new_subset.back() = new_dim;
-                old_subset.erase(old_subset.begin());
+                if (oedge.base_type() != ref_type) {
+                    for (auto& dim : old_subset) {
+                        new_subset.push_back(dim);
+                    }
+                } else {
+                    // Handle first trailing dimensions
+                    auto& trail_dim = old_subset.front();
+                    auto& current_dim = new_subset.back();
+                    auto new_dim = symbolic::add(current_dim, trail_dim);
+                    new_subset.back() = new_dim;
+                    old_subset.erase(old_subset.begin());
 
-                // Add remaining trailing dimensions
-                for (auto dim : old_subset) {
-                    new_subset.push_back(dim);
+                    // Add remaining trailing dimensions
+                    for (auto dim : old_subset) {
+                        new_subset.push_back(dim);
+                    }
                 }
 
                 // Build new type
-                if (move_subset.size() == 1) {
-                    oedge.set_subset(new_subset);
-                } else {
-                    // Case 2: multi-dimensional subset
-                    oedge.set_subset(new_subset);
-                    oedge.set_base_type(move_edge.base_type());
-                }
+                oedge.set_subset(new_subset);
+                oedge.set_base_type(move_edge.base_type());
             }
 
             for (auto& iedge : user_graph.in_edges(user_node)) {
@@ -209,27 +259,26 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
                 }
 
                 auto old_subset = iedge.subset();
-
-                // Handle first trailing dimensions
-                auto& trail_dim = old_subset.front();
-                auto& current_dim = new_subset.back();
-                auto new_dim = symbolic::add(current_dim, trail_dim);
-                new_subset.back() = new_dim;
-                old_subset.erase(old_subset.begin());
-
-                // Add remaining trailing dimensions
-                for (auto dim : old_subset) {
-                    new_subset.push_back(dim);
-                }
-
-                // Case 1: 1D subset, "original pointer is shifted"
-                if (move_subset.size() == 1) {
-                    iedge.set_subset(new_subset);
+                if (iedge.base_type() != ref_type) {
+                    for (auto& dim : old_subset) {
+                        new_subset.push_back(dim);
+                    }
                 } else {
-                    // Case 2: multi-dimensional subset
-                    iedge.set_subset(new_subset);
-                    iedge.set_base_type(move_edge.base_type());
+                    // Handle first trailing dimensions
+                    auto& trail_dim = old_subset.front();
+                    auto& current_dim = new_subset.back();
+                    auto new_dim = symbolic::add(current_dim, trail_dim);
+                    new_subset.back() = new_dim;
+                    old_subset.erase(old_subset.begin());
+
+                    // Add remaining trailing dimensions
+                    for (auto dim : old_subset) {
+                        new_subset.push_back(dim);
+                    }
                 }
+
+                iedge.set_subset(new_subset);
+                iedge.set_base_type(move_edge.base_type());
             }
 
             applied = true;

@@ -14,6 +14,9 @@ public:
     std::string name() override;
 
     virtual bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
+
+    static bool
+    compatible_type(const Function& function, const data_flow::Memlet& reference, const data_flow::Memlet& target);
 };
 
 } // namespace passes

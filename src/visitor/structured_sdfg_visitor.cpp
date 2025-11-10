@@ -142,5 +142,57 @@ bool NonStoppingStructuredSDFGVisitor::visit_internal(structured_control_flow::S
     return false;
 };
 
+bool ActualStructuredSDFGVisitor::visit(sdfg::structured_control_flow::ControlFlowNode& node) { return dispatch(node); }
+
+bool ActualStructuredSDFGVisitor::dispatch(ControlFlowNode& node) {
+    //// ARGH. The most inefficient variant of them all. Is there a good way to
+    if (auto block_stmt = dynamic_cast<structured_control_flow::Block*>(&node)) {
+        return this->visit(*block_stmt);
+    } else if (auto sequence_stmt = dynamic_cast<structured_control_flow::Sequence*>(&node)) {
+        return this->visit(*sequence_stmt);
+    } else if (auto if_else_stmt = dynamic_cast<structured_control_flow::IfElse*>(&node)) {
+        return this->visit(*if_else_stmt);
+    } else if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(&node)) {
+        return this->visit(*for_stmt);
+    } else if (auto map_stmt = dynamic_cast<structured_control_flow::Map*>(&node)) {
+        return this->visit(*map_stmt);
+    } else if (auto while_stmt = dynamic_cast<structured_control_flow::While*>(&node)) {
+        return this->visit(*while_stmt);
+    } else if (auto continue_stmt = dynamic_cast<structured_control_flow::Continue*>(&node)) {
+        return this->visit(*continue_stmt);
+    } else if (auto break_stmt = dynamic_cast<structured_control_flow::Break*>(&node)) {
+        return this->visit(*break_stmt);
+    } else if (auto return_stmt = dynamic_cast<structured_control_flow::Return*>(&node)) {
+        return this->visit(*return_stmt);
+    }
+
+    return false;
+}
+
+
+ActualStructuredSDFGVisitor::ActualStructuredSDFGVisitor() {}
+
+bool ActualStructuredSDFGVisitor::visit(Block& node) { return false; }
+bool ActualStructuredSDFGVisitor::visit(Sequence& node) {
+    for (int i = 0; i < node.size(); ++i) {
+        visit(node.at(i).first);
+    }
+
+    return true;
+}
+bool ActualStructuredSDFGVisitor::visit(Return& node) { return false; }
+bool ActualStructuredSDFGVisitor::visit(IfElse& node) {
+    for (int i = 0; i < node.size(); ++i) {
+        visit(node.at(i).first);
+    }
+
+    return true;
+}
+bool ActualStructuredSDFGVisitor::visit(For& node) { return handleStructuredLoop(node); }
+bool ActualStructuredSDFGVisitor::visit(Map& node) { return handleStructuredLoop(node); }
+bool ActualStructuredSDFGVisitor::handleStructuredLoop(StructuredLoop& loop) { return visit(loop.root()); }
+bool ActualStructuredSDFGVisitor::visit(While& node) { return visit(node.root()); }
+bool ActualStructuredSDFGVisitor::visit(Continue& node) { return false; }
+bool ActualStructuredSDFGVisitor::visit(Break& node) { return false; }
 } // namespace visitor
 } // namespace sdfg

@@ -26,7 +26,9 @@ TEST(ForDispatcherTest, DispatchNode) {
 
     codegen::CLanguageExtension language_extension;
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
-    codegen::ForDispatcher dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation);
+    auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
+    codegen::ForDispatcher
+        dispatcher(language_extension, *final_sdfg, analysis_manager, loop, *instrumentation, *arg_capture);
 
     codegen::PrettyPrinter main_stream;
     codegen::PrettyPrinter globals_stream;
