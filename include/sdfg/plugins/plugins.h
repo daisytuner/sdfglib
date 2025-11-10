@@ -1,6 +1,5 @@
 #pragma once
 
-#include <list>
 #include <memory>
 #include <string>
 #include "sdfg/structured_sdfg.h"
@@ -17,7 +16,7 @@ struct Plugin {
     void (*register_plugin_callback)();
 
     // SDFG lookup
-    std::list<std::unique_ptr<sdfg::StructuredSDFG>> (*sdfg_lookup)(std::string name);
+    std::unique_ptr<StructuredSDFG> (*sdfg_lookup)(std::string name);
 };
 
 } // namespace plugins
