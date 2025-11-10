@@ -73,17 +73,23 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
         }
 
         // Criterion: Two definitions
-        auto defines = data_dependency_analysis.definitions(name);
+        auto definitions = data_dependency_analysis.definitions(name);
+        if (definitions.size() < 2 || definitions.size() > 3) {
+            continue;
+        }
+        // Filter our undefined user
+        std::unordered_set<analysis::User*> defines;
+        for (auto& def : definitions) {
+            if (data_dependency_analysis.is_undefined_user(*def.first)) {
+                continue;
+            }
+            defines.insert(def.first);
+        }
         if (defines.size() != 2) {
             continue;
         }
-
-        auto define1 = defines.begin()->first;
-        auto define2 = (++defines.begin())->first;
-        if (data_dependency_analysis.is_undefined_user(*define1) ||
-            data_dependency_analysis.is_undefined_user(*define2)) {
-            continue;
-        }
+        auto define1 = *defines.begin();
+        auto define2 = *(++defines.begin());
 
         // Criterion: Identical define
         auto subsets1 = define1->subsets();
@@ -140,10 +146,21 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
             }
 
             // input1 is constant
-            if (!users.writes(input->container()).empty() || !users.moves(input->container()).empty() ||
-                !users.views(input->container()).empty()) {
+            if (users.views(input->container()).size() > 0) {
                 constant_inputs = false;
                 break;
+            }
+            for (auto& write_user : users.writes(input->container())) {
+                if (!dominance_analysis.dominates(*write_user, *define1)) {
+                    constant_inputs = false;
+                    break;
+                }
+            }
+            for (auto& move_user : users.moves(input->container())) {
+                if (!dominance_analysis.dominates(*move_user, *define1)) {
+                    constant_inputs = false;
+                    break;
+                }
             }
 
             // Find identical input in inputs2
