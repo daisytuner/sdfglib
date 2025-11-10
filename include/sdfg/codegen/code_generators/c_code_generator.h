@@ -33,7 +33,7 @@ public:
         : CStyleBaseCodeGenerator(
               sdfg, analysis_manager, instrumentation_plan, arg_capture_plan, output_and_header_paths, externals_prefix
           ),
-          language_extension_(sdfg.externals(), externals_prefix) {}
+          language_extension_(sdfg, externals_prefix) {}
 
     std::string function_definition() override;
 

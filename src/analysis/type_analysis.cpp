@@ -1,7 +1,6 @@
 #include "sdfg/analysis/type_analysis.h"
 
 #include "sdfg/analysis/users.h"
-#include "sdfg/codegen/language_extensions/c_language_extension.h"
 #include "sdfg/exceptions.h"
 
 namespace sdfg {
@@ -19,8 +18,6 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
     }
 
     auto& users = analysis_manager.get<Users>();
-    codegen::CLanguageExtension c_lang;
-
     for (auto container : containers) {
         // iterate over writes
         for (auto user : users.writes(container)) {
@@ -60,14 +57,6 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     this->type_map_.insert({container, base_type});
                     continue;
                 }
-
-                /* if (*this->type_map_.at(container) != *base_type) {
-                    throw InvalidSDFGException(
-                        "Type mismatch for container '" + container + "': expected " +
-                        c_lang.declaration("", *this->type_map_.at(container)) + ", got " +
-                        c_lang.declaration("", *base_type)
-                    );
-                } */
             }
         }
 
@@ -109,14 +98,6 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     this->type_map_.insert({container, base_type});
                     continue;
                 }
-
-                /* if (*this->type_map_.at(container) != *base_type) {
-                    throw InvalidSDFGException(
-                        "Type mismatch for container '" + container + "': expected " +
-                        c_lang.declaration("", *this->type_map_.at(container)) + ", got " +
-                        c_lang.declaration("", *base_type)
-                    );
-                } */
             }
         }
 

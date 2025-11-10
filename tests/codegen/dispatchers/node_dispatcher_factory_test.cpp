@@ -21,7 +21,7 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Block) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     auto dispatcher = codegen::
@@ -39,7 +39,7 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Sequence) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     auto dispatcher = codegen::
@@ -57,7 +57,7 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_IfElse) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     auto dispatcher = codegen::
@@ -75,7 +75,7 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_While) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     auto dispatcher = codegen::create_dispatcher(
@@ -102,7 +102,7 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_For) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     auto dispatcher =
@@ -120,7 +120,7 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Return) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     auto dispatcher = codegen::create_dispatcher(
@@ -140,7 +140,7 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Break) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     auto dispatcher = codegen::create_dispatcher(
@@ -160,7 +160,7 @@ TEST(NodeDispatcherFactoryTest, CreateDispatch_Continue) {
     auto final_sdfg = builder.move();
     analysis::AnalysisManager analysis_manager(*final_sdfg);
 
-    codegen::CLanguageExtension language_extension;
+    codegen::CLanguageExtension language_extension(*final_sdfg);
     auto instrumentation = codegen::InstrumentationPlan::none(*final_sdfg);
     auto arg_capture = codegen::ArgCapturePlan::none(*final_sdfg);
     auto dispatcher = codegen::create_dispatcher(

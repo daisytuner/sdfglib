@@ -18,14 +18,12 @@ namespace codegen {
 
 class LanguageExtension {
 protected:
-    std::unordered_set<std::string> external_variables_;
+    sdfg::Function& function_;
     std::string external_prefix_;
 
 public:
-    LanguageExtension() : external_variables_(), external_prefix_() {}
-
-    LanguageExtension(const std::vector<std::string>& external_variables, const std::string& external_prefix)
-        : external_variables_(external_variables.begin(), external_variables.end()), external_prefix_(external_prefix) {}
+    LanguageExtension(sdfg::Function& function, const std::string& external_prefix)
+        : function_(function), external_prefix_(external_prefix) {}
 
     virtual ~LanguageExtension() = default;
 
@@ -41,7 +39,7 @@ public:
 
     virtual std::string type_cast(const std::string& name, const types::IType& type) = 0;
 
-    virtual std::string subset(const Function& function, const types::IType& type, const data_flow::Subset& subset) = 0;
+    virtual std::string subset(const types::IType& type, const data_flow::Subset& subset) = 0;
 
     virtual std::string expression(const symbolic::Expression expr) = 0;
 

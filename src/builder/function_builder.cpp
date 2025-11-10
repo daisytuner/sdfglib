@@ -79,7 +79,7 @@ const types::IType& FunctionBuilder::
         this->function().externals_.push_back(name);
         this->function().externals_linkage_types_[name] = LinkageType_External;
     }
-    if (type.is_symbol() && dynamic_cast<const types::Scalar*>(&type)) {
+    if (type.is_symbol()) {
         auto sym = symbolic::symbol(name);
         this->function().assumptions_.insert({sym, symbolic::Assumption::create(sym, type)});
     }

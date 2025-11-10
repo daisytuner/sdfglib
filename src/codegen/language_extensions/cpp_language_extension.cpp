@@ -125,7 +125,7 @@ std::string CPPLanguageExtension::type_cast(const std::string& name, const types
     return val.str();
 };
 
-std::string CPPLanguageExtension::subset(const Function& function, const types::IType& type, const data_flow::Subset& sub) {
+std::string CPPLanguageExtension::subset(const types::IType& type, const data_flow::Subset& sub) {
     if (sub.empty()) {
         return "";
     }
@@ -138,7 +138,7 @@ std::string CPPLanguageExtension::subset(const Function& function, const types::
         if (sub.size() > 1) {
             data_flow::Subset element_subset(sub.begin() + 1, sub.end());
             auto& element_type = array_type->element_type();
-            return subset_str + subset(function, element_type, element_subset);
+            return subset_str + subset(element_type, element_subset);
         } else {
             return subset_str;
         }
@@ -147,16 +147,16 @@ std::string CPPLanguageExtension::subset(const Function& function, const types::
 
         data_flow::Subset element_subset(sub.begin() + 1, sub.end());
         auto& pointee_type = pointer_type->pointee_type();
-        return subset_str + subset(function, pointee_type, element_subset);
+        return subset_str + subset(pointee_type, element_subset);
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
-        auto& definition = function.structure(structure_type->name());
+        auto& definition = this->function_.structure(structure_type->name());
 
         std::string subset_str = ".member_" + this->expression(sub.at(0));
         if (sub.size() > 1) {
             auto member = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(sub.at(0));
             auto& member_type = definition.member_type(member);
             data_flow::Subset element_subset(sub.begin() + 1, sub.end());
-            return subset_str + subset(function, member_type, element_subset);
+            return subset_str + subset(member_type, element_subset);
         } else {
             return subset_str;
         }
@@ -166,7 +166,7 @@ std::string CPPLanguageExtension::subset(const Function& function, const types::
 };
 
 std::string CPPLanguageExtension::expression(const symbolic::Expression expr) {
-    CPPSymbolicPrinter printer(this->external_variables_, this->external_prefix_);
+    CPPSymbolicPrinter printer(this->function_, this->external_prefix_);
     return printer.apply(expr);
 };
 
@@ -174,12 +174,12 @@ std::string CPPLanguageExtension::access_node(const data_flow::AccessNode& node)
     if (dynamic_cast<const data_flow::ConstantNode*>(&node)) {
         std::string name = node.data();
         if (symbolic::is_nullptr(symbolic::symbol(name))) {
-            return this->expression(symbolic::__nullptr__());
+            return "nullptr";
         }
         return name;
     } else {
         std::string name = node.data();
-        if (this->external_variables_.find(name) != this->external_variables_.end()) {
+        if (this->function_.is_external(name)) {
             return "(&" + this->external_prefix_ + name + ")";
         }
         return name;
@@ -363,13 +363,18 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::BooleanAtom& x) { str_ = x.get_
 
 void CPPSymbolicPrinter::bvisit(const SymEngine::Symbol& x) {
     if (symbolic::is_nullptr(symbolic::symbol(x.get_name()))) {
-        str_ = "nullptr";
+        str_ = "(reinterpret_cast<uintptr_t>(nullptr))";
         return;
     }
     std::string name = x.get_name();
-    if (this->external_variables_.find(name) != this->external_variables_.end()) {
+
+    if (this->function_.is_external(name)) {
         name = "(&" + this->external_prefix_ + name + ")";
     }
+    if (this->function_.exists(name) && this->function_.type(name).type_id() == types::TypeID::Pointer) {
+        name = "(reinterpret_cast<uintptr_t>(" + name + "))";
+    }
+
     str_ = name;
 };
 
@@ -465,7 +470,7 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::FunctionSymbol& x) {
     } else if (x.get_name() == "sizeof") {
         auto& so = dynamic_cast<const symbolic::SizeOfTypeFunction&>(x);
         auto& type = so.get_type();
-        CPPLanguageExtension lang;
+        CPPLanguageExtension lang(this->function_, this->external_prefix_);
         str_ = "sizeof(" + lang.declaration("", type) + ")";
     } else {
         throw std::runtime_error("Unsupported function symbol: " + x.get_name());

@@ -6,6 +6,7 @@
 
 #include <regex>
 
+#include "sdfg/builder/sdfg_builder.h"
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
 #include "sdfg/symbolic/assumptions.h"
 #include "sdfg/symbolic/extreme_values.h"
@@ -16,7 +17,8 @@ namespace sdfg {
 namespace symbolic {
 
 std::string expression_to_map_str(const MultiExpression& expr, const Assumptions& assums) {
-    codegen::CLanguageExtension language_extension;
+    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
+    codegen::CLanguageExtension language_extension(builder.subject());
 
     // Get all symbols
     symbolic::SymbolSet syms;
@@ -151,7 +153,8 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     const Assumptions& assums1,
     const Assumptions& assums2
 ) {
-    codegen::CLanguageExtension language_extension;
+    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
+    codegen::CLanguageExtension language_extension(builder.subject());
 
     // Get all symbols
     symbolic::SymbolSet syms;
@@ -477,7 +480,8 @@ ExpressionSet generate_constraints(SymbolSet& syms, const Assumptions& assums, S
 }
 
 std::string constraint_to_isl_str(const Expression con) {
-    codegen::CLanguageExtension language_extension;
+    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
+    codegen::CLanguageExtension language_extension(builder.subject());
 
     if (SymEngine::is_a<SymEngine::StrictLessThan>(*con)) {
         auto le = SymEngine::rcp_static_cast<const SymEngine::StrictLessThan>(con);

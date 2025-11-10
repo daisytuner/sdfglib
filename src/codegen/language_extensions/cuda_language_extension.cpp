@@ -138,7 +138,7 @@ std::string CUDALanguageExtension::type_cast(const std::string& name, const type
     return val.str();
 };
 
-std::string CUDALanguageExtension::subset(const Function& function, const types::IType& type, const data_flow::Subset& sub) {
+std::string CUDALanguageExtension::subset(const types::IType& type, const data_flow::Subset& sub) {
     if (sub.empty()) {
         return "";
     }
@@ -151,7 +151,7 @@ std::string CUDALanguageExtension::subset(const Function& function, const types:
         if (sub.size() > 1) {
             data_flow::Subset element_subset(sub.begin() + 1, sub.end());
             auto& element_type = array_type->element_type();
-            return subset_str + subset(function, element_type, element_subset);
+            return subset_str + subset(element_type, element_subset);
         } else {
             return subset_str;
         }
@@ -160,16 +160,16 @@ std::string CUDALanguageExtension::subset(const Function& function, const types:
 
         data_flow::Subset element_subset(sub.begin() + 1, sub.end());
         auto& pointee_type = pointer_type->pointee_type();
-        return subset_str + subset(function, pointee_type, element_subset);
+        return subset_str + subset(pointee_type, element_subset);
     } else if (auto structure_type = dynamic_cast<const types::Structure*>(&type)) {
-        auto& definition = function.structure(structure_type->name());
+        auto& definition = this->function_.structure(structure_type->name());
 
         std::string subset_str = ".member_" + this->expression(sub.at(0));
         if (sub.size() > 1) {
             auto member = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(sub.at(0));
             auto& member_type = definition.member_type(member);
             data_flow::Subset element_subset(sub.begin() + 1, sub.end());
-            return subset_str + subset(function, member_type, element_subset);
+            return subset_str + subset(member_type, element_subset);
         } else {
             return subset_str;
         }
@@ -179,7 +179,7 @@ std::string CUDALanguageExtension::subset(const Function& function, const types:
 };
 
 std::string CUDALanguageExtension::expression(const symbolic::Expression expr) {
-    CPPSymbolicPrinter printer(this->external_variables_, this->external_prefix_);
+    CPPSymbolicPrinter printer(this->function_, this->external_prefix_);
     return printer.apply(expr);
 };
 
@@ -187,12 +187,12 @@ std::string CUDALanguageExtension::access_node(const data_flow::AccessNode& node
     if (dynamic_cast<const data_flow::ConstantNode*>(&node)) {
         std::string name = node.data();
         if (symbolic::is_nullptr(symbolic::symbol(name))) {
-            return this->expression(symbolic::__nullptr__());
+            return "nullptr";
         }
         return name;
     } else {
         std::string name = node.data();
-        if (this->external_variables_.find(name) != this->external_variables_.end()) {
+        if (this->function_.is_external(name)) {
             return "(&" + name + ")";
         }
         return name;
