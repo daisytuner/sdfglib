@@ -45,7 +45,7 @@ void AccessNode::validate(const Function& function) const {
 
 const std::string& AccessNode::data() const { return this->data_; };
 
-std::string& AccessNode::data() { return this->data_; };
+void AccessNode::data(const std::string data) { this->data_ = data; };
 
 std::unique_ptr<DataFlowNode> AccessNode::clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
     const {

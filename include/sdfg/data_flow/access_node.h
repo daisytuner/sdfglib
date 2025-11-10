@@ -35,7 +35,7 @@ public:
 
     const std::string& data() const;
 
-    std::string& data();
+    void data(const std::string data);
 
     virtual std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
         const override;
