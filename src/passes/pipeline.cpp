@@ -1,5 +1,6 @@
 #include "sdfg/passes/pipeline.h"
 
+#include "sdfg/passes/dataflow/block_hoisting.h"
 #include "sdfg/passes/dataflow/tasklet_fusion.h"
 #include "sdfg/passes/schedules/expansion_pass.h"
 
@@ -81,6 +82,14 @@ Pipeline Pipeline::controlflow_simplification() {
     p.register_pass<BlockFusionPass>();
     p.register_pass<SequenceFusion>();
     p.register_pass<ConditionEliminationPass>();
+
+    return p;
+};
+
+Pipeline Pipeline::code_motion() {
+    Pipeline p("CodeMotion");
+
+    p.register_pass<BlockHoistingPass>();
 
     return p;
 };
