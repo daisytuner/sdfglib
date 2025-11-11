@@ -31,10 +31,6 @@ void MemAccessRanges::
     auto& users = analysis_manager_->get<Users>();
     auto& assumptions_analysis = analysis_manager_->get<AssumptionsAnalysis>();
 
-    if (&node != &sdfg_.root()) {
-        std::cout << "Warning: MemAccessRanges::run called on non-root node. Results may be incomplete." << std::endl;
-    }
-
     auto builder = MemAccessRangesBuilder(sdfg_, node, users, assumptions_analysis);
 
     auto& worklist = builder.worklist_;
