@@ -5,19 +5,39 @@
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/data_flow_graph.h"
+#include "sdfg/data_flow/library_node.h"
 #include "sdfg/passes/pass.h"
 #include "sdfg/structured_control_flow/block.h"
+#include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
+#include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/sequence.h"
+#include "sdfg/symbolic/symbolic.h"
 #include "sdfg/visitor/structured_sdfg_visitor.h"
+#include "symengine/symengine_rcp.h"
 
 namespace sdfg {
 namespace passes {
 
 class BlockHoisting : public visitor::NonStoppingStructuredSDFGVisitor {
 private:
-    bool is_invariant_move(structured_control_flow::Sequence& body, data_flow::DataFlowGraph& dfg);
-    bool is_invariant_view(structured_control_flow::Sequence& body, data_flow::DataFlowGraph& dfg);
+    bool is_invariant_move(
+        structured_control_flow::Sequence& body,
+        data_flow::DataFlowGraph& dfg,
+        bool no_loop_carried_dependencies = false
+    );
+    bool is_invariant_view(
+        structured_control_flow::Sequence& body,
+        data_flow::DataFlowGraph& dfg,
+        symbolic::Symbol indvar = SymEngine::null,
+        bool no_loop_carried_dependencies = false
+    );
+    bool is_invariant_libnode(
+        structured_control_flow::Sequence& body,
+        data_flow::DataFlowGraph& dfg,
+        symbolic::Symbol indvar = SymEngine::null,
+        bool no_loop_carried_dependencies = false
+    );
 
     bool equal_moves(structured_control_flow::Block& block1, structured_control_flow::Block& block2);
     bool equal_views(structured_control_flow::Block& block1, structured_control_flow::Block& block2);
@@ -29,6 +49,12 @@ private:
     );
 
     bool map_invariant_view(
+        structured_control_flow::Sequence& parent,
+        structured_control_flow::Map& map_stmt,
+        structured_control_flow::Block& block
+    );
+
+    bool map_invariant_libnode(
         structured_control_flow::Sequence& parent,
         structured_control_flow::Map& map_stmt,
         structured_control_flow::Block& block
@@ -46,7 +72,18 @@ private:
         structured_control_flow::Block& block
     );
 
+    bool for_invariant_libnode(
+        structured_control_flow::Sequence& parent,
+        structured_control_flow::For& for_stmt,
+        structured_control_flow::Block& block
+    );
+
     void if_else_extract_invariant(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else);
+
+protected:
+    bool is_libnode_allowed(
+        structured_control_flow::Sequence& body, data_flow::DataFlowGraph& dfg, data_flow::LibraryNode* libnode
+    );
 
 public:
     BlockHoisting(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);

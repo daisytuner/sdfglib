@@ -5,7 +5,12 @@
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/access_node.h"
+#include "sdfg/data_flow/library_nodes/stdlib/alloca.h"
+#include "sdfg/data_flow/library_nodes/stdlib/memcpy.h"
+#include "sdfg/data_flow/library_nodes/stdlib/memmove.h"
+#include "sdfg/data_flow/library_nodes/stdlib/memset.h"
 #include "sdfg/data_flow/tasklet.h"
+#include "sdfg/element.h"
 #include "sdfg/function.h"
 #include "sdfg/types/pointer.h"
 #include "sdfg/types/scalar.h"
@@ -45,7 +50,8 @@ TEST(BlockHoistingTest, Map_InvariantMove) {
     {
         auto& a = builder.add_access(block1, "A");
         auto& a_ = builder.add_access(block1, "a");
-        builder.add_dereference_memlet(block1, a, a_, true, types::Pointer(static_cast<const types::IType&>(opaque_ptr)));
+        builder
+            .add_dereference_memlet(block1, a, a_, true, types::Pointer(static_cast<const types::IType&>(opaque_ptr)));
     }
 
     // Loop variant computation
@@ -121,6 +127,248 @@ TEST(BlockHoistingTest, Map_InvariantView) {
     EXPECT_EQ(body.size(), 1);
 }
 
+TEST(BlockHoistingTest, Map_InvariantAlloca) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::Int64);
+    types::Scalar desc(types::PrimitiveType::Float);
+    types::Pointer desc_ptr(desc);
+
+    builder.add_container("A", desc_ptr, true);
+    builder.add_container("B", desc_ptr, true);
+    builder.add_container("c", desc_ptr);
+    builder.add_container("i", sym_desc);
+
+    auto& map_stmt = builder.add_map(
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::zero(),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential::create()
+    );
+    auto& body = map_stmt.root();
+
+    // Loop invariant alloca
+    auto& block1 = builder.add_block(body);
+    {
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode = builder.add_library_node<stdlib::AllocaNode>(block1, DebugInfo(), symbolic::one());
+        builder.add_computational_memlet(block1, libnode, "_ret", c, {}, desc_ptr);
+    }
+
+    // Loop variant computation
+    auto& block2 = builder.add_block(body);
+    {
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, tasklet1, "_out", c, {symbolic::zero()});
+    }
+    auto& block3 = builder.add_block(body);
+    {
+        auto& B = builder.add_access(block3, "B");
+        auto& A = builder.add_access(block3, "A");
+        auto& tasklet1 = builder.add_tasklet(block3, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+        builder.add_computational_memlet(block3, B, tasklet1, "_in", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block3, tasklet1, "_out", A, {symbolic::symbol("i")});
+    }
+    auto& block4 = builder.add_block(body);
+    {
+        auto& c = builder.add_access(block4, "c");
+        auto& B = builder.add_access(block4, "B");
+        auto& tasklet1 = builder.add_tasklet(block4, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+        builder.add_computational_memlet(block4, c, tasklet1, "_in", {symbolic::zero()});
+        builder.add_computational_memlet(block4, tasklet1, "_out", B, {symbolic::symbol("i")});
+    }
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::BlockHoistingPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(body.size(), 3);
+}
+
+TEST(BlockHoistingTest, Map_InvariantMemcpy) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::Int64);
+    types::Scalar desc(types::PrimitiveType::Float);
+    types::Pointer desc_ptr(desc);
+
+    builder.add_container("A", desc_ptr, true);
+    builder.add_container("B", desc_ptr, true);
+    builder.add_container("C", desc_ptr, true);
+    builder.add_container("c", desc_ptr);
+    builder.add_container("i", sym_desc);
+
+    auto& map_stmt = builder.add_map(
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::zero(),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential::create()
+    );
+    auto& body = map_stmt.root();
+
+    // Loop invariant memcpy
+    auto& block1 = builder.add_block(body);
+    {
+        auto& C = builder.add_access(block1, "C");
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemcpyNode>(block1, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block1, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block1, libnode, "_dst", c, {}, desc_ptr);
+    }
+
+    // Loop variant computation
+    auto& block2 = builder.add_block(body);
+    {
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& B = builder.add_access(block2, "B");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::symbol("i")});
+    }
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::BlockHoistingPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(body.size(), 1);
+}
+
+TEST(BlockHoistingTest, Map_InvariantMemmove) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::Int64);
+    types::Scalar desc(types::PrimitiveType::Float);
+    types::Pointer desc_ptr(desc);
+
+    builder.add_container("A", desc_ptr, true);
+    builder.add_container("B", desc_ptr, true);
+    builder.add_container("C", desc_ptr, true);
+    builder.add_container("c", desc_ptr);
+    builder.add_container("i", sym_desc);
+
+    auto& map_stmt = builder.add_map(
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::zero(),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential::create()
+    );
+    auto& body = map_stmt.root();
+
+    // Loop invariant memcpy
+    auto& block1 = builder.add_block(body);
+    {
+        auto& C = builder.add_access(block1, "C");
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemmoveNode>(block1, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block1, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block1, libnode, "_dst", c, {}, desc_ptr);
+    }
+
+    // Loop variant computation
+    auto& block2 = builder.add_block(body);
+    {
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& B = builder.add_access(block2, "B");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::symbol("i")});
+    }
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::BlockHoistingPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(body.size(), 1);
+}
+
+TEST(BlockHoistingTest, Map_InvariantMemset) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::Int64);
+    types::Scalar desc(types::PrimitiveType::Float);
+    types::Pointer desc_ptr(desc);
+
+    builder.add_container("A", desc_ptr, true);
+    builder.add_container("B", desc_ptr, true);
+    builder.add_container("c", desc_ptr);
+    builder.add_container("i", sym_desc);
+
+    auto& map_stmt = builder.add_map(
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::zero(),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential::create()
+    );
+    auto& body = map_stmt.root();
+
+    // Loop invariant memcpy
+    auto& block1 = builder.add_block(body);
+    {
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode =
+            builder
+                .add_library_node<stdlib::MemsetNode>(block1, DebugInfo(), symbolic::integer(2), symbolic::integer(10));
+        builder.add_computational_memlet(block1, libnode, "_ptr", c, {}, desc_ptr);
+    }
+
+    // Loop variant computation
+    auto& block2 = builder.add_block(body);
+    {
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& B = builder.add_access(block2, "B");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::symbol("i")});
+    }
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::BlockHoistingPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(body.size(), 1);
+}
+
 TEST(BlockHoistingTest, For_InvariantMove) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
@@ -152,7 +400,8 @@ TEST(BlockHoistingTest, For_InvariantMove) {
     {
         auto& a = builder.add_access(block1, "A");
         auto& a_ = builder.add_access(block1, "a");
-        builder.add_dereference_memlet(block1, a, a_, true, types::Pointer(static_cast<const types::IType&>(opaque_ptr)));
+        builder
+            .add_dereference_memlet(block1, a, a_, true, types::Pointer(static_cast<const types::IType&>(opaque_ptr)));
     }
 
     // Loop variant computation
@@ -289,6 +538,244 @@ TEST(BlockHoistingTest, For_InvariantView_MultipleViews) {
     EXPECT_EQ(body.size(), 1);
 }
 
+TEST(BlockHoistingTest, For_InvariantAlloca) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::Int64);
+    types::Scalar desc(types::PrimitiveType::Float);
+    types::Pointer desc_ptr(desc);
+
+    builder.add_container("A", desc_ptr, true);
+    builder.add_container("B", desc_ptr, true);
+    builder.add_container("c", desc_ptr);
+    builder.add_container("i", sym_desc);
+
+    auto& for_stmt = builder.add_for(
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::zero(),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
+    auto& body = for_stmt.root();
+
+    // Loop invariant alloca
+    auto& block1 = builder.add_block(body);
+    {
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode = builder.add_library_node<stdlib::AllocaNode>(block1, DebugInfo(), symbolic::one());
+        builder.add_computational_memlet(block1, libnode, "_ret", c, {}, desc_ptr);
+    }
+
+    // Loop variant computation
+    auto& block2 = builder.add_block(body);
+    {
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, tasklet1, "_out", c, {symbolic::zero()});
+    }
+    auto& block3 = builder.add_block(body);
+    {
+        auto& B = builder.add_access(block3, "B");
+        auto& A = builder.add_access(block3, "A");
+        auto& tasklet1 = builder.add_tasklet(block3, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+        builder.add_computational_memlet(block3, B, tasklet1, "_in", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block3, tasklet1, "_out", A, {symbolic::symbol("i")});
+    }
+    auto& block4 = builder.add_block(body);
+    {
+        auto& c = builder.add_access(block4, "c");
+        auto& B = builder.add_access(block4, "B");
+        auto& tasklet1 = builder.add_tasklet(block4, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+        builder.add_computational_memlet(block4, c, tasklet1, "_in", {symbolic::zero()});
+        builder.add_computational_memlet(block4, tasklet1, "_out", B, {symbolic::symbol("i")});
+    }
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::BlockHoistingPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(body.size(), 3);
+}
+
+TEST(BlockHoistingTest, For_InvariantMemcpy) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::Int64);
+    types::Scalar desc(types::PrimitiveType::Float);
+    types::Pointer desc_ptr(desc);
+
+    builder.add_container("A", desc_ptr, true);
+    builder.add_container("B", desc_ptr, true);
+    builder.add_container("C", desc_ptr, true);
+    builder.add_container("c", desc_ptr);
+    builder.add_container("i", sym_desc);
+
+    auto& for_stmt = builder.add_for(
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::zero(),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
+    auto& body = for_stmt.root();
+
+    // Loop invariant memcpy
+    auto& block1 = builder.add_block(body);
+    {
+        auto& C = builder.add_access(block1, "C");
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemcpyNode>(block1, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block1, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block1, libnode, "_dst", c, {}, desc_ptr);
+    }
+
+    // Loop variant computation
+    auto& block2 = builder.add_block(body);
+    {
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& B = builder.add_access(block2, "B");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::symbol("i")});
+    }
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::BlockHoistingPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(body.size(), 1);
+}
+
+TEST(BlockHoistingTest, For_InvariantMemmove) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::Int64);
+    types::Scalar desc(types::PrimitiveType::Float);
+    types::Pointer desc_ptr(desc);
+
+    builder.add_container("A", desc_ptr, true);
+    builder.add_container("B", desc_ptr, true);
+    builder.add_container("C", desc_ptr, true);
+    builder.add_container("c", desc_ptr);
+    builder.add_container("i", sym_desc);
+
+    auto& for_stmt = builder.add_for(
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::zero(),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
+    auto& body = for_stmt.root();
+
+    // Loop invariant memcpy
+    auto& block1 = builder.add_block(body);
+    {
+        auto& C = builder.add_access(block1, "C");
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemmoveNode>(block1, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block1, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block1, libnode, "_dst", c, {}, desc_ptr);
+    }
+
+    // Loop variant computation
+    auto& block2 = builder.add_block(body);
+    {
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& B = builder.add_access(block2, "B");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::symbol("i")});
+    }
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::BlockHoistingPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(body.size(), 1);
+}
+
+TEST(BlockHoistingTest, For_InvariantMemset) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::Int64);
+    types::Scalar desc(types::PrimitiveType::Float);
+    types::Pointer desc_ptr(desc);
+
+    builder.add_container("A", desc_ptr, true);
+    builder.add_container("B", desc_ptr, true);
+    builder.add_container("c", desc_ptr);
+    builder.add_container("i", sym_desc);
+
+    auto& for_stmt = builder.add_for(
+        root,
+        symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::zero(),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
+    auto& body = for_stmt.root();
+
+    // Loop invariant memcpy
+    auto& block1 = builder.add_block(body);
+    {
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode =
+            builder
+                .add_library_node<stdlib::MemsetNode>(block1, DebugInfo(), symbolic::integer(2), symbolic::integer(10));
+        builder.add_computational_memlet(block1, libnode, "_ptr", c, {}, desc_ptr);
+    }
+
+    // Loop variant computation
+    auto& block2 = builder.add_block(body);
+    {
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& B = builder.add_access(block2, "B");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::symbol("i")});
+    }
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::BlockHoistingPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(body.size(), 1);
+}
+
 TEST(BlockHoistingTest, IfElse_InvariantMove) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
@@ -314,7 +801,8 @@ TEST(BlockHoistingTest, IfElse_InvariantMove) {
     {
         auto& a = builder.add_access(block1, "A");
         auto& a_ = builder.add_access(block1, "a");
-        builder.add_dereference_memlet(block1, a, a_, true, types::Pointer(static_cast<const types::IType&>(opaque_ptr)));
+        builder
+            .add_dereference_memlet(block1, a, a_, true, types::Pointer(static_cast<const types::IType&>(opaque_ptr)));
     }
 
     // Case 1: Branch variant computation
@@ -332,7 +820,8 @@ TEST(BlockHoistingTest, IfElse_InvariantMove) {
     {
         auto& a = builder.add_access(block3, "A");
         auto& a_ = builder.add_access(block3, "a");
-        builder.add_dereference_memlet(block3, a, a_, true, types::Pointer(static_cast<const types::IType&>(opaque_ptr)));
+        builder
+            .add_dereference_memlet(block3, a, a_, true, types::Pointer(static_cast<const types::IType&>(opaque_ptr)));
     }
 
     // Case 2: Branch variant computation

@@ -8,14 +8,20 @@
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/data_flow_graph.h"
+#include "sdfg/data_flow/library_nodes/stdlib/alloca.h"
+#include "sdfg/data_flow/library_nodes/stdlib/memcpy.h"
+#include "sdfg/data_flow/library_nodes/stdlib/memmove.h"
+#include "sdfg/data_flow/library_nodes/stdlib/memset.h"
 #include "sdfg/data_flow/memlet.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/element.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
+#include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
+#include "sdfg/symbolic/symbolic.h"
 #include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {
@@ -46,6 +52,9 @@ bool BlockHoisting::accept(structured_control_flow::Map& map_stmt) {
         if (this->map_invariant_view(parent, map_stmt, *block)) {
             return true;
         }
+        if (this->map_invariant_libnode(parent, map_stmt, *block)) {
+            return true;
+        }
     }
 
     return false;
@@ -71,6 +80,9 @@ bool BlockHoisting::accept(structured_control_flow::For& for_stmt) {
             return true;
         }
         if (this->for_invariant_view(parent, for_stmt, *block)) {
+            return true;
+        }
+        if (this->for_invariant_libnode(parent, for_stmt, *block)) {
             return true;
         }
     }
@@ -145,7 +157,25 @@ bool BlockHoisting::accept(structured_control_flow::IfElse& if_else) {
     return false;
 }
 
-bool BlockHoisting::is_invariant_move(structured_control_flow::Sequence& body, data_flow::DataFlowGraph& dfg) {
+bool BlockHoisting::is_libnode_allowed(
+    structured_control_flow::Sequence& body, data_flow::DataFlowGraph& dfg, data_flow::LibraryNode* libnode
+) {
+    if (dynamic_cast<stdlib::AllocaNode*>(libnode)) {
+        return true;
+    } else if (dynamic_cast<stdlib::MemcpyNode*>(libnode)) {
+        return true;
+    } else if (dynamic_cast<stdlib::MemmoveNode*>(libnode)) {
+        return true;
+    } else if (dynamic_cast<stdlib::MemsetNode*>(libnode)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool BlockHoisting::is_invariant_move(
+    structured_control_flow::Sequence& body, data_flow::DataFlowGraph& dfg, bool no_loop_carried_dependencies
+) {
     if (dfg.nodes().size() != 2) {
         return false;
     }
@@ -155,6 +185,10 @@ bool BlockHoisting::is_invariant_move(structured_control_flow::Sequence& body, d
     auto& edge = *dfg.edges().begin();
     if (edge.type() != data_flow::MemletType::Dereference_Src) {
         return false;
+    }
+
+    if (no_loop_carried_dependencies) {
+        return true;
     }
     auto& src = static_cast<data_flow::AccessNode&>(edge.src());
 
@@ -167,7 +201,12 @@ bool BlockHoisting::is_invariant_move(structured_control_flow::Sequence& body, d
     return true;
 }
 
-bool BlockHoisting::is_invariant_view(structured_control_flow::Sequence& body, data_flow::DataFlowGraph& dfg) {
+bool BlockHoisting::is_invariant_view(
+    structured_control_flow::Sequence& body,
+    data_flow::DataFlowGraph& dfg,
+    symbolic::Symbol indvar,
+    bool no_loop_carried_dependencies
+) {
     if (dfg.nodes().size() != 2) {
         return false;
     }
@@ -178,12 +217,85 @@ bool BlockHoisting::is_invariant_view(structured_control_flow::Sequence& body, d
     if (edge.type() != data_flow::MemletType::Reference) {
         return false;
     }
+
+    if (!indvar.is_null()) {
+        auto& subset = edge.subset();
+        for (const auto& dim : subset) {
+            if (symbolic::uses(dim, indvar)) {
+                return false;
+            }
+        }
+    }
+
+    if (no_loop_carried_dependencies) {
+        return true;
+    }
     auto& src = static_cast<data_flow::AccessNode&>(edge.src());
 
     auto& users_analysis = analysis_manager_.get<analysis::Users>();
     analysis::UsersView body_view(users_analysis, body);
     if (!body_view.writes(src.data()).empty() || !body_view.moves(src.data()).empty()) {
         return false;
+    }
+
+    return true;
+}
+
+bool BlockHoisting::is_invariant_libnode(
+    structured_control_flow::Sequence& body,
+    data_flow::DataFlowGraph& dfg,
+    symbolic::Symbol indvar,
+    bool no_loop_carried_dependencies
+) {
+    if (dfg.library_nodes().size() != 1) {
+        return false;
+    }
+    if (dfg.tasklets().size() != 0) {
+        return false;
+    }
+    auto* libnode = *dfg.library_nodes().begin();
+    if (!libnode) {
+        return false;
+    }
+    if (dfg.data_nodes().size() != libnode->outputs().size() + libnode->inputs().size()) {
+        return false;
+    }
+
+    if (!this->is_libnode_allowed(body, dfg, libnode)) {
+        return false;
+    }
+
+    if (!indvar.is_null()) {
+        if (libnode->symbols().contains(indvar)) {
+            return false;
+        }
+        for (auto& oedge : dfg.out_edges(*libnode)) {
+            for (const auto& dim : oedge.subset()) {
+                if (symbolic::uses(dim, indvar)) {
+                    return false;
+                }
+            }
+        }
+        for (auto& iedge : dfg.in_edges(*libnode)) {
+            for (const auto& dim : iedge.subset()) {
+                if (symbolic::uses(dim, indvar)) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    if (no_loop_carried_dependencies) {
+        return true;
+    }
+
+    auto& users_analysis = analysis_manager_.get<analysis::Users>();
+    analysis::UsersView body_view(users_analysis, body);
+    for (auto& iedge : dfg.in_edges(*libnode)) {
+        auto& src = static_cast<data_flow::AccessNode&>(iedge.src());
+        if (!body_view.writes(src.data()).empty() || !body_view.moves(src.data()).empty()) {
+            return false;
+        }
     }
 
     return true;
@@ -268,21 +380,12 @@ bool BlockHoisting::map_invariant_move(
     structured_control_flow::Map& map_stmt,
     structured_control_flow::Block& block
 ) {
-    size_t map_index = parent.index(map_stmt);
     auto& body = map_stmt.root();
-    auto& dfg = block.dataflow();
-
-    if (dfg.nodes().size() != 2) {
-        return false;
-    }
-    if (dfg.edges().size() != 1) {
-        return false;
-    }
-    auto& edge = *dfg.edges().begin();
-    if (edge.type() != data_flow::MemletType::Dereference_Src) {
+    if (!this->is_invariant_move(body, block.dataflow(), true)) {
         return false;
     }
 
+    size_t map_index = parent.index(map_stmt);
     builder_.move_child(body, 0, parent, map_index);
     return true;
 }
@@ -292,27 +395,32 @@ bool BlockHoisting::map_invariant_view(
     structured_control_flow::Map& map_stmt,
     structured_control_flow::Block& block
 ) {
-    size_t map_index = parent.index(map_stmt);
     auto& body = map_stmt.root();
-    auto& dfg = block.dataflow();
-
-    if (dfg.nodes().size() != 2) {
+    if (!this->is_invariant_view(body, block.dataflow(), map_stmt.indvar(), true)) {
         return false;
-    }
-    if (dfg.edges().size() != 1) {
-        return false;
-    }
-    auto& edge = *dfg.edges().begin();
-    if (edge.type() != data_flow::MemletType::Reference) {
-        return false;
-    }
-    auto& subset = edge.subset();
-    for (const auto& dim : subset) {
-        if (symbolic::uses(dim, map_stmt.indvar())) {
-            return false;
-        }
     }
 
+    size_t map_index = parent.index(map_stmt);
+    builder_.move_child(body, 0, parent, map_index);
+    return true;
+}
+
+bool BlockHoisting::map_invariant_libnode(
+    structured_control_flow::Sequence& parent,
+    structured_control_flow::Map& map_stmt,
+    structured_control_flow::Block& block
+) {
+    // For now, only allow libnode hoisting on sequential maps
+    if (map_stmt.schedule_type().value() != ScheduleType_Sequential::value()) {
+        return false;
+    }
+
+    auto& body = map_stmt.root();
+    if (!this->is_invariant_libnode(body, block.dataflow(), map_stmt.indvar(), true)) {
+        return false;
+    }
+
+    size_t map_index = parent.index(map_stmt);
     builder_.move_child(body, 0, parent, map_index);
     return true;
 }
@@ -322,14 +430,12 @@ bool BlockHoisting::for_invariant_move(
     structured_control_flow::For& for_stmt,
     structured_control_flow::Block& block
 ) {
-    size_t for_index = parent.index(for_stmt);
     auto& body = for_stmt.root();
-    auto& dfg = block.dataflow();
-
-    if (!this->is_invariant_move(body, dfg)) {
+    if (!this->is_invariant_move(body, block.dataflow())) {
         return false;
     }
 
+    size_t for_index = parent.index(for_stmt);
     builder_.move_child(body, 0, parent, for_index);
     return true;
 }
@@ -339,23 +445,28 @@ bool BlockHoisting::for_invariant_view(
     structured_control_flow::For& for_stmt,
     structured_control_flow::Block& block
 ) {
-    size_t for_index = parent.index(for_stmt);
     auto& body = for_stmt.root();
-    auto& dfg = block.dataflow();
-
-    if (!this->is_invariant_view(body, dfg)) {
+    if (!this->is_invariant_view(body, block.dataflow(), for_stmt.indvar())) {
         return false;
     }
-    auto& edge = *dfg.edges().begin();
 
-    auto& subset = edge.subset();
-    for (const auto& dim : subset) {
-        if (symbolic::uses(dim, for_stmt.indvar())) {
-            return false;
-        }
+    size_t for_index = parent.index(for_stmt);
+    builder_.move_child(body, 0, parent, for_index);
+    return true;
+}
+
+bool BlockHoisting::for_invariant_libnode(
+    structured_control_flow::Sequence& parent,
+    structured_control_flow::For& for_stmt,
+    structured_control_flow::Block& block
+) {
+    auto& body = for_stmt.root();
+    if (!this->is_invariant_libnode(body, block.dataflow(), for_stmt.indvar())) {
+        return false;
     }
 
-    builder_.move_child(body, 0, parent, for_index);
+    size_t map_index = parent.index(for_stmt);
+    builder_.move_child(body, 0, parent, map_index);
     return true;
 }
 
