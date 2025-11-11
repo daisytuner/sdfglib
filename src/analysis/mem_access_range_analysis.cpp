@@ -31,9 +31,11 @@ void MemAccessRanges::
     auto& users = analysis_manager_->get<Users>();
     auto& assumptions_analysis = analysis_manager_->get<AssumptionsAnalysis>();
 
-    UsersView users_view(users, node);
+    if (&node != &sdfg_.root()) {
+        std::cout << "Warning: MemAccessRanges::run called on non-root node. Results may be incomplete." << std::endl;
+    }
 
-    auto builder = MemAccessRangesBuilder(sdfg_, users_view, assumptions_analysis);
+    auto builder = MemAccessRangesBuilder(sdfg_, node, users, assumptions_analysis);
 
     auto& worklist = builder.worklist_;
 
@@ -123,6 +125,8 @@ bool MemAccessRange::is_undefined() const { return undefined_; }
 const std::vector<std::pair<symbolic::Expression, symbolic::Expression>>& MemAccessRange::dims() const { return dims_; }
 
 void MemAccessRangesBuilder::process_workItem(WorkItem* item) {
+    analysis::UsersView users_(users_analysis_, node_);
+
     const auto* varName = item->var_name;
 
     const auto& reads = users_.reads(*varName);
@@ -184,14 +188,40 @@ void MemAccessRangesBuilder::process_workItem(WorkItem* item) {
 
 void MemAccessRangesBuilder::process_direct_users(WorkItem* item, bool is_write, std::vector<User*> accesses) {
     for (auto& access : accesses) {
-        auto subsets = access->subsets();
+        // The actual range analysis replaces symbols used in subsets
+        // by their lower/upper bounds according to the assumptions analysis.
+        // For this, we take the immediate scope to get the richest assumptions.
         const auto& user_scope = analysis::Users::scope(access);
         auto assums = assumptions_analysis_.get(*user_scope, false);
-        auto params = this->sdfg_.parameters();
+
+        // The final expression must be an expression w.r.t parameters,
+        // i.e., constant symbols w.r.t the actual node.
+        // Note we can compute this more efficiently once, but
+        // we want to move this to the assumptions analysis anyway
+        analysis::UsersView users_view(users_analysis_, node_);
+        symbolic::SymbolSet params;
+        for (auto& user : users_view.uses()) {
+            if (user->container() == symbolic::__nullptr__()->get_name()) {
+                continue;
+            }
+            auto& type = sdfg_.type(user->container());
+            if (type.type_id() != types::TypeID::Scalar) {
+                continue;
+            }
+            auto& scalar_type = static_cast<const types::Scalar&>(type);
+            if (!types::is_integer(scalar_type.primitive_type())) {
+                continue;
+            }
+            if (users_view.writes(user->container()).size() > 0) {
+                continue;
+            }
+            params.insert(symbolic::symbol(user->container()));
+        }
 
         item->saw_read |= !is_write;
         item->saw_write |= is_write;
 
+        auto subsets = access->subsets();
         for (const auto& subset : subsets) {
             auto subsetDims = subset.size();
             item->dims.reserve(subsetDims);
