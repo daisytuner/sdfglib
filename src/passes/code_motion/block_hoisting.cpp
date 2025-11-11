@@ -1,4 +1,4 @@
-#include "sdfg/passes/dataflow/block_hoisting.h"
+#include "sdfg/passes/code_motion/block_hoisting.h"
 
 #include <unordered_set>
 

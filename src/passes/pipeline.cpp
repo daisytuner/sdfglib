@@ -1,7 +1,7 @@
 #include "sdfg/passes/pipeline.h"
 
-#include "sdfg/passes/dataflow/block_hoisting.h"
-#include "sdfg/passes/dataflow/block_sorting.h"
+#include "sdfg/passes/code_motion/block_hoisting.h"
+#include "sdfg/passes/code_motion/block_sorting.h"
 #include "sdfg/passes/dataflow/tasklet_fusion.h"
 #include "sdfg/passes/schedules/expansion_pass.h"
 

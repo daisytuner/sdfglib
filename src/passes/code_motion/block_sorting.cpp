@@ -1,4 +1,4 @@
-#include "sdfg/passes/dataflow/block_sorting.h"
+#include "sdfg/passes/code_motion/block_sorting.h"
 
 #include <unordered_set>
 
