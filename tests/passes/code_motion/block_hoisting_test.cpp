@@ -237,12 +237,22 @@ TEST(BlockHoistingTest, Map_InvariantMemcpy) {
     auto& block2 = builder.add_block(body);
     {
         auto& A = builder.add_access(block2, "A");
-        auto& c = builder.add_access(block2, "c");
         auto& B = builder.add_access(block2, "B");
+        auto& c = builder.add_access(block2, "c");
         auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
         builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::symbol("i")});
-        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::symbol("i")});
-        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, B, tasklet1, "_in2", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, tasklet1, "_out", c, {symbolic::symbol("i")});
+    }
+
+    // Loop invariant memcpy
+    auto& block3 = builder.add_block(body);
+    {
+        auto& C = builder.add_access(block3, "C");
+        auto& c = builder.add_access(block3, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemcpyNode>(block3, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block3, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block3, libnode, "_dst", c, {}, desc_ptr);
     }
 
     // Apply pass
@@ -250,7 +260,7 @@ TEST(BlockHoistingTest, Map_InvariantMemcpy) {
     passes::BlockHoistingPass pass;
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
-    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(root.size(), 3);
     EXPECT_EQ(body.size(), 1);
 }
 
@@ -281,7 +291,7 @@ TEST(BlockHoistingTest, Map_InvariantMemmove) {
     );
     auto& body = map_stmt.root();
 
-    // Loop invariant memcpy
+    // Loop invariant memmove
     auto& block1 = builder.add_block(body);
     {
         auto& C = builder.add_access(block1, "C");
@@ -295,12 +305,22 @@ TEST(BlockHoistingTest, Map_InvariantMemmove) {
     auto& block2 = builder.add_block(body);
     {
         auto& A = builder.add_access(block2, "A");
-        auto& c = builder.add_access(block2, "c");
         auto& B = builder.add_access(block2, "B");
+        auto& c = builder.add_access(block2, "c");
         auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
         builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::symbol("i")});
-        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::symbol("i")});
-        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, B, tasklet1, "_in2", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, tasklet1, "_out", c, {symbolic::symbol("i")});
+    }
+
+    // Loop invariant memmove
+    auto& block3 = builder.add_block(body);
+    {
+        auto& C = builder.add_access(block3, "C");
+        auto& c = builder.add_access(block3, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemmoveNode>(block3, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block3, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block3, libnode, "_dst", c, {}, desc_ptr);
     }
 
     // Apply pass
@@ -308,7 +328,7 @@ TEST(BlockHoistingTest, Map_InvariantMemmove) {
     passes::BlockHoistingPass pass;
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
-    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(root.size(), 3);
     EXPECT_EQ(body.size(), 1);
 }
 
@@ -338,7 +358,7 @@ TEST(BlockHoistingTest, Map_InvariantMemset) {
     );
     auto& body = map_stmt.root();
 
-    // Loop invariant memcpy
+    // Loop invariant memset
     auto& block1 = builder.add_block(body);
     {
         auto& c = builder.add_access(block1, "c");
@@ -646,12 +666,22 @@ TEST(BlockHoistingTest, For_InvariantMemcpy) {
     auto& block2 = builder.add_block(body);
     {
         auto& A = builder.add_access(block2, "A");
-        auto& c = builder.add_access(block2, "c");
         auto& B = builder.add_access(block2, "B");
+        auto& c = builder.add_access(block2, "c");
         auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
         builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::symbol("i")});
-        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::symbol("i")});
-        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, B, tasklet1, "_in2", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, tasklet1, "_out", c, {symbolic::symbol("i")});
+    }
+
+    // Loop invariant memcpy
+    auto& block3 = builder.add_block(body);
+    {
+        auto& C = builder.add_access(block3, "C");
+        auto& c = builder.add_access(block3, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemcpyNode>(block3, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block3, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block3, libnode, "_dst", c, {}, desc_ptr);
     }
 
     // Apply pass
@@ -659,7 +689,7 @@ TEST(BlockHoistingTest, For_InvariantMemcpy) {
     passes::BlockHoistingPass pass;
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
-    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(root.size(), 3);
     EXPECT_EQ(body.size(), 1);
 }
 
@@ -689,7 +719,7 @@ TEST(BlockHoistingTest, For_InvariantMemmove) {
     );
     auto& body = for_stmt.root();
 
-    // Loop invariant memcpy
+    // Loop invariant memmove
     auto& block1 = builder.add_block(body);
     {
         auto& C = builder.add_access(block1, "C");
@@ -703,12 +733,22 @@ TEST(BlockHoistingTest, For_InvariantMemmove) {
     auto& block2 = builder.add_block(body);
     {
         auto& A = builder.add_access(block2, "A");
-        auto& c = builder.add_access(block2, "c");
         auto& B = builder.add_access(block2, "B");
+        auto& c = builder.add_access(block2, "c");
         auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
         builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::symbol("i")});
-        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::symbol("i")});
-        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, B, tasklet1, "_in2", {symbolic::symbol("i")});
+        builder.add_computational_memlet(block2, tasklet1, "_out", c, {symbolic::symbol("i")});
+    }
+
+    // Loop invariant memmove
+    auto& block3 = builder.add_block(body);
+    {
+        auto& C = builder.add_access(block3, "C");
+        auto& c = builder.add_access(block3, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemmoveNode>(block3, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block3, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block3, libnode, "_dst", c, {}, desc_ptr);
     }
 
     // Apply pass
@@ -716,7 +756,7 @@ TEST(BlockHoistingTest, For_InvariantMemmove) {
     passes::BlockHoistingPass pass;
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
-    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(root.size(), 3);
     EXPECT_EQ(body.size(), 1);
 }
 
@@ -1127,6 +1167,16 @@ TEST(BlockHoistingTest, IfElse_InvariantMemcpy) {
         builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::integer(3)});
     }
 
+    // Case 1: Branch invariant memcpy
+    {
+        auto& block3 = builder.add_block(case1);
+        auto& C = builder.add_access(block3, "C");
+        auto& c = builder.add_access(block3, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemcpyNode>(block3, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block3, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block3, libnode, "_dst", c, {}, desc_ptr);
+    }
+
     // Case 2: Branch invariant memcpy
     {
         auto& block1 = builder.add_block(case2);
@@ -1149,12 +1199,22 @@ TEST(BlockHoistingTest, IfElse_InvariantMemcpy) {
         builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::integer(5)});
     }
 
+    // Case 2: Branch invariant memcpy
+    {
+        auto& block3 = builder.add_block(case2);
+        auto& C = builder.add_access(block3, "C");
+        auto& c = builder.add_access(block3, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemcpyNode>(block3, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block3, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block3, libnode, "_dst", c, {}, desc_ptr);
+    }
+
     // Apply pass
     analysis::AnalysisManager analysis_manager(sdfg);
     passes::BlockHoistingPass pass;
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
-    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(root.size(), 3);
     EXPECT_EQ(case1.size(), 1);
     EXPECT_EQ(case2.size(), 1);
 }
@@ -1200,6 +1260,16 @@ TEST(BlockHoistingTest, IfElse_InvariantMemmove) {
         builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::integer(3)});
     }
 
+    // Case 1: Branch invariant memmove
+    {
+        auto& block3 = builder.add_block(case1);
+        auto& C = builder.add_access(block3, "C");
+        auto& c = builder.add_access(block3, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemmoveNode>(block3, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block3, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block3, libnode, "_dst", c, {}, desc_ptr);
+    }
+
     // Case 2: Branch invariant memcpy
     {
         auto& block1 = builder.add_block(case2);
@@ -1222,12 +1292,22 @@ TEST(BlockHoistingTest, IfElse_InvariantMemmove) {
         builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::integer(5)});
     }
 
+    // Case 2: Branch invariant memmove
+    {
+        auto& block3 = builder.add_block(case2);
+        auto& C = builder.add_access(block3, "C");
+        auto& c = builder.add_access(block3, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemmoveNode>(block3, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block3, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block3, libnode, "_dst", c, {}, desc_ptr);
+    }
+
     // Apply pass
     analysis::AnalysisManager analysis_manager(sdfg);
     passes::BlockHoistingPass pass;
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
-    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(root.size(), 3);
     EXPECT_EQ(case1.size(), 1);
     EXPECT_EQ(case2.size(), 1);
 }

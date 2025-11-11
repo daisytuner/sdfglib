@@ -22,6 +22,7 @@
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/if_else.h"
+#include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/symbolic.h"
@@ -37,60 +38,22 @@ bool BlockHoisting::accept(structured_control_flow::Map& map_stmt) {
     auto& scope_analysis = analysis_manager_.get<analysis::ScopeAnalysis>();
     auto& parent = static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&map_stmt));
 
-    // Extract first child
-    auto& body = map_stmt.root();
-    if (body.size() == 0) {
-        return false;
-    }
-    auto first_child = body.at(0);
-    if (!first_child.second.assignments().empty()) {
-        return false;
-    }
-    auto& first_node = first_child.first;
+    bool applied = false;
+    applied |= this->map_invariant_front(parent, map_stmt);
+    applied |= this->map_invariant_back(parent, map_stmt);
 
-    if (auto block = dynamic_cast<structured_control_flow::Block*>(&first_node)) {
-        if (this->map_invariant_move(parent, map_stmt, *block)) {
-            return true;
-        }
-        if (this->map_invariant_view(parent, map_stmt, *block)) {
-            return true;
-        }
-        if (this->map_invariant_libnode(parent, map_stmt, *block)) {
-            return true;
-        }
-    }
-
-    return false;
+    return applied;
 }
 
 bool BlockHoisting::accept(structured_control_flow::For& for_stmt) {
     auto& scope_analysis = analysis_manager_.get<analysis::ScopeAnalysis>();
     auto& parent = static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&for_stmt));
 
-    // Extract first child
-    auto& body = for_stmt.root();
-    if (body.size() == 0) {
-        return false;
-    }
-    auto first_child = body.at(0);
-    if (!first_child.second.assignments().empty()) {
-        return false;
-    }
-    auto& first_node = first_child.first;
+    bool applied = false;
+    applied |= this->for_invariant_front(parent, for_stmt);
+    applied |= this->for_invariant_back(parent, for_stmt);
 
-    if (auto block = dynamic_cast<structured_control_flow::Block*>(&first_node)) {
-        if (this->for_invariant_move(parent, for_stmt, *block)) {
-            return true;
-        }
-        if (this->for_invariant_view(parent, for_stmt, *block)) {
-            return true;
-        }
-        if (this->for_invariant_libnode(parent, for_stmt, *block)) {
-            return true;
-        }
-    }
-
-    return false;
+    return applied;
 }
 
 bool BlockHoisting::accept(structured_control_flow::IfElse& if_else) {
@@ -102,73 +65,11 @@ bool BlockHoisting::accept(structured_control_flow::IfElse& if_else) {
     auto& scope_analysis = analysis_manager_.get<analysis::ScopeAnalysis>();
     auto& parent = static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&if_else));
 
-    // Extract the first block of first case
-    if (if_else.at(0).first.size() == 0) {
-        return false;
-    }
-    auto first_child = if_else.at(0).first.at(0);
-    if (!first_child.second.assignments().empty()) {
-        return false;
-    }
-    auto* first_block = dynamic_cast<structured_control_flow::Block*>(&first_child.first);
-    if (!first_block) {
-        return false;
-    }
+    bool applied = false;
+    applied |= this->if_else_invariant_front(parent, if_else);
+    applied |= this->if_else_invariant_back(parent, if_else);
 
-    // Collect the first block of all other cases
-    std::vector<structured_control_flow::Block*> other_blocks;
-    for (size_t i = 1; i < if_else.size(); i++) {
-        if (if_else.at(i).first.size() == 0) {
-            return false;
-        }
-        auto other_child = if_else.at(i).first.at(0);
-        if (!other_child.second.assignments().empty()) {
-            return false;
-        }
-        auto* other_block = dynamic_cast<structured_control_flow::Block*>(&other_child.first);
-        if (!other_block) {
-            return false;
-        }
-        other_blocks.push_back(other_block);
-    }
-
-    // Check the first block of all cases for invariant move / view / libnode
-    if (this->is_invariant_move(if_else.at(0).first, first_block->dataflow())) {
-        for (size_t i = 0; i < other_blocks.size(); i++) {
-            if (!this->is_invariant_move(if_else.at(i + 1).first, other_blocks[i]->dataflow())) {
-                return false;
-            }
-            if (!this->equal_moves(*first_block, *other_blocks[i])) {
-                return false;
-            }
-        }
-        this->if_else_extract_invariant(parent, if_else);
-        return true;
-    } else if (this->is_invariant_view(if_else.at(0).first, first_block->dataflow())) {
-        for (size_t i = 0; i < other_blocks.size(); i++) {
-            if (!this->is_invariant_view(if_else.at(i + 1).first, other_blocks[i]->dataflow())) {
-                return false;
-            }
-            if (!this->equal_views(*first_block, *other_blocks[i])) {
-                return false;
-            }
-        }
-        this->if_else_extract_invariant(parent, if_else);
-        return true;
-    } else if (this->is_invariant_libnode(if_else.at(0).first, first_block->dataflow())) {
-        for (size_t i = 0; i < other_blocks.size(); i++) {
-            if (!this->is_invariant_libnode(if_else.at(i + 1).first, other_blocks[i]->dataflow())) {
-                return false;
-            }
-            if (!this->equal_libnodes(*first_block, *other_blocks[i])) {
-                return false;
-            }
-        }
-        this->if_else_extract_invariant(parent, if_else);
-        return true;
-    }
-
-    return false;
+    return applied;
 }
 
 bool BlockHoisting::is_libnode_allowed(
@@ -187,29 +88,100 @@ bool BlockHoisting::is_libnode_allowed(
     }
 }
 
-bool BlockHoisting::equal_libnodes(data_flow::LibraryNode* libnode1, data_flow::LibraryNode* libnode2) {
-    if (auto* alloca_node1 = dynamic_cast<stdlib::AllocaNode*>(libnode1)) {
-        if (auto* alloca_node2 = dynamic_cast<stdlib::AllocaNode*>(libnode2)) {
-            return symbolic::eq(alloca_node1->size(), alloca_node2->size());
+bool BlockHoisting::equal_libnodes(structured_control_flow::Block& block1, structured_control_flow::Block& block2) {
+    auto& dfg1 = block1.dataflow();
+    auto& dfg2 = block2.dataflow();
+
+    // Get library nodes
+    auto* libnode1 = *dfg1.library_nodes().begin();
+    auto* libnode2 = *dfg2.library_nodes().begin();
+
+    // Collect in edges
+    std::unordered_map<std::string, data_flow::Memlet*> iedges1, iedges2;
+    for (auto& iedge : dfg1.in_edges(*libnode1)) {
+        iedges1.insert({iedge.dst_conn(), &iedge});
+    }
+    for (auto& iedge : dfg2.in_edges(*libnode2)) {
+        iedges2.insert({iedge.dst_conn(), &iedge});
+    }
+
+    // In edges must have the same type, subset, and container
+    if (iedges1.size() != iedges2.size()) {
+        return false;
+    }
+    for (auto [conn, iedge1] : iedges1) {
+        if (!iedges2.contains(conn)) {
+            return false;
+        }
+        auto* iedge2 = iedges2.at(conn);
+
+        // Compare types
+        if (iedge1->type() != iedge2->type()) {
+            return false;
+        }
+
+        // Compare subsets
+        if (iedge1->subset().size() != iedge2->subset().size()) {
+            return false;
+        }
+        for (size_t i = 0; i < iedge1->subset().size(); i++) {
+            if (!symbolic::eq(iedge1->subset().at(i), iedge2->subset().at(i))) {
+                return false;
+            }
+        }
+
+        // Compare containers
+        auto& src1 = static_cast<data_flow::AccessNode&>(iedge1->src());
+        auto& src2 = static_cast<data_flow::AccessNode&>(iedge2->src());
+        if (src1.data() != src2.data()) {
+            return false;
         }
     }
-    if (auto* memcpy_node1 = dynamic_cast<stdlib::MemcpyNode*>(libnode1)) {
-        if (auto* memcpy_node2 = dynamic_cast<stdlib::MemcpyNode*>(libnode2)) {
-            return symbolic::eq(memcpy_node1->count(), memcpy_node2->count());
+
+    // Collect out edges
+    std::unordered_map<std::string, data_flow::Memlet*> oedges1, oedges2;
+    for (auto& oedge : dfg1.out_edges(*libnode1)) {
+        oedges1.insert({oedge.src_conn(), &oedge});
+    }
+    for (auto& oedge : dfg2.out_edges(*libnode2)) {
+        oedges2.insert({oedge.src_conn(), &oedge});
+    }
+
+    // Out edges must have the same type, subset, and container
+    if (oedges1.size() != oedges2.size()) {
+        return false;
+    }
+    for (auto [conn, oedge1] : oedges1) {
+        if (!oedges2.contains(conn)) {
+            return false;
+        }
+        auto& oedge2 = oedges2.at(conn);
+
+        // Compare types
+        if (oedge1->type() != oedge2->type()) {
+            return false;
+        }
+
+        // Compare subsets
+        if (oedge1->subset().size() != oedge2->subset().size()) {
+            return false;
+        }
+        for (size_t i = 0; i < oedge1->subset().size(); i++) {
+            if (!symbolic::eq(oedge1->subset().at(i), oedge2->subset().at(i))) {
+                return false;
+            }
+        }
+
+        // Compare containers
+        auto& dst1 = static_cast<data_flow::AccessNode&>(oedge1->dst());
+        auto& dst2 = static_cast<data_flow::AccessNode&>(oedge2->dst());
+        if (dst1.data() != dst2.data()) {
+            return false;
         }
     }
-    if (auto* memmove_node1 = dynamic_cast<stdlib::MemmoveNode*>(libnode1)) {
-        if (auto* memmove_node2 = dynamic_cast<stdlib::MemmoveNode*>(libnode2)) {
-            return symbolic::eq(memmove_node1->count(), memmove_node2->count());
-        }
-    }
-    if (auto* memset_node1 = dynamic_cast<stdlib::MemsetNode*>(libnode1)) {
-        if (auto* memset_node2 = dynamic_cast<stdlib::MemsetNode*>(libnode2)) {
-            return symbolic::eq(memset_node1->value(), memset_node2->value()) &&
-                   symbolic::eq(memset_node1->num(), memset_node2->num());
-        }
-    }
-    return false;
+
+    // Virtual method that checks library node internals
+    return this->equal_libnodes(libnode1, libnode2);
 }
 
 bool BlockHoisting::is_invariant_move(
@@ -414,100 +386,77 @@ bool BlockHoisting::equal_views(structured_control_flow::Block& block1, structur
     return true;
 }
 
-bool BlockHoisting::equal_libnodes(structured_control_flow::Block& block1, structured_control_flow::Block& block2) {
-    auto& dfg1 = block1.dataflow();
-    auto& dfg2 = block2.dataflow();
-
-    // Get library nodes
-    auto* libnode1 = *dfg1.library_nodes().begin();
-    auto* libnode2 = *dfg2.library_nodes().begin();
-
-    // Collect in edges
-    std::unordered_map<std::string, data_flow::Memlet*> iedges1, iedges2;
-    for (auto& iedge : dfg1.in_edges(*libnode1)) {
-        iedges1.insert({iedge.dst_conn(), &iedge});
+bool BlockHoisting::equal_libnodes(data_flow::LibraryNode* libnode1, data_flow::LibraryNode* libnode2) {
+    if (auto* alloca_node1 = dynamic_cast<stdlib::AllocaNode*>(libnode1)) {
+        if (auto* alloca_node2 = dynamic_cast<stdlib::AllocaNode*>(libnode2)) {
+            return symbolic::eq(alloca_node1->size(), alloca_node2->size());
+        }
     }
-    for (auto& iedge : dfg2.in_edges(*libnode2)) {
-        iedges2.insert({iedge.dst_conn(), &iedge});
+    if (auto* memcpy_node1 = dynamic_cast<stdlib::MemcpyNode*>(libnode1)) {
+        if (auto* memcpy_node2 = dynamic_cast<stdlib::MemcpyNode*>(libnode2)) {
+            return symbolic::eq(memcpy_node1->count(), memcpy_node2->count());
+        }
     }
+    if (auto* memmove_node1 = dynamic_cast<stdlib::MemmoveNode*>(libnode1)) {
+        if (auto* memmove_node2 = dynamic_cast<stdlib::MemmoveNode*>(libnode2)) {
+            return symbolic::eq(memmove_node1->count(), memmove_node2->count());
+        }
+    }
+    if (auto* memset_node1 = dynamic_cast<stdlib::MemsetNode*>(libnode1)) {
+        if (auto* memset_node2 = dynamic_cast<stdlib::MemsetNode*>(libnode2)) {
+            return symbolic::eq(memset_node1->value(), memset_node2->value()) &&
+                   symbolic::eq(memset_node1->num(), memset_node2->num());
+        }
+    }
+    return false;
+}
 
-    // In edges must have the same type, subset, and container
-    if (iedges1.size() != iedges2.size()) {
+bool BlockHoisting::map_invariant_front(structured_control_flow::Sequence& parent, structured_control_flow::Map& map_stmt) {
+    // Extract first child
+    auto& body = map_stmt.root();
+    if (body.size() == 0) {
         return false;
     }
-    for (auto [conn, iedge1] : iedges1) {
-        if (!iedges2.contains(conn)) {
-            return false;
-        }
-        auto* iedge2 = iedges2.at(conn);
-
-        // Compare types
-        if (iedge1->type() != iedge2->type()) {
-            return false;
-        }
-
-        // Compare subsets
-        if (iedge1->subset().size() != iedge2->subset().size()) {
-            return false;
-        }
-        for (size_t i = 0; i < iedge1->subset().size(); i++) {
-            if (!symbolic::eq(iedge1->subset().at(i), iedge2->subset().at(i))) {
-                return false;
-            }
-        }
-
-        // Compare containers
-        auto& src1 = static_cast<data_flow::AccessNode&>(iedge1->src());
-        auto& src2 = static_cast<data_flow::AccessNode&>(iedge2->src());
-        if (src1.data() != src2.data()) {
-            return false;
-        }
-    }
-
-    // Collect out edges
-    std::unordered_map<std::string, data_flow::Memlet*> oedges1, oedges2;
-    for (auto& oedge : dfg1.out_edges(*libnode1)) {
-        oedges1.insert({oedge.src_conn(), &oedge});
-    }
-    for (auto& oedge : dfg2.out_edges(*libnode2)) {
-        oedges2.insert({oedge.src_conn(), &oedge});
-    }
-
-    // Out edges must have the same type, subset, and container
-    if (oedges1.size() != oedges2.size()) {
+    auto first_child = body.at(0);
+    if (!first_child.second.assignments().empty()) {
         return false;
     }
-    for (auto [conn, oedge1] : oedges1) {
-        if (!oedges2.contains(conn)) {
-            return false;
-        }
-        auto& oedge2 = oedges2.at(conn);
+    auto& first_node = first_child.first;
 
-        // Compare types
-        if (oedge1->type() != oedge2->type()) {
-            return false;
-        }
-
-        // Compare subsets
-        if (oedge1->subset().size() != oedge2->subset().size()) {
-            return false;
-        }
-        for (size_t i = 0; i < oedge1->subset().size(); i++) {
-            if (!symbolic::eq(oedge1->subset().at(i), oedge2->subset().at(i))) {
-                return false;
-            }
-        }
-
-        // Compare containers
-        auto& dst1 = static_cast<data_flow::AccessNode&>(oedge1->dst());
-        auto& dst2 = static_cast<data_flow::AccessNode&>(oedge2->dst());
-        if (dst1.data() != dst2.data()) {
-            return false;
-        }
+    auto* block = dynamic_cast<structured_control_flow::Block*>(&first_node);
+    if (!block) {
+        return false;
+    }
+    if (this->map_invariant_move(parent, map_stmt, *block)) {
+        return true;
+    }
+    if (this->map_invariant_view(parent, map_stmt, *block)) {
+        return true;
+    }
+    if (this->map_invariant_libnode_front(parent, map_stmt, *block)) {
+        return true;
     }
 
-    // Virtual method that checks library node internals
-    return this->equal_libnodes(libnode1, libnode2);
+    return false;
+}
+
+bool BlockHoisting::map_invariant_back(structured_control_flow::Sequence& parent, structured_control_flow::Map& map_stmt) {
+    // Extract last child
+    auto& body = map_stmt.root();
+    if (body.size() == 0) {
+        return false;
+    }
+    auto last_child = body.at(body.size() - 1);
+    if (!last_child.second.assignments().empty()) {
+        return false;
+    }
+    auto& last_node = last_child.first;
+
+    auto* block = dynamic_cast<structured_control_flow::Block*>(&last_node);
+    if (!block) {
+        return false;
+    }
+    return this->map_invariant_libnode_back(parent, map_stmt, *block);
 }
 
 bool BlockHoisting::map_invariant_move(
@@ -516,7 +465,7 @@ bool BlockHoisting::map_invariant_move(
     structured_control_flow::Block& block
 ) {
     auto& body = map_stmt.root();
-    if (!this->is_invariant_move(body, block.dataflow(), true)) {
+    if (!this->is_invariant_move(body, block.dataflow())) {
         return false;
     }
 
@@ -531,7 +480,7 @@ bool BlockHoisting::map_invariant_view(
     structured_control_flow::Block& block
 ) {
     auto& body = map_stmt.root();
-    if (!this->is_invariant_view(body, block.dataflow(), map_stmt.indvar(), true)) {
+    if (!this->is_invariant_view(body, block.dataflow(), map_stmt.indvar())) {
         return false;
     }
 
@@ -540,7 +489,7 @@ bool BlockHoisting::map_invariant_view(
     return true;
 }
 
-bool BlockHoisting::map_invariant_libnode(
+bool BlockHoisting::map_invariant_libnode_front(
     structured_control_flow::Sequence& parent,
     structured_control_flow::Map& map_stmt,
     structured_control_flow::Block& block
@@ -551,7 +500,7 @@ bool BlockHoisting::map_invariant_libnode(
     }
 
     auto& body = map_stmt.root();
-    if (!this->is_invariant_libnode(body, block.dataflow(), map_stmt.indvar(), true)) {
+    if (!this->is_invariant_libnode(body, block.dataflow(), map_stmt.indvar())) {
         return false;
     }
 
@@ -560,13 +509,81 @@ bool BlockHoisting::map_invariant_libnode(
     return true;
 }
 
+bool BlockHoisting::map_invariant_libnode_back(
+    structured_control_flow::Sequence& parent,
+    structured_control_flow::Map& map_stmt,
+    structured_control_flow::Block& block
+) {
+    // For now, only allow libnode hoisting on sequential maps
+    if (map_stmt.schedule_type().value() != ScheduleType_Sequential::value()) {
+        return false;
+    }
+
+    auto& body = map_stmt.root();
+    if (!this->is_invariant_libnode(body, block.dataflow(), map_stmt.indvar())) {
+        return false;
+    }
+
+    size_t map_index = parent.index(map_stmt);
+    builder_.move_child(body, body.size() - 1, parent, map_index + 1);
+    return true;
+}
+
+bool BlockHoisting::for_invariant_front(structured_control_flow::Sequence& parent, structured_control_flow::For& for_stmt) {
+    // Extract first child
+    auto& body = for_stmt.root();
+    if (body.size() == 0) {
+        return false;
+    }
+    auto first_child = body.at(0);
+    if (!first_child.second.assignments().empty()) {
+        return false;
+    }
+    auto& first_node = first_child.first;
+
+    auto* block = dynamic_cast<structured_control_flow::Block*>(&first_node);
+    if (!block) {
+        return false;
+    }
+    if (this->for_invariant_move(parent, for_stmt, *block)) {
+        return true;
+    }
+    if (this->for_invariant_view(parent, for_stmt, *block)) {
+        return true;
+    }
+    if (this->for_invariant_libnode_front(parent, for_stmt, *block)) {
+        return true;
+    }
+
+    return false;
+}
+
+bool BlockHoisting::for_invariant_back(structured_control_flow::Sequence& parent, structured_control_flow::For& for_stmt) {
+    // Extract last child
+    auto& body = for_stmt.root();
+    if (body.size() == 0) {
+        return false;
+    }
+    auto last_child = body.at(body.size() - 1);
+    if (!last_child.second.assignments().empty()) {
+        return false;
+    }
+    auto& last_node = last_child.first;
+
+    auto* block = dynamic_cast<structured_control_flow::Block*>(&last_node);
+    if (!block) {
+        return false;
+    }
+    return this->for_invariant_libnode_back(parent, for_stmt, *block);
+}
+
 bool BlockHoisting::for_invariant_move(
     structured_control_flow::Sequence& parent,
     structured_control_flow::For& for_stmt,
     structured_control_flow::Block& block
 ) {
     auto& body = for_stmt.root();
-    if (!this->is_invariant_move(body, block.dataflow())) {
+    if (!this->is_invariant_move(body, block.dataflow(), false)) {
         return false;
     }
 
@@ -581,7 +598,7 @@ bool BlockHoisting::for_invariant_view(
     structured_control_flow::Block& block
 ) {
     auto& body = for_stmt.root();
-    if (!this->is_invariant_view(body, block.dataflow(), for_stmt.indvar())) {
+    if (!this->is_invariant_view(body, block.dataflow(), for_stmt.indvar(), false)) {
         return false;
     }
 
@@ -590,13 +607,13 @@ bool BlockHoisting::for_invariant_view(
     return true;
 }
 
-bool BlockHoisting::for_invariant_libnode(
+bool BlockHoisting::for_invariant_libnode_front(
     structured_control_flow::Sequence& parent,
     structured_control_flow::For& for_stmt,
     structured_control_flow::Block& block
 ) {
     auto& body = for_stmt.root();
-    if (!this->is_invariant_libnode(body, block.dataflow(), for_stmt.indvar())) {
+    if (!this->is_invariant_libnode(body, block.dataflow(), for_stmt.indvar(), false)) {
         return false;
     }
 
@@ -605,10 +622,157 @@ bool BlockHoisting::for_invariant_libnode(
     return true;
 }
 
-void BlockHoisting::
-    if_else_extract_invariant(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else) {
+bool BlockHoisting::for_invariant_libnode_back(
+    structured_control_flow::Sequence& parent,
+    structured_control_flow::For& for_stmt,
+    structured_control_flow::Block& block
+) {
+    auto& body = for_stmt.root();
+    if (!this->is_invariant_libnode(body, block.dataflow(), for_stmt.indvar(), false)) {
+        return false;
+    }
+
+    size_t map_index = parent.index(for_stmt);
+    builder_.move_child(body, body.size() - 1, parent, map_index + 1);
+    return true;
+}
+
+bool BlockHoisting::
+    if_else_invariant_front(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else) {
+    // Extract the first block of first case
+    if (if_else.at(0).first.size() == 0) {
+        return false;
+    }
+    auto first_child = if_else.at(0).first.at(0);
+    if (!first_child.second.assignments().empty()) {
+        return false;
+    }
+    auto* first_block = dynamic_cast<structured_control_flow::Block*>(&first_child.first);
+    if (!first_block) {
+        return false;
+    }
+
+    // Collect the first block of all other cases
+    std::vector<structured_control_flow::Block*> other_blocks;
+    for (size_t i = 1; i < if_else.size(); i++) {
+        if (if_else.at(i).first.size() == 0) {
+            return false;
+        }
+        auto other_child = if_else.at(i).first.at(0);
+        if (!other_child.second.assignments().empty()) {
+            return false;
+        }
+        auto* other_block = dynamic_cast<structured_control_flow::Block*>(&other_child.first);
+        if (!other_block) {
+            return false;
+        }
+        other_blocks.push_back(other_block);
+    }
+
+    // Check the first block of all cases for invariant move / view / libnode
+    if (this->is_invariant_move(if_else.at(0).first, first_block->dataflow())) {
+        for (size_t i = 0; i < other_blocks.size(); i++) {
+            if (!this->is_invariant_move(if_else.at(i + 1).first, other_blocks[i]->dataflow())) {
+                return false;
+            }
+            if (!this->equal_moves(*first_block, *other_blocks[i])) {
+                return false;
+            }
+        }
+        this->if_else_extract_invariant_front(parent, if_else);
+        return true;
+    } else if (this->is_invariant_view(if_else.at(0).first, first_block->dataflow())) {
+        for (size_t i = 0; i < other_blocks.size(); i++) {
+            if (!this->is_invariant_view(if_else.at(i + 1).first, other_blocks[i]->dataflow())) {
+                return false;
+            }
+            if (!this->equal_views(*first_block, *other_blocks[i])) {
+                return false;
+            }
+        }
+        this->if_else_extract_invariant_front(parent, if_else);
+        return true;
+    } else if (this->is_invariant_libnode(if_else.at(0).first, first_block->dataflow())) {
+        for (size_t i = 0; i < other_blocks.size(); i++) {
+            if (!this->is_invariant_libnode(if_else.at(i + 1).first, other_blocks[i]->dataflow())) {
+                return false;
+            }
+            if (!this->equal_libnodes(*first_block, *other_blocks[i])) {
+                return false;
+            }
+        }
+        this->if_else_extract_invariant_front(parent, if_else);
+        return true;
+    }
+
+    return false;
+}
+
+bool BlockHoisting::
+    if_else_invariant_back(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else) {
+    // Extract the last block of first case
+    if (if_else.at(0).first.size() == 0) {
+        return false;
+    }
+    auto last_child = if_else.at(0).first.at(if_else.at(0).first.size() - 1);
+    if (!last_child.second.assignments().empty()) {
+        return false;
+    }
+    auto* last_block = dynamic_cast<structured_control_flow::Block*>(&last_child.first);
+    if (!last_block) {
+        return false;
+    }
+
+    // Collect the last block of all other cases
+    std::vector<structured_control_flow::Block*> other_blocks;
+    for (size_t i = 1; i < if_else.size(); i++) {
+        if (if_else.at(i).first.size() == 0) {
+            return false;
+        }
+        auto other_child = if_else.at(i).first.at(if_else.at(i).first.size() - 1);
+        if (!other_child.second.assignments().empty()) {
+            return false;
+        }
+        auto* other_block = dynamic_cast<structured_control_flow::Block*>(&other_child.first);
+        if (!other_block) {
+            return false;
+        }
+        other_blocks.push_back(other_block);
+    }
+
+    // Check the first block of all cases for invariant move / view / libnode
+    if (this->is_invariant_libnode(if_else.at(0).first, last_block->dataflow())) {
+        for (size_t i = 0; i < other_blocks.size(); i++) {
+            if (!this->is_invariant_libnode(if_else.at(i + 1).first, other_blocks[i]->dataflow())) {
+                return false;
+            }
+            if (!this->equal_libnodes(*last_block, *other_blocks[i])) {
+                return false;
+            }
+        }
+        this->if_else_extract_invariant_back(parent, if_else);
+        return true;
+    }
+
+    return false;
+}
+
+void BlockHoisting::if_else_extract_invariant_front(
+    structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else
+) {
     size_t if_else_index = parent.index(if_else);
     builder_.move_child(if_else.at(0).first, 0, parent, if_else_index);
+
+    for (size_t i = 1; i < if_else.size(); i++) {
+        builder_.remove_child(if_else.at(i).first, 0);
+    }
+}
+
+void BlockHoisting::if_else_extract_invariant_back(
+    structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else
+) {
+    size_t if_else_index = parent.index(if_else);
+    builder_.move_child(if_else.at(0).first, if_else.at(0).first.size() - 1, parent, if_else_index + 1);
 
     for (size_t i = 1; i < if_else.size(); i++) {
         builder_.remove_child(if_else.at(i).first, 0);
