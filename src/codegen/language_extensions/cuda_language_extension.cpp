@@ -102,11 +102,10 @@ std::string CUDALanguageExtension::
             if (i + 1 < function_type->num_params()) params << ", ";
         }
         if (function_type->is_var_arg()) {
-            // ISO C++ forbids empty parameter lists before ...
             if (function_type->num_params() > 0) {
                 params << ", ";
-                params << "...";
             }
+            params << "...";
         }
 
         const std::string fun_name = name + "(" + params.str() + ")";
