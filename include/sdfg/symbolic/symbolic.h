@@ -146,6 +146,16 @@ bool uses(const Expression expr, const std::string& name);
 
 SymbolSet atoms(const Expression expr);
 
+template<typename T>
+bool has(const Expression expr) {
+    for (auto& atom : SymEngine::atoms<T>(*expr)) {
+        if (SymEngine::is_a<T>(*atom)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 ExpressionSet muls(const Expression expr);
 
 Expression subs(const Expression expr, const Expression old_expr, const Expression new_expr);

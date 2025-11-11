@@ -237,12 +237,12 @@ void MemAccessRangesBuilder::process_direct_users(WorkItem* item, bool is_write,
                 auto lb = symbolic::minimum(dim, params, assums);
                 auto ub = symbolic::maximum(dim, params, assums);
 
-                if (lb.is_null()) {
+                if (lb.is_null() || symbolic::has<SymEngine::Infty>(lb)) {
                     std::get<1>(item->dims[dimIdx]) = true;
                 } else {
                     std::get<0>(item->dims[dimIdx]).push_back(lb);
                 }
-                if (ub.is_null()) {
+                if (ub.is_null() || symbolic::has<SymEngine::Infty>(ub)) {
                     std::get<3>(item->dims[dimIdx]) = true;
                 } else {
                     std::get<2>(item->dims[dimIdx]).push_back(ub);
