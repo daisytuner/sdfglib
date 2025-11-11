@@ -19,9 +19,7 @@ struct WorkItem {
     bool saw_write = false;
     bool undefined = false;
     WorkItem* will_complete;
-    std::vector<std::tuple<std::vector<symbolic::Expression>, bool,
-                           std::vector<symbolic::Expression>, bool>>
-        dims;
+    std::vector<std::tuple<std::vector<symbolic::Expression>, bool, std::vector<symbolic::Expression>, bool>> dims;
 
     WorkItem(const std::string* var_name) : var_name(var_name), will_complete(nullptr) {}
 };
@@ -29,21 +27,28 @@ struct WorkItem {
 class MemAccessRangesBuilder {
     friend class MemAccessRanges;
 
-   private:
+private:
     std::deque<WorkItem*> worklist_;
     std::unordered_map<std::string, MemAccessRange> ranges_;
+
     StructuredSDFG& sdfg_;
-    UsersView& users_;
+    structured_control_flow::ControlFlowNode& node_;
+
+    Users& users_analysis_;
     AssumptionsAnalysis& assumptions_analysis_;
 
     void process_workItem(WorkItem* item);
 
     void process_direct_users(WorkItem* item, bool is_write, std::vector<User*> accesses);
 
-    MemAccessRangesBuilder(StructuredSDFG& sdfg, UsersView& users,
-                           AssumptionsAnalysis& assumptions_analysis)
-        : sdfg_(sdfg), users_(users), assumptions_analysis_(assumptions_analysis) {}
+    MemAccessRangesBuilder(
+        StructuredSDFG& sdfg,
+        structured_control_flow::ControlFlowNode& node,
+        Users& users_analysis,
+        AssumptionsAnalysis& assumptions_analysis
+    )
+        : sdfg_(sdfg), node_(node), users_analysis_(users_analysis), assumptions_analysis_(assumptions_analysis) {}
 };
 
-}  // namespace analysis
-}  // namespace sdfg
+} // namespace analysis
+} // namespace sdfg
