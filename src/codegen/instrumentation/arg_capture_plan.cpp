@@ -44,8 +44,6 @@ void ArgCapturePlan::begin_instrumentation(
     stream << "{" << std::endl;
 
     auto& node_plan = this->nodes_.at(&node);
-    std::cout << "Emitting begin instrumentation for node " << node.element_id() << " with " << node_plan.size()
-              << " arguments." << std::endl;
     this->emit_arg_captures(stream, language_extension, node_plan, false, std::to_string(node.element_id()));
 
     stream << "}" << std::endl;
@@ -96,7 +94,7 @@ std::unique_ptr<ArgCapturePlan> ArgCapturePlan::outermost_loops_plan(StructuredS
         nodes.insert({loop, loop_plan});
     }
 
-    std::cout << "Created arg capture plan for " << nodes.size() << " nodes." << std::endl;
+    DEBUG_PRINTLN("Created arg capture plan for " + std::to_string(nodes.size()) + " nodes.");
 
     return std::make_unique<ArgCapturePlan>(sdfg, nodes);
 }
@@ -110,8 +108,6 @@ void ArgCapturePlan::emit_arg_captures(
 ) const {
     auto afterBoolStr = after ? "true" : "false";
     for (auto& [argName, varPlan] : plan) {
-        std::cout << "Emitting capture for arg " << argName << " at " << (after ? "result" : "input") << " time"
-                  << std::endl;
         auto argIdx = varPlan.arg_idx;
         if ((!after && varPlan.capture_input) || (after && varPlan.capture_output)) {
             switch (varPlan.type) {
@@ -313,7 +309,7 @@ bool ArgCapturePlan::add_capture_plan(
         );
     }
 
-    std::cout << "Successfully added capture plan " << std::endl;
+    DEBUG_PRINTLN("Successfully added capture plan ");
     return true;
 }
 
@@ -328,7 +324,7 @@ std::unordered_map<std::string, CaptureVarPlan> ArgCapturePlan::create_capture_p
         args.push_back(arg_name);
     }
     std::sort(args.begin(), args.end());
-    std::cout << "Found " << args.size() << " arguments for region " << node.element_id() << std::endl;
+    DEBUG_PRINTLN("Found " + std::to_string(args.size()) + " arguments for region " + std::to_string(node.element_id()));
 
     // Determine ranges per arguments
     auto& ranges_analysis = analysis_manager.get<analysis::MemAccessRanges>();
