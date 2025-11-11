@@ -478,6 +478,8 @@ void CSymbolicPrinter::bvisit(const SymEngine::FunctionSymbol& x) {
         auto& type = so.get_type();
         CLanguageExtension lang(this->function_, this->external_prefix_);
         str_ = "sizeof(" + lang.declaration("", type) + ")";
+    } else if (x.get_name() == "malloc_usable_size") {
+        str_ = "malloc_usable_size(" + SymEngine::rcp_static_cast<const SymEngine::Symbol>(x.get_args()[0])->get_name() + ")";
     } else {
         throw std::runtime_error("Unsupported function symbol: " + x.get_name());
     }
