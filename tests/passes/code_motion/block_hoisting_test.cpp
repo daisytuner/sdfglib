@@ -783,7 +783,6 @@ TEST(BlockHoistingTest, IfElse_InvariantMove) {
     auto& root = sdfg.root();
 
     // Add containers
-    types::Scalar sym_desc(types::PrimitiveType::Int64);
     types::Scalar desc(types::PrimitiveType::Float);
     types::Pointer desc_ptr(desc);
 
@@ -851,7 +850,6 @@ TEST(BlockHoistingTest, IfElse_InvariantView) {
     auto& root = sdfg.root();
 
     // Add containers
-    types::Scalar sym_desc(types::PrimitiveType::Int64);
     types::Scalar desc(types::PrimitiveType::Float);
     types::Pointer desc_ptr(desc);
 
@@ -917,7 +915,6 @@ TEST(BlockHoistingTest, IfElse_InvariantView_MultipleViews) {
     auto& root = sdfg.root();
 
     // Add containers
-    types::Scalar sym_desc(types::PrimitiveType::Int64);
     types::Scalar desc(types::PrimitiveType::Float);
     types::Pointer desc_ptr(desc);
 
@@ -989,6 +986,320 @@ TEST(BlockHoistingTest, IfElse_InvariantView_MultipleViews) {
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
     EXPECT_EQ(root.size(), 3);
+    EXPECT_EQ(case1.size(), 1);
+    EXPECT_EQ(case2.size(), 1);
+}
+
+TEST(BlockHoistingTest, IfElse_InvariantAlloca) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar desc(types::PrimitiveType::Float);
+    types::Pointer desc_ptr(desc);
+
+    builder.add_container("A", desc_ptr, true);
+    builder.add_container("B", desc_ptr, true);
+    builder.add_container("c", desc_ptr);
+
+    auto& if_else = builder.add_if_else(root);
+    auto& case1 = builder.add_case(if_else, symbolic::Lt(symbolic::symbol("A"), symbolic::integer(5)));
+    auto& case2 = builder.add_case(if_else, symbolic::Ge(symbolic::symbol("A"), symbolic::integer(5)));
+
+    // Case 1: Branch invariant alloca
+    {
+        auto& block1 = builder.add_block(case1);
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode = builder.add_library_node<stdlib::AllocaNode>(block1, DebugInfo(), symbolic::one());
+        builder.add_computational_memlet(block1, libnode, "_ret", c, {}, desc_ptr);
+    }
+
+    // Case 1: Branch variant computation
+    {
+        auto& block2 = builder.add_block(case1);
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in", {symbolic::integer(3)});
+        builder.add_computational_memlet(block2, tasklet1, "_out", c, {symbolic::zero()});
+    }
+    {
+        auto& block3 = builder.add_block(case1);
+        auto& B = builder.add_access(block3, "B");
+        auto& A = builder.add_access(block3, "A");
+        auto& tasklet1 = builder.add_tasklet(block3, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+        builder.add_computational_memlet(block3, B, tasklet1, "_in", {symbolic::integer(3)});
+        builder.add_computational_memlet(block3, tasklet1, "_out", A, {symbolic::integer(3)});
+    }
+    {
+        auto& block4 = builder.add_block(case1);
+        auto& c = builder.add_access(block4, "c");
+        auto& B = builder.add_access(block4, "B");
+        auto& tasklet1 = builder.add_tasklet(block4, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+        builder.add_computational_memlet(block4, c, tasklet1, "_in", {symbolic::zero()});
+        builder.add_computational_memlet(block4, tasklet1, "_out", B, {symbolic::integer(3)});
+    }
+
+    // Case 2: Branch invariant alloca
+    {
+        auto& block1 = builder.add_block(case2);
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode = builder.add_library_node<stdlib::AllocaNode>(block1, DebugInfo(), symbolic::one());
+        builder.add_computational_memlet(block1, libnode, "_ret", c, {}, desc_ptr);
+    }
+
+    // Case 2: Branch variant computation
+    {
+        auto& block2 = builder.add_block(case2);
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in", {symbolic::integer(5)});
+        builder.add_computational_memlet(block2, tasklet1, "_out", c, {symbolic::zero()});
+    }
+    {
+        auto& block3 = builder.add_block(case2);
+        auto& B = builder.add_access(block3, "B");
+        auto& A = builder.add_access(block3, "A");
+        auto& tasklet1 = builder.add_tasklet(block3, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+        builder.add_computational_memlet(block3, B, tasklet1, "_in", {symbolic::integer(5)});
+        builder.add_computational_memlet(block3, tasklet1, "_out", A, {symbolic::integer(5)});
+    }
+    {
+        auto& block4 = builder.add_block(case2);
+        auto& c = builder.add_access(block4, "c");
+        auto& B = builder.add_access(block4, "B");
+        auto& tasklet1 = builder.add_tasklet(block4, data_flow::TaskletCode::assign, {"_out"}, {"_in"});
+        builder.add_computational_memlet(block4, c, tasklet1, "_in", {symbolic::zero()});
+        builder.add_computational_memlet(block4, tasklet1, "_out", B, {symbolic::integer(5)});
+    }
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::BlockHoistingPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(case1.size(), 3);
+    EXPECT_EQ(case2.size(), 3);
+}
+
+TEST(BlockHoistingTest, IfElse_InvariantMemcpy) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar desc(types::PrimitiveType::Float);
+    types::Pointer desc_ptr(desc);
+
+    builder.add_container("A", desc_ptr, true);
+    builder.add_container("B", desc_ptr, true);
+    builder.add_container("C", desc_ptr, true);
+    builder.add_container("c", desc_ptr);
+
+    auto& if_else = builder.add_if_else(root);
+    auto& case1 = builder.add_case(if_else, symbolic::Lt(symbolic::symbol("A"), symbolic::integer(5)));
+    auto& case2 = builder.add_case(if_else, symbolic::Ge(symbolic::symbol("A"), symbolic::integer(5)));
+
+    // Case 1: Branch invariant memcpy
+    {
+        auto& block1 = builder.add_block(case1);
+        auto& C = builder.add_access(block1, "C");
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemcpyNode>(block1, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block1, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block1, libnode, "_dst", c, {}, desc_ptr);
+    }
+
+    // Case 1: Branch variant computation
+    {
+        auto& block2 = builder.add_block(case1);
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& B = builder.add_access(block2, "B");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::integer(3)});
+        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::integer(3)});
+        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::integer(3)});
+    }
+
+    // Case 2: Branch invariant memcpy
+    {
+        auto& block1 = builder.add_block(case2);
+        auto& C = builder.add_access(block1, "C");
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemcpyNode>(block1, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block1, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block1, libnode, "_dst", c, {}, desc_ptr);
+    }
+
+    // Case 2: Branch variant computation
+    {
+        auto& block2 = builder.add_block(case2);
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& B = builder.add_access(block2, "B");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::integer(5)});
+        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::integer(5)});
+        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::integer(5)});
+    }
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::BlockHoistingPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(case1.size(), 1);
+    EXPECT_EQ(case2.size(), 1);
+}
+
+TEST(BlockHoistingTest, IfElse_InvariantMemmove) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar desc(types::PrimitiveType::Float);
+    types::Pointer desc_ptr(desc);
+
+    builder.add_container("A", desc_ptr, true);
+    builder.add_container("B", desc_ptr, true);
+    builder.add_container("C", desc_ptr, true);
+    builder.add_container("c", desc_ptr);
+
+    auto& if_else = builder.add_if_else(root);
+    auto& case1 = builder.add_case(if_else, symbolic::Lt(symbolic::symbol("A"), symbolic::integer(5)));
+    auto& case2 = builder.add_case(if_else, symbolic::Ge(symbolic::symbol("A"), symbolic::integer(5)));
+
+    // Case 1: Branch invariant memcpy
+    {
+        auto& block1 = builder.add_block(case1);
+        auto& C = builder.add_access(block1, "C");
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemmoveNode>(block1, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block1, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block1, libnode, "_dst", c, {}, desc_ptr);
+    }
+
+    // Case 1: Branch variant computation
+    {
+        auto& block2 = builder.add_block(case1);
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& B = builder.add_access(block2, "B");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::integer(3)});
+        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::integer(3)});
+        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::integer(3)});
+    }
+
+    // Case 2: Branch invariant memcpy
+    {
+        auto& block1 = builder.add_block(case2);
+        auto& C = builder.add_access(block1, "C");
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode = builder.add_library_node<stdlib::MemmoveNode>(block1, DebugInfo(), symbolic::integer(10));
+        builder.add_computational_memlet(block1, C, libnode, "_src", {}, desc_ptr);
+        builder.add_computational_memlet(block1, libnode, "_dst", c, {}, desc_ptr);
+    }
+
+    // Case 2: Branch variant computation
+    {
+        auto& block2 = builder.add_block(case2);
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& B = builder.add_access(block2, "B");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::integer(5)});
+        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::integer(5)});
+        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::integer(5)});
+    }
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::BlockHoistingPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    EXPECT_EQ(root.size(), 2);
+    EXPECT_EQ(case1.size(), 1);
+    EXPECT_EQ(case2.size(), 1);
+}
+
+TEST(BlockHoistingTest, IfElse_InvariantMemset) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar desc(types::PrimitiveType::Float);
+    types::Pointer desc_ptr(desc);
+
+    builder.add_container("A", desc_ptr, true);
+    builder.add_container("B", desc_ptr, true);
+    builder.add_container("c", desc_ptr);
+
+    auto& if_else = builder.add_if_else(root);
+    auto& case1 = builder.add_case(if_else, symbolic::Lt(symbolic::symbol("A"), symbolic::integer(5)));
+    auto& case2 = builder.add_case(if_else, symbolic::Ge(symbolic::symbol("A"), symbolic::integer(5)));
+
+    // Case 1: Branch invariant memcpy
+    {
+        auto& block1 = builder.add_block(case1);
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode =
+            builder
+                .add_library_node<stdlib::MemsetNode>(block1, DebugInfo(), symbolic::integer(2), symbolic::integer(10));
+        builder.add_computational_memlet(block1, libnode, "_ptr", c, {}, desc_ptr);
+    }
+
+    // Case 1: Branch variant computation
+    {
+        auto& block2 = builder.add_block(case1);
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& B = builder.add_access(block2, "B");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::integer(3)});
+        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::integer(3)});
+        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::integer(3)});
+    }
+
+    // Case 2: Branch invariant memcpy
+    {
+        auto& block1 = builder.add_block(case2);
+        auto& c = builder.add_access(block1, "c");
+        auto& libnode =
+            builder
+                .add_library_node<stdlib::MemsetNode>(block1, DebugInfo(), symbolic::integer(2), symbolic::integer(10));
+        builder.add_computational_memlet(block1, libnode, "_ptr", c, {}, desc_ptr);
+    }
+
+    // Case 2: Branch variant computation
+    {
+        auto& block2 = builder.add_block(case2);
+        auto& A = builder.add_access(block2, "A");
+        auto& c = builder.add_access(block2, "c");
+        auto& B = builder.add_access(block2, "B");
+        auto& tasklet1 = builder.add_tasklet(block2, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"});
+        builder.add_computational_memlet(block2, A, tasklet1, "_in1", {symbolic::integer(5)});
+        builder.add_computational_memlet(block2, c, tasklet1, "_in2", {symbolic::integer(5)});
+        builder.add_computational_memlet(block2, tasklet1, "_out", B, {symbolic::integer(5)});
+    }
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::BlockHoistingPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    EXPECT_EQ(root.size(), 2);
     EXPECT_EQ(case1.size(), 1);
     EXPECT_EQ(case2.size(), 1);
 }

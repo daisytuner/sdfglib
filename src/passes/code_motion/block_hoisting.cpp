@@ -1,5 +1,7 @@
 #include "sdfg/passes/code_motion/block_hoisting.h"
 #include <cstddef>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "sdfg/analysis/analysis.h"
@@ -8,6 +10,7 @@
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/data_flow_graph.h"
+#include "sdfg/data_flow/library_node.h"
 #include "sdfg/data_flow/library_nodes/stdlib/alloca.h"
 #include "sdfg/data_flow/library_nodes/stdlib/memcpy.h"
 #include "sdfg/data_flow/library_nodes/stdlib/memmove.h"
@@ -129,7 +132,7 @@ bool BlockHoisting::accept(structured_control_flow::IfElse& if_else) {
         other_blocks.push_back(other_block);
     }
 
-    // Check the first block of all cases for invariant move / view
+    // Check the first block of all cases for invariant move / view / libnode
     if (this->is_invariant_move(if_else.at(0).first, first_block->dataflow())) {
         for (size_t i = 0; i < other_blocks.size(); i++) {
             if (!this->is_invariant_move(if_else.at(i + 1).first, other_blocks[i]->dataflow())) {
@@ -147,6 +150,17 @@ bool BlockHoisting::accept(structured_control_flow::IfElse& if_else) {
                 return false;
             }
             if (!this->equal_views(*first_block, *other_blocks[i])) {
+                return false;
+            }
+        }
+        this->if_else_extract_invariant(parent, if_else);
+        return true;
+    } else if (this->is_invariant_libnode(if_else.at(0).first, first_block->dataflow())) {
+        for (size_t i = 0; i < other_blocks.size(); i++) {
+            if (!this->is_invariant_libnode(if_else.at(i + 1).first, other_blocks[i]->dataflow())) {
+                return false;
+            }
+            if (!this->equal_libnodes(*first_block, *other_blocks[i])) {
                 return false;
             }
         }
@@ -171,6 +185,31 @@ bool BlockHoisting::is_libnode_allowed(
     } else {
         return false;
     }
+}
+
+bool BlockHoisting::equal_libnodes(data_flow::LibraryNode* libnode1, data_flow::LibraryNode* libnode2) {
+    if (auto* alloca_node1 = dynamic_cast<stdlib::AllocaNode*>(libnode1)) {
+        if (auto* alloca_node2 = dynamic_cast<stdlib::AllocaNode*>(libnode2)) {
+            return symbolic::eq(alloca_node1->size(), alloca_node2->size());
+        }
+    }
+    if (auto* memcpy_node1 = dynamic_cast<stdlib::MemcpyNode*>(libnode1)) {
+        if (auto* memcpy_node2 = dynamic_cast<stdlib::MemcpyNode*>(libnode2)) {
+            return symbolic::eq(memcpy_node1->count(), memcpy_node2->count());
+        }
+    }
+    if (auto* memmove_node1 = dynamic_cast<stdlib::MemmoveNode*>(libnode1)) {
+        if (auto* memmove_node2 = dynamic_cast<stdlib::MemmoveNode*>(libnode2)) {
+            return symbolic::eq(memmove_node1->count(), memmove_node2->count());
+        }
+    }
+    if (auto* memset_node1 = dynamic_cast<stdlib::MemsetNode*>(libnode1)) {
+        if (auto* memset_node2 = dynamic_cast<stdlib::MemsetNode*>(libnode2)) {
+            return symbolic::eq(memset_node1->value(), memset_node2->value()) &&
+                   symbolic::eq(memset_node1->num(), memset_node2->num());
+        }
+    }
+    return false;
 }
 
 bool BlockHoisting::is_invariant_move(
@@ -373,6 +412,102 @@ bool BlockHoisting::equal_views(structured_control_flow::Block& block1, structur
     }
 
     return true;
+}
+
+bool BlockHoisting::equal_libnodes(structured_control_flow::Block& block1, structured_control_flow::Block& block2) {
+    auto& dfg1 = block1.dataflow();
+    auto& dfg2 = block2.dataflow();
+
+    // Get library nodes
+    auto* libnode1 = *dfg1.library_nodes().begin();
+    auto* libnode2 = *dfg2.library_nodes().begin();
+
+    // Collect in edges
+    std::unordered_map<std::string, data_flow::Memlet*> iedges1, iedges2;
+    for (auto& iedge : dfg1.in_edges(*libnode1)) {
+        iedges1.insert({iedge.dst_conn(), &iedge});
+    }
+    for (auto& iedge : dfg2.in_edges(*libnode2)) {
+        iedges2.insert({iedge.dst_conn(), &iedge});
+    }
+
+    // In edges must have the same type, subset, and container
+    if (iedges1.size() != iedges2.size()) {
+        return false;
+    }
+    for (auto [conn, iedge1] : iedges1) {
+        if (!iedges2.contains(conn)) {
+            return false;
+        }
+        auto* iedge2 = iedges2.at(conn);
+
+        // Compare types
+        if (iedge1->type() != iedge2->type()) {
+            return false;
+        }
+
+        // Compare subsets
+        if (iedge1->subset().size() != iedge2->subset().size()) {
+            return false;
+        }
+        for (size_t i = 0; i < iedge1->subset().size(); i++) {
+            if (!symbolic::eq(iedge1->subset().at(i), iedge2->subset().at(i))) {
+                return false;
+            }
+        }
+
+        // Compare containers
+        auto& src1 = static_cast<data_flow::AccessNode&>(iedge1->src());
+        auto& src2 = static_cast<data_flow::AccessNode&>(iedge2->src());
+        if (src1.data() != src2.data()) {
+            return false;
+        }
+    }
+
+    // Collect out edges
+    std::unordered_map<std::string, data_flow::Memlet*> oedges1, oedges2;
+    for (auto& oedge : dfg1.out_edges(*libnode1)) {
+        oedges1.insert({oedge.src_conn(), &oedge});
+    }
+    for (auto& oedge : dfg2.out_edges(*libnode2)) {
+        oedges2.insert({oedge.src_conn(), &oedge});
+    }
+
+    // Out edges must have the same type, subset, and container
+    if (oedges1.size() != oedges2.size()) {
+        return false;
+    }
+    for (auto [conn, oedge1] : oedges1) {
+        if (!oedges2.contains(conn)) {
+            return false;
+        }
+        auto& oedge2 = oedges2.at(conn);
+
+        // Compare types
+        if (oedge1->type() != oedge2->type()) {
+            return false;
+        }
+
+        // Compare subsets
+        if (oedge1->subset().size() != oedge2->subset().size()) {
+            return false;
+        }
+        for (size_t i = 0; i < oedge1->subset().size(); i++) {
+            if (!symbolic::eq(oedge1->subset().at(i), oedge2->subset().at(i))) {
+                return false;
+            }
+        }
+
+        // Compare containers
+        auto& dst1 = static_cast<data_flow::AccessNode&>(oedge1->dst());
+        auto& dst2 = static_cast<data_flow::AccessNode&>(oedge2->dst());
+        if (dst1.data() != dst2.data()) {
+            return false;
+        }
+    }
+
+    // Virtual method that checks library node internals
+    return this->equal_libnodes(libnode1, libnode2);
 }
 
 bool BlockHoisting::map_invariant_move(

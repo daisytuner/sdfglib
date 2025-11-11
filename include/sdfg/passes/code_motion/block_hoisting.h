@@ -41,6 +41,7 @@ private:
 
     bool equal_moves(structured_control_flow::Block& block1, structured_control_flow::Block& block2);
     bool equal_views(structured_control_flow::Block& block1, structured_control_flow::Block& block2);
+    bool equal_libnodes(structured_control_flow::Block& block1, structured_control_flow::Block& block2);
 
     bool map_invariant_move(
         structured_control_flow::Sequence& parent,
@@ -81,9 +82,11 @@ private:
     void if_else_extract_invariant(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else);
 
 protected:
-    bool is_libnode_allowed(
+    virtual bool is_libnode_allowed(
         structured_control_flow::Sequence& body, data_flow::DataFlowGraph& dfg, data_flow::LibraryNode* libnode
     );
+
+    virtual bool equal_libnodes(data_flow::LibraryNode* libnode1, data_flow::LibraryNode* libnode2);
 
 public:
     BlockHoisting(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
