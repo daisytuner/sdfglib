@@ -4,7 +4,6 @@
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/analysis/users.h"
-#include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/data_flow_graph.h"
@@ -16,7 +15,6 @@
 #include "sdfg/structured_control_flow/if_else.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
-#include "sdfg/types/type.h"
 #include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {
@@ -26,6 +24,10 @@ BlockSorting::BlockSorting(builder::StructuredSDFGBuilder& builder, analysis::An
     : visitor::StructuredSDFGVisitor(builder, analysis_manager) {};
 
 bool BlockSorting::accept(structured_control_flow::Sequence& sequence) {
+    if (sequence.size() == 0) {
+        return false;
+    }
+
     bool applied = false;
     for (size_t i = 0; i < sequence.size() - 1; i++) {
         auto current_child = sequence.at(i);
@@ -37,10 +39,10 @@ bool BlockSorting::accept(structured_control_flow::Sequence& sequence) {
             auto& current_dfg = current_block->dataflow();
             if (current_dfg.nodes().size() == 2 && current_dfg.edges().size() == 1) {
                 auto& edge = *current_dfg.edges().begin();
-                if (edge.type() == data_flow::MemletType::Reference
-                    || edge.type() == data_flow::MemletType::Dereference_Src
-                    || edge.type() == data_flow::MemletType::Dereference_Dst) {
-                        continue;
+                if (edge.type() == data_flow::MemletType::Reference ||
+                    edge.type() == data_flow::MemletType::Dereference_Src ||
+                    edge.type() == data_flow::MemletType::Dereference_Dst) {
+                    continue;
                 }
             }
         }
@@ -49,30 +51,27 @@ bool BlockSorting::accept(structured_control_flow::Sequence& sequence) {
         if (!next_child.second.assignments().empty()) {
             continue;
         }
-        if (!dynamic_cast<structured_control_flow::Block*>(&current_child.first)) {
+        auto* next_block = dynamic_cast<structured_control_flow::Block*>(&next_child.first);
+        if (!next_block) {
             continue;
         }
-        auto& next_block = static_cast<structured_control_flow::Block&>(next_child.first);
-        
+
         // Check if next block is a high-priority candidate for sorting
-        auto& next_dfg = next_block.dataflow();
-        if (next_dfg.nodes().size() != 2) {
-            continue;
-        }
-        if (next_dfg.edges().size() != 1) {
-            continue;
-        }
-        auto& edge = *next_dfg.edges().begin();
-        if (edge.type() != data_flow::MemletType::Reference
-            && edge.type() != data_flow::MemletType::Dereference_Src
-            && edge.type() != data_flow::MemletType::Dereference_Dst) {
+        if (!this->is_reference_block(*next_block) && !this->is_libnode_block(*next_block)) {
             continue;
         }
 
         // Check if current block has side-effects
         if (auto current_block = dynamic_cast<structured_control_flow::Block*>(&current_child.first)) {
             auto& current_dfg = current_block->dataflow();
+            bool side_effect = false;
             for (auto& libnode : current_dfg.library_nodes()) {
+                if (libnode->side_effect()) {
+                    side_effect = true;
+                    break;
+                }
+            }
+            if (side_effect) {
                 continue;
             }
         } else {
@@ -95,13 +94,43 @@ bool BlockSorting::accept(structured_control_flow::Sequence& sequence) {
         }
 
         // Swap blocks
-        DEBUG_PRINTLN("BlockSorting: Swapping blocks " << current_child.first.element_id() << " " << next_child.first.element_id());
+        DEBUG_PRINTLN(
+            "BlockSorting: Swapping blocks " << current_child.first.element_id() << " " << next_child.first.element_id()
+        );
         builder_.move_child(sequence, i + 1, sequence, i);
         applied = true;
         break; // Restart after modification
     }
 
     return applied;
+}
+
+bool BlockSorting::is_reference_block(structured_control_flow::Block& next_block) {
+    auto& next_dfg = next_block.dataflow();
+    if (next_dfg.nodes().size() != 2) {
+        return false;
+    }
+    if (next_dfg.edges().size() != 1) {
+        return false;
+    }
+    auto& edge = *next_dfg.edges().begin();
+    if (edge.type() != data_flow::MemletType::Reference && edge.type() != data_flow::MemletType::Dereference_Src &&
+        edge.type() != data_flow::MemletType::Dereference_Dst) {
+        return false;
+    }
+    return true;
+}
+
+bool BlockSorting::is_libnode_block(structured_control_flow::Block& next_block) {
+    auto& next_dfg = next_block.dataflow();
+    if (next_dfg.library_nodes().size() != 1) {
+        return false;
+    }
+    auto* libnode = *next_dfg.library_nodes().begin();
+    if (next_dfg.edges().size() != libnode->inputs().size() + libnode->outputs().size()) {
+        return false;
+    }
+    return true;
 }
 
 } // namespace passes
