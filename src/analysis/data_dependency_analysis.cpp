@@ -301,25 +301,34 @@ void DataDependencyAnalysis::visit_for(
 
     // Undefined reads are matched or forwarded
     for (auto open_read : undefined_for) {
+        // Simple check: no match or undefined user
+        std::unordered_set<User*> frontier;
         bool found = false;
+        bool found_undefined_user = false;
         for (auto& entry : open_definitions) {
             if (intersects(*entry.first, *open_read, assumptions_analysis)) {
                 entry.second.insert(open_read);
                 found = true;
+                found_undefined_user = this->is_undefined_user(*entry.first);
+                frontier.insert(entry.first);
             }
         }
-        if (!found) {
+        if (!found || found_undefined_user) {
             undefined.insert(open_read);
-        } else {
-            bool subset_all = true;
-            for (auto& entry : open_definitions) {
-                if (entry.first->container() == open_read->container()) {
-                    subset_all &= supersedes_restrictive(*open_read, *entry.first, assumptions_analysis);
-                }
+            continue;
+        }
+
+        // Users found, check if they fully cover the read
+        bool covered = false;
+        for (auto& entry : frontier) {
+            bool covers = supersedes_restrictive(*open_read, *entry, assumptions_analysis);
+            if (covers && dominance_analysis.dominates(*entry, *open_read)) {
+                covered = true;
+                break;
             }
-            if (!subset_all) {
-                undefined.insert(open_read);
-            }
+        }
+        if (!covered) {
+            undefined.insert(open_read);
         }
     }
 
