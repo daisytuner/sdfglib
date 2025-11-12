@@ -3508,3 +3508,115 @@ TEST(LoopDependencyAnalysisTest, LUDecomposition_Blocked) {
     EXPECT_EQ(dependencies_260.at("_267"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
     EXPECT_EQ(dependencies_260.at("_298"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
 }
+
+TEST(LoopDependencyAnalysisTest, ReductionWithLocalStorage) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+    builder.add_container("j", sym_desc);
+
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer ptr_desc(base_desc);
+    types::Array array_desc(base_desc, symbolic::integer(2));
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("B", opaque_desc, true);
+    builder.add_container("C", opaque_desc, true);
+    builder.add_container("local", array_desc);
+
+    // Define loop
+    auto indvar1 = symbolic::symbol("i");
+    auto init1 = symbolic::integer(0);
+    auto condition1 = symbolic::Lt(indvar1, symbolic::symbol("N"));
+    auto update1 = symbolic::add(indvar1, symbolic::integer(1));
+
+    auto& loop1 = builder.add_for(root, indvar1, condition1, init1, update1);
+    auto& body1 = loop1.root();
+
+    // local[0] = 0.0 block
+    {
+        auto& init_block = builder.add_block(body1);
+        auto& local_init_0 = builder.add_access(init_block, "local");
+        auto& zero_node = builder.add_constant(init_block, "0.0", base_desc);
+        auto& tasklet_init = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, "_out", {"_in"});
+        builder.add_computational_memlet(init_block, zero_node, tasklet_init, "_in", {});
+        builder.add_computational_memlet(init_block, tasklet_init, "_out", local_init_0, {symbolic::zero()}, array_desc);
+    }
+
+    // local[1] = 0.0 block
+    {
+        auto& init_block = builder.add_block(body1);
+        auto& local_init_0 = builder.add_access(init_block, "local");
+        auto& zero_node = builder.add_constant(init_block, "0.0", base_desc);
+        auto& tasklet_init = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, "_out", {"_in"});
+        builder.add_computational_memlet(init_block, zero_node, tasklet_init, "_in", {});
+        builder.add_computational_memlet(init_block, tasklet_init, "_out", local_init_0, {symbolic::one()}, array_desc);
+    }
+
+    auto indvar2 = symbolic::symbol("j");
+    auto init2 = symbolic::zero();
+    auto condition2 = symbolic::Lt(indvar2, indvar1);
+    auto update2 = symbolic::add(indvar2, symbolic::integer(1));
+
+    auto& loop2 = builder.add_for(body1, indvar2, condition2, init2, update2);
+    auto& body2 = loop2.root();
+
+    // Reduction: local[0] += A[j] block
+    {
+        auto& block = builder.add_block(body2);
+        auto& A_in = builder.add_access(block, "A");
+        auto& local_in = builder.add_access(block, "local");
+        auto& local_out = builder.add_access(block, "local");
+        auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
+        builder.add_computational_memlet(block, A_in, tasklet, "_in1", {indvar2}, ptr_desc);
+        builder.add_computational_memlet(block, local_in, tasklet, "_in2", {symbolic::zero()}, array_desc);
+        builder.add_computational_memlet(block, tasklet, "_out", local_out, {symbolic::zero()}, array_desc);
+    }
+
+    // Reduction: local[1] *= A[j] block
+    {
+        auto& block = builder.add_block(body2);
+        auto& A_in = builder.add_access(block, "A");
+        auto& local_in = builder.add_access(block, "local");
+        auto& local_out = builder.add_access(block, "local");
+        auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_mul, "_out", {"_in1", "_in2"});
+        builder.add_computational_memlet(block, A_in, tasklet, "_in1", {indvar2}, ptr_desc);
+        builder.add_computational_memlet(block, local_in, tasklet, "_in2", {symbolic::one()}, array_desc);
+        builder.add_computational_memlet(block, tasklet, "_out", local_out, {symbolic::one()}, array_desc);
+    }
+
+    // Writeback block: B[i] = local[0]; C[i] = local[1]
+    {
+        auto& block = builder.add_block(body1);
+        auto& local_in_0 = builder.add_access(block, "local");
+        auto& local_in_1 = builder.add_access(block, "local");
+        auto& B_out = builder.add_access(block, "B");
+        auto& C_out = builder.add_access(block, "C");
+        auto& tasklet_0 = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+        builder.add_computational_memlet(block, local_in_0, tasklet_0, "_in", {symbolic::zero()}, array_desc);
+        builder.add_computational_memlet(block, tasklet_0, "_out", B_out, {indvar1}, ptr_desc);
+
+        auto& tasklet_1 = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+        builder.add_computational_memlet(block, local_in_1, tasklet_1, "_in", {symbolic::one()}, array_desc);
+        builder.add_computational_memlet(block, tasklet_1, "_out", C_out, {indvar1}, ptr_desc);
+    }
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    auto& dependencies1 = analysis.dependencies(loop1);
+    auto& dependencies2 = analysis.dependencies(loop2);
+
+    // Check
+    EXPECT_EQ(dependencies1.size(), 2);
+    EXPECT_EQ(dependencies1.at("local"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies1.at("j"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies2.size(), 1);
+    EXPECT_EQ(dependencies2.at("local"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
+}
