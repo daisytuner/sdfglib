@@ -438,6 +438,12 @@ void JSONSerializer::storage_type_to_json(nlohmann::json& j, const types::Storag
     if (!storage_type.allocation_size().is_null()) {
         j["allocation_size"] = expression(storage_type.allocation_size());
     }
+    const symbolic::Expression& arg1 = storage_type.arg1();
+    if (!arg1.is_null()) {
+        auto args = nlohmann::json::array();
+        args.push_back(expression(arg1));
+        j["args"] = args;
+    }
 }
 
 
@@ -1083,7 +1089,15 @@ types::StorageType JSONSerializer::json_to_storage_type(const nlohmann::json& j)
     types::StorageType::AllocationType allocation = j["allocation"];
     types::StorageType::AllocationType deallocation = j["deallocation"];
 
-    return types::StorageType(j["value"].get<std::string>(), allocation_size, allocation, deallocation);
+    auto storageType = types::StorageType(j["value"].get<std::string>(), allocation_size, allocation, deallocation);
+
+    if (j.contains("args")) {
+        nlohmann::json::array_t args = j["args"];
+        if (args.size() > 0) {
+            storageType.arg1(symbolic::parse(args[0].get<std::string>()));
+        }
+    }
+    return storageType;
 }
 
 std::string JSONSerializer::expression(const symbolic::Expression expr) {

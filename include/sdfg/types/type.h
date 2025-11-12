@@ -51,6 +51,7 @@ private:
     symbolic::Expression allocation_size_;
     AllocationType allocation_;
     AllocationType deallocation_;
+    symbolic::Expression arg1_; // I envision a vector of expressions, but we only need page_size for TT for now.
 
 public:
     StorageType(const std::string& value)
@@ -72,6 +73,10 @@ public:
 
     void allocation_size(const symbolic::Expression& allocation_size) { allocation_size_ = allocation_size; }
 
+    symbolic::Expression arg1() const { return arg1_; }
+
+    void arg1(const symbolic::Expression& arg) { arg1_ = arg; }
+
     AllocationType allocation() const { return allocation_; }
 
     void allocation(AllocationType allocation) { allocation_ = allocation; }
@@ -90,13 +95,13 @@ public:
         if (deallocation_ != other.deallocation_) {
             return false;
         }
-        if (allocation_size_.is_null() && other.allocation_size_.is_null()) {
-            return true;
+        if (!symbolic::null_safe_eq(allocation_size_, other.allocation_size_)) {
+            return false;
         }
-        if (!allocation_size_.is_null() && !other.allocation_size_.is_null()) {
-            return symbolic::eq(allocation_size_, other.allocation_size_);
+        if (!symbolic::null_safe_eq(arg1_, other.arg1_)) {
+            return false;
         }
-        return false;
+        return true;
     }
 
     bool is_cpu_stack() const { return value_ == "CPU_Stack"; }
