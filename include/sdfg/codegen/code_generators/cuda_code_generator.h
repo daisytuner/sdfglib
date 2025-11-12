@@ -26,7 +26,7 @@ public:
         analysis::AnalysisManager& analysis_manager,
         InstrumentationPlan& instrumentation_plan,
         ArgCapturePlan& arg_capture_plan,
-        const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr
+        CodeSnippetFactory& library_snippet_factory
     );
 
     bool generate() override;
