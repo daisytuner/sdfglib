@@ -102,6 +102,9 @@ protected:
 
     virtual bool equal_libnodes(structured_control_flow::Block& block1, structured_control_flow::Block& block2);
 
+    virtual void if_else_extract_invariant_libnode_front(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else);
+    virtual void if_else_extract_invariant_libnode_back(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else);
+
 public:
     BlockHoisting(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
 

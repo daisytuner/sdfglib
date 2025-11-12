@@ -180,8 +180,22 @@ bool BlockHoisting::equal_libnodes(structured_control_flow::Block& block1, struc
         }
     }
 
-    // Virtual method that checks library node internals
+    // Checks library node internals
     return this->equal_libnodes(libnode1, libnode2);
+}
+
+void BlockHoisting::if_else_extract_invariant_libnode_front(
+    structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else
+) {
+    // This function is a wrapper that can be overridden in sub-classes
+    this->if_else_extract_invariant_front(parent, if_else);
+}
+
+void BlockHoisting::if_else_extract_invariant_libnode_back(
+    structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else
+) {
+    // This function is a wrapper that can be overridden in sub-classes
+    this->if_else_extract_invariant_back(parent, if_else);
 }
 
 bool BlockHoisting::is_invariant_move(
@@ -701,7 +715,7 @@ bool BlockHoisting::
                 return false;
             }
         }
-        this->if_else_extract_invariant_front(parent, if_else);
+        this->if_else_extract_invariant_libnode_front(parent, if_else);
         return true;
     }
 
@@ -750,7 +764,7 @@ bool BlockHoisting::
                 return false;
             }
         }
-        this->if_else_extract_invariant_back(parent, if_else);
+        this->if_else_extract_invariant_libnode_back(parent, if_else);
         return true;
     }
 
@@ -775,7 +789,7 @@ void BlockHoisting::if_else_extract_invariant_back(
     builder_.move_child(if_else.at(0).first, if_else.at(0).first.size() - 1, parent, if_else_index + 1);
 
     for (size_t i = 1; i < if_else.size(); i++) {
-        builder_.remove_child(if_else.at(i).first, 0);
+        builder_.remove_child(if_else.at(i).first, if_else.at(i).first.size() - 1);
     }
 }
 
