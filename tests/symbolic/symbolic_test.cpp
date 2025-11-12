@@ -127,3 +127,11 @@ TEST(SymbolicTest, subs) {
     auto new_expr = symbolic::subs(expr, x, z);
     EXPECT_EQ(new_expr->__str__(), "y + z");
 }
+
+TEST(SymbolicTest, has) {
+    auto x = symbolic::symbol("x");
+    auto inf = SymEngine::Inf;
+
+    auto expr = symbolic::max(x, inf);
+    EXPECT_TRUE(symbolic::has<SymEngine::Infty>(expr));
+}

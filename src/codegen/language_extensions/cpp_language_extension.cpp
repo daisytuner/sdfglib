@@ -90,11 +90,10 @@ std::string CPPLanguageExtension::
             if (i + 1 < function_type->num_params()) params << ", ";
         }
         if (function_type->is_var_arg()) {
-            // ISO C++ forbids empty parameter lists before ...
             if (function_type->num_params() > 0) {
                 params << ", ";
-                params << "...";
             }
+            params << "...";
         }
 
         const std::string fun_name = name + "(" + params.str() + ")";
@@ -472,6 +471,8 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::FunctionSymbol& x) {
         auto& type = so.get_type();
         CPPLanguageExtension lang(this->function_, this->external_prefix_);
         str_ = "sizeof(" + lang.declaration("", type) + ")";
+    } else if (x.get_name() == "malloc_usable_size") {
+        str_ = "malloc_usable_size(" + SymEngine::rcp_static_cast<const SymEngine::Symbol>(x.get_args()[0])->get_name() + ")";
     } else {
         throw std::runtime_error("Unsupported function symbol: " + x.get_name());
     }

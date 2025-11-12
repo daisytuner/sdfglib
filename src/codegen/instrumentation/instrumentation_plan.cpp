@@ -26,7 +26,13 @@ void InstrumentationPlan::begin_instrumentation(
     std::string sdfg_name = sdfg_.name();
     std::string sdfg_file = metadata.at("sdfg_file");
     std::string arg_capture_path = metadata.at("arg_capture_path");
-    std::string features_file = metadata.at("features_file");
+    std::string features_file;
+    if (auto it = metadata.find("features_file"); it != metadata.end()) {
+        features_file = it->second;
+    } else {
+        features_file = "";
+    }
+
     std::string opt_report_file = metadata.at("opt_report_file");
 
     std::string region_uuid = sdfg_name + "_" + std::to_string(node.element_id());
