@@ -138,6 +138,11 @@ Expression simplify(const Expression expr);
 
 bool eq(const Expression lhs, const Expression rhs);
 
+/**
+ * eq wrapped in null-checks. both inputs null is also considered equal!
+ */
+bool null_safe_eq(const Expression lhs, const Expression rhs);
+
 bool uses(const Expression expr, const Symbol sym);
 
 bool uses(const Expression expr, const std::string& name);
