@@ -42,7 +42,7 @@ protected:
     PrettyPrinter globals_stream_;
 
     /// @brief Stream for library functions
-    CodeSnippetFactory library_snippet_factory_;
+    CodeSnippetFactory& library_snippet_factory_;
 
     /// @brief Main stream
     PrettyPrinter main_stream_;
@@ -56,11 +56,11 @@ public:
         analysis::AnalysisManager& analysis_manager,
         InstrumentationPlan& instrumentation_plan,
         ArgCapturePlan& arg_capture_plan,
-        const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr,
+        CodeSnippetFactory& library_snippet_factory,
         const std::string& externals_prefix = ""
     )
         : sdfg_(sdfg), analysis_manager_(analysis_manager), instrumentation_plan_(instrumentation_plan),
-          arg_capture_plan_(arg_capture_plan), library_snippet_factory_(output_and_header_paths),
+          arg_capture_plan_(arg_capture_plan), library_snippet_factory_(library_snippet_factory),
           externals_prefix_(externals_prefix) {};
 
 

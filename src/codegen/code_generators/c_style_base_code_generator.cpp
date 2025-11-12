@@ -10,11 +10,11 @@ CStyleBaseCodeGenerator::CStyleBaseCodeGenerator(
     analysis::AnalysisManager& analysis_manager,
     InstrumentationPlan& instrumentation_plan,
     ArgCapturePlan& arg_capture_plan,
-    const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths,
+    CodeSnippetFactory& library_snippet_factory,
     const std::string& externals_prefix
 )
     : CodeGenerator(
-          sdfg, analysis_manager, instrumentation_plan, arg_capture_plan, output_and_header_paths, externals_prefix
+          sdfg, analysis_manager, instrumentation_plan, arg_capture_plan, library_snippet_factory, externals_prefix
       ) {
     if (sdfg.type() != FunctionType_CPU) {
         throw std::runtime_error("CStyleBaseCodeGenerator can only be used for CPU SDFGs");
