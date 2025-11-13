@@ -26,7 +26,7 @@ public:
         analysis::AnalysisManager& analysis_manager,
         InstrumentationPlan& instrumentation_plan,
         ArgCapturePlan& arg_capture_plan,
-        CodeSnippetFactory& library_snippet_factory,
+        std::shared_ptr<CodeSnippetFactory> library_snippet_factory = std::make_shared<CodeSnippetFactory>(),
         const std::string& externals_prefix = ""
     );
 
