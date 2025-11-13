@@ -1,5 +1,6 @@
 #include "sdfg/structured_control_flow/if_else.h"
 
+#include "sdfg/symbolic/conjunctive_normal_form.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
@@ -42,7 +43,17 @@ bool IfElse::is_complete() const {
     for (auto& entry : this->conditions_) {
         condition = symbolic::Or(condition, entry);
     }
-    return symbolic::is_true(condition);
+    symbolic::CNF cnf_cond = symbolic::conjunctive_normal_form(condition);
+    for (auto& clause : cnf_cond) {
+        auto cond = symbolic::__false__();
+        for (auto& literal : clause) {
+            cond = symbolic::Or(cond, literal);
+        }
+        if (!symbolic::is_true(cond)) {
+            return false;
+        }
+    }
+    return true;
 };
 
 void IfElse::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
