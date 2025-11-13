@@ -38,6 +38,8 @@ public:
     virtual std::unique_ptr<IType> clone() const override;
 
     virtual std::string print() const override;
+
+    bool is_pointer_like() const;
 };
 
 class StructureDefinition {

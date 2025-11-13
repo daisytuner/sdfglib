@@ -9,9 +9,17 @@ namespace analysis {
 void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
     std::vector<std::string> containers;
     for (auto container : this->sdfg_.containers()) {
-        if (sdfg_.type(container).type_id() == sdfg::types::TypeID::Pointer) {
+        auto& contType = sdfg_.type(container);
+        if (contType.type_id() == sdfg::types::TypeID::Pointer) {
             auto pointer_type = static_cast<const sdfg::types::Pointer*>(&sdfg_.type(container));
             if (!pointer_type->has_pointee_type()) {
+                containers.push_back(container);
+            }
+        } else if (contType.type_id() == sdfg::types::TypeID::Structure) { // we model std::shared_ptr as pointer-like
+                                                                           // structure
+            // if we find uses of it AS a pointer those can also be used
+            auto struct_type = static_cast<const sdfg::types::Structure&>(contType);
+            if (struct_type.is_pointer_like()) {
                 containers.push_back(container);
             }
         }
@@ -33,6 +41,10 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     if (!pointer_type->has_pointee_type()) {
                         continue;
                     }
+                } else if (base_type->type_id() == types::TypeID::Structure) { // pointer-likes may also be used raw.
+                                                                               // Cannot glean anything from those
+                                                                               // accesses directly
+                    continue;
                 }
 
                 if (memlet.type() == data_flow::MemletType::Dereference_Src) {
@@ -75,6 +87,10 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     if (!pointer_type->has_pointee_type()) {
                         continue;
                     }
+                } else if (base_type->type_id() == types::TypeID::Structure) { // pointer-likes may also be used raw.
+                                                                               // Cannot glean anything from those
+                                                                               // accesses directly
+                    continue;
                 }
 
                 if (memlet.type() == data_flow::MemletType::Dereference_Dst) {
@@ -114,6 +130,10 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     if (!pointer_type->has_pointee_type()) {
                         continue;
                     }
+                } else if (base_type->type_id() == types::TypeID::Structure) { // pointer-likes may also be used raw.
+                                                                               // Cannot glean anything from those
+                                                                               // accesses directly
+                    continue;
                 }
 
                 if (memlet.type() == data_flow::MemletType::Dereference_Dst) {
@@ -153,6 +173,8 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     if (!pointer_type->has_pointee_type()) {
                         continue;
                     }
+                } else if (base_type->type_id() == types::TypeID::Structure) {
+                    continue;
                 }
 
                 if (memlet.type() == data_flow::MemletType::Dereference_Src) {
@@ -184,13 +206,16 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
 TypeAnalysis::TypeAnalysis(StructuredSDFG& sdfg) : Analysis(sdfg) {}
 
 const sdfg::types::IType* TypeAnalysis::get_outer_type(const std::string& container) const {
-    if (sdfg_.type(container).type_id() == sdfg::types::TypeID::Pointer) {
-        auto pointer_type = static_cast<const sdfg::types::Pointer*>(&sdfg_.type(container));
+    auto& contType = sdfg_.type(container);
+    if (contType.type_id() == sdfg::types::TypeID::Pointer) {
+        auto pointer_type = static_cast<const sdfg::types::Pointer*>(&contType);
         if (pointer_type->has_pointee_type()) {
             return pointer_type;
         }
+    } else if (contType.type_id() == sdfg::types::TypeID::Structure &&
+               static_cast<const types::Structure&>(contType).is_pointer_like()) {
     } else {
-        return &sdfg_.type(container);
+        return &contType;
     }
 
     auto it = type_map_.find(container);
