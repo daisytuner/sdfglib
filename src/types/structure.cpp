@@ -30,7 +30,9 @@ std::unique_ptr<IType> Structure::clone() const {
     return std::make_unique<Structure>(this->storage_type(), this->alignment(), this->initializer(), this->name_);
 };
 
-std::string Structure::print() const { return "Structure(" + this->name_ + ")"; };
+std::string Structure::print() const { return "Structure(" + this->name_ + ")"; }
+
+bool Structure::is_pointer_like() const { return this->name_.starts_with("std::shared_ptr"); }
 
 StructureDefinition::StructureDefinition(const std::string& name, bool is_packed)
     : name_(name), is_packed_(is_packed), members_() {};

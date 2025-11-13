@@ -2,6 +2,7 @@
 
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 #include "sdfg/codegen/instrumentation/instrumentation_info.h"
+#include "sdfg/types/structure.h"
 
 namespace sdfg {
 namespace codegen {
@@ -325,7 +326,9 @@ void LibraryNodeDispatcher::
 
         std::string conn = iedge.dst_conn();
         auto& conn_type = iedge.result_type(this->function_);
-        if (conn_type.type_id() == types::TypeID::Array || conn_type.type_id() == types::TypeID::Structure) {
+        if (conn_type.type_id() == types::TypeID::Array ||
+            (conn_type.type_id() == types::TypeID::Structure &&
+             !static_cast<const types::Structure&>(conn_type).is_pointer_like())) {
             // Handle array and structure types
             stream << this->language_extension_.declaration(conn, conn_type) << ";" << std::endl;
             stream << "memcpy(" << "&" << conn << ", " << "&" << src_name
