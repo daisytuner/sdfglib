@@ -96,6 +96,7 @@ bool BlockSorting::accept(structured_control_flow::Sequence& sequence) {
         // Swap blocks
         DEBUG_PRINTLN(
             "BlockSorting: Swapping blocks " << current_child.first.element_id() << " " << next_child.first.element_id()
+                                             << " in '" << builder_.subject().name() << "'"
         );
         builder_.move_child(sequence, i + 1, sequence, i);
         applied = true;
@@ -127,6 +128,9 @@ bool BlockSorting::is_libnode_block(structured_control_flow::Block& next_block) 
         return false;
     }
     auto* libnode = *next_dfg.library_nodes().begin();
+    if (libnode->side_effect()) {
+        return false;
+    }
     if (next_dfg.edges().size() != libnode->inputs().size() + libnode->outputs().size()) {
         return false;
     }
