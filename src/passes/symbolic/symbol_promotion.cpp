@@ -12,7 +12,7 @@ symbolic::Expression SymbolPromotion::
         if (iedge.dst_conn() == op) {
             auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
             if (dynamic_cast<const data_flow::ConstantNode*>(&iedge.src()) != nullptr) {
-                int64_t value = helpers::parse_number(src.data());
+                int64_t value = helpers::parse_number_signed(src.data());
                 return symbolic::integer(value);
             } else {
                 return symbolic::symbol(src.data());
@@ -51,6 +51,13 @@ bool SymbolPromotion::can_be_applied(
     // Criterion: Tasklet is not an unsigned operation
     if (data_flow::is_unsigned(tasklet->code())) {
         return false;
+    }
+
+    // Special case: Constant assign
+    if (tasklet->code() == data_flow::TaskletCode::assign) {
+        if (is_safe_constant_assign(builder.subject(), dataflow, *tasklet)) {
+            return true;
+        }
     }
 
     // Criterion: Inputs are signed integers
@@ -146,6 +153,62 @@ bool SymbolPromotion::can_be_applied(
         default:
             return false;
     }
+};
+
+bool SymbolPromotion::is_safe_constant_assign(
+    sdfg::StructuredSDFG& sdfg, const data_flow::DataFlowGraph& dataflow, const data_flow::Tasklet& tasklet
+) {
+    if (tasklet.code() != data_flow::TaskletCode::assign) {
+        return false;
+    }
+
+    auto& iedge = *dataflow.in_edges(tasklet).begin();
+    if (iedge.base_type().type_id() != types::TypeID::Scalar) {
+        return false;
+    }
+    if (!types::is_integer(iedge.base_type().primitive_type())) {
+        return false;
+    }
+    if (!types::is_unsigned(iedge.base_type().primitive_type())) {
+        return false;
+    }
+    auto& src = dynamic_cast<const data_flow::AccessNode&>(iedge.src());
+    if (!dynamic_cast<const data_flow::ConstantNode*>(&iedge.src())) {
+        return false;
+    }
+
+    auto& oedge = *dataflow.out_edges(tasklet).begin();
+    if (oedge.base_type().type_id() != types::TypeID::Scalar) {
+        return false;
+    }
+    if (!types::is_integer(oedge.base_type().primitive_type())) {
+        return false;
+    }
+    if (!types::is_unsigned(oedge.base_type().primitive_type())) {
+        return false;
+    }
+
+    // DST type must be signed integer
+    auto& dst = dynamic_cast<const data_flow::AccessNode&>(oedge.dst());
+    auto& dst_type = sdfg.type(dst.data());
+    if (dst_type.type_id() != types::TypeID::Scalar) {
+        return false;
+    }
+    if (!types::is_integer(dst_type.primitive_type())) {
+        return false;
+    }
+    if (!types::is_signed(dst_type.primitive_type())) {
+        return false;
+    }
+
+    // Check that value fits in the output type, and cast is safe to remove
+    uint64_t value = helpers::parse_number_unsigned(src.data());
+    size_t bitwidth = types::bit_width(oedge.base_type().primitive_type());
+    size_t max_value = (1ULL << (bitwidth - 1)) - 1;
+    if (value > max_value) {
+        return false;
+    }
+    return true;
 };
 
 void SymbolPromotion::apply(

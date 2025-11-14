@@ -9,27 +9,33 @@
 #include <vector>
 
 #ifndef NDEBUG
-  #define DEBUG_PRINTLN(msg) \
-      do { std::cerr << "[DEBUG] " << msg << std::endl; } while (0)
-  #define DEBUG_PRINT(msg) \
-      do { std::cerr << "[DEBUG] " << msg; } while (0)
+#define DEBUG_PRINTLN(msg)                           \
+    do {                                             \
+        std::cerr << "[DEBUG] " << msg << std::endl; \
+    } while (0)
+#define DEBUG_PRINT(msg)                \
+    do {                                \
+        std::cerr << "[DEBUG] " << msg; \
+    } while (0)
 #else
-  #define DEBUG_PRINTLN(msg) \
-      do { } while (0)
-  #define DEBUG_PRINT(msg) \
-      do { } while (0)
+#define DEBUG_PRINTLN(msg) \
+    do {                   \
+    } while (0)
+#define DEBUG_PRINT(msg) \
+    do {                 \
+    } while (0)
 #endif
 
 namespace sdfg {
 namespace helpers {
 
 // Transformation functions
-template <typename T>
+template<typename T>
 inline T& indirect(const std::unique_ptr<T>& ptr) {
     return *ptr;
 };
 
-template <typename T>
+template<typename T>
 inline const T& add_const(T& s) {
     return s;
 };
@@ -42,14 +48,16 @@ inline bool is_number(const std::string& s) {
     return !s.empty() && it == s.end();
 };
 
-inline uint64_t parse_number(const std::string& s) { return std::stoull(s); };
+inline uint64_t parse_number_unsigned(const std::string& s) { return std::stoull(s); };
+
+inline int64_t parse_number_signed(const std::string& s) { return std::stoll(s); };
 
 inline bool endswith(std::string const& value, std::string const& ending) {
     if (ending.size() > value.size()) return false;
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 };
 
-template <class S, class T>
+template<class S, class T>
 inline std::string join(std::vector<T>& elems, S& delim) {
     if (elems.size() == 0) {
         return "";
@@ -72,7 +80,7 @@ inline void split(std::vector<std::string>& result, std::string s, std::string d
     } while (end != -1);
 }
 
-template <typename T>
+template<typename T>
 inline bool sets_intersect(const std::unordered_set<T>& set1, const std::unordered_set<T>& set2) {
     // Determine the smaller and larger set
     const std::unordered_set<T>& smaller = (set1.size() < set2.size()) ? set1 : set2;
@@ -81,12 +89,12 @@ inline bool sets_intersect(const std::unordered_set<T>& set1, const std::unorder
     // Iterate through the smaller set and check for existence in the larger set
     for (const T& element : smaller) {
         if (larger.find(element) != larger.end()) {
-            return true;  // Intersection found
+            return true; // Intersection found
         }
     }
 
-    return false;  // No intersection found
+    return false; // No intersection found
 }
 
-}  // namespace helpers
-}  // namespace sdfg
+} // namespace helpers
+} // namespace sdfg
