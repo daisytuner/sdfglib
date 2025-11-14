@@ -123,6 +123,34 @@ TEST(SymbolPromotionTest, Assign_Unsigned) {
     EXPECT_FALSE(s2spass.run(builder_opt, analysis_manager));
 }
 
+TEST(SymbolPromotionTest, Assign_Unsigned_Constant) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar udesc(types::PrimitiveType::UInt32);
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    auto sym = symbolic::symbol("i");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& zero_node = builder.add_constant(block, "0", udesc);
+    auto& output_node = builder.add_access(block, "i");
+
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+
+    builder.add_computational_memlet(block, zero_node, tasklet, "_in", {}, udesc);
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {}, udesc);
+
+    // Apply pass
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder, analysis_manager));
+
+    auto& trans = builder.subject().root().at(0).second;
+    EXPECT_EQ(trans.assignments().size(), 1);
+    EXPECT_TRUE(symbolic::eq(trans.assignments().at(symbolic::symbol("i")), symbolic::zero()));
+}
+
 TEST(SymbolPromotionTest, Assign_Unsigned_Cast_Input) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
