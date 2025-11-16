@@ -149,8 +149,12 @@ TEST(AssumptionsAnalysisTest, Init_i64) {
     // Check
     EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("N")).lower_bound(), *symbolic::integer(0)));
     EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("N")).upper_bound(), *SymEngine::Inf));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).lower_bound(), *SymEngine::NegInf));
-    EXPECT_TRUE(SymEngine::eq(*assumptions.at(symbolic::symbol("M")).upper_bound(), *SymEngine::Inf));
+    EXPECT_TRUE(SymEngine::
+                    eq(*assumptions.at(symbolic::symbol("M")).lower_bound(),
+                       *symbolic::integer(std::numeric_limits<int64_t>::min())));
+    EXPECT_TRUE(SymEngine::
+                    eq(*assumptions.at(symbolic::symbol("M")).upper_bound(),
+                       *symbolic::integer(std::numeric_limits<int64_t>::max())));
     EXPECT_TRUE(assumptions.at(symbolic::symbol("N")).tight_lower_bound().is_null());
     EXPECT_TRUE(assumptions.at(symbolic::symbol("N")).tight_upper_bound().is_null());
     EXPECT_TRUE(assumptions.at(symbolic::symbol("M")).tight_lower_bound().is_null());

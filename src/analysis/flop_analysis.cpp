@@ -52,7 +52,8 @@ symbolic::ExpressionSet FlopAnalysis::
         } else if (SymEngine::is_a<SymEngine::Integer>(*bound)) {
             // Collect integers
             result.insert(bound);
-        } else if (!symbolic::contains_dynamic_sizeof(bound) && this->is_parameter_expression(parameters, bound)) {
+        } else if (!symbolic::has<symbolic::DynamicSizeOfFunction>(bound) &&
+                   this->is_parameter_expression(parameters, bound)) {
             // Collect parameter expressions if they do not contain dynamic_sizeof
             result.insert(bound);
         }

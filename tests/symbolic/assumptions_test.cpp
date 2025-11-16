@@ -51,6 +51,6 @@ TEST(AssumptionsTest, Create) {
     EXPECT_TRUE(symbolic::eq(a.upper_bound(), SymEngine::Inf));
 
     a = symbolic::Assumption::create(x, types::Scalar(types::PrimitiveType::Int64));
-    EXPECT_TRUE(symbolic::eq(a.lower_bound(), SymEngine::NegInf));
-    EXPECT_TRUE(symbolic::eq(a.upper_bound(), SymEngine::Inf));
+    EXPECT_TRUE(symbolic::eq(a.lower_bound(), symbolic::integer(std::numeric_limits<int64_t>::min())));
+    EXPECT_TRUE(symbolic::eq(a.upper_bound(), symbolic::integer(std::numeric_limits<int64_t>::max())));
 }

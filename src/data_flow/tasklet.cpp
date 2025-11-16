@@ -142,6 +142,9 @@ bool Tasklet::is_trunc(const Function& function) const {
     auto& input_type = iedge.result_type(function);
     auto& output_type = oedge.result_type(function);
 
+    if (!types::is_integer(input_type.primitive_type()) || !types::is_integer(output_type.primitive_type())) {
+        return false;
+    }
     if (types::is_unsigned(input_type.primitive_type()) != types::is_unsigned(output_type.primitive_type())) {
         return false;
     }

@@ -1,6 +1,8 @@
 #include "sdfg/passes/symbolic/symbol_promotion.h"
 
+#include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
+#include "sdfg/symbolic/extreme_values.h"
 #include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
@@ -57,6 +59,11 @@ bool SymbolPromotion::can_be_applied(
     if (tasklet->code() == data_flow::TaskletCode::assign) {
         if (is_safe_constant_assign(builder.subject(), dataflow, *tasklet)) {
             return true;
+        }
+        if (tasklet->is_trunc(builder.subject())) {
+            if (is_safe_trunc(builder.subject(), analysis_manager, dataflow, *tasklet)) {
+                return true;
+            }
         }
     }
 
@@ -156,7 +163,7 @@ bool SymbolPromotion::can_be_applied(
 };
 
 bool SymbolPromotion::is_safe_constant_assign(
-    sdfg::StructuredSDFG& sdfg, const data_flow::DataFlowGraph& dataflow, const data_flow::Tasklet& tasklet
+    sdfg::StructuredSDFG& sdfg, data_flow::DataFlowGraph& dataflow, data_flow::Tasklet& tasklet
 ) {
     if (tasklet.code() != data_flow::TaskletCode::assign) {
         return false;
@@ -210,6 +217,81 @@ bool SymbolPromotion::is_safe_constant_assign(
     }
     return true;
 };
+
+bool SymbolPromotion::is_safe_trunc(
+    sdfg::StructuredSDFG& sdfg,
+    analysis::AnalysisManager& analysis_manager,
+    data_flow::DataFlowGraph& dataflow,
+    data_flow::Tasklet& tasklet
+) {
+    if (!tasklet.is_trunc(sdfg)) {
+        return false;
+    }
+
+    auto& iedge = *dataflow.in_edges(tasklet).begin();
+    auto& oedge = *dataflow.out_edges(tasklet).begin();
+    if (!types::is_unsigned(iedge.base_type().primitive_type()) ||
+        !types::is_unsigned(oedge.base_type().primitive_type())) {
+        return false;
+    }
+
+    // Check that output type can hold input type
+    size_t output_bitwidth = types::bit_width(oedge.base_type().primitive_type());
+    int64_t output_min_value_signed = 0;
+    int64_t output_max_value_signed = (1ULL << (output_bitwidth - 1)) - 1;
+
+    // Check that input and output ranges can hold the range of the src
+    auto& src = dynamic_cast<data_flow::AccessNode&>(iedge.src());
+    std::string value = src.data();
+    auto sym = symbolic::symbol(value);
+
+    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    auto& dfg = src.get_parent();
+    auto& block = static_cast<structured_control_flow::Block&>(*dfg.get_parent());
+    auto& block_assumptions = assumptions_analysis.get(block, true);
+    if (block_assumptions.find(sym) == block_assumptions.end()) {
+        return false;
+    }
+
+    bool safe_lib = false;
+    for (auto& lb : block_assumptions.at(sym).lower_bounds()) {
+        auto mini = symbolic::minimum_new(lb, {}, block_assumptions, false);
+        if (mini.is_null()) {
+            continue;
+        }
+        if (!SymEngine::is_a<SymEngine::Integer>(*mini)) {
+            continue;
+        }
+        int64_t lb_val = SymEngine::rcp_static_cast<const SymEngine::Integer>(mini)->as_int();
+        if (lb_val >= output_min_value_signed) {
+            safe_lib = true;
+            break;
+        }
+    }
+    if (!safe_lib) {
+        return false;
+    }
+
+    for (auto& ub : block_assumptions.at(sym).upper_bounds()) {
+        auto maxi = symbolic::maximum_new(ub, {}, block_assumptions, false);
+        if (maxi.is_null()) {
+            continue;
+        }
+        if (!SymEngine::is_a<SymEngine::Integer>(*maxi)) {
+            continue;
+        }
+        int64_t ub_val = SymEngine::rcp_static_cast<const SymEngine::Integer>(maxi)->as_int();
+        if (ub_val <= output_max_value_signed) {
+            safe_lib = true;
+            break;
+        }
+    }
+    if (!safe_lib) {
+        return false;
+    }
+
+    return true;
+}
 
 void SymbolPromotion::apply(
     builder::StructuredSDFGBuilder& builder,

@@ -111,8 +111,6 @@ public:
 
 Expression dynamic_sizeof(const Symbol symbol);
 
-bool contains_dynamic_sizeof(const symbolic::Expression& expr);
-
 class DynamicSizeOfFunction : public SymEngine::FunctionSymbol {
 public:
     explicit DynamicSizeOfFunction(const Symbol symbol) : FunctionSymbol("dynamic_sizeof", symbol) {}

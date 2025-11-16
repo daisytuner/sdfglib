@@ -269,5 +269,318 @@ Expression maximum(const Expression expr, const SymbolSet& parameters, const Ass
     return maximum(expr, parameters, assumptions, 0);
 }
 
+Expression minimum_new(
+    const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions, const size_t depth, bool tight
+);
+Expression maximum_new(
+    const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions, const size_t depth, bool tight
+);
+
+Expression minimum_new(
+    const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions, const size_t depth, bool tight
+) {
+    // End of recursion: fail
+    if (depth > MAX_DEPTH) {
+        return SymEngine::null;
+    }
+    if (SymEngine::is_a<SymEngine::NaN>(*expr)) {
+        return SymEngine::null;
+    }
+    if (SymEngine::is_a<SymEngine::Infty>(*expr)) {
+        return SymEngine::null;
+    }
+    // End of recursion: success
+    if (SymEngine::is_a<SymEngine::Integer>(*expr)) {
+        return expr;
+    }
+    if (SymEngine::is_a<SymEngine::Symbol>(*expr)) {
+        auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(expr);
+        if (parameters.find(sym) != parameters.end()) {
+            return sym;
+        }
+    }
+
+    // Symbol
+    if (SymEngine::is_a<SymEngine::Symbol>(*expr)) {
+        auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(expr);
+        if (assumptions.find(sym) != assumptions.end()) {
+            if (tight) {
+                if (assumptions.at(sym).tight_lower_bound().is_null()) {
+                    return SymEngine::null;
+                }
+                return minimum_new(assumptions.at(sym).tight_lower_bound(), parameters, assumptions, depth + 1, tight);
+            }
+            symbolic::Expression new_lb = SymEngine::null;
+            for (auto& lb : assumptions.at(sym).lower_bounds()) {
+                auto new_min = minimum_new(lb, parameters, assumptions, depth + 1, tight);
+                if (new_min.is_null()) {
+                    continue;
+                }
+                if (new_lb.is_null()) {
+                    new_lb = new_min;
+                    continue;
+                }
+                new_lb = symbolic::max(new_lb, new_min);
+            }
+            return new_lb;
+        }
+        return SymEngine::null;
+    }
+
+    // Mul
+    if (SymEngine::is_a<SymEngine::Mul>(*expr)) {
+        auto mul = SymEngine::rcp_static_cast<const SymEngine::Mul>(expr);
+        const auto& args = mul->get_args();
+        size_t n = args.size();
+
+        std::vector<std::pair<Expression, Expression>> bounds;
+        bounds.reserve(n);
+
+        for (const auto& arg : args) {
+            Expression min_val = minimum_new(arg, parameters, assumptions, depth + 1, tight);
+            Expression max_val = maximum_new(arg, parameters, assumptions, depth + 1, tight);
+
+            if (min_val == SymEngine::null || max_val == SymEngine::null) {
+                return SymEngine::null;
+            }
+            bounds.emplace_back(min_val, max_val);
+        }
+
+        // Iterate over 2^n combinations
+        Expression min_product = SymEngine::null;
+        const size_t total_combinations = 1ULL << n;
+
+        for (size_t mask = 0; mask < total_combinations; ++mask) {
+            Expression product = SymEngine::integer(1);
+            for (size_t i = 0; i < n; ++i) {
+                const auto& bound = bounds[i];
+                Expression val = (mask & (1ULL << i)) ? bound.second : bound.first;
+                product = symbolic::mul(product, val);
+            }
+            if (min_product == SymEngine::null) {
+                min_product = product;
+            } else {
+                min_product = symbolic::min(min_product, product);
+            }
+        }
+
+        return min_product;
+    }
+
+    // Add
+    if (SymEngine::is_a<SymEngine::Add>(*expr)) {
+        auto add = SymEngine::rcp_static_cast<const SymEngine::Add>(expr);
+        const auto& args = add->get_args();
+        Expression lbs = SymEngine::null;
+        for (const auto& arg : args) {
+            auto lb = minimum_new(arg, parameters, assumptions, depth + 1, tight);
+            if (lb == SymEngine::null) {
+                return SymEngine::null;
+            }
+            if (lbs == SymEngine::null) {
+                lbs = lb;
+            } else {
+                lbs = symbolic::add(lbs, lb);
+            }
+        }
+        return lbs;
+    }
+
+    // Max
+    if (SymEngine::is_a<SymEngine::Max>(*expr)) {
+        auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Max>(expr)->get_args();
+        Expression lbs = SymEngine::null;
+        for (const auto& arg : args) {
+            auto lb = minimum_new(arg, parameters, assumptions, depth + 1, tight);
+            if (lb == SymEngine::null) {
+                return SymEngine::null;
+            }
+            if (lbs == SymEngine::null) {
+                lbs = lb;
+            } else {
+                lbs = symbolic::min(lbs, lb);
+            }
+        }
+        return lbs;
+    }
+
+    // Min
+    if (SymEngine::is_a<SymEngine::Min>(*expr)) {
+        auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Min>(expr)->get_args();
+        Expression lbs = SymEngine::null;
+        for (const auto& arg : args) {
+            auto lb = minimum_new(arg, parameters, assumptions, depth + 1, tight);
+            if (lb == SymEngine::null) {
+                return SymEngine::null;
+            }
+            if (lbs == SymEngine::null) {
+                lbs = lb;
+            } else {
+                lbs = symbolic::min(lbs, lb);
+            }
+        }
+        return lbs;
+    }
+
+    return SymEngine::null;
+}
+
+Expression maximum_new(
+    const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions, const size_t depth, bool tight
+) {
+    // End of recursion: fail
+    if (depth > MAX_DEPTH) {
+        return SymEngine::null;
+    }
+    if (SymEngine::is_a<SymEngine::NaN>(*expr)) {
+        return SymEngine::null;
+    }
+    if (SymEngine::is_a<SymEngine::Infty>(*expr)) {
+        return SymEngine::null;
+    }
+    // End of recursion: success
+    if (SymEngine::is_a<SymEngine::Integer>(*expr)) {
+        return expr;
+    }
+    if (SymEngine::is_a<SymEngine::Symbol>(*expr)) {
+        auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(expr);
+        if (parameters.find(sym) != parameters.end()) {
+            return sym;
+        }
+    }
+
+    // Symbol
+    if (SymEngine::is_a<SymEngine::Symbol>(*expr)) {
+        auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(expr);
+        if (assumptions.find(sym) != assumptions.end()) {
+            if (tight) {
+                if (assumptions.at(sym).tight_upper_bound().is_null()) {
+                    return SymEngine::null;
+                }
+                return maximum_new(assumptions.at(sym).tight_upper_bound(), parameters, assumptions, depth + 1, tight);
+            }
+            symbolic::Expression new_ub = SymEngine::null;
+            for (auto& ub : assumptions.at(sym).upper_bounds()) {
+                auto new_max = maximum_new(ub, parameters, assumptions, depth + 1, tight);
+                if (new_max.is_null()) {
+                    continue;
+                }
+                if (new_ub.is_null()) {
+                    new_ub = new_max;
+                    continue;
+                }
+                new_ub = symbolic::min(new_ub, new_max);
+            }
+            return new_ub;
+        }
+        return SymEngine::null;
+    }
+
+    // Mul
+    if (SymEngine::is_a<SymEngine::Mul>(*expr)) {
+        auto mul = SymEngine::rcp_static_cast<const SymEngine::Mul>(expr);
+        const auto& args = mul->get_args();
+        size_t n = args.size();
+
+        std::vector<std::pair<Expression, Expression>> bounds;
+        bounds.reserve(n);
+
+        for (const auto& arg : args) {
+            Expression min_val = minimum_new(arg, parameters, assumptions, depth + 1, tight);
+            Expression max_val = maximum_new(arg, parameters, assumptions, depth + 1, tight);
+
+            if (min_val == SymEngine::null || max_val == SymEngine::null) {
+                return SymEngine::null;
+            }
+            bounds.emplace_back(min_val, max_val);
+        }
+
+        // Iterate over 2^n combinations
+        Expression max_product = SymEngine::null;
+        const size_t total_combinations = 1ULL << n;
+
+        for (size_t mask = 0; mask < total_combinations; ++mask) {
+            Expression product = SymEngine::integer(1);
+            for (size_t i = 0; i < n; ++i) {
+                const auto& bound = bounds[i];
+                Expression val = (mask & (1ULL << i)) ? bound.second : bound.first;
+                product = symbolic::mul(product, val);
+            }
+            if (max_product == SymEngine::null) {
+                max_product = product;
+            } else {
+                max_product = symbolic::max(max_product, product);
+            }
+        }
+
+        return max_product;
+    }
+
+    // Add
+    if (SymEngine::is_a<SymEngine::Add>(*expr)) {
+        auto add = SymEngine::rcp_static_cast<const SymEngine::Add>(expr);
+        const auto& args = add->get_args();
+        Expression ubs = SymEngine::null;
+        for (const auto& arg : args) {
+            auto ub = maximum_new(arg, parameters, assumptions, depth + 1, tight);
+            if (ub == SymEngine::null) {
+                return SymEngine::null;
+            }
+            if (ubs == SymEngine::null) {
+                ubs = ub;
+            } else {
+                ubs = symbolic::add(ubs, ub);
+            }
+        }
+        return ubs;
+    }
+
+    // Max
+    if (SymEngine::is_a<SymEngine::Max>(*expr)) {
+        auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Max>(expr)->get_args();
+        Expression ubs = SymEngine::null;
+        for (const auto& arg : args) {
+            auto ub = maximum_new(arg, parameters, assumptions, depth + 1, tight);
+            if (ub == SymEngine::null) {
+                return SymEngine::null;
+            }
+            if (ubs == SymEngine::null) {
+                ubs = ub;
+            } else {
+                ubs = symbolic::max(ubs, ub);
+            }
+        }
+        return ubs;
+    }
+
+    // Min
+    if (SymEngine::is_a<SymEngine::Min>(*expr)) {
+        auto args = SymEngine::rcp_dynamic_cast<const SymEngine::Min>(expr)->get_args();
+        Expression ubs = SymEngine::null;
+        for (const auto& arg : args) {
+            auto ub = maximum_new(arg, parameters, assumptions, depth + 1, tight);
+            if (ub == SymEngine::null) {
+                return SymEngine::null;
+            }
+            if (ubs == SymEngine::null) {
+                ubs = ub;
+            } else {
+                ubs = symbolic::max(ubs, ub);
+            }
+        }
+        return ubs;
+    }
+
+    return SymEngine::null;
+}
+
+Expression minimum_new(const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions, bool tight) {
+    return minimum_new(expr, parameters, assumptions, 0, tight);
+}
+
+Expression maximum_new(const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions, bool tight) {
+    return maximum_new(expr, parameters, assumptions, 0, tight);
+}
+
 } // namespace symbolic
 } // namespace sdfg
