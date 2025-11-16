@@ -194,7 +194,7 @@ void AssumptionsAnalysis::
         return;
     }
     // Assumption: upper bound ub is tight for indvar if
-    body_assumptions[indvar].add_upper_bound(ub);
+    // body_assumptions[indvar].add_upper_bound(ub);
     body_assumptions[indvar].upper_bound_deprecated(ub);
     // TODO: handle non-contiguous tight upper bounds with modulo
     // Example: for (i = 0; i < n; i += 3) -> tight_upper_bound = (n - 1) - ((n - 1) % 3)

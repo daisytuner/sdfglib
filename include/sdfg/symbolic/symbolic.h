@@ -145,9 +145,29 @@ bool uses(const Expression expr, const std::string& name);
 SymbolSet atoms(const Expression expr);
 
 template<typename T>
-bool has(const Expression expr) {
+inline bool has(const Expression expr) {
     for (auto& atom : SymEngine::atoms<T>(*expr)) {
         if (SymEngine::is_a<T>(*atom)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+template<typename T>
+inline ExpressionSet find(const Expression expr) {
+    ExpressionSet res;
+    for (auto& atom : SymEngine::atoms<T>(*expr)) {
+        if (SymEngine::is_a<T>(*atom)) {
+            res.insert(atom);
+        }
+    }
+    return res;
+}
+
+inline bool has_dynamic_sizeof(const Expression expr) {
+    for (auto& func : SymEngine::atoms<SymEngine::FunctionSymbol>(*expr)) {
+        if (SymEngine::is_a<DynamicSizeOfFunction>(*func)) {
             return true;
         }
     }

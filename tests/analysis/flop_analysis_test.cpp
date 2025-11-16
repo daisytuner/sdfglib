@@ -217,19 +217,19 @@ TEST(FlopAnalysis, LoopNest) {
     ASSERT_TRUE(analysis.contains(&loop2));
     flop = analysis.get(&loop2);
     ASSERT_FALSE(flop.is_null());
-    EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("idiv(min(m, k - 1), 2) * 2")));
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("idiv(min(m + 1, k) - 1, 2) * 2")));
     ASSERT_TRUE(analysis.contains(&loop1.root()));
     flop = analysis.get(&loop1.root());
     ASSERT_FALSE(flop.is_null());
-    EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("idiv(min(m, k - 1), 2) * 2")));
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("idiv(min(m + 1, k) - 1, 2) * 2")));
     ASSERT_TRUE(analysis.contains(&loop1));
     flop = analysis.get(&loop1);
     ASSERT_FALSE(flop.is_null());
-    EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("n * idiv(min(m, k - 1), 2) * 2")));
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("n * idiv(min(m + 1, k) - 1, 2) * 2")));
     ASSERT_TRUE(analysis.contains(&root));
     flop = analysis.get(&root);
     ASSERT_FALSE(flop.is_null());
-    EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("n * idiv(min(m, k - 1), 2) * 2")));
+    EXPECT_TRUE(symbolic::eq(flop, symbolic::parse("n * idiv(min(m + 1, k) - 1, 2) * 2")));
 }
 
 TEST(FlopAnalysis, Intrinsic) {
