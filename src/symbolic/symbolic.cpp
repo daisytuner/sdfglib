@@ -123,22 +123,6 @@ Expression dynamic_sizeof(const Symbol symbol) {
     return so;
 }
 
-bool contains_dynamic_sizeof(const symbolic::Expression& expr) {
-    if (expr.is_null()) {
-        return false;
-    }
-    if (SymEngine::is_a<SymEngine::FunctionSymbol>(*expr) &&
-        SymEngine::rcp_static_cast<const SymEngine::FunctionSymbol>(expr)->get_name() == "dynamic_sizeof") {
-        return true;
-    }
-    for (auto& arg : expr->get_args()) {
-        if (contains_dynamic_sizeof(arg)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 /***** Comparisions *****/
 
 Condition Eq(const Expression lhs, const Expression rhs) { return SymEngine::Eq(lhs, rhs); };

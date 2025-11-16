@@ -185,10 +185,10 @@ Assumption Assumption::create(const Symbol symbol, const types::IType& type) {
                 break;
             }
             case types::PrimitiveType::Int64: {
-                assum.add_lower_bound(SymEngine::NegInf);
-                assum.add_upper_bound(SymEngine::Inf);
-                assum.lower_bound_deprecated(SymEngine::NegInf);
-                assum.upper_bound_deprecated(SymEngine::Inf);
+                assum.add_lower_bound(integer(std::numeric_limits<int64_t>::min()));
+                assum.add_upper_bound(integer(std::numeric_limits<int64_t>::max()));
+                assum.lower_bound_deprecated(integer(std::numeric_limits<int64_t>::min()));
+                assum.upper_bound_deprecated(integer(std::numeric_limits<int64_t>::max()));
                 break;
             }
             case types::PrimitiveType::Int128: {

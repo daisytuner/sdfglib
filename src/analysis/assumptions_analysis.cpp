@@ -168,6 +168,7 @@ void AssumptionsAnalysis::
     }
 
     // Assumption: init is tight lower bound for indvar
+    body_assumptions[indvar].add_lower_bound(init);
     body_assumptions[indvar].tight_lower_bound(init);
     body_assumptions[indvar].lower_bound_deprecated(init);
 
@@ -182,38 +183,40 @@ void AssumptionsAnalysis::
         }
     }
 
+    symbolic::CNF cnf;
     try {
-        auto cnf = symbolic::conjunctive_normal_form(loop->condition());
-        auto ub = cnf_to_upper_bound(cnf, indvar);
-        if (ub == SymEngine::null) {
-            return;
-        }
-        // Assumption: upper bound ub is tight for indvar if
-        body_assumptions[indvar].upper_bound_deprecated(ub);
-        // TODO: handle non-contiguous tight upper bounds with modulo
-        // Example: for (i = 0; i < n; i += 3) -> tight_upper_bound = (n - 1) - ((n - 1) % 3)
-        if (symbolic::series::is_contiguous(update, indvar, assums)) {
-            body_assumptions[indvar].tight_upper_bound(ub);
-        }
-
-        // Assumption: inverse index access upper bounds are upper bound for ub
-        if (SymEngine::is_a<SymEngine::Symbol>(*ub) && !ubs.empty()) {
-            auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(ub);
-            if (!body_assumptions.contains(sym)) {
-                body_assumptions.insert({sym, symbolic::Assumption(sym)});
-            }
-            for (auto ub : ubs) {
-                body_assumptions[sym].add_upper_bound(ub);
-            }
-        }
-
-        // Assumption: any ub symbol is at least init
-        for (auto& sym : symbolic::atoms(ub)) {
-            body_assumptions[sym].add_lower_bound(symbolic::add(init, symbolic::one()));
-            body_assumptions[sym].lower_bound_deprecated(symbolic::add(init, symbolic::one()));
-        }
+        cnf = symbolic::conjunctive_normal_form(loop->condition());
     } catch (const symbolic::CNFException& e) {
         return;
+    }
+    auto ub = cnf_to_upper_bound(cnf, indvar);
+    if (ub.is_null()) {
+        return;
+    }
+    // Assumption: upper bound ub is tight for indvar if
+    body_assumptions[indvar].add_upper_bound(ub);
+    body_assumptions[indvar].upper_bound_deprecated(ub);
+    // TODO: handle non-contiguous tight upper bounds with modulo
+    // Example: for (i = 0; i < n; i += 3) -> tight_upper_bound = (n - 1) - ((n - 1) % 3)
+    if (symbolic::series::is_contiguous(update, indvar, assums)) {
+        body_assumptions[indvar].tight_upper_bound(ub);
+    }
+
+    // Assumption: inverse index access upper bounds are upper bound for ub
+    if (SymEngine::is_a<SymEngine::Symbol>(*ub) && !ubs.empty()) {
+        auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(ub);
+        if (!body_assumptions.contains(sym)) {
+            body_assumptions.insert({sym, symbolic::Assumption(sym)});
+        }
+        for (auto ub : ubs) {
+            body_assumptions[sym].add_upper_bound(ub);
+        }
+    }
+
+    // Assumption: any ub symbol is at least init
+    for (auto& sym : symbolic::atoms(ub)) {
+        body_assumptions[sym].add_lower_bound(symbolic::add(init, symbolic::one()));
+        body_assumptions[sym].lower_bound_deprecated(symbolic::add(init, symbolic::one()));
     }
 }
 
@@ -310,46 +313,52 @@ const symbolic::Assumptions AssumptionsAnalysis::
 
     auto scope = scope_analysis_->parent_scope(&node);
     while (scope != nullptr) {
-        if (this->assumptions_.find(scope) != this->assumptions_.end()) {
-            for (auto& entry : this->assumptions_[scope]) {
-                if (assums.find(entry.first) == assums.end()) {
-                    // New assumption
-                    assums.insert({entry.first, entry.second});
-                } else {
-                    // Merge assumptions from lower scopes
-                    auto& lower_assum = assums[entry.first];
-                    auto lower_ub_deprecated = lower_assum.upper_bound_deprecated();
-                    auto lower_lb_deprecated = lower_assum.lower_bound_deprecated();
-                    auto new_ub_deprecated = symbolic::min(entry.second.upper_bound_deprecated(), lower_ub_deprecated);
-                    auto new_lb_deprecated = symbolic::max(entry.second.lower_bound_deprecated(), lower_lb_deprecated);
-                    lower_assum.upper_bound_deprecated(new_ub_deprecated);
-                    lower_assum.lower_bound_deprecated(new_lb_deprecated);
+        if (this->assumptions_.find(scope) == this->assumptions_.end()) {
+            scope = scope_analysis_->parent_scope(scope);
+            continue;
+        }
+        for (auto& entry : this->assumptions_[scope]) {
+            if (assums.find(entry.first) == assums.end()) {
+                // New assumption
+                assums.insert({entry.first, entry.second});
+                continue;
+            }
 
-                    for (auto ub : entry.second.upper_bounds()) {
-                        lower_assum.add_upper_bound(ub);
-                    }
-                    for (auto lb : entry.second.lower_bounds()) {
-                        lower_assum.add_lower_bound(lb);
-                    }
+            // Merge assumptions from lower scopes
+            auto& lower_assum = assums[entry.first];
 
-                    auto lower_tight_ub = lower_assum.tight_upper_bound();
-                    if (!entry.second.tight_upper_bound().is_null() && !lower_tight_ub.is_null()) {
-                        auto new_tight_ub = symbolic::min(entry.second.tight_upper_bound(), lower_tight_ub);
-                        lower_assum.tight_upper_bound(new_tight_ub);
-                    }
-                    auto lower_tight_lb = lower_assum.tight_lower_bound();
-                    if (!entry.second.tight_lower_bound().is_null() && !lower_tight_lb.is_null()) {
-                        auto new_tight_lb = symbolic::max(entry.second.tight_lower_bound(), lower_tight_lb);
-                        lower_assum.tight_lower_bound(new_tight_lb);
-                    }
+            // Deprecated: combine with min
+            auto lower_ub_deprecated = lower_assum.upper_bound_deprecated();
+            auto lower_lb_deprecated = lower_assum.lower_bound_deprecated();
+            auto new_ub_deprecated = symbolic::min(entry.second.upper_bound_deprecated(), lower_ub_deprecated);
+            auto new_lb_deprecated = symbolic::max(entry.second.lower_bound_deprecated(), lower_lb_deprecated);
+            lower_assum.upper_bound_deprecated(new_ub_deprecated);
+            lower_assum.lower_bound_deprecated(new_lb_deprecated);
 
-                    if (lower_assum.map() == SymEngine::null) {
-                        lower_assum.map(entry.second.map());
-                    }
-                    if (!lower_assum.constant()) {
-                        lower_assum.constant(entry.second.constant());
-                    }
-                }
+            // Add to set of bounds
+            for (auto ub : entry.second.upper_bounds()) {
+                lower_assum.add_upper_bound(ub);
+            }
+            for (auto lb : entry.second.lower_bounds()) {
+                lower_assum.add_lower_bound(lb);
+            }
+
+            // Set tight bounds
+            if (lower_assum.tight_upper_bound().is_null()) {
+                lower_assum.tight_upper_bound(entry.second.tight_upper_bound());
+            }
+            if (lower_assum.tight_lower_bound().is_null()) {
+                lower_assum.tight_lower_bound(entry.second.tight_lower_bound());
+            }
+
+            // Set map
+            if (lower_assum.map().is_null()) {
+                lower_assum.map(entry.second.map());
+            }
+
+            // Set constant
+            if (!lower_assum.constant()) {
+                lower_assum.constant(entry.second.constant());
             }
         }
         scope = scope_analysis_->parent_scope(scope);
@@ -359,6 +368,13 @@ const symbolic::Assumptions AssumptionsAnalysis::
         for (auto& entry : sdfg_.assumptions()) {
             if (assums.find(entry.first) == assums.end()) {
                 assums.insert({entry.first, entry.second});
+            } else {
+                for (auto& lb : entry.second.lower_bounds()) {
+                    assums.at(entry.first).add_lower_bound(lb);
+                }
+                for (auto& ub : entry.second.upper_bounds()) {
+                    assums.at(entry.first).add_upper_bound(ub);
+                }
             }
         }
     }

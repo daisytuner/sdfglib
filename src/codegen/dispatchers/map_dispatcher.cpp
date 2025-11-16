@@ -213,7 +213,7 @@ InstrumentationInfo SequentialMapDispatcher::instrumentation_info() const {
     if (flop_analysis.contains(&node_)) {
         auto flop = flop_analysis.get(&node_);
         if (!flop.is_null()) {
-            if (!symbolic::contains_dynamic_sizeof(flop)) {
+            if (!symbolic::has<symbolic::DynamicSizeOfFunction>(flop)) {
                 std::string flop_str = language_extension_.expression(flop);
                 metrics.insert({"flop", flop_str});
             }
@@ -241,7 +241,7 @@ InstrumentationInfo CPUParallelMapDispatcher::instrumentation_info() const {
     if (flop_analysis.contains(&node_)) {
         auto flop = flop_analysis.get(&node_);
         if (!flop.is_null()) {
-            if (!symbolic::contains_dynamic_sizeof(flop)) {
+            if (!symbolic::has<symbolic::DynamicSizeOfFunction>(flop)) {
                 std::string flop_str = language_extension_.expression(flop);
                 metrics.insert({"flop", flop_str});
             }

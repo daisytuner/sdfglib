@@ -148,6 +148,15 @@ void FunctionBuilder::rename_container(const std::string& old_name, const std::s
         symbolic::Assumption new_assumption(symbolic::symbol(new_name));
         new_assumption.lower_bound_deprecated(assumption.lower_bound_deprecated());
         new_assumption.upper_bound_deprecated(assumption.upper_bound_deprecated());
+        new_assumption.tight_lower_bound(assumption.tight_lower_bound());
+        new_assumption.tight_upper_bound(assumption.tight_upper_bound());
+        for (auto& lb : assumption.lower_bounds()) {
+            new_assumption.add_lower_bound(lb);
+        }
+        for (auto& ub : assumption.upper_bounds()) {
+            new_assumption.add_upper_bound(ub);
+        }
+
         new_assumption.constant(assumption.constant());
         new_assumption.map(assumption.map());
 
