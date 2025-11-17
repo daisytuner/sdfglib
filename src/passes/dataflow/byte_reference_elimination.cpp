@@ -22,6 +22,7 @@ bool ByteReferenceElimination::
     auto& users_analysis = analysis_manager.get<analysis::Users>();
     auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
 
+    std::unordered_set<data_flow::AccessNode*> replaced_nodes;
     for (auto& name : sdfg.containers()) {
         if (!sdfg.is_transient(name)) {
             continue;
@@ -133,8 +134,24 @@ bool ByteReferenceElimination::
             new_subset[0] = symbolic::add(offset, symbolic::integer(elements));
             use_edge->set_subset(new_subset);
             access_node->data(move_src.data());
+            replaced_nodes.insert(access_node);
 
             applied = true;
+        }
+    }
+
+    // Post-processing: Merge access nodes and remove dangling nodes
+    // Avoid removing elements while iterating above
+    for (auto* node : replaced_nodes) {
+        builder.merge_siblings(*node);
+    }
+    for (auto* node : replaced_nodes) {
+        auto& graph = node->get_parent();
+        auto* block = static_cast<structured_control_flow::Block*>(graph.get_parent());
+        for (auto& dnode : graph.data_nodes()) {
+            if (graph.in_degree(*dnode) == 0 && graph.out_degree(*dnode) == 0) {
+                builder.remove_node(*block, *dnode);
+            }
         }
     }
 
