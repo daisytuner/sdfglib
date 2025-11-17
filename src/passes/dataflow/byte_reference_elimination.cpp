@@ -106,6 +106,25 @@ bool ByteReferenceElimination::
                 continue;
             }
 
+            // Criterion: No reassignment of pointer or view in between
+            if (users_analysis.moves(move_src.data()).size() > 0) {
+                auto uses_between = users_analysis.all_uses_between(*move, *use);
+                bool unsafe = false;
+                for (auto& use : uses_between) {
+                    if (use->use() != analysis::Use::MOVE) {
+                        continue;
+                    }
+                    // Pointer is not constant
+                    if (use->container() == move_src.data()) {
+                        unsafe = true;
+                        break;
+                    }
+                }
+                if (unsafe) {
+                    continue;
+                }
+            }
+
             // Criterion: View must be a pointer
             auto& base_type = use_edge->base_type();
             if (base_type.type_id() != types::TypeID::Pointer) {
