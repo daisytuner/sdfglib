@@ -9,6 +9,8 @@
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/types/utils.h"
 
+#define TRAVERSE_CUTOFF 100
+
 using namespace sdfg::control_flow;
 using namespace sdfg::structured_control_flow;
 
@@ -112,6 +114,10 @@ void StructuredSDFGBuilder::traverse_with_loop_detection(
     if (current == end) {
         return;
     }
+    // Cutoff
+    if (this->function().element_counter_ > sdfg.states().size() * TRAVERSE_CUTOFF) {
+        throw UnstructuredControlFlowException();
+    }
 
     auto in_edges = sdfg.in_edges(*current);
 
@@ -186,6 +192,11 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
     const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree,
     std::unordered_set<const control_flow::State*>& visited
 ) {
+    // Cutoff
+    if (this->function().element_counter_ > sdfg.states().size() * TRAVERSE_CUTOFF) {
+        throw UnstructuredControlFlowException();
+    }
+
     std::list<const State*> queue = {current};
     while (!queue.empty()) {
         auto curr = queue.front();
