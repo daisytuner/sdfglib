@@ -94,10 +94,6 @@ bool BlockSorting::accept(structured_control_flow::Sequence& sequence) {
         }
 
         // Swap blocks
-        DEBUG_PRINTLN(
-            "BlockSorting: Swapping blocks " << current_child.first.element_id() << " " << next_child.first.element_id()
-                                             << " in '" << builder_.subject().name() << "'"
-        );
         builder_.move_child(sequence, i + 1, sequence, i);
         applied = true;
         break; // Restart after modification
