@@ -368,9 +368,8 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::Symbol& x) {
     std::string name = x.get_name();
 
     if (this->function_.is_external(name)) {
-        name = "(&" + this->external_prefix_ + name + ")";
-    }
-    if (this->function_.exists(name) && this->function_.type(name).type_id() == types::TypeID::Pointer) {
+        name = "(reinterpret_cast<uintptr_t>(&" + this->external_prefix_ + name + "))";
+    } else if (this->function_.exists(name) && this->function_.type(name).type_id() == types::TypeID::Pointer) {
         name = "(reinterpret_cast<uintptr_t>(" + name + "))";
     }
 
