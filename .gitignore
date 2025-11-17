@@ -6,6 +6,7 @@ build/
 .cache/
 _deps/
 *-build-*/
+build-*/
 
 # Prerequisites
 *.d

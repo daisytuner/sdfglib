@@ -101,8 +101,8 @@ void InstrumentationPlan::end_instrumentation(
     }
 
     for (auto entry : info.metrics()) {
-        stream << "__daisy_instrumentation_increment(" << region_id_var << ", \"" << entry.first << "\", "
-               << entry.second << ");" << std::endl;
+        stream << "__daisy_instrumentation_metric(" << region_id_var << ", \"" << entry.first << "\", " << entry.second
+               << ");" << std::endl;
     }
 
     // Finalize region

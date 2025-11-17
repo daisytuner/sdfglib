@@ -31,16 +31,19 @@ void NodeDispatcher::
         this->arg_capture_plan_.begin_instrumentation(node_, main_stream, language_extension_);
     }
 
-    if (this->instrumentation_plan_.should_instrument(node_)) {
-        auto instrumentation_info = this->instrumentation_info();
-        this->instrumentation_plan_.begin_instrumentation(node_, main_stream, language_extension_, instrumentation_info);
+    bool should_instrument = this->instrumentation_plan_.should_instrument(node_);
+    std::optional<InstrumentationInfo> instrumentation_info;
+    if (should_instrument) {
+        instrumentation_info = this->instrumentation_info();
+        this->instrumentation_plan_
+            .begin_instrumentation(node_, main_stream, language_extension_, instrumentation_info.value());
     }
 
     dispatch_node(main_stream, globals_stream, library_snippet_factory);
 
-    if (this->instrumentation_plan_.should_instrument(node_)) {
-        auto instrumentation_info = this->instrumentation_info();
-        this->instrumentation_plan_.end_instrumentation(node_, main_stream, language_extension_, instrumentation_info);
+    if (should_instrument) {
+        this->instrumentation_plan_
+            .end_instrumentation(node_, main_stream, language_extension_, instrumentation_info.value());
     }
 
     if (this->arg_capture_plan_.should_instrument(node_)) {

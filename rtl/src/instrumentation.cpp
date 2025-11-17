@@ -95,8 +95,8 @@ struct DaisyRegion {
     std::unordered_map<std::string, long long> static_counters_n;
     std::unordered_map<std::string, double> static_counters_mean;
     std::unordered_map<std::string, double> static_counters_variance;
-    std::unordered_map<std::string, long long> static_counters_min;
-    std::unordered_map<std::string, long long> static_counters_max;
+    std::unordered_map<std::string, double> static_counters_min;
+    std::unordered_map<std::string, double> static_counters_max;
 };
 
 class DaisyInstrumentationState {
@@ -704,12 +704,12 @@ public:
         }
     }
 
-    void increment(size_t region_id, const char* name, long long value) {
+    void provided_metric(size_t region_id, const char* name, double value) {
         std::lock_guard<std::mutex> lock(mutex);
 
         auto it = regions.find(region_id);
         if (it == regions.end()) {
-            std::fprintf(stderr, "[daisy-rtl] Warning: incrementing unknown region %zu\n", region_id);
+            std::fprintf(stderr, "[daisy-rtl] Warning: metric for unknown region %zu\n", region_id);
             exit(EXIT_FAILURE);
         }
 
@@ -718,7 +718,7 @@ public:
         if (region.static_counters_n.find(name) == region.static_counters_n.end()) {
             // Initialize counter
             region.static_counters_n[name] = 1;
-            region.static_counters_mean[name] = value;
+            region.static_counters_mean[name] = 0.0;
             region.static_counters_variance[name] = 0.0;
             region.static_counters_min[name] = value;
             region.static_counters_max[name] = value;
@@ -827,7 +827,11 @@ void __daisy_instrumentation_exit(size_t region_id) { get_daisy_state().exit_reg
 void __daisy_instrumentation_finalize(size_t region_id) { get_daisy_state().finalize(region_id); }
 
 void __daisy_instrumentation_increment(size_t region_id, const char* name, long long value) {
-    get_daisy_state().increment(region_id, name, value);
+    get_daisy_state().provided_metric(region_id, name, static_cast<double>(value));
+}
+
+void __daisy_instrumentation_metric(size_t region_id, const char* name, double value) {
+    get_daisy_state().provided_metric(region_id, name, value);
 }
 
 #ifdef __cplusplus

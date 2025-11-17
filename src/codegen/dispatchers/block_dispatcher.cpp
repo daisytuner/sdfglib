@@ -287,15 +287,19 @@ void DataFlowDispatcher::dispatch_library_node(
     if (dispatcher_fn) {
         auto dispatcher = dispatcher_fn(this->language_extension_, this->function_, this->data_flow_graph_, libnode);
 
-        auto instrument_info = dispatcher->instrumentation_info();
-        if (this->instrumentation_plan_.should_instrument(libnode)) {
-            this->instrumentation_plan_.begin_instrumentation(libnode, stream, language_extension_, instrument_info);
+        bool should_instrument = this->instrumentation_plan_.should_instrument(libnode);
+        std::optional<InstrumentationInfo> instrument_info;
+        if (should_instrument) {
+            instrument_info = dispatcher->instrumentation_info();
+            this->instrumentation_plan_
+                .begin_instrumentation(libnode, stream, language_extension_, instrument_info.value());
         }
 
         dispatcher->dispatch(stream, globals_stream, library_snippet_factory);
 
-        if (this->instrumentation_plan_.should_instrument(libnode)) {
-            this->instrumentation_plan_.end_instrumentation(libnode, stream, language_extension_, instrument_info);
+        if (should_instrument) {
+            this->instrumentation_plan_
+                .end_instrumentation(libnode, stream, language_extension_, instrument_info.value());
         }
     } else {
         throw std::runtime_error(
