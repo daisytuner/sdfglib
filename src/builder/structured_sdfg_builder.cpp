@@ -97,6 +97,7 @@ void StructuredSDFGBuilder::traverse(SDFG& sdfg) {
         continues.insert(edge);
     }
 
+    this->current_traverse_loop_ = nullptr;
     std::unordered_set<const control_flow::State*> visited;
     this->traverse_with_loop_detection(sdfg, root, start_state, nullptr, continues, breaks, pdom_tree, visited);
 };
@@ -170,11 +171,14 @@ void StructuredSDFGBuilder::traverse_with_loop_detection(
 
         // 3. Add while loop
         While& loop = this->add_while(scope, {}, dbg_info);
+        auto last_loop_ = this->current_traverse_loop_;
+        this->current_traverse_loop_ = &loop;
 
         std::unordered_set<const control_flow::State*> loop_visited(visited);
         this->traverse_without_loop_detection(
             sdfg, loop.root(), current, exit_state, continues, exit_edges, pdom_tree, loop_visited
         );
+        this->current_traverse_loop_ = last_loop_;
 
         this->traverse_with_loop_detection(sdfg, scope, exit_state, end, continues, breaks, pdom_tree, visited);
     } else {
@@ -241,8 +245,14 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
             this->add_block(scope, curr->dataflow(), oedge.assignments(), curr->debug_info());
 
             if (continues.find(&oedge) != continues.end()) {
+                if (this->current_traverse_loop_ == nullptr) {
+                    throw UnstructuredControlFlowException();
+                }
                 this->add_continue(scope, {}, oedge.debug_info());
             } else if (breaks.find(&oedge) != breaks.end()) {
+                if (this->current_traverse_loop_ == nullptr) {
+                    throw UnstructuredControlFlowException();
+                }
                 this->add_break(scope, {}, oedge.debug_info());
             } else {
                 bool starts_loop = false;
@@ -288,8 +298,14 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
                     this->add_block(branch, out_edge->assignments(), out_edge->debug_info());
                 }
                 if (continues.find(out_edge) != continues.end()) {
+                    if (this->current_traverse_loop_ == nullptr) {
+                        throw UnstructuredControlFlowException();
+                    }
                     this->add_continue(branch, {}, out_edge->debug_info());
                 } else if (breaks.find(out_edge) != breaks.end()) {
+                    if (this->current_traverse_loop_ == nullptr) {
+                        throw UnstructuredControlFlowException();
+                    }
                     this->add_break(branch, {}, out_edge->debug_info());
                 } else {
                     std::unordered_set<const control_flow::State*> branch_visited(visited);

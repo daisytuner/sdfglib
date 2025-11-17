@@ -55,6 +55,8 @@ private:
         const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
     );
 
+    structured_control_flow::While* current_traverse_loop_;
+
     void traverse(SDFG& sdfg);
 
     void traverse_with_loop_detection(
