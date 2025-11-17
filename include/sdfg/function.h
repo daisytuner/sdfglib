@@ -30,7 +30,8 @@ namespace sdfg {
 
 namespace builder {
 class FunctionBuilder;
-}
+class StructuredSDFGBuilder;
+} // namespace builder
 
 typedef StringEnum FunctionType;
 inline FunctionType FunctionType_CPU{"CPU"};
@@ -40,6 +41,7 @@ enum LinkageType { LinkageType_External, LinkageType_Internal };
 
 class Function {
     friend class sdfg::builder::FunctionBuilder;
+    friend class sdfg::builder::StructuredSDFGBuilder;
 
 protected:
     size_t element_counter_;
