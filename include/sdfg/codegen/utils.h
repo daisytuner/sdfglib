@@ -19,6 +19,8 @@ public:
 
     int indent() const;
 
+    int changeIndent(int delta);
+
     // Get the underlying string
     std::string str() const;
 
