@@ -261,5 +261,5 @@ TEST(CPPLanguageExtensionTest, Expression_External) {
 
     auto sym = symbolic::symbol("EXT1");
     auto result = generator.expression(sym);
-    EXPECT_EQ(result, "(&EXT1)");
+    EXPECT_EQ(result, "(reinterpret_cast<uintptr_t>(&EXT1))");
 }
