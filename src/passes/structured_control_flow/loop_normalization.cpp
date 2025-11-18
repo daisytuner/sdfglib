@@ -9,11 +9,12 @@
 namespace sdfg {
 namespace passes {
 
-bool LoopNormalization::apply(
-    builder::StructuredSDFGBuilder& builder,
-    analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::For& loop
-) {
+LoopNormalization::LoopNormalization(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
+    : NonStoppingStructuredSDFGVisitor(builder, analysis_manager) {
+
+      };
+
+bool LoopNormalization::accept(structured_control_flow::For& loop) {
     bool applied = false;
 
     // Step 1: Bring condition to CNF
@@ -34,7 +35,7 @@ bool LoopNormalization::apply(
             new_condition = symbolic::And(new_condition, new_clause);
         }
         if (!symbolic::eq(new_condition, condition)) {
-            builder.update_loop(loop, loop.indvar(), new_condition, loop.init(), loop.update());
+            builder_.update_loop(loop, loop.indvar(), new_condition, loop.init(), loop.update());
             applied = true;
         }
         condition = new_condition;
@@ -45,7 +46,7 @@ bool LoopNormalization::apply(
     auto update = loop.update();
 
     // check if update is affine in indvar
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    auto& assumptions_analysis = analysis_manager_.get<analysis::AssumptionsAnalysis>();
     auto assums = assumptions_analysis.get(loop, true);
     auto [success, coeffs] = symbolic::series::affine_int_coeffs(update, indvar, assums);
     if (!success) {
@@ -127,16 +128,12 @@ bool LoopNormalization::apply(
             new_condition = symbolic::And(new_condition, new_clause);
         }
         if (!symbolic::eq(new_condition, condition)) {
-            builder.update_loop(loop, loop.indvar(), new_condition, loop.init(), loop.update());
+            builder_.update_loop(loop, loop.indvar(), new_condition, loop.init(), loop.update());
             applied = true;
         }
     }
 
     // Step 3: Rotate loop if stride is negative
-
-    // Unsafe: Associate and commutative operations only
-    return applied;
-
     if (stride != -1) {
         return applied;
     }
@@ -158,6 +155,16 @@ bool LoopNormalization::apply(
         return applied;
     }
 
+    // Criterion: Body is invariant to iteration order
+    // I.e., a map or an associative/commutative reduction
+    // Since all data-dependency analysis depend on positive stride
+    // we do cheap approximations:
+    auto& users_analysis = analysis_manager_.get<analysis::Users>();
+    analysis::UsersView body_users(users_analysis, loop.root());
+    if (!body_users.uses(indvar->get_name()).empty()) {
+        return applied;
+    }
+
     // Update loop parameters
     auto new_init = symbolic::add(lhs, symbolic::one());
     auto new_update = symbolic::add(indvar, symbolic::one());
@@ -166,28 +173,8 @@ bool LoopNormalization::apply(
     // Replace indvar by (init - indvar) in loop body
     loop.root().replace(indvar, symbolic::sub(loop.init(), symbolic::sub(indvar, new_init)));
 
-    builder.update_loop(loop, loop.indvar(), new_condition, new_init, new_update);
+    builder_.update_loop(loop, loop.indvar(), new_condition, new_init, new_update);
     applied = true;
-
-    return applied;
-};
-
-LoopNormalization::LoopNormalization()
-    : Pass() {
-
-      };
-
-std::string LoopNormalization::name() { return "LoopNormalization"; };
-
-bool LoopNormalization::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
-    bool applied = false;
-
-    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
-    for (const auto& loop : loop_analysis.loops()) {
-        if (auto for_loop = dynamic_cast<structured_control_flow::For*>(loop)) {
-            applied |= this->apply(builder, analysis_manager, *for_loop);
-        }
-    }
 
     return applied;
 };

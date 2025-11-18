@@ -1,23 +1,21 @@
 #pragma once
 
 #include "sdfg/passes/pass.h"
+#include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {
 namespace passes {
 
-class LoopNormalization : public Pass {
-   private:
-    bool apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager,
-               structured_control_flow::For& loop);
+class LoopNormalization : public visitor::NonStoppingStructuredSDFGVisitor {
+public:
+    LoopNormalization(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
 
-   public:
-    LoopNormalization();
+    static std::string name() { return "LoopNormalization"; };
 
-    std::string name() override;
-
-    virtual bool run_pass(builder::StructuredSDFGBuilder& builder,
-                          analysis::AnalysisManager& analysis_manager) override;
+    bool accept(structured_control_flow::For& node) override;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+typedef VisitorPass<LoopNormalization> LoopNormalizationPass;
+
+} // namespace passes
+} // namespace sdfg

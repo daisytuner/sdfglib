@@ -6,7 +6,7 @@
 
 using namespace sdfg;
 
-TEST(LoopNormalizationTest, Unequality_StrideOne_Positive) {
+TEST(LoopNormalizationTest, NotEqualToLowerThan) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -29,14 +29,14 @@ TEST(LoopNormalizationTest, Unequality_StrideOne_Positive) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    passes::LoopNormalization pass;
+    passes::LoopNormalizationPass pass;
     pass.run(builder, analysis_manager);
 
     // Check
     EXPECT_TRUE(SymEngine::eq(*loop.condition(), *symbolic::Lt(indvar, bound)));
 }
 
-TEST(LoopNormalizationTest, Unequality_StrideOne_Negative) {
+TEST(LoopNormalizationTest, NotEqualToLowerThan_Rotation) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -56,23 +56,18 @@ TEST(LoopNormalizationTest, Unequality_StrideOne_Negative) {
     auto update = symbolic::sub(indvar, symbolic::one());
 
     auto& loop = builder.add_for(root, indvar, condition, init, update);
-    auto& seq = builder.add_sequence(loop.root(), {{symbolic::symbol("i_ext"), indvar}});
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    passes::LoopNormalization pass;
+    passes::LoopNormalizationPass pass;
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
     // Check
-    // EXPECT_TRUE(SymEngine::eq(*loop.condition(), *symbolic::Lt(indvar, symbolic::add(init, symbolic::one()))));
-
-    // auto& assignments = loop.root().at(0).second.assignments();
-    // EXPECT_TRUE(symbolic::
-    //                 eq(assignments.at(symbolic::symbol("i_ext")),
-    //                    symbolic::sub(init, symbolic::sub(indvar, symbolic::one()))));
+    EXPECT_TRUE(symbolic::eq(loop.init(), symbolic::one()));
+    EXPECT_TRUE(symbolic::eq(loop.condition(), symbolic::Lt(indvar, symbolic::add(init, symbolic::one()))));
 }
 
-TEST(LoopNormalizationTest, Unequality_StrideNotOne_Positive) {
+TEST(LoopNormalizationTest, NotEqualToLowerThan_Strided) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -95,14 +90,11 @@ TEST(LoopNormalizationTest, Unequality_StrideNotOne_Positive) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    passes::LoopNormalization pass;
-    pass.run(builder, analysis_manager);
-
-    // Check
-    EXPECT_TRUE(SymEngine::eq(*loop.condition(), *symbolic::Ne(indvar, bound)));
+    passes::LoopNormalizationPass pass;
+    EXPECT_FALSE(pass.run(builder, analysis_manager));
 }
 
-TEST(LoopNormalizationTest, Unequality_StrideNotOne_Negative) {
+TEST(LoopNormalizationTest, NotEqualToLowerThan_Strided_Rotation) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -125,14 +117,11 @@ TEST(LoopNormalizationTest, Unequality_StrideNotOne_Negative) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    passes::LoopNormalization pass;
+    passes::LoopNormalizationPass pass;
     EXPECT_FALSE(pass.run(builder, analysis_manager));
-
-    // Check
-    EXPECT_TRUE(SymEngine::eq(*loop.condition(), *symbolic::Ne(indvar, bound)));
 }
 
-TEST(LoopNormalizationTest, AndUnequality) {
+TEST(LoopNormalizationTest, NoEqualToLowerThan_And) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -157,15 +146,15 @@ TEST(LoopNormalizationTest, AndUnequality) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    passes::LoopNormalization pass;
-    pass.run(builder, analysis_manager);
+    passes::LoopNormalizationPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
 
     // Check
-    EXPECT_TRUE(SymEngine::eq(*loop.condition(), *symbolic::And(symbolic::Lt(indvar, bound), symbolic::Lt(indvar, bound2)))
+    EXPECT_TRUE(symbolic::eq(loop.condition(), symbolic::And(symbolic::Lt(indvar, bound), symbolic::Lt(indvar, bound2)))
     );
 }
 
-TEST(LoopNormalizationTest, OrUnequality) {
+TEST(LoopNormalizationTest, NotEqualToLowerThan_Or) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -190,42 +179,12 @@ TEST(LoopNormalizationTest, OrUnequality) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    passes::LoopNormalization pass;
-    pass.run(builder, analysis_manager);
+    passes::LoopNormalizationPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
 
     // Check
-    EXPECT_TRUE(SymEngine::eq(*loop.condition(), *symbolic::Or(symbolic::Lt(indvar, bound), symbolic::Lt(indvar, bound2)))
+    EXPECT_TRUE(symbolic::eq(loop.condition(), symbolic::Or(symbolic::Lt(indvar, bound), symbolic::Lt(indvar, bound2)))
     );
-}
-
-TEST(LoopNormalizationTest, Rotate) {
-    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
-
-    auto& sdfg = builder.subject();
-    auto& root = sdfg.root();
-
-    // Add containers
-    types::Scalar desc_unsigned(types::PrimitiveType::UInt64);
-    types::Scalar desc_signed(types::PrimitiveType::Int64);
-    builder.add_container("N", desc_unsigned, true);
-    builder.add_container("M", desc_unsigned, true);
-    builder.add_container("i", desc_signed);
-
-    // Define loop
-    auto indvar = symbolic::symbol("i");
-    auto init = symbolic::sub(symbolic::symbol("N"), symbolic::one());
-    auto condition = symbolic::Lt(symbolic::zero(), indvar);
-    auto update = symbolic::sub(indvar, symbolic::one());
-
-    auto& loop = builder.add_for(root, indvar, condition, init, update);
-
-    // Analysis
-    analysis::AnalysisManager analysis_manager(sdfg);
-    passes::LoopNormalization pass;
-    EXPECT_FALSE(pass.run(builder, analysis_manager));
-
-    // Check
-    // EXPECT_TRUE(symbolic::eq(loop.condition(), symbolic::Lt(indvar, symbolic::symbol("N"))));
 }
 
 TEST(LoopNormalizationTest, Rotate_NonCommutative) {
@@ -284,6 +243,6 @@ TEST(LoopNormalizationTest, Rotate_NonCommutative) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    passes::LoopNormalization pass;
+    passes::LoopNormalizationPass pass;
     EXPECT_FALSE(pass.run(builder, analysis_manager));
 }
