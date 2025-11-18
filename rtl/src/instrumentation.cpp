@@ -718,7 +718,7 @@ public:
         if (region.static_counters_n.find(name) == region.static_counters_n.end()) {
             // Initialize counter
             region.static_counters_n[name] = 1;
-            region.static_counters_mean[name] = 0.0;
+            region.static_counters_mean[name] = value;
             region.static_counters_variance[name] = 0.0;
             region.static_counters_min[name] = value;
             region.static_counters_max[name] = value;
