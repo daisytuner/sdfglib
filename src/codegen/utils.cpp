@@ -14,6 +14,8 @@ void PrettyPrinter::setIndent(int indent) { indentSize = indent; };
 
 int PrettyPrinter::indent() const { return indentSize; };
 
+int PrettyPrinter::changeIndent(int delta) { return indentSize += delta; };
+
 // Get the underlying string
 std::string PrettyPrinter::str() const { return stream.str(); };
 

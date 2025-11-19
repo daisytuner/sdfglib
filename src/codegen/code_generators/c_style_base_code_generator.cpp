@@ -10,11 +10,16 @@ CStyleBaseCodeGenerator::CStyleBaseCodeGenerator(
     analysis::AnalysisManager& analysis_manager,
     InstrumentationPlan& instrumentation_plan,
     ArgCapturePlan& arg_capture_plan,
-    const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths,
+    std::shared_ptr<CodeSnippetFactory> library_snippet_factory,
     const std::string& externals_prefix
 )
     : CodeGenerator(
-          sdfg, analysis_manager, instrumentation_plan, arg_capture_plan, output_and_header_paths, externals_prefix
+          sdfg,
+          analysis_manager,
+          instrumentation_plan,
+          arg_capture_plan,
+          std::move(library_snippet_factory),
+          externals_prefix
       ) {
     if (sdfg.type() != FunctionType_CPU) {
         throw std::runtime_error("CStyleBaseCodeGenerator can only be used for CPU SDFGs");
@@ -64,15 +69,15 @@ void CStyleBaseCodeGenerator::append_function_source(std::ofstream& ofs_source) 
     ofs_source << this->function_definition() << std::endl;
     ofs_source << "{" << std::endl;
 
-    auto init_once = library_snippet_factory_.find(CODE_SNIPPET_INIT_ONCE);
-    if (init_once != library_snippet_factory_.snippets().end()) {
+    auto init_once = library_snippet_factory_->find(CODE_SNIPPET_INIT_ONCE);
+    if (init_once != library_snippet_factory_->snippets().end()) {
         ofs_source << init_once->second.stream().str() << std::endl;
     }
 
     ofs_source << this->main_stream_.str() << std::endl;
 
-    auto deinit_once = library_snippet_factory_.find(CODE_SNIPPET_DEINIT_ONCE);
-    if (deinit_once != library_snippet_factory_.snippets().end()) {
+    auto deinit_once = library_snippet_factory_->find(CODE_SNIPPET_DEINIT_ONCE);
+    if (deinit_once != library_snippet_factory_->snippets().end()) {
         ofs_source << deinit_once->second.stream().str() << std::endl;
     }
 

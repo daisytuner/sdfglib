@@ -32,6 +32,11 @@ protected:
 
     virtual void end_node(PrettyPrinter& stream, bool has_declaration);
 
+    /**
+     * Bad design. We already have fields in this class and have to bind an instance to a single node.
+     * Just set a field to sth. of the instrumentation plan where the node can register more details. But this is a
+     * breaking change
+     */
     virtual InstrumentationInfo instrumentation_info() const;
 
 public:

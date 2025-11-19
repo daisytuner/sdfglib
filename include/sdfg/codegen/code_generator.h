@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <string>
+#include <utility>
 
 #include "code_snippet_factory.h"
 #include "sdfg/analysis/mem_access_range_analysis.h"
@@ -42,7 +43,7 @@ protected:
     PrettyPrinter globals_stream_;
 
     /// @brief Stream for library functions
-    CodeSnippetFactory library_snippet_factory_;
+    std::shared_ptr<CodeSnippetFactory> library_snippet_factory_;
 
     /// @brief Main stream
     PrettyPrinter main_stream_;
@@ -56,11 +57,11 @@ public:
         analysis::AnalysisManager& analysis_manager,
         InstrumentationPlan& instrumentation_plan,
         ArgCapturePlan& arg_capture_plan,
-        const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr,
+        std::shared_ptr<CodeSnippetFactory> library_snippet_factory = std::make_shared<CodeSnippetFactory>(),
         const std::string& externals_prefix = ""
     )
         : sdfg_(sdfg), analysis_manager_(analysis_manager), instrumentation_plan_(instrumentation_plan),
-          arg_capture_plan_(arg_capture_plan), library_snippet_factory_(output_and_header_paths),
+          arg_capture_plan_(arg_capture_plan), library_snippet_factory_(std::move(library_snippet_factory)),
           externals_prefix_(externals_prefix) {};
 
 
@@ -94,7 +95,7 @@ public:
 
     /// @brief all created library snippets
     const std::unordered_map<std::string, CodeSnippet>& library_snippets() const {
-        return this->library_snippet_factory_.snippets();
+        return this->library_snippet_factory_->snippets();
     };
 
     /// @brief Get the main stream

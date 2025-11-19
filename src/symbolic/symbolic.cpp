@@ -198,6 +198,16 @@ Expression simplify(const Expression expr) {
 
 bool eq(const Expression lhs, const Expression rhs) { return SymEngine::eq(*lhs, *rhs); };
 
+bool null_safe_eq(const Expression lhs, const Expression rhs) {
+    if (lhs.is_null() && rhs.is_null()) {
+        return true;
+    } else if (!lhs.is_null() && !rhs.is_null()) {
+        return SymEngine::eq(*lhs, *rhs);
+    } else {
+        return false;
+    }
+}
+
 bool uses(const Expression expr, const Symbol sym) { return SymEngine::has_symbol(*expr, *sym); };
 
 bool uses(const Expression expr, const std::string& name) { return symbolic::uses(expr, symbol(name)); };

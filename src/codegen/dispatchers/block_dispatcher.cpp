@@ -2,6 +2,7 @@
 
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 #include "sdfg/codegen/instrumentation/instrumentation_info.h"
+#include "sdfg/types/structure.h"
 
 namespace sdfg {
 namespace codegen {
@@ -286,15 +287,19 @@ void DataFlowDispatcher::dispatch_library_node(
     if (dispatcher_fn) {
         auto dispatcher = dispatcher_fn(this->language_extension_, this->function_, this->data_flow_graph_, libnode);
 
-        auto instrument_info = dispatcher->instrumentation_info();
-        if (this->instrumentation_plan_.should_instrument(libnode)) {
-            this->instrumentation_plan_.begin_instrumentation(libnode, stream, language_extension_, instrument_info);
+        bool should_instrument = this->instrumentation_plan_.should_instrument(libnode);
+        std::optional<InstrumentationInfo> instrument_info;
+        if (should_instrument) {
+            instrument_info = dispatcher->instrumentation_info();
+            this->instrumentation_plan_
+                .begin_instrumentation(libnode, stream, language_extension_, instrument_info.value());
         }
 
         dispatcher->dispatch(stream, globals_stream, library_snippet_factory);
 
-        if (this->instrumentation_plan_.should_instrument(libnode)) {
-            this->instrumentation_plan_.end_instrumentation(libnode, stream, language_extension_, instrument_info);
+        if (should_instrument) {
+            this->instrumentation_plan_
+                .end_instrumentation(libnode, stream, language_extension_, instrument_info.value());
         }
     } else {
         throw std::runtime_error(
@@ -325,7 +330,9 @@ void LibraryNodeDispatcher::
 
         std::string conn = iedge.dst_conn();
         auto& conn_type = iedge.result_type(this->function_);
-        if (conn_type.type_id() == types::TypeID::Array || conn_type.type_id() == types::TypeID::Structure) {
+        if (conn_type.type_id() == types::TypeID::Array ||
+            (conn_type.type_id() == types::TypeID::Structure &&
+             !static_cast<const types::Structure&>(conn_type).is_pointer_like())) {
             // Handle array and structure types
             stream << this->language_extension_.declaration(conn, conn_type) << ";" << std::endl;
             stream << "memcpy(" << "&" << conn << ", " << "&" << src_name

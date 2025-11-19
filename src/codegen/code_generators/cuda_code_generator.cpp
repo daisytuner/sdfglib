@@ -12,9 +12,9 @@ CUDACodeGenerator::CUDACodeGenerator(
     analysis::AnalysisManager& analysis_manager,
     InstrumentationPlan& instrumentation_plan,
     ArgCapturePlan& arg_capture_plan,
-    const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths
+    std::shared_ptr<CodeSnippetFactory> library_snippet_factory
 )
-    : CodeGenerator(sdfg, analysis_manager, instrumentation_plan, arg_capture_plan, output_and_header_paths),
+    : CodeGenerator(sdfg, analysis_manager, instrumentation_plan, arg_capture_plan, std::move(library_snippet_factory)),
       language_extension_(sdfg) {
     if (sdfg.type() != FunctionType_NV_GLOBAL) {
         throw std::runtime_error("CUDACodeGenerator can only be used for GPU SDFGs");
@@ -199,7 +199,7 @@ void CUDACodeGenerator::dispatch_schedule() {
     auto dispatcher = create_dispatcher(
         language_extension_, sdfg_, analysis_manager_, sdfg_.root(), instrumentation_plan_, arg_capture_plan_
     );
-    dispatcher->dispatch(this->main_stream_, this->globals_stream_, this->library_snippet_factory_);
+    dispatcher->dispatch(this->main_stream_, this->globals_stream_, *this->library_snippet_factory_);
 };
 
 } // namespace codegen

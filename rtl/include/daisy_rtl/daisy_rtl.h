@@ -57,6 +57,7 @@ void __daisy_instrumentation_exit(size_t region_id);
 // Increments a counter with name statically
 // The counters appear with the "static:::" prefix in the output
 void __daisy_instrumentation_increment(size_t region_id, const char* name, long long value);
+void __daisy_instrumentation_metric(size_t region_id, const char* name, double value);
 
 typedef struct __daisy_capture __daisy_capture_t;
 
@@ -118,11 +119,10 @@ void __daisy_capture_3d(
 
 #define __daisy_min(a, b) ((a) < (b) ? (a) : (b))
 #define __daisy_max(a, b) ((a) > (b) ? (a) : (b))
-#define __daisy_fma(a, b, c) a * b + c
+#define __daisy_fma(a, b, c) a* b + c
 
 // Implementation of integer functions for symbolic expressions
-inline int __daisy_sym_pow(int base, int exp)
-{
+inline int __daisy_sym_pow(int base, int exp) {
     if (exp < 0) {
         return 0;
     }

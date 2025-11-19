@@ -28,11 +28,16 @@ public:
         analysis::AnalysisManager& analysis_manager,
         InstrumentationPlan& instrumentation_plan,
         ArgCapturePlan& arg_capture_plan,
-        const std::pair<std::filesystem::path, std::filesystem::path>* output_and_header_paths = nullptr,
+        std::shared_ptr<CodeSnippetFactory> library_snippet_factory = std::make_shared<CodeSnippetFactory>(),
         const std::string& externals_prefix = ""
     )
         : CStyleBaseCodeGenerator(
-              sdfg, analysis_manager, instrumentation_plan, arg_capture_plan, output_and_header_paths, externals_prefix
+              sdfg,
+              analysis_manager,
+              instrumentation_plan,
+              arg_capture_plan,
+              std::move(library_snippet_factory),
+              externals_prefix
           ),
           language_extension_(sdfg, externals_prefix) {}
 
