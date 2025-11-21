@@ -69,8 +69,17 @@ void OptimizationReport::add_pass_entry(const std::string& pass_name, long durat
 }
 
 void OptimizationReport::add_transformation_entry(
-    const std::string& transformation_name, long apply_duration, const nlohmann::json& transformation_desc
+    int loopnest_index, const std::string& transformation_name, long apply_duration, const TransformReport& report
 ) {
+    auto& rep = report_["regions"].at(loopnest_index
+    )["transformations"][transformation_name] = nlohmann::json::object();
+
+    rep["possible"] = report.possible;
+    rep["applied"] = report.applied;
+    if (!report.reason.empty()) {
+        rep["reason"] = report.reason;
+    }
+
     /* if (!aggregate_) {
         if (!report_.contains("transformations")) {
             report_["transformations"] = nlohmann::json::array();
@@ -96,12 +105,12 @@ void OptimizationReport::add_transformation_entry(
     } */
 }
 
-void OptimizationReport::
-    add_target_test(size_t loopnest_index, structured_control_flow::ScheduleType schedule_type, bool success) {
-    if (!report_["regions"].at(loopnest_index).contains("targets")) {
-        report_["regions"].at(loopnest_index)["targets"] = nlohmann::json::object();
-    }
-    report_["regions"].at(loopnest_index)["targets"][schedule_type.value()] = success;
-}
+// void OptimizationReport::
+//     add_target_test(size_t loopnest_index, structured_control_flow::ScheduleType schedule_type, bool success) {
+//     if (!report_["regions"].at(loopnest_index).contains("targets")) {
+//         report_["regions"].at(loopnest_index)["targets"] = nlohmann::json::object();
+//     }
+//     report_["regions"].at(loopnest_index)["targets"][schedule_type.value()] = success;
+// }
 
 } // namespace sdfg
