@@ -11,6 +11,11 @@
 
 namespace sdfg {
 
+struct TransformReport {
+    bool possible;
+    bool applied;
+    std::string reason;
+};
 
 class OptimizationReport {
 private:
@@ -24,12 +29,12 @@ public:
     void add_pass_entry(const std::string& pass_name, long duration, bool applied);
 
     void add_transformation_entry(
-        const std::string& transformation_name, long apply_duration, const nlohmann::json& transformation_desc
+        int loopnest_index, const std::string& transformation_name, long apply_duration, const TransformReport& report
     );
 
-    nlohmann::json get_report();
+    void add_target_test(size_t loopnest_index, const std::string& target_name, bool success);
 
-    void add_target_test(size_t loopnest_index, structured_control_flow::ScheduleType schedule_type, bool success);
+    nlohmann::json get_report();
 };
 
 } // namespace sdfg
