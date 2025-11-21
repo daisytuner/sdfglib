@@ -14,10 +14,13 @@ class PassReportConsumer;
 namespace transformations {
 
 class Transformation {
+protected:
+    PassReportConsumer* report_ = nullptr;
+
 public:
     virtual ~Transformation() = default;
 
-    virtual void set_report(PassReportConsumer* report) {}
+    virtual void set_report(PassReportConsumer* report) { report_ = report; }
 
     virtual std::string name() const = 0;
 

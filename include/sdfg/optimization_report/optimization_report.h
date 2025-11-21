@@ -32,6 +32,8 @@ public:
         int loopnest_index, const std::string& transformation_name, long apply_duration, const TransformReport& report
     );
 
+    void add_target_test(size_t loopnest_index, const std::string& target_name, bool success);
+
     nlohmann::json get_report();
 };
 

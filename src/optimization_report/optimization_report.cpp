@@ -105,12 +105,11 @@ void OptimizationReport::add_transformation_entry(
     } */
 }
 
-// void OptimizationReport::
-//     add_target_test(size_t loopnest_index, structured_control_flow::ScheduleType schedule_type, bool success) {
-//     if (!report_["regions"].at(loopnest_index).contains("targets")) {
-//         report_["regions"].at(loopnest_index)["targets"] = nlohmann::json::object();
-//     }
-//     report_["regions"].at(loopnest_index)["targets"][schedule_type.value()] = success;
-// }
+void OptimizationReport::add_target_test(size_t loopnest_index, const std::string& target_name, bool success) {
+    if (!report_["regions"].at(loopnest_index).contains("targets")) {
+        report_["regions"].at(loopnest_index)["targets"] = nlohmann::json::object();
+    }
+    report_["regions"].at(loopnest_index)["targets"][target_name] = success;
+}
 
 } // namespace sdfg

@@ -23,6 +23,9 @@ public:
     virtual void in_outermost_loop(int idx) = 0;
 
     void no_loop() { in_outermost_loop(-1); }
+    virtual ~PassReportConsumer() = default;
+
+    virtual void target_transform_possible(const std::string basicString, bool b) = 0;
 };
 
 } // namespace sdfg

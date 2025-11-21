@@ -9,11 +9,21 @@ Parallelization::Parallelization(structured_control_flow::Map& map) : map_(map) 
 std::string Parallelization::name() const { return "Parallelization"; }
 
 bool Parallelization::can_be_applied(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
-    return map_.schedule_type().value() == structured_control_flow::ScheduleType_Sequential::value();
+    auto result = map_.schedule_type().value() == structured_control_flow::ScheduleType_Sequential::value();
+
+    if (report_) {
+        if (result) {
+            report_->transform_possible(this);
+        } else {
+            report_->transform_impossible(this, "not sequential");
+        }
+    }
+    return result;
 }
 
 void Parallelization::apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     builder.update_schedule_type(this->map_, structured_control_flow::ScheduleType_CPU_Parallel::create());
+    if (report_) report_->transform_applied(this);
 }
 
 void Parallelization::to_json(nlohmann::json& j) const {
