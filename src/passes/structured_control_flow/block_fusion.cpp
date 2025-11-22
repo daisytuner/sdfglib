@@ -49,7 +49,7 @@ bool BlockFusion::can_be_applied(
         }
     }
 
-    // Criterion: Subsets may not use written symbols
+    // Criterion: Subsets and library node symbols may not use written symbols
     for (auto& edge : first_graph.edges()) {
         for (auto& dim : edge.subset()) {
             for (auto& sym : symbolic::atoms(dim)) {
@@ -59,12 +59,26 @@ bool BlockFusion::can_be_applied(
             }
         }
     }
+    for (auto* libnode : first_graph.library_nodes()) {
+        for (auto& sym : libnode->symbols()) {
+            if (second_write_symbols.find(sym->get_name()) != second_write_symbols.end()) {
+                return false;
+            }
+        }
+    }
     for (auto& edge : second_graph.edges()) {
         for (auto& dim : edge.subset()) {
             for (auto& sym : symbolic::atoms(dim)) {
                 if (first_write_symbols.find(sym->get_name()) != first_write_symbols.end()) {
                     return false;
                 }
+            }
+        }
+    }
+    for (auto* libnode : second_graph.library_nodes()) {
+        for (auto& sym : libnode->symbols()) {
+            if (first_write_symbols.find(sym->get_name()) != first_write_symbols.end()) {
+                return false;
             }
         }
     }
