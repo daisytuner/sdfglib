@@ -17,7 +17,6 @@ namespace passes {
 
 bool ReferencePropagation::
     compatible_type(const Function& function, const data_flow::Memlet& reference, const data_flow::Memlet& target) {
-    auto& ref_subset = reference.subset();
     auto& ref_type = reference.base_type();
     if (ref_type.type_id() != types::TypeID::Pointer) {
         return false;
@@ -27,8 +26,8 @@ bool ReferencePropagation::
         ref_pointer_type.pointee_type().type_id() != types::TypeID::Structure) {
         return false;
     }
+    auto& ref_subset = reference.subset();
 
-    auto& tar_subset = target.subset();
     auto& tar_type = target.base_type();
     if (tar_type.type_id() != types::TypeID::Pointer) {
         return false;
@@ -37,6 +36,7 @@ bool ReferencePropagation::
     if (tar_pointer_type.pointee_type().type_id() != types::TypeID::Scalar) {
         return false;
     }
+    auto& tar_subset = target.subset();
 
     // Check if trailing zeros yield compatible type
     for (auto dim : tar_subset) {
@@ -46,15 +46,15 @@ bool ReferencePropagation::
     }
     auto expanded_subset = ref_subset;
     for (auto& dim : tar_subset) {
-        if (!symbolic::eq(dim, symbolic::zero())) {
-            return false;
-        }
         expanded_subset.push_back(dim);
     }
-    auto& new_res_type = types::infer_type(function, ref_type, expanded_subset);
-
-    auto& tar_res_type = target.result_type(function);
-    return new_res_type == tar_res_type;
+    try {
+        auto& new_res_type = types::infer_type(function, ref_type, expanded_subset);
+        auto& tar_res_type = target.result_type(function);
+        return new_res_type == tar_res_type;
+    } catch (const InvalidSDFGException&) {
+        return false;
+    }
 }
 
 ReferencePropagation::ReferencePropagation()
