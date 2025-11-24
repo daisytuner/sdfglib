@@ -89,7 +89,8 @@ inline constexpr std::string_view BLAS_Layout_to_short_string(BLAS_Layout layout
 }
 
 inline data_flow::ImplementationType ImplementationType_BLAS{"BLAS"};
-inline data_flow::ImplementationType ImplementationType_CUBLAS{"CUBLAS"};
+inline data_flow::ImplementationType ImplementationType_CUBLASWithTransfers{"CUBLASWithTransfers"};
+inline data_flow::ImplementationType ImplementationType_CUBLASWithoutTransfers{"CUBLASWithoutTransfers"};
 
 } // namespace blas
 } // namespace math
