@@ -13,9 +13,8 @@ namespace blas {
 
 inline data_flow::LibraryNodeCode LibraryNodeType_GEMM("GEMM");
 
-class GEMMNode : public math::MathNode {
+class GEMMNode : public BLASNode {
 private:
-    BLAS_Precision precision_;
     BLAS_Layout layout_;
     BLAS_Transpose trans_a_;
     BLAS_Transpose trans_b_;
@@ -45,8 +44,6 @@ public:
         symbolic::Expression ldb,
         symbolic::Expression ldc
     );
-
-    BLAS_Precision precision() const;
 
     BLAS_Layout layout() const;
 
