@@ -26,7 +26,7 @@ GEMMNode::GEMMNode(
     symbolic::Expression ldb,
     symbolic::Expression ldc
 )
-    : MathNode(
+    : BLASNode(
           element_id,
           debug_info,
           vertex,
@@ -34,12 +34,10 @@ GEMMNode::GEMMNode(
           LibraryNodeType_GEMM,
           {"C"},
           {"A", "B", "C", "alpha", "beta"},
-          implementation_type
+          implementation_type,
+          precision
       ),
-      precision_(precision), layout_(layout), trans_a_(trans_a), trans_b_(trans_b), m_(m), n_(n), k_(k), lda_(lda),
-      ldb_(ldb), ldc_(ldc) {}
-
-BLAS_Precision GEMMNode::precision() const { return this->precision_; };
+      layout_(layout), trans_a_(trans_a), trans_b_(trans_b), m_(m), n_(n), k_(k), lda_(lda), ldb_(ldb), ldc_(ldc) {}
 
 BLAS_Layout GEMMNode::layout() const { return this->layout_; };
 
@@ -60,19 +58,6 @@ symbolic::Expression GEMMNode::ldb() const { return this->ldb_; };
 symbolic::Expression GEMMNode::ldc() const { return this->ldc_; };
 
 void GEMMNode::validate(const Function& function) const {}
-
-types::PrimitiveType GEMMNode::scalar_primitive() const {
-    switch (this->precision_) {
-        case BLAS_Precision::s:
-            return types::PrimitiveType::Float;
-        case BLAS_Precision::d:
-            return types::PrimitiveType::Double;
-        case BLAS_Precision::h:
-            return types::PrimitiveType::Half;
-        default:
-            return types::PrimitiveType::Void;
-    }
-}
 
 bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();

@@ -20,10 +20,10 @@ DotNode::DotNode(
     symbolic::Expression incx,
     symbolic::Expression incy
 )
-    : MathNode(element_id, debug_info, vertex, parent, LibraryNodeType_DOT, {"_out"}, {"x", "y"}, implementation_type),
-      precision_(precision), n_(n), incx_(incx), incy_(incy) {}
-
-BLAS_Precision DotNode::precision() const { return this->precision_; };
+    : BLASNode(
+          element_id, debug_info, vertex, parent, LibraryNodeType_DOT, {"_out"}, {"x", "y"}, implementation_type, precision
+      ),
+      n_(n), incx_(incx), incy_(incy) {}
 
 symbolic::Expression DotNode::n() const { return this->n_; };
 
@@ -205,7 +205,8 @@ void DotNodeDispatcher_BLAS::dispatch_code(
     auto& dot_node = static_cast<const DotNode&>(this->node_);
 
     sdfg::types::Scalar base_type(types::PrimitiveType::Void);
-    switch (dot_node.precision()) {
+    BLAS_Precision precision = dot_node.precision();
+    switch (precision) {
         case BLAS_Precision::h:
             base_type = types::Scalar(types::PrimitiveType::Half);
             break;
@@ -220,7 +221,7 @@ void DotNodeDispatcher_BLAS::dispatch_code(
     }
 
     stream << dot_node.outputs().at(0) << " = ";
-    stream << "cblas_" << BLAS_Precision_to_string(dot_node.precision()) << "dot(";
+    stream << "cblas_" << BLAS_Precision_to_string(precision) << "dot(";
     stream.setIndent(stream.indent() + 4);
     stream << this->language_extension_.expression(dot_node.n());
     stream << ", ";

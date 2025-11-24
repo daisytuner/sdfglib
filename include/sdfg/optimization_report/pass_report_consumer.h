@@ -5,17 +5,22 @@
 
 namespace sdfg {
 
-namespace transformations {
-class Transformation;
-}
-
 class PassReportConsumer {
 public:
-    virtual void transform_impossible(const transformations::Transformation* transform, const std::string& reason) = 0;
+    virtual void transform_impossible(const std::string& transform, const std::string& reason) = 0;
+    virtual void transform_impossible(const transformations::Transformation* transform, const std::string& reason) {
+        transform_impossible(transform->name(), reason);
+    }
 
-    virtual void transform_possible(const transformations::Transformation* transform) = 0;
+    virtual void transform_possible(const std::string& transform) = 0;
+    virtual void transform_possible(const transformations::Transformation* transform) {
+        transform_possible(transform->name());
+    }
 
-    virtual void transform_applied(const sdfg::transformations::Transformation* transform) = 0;
+    virtual void transform_applied(const std::string& transform) = 0;
+    virtual void transform_applied(const sdfg::transformations::Transformation* transform) {
+        transform_applied(transform->name());
+    }
 
     virtual void in_scope(StructuredSDFG* scope) = 0;
     void no_scope() { in_scope(nullptr); }

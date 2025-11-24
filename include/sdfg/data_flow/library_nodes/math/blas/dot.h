@@ -13,10 +13,8 @@ namespace blas {
 
 inline data_flow::LibraryNodeCode LibraryNodeType_DOT("DOT");
 
-class DotNode : public math::MathNode {
+class DotNode : public BLASNode {
 private:
-    BLAS_Precision precision_;
-
     symbolic::Expression n_;
     symbolic::Expression incx_;
     symbolic::Expression incy_;
@@ -33,8 +31,6 @@ public:
         symbolic::Expression incx = symbolic::integer(1),
         symbolic::Expression incy = symbolic::integer(1)
     );
-
-    BLAS_Precision precision() const;
 
     BLAS_Layout layout() const;
 
