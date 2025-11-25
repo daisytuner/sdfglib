@@ -92,6 +92,28 @@ inline data_flow::ImplementationType ImplementationType_BLAS{"BLAS"};
 inline data_flow::ImplementationType ImplementationType_CUBLASWithTransfers{"CUBLASWithTransfers"};
 inline data_flow::ImplementationType ImplementationType_CUBLASWithoutTransfers{"CUBLASWithoutTransfers"};
 
+class BLASNode : public math::MathNode {
+protected:
+    BLAS_Precision precision_;
+
+public:
+    BLASNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent,
+        const data_flow::LibraryNodeCode& code,
+        const std::vector<std::string>& outputs,
+        const std::vector<std::string>& inputs,
+        const data_flow::ImplementationType& implementation_type,
+        const BLAS_Precision& precision
+    );
+
+    BLAS_Precision precision() const;
+
+    types::PrimitiveType scalar_primitive() const;
+};
+
 } // namespace blas
 } // namespace math
 } // namespace sdfg
