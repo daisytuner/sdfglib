@@ -5,7 +5,6 @@
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/analysis/users.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/optimization_report/pass_report_consumer.h"
 
 namespace sdfg {
 

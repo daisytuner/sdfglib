@@ -1,5 +1,8 @@
 #include "sdfg/transformations/parallelization.h"
+
 #include <stdexcept>
+
+#include "sdfg/optimization_report/pass_report_consumer.h"
 
 namespace sdfg {
 namespace transformations {
