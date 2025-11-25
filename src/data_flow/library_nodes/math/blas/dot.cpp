@@ -332,7 +332,44 @@ void DotNodeDispatcher_CUBLASWithoutTransfers::dispatch_code(
     codegen::PrettyPrinter& globals_stream,
     codegen::CodeSnippetFactory& library_snippet_factory
 ) {
-    throw std::runtime_error("DotNodeDispatcher_CUBLAS not implemented");
+    auto& dot_node = static_cast<const DotNode&>(this->node_);
+
+    globals_stream << "#include <cuda.h>" << std::endl;
+    globals_stream << "#include <cublas_v2.h>" << std::endl;
+
+    stream << "cublasStatus_t err;" << std::endl;
+    stream << "cublasHandle_t handle;" << std::endl;
+    stream << "err = cublasCreate(&handle);" << std::endl;
+    stream << "if (err != CUBLAS_STATUS_SUCCESS) {" << std::endl;
+    stream.setIndent(stream.indent() + 4);
+    stream << this->language_extension_.external_prefix() << "exit(1);" << std::endl;
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
+    stream << "err = cublas";
+    switch (dot_node.precision()) {
+        case s:
+            stream << "S";
+            break;
+        case d:
+            stream << "D";
+            break;
+        default:
+            throw std::runtime_error("Invalid precision for CUBLAS DOT node");
+    }
+    stream << "dot(handle, " << this->language_extension_.expression(dot_node.n()) << ", x, "
+           << this->language_extension_.expression(dot_node.incx()) << ", y, "
+           << this->language_extension_.expression(dot_node.incy()) << ", &_out);" << std::endl;
+    stream << "if (err != CUBLAS_STATUS_SUCCESS) {" << std::endl;
+    stream.setIndent(stream.indent() + 4);
+    stream << this->language_extension_.external_prefix() << "exit(1);" << std::endl;
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
+    stream << "err = cublasDestroy(handle);" << std::endl;
+    stream << "if (err != CUBLAS_STATUS_SUCCESS) {" << std::endl;
+    stream.setIndent(stream.indent() + 4);
+    stream << this->language_extension_.external_prefix() << "exit(1);" << std::endl;
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
 }
 
 } // namespace blas
