@@ -273,16 +273,20 @@ void DotNodeDispatcher_CUBLASWithTransfers::dispatch_code(
             throw std::runtime_error("Invalid precision for CUBLAS DOT node");
     }
 
-    const std::string x_size = this->language_extension_.expression(
-        symbolic::add(symbolic::mul(symbolic::sub(dot_node.n(), symbolic::one()), dot_node.incx()), symbolic::one())
-    );
-    const std::string y_size = this->language_extension_.expression(
-        symbolic::add(symbolic::mul(symbolic::sub(dot_node.n(), symbolic::one()), dot_node.incy()), symbolic::one())
-    );
+    const std::string x_size =
+        this->language_extension_.expression(
+            symbolic::add(symbolic::mul(symbolic::sub(dot_node.n(), symbolic::one()), dot_node.incx()), symbolic::one())
+        ) +
+        " * sizeof(" + type + ")";
+    const std::string y_size =
+        this->language_extension_.expression(
+            symbolic::add(symbolic::mul(symbolic::sub(dot_node.n(), symbolic::one()), dot_node.incy()), symbolic::one())
+        ) +
+        " * sizeof(" + type + ")";
 
     stream << type << " *dx, *dy;" << std::endl;
-    stream << "cudaMalloc(&dx, " << x_size << " * sizeof(" << type << "));" << std::endl;
-    stream << "cudaMalloc(&dy, " << y_size << " * sizeof(" << type << "));" << std::endl;
+    stream << "cudaMalloc(&dx, " << x_size << ");" << std::endl;
+    stream << "cudaMalloc(&dy, " << y_size << ");" << std::endl;
 
     stream << "cudaMemcpy(dx, x, " << x_size << ", cudaMemcpyHostToDevice);" << std::endl;
     stream << "cudaMemcpy(dy, y, " << y_size << ", cudaMemcpyHostToDevice);" << std::endl;
