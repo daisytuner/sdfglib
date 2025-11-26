@@ -98,9 +98,25 @@ public:
     ) override;
 };
 
-class GEMMNodeDispatcher_CUBLAS : public codegen::LibraryNodeDispatcher {
+class GEMMNodeDispatcher_CUBLASWithTransfers : public codegen::LibraryNodeDispatcher {
 public:
-    GEMMNodeDispatcher_CUBLAS(
+    GEMMNodeDispatcher_CUBLASWithTransfers(
+        codegen::LanguageExtension& language_extension,
+        const Function& function,
+        const data_flow::DataFlowGraph& data_flow_graph,
+        const GEMMNode& node
+    );
+
+    void dispatch_code(
+        codegen::PrettyPrinter& stream,
+        codegen::PrettyPrinter& globals_stream,
+        codegen::CodeSnippetFactory& library_snippet_factory
+    ) override;
+};
+
+class GEMMNodeDispatcher_CUBLASWithoutTransfers : public codegen::LibraryNodeDispatcher {
+public:
+    GEMMNodeDispatcher_CUBLASWithoutTransfers(
         codegen::LanguageExtension& language_extension,
         const Function& function,
         const data_flow::DataFlowGraph& data_flow_graph,

@@ -445,7 +445,7 @@ void GEMMNodeDispatcher_BLAS::dispatch_code(
     stream << "}" << std::endl;
 }
 
-GEMMNodeDispatcher_CUBLAS::GEMMNodeDispatcher_CUBLAS(
+GEMMNodeDispatcher_CUBLASWithTransfers::GEMMNodeDispatcher_CUBLASWithTransfers(
     codegen::LanguageExtension& language_extension,
     const Function& function,
     const data_flow::DataFlowGraph& data_flow_graph,
@@ -453,7 +453,23 @@ GEMMNodeDispatcher_CUBLAS::GEMMNodeDispatcher_CUBLAS(
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void GEMMNodeDispatcher_CUBLAS::dispatch_code(
+void GEMMNodeDispatcher_CUBLASWithTransfers::dispatch_code(
+    codegen::PrettyPrinter& stream,
+    codegen::PrettyPrinter& globals_stream,
+    codegen::CodeSnippetFactory& library_snippet_factory
+) {
+    throw std::runtime_error("GEMMNodeDispatcher_CUBLAS not implemented");
+}
+
+GEMMNodeDispatcher_CUBLASWithoutTransfers::GEMMNodeDispatcher_CUBLASWithoutTransfers(
+    codegen::LanguageExtension& language_extension,
+    const Function& function,
+    const data_flow::DataFlowGraph& data_flow_graph,
+    const GEMMNode& node
+)
+    : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
+
+void GEMMNodeDispatcher_CUBLASWithoutTransfers::dispatch_code(
     codegen::PrettyPrinter& stream,
     codegen::PrettyPrinter& globals_stream,
     codegen::CodeSnippetFactory& library_snippet_factory

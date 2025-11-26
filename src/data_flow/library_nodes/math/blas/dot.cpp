@@ -1,9 +1,12 @@
 #include "sdfg/data_flow/library_nodes/math/blas/dot.h"
+#include <stdexcept>
+#include <string>
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 
 #include "sdfg/analysis/scope_analysis.h"
+#include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
 namespace math {
@@ -239,7 +242,7 @@ void DotNodeDispatcher_BLAS::dispatch_code(
     stream << "}" << std::endl;
 }
 
-DotNodeDispatcher_CUBLAS::DotNodeDispatcher_CUBLAS(
+DotNodeDispatcher_CUBLASWithTransfers::DotNodeDispatcher_CUBLASWithTransfers(
     codegen::LanguageExtension& language_extension,
     const Function& function,
     const data_flow::DataFlowGraph& data_flow_graph,
@@ -247,12 +250,126 @@ DotNodeDispatcher_CUBLAS::DotNodeDispatcher_CUBLAS(
 )
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
-void DotNodeDispatcher_CUBLAS::dispatch_code(
+void DotNodeDispatcher_CUBLASWithTransfers::dispatch_code(
     codegen::PrettyPrinter& stream,
     codegen::PrettyPrinter& globals_stream,
     codegen::CodeSnippetFactory& library_snippet_factory
 ) {
-    throw std::runtime_error("DotNodeDispatcher_CUBLAS not implemented");
+    auto& dot_node = static_cast<const DotNode&>(this->node_);
+
+    globals_stream << "#include <cuda.h>" << std::endl;
+    globals_stream << "#include <cublas_v2.h>" << std::endl;
+
+    std::string type, type2;
+    switch (dot_node.precision()) {
+        case s:
+            type = "float";
+            type2 = "S";
+            break;
+        case d:
+            type = "double";
+            type2 = "D";
+            break;
+        default:
+            throw std::runtime_error("Invalid precision for CUBLAS DOT node");
+    }
+
+    const std::string x_size =
+        this->language_extension_.expression(
+            symbolic::add(symbolic::mul(symbolic::sub(dot_node.n(), symbolic::one()), dot_node.incx()), symbolic::one())
+        ) +
+        " * sizeof(" + type + ")";
+    const std::string y_size =
+        this->language_extension_.expression(
+            symbolic::add(symbolic::mul(symbolic::sub(dot_node.n(), symbolic::one()), dot_node.incy()), symbolic::one())
+        ) +
+        " * sizeof(" + type + ")";
+
+    stream << type << " *dx, *dy;" << std::endl;
+    stream << "cudaMalloc(&dx, " << x_size << ");" << std::endl;
+    stream << "cudaMalloc(&dy, " << y_size << ");" << std::endl;
+
+    stream << "cudaMemcpy(dx, x, " << x_size << ", cudaMemcpyHostToDevice);" << std::endl;
+    stream << "cudaMemcpy(dy, y, " << y_size << ", cudaMemcpyHostToDevice);" << std::endl;
+
+    stream << "cublasStatus_t err;" << std::endl;
+    stream << "cublasHandle_t handle;" << std::endl;
+    stream << "err = cublasCreate(&handle);" << std::endl;
+    stream << "if (err != CUBLAS_STATUS_SUCCESS) {" << std::endl;
+    stream.setIndent(stream.indent() + 4);
+    stream << this->language_extension_.external_prefix() << "exit(1);" << std::endl;
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
+    stream << "err = cublas" << type2 << "dot(handle, " << this->language_extension_.expression(dot_node.n())
+           << ", dx, " << this->language_extension_.expression(dot_node.incx()) << ", dy, "
+           << this->language_extension_.expression(dot_node.incy()) << ", &_out);" << std::endl;
+    stream << "if (err != CUBLAS_STATUS_SUCCESS) {" << std::endl;
+    stream.setIndent(stream.indent() + 4);
+    stream << this->language_extension_.external_prefix() << "exit(1);" << std::endl;
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
+    stream << "err = cublasDestroy(handle);" << std::endl;
+    stream << "if (err != CUBLAS_STATUS_SUCCESS) {" << std::endl;
+    stream.setIndent(stream.indent() + 4);
+    stream << this->language_extension_.external_prefix() << "exit(1);" << std::endl;
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
+
+    stream << "cudaFree(dx);" << std::endl;
+    stream << "cudaFree(dy);" << std::endl;
+}
+
+DotNodeDispatcher_CUBLASWithoutTransfers::DotNodeDispatcher_CUBLASWithoutTransfers(
+    codegen::LanguageExtension& language_extension,
+    const Function& function,
+    const data_flow::DataFlowGraph& data_flow_graph,
+    const DotNode& node
+)
+    : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
+
+void DotNodeDispatcher_CUBLASWithoutTransfers::dispatch_code(
+    codegen::PrettyPrinter& stream,
+    codegen::PrettyPrinter& globals_stream,
+    codegen::CodeSnippetFactory& library_snippet_factory
+) {
+    auto& dot_node = static_cast<const DotNode&>(this->node_);
+
+    globals_stream << "#include <cuda.h>" << std::endl;
+    globals_stream << "#include <cublas_v2.h>" << std::endl;
+
+    stream << "cublasStatus_t err;" << std::endl;
+    stream << "cublasHandle_t handle;" << std::endl;
+    stream << "err = cublasCreate(&handle);" << std::endl;
+    stream << "if (err != CUBLAS_STATUS_SUCCESS) {" << std::endl;
+    stream.setIndent(stream.indent() + 4);
+    stream << this->language_extension_.external_prefix() << "exit(1);" << std::endl;
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
+    stream << "err = cublas";
+    switch (dot_node.precision()) {
+        case s:
+            stream << "S";
+            break;
+        case d:
+            stream << "D";
+            break;
+        default:
+            throw std::runtime_error("Invalid precision for CUBLAS DOT node");
+    }
+    stream << "dot(handle, " << this->language_extension_.expression(dot_node.n()) << ", x, "
+           << this->language_extension_.expression(dot_node.incx()) << ", y, "
+           << this->language_extension_.expression(dot_node.incy()) << ", &_out);" << std::endl;
+    stream << "if (err != CUBLAS_STATUS_SUCCESS) {" << std::endl;
+    stream.setIndent(stream.indent() + 4);
+    stream << this->language_extension_.external_prefix() << "exit(1);" << std::endl;
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
+    stream << "err = cublasDestroy(handle);" << std::endl;
+    stream << "if (err != CUBLAS_STATUS_SUCCESS) {" << std::endl;
+    stream.setIndent(stream.indent() + 4);
+    stream << this->language_extension_.external_prefix() << "exit(1);" << std::endl;
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
 }
 
 } // namespace blas
