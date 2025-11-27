@@ -7,6 +7,7 @@
 #include "sdfg/codegen/language_extension.h"
 #include "sdfg/codegen/utils.h"
 #include "sdfg/data_flow/library_node.h"
+#include "sdfg/data_flow/library_nodes/math/blas/blas.h"
 #include "sdfg/element.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_sdfg.h"
@@ -33,7 +34,7 @@ public:
     InstrumentationPlan& operator=(const InstrumentationPlan& other) = delete;
     InstrumentationPlan& operator=(InstrumentationPlan&& other) = delete;
 
-    void update(const structured_control_flow::ControlFlowNode& node, InstrumentationEventType event_type);
+    void update(const Element& element, InstrumentationEventType event_type);
 
     bool is_empty() const { return nodes_.empty(); }
 
@@ -56,21 +57,6 @@ public:
     static std::unique_ptr<InstrumentationPlan> none(StructuredSDFG& sdfg);
 
     static std::unique_ptr<InstrumentationPlan> outermost_loops_plan(StructuredSDFG& sdfg);
-};
-
-class LibNodeFinder : public visitor::ImmutableStructuredSDFGVisitor {
-private:
-    std::vector<const data_flow::LibraryNode*> lib_nodes_H2D;
-    std::vector<const data_flow::LibraryNode*> lib_nodes_D2H;
-
-public:
-    const std::vector<const data_flow::LibraryNode*>& get_lib_nodes_H2D() const { return lib_nodes_H2D; }
-    const std::vector<const data_flow::LibraryNode*>& get_lib_nodes_D2H() const { return lib_nodes_D2H; }
-
-    virtual bool accept(structured_control_flow::Block& node);
-
-    LibNodeFinder(StructuredSDFG& sdfg, analysis::AnalysisManager& analysis_manager)
-        : visitor::ImmutableStructuredSDFGVisitor(sdfg, analysis_manager) {}
 };
 
 } // namespace codegen
