@@ -292,19 +292,18 @@ bool ArgCapturePlan::add_capture_plan(
     } else if (dim_count == 1) {
         plan.insert(
             {var_name,
-             CaptureVarPlan(is_read, is_written, CaptureVarType::Cap1D, arg_idx, is_external, inner_type, dims[0])}
+             CaptureVarPlan(is_read || is_written, is_written, CaptureVarType::Cap1D, arg_idx, is_external, inner_type, dims[0])}
         );
     } else if (dim_count == 2) {
         plan.insert(
             {var_name,
-             CaptureVarPlan(is_read, is_written, CaptureVarType::Cap2D, arg_idx, is_external, inner_type, dims[0], dims[1])
-            }
+             CaptureVarPlan(is_read || is_written, is_written, CaptureVarType::Cap2D, arg_idx, is_external, inner_type, dims[0], dims[1])}
         );
     } else if (dim_count == 3) {
         plan.insert(
             {var_name,
              CaptureVarPlan(
-                 is_read, is_written, CaptureVarType::Cap3D, arg_idx, is_external, inner_type, dims[0], dims[1], dims[2]
+                 is_read || is_written, is_written, CaptureVarType::Cap3D, arg_idx, is_external, inner_type, dims[0], dims[1], dims[2]
              )}
         );
     }
@@ -346,7 +345,7 @@ std::unordered_map<std::string, CaptureVarPlan> ArgCapturePlan::create_capture_p
         }
 
         ++arg_idx;
-        working &= add_capture_plan(sdfg, analysis_manager, node, arg_name, arg_idx, false, plan, ranges_analysis);
+        working &= add_capture_plan(sdfg, analysis_manager, node, arg_name, arg_idx, true, plan, ranges_analysis);
     }
     if (!working) {
         DEBUG_PRINTLN("could not create capture plan, returning empty plan");
