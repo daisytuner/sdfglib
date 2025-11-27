@@ -13,8 +13,8 @@
 namespace sdfg {
 namespace codegen {
 
-void InstrumentationPlan::update(const structured_control_flow::ControlFlowNode& node, InstrumentationEventType event_type) {
-    this->nodes_[&node] = event_type;
+void InstrumentationPlan::update(const Element& element, InstrumentationEventType event_type) {
+    this->nodes_[&element] = event_type;
 }
 
 bool InstrumentationPlan::should_instrument(const Element& node) const { return this->nodes_.count(&node); }
@@ -130,30 +130,9 @@ std::unique_ptr<InstrumentationPlan> InstrumentationPlan::outermost_loops_plan(S
         nodes.insert({loop, InstrumentationEventType::CPU}); // Default to CPU if not CUDA
     }
 
-    LibNodeFinder lib_node_finder(sdfg, analysis_manager);
-    lib_node_finder.visit();
-    for (auto& lib_node : lib_node_finder.get_lib_nodes_D2H()) {
-        nodes.insert({lib_node, InstrumentationEventType::NONE});
-    }
-    for (auto& lib_node : lib_node_finder.get_lib_nodes_H2D()) {
-        nodes.insert({lib_node, InstrumentationEventType::NONE});
-    }
-
     std::cout << "Created instrumentation plan for " << nodes.size() << " nodes." << std::endl;
 
     return std::make_unique<InstrumentationPlan>(sdfg, nodes);
-}
-
-bool LibNodeFinder::accept(structured_control_flow::Block& node) {
-    for (auto libnode : node.dataflow().library_nodes()) {
-        if (libnode->code().value() == "CUDAD2HTransfer" || libnode->code().value() == "TTEnqueueRead") {
-            lib_nodes_D2H.push_back(libnode);
-        }
-        if (libnode->code().value() == "CUDAH2DTransfer" || libnode->code().value() == "TTEnqueueWrite") {
-            lib_nodes_H2D.push_back(libnode);
-        }
-    }
-    return false;
 }
 
 } // namespace codegen

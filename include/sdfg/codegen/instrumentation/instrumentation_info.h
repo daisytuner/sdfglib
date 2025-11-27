@@ -19,6 +19,7 @@ inline ElementType ElementType_IfElse{"if_else"};
 inline ElementType ElementType_Sequence{"sequence"};
 inline ElementType ElementType_H2DTransfer{"h2d_transfer"};
 inline ElementType ElementType_D2HTransfer{"d2h_transfer"};
+inline ElementType ElementType_Math{"math"};
 inline ElementType ElementType_Unknown{"unknown"};
 
 typedef StringEnum TargetType;
