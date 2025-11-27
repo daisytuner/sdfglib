@@ -29,7 +29,7 @@ private:
 __attribute__((weak)) std::unordered_map<int, std::unique_ptr<tt::tt_metal::IDevice, __daisy_DeviceDeleter>>
     __daisy_global_tt_devices;
 
-__attribute__((weak)) tt::tt_metal::IDevice* daisy_get_tt_device(int device_id = 0) {
+__attribute__((weak)) tt::tt_metal::IDevice* daisy_get_tt_device(int device_id = DAISY_TT_DEVICE_IDX) {
     auto& holder = __daisy_global_tt_devices[device_id];
     auto* ptr = holder.get();
     if (!ptr) {
@@ -40,7 +40,7 @@ __attribute__((weak)) tt::tt_metal::IDevice* daisy_get_tt_device(int device_id =
             }
         }
         if (!ptr) {
-            ptr = tt::tt_metal::CreateDevice(DAISY_TT_DEVICE_IDX);
+            ptr = tt::tt_metal::CreateDevice(device_id);
         }
         holder = std::unique_ptr<tt::tt_metal::IDevice, __daisy_DeviceDeleter>(ptr, __daisy_DeviceDeleter(device_id));
     }
