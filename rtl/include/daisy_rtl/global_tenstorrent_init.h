@@ -33,7 +33,15 @@ __attribute__((weak)) tt::tt_metal::IDevice* daisy_get_tt_device(int device_id =
     auto& holder = __daisy_global_tt_devices[device_id];
     auto* ptr = holder.get();
     if (!ptr) {
-        ptr = tt::tt_metal::CreateDevice(DAISY_TT_DEVICE_IDX);
+        if (tt::DevicePool::is_initialized()) {
+            auto& pool = tt::DevicePool::instance();
+            if (pool.is_device_active(device_id)) {
+                ptr = pool.get_active_device(device_id);
+            }
+        }
+        if (!ptr) {
+            ptr = tt::tt_metal::CreateDevice(DAISY_TT_DEVICE_IDX);
+        }
         holder = std::unique_ptr<tt::tt_metal::IDevice, __daisy_DeviceDeleter>(ptr, __daisy_DeviceDeleter(device_id));
     }
     return ptr;
