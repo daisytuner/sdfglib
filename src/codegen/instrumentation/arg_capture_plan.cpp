@@ -110,22 +110,29 @@ void ArgCapturePlan::emit_arg_captures(
     for (auto& [argName, varPlan] : plan) {
         auto argIdx = varPlan.arg_idx;
         if ((!after && varPlan.capture_input) || (after && varPlan.capture_output)) {
+            std::string safe_name;
+            if (varPlan.is_external) {
+                safe_name = language_extension.external_prefix() + argName;
+            } else {
+                safe_name = argName;
+            }
             switch (varPlan.type) {
                 case CaptureVarType::CapRaw: {
-                    stream << "\t__daisy_capture_raw(" << "__capture_ctx, " << argIdx << ", " << "&" << argName << ", "
-                           << "sizeof(" << argName << "), " << varPlan.inner_type << ", " << afterBoolStr << ", "
+                    stream << "\t__daisy_capture_raw(" << "__capture_ctx, " << argIdx << ", " << "&" << safe_name
+                           << ", "
+                           << "sizeof(" << safe_name << "), " << varPlan.inner_type << ", " << afterBoolStr << ", "
                            << element_id << ");" << std::endl;
                     break;
                 }
                 case CaptureVarType::Cap1D: {
-                    stream << "\t__daisy_capture_1d(" << "__capture_ctx, " << argIdx << ", " << argName << ", "
+                    stream << "\t__daisy_capture_1d(" << "__capture_ctx, " << argIdx << ", " << safe_name << ", "
                            << "sizeof(" << language_extension.primitive_type(varPlan.inner_type) << "), "
                            << varPlan.inner_type << ", " << language_extension.expression(varPlan.dim1) << ", "
                            << afterBoolStr << ", " << element_id << ");" << std::endl;
                     break;
                 }
                 case CaptureVarType::Cap2D: {
-                    stream << "\t__daisy_capture_2d(" << "__capture_ctx, " << argIdx << ", " << argName << ", "
+                    stream << "\t__daisy_capture_2d(" << "__capture_ctx, " << argIdx << ", " << safe_name << ", "
                            << "sizeof(" << language_extension.primitive_type(varPlan.inner_type) << "), "
                            << varPlan.inner_type << ", " << language_extension.expression(varPlan.dim1) << ", "
                            << language_extension.expression(varPlan.dim2) << ", " << afterBoolStr << ", " << element_id
@@ -133,7 +140,7 @@ void ArgCapturePlan::emit_arg_captures(
                     break;
                 }
                 case CaptureVarType::Cap3D: {
-                    stream << "\t__daisy_capture_3d(" << "__capture_ctx, " << argIdx << ", " << argName << ", "
+                    stream << "\t__daisy_capture_3d(" << "__capture_ctx, " << argIdx << ", " << safe_name << ", "
                            << "sizeof(" << language_extension.primitive_type(varPlan.inner_type) << "), "
                            << varPlan.inner_type << ", " << language_extension.expression(varPlan.dim1) << ", "
                            << language_extension.expression(varPlan.dim2) << ", "
@@ -292,18 +299,37 @@ bool ArgCapturePlan::add_capture_plan(
     } else if (dim_count == 1) {
         plan.insert(
             {var_name,
-             CaptureVarPlan(is_read || is_written, is_written, CaptureVarType::Cap1D, arg_idx, is_external, inner_type, dims[0])}
+             CaptureVarPlan(
+                 is_read || is_written, is_written, CaptureVarType::Cap1D, arg_idx, is_external, inner_type, dims[0]
+             )}
         );
     } else if (dim_count == 2) {
         plan.insert(
             {var_name,
-             CaptureVarPlan(is_read || is_written, is_written, CaptureVarType::Cap2D, arg_idx, is_external, inner_type, dims[0], dims[1])}
+             CaptureVarPlan(
+                 is_read || is_written,
+                 is_written,
+                 CaptureVarType::Cap2D,
+                 arg_idx,
+                 is_external,
+                 inner_type,
+                 dims[0],
+                 dims[1]
+             )}
         );
     } else if (dim_count == 3) {
         plan.insert(
             {var_name,
              CaptureVarPlan(
-                 is_read || is_written, is_written, CaptureVarType::Cap3D, arg_idx, is_external, inner_type, dims[0], dims[1], dims[2]
+                 is_read || is_written,
+                 is_written,
+                 CaptureVarType::Cap3D,
+                 arg_idx,
+                 is_external,
+                 inner_type,
+                 dims[0],
+                 dims[1],
+                 dims[2]
              )}
         );
     }
