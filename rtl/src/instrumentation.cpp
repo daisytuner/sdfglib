@@ -103,6 +103,7 @@ class DaisyInstrumentationState {
 private:
     size_t next_region_id = 1;
     std::unordered_map<size_t, DaisyRegion> regions;
+    std::unordered_map<std::string, size_t> region_name_to_id;
 
     // Keep a small cache of "sleeping" regions, i.e., after finalize we don't destroy the PAPI eventset immediately
     // This avoids re-creating PAPI eventsets for regions that are frequently re-entered
@@ -441,6 +442,8 @@ public:
         this->sleeping_regions_id_lookup.clear();
         this->sleeping_regions_by_name.clear();
 
+        this->region_name_to_id.clear();
+
         // Write output file
         FILE* f = std::fopen(this->output_file.c_str(), "w");
         if (!f) {
@@ -513,6 +516,36 @@ public:
 
             return region_id;
         }
+        // Check existing region
+        if (this->region_name_to_id.find(metadata->region_uuid) != this->region_name_to_id.end()) {
+            size_t region_id = this->region_name_to_id[metadata->region_uuid];
+            auto& region = this->regions[region_id];
+
+            if (_PAPI_create_eventset(&region.papi_eventset) != 0) {
+                std::fprintf(stderr, "[daisy-rtl] Failed to create PAPI eventset.\n");
+                exit(EXIT_FAILURE);
+            }
+            if (region.event_set == __DAISY_EVENT_SET_CPU) {
+                for (const auto& ev : this->event_names_cpu) {
+                    if (_PAPI_add_named_event(region.papi_eventset, ev.c_str()) != 0) {
+                        std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
+                        exit(EXIT_FAILURE);
+                    }
+                }
+            } else if (region.event_set == __DAISY_EVENT_SET_CUDA) {
+                for (const auto& ev : this->event_names_cuda) {
+                    if (_PAPI_add_named_event(region.papi_eventset, ev.c_str()) != 0) {
+                        std::fprintf(stderr, "[daisy-rtl] Could not add event %s.\n", ev.c_str());
+                        exit(EXIT_FAILURE);
+                    }
+                }
+            }
+
+            // start region
+            _PAPI_start(region.papi_eventset);
+
+            return region_id;
+        }
 
         DaisyRegion region;
         std::memcpy(&region.metadata, metadata, sizeof(__daisy_metadata));
@@ -540,6 +573,7 @@ public:
 
         size_t region_id = next_region_id++;
         regions[region_id] = region;
+        region_name_to_id[region.metadata.region_uuid] = region_id;
 
         _PAPI_start(region.papi_eventset);
         return region_id;
