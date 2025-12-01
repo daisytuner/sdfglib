@@ -25,6 +25,7 @@
 #include "sdfg/symbolic/symbolic.h"
 #include "symengine/functions.h"
 #include "symengine/symengine_rcp.h"
+#include "symengine/visitor.h"
 
 namespace sdfg {
 namespace analysis {
@@ -389,7 +390,12 @@ bool FlopAnalysis::contains(const structured_control_flow::ControlFlowNode* node
 }
 
 symbolic::Expression FlopAnalysis::get(const structured_control_flow::ControlFlowNode* node) {
-    return this->flops_[node];
+    auto it = this->flops_.find(node);
+    if (it != this->flops_.end()) {
+        return it->second;
+    } else {
+        return SymEngine::null;
+    }
 }
 
 std::unordered_map<const structured_control_flow::ControlFlowNode*, symbolic::Expression> FlopAnalysis::get() {
@@ -397,6 +403,24 @@ std::unordered_map<const structured_control_flow::ControlFlowNode*, symbolic::Ex
 }
 
 bool FlopAnalysis::precise() { return this->precise_; }
+
+symbolic::Expression FlopAnalysis::get_if_valid_for_codegen(const symbolic::Expression flops) {
+    if (!flops.is_null()) {
+        for (auto& atom : SymEngine::atoms<SymEngine::Basic>(*flops)) { // TODO this excludes anything including
+                                                                        // Infinity, as long as its not filtered out at
+                                                                        // the beginning of flop analysis (untested,
+                                                                        // whether parsing can handle incomplete traces
+                                                                        // (we emit null, for such)
+            if (SymEngine::is_a<SymEngine::Infty>(*atom)) {
+                return SymEngine::null;
+            }
+        }
+        if (!symbolic::has_dynamic_sizeof(flops)) {
+            return flops;
+        }
+    }
+    return SymEngine::null;
+}
 
 } // namespace analysis
 } // namespace sdfg

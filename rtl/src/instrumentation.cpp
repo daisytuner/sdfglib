@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -98,6 +99,20 @@ struct DaisyRegion {
     std::unordered_map<std::string, double> static_counters_min;
     std::unordered_map<std::string, double> static_counters_max;
 };
+
+struct JsSafeDouble {
+    double value;
+    explicit JsSafeDouble(double value) : value(value) {}
+};
+
+static std::ostream& operator<<(std::ostream& os, JsSafeDouble val) {
+    if (std::isfinite(val.value)) {
+        os << val.value;
+    } else {
+        os << "null";
+    }
+    return os;
+}
 
 class DaisyInstrumentationState {
 private:
@@ -238,6 +253,7 @@ private:
         std::fprintf(f, "%s", entry.str().c_str());
     }
 
+
     void append_event_aggregated(FILE* f, DaisyRegion& region, const std::vector<std::string>& event_names) {
         // Writes one event as a row in the Chrome trace format
 
@@ -342,11 +358,11 @@ private:
         // Static counters
         for (auto& [name, mean] : region.static_counters_mean) {
             entry << "\"static:::" << name << "\":{";
-            entry << "\"mean\":" << mean << ",";
-            entry << "\"variance\":" << region.static_counters_variance[name] << ",";
-            entry << "\"count\":" << region.static_counters_n[name] << ",";
-            entry << "\"min\":" << region.static_counters_min[name] << ",";
-            entry << "\"max\":" << region.static_counters_max[name];
+            entry << "\"mean\":" << JsSafeDouble(mean) << ", ";
+            entry << "\"variance\":" << JsSafeDouble(region.static_counters_variance[name]) << ", ";
+            entry << "\"count\":" << region.static_counters_n[name] << ", ";
+            entry << "\"min\":" << JsSafeDouble(region.static_counters_min[name]) << ", ";
+            entry << "\"max\":" << JsSafeDouble(region.static_counters_max[name]);
             entry << "}";
             entry << ",";
         }
