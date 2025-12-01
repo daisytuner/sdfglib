@@ -106,7 +106,7 @@ struct JsSafeDouble {
 };
 
 static std::ostream& operator<<(std::ostream& os, JsSafeDouble val) {
-    if (std::isnormal(val.value)) {
+    if (std::isfinite(val.value)) {
         os << val.value;
     } else {
         os << "null";
