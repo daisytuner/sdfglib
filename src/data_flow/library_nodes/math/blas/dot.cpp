@@ -132,6 +132,12 @@ bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
     return true;
 }
 
+symbolic::Expression DotNode::flop() const {
+    auto muls = this->n_;
+    auto adds = symbolic::sub(this->n_, symbolic::one());
+    return symbolic::add(muls, adds);
+}
+
 std::unique_ptr<data_flow::DataFlowNode> DotNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
     auto node_clone = std::unique_ptr<DotNode>(new DotNode(

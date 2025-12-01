@@ -170,14 +170,7 @@ inline ExpressionSet find(const Expression expr) {
     return res;
 }
 
-inline bool has_dynamic_sizeof(const Expression expr) {
-    for (auto& func : SymEngine::atoms<SymEngine::FunctionSymbol>(*expr)) {
-        if (SymEngine::is_a<DynamicSizeOfFunction>(*func)) {
-            return true;
-        }
-    }
-    return false;
-}
+bool has_dynamic_sizeof(const Expression expr);
 
 ExpressionSet muls(const Expression expr);
 

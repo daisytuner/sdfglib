@@ -275,7 +275,17 @@ Symbol gridDim_x() { return symbol("gridDim.x"); };
 
 Symbol gridDim_y() { return symbol("gridDim.y"); };
 
-Symbol gridDim_z() { return symbol("gridDim.z"); };
+Symbol gridDim_z() { return symbol("gridDim.z"); }
+
+bool has_dynamic_sizeof(const Expression expr) {
+    for (auto& func : SymEngine::atoms<SymEngine::FunctionSymbol>(*expr)) {
+        if (SymEngine::is_a<DynamicSizeOfFunction>(*func) &&
+            SymEngine::rcp_static_cast<const SymEngine::FunctionSymbol>(func)->get_name() == "dynamic_sizeof") {
+            return true;
+        }
+    }
+    return false;
+};
 
 } // namespace symbolic
 } // namespace sdfg
