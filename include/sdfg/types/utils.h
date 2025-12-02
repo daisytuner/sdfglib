@@ -42,5 +42,20 @@ symbolic::Expression get_contiguous_element_size(const types::IType& type, bool 
 /// @return Empty RCP if the size is unknown
 symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_time_eval = true);
 
+/// Returns the next element type inside an array/pointer/reference type.
+///
+/// @param type The type to peel
+/// @return The next element type, or nullptr if there is none
+const types::IType* peel_to_next_element(const types::IType& type);
+
+
+enum class TypeCompare { EQUAL, COMPATIBLE, LARGER, SMALLER, INCOMPATIBLE };
+/// Compares two types for compatibility
+///
+/// @param type1 First type
+/// @param type2 Second type
+/// @return The comparison result
+TypeCompare compare_types(const types::IType& type1, const types::IType& type2);
+
 } // namespace types
 } // namespace sdfg
