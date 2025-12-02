@@ -2,6 +2,7 @@
 
 #include "sdfg/analysis/users.h"
 #include "sdfg/exceptions.h"
+#include "sdfg/types/utils.h"
 
 namespace sdfg {
 namespace analysis {
@@ -68,6 +69,21 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                 if (this->type_map_.find(container) == this->type_map_.end()) {
                     this->type_map_.insert({container, base_type});
                     continue;
+                } else {
+                    if (this->type_map_.find(container)->second != base_type) {
+                        auto& existing_type = this->type_map_.find(container)->second;
+                        auto comparison = types::compare_types(*existing_type, *base_type);
+                        if (comparison == types::TypeCompare::INCOMPATIBLE) {
+                            throw sdfg::InvalidSDFGException("Conflicting types inferred for container " + container);
+                        } else if (comparison == types::TypeCompare::COMPATIBLE ||
+                                   comparison == types::TypeCompare::EQUAL ||
+                                   comparison == types::TypeCompare::LARGER) {
+                            // keep existing type
+                        } else if (comparison == types::TypeCompare::SMALLER) {
+                            // update to new type
+                            this->type_map_[container] = base_type;
+                        }
+                    }
                 }
             }
         }
@@ -113,6 +129,21 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                 if (this->type_map_.find(container) == this->type_map_.end()) {
                     this->type_map_.insert({container, base_type});
                     continue;
+                } else {
+                    if (this->type_map_.find(container)->second != base_type) {
+                        auto& existing_type = this->type_map_.find(container)->second;
+                        auto comparison = types::compare_types(*existing_type, *base_type);
+                        if (comparison == types::TypeCompare::INCOMPATIBLE) {
+                            throw sdfg::InvalidSDFGException("Conflicting types inferred for container " + container);
+                        } else if (comparison == types::TypeCompare::COMPATIBLE ||
+                                   comparison == types::TypeCompare::EQUAL ||
+                                   comparison == types::TypeCompare::LARGER) {
+                            // keep existing type
+                        } else if (comparison == types::TypeCompare::SMALLER) {
+                            // update to new type
+                            this->type_map_[container] = base_type;
+                        }
+                    }
                 }
             }
         }
@@ -156,6 +187,21 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                 if (this->type_map_.find(container) == this->type_map_.end()) {
                     this->type_map_.insert({container, base_type});
                     continue;
+                } else {
+                    if (this->type_map_.find(container)->second != base_type) {
+                        auto& existing_type = this->type_map_.find(container)->second;
+                        auto comparison = types::compare_types(*existing_type, *base_type);
+                        if (comparison == types::TypeCompare::INCOMPATIBLE) {
+                            throw sdfg::InvalidSDFGException("Conflicting types inferred for container " + container);
+                        } else if (comparison == types::TypeCompare::COMPATIBLE ||
+                                   comparison == types::TypeCompare::EQUAL ||
+                                   comparison == types::TypeCompare::LARGER) {
+                            // keep existing type
+                        } else if (comparison == types::TypeCompare::SMALLER) {
+                            // update to new type
+                            this->type_map_[container] = base_type;
+                        }
+                    }
                 }
             }
         }
@@ -197,6 +243,21 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                 if (this->type_map_.find(container) == this->type_map_.end()) {
                     this->type_map_.insert({container, base_type});
                     continue;
+                } else {
+                    if (this->type_map_.find(container)->second != base_type) {
+                        auto& existing_type = this->type_map_.find(container)->second;
+                        auto comparison = types::compare_types(*existing_type, *base_type);
+                        if (comparison == types::TypeCompare::INCOMPATIBLE) {
+                            throw sdfg::InvalidSDFGException("Conflicting types inferred for container " + container);
+                        } else if (comparison == types::TypeCompare::COMPATIBLE ||
+                                   comparison == types::TypeCompare::EQUAL ||
+                                   comparison == types::TypeCompare::LARGER) {
+                            // keep existing type
+                        } else if (comparison == types::TypeCompare::SMALLER) {
+                            // update to new type
+                            this->type_map_[container] = base_type;
+                        }
+                    }
                 }
             }
         }

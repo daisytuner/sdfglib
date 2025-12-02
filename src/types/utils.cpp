@@ -119,7 +119,6 @@ const IType& peel_to_innermost_element(const IType& type, int follow_ptr) {
 symbolic::Expression get_contiguous_element_size(const types::IType& type, bool allow_comp_time_eval) {
     // need to peel explicitly, primitive_type() would follow ALL pointers, even ***, even though this is not contiguous
     auto& innermost = peel_to_innermost_element(type, PEEL_TO_INNERMOST_ELEMENT_FOLLOW_ONLY_OUTER_PTR);
-
     return get_type_size(innermost, allow_comp_time_eval);
 }
 
@@ -160,6 +159,79 @@ symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_tim
             return {};
         }
     }
+}
+
+const types::IType* peel_to_next_element(const types::IType& type) {
+    switch (type.type_id()) {
+        case TypeID::Array:
+            return &dynamic_cast<const types::Array&>(type).element_type();
+        case TypeID::Reference:
+            return &dynamic_cast<const codegen::Reference&>(type).reference_type();
+        case TypeID::Pointer: {
+            auto& pointer_type = dynamic_cast<const types::Pointer&>(type);
+            if (pointer_type.has_pointee_type()) {
+                return &pointer_type.pointee_type();
+            } else {
+                return nullptr;
+            }
+        }
+        default:
+            return &type;
+    }
+}
+
+TypeCompare compare_types(const types::IType& type1, const types::IType& type2) {
+    if (type1 == type2) {
+        return TypeCompare::EQUAL;
+    }
+
+    // TODO: handle compatible types (e.g., elements of identical size)
+
+    if (type1.type_id() == TypeID::Pointer && type2.type_id() == TypeID::Pointer) {
+        auto& ptr1 = dynamic_cast<const types::Pointer&>(type1);
+        auto& ptr2 = dynamic_cast<const types::Pointer&>(type2);
+
+        if (!ptr1.has_pointee_type() || !ptr2.has_pointee_type()) {
+            return TypeCompare::INCOMPATIBLE;
+        }
+
+        return compare_types(ptr1.pointee_type(), ptr2.pointee_type());
+    } else if (type1.type_id() == TypeID::Array && type2.type_id() == TypeID::Array) {
+        auto& arr1 = dynamic_cast<const types::Array&>(type1);
+        auto& arr2 = dynamic_cast<const types::Array&>(type2);
+
+        auto elem_comp = compare_types(arr1.element_type(), arr2.element_type());
+        if (elem_comp == TypeCompare::INCOMPATIBLE) {
+            return TypeCompare::INCOMPATIBLE;
+        }
+
+        if (!symbolic::eq(arr1.num_elements(), arr2.num_elements())) {
+            return TypeCompare::INCOMPATIBLE;
+        }
+
+    } else if (type1.type_id() == TypeID::Scalar || type1.type_id() == TypeID::Structure) {
+        if (type2.type_id() == TypeID::Pointer || type2.type_id() == TypeID::Array) {
+            auto inner_comparison = compare_types(type1, *peel_to_next_element(type2));
+            if (inner_comparison == TypeCompare::EQUAL || inner_comparison == TypeCompare::COMPATIBLE ||
+                inner_comparison == TypeCompare::SMALLER) {
+                return TypeCompare::SMALLER;
+            } else {
+                return TypeCompare::INCOMPATIBLE;
+            }
+        }
+    } else if (type2.type_id() == TypeID::Scalar || type2.type_id() == TypeID::Structure) {
+        if (type1.type_id() == TypeID::Pointer || type1.type_id() == TypeID::Array) {
+            auto inner_comparison = compare_types(*peel_to_next_element(type1), type2);
+            if (inner_comparison == TypeCompare::EQUAL || inner_comparison == TypeCompare::COMPATIBLE ||
+                inner_comparison == TypeCompare::LARGER) {
+                return TypeCompare::LARGER;
+            } else {
+                return TypeCompare::INCOMPATIBLE;
+            }
+        }
+    }
+
+    return TypeCompare::INCOMPATIBLE;
 }
 
 } // namespace types
