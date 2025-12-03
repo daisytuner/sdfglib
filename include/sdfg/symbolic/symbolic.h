@@ -116,6 +116,13 @@ public:
     explicit DynamicSizeOfFunction(const Symbol symbol) : FunctionSymbol("dynamic_sizeof", symbol) {}
 };
 
+Expression malloc_usable_size(const Symbol symbol);
+
+class MallocUsableSizeFunction : public SymEngine::FunctionSymbol {
+public:
+    explicit MallocUsableSizeFunction(const Symbol symbol) : FunctionSymbol("malloc_usable_size", symbol) {}
+};
+
 /***** Comparisions *****/
 
 Condition Eq(const Expression lhs, const Expression rhs);
