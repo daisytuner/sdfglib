@@ -2,10 +2,13 @@
 
 #include <cassert>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "sdfg/function.h"
+#include "sdfg/structured_sdfg.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/types/structure.h"
 #include "sdfg/types/type.h"
 
 namespace sdfg {
@@ -47,15 +50,6 @@ symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_tim
 /// @param type The type to peel
 /// @return The next element type, or nullptr if there is none
 const types::IType* peel_to_next_element(const types::IType& type);
-
-
-enum class TypeCompare { EQUAL, COMPATIBLE, LARGER, SMALLER, INCOMPATIBLE };
-/// Compares two types for compatibility
-///
-/// @param type1 First type
-/// @param type2 Second type
-/// @return The comparison result
-TypeCompare compare_types(const types::IType& type1, const types::IType& type2);
 
 } // namespace types
 } // namespace sdfg
