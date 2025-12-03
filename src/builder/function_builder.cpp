@@ -70,6 +70,7 @@ const types::IType& FunctionBuilder::
     check_name(name);
 
     auto res = this->function().containers_.insert({name, type.clone()});
+    std::cerr << "Added container " << name << " of type " << type.print() << std::endl;
     assert(res.second);
 
     if (is_argument) {

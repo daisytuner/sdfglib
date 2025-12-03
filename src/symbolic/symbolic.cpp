@@ -123,6 +123,11 @@ Expression dynamic_sizeof(const Symbol symbol) {
     return so;
 }
 
+Expression malloc_usable_size(const Symbol symbol) {
+    auto mus = SymEngine::make_rcp<MallocUsableSizeFunction>(symbol);
+    return mus;
+}
+
 /***** Comparisions *****/
 
 Condition Eq(const Expression lhs, const Expression rhs) { return SymEngine::Eq(lhs, rhs); };
