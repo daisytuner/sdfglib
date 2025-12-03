@@ -1,14 +1,12 @@
 #include "sdfg/types/utils.h"
-#include <iostream>
 #include <memory>
 #include <string>
 
 #include "sdfg/codegen/utils.h"
 #include "sdfg/function.h"
-#include "sdfg/helpers/helpers.h"
 #include "sdfg/symbolic/symbolic.h"
 
-#include "sdfg/codegen/language_extensions/c_language_extension.h"
+#include "sdfg/types/structure.h"
 #include "sdfg/types/type.h"
 
 namespace sdfg {
@@ -178,60 +176,6 @@ const types::IType* peel_to_next_element(const types::IType& type) {
         default:
             return &type;
     }
-}
-
-TypeCompare compare_types(const types::IType& type1, const types::IType& type2) {
-    if (type1 == type2) {
-        return TypeCompare::EQUAL;
-    }
-
-    // TODO: handle compatible types (e.g., elements of identical size)
-
-    if (type1.type_id() == TypeID::Pointer && type2.type_id() == TypeID::Pointer) {
-        auto& ptr1 = dynamic_cast<const types::Pointer&>(type1);
-        auto& ptr2 = dynamic_cast<const types::Pointer&>(type2);
-
-        if (!ptr1.has_pointee_type() || !ptr2.has_pointee_type()) {
-            return TypeCompare::INCOMPATIBLE;
-        }
-
-        return compare_types(ptr1.pointee_type(), ptr2.pointee_type());
-    } else if (type1.type_id() == TypeID::Array && type2.type_id() == TypeID::Array) {
-        auto& arr1 = dynamic_cast<const types::Array&>(type1);
-        auto& arr2 = dynamic_cast<const types::Array&>(type2);
-
-        auto elem_comp = compare_types(arr1.element_type(), arr2.element_type());
-        if (elem_comp == TypeCompare::INCOMPATIBLE) {
-            return TypeCompare::INCOMPATIBLE;
-        }
-
-        if (!symbolic::eq(arr1.num_elements(), arr2.num_elements())) {
-            return TypeCompare::INCOMPATIBLE;
-        }
-
-    } else if (type1.type_id() == TypeID::Scalar || type1.type_id() == TypeID::Structure) {
-        if (type2.type_id() == TypeID::Pointer || type2.type_id() == TypeID::Array) {
-            auto inner_comparison = compare_types(type1, *peel_to_next_element(type2));
-            if (inner_comparison == TypeCompare::EQUAL || inner_comparison == TypeCompare::COMPATIBLE ||
-                inner_comparison == TypeCompare::SMALLER) {
-                return TypeCompare::SMALLER;
-            } else {
-                return TypeCompare::INCOMPATIBLE;
-            }
-        }
-    } else if (type2.type_id() == TypeID::Scalar || type2.type_id() == TypeID::Structure) {
-        if (type1.type_id() == TypeID::Pointer || type1.type_id() == TypeID::Array) {
-            auto inner_comparison = compare_types(*peel_to_next_element(type1), type2);
-            if (inner_comparison == TypeCompare::EQUAL || inner_comparison == TypeCompare::COMPATIBLE ||
-                inner_comparison == TypeCompare::LARGER) {
-                return TypeCompare::LARGER;
-            } else {
-                return TypeCompare::INCOMPATIBLE;
-            }
-        }
-    }
-
-    return TypeCompare::INCOMPATIBLE;
 }
 
 } // namespace types
