@@ -22,8 +22,10 @@
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/if_else.h"
+#include "sdfg/structured_control_flow/return.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
+#include "sdfg/structured_control_flow/while.h"
 #include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {
@@ -38,7 +40,8 @@ bool BlockSorting::accept(structured_control_flow::Sequence& sequence) {
     }
 
     // Bubble up:
-    for (size_t i = 0; i < sequence.size() - 1; i++) {
+    size_t i;
+    for (i = 0; i < sequence.size() - 1; i++) {
         // Skip assignments
         auto current_child = sequence.at(i);
         if (!current_child.second.empty()) {
@@ -49,33 +52,42 @@ bool BlockSorting::accept(structured_control_flow::Sequence& sequence) {
             continue;
         }
 
-        // Next child must be a block
+        // Sorting after return, break, and continue is useless
+        if (dynamic_cast<structured_control_flow::Return*>(&current_child.first) ||
+            dynamic_cast<structured_control_flow::Break*>(&current_child.first) ||
+            dynamic_cast<structured_control_flow::Continue*>(&current_child.first)) {
+            break;
+        }
+
+        // Childs must be a blocks
+        auto* current_block = dynamic_cast<structured_control_flow::Block*>(&current_child.first);
+        if (!current_block) {
+            continue;
+        }
         auto* next_block = dynamic_cast<structured_control_flow::Block*>(&next_child.first);
         if (!next_block) {
             continue;
         }
 
         // Check if current block has side-effects
-        if (auto current_block = dynamic_cast<structured_control_flow::Block*>(&current_child.first)) {
-            bool side_effect = false;
-            for (auto* libnode : current_block->dataflow().library_nodes()) {
-                if (this->is_libnode_side_effect_white_listed(libnode)) {
-                    continue;
-                }
-                if (libnode->side_effect()) {
-                    side_effect = true;
-                    break;
-                }
-            }
-            if (side_effect) {
+        bool side_effect = false;
+        for (auto* libnode : current_block->dataflow().library_nodes()) {
+            if (this->is_libnode_side_effect_white_listed(libnode)) {
                 continue;
             }
+            if (libnode->side_effect()) {
+                side_effect = true;
+                break;
+            }
+        }
+        if (side_effect) {
+            continue;
         }
 
         // Check if happens-before relation allows swapping
         auto& users_analysis = this->analysis_manager_.get<analysis::Users>();
-        analysis::UsersView current_users(users_analysis, current_child.first);
-        analysis::UsersView next_users(users_analysis, next_child.first);
+        analysis::UsersView current_users(users_analysis, *current_block);
+        analysis::UsersView next_users(users_analysis, *next_block);
         bool safe = true;
         for (auto user : next_users.uses()) {
             if (current_users.uses(user->container()).size() > 0) {
@@ -93,8 +105,8 @@ bool BlockSorting::accept(structured_control_flow::Sequence& sequence) {
         }
 
         // Compare priority and order
-        auto [current_prio, current_order] = this->get_prio_and_order(current_child.first);
-        auto [next_prio, next_order] = this->get_prio_and_order(next_child.first);
+        auto [current_prio, current_order] = this->get_prio_and_order(current_block);
+        auto [next_prio, next_order] = this->get_prio_and_order(next_block);
         if (current_prio > next_prio) {
             continue;
         }
@@ -108,44 +120,46 @@ bool BlockSorting::accept(structured_control_flow::Sequence& sequence) {
     }
 
     // Bubble down:
-    for (size_t i = sequence.size() - 1; i > 0; i--) {
+    for (size_t j = i; j > 0; j--) {
         // Skip assignments
-        auto current_child = sequence.at(i);
+        auto current_child = sequence.at(j);
         if (!current_child.second.empty()) {
             continue;
         }
-        auto next_child = sequence.at(i - 1);
+        auto next_child = sequence.at(j - 1);
         if (!next_child.second.empty()) {
             continue;
         }
 
-        // Next child must be a block
+        // Childs must be a blocks
+        auto* current_block = dynamic_cast<structured_control_flow::Block*>(&current_child.first);
+        if (!current_block) {
+            continue;
+        }
         auto* next_block = dynamic_cast<structured_control_flow::Block*>(&next_child.first);
         if (!next_block) {
             continue;
         }
 
         // Check if current block has side-effects
-        if (auto current_block = dynamic_cast<structured_control_flow::Block*>(&current_child.first)) {
-            bool side_effect = false;
-            for (auto* libnode : current_block->dataflow().library_nodes()) {
-                if (this->is_libnode_side_effect_white_listed(libnode)) {
-                    continue;
-                }
-                if (libnode->side_effect()) {
-                    side_effect = true;
-                    break;
-                }
-            }
-            if (side_effect) {
+        bool side_effect = false;
+        for (auto* libnode : current_block->dataflow().library_nodes()) {
+            if (this->is_libnode_side_effect_white_listed(libnode)) {
                 continue;
             }
+            if (libnode->side_effect()) {
+                side_effect = true;
+                break;
+            }
+        }
+        if (side_effect) {
+            continue;
         }
 
         // Check if happens-before relation allows swapping
         auto& users_analysis = this->analysis_manager_.get<analysis::Users>();
-        analysis::UsersView current_users(users_analysis, current_child.first);
-        analysis::UsersView next_users(users_analysis, next_child.first);
+        analysis::UsersView current_users(users_analysis, *current_block);
+        analysis::UsersView next_users(users_analysis, *next_block);
         bool safe = true;
         for (auto user : next_users.uses()) {
             if (current_users.uses(user->container()).size() > 0) {
@@ -163,8 +177,8 @@ bool BlockSorting::accept(structured_control_flow::Sequence& sequence) {
         }
 
         // Compare priority and order
-        auto [current_prio, current_order] = this->get_prio_and_order(current_child.first);
-        auto [next_prio, next_order] = this->get_prio_and_order(next_child.first);
+        auto [current_prio, current_order] = this->get_prio_and_order(current_block);
+        auto [next_prio, next_order] = this->get_prio_and_order(next_block);
         if (current_prio > next_prio) {
             continue;
         }
@@ -173,7 +187,7 @@ bool BlockSorting::accept(structured_control_flow::Sequence& sequence) {
         }
 
         // Swap blocks
-        builder_.move_child(sequence, i - 1, sequence, i);
+        builder_.move_child(sequence, j - 1, sequence, j);
         return true; // Restart after modification
     }
 
@@ -208,23 +222,21 @@ bool BlockSorting::can_be_bubbled_down(structured_control_flow::Block& block) {
     return dynamic_cast<stdlib::FreeNode*>(libnode);
 }
 
-std::pair<int, std::string> BlockSorting::get_prio_and_order(structured_control_flow::ControlFlowNode& node) {
-    if (auto* block = dynamic_cast<structured_control_flow::Block*>(&node)) {
-        if (this->is_libnode_block(*block)) {
-            auto* libnode = *block->dataflow().library_nodes().begin();
-            if (dynamic_cast<stdlib::AllocaNode*>(libnode) || dynamic_cast<stdlib::CallocNode*>(libnode) ||
-                dynamic_cast<stdlib::FreeNode*>(libnode) || dynamic_cast<stdlib::MallocNode*>(libnode)) {
-                auto& oedge = *block->dataflow().out_edges(*libnode).begin();
-                auto& dst = static_cast<data_flow::AccessNode&>(oedge.dst());
-                return {300, dst.data()};
-            } else if (dynamic_cast<stdlib::MemsetNode*>(libnode)) {
-                auto& oedge = *block->dataflow().out_edges(*libnode).begin();
-                auto& dst = static_cast<data_flow::AccessNode&>(oedge.dst());
-                return {200, dst.data()};
-            }
-        } else if (this->is_reference_block(*block)) {
-            return {100, ""};
+std::pair<int, std::string> BlockSorting::get_prio_and_order(structured_control_flow::Block* block) {
+    if (this->is_libnode_block(*block)) {
+        auto* libnode = *block->dataflow().library_nodes().begin();
+        if (dynamic_cast<stdlib::AllocaNode*>(libnode) || dynamic_cast<stdlib::CallocNode*>(libnode) ||
+            dynamic_cast<stdlib::FreeNode*>(libnode) || dynamic_cast<stdlib::MallocNode*>(libnode)) {
+            auto& oedge = *block->dataflow().out_edges(*libnode).begin();
+            auto& dst = static_cast<data_flow::AccessNode&>(oedge.dst());
+            return {300, dst.data()};
+        } else if (dynamic_cast<stdlib::MemsetNode*>(libnode)) {
+            auto& oedge = *block->dataflow().out_edges(*libnode).begin();
+            auto& dst = static_cast<data_flow::AccessNode&>(oedge.dst());
+            return {200, dst.data()};
         }
+    } else if (this->is_reference_block(*block)) {
+        return {100, ""};
     }
 
     return {INT_MIN, ""};
