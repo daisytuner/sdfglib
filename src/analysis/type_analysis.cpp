@@ -75,7 +75,16 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     this->type_map_.insert({container, {base_type}});
                     continue;
                 } else {
-                    this->type_map_.at(container).insert(base_type);
+                    bool insert = true;
+                    for (auto type : this->type_map_.at(container)) {
+                        if (*type == *base_type) {
+                            insert = false;
+                            break;
+                        }
+                    }
+                    if (insert) {
+                        this->type_map_.at(container).insert(base_type);
+                    }
                 }
             }
         }
@@ -122,7 +131,16 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     this->type_map_.insert({container, {base_type}});
                     continue;
                 } else {
-                    this->type_map_.at(container).insert(base_type);
+                    bool insert = true;
+                    for (auto type : this->type_map_.at(container)) {
+                        if (*type == *base_type) {
+                            insert = false;
+                            break;
+                        }
+                    }
+                    if (insert) {
+                        this->type_map_.at(container).insert(base_type);
+                    }
                 }
             }
         }
@@ -167,7 +185,16 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     this->type_map_.insert({container, {base_type}});
                     continue;
                 } else {
-                    this->type_map_.at(container).insert(base_type);
+                    bool insert = true;
+                    for (auto type : this->type_map_.at(container)) {
+                        if (*type == *base_type) {
+                            insert = false;
+                            break;
+                        }
+                    }
+                    if (insert) {
+                        this->type_map_.at(container).insert(base_type);
+                    }
                 }
             }
         }
@@ -210,7 +237,16 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     this->type_map_.insert({container, {base_type}});
                     continue;
                 } else {
-                    this->type_map_.at(container).insert(base_type);
+                    bool insert = true;
+                    for (auto type : this->type_map_.at(container)) {
+                        if (*type == *base_type) {
+                            insert = false;
+                            break;
+                        }
+                    }
+                    if (insert) {
+                        this->type_map_.at(container).insert(base_type);
+                    }
                 }
             }
         }
@@ -224,13 +260,6 @@ TypeAnalysis::TypeAnalysis(
 )
     : Analysis(sdfg), node_(node) {
     run(analysis_manager);
-    std::cout << "run local type analysis" << std::endl;
-    for (auto& set : type_map_) {
-        std::cout << "Key: " << set.first << std::endl;
-        for (auto i : set.second) {
-            std::cout << "    " << i->print() << std::endl;
-        }
-    }
 }
 
 const sdfg::types::IType* TypeAnalysis::get_outer_type(const std::string& container) const {
