@@ -292,6 +292,31 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     return true;
 }
 
+symbolic::Expression GEMMNode::flop() const {
+    return flops(symbolic::__true__(), symbolic::__true__(), symbolic::__true__(), symbolic::__true__());
+}
+
+symbolic::Expression GEMMNode::flops(
+    symbolic::Condition alpha_non_zero,
+    symbolic::Condition alpha_non_ident,
+    symbolic::Condition beta_non_zero,
+    symbolic::Condition beta_non_ident
+) const {
+    auto res_elems = symbolic::mul(this->m_, this->n_);
+
+    // conditional on alpha != 0.0
+    auto mm_mul_ops = symbolic::mul(symbolic::mul(res_elems, this->k_), alpha_non_zero);
+    auto mm_sum_ops = symbolic::mul(symbolic::mul(res_elems, symbolic::sub(this->k_, symbolic::one())), alpha_non_zero);
+    // conditional on alpha != 1.0 && alpha != 0.0
+    auto mm_alpha_scale_ops = symbolic::mul(res_elems, symbolic::And(alpha_non_ident, alpha_non_zero));
+    // conditional on beta != 1.0 && beta != 0.0
+    auto mm_beta_scale_ops = symbolic::mul(res_elems, symbolic::And(beta_non_ident, beta_non_zero));
+    auto mm_beta_scaled_sum_ops = symbolic::mul(res_elems, beta_non_zero);
+    auto mul_ops = symbolic::add(mm_mul_ops, symbolic::add(mm_alpha_scale_ops, mm_beta_scale_ops));
+    auto add_ops = symbolic::add(mm_sum_ops, mm_beta_scaled_sum_ops);
+    return symbolic::add(mul_ops, add_ops);
+}
+
 std::unique_ptr<data_flow::DataFlowNode> GEMMNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
     auto node_clone = std::unique_ptr<GEMMNode>(new GEMMNode(

@@ -71,6 +71,15 @@ public:
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override;
 
     std::string toStr() const override;
+
+    symbolic::Expression flop() const override;
+
+    symbolic::Expression flops(
+        symbolic::Condition alpha_non_zero,
+        symbolic::Condition alpha_non_ident,
+        symbolic::Condition beta_non_zero,
+        symbolic::Condition beta_non_ident
+    ) const;
 };
 
 class GEMMNodeSerializer : public serializer::LibraryNodeSerializer {

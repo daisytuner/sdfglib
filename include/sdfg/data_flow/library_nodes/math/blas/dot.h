@@ -46,6 +46,8 @@ public:
 
     std::unique_ptr<data_flow::DataFlowNode>
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override;
+
+    symbolic::Expression flop() const override;
 };
 
 class DotNodeSerializer : public serializer::LibraryNodeSerializer {

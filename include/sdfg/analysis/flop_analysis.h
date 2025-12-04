@@ -59,9 +59,34 @@ public:
 
     bool contains(const structured_control_flow::ControlFlowNode* node);
 
+    /**
+     * @return SymEngine::null, if none exists
+     */
     symbolic::Expression get(const structured_control_flow::ControlFlowNode* node);
 
     std::unordered_map<const structured_control_flow::ControlFlowNode*, symbolic::Expression> get();
+
+    symbolic::Expression get_if_available_for_codegen(const structured_control_flow::ControlFlowNode* node) {
+        return get_if_valid_for_codegen(get(node));
+    }
+
+    /**
+     * Wrapper to read the flop-property of a LibraryNode, to ensure a unified format and structure and seeing usages
+     * easily
+     * @param lib_node
+     * @return
+     */
+    static symbolic::Expression get_flops_if_valid_for_codegen(const data_flow::LibraryNode& lib_node) {
+        return get_if_valid_for_codegen(lib_node.flop());
+    }
+
+    /**
+     * Check that the expression is available and resolvable if codegen'ed, as analysis may return expressions that
+     * contain unresolvable placeholders it needs internally
+     * @param expr expr may even be null
+     * @return !null if ok
+     */
+    static symbolic::Expression get_if_valid_for_codegen(const symbolic::Expression expr);
 
     bool precise();
 };
