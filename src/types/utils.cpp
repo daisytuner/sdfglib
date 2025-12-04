@@ -1,14 +1,12 @@
 #include "sdfg/types/utils.h"
-#include <iostream>
 #include <memory>
 #include <string>
 
 #include "sdfg/codegen/utils.h"
 #include "sdfg/function.h"
-#include "sdfg/helpers/helpers.h"
 #include "sdfg/symbolic/symbolic.h"
 
-#include "sdfg/codegen/language_extensions/c_language_extension.h"
+#include "sdfg/types/structure.h"
 #include "sdfg/types/type.h"
 
 namespace sdfg {
@@ -119,7 +117,6 @@ const IType& peel_to_innermost_element(const IType& type, int follow_ptr) {
 symbolic::Expression get_contiguous_element_size(const types::IType& type, bool allow_comp_time_eval) {
     // need to peel explicitly, primitive_type() would follow ALL pointers, even ***, even though this is not contiguous
     auto& innermost = peel_to_innermost_element(type, PEEL_TO_INNERMOST_ELEMENT_FOLLOW_ONLY_OUTER_PTR);
-
     return get_type_size(innermost, allow_comp_time_eval);
 }
 
@@ -159,6 +156,25 @@ symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_tim
         } else {
             return {};
         }
+    }
+}
+
+const types::IType* peel_to_next_element(const types::IType& type) {
+    switch (type.type_id()) {
+        case TypeID::Array:
+            return &dynamic_cast<const types::Array&>(type).element_type();
+        case TypeID::Reference:
+            return &dynamic_cast<const codegen::Reference&>(type).reference_type();
+        case TypeID::Pointer: {
+            auto& pointer_type = dynamic_cast<const types::Pointer&>(type);
+            if (pointer_type.has_pointee_type()) {
+                return &pointer_type.pointee_type();
+            } else {
+                return nullptr;
+            }
+        }
+        default:
+            return &type;
     }
 }
 

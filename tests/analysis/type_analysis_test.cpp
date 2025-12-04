@@ -236,3 +236,96 @@ TEST(TypeAnalysisTest, Dereference_Chain) {
     EXPECT_TRUE(type_analysis.get_outer_type("C") != nullptr);
     EXPECT_TRUE(*type_analysis.get_outer_type("C") == array2dType);
 }
+
+TEST(TypeAnalysisTest, MultipleTypesWrite) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Pointer ptr;
+    types::Scalar base_desc(types::PrimitiveType::Int32);
+    types::Pointer array1dType(base_desc);
+
+    types::Scalar base_desc2(types::PrimitiveType::Float);
+    types::Pointer array1dType2(base_desc2);
+    types::IType& wrapper = array1dType2;
+
+    builder.add_container("i", ptr);
+    builder.add_container("N", base_desc);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    auto& block = builder.add_block(root);
+    auto& access_node = builder.add_access(block, "i");
+    auto& access_node2 = builder.add_access(block, "N");
+
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+
+    auto& read_memlet =
+        builder.add_computational_memlet(block, access_node, tasklet, "_in", {symbolic::zero()}, array1dType);
+    auto& write_memlet = builder.add_computational_memlet(block, tasklet, "_out", access_node2, {}, base_desc);
+
+    auto& block2 = builder.add_block(root);
+    auto& access_node3 = builder.add_access(block2, "i");
+    auto& access_node4 = builder.add_access(block2, "N");
+
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"_in"});
+
+    auto& read_memlet2 =
+        builder.add_computational_memlet(block2, access_node3, tasklet2, "_in", {symbolic::zero()}, array1dType2);
+    auto& write_memlet2 = builder.add_computational_memlet(block2, tasklet2, "_out", access_node4, {}, base_desc2);
+
+    analysis::AnalysisManager manager(sdfg);
+    auto& type_analysis = manager.get<analysis::TypeAnalysis>();
+
+    EXPECT_TRUE(type_analysis.get_outer_type("i") == nullptr);
+
+    EXPECT_TRUE(type_analysis.get_outer_type("N") != nullptr);
+    EXPECT_TRUE(*type_analysis.get_outer_type("N") == base_desc);
+}
+
+TEST(TypeAnalysisTest, MultipleTypesRead) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Pointer ptr;
+    types::Scalar base_desc(types::PrimitiveType::Int32);
+    types::Pointer array1dType(base_desc);
+
+    types::Scalar base_desc2(types::PrimitiveType::Float);
+    types::Pointer array1dType2(base_desc2);
+    types::IType& wrapper = array1dType2;
+
+    builder.add_container("i", ptr);
+    builder.add_container("N", base_desc);
+    builder.add_container("N2", base_desc2);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    auto& block = builder.add_block(root);
+    auto& access_node2 = builder.add_access(block, "i");
+    auto& access_node = builder.add_access(block, "N");
+
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+
+    auto& read_memlet = builder.add_computational_memlet(block, access_node, tasklet, "_in", {}, base_desc);
+    auto& write_memlet =
+        builder.add_computational_memlet(block, tasklet, "_out", access_node2, {symbolic::zero()}, array1dType);
+
+    auto& block2 = builder.add_block(root);
+    auto& access_node4 = builder.add_access(block2, "i");
+    auto& access_node3 = builder.add_access(block2, "N2");
+
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"_in"});
+
+    auto& read_memlet2 = builder.add_computational_memlet(block2, access_node3, tasklet2, "_in", {}, base_desc2);
+    auto& write_memlet2 =
+        builder.add_computational_memlet(block2, tasklet2, "_out", access_node4, {symbolic::zero()}, array1dType2);
+
+    analysis::AnalysisManager manager(sdfg);
+    auto& type_analysis = manager.get<analysis::TypeAnalysis>();
+
+    EXPECT_TRUE(type_analysis.get_outer_type("i") == nullptr);
+
+    EXPECT_TRUE(type_analysis.get_outer_type("N") != nullptr);
+    EXPECT_TRUE(*type_analysis.get_outer_type("N") == base_desc);
+}

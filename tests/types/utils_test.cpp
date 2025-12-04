@@ -3,6 +3,9 @@
 #include <gtest/gtest.h>
 
 #include "sdfg/builder/sdfg_builder.h"
+#include "sdfg/types/array.h"
+#include "sdfg/types/pointer.h"
+#include "sdfg/types/type.h"
 
 using namespace sdfg;
 
@@ -80,4 +83,40 @@ TEST(TypeInferenceTest, StructureMember) {
     data_flow::Subset subset = {symbolic::integer(1)};
     auto& inferred = types::infer_type(function, structure_type, subset);
     EXPECT_EQ(inferred, scalar_type2);
+}
+
+TEST(PeelToNextElement, Scalar) {
+    types::Scalar scalar_type(types::PrimitiveType::Int32);
+    auto* peeled = types::peel_to_next_element(scalar_type);
+    EXPECT_EQ(peeled, &scalar_type);
+}
+
+TEST(PeelToNextElement, Array) {
+    types::Scalar scalar_type(types::PrimitiveType::Int32);
+    types::Array array_type(scalar_type, symbolic::integer(10));
+    auto* peeled = types::peel_to_next_element(array_type);
+    EXPECT_EQ(*peeled, scalar_type);
+}
+
+TEST(PeelToNextElement, Pointer) {
+    types::Scalar scalar_type(types::PrimitiveType::Int32);
+    types::Pointer pointer_type(scalar_type);
+    auto* peeled = types::peel_to_next_element(pointer_type);
+    EXPECT_EQ(*peeled, scalar_type);
+}
+
+TEST(PeelToNextElement, NestedArray) {
+    types::Scalar scalar_type(types::PrimitiveType::Int32);
+    types::Array array_type1(scalar_type, symbolic::integer(10));
+    types::Array array_type2(array_type1, symbolic::integer(20));
+    auto* peeled = types::peel_to_next_element(array_type2);
+    EXPECT_EQ(*peeled, array_type1);
+}
+
+TEST(PeelToNextElement, NestedPointer) {
+    types::Scalar scalar_type(types::PrimitiveType::Int32);
+    types::Pointer pointer_type1(scalar_type);
+    types::Pointer pointer_type2(types::StorageType::CPU_Heap(), 8, "", pointer_type1);
+    auto* peeled = types::peel_to_next_element(pointer_type2);
+    EXPECT_EQ(*peeled, pointer_type1);
 }
