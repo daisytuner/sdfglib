@@ -106,6 +106,7 @@ void ReferenceAnalysis::visit_block(
                 continue;
             }
 
+            found = true;
             if (read_user) {
                 move.second.insert(read_user);
             }

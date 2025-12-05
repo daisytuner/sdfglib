@@ -73,11 +73,8 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
         }
 
         // Criterion: Two definitions
-        auto definitions = data_dependency_analysis.definitions(name);
-        if (definitions.size() < 2 || definitions.size() > 3) {
-            continue;
-        }
         // Filter our undefined user
+        auto definitions = data_dependency_analysis.definitions(name);
         std::unordered_set<analysis::User*> defines;
         for (auto& def : definitions) {
             if (data_dependency_analysis.is_undefined_user(*def.first)) {
@@ -195,9 +192,18 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
                     constant_inputs = false;
                     break;
                 }
-                if (!SymEngine::is_a<SymEngine::Integer>(*dim1)) {
-                    constant_inputs = false;
-                    break;
+                std::unordered_set<std::string> symbols;
+                for (auto& sym : symbolic::atoms(dim1)) {
+                    symbols.insert(sym->get_name());
+                }
+                for (auto& user : users.all_uses_between(*define1, *define2)) {
+                    if (user->use() == analysis::Use::READ) {
+                        continue;
+                    }
+                    if (symbols.find(user->container()) != symbols.end()) {
+                        constant_inputs = false;
+                        break;
+                    }
                 }
             }
         }
@@ -212,9 +218,6 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
             applied = true;
         } else if (auto access_node = dynamic_cast<data_flow::AccessNode*>(write)) {
             auto& graph = access_node->get_parent();
-            if (graph.out_degree(*access_node) > 0) {
-                continue;
-            }
             auto& block = dynamic_cast<structured_control_flow::Block&>(*graph.get_parent());
             builder.clear_node(block, *access_node);
             applied = true;
