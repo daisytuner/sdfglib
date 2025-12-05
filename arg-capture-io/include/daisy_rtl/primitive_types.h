@@ -48,8 +48,8 @@ static const char* primitive_type_names[] = {
     "Double",
     "X86_FP80",
     "FP128",
-    "PPC_FP128",
-    ""};
+    "PPC_FP128"
+};
 
 static const char* primitive_type_cppspellings[] = {
     "void", // Void
@@ -70,8 +70,7 @@ static const char* primitive_type_cppspellings[] = {
     "double", // Double
     "long double", // X86_FP80  (x86 80-bit extended precision)
     "__float128", // FP128     (software quad precision via libquadmath)
-    "__ibm128", // PPC_FP128 (IBM double-double)
-    ""
+    "__ibm128" // PPC_FP128 (IBM double-double)
 };
 
 static const double primitive_type_machine_epsilons[] = {
@@ -93,8 +92,7 @@ static const double primitive_type_machine_epsilons[] = {
     2.220446049250313e-16, // Double (double, 64-bit) ≈ 2^-52
     1.0842021724855044e-19, // long double (x86_80-bit) ≈ 2^-63
     1.9259299443872354e-34, // __float128 (quad-precision) ≈ 2^-112
-    1.0842021724855044e-19, // __ibm128 (double-double) ≈ 2^-63
-    0.0
+    1.0842021724855044e-19 // __ibm128 (double-double) ≈ 2^-63
 };
 
 constexpr const char* to_string(PrimitiveType e) {
@@ -129,7 +127,7 @@ struct PrimitiveCppType<PrimitiveType::FP128> {
     using type = __float128;
 };
 
-// Integral types (optional: just for completeness)
+// Integral types
 template<>
 struct PrimitiveCppType<PrimitiveType::Int8> {
     using type = int8_t;
@@ -183,7 +181,7 @@ constexpr T machine_epsilon() {
     return T{};
 }
 
-inline double primitive_type_epsilon_runtime(arg_capture::PrimitiveType pt) {
+inline long double primitive_type_epsilon(arg_capture::PrimitiveType pt) {
     switch (pt) {
         case arg_capture::PrimitiveType::Float:
             return machine_epsilon<float>();
