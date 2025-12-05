@@ -192,9 +192,18 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
                     constant_inputs = false;
                     break;
                 }
-                if (!SymEngine::is_a<SymEngine::Integer>(*dim1)) {
-                    constant_inputs = false;
-                    break;
+                std::unordered_set<std::string> symbols;
+                for (auto& sym : symbolic::atoms(dim1)) {
+                    symbols.insert(sym->get_name());
+                }
+                for (auto& user : users.all_uses_between(*define1, *define2)) {
+                    if (user->use() == analysis::Use::READ) {
+                        continue;
+                    }
+                    if (symbols.find(user->container()) != symbols.end()) {
+                        constant_inputs = false;
+                        break;
+                    }
                 }
             }
         }
