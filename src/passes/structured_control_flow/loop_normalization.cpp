@@ -18,13 +18,14 @@ bool LoopNormalization::accept(structured_control_flow::For& loop) {
     bool applied = false;
 
     // Step 1: Bring condition to CNF
-    auto condition = loop.condition();
+    symbolic::Condition condition = loop.condition();
     sdfg::symbolic::CNF cnf;
     try {
         cnf = symbolic::conjunctive_normal_form(condition);
     } catch (const symbolic::CNFException e) {
         return false;
     }
+    // Update if changed
     {
         symbolic::Condition new_condition = symbolic::__true__();
         for (auto& clause : cnf) {
@@ -41,11 +42,9 @@ bool LoopNormalization::accept(structured_control_flow::For& loop) {
         condition = new_condition;
     }
 
-    // Step 2: Normalize bound
+    // Following steps require affine update
     auto indvar = loop.indvar();
     auto update = loop.update();
-
-    // check if update is affine in indvar
     auto& assumptions_analysis = analysis_manager_.get<analysis::AssumptionsAnalysis>();
     auto assums = assumptions_analysis.get(loop, true);
     auto [success, coeffs] = symbolic::series::affine_int_coeffs(update, indvar, assums);
@@ -57,8 +56,11 @@ bool LoopNormalization::accept(structured_control_flow::For& loop) {
         return applied;
     }
     int stride = add_coeff->as_int();
+    if (stride == 0) {
+        return applied;
+    }
 
-    // Convert inequality-literals into comparisons with loop variable on LHS
+    // Step 2: Convert inequality-literals into comparisons with loop variable on LHS
     symbolic::CNF new_cnf;
     for (auto& clause : cnf) {
         std::vector<symbolic::Condition> new_clause;
@@ -118,6 +120,7 @@ bool LoopNormalization::accept(structured_control_flow::For& loop) {
         }
         new_cnf.push_back(new_clause);
     }
+    // Update if changed
     {
         symbolic::Condition new_condition = symbolic::__true__();
         for (auto& clause : new_cnf) {
@@ -130,51 +133,100 @@ bool LoopNormalization::accept(structured_control_flow::For& loop) {
         if (!symbolic::eq(new_condition, condition)) {
             builder_.update_loop(loop, loop.indvar(), new_condition, loop.init(), loop.update());
             applied = true;
+            condition = new_condition;
         }
     }
 
-    // Step 3: Rotate loop if stride is negative
-    if (stride != -1) {
-        return applied;
-    }
-    if (new_cnf.size() != 1) {
-        return applied;
-    }
-    auto& clause = new_cnf[0];
-    if (clause.size() != 1) {
-        return applied;
-    }
-    auto literal = clause[0];
-    if (!SymEngine::is_a<SymEngine::StrictLessThan>(*literal)) {
-        return applied;
-    }
-    auto slt = SymEngine::rcp_static_cast<const SymEngine::StrictLessThan>(literal);
-    auto lhs = slt->get_args().at(0);
-    auto rhs = slt->get_args().at(1);
-    if (!symbolic::eq(rhs, indvar)) {
-        return applied;
-    }
-
-    // Criterion: Body is invariant to iteration order
-    // I.e., a map or an associative/commutative reduction
-    // Since all data-dependency analysis depend on positive stride
-    // we do cheap approximations:
+    // Check uses of indvar in loop body are all memlets for further steps
     auto& users_analysis = analysis_manager_.get<analysis::Users>();
     analysis::UsersView body_users(users_analysis, loop.root());
-    if (!body_users.uses(indvar->get_name()).empty()) {
+    bool all_subsets = true;
+    for (auto& user : body_users.uses(indvar->get_name())) {
+        if (!dynamic_cast<data_flow::Memlet*>(user->element())) {
+            all_subsets = false;
+            break;
+        }
+    }
+    if (!all_subsets) {
         return applied;
     }
 
-    // Update loop parameters
-    auto new_init = symbolic::add(lhs, symbolic::one());
-    auto new_update = symbolic::add(indvar, symbolic::one());
-    auto new_condition = symbolic::Lt(indvar, symbolic::add(loop.init(), symbolic::one()));
+    try {
+        new_cnf = symbolic::conjunctive_normal_form(condition);
+    } catch (const symbolic::CNFException e) {
+        return applied;
+    }
 
-    // Replace indvar by (init - indvar) in loop body
-    loop.root().replace(indvar, symbolic::sub(loop.init(), symbolic::sub(indvar, new_init)));
+    if (stride > 0) {
+        // Step 3: Shift loop to start from zero if possible
+        if (!symbolic::eq(loop.init(), symbolic::zero())) {
+            // Require integer initial value for following steps
+            if (!SymEngine::is_a<SymEngine::Integer>(*loop.init())) {
+                return applied;
+            }
 
-    builder_.update_loop(loop, loop.indvar(), new_condition, new_init, new_update);
-    applied = true;
+            auto new_init = symbolic::zero();
+            auto actual_indvar = symbolic::add(indvar, loop.init());
+            
+            // T
+            bool canonical_condition = false;
+            if (new_cnf.size() == 1) {
+                auto& clause = new_cnf[0];
+                if (clause.size() == 1) {
+                    auto literal = clause[0];
+                    if (SymEngine::is_a<SymEngine::StrictLessThan>(*literal)) {
+                        auto lhs = literal->get_args().at(0);
+                        auto rhs = literal->get_args().at(1);
+                        if (symbolic::eq(lhs, indvar) && !symbolic::uses(rhs, indvar)) {
+                            condition = symbolic::Lt(indvar, symbolic::sub(rhs, loop.init()));
+                            canonical_condition = true;
+                        }
+                    }
+                }
+            }
+            if (!canonical_condition) {
+                condition = symbolic::subs(condition, indvar, actual_indvar);
+            }
+            builder_.update_loop(loop, indvar, condition, new_init, loop.update());
+            auto& root = loop.root();
+            root.replace(indvar, actual_indvar);
+
+            return true;
+        }
+    } else if (stride < 0) {
+        // Step 4: Rotate loop if stride is negative
+        if (stride != -1) {
+            return applied;
+        }
+        if (new_cnf.size() != 1) {
+            return applied;
+        }
+        auto& clause = new_cnf[0];
+        if (clause.size() != 1) {
+            return applied;
+        }
+        auto literal = clause[0];
+        if (!SymEngine::is_a<SymEngine::StrictLessThan>(*literal)) {
+            return applied;
+        }
+        auto slt = SymEngine::rcp_static_cast<const SymEngine::StrictLessThan>(literal);
+        auto lhs = slt->get_args().at(0);
+        auto rhs = slt->get_args().at(1);
+        if (!symbolic::eq(rhs, indvar)) {
+            return applied;
+        }
+
+        // Update loop parameters
+        auto new_init = symbolic::add(lhs, symbolic::one());
+        auto new_update = symbolic::add(indvar, symbolic::one());
+        auto new_condition = symbolic::Lt(indvar, symbolic::add(loop.init(), symbolic::one()));
+
+        // Replace indvar by (init - indvar) in loop body
+        loop.root().replace(indvar, symbolic::sub(loop.init(), symbolic::sub(indvar, new_init)));
+
+        builder_.update_loop(loop, loop.indvar(), new_condition, new_init, new_update);
+        return true;
+    }
 
     return applied;
 };
