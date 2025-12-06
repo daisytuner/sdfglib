@@ -3,11 +3,11 @@
 #include <ostream>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/passes/dataflow/constant_elimination.h"
+#include "sdfg/passes/dataflow/constant_propagation.h"
 
 using namespace sdfg;
 
-TEST(ConstantEliminationTest, Symbolic_Argument) {
+TEST(ConstantPropagationTest, Symbolic_Argument) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::Int32);
@@ -19,7 +19,7 @@ TEST(ConstantEliminationTest, Symbolic_Argument) {
 
     // Apply pass
     analysis::AnalysisManager analysis_manager(builder.subject());
-    passes::ConstantElimination pass;
+    passes::ConstantPropagation pass;
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
     // Check result
@@ -33,7 +33,7 @@ TEST(ConstantEliminationTest, Symbolic_Argument) {
     EXPECT_EQ(trans2.assignments().size(), 0);
 }
 
-TEST(ConstantEliminationTest, Symbolic_Transient) {
+TEST(ConstantPropagationTest, Symbolic_Transient) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::Int32);
@@ -46,7 +46,7 @@ TEST(ConstantEliminationTest, Symbolic_Transient) {
 
     // Apply pass
     analysis::AnalysisManager analysis_manager(builder.subject());
-    passes::ConstantElimination pass;
+    passes::ConstantPropagation pass;
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
     // Check result
@@ -64,7 +64,7 @@ TEST(ConstantEliminationTest, Symbolic_Transient) {
     EXPECT_EQ(trans3.assignments().size(), 0);
 }
 
-TEST(ConstantEliminationTest, Dataflow_Argument) {
+TEST(ConstantPropagationTest, Dataflow_Argument) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Pointer opaque_ptr;
@@ -92,7 +92,7 @@ TEST(ConstantEliminationTest, Dataflow_Argument) {
 
     // Apply pass
     analysis::AnalysisManager analysis_manager(builder.subject());
-    passes::ConstantElimination pass;
+    passes::ConstantPropagation pass;
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
     // Check result
@@ -105,7 +105,7 @@ TEST(ConstantEliminationTest, Dataflow_Argument) {
     EXPECT_EQ(child2.dataflow().nodes().size(), 0);
 }
 
-TEST(ConstantEliminationTest, Dataflow_Transient) {
+TEST(ConstantPropagationTest, Dataflow_Transient) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Pointer opaque_ptr;
@@ -142,7 +142,7 @@ TEST(ConstantEliminationTest, Dataflow_Transient) {
 
     // Apply pass
     analysis::AnalysisManager analysis_manager(builder.subject());
-    passes::ConstantElimination pass;
+    passes::ConstantPropagation pass;
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
     // Check result
@@ -158,7 +158,7 @@ TEST(ConstantEliminationTest, Dataflow_Transient) {
     EXPECT_EQ(child2.dataflow().nodes().size(), 0);
 }
 
-TEST(ConstantEliminationTest, LoopInvariant_Symbolic) {
+TEST(ConstantPropagationTest, LoopInvariant_Symbolic) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::Int32);
@@ -173,7 +173,7 @@ TEST(ConstantEliminationTest, LoopInvariant_Symbolic) {
 
     // Apply pass
     analysis::AnalysisManager analysis_manager(builder.subject());
-    passes::ConstantElimination pass;
+    passes::ConstantPropagation pass;
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
     // Check result
@@ -191,7 +191,7 @@ TEST(ConstantEliminationTest, LoopInvariant_Symbolic) {
     EXPECT_EQ(trans3.assignments().size(), 0);
 }
 
-TEST(ConstantEliminationTest, Branchnvariant_Symbolic) {
+TEST(ConstantPropagationTest, Branchnvariant_Symbolic) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::Int32);
@@ -207,7 +207,7 @@ TEST(ConstantEliminationTest, Branchnvariant_Symbolic) {
 
     // Apply pass
     analysis::AnalysisManager analysis_manager(builder.subject());
-    passes::ConstantElimination pass;
+    passes::ConstantPropagation pass;
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
     // Check result

@@ -44,7 +44,7 @@ set(TEST_FILES
     passes/code_motion/block_hoisting_test.cpp
     passes/code_motion/block_sorting_test.cpp
     passes/dataflow/bytes_reference_elimination_test.cpp
-    passes/dataflow/constant_elimination_test.cpp
+    passes/dataflow/constant_propagation_test.cpp
     passes/dataflow/dead_data_elimination_test.cpp
     passes/dataflow/redundant_array_elimination_test.cpp
     passes/dataflow/trivial_array_elimination_test.cpp
