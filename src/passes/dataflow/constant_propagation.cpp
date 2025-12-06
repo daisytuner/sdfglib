@@ -1,4 +1,4 @@
-#include "sdfg/passes/dataflow/constant_elimination.h"
+#include "sdfg/passes/dataflow/constant_propagation.h"
 
 #include "sdfg/analysis/data_dependency_analysis.h"
 #include "sdfg/analysis/dominance_analysis.h"
@@ -7,30 +7,38 @@
 namespace sdfg {
 namespace passes {
 
-ConstantElimination::ConstantElimination() : Pass() {};
+ConstantPropagation::ConstantPropagation() : Pass() {};
 
-std::string ConstantElimination::name() { return "ConstantElimination"; };
+std::string ConstantPropagation::name() { return "ConstantPropagation"; };
 
 std::unordered_set<analysis::User*>
 inputs(const std::string& container, data_flow::AccessNode* access_node, analysis::Users& users) {
     std::unordered_set<analysis::User*> inputs;
 
     auto& graph = access_node->get_parent();
-    data_flow::Tasklet* tasklet = nullptr;
-    for (auto& iedge : graph.in_edges(*access_node)) {
-        tasklet = dynamic_cast<data_flow::Tasklet*>(&iedge.src());
-    }
-    if (tasklet == nullptr) {
+    if (graph.in_degree(*access_node) != 1) {
         return {};
     }
-    for (auto& iedge : graph.in_edges(*tasklet)) {
-        auto& src_node = static_cast<data_flow::AccessNode&>(iedge.src());
-        if (dynamic_cast<data_flow::ConstantNode*>(&src_node) != nullptr) {
-            continue;
-        }
+    auto& iedge = *graph.in_edges(*access_node).begin();
 
-        inputs.insert(users.get_user(src_node.data(), &src_node, analysis::Use::READ));
+    auto& src = iedge.src();
+    if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(&src)) {
+        for (auto& iedge : graph.in_edges(*tasklet)) {
+            auto& src_node = static_cast<data_flow::AccessNode&>(iedge.src());
+            if (dynamic_cast<data_flow::ConstantNode*>(&src_node) != nullptr) {
+                continue;
+            }
+
+            inputs.insert(users.get_user(src_node.data(), &src_node, analysis::Use::READ));
+        }
+    } else if (auto access_node = dynamic_cast<data_flow::AccessNode*>(&src)) {
+        if (iedge.type() == data_flow::MemletType::Dereference_Src) {
+            inputs.insert(users.get_user(access_node->data(), access_node, analysis::Use::READ));
+        } else if (iedge.type() == data_flow::MemletType::Reference) {
+            inputs.insert(users.get_user(access_node->data(), access_node, analysis::Use::VIEW));
+        }
     }
+
     return inputs;
 }
 
@@ -57,7 +65,7 @@ std::unordered_set<analysis::User*> inputs(analysis::User& user, analysis::Users
     }
 }
 
-bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
+bool ConstantPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     auto& sdfg = builder.subject();
@@ -65,54 +73,22 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
     auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
     auto& data_dependency_analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
 
-    std::unordered_set<std::string> dead;
+    // We seek to find two identical definitions of the same container
     for (auto& name : sdfg.containers()) {
-        // Criterion: No aliases
-        if (!users.views(name).empty() || !users.moves(name).empty()) {
-            continue;
-        }
-
-        // Criterion: Two definitions
-        // Filter our undefined user
-        auto definitions = data_dependency_analysis.definitions(name);
         std::unordered_set<analysis::User*> defines;
-        for (auto& def : definitions) {
-            if (data_dependency_analysis.is_undefined_user(*def.first)) {
-                continue;
+        if (users.writes(name).size() == 2 && users.moves(name).size() == 0) {
+            for (auto& write : users.writes(name)) {
+                defines.insert(write);
             }
-            defines.insert(def.first);
-        }
-        if (defines.size() != 2) {
+        } else if (users.moves(name).size() == 2 && users.writes(name).size() == 0) {
+            for (auto& move : users.moves(name)) {
+                defines.insert(move);
+            }
+        } else {
             continue;
         }
         auto define1 = *defines.begin();
         auto define2 = *(++defines.begin());
-
-        // Criterion: Identical define
-        auto subsets1 = define1->subsets();
-        auto subsets2 = define2->subsets();
-        if (subsets1.size() != 1 || subsets2.size() != 1) {
-            continue;
-        }
-        if (subsets1.begin()->size() != subsets2.begin()->size()) {
-            continue;
-        }
-        bool constant_write = true;
-        for (size_t i = 0; i < subsets1.begin()->size(); i++) {
-            auto dim1 = subsets1.begin()->at(i);
-            auto dim2 = subsets2.begin()->at(i);
-            if (!symbolic::eq(dim1, dim2)) {
-                constant_write = false;
-                break;
-            }
-            if (!SymEngine::is_a<SymEngine::Integer>(*dim1)) {
-                constant_write = false;
-                break;
-            }
-        }
-        if (!constant_write) {
-            continue;
-        }
 
         // Criterion: One dominates the other
         if (!dominance_analysis.dominates(*define1, *define2)) {
@@ -122,7 +98,42 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
             continue;
         }
 
-        // Criterion: Inputs of definition are constant
+        // Criterion: Prove identical subsets of definitions
+        auto subsets1 = define1->subsets();
+        auto subsets2 = define2->subsets();
+        if (subsets1.size() != 1 || subsets2.size() != 1) {
+            continue;
+        }
+        if (subsets1.begin()->size() != subsets2.begin()->size()) {
+            continue;
+        }
+        bool identical_subsets = true;
+        for (size_t i = 0; i < subsets1.begin()->size(); i++) {
+            auto dim1 = subsets1.begin()->at(i);
+            auto dim2 = subsets2.begin()->at(i);
+            if (!symbolic::eq(dim1, dim2)) {
+                identical_subsets = false;
+                break;
+            }
+            std::unordered_set<std::string> symbols;
+            for (auto& sym : symbolic::atoms(dim1)) {
+                symbols.insert(sym->get_name());
+            }
+            for (auto& user : users.all_uses_between(*define1, *define2)) {
+                if (user->use() == analysis::Use::READ) {
+                    continue;
+                }
+                if (symbols.find(user->container()) != symbols.end()) {
+                    identical_subsets = false;
+                    break;
+                }
+            }
+        }
+        if (!identical_subsets) {
+            continue;
+        }
+
+        // Criterion: Provide identical rhs/inputs of definitions
         auto inputs1 = inputs(*define1, users);
         if (inputs1.empty()) {
             continue;
@@ -134,30 +145,45 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
         if (inputs1.size() != inputs2.size()) {
             continue;
         }
-        bool constant_inputs = true;
+
+        bool identical_inputs = true;
         for (auto& input : inputs1) {
             // Recursion
             if (input->container() == name) {
-                constant_inputs = false;
+                identical_inputs = false;
                 break;
             }
 
-            // input1 is constant
-            if (users.views(input->container()).size() > 0) {
-                constant_inputs = false;
-                break;
-            }
+            // If input is written, it must happen before define1
             for (auto& write_user : users.writes(input->container())) {
                 if (!dominance_analysis.dominates(*write_user, *define1)) {
-                    constant_inputs = false;
+                    identical_inputs = false;
                     break;
                 }
             }
+
+            // If input is moved, it must happen before define1
             for (auto& move_user : users.moves(input->container())) {
                 if (!dominance_analysis.dominates(*move_user, *define1)) {
-                    constant_inputs = false;
+                    identical_inputs = false;
                     break;
                 }
+            }
+
+            // If input has views, it must be the definitions
+            for (auto& view : users.views(input->container())) {
+                auto& viewed_node = dynamic_cast<data_flow::AccessNode&>(*view->element());
+                auto& graph = viewed_node.get_parent();
+                if (graph.out_degree(viewed_node) != 1) {
+                    continue;
+                }
+                auto& viewing_node = (*graph.out_edges(viewed_node).begin()).dst();
+                if (&viewing_node != define1->element() && &viewing_node != define2->element()) {
+                    identical_inputs = false;
+                }
+            }
+            if (!identical_inputs) {
+                break;
             }
 
             // Find identical input in inputs2
@@ -169,27 +195,27 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
                 }
             }
             if (input2 == nullptr) {
-                constant_inputs = false;
+                identical_inputs = false;
                 break;
             }
 
             // same subsets
             if (input->subsets().size() != 1 || input2->subsets().size() != 1) {
-                constant_inputs = false;
+                identical_inputs = false;
                 break;
             }
 
             auto subset1 = *input->subsets().begin();
             auto subset2 = *input2->subsets().begin();
             if (subset1.size() != subset2.size()) {
-                constant_inputs = false;
+                identical_inputs = false;
                 break;
             }
             for (size_t i = 0; i < subset1.size(); i++) {
                 auto dim1 = subset1[i];
                 auto dim2 = subset2[i];
                 if (!symbolic::eq(dim1, dim2)) {
-                    constant_inputs = false;
+                    identical_inputs = false;
                     break;
                 }
                 std::unordered_set<std::string> symbols;
@@ -201,13 +227,13 @@ bool ConstantElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
                         continue;
                     }
                     if (symbols.find(user->container()) != symbols.end()) {
-                        constant_inputs = false;
+                        identical_inputs = false;
                         break;
                     }
                 }
             }
         }
-        if (!constant_inputs) {
+        if (!identical_inputs) {
             continue;
         }
 
