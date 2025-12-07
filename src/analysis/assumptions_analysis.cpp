@@ -97,7 +97,9 @@ void AssumptionsAnalysis::
     }
     auto& body_assumptions = this->assumptions_[&body];
 
-    // By definition: indvar and condition symbols are constant
+    // Define all constant symbols
+
+    // By definition, all symbols in the loop condition are constant within the loop body
     symbolic::SymbolSet syms = {indvar};
     for (auto& sym : symbolic::atoms(loop->condition())) {
         syms.insert(sym);
@@ -109,7 +111,36 @@ void AssumptionsAnalysis::
         body_assumptions[sym].constant(true);
     }
 
-    // Map of indvar
+    // Collect other constant symbols based on uses
+    // UsersView users_view(*this->users_analysis_, body);
+    // std::unordered_set<std::string> visited;
+    // for (auto& read : users_view.reads()) {
+    //     if (!sdfg_.exists(read->container())) {
+    //         continue;
+    //     }
+
+    //     if (visited.find(read->container()) != visited.end()) {
+    //         continue;
+    //     }
+    //     visited.insert(read->container());
+
+    //     auto& type = this->sdfg_.type(read->container());
+    //     if (!type.is_symbol() || type.type_id() != types::TypeID::Scalar) {
+    //         continue;
+    //     }
+
+    //     if (users_view.reads(read->container()) != users_view.uses(read->container())) {
+    //         continue;
+    //     }
+
+    //     if (body_assumptions.find(symbolic::symbol(read->container())) == body_assumptions.end()) {
+    //         symbolic::Symbol sym = symbolic::symbol(read->container());
+    //         body_assumptions.insert({sym, symbolic::Assumption(sym)});
+    //         body_assumptions[sym].constant(true);
+    //     }
+    // }
+
+    // Define map of indvar
     body_assumptions[indvar].map(update);
 
     // Determine non-tight lower and upper bounds from inverse index access

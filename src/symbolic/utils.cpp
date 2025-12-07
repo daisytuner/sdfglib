@@ -561,7 +561,7 @@ MultiExpression delinearize(const MultiExpression& expr, const Assumptions& assu
                 symbols.push_back(sym);
             }
         }
-        if (symbols.size() < 2) {
+        if (symbols.size() < 1) {
             delinearized.push_back(dim);
             continue;
         }
@@ -645,20 +645,28 @@ MultiExpression delinearize(const MultiExpression& expr, const Assumptions& assu
                 break;
             }
 
-            // Add the peeled dimension to the list
-            peeled_dims.push_back(new_dim);
+            // Add offset contribution of peeled dimension
+            auto [q, r] = polynomial_div(offset, stride);
+            offset = r;
+            auto final_dim = symbolic::add(new_dim, q);
+
+            peeled_dims.push_back(final_dim);
             aff_coeffs.erase(new_dim);
         }
+        // Not all dimensions could be peeled off
         if (!aff_coeffs.empty()) {
             delinearized.push_back(dim);
             continue;
         }
+        // Offset did not reduce to zero
+        if (!symbolic::eq(offset, symbolic::zero())) {
+            delinearized.push_back(dim);
+            continue;
+        }
 
+        // Success
         for (auto& peeled_dim : peeled_dims) {
             delinearized.push_back(peeled_dim);
-        }
-        if (!symbolic::eq(offset, symbolic::zero())) {
-            delinearized.push_back(offset);
         }
     }
 
