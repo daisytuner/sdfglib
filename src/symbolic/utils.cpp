@@ -554,75 +554,69 @@ void canonicalize_map_dims(isl_map* map, const std::string& in_prefix, const std
 MultiExpression delinearize(const MultiExpression& expr, const Assumptions& assums) {
     MultiExpression delinearized;
     for (auto& dim : expr) {
-        // Step 1: Convert expression into an affine polynomial
+        // Check if more than two symbols are involved
         SymbolVec symbols;
         for (auto& sym : atoms(dim)) {
-            if (assums.at(sym).constant() && assums.at(sym).map() == SymEngine::null) {
-                continue;
+            if (!assums.at(sym).constant() || !assums.at(sym).map().is_null()) {
+                symbols.push_back(sym);
             }
-            symbols.push_back(sym);
         }
-        if (symbols.empty() || symbols.size() <= 1) {
+        if (symbols.size() < 2) {
             delinearized.push_back(dim);
             continue;
         }
 
+        // Step 1: Get polynomial form and affine coefficients
         auto poly = polynomial(dim, symbols);
         if (poly == SymEngine::null) {
             delinearized.push_back(dim);
             continue;
         }
-
         auto aff_coeffs = affine_coefficients(poly, symbols);
         if (aff_coeffs.empty()) {
             delinearized.push_back(dim);
             continue;
         }
+        auto offset = aff_coeffs.at(symbolic::symbol("__daisy_constant__"));
+        aff_coeffs.erase(symbolic::symbol("__daisy_constant__"));
 
         // Step 2: Peel-off dimensions
         bool success = true;
-        Expression remaining = dim;
+        Expression remaining = symbolic::sub(dim, offset);
         std::vector<Expression> peeled_dims;
-        while (aff_coeffs.size() > 1) {
+        while (!aff_coeffs.empty()) {
             // Find the symbol with largest stride (= largest atom count)
-            Symbol new_dim = symbolic::symbol("");
+            Symbol new_dim = SymEngine::null;
             size_t max_atom_count = 0;
             for (const auto& [sym, coeff] : aff_coeffs) {
-                if (sym->get_name() == "__daisy_constant__") {
-                    continue;
-                }
                 size_t atom_count = symbolic::atoms(coeff).size();
-                if (atom_count > max_atom_count || new_dim->get_name() == "") {
+                if (atom_count > max_atom_count || new_dim.is_null()) {
                     max_atom_count = atom_count;
                     new_dim = sym;
                 }
             }
-            if (new_dim->get_name() == "") {
+            if (new_dim.is_null()) {
                 break;
             }
 
             // Symbol must be nonnegative
             auto sym_lb = minimum(new_dim, {}, assums);
-            if (sym_lb == SymEngine::null) {
-                success = false;
+            if (sym_lb.is_null()) {
                 break;
             }
             auto sym_cond = symbolic::Ge(sym_lb, symbolic::zero());
             if (!symbolic::is_true(sym_cond)) {
-                success = false;
                 break;
             }
 
             // Stride must be positive
             Expression stride = aff_coeffs.at(new_dim);
             auto stride_lb = minimum(stride, {}, assums);
-            if (stride_lb == SymEngine::null) {
-                success = false;
+            if (stride_lb.is_null()) {
                 break;
             }
             auto stride_cond = symbolic::Ge(stride_lb, symbolic::one());
             if (!symbolic::is_true(stride_cond)) {
-                success = false;
                 break;
             }
 
@@ -635,13 +629,11 @@ MultiExpression delinearize(const MultiExpression& expr, const Assumptions& assu
 
             // remaining must be nonnegative
             auto rem_lb = minimum(remaining, {}, assums);
-            if (rem_lb == SymEngine::null) {
-                success = false;
+            if (rem_lb.is_null()) {
                 break;
             }
             auto cond_zero = symbolic::Ge(rem_lb, symbolic::zero());
             if (!symbolic::is_true(cond_zero)) {
-                success = false;
                 break;
             }
 
@@ -650,7 +642,6 @@ MultiExpression delinearize(const MultiExpression& expr, const Assumptions& assu
             auto ub_remaining = maximum(remaining, {}, assums);
             auto cond_stride = symbolic::Ge(ub_stride, ub_remaining);
             if (!symbolic::is_true(cond_stride)) {
-                success = false;
                 break;
             }
 
@@ -658,7 +649,7 @@ MultiExpression delinearize(const MultiExpression& expr, const Assumptions& assu
             peeled_dims.push_back(new_dim);
             aff_coeffs.erase(new_dim);
         }
-        if (!success) {
+        if (!aff_coeffs.empty()) {
             delinearized.push_back(dim);
             continue;
         }
@@ -666,10 +657,8 @@ MultiExpression delinearize(const MultiExpression& expr, const Assumptions& assu
         for (auto& peeled_dim : peeled_dims) {
             delinearized.push_back(peeled_dim);
         }
-
-        // If remaining is not zero, then add the constant term
-        if (!symbolic::eq(remaining, symbolic::zero()) && success) {
-            delinearized.push_back(remaining);
+        if (!symbolic::eq(offset, symbolic::zero())) {
+            delinearized.push_back(offset);
         }
     }
 
