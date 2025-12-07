@@ -71,6 +71,7 @@ set(TEST_FILES
     symbolic/assumptions_test.cpp
     symbolic/conjunctive_normal_form_test.cpp
     symbolic/extreme_values_test.cpp
+    symbolic/maps_test.cpp
     symbolic/polynomials_test.cpp
     symbolic/symbolic_test.cpp
     symbolic/sets_test.cpp

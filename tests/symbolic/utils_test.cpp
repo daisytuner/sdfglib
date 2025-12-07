@@ -122,7 +122,7 @@ TEST(DelinearizeTest, Delinearize4D) {
     auto assums_3 = symbolic::Assumption::create(_3, desc_i64);
     assums_3.lower_bound_deprecated(symbolic::integer(1));
     assums_3.constant(true);
-    
+
     // Indvars
     auto _13 = symbolic::symbol("_13");
     auto assum_13 = symbolic::Assumption::create(_13, desc_i64);
@@ -193,7 +193,7 @@ TEST(DelinearizeTest, Delinearize4D_WithOffsets) {
     auto assums_3 = symbolic::Assumption::create(_3, desc_i64);
     assums_3.lower_bound_deprecated(symbolic::integer(1));
     assums_3.constant(true);
-    
+
     // Indvars
     auto _13 = symbolic::symbol("_13");
     auto assum_13 = symbolic::Assumption::create(_13, desc_i64);
@@ -231,7 +231,7 @@ TEST(DelinearizeTest, Delinearize4D_WithOffsets) {
 
     // 1 + _32 + (2 + _3)*(1 + _28) + (2 + _3)*(2 + _2)*(1 + _24) + (2 + _3)*(2 + _2)*(2 + _1)*_13
     auto stride_1 = symbolic::add(symbolic::integer(2), _1);
-    auto stride_2 = symbolic::add(symbolic::integer(2), _2); 
+    auto stride_2 = symbolic::add(symbolic::integer(2), _2);
     auto stride_3 = symbolic::add(symbolic::integer(2), _3);
     auto offset_32 = symbolic::add(symbolic::integer(1), _32);
     auto offset_28 = symbolic::add(symbolic::integer(1), _28);
@@ -319,4 +319,3 @@ TEST(DelinearizeTest, NegativeStride) {
     EXPECT_EQ(expr_delinearized.size(), 1);
     EXPECT_TRUE(symbolic::eq(expr_delinearized.at(0), expr));
 }
-

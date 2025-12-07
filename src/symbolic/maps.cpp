@@ -88,6 +88,71 @@ bool is_disjoint_isl(
     if (expr1_delinearized.size() != expr2_delinearized.size()) {
         return false;
     }
+
+    // Cheap per-dimension check
+    for (size_t i = 0; i < expr1_delinearized.size(); i++) {
+        auto& dim1 = expr1_delinearized[i];
+        auto& dim2 = expr2_delinearized[i];
+        auto maps = expressions_to_intersection_map_str({dim1}, {dim2}, indvar, assums1, assums2);
+
+        isl_ctx* ctx = isl_ctx_alloc();
+        isl_options_set_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+
+        isl_map* map_1 = isl_map_read_from_str(ctx, std::get<0>(maps).c_str());
+        isl_map* map_2 = isl_map_read_from_str(ctx, std::get<1>(maps).c_str());
+        isl_map* map_3 = isl_map_read_from_str(ctx, std::get<2>(maps).c_str());
+        if (!map_1 || !map_2 || !map_3) {
+            if (map_1) {
+                isl_map_free(map_1);
+            }
+            if (map_2) {
+                isl_map_free(map_2);
+            }
+            if (map_3) {
+                isl_map_free(map_3);
+            }
+            isl_ctx_free(ctx);
+            return false;
+        }
+
+        // Find aliasing pairs under the constraint that dimensions are different
+
+        isl_map* composed = isl_map_apply_domain(map_2, map_3);
+        if (!composed) {
+            isl_map_free(map_1);
+            if (map_2) {
+                isl_map_free(map_2);
+            }
+            if (map_3) {
+                isl_map_free(map_3);
+            }
+            isl_ctx_free(ctx);
+            return false;
+        }
+        isl_map* alias_pairs = isl_map_intersect(composed, map_1);
+        if (!alias_pairs) {
+            if (composed) {
+                isl_map_free(composed);
+            }
+            if (map_1) {
+                isl_map_free(map_1);
+            }
+            isl_ctx_free(ctx);
+            return false;
+        }
+
+        bool disjoint = isl_map_is_empty(alias_pairs);
+        isl_map_free(alias_pairs);
+        isl_ctx_free(ctx);
+        if (disjoint) {
+            return true;
+        }
+    }
+    if (expr1_delinearized.size() == 1) {
+        return false;
+    }
+
+    // Now check on all dimensions together
     auto maps = expressions_to_intersection_map_str(expr1_delinearized, expr2_delinearized, indvar, assums1, assums2);
 
     isl_ctx* ctx = isl_ctx_alloc();
