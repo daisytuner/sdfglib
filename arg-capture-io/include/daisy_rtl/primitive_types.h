@@ -122,10 +122,6 @@ template<>
 struct PrimitiveCppType<PrimitiveType::X86_FP80> {
     using type = long double;
 };
-template<>
-struct PrimitiveCppType<PrimitiveType::FP128> {
-    using type = __float128;
-};
 
 // Integral types
 template<>
@@ -189,8 +185,6 @@ inline long double primitive_type_epsilon(arg_capture::PrimitiveType pt) {
             return machine_epsilon<double>();
         case arg_capture::PrimitiveType::X86_FP80:
             return machine_epsilon<long double>();
-        case arg_capture::PrimitiveType::FP128:
-            return machine_epsilon<__float128>();
         default:
             throw std::runtime_error("No machine epsilon defined for this type");
     }
