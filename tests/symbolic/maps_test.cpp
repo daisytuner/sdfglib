@@ -82,21 +82,22 @@ TEST(MapsTest, IsDisjoint_Stencil7P) {
 
     // 1 + _32 + (2 + _3)*(1 + _28) + (2 + _3)*(2 + _2)*_24 + (2 + _3)*(2 + _2)*(2 + _1)*_13
     auto expr2 = symbolic::add(offset_32, symbolic::mul(stride_3, offset_28));
-    ;
     expr2 = symbolic::add(expr2, symbolic::mul(symbolic::mul(stride_3, stride_2), _24));
     expr2 = symbolic::add(expr2, symbolic::mul(symbolic::mul(symbolic::mul(stride_3, stride_2), stride_1), _13));
     EXPECT_FALSE(symbolic::maps::intersects({expr1}, {expr2}, _13, assums1, assums2));
+    EXPECT_TRUE(symbolic::maps::intersects({expr1}, {expr2}, _24, assums1, assums2));
 
     // 1 + _32 + (2 + _3)*_28 + (2 + _3)*(2 + _2)*(1 + _24) + (2 + _3)*(2 + _2)*(2 + _1)*_13
     auto expr3 = symbolic::add(offset_32, symbolic::mul(stride_3, _28));
-    ;
     expr3 = symbolic::add(expr3, symbolic::mul(symbolic::mul(stride_3, stride_2), offset_24));
     expr3 = symbolic::add(expr3, symbolic::mul(symbolic::mul(symbolic::mul(stride_3, stride_2), stride_1), _13));
     EXPECT_FALSE(symbolic::maps::intersects({expr1}, {expr3}, _13, assums1, assums2));
+    EXPECT_TRUE(symbolic::maps::intersects({expr1}, {expr3}, _28, assums1, assums2));
 
     // _32 + (2 + _3)*(1 + _28) + (2 + _3)*(2 + _2)*(1 + _24) + (2 + _3)*(2 + _2)*(2 + _1)*_13
     auto expr4 = symbolic::add(_32, symbolic::mul(stride_3, offset_28));
     expr4 = symbolic::add(expr4, symbolic::mul(symbolic::mul(stride_3, stride_2), offset_24));
     expr4 = symbolic::add(expr4, symbolic::mul(symbolic::mul(symbolic::mul(stride_3, stride_2), stride_1), _13));
     EXPECT_FALSE(symbolic::maps::intersects({expr1}, {expr4}, _13, assums1, assums2));
+    EXPECT_TRUE(symbolic::maps::intersects({expr1}, {expr4}, _32, assums1, assums2));
 }
