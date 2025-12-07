@@ -246,3 +246,33 @@ TEST(LoopNormalizationTest, Rotate_NonCommutative) {
     passes::LoopNormalizationPass pass;
     EXPECT_FALSE(pass.run(builder, analysis_manager));
 }
+
+TEST(LoopNormalizationTest, LowerThanWithMaxInit) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar desc_unsigned(types::PrimitiveType::UInt64);
+    types::Scalar desc_signed(types::PrimitiveType::Int64);
+    builder.add_container("N", desc_unsigned, true);
+    builder.add_container("i", desc_signed);
+
+    // Define loop
+    auto bound = symbolic::symbol("N");
+    auto indvar = symbolic::symbol("i");
+    auto init = symbolic::zero();
+    auto condition = symbolic::Lt(indvar, symbolic::max(symbolic::zero(), bound));
+    auto update = symbolic::add(indvar, symbolic::one());
+
+    auto& loop = builder.add_for(root, indvar, condition, init, update);
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    passes::LoopNormalizationPass pass;
+    EXPECT_TRUE(pass.run(builder, analysis_manager));
+
+    // Check
+    EXPECT_TRUE(SymEngine::eq(*loop.condition(), *symbolic::Lt(indvar, bound)));
+}

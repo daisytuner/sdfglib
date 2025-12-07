@@ -60,63 +60,94 @@ bool LoopNormalization::accept(structured_control_flow::For& loop) {
         return applied;
     }
 
-    // Step 2: Convert inequality-literals into comparisons with loop variable on LHS
+    // Step 2: Simplify literals of CNF that involve the induction variable
     symbolic::CNF new_cnf;
     for (auto& clause : cnf) {
         std::vector<symbolic::Condition> new_clause;
         for (auto& literal : clause) {
-            if (!SymEngine::is_a<SymEngine::Unequality>(*literal)) {
-                new_clause.push_back(literal);
-                continue;
-            }
-            auto old_literal = SymEngine::rcp_static_cast<const SymEngine::Unequality>(literal);
-            auto lhs = old_literal->get_args().at(0);
-            auto rhs = old_literal->get_args().at(1);
-            if (symbolic::uses(lhs, indvar) && symbolic::uses(rhs, indvar)) {
-                new_clause.push_back(literal);
-                continue;
-            }
-            if (!symbolic::uses(rhs, indvar)) {
-                std::swap(lhs, rhs);
-            }
-            if (!symbolic::uses(rhs, indvar)) {
-                new_clause.push_back(literal);
-                continue;
-            }
+            if (SymEngine::is_a<SymEngine::Unequality>(*literal)) {
+                auto old_literal = SymEngine::rcp_static_cast<const SymEngine::Unequality>(literal);
+                auto lhs = old_literal->get_args().at(0);
+                auto rhs = old_literal->get_args().at(1);
+                if (symbolic::uses(lhs, indvar) && symbolic::uses(rhs, indvar)) {
+                    new_clause.push_back(literal);
+                    continue;
+                }
+                if (!symbolic::uses(rhs, indvar)) {
+                    std::swap(lhs, rhs);
+                }
+                if (!symbolic::uses(rhs, indvar)) {
+                    new_clause.push_back(literal);
+                    continue;
+                }
 
-            // RHS is now guranteed to use the indvar
+                // RHS is now guranteed to use the indvar
 
-            // 1. Solve inequality for indvar (affine case)
-            symbolic::SymbolVec syms = {indvar};
-            auto poly_rhs = symbolic::polynomial(rhs, syms);
-            if (poly_rhs == SymEngine::null) {
-                new_clause.push_back(literal);
-                continue;
-            }
-            auto coeffs_rhs = symbolic::affine_coefficients(poly_rhs, syms);
-            auto mul_coeff_rhs = coeffs_rhs[indvar];
-            auto add_coeff_rhs = coeffs_rhs[symbolic::symbol("__daisy_constant__")];
+                // 1. Solve inequality for indvar (affine case)
+                symbolic::SymbolVec syms = {indvar};
+                auto poly_rhs = symbolic::polynomial(rhs, syms);
+                if (poly_rhs == SymEngine::null) {
+                    new_clause.push_back(literal);
+                    continue;
+                }
+                auto coeffs_rhs = symbolic::affine_coefficients(poly_rhs, syms);
+                auto mul_coeff_rhs = coeffs_rhs[indvar];
+                auto add_coeff_rhs = coeffs_rhs[symbolic::symbol("__daisy_constant__")];
 
-            auto new_rhs = symbolic::sub(lhs, add_coeff_rhs);
-            // TODO: integer division
-            new_rhs = symbolic::div(new_rhs, mul_coeff_rhs);
-            auto new_lhs = indvar;
+                auto new_rhs = symbolic::sub(lhs, add_coeff_rhs);
+                // TODO: integer division
+                new_rhs = symbolic::div(new_rhs, mul_coeff_rhs);
+                auto new_lhs = indvar;
 
-            // 2. Convert to comparison based on stride sign
+                // 2. Convert to comparison based on stride sign
 
-            // Special cases: |stride| == 1
-            if (stride == 1) {
-                auto new_literal = symbolic::Lt(new_lhs, new_rhs);
+                // Special cases: |stride| == 1
+                if (stride == 1) {
+                    auto new_literal = symbolic::Lt(new_lhs, new_rhs);
+                    new_clause.push_back(new_literal);
+                    continue;
+                } else if (stride == -1) {
+                    auto new_literal = symbolic::Gt(new_lhs, new_rhs);
+                    new_clause.push_back(new_literal);
+                    continue;
+                }
+
+                // Fallback general case
+                new_clause.push_back(symbolic::Ne(new_lhs, new_rhs));
+            } else if (SymEngine::is_a<SymEngine::StrictLessThan>(*literal)) {
+                // Remove trivial max expressions
+                auto slt = SymEngine::rcp_static_cast<const SymEngine::StrictLessThan>(literal);
+                auto lhs = slt->get_args().at(0);
+                auto rhs = slt->get_args().at(1);
+                if (!symbolic::eq(lhs, indvar)) {
+                    new_clause.push_back(literal);
+                    continue;
+                }
+                if (!SymEngine::is_a<SymEngine::Max>(*rhs)) {
+                    new_clause.push_back(literal);
+                    continue;
+                }
+                auto max_expr = SymEngine::rcp_static_cast<const SymEngine::Max>(rhs);
+                auto args = max_expr->get_args();
+                if (args.size() != 2) {
+                    new_clause.push_back(literal);
+                    continue;
+                }
+                auto arg1 = args.at(0);;
+                auto arg2 = args.at(1);
+                if (!symbolic::eq(arg1, loop.init())) {
+                    std::swap(arg1, arg2);
+                }
+                if (!symbolic::eq(arg1, loop.init())) {
+                    new_clause.push_back(literal);
+                    continue;
+                }
+                auto new_literal = symbolic::Lt(indvar, arg2);
                 new_clause.push_back(new_literal);
-                continue;
-            } else if (stride == -1) {
-                auto new_literal = symbolic::Gt(new_lhs, new_rhs);
-                new_clause.push_back(new_literal);
-                continue;
+            } else {
+                new_clause.push_back(literal);
             }
 
-            // TODO: Modulo case: stride != +/-1
-            new_clause.push_back(symbolic::Ne(new_lhs, new_rhs));
         }
         new_cnf.push_back(new_clause);
     }
