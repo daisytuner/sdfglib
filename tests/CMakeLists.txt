@@ -74,6 +74,7 @@ set(TEST_FILES
     symbolic/polynomials_test.cpp
     symbolic/symbolic_test.cpp
     symbolic/sets_test.cpp
+    symbolic/utils_test.cpp
     transformations/loop_interchange_test.cpp
     transformations/loop_tiling_test.cpp
     transformations/out_local_storage_test.cpp
