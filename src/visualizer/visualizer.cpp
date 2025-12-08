@@ -43,7 +43,7 @@ constexpr const char* code_to_string(data_flow::TaskletCode c) {
         case data_flow::TaskletCode::int_urem:
         case data_flow::TaskletCode::int_srem:
         case data_flow::TaskletCode::fp_rem:
-            return "/";
+            return "%";
         case data_flow::TaskletCode::fp_fma:
             return "fma";
         default:
