@@ -7,12 +7,15 @@
 namespace sdfg {
 namespace codegen {
 
-class MapDispatcher : public NodeDispatcher {
+/**
+ * Dispatches to the actual NodeDispatcher based on scheduleType and the MapDispatcherRegistry
+ */
+class SchedTypeMapDispatcher : public NodeDispatcher {
 private:
     structured_control_flow::Map& node_;
 
 public:
-    MapDispatcher(
+    SchedTypeMapDispatcher(
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
         analysis::AnalysisManager& analysis_manager,
@@ -32,6 +35,12 @@ public:
 
     InstrumentationInfo instrumentation_info() const override;
 };
+
+/**
+ * @deprecated Use the new nyme [SchedTypeMapDispatcher]. The old name suggests it is perhaps a base class for other
+ * dispatchers, which it is not
+ */
+typedef SchedTypeMapDispatcher MapDispatcher;
 
 class SequentialMapDispatcher : public NodeDispatcher {
 private:

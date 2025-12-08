@@ -10,7 +10,7 @@
 namespace sdfg {
 namespace codegen {
 
-MapDispatcher::MapDispatcher(
+SchedTypeMapDispatcher::SchedTypeMapDispatcher(
     LanguageExtension& language_extension,
     StructuredSDFG& sdfg,
     analysis::AnalysisManager& analysis_manager,
@@ -23,7 +23,7 @@ MapDispatcher::MapDispatcher(
 
       };
 
-void MapDispatcher::
+void SchedTypeMapDispatcher::
     dispatch(PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory) {
     auto dispatcher = MapDispatcherRegistry::instance().get_map_dispatcher(node_.schedule_type().value());
     if (dispatcher) {
