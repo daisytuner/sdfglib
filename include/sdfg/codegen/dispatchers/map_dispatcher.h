@@ -7,12 +7,15 @@
 namespace sdfg {
 namespace codegen {
 
-class MapDispatcher : public NodeDispatcher {
+/**
+ * Dispatches to the actual NodeDispatcher based on scheduleType and the MapDispatcherRegistry
+ */
+class SchedTypeMapDispatcher : public NodeDispatcher {
 private:
     structured_control_flow::Map& node_;
 
 public:
-    MapDispatcher(
+    SchedTypeMapDispatcher(
         LanguageExtension& language_extension,
         StructuredSDFG& sdfg,
         analysis::AnalysisManager& analysis_manager,
@@ -23,10 +26,21 @@ public:
 
     void dispatch_node(
         PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
-    ) override;
+    ) override {
+        throw std::runtime_error("MapDispatcher::dispatch_node not implemented");
+    }
+
+    void dispatch(PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory)
+        override;
 
     InstrumentationInfo instrumentation_info() const override;
 };
+
+/**
+ * @deprecated Use the new nyme [SchedTypeMapDispatcher]. The old name suggests it is perhaps a base class for other
+ * dispatchers, which it is not
+ */
+typedef SchedTypeMapDispatcher MapDispatcher;
 
 class SequentialMapDispatcher : public NodeDispatcher {
 private:
