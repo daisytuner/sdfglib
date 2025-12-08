@@ -23,14 +23,13 @@ MapDispatcher::MapDispatcher(
 
       };
 
-void MapDispatcher::dispatch_node(
-    PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
-) {
+void MapDispatcher::
+    dispatch(PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory) {
     auto dispatcher = MapDispatcherRegistry::instance().get_map_dispatcher(node_.schedule_type().value());
     if (dispatcher) {
         auto dispatcher_ptr =
             dispatcher(language_extension_, sdfg_, analysis_manager_, node_, instrumentation_plan_, arg_capture_plan_);
-        dispatcher_ptr->dispatch_node(main_stream, globals_stream, library_snippet_factory);
+        dispatcher_ptr->dispatch(main_stream, globals_stream, library_snippet_factory);
     } else {
         throw std::runtime_error("Unsupported map schedule type: " + std::string(node_.schedule_type().value()));
     }

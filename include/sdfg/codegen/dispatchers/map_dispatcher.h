@@ -23,7 +23,12 @@ public:
 
     void dispatch_node(
         PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
-    ) override;
+    ) override {
+        throw std::runtime_error("MapDispatcher::dispatch_node not implemented");
+    }
+
+    void dispatch(PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory)
+        override;
 
     InstrumentationInfo instrumentation_info() const override;
 };
