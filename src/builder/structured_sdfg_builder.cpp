@@ -1496,9 +1496,6 @@ void StructuredSDFGBuilder::clear_node(structured_control_flow::Block& block, co
 
 void StructuredSDFGBuilder::clear_node(structured_control_flow::Block& block, const data_flow::AccessNode& node) {
     auto& graph = block.dataflow();
-    if (graph.out_degree(node) != 0) {
-        throw InvalidSDFGException("StructuredSDFGBuilder: Access node has outgoing edges");
-    }
 
     std::list<const data_flow::Memlet*> tmp;
     std::list<const data_flow::DataFlowNode*> queue = {&node};
@@ -1526,9 +1523,11 @@ void StructuredSDFGBuilder::clear_node(structured_control_flow::Block& block, co
             boost::remove_edge(edge, graph.graph_);
         }
 
-        auto vertex = current->vertex();
-        graph.nodes_.erase(vertex);
-        boost::remove_vertex(vertex, graph.graph_);
+        if (current != &node || graph.out_degree(*current) == 0) {
+            auto vertex = current->vertex();
+            graph.nodes_.erase(vertex);
+            boost::remove_vertex(vertex, graph.graph_);
+        }
     }
 };
 

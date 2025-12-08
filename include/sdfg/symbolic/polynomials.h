@@ -30,5 +30,8 @@ AffineCoeffs affine_coefficients(Polynomial poly, SymbolVec& symbols);
 /// Create the inverse function for AffineCoeffs
 Expression affine_inverse(AffineCoeffs coeffs, Symbol symbol);
 
+std::pair<Expression, Expression> polynomial_div(const Expression& dividend, const Expression& divisor);
+
+
 } // namespace symbolic
 } // namespace sdfg

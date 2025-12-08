@@ -44,7 +44,7 @@ set(TEST_FILES
     passes/code_motion/block_hoisting_test.cpp
     passes/code_motion/block_sorting_test.cpp
     passes/dataflow/bytes_reference_elimination_test.cpp
-    passes/dataflow/constant_elimination_test.cpp
+    passes/dataflow/constant_propagation_test.cpp
     passes/dataflow/dead_data_elimination_test.cpp
     passes/dataflow/redundant_array_elimination_test.cpp
     passes/dataflow/trivial_array_elimination_test.cpp
@@ -71,9 +71,11 @@ set(TEST_FILES
     symbolic/assumptions_test.cpp
     symbolic/conjunctive_normal_form_test.cpp
     symbolic/extreme_values_test.cpp
+    symbolic/maps_test.cpp
     symbolic/polynomials_test.cpp
     symbolic/symbolic_test.cpp
     symbolic/sets_test.cpp
+    symbolic/utils_test.cpp
     transformations/loop_interchange_test.cpp
     transformations/loop_tiling_test.cpp
     transformations/out_local_storage_test.cpp

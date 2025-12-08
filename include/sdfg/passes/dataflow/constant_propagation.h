@@ -15,9 +15,9 @@ namespace passes {
  *     ...
  * }
  */
-class ConstantElimination : public Pass {
+class ConstantPropagation : public Pass {
    public:
-    ConstantElimination();
+    ConstantPropagation();
 
     virtual std::string name() override;
 

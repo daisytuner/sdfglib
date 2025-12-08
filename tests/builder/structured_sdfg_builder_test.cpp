@@ -667,3 +667,52 @@ TEST(StructuredSDFGBuilderTest, FindElementById_Block) {
 
     EXPECT_EQ(builder.find_element_by_id(block.element_id()), &block);
 }
+
+TEST(StructuredSDFGBuilderTest, ClearNode_AccessNode_Unused) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int64);
+    builder.add_container("N", desc);
+
+    auto& root = builder.subject().root();
+    EXPECT_EQ(root.element_id(), 0);
+
+    auto& block = builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+
+    auto& in_node = builder.add_access(block, "N");
+    auto& out_node = builder.add_access(block, "N");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, in_node, tasklet, "_in", {});
+    builder.add_computational_memlet(block, tasklet, "_out", out_node, {});
+
+    builder.clear_node(block, out_node);
+    EXPECT_EQ(block.dataflow().nodes().size(), 0);
+    EXPECT_EQ(block.dataflow().edges().size(), 0);
+}
+
+TEST(StructuredSDFGBuilderTest, ClearNode_AccessNode_Used) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int64);
+    builder.add_container("N", desc);
+
+    auto& root = builder.subject().root();
+    EXPECT_EQ(root.element_id(), 0);
+
+    auto& block = builder.add_block(root, control_flow::Assignments{{symbolic::symbol("N"), SymEngine::integer(10)}});
+
+    auto& in_node = builder.add_access(block, "N");
+    auto& out_node = builder.add_access(block, "N");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, in_node, tasklet, "_in", {});
+    builder.add_computational_memlet(block, tasklet, "_out", out_node, {});
+
+    auto& out_node2 = builder.add_access(block, "N");
+    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, out_node, tasklet2, "_in", {});
+    builder.add_computational_memlet(block, tasklet2, "_out", out_node2, {});
+
+    builder.clear_node(block, out_node);
+    EXPECT_EQ(block.dataflow().nodes().size(), 3);
+    EXPECT_EQ(block.dataflow().edges().size(), 2);
+}
