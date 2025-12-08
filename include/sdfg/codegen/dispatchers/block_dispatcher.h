@@ -75,6 +75,10 @@ public:
 
     virtual ~LibraryNodeDispatcher() = default;
 
+    virtual bool begin_node(PrettyPrinter& stream) { return false; }
+
+    virtual void end_node(PrettyPrinter& stream, bool has_declaration) {}
+
     virtual void
     dispatch(PrettyPrinter& stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory);
 

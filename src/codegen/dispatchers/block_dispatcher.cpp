@@ -286,6 +286,7 @@ void DataFlowDispatcher::dispatch_library_node(
             .get_library_node_dispatcher(libnode.code().value() + "::" + libnode.implementation_type().value());
     if (dispatcher_fn) {
         auto dispatcher = dispatcher_fn(this->language_extension_, this->function_, this->data_flow_graph_, libnode);
+        auto applied = dispatcher->begin_node(stream);
 
         bool should_instrument = this->instrumentation_plan_.should_instrument(libnode);
         std::optional<InstrumentationInfo> instrument_info;
@@ -301,6 +302,7 @@ void DataFlowDispatcher::dispatch_library_node(
             this->instrumentation_plan_
                 .end_instrumentation(libnode, stream, language_extension_, instrument_info.value());
         }
+        dispatcher->end_node(stream, applied);
     } else {
         throw std::runtime_error(
             "No library node dispatcher found for library node code: " + std::string(libnode.code().value())
