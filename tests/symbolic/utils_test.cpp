@@ -158,15 +158,16 @@ TEST(DelinearizeTest, Delinearize4D) {
     assums.insert({_2, assums_2});
     assums.insert({_3, assums_3});
 
-    auto offset_32 = symbolic::add(symbolic::integer(1), _32);
-    auto offset_28 = symbolic::add(symbolic::integer(1), _28);
-    auto offset_24 = symbolic::add(symbolic::integer(1), _24);
     auto expr = symbolic::add(_32, symbolic::mul(_3, _28));
     expr = symbolic::add(expr, symbolic::mul(symbolic::mul(_3, _2), _24));
     expr = symbolic::add(expr, symbolic::mul(symbolic::mul(symbolic::mul(_3, _2), _1), _13));
 
     auto expr_delinearized = symbolic::delinearize({expr}, assums);
     EXPECT_EQ(expr_delinearized.size(), 4);
+    EXPECT_TRUE(symbolic::eq(expr_delinearized[0], _13));
+    EXPECT_TRUE(symbolic::eq(expr_delinearized[1], _24));
+    EXPECT_TRUE(symbolic::eq(expr_delinearized[2], _28));
+    EXPECT_TRUE(symbolic::eq(expr_delinearized[3], _32));
 }
 
 TEST(DelinearizeTest, Delinearize4D_WithOffsets) {
@@ -233,15 +234,115 @@ TEST(DelinearizeTest, Delinearize4D_WithOffsets) {
     auto stride_1 = symbolic::add(symbolic::integer(2), _1);
     auto stride_2 = symbolic::add(symbolic::integer(2), _2);
     auto stride_3 = symbolic::add(symbolic::integer(2), _3);
-    auto offset_32 = symbolic::add(symbolic::integer(1), _32);
-    auto offset_28 = symbolic::add(symbolic::integer(1), _28);
-    auto offset_24 = symbolic::add(symbolic::integer(1), _24);
+    auto offset_32 = symbolic::add(symbolic::one(), _32);
+    auto offset_28 = symbolic::add(symbolic::one(), _28);
+    auto offset_24 = symbolic::add(symbolic::one(), _24);
     auto expr = symbolic::add(offset_32, symbolic::mul(stride_3, offset_28));
     expr = symbolic::add(expr, symbolic::mul(symbolic::mul(stride_3, stride_2), offset_24));
     expr = symbolic::add(expr, symbolic::mul(symbolic::mul(symbolic::mul(stride_3, stride_2), stride_1), _13));
 
     auto expr_delinearized = symbolic::delinearize({expr}, assums);
     EXPECT_EQ(expr_delinearized.size(), 4);
+    EXPECT_TRUE(symbolic::eq(expr_delinearized[0], _13));
+    EXPECT_TRUE(symbolic::eq(expr_delinearized[1], symbolic::add(_24, symbolic::one())));
+    EXPECT_TRUE(symbolic::eq(expr_delinearized[2], symbolic::add(_28, symbolic::one())));
+    EXPECT_TRUE(symbolic::eq(expr_delinearized[3], symbolic::add(_32, symbolic::one())));
+}
+
+TEST(DelinearizeTest, Delinearize4D_WithOffsets_Symbolic) {
+    types::Scalar desc_i64(types::PrimitiveType::Int64);
+    types::Scalar desc_i32(types::PrimitiveType::Int32);
+
+    // Bounds
+    auto _19 = symbolic::symbol("_19");
+    auto assums_19 = symbolic::Assumption::create(_19, desc_i32);
+    assums_19.lower_bound_deprecated(symbolic::integer(1));
+    assums_19.constant(true);
+
+    auto _1 = symbolic::symbol("_1");
+    auto assums_1 = symbolic::Assumption::create(_1, desc_i64);
+    assums_1.lower_bound_deprecated(symbolic::integer(1));
+    assums_1.constant(true);
+
+    auto _2 = symbolic::symbol("_2");
+    auto assums_2 = symbolic::Assumption::create(_2, desc_i64);
+    assums_2.lower_bound_deprecated(symbolic::integer(1));
+    assums_2.constant(true);
+
+    auto _3 = symbolic::symbol("_3");
+    auto assums_3 = symbolic::Assumption::create(_3, desc_i64);
+    assums_3.lower_bound_deprecated(symbolic::integer(1));
+    assums_3.constant(true);
+
+    auto _4 = symbolic::symbol("_4");
+    auto assums_4 = symbolic::Assumption::create(_4, desc_i64);
+    assums_4.constant(true);
+
+    auto _5 = symbolic::symbol("_5");
+    auto assums_5 = symbolic::Assumption::create(_5, desc_i64);
+    assums_5.constant(true);
+
+    // Indvars
+    auto _13 = symbolic::symbol("_13");
+    auto assum_13 = symbolic::Assumption::create(_13, desc_i64);
+    assum_13.lower_bound_deprecated(symbolic::zero());
+    assum_13.upper_bound_deprecated(symbolic::sub(_19, symbolic::one()));
+    assum_13.map(symbolic::add(_13, symbolic::one()));
+
+    auto _24 = symbolic::symbol("_24");
+    auto assum_24 = symbolic::Assumption::create(_24, desc_i64);
+    assum_24.lower_bound_deprecated(symbolic::zero());
+    assum_24.upper_bound_deprecated(symbolic::sub(_1, symbolic::one()));
+    assum_24.map(symbolic::add(_24, symbolic::one()));
+
+    auto _28 = symbolic::symbol("_28");
+    auto assum_28 = symbolic::Assumption::create(_28, desc_i64);
+    assum_28.lower_bound_deprecated(symbolic::zero());
+    assum_28.upper_bound_deprecated(symbolic::sub(_2, symbolic::one()));
+    assum_28.map(symbolic::add(_28, symbolic::one()));
+
+    auto _32 = symbolic::symbol("_32");
+    auto assum_32 = symbolic::Assumption::create(_32, desc_i64);
+    assum_32.lower_bound_deprecated(symbolic::zero());
+    assum_32.upper_bound_deprecated(symbolic::sub(_3, symbolic::one()));
+    assum_32.map(symbolic::add(_32, symbolic::one()));
+
+    symbolic::Assumptions assums;
+    assums.insert({_13, assum_13});
+    assums.insert({_24, assum_24});
+    assums.insert({_28, assum_28});
+    assums.insert({_32, assum_32});
+    assums.insert({_19, assums_19});
+    assums.insert({_1, assums_1});
+    assums.insert({_2, assums_2});
+    assums.insert({_3, assums_3});
+    assums.insert({_4, assums_4});
+    assums.insert({_5, assums_5});
+
+    // 1 + _32 + (2 + _3)*(1 + _28) + (2 + _3)*(2 + _2)*(1 + _24) + (2 + _3)*(2 + _2)*(2 + _1)*_13 + _4*(_5 - 1)*(2 +
+    // _3)*(2 + _2)*(2 + _1)
+    auto stride_1 = symbolic::add(symbolic::integer(2), _1);
+    auto stride_2 = symbolic::add(symbolic::integer(2), _2);
+    auto stride_3 = symbolic::add(symbolic::integer(2), _3);
+    auto offset_32 = symbolic::add(symbolic::one(), _32);
+    auto offset_28 = symbolic::add(symbolic::one(), _28);
+    auto offset_24 = symbolic::add(symbolic::one(), _24);
+    auto expr = symbolic::add(offset_32, symbolic::mul(stride_3, offset_28));
+    expr = symbolic::add(expr, symbolic::mul(symbolic::mul(stride_3, stride_2), offset_24));
+    expr = symbolic::add(expr, symbolic::mul(symbolic::mul(symbolic::mul(stride_3, stride_2), stride_1), _13));
+    expr = symbolic::add(
+        expr,
+        symbolic::
+            mul(symbolic::mul(symbolic::mul(symbolic::mul(_4, symbolic::sub(_5, symbolic::one())), stride_3), stride_2),
+                stride_1)
+    );
+
+    auto expr_delinearized = symbolic::delinearize({expr}, assums);
+    EXPECT_EQ(expr_delinearized.size(), 4);
+    EXPECT_TRUE(symbolic::eq(expr_delinearized[0], symbolic::add(symbolic::sub(_13, _4), symbolic::mul(_4, _5))));
+    EXPECT_TRUE(symbolic::eq(expr_delinearized[1], symbolic::add(_24, symbolic::one())));
+    EXPECT_TRUE(symbolic::eq(expr_delinearized[2], symbolic::add(_28, symbolic::one())));
+    EXPECT_TRUE(symbolic::eq(expr_delinearized[3], symbolic::add(_32, symbolic::one())));
 }
 
 TEST(DelinearizeTest, ZeroStride) {
