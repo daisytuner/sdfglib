@@ -2489,6 +2489,75 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Tiled) {
     EXPECT_EQ(dependencies2.size(), 0);
 }
 
+TEST(LoopDependencyAnalysisTest, Map_1D_Incomplete) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    types::Scalar bool_desc(types::PrimitiveType::Bool);
+    types::Scalar sym_desc(types::PrimitiveType::Int32);
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer edge_desc(base_desc);
+    types::Pointer desc;
+
+    builder.add_container("A", desc, true);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+    builder.add_container("tmp", base_desc);
+    builder.add_container("k", bool_desc);
+
+    // Define loop
+    auto bound = symbolic::symbol("N");
+    auto indvar = symbolic::symbol("i");
+    auto init = symbolic::integer(0);
+    auto condition = symbolic::Lt(indvar, bound);
+    auto update = symbolic::add(indvar, symbolic::integer(1));
+
+    auto& loop = builder.add_for(root, indvar, condition, init, update);
+    auto& body = loop.root();
+
+    // tmp = A[i]
+    auto& block = builder.add_block(body);
+    auto& a_in = builder.add_access(block, "A");
+    auto& tmp_out = builder.add_access(block, "tmp");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, a_in, tasklet, "_in", {indvar}, edge_desc);
+    builder.add_computational_memlet(block, tasklet, "_out", tmp_out, {});
+
+    // switch = tmp > 0
+    auto& block_switch = builder.add_block(body);
+    auto& tmp_in = builder.add_access(block_switch, "tmp");
+    auto& zero_node = builder.add_constant(block_switch, "0.0", base_desc);
+    auto& switch_out = builder.add_access(block_switch, "k");
+    auto& tasklet_switch = builder.add_tasklet(block_switch, data_flow::TaskletCode::fp_oge, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block_switch, tmp_in, tasklet_switch, "_in1", {});
+    builder.add_computational_memlet(block_switch, zero_node, tasklet_switch, "_in2", {});
+    builder.add_computational_memlet(block_switch, tasklet_switch, "_out", switch_out, {});
+
+    auto switch_condition = symbolic::Eq(symbolic::symbol("k"), symbolic::__true__());
+    auto& ifelse = builder.add_if_else(body);
+
+    // if (switch) A[i] = tmp
+    auto& branch1 = builder.add_case(ifelse, switch_condition);
+    auto& block1 = builder.add_block(branch1);
+    auto& tmp_in1 = builder.add_access(block1, "tmp");
+    auto& a_out1 = builder.add_access(block1, "A");
+    auto& tasklet1 = builder.add_tasklet(block1, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block1, tmp_in1, tasklet1, "_in", {});
+    builder.add_computational_memlet(block1, tasklet1, "_out", a_out1, {indvar}, edge_desc);
+
+    // Analysis
+    analysis::AnalysisManager analysis_manager(sdfg);
+    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    auto& dependencies = analysis.dependencies(loop);
+
+    // Check
+    EXPECT_EQ(dependencies.size(), 2);
+    EXPECT_EQ(dependencies.at("tmp"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    EXPECT_EQ(dependencies.at("k"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+}
+
 TEST(LoopDependencyAnalysisTest, MapParameterized_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 

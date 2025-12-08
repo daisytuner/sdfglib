@@ -757,7 +757,7 @@ bool DataDependencyAnalysis::loop_depends(
     }
 
     if (this->is_undefined_user(previous) || this->is_undefined_user(current)) {
-        return true;
+        return false;
     }
 
     auto& previous_subsets = previous.subsets();
