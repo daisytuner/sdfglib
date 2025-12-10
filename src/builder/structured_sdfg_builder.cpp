@@ -536,7 +536,11 @@ void StructuredSDFGBuilder::remove_children(Sequence& parent) {
 };
 
 void StructuredSDFGBuilder::move_child(Sequence& source, size_t source_index, Sequence& target) {
-    this->move_child(source, source_index, target, target.size());
+    size_t target_index = target.size();
+    if (&source == &target) {
+        target_index--;
+    }
+    this->move_child(source, source_index, target, target_index);
 };
 
 void StructuredSDFGBuilder::move_child(Sequence& source, size_t source_index, Sequence& target, size_t target_index) {
