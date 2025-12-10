@@ -17,9 +17,6 @@ struct __daisy_DeviceDeleter {
     void operator()(tt::tt_metal::IDevice* ptr) const {
         // Device mgmt of Tenstorrent is itself a global var that gets descructed at C++ exit handlers. So it may have
         // already destructed the devices...
-        if (tt::DevicePool::is_initialized() && tt::DevicePool::instance().is_device_active(id)) {
-            tt::tt_metal::CloseDevice(ptr);
-        }
     }
 
 private:
