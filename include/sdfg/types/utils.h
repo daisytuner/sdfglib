@@ -2,10 +2,13 @@
 
 #include <cassert>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "sdfg/function.h"
+#include "sdfg/structured_sdfg.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/types/structure.h"
 #include "sdfg/types/type.h"
 
 namespace sdfg {
@@ -41,6 +44,12 @@ symbolic::Expression get_contiguous_element_size(const types::IType& type, bool 
 ///     if the size cannot be determined statically
 /// @return Empty RCP if the size is unknown
 symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_time_eval = true);
+
+/// Returns the next element type inside an array/pointer/reference type.
+///
+/// @param type The type to peel
+/// @return The next element type, or nullptr if there is none
+const types::IType* peel_to_next_element(const types::IType& type);
 
 } // namespace types
 } // namespace sdfg
