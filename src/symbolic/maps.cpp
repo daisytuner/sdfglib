@@ -256,47 +256,6 @@ bool is_disjoint_monotonic(
     return false;
 }
 
-bool is_disjoint_interval(
-    const MultiExpression& expr1,
-    const MultiExpression& expr2,
-    const Symbol indvar,
-    const Assumptions& assums1,
-    const Assumptions& assums2
-) {
-    for (size_t i = 0; i < expr1.size(); i++) {
-        auto& dim1 = expr1[i];
-        if (expr2.size() <= i) {
-            continue;
-        }
-        auto& dim2 = expr2[i];
-
-        auto lb1 = minimum(dim1, {}, assums1);
-        if (lb1 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*lb1)) {
-            continue;
-        }
-        auto ub1 = maximum(dim1, {}, assums1);
-        if (ub1 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*ub1)) {
-            continue;
-        }
-        auto lb2 = minimum(dim2, {}, assums2);
-        if (lb2 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*lb2)) {
-            continue;
-        }
-        auto ub2 = maximum(dim2, {}, assums2);
-        if (ub2 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*ub2)) {
-            continue;
-        }
-
-        auto dis1 = symbolic::Gt(lb1, ub2);
-        auto dis2 = symbolic::Gt(lb2, ub1);
-        if (symbolic::is_true(dis1) || symbolic::is_true(dis2)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool intersects(
     const MultiExpression& expr1,
     const MultiExpression& expr2,
@@ -304,9 +263,6 @@ bool intersects(
     const Assumptions& assums1,
     const Assumptions& assums2
 ) {
-    if (is_disjoint_interval(expr1, expr2, indvar, assums1, assums2)) {
-        return false;
-    }
     if (is_disjoint_monotonic(expr1, expr2, indvar, assums1, assums2)) {
         return false;
     }
