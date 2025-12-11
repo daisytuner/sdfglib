@@ -64,29 +64,6 @@ private:
         structured_control_flow::Block& block
     );
 
-    bool for_invariant_front(structured_control_flow::Sequence& parent, structured_control_flow::For& for_stmt);
-    bool for_invariant_back(structured_control_flow::Sequence& parent, structured_control_flow::For& for_stmt);
-    bool for_invariant_move(
-        structured_control_flow::Sequence& parent,
-        structured_control_flow::For& for_stmt,
-        structured_control_flow::Block& block
-    );
-    bool for_invariant_view(
-        structured_control_flow::Sequence& parent,
-        structured_control_flow::For& for_stmt,
-        structured_control_flow::Block& block
-    );
-    bool for_invariant_libnode_front(
-        structured_control_flow::Sequence& parent,
-        structured_control_flow::For& for_stmt,
-        structured_control_flow::Block& block
-    );
-    bool for_invariant_libnode_back(
-        structured_control_flow::Sequence& parent,
-        structured_control_flow::For& for_stmt,
-        structured_control_flow::Block& block
-    );
-
     bool if_else_invariant_front(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else);
     bool if_else_invariant_back(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else);
     void if_else_extract_invariant_front(
@@ -102,8 +79,12 @@ protected:
 
     virtual bool equal_libnodes(structured_control_flow::Block& block1, structured_control_flow::Block& block2);
 
-    virtual void if_else_extract_invariant_libnode_front(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else);
-    virtual void if_else_extract_invariant_libnode_back(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else);
+    virtual void if_else_extract_invariant_libnode_front(
+        structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else
+    );
+    virtual void if_else_extract_invariant_libnode_back(
+        structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else
+    );
 
 public:
     BlockHoisting(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
@@ -111,8 +92,6 @@ public:
     static std::string name() { return "BlockHoisting"; }
 
     virtual bool accept(structured_control_flow::Map& map_stmt) override;
-
-    virtual bool accept(structured_control_flow::For& for_stmt) override;
 
     virtual bool accept(structured_control_flow::IfElse& if_else) override;
 };
