@@ -15,7 +15,7 @@ public:
     bool accept(structured_control_flow::For& node) override;
 };
 
-typedef VisitorPass<IteratorToIndvar> IteratorToIndvarPass;
+typedef VisitorPass<IteratorToIndvar> PointerEvolution;
 
 } // namespace passes
 } // namespace sdfg

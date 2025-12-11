@@ -1,4 +1,4 @@
-#include "sdfg/passes/structured_control_flow/iterator_to_indvar.h"
+#include "sdfg/passes/structured_control_flow/pointer_evolution.h"
 
 #include <gtest/gtest.h>
 
@@ -8,7 +8,7 @@
 
 using namespace sdfg;
 
-TEST(IteratorToIndvarTest, ZeroOffsets) {
+TEST(PointerEvolutionTest, ZeroOffsets) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Pointer opaque_desc;
@@ -47,7 +47,7 @@ TEST(IteratorToIndvarTest, ZeroOffsets) {
 
     // Apply pass
     analysis::AnalysisManager analysis_manager(builder.subject());
-    passes::IteratorToIndvarPass pass;
+    passes::PointerEvolution pass;
     EXPECT_TRUE(pass.run(builder, analysis_manager));
 
     EXPECT_TRUE(block2.dataflow().nodes().empty());
