@@ -28,7 +28,7 @@ TEST(DataDependencyAnalysisTest, Block_Define_Scalar) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -70,7 +70,7 @@ TEST(DataDependencyAnalysisTest, Block_Define_Array) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -112,7 +112,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Scalar) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -160,7 +160,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Array) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -214,7 +214,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Array_Subset) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -265,7 +265,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Symbol) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -318,7 +318,7 @@ TEST(DataDependencyAnalysisTest, Block_Use_Scalar) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -377,7 +377,7 @@ TEST(DataDependencyAnalysisTest, Block_Use_Array) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -423,7 +423,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Define_Scalar) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -463,7 +463,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Use_Scalar) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -509,7 +509,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Close_Scalar) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -564,7 +564,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Close_Array) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -615,7 +615,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Define_Array_Subsets) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -658,7 +658,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Condition_Undefined) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -694,7 +694,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Condition_Use) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -739,7 +739,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Complete_Scalar) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -799,7 +799,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Incomplete_Scalar) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -867,7 +867,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Array) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -932,7 +932,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Array_Subsets) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -997,7 +997,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Close_Array) {
 
     // Run analysis
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -1049,7 +1049,7 @@ TEST(DataDependencyAnalysisTest, For_Indvar) {
     );
 
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -1112,7 +1112,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Scalar) {
         .add_computational_memlet(block2, tasklet2, "_out", output_node2, {}, types::Scalar(types::PrimitiveType::Int32));
 
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -1178,7 +1178,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Array) {
     builder.add_computational_memlet(block2, tasklet2, "_out", output_node2, {symbolic::symbol("j")}, array_desc);
 
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -1244,7 +1244,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets) {
     builder.add_computational_memlet(block2, tasklet2, "_out", output_node2, {symbolic::symbol("j")}, array_desc);
 
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -1310,7 +1310,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets_Trivial) {
     builder.add_computational_memlet(block2, tasklet2, "_out", output_node2, {symbolic::integer(0)}, array_desc);
 
     analysis::AnalysisManager analysis_manager(builder.subject());
-    analysis::DataDependencyAnalysis analysis(builder.subject());
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -1365,7 +1365,8 @@ types::Scalar(types::PrimitiveType::Int32));
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -1438,7 +1439,8 @@ types::Scalar(types::PrimitiveType::Int32));
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -1520,7 +1522,8 @@ types::Scalar(types::PrimitiveType::Int32));
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -1610,7 +1613,8 @@ types::Scalar(types::PrimitiveType::Int32));
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& users = analysis_manager.get<analysis::Users>();
 
     std::unordered_set<analysis::User*> undefined;
@@ -1699,7 +1703,8 @@ types::Scalar(types::PrimitiveType::Int32));
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& users = analysis_manager.get<analysis::Users>();
 
     // Check result
@@ -1788,7 +1793,8 @@ types::Pointer(types::Scalar(types::PrimitiveType::Double)));
     // Run analysis
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& users = analysis_manager.get<analysis::Users>();
 
     // Check result
@@ -1873,7 +1879,8 @@ TEST(LoopDependencyAnalysisTest, Last_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -1920,7 +1927,8 @@ TEST(LoopDependencyAnalysisTest, Sum_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -1965,7 +1973,8 @@ TEST(LoopDependencyAnalysisTest, Shift_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -2011,7 +2020,8 @@ TEST(LoopDependencyAnalysisTest, PartialSum_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -2062,7 +2072,8 @@ TEST(LoopDependencyAnalysisTest, LoopLocal_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -2113,7 +2124,8 @@ TEST(LoopDependencyAnalysisTest, LoopLocal_Conditional) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop1);
 
     // Check
@@ -2161,7 +2173,8 @@ TEST(LoopDependencyAnalysisTest, LoopLocal_Conditional_Incomplete) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop1);
 
     // Check
@@ -2202,7 +2215,8 @@ TEST(LoopDependencyAnalysisTest, Store_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -2245,7 +2259,8 @@ TEST(LoopDependencyAnalysisTest, Copy_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -2289,7 +2304,8 @@ TEST(LoopDependencyAnalysisTest, Map_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -2335,7 +2351,8 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Disjoint) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -2379,7 +2396,8 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Strided) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -2423,7 +2441,8 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Strided2) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -2479,7 +2498,8 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Tiled) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies1 = analysis.dependencies(loop_outer);
     auto& dependencies2 = analysis.dependencies(loop_inner);
 
@@ -2549,7 +2569,8 @@ TEST(LoopDependencyAnalysisTest, Map_1D_Incomplete) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -2609,7 +2630,8 @@ TEST(LoopDependencyAnalysisTest, MapParameterized_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -2662,7 +2684,8 @@ TEST(LoopDependencyAnalysisTest, Stencil_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -2716,7 +2739,8 @@ TEST(LoopDependencyAnalysisTest, Gather_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -2769,7 +2793,8 @@ TEST(LoopDependencyAnalysisTest, Scatter_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -2813,7 +2838,8 @@ TEST(LoopDependencyAnalysisTest, MapDeg2_1D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(loop);
 
     // Check
@@ -2872,7 +2898,8 @@ TEST(LoopDependencyAnalysisTest, Map_2D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
 
     // Check
     auto& dependencies = analysis.dependencies(loop);
@@ -2935,7 +2962,8 @@ TEST(LoopDependencyAnalysisTest, PartialSumInner_2D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies1 = analysis.dependencies(loop1);
     auto& dependencies2 = analysis.dependencies(loop2);
 
@@ -2996,7 +3024,8 @@ TEST(LoopDependencyAnalysisTest, PartialSumOuter_2D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies1 = analysis.dependencies(loop1);
     auto& dependencies2 = analysis.dependencies(loop2);
 
@@ -3061,7 +3090,8 @@ TEST(LoopDependencyAnalysisTest, PartialSum_1D_Triangle) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies1 = analysis.dependencies(loop1);
     auto& dependencies2 = analysis.dependencies(loop2);
 
@@ -3124,7 +3154,8 @@ TEST(LoopDependencyAnalysisTest, Transpose_2D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies1 = analysis.dependencies(loop1);
     auto& dependencies2 = analysis.dependencies(loop2);
 
@@ -3181,7 +3212,8 @@ TEST(LoopDependencyAnalysisTest, TransposeTriangle_2D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies1 = analysis.dependencies(loop1);
     auto& dependencies2 = analysis.dependencies(loop2);
 
@@ -3238,7 +3270,8 @@ TEST(LoopDependencyAnalysisTest, TransposeTriangleWithDiagonal_2D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies1 = analysis.dependencies(loop1);
     auto& dependencies2 = analysis.dependencies(loop2);
 
@@ -3295,7 +3328,8 @@ TEST(LoopDependencyAnalysisTest, TransposeSquare_2D) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies1 = analysis.dependencies(loop1);
     auto& dependencies2 = analysis.dependencies(loop2);
 
@@ -3406,7 +3440,8 @@ TEST(LoopDependencyAnalysisTest, ReductionWithLocalStorage) {
 
     // Analysis
     analysis::AnalysisManager analysis_manager(sdfg);
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(sdfg, true);
+    analysis.run(analysis_manager);
     auto& dependencies1 = analysis.dependencies(loop1);
     auto& dependencies2 = analysis.dependencies(loop2);
 
