@@ -15,13 +15,13 @@
 namespace sdfg {
 namespace analysis {
 
-DataDependencyAnalysis::DataDependencyAnalysis(StructuredSDFG& sdfg)
-    : Analysis(sdfg), node_(sdfg.root()) {
+DataDependencyAnalysis::DataDependencyAnalysis(StructuredSDFG& sdfg, bool detailed)
+    : Analysis(sdfg), node_(sdfg.root()), detailed_(detailed) {
 
       };
 
-DataDependencyAnalysis::DataDependencyAnalysis(StructuredSDFG& sdfg, structured_control_flow::Sequence& node)
-    : Analysis(sdfg), node_(node) {
+DataDependencyAnalysis::DataDependencyAnalysis(StructuredSDFG& sdfg, structured_control_flow::Sequence& node, bool detailed)
+    : Analysis(sdfg), node_(node), detailed_(detailed) {
 
       };
 
@@ -348,10 +348,8 @@ void DataDependencyAnalysis::visit_for(
     }
 
     // Add loop-carried dependencies
-
-    // Criterion 1: Loop is monotonic -> indvar never takes the same value twice
     bool is_monotonic = LoopAnalysis::is_monotonic(&for_loop, assumptions_analysis);
-    if (is_monotonic) {
+    if (this->detailed_ && is_monotonic) {
         // Case: Can analyze
         bool success = this->loop_carried_dependencies_.insert({&for_loop, {}}).second;
         assert(success);
@@ -835,6 +833,10 @@ bool DataDependencyAnalysis::intersects(User& previous, User& current, analysis:
         return true;
     }
 
+    if (!this->detailed_) {
+        return true;
+    }
+
     auto& previous_subsets = previous.subsets();
     auto& current_subsets = current.subsets();
 
@@ -886,6 +888,10 @@ bool DataDependencyAnalysis::closes(
         return false;
     }
 
+    if (!this->detailed_) {
+        return false;
+    }
+
     // Collect memlets and assumptions
     auto previous_scope = Users::scope(&previous);
     auto current_scope = Users::scope(&current);
@@ -928,6 +934,10 @@ bool DataDependencyAnalysis::depends(
     }
 
     if (this->is_undefined_user(previous)) {
+        return true;
+    }
+
+    if (!this->detailed_) {
         return true;
     }
 

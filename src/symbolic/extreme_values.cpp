@@ -12,7 +12,7 @@ Expression maximum(const Expression expr, const SymbolSet& parameters, const Ass
 Expression minimum(const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions, const size_t depth) {
     // Base Cases
     if (depth > MAX_DEPTH) {
-        return expr;
+        return SymEngine::null;
     }
 
     if (SymEngine::is_a<SymEngine::NaN>(*expr)) {
@@ -137,7 +137,7 @@ Expression minimum(const Expression expr, const SymbolSet& parameters, const Ass
 
 Expression maximum(const Expression expr, const SymbolSet& parameters, const Assumptions& assumptions, const size_t depth) {
     if (depth > MAX_DEPTH) {
-        return expr;
+        return SymEngine::null;
     }
 
     if (SymEngine::is_a<SymEngine::NaN>(*expr)) {

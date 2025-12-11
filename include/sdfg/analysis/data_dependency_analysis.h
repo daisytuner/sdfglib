@@ -34,6 +34,8 @@ class DataDependencyAnalysis : public Analysis {
 
 private:
     structured_control_flow::Sequence& node_;
+    bool detailed_;
+
     std::unordered_map<std::string, std::unordered_map<User*, std::unordered_set<User*>>> results_;
 
     std::unordered_map<structured_control_flow::StructuredLoop*, std::unordered_map<std::string, LoopCarriedDependency>>
@@ -68,9 +70,9 @@ private:
     );
 
 public:
-    DataDependencyAnalysis(StructuredSDFG& sdfg);
+    DataDependencyAnalysis(StructuredSDFG& sdfg, bool detailed = false);
 
-    DataDependencyAnalysis(StructuredSDFG& sdfg, structured_control_flow::Sequence& node);
+    DataDependencyAnalysis(StructuredSDFG& sdfg, structured_control_flow::Sequence& node, bool detailed = false);
 
     void run(analysis::AnalysisManager& analysis_manager) override;
 

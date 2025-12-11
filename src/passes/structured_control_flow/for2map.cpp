@@ -62,7 +62,8 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt, analysis::A
     }
 
     // Criterion: loop must be data-parallel w.r.t containers
-    auto& data_dependency_analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis data_dependency_analysis(builder_.subject(), true);
+    data_dependency_analysis.run(analysis_manager);
     auto dependencies = data_dependency_analysis.dependencies(for_stmt);
 
     // a. No true dependencies (RAW) between iterations
