@@ -9,7 +9,7 @@
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/types/utils.h"
 
-#define TRAVERSE_CUTOFF 100
+#define TRAVERSE_CUTOFF 30
 
 using namespace sdfg::control_flow;
 using namespace sdfg::structured_control_flow;
