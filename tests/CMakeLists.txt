@@ -18,6 +18,7 @@ set(TEST_FILES
     builder/function_builder_test.cpp
     builder/sdfg_builder_test.cpp
     builder/structured_sdfg_builder_test.cpp
+    builder/structured_sdfg_conversion_test.cpp
     codegen/code_generators/c_code_generator_test.cpp
     codegen/code_generators/cpp_code_generator_test.cpp
     codegen/code_generators/cuda_code_generator_test.cpp
