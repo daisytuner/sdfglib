@@ -123,6 +123,8 @@ public:
 
     std::list<std::list<const control_flow::InterstateEdge*>>
     all_simple_paths(const control_flow::State& src, const control_flow::State& dst) const;
+
+    void as_dot(std::ostream& out) const;
 };
 
 } // namespace sdfg
