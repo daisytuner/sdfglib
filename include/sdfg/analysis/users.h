@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <boost/functional/hash.hpp>
+
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/element.h"
 #include "sdfg/structured_control_flow/sequence.h"
@@ -91,17 +93,42 @@ private:
 
     std::unordered_map<graph::Vertex, std::unique_ptr<User>, boost::hash<graph::Vertex>> users_;
 
+    // Lookup tables for entries and exits of control flow nodes
     std::unordered_map<const structured_control_flow::ControlFlowNode*, User*> entries_;
     std::unordered_map<const structured_control_flow::ControlFlowNode*, User*> exits_;
 
-    std::unordered_map<std::string, std::unordered_map<Element*, std::unordered_map<Use, User*>>> users_by_sdfg_;
-    std::unordered_map<std::string, std::unordered_map<Element*, std::unordered_map<Use, User*>>>
-        users_by_sdfg_loop_init_;
-    std::unordered_map<std::string, std::unordered_map<Element*, std::unordered_map<Use, User*>>>
-        users_by_sdfg_loop_condition_;
-    std::unordered_map<std::string, std::unordered_map<Element*, std::unordered_map<Use, User*>>>
-        users_by_sdfg_loop_update_;
+    struct UserProps {
+        std::string container;
+        Element* element;
+        Use use;
+        bool is_init;
+        bool is_condition;
+        bool is_update;
 
+        bool operator==(const UserProps& other) const {
+            return container == other.container && element->element_id() == other.element->element_id() &&
+                   use == other.use && is_init == other.is_init && is_condition == other.is_condition &&
+                   is_update == other.is_update;
+        }
+    };
+
+    struct UserPropsHash {
+        std::size_t operator()(const UserProps& k) const {
+            std::size_t h = 0;
+            boost::hash_combine(h, k.container);
+            boost::hash_combine(h, k.element->element_id());
+            boost::hash_combine(h, static_cast<int>(k.use));
+            boost::hash_combine(h, k.is_init);
+            boost::hash_combine(h, k.is_condition);
+            boost::hash_combine(h, k.is_update);
+            return h;
+        }
+    };
+
+    // Lookup table for users by (container, element, use, is_init, is_condition, is_update)
+    std::unordered_map<UserProps, User*, UserPropsHash> users_lookup_;
+
+    // Lookup tables for different use types
     std::unordered_map<std::string, std::list<User*>> reads_;
     std::unordered_map<std::string, std::list<User*>> writes_;
     std::unordered_map<std::string, std::list<User*>> views_;

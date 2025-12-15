@@ -443,10 +443,7 @@ void Users::run(analysis::AnalysisManager& analysis_manager) {
     sink_ = nullptr;
     this->entries_.clear();
     this->exits_.clear();
-    users_by_sdfg_.clear();
-    users_by_sdfg_loop_condition_.clear();
-    users_by_sdfg_loop_init_.clear();
-    users_by_sdfg_loop_update_.clear();
+    this->users_lookup_.clear();
 
     reads_.clear();
     writes_.clear();
@@ -981,59 +978,17 @@ std::unordered_set<User*> UsersView::all_uses_after(User& user) {
 
 bool Users::
     has_user(const std::string& container, Element* element, Use use, bool is_init, bool is_condition, bool is_update) {
-    if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element)) {
-        if (is_init) {
-            if (users_by_sdfg_loop_init_.find(container) == users_by_sdfg_loop_init_.end() ||
-                users_by_sdfg_loop_init_.at(container).find(for_loop) == users_by_sdfg_loop_init_.at(container).end() ||
-                users_by_sdfg_loop_init_.at(container).at(for_loop).find(use) ==
-                    users_by_sdfg_loop_init_.at(container).at(for_loop).end()) {
-                return false;
-            }
-            return true;
-        } else if (is_condition) {
-            if (users_by_sdfg_loop_condition_.find(container) == users_by_sdfg_loop_condition_.end() ||
-                users_by_sdfg_loop_condition_.at(container).find(for_loop) ==
-                    users_by_sdfg_loop_condition_.at(container).end() ||
-                users_by_sdfg_loop_condition_.at(container).at(for_loop).find(use) ==
-                    users_by_sdfg_loop_condition_.at(container).at(for_loop).end()) {
-                return false;
-            }
-            return true;
-        } else if (is_update) {
-            if (users_by_sdfg_loop_update_.find(container) == users_by_sdfg_loop_update_.end() ||
-                users_by_sdfg_loop_update_.at(container).find(for_loop) ==
-                    users_by_sdfg_loop_update_.at(container).end() ||
-                users_by_sdfg_loop_update_.at(container).at(for_loop).find(use) ==
-                    users_by_sdfg_loop_update_.at(container).at(for_loop).end()) {
-                return false;
-            }
-            return true;
-        }
-    }
-    if (users_by_sdfg_.find(container) == users_by_sdfg_.end() ||
-        users_by_sdfg_.at(container).find(element) == users_by_sdfg_.at(container).end() ||
-        users_by_sdfg_.at(container).at(element).find(use) == users_by_sdfg_.at(container).at(element).end()) {
+    UserProps key{container, element, use, is_init, is_condition, is_update};
+    if (this->users_lookup_.find(key) == this->users_lookup_.end()) {
         return false;
     }
-
     return true;
 }
 
 User* Users::
     get_user(const std::string& container, Element* element, Use use, bool is_init, bool is_condition, bool is_update) {
-    if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element)) {
-        if (is_init) {
-            auto tmp = users_by_sdfg_loop_init_.at(container).at(for_loop).at(use);
-            return tmp;
-        } else if (is_condition) {
-            return users_by_sdfg_loop_condition_.at(container).at(for_loop).at(use);
-        } else if (is_update) {
-            return users_by_sdfg_loop_update_.at(container).at(for_loop).at(use);
-        }
-    }
-
-    auto tmp = users_by_sdfg_.at(container).at(element).at(use);
-    return tmp;
+    UserProps key{container, element, use, is_init, is_condition, is_update};
+    return this->users_lookup_.at(key);
 }
 
 void Users::add_user(std::unique_ptr<User> user) {
@@ -1041,31 +996,27 @@ void Users::add_user(std::unique_ptr<User> user) {
     this->users_.insert({vertex, std::move(user)});
 
     auto user_ptr = this->users_.at(vertex).get();
-    auto* target_structure = &users_by_sdfg_;
+    bool is_init = false;
+    bool is_condition = false;
+    bool is_update = false;
     if (auto for_user = dynamic_cast<ForUser*>(user_ptr)) {
         auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(user_ptr->element());
         if (for_loop == nullptr) {
             throw std::invalid_argument("Invalid user type");
         }
         if (for_user->is_init()) {
-            target_structure = &users_by_sdfg_loop_init_;
+            is_init = true;
         } else if (for_user->is_condition()) {
-            target_structure = &users_by_sdfg_loop_condition_;
+            is_condition = true;
         } else if (for_user->is_update()) {
-            target_structure = &users_by_sdfg_loop_update_;
+            is_update = true;
         } else {
             throw std::invalid_argument("Invalid user type");
         }
     }
 
-    if (target_structure->find(user_ptr->container()) == target_structure->end()) {
-        target_structure->insert({user_ptr->container(), {}});
-    }
-    if ((*target_structure)[user_ptr->container()].find(user_ptr->element()) ==
-        (*target_structure)[user_ptr->container()].end()) {
-        target_structure->at(user_ptr->container()).insert({user_ptr->element(), {}});
-    }
-    target_structure->at(user_ptr->container()).at(user_ptr->element()).insert({user_ptr->use(), user_ptr});
+    UserProps key{user_ptr->container(), user_ptr->element(), user_ptr->use(), is_init, is_condition, is_update};
+    this->users_lookup_.insert({key, user_ptr});
 }
 
 std::unordered_set<std::string> Users::locals(structured_control_flow::ControlFlowNode& node) {
