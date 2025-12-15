@@ -311,6 +311,8 @@ void AssumptionsAnalysis::determine_parameters(analysis::AnalysisManager& analys
 void AssumptionsAnalysis::run(analysis::AnalysisManager& analysis_manager) {
     this->assumptions_.clear();
     this->parameters_.clear();
+    this->cache_nodes_.clear();
+    this->cache_range_.clear();
 
     // Add sdfg assumptions
     this->assumptions_.insert({&sdfg_.root(), symbolic::Assumptions()});
@@ -332,6 +334,13 @@ void AssumptionsAnalysis::run(analysis::AnalysisManager& analysis_manager) {
 
 const symbolic::Assumptions AssumptionsAnalysis::
     get(structured_control_flow::ControlFlowNode& node, bool include_trivial_bounds) {
+    if (include_trivial_bounds) {
+        std::string key = std::to_string(node.element_id());
+        if (this->cache_nodes_.find(key) != this->cache_nodes_.end()) {
+            return this->cache_nodes_[key];
+        }
+    }
+
     // Compute assumptions on the fly
 
     // Node-level assumptions
@@ -410,6 +419,10 @@ const symbolic::Assumptions AssumptionsAnalysis::
         }
     }
 
+    if (include_trivial_bounds) {
+        std::string key = std::to_string(node.element_id());
+        this->cache_nodes_.insert({key, assums});
+    }
     return assums;
 };
 
@@ -417,6 +430,13 @@ const symbolic::Assumptions AssumptionsAnalysis::
     get(structured_control_flow::ControlFlowNode& from,
         structured_control_flow::ControlFlowNode& to,
         bool include_trivial_bounds) {
+    if (include_trivial_bounds) {
+        std::string key = std::to_string(from.element_id()) + "." + std::to_string(to.element_id());
+        if (this->cache_range_.find(key) != this->cache_range_.end()) {
+            return this->cache_range_[key];
+        }
+    }
+
     auto assums_from = this->get(from, include_trivial_bounds);
     auto assums_to = this->get(to, include_trivial_bounds);
 
@@ -462,6 +482,10 @@ const symbolic::Assumptions AssumptionsAnalysis::
         }
     }
 
+    if (include_trivial_bounds) {
+        std::string key = std::to_string(from.element_id()) + "." + std::to_string(to.element_id());
+        this->cache_range_.insert({key, assums_to});
+    }
     return assums_to;
 }
 

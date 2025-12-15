@@ -24,7 +24,7 @@ bool TrivialArrayElimination::
         if (!sdfg.is_transient(name)) {
             continue;
         }
-        if (!users.moves(name).empty() || !users.views(name).empty()) {
+        if (users.num_moves(name) > 0 || users.num_views(name) > 0) {
             continue;
         }
 

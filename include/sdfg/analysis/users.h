@@ -144,21 +144,31 @@ public:
 
     std::vector<User*> uses(const std::string& container) const;
 
+    size_t num_uses(const std::string& container) const;
+
     std::vector<User*> writes() const;
 
     std::vector<User*> writes(const std::string& container) const;
+
+    size_t num_writes(const std::string& container) const;
 
     std::vector<User*> reads() const;
 
     std::vector<User*> reads(const std::string& container) const;
 
+    size_t num_reads(const std::string& container) const;
+
     std::vector<User*> views() const;
 
     std::vector<User*> views(const std::string& container) const;
 
+    size_t num_views(const std::string& container) const;
+
     std::vector<User*> moves() const;
 
     std::vector<User*> moves(const std::string& container) const;
+
+    size_t num_moves(const std::string& container) const;
 
     static structured_control_flow::ControlFlowNode* scope(User* user);
 

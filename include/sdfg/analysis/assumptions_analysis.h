@@ -18,6 +18,10 @@ class AssumptionsAnalysis : public Analysis {
 private:
     std::unordered_map<structured_control_flow::ControlFlowNode*, symbolic::Assumptions> assumptions_;
 
+    std::unordered_map<std::string, symbolic::Assumptions> cache_nodes_;
+
+    std::unordered_map<std::string, symbolic::Assumptions> cache_range_;
+
     symbolic::SymbolSet parameters_;
 
     analysis::ScopeAnalysis* scope_analysis_;

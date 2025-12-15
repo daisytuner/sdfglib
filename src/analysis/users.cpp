@@ -560,6 +560,8 @@ std::vector<User*> Users::uses(const std::string& container) const {
     return us;
 };
 
+size_t Users::num_uses(const std::string& container) const { return this->uses(container).size(); };
+
 std::vector<User*> Users::writes() const {
     std::vector<User*> us;
     for (auto& entry : this->users_) {
@@ -579,6 +581,8 @@ std::vector<User*> Users::writes(const std::string& container) const {
         return this->writes_.at(container);
     }
 };
+
+size_t Users::num_writes(const std::string& container) const { return this->writes(container).size(); };
 
 std::vector<User*> Users::reads() const {
     std::vector<User*> us;
@@ -600,6 +604,8 @@ std::vector<User*> Users::reads(const std::string& container) const {
     }
 };
 
+size_t Users::num_reads(const std::string& container) const { return this->reads(container).size(); };
+
 std::vector<User*> Users::views() const {
     std::vector<User*> us;
     for (auto& entry : this->users_) {
@@ -620,6 +626,8 @@ std::vector<User*> Users::views(const std::string& container) const {
     }
 };
 
+size_t Users::num_views(const std::string& container) const { return this->views(container).size(); };
+
 std::vector<User*> Users::moves() const {
     std::vector<User*> us;
     for (auto& entry : this->users_) {
@@ -639,6 +647,8 @@ std::vector<User*> Users::moves(const std::string& container) const {
         return this->moves_.at(container);
     }
 };
+
+size_t Users::num_moves(const std::string& container) const { return this->moves(container).size(); };
 
 structured_control_flow::ControlFlowNode* Users::scope(User* user) {
     if (auto data_node = dynamic_cast<data_flow::DataFlowNode*>(user->element())) {

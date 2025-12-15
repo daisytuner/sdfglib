@@ -24,10 +24,10 @@ bool RedundantArrayElimination::
         if (!sdfg.is_transient(name)) {
             continue;
         }
-        if (!users.moves(name).empty() || !users.views(name).empty()) {
+        if (users.num_moves(name) > 0 || users.num_views(name) > 0) {
             continue;
         }
-        if (users.writes(name).size() != 1) {
+        if (users.num_writes(name) != 1) {
             continue;
         }
         std::unique_ptr<types::IType> type = sdfg.type(name).clone();
