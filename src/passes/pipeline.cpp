@@ -55,6 +55,33 @@ bool Pipeline::run(builder::StructuredSDFGBuilder& builder, analysis::AnalysisMa
     return applied;
 };
 
+Pipeline Pipeline::dataflow_simplification() {
+    Pipeline p("DataflowSimplification");
+
+    p.register_pass<BlockFusionPass>();
+    p.register_pass<TaskletFusionPass>();
+    p.register_pass<SequenceFusion>();
+
+    return p;
+};
+
+Pipeline Pipeline::symbolic_simplification() {
+    Pipeline p("SymbolicSimplification");
+
+    p.register_pass<SymbolPropagation>();
+
+    return p;
+};
+
+Pipeline Pipeline::dead_code_elimination() {
+    Pipeline p("DeadCodeElimination");
+
+    p.register_pass<DeadCFGElimination>();
+    p.register_pass<DeadDataElimination>();
+
+    return p;
+};
+
 Pipeline Pipeline::expression_combine() {
     Pipeline p("ExpressionCombine");
 

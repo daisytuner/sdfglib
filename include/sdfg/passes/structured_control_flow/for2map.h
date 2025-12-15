@@ -1,29 +1,26 @@
 #pragma once
 
+#include "sdfg/analysis/data_dependency_analysis.h"
 #include "sdfg/passes/pass.h"
-#include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {
 namespace passes {
 
-class For2Map : public visitor::StructuredSDFGVisitor {
-public:
-    For2Map(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
-
-    static std::string name() { return "For2Map"; };
-
-    bool accept(structured_control_flow::For& node) override;
-
+class For2MapPass : public Pass {
 private:
-    bool can_be_applied(structured_control_flow::For& for_stmt, analysis::AnalysisManager& analysis_manager);
-    void apply(
-        structured_control_flow::For& for_stmt,
-        builder::StructuredSDFGBuilder& builder,
-        analysis::AnalysisManager& analysis_manager
-    );
-};
+    std::unique_ptr<analysis::DataDependencyAnalysis> data_dependency_analysis_;
 
-typedef VisitorPass<For2Map> For2MapPass;
+    bool can_be_applied(
+        builder::StructuredSDFGBuilder& builder,
+        analysis::AnalysisManager& analysis_manager,
+        structured_control_flow::For& for_stmt
+    );
+
+public:
+    virtual std::string name() override;
+
+    virtual bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
+};
 
 } // namespace passes
 } // namespace sdfg
