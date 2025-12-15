@@ -22,7 +22,7 @@ bool DeadDataElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
         if (!sdfg.is_transient(name)) {
             continue;
         }
-        if (!dynamic_cast<const types::Scalar*>(&sdfg.type(name))) {
+        if (sdfg.type(name).type_id() != types::TypeID::Scalar) {
             continue;
         }
 
