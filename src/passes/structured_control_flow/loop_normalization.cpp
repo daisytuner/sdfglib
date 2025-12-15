@@ -46,7 +46,7 @@ bool LoopNormalization::accept(structured_control_flow::For& loop) {
     auto indvar = loop.indvar();
     auto update = loop.update();
     auto& assumptions_analysis = analysis_manager_.get<analysis::AssumptionsAnalysis>();
-    auto assums = assumptions_analysis.get(loop, true);
+    auto& assums = assumptions_analysis.get(loop, true);
     auto [success, coeffs] = symbolic::series::affine_int_coeffs(update, indvar, assums);
     if (!success) {
         return applied;
@@ -133,7 +133,7 @@ bool LoopNormalization::accept(structured_control_flow::For& loop) {
                     new_clause.push_back(literal);
                     continue;
                 }
-                auto arg1 = args.at(0);;
+                auto arg1 = args.at(0);
                 auto arg2 = args.at(1);
                 if (!symbolic::eq(arg1, loop.init())) {
                     std::swap(arg1, arg2);
@@ -147,7 +147,6 @@ bool LoopNormalization::accept(structured_control_flow::For& loop) {
             } else {
                 new_clause.push_back(literal);
             }
-
         }
         new_cnf.push_back(new_clause);
     }
@@ -198,7 +197,7 @@ bool LoopNormalization::accept(structured_control_flow::For& loop) {
 
             auto new_init = symbolic::zero();
             auto actual_indvar = symbolic::add(indvar, loop.init());
-            
+
             // T
             bool canonical_condition = false;
             if (new_cnf.size() == 1) {

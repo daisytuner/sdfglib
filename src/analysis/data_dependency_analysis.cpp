@@ -762,9 +762,9 @@ bool DataDependencyAnalysis::loop_depends(
     auto& current_subsets = current.subsets();
 
     auto previous_scope = Users::scope(&previous);
-    auto previous_assumptions = assumptions_analysis.get(loop.root(), *previous_scope, true);
+    auto& previous_assumptions = assumptions_analysis.get(loop.root(), *previous_scope, true);
     auto current_scope = Users::scope(&current);
-    auto current_assumptions = assumptions_analysis.get(loop.root(), *current_scope, true);
+    auto& current_assumptions = assumptions_analysis.get(loop.root(), *current_scope, true);
 
     // Check if previous subset is subset of any current subset
     for (auto& previous_subset : previous_subsets) {
@@ -798,9 +798,9 @@ bool DataDependencyAnalysis::
     auto& previous_subsets = previous.subsets();
     auto& current_subsets = current.subsets();
     auto previous_scope = Users::scope(&previous);
-    auto previous_assumptions = assumptions_analysis.get(*previous_scope, true);
+    auto& previous_assumptions = assumptions_analysis.get(*previous_scope, true);
     auto current_scope = Users::scope(&current);
-    auto current_assumptions = assumptions_analysis.get(*current_scope, true);
+    auto& current_assumptions = assumptions_analysis.get(*current_scope, true);
 
     // Check if previous subset is subset of any current subset
     for (auto& previous_subset : previous_subsets) {
@@ -841,9 +841,9 @@ bool DataDependencyAnalysis::intersects(User& previous, User& current, analysis:
     auto& current_subsets = current.subsets();
 
     auto previous_scope = Users::scope(&previous);
-    auto previous_assumptions = assumptions_analysis.get(*previous_scope, true);
+    auto& previous_assumptions = assumptions_analysis.get(*previous_scope, true);
     auto current_scope = Users::scope(&current);
-    auto current_assumptions = assumptions_analysis.get(*current_scope, true);
+    auto& current_assumptions = assumptions_analysis.get(*current_scope, true);
 
     // Check if any current subset intersects with any previous subset
     bool found = false;
@@ -895,8 +895,8 @@ bool DataDependencyAnalysis::closes(
     // Collect memlets and assumptions
     auto previous_scope = Users::scope(&previous);
     auto current_scope = Users::scope(&current);
-    auto previous_assumptions = assumptions_analysis.get(*previous_scope, true);
-    auto current_assumptions = assumptions_analysis.get(*current_scope, true);
+    auto& previous_assumptions = assumptions_analysis.get(*previous_scope, true);
+    auto& current_assumptions = assumptions_analysis.get(*current_scope, true);
 
     auto& previous_memlets = previous.subsets();
     auto& current_memlets = current.subsets();
@@ -944,8 +944,8 @@ bool DataDependencyAnalysis::depends(
     // Collect memlets and assumptions
     auto previous_scope = Users::scope(&previous);
     auto current_scope = Users::scope(&current);
-    auto previous_assumptions = assumptions_analysis.get(*previous_scope, true);
-    auto current_assumptions = assumptions_analysis.get(*current_scope, true);
+    auto& previous_assumptions = assumptions_analysis.get(*previous_scope, true);
+    auto& current_assumptions = assumptions_analysis.get(*current_scope, true);
 
     auto& previous_memlets = previous.subsets();
     auto& current_memlets = current.subsets();
