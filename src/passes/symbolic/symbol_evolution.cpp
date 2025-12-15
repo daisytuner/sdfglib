@@ -1,10 +1,10 @@
 #include "sdfg/passes/symbolic/symbol_evolution.h"
 
 #include "sdfg/analysis/assumptions_analysis.h"
+#include "sdfg/analysis/dominance_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/analysis/users.h"
-#include "sdfg/analysis/dominance_analysis.h"
 #include "sdfg/symbolic/polynomials.h"
 #include "sdfg/symbolic/series.h"
 
@@ -177,9 +177,9 @@ bool SymbolEvolution::eliminate_symbols(
         if (all_writes.size() != 2) {
             continue;
         }
-        auto init_write = all_writes.at(0);
+        auto init_write = *all_writes.begin();
         if (init_write == update_write) {
-            init_write = all_writes.at(1);
+            init_write = *(++all_writes.begin());
         }
         if (!dominance_analysis.dominates(*init_write, *update_write)) {
             continue;

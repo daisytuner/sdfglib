@@ -36,7 +36,7 @@ bool RedundantArrayElimination::
         }
 
         // Criterion: Data must depend on externals
-        auto write = users.writes(name)[0];
+        auto write = *users.writes(name).begin();
         auto write_node = dynamic_cast<data_flow::AccessNode*>(write->element());
         auto& graph = write_node->get_parent();
         if (graph.in_degree(*write_node) == 0) {

@@ -495,35 +495,37 @@ void Users::run(analysis::AnalysisManager& analysis_manager) {
         this->sink_ = sinks.front();
     }
 
+    for (auto& container : sdfg_.containers()) {
+        this->reads_.insert({container, {}});
+        this->writes_.insert({container, {}});
+        this->views_.insert({container, {}});
+        this->moves_.insert({container, {}});
+    }
+
     // Collect sub structures
     for (auto& entry : this->users_) {
         auto container = entry.second->container();
+        if (entry.second->use() == Use::NOP) {
+            continue;
+        }
+        if (container == "") {
+            continue;
+        }
+
         switch (entry.second->use()) {
             case Use::READ: {
-                if (this->reads_.find(container) == this->reads_.end()) {
-                    this->reads_.insert({container, {}});
-                }
                 this->reads_[container].push_back(entry.second.get());
                 break;
             }
             case Use::WRITE: {
-                if (this->writes_.find(container) == this->writes_.end()) {
-                    this->writes_.insert({container, {}});
-                }
                 this->writes_[container].push_back(entry.second.get());
                 break;
             }
             case Use::VIEW: {
-                if (this->views_.find(container) == this->views_.end()) {
-                    this->views_.insert({container, {}});
-                }
                 this->views_[container].push_back(entry.second.get());
                 break;
             }
             case Use::MOVE: {
-                if (this->moves_.find(container) == this->moves_.end()) {
-                    this->moves_.insert({container, {}});
-                }
                 this->moves_[container].push_back(entry.second.get());
                 break;
             }
@@ -533,8 +535,8 @@ void Users::run(analysis::AnalysisManager& analysis_manager) {
     }
 };
 
-std::vector<User*> Users::uses() const {
-    std::vector<User*> us;
+std::list<User*> Users::uses() const {
+    std::list<User*> us;
     for (auto& entry : this->users_) {
         if (entry.second->use() == Use::NOP) {
             continue;
@@ -545,8 +547,8 @@ std::vector<User*> Users::uses() const {
     return us;
 };
 
-std::vector<User*> Users::uses(const std::string& container) const {
-    std::vector<User*> us;
+std::list<User*> Users::uses(const std::string& container) const {
+    std::list<User*> us;
     for (auto& entry : this->users_) {
         if (entry.second->container() != container) {
             continue;
@@ -562,8 +564,8 @@ std::vector<User*> Users::uses(const std::string& container) const {
 
 size_t Users::num_uses(const std::string& container) const { return this->uses(container).size(); };
 
-std::vector<User*> Users::writes() const {
-    std::vector<User*> us;
+std::list<User*> Users::writes() const {
+    std::list<User*> us;
     for (auto& entry : this->users_) {
         if (entry.second->use() != Use::WRITE) {
             continue;
@@ -574,18 +576,12 @@ std::vector<User*> Users::writes() const {
     return us;
 };
 
-std::vector<User*> Users::writes(const std::string& container) const {
-    if (this->writes_.find(container) == this->writes_.end()) {
-        return {};
-    } else {
-        return this->writes_.at(container);
-    }
-};
+const std::list<User*>& Users::writes(const std::string& container) const { return this->writes_.at(container); };
 
 size_t Users::num_writes(const std::string& container) const { return this->writes(container).size(); };
 
-std::vector<User*> Users::reads() const {
-    std::vector<User*> us;
+std::list<User*> Users::reads() const {
+    std::list<User*> us;
     for (auto& entry : this->users_) {
         if (entry.second->use() != Use::READ) {
             continue;
@@ -596,18 +592,12 @@ std::vector<User*> Users::reads() const {
     return us;
 };
 
-std::vector<User*> Users::reads(const std::string& container) const {
-    if (this->reads_.find(container) == this->reads_.end()) {
-        return {};
-    } else {
-        return this->reads_.at(container);
-    }
-};
+const std::list<User*>& Users::reads(const std::string& container) const { return this->reads_.at(container); };
 
 size_t Users::num_reads(const std::string& container) const { return this->reads(container).size(); };
 
-std::vector<User*> Users::views() const {
-    std::vector<User*> us;
+std::list<User*> Users::views() const {
+    std::list<User*> us;
     for (auto& entry : this->users_) {
         if (entry.second->use() != Use::VIEW) {
             continue;
@@ -618,18 +608,12 @@ std::vector<User*> Users::views() const {
     return us;
 };
 
-std::vector<User*> Users::views(const std::string& container) const {
-    if (this->views_.find(container) == this->views_.end()) {
-        return {};
-    } else {
-        return this->views_.at(container);
-    }
-};
+const std::list<User*>& Users::views(const std::string& container) const { return this->views_.at(container); };
 
 size_t Users::num_views(const std::string& container) const { return this->views(container).size(); };
 
-std::vector<User*> Users::moves() const {
-    std::vector<User*> us;
+std::list<User*> Users::moves() const {
+    std::list<User*> us;
     for (auto& entry : this->users_) {
         if (entry.second->use() != Use::MOVE) {
             continue;
@@ -640,13 +624,7 @@ std::vector<User*> Users::moves() const {
     return us;
 };
 
-std::vector<User*> Users::moves(const std::string& container) const {
-    if (this->moves_.find(container) == this->moves_.end()) {
-        return {};
-    } else {
-        return this->moves_.at(container);
-    }
-};
+const std::list<User*>& Users::moves(const std::string& container) const { return this->moves_.at(container); };
 
 size_t Users::num_moves(const std::string& container) const { return this->moves(container).size(); };
 

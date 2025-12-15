@@ -23,7 +23,7 @@ bool ConditionElimination::eliminate_condition(
     // indvar shall not be read afterwards directly since loop init overrides it
     analysis::Users& users = this->analysis_manager_.get<analysis::Users>();
     analysis::UsersView loop_users(users, branch_root);
-    if (users.reads(loop_indvar->get_name()).size() > loop_users.reads(loop_indvar->get_name()).size()) {
+    if (users.num_reads(loop_indvar->get_name()) > loop_users.reads(loop_indvar->get_name()).size()) {
         return false;
     }
 

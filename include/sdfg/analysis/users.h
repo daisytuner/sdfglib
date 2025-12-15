@@ -102,10 +102,10 @@ private:
     std::unordered_map<std::string, std::unordered_map<Element*, std::unordered_map<Use, User*>>>
         users_by_sdfg_loop_update_;
 
-    std::unordered_map<std::string, std::vector<User*>> reads_;
-    std::unordered_map<std::string, std::vector<User*>> writes_;
-    std::unordered_map<std::string, std::vector<User*>> views_;
-    std::unordered_map<std::string, std::vector<User*>> moves_;
+    std::unordered_map<std::string, std::list<User*>> reads_;
+    std::unordered_map<std::string, std::list<User*>> writes_;
+    std::unordered_map<std::string, std::list<User*>> views_;
+    std::unordered_map<std::string, std::list<User*>> moves_;
 
     std::pair<graph::Vertex, graph::Vertex> traverse(data_flow::DataFlowGraph& dataflow);
 
@@ -140,33 +140,33 @@ public:
 
     /**** Users ****/
 
-    std::vector<User*> uses() const;
+    std::list<User*> uses() const;
 
-    std::vector<User*> uses(const std::string& container) const;
+    std::list<User*> uses(const std::string& container) const;
 
     size_t num_uses(const std::string& container) const;
 
-    std::vector<User*> writes() const;
+    std::list<User*> writes() const;
 
-    std::vector<User*> writes(const std::string& container) const;
+    const std::list<User*>& writes(const std::string& container) const;
 
     size_t num_writes(const std::string& container) const;
 
-    std::vector<User*> reads() const;
+    std::list<User*> reads() const;
 
-    std::vector<User*> reads(const std::string& container) const;
+    const std::list<User*>& reads(const std::string& container) const;
 
     size_t num_reads(const std::string& container) const;
 
-    std::vector<User*> views() const;
+    std::list<User*> views() const;
 
-    std::vector<User*> views(const std::string& container) const;
+    const std::list<User*>& views(const std::string& container) const;
 
     size_t num_views(const std::string& container) const;
 
-    std::vector<User*> moves() const;
+    std::list<User*> moves() const;
 
-    std::vector<User*> moves(const std::string& container) const;
+    const std::list<User*>& moves(const std::string& container) const;
 
     size_t num_moves(const std::string& container) const;
 
