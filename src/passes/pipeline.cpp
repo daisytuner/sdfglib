@@ -78,6 +78,7 @@ Pipeline Pipeline::dead_code_elimination() {
 
     p.register_pass<DeadCFGElimination>();
     p.register_pass<DeadDataElimination>();
+    p.register_pass<SequenceFusion>();
 
     return p;
 };
