@@ -36,9 +36,11 @@ bool DeadDataElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
         }
 
         // Writes without reads
+        bool all_definitions_removed = true;
         auto raws = data_dependency_analysis.definitions(name);
         for (auto set : raws) {
             if (set.second.size() > 0) {
+                all_definitions_removed = false;
                 continue;
             }
             if (data_dependency_analysis.is_undefined_user(*set.first)) {
@@ -62,9 +64,17 @@ bool DeadDataElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
                         auto& block = dynamic_cast<structured_control_flow::Block&>(*graph.get_parent());
                         builder.clear_node(block, *library_node);
                         applied = true;
+                    } else {
+                        all_definitions_removed = false;
                     }
                 }
+            } else {
+                all_definitions_removed = false;
             }
+        }
+
+        if (all_definitions_removed) {
+            dead.insert(name);
         }
     }
 
