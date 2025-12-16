@@ -425,9 +425,9 @@ void CSymbolicPrinter::bvisit(const SymEngine::Min& x) {
         s << apply(*container.begin());
     } else {
         if (this->use_rtl_functions_) {
-            s << "min(";
-        } else {
             s << "__daisy_min(";
+        } else {
+            s << "min(";
         }
         s << apply(*container.begin());
 
@@ -452,9 +452,9 @@ void CSymbolicPrinter::bvisit(const SymEngine::Max& x) {
         s << apply(*container.begin());
     } else {
         if (this->use_rtl_functions_) {
-            s << "max(";
-        } else {
             s << "__daisy_max(";
+        } else {
+            s << "max(";
         }
         s << apply(*container.begin());
 
