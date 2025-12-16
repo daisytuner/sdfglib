@@ -139,10 +139,7 @@ void AssumptionsAnalysis::traverse_structured_loop(
     auto init = loop->init();
 
     // By definition, all symbols in the loop condition are constant within the loop body
-    symbolic::SymbolSet loop_syms = {indvar};
-    for (auto& sym : symbolic::atoms(loop->condition())) {
-        loop_syms.insert(sym);
-    }
+    symbolic::SymbolSet loop_syms = symbolic::atoms(loop->condition());
     for (auto& sym : loop_syms) {
         body_assumptions.insert({sym, symbolic::Assumption(sym)});
         body_assumptions[sym].constant(true);
