@@ -39,6 +39,7 @@ class CSymbolicPrinter : public SymEngine::BaseVisitor<CSymbolicPrinter, SymEngi
 private:
     sdfg::Function& function_;
     std::string external_prefix_;
+    bool use_rtl_functions_;
 
 public:
     using SymEngine::CodePrinter::apply;
@@ -68,8 +69,8 @@ public:
         const SymEngine::RCP<const SymEngine::Basic>& b
     ) override;
 
-    CSymbolicPrinter(sdfg::Function& function, const std::string& external_prefix = "")
-        : function_(function), external_prefix_(external_prefix) {}
+    CSymbolicPrinter(sdfg::Function& function, const std::string& external_prefix = "", bool use_rtl_functions = true)
+        : function_(function), external_prefix_(external_prefix), use_rtl_functions_(use_rtl_functions) {}
 };
 
 } // namespace codegen
