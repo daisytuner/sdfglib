@@ -765,9 +765,9 @@ bool DataDependencyAnalysis::loop_depends(
     auto& current_subsets = current.subsets();
 
     auto previous_scope = Users::scope(&previous);
-    auto& previous_assumptions = assumptions_analysis.get(loop.root(), *previous_scope, true);
+    auto& previous_assumptions = assumptions_analysis.get(*previous_scope, true);
     auto current_scope = Users::scope(&current);
-    auto& current_assumptions = assumptions_analysis.get(loop.root(), *current_scope, true);
+    auto& current_assumptions = assumptions_analysis.get(*current_scope, true);
 
     // Check if previous subset is subset of any current subset
     for (auto& previous_subset : previous_subsets) {
