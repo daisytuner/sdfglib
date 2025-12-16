@@ -18,6 +18,14 @@ class AssumptionsAnalysis : public Analysis {
 private:
     std::unordered_map<structured_control_flow::ControlFlowNode*, symbolic::Assumptions> assumptions_;
 
+    std::unordered_map<std::string, symbolic::Assumptions> cache_nodes_;
+
+    std::unordered_map<std::string, symbolic::Assumptions> cache_nodes_bounds_;
+
+    std::unordered_map<std::string, symbolic::Assumptions> cache_range_;
+
+    std::unordered_map<std::string, symbolic::Assumptions> cache_range_bounds_;
+
     symbolic::SymbolSet parameters_;
 
     analysis::ScopeAnalysis* scope_analysis_;
@@ -44,9 +52,9 @@ protected:
 public:
     AssumptionsAnalysis(StructuredSDFG& sdfg);
 
-    const symbolic::Assumptions get(structured_control_flow::ControlFlowNode& node, bool include_trivial_bounds = false);
+    const symbolic::Assumptions& get(structured_control_flow::ControlFlowNode& node, bool include_trivial_bounds = false);
 
-    const symbolic::Assumptions
+    const symbolic::Assumptions&
     get(structured_control_flow::ControlFlowNode& from,
         structured_control_flow::ControlFlowNode& to,
         bool include_trivial_bounds = false);

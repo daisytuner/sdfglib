@@ -368,7 +368,6 @@ TEST(For2MapTest, Tiled) {
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
     passes::For2MapPass conversion_pass;
     EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
-    EXPECT_TRUE(conversion_pass.run(builder_opt, analysis_manager));
 
     auto& sdfg_map = builder_opt.subject();
 

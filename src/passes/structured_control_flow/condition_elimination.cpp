@@ -23,7 +23,7 @@ bool ConditionElimination::eliminate_condition(
     // indvar shall not be read afterwards directly since loop init overrides it
     analysis::Users& users = this->analysis_manager_.get<analysis::Users>();
     analysis::UsersView loop_users(users, branch_root);
-    if (users.reads(loop_indvar->get_name()).size() > loop_users.reads(loop_indvar->get_name()).size()) {
+    if (users.num_reads(loop_indvar->get_name()) > loop_users.reads(loop_indvar->get_name()).size()) {
         return false;
     }
 
@@ -47,12 +47,13 @@ bool ConditionElimination::eliminate_condition(
 
 ConditionElimination::
     ConditionElimination(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
-    : StructuredSDFGVisitor(builder, analysis_manager) {
+    : NonStoppingStructuredSDFGVisitor(builder, analysis_manager) {
 
       };
 
 
 bool ConditionElimination::accept(structured_control_flow::Sequence& node) {
+    bool applied = false;
     for (size_t i = 0; i < node.size(); i++) {
         auto& current = node.at(i).first;
         if (auto ifelse = dynamic_cast<structured_control_flow::IfElse*>(&current)) {
@@ -71,12 +72,12 @@ bool ConditionElimination::accept(structured_control_flow::Sequence& node) {
             }
 
             if (this->eliminate_condition(node, *ifelse, node.at(i).second)) {
-                return true;
+                applied = true;
             }
         }
     }
 
-    return false;
+    return applied;
 };
 
 } // namespace passes

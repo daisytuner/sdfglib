@@ -22,14 +22,14 @@ bool DeadDataElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
         if (!sdfg.is_transient(name)) {
             continue;
         }
-        if (!dynamic_cast<const types::Scalar*>(&sdfg.type(name))) {
+        if (sdfg.type(name).type_id() != types::TypeID::Scalar) {
             continue;
         }
 
-        if (!users.views(name).empty() || !users.moves(name).empty()) {
+        if (users.num_views(name) > 0 || users.num_moves(name) > 0) {
             continue;
         }
-        if (users.reads(name).empty() && users.writes(name).empty()) {
+        if (users.num_reads(name) == 0 && users.num_writes(name) == 0) {
             dead.insert(name);
             applied = true;
             continue;
