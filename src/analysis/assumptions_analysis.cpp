@@ -142,6 +142,7 @@ void AssumptionsAnalysis::
 
     // Define map of indvar
     body_assumptions[indvar].map(update);
+    body_assumptions[indvar].constant(true);
 
     // Determine non-tight lower and upper bounds from inverse index access
     std::vector<symbolic::Expression> lbs, ubs;

@@ -4,8 +4,6 @@
 #include <isl/set.h>
 #include <isl/space.h>
 
-#include <regex>
-
 #include "sdfg/builder/sdfg_builder.h"
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
 #include "sdfg/symbolic/assumptions.h"
@@ -16,10 +14,10 @@
 namespace sdfg {
 namespace symbolic {
 
-std::string expression_to_map_str(const MultiExpression& expr, const Assumptions& assums) {
-    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
-    codegen::CLanguageExtension language_extension(builder.subject());
+builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
+codegen::CSymbolicPrinter c_printer(builder.subject(), "", false);
 
+std::string expression_to_map_str(const MultiExpression& expr, const Assumptions& assums) {
     // Get all symbols
     symbolic::SymbolSet syms;
     for (auto& expr : expr) {
@@ -67,22 +65,22 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
     }
 
     // Define map
-    std::string map;
+    std::stringstream map_ss;
     if (!parameters.empty()) {
         std::sort(parameters.begin(), parameters.end());
-        map += "[";
-        map += helpers::join(parameters, ", ");
-        map += "] -> ";
+        map_ss << "[";
+        map_ss << helpers::join(parameters, ", ");
+        map_ss << "] -> ";
     }
-    map += "{ [" + helpers::join(dimensions, ", ") + "] -> [";
+    map_ss << "{ [" + helpers::join(dimensions, ", ") + "] -> [";
     for (size_t i = 0; i < expr.size(); i++) {
         auto dim = expr[i];
-        map += language_extension.expression(dim);
+        map_ss << c_printer.apply(dim);
         if (i < expr.size() - 1) {
-            map += ", ";
+            map_ss << ", ";
         }
     }
-    map += "] ";
+    map_ss << "] ";
 
     std::vector<std::string> constraints;
     for (auto& con : constraints_syms) {
@@ -93,14 +91,14 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
     }
     for (auto& dim : dimensions) {
         auto sym = symbolic::symbol(dim);
-        auto map = assums.at(sym).map();
-        if (map == SymEngine::null) {
+        auto map_func = assums.at(sym).map();
+        if (map_func == SymEngine::null) {
             continue;
         }
-        if (!SymEngine::is_a<SymEngine::Add>(*map)) {
+        if (!SymEngine::is_a<SymEngine::Add>(*map_func)) {
             continue;
         }
-        auto args = SymEngine::rcp_static_cast<const SymEngine::Add>(map)->get_args();
+        auto args = SymEngine::rcp_static_cast<const SymEngine::Add>(map_func)->get_args();
         if (args.size() != 2) {
             continue;
         }
@@ -125,24 +123,18 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
         }
 
         std::string iter = "__daisy_iterator_" + dim;
-        std::string con = "exists " + iter + " : " + dim + " = " + language_extension.expression(lb) + " + " + iter +
-                          " * " + language_extension.expression(arg1);
+        std::string con = "exists " + iter + " : " + dim + " = " + c_printer.apply(lb) + " + " + iter + " * " +
+                          c_printer.apply(arg1);
         constraints.push_back(con);
     }
     if (!constraints.empty()) {
-        map += " : ";
-        map += helpers::join(constraints, " and ");
+        map_ss << " : ";
+        map_ss << helpers::join(constraints, " and ");
     }
 
-    map += " }";
+    map_ss << " }";
 
-    // NV Symbols, e.g., threadIdx.x
-    map = std::regex_replace(map, std::regex("\\."), "_");
-
-    // min, max
-    map = std::regex_replace(map, std::regex("__daisy_min"), "min_");
-    map = std::regex_replace(map, std::regex("__daisy_max"), "max_");
-
+    std::string map = map_ss.str();
     return map;
 }
 
@@ -153,9 +145,6 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     const Assumptions& assums1,
     const Assumptions& assums2
 ) {
-    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
-    codegen::CLanguageExtension language_extension(builder.subject());
-
     // Get all symbols
     symbolic::SymbolSet syms;
     for (auto& expr : expr1) {
@@ -221,36 +210,36 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     }
 
     // Define two maps
-    std::string map_1;
-    std::string map_2;
+    std::stringstream map_1_ss;
+    std::stringstream map_2_ss;
     if (!parameters.empty()) {
-        map_1 += "[";
-        map_1 += helpers::join(parameters, ", ");
-        map_1 += "] -> ";
-        map_2 += "[";
-        map_2 += helpers::join(parameters, ", ");
-        map_2 += "] -> ";
+        map_1_ss << "[";
+        map_1_ss << helpers::join(parameters, ", ");
+        map_1_ss << "] -> ";
+        map_2_ss << "[";
+        map_2_ss << helpers::join(parameters, ", ");
+        map_2_ss << "] -> ";
     }
-    map_1 += "{ [";
-    map_2 += "{ [";
+    map_1_ss << "{ [";
+    map_2_ss << "{ [";
     for (size_t i = 0; i < dimensions.size(); i++) {
-        map_1 += dimensions[i] + "_1";
-        map_2 += dimensions[i] + "_2";
+        map_1_ss << dimensions[i] + "_1";
+        map_2_ss << dimensions[i] + "_2";
         if (i < dimensions.size() - 1) {
-            map_1 += ", ";
-            map_2 += ", ";
+            map_1_ss << ", ";
+            map_2_ss << ", ";
         }
     }
-    map_1 += "] -> [";
-    map_2 += "] -> [";
+    map_1_ss << "] -> [";
+    map_2_ss << "] -> [";
     for (size_t i = 0; i < expr1.size(); i++) {
         auto dim = expr1[i];
         for (auto& iter : dimensions) {
             dim = symbolic::subs(dim, symbolic::symbol(iter), symbolic::symbol(iter + "_1"));
         }
-        map_1 += language_extension.expression(dim);
+        map_1_ss << c_printer.apply(dim);
         if (i < expr1.size() - 1) {
-            map_1 += ", ";
+            map_1_ss << ", ";
         }
     }
     for (size_t i = 0; i < expr2.size(); i++) {
@@ -258,13 +247,13 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
         for (auto& iter : dimensions) {
             dim = symbolic::subs(dim, symbolic::symbol(iter), symbolic::symbol(iter + "_2"));
         }
-        map_2 += language_extension.expression(dim);
+        map_2_ss << c_printer.apply(dim);
         if (i < expr2.size() - 1) {
-            map_2 += ", ";
+            map_2_ss << ", ";
         }
     }
-    map_1 += "] ";
-    map_2 += "] ";
+    map_1_ss << "] ";
+    map_2_ss << "] ";
 
     std::vector<std::string> constraints_1;
     // Add bounds
@@ -281,14 +270,14 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     }
     for (auto& dim : dimensions) {
         auto sym = symbolic::symbol(dim);
-        auto map = assums1.at(sym).map();
-        if (map == SymEngine::null) {
+        auto map_func = assums1.at(sym).map();
+        if (map_func == SymEngine::null) {
             continue;
         }
-        if (!SymEngine::is_a<SymEngine::Add>(*map)) {
+        if (!SymEngine::is_a<SymEngine::Add>(*map_func)) {
             continue;
         }
-        auto args = SymEngine::rcp_static_cast<const SymEngine::Add>(map)->get_args();
+        auto args = SymEngine::rcp_static_cast<const SymEngine::Add>(map_func)->get_args();
         if (args.size() != 2) {
             continue;
         }
@@ -314,15 +303,15 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
 
         std::string dim1 = dim + "_1";
         std::string iter = "__daisy_iterator_" + dim1;
-        std::string con = "exists " + iter + " : " + dim1 + " = " + language_extension.expression(lb) + " + " + iter +
-                          " * " + language_extension.expression(arg1);
+        std::string con = "exists " + iter + " : " + dim1 + " = " + c_printer.apply(lb) + " + " + iter + " * " +
+                          c_printer.apply(arg1);
         constraints_1.push_back(con);
     }
     if (!constraints_1.empty()) {
-        map_1 += " : ";
-        map_1 += helpers::join(constraints_1, " and ");
+        map_1_ss << " : ";
+        map_1_ss << helpers::join(constraints_1, " and ");
     }
-    map_1 += " }";
+    map_1_ss << " }";
 
     std::vector<std::string> constraints_2;
     for (auto& con : constraints_syms_2) {
@@ -338,14 +327,14 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     }
     for (auto& dim : dimensions) {
         auto sym = symbolic::symbol(dim);
-        auto map = assums2.at(sym).map();
-        if (map == SymEngine::null) {
+        auto map_func = assums2.at(sym).map();
+        if (map_func.is_null()) {
             continue;
         }
-        if (!SymEngine::is_a<SymEngine::Add>(*map)) {
+        if (!SymEngine::is_a<SymEngine::Add>(*map_func)) {
             continue;
         }
-        auto args = SymEngine::rcp_static_cast<const SymEngine::Add>(map)->get_args();
+        auto args = SymEngine::rcp_static_cast<const SymEngine::Add>(map_func)->get_args();
         if (args.size() != 2) {
             continue;
         }
@@ -371,51 +360,45 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
 
         std::string dim2 = dim + "_2";
         std::string iter = "__daisy_iterator_" + dim2;
-        std::string con = "exists " + iter + " : " + dim2 + " = " + language_extension.expression(lb) + " + " + iter +
-                          " * " + language_extension.expression(arg1);
+        std::string con = "exists " + iter + " : " + dim2 + " = " + c_printer.apply(lb) + " + " + iter + " * " +
+                          c_printer.apply(arg1);
         constraints_2.push_back(con);
     }
     if (!constraints_2.empty()) {
-        map_2 += " : ";
-        map_2 += helpers::join(constraints_2, " and ");
+        map_2_ss << " : ";
+        map_2_ss << helpers::join(constraints_2, " and ");
     }
-    map_2 += " }";
+    map_2_ss << " }";
 
-    std::string map_3 = "{ [";
+    std::stringstream map_3_ss;
+    map_3_ss << "{ [";
     for (size_t i = 0; i < dimensions.size(); i++) {
-        map_3 += dimensions[i] + "_2";
+        map_3_ss << dimensions[i] + "_2";
         if (i < dimensions.size() - 1) {
-            map_3 += ", ";
+            map_3_ss << ", ";
         }
     }
-    map_3 += "] -> [";
+    map_3_ss << "] -> [";
     for (size_t i = 0; i < dimensions.size(); i++) {
-        map_3 += dimensions[i] + "_1";
+        map_3_ss << dimensions[i] + "_1";
         if (i < dimensions.size() - 1) {
-            map_3 += ", ";
+            map_3_ss << ", ";
         }
     }
-    map_3 += "]";
+    map_3_ss << "]";
     std::vector<std::string> monotonicity_constraints;
     if (dimensions_syms.find(indvar) != dimensions_syms.end()) {
         monotonicity_constraints.push_back(indvar->get_name() + "_1 != " + indvar->get_name() + "_2");
     }
     if (!monotonicity_constraints.empty()) {
-        map_3 += " : ";
-        map_3 += helpers::join(monotonicity_constraints, " and ");
+        map_3_ss << " : ";
+        map_3_ss << helpers::join(monotonicity_constraints, " and ");
     }
-    map_3 += " }";
+    map_3_ss << " }";
 
-    map_1 = std::regex_replace(map_1, std::regex("\\."), "_");
-    map_2 = std::regex_replace(map_2, std::regex("\\."), "_");
-    map_3 = std::regex_replace(map_3, std::regex("\\."), "_");
-
-    map_1 = std::regex_replace(map_1, std::regex("__daisy_min"), "min");
-    map_1 = std::regex_replace(map_1, std::regex("__daisy_max"), "max");
-    map_2 = std::regex_replace(map_2, std::regex("__daisy_min"), "min");
-    map_2 = std::regex_replace(map_2, std::regex("__daisy_max"), "max");
-    map_3 = std::regex_replace(map_3, std::regex("__daisy_min"), "min");
-    map_3 = std::regex_replace(map_3, std::regex("__daisy_max"), "max");
+    std::string map_1 = map_1_ss.str();
+    std::string map_2 = map_2_ss.str();
+    std::string map_3 = map_3_ss.str();
 
     return {map_1, map_2, map_3};
 }
@@ -480,9 +463,6 @@ ExpressionSet generate_constraints(SymbolSet& syms, const Assumptions& assums, S
 }
 
 std::string constraint_to_isl_str(const Expression con) {
-    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
-    codegen::CLanguageExtension language_extension(builder.subject());
-
     if (SymEngine::is_a<SymEngine::StrictLessThan>(*con)) {
         auto le = SymEngine::rcp_static_cast<const SymEngine::StrictLessThan>(con);
         auto lhs = le->get_arg1();
@@ -490,10 +470,7 @@ std::string constraint_to_isl_str(const Expression con) {
         if (SymEngine::is_a<SymEngine::Infty>(*lhs) || SymEngine::is_a<SymEngine::Infty>(*rhs)) {
             return "";
         }
-        auto res = language_extension.expression(lhs) + " < " + language_extension.expression(rhs);
-        res = std::regex_replace(res, std::regex("\\."), "_");
-        res = std::regex_replace(res, std::regex("__daisy_min"), "min");
-        res = std::regex_replace(res, std::regex("__daisy_max"), "max");
+        auto res = c_printer.apply(con);
         return res;
     } else if (SymEngine::is_a<SymEngine::LessThan>(*con)) {
         auto le = SymEngine::rcp_static_cast<const SymEngine::LessThan>(con);
@@ -502,10 +479,7 @@ std::string constraint_to_isl_str(const Expression con) {
         if (SymEngine::is_a<SymEngine::Infty>(*lhs) || SymEngine::is_a<SymEngine::Infty>(*rhs)) {
             return "";
         }
-        auto res = language_extension.expression(lhs) + " <= " + language_extension.expression(rhs);
-        res = std::regex_replace(res, std::regex("\\."), "_");
-        res = std::regex_replace(res, std::regex("__daisy_min"), "min");
-        res = std::regex_replace(res, std::regex("__daisy_max"), "max");
+        auto res = c_printer.apply(con);
         return res;
     } else if (SymEngine::is_a<SymEngine::Equality>(*con)) {
         auto eq = SymEngine::rcp_static_cast<const SymEngine::Equality>(con);
@@ -514,10 +488,7 @@ std::string constraint_to_isl_str(const Expression con) {
         if (SymEngine::is_a<SymEngine::Infty>(*lhs) || SymEngine::is_a<SymEngine::Infty>(*rhs)) {
             return "";
         }
-        auto res = language_extension.expression(lhs) + " == " + language_extension.expression(rhs);
-        res = std::regex_replace(res, std::regex("\\."), "_");
-        res = std::regex_replace(res, std::regex("__daisy_min"), "min");
-        res = std::regex_replace(res, std::regex("__daisy_max"), "max");
+        auto res = c_printer.apply(con);
         return res;
     } else if (SymEngine::is_a<SymEngine::Unequality>(*con)) {
         auto ne = SymEngine::rcp_static_cast<const SymEngine::Unequality>(con);
@@ -526,10 +497,7 @@ std::string constraint_to_isl_str(const Expression con) {
         if (SymEngine::is_a<SymEngine::Infty>(*lhs) || SymEngine::is_a<SymEngine::Infty>(*rhs)) {
             return "";
         }
-        auto res = language_extension.expression(lhs) + " != " + language_extension.expression(rhs);
-        res = std::regex_replace(res, std::regex("\\."), "_");
-        res = std::regex_replace(res, std::regex("__daisy_min"), "min");
-        res = std::regex_replace(res, std::regex("__daisy_max"), "max");
+        auto res = c_printer.apply(con);
         return res;
     }
 

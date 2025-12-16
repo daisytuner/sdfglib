@@ -114,73 +114,111 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
             // Collect all symbols used in the RHS
             std::unordered_set<std::string> rhs_symbols;
             for (auto& sym : symbolic::atoms(rhs)) {
+                if (symbolic::eq(sym, symbolic::__nullptr__())) {
+                    continue;
+                }
                 rhs_symbols.insert(sym->get_name());
             }
 
-            // RHS' symbols may be written between write and read
-            // We attempt to create the new RHS
-            bool success = true;
             auto rhs_modified = rhs;
-            std::unordered_set<std::string> modified_symbols;
 
-            auto middle_users = users.all_uses_between(*write, *read);
-            for (auto& user : middle_users) {
-                if (user->use() != analysis::Use::WRITE && user->use() != analysis::Use::MOVE) {
-                    continue;
-                }
-                if (rhs_symbols.find(user->container()) == rhs_symbols.end()) {
-                    continue;
-                }
-
-                // Criterion: Symbol is only modified once
-                if (modified_symbols.find(user->container()) != modified_symbols.end()) {
-                    success = false;
-                    break;
+            // Find dangerous users between write and read
+            auto is_dangerous = [&](analysis::User* user) {
+                if (user == write || user == read) {
+                    return false;
                 }
 
                 // Criterion: RHS must dominate modification
                 if (!dominance_analysis.dominates(*write, *user)) {
-                    success = false;
-                    break;
+                    return false;
                 }
 
                 // Criterion: Modification must dominate read
-                if (!dominance_analysis.dominates(*user, *read)) {
-                    success = false;
-                    break;
+                if (dominance_analysis.dominates(*read, *user)) {
+                    return false;
                 }
 
-                // Criterion: Only transitions
-                if (!dynamic_cast<structured_control_flow::Transition*>(user->element())) {
-                    success = false;
-                    break;
-                }
-                auto sym_transition = dynamic_cast<structured_control_flow::Transition*>(user->element());
-                auto sym_lhs = symbolic::symbol(user->container());
-                auto sym_rhs = sym_transition->assignments().at(sym_lhs);
-
-                // Limited to constants
-                for (auto& atom : symbolic::atoms(sym_rhs)) {
-                    if (!symbolic::eq(atom, sym_lhs)) {
-                        success = false;
+                return true;
+            };
+            std::unordered_set<std::string> dangerous_users;
+            for (const auto& sym : rhs_symbols) {
+                for (auto* user : users.writes(sym)) {
+                    if (is_dangerous(user)) {
+                        dangerous_users.insert(sym);
                         break;
                     }
                 }
-                if (!success) {
-                    break;
+                for (auto* user : users.moves(sym)) {
+                    if (is_dangerous(user)) {
+                        dangerous_users.insert(sym);
+                        break;
+                    }
                 }
-
-                auto inv = inverse(sym_lhs, sym_rhs);
-                if (inv == SymEngine::null) {
-                    success = false;
-                    break;
-                }
-
-                rhs_modified = symbolic::subs(rhs_modified, sym_lhs, inv);
-                modified_symbols.insert(user->container());
             }
-            if (!success) {
-                continue;
+            if (!dangerous_users.empty()) {
+                // RHS' symbols may be written between write and read
+                // We attempt to create the new RHS
+                bool success = true;
+                std::unordered_set<std::string> modified_symbols;
+                auto middle_users = users.all_uses_between(*write, *read);
+                for (auto& user : middle_users) {
+                    if (user->use() != analysis::Use::WRITE && user->use() != analysis::Use::MOVE) {
+                        continue;
+                    }
+                    if (rhs_symbols.find(user->container()) == rhs_symbols.end()) {
+                        continue;
+                    }
+
+                    // Criterion: Symbol is only modified once
+                    if (modified_symbols.find(user->container()) != modified_symbols.end()) {
+                        success = false;
+                        break;
+                    }
+
+                    // Criterion: RHS must dominate modification
+                    if (!dominance_analysis.dominates(*write, *user)) {
+                        success = false;
+                        break;
+                    }
+
+                    // Criterion: Modification must dominate read
+                    if (!dominance_analysis.dominates(*user, *read)) {
+                        success = false;
+                        break;
+                    }
+
+                    // Criterion: Only transitions
+                    if (!dynamic_cast<structured_control_flow::Transition*>(user->element())) {
+                        success = false;
+                        break;
+                    }
+                    auto sym_transition = dynamic_cast<structured_control_flow::Transition*>(user->element());
+                    auto sym_lhs = symbolic::symbol(user->container());
+                    auto sym_rhs = sym_transition->assignments().at(sym_lhs);
+
+                    // Limited to constants
+                    for (auto& atom : symbolic::atoms(sym_rhs)) {
+                        if (!symbolic::eq(atom, sym_lhs)) {
+                            success = false;
+                            break;
+                        }
+                    }
+                    if (!success) {
+                        break;
+                    }
+
+                    auto inv = inverse(sym_lhs, sym_rhs);
+                    if (inv == SymEngine::null) {
+                        success = false;
+                        break;
+                    }
+
+                    rhs_modified = symbolic::subs(rhs_modified, sym_lhs, inv);
+                    modified_symbols.insert(user->container());
+                }
+                if (!success) {
+                    continue;
+                }
             }
             rhs_modified = symbolic::simplify(rhs_modified);
 

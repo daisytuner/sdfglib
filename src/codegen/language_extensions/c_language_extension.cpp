@@ -424,7 +424,11 @@ void CSymbolicPrinter::bvisit(const SymEngine::Min& x) {
     if (container.size() == 1) {
         s << apply(*container.begin());
     } else {
-        s << "__daisy_min(";
+        if (this->use_rtl_functions_) {
+            s << "__daisy_min(";
+        } else {
+            s << "min(";
+        }
         s << apply(*container.begin());
 
         // Recursively apply __daisy_min to the arguments
@@ -447,7 +451,11 @@ void CSymbolicPrinter::bvisit(const SymEngine::Max& x) {
     if (container.size() == 1) {
         s << apply(*container.begin());
     } else {
-        s << "__daisy_max(";
+        if (this->use_rtl_functions_) {
+            s << "__daisy_max(";
+        } else {
+            s << "max(";
+        }
         s << apply(*container.begin());
 
         // Recursively apply __daisy_max to the arguments
@@ -478,7 +486,8 @@ void CSymbolicPrinter::bvisit(const SymEngine::FunctionSymbol& x) {
         CLanguageExtension lang(this->function_, this->external_prefix_);
         str_ = "sizeof(" + lang.declaration("", type) + ")";
     } else if (x.get_name() == "malloc_usable_size") {
-        str_ = "malloc_usable_size(" + SymEngine::rcp_static_cast<const SymEngine::Symbol>(x.get_args()[0])->get_name() + ")";
+        str_ = "malloc_usable_size(" +
+               SymEngine::rcp_static_cast<const SymEngine::Symbol>(x.get_args()[0])->get_name() + ")";
     } else {
         throw std::runtime_error("Unsupported function symbol: " + x.get_name());
     }
