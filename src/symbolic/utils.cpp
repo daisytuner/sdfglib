@@ -67,22 +67,22 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
     }
 
     // Define map
-    std::string map;
+    std::stringstream map_ss;
     if (!parameters.empty()) {
         std::sort(parameters.begin(), parameters.end());
-        map += "[";
-        map += helpers::join(parameters, ", ");
-        map += "] -> ";
+        map_ss << "[";
+        map_ss << helpers::join(parameters, ", ");
+        map_ss << "] -> ";
     }
-    map += "{ [" + helpers::join(dimensions, ", ") + "] -> [";
+    map_ss << "{ [" + helpers::join(dimensions, ", ") + "] -> [";
     for (size_t i = 0; i < expr.size(); i++) {
         auto dim = expr[i];
-        map += language_extension.expression(dim);
+        map_ss << language_extension.expression(dim);
         if (i < expr.size() - 1) {
-            map += ", ";
+            map_ss << ", ";
         }
     }
-    map += "] ";
+    map_ss << "] ";
 
     std::vector<std::string> constraints;
     for (auto& con : constraints_syms) {
@@ -93,14 +93,14 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
     }
     for (auto& dim : dimensions) {
         auto sym = symbolic::symbol(dim);
-        auto map = assums.at(sym).map();
-        if (map == SymEngine::null) {
+        auto map_func = assums.at(sym).map();
+        if (map_func == SymEngine::null) {
             continue;
         }
-        if (!SymEngine::is_a<SymEngine::Add>(*map)) {
+        if (!SymEngine::is_a<SymEngine::Add>(*map_func)) {
             continue;
         }
-        auto args = SymEngine::rcp_static_cast<const SymEngine::Add>(map)->get_args();
+        auto args = SymEngine::rcp_static_cast<const SymEngine::Add>(map_func)->get_args();
         if (args.size() != 2) {
             continue;
         }
@@ -130,13 +130,14 @@ std::string expression_to_map_str(const MultiExpression& expr, const Assumptions
         constraints.push_back(con);
     }
     if (!constraints.empty()) {
-        map += " : ";
-        map += helpers::join(constraints, " and ");
+        map_ss << " : ";
+        map_ss << helpers::join(constraints, " and ");
     }
 
-    map += " }";
+    map_ss << " }";
 
     // NV Symbols, e.g., threadIdx.x
+    std::string map = map_ss.str();
     map = std::regex_replace(map, std::regex("\\."), "_");
 
     // min, max
@@ -218,36 +219,36 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     }
 
     // Define two maps
-    std::string map_1;
-    std::string map_2;
+    std::stringstream map_1_ss;
+    std::stringstream map_2_ss;
     if (!parameters.empty()) {
-        map_1 += "[";
-        map_1 += helpers::join(parameters, ", ");
-        map_1 += "] -> ";
-        map_2 += "[";
-        map_2 += helpers::join(parameters, ", ");
-        map_2 += "] -> ";
+        map_1_ss << "[";
+        map_1_ss << helpers::join(parameters, ", ");
+        map_1_ss << "] -> ";
+        map_2_ss << "[";
+        map_2_ss << helpers::join(parameters, ", ");
+        map_2_ss << "] -> ";
     }
-    map_1 += "{ [";
-    map_2 += "{ [";
+    map_1_ss << "{ [";
+    map_2_ss << "{ [";
     for (size_t i = 0; i < dimensions.size(); i++) {
-        map_1 += dimensions[i] + "_1";
-        map_2 += dimensions[i] + "_2";
+        map_1_ss << dimensions[i] + "_1";
+        map_2_ss << dimensions[i] + "_2";
         if (i < dimensions.size() - 1) {
-            map_1 += ", ";
-            map_2 += ", ";
+            map_1_ss << ", ";
+            map_2_ss << ", ";
         }
     }
-    map_1 += "] -> [";
-    map_2 += "] -> [";
+    map_1_ss << "] -> [";
+    map_2_ss << "] -> [";
     for (size_t i = 0; i < expr1.size(); i++) {
         auto dim = expr1[i];
         for (auto& iter : dimensions) {
             dim = symbolic::subs(dim, symbolic::symbol(iter), symbolic::symbol(iter + "_1"));
         }
-        map_1 += language_extension.expression(dim);
+        map_1_ss << language_extension.expression(dim);
         if (i < expr1.size() - 1) {
-            map_1 += ", ";
+            map_1_ss << ", ";
         }
     }
     for (size_t i = 0; i < expr2.size(); i++) {
@@ -255,13 +256,13 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
         for (auto& iter : dimensions) {
             dim = symbolic::subs(dim, symbolic::symbol(iter), symbolic::symbol(iter + "_2"));
         }
-        map_2 += language_extension.expression(dim);
+        map_2_ss << language_extension.expression(dim);
         if (i < expr2.size() - 1) {
-            map_2 += ", ";
+            map_2_ss << ", ";
         }
     }
-    map_1 += "] ";
-    map_2 += "] ";
+    map_1_ss << "] ";
+    map_2_ss << "] ";
 
     std::vector<std::string> constraints_1;
     // Add bounds
@@ -278,14 +279,14 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     }
     for (auto& dim : dimensions) {
         auto sym = symbolic::symbol(dim);
-        auto map = assums1.at(sym).map();
-        if (map == SymEngine::null) {
+        auto map_func = assums1.at(sym).map();
+        if (map_func == SymEngine::null) {
             continue;
         }
-        if (!SymEngine::is_a<SymEngine::Add>(*map)) {
+        if (!SymEngine::is_a<SymEngine::Add>(*map_func)) {
             continue;
         }
-        auto args = SymEngine::rcp_static_cast<const SymEngine::Add>(map)->get_args();
+        auto args = SymEngine::rcp_static_cast<const SymEngine::Add>(map_func)->get_args();
         if (args.size() != 2) {
             continue;
         }
@@ -316,10 +317,10 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
         constraints_1.push_back(con);
     }
     if (!constraints_1.empty()) {
-        map_1 += " : ";
-        map_1 += helpers::join(constraints_1, " and ");
+        map_1_ss << " : ";
+        map_1_ss << helpers::join(constraints_1, " and ");
     }
-    map_1 += " }";
+    map_1_ss << " }";
 
     std::vector<std::string> constraints_2;
     for (auto& con : constraints_syms_2) {
@@ -335,14 +336,14 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     }
     for (auto& dim : dimensions) {
         auto sym = symbolic::symbol(dim);
-        auto map = assums2.at(sym).map();
-        if (map == SymEngine::null) {
+        auto map_func = assums2.at(sym).map();
+        if (map_func.is_null()) {
             continue;
         }
-        if (!SymEngine::is_a<SymEngine::Add>(*map)) {
+        if (!SymEngine::is_a<SymEngine::Add>(*map_func)) {
             continue;
         }
-        auto args = SymEngine::rcp_static_cast<const SymEngine::Add>(map)->get_args();
+        auto args = SymEngine::rcp_static_cast<const SymEngine::Add>(map_func)->get_args();
         if (args.size() != 2) {
             continue;
         }
@@ -373,35 +374,40 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
         constraints_2.push_back(con);
     }
     if (!constraints_2.empty()) {
-        map_2 += " : ";
-        map_2 += helpers::join(constraints_2, " and ");
+        map_2_ss << " : ";
+        map_2_ss << helpers::join(constraints_2, " and ");
     }
-    map_2 += " }";
+    map_2_ss << " }";
 
-    std::string map_3 = "{ [";
+    std::stringstream map_3_ss;
+    map_3_ss << "{ [";
     for (size_t i = 0; i < dimensions.size(); i++) {
-        map_3 += dimensions[i] + "_2";
+        map_3_ss << dimensions[i] + "_2";
         if (i < dimensions.size() - 1) {
-            map_3 += ", ";
+            map_3_ss << ", ";
         }
     }
-    map_3 += "] -> [";
+    map_3_ss << "] -> [";
     for (size_t i = 0; i < dimensions.size(); i++) {
-        map_3 += dimensions[i] + "_1";
+        map_3_ss << dimensions[i] + "_1";
         if (i < dimensions.size() - 1) {
-            map_3 += ", ";
+            map_3_ss << ", ";
         }
     }
-    map_3 += "]";
+    map_3_ss << "]";
     std::vector<std::string> monotonicity_constraints;
     if (dimensions_syms.find(indvar) != dimensions_syms.end()) {
         monotonicity_constraints.push_back(indvar->get_name() + "_1 != " + indvar->get_name() + "_2");
     }
     if (!monotonicity_constraints.empty()) {
-        map_3 += " : ";
-        map_3 += helpers::join(monotonicity_constraints, " and ");
+        map_3_ss << " : ";
+        map_3_ss << helpers::join(monotonicity_constraints, " and ");
     }
-    map_3 += " }";
+    map_3_ss << " }";
+
+    std::string map_1 = map_1_ss.str();
+    std::string map_2 = map_2_ss.str();
+    std::string map_3 = map_3_ss.str();
 
     map_1 = std::regex_replace(map_1, std::regex("\\."), "_");
     map_2 = std::regex_replace(map_2, std::regex("\\."), "_");
