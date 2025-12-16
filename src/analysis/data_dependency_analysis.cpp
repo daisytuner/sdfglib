@@ -321,8 +321,11 @@ void DataDependencyAnalysis::visit_for(
         // Users found, check if they fully cover the read
         bool covered = false;
         for (auto& entry : frontier) {
+            if (!dominance_analysis.dominates(*entry, *open_read)) {
+                continue;
+            }
             bool covers = supersedes_restrictive(*open_read, *entry, assumptions_analysis);
-            if (covers && dominance_analysis.dominates(*entry, *open_read)) {
+            if (covers) {
                 covered = true;
                 break;
             }

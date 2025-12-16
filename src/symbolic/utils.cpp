@@ -16,10 +16,10 @@
 namespace sdfg {
 namespace symbolic {
 
-std::string expression_to_map_str(const MultiExpression& expr, const Assumptions& assums) {
-    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
-    codegen::CLanguageExtension language_extension(builder.subject());
+builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
+codegen::CLanguageExtension language_extension(builder.subject());
 
+std::string expression_to_map_str(const MultiExpression& expr, const Assumptions& assums) {
     // Get all symbols
     symbolic::SymbolSet syms;
     for (auto& expr : expr) {
@@ -153,9 +153,6 @@ std::tuple<std::string, std::string, std::string> expressions_to_intersection_ma
     const Assumptions& assums1,
     const Assumptions& assums2
 ) {
-    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
-    codegen::CLanguageExtension language_extension(builder.subject());
-
     // Get all symbols
     symbolic::SymbolSet syms;
     for (auto& expr : expr1) {
@@ -480,9 +477,6 @@ ExpressionSet generate_constraints(SymbolSet& syms, const Assumptions& assums, S
 }
 
 std::string constraint_to_isl_str(const Expression con) {
-    builder::SDFGBuilder builder("sdfg", FunctionType_CPU);
-    codegen::CLanguageExtension language_extension(builder.subject());
-
     if (SymEngine::is_a<SymEngine::StrictLessThan>(*con)) {
         auto le = SymEngine::rcp_static_cast<const SymEngine::StrictLessThan>(con);
         auto lhs = le->get_arg1();
