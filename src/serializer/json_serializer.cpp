@@ -2,7 +2,6 @@
 
 #include <cassert>
 #include <memory>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -563,7 +562,7 @@ std::vector<std::pair<std::string, types::Scalar>> JSONSerializer::json_to_argum
 void JSONSerializer::json_to_dataflow(
     const nlohmann::json& j, builder::StructuredSDFGBuilder& builder, structured_control_flow::Block& parent
 ) {
-    std::unordered_map<size_t, data_flow::DataFlowNode&> nodes_map;
+    std::map<size_t, data_flow::DataFlowNode&> nodes_map;
 
     assert(j.contains("nodes"));
     assert(j["nodes"].is_array());
