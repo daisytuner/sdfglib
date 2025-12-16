@@ -37,22 +37,24 @@ private:
     graph::Vertex vertex_;
 
     std::string container_;
+    Element* element_;
     Use use_;
 
-    Element* element_;
+    mutable std::vector<data_flow::Subset> subsets_;
+    mutable bool subsets_cached_ = false;
 
 public:
     User(graph::Vertex vertex, const std::string& container, Element* element, Use use);
 
     virtual ~User() = default;
 
-    Use use() const;
-
     std::string& container();
+
+    Use use() const;
 
     Element* element();
 
-    const std::vector<data_flow::Subset> subsets() const;
+    const std::vector<data_flow::Subset>& subsets() const;
 };
 
 class ForUser : public User {

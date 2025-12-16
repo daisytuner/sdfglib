@@ -32,30 +32,31 @@ std::string& User::container() { return this->container_; };
 
 Element* User::element() { return this->element_; };
 
-const std::vector<data_flow::Subset> User::subsets() const {
-    if (this->container_ == "") {
-        return {};
+const std::vector<data_flow::Subset>& User::subsets() const {
+    if (this->subsets_cached_) {
+        return this->subsets_;
     }
 
-    if (auto access_node = dynamic_cast<data_flow::AccessNode*>(this->element_)) {
+    if (this->container_ == "") {
+        // No-op user
+    } else if (auto access_node = dynamic_cast<data_flow::AccessNode*>(this->element_)) {
         auto& graph = access_node->get_parent();
         if (this->use_ == Use::READ || this->use_ == Use::VIEW) {
-            std::vector<data_flow::Subset> subsets;
             for (auto& iedge : graph.out_edges(*access_node)) {
-                subsets.push_back(iedge.subset());
+                this->subsets_.push_back(iedge.subset());
             }
-            return subsets;
         } else if (this->use_ == Use::WRITE || this->use_ == Use::MOVE) {
-            std::vector<data_flow::Subset> subsets;
             for (auto& oedge : graph.in_edges(*access_node)) {
-                subsets.push_back(oedge.subset());
+                this->subsets_.push_back(oedge.subset());
             }
-            return subsets;
         }
+    } else {
+        // Use of symbol
+        this->subsets_.push_back({});
     }
 
-    // Use of symbol
-    return {{}};
+    this->subsets_cached_ = true;
+    return this->subsets_;
 };
 
 ForUser::ForUser(
