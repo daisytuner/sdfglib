@@ -31,7 +31,12 @@ bool is_monotonic_affine(const Expression expr, const Symbol sym, const Assumpti
         return false;
     }
     auto mul_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(mul);
-    if (mul_int->as_int() <= 0) {
+    try {
+        long long val = mul_int->as_int();
+        if (val <= 0) {
+            return false;
+        }
+    } catch (const SymEngine::SymEngineException&) {
         return false;
     }
 
@@ -45,7 +50,12 @@ bool is_monotonic_pow(const Expression expr, const Symbol sym, const Assumptions
         auto exp = pow->get_exp();
         if (SymEngine::is_a<SymEngine::Integer>(*exp) && SymEngine::is_a<SymEngine::Symbol>(*base)) {
             auto exp_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(exp);
-            if (exp_int->as_int() <= 0) {
+            try {
+                long long val = exp_int->as_int();
+                if (val <= 0) {
+                    return false;
+                }
+            } catch (const SymEngine::SymEngineException&) {
                 return false;
             }
             auto base_sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(base);
