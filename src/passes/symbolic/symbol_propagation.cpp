@@ -326,31 +326,23 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
             } else if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(read->element())) {
                 auto for_user = dynamic_cast<analysis::ForUser*>(read);
                 if (for_user->is_init() && symbolic::uses(for_loop->init(), lhs)) {
-                    builder.update_loop(
-                        *for_loop,
-                        for_loop->indvar(),
-                        for_loop->condition(),
-                        symbolic::subs(for_loop->init(), lhs, rhs_modified),
-                        for_loop->update()
-                    );
+                    auto new_init = symbolic::subs(for_loop->init(), lhs, rhs_modified);
+                    new_init = symbolic::simplify(new_init);
+                    builder
+                        .update_loop(*for_loop, for_loop->indvar(), for_loop->condition(), new_init, for_loop->update());
                     applied = true;
                 } else if (for_user->is_condition() && symbolic::uses(for_loop->condition(), lhs)) {
-                    builder.update_loop(
-                        *for_loop,
-                        for_loop->indvar(),
-                        symbolic::subs(for_loop->condition(), lhs, rhs_modified),
-                        for_loop->init(),
-                        for_loop->update()
-                    );
+                    auto new_condition = symbolic::subs(for_loop->condition(), lhs, rhs_modified);
+                    new_condition =
+                        SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(symbolic::simplify(new_condition));
+                    builder
+                        .update_loop(*for_loop, for_loop->indvar(), new_condition, for_loop->init(), for_loop->update());
                     applied = true;
                 } else if (for_user->is_update() && symbolic::uses(for_loop->update(), lhs)) {
-                    builder.update_loop(
-                        *for_loop,
-                        for_loop->indvar(),
-                        for_loop->condition(),
-                        for_loop->init(),
-                        symbolic::subs(for_loop->update(), lhs, rhs_modified)
-                    );
+                    auto new_update = symbolic::subs(for_loop->update(), lhs, rhs_modified);
+                    new_update = symbolic::simplify(new_update);
+                    builder
+                        .update_loop(*for_loop, for_loop->indvar(), for_loop->condition(), for_loop->init(), new_update);
                     applied = true;
                 }
             }
