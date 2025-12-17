@@ -34,12 +34,7 @@ TEST(DataDependencyAnalysisTest, Block_Define_Scalar) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_block(
-        users, assumptions_analysis, dominance_analysis, block, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_block(analysis_manager, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -76,12 +71,7 @@ TEST(DataDependencyAnalysisTest, Block_Define_Array) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_block(
-        users, assumptions_analysis, dominance_analysis, block, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_block(analysis_manager, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -118,12 +108,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Scalar) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_block(
-        users, assumptions_analysis, dominance_analysis, block, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_block(analysis_manager, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -166,12 +151,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Array) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_block(
-        users, assumptions_analysis, dominance_analysis, block, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_block(analysis_manager, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -220,12 +200,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Array_Subset) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_block(
-        users, assumptions_analysis, dominance_analysis, block, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_block(analysis_manager, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 2);
@@ -271,12 +246,7 @@ TEST(DataDependencyAnalysisTest, Block_Undefined_Symbol) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_block(
-        users, assumptions_analysis, dominance_analysis, block, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_block(analysis_manager, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -324,12 +294,7 @@ TEST(DataDependencyAnalysisTest, Block_Use_Scalar) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_block(
-        users, assumptions_analysis, dominance_analysis, block, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_block(analysis_manager, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -383,12 +348,7 @@ TEST(DataDependencyAnalysisTest, Block_Use_Array) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_block(
-        users, assumptions_analysis, dominance_analysis, block, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_block(analysis_manager, block, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -429,12 +389,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Define_Scalar) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -469,12 +424,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Use_Scalar) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -515,12 +465,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Close_Scalar) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -570,12 +515,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Close_Array) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -621,12 +561,7 @@ TEST(DataDependencyAnalysisTest, Sequence_Define_Array_Subsets) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -664,12 +599,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Condition_Undefined) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 1);
@@ -700,12 +630,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Condition_Use) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -745,12 +670,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Complete_Scalar) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -805,12 +725,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Incomplete_Scalar) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -873,12 +788,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Array) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -938,12 +848,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Define_Array_Subsets) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -1003,12 +908,7 @@ TEST(DataDependencyAnalysisTest, IfElse_Close_Array) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -1055,12 +955,7 @@ TEST(DataDependencyAnalysisTest, For_Indvar) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -1118,12 +1013,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Scalar) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -1184,12 +1074,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Array) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -1250,12 +1135,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -1316,12 +1196,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets_Trivial) {
     std::unordered_set<analysis::User*> undefined;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
     std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-    analysis.visit_sequence(
-        users, assumptions_analysis, dominance_analysis, root, undefined, open_definitions, closed_definitions
-    );
+    analysis.visit_sequence(analysis_manager, root, undefined, open_definitions, closed_definitions);
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
@@ -1337,510 +1212,6 @@ TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets_Trivial) {
     auto& definition_A_after = open_definitions.at(write_A_after);
     EXPECT_EQ(definition_A_after.size(), 0);
 }
-
-/*
-TEST(DataDependencyAnalysisTest, visit_map) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
-
-    auto& root = builder.subject().root();
-
-    auto& map = builder.add_map(root, symbolic::symbol("i"), symbolic::integer(10),
-                                structured_control_flow::ScheduleType_Sequential::create());
-
-    auto& block = builder.add_block(map.root());
-    auto& input_node = builder.add_access(block, "i");
-    auto& output_node = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        "_out",
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_computational_memlet(block, tasklet, "_out", output_node, {},
-types::Scalar(types::PrimitiveType::Int32)); builder.add_computational_memlet(block, input_node, tasklet, "_in", {},
-types::Scalar(types::PrimitiveType::Int32));
-
-    auto sdfg = builder.move();
-
-    // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    analysis::DataDependencyAnalysis analysis(sdfg, true);
-    analysis.run(analysis_manager);
-    auto& users = analysis_manager.get<analysis::Users>();
-
-    std::unordered_set<analysis::User*> undefined;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    symbolic::Assumptions assumptions = assumptions_analysis.get(map, true);
-    analysis.visit_map(users, assumptions_analysis, assumptions, map, undefined, open_definitions,
-                       closed_definitions);
-
-    // Check result
-    EXPECT_EQ(undefined.size(), 0);
-    EXPECT_EQ(open_definitions.size(), 2);
-    EXPECT_EQ(closed_definitions.size(), 0);
-
-    bool foundB = false;
-    bool foundi = false;
-
-    for (auto entry : open_definitions) {
-        if (entry.first->container() == "B") {
-            foundB = true;
-            EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
-            EXPECT_EQ(entry.first->container(), "B");
-            EXPECT_EQ(entry.first->element(), &output_node);
-            EXPECT_EQ(entry.second.size(), 0);
-        } else if (entry.first->container() == "i") {
-            foundi = true;
-            EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
-            EXPECT_EQ(entry.first->container(), "i");
-            EXPECT_EQ(entry.first->element(), &map);
-            EXPECT_EQ(entry.second.size(), 1);
-        }
-    }
-
-    EXPECT_TRUE(foundB);
-    EXPECT_TRUE(foundi);
-}
-
-TEST(DataDependencyAnalysisTest, visit_while) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
-
-    auto& root = builder.subject().root();
-
-    auto& while_loop = builder.add_while(root);
-
-    auto& block = builder.add_block(while_loop.root());
-    auto& input_node = builder.add_access(block, "A");
-    auto& output_node = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        "_out",
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_computational_memlet(block, tasklet, "_out", output_node, {},
-types::Scalar(types::PrimitiveType::Int32)); builder.add_computational_memlet(block, input_node, tasklet, "_in", {},
-types::Scalar(types::PrimitiveType::Int32));
-
-    auto& output_node2 = builder.add_access(block, "A");
-    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                         "_out",
-                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_computational_memlet(block, tasklet2, "_out", output_node2, {},
-types::Scalar(types::PrimitiveType::Int32)); builder.add_computational_memlet(block, output_node, tasklet2, "_in", {},
-types::Scalar(types::PrimitiveType::Int32));
-
-    auto sdfg = builder.move();
-
-    // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    analysis::DataDependencyAnalysis analysis(sdfg, true);
-    analysis.run(analysis_manager);
-    auto& users = analysis_manager.get<analysis::Users>();
-
-    std::unordered_set<analysis::User*> undefined;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    symbolic::Assumptions assumptions = assumptions_analysis.get(while_loop, true);
-    analysis.visit_while(users, assumptions_analysis, assumptions, while_loop, undefined,
-                         open_definitions, closed_definitions);
-
-    // Check result
-    EXPECT_EQ(undefined.size(), 1);
-    auto& oread = *undefined.begin();
-    EXPECT_EQ(oread->use(), analysis::Use::READ);
-    EXPECT_EQ(oread->container(), "A");
-    EXPECT_EQ(oread->element(), &input_node);
-
-    EXPECT_EQ(open_definitions.size(), 2);
-    EXPECT_EQ(closed_definitions.size(), 0);
-
-    bool foundA = false;
-    bool foundB = false;
-
-    for (auto entry : open_definitions) {
-        if (entry.first->container() == "A") {
-            foundA = true;
-            EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
-            EXPECT_EQ(entry.first->container(), "A");
-            EXPECT_EQ(entry.first->element(), &output_node2);
-            EXPECT_EQ(entry.second.size(), 1);
-            EXPECT_EQ((*entry.second.begin())->element(), &input_node);
-        } else if (entry.first->container() == "B") {
-            foundB = true;
-            EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
-            EXPECT_EQ(entry.first->container(), "B");
-            EXPECT_EQ(entry.first->element(), &output_node);
-            EXPECT_EQ(entry.second.size(), 1);
-            EXPECT_EQ((*entry.second.begin())->element(), &output_node);
-        }
-    }
-}
-
-TEST(DataDependencyAnalysisTest, visit_sequence_for_loop) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("C", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("i", types::Scalar(types::PrimitiveType::Int32));
-
-    auto& root = builder.subject().root();
-    auto& block = builder.add_block(root);
-    auto& input_node = builder.add_access(block, "A");
-    auto& output_node = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        "_out",
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_computational_memlet(block, tasklet, "_out", output_node, {},
-types::Scalar(types::PrimitiveType::Int32)); builder.add_computational_memlet(block, input_node, tasklet, "_in", {},
-types::Scalar(types::PrimitiveType::Int32));
-
-    auto& for_loop = builder.add_for(
-        root, symbolic::symbol("i"), symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
-        symbolic::integer(0), symbolic::add(symbolic::symbol("i"), symbolic::integer(1)));
-
-    auto& block2 = builder.add_block(for_loop.root());
-    auto& input_node2 = builder.add_access(block2, "i");
-    auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                         "_out",
-                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_computational_memlet(block2, tasklet2, "_out", output_node2, {},
-types::Scalar(types::PrimitiveType::Int32)); builder.add_computational_memlet(block2, input_node2, tasklet2, "_in", {},
-types::Scalar(types::PrimitiveType::Int32));
-
-    auto sdfg = builder.move();
-
-    // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    analysis::DataDependencyAnalysis analysis(sdfg, true);
-    analysis.run(analysis_manager);
-    auto& users = analysis_manager.get<analysis::Users>();
-
-    std::unordered_set<analysis::User*> undefined;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    symbolic::Assumptions assumptions =
-        assumptions_analysis.get(builder_opt.subject().root(), true);
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-        analysis.visit_sequence(users, assumptions_analysis, dominance_analysis, assumptions,
-builder_opt.subject().root(), undefined, open_definitions, closed_definitions);
-
-    // Check result
-    EXPECT_EQ(undefined.size(), 1);
-    EXPECT_EQ(open_definitions.size(), 4);
-    EXPECT_EQ(closed_definitions.size(), 0);
-
-    auto read = *undefined.begin();
-
-    EXPECT_EQ(read->use(), analysis::Use::READ);
-    EXPECT_EQ(read->container(), "A");
-    EXPECT_EQ(read->element(), &input_node);
-
-    bool foundB = false;
-    bool foundA = false;
-    int both_i = 0;
-
-    for (auto entry : open_definitions) {
-        if (entry.first->container() == "B") {
-            foundB = true;
-            EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
-            EXPECT_EQ(entry.first->container(), "B");
-            EXPECT_EQ(entry.first->element(), &output_node);
-            EXPECT_EQ(entry.second.size(), 0);
-        } else if (entry.first->container() == "A") {
-            foundA = true;
-            EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
-            EXPECT_EQ(entry.first->container(), "A");
-            EXPECT_EQ(entry.first->element(), &output_node2);
-            EXPECT_EQ(entry.second.size(), 0);
-        } else if (entry.first->container() == "i") {
-            both_i++;
-            EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
-            EXPECT_EQ(entry.first->container(), "i");
-            EXPECT_EQ(entry.first->element(), &for_loop);
-            EXPECT_EQ(entry.second.size(), 3);
-        }
-    }
-
-    EXPECT_TRUE(foundB && foundA);
-    EXPECT_EQ(both_i, 2);
-}
-
-TEST(DataDependencyAnalysisTest, visit_sequence_while_loop) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("C", types::Scalar(types::PrimitiveType::Int32));
-
-    auto& root = builder.subject().root();
-    auto& block = builder.add_block(root);
-    auto& input_node = builder.add_access(block, "A");
-    auto& output_node = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        "_out",
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_computational_memlet(block, tasklet, "_out", output_node, {},
-types::Scalar(types::PrimitiveType::Int32)); builder.add_computational_memlet(block, input_node, tasklet, "_in", {},
-types::Scalar(types::PrimitiveType::Int32));
-
-    auto& while_loop = builder.add_while(root);
-
-    auto& block2 = builder.add_block(while_loop.root());
-    auto& input_node2 = builder.add_access(block2, "B");
-    auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign,
-                                         "_out",
-                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_computational_memlet(block2, tasklet2, "_out", output_node2, {},
-types::Scalar(types::PrimitiveType::Int32)); builder.add_computational_memlet(block2, input_node2, tasklet2, "_in", {},
-types::Scalar(types::PrimitiveType::Int32));
-
-    auto sdfg = builder.move();
-
-    // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    analysis::DataDependencyAnalysis analysis(sdfg, true);
-    analysis.run(analysis_manager);
-    auto& users = analysis_manager.get<analysis::Users>();
-
-    std::unordered_set<analysis::User*> undefined;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> open_definitions;
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> closed_definitions;
-
-    auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-    symbolic::Assumptions assumptions =
-        assumptions_analysis.get(builder_opt.subject().root(), true);
-    auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
-        analysis.visit_sequence(users, assumptions_analysis, dominance_analysis, assumptions,
-builder_opt.subject().root(), undefined, open_definitions, closed_definitions);
-
-    // Check result
-    EXPECT_EQ(undefined.size(), 1);
-    EXPECT_EQ(open_definitions.size(), 2);
-    EXPECT_EQ(closed_definitions.size(), 0);
-
-    auto read = *undefined.begin();
-
-    EXPECT_EQ(read->use(), analysis::Use::READ);
-    EXPECT_EQ(read->container(), "A");
-    EXPECT_EQ(read->element(), &input_node);
-
-    bool foundB = false;
-    bool foundA = false;
-
-    for (auto entry : open_definitions) {
-        if (entry.first->container() == "B") {
-            foundB = true;
-            EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
-            EXPECT_EQ(entry.first->container(), "B");
-            EXPECT_EQ(entry.first->element(), &output_node);
-            EXPECT_EQ(entry.second.size(), 1);
-            EXPECT_EQ((*entry.second.begin())->container(), "B");
-        } else if (entry.first->container() == "A") {
-            foundA = true;
-            EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
-            EXPECT_EQ(entry.first->container(), "A");
-            EXPECT_EQ(entry.first->element(), &output_node2);
-            EXPECT_EQ(entry.second.size(), 0);
-        }
-    }
-
-    EXPECT_TRUE(foundB && foundA);
-}
-
-TEST(DataDependencyAnalysisTest, visit_sdfg) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    builder.add_container("A", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("B", types::Scalar(types::PrimitiveType::Int32));
-    builder.add_container("C", types::Scalar(types::PrimitiveType::Int32));
-
-    auto& root = builder.subject().root();
-    auto& block = builder.add_block(root);
-    auto& input_node = builder.add_access(block, "A");
-    auto& output_node = builder.add_access(block, "B");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                        "_out",
-                                        {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_computational_memlet(block, tasklet, "_out", output_node, {},
-types::Scalar(types::PrimitiveType::Int32)); builder.add_computational_memlet(block, input_node, tasklet, "_in", {},
-types::Scalar(types::PrimitiveType::Int32));
-
-    auto& input_node3 = output_node;
-    auto& output_node3 = builder.add_access(block, "C");
-    auto& tasklet3 = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                         "_out",
-                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_computational_memlet(block, tasklet3, "_out", output_node3, {},
-types::Scalar(types::PrimitiveType::Int32)); builder.add_computational_memlet(block, input_node3, tasklet3, "_in", {},
-types::Scalar(types::PrimitiveType::Int32));
-
-    auto& input_node2 = output_node3;
-    auto& output_node2 = builder.add_access(block, "B");
-    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::assign,
-                                         "_out",
-                                         {{"_in", types::Scalar(types::PrimitiveType::Int32)}});
-    builder.add_computational_memlet(block, tasklet2, "_out", output_node2, {},
-types::Scalar(types::PrimitiveType::Int32)); builder.add_computational_memlet(block, input_node2, tasklet2, "_in", {},
-types::Scalar(types::PrimitiveType::Int32));
-
-    auto sdfg = builder.move();
-
-    // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    analysis::DataDependencyAnalysis analysis(sdfg, true);
-    analysis.run(analysis_manager);
-    auto& users = analysis_manager.get<analysis::Users>();
-
-    // Check result
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> reads_after_writes_A =
-        analysis.definitions("A");
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> reads_after_writes_B =
-        analysis.definitions("B");
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> reads_after_writes_C =
-        analysis.definitions("C");
-
-    EXPECT_EQ(reads_after_writes_A.size(), 0);
-    EXPECT_EQ(reads_after_writes_B.size(), 2);
-    EXPECT_EQ(reads_after_writes_C.size(), 1);
-
-    bool foundB_first = false;
-    bool foundB_second = false;
-    bool foundC = false;
-
-    for (auto& entry : reads_after_writes_B) {
-        if (entry.first->element() == &output_node) {
-            foundB_first = true;
-            EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
-            EXPECT_EQ(entry.first->container(), "B");
-            EXPECT_EQ(entry.second.size(), 1);
-            EXPECT_EQ((*entry.second.begin())->container(), "B");
-            EXPECT_EQ((*entry.second.begin())->element(), &input_node3);
-        } else if (entry.first->element() == &output_node2) {
-            foundB_second = true;
-            EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
-            EXPECT_EQ(entry.first->container(), "B");
-            EXPECT_EQ(entry.second.size(), 0);
-        }
-    }
-
-    for (auto& entry : reads_after_writes_C) {
-        foundC = true;
-        EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
-        EXPECT_EQ(entry.first->container(), "C");
-        EXPECT_EQ(entry.second.size(), 1);
-        EXPECT_EQ((*entry.second.begin())->container(), "C");
-        EXPECT_EQ((*entry.second.begin())->element(), &input_node2);
-    }
-
-    EXPECT_TRUE(foundB_first && foundB_second && foundC);
-}
-
-TEST(DataDependencyAnalysisTest, propagate_open_read_out_of_while) {
-    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
-
-    builder.add_container("_0", types::Pointer(types::Scalar(types::PrimitiveType::Double)), true);
-    builder.add_container("_1", types::Pointer(types::Scalar(types::PrimitiveType::Double)));
-    builder.add_container("_7", types::Pointer(types::Scalar(types::PrimitiveType::Double)));
-    builder.add_container("_16", types::Pointer(types::Scalar(types::PrimitiveType::Double)));
-
-    builder.add_container("_4", types::Scalar(types::PrimitiveType::Int32));
-    auto sym = symbolic::symbol("_4");
-
-    auto& root = builder.subject().root();
-    auto& block1 = builder.add_block(root, {{sym, symbolic::integer(0)}});
-    auto& outer_if_else = builder.add_if_else(root);
-    auto& outer_case1 = builder.add_case(outer_if_else, symbolic::__false__());
-    auto& outer_case2 = builder.add_case(outer_if_else, symbolic::__true__());
-
-    auto& outer_loop = builder.add_while(outer_case2);
-    auto& outer_body = outer_loop.root();
-    auto& outer_block = builder.add_block(outer_body);
-
-    auto& outer_input_node = builder.add_access(outer_block, "_1");
-    auto& outer_output_node = builder.add_access(outer_block, "_16");
-    auto& memlet =
-        builder.add_computational_memlet(outer_block, outer_input_node, outer_output_node, "refs", {sym},
-types::Pointer(types::Scalar(types::PrimitiveType::Double)));
-
-    auto& increment_block =
-        builder.add_block(outer_body, {{sym, symbolic::add(sym, symbolic::integer(1))}});
-    auto& outer_cont_break = builder.add_if_else(outer_body);
-    auto& outer_cont_case =
-        builder.add_case(outer_cont_break, symbolic::Lt(sym, symbolic::integer(10)));
-    auto& outer_cont = builder.add_continue(outer_cont_case);
-    auto& outer_break_case =
-        builder.add_case(outer_cont_break, symbolic::Ge(sym, symbolic::integer(10)));
-    auto& outer_break = builder.add_break(outer_break_case);
-
-    auto sdfg = builder.move();
-
-    // Run analysis
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    analysis::DataDependencyAnalysis analysis(sdfg, true);
-    analysis.run(analysis_manager);
-    auto& users = analysis_manager.get<analysis::Users>();
-
-    // Check result
-    std::unordered_map<analysis::User*, std::unordered_set<analysis::User*>> reads_after_writes_4 =
-        analysis.definitions("_4");
-
-    EXPECT_EQ(reads_after_writes_4.size(), 2);
-    for (auto& entry : reads_after_writes_4) {
-        EXPECT_EQ(entry.first->use(), analysis::Use::WRITE);
-        EXPECT_EQ(entry.first->container(), "_4");
-
-        if (entry.first->element() == &root.at(0).second) {
-            EXPECT_EQ(entry.second.size(), 2);
-            for (auto& entry2 : entry.second) {
-                if (entry2->element() == &memlet) {
-                    EXPECT_EQ(entry2->use(), analysis::Use::READ);
-                    EXPECT_EQ(entry2->container(), "_4");
-                } else if (entry2->element() == &outer_body.at(1).second) {
-                    EXPECT_EQ(entry2->use(), analysis::Use::READ);
-                    EXPECT_EQ(entry2->container(), "_4");
-                } else {
-                    EXPECT_FALSE(true);
-                }
-            }
-        } else if (entry.first->element() == &outer_body.at(1).second) {
-            EXPECT_EQ(entry.second.size(), 3);
-            for (auto& entry2 : entry.second) {
-                if (entry2->element() == &memlet) {
-                    EXPECT_EQ(entry2->use(), analysis::Use::READ);
-                    EXPECT_EQ(entry2->container(), "_4");
-                } else if (entry2->element() == &outer_cont_break) {
-                    EXPECT_EQ(entry2->use(), analysis::Use::READ);
-                    EXPECT_EQ(entry2->container(), "_4");
-                } else if (entry2->element() == &outer_body.at(1).second) {
-                    EXPECT_EQ(entry2->use(), analysis::Use::READ);
-                    EXPECT_EQ(entry2->container(), "_4");
-                } else {
-                    EXPECT_FALSE(true);
-                }
-            }
-        } else {
-            EXPECT_FALSE(true);
-        }
-    }
-}
-*/
 
 TEST(LoopDependencyAnalysisTest, Last_1D) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
