@@ -65,6 +65,18 @@ bool SymbolPromotion::can_be_applied(
                 return true;
             }
         }
+        // Special case: Zero-extension (i32 -> i64)
+        if (tasklet->is_zext(builder.subject())) {
+            auto& iedge = *dataflow.in_edges(*tasklet).begin();
+            auto& oedge = *dataflow.out_edges(*tasklet).begin();
+            // check i32 -> i64
+            auto& itype = static_cast<const types::Scalar&>(iedge.base_type());
+            auto& otype = static_cast<const types::Scalar&>(oedge.base_type());
+            if (itype.primitive_type() == types::PrimitiveType::UInt32 &&
+                otype.primitive_type() == types::PrimitiveType::UInt64) {
+                return true;
+            }
+        }
     }
 
     // Criterion: Inputs are signed integers
@@ -310,7 +322,13 @@ void SymbolPromotion::apply(
 
     switch (tasklet->code()) {
         case data_flow::TaskletCode::assign: {
-            rhs = as_symbol(dataflow, *tasklet, tasklet->input(0));
+            if (tasklet->is_zext(builder.subject())) {
+                // Zero-extension (i32 -> i64)
+                rhs = symbolic::zext_i64(SymEngine::rcp_static_cast<
+                                         const SymEngine::Symbol>(as_symbol(dataflow, *tasklet, tasklet->input(0))));
+            } else {
+                rhs = as_symbol(dataflow, *tasklet, tasklet->input(0));
+            }
             break;
         }
         case data_flow::TaskletCode::int_add: {
