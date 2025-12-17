@@ -6,6 +6,7 @@
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/dominance_analysis.h"
+#include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/users.h"
 #include "sdfg/structured_sdfg.h"
 
@@ -46,28 +47,17 @@ private:
     bool loop_depends(
         User& previous,
         User& current,
-        analysis::AssumptionsAnalysis& assumptions_analysis,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::StructuredLoop& loop
     );
 
-    bool supersedes_restrictive(User& previous, User& current, analysis::AssumptionsAnalysis& assumptions_analysis);
+    bool supersedes_restrictive(User& previous, User& current, analysis::AnalysisManager& analysis_manager);
 
-    bool intersects(User& previous, User& current, analysis::AssumptionsAnalysis& assumptions_analysis);
+    bool intersects(User& previous, User& current, analysis::AnalysisManager& analysis_manager);
 
-    bool closes(
-        analysis::AssumptionsAnalysis& assumptions_analysis,
-        analysis::DominanceAnalysis& dominance_analysis,
-        User& previous,
-        User& current,
-        bool requires_dominance
-    );
+    bool closes(analysis::AnalysisManager& analysis_manager, User& previous, User& current, bool requires_dominance);
 
-    bool depends(
-        analysis::AssumptionsAnalysis& assumptions_analysis,
-        analysis::DominanceAnalysis& dominance_analysis,
-        User& previous,
-        User& current
-    );
+    bool depends(analysis::AnalysisManager& analysis_manager, User& previous, User& current);
 
 public:
     DataDependencyAnalysis(StructuredSDFG& sdfg, bool detailed = false);
@@ -79,9 +69,7 @@ public:
     /****** Visitor API ******/
 
     void visit_block(
-        analysis::Users& users,
-        analysis::AssumptionsAnalysis& assumptions_analysis,
-        analysis::DominanceAnalysis& dominance_analysis,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::Block& block,
         std::unordered_set<User*>& undefined,
         std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
@@ -89,9 +77,7 @@ public:
     );
 
     void visit_for(
-        analysis::Users& users,
-        analysis::AssumptionsAnalysis& assumptions_analysis,
-        analysis::DominanceAnalysis& dominance_analysis,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::StructuredLoop& for_loop,
         std::unordered_set<User*>& undefined,
         std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
@@ -99,9 +85,7 @@ public:
     );
 
     void visit_if_else(
-        analysis::Users& users,
-        analysis::AssumptionsAnalysis& assumptions_analysis,
-        analysis::DominanceAnalysis& dominance_analysis,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::IfElse& if_loop,
         std::unordered_set<User*>& undefined,
         std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
@@ -109,9 +93,7 @@ public:
     );
 
     void visit_while(
-        analysis::Users& users,
-        analysis::AssumptionsAnalysis& assumptions_analysis,
-        analysis::DominanceAnalysis& dominance_analysis,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::While& while_loop,
         std::unordered_set<User*>& undefined,
         std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
@@ -119,9 +101,7 @@ public:
     );
 
     void visit_return(
-        analysis::Users& users,
-        analysis::AssumptionsAnalysis& assumptions_analysis,
-        analysis::DominanceAnalysis& dominance_analysis,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::Return& return_statement,
         std::unordered_set<User*>& undefined,
         std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
@@ -129,9 +109,7 @@ public:
     );
 
     void visit_sequence(
-        analysis::Users& users,
-        analysis::AssumptionsAnalysis& assumptions_analysis,
-        analysis::DominanceAnalysis& dominance_analysis,
+        analysis::AnalysisManager& analysis_manager,
         structured_control_flow::Sequence& sequence,
         std::unordered_set<User*>& undefined,
         std::unordered_map<User*, std::unordered_set<User*>>& open_definitions,
