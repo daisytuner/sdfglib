@@ -24,13 +24,6 @@ private:
         sdfg::StructuredSDFG& sdfg, data_flow::DataFlowGraph& dataflow, data_flow::Tasklet& tasklet
     );
 
-    bool is_safe_trunc(
-        sdfg::StructuredSDFG& sdfg,
-        analysis::AnalysisManager& analysis_manager,
-        data_flow::DataFlowGraph& dataflow,
-        data_flow::Tasklet& tasklet
-    );
-
 public:
     SymbolPromotion();
 
