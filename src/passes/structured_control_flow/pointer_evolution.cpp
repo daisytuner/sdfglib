@@ -1,4 +1,4 @@
-#include "sdfg/passes/structured_control_flow/iterator_to_indvar.h"
+#include "sdfg/passes/structured_control_flow/pointer_evolution.h"
 
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/dominance_analysis.h"

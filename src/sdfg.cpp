@@ -62,6 +62,11 @@ std::unordered_map<const control_flow::State*, const control_flow::State*> SDFG:
 
     std::unordered_map<const control_flow::State*, const control_flow::State*> dom_tree;
     for (auto& entry : dom_tree_) {
+        if (entry.first == boost::graph_traits<graph::Graph>::null_vertex() ||
+            this->states_.find(entry.first) == this->states_.end()) {
+            // This is the synthetic super-root, skip it
+            continue;
+        }
         control_flow::State* first = this->states_.at(entry.first).get();
         control_flow::State* second = nullptr;
         if (entry.second != boost::graph_traits<graph::Graph>::null_vertex()) {
@@ -118,6 +123,41 @@ std::list<std::list<const control_flow::InterstateEdge*>> SDFG::
     }
 
     return all_paths;
+};
+
+void SDFG::as_dot(std::ostream& out) const {
+    out << "digraph SDFG {\n";
+
+    // States as nodes
+    for (auto& state : this->states()) {
+        out << "  S" << state.element_id() << " [label=\""
+            << "State " << state.element_id() << "\"];\n";
+    }
+
+    // Edges
+    for (auto& edge : this->edges()) {
+        out << "  S" << edge.src().element_id() << " -> S" << edge.dst().element_id();
+        out << " [label=\"";
+        // Condition
+        out << edge.condition()->__str__() << ",";
+        // Assignments
+        if (!edge.assignments().empty()) {
+            out << "\\n{";
+            bool first = true;
+            for (auto& [var, expr] : edge.assignments()) {
+                if (!first) {
+                    out << "; ";
+                }
+                out << var->get_name() << " = " << expr->__str__();
+                ;
+                first = false;
+            }
+            out << "}";
+        }
+        out << "\"];\n";
+    }
+
+    out << "}\n";
 };
 
 } // namespace sdfg

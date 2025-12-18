@@ -113,6 +113,11 @@ Expression mod(const Expression lhs, const Expression rhs) {
 
 Expression pow(const Expression base, const Expression exp) { return SymEngine::pow(base, exp); };
 
+Expression zext_i64(const Expression expr) {
+    auto zext = SymEngine::make_rcp<ZExtI64Function>(expr);
+    return zext;
+}
+
 Expression size_of_type(const types::IType& type) {
     auto so = SymEngine::make_rcp<SizeOfTypeFunction>(type);
     return so;
@@ -121,6 +126,11 @@ Expression size_of_type(const types::IType& type) {
 Expression dynamic_sizeof(const Symbol symbol) {
     auto so = SymEngine::make_rcp<DynamicSizeOfFunction>(symbol);
     return so;
+}
+
+Expression malloc_usable_size(const Symbol symbol) {
+    auto mus = SymEngine::make_rcp<MallocUsableSizeFunction>(symbol);
+    return mus;
 }
 
 /***** Comparisions *****/
@@ -145,6 +155,51 @@ Expression expand(const Expression expr) {
 };
 
 Expression simplify(const Expression expr) {
+    if (SymEngine::is_a<SymEngine::StrictLessThan>(*expr)) {
+        auto slt = SymEngine::rcp_static_cast<const SymEngine::StrictLessThan>(expr);
+        auto lhs = slt->get_arg1();
+        auto rhs = slt->get_arg2();
+        auto simple_lhs = symbolic::simplify(lhs);
+        auto simple_rhs = symbolic::simplify(rhs);
+        return symbolic::Lt(simple_lhs, simple_rhs);
+    }
+    if (SymEngine::is_a<SymEngine::LessThan>(*expr)) {
+        auto le = SymEngine::rcp_static_cast<const SymEngine::LessThan>(expr);
+        auto lhs = le->get_arg1();
+        auto rhs = le->get_arg2();
+        auto simple_lhs = symbolic::simplify(lhs);
+        auto simple_rhs = symbolic::simplify(rhs);
+        return symbolic::Le(simple_lhs, simple_rhs);
+    }
+
+    if (SymEngine::is_a<SymEngine::Add>(*expr)) {
+        auto add = SymEngine::rcp_static_cast<const SymEngine::Add>(expr);
+        auto args = add->get_args();
+        for (const auto& arg : args) {
+            if (SymEngine::is_a<SymEngine::Max>(*arg)) {
+                auto max_op = SymEngine::rcp_static_cast<const SymEngine::Max>(arg);
+                auto max_args = max_op->get_args();
+
+                std::vector<Expression> other_args;
+                bool skipped = false;
+                for (const auto& a : args) {
+                    if (eq(a, arg) && !skipped) {
+                        skipped = true;
+                    } else {
+                        other_args.push_back(a);
+                    }
+                }
+                auto rest = SymEngine::add(other_args);
+
+                SymEngine::vec_basic new_max_args;
+                for (const auto& m_arg : max_args) {
+                    new_max_args.push_back(symbolic::simplify(SymEngine::add(rest, m_arg)));
+                }
+                return SymEngine::max(new_max_args);
+            }
+        }
+    }
+
     if (SymEngine::is_a<SymEngine::FunctionSymbol>(*expr)) {
         auto func_sym = SymEngine::rcp_static_cast<const SymEngine::FunctionSymbol>(expr);
         auto func_id = func_sym->get_name();
@@ -184,6 +239,34 @@ Expression simplify(const Expression expr) {
                 auto a = SymEngine::rcp_static_cast<const SymEngine::Integer>(lhs)->as_int();
                 auto b = SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs)->as_int();
                 return integer(a % b);
+            }
+        } else if (func_id == "zext_i64") {
+            auto arg = func_sym->get_args()[0];
+            auto simple_arg = symbolic::simplify(arg);
+
+            bool non_negative = false;
+            if (SymEngine::is_a<SymEngine::Integer>(*simple_arg)) {
+                if (SymEngine::rcp_static_cast<const SymEngine::Integer>(simple_arg)->as_int() >= 0) {
+                    non_negative = true;
+                }
+            } else if (SymEngine::is_a<SymEngine::Max>(*simple_arg)) {
+                auto max_op = SymEngine::rcp_static_cast<const SymEngine::Max>(simple_arg);
+                for (const auto& m_arg : max_op->get_args()) {
+                    if (SymEngine::is_a<SymEngine::Integer>(*m_arg)) {
+                        if (SymEngine::rcp_static_cast<const SymEngine::Integer>(m_arg)->as_int() >= 0) {
+                            non_negative = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (non_negative) {
+                return simple_arg;
+            }
+
+            if (!eq(arg, simple_arg)) {
+                return zext_i64(simple_arg);
             }
         }
     }

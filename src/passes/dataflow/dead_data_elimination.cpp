@@ -22,23 +22,25 @@ bool DeadDataElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
         if (!sdfg.is_transient(name)) {
             continue;
         }
-        if (!dynamic_cast<const types::Scalar*>(&sdfg.type(name))) {
+        if (sdfg.type(name).type_id() != types::TypeID::Scalar) {
             continue;
         }
 
-        if (!users.views(name).empty() || !users.moves(name).empty()) {
+        if (users.num_views(name) > 0 || users.num_moves(name) > 0) {
             continue;
         }
-        if (users.reads(name).empty() && users.writes(name).empty()) {
+        if (users.num_reads(name) == 0 && users.num_writes(name) == 0) {
             dead.insert(name);
             applied = true;
             continue;
         }
 
         // Writes without reads
+        bool all_definitions_removed = true;
         auto raws = data_dependency_analysis.definitions(name);
         for (auto set : raws) {
             if (set.second.size() > 0) {
+                all_definitions_removed = false;
                 continue;
             }
             if (data_dependency_analysis.is_undefined_user(*set.first)) {
@@ -62,9 +64,17 @@ bool DeadDataElimination::run_pass(builder::StructuredSDFGBuilder& builder, anal
                         auto& block = dynamic_cast<structured_control_flow::Block&>(*graph.get_parent());
                         builder.clear_node(block, *library_node);
                         applied = true;
+                    } else {
+                        all_definitions_removed = false;
                     }
                 }
+            } else {
+                all_definitions_removed = false;
             }
+        }
+
+        if (all_definitions_removed) {
+            dead.insert(name);
         }
     }
 

@@ -43,6 +43,12 @@ public:
         this->passes_.push_back(std::make_unique<T>());
     };
 
+    static Pipeline dataflow_simplification();
+
+    static Pipeline symbolic_simplification();
+
+    static Pipeline dead_code_elimination();
+
     static Pipeline expression_combine();
 
     static Pipeline memlet_combine();

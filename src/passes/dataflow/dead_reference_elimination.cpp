@@ -34,17 +34,14 @@ bool DeadReferenceElimination::
         }
 
         // Requirement: Pointer is only assigned
-        auto reads = users.reads(name);
-        auto writes = users.writes(name);
-        if (reads.size() > 0 || writes.size() > 0) {
+        if (users.num_reads(name) > 0 || users.num_writes(name) > 0) {
             continue;
         }
-        auto views = users.views(name);
-        auto moves = users.moves(name);
-        if (views.size() > 0) {
+        if (users.num_views(name) > 0) {
             continue;
         }
 
+        auto& moves = users.moves(name);
         for (auto& move : moves) {
             auto access_node = dynamic_cast<data_flow::AccessNode*>(move->element());
             auto& graph = dynamic_cast<data_flow::DataFlowGraph&>(access_node->get_parent());

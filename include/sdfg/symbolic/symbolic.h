@@ -96,6 +96,13 @@ Expression mod(const Expression lhs, const Expression rhs);
 
 Expression pow(const Expression base, const Expression exp);
 
+Expression zext_i64(const Expression expr);
+
+class ZExtI64Function : public SymEngine::FunctionSymbol {
+public:
+    explicit ZExtI64Function(const Expression expr) : FunctionSymbol("zext_i64", expr) {}
+};
+
 Expression size_of_type(const types::IType& type);
 
 class SizeOfTypeFunction : public SymEngine::FunctionSymbol {
@@ -114,6 +121,13 @@ Expression dynamic_sizeof(const Symbol symbol);
 class DynamicSizeOfFunction : public SymEngine::FunctionSymbol {
 public:
     explicit DynamicSizeOfFunction(const Symbol symbol) : FunctionSymbol("dynamic_sizeof", symbol) {}
+};
+
+Expression malloc_usable_size(const Symbol symbol);
+
+class MallocUsableSizeFunction : public SymEngine::FunctionSymbol {
+public:
+    explicit MallocUsableSizeFunction(const Symbol symbol) : FunctionSymbol("malloc_usable_size", symbol) {}
 };
 
 /***** Comparisions *****/

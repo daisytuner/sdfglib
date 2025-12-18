@@ -437,10 +437,7 @@ TEST(BlockHoistingTest, For_InvariantMove) {
     // Apply pass
     analysis::AnalysisManager analysis_manager(sdfg);
     passes::BlockHoistingPass pass;
-    EXPECT_TRUE(pass.run(builder, analysis_manager));
-
-    EXPECT_EQ(root.size(), 2);
-    EXPECT_EQ(body.size(), 1);
+    EXPECT_FALSE(pass.run(builder, analysis_manager));
 }
 
 TEST(BlockHoistingTest, For_InvariantView) {
@@ -490,10 +487,7 @@ TEST(BlockHoistingTest, For_InvariantView) {
     // Apply pass
     analysis::AnalysisManager analysis_manager(sdfg);
     passes::BlockHoistingPass pass;
-    EXPECT_TRUE(pass.run(builder, analysis_manager));
-
-    EXPECT_EQ(root.size(), 2);
-    EXPECT_EQ(body.size(), 1);
+    EXPECT_FALSE(pass.run(builder, analysis_manager));
 }
 
 TEST(BlockHoistingTest, For_InvariantView_MultipleViews) {
@@ -552,13 +546,10 @@ TEST(BlockHoistingTest, For_InvariantView_MultipleViews) {
     // Apply pass
     analysis::AnalysisManager analysis_manager(sdfg);
     passes::BlockHoistingPass pass;
-    EXPECT_TRUE(pass.run(builder, analysis_manager));
-
-    EXPECT_EQ(root.size(), 3);
-    EXPECT_EQ(body.size(), 1);
+    EXPECT_FALSE(pass.run(builder, analysis_manager));
 }
 
-TEST(BlockHoistingTest, For_InvariantAlloca) {
+TEST(BlockHoistingTest, For_VariantAlloca) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -583,7 +574,6 @@ TEST(BlockHoistingTest, For_InvariantAlloca) {
     );
     auto& body = for_stmt.root();
 
-    // Loop invariant alloca
     auto& block1 = builder.add_block(body);
     {
         auto& c = builder.add_access(block1, "c");
@@ -620,13 +610,10 @@ TEST(BlockHoistingTest, For_InvariantAlloca) {
     // Apply pass
     analysis::AnalysisManager analysis_manager(sdfg);
     passes::BlockHoistingPass pass;
-    EXPECT_TRUE(pass.run(builder, analysis_manager));
-
-    EXPECT_EQ(root.size(), 2);
-    EXPECT_EQ(body.size(), 3);
+    EXPECT_FALSE(pass.run(builder, analysis_manager));
 }
 
-TEST(BlockHoistingTest, For_InvariantMemcpy) {
+TEST(BlockHoistingTest, For_VariantMemcpy) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -652,7 +639,7 @@ TEST(BlockHoistingTest, For_InvariantMemcpy) {
     );
     auto& body = for_stmt.root();
 
-    // Loop invariant memcpy
+    // C -> c memcpy
     auto& block1 = builder.add_block(body);
     {
         auto& C = builder.add_access(block1, "C");
@@ -674,26 +661,13 @@ TEST(BlockHoistingTest, For_InvariantMemcpy) {
         builder.add_computational_memlet(block2, tasklet1, "_out", c, {symbolic::symbol("i")});
     }
 
-    // Loop invariant memcpy
-    auto& block3 = builder.add_block(body);
-    {
-        auto& C = builder.add_access(block3, "C");
-        auto& c = builder.add_access(block3, "c");
-        auto& libnode = builder.add_library_node<stdlib::MemcpyNode>(block3, DebugInfo(), symbolic::integer(10));
-        builder.add_computational_memlet(block3, C, libnode, "_src", {}, desc_ptr);
-        builder.add_computational_memlet(block3, libnode, "_dst", c, {}, desc_ptr);
-    }
-
     // Apply pass
     analysis::AnalysisManager analysis_manager(sdfg);
     passes::BlockHoistingPass pass;
-    EXPECT_TRUE(pass.run(builder, analysis_manager));
-
-    EXPECT_EQ(root.size(), 3);
-    EXPECT_EQ(body.size(), 1);
+    EXPECT_FALSE(pass.run(builder, analysis_manager));
 }
 
-TEST(BlockHoistingTest, For_InvariantMemmove) {
+TEST(BlockHoistingTest, For_VariantMemmove) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -719,7 +693,7 @@ TEST(BlockHoistingTest, For_InvariantMemmove) {
     );
     auto& body = for_stmt.root();
 
-    // Loop invariant memmove
+    // C -> c memcpy
     auto& block1 = builder.add_block(body);
     {
         auto& C = builder.add_access(block1, "C");
@@ -741,26 +715,13 @@ TEST(BlockHoistingTest, For_InvariantMemmove) {
         builder.add_computational_memlet(block2, tasklet1, "_out", c, {symbolic::symbol("i")});
     }
 
-    // Loop invariant memmove
-    auto& block3 = builder.add_block(body);
-    {
-        auto& C = builder.add_access(block3, "C");
-        auto& c = builder.add_access(block3, "c");
-        auto& libnode = builder.add_library_node<stdlib::MemmoveNode>(block3, DebugInfo(), symbolic::integer(10));
-        builder.add_computational_memlet(block3, C, libnode, "_src", {}, desc_ptr);
-        builder.add_computational_memlet(block3, libnode, "_dst", c, {}, desc_ptr);
-    }
-
     // Apply pass
     analysis::AnalysisManager analysis_manager(sdfg);
     passes::BlockHoistingPass pass;
-    EXPECT_TRUE(pass.run(builder, analysis_manager));
-
-    EXPECT_EQ(root.size(), 3);
-    EXPECT_EQ(body.size(), 1);
+    EXPECT_FALSE(pass.run(builder, analysis_manager));
 }
 
-TEST(BlockHoistingTest, For_InvariantMemset) {
+TEST(BlockHoistingTest, For_VariantMemset) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
@@ -785,7 +746,7 @@ TEST(BlockHoistingTest, For_InvariantMemset) {
     );
     auto& body = for_stmt.root();
 
-    // Loop invariant memcpy
+    // 2 -> c memset
     auto& block1 = builder.add_block(body);
     {
         auto& c = builder.add_access(block1, "c");
@@ -810,10 +771,7 @@ TEST(BlockHoistingTest, For_InvariantMemset) {
     // Apply pass
     analysis::AnalysisManager analysis_manager(sdfg);
     passes::BlockHoistingPass pass;
-    EXPECT_TRUE(pass.run(builder, analysis_manager));
-
-    EXPECT_EQ(root.size(), 2);
-    EXPECT_EQ(body.size(), 1);
+    EXPECT_FALSE(pass.run(builder, analysis_manager));
 }
 
 TEST(BlockHoistingTest, IfElse_InvariantMove) {

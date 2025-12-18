@@ -52,7 +52,8 @@ bool LoopDistribute::can_be_applied(builder::StructuredSDFGBuilder& builder, ana
     // b) is not used by child at all
 
     // collect dependencies
-    auto& analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
+    analysis::DataDependencyAnalysis analysis(builder.subject(), true);
+    analysis.run(analysis_manager);
     auto& dependencies = analysis.dependencies(this->loop_);
 
     // collect child locals and child users

@@ -29,17 +29,17 @@ TEST(UsersTest, Transition_WAR) {
     auto reads = users.reads("A");
     EXPECT_EQ(reads.size(), 1);
 
-    auto& read = reads.at(0);
+    auto& read = *reads.begin();
     EXPECT_EQ(read->use(), analysis::Use::READ);
     EXPECT_EQ(read->container(), "A");
     EXPECT_EQ(read->element(), &transition1);
     EXPECT_EQ(read->subsets().size(), 1);
     EXPECT_TRUE(read->subsets().at(0).empty());
 
-    auto writes = users.writes("A");
+    auto& writes = users.writes("A");
     EXPECT_EQ(writes.size(), 1);
 
-    auto& write = writes.at(0);
+    auto& write = *writes.begin();
     EXPECT_EQ(write->use(), analysis::Use::WRITE);
     EXPECT_EQ(write->container(), "A");
     EXPECT_EQ(write->element(), &transition1);
@@ -71,11 +71,11 @@ TEST(UsersTest, Transition_WAW) {
     auto reads = users.reads("A");
     EXPECT_EQ(reads.size(), 0);
 
-    auto writes = users.writes("A");
+    auto& writes = users.writes("A");
     EXPECT_EQ(writes.size(), 2);
 
-    auto& write1 = writes.at(0);
-    auto& write2 = writes.at(1);
+    auto write1 = *writes.begin();
+    auto write2 = *(++writes.begin());
     if (write1->element() == &transition2) {
         std::swap(write1, write2);
     }
@@ -119,17 +119,17 @@ TEST(UsersTest, Transition_RAW) {
     auto reads = users.reads("A");
     EXPECT_EQ(reads.size(), 1);
 
-    auto& read = reads.at(0);
+    auto& read = *reads.begin();
     EXPECT_EQ(read->use(), analysis::Use::READ);
     EXPECT_EQ(read->container(), "A");
     EXPECT_EQ(read->element(), &transition2);
     EXPECT_EQ(read->subsets().size(), 1);
     EXPECT_TRUE(read->subsets().at(0).empty());
 
-    auto writes = users.writes("A");
+    auto& writes = users.writes("A");
     EXPECT_EQ(writes.size(), 1);
 
-    auto& write = writes.at(0);
+    auto& write = *writes.begin();
     EXPECT_EQ(write->use(), analysis::Use::WRITE);
     EXPECT_EQ(write->container(), "A");
     EXPECT_EQ(write->element(), &transition1);
@@ -160,7 +160,7 @@ TEST(UsersTest, AccessNode_Scalar_WAR) {
     auto reads = users.reads("A");
     EXPECT_EQ(reads.size(), 1);
 
-    auto& read = reads.at(0);
+    auto& read = *reads.begin();
     EXPECT_EQ(read->container(), "A");
     EXPECT_EQ(read->use(), analysis::Use::READ);
     EXPECT_EQ(read->element(), &input_node);
@@ -169,10 +169,10 @@ TEST(UsersTest, AccessNode_Scalar_WAR) {
     EXPECT_EQ(read_subsets.size(), 1);
     EXPECT_TRUE(read_subsets.at(0).empty());
 
-    auto writes = users.writes("A");
+    auto& writes = users.writes("A");
     EXPECT_EQ(writes.size(), 1);
 
-    auto& write = writes.at(0);
+    auto& write = *writes.begin();
     EXPECT_EQ(write->container(), "A");
     EXPECT_EQ(write->use(), analysis::Use::WRITE);
     EXPECT_EQ(write->element(), &output_node);
@@ -213,11 +213,11 @@ TEST(UsersTest, AccessNode_Scalar_WAW) {
     auto reads = users.reads("A");
     EXPECT_EQ(reads.size(), 0);
 
-    auto writes = users.writes("A");
+    auto& writes = users.writes("A");
     EXPECT_EQ(writes.size(), 2);
 
-    auto& write1 = writes.at(0);
-    auto& write2 = writes.at(1);
+    auto write1 = *writes.begin();
+    auto write2 = *(++writes.begin());
     if (write1->element() == &output_node2) {
         std::swap(write1, write2);
     }
@@ -265,17 +265,17 @@ TEST(UsersTest, AccessNode_Scalar_RAW) {
     auto reads = users.reads("A");
     EXPECT_EQ(reads.size(), 1);
 
-    auto& read = reads.at(0);
+    auto& read = *reads.begin();
     EXPECT_EQ(read->use(), analysis::Use::READ);
     EXPECT_EQ(read->container(), "A");
     EXPECT_EQ(read->element(), &output_node);
     EXPECT_EQ(read->subsets().size(), 1);
     EXPECT_TRUE(read->subsets().at(0).empty());
 
-    auto writes = users.writes("A");
+    auto& writes = users.writes("A");
     EXPECT_EQ(writes.size(), 1);
 
-    auto& write = writes.at(0);
+    auto& write = *writes.begin();
     EXPECT_EQ(write->use(), analysis::Use::WRITE);
     EXPECT_EQ(write->container(), "A");
     EXPECT_EQ(write->element(), &output_node);
@@ -305,15 +305,15 @@ TEST(UsersTest, For_Definition) {
 
     // Check result
     auto reads = users.reads("A");
-    auto writes = users.writes("A");
+    auto& writes = users.writes("A");
 
     EXPECT_EQ(reads.size(), 2);
     EXPECT_EQ(writes.size(), 2);
 
-    auto read1 = dynamic_cast<analysis::ForUser*>(reads.at(0));
-    auto read2 = dynamic_cast<analysis::ForUser*>(reads.at(1));
-    auto write1 = dynamic_cast<analysis::ForUser*>(writes.at(0));
-    auto write2 = dynamic_cast<analysis::ForUser*>(writes.at(1));
+    auto read1 = dynamic_cast<analysis::ForUser*>(*reads.begin());
+    auto read2 = dynamic_cast<analysis::ForUser*>(*(++reads.begin()));
+    auto write1 = dynamic_cast<analysis::ForUser*>(*writes.begin());
+    auto write2 = dynamic_cast<analysis::ForUser*>(*(++writes.begin()));
 
     if (read1->is_update()) {
         std::swap(read1, read2);
@@ -368,9 +368,9 @@ TEST(UsersTest, Returns_Diverging) {
     EXPECT_EQ(users.uses("A").size(), 1);
     EXPECT_EQ(users.uses("B").size(), 1);
 
-    auto read1 = dynamic_cast<analysis::User*>(reads_A.at(0));
+    auto read1 = dynamic_cast<analysis::User*>(*reads_A.begin());
     EXPECT_TRUE(dynamic_cast<const structured_control_flow::Return*>(read1->element()) != nullptr);
-    auto read2 = dynamic_cast<analysis::User*>(reads_B.at(0));
+    auto read2 = dynamic_cast<analysis::User*>(*reads_B.begin());
     EXPECT_TRUE(dynamic_cast<const structured_control_flow::Return*>(read2->element()) != nullptr);
 }
 

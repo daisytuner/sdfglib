@@ -265,7 +265,7 @@ const std::string& Memlet::src_conn() const { return this->src_conn_; };
 
 const std::string& Memlet::dst_conn() const { return this->dst_conn_; };
 
-const Subset Memlet::subset() const { return this->subset_; };
+const Subset& Memlet::subset() const { return this->subset_; };
 
 void Memlet::set_subset(const Subset& subset) { this->subset_ = subset; };
 

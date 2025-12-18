@@ -24,10 +24,10 @@ bool RedundantArrayElimination::
         if (!sdfg.is_transient(name)) {
             continue;
         }
-        if (!users.moves(name).empty() || !users.views(name).empty()) {
+        if (users.num_moves(name) > 0 || users.num_views(name) > 0) {
             continue;
         }
-        if (users.writes(name).size() != 1) {
+        if (users.num_writes(name) != 1) {
             continue;
         }
         std::unique_ptr<types::IType> type = sdfg.type(name).clone();
@@ -36,7 +36,7 @@ bool RedundantArrayElimination::
         }
 
         // Criterion: Data must depend on externals
-        auto write = users.writes(name)[0];
+        auto write = *users.writes(name).begin();
         auto write_node = dynamic_cast<data_flow::AccessNode*>(write->element());
         auto& graph = write_node->get_parent();
         if (graph.in_degree(*write_node) == 0) {

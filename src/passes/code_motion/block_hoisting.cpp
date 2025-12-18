@@ -45,17 +45,6 @@ bool BlockHoisting::accept(structured_control_flow::Map& map_stmt) {
     return applied;
 }
 
-bool BlockHoisting::accept(structured_control_flow::For& for_stmt) {
-    auto& scope_analysis = analysis_manager_.get<analysis::ScopeAnalysis>();
-    auto& parent = static_cast<structured_control_flow::Sequence&>(*scope_analysis.parent_scope(&for_stmt));
-
-    bool applied = false;
-    applied |= this->for_invariant_front(parent, for_stmt);
-    applied |= this->for_invariant_back(parent, for_stmt);
-
-    return applied;
-}
-
 bool BlockHoisting::accept(structured_control_flow::IfElse& if_else) {
     // Ignore incomplete branches for now
     if (if_else.size() == 0 || !if_else.is_complete()) {
@@ -322,6 +311,12 @@ bool BlockHoisting::is_invariant_libnode(
             return false;
         }
     }
+    for (auto& oedge : dfg.out_edges(*libnode)) {
+        auto& dst = static_cast<data_flow::AccessNode&>(oedge.dst());
+        if (!body_view.writes(dst.data()).empty() || !body_view.moves(dst.data()).empty()) {
+            return false;
+        }
+    }
 
     return true;
 }
@@ -539,114 +534,6 @@ bool BlockHoisting::map_invariant_libnode_back(
     }
 
     size_t map_index = parent.index(map_stmt);
-    builder_.move_child(body, body.size() - 1, parent, map_index + 1);
-    return true;
-}
-
-bool BlockHoisting::for_invariant_front(structured_control_flow::Sequence& parent, structured_control_flow::For& for_stmt) {
-    // Extract first child
-    auto& body = for_stmt.root();
-    if (body.size() == 0) {
-        return false;
-    }
-    auto first_child = body.at(0);
-    if (!first_child.second.assignments().empty()) {
-        return false;
-    }
-    auto& first_node = first_child.first;
-
-    auto* block = dynamic_cast<structured_control_flow::Block*>(&first_node);
-    if (!block) {
-        return false;
-    }
-    if (this->for_invariant_move(parent, for_stmt, *block)) {
-        return true;
-    }
-    if (this->for_invariant_view(parent, for_stmt, *block)) {
-        return true;
-    }
-    if (this->for_invariant_libnode_front(parent, for_stmt, *block)) {
-        return true;
-    }
-
-    return false;
-}
-
-bool BlockHoisting::for_invariant_back(structured_control_flow::Sequence& parent, structured_control_flow::For& for_stmt) {
-    // Extract last child
-    auto& body = for_stmt.root();
-    if (body.size() == 0) {
-        return false;
-    }
-    auto last_child = body.at(body.size() - 1);
-    if (!last_child.second.assignments().empty()) {
-        return false;
-    }
-    auto& last_node = last_child.first;
-
-    auto* block = dynamic_cast<structured_control_flow::Block*>(&last_node);
-    if (!block) {
-        return false;
-    }
-    return this->for_invariant_libnode_back(parent, for_stmt, *block);
-}
-
-bool BlockHoisting::for_invariant_move(
-    structured_control_flow::Sequence& parent,
-    structured_control_flow::For& for_stmt,
-    structured_control_flow::Block& block
-) {
-    auto& body = for_stmt.root();
-    if (!this->is_invariant_move(body, block.dataflow(), false)) {
-        return false;
-    }
-
-    size_t for_index = parent.index(for_stmt);
-    builder_.move_child(body, 0, parent, for_index);
-    return true;
-}
-
-bool BlockHoisting::for_invariant_view(
-    structured_control_flow::Sequence& parent,
-    structured_control_flow::For& for_stmt,
-    structured_control_flow::Block& block
-) {
-    auto& body = for_stmt.root();
-    if (!this->is_invariant_view(body, block.dataflow(), for_stmt.indvar(), false)) {
-        return false;
-    }
-
-    size_t for_index = parent.index(for_stmt);
-    builder_.move_child(body, 0, parent, for_index);
-    return true;
-}
-
-bool BlockHoisting::for_invariant_libnode_front(
-    structured_control_flow::Sequence& parent,
-    structured_control_flow::For& for_stmt,
-    structured_control_flow::Block& block
-) {
-    auto& body = for_stmt.root();
-    if (!this->is_invariant_libnode(body, block.dataflow(), for_stmt.indvar(), false)) {
-        return false;
-    }
-
-    size_t map_index = parent.index(for_stmt);
-    builder_.move_child(body, 0, parent, map_index);
-    return true;
-}
-
-bool BlockHoisting::for_invariant_libnode_back(
-    structured_control_flow::Sequence& parent,
-    structured_control_flow::For& for_stmt,
-    structured_control_flow::Block& block
-) {
-    auto& body = for_stmt.root();
-    if (!this->is_invariant_libnode(body, block.dataflow(), for_stmt.indvar(), false)) {
-        return false;
-    }
-
-    size_t map_index = parent.index(for_stmt);
     builder_.move_child(body, body.size() - 1, parent, map_index + 1);
     return true;
 }

@@ -166,7 +166,9 @@ struct __daisy_capture* __daisy_capture_init(const char* name, const char* base_
     DaisyRtlCapture* ctx;
 
     std::filesystem::path base_dir_path = "arg_captures";
-    if (base_dir) {
+    if (getenv("__DAISY_CAPTURE_BASE_DIR")) {
+        base_dir_path = getenv("__DAISY_CAPTURE_BASE_DIR");
+    } else if (base_dir) {
         base_dir_path = base_dir;
     }
 

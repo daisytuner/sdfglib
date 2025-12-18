@@ -1,7 +1,6 @@
 #include "sdfg/passes/structured_control_flow/for2map.h"
 
 #include "sdfg/analysis/assumptions_analysis.h"
-#include "sdfg/analysis/data_dependency_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/analysis/users.h"
@@ -10,12 +9,13 @@
 namespace sdfg {
 namespace passes {
 
-For2Map::For2Map(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
-    : visitor::StructuredSDFGVisitor(builder, analysis_manager) {
+std::string For2MapPass::name() { return "For2Map"; }
 
-      };
-
-bool For2Map::can_be_applied(structured_control_flow::For& for_stmt, analysis::AnalysisManager& analysis_manager) {
+bool For2MapPass::can_be_applied(
+    builder::StructuredSDFGBuilder& builder,
+    analysis::AnalysisManager& analysis_manager,
+    structured_control_flow::For& for_stmt
+) {
     auto& assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
     bool is_monotonic = analysis::LoopAnalysis::is_monotonic(&for_stmt, assumptions_analysis);
     if (!is_monotonic) {
@@ -62,8 +62,7 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt, analysis::A
     }
 
     // Criterion: loop must be data-parallel w.r.t containers
-    auto& data_dependency_analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
-    auto dependencies = data_dependency_analysis.dependencies(for_stmt);
+    auto dependencies = data_dependency_analysis_->dependencies(for_stmt);
 
     // a. No true dependencies (RAW) between iterations
     for (auto& dep : dependencies) {
@@ -84,7 +83,7 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt, analysis::A
         }
 
         // Check for pointers that they point to loop-local storage
-        auto& type = builder_.subject().type(container);
+        auto& type = builder.subject().type(container);
         if (type.type_id() != types::TypeID::Pointer) {
             continue;
         }
@@ -104,7 +103,7 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt, analysis::A
         if (locals.find(move_src.data()) == locals.end()) {
             return false;
         }
-        auto& move_type = builder_.subject().type(move_src.data());
+        auto& move_type = builder.subject().type(move_src.data());
         if (move_type.storage_type().allocation() == types::StorageType::AllocationType::Unmanaged) {
             return false;
         }
@@ -118,25 +117,39 @@ bool For2Map::can_be_applied(structured_control_flow::For& for_stmt, analysis::A
     return true;
 }
 
-void For2Map::apply(
-    structured_control_flow::For& for_stmt,
-    builder::StructuredSDFGBuilder& builder,
-    analysis::AnalysisManager& analysis_manager
-) {
-    auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
-    auto parent = static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&for_stmt));
+bool For2MapPass::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
+    this->data_dependency_analysis_ = std::make_unique<analysis::DataDependencyAnalysis>(builder.subject(), true);
+    this->data_dependency_analysis_->run(analysis_manager);
 
-    // convert for to map
-    builder.convert_for(*parent, for_stmt);
-}
+    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    auto& loop_tree = loop_analysis.loop_tree();
 
-bool For2Map::accept(structured_control_flow::For& node) {
-    if (!this->can_be_applied(node, analysis_manager_)) {
-        return false;
+    // Traverse loops in bottom-up fashion (reverse loop)
+    std::list<structured_control_flow::For*> for_queue;
+    for (auto& entry : loop_tree) {
+        if (auto for_stmt = dynamic_cast<structured_control_flow::For*>(entry.first)) {
+            for_queue.push_front(for_stmt);
+        }
     }
 
-    this->apply(node, builder_, analysis_manager_);
-    return true;
+    // Mark for loops that can be converted
+    std::list<structured_control_flow::For*> map_queue;
+    for (auto& for_loop : for_queue) {
+        if (this->can_be_applied(builder, analysis_manager, *for_loop)) {
+            map_queue.push_back(for_loop);
+        }
+    }
+
+    // Convert marked for loops
+    bool applied = false;
+    auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+    for (auto& for_stmt : map_queue) {
+        auto parent = static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(for_stmt));
+        builder.convert_for(*parent, *for_stmt);
+        applied = true;
+    }
+
+    return applied;
 }
 
 } // namespace passes

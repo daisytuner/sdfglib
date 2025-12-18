@@ -32,30 +32,31 @@ std::string& User::container() { return this->container_; };
 
 Element* User::element() { return this->element_; };
 
-const std::vector<data_flow::Subset> User::subsets() const {
-    if (this->container_ == "") {
-        return {};
+const std::vector<data_flow::Subset>& User::subsets() const {
+    if (this->subsets_cached_) {
+        return this->subsets_;
     }
 
-    if (auto access_node = dynamic_cast<data_flow::AccessNode*>(this->element_)) {
+    if (this->container_ == "") {
+        // No-op user
+    } else if (auto access_node = dynamic_cast<data_flow::AccessNode*>(this->element_)) {
         auto& graph = access_node->get_parent();
         if (this->use_ == Use::READ || this->use_ == Use::VIEW) {
-            std::vector<data_flow::Subset> subsets;
             for (auto& iedge : graph.out_edges(*access_node)) {
-                subsets.push_back(iedge.subset());
+                this->subsets_.push_back(iedge.subset());
             }
-            return subsets;
         } else if (this->use_ == Use::WRITE || this->use_ == Use::MOVE) {
-            std::vector<data_flow::Subset> subsets;
             for (auto& oedge : graph.in_edges(*access_node)) {
-                subsets.push_back(oedge.subset());
+                this->subsets_.push_back(oedge.subset());
             }
-            return subsets;
         }
+    } else {
+        // Use of symbol
+        this->subsets_.push_back({});
     }
 
-    // Use of symbol
-    return {{}};
+    this->subsets_cached_ = true;
+    return this->subsets_;
 };
 
 ForUser::ForUser(
@@ -443,10 +444,7 @@ void Users::run(analysis::AnalysisManager& analysis_manager) {
     sink_ = nullptr;
     this->entries_.clear();
     this->exits_.clear();
-    users_by_sdfg_.clear();
-    users_by_sdfg_loop_condition_.clear();
-    users_by_sdfg_loop_init_.clear();
-    users_by_sdfg_loop_update_.clear();
+    this->users_lookup_.clear();
 
     reads_.clear();
     writes_.clear();
@@ -495,35 +493,37 @@ void Users::run(analysis::AnalysisManager& analysis_manager) {
         this->sink_ = sinks.front();
     }
 
+    for (auto& container : sdfg_.containers()) {
+        this->reads_.insert({container, {}});
+        this->writes_.insert({container, {}});
+        this->views_.insert({container, {}});
+        this->moves_.insert({container, {}});
+    }
+
     // Collect sub structures
     for (auto& entry : this->users_) {
         auto container = entry.second->container();
+        if (entry.second->use() == Use::NOP) {
+            continue;
+        }
+        if (container == "") {
+            continue;
+        }
+
         switch (entry.second->use()) {
             case Use::READ: {
-                if (this->reads_.find(container) == this->reads_.end()) {
-                    this->reads_.insert({container, {}});
-                }
                 this->reads_[container].push_back(entry.second.get());
                 break;
             }
             case Use::WRITE: {
-                if (this->writes_.find(container) == this->writes_.end()) {
-                    this->writes_.insert({container, {}});
-                }
                 this->writes_[container].push_back(entry.second.get());
                 break;
             }
             case Use::VIEW: {
-                if (this->views_.find(container) == this->views_.end()) {
-                    this->views_.insert({container, {}});
-                }
                 this->views_[container].push_back(entry.second.get());
                 break;
             }
             case Use::MOVE: {
-                if (this->moves_.find(container) == this->moves_.end()) {
-                    this->moves_.insert({container, {}});
-                }
                 this->moves_[container].push_back(entry.second.get());
                 break;
             }
@@ -533,8 +533,8 @@ void Users::run(analysis::AnalysisManager& analysis_manager) {
     }
 };
 
-std::vector<User*> Users::uses() const {
-    std::vector<User*> us;
+std::list<User*> Users::uses() const {
+    std::list<User*> us;
     for (auto& entry : this->users_) {
         if (entry.second->use() == Use::NOP) {
             continue;
@@ -545,8 +545,8 @@ std::vector<User*> Users::uses() const {
     return us;
 };
 
-std::vector<User*> Users::uses(const std::string& container) const {
-    std::vector<User*> us;
+std::list<User*> Users::uses(const std::string& container) const {
+    std::list<User*> us;
     for (auto& entry : this->users_) {
         if (entry.second->container() != container) {
             continue;
@@ -560,8 +560,10 @@ std::vector<User*> Users::uses(const std::string& container) const {
     return us;
 };
 
-std::vector<User*> Users::writes() const {
-    std::vector<User*> us;
+size_t Users::num_uses(const std::string& container) const { return this->uses(container).size(); };
+
+std::list<User*> Users::writes() const {
+    std::list<User*> us;
     for (auto& entry : this->users_) {
         if (entry.second->use() != Use::WRITE) {
             continue;
@@ -572,16 +574,12 @@ std::vector<User*> Users::writes() const {
     return us;
 };
 
-std::vector<User*> Users::writes(const std::string& container) const {
-    if (this->writes_.find(container) == this->writes_.end()) {
-        return {};
-    } else {
-        return this->writes_.at(container);
-    }
-};
+const std::list<User*>& Users::writes(const std::string& container) const { return this->writes_.at(container); };
 
-std::vector<User*> Users::reads() const {
-    std::vector<User*> us;
+size_t Users::num_writes(const std::string& container) const { return this->writes(container).size(); };
+
+std::list<User*> Users::reads() const {
+    std::list<User*> us;
     for (auto& entry : this->users_) {
         if (entry.second->use() != Use::READ) {
             continue;
@@ -592,16 +590,12 @@ std::vector<User*> Users::reads() const {
     return us;
 };
 
-std::vector<User*> Users::reads(const std::string& container) const {
-    if (this->reads_.find(container) == this->reads_.end()) {
-        return {};
-    } else {
-        return this->reads_.at(container);
-    }
-};
+const std::list<User*>& Users::reads(const std::string& container) const { return this->reads_.at(container); };
 
-std::vector<User*> Users::views() const {
-    std::vector<User*> us;
+size_t Users::num_reads(const std::string& container) const { return this->reads(container).size(); };
+
+std::list<User*> Users::views() const {
+    std::list<User*> us;
     for (auto& entry : this->users_) {
         if (entry.second->use() != Use::VIEW) {
             continue;
@@ -612,16 +606,12 @@ std::vector<User*> Users::views() const {
     return us;
 };
 
-std::vector<User*> Users::views(const std::string& container) const {
-    if (this->views_.find(container) == this->views_.end()) {
-        return {};
-    } else {
-        return this->views_.at(container);
-    }
-};
+const std::list<User*>& Users::views(const std::string& container) const { return this->views_.at(container); };
 
-std::vector<User*> Users::moves() const {
-    std::vector<User*> us;
+size_t Users::num_views(const std::string& container) const { return this->views(container).size(); };
+
+std::list<User*> Users::moves() const {
+    std::list<User*> us;
     for (auto& entry : this->users_) {
         if (entry.second->use() != Use::MOVE) {
             continue;
@@ -632,13 +622,9 @@ std::vector<User*> Users::moves() const {
     return us;
 };
 
-std::vector<User*> Users::moves(const std::string& container) const {
-    if (this->moves_.find(container) == this->moves_.end()) {
-        return {};
-    } else {
-        return this->moves_.at(container);
-    }
-};
+const std::list<User*>& Users::moves(const std::string& container) const { return this->moves_.at(container); };
+
+size_t Users::num_moves(const std::string& container) const { return this->moves(container).size(); };
 
 structured_control_flow::ControlFlowNode* Users::scope(User* user) {
     if (auto data_node = dynamic_cast<data_flow::DataFlowNode*>(user->element())) {
@@ -993,59 +979,17 @@ std::unordered_set<User*> UsersView::all_uses_after(User& user) {
 
 bool Users::
     has_user(const std::string& container, Element* element, Use use, bool is_init, bool is_condition, bool is_update) {
-    if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element)) {
-        if (is_init) {
-            if (users_by_sdfg_loop_init_.find(container) == users_by_sdfg_loop_init_.end() ||
-                users_by_sdfg_loop_init_.at(container).find(for_loop) == users_by_sdfg_loop_init_.at(container).end() ||
-                users_by_sdfg_loop_init_.at(container).at(for_loop).find(use) ==
-                    users_by_sdfg_loop_init_.at(container).at(for_loop).end()) {
-                return false;
-            }
-            return true;
-        } else if (is_condition) {
-            if (users_by_sdfg_loop_condition_.find(container) == users_by_sdfg_loop_condition_.end() ||
-                users_by_sdfg_loop_condition_.at(container).find(for_loop) ==
-                    users_by_sdfg_loop_condition_.at(container).end() ||
-                users_by_sdfg_loop_condition_.at(container).at(for_loop).find(use) ==
-                    users_by_sdfg_loop_condition_.at(container).at(for_loop).end()) {
-                return false;
-            }
-            return true;
-        } else if (is_update) {
-            if (users_by_sdfg_loop_update_.find(container) == users_by_sdfg_loop_update_.end() ||
-                users_by_sdfg_loop_update_.at(container).find(for_loop) ==
-                    users_by_sdfg_loop_update_.at(container).end() ||
-                users_by_sdfg_loop_update_.at(container).at(for_loop).find(use) ==
-                    users_by_sdfg_loop_update_.at(container).at(for_loop).end()) {
-                return false;
-            }
-            return true;
-        }
-    }
-    if (users_by_sdfg_.find(container) == users_by_sdfg_.end() ||
-        users_by_sdfg_.at(container).find(element) == users_by_sdfg_.at(container).end() ||
-        users_by_sdfg_.at(container).at(element).find(use) == users_by_sdfg_.at(container).at(element).end()) {
+    UserProps key{container, element, use, is_init, is_condition, is_update};
+    if (this->users_lookup_.find(key) == this->users_lookup_.end()) {
         return false;
     }
-
     return true;
 }
 
 User* Users::
     get_user(const std::string& container, Element* element, Use use, bool is_init, bool is_condition, bool is_update) {
-    if (auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element)) {
-        if (is_init) {
-            auto tmp = users_by_sdfg_loop_init_.at(container).at(for_loop).at(use);
-            return tmp;
-        } else if (is_condition) {
-            return users_by_sdfg_loop_condition_.at(container).at(for_loop).at(use);
-        } else if (is_update) {
-            return users_by_sdfg_loop_update_.at(container).at(for_loop).at(use);
-        }
-    }
-
-    auto tmp = users_by_sdfg_.at(container).at(element).at(use);
-    return tmp;
+    UserProps key{container, element, use, is_init, is_condition, is_update};
+    return this->users_lookup_.at(key);
 }
 
 void Users::add_user(std::unique_ptr<User> user) {
@@ -1053,31 +997,27 @@ void Users::add_user(std::unique_ptr<User> user) {
     this->users_.insert({vertex, std::move(user)});
 
     auto user_ptr = this->users_.at(vertex).get();
-    auto* target_structure = &users_by_sdfg_;
+    bool is_init = false;
+    bool is_condition = false;
+    bool is_update = false;
     if (auto for_user = dynamic_cast<ForUser*>(user_ptr)) {
         auto for_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(user_ptr->element());
         if (for_loop == nullptr) {
             throw std::invalid_argument("Invalid user type");
         }
         if (for_user->is_init()) {
-            target_structure = &users_by_sdfg_loop_init_;
+            is_init = true;
         } else if (for_user->is_condition()) {
-            target_structure = &users_by_sdfg_loop_condition_;
+            is_condition = true;
         } else if (for_user->is_update()) {
-            target_structure = &users_by_sdfg_loop_update_;
+            is_update = true;
         } else {
             throw std::invalid_argument("Invalid user type");
         }
     }
 
-    if (target_structure->find(user_ptr->container()) == target_structure->end()) {
-        target_structure->insert({user_ptr->container(), {}});
-    }
-    if ((*target_structure)[user_ptr->container()].find(user_ptr->element()) ==
-        (*target_structure)[user_ptr->container()].end()) {
-        target_structure->at(user_ptr->container()).insert({user_ptr->element(), {}});
-    }
-    target_structure->at(user_ptr->container()).at(user_ptr->element()).insert({user_ptr->use(), user_ptr});
+    UserProps key{user_ptr->container(), user_ptr->element(), user_ptr->use(), is_init, is_condition, is_update};
+    this->users_lookup_.insert({key, user_ptr});
 }
 
 std::unordered_set<std::string> Users::locals(structured_control_flow::ControlFlowNode& node) {

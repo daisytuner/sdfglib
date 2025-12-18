@@ -48,37 +48,20 @@ private:
     std::unordered_set<const control_flow::State*>
     determine_loop_nodes(SDFG& sdfg, const control_flow::State& start, const control_flow::State& end) const;
 
-    const control_flow::State* find_end_of_if_else(
-        SDFG& sdfg,
-        const State* current,
-        std::vector<const InterstateEdge*>& out_edges,
-        const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
-    );
-
     structured_control_flow::While* current_traverse_loop_;
 
     void traverse(SDFG& sdfg);
 
-    void traverse_with_loop_detection(
+    void structure_region(
         SDFG& sdfg,
         Sequence& scope,
-        const State* current,
-        const State* end,
+        const State* entry,
+        const State* exit,
         const std::unordered_set<const InterstateEdge*>& continues,
         const std::unordered_set<const InterstateEdge*>& breaks,
         const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree,
-        std::unordered_set<const control_flow::State*>& visited
-    );
-
-    void traverse_without_loop_detection(
-        SDFG& sdfg,
-        Sequence& scope,
-        const State* current,
-        const State* end,
-        const std::unordered_set<const InterstateEdge*>& continues,
-        const std::unordered_set<const InterstateEdge*>& breaks,
-        const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree,
-        std::unordered_set<const control_flow::State*>& visited
+        std::unordered_set<const control_flow::State*>& visited,
+        bool is_loop_body = false
     );
 
     void add_dataflow(const data_flow::DataFlowGraph& from, Block& to);

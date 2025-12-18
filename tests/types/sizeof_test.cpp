@@ -73,3 +73,24 @@ TEST(SizeOfTest, SymbolicSizeOfNestedStruct) {
     EXPECT_EQ(t.type_id(), types::TypeID::Structure);
     EXPECT_EQ(t, struct_type);
 }
+
+TEST(MallocUsableSizeTest, MallocUsableSizeSymbol) {
+    auto symbol = symbolic::symbol("my_array");
+    auto expr = symbolic::malloc_usable_size(symbol);
+
+    auto f = SymEngine::rcp_dynamic_cast<const sdfg::symbolic::MallocUsableSizeFunction>(expr);
+    auto args = f->get_args();
+    auto s = args[0];
+    EXPECT_TRUE(symbolic::eq(s, symbol));
+
+
+    auto symbol2 = symbolic::symbol("my_array");
+    auto expr2 = symbolic::malloc_usable_size(symbol2);
+    EXPECT_TRUE(symbolic::eq(expr, expr2));
+
+    auto symbol3 = symbolic::symbol("my_array3");
+    auto expr3 = symbolic::malloc_usable_size(symbol3);
+    EXPECT_FALSE(symbolic::eq(expr, expr3));
+
+    EXPECT_EQ(expr->__str__(), "malloc_usable_size(my_array)");
+}

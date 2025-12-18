@@ -40,11 +40,17 @@ bool is_monotonic_affine(const Expression expr, const Symbol sym, const Assumpti
         return false;
     }
     auto [mul_int, offset_int] = coeffs;
-    if (mul_int->as_int() <= 0 || offset_int->as_int() <= 0) {
+    try {
+        signed long mul_value = mul_int->as_int();
+        signed long offset_value = offset_int->as_int();
+        if (mul_value > 0 && offset_value > 0) {
+            return true;
+        }
+    } catch (SymEngine::SymEngineException&) {
         return false;
     }
 
-    return true;
+    return false;
 }
 
 bool is_contiguous_affine(const Expression expr, const Symbol sym, const Assumptions& assums) {
@@ -53,8 +59,14 @@ bool is_contiguous_affine(const Expression expr, const Symbol sym, const Assumpt
         return false;
     }
     auto [mul_int, offset_int] = coeffs;
-    if (mul_int->as_int() == 1 && offset_int->as_int() == 1) {
-        return true;
+    try {
+        signed long mul_value = mul_int->as_int();
+        signed long offset_value = offset_int->as_int();
+        if (mul_value == 1 && offset_value == 1) {
+            return true;
+        }
+    } catch (SymEngine::SymEngineException&) {
+        return false;
     }
 
     return false;

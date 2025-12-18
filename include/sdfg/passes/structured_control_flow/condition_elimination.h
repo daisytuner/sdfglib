@@ -6,7 +6,7 @@
 namespace sdfg {
 namespace passes {
 
-class ConditionElimination : public visitor::StructuredSDFGVisitor {
+class ConditionElimination : public visitor::NonStoppingStructuredSDFGVisitor {
 private:
     bool eliminate_condition(
         structured_control_flow::Sequence& root,

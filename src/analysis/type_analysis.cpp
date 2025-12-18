@@ -1,7 +1,7 @@
 #include "sdfg/analysis/type_analysis.h"
 
 #include "sdfg/analysis/users.h"
-#include "sdfg/exceptions.h"
+#include "sdfg/structured_control_flow/control_flow_node.h"
 
 namespace sdfg {
 namespace analysis {
@@ -26,9 +26,15 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
     }
 
     auto& users = analysis_manager.get<Users>();
+    structured_control_flow::ControlFlowNode* node = &sdfg_.root();
+    if (node_) {
+        node = node_;
+    }
+    UsersView users_view(users, *node);
+
     for (auto container : containers) {
         // iterate over writes
-        for (auto user : users.writes(container)) {
+        for (auto user : users_view.writes(container)) {
             auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element());
             if (access_node == nullptr) {
                 continue;
@@ -66,14 +72,25 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                 }
 
                 if (this->type_map_.find(container) == this->type_map_.end()) {
-                    this->type_map_.insert({container, base_type});
+                    this->type_map_.insert({container, {base_type}});
                     continue;
+                } else {
+                    bool insert = true;
+                    for (auto type : this->type_map_.at(container)) {
+                        if (*type == *base_type) {
+                            insert = false;
+                            break;
+                        }
+                    }
+                    if (insert) {
+                        this->type_map_.at(container).insert(base_type);
+                    }
                 }
             }
         }
 
         // iterate over reads
-        for (auto user : users.reads(container)) {
+        for (auto user : users_view.reads(container)) {
             // Pointers may be used in symbolic conditions
             auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element());
             if (access_node == nullptr) {
@@ -111,14 +128,25 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     }
                 }
                 if (this->type_map_.find(container) == this->type_map_.end()) {
-                    this->type_map_.insert({container, base_type});
+                    this->type_map_.insert({container, {base_type}});
                     continue;
+                } else {
+                    bool insert = true;
+                    for (auto type : this->type_map_.at(container)) {
+                        if (*type == *base_type) {
+                            insert = false;
+                            break;
+                        }
+                    }
+                    if (insert) {
+                        this->type_map_.at(container).insert(base_type);
+                    }
                 }
             }
         }
 
         // iterate over views
-        for (auto user : users.views(container)) {
+        for (auto user : users_view.views(container)) {
             auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element());
             if (access_node == nullptr) {
                 continue;
@@ -154,14 +182,25 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     }
                 }
                 if (this->type_map_.find(container) == this->type_map_.end()) {
-                    this->type_map_.insert({container, base_type});
+                    this->type_map_.insert({container, {base_type}});
                     continue;
+                } else {
+                    bool insert = true;
+                    for (auto type : this->type_map_.at(container)) {
+                        if (*type == *base_type) {
+                            insert = false;
+                            break;
+                        }
+                    }
+                    if (insert) {
+                        this->type_map_.at(container).insert(base_type);
+                    }
                 }
             }
         }
 
         // iterate over moves
-        for (auto user : users.moves(container)) {
+        for (auto user : users_view.moves(container)) {
             auto access_node = dynamic_cast<data_flow::AccessNode*>(user->element());
             if (access_node == nullptr) {
                 continue;
@@ -195,15 +234,33 @@ void TypeAnalysis::run(analysis::AnalysisManager& analysis_manager) {
                     }
                 }
                 if (this->type_map_.find(container) == this->type_map_.end()) {
-                    this->type_map_.insert({container, base_type});
+                    this->type_map_.insert({container, {base_type}});
                     continue;
+                } else {
+                    bool insert = true;
+                    for (auto type : this->type_map_.at(container)) {
+                        if (*type == *base_type) {
+                            insert = false;
+                            break;
+                        }
+                    }
+                    if (insert) {
+                        this->type_map_.at(container).insert(base_type);
+                    }
                 }
             }
         }
     }
 }
 
-TypeAnalysis::TypeAnalysis(StructuredSDFG& sdfg) : Analysis(sdfg) {}
+TypeAnalysis::TypeAnalysis(StructuredSDFG& sdfg) : Analysis(sdfg), node_(nullptr) {}
+
+TypeAnalysis::TypeAnalysis(
+    StructuredSDFG& sdfg, structured_control_flow::ControlFlowNode* node, AnalysisManager& analysis_manager
+)
+    : Analysis(sdfg), node_(node) {
+    run(analysis_manager);
+}
 
 const sdfg::types::IType* TypeAnalysis::get_outer_type(const std::string& container) const {
     auto& contType = sdfg_.type(container);
@@ -220,7 +277,11 @@ const sdfg::types::IType* TypeAnalysis::get_outer_type(const std::string& contai
 
     auto it = type_map_.find(container);
     if (it != type_map_.end()) {
-        return it->second;
+        if (it->second.size() == 1) {
+            for (auto i : it->second) {
+                return i;
+            }
+        }
     }
     return nullptr;
 }

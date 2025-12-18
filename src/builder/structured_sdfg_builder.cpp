@@ -9,7 +9,7 @@
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/types/utils.h"
 
-#define TRAVERSE_CUTOFF 100
+#define TRAVERSE_CUTOFF 30
 
 using namespace sdfg::control_flow;
 using namespace sdfg::structured_control_flow;
@@ -40,6 +40,72 @@ std::unordered_set<const control_flow::State*> StructuredSDFGBuilder::
         }
     }
 
+    // Iteratively expand nodes to reduce frontier size
+    auto dom_tree = sdfg.dominator_tree();
+    auto dominates = [&](const control_flow::State* a, const control_flow::State* b) {
+        const control_flow::State* curr = b;
+        while (curr != nullptr) {
+            if (curr == a) return true;
+            if (dom_tree.find(curr) == dom_tree.end()) break;
+            curr = dom_tree.at(curr);
+        }
+        return false;
+    };
+
+    // Identify header exits
+    std::unordered_set<const control_flow::State*> stop_nodes;
+    for (auto& edge : sdfg.out_edges(end)) {
+        if (nodes.find(&edge.dst()) == nodes.end()) {
+            stop_nodes.insert(&edge.dst());
+        }
+    }
+
+    // If no header exits, check latch exits (Do-While)
+    if (stop_nodes.empty()) {
+        for (auto& edge : sdfg.out_edges(start)) {
+            if (nodes.find(&edge.dst()) == nodes.end()) {
+                stop_nodes.insert(&edge.dst());
+            }
+        }
+    }
+
+    // If still no exits, check any natural loop exit (e.g. infinite loop with break)
+    if (stop_nodes.empty()) {
+        for (auto node : nodes) {
+            for (auto& edge : sdfg.out_edges(*node)) {
+                if (nodes.find(&edge.dst()) == nodes.end()) {
+                    stop_nodes.insert(&edge.dst());
+                }
+            }
+        }
+    }
+
+    while (true) {
+        std::unordered_set<const control_flow::State*> frontier;
+        for (auto node : nodes) {
+            for (auto& edge : sdfg.out_edges(*node)) {
+                if (nodes.find(&edge.dst()) == nodes.end()) {
+                    frontier.insert(&edge.dst());
+                }
+            }
+        }
+
+        bool changed = false;
+        for (auto f : frontier) {
+            // If f is a stop node, do not include it
+            if (stop_nodes.find(f) != stop_nodes.end()) {
+                continue;
+            }
+            // If f is dominated by the header, it belongs to the loop body (extended)
+            if (dominates(&end, f)) {
+                nodes.insert(f);
+                changed = true;
+            }
+        }
+
+        if (!changed) break;
+    }
+
     return nodes;
 };
 
@@ -63,26 +129,6 @@ bool post_dominates(
     return false;
 }
 
-const control_flow::State* StructuredSDFGBuilder::find_end_of_if_else(
-    SDFG& sdfg,
-    const State* current,
-    std::vector<const InterstateEdge*>& out_edges,
-    const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree
-) {
-    // Best-effort approach: Check if post-dominator of current dominates all out edges
-    auto pdom = pdom_tree.at(current);
-    if (pdom == nullptr) {
-        return nullptr;
-    }
-
-    for (auto& edge : out_edges) {
-        if (!post_dominates(pdom, &edge->dst(), pdom_tree)) {
-            return nullptr;
-        }
-    }
-
-    return pdom;
-}
 
 void StructuredSDFGBuilder::traverse(SDFG& sdfg) {
     // Start of SDFGS
@@ -99,129 +145,141 @@ void StructuredSDFGBuilder::traverse(SDFG& sdfg) {
 
     this->current_traverse_loop_ = nullptr;
     std::unordered_set<const control_flow::State*> visited;
-    this->traverse_with_loop_detection(sdfg, root, start_state, nullptr, continues, breaks, pdom_tree, visited);
+    this->structure_region(sdfg, root, start_state, nullptr, continues, breaks, pdom_tree, visited);
 };
 
-void StructuredSDFGBuilder::traverse_with_loop_detection(
+void StructuredSDFGBuilder::structure_region(
     SDFG& sdfg,
     Sequence& scope,
-    const State* current,
-    const State* end,
+    const State* entry,
+    const State* exit,
     const std::unordered_set<const InterstateEdge*>& continues,
     const std::unordered_set<const InterstateEdge*>& breaks,
     const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree,
-    std::unordered_set<const control_flow::State*>& visited
+    std::unordered_set<const control_flow::State*>& visited,
+    bool is_loop_body
 ) {
-    if (current == end) {
-        return;
-    }
-    // Cutoff
-    if (this->function().element_counter_ > sdfg.states().size() * TRAVERSE_CUTOFF) {
-        throw UnstructuredControlFlowException();
-    }
-
-    auto in_edges = sdfg.in_edges(*current);
-
-    // Loop detection
-    std::unordered_set<const InterstateEdge*> loop_edges;
-    for (auto& iedge : in_edges) {
-        if (continues.find(&iedge) != continues.end()) {
-            loop_edges.insert(&iedge);
-        }
-    }
-    if (!loop_edges.empty()) {
-        // 1. Determine nodes of loop body
-        std::unordered_set<const control_flow::State*> body;
-        for (auto back_edge : loop_edges) {
-            auto loop_nodes = this->determine_loop_nodes(sdfg, back_edge->src(), back_edge->dst());
-            body.insert(loop_nodes.begin(), loop_nodes.end());
+    const State* current = entry;
+    while (current != exit) {
+        if (current == nullptr) {
+            break;
         }
 
-        // 2. Determine exit states and exit edges
-        std::unordered_set<const control_flow::State*> exit_states;
-        std::unordered_set<const control_flow::InterstateEdge*> exit_edges;
-        for (auto node : body) {
-            for (auto& edge : sdfg.out_edges(*node)) {
-                if (body.find(&edge.dst()) == body.end()) {
-                    exit_edges.insert(&edge);
-                    exit_states.insert(&edge.dst());
+
+        // Cutoff
+        if (this->function().element_counter_ > sdfg.states().size() * TRAVERSE_CUTOFF) {
+            throw UnstructuredControlFlowException();
+        }
+
+        if (visited.find(current) != visited.end()) {
+            throw UnstructuredControlFlowException();
+        }
+        visited.insert(current);
+
+        // Loop detection
+        bool is_loop_header = false;
+        if (!is_loop_body || current != entry) {
+            for (auto& iedge : sdfg.in_edges(*current)) {
+                if (continues.find(&iedge) != continues.end()) {
+                    is_loop_header = true;
+                    break;
                 }
             }
         }
-        if (exit_states.size() != 1) {
-            throw UnstructuredControlFlowException();
-        }
-        const control_flow::State* exit_state = *exit_states.begin();
 
-        for (auto& edge : breaks) {
-            exit_edges.insert(edge);
-        }
+        if (is_loop_header) {
+            // 1. Determine nodes of loop body
+            std::unordered_set<const InterstateEdge*> loop_edges;
+            for (auto& iedge : sdfg.in_edges(*current)) {
+                if (continues.find(&iedge) != continues.end()) {
+                    loop_edges.insert(&iedge);
+                }
+            }
 
-        // Collect debug information (could be removed when this is computed dynamically)
-        DebugInfo dbg_info = current->debug_info();
-        for (auto& edge : in_edges) {
-            dbg_info = DebugInfo::merge(dbg_info, edge.debug_info());
-        }
-        for (auto node : body) {
-            dbg_info = DebugInfo::merge(dbg_info, node->debug_info());
-        }
-        for (auto edge : exit_edges) {
-            dbg_info = DebugInfo::merge(dbg_info, edge->debug_info());
-        }
+            std::unordered_set<const control_flow::State*> body;
+            for (auto back_edge : loop_edges) {
+                auto loop_nodes = this->determine_loop_nodes(sdfg, back_edge->src(), back_edge->dst());
+                body.insert(loop_nodes.begin(), loop_nodes.end());
+            }
 
-        // 3. Add while loop
-        While& loop = this->add_while(scope, {}, dbg_info);
-        auto last_loop_ = this->current_traverse_loop_;
-        this->current_traverse_loop_ = &loop;
+            // 2. Determine exit states and exit edges
+            std::unordered_set<const control_flow::State*> exit_states;
+            std::unordered_set<const control_flow::InterstateEdge*> exit_edges;
+            for (auto node : body) {
+                for (auto& edge : sdfg.out_edges(*node)) {
+                    if (body.find(&edge.dst()) == body.end()) {
+                        if (continues.find(&edge) != continues.end()) {
+                            continue;
+                        }
+                        exit_edges.insert(&edge);
+                        exit_states.insert(&edge.dst());
+                    }
+                }
+            }
 
-        std::unordered_set<const control_flow::State*> loop_visited(visited);
-        this->traverse_without_loop_detection(
-            sdfg, loop.root(), current, exit_state, continues, exit_edges, pdom_tree, loop_visited
-        );
-        this->current_traverse_loop_ = last_loop_;
+            if (exit_states.size() > 1) {
+                std::unordered_set<const control_flow::State*> non_return_exits;
+                for (auto s : exit_states) {
+                    if (dynamic_cast<const control_flow::ReturnState*>(s)) {
+                        continue;
+                    }
+                    if (sdfg.out_degree(*s) > 0) {
+                        non_return_exits.insert(s);
+                    }
+                }
+                if (non_return_exits.size() == 1) {
+                    exit_states = non_return_exits;
+                }
+            }
 
-        this->traverse_with_loop_detection(sdfg, scope, exit_state, end, continues, breaks, pdom_tree, visited);
-    } else {
-        this->traverse_without_loop_detection(sdfg, scope, current, end, continues, breaks, pdom_tree, visited);
-    }
-};
+            if (exit_states.size() != 1) {
+                throw UnstructuredControlFlowException();
+            }
+            const control_flow::State* exit_state = *exit_states.begin();
 
-void StructuredSDFGBuilder::traverse_without_loop_detection(
-    SDFG& sdfg,
-    Sequence& scope,
-    const State* current,
-    const State* end,
-    const std::unordered_set<const InterstateEdge*>& continues,
-    const std::unordered_set<const InterstateEdge*>& breaks,
-    const std::unordered_map<const control_flow::State*, const control_flow::State*>& pdom_tree,
-    std::unordered_set<const control_flow::State*>& visited
-) {
-    // Cutoff
-    if (this->function().element_counter_ > sdfg.states().size() * TRAVERSE_CUTOFF) {
-        throw UnstructuredControlFlowException();
-    }
+            for (auto& edge : breaks) {
+                exit_edges.insert(edge);
+            }
 
-    std::list<const State*> queue = {current};
-    while (!queue.empty()) {
-        auto curr = queue.front();
-        queue.pop_front();
-        if (curr == end) {
+            // Collect debug information
+            DebugInfo dbg_info = current->debug_info();
+            for (auto& edge : sdfg.in_edges(*current)) {
+                dbg_info = DebugInfo::merge(dbg_info, edge.debug_info());
+            }
+            for (auto node : body) {
+                dbg_info = DebugInfo::merge(dbg_info, node->debug_info());
+            }
+            for (auto edge : exit_edges) {
+                dbg_info = DebugInfo::merge(dbg_info, edge->debug_info());
+            }
+
+            // 3. Add while loop
+            While& loop = this->add_while(scope, {}, dbg_info);
+            auto last_loop_ = this->current_traverse_loop_;
+            this->current_traverse_loop_ = &loop;
+
+            std::unordered_set<const control_flow::State*> loop_visited(visited);
+            loop_visited.erase(current);
+
+            this->structure_region(
+                sdfg, loop.root(), current, exit_state, continues, exit_edges, pdom_tree, loop_visited, true
+            );
+            this->current_traverse_loop_ = last_loop_;
+
+            current = exit_state;
             continue;
         }
 
-        if (visited.find(curr) != visited.end()) {
-            throw UnstructuredControlFlowException();
-        }
-        visited.insert(curr);
-
-        auto out_edges = sdfg.out_edges(*curr);
-        auto out_degree = sdfg.out_degree(*curr);
+        auto out_edges = sdfg.out_edges(*current);
+        auto out_degree = sdfg.out_degree(*current);
 
         // Case 1: Sink node
         if (out_degree == 0) {
-            this->add_block(scope, curr->dataflow(), {}, curr->debug_info());
+            if (!std::ranges::empty(current->dataflow().nodes())) {
+                this->add_block(scope, current->dataflow(), {}, current->debug_info());
+            }
 
-            auto return_state = dynamic_cast<const control_flow::ReturnState*>(curr);
+            auto return_state = dynamic_cast<const control_flow::ReturnState*>(current);
             assert(return_state != nullptr);
             if (return_state->is_data()) {
                 this->add_return(scope, return_state->data(), {}, return_state->debug_info());
@@ -233,7 +291,7 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
                 assert(false && "Unknown return state type");
             }
 
-            continue;
+            break;
         }
 
         // Case 2: Transition
@@ -242,93 +300,82 @@ void StructuredSDFGBuilder::traverse_without_loop_detection(
             if (!oedge.is_unconditional()) {
                 throw UnstructuredControlFlowException();
             }
-            this->add_block(scope, curr->dataflow(), oedge.assignments(), curr->debug_info());
+
+            if (!std::ranges::empty(current->dataflow().nodes()) || !oedge.assignments().empty()) {
+                this->add_block(scope, current->dataflow(), oedge.assignments(), current->debug_info());
+            }
 
             if (continues.find(&oedge) != continues.end()) {
                 if (this->current_traverse_loop_ == nullptr) {
                     throw UnstructuredControlFlowException();
                 }
                 this->add_continue(scope, {}, oedge.debug_info());
+                break;
             } else if (breaks.find(&oedge) != breaks.end()) {
                 if (this->current_traverse_loop_ == nullptr) {
                     throw UnstructuredControlFlowException();
                 }
                 this->add_break(scope, {}, oedge.debug_info());
+                break;
             } else {
-                bool starts_loop = false;
-                for (auto& iedge : sdfg.in_edges(oedge.dst())) {
-                    if (continues.find(&iedge) != continues.end()) {
-                        starts_loop = true;
-                        break;
-                    }
-                }
-                if (!starts_loop) {
-                    queue.push_back(&oedge.dst());
-                } else {
-                    this->traverse_with_loop_detection(
-                        sdfg, scope, &oedge.dst(), end, continues, breaks, pdom_tree, visited
-                    );
-                }
+                current = &oedge.dst();
             }
             continue;
         }
 
         // Case 3: Branches
         if (out_degree > 1) {
-            this->add_block(scope, curr->dataflow(), {}, curr->debug_info());
-
-            std::vector<const InterstateEdge*> out_edges_vec;
-            for (auto& edge : out_edges) {
-                out_edges_vec.push_back(&edge);
+            if (!std::ranges::empty(current->dataflow().nodes())) {
+                this->add_block(scope, current->dataflow(), {}, current->debug_info());
             }
 
-            // Best-effort approach: Find end of if-else
-            // If not found, the branches may repeat paths yielding a large SDFG
-            const control_flow::State* local_end = this->find_end_of_if_else(sdfg, curr, out_edges_vec, pdom_tree);
-            if (local_end == nullptr) {
-                local_end = end;
+            // Determine Merge Point
+            const State* merge = nullptr;
+            if (pdom_tree.find(current) != pdom_tree.end()) {
+                merge = pdom_tree.at(current);
             }
 
-            auto& if_else = this->add_if_else(scope, {}, curr->debug_info());
-            for (size_t i = 0; i < out_degree; i++) {
-                auto& out_edge = out_edges_vec[i];
 
-                auto& branch = this->add_case(if_else, out_edge->condition(), out_edge->debug_info());
-                if (!out_edge->assignments().empty()) {
-                    this->add_block(branch, out_edge->assignments(), out_edge->debug_info());
+            // If merge is beyond exit, clamp to exit
+            if (exit != nullptr && merge != nullptr) {
+                if (post_dominates(merge, exit, pdom_tree)) {
+                    merge = exit;
                 }
-                if (continues.find(out_edge) != continues.end()) {
+            }
+
+            if (merge != nullptr && visited.find(merge) != visited.end()) {
+                merge = exit;
+            }
+
+            if (merge == nullptr && exit != nullptr) {
+                merge = exit;
+            }
+
+            auto& if_else = this->add_if_else(scope, {}, current->debug_info());
+            for (auto& out_edge : out_edges) {
+                auto& branch = this->add_case(if_else, out_edge.condition(), out_edge.debug_info());
+                if (!out_edge.assignments().empty()) {
+                    this->add_block(branch, out_edge.assignments(), out_edge.debug_info());
+                }
+                if (continues.find(&out_edge) != continues.end()) {
                     if (this->current_traverse_loop_ == nullptr) {
                         throw UnstructuredControlFlowException();
                     }
-                    this->add_continue(branch, {}, out_edge->debug_info());
-                } else if (breaks.find(out_edge) != breaks.end()) {
+                    this->add_continue(branch, {}, out_edge.debug_info());
+                } else if (breaks.find(&out_edge) != breaks.end()) {
                     if (this->current_traverse_loop_ == nullptr) {
                         throw UnstructuredControlFlowException();
                     }
-                    this->add_break(branch, {}, out_edge->debug_info());
+                    this->add_break(branch, {}, out_edge.debug_info());
                 } else {
                     std::unordered_set<const control_flow::State*> branch_visited(visited);
-                    this->traverse_with_loop_detection(
-                        sdfg, branch, &out_edge->dst(), local_end, continues, breaks, pdom_tree, branch_visited
+                    this->structure_region(
+                        sdfg, branch, &out_edge.dst(), merge, continues, breaks, pdom_tree, branch_visited
                     );
                 }
             }
 
-            if (local_end != end) {
-                bool starts_loop = false;
-                for (auto& iedge : sdfg.in_edges(*local_end)) {
-                    if (continues.find(&iedge) != continues.end()) {
-                        starts_loop = true;
-                        break;
-                    }
-                }
-                if (!starts_loop) {
-                    queue.push_back(local_end);
-                } else {
-                    this->traverse_with_loop_detection(sdfg, scope, local_end, end, continues, breaks, pdom_tree, visited);
-                }
-            }
+            current = merge;
             continue;
         }
     }
@@ -536,7 +583,11 @@ void StructuredSDFGBuilder::remove_children(Sequence& parent) {
 };
 
 void StructuredSDFGBuilder::move_child(Sequence& source, size_t source_index, Sequence& target) {
-    this->move_child(source, source_index, target, target.size());
+    size_t target_index = target.size();
+    if (&source == &target) {
+        target_index--;
+    }
+    this->move_child(source, source_index, target, target_index);
 };
 
 void StructuredSDFGBuilder::move_child(Sequence& source, size_t source_index, Sequence& target, size_t target_index) {

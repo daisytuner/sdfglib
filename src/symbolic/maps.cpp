@@ -31,7 +31,12 @@ bool is_monotonic_affine(const Expression expr, const Symbol sym, const Assumpti
         return false;
     }
     auto mul_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(mul);
-    if (mul_int->as_int() <= 0) {
+    try {
+        long long val = mul_int->as_int();
+        if (val <= 0) {
+            return false;
+        }
+    } catch (const SymEngine::SymEngineException&) {
         return false;
     }
 
@@ -45,7 +50,12 @@ bool is_monotonic_pow(const Expression expr, const Symbol sym, const Assumptions
         auto exp = pow->get_exp();
         if (SymEngine::is_a<SymEngine::Integer>(*exp) && SymEngine::is_a<SymEngine::Symbol>(*base)) {
             auto exp_int = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(exp);
-            if (exp_int->as_int() <= 0) {
+            try {
+                long long val = exp_int->as_int();
+                if (val <= 0) {
+                    return false;
+                }
+            } catch (const SymEngine::SymEngineException&) {
                 return false;
             }
             auto base_sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(base);
@@ -256,47 +266,6 @@ bool is_disjoint_monotonic(
     return false;
 }
 
-bool is_disjoint_interval(
-    const MultiExpression& expr1,
-    const MultiExpression& expr2,
-    const Symbol indvar,
-    const Assumptions& assums1,
-    const Assumptions& assums2
-) {
-    for (size_t i = 0; i < expr1.size(); i++) {
-        auto& dim1 = expr1[i];
-        if (expr2.size() <= i) {
-            continue;
-        }
-        auto& dim2 = expr2[i];
-
-        auto lb1 = minimum(dim1, {}, assums1);
-        if (lb1 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*lb1)) {
-            continue;
-        }
-        auto ub1 = maximum(dim1, {}, assums1);
-        if (ub1 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*ub1)) {
-            continue;
-        }
-        auto lb2 = minimum(dim2, {}, assums2);
-        if (lb2 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*lb2)) {
-            continue;
-        }
-        auto ub2 = maximum(dim2, {}, assums2);
-        if (ub2 == SymEngine::null || SymEngine::is_a<SymEngine::NaN>(*ub2)) {
-            continue;
-        }
-
-        auto dis1 = symbolic::Gt(lb1, ub2);
-        auto dis2 = symbolic::Gt(lb2, ub1);
-        if (symbolic::is_true(dis1) || symbolic::is_true(dis2)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool intersects(
     const MultiExpression& expr1,
     const MultiExpression& expr2,
@@ -304,9 +273,6 @@ bool intersects(
     const Assumptions& assums1,
     const Assumptions& assums2
 ) {
-    if (is_disjoint_interval(expr1, expr2, indvar, assums1, assums2)) {
-        return false;
-    }
     if (is_disjoint_monotonic(expr1, expr2, indvar, assums1, assums2)) {
         return false;
     }

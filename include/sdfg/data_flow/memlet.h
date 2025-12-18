@@ -78,7 +78,7 @@ public:
 
     const std::string& dst_conn() const;
 
-    const Subset subset() const;
+    const Subset& subset() const;
 
     void set_subset(const Subset& subset);
 
