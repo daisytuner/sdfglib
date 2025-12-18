@@ -31,6 +31,14 @@ Expression minimum(const Expression expr, const SymbolSet& parameters, const Ass
         } else {
             return symbolic::zext_i64(min_arg);
         }
+    } else if (SymEngine::is_a<symbolic::TruncI32Function>(*expr)) {
+        auto trunc = SymEngine::rcp_static_cast<const symbolic::TruncI32Function>(expr);
+        auto min_arg = minimum(trunc->get_args()[0], parameters, assumptions, depth + 1);
+        if (min_arg == SymEngine::null) {
+            return SymEngine::null;
+        } else {
+            return symbolic::trunc_i32(min_arg);
+        }
     }
 
     // Symbol
@@ -180,6 +188,15 @@ Expression maximum(const Expression expr, const SymbolSet& parameters, const Ass
             return symbolic::zext_i64(max_arg);
         }
     }
+    if (SymEngine::is_a<symbolic::TruncI32Function>(*expr)) {
+        auto trunc = SymEngine::rcp_static_cast<const symbolic::TruncI32Function>(expr);
+        auto max_arg = maximum(trunc->get_args()[0], parameters, assumptions, depth + 1);
+        if (max_arg == SymEngine::null) {
+            return SymEngine::null;
+        } else {
+            return symbolic::trunc_i32(max_arg);
+        }
+    }
 
     // Mul
     if (SymEngine::is_a<SymEngine::Mul>(*expr)) {
@@ -325,6 +342,15 @@ Expression minimum_new(
             return SymEngine::null;
         } else {
             return symbolic::zext_i64(min_arg);
+        }
+    }
+    if (SymEngine::is_a<symbolic::TruncI32Function>(*expr)) {
+        auto trunc = SymEngine::rcp_static_cast<const symbolic::TruncI32Function>(expr);
+        auto min_arg = minimum_new(trunc->get_args()[0], parameters, assumptions, depth + 1, tight);
+        if (min_arg == SymEngine::null) {
+            return SymEngine::null;
+        } else {
+            return symbolic::trunc_i32(min_arg);
         }
     }
 
@@ -484,6 +510,15 @@ Expression maximum_new(
             return SymEngine::null;
         } else {
             return symbolic::zext_i64(max_arg);
+        }
+    }
+    if (SymEngine::is_a<symbolic::TruncI32Function>(*expr)) {
+        auto trunc = SymEngine::rcp_static_cast<const symbolic::TruncI32Function>(expr);
+        auto max_arg = maximum_new(trunc->get_args()[0], parameters, assumptions, depth + 1, tight);
+        if (max_arg == SymEngine::null) {
+            return SymEngine::null;
+        } else {
+            return symbolic::trunc_i32(max_arg);
         }
     }
 

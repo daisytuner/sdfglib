@@ -467,6 +467,8 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::FunctionSymbol& x) {
         str_ = "((" + apply(x.get_args()[0]) + ") % (" + apply(x.get_args()[1]) + "))";
     } else if (x.get_name() == "zext_i64") {
         str_ = "((long long) ((unsigned long long) (" + apply(x.get_args()[0]) + ")))";
+    } else if (x.get_name() == "trunc_i32") {
+        str_ = "((int) ((unsigned int) ((unsigned long long) (" + apply(x.get_args()[0]) + "))))";
     } else if (x.get_name() == "sizeof") {
         auto& so = dynamic_cast<const symbolic::SizeOfTypeFunction&>(x);
         auto& type = so.get_type();

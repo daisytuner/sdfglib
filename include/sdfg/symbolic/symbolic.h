@@ -103,6 +103,14 @@ public:
     explicit ZExtI64Function(const Expression expr) : FunctionSymbol("zext_i64", expr) {}
 };
 
+Expression trunc_i32(const Expression expr);
+
+class TruncI32Function : public SymEngine::FunctionSymbol {
+public:
+    explicit TruncI32Function(const Expression expr) : FunctionSymbol("trunc_i32", expr) {}
+};
+
+
 Expression size_of_type(const types::IType& type);
 
 class SizeOfTypeFunction : public SymEngine::FunctionSymbol {

@@ -118,6 +118,11 @@ Expression zext_i64(const Expression expr) {
     return zext;
 }
 
+Expression trunc_i32(const Expression expr) {
+    auto trunc = SymEngine::make_rcp<TruncI32Function>(expr);
+    return trunc;
+}
+
 Expression size_of_type(const types::IType& type) {
     auto so = SymEngine::make_rcp<SizeOfTypeFunction>(type);
     return so;
