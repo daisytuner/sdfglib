@@ -23,6 +23,14 @@ Expression minimum(const Expression expr, const SymbolSet& parameters, const Ass
         return expr;
     } else if (SymEngine::is_a<SymEngine::Infty>(*expr)) {
         return expr;
+    } else if (SymEngine::is_a<symbolic::ZExtI64Function>(*expr)) {
+        auto zext = SymEngine::rcp_static_cast<const symbolic::ZExtI64Function>(expr);
+        auto min_arg = minimum(zext->get_args()[0], parameters, assumptions, depth + 1);
+        if (min_arg == SymEngine::null) {
+            return SymEngine::null;
+        } else {
+            return symbolic::zext_i64(min_arg);
+        }
     }
 
     // Symbol
@@ -163,6 +171,16 @@ Expression maximum(const Expression expr, const SymbolSet& parameters, const Ass
         return SymEngine::null;
     }
 
+    if (SymEngine::is_a<symbolic::ZExtI64Function>(*expr)) {
+        auto zext = SymEngine::rcp_static_cast<const symbolic::ZExtI64Function>(expr);
+        auto max_arg = maximum(zext->get_args()[0], parameters, assumptions, depth + 1);
+        if (max_arg == SymEngine::null) {
+            return SymEngine::null;
+        } else {
+            return symbolic::zext_i64(max_arg);
+        }
+    }
+
     // Mul
     if (SymEngine::is_a<SymEngine::Mul>(*expr)) {
         auto mul = SymEngine::rcp_static_cast<const SymEngine::Mul>(expr);
@@ -297,6 +315,16 @@ Expression minimum_new(
         auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(expr);
         if (parameters.find(sym) != parameters.end()) {
             return sym;
+        }
+    }
+
+    if (SymEngine::is_a<symbolic::ZExtI64Function>(*expr)) {
+        auto zext = SymEngine::rcp_static_cast<const symbolic::ZExtI64Function>(expr);
+        auto min_arg = minimum_new(zext->get_args()[0], parameters, assumptions, depth + 1, tight);
+        if (min_arg == SymEngine::null) {
+            return SymEngine::null;
+        } else {
+            return symbolic::zext_i64(min_arg);
         }
     }
 
@@ -446,6 +474,16 @@ Expression maximum_new(
         auto sym = SymEngine::rcp_static_cast<const SymEngine::Symbol>(expr);
         if (parameters.find(sym) != parameters.end()) {
             return sym;
+        }
+    }
+
+    if (SymEngine::is_a<symbolic::ZExtI64Function>(*expr)) {
+        auto zext = SymEngine::rcp_static_cast<const symbolic::ZExtI64Function>(expr);
+        auto max_arg = maximum_new(zext->get_args()[0], parameters, assumptions, depth + 1, tight);
+        if (max_arg == SymEngine::null) {
+            return SymEngine::null;
+        } else {
+            return symbolic::zext_i64(max_arg);
         }
     }
 

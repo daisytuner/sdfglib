@@ -31,7 +31,8 @@ bool LoopNormalization::accept(structured_control_flow::For& loop) {
         for (auto& clause : cnf) {
             symbolic::Condition new_clause = symbolic::__false__();
             for (auto& literal : clause) {
-                new_clause = symbolic::Or(new_clause, literal);
+                auto new_literal = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(symbolic::simplify(literal));
+                new_clause = symbolic::Or(new_clause, new_literal);
             }
             new_condition = symbolic::And(new_condition, new_clause);
         }
