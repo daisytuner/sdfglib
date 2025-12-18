@@ -1030,7 +1030,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Scalar) {
     EXPECT_EQ(definition_A_after.size(), 0);
 }
 
-TEST(DataDependencyAnalysisTest, For_Close_Array) {
+TEST(DataDependencyAnalysisTest, For_Open_Array) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
@@ -1051,7 +1051,9 @@ TEST(DataDependencyAnalysisTest, For_Close_Array) {
 
     auto& block = builder.add_block(for_loop1.root());
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& zero_node = builder.add_constant(block, "0", base_desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, zero_node, tasklet, "_in", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {symbolic::symbol("i")}, array_desc);
 
     auto& for_loop2 = builder.add_for(
@@ -1064,7 +1066,9 @@ TEST(DataDependencyAnalysisTest, For_Close_Array) {
 
     auto& block2 = builder.add_block(for_loop2.root());
     auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& zero_node2 = builder.add_constant(block2, "0", base_desc);
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block2, zero_node2, tasklet2, "_in", {});
     builder.add_computational_memlet(block2, tasklet2, "_out", output_node2, {symbolic::symbol("j")}, array_desc);
 
     analysis::AnalysisManager analysis_manager(builder.subject());
@@ -1078,20 +1082,11 @@ TEST(DataDependencyAnalysisTest, For_Close_Array) {
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
-    EXPECT_EQ(open_definitions.size(), 5);
-    EXPECT_EQ(closed_definitions.size(), 1);
-
-    auto write_A_body = users.get_user("A", &output_node, analysis::Use::WRITE);
-    auto write_A_after = users.get_user("A", &output_node2, analysis::Use::WRITE);
-
-    auto& definition_A_body = closed_definitions.at(write_A_body);
-    EXPECT_EQ(definition_A_body.size(), 0);
-
-    auto& definition_A_after = open_definitions.at(write_A_after);
-    EXPECT_EQ(definition_A_after.size(), 0);
+    EXPECT_EQ(open_definitions.size(), 6);
+    EXPECT_EQ(closed_definitions.size(), 0);
 }
 
-TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets) {
+TEST(DataDependencyAnalysisTest, For_Open_Array_Subsets) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
@@ -1152,7 +1147,7 @@ TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets) {
     EXPECT_EQ(definition_A_after.size(), 0);
 }
 
-TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets_Trivial) {
+TEST(DataDependencyAnalysisTest, For_Open_Array_Subsets_Trivial) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar base_desc(types::PrimitiveType::Int32);
@@ -1173,7 +1168,9 @@ TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets_Trivial) {
 
     auto& block = builder.add_block(for_loop1.root());
     auto& output_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& zero_node = builder.add_constant(block, "0", base_desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, zero_node, tasklet, "_in", {});
     builder.add_computational_memlet(block, tasklet, "_out", output_node, {symbolic::integer(0)}, array_desc);
 
     auto& for_loop2 = builder.add_for(
@@ -1186,7 +1183,9 @@ TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets_Trivial) {
 
     auto& block2 = builder.add_block(for_loop2.root());
     auto& output_node2 = builder.add_access(block2, "A");
-    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"0"});
+    auto& zero_node2 = builder.add_constant(block2, "0", base_desc);
+    auto& tasklet2 = builder.add_tasklet(block2, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block2, zero_node2, tasklet2, "_in", {});
     builder.add_computational_memlet(block2, tasklet2, "_out", output_node2, {symbolic::integer(0)}, array_desc);
 
     analysis::AnalysisManager analysis_manager(builder.subject());
@@ -1200,17 +1199,8 @@ TEST(DataDependencyAnalysisTest, For_Close_Array_Subsets_Trivial) {
 
     // Check result
     EXPECT_EQ(undefined.size(), 0);
-    EXPECT_EQ(open_definitions.size(), 5);
-    EXPECT_EQ(closed_definitions.size(), 1);
-
-    auto write_A_body = users.get_user("A", &output_node, analysis::Use::WRITE);
-    auto write_A_after = users.get_user("A", &output_node2, analysis::Use::WRITE);
-
-    auto& definition_A_body = closed_definitions.at(write_A_body);
-    EXPECT_EQ(definition_A_body.size(), 0);
-
-    auto& definition_A_after = open_definitions.at(write_A_after);
-    EXPECT_EQ(definition_A_after.size(), 0);
+    EXPECT_EQ(open_definitions.size(), 6);
+    EXPECT_EQ(closed_definitions.size(), 0);
 }
 
 TEST(LoopDependencyAnalysisTest, Last_1D) {

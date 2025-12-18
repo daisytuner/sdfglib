@@ -48,6 +48,16 @@ bool DeadCFGElimination::run_pass(builder::StructuredSDFGBuilder& builder, analy
             size_t i = 0;
             while (i < sequence_stmt->size()) {
                 auto child = sequence_stmt->at(i);
+                symbolic::SymbolSet dead_lhs;
+                for (auto& entry : child.second.assignments()) {
+                    if (symbolic::eq(entry.first, entry.second)) {
+                        dead_lhs.insert(entry.first);
+                    }
+                }
+                for (auto& lhs : dead_lhs) {
+                    child.second.assignments().erase(lhs);
+                    applied = true;
+                }
 
                 // Return node found, everything after is dead
                 if (auto return_node = dynamic_cast<structured_control_flow::Return*>(&child.first)) {

@@ -73,17 +73,35 @@ bool For2MapPass::can_be_applied(
 
     // b. False dependencies (WAW) are limited to loop-local variables
     auto& users = analysis_manager.get<analysis::Users>();
+    analysis::UsersView body_users(users, for_stmt.root());
     auto locals = users.locals(for_stmt.root());
     for (auto& dep : dependencies) {
         auto& container = dep.first;
+        auto& type = builder.subject().type(container);
 
         // Must be loop-local variable
         if (locals.find(container) == locals.end()) {
+            // Special case: Constant scalar assignments
+            if (type.type_id() == types::TypeID::Scalar) {
+                auto writes = body_users.writes(container);
+                auto reads = body_users.reads(container);
+                if (writes.size() == 1 && reads.empty()) {
+                    auto write = writes.front();
+                    if (auto write_transition =
+                            dynamic_cast<const structured_control_flow::Transition*>(write->element())) {
+                        auto lhs = symbolic::symbol(container);
+                        auto rhs = write_transition->assignments().at(lhs);
+                        if (SymEngine::is_a<SymEngine::Integer>(*rhs)) {
+                            continue;
+                        }
+                    }
+                }
+            }
+
             return false;
         }
 
         // Check for pointers that they point to loop-local storage
-        auto& type = builder.subject().type(container);
         if (type.type_id() != types::TypeID::Pointer) {
             continue;
         }
