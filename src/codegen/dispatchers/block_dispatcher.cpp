@@ -3,6 +3,7 @@
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 #include "sdfg/codegen/instrumentation/instrumentation_info.h"
 #include "sdfg/types/structure.h"
+#include "sdfg/types/type.h"
 
 namespace sdfg {
 namespace codegen {
@@ -378,6 +379,10 @@ void LibraryNodeDispatcher::
             stream << "memcpy(" << "&" << conn << ", " << "&" << dst_name
                    << this->language_extension_.subset(oedge.base_type(), oedge.subset()) << ", sizeof " << conn << ");"
                    << std::endl;
+        } else if (conn_type.type_id() == types::TypeID::Function) {
+            auto& func_type = static_cast<const types::Function&>(conn_type);
+            stream << this->language_extension_.declaration(conn, func_type.return_type());
+            stream << ";" << std::endl;
         } else {
             stream << this->language_extension_.declaration(conn, conn_type);
             stream << " = ";
