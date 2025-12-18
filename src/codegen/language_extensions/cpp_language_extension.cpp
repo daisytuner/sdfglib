@@ -463,8 +463,6 @@ void CPPSymbolicPrinter::bvisit(const SymEngine::FunctionSymbol& x) {
     } else if (x.get_name() == "iabs") {
         str_ = "((" + apply(x.get_args()[0]) + ") < 0 ? -(" + apply(x.get_args()[0]) + ") : (" +
                apply(x.get_args()[0]) + "))";
-    } else if (x.get_name() == "imod") {
-        str_ = "((" + apply(x.get_args()[0]) + ") % (" + apply(x.get_args()[1]) + "))";
     } else if (x.get_name() == "zext_i64") {
         str_ = "((long long) ((unsigned long long) (" + apply(x.get_args()[0]) + ")))";
     } else if (x.get_name() == "trunc_i32") {

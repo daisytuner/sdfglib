@@ -102,13 +102,7 @@ Expression abs(const Expression expr) {
 };
 
 Expression mod(const Expression lhs, const Expression rhs) {
-    if (SymEngine::is_a<SymEngine::Integer>(*lhs) && SymEngine::is_a<SymEngine::Integer>(*rhs)) {
-        auto a = SymEngine::rcp_static_cast<const SymEngine::Integer>(lhs)->as_int();
-        auto b = SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs)->as_int();
-        return integer(a % b);
-    }
-    auto imod = SymEngine::function_symbol("imod", {lhs, rhs});
-    return imod;
+    return symbolic::sub(lhs, symbolic::mul(symbolic::div(lhs, rhs), rhs));
 };
 
 Expression pow(const Expression base, const Expression exp) { return SymEngine::pow(base, exp); };
