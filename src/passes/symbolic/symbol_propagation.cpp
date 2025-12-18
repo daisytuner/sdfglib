@@ -60,9 +60,13 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
     auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
     auto& data_dependency_analysis = analysis_manager.get<analysis::DataDependencyAnalysis>();
     std::unordered_set<data_flow::AccessNode*> replaced_nodes;
+    std::unordered_set<std::string> skip;
     for (auto& name : sdfg.containers()) {
         // Criterion: Only transients
         if (!sdfg.is_transient(name)) {
+            continue;
+        }
+        if (skip.find(name) != skip.end()) {
             continue;
         }
 
@@ -87,7 +91,7 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
             // Reverse propagation
             if (entry.second.size() == 2) {
                 // if (...) { a = 1} else { a = 2 } b = a
-                // -> if (...) { b = 1} else { b = 2 }
+                // -> if (...) { a = 1, b = 1} else { a = 2, b = 2 }
                 auto write1 = *entry.second.begin();
                 auto write2 = *(++entry.second.begin());
                 if (write1->container() != write2->container()) {
@@ -124,7 +128,8 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                 if (lhs.is_null()) {
                     continue;
                 }
-                if (transition1->assignments().count(lhs) || transition2->assignments().count(lhs)) {
+                if (transition1->assignments().find(lhs) != transition1->assignments().end() ||
+                    transition2->assignments().find(lhs) != transition2->assignments().end()) {
                     continue;
                 }
 
@@ -143,7 +148,10 @@ bool SymbolPropagation::run_pass(builder::StructuredSDFGBuilder& builder, analys
                 transition1->assignments().insert({lhs, rhs1});
                 transition2->assignments().insert({lhs, rhs2});
                 transition_lhs->assignments().erase(lhs);
+                skip.insert(lhs->get_name());
+                skip.insert(rhs->get_name());
                 applied = true;
+                break;
             }
             // Forward propagation
             else if (entry.second.size() == 1) {
