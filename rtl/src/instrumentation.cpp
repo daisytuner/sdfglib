@@ -224,6 +224,19 @@ private:
             entry << "\"element_id\":" << md.element_id << ",";
             entry << "\"element_type\":\"" << md.element_type << "\",";
             entry << "\"loopnest_index\":" << md.loopnest_index;
+            if (md.num_loops > 0) {
+                entry << ",";
+                entry << "\"loop_info\":{";
+                entry << "\"num_loops\":" << md.num_loops << ",";
+                entry << "\"num_maps\":" << md.num_maps << ",";
+                entry << "\"num_fors\":" << md.num_fors << ",";
+                entry << "\"num_whiles\":" << md.num_whiles << ",";
+                entry << "\"max_depth\":" << md.max_depth << ",";
+                entry << "\"is_perfectly_nested\":" << (md.is_perfectly_nested ? "true" : "false") << ",";
+                entry << "\"is_perfectly_parallel\":" << (md.is_perfectly_parallel ? "true" : "false") << ",";
+                entry << "\"is_elementwise\":" << (md.is_elementwise ? "true" : "false");
+                entry << "}";
+            }
 
             entry << "},";
         }
@@ -333,6 +346,19 @@ private:
         }
         if (md.sdfg_name && md.sdfg_file) {
             entry << "\"loopnest_index\":" << md.loopnest_index;
+            if (md.num_loops > 0) {
+                entry << ",";
+                entry << "\"loop_info\":{";
+                entry << "\"num_loops\":" << md.num_loops << ",";
+                entry << "\"num_maps\":" << md.num_maps << ",";
+                entry << "\"num_fors\":" << md.num_fors << ",";
+                entry << "\"num_whiles\":" << md.num_whiles << ",";
+                entry << "\"max_depth\":" << md.max_depth << ",";
+                entry << "\"is_perfectly_nested\":" << (md.is_perfectly_nested ? "true" : "false") << ",";
+                entry << "\"is_perfectly_parallel\":" << (md.is_perfectly_parallel ? "true" : "false") << ",";
+                entry << "\"is_elementwise\":" << (md.is_elementwise ? "true" : "false");
+                entry << "}";
+            }
         } else {
             entry << "\"loopnest_index\":-1";
         }

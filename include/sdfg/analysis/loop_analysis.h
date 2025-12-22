@@ -22,11 +22,24 @@ struct DFSLoopComparator {
     }
 };
 
+struct LoopInfo {
+    size_t num_loops;
+    size_t num_maps;
+    size_t num_fors;
+    size_t num_whiles;
+    size_t max_depth;
+    bool is_perfectly_nested;
+    bool is_perfectly_parallel;
+    bool is_elementwise;
+};
+
 class LoopAnalysis : public Analysis {
 private:
     std::vector<structured_control_flow::ControlFlowNode*> loops_;
     std::map<structured_control_flow::ControlFlowNode*, structured_control_flow::ControlFlowNode*, DFSLoopComparator>
         loop_tree_;
+
+    std::unordered_map<structured_control_flow::ControlFlowNode*, LoopInfo> loop_infos_;
 
     void run(structured_control_flow::ControlFlowNode& scope, structured_control_flow::ControlFlowNode* parent_loop);
 
@@ -54,6 +67,8 @@ public:
 
     const std::vector<structured_control_flow::ControlFlowNode*> loops() const;
 
+    const LoopInfo& loop_info(structured_control_flow::ControlFlowNode* loop) const;
+
     structured_control_flow::ControlFlowNode* find_loop_by_indvar(const std::string& indvar);
 
     const std::map<structured_control_flow::ControlFlowNode*, structured_control_flow::ControlFlowNode*, DFSLoopComparator>&
@@ -62,6 +77,8 @@ public:
     structured_control_flow::ControlFlowNode* parent_loop(structured_control_flow::ControlFlowNode* loop) const;
 
     const std::vector<structured_control_flow::ControlFlowNode*> outermost_loops() const;
+
+    bool is_outermost_loop(structured_control_flow::ControlFlowNode* loop) const;
 
     const std::vector<structured_control_flow::ControlFlowNode*> outermost_maps() const;
 

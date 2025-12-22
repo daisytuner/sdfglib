@@ -63,6 +63,20 @@ void InstrumentationPlan::begin_instrumentation(
     stream << metadata_var << ".element_type = \"" << info.element_type().value() << "\";" << std::endl;
     stream << metadata_var << ".target_type = \"" << info.target_type().value() << "\";" << std::endl;
     stream << metadata_var << ".loopnest_index = " << info.loopnest_index() << ";" << std::endl;
+    if (info.loopnest_index() >= 0) {
+        stream << metadata_var << ".num_loops = " << info.loop_info().num_loops << ";" << std::endl;
+        stream << metadata_var << ".num_maps = " << info.loop_info().num_maps << ";" << std::endl;
+        stream << metadata_var << ".num_fors = " << info.loop_info().num_fors << ";" << std::endl;
+        stream << metadata_var << ".num_whiles = " << info.loop_info().num_whiles << ";" << std::endl;
+        stream << metadata_var << ".max_depth = " << info.loop_info().max_depth << ";" << std::endl;
+        stream << metadata_var << ".is_perfectly_nested = " << (info.loop_info().is_perfectly_nested ? "1" : "0") << ";"
+               << std::endl;
+        stream << metadata_var << ".is_perfectly_parallel = " << (info.loop_info().is_perfectly_parallel ? "1" : "0")
+               << ";" << std::endl;
+        stream << metadata_var << ".is_elementwise = " << (info.loop_info().is_elementwise ? "1" : "0") << ";"
+               << std::endl;
+    }
+
     stream << metadata_var << ".region_uuid = \"" << region_uuid << "\";" << std::endl;
 
     // Initialize region

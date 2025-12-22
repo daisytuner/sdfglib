@@ -1,5 +1,6 @@
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 
+#include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 #include "sdfg/codegen/instrumentation/instrumentation_info.h"
 #include "sdfg/types/structure.h"
@@ -426,7 +427,9 @@ void LibraryNodeDispatcher::
 }
 
 InstrumentationInfo LibraryNodeDispatcher::instrumentation_info() const {
-    return InstrumentationInfo(ElementType_Unknown, TargetType_SEQUENTIAL, -1, node_.element_id(), {});
+    return InstrumentationInfo(
+        node_.element_id(), ElementType_Unknown, TargetType_SEQUENTIAL, analysis::LoopInfo{}, -1, {}
+    );
 };
 
 

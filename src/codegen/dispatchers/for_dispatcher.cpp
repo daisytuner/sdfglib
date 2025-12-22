@@ -47,15 +47,22 @@ void ForDispatcher::dispatch_node(
 };
 
 InstrumentationInfo ForDispatcher::instrumentation_info() const {
-    size_t loopnest_index = -1;
-    auto& loop_tree_analysis = analysis_manager_.get<analysis::LoopAnalysis>();
+    long long loopnest_index = -1;
 
+    // Check if this is an outermost loop
+    auto& loop_tree_analysis = analysis_manager_.get<analysis::LoopAnalysis>();
     auto outermost_loops = loop_tree_analysis.outermost_loops();
     for (size_t i = 0; i < outermost_loops.size(); i++) {
         if (outermost_loops[i] == &node_) {
             loopnest_index = i;
             break;
         }
+    }
+
+    // Query LoopInfo
+    analysis::LoopInfo loop_info;
+    if (loopnest_index != -1) {
+        loop_info = loop_tree_analysis.loop_info(&node_);
     }
 
     // Perform FlopAnalysis
@@ -67,7 +74,9 @@ InstrumentationInfo ForDispatcher::instrumentation_info() const {
         metrics.insert({"flop", flop_str});
     }
 
-    return InstrumentationInfo(ElementType_For, TargetType_SEQUENTIAL, loopnest_index, node_.element_id(), metrics);
+    return InstrumentationInfo(
+        node_.element_id(), ElementType_For, TargetType_SEQUENTIAL, loop_info, loopnest_index, metrics
+    );
 };
 
 } // namespace codegen
