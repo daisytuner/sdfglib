@@ -1,4 +1,5 @@
 #include "sdfg/transformations/loop_tiling.h"
+#include <stdexcept>
 
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
@@ -84,6 +85,9 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
     builder.move_child(*parent, index + 1, outer_loop->root());
 
     analysis_manager.invalidate_all();
+    applied_ = true;
+    inner_loop_ = &loop_;
+    outer_loop_ = outer_loop;
 };
 
 void LoopTiling::to_json(nlohmann::json& j) const {
@@ -112,6 +116,22 @@ LoopTiling LoopTiling::from_json(builder::StructuredSDFGBuilder& builder, const 
 
     return LoopTiling(*loop, tile_size);
 };
+
+structured_control_flow::StructuredLoop* LoopTiling::inner_loop() {
+    if (!applied_) {
+        throw std::runtime_error("Accessing tiled loop before their creation.");
+    }
+
+    return inner_loop_;
+}
+
+structured_control_flow::StructuredLoop* LoopTiling::outer_loop() {
+    if (!applied_) {
+        throw std::runtime_error("Accessing tiled loop before their creation.");
+    }
+
+    return outer_loop_;
+}
 
 } // namespace transformations
 } // namespace sdfg
