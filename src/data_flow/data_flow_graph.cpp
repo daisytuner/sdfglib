@@ -288,5 +288,211 @@ const std::pair<size_t, const std::unordered_map<const data_flow::DataFlowNode*,
     return {ccs_vertex.first, ccs};
 };
 
+std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_deterministic() const {
+    auto [num_components, components_map] = graph::weakly_connected_components(this->graph_);
+
+    // Build deterministic topological sort for each weakly connected component
+    std::vector<std::list<const DataFlowNode*>> components(num_components);
+    for (size_t i = 0; i < num_components; i++) {
+        // Get all sinks of the current component
+        std::vector<const DataFlowNode*> sinks;
+        bool component_empty = true;
+        for (auto [v, comp] : components_map) {
+            if (comp == i) {
+                component_empty = false;
+                if (boost::out_degree(v, this->graph_) == 0) {
+                    sinks.push_back(this->nodes_.at(v).get());
+                }
+            }
+        }
+        if (sinks.size() == 0) {
+            if (component_empty) {
+                continue;
+            } else {
+                throw boost::not_a_dag();
+            }
+        }
+
+        // Go over all sinks
+        const DataFlowNode* primary_sink = nullptr;
+        std::unordered_map<const DataFlowNode*, std::list<const DataFlowNode*>> lists;
+        std::unordered_map<const DataFlowNode*, std::list<const Memlet*>> memlet_queues;
+        std::unordered_map<const Memlet*, const DataFlowNode*> memlet_map;
+        for (const auto* sink : sinks) {
+            lists.insert({sink, {}});
+            memlet_queues.insert({sink, {}});
+            std::unordered_set<const DataFlowNode*> primary_blocker;
+
+            // Perform reversed DFS starting form sink node
+            std::unordered_set<const DataFlowNode*> visited;
+            std::stack<std::pair<const DataFlowNode*, const DataFlowNode*>> stack({{sink, nullptr}});
+            while (!stack.empty()) {
+                const auto [current, successor] = stack.top();
+                stack.pop();
+
+                // Special case: Only handle primary edges
+                if (this->out_degree(*current) > 1) {
+                    if (const auto* code_node = dynamic_cast<const CodeNode*>(current)) {
+                        std::unordered_map<std::string, const Memlet*> edges_map;
+                        const Memlet* memlet = nullptr; // Memlet from current to successor
+                        for (const auto& oedge : this->out_edges(*code_node)) {
+                            edges_map.insert({oedge.src_conn(), &oedge});
+                            if (&oedge.dst() == successor) {
+                                memlet = &oedge;
+                            }
+                        }
+                        const auto* primary_dst = &edges_map.at(code_node->output(0))->dst();
+                        if (primary_dst == successor) {
+                            for (size_t j = 1; j < code_node->outputs().size(); j++) {
+                                memlet_queues.at(sink).push_back(edges_map.at(code_node->output(j)));
+                            }
+                        } else {
+                            if (primary_blocker.empty()) {
+                                memlet_map.insert({memlet, sink});
+                            } else {
+                                memlet_map.insert({memlet, nullptr});
+                            }
+                            primary_blocker.insert(current);
+                            continue;
+                        }
+                    } else {
+                        std::vector<std::pair<const Memlet*, size_t>> edges_list;
+                        const Memlet* memlet = nullptr; // Memlet from current to successor
+                        for (const auto& oedge : this->out_edges(*current)) {
+                            const auto* dst = &oedge.dst();
+                            size_t value = 0;
+                            if (const auto* tasklet = dynamic_cast<const Tasklet*>(dst)) {
+                                value = tasklet->code();
+                            } else if (const auto* libnode = dynamic_cast<const LibraryNode*>(dst)) {
+                                value = 52;
+                                for (char c : libnode->code().value()) {
+                                    value += c;
+                                }
+                            }
+                            edges_list.push_back({&oedge, value});
+                            if (&oedge.dst() == successor) {
+                                memlet = &oedge;
+                            }
+                        }
+                        std::sort(edges_list.begin(), edges_list.end(), [](const auto& a, const auto& b) {
+                            return a.second > b.second ||
+                                   (a.second == b.second && a.first->element_id() < b.first->element_id());
+                        });
+                        const auto* primary_dst = &edges_list.front().first->dst();
+                        if (primary_dst == successor) {
+                            for (size_t j = 1; j < edges_list.size(); j++) {
+                                memlet_queues.at(sink).push_back(edges_list.at(j).first);
+                            }
+                        } else {
+                            if (primary_blocker.empty()) {
+                                memlet_map.insert({memlet, sink});
+                            } else {
+                                memlet_map.insert({memlet, nullptr});
+                            }
+                            primary_blocker.insert(current);
+                            continue;
+                        }
+                    }
+                }
+
+                // Put the current element in the list
+                if (visited.contains(current)) {
+                    throw boost::not_a_dag();
+                }
+                visited.insert(current);
+                if (primary_blocker.contains(current)) {
+                    primary_blocker.erase(current);
+                }
+                lists.at(sink).push_front(current);
+
+                // Put all predecessors on the stack
+                if (const auto* code_node = dynamic_cast<const CodeNode*>(current)) {
+                    for (const auto& input : code_node->inputs()) {
+                        const Memlet* iedge = nullptr;
+                        for (auto& in_edge : this->in_edges(*code_node)) {
+                            if (in_edge.dst_conn() == input) {
+                                iedge = &in_edge;
+                                break;
+                            }
+                        }
+                        if (!iedge) {
+                            continue;
+                        }
+                        const auto* src = &iedge->src();
+                        stack.push({src, current});
+                    }
+                } else {
+                    std::vector<std::pair<const DataFlowNode*, size_t>> tmp_inputs;
+                    for (const auto& iedge : this->in_edges(*current)) {
+                        const auto* src = &iedge.src();
+                        size_t value = 0;
+                        if (const auto* tasklet = dynamic_cast<const Tasklet*>(src)) {
+                            value = tasklet->code();
+                        } else if (const auto* libnode = dynamic_cast<const LibraryNode*>(src)) {
+                            value = 52;
+                            for (char c : libnode->code().value()) {
+                                value += c;
+                            }
+                        }
+                        tmp_inputs.push_back({src, value});
+                    }
+                    std::sort(tmp_inputs.begin(), tmp_inputs.end(), [](const auto& a, const auto& b) {
+                        return a.second > b.second ||
+                               (a.second == b.second && a.first->element_id() < b.first->element_id());
+                    });
+                    for (const auto& tmp_input : tmp_inputs) {
+                        stack.push({tmp_input.first, current});
+                    }
+                }
+            }
+
+            // Store primary sink
+            if (primary_blocker.empty()) {
+                primary_sink = sink;
+            }
+        }
+        if (!primary_sink) {
+            throw boost::not_a_dag();
+        }
+
+        std::list<const DataFlowNode*> queue = {primary_sink};
+        std::unordered_set<const DataFlowNode*> visited;
+        while (!queue.empty()) {
+            const auto* current = queue.front();
+            queue.pop_front();
+            if (visited.contains(current)) {
+                continue;
+            }
+
+            // Fill global list
+            components.at(i).insert(components.at(i).end(), lists.at(current).begin(), lists.at(current).end());
+            visited.insert(current);
+
+            // Fill queue
+            for (const auto* memlet : memlet_queues.at(current)) {
+                const auto* node = memlet_map.at(memlet);
+                if (node) {
+                    queue.push_back(node);
+                }
+            }
+        }
+    }
+
+    // Sort components
+    std::sort(components.begin(), components.end(), [](const auto& a, const auto& b) {
+        return a.size() > b.size() ||
+               (a.size() == b.size() && a.size() > 0 && a.front()->element_id() < b.front()->element_id());
+    });
+
+    // Resulting data structure
+    std::list<const DataFlowNode*> order;
+    for (auto& component : components) {
+        order.insert(order.end(), component.begin(), component.end());
+    }
+
+    return order;
+};
+
+
 } // namespace data_flow
 } // namespace sdfg
