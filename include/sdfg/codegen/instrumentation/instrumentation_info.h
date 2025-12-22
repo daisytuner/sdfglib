@@ -2,6 +2,8 @@
 
 #include <cstddef>
 #include <unordered_map>
+
+#include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/exceptions.h"
 #include "sdfg/structured_control_flow/map.h"
 
@@ -28,29 +30,36 @@ inline TargetType TargetType_CPU_PARALLEL{structured_control_flow::ScheduleType_
 
 class InstrumentationInfo {
 private:
+    // General properties
+    size_t element_id_;
     ElementType element_type_;
     TargetType target_type_;
+
+    // Loop-specific properties
+    analysis::LoopInfo loop_info_;
     long long loopnest_index_;
-    size_t element_id_;
 
     std::unordered_map<std::string, std::string> metrics_;
 
 public:
     InstrumentationInfo(
+        size_t element_id,
         const ElementType& element_type,
         const TargetType& target_type,
+        const analysis::LoopInfo& loop_info,
         long long loopnest_index,
-        size_t element_id,
         const std::unordered_map<std::string, std::string>& metrics = {}
     );
 
+    size_t element_id() const;
+
     const ElementType& element_type() const;
+
+    const analysis::LoopInfo& loop_info() const;
 
     const TargetType& target_type() const;
 
     long long loopnest_index() const;
-
-    size_t element_id() const;
 
     const std::unordered_map<std::string, std::string>& metrics() const;
 };

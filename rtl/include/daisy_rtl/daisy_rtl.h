@@ -38,6 +38,16 @@ typedef struct __daisy_metadata {
     const char* target_type;
     int loopnest_index;
 
+    // Loop Info
+    size_t num_loops;
+    size_t num_maps;
+    size_t num_fors;
+    size_t num_whiles;
+    size_t max_depth;
+    bool is_perfectly_nested;
+    bool is_perfectly_parallel;
+    bool is_elementwise;
+
     // Example: sdfg_name + element_id
     const char* region_uuid;
 } __daisy_metadata_t;

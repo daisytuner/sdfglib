@@ -78,6 +78,8 @@ public:
 
     const std::vector<structured_control_flow::ControlFlowNode*> outermost_loops() const;
 
+    bool is_outermost_loop(structured_control_flow::ControlFlowNode* loop) const;
+
     const std::vector<structured_control_flow::ControlFlowNode*> outermost_maps() const;
 
     std::vector<sdfg::structured_control_flow::ControlFlowNode*> children(sdfg::structured_control_flow::ControlFlowNode*

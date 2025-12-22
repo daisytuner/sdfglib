@@ -285,6 +285,13 @@ const std::vector<structured_control_flow::ControlFlowNode*> LoopAnalysis::outer
     return outermost_loops_;
 }
 
+bool LoopAnalysis::is_outermost_loop(structured_control_flow::ControlFlowNode* loop) const {
+    if (this->loop_tree_.find(loop) == this->loop_tree_.end()) {
+        return false;
+    }
+    return this->loop_tree_.at(loop) == nullptr;
+}
+
 const std::vector<structured_control_flow::ControlFlowNode*> LoopAnalysis::outermost_maps() const {
     std::vector<structured_control_flow::ControlFlowNode*> outermost_maps_;
     for (const auto& [loop, parent] : this->loop_tree_) {
