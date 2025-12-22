@@ -143,7 +143,6 @@ set(SOURCE_FILES
     src/passes/dataflow/dead_data_elimination.cpp
     src/passes/dataflow/dead_reference_elimination.cpp
     src/passes/dataflow/constant_propagation.cpp
-    src/passes/dataflow/redundant_array_elimination.cpp
     src/passes/dataflow/tasklet_fusion.cpp
     src/passes/dataflow/trivial_array_elimination.cpp
     src/passes/dataflow/trivial_reference_conversion.cpp
