@@ -75,6 +75,8 @@ void InstrumentationPlan::begin_instrumentation(
                << ";" << std::endl;
         stream << metadata_var << ".is_elementwise = " << (info.loop_info().is_elementwise ? "1" : "0") << ";"
                << std::endl;
+        stream << metadata_var << ".has_side_effects = " << (info.loop_info().has_side_effects ? "1" : "0") << ";"
+               << std::endl;
     }
 
     stream << metadata_var << ".region_uuid = \"" << region_uuid << "\";" << std::endl;

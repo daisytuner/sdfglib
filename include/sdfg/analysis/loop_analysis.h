@@ -31,6 +31,7 @@ struct LoopInfo {
     bool is_perfectly_nested;
     bool is_perfectly_parallel;
     bool is_elementwise;
+    bool has_side_effects;
 };
 
 class LoopAnalysis : public Analysis {

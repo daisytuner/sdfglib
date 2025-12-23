@@ -234,7 +234,8 @@ private:
                 entry << "\"max_depth\":" << md.max_depth << ",";
                 entry << "\"is_perfectly_nested\":" << (md.is_perfectly_nested ? "true" : "false") << ",";
                 entry << "\"is_perfectly_parallel\":" << (md.is_perfectly_parallel ? "true" : "false") << ",";
-                entry << "\"is_elementwise\":" << (md.is_elementwise ? "true" : "false");
+                entry << "\"is_elementwise\":" << (md.is_elementwise ? "true" : "false") << ",";
+                entry << "\"has_side_effects\":" << (md.has_side_effects ? "true" : "false");
                 entry << "}";
             }
 
@@ -356,7 +357,8 @@ private:
                 entry << "\"max_depth\":" << md.max_depth << ",";
                 entry << "\"is_perfectly_nested\":" << (md.is_perfectly_nested ? "true" : "false") << ",";
                 entry << "\"is_perfectly_parallel\":" << (md.is_perfectly_parallel ? "true" : "false") << ",";
-                entry << "\"is_elementwise\":" << (md.is_elementwise ? "true" : "false");
+                entry << "\"is_elementwise\":" << (md.is_elementwise ? "true" : "false") << ",";
+                entry << "\"has_side_effects\":" << (md.has_side_effects ? "true" : "false");
                 entry << "}";
             }
         } else {

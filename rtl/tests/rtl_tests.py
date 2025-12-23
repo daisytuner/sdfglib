@@ -611,3 +611,4 @@ def test_instrumentation_loop_info():
     assert loop_info["is_perfectly_nested"] == True
     assert loop_info["is_perfectly_parallel"] == False
     assert loop_info["is_elementwise"] == False
+    assert loop_info["has_side_effects"] == False
