@@ -36,6 +36,7 @@ void main(int argc, char** argv) {
         .is_perfectly_nested = true,
         .is_perfectly_parallel = false,
         .is_elementwise = false,
+        .has_side_effects = false,
         .region_uuid = "__daisy_instrumentation_test_0_10"
     };
 

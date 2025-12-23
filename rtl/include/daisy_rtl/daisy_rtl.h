@@ -47,6 +47,7 @@ typedef struct __daisy_metadata {
     bool is_perfectly_nested;
     bool is_perfectly_parallel;
     bool is_elementwise;
+    bool has_side_effects;
 
     // Example: sdfg_name + element_id
     const char* region_uuid;

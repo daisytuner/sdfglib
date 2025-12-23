@@ -144,6 +144,60 @@ void LoopAnalysis::run(AnalysisManager& analysis_manager) {
             info.is_elementwise = all_contiguous;
         }
 
+        // Criterion: Loop must not have side-effecting body
+        structured_control_flow::Sequence* root = nullptr;
+        if (auto while_stmt = dynamic_cast<structured_control_flow::While*>(loop)) {
+            root = &while_stmt->root();
+        } else if (auto loop_stmt = dynamic_cast<structured_control_flow::For*>(loop)) {
+            root = &loop_stmt->root();
+        }
+        // Maps cannot have side effects by definition
+
+        info.has_side_effects = false;
+        if (root != nullptr) {
+            std::list<const structured_control_flow::ControlFlowNode*> queue = {root};
+            while (!queue.empty()) {
+                auto current = queue.front();
+                queue.pop_front();
+
+                if (auto block = dynamic_cast<const structured_control_flow::Block*>(current)) {
+                    for (auto& node : block->dataflow().nodes()) {
+                        if (auto library_node = dynamic_cast<const data_flow::LibraryNode*>(&node)) {
+                            if (library_node->side_effect()) {
+                                info.has_side_effects = true;
+                                break;
+                            }
+                        }
+                    }
+                } else if (auto seq = dynamic_cast<const structured_control_flow::Sequence*>(current)) {
+                    for (size_t i = 0; i < seq->size(); i++) {
+                        auto& child = seq->at(i).first;
+                        queue.push_back(&child);
+                    }
+                } else if (auto ifelse = dynamic_cast<const structured_control_flow::IfElse*>(current)) {
+                    for (size_t i = 0; i < ifelse->size(); i++) {
+                        auto& branch = ifelse->at(i).first;
+                        queue.push_back(&branch);
+                    }
+                } else if (auto loop = dynamic_cast<const structured_control_flow::For*>(current)) {
+                    queue.push_back(&loop->root());
+                } else if (auto while_stmt = dynamic_cast<const structured_control_flow::While*>(current)) {
+                    queue.push_back(&while_stmt->root());
+                } else if (auto loop = dynamic_cast<const structured_control_flow::Map*>(current)) {
+                    continue;
+                } else if (auto for_stmt = dynamic_cast<const structured_control_flow::Break*>(current)) {
+                    continue;
+                } else if (auto for_stmt = dynamic_cast<const structured_control_flow::Continue*>(current)) {
+                    continue;
+                } else if (auto for_stmt = dynamic_cast<const structured_control_flow::Return*>(current)) {
+                    info.has_side_effects = true;
+                    break;
+                } else {
+                    throw InvalidSDFGException("Unknown control flow node type in Loop Analysis.");
+                }
+            }
+        }
+
         this->loop_infos_[loop] = info;
     }
 }
