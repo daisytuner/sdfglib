@@ -122,6 +122,9 @@ void LoopInterchange::apply(builder::StructuredSDFGBuilder& builder, analysis::A
     builder.remove_child(outer_scope, index);
 
     analysis_manager.invalidate_all();
+    applied_ = true;
+    new_outer_loop_ = new_outer_loop;
+    new_inner_loop_ = new_inner_loop;
 };
 
 void LoopInterchange::to_json(nlohmann::json& j) const {
@@ -163,6 +166,20 @@ LoopInterchange LoopInterchange::from_json(builder::StructuredSDFGBuilder& build
     }
 
     return LoopInterchange(*outer_loop, *inner_loop);
+};
+
+structured_control_flow::StructuredLoop* LoopInterchange::new_outer_loop() const {
+    if (!applied_) {
+        throw std::runtime_error("Transformation has not been applied yet.");
+    }
+    return new_outer_loop_;
+};
+
+structured_control_flow::StructuredLoop* LoopInterchange::new_inner_loop() const {
+    if (!applied_) {
+        throw std::runtime_error("Transformation has not been applied yet.");
+    }
+    return new_inner_loop_;
 };
 
 } // namespace transformations

@@ -9,24 +9,29 @@ namespace transformations {
 class LoopInterchange : public Transformation {
     structured_control_flow::StructuredLoop& outer_loop_;
     structured_control_flow::StructuredLoop& inner_loop_;
+    bool applied_ = false;
+    structured_control_flow::StructuredLoop* new_outer_loop_;
+    structured_control_flow::StructuredLoop* new_inner_loop_;
 
-   public:
-    LoopInterchange(structured_control_flow::StructuredLoop& outer_loop,
-                    structured_control_flow::StructuredLoop& inner_loop);
+public:
+    LoopInterchange(
+        structured_control_flow::StructuredLoop& outer_loop, structured_control_flow::StructuredLoop& inner_loop
+    );
 
     virtual std::string name() const override;
 
-    virtual bool can_be_applied(builder::StructuredSDFGBuilder& builder,
-                                analysis::AnalysisManager& analysis_manager) override;
+    virtual bool can_be_applied(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
+        override;
 
-    virtual void apply(builder::StructuredSDFGBuilder& builder,
-                       analysis::AnalysisManager& analysis_manager) override;
+    virtual void apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
 
     virtual void to_json(nlohmann::json& j) const override;
 
-    static LoopInterchange from_json(builder::StructuredSDFGBuilder& builder,
-                                     const nlohmann::json& j);
+    static LoopInterchange from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j);
+
+    structured_control_flow::StructuredLoop* new_outer_loop() const;
+    structured_control_flow::StructuredLoop* new_inner_loop() const;
 };
 
-}  // namespace transformations
-}  // namespace sdfg
+} // namespace transformations
+} // namespace sdfg
