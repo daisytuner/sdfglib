@@ -22,9 +22,7 @@ bool NodeDispatcher::begin_node(PrettyPrinter& stream) { return false; };
 void NodeDispatcher::end_node(PrettyPrinter& stream, bool applied) {};
 
 InstrumentationInfo NodeDispatcher::instrumentation_info() const {
-    return InstrumentationInfo(
-        node_.element_id(), ElementType_Unknown, TargetType_SEQUENTIAL, analysis::LoopInfo(), -1, {}
-    );
+    return InstrumentationInfo(node_.element_id(), ElementType_Unknown, TargetType_SEQUENTIAL);
 };
 
 void NodeDispatcher::

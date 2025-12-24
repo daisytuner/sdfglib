@@ -23,15 +23,16 @@ struct DFSLoopComparator {
 };
 
 struct LoopInfo {
-    size_t num_loops;
-    size_t num_maps;
-    size_t num_fors;
-    size_t num_whiles;
-    size_t max_depth;
-    bool is_perfectly_nested;
-    bool is_perfectly_parallel;
-    bool is_elementwise;
-    bool has_side_effects;
+    int loopnest_index = -1;
+    size_t num_loops = 0;
+    size_t num_maps = 0;
+    size_t num_fors = 0;
+    size_t num_whiles = 0;
+    size_t max_depth = 0;
+    bool is_perfectly_nested = false;
+    bool is_perfectly_parallel = false;
+    bool is_elementwise = false;
+    bool has_side_effects = false;
 };
 
 class LoopAnalysis : public Analysis {
@@ -68,12 +69,12 @@ public:
 
     const std::vector<structured_control_flow::ControlFlowNode*> loops() const;
 
-    const LoopInfo& loop_info(structured_control_flow::ControlFlowNode* loop) const;
-
-    structured_control_flow::ControlFlowNode* find_loop_by_indvar(const std::string& indvar);
-
     const std::map<structured_control_flow::ControlFlowNode*, structured_control_flow::ControlFlowNode*, DFSLoopComparator>&
     loop_tree() const;
+
+    LoopInfo loop_info(structured_control_flow::ControlFlowNode* loop) const;
+
+    structured_control_flow::ControlFlowNode* find_loop_by_indvar(const std::string& indvar);
 
     structured_control_flow::ControlFlowNode* parent_loop(structured_control_flow::ControlFlowNode* loop) const;
 

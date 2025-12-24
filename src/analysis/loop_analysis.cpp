@@ -63,12 +63,16 @@ void LoopAnalysis::run(AnalysisManager& analysis_manager) {
     this->run(this->sdfg_.root(), nullptr);
 
     // Loop info for outermost loops
+    int loopnest_index = 0;
     for (const auto& [loop, parent] : this->loop_tree_) {
         if (parent != nullptr) {
             continue;
         }
 
         LoopInfo info;
+        info.loopnest_index = loopnest_index;
+        loopnest_index++;
+
         auto descendants = this->descendants(loop);
         descendants.insert(loop);
 
@@ -204,7 +208,10 @@ void LoopAnalysis::run(AnalysisManager& analysis_manager) {
 
 const std::vector<structured_control_flow::ControlFlowNode*> LoopAnalysis::loops() const { return this->loops_; }
 
-const LoopInfo& LoopAnalysis::loop_info(structured_control_flow::ControlFlowNode* loop) const {
+LoopInfo LoopAnalysis::loop_info(structured_control_flow::ControlFlowNode* loop) const {
+    if (this->loop_infos_.find(loop) == this->loop_infos_.end()) {
+        return LoopInfo();
+    }
     return this->loop_infos_.at(loop);
 }
 

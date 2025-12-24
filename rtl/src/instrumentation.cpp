@@ -200,47 +200,57 @@ private:
         entry << "}],";
 
         // docc metadata
-        if (md.sdfg_name && md.sdfg_file) {
-            entry << "\"docc\":";
-            entry << "{";
-
+        entry << "\"docc\":";
+        entry << "{";
+        if (md.sdfg_name) {
             entry << "\"sdfg_name\":\"" << md.sdfg_name << "\",";
+        } else {
+            entry << "\"sdfg_name\":\"\",";
+        }
+        if (md.sdfg_file) {
             entry << "\"sdfg_file\":\"" << md.sdfg_file << "\",";
-            if (md.arg_capture_path) {
-                entry << "\"arg_capture_path\":\"" << md.arg_capture_path << "\",";
-            } else {
-                entry << "\"arg_capture_path\":\"\",";
-            }
-            if (md.features_file) {
-                entry << "\"features_file\":\"" << md.features_file << "\",";
-            } else {
-                entry << "\"features_file\":\"\",";
-            }
-            if (md.opt_report_file) {
-                entry << "\"opt_report_file\":\"" << md.opt_report_file << "\",";
-            } else {
-                entry << "\"opt_report_file\":\"\",";
-            }
+        } else {
+            entry << "\"sdfg_file\":\"\",";
+        }
+        if (md.arg_capture_path) {
+            entry << "\"arg_capture_path\":\"" << md.arg_capture_path << "\",";
+        } else {
+            entry << "\"arg_capture_path\":\"\",";
+        }
+        if (md.features_file) {
+            entry << "\"features_file\":\"" << md.features_file << "\",";
+        } else {
+            entry << "\"features_file\":\"\",";
+        }
+        if (md.opt_report_file) {
+            entry << "\"opt_report_file\":\"" << md.opt_report_file << "\",";
+        } else {
+            entry << "\"opt_report_file\":\"\",";
+        }
+
+        if (md.sdfg_name && md.sdfg_file) {
+            // Element metadata
             entry << "\"element_id\":" << md.element_id << ",";
             entry << "\"element_type\":\"" << md.element_type << "\",";
-            entry << "\"loopnest_index\":" << md.loopnest_index;
-            if (md.num_loops > 0) {
-                entry << ",";
-                entry << "\"loop_info\":{";
-                entry << "\"num_loops\":" << md.num_loops << ",";
-                entry << "\"num_maps\":" << md.num_maps << ",";
-                entry << "\"num_fors\":" << md.num_fors << ",";
-                entry << "\"num_whiles\":" << md.num_whiles << ",";
-                entry << "\"max_depth\":" << md.max_depth << ",";
-                entry << "\"is_perfectly_nested\":" << (md.is_perfectly_nested ? "true" : "false") << ",";
-                entry << "\"is_perfectly_parallel\":" << (md.is_perfectly_parallel ? "true" : "false") << ",";
-                entry << "\"is_elementwise\":" << (md.is_elementwise ? "true" : "false") << ",";
-                entry << "\"has_side_effects\":" << (md.has_side_effects ? "true" : "false");
-                entry << "}";
-            }
 
-            entry << "},";
+            // Deprecated, is also inside loop info
+            entry << "\"loopnest_index\":" << md.loopnest_index << ",";
+
+            // Loop info
+            entry << "\"loop_info\":{";
+            entry << "\"loopnest_index\":" << md.loopnest_index << ",";
+            entry << "\"num_loops\":" << md.num_loops << ",";
+            entry << "\"num_maps\":" << md.num_maps << ",";
+            entry << "\"num_fors\":" << md.num_fors << ",";
+            entry << "\"num_whiles\":" << md.num_whiles << ",";
+            entry << "\"max_depth\":" << md.max_depth << ",";
+            entry << "\"is_perfectly_nested\":" << (md.is_perfectly_nested ? "true" : "false") << ",";
+            entry << "\"is_perfectly_parallel\":" << (md.is_perfectly_parallel ? "true" : "false") << ",";
+            entry << "\"is_elementwise\":" << (md.is_elementwise ? "true" : "false") << ",";
+            entry << "\"has_side_effects\":" << (md.has_side_effects ? "true" : "false");
+            entry << "}";
         }
+        entry << "},";
 
         if (md.target_type) {
             entry << "\"target_type\":\"" << md.target_type << "\",";
@@ -319,56 +329,64 @@ private:
 
 
         // docc metadata
-
         entry << "\"docc\":";
         entry << "{";
         if (md.sdfg_name) {
             entry << "\"sdfg_name\":\"" << md.sdfg_name << "\",";
+        } else {
+            entry << "\"sdfg_name\":\"\",";
         }
         if (md.sdfg_file) {
             entry << "\"sdfg_file\":\"" << md.sdfg_file << "\",";
+        } else {
+            entry << "\"sdfg_file\":\"\",";
         }
-
         if (md.arg_capture_path) {
             entry << "\"arg_capture_path\":\"" << md.arg_capture_path << "\",";
+        } else {
+            entry << "\"arg_capture_path\":\"\",";
         }
         if (md.features_file) {
             entry << "\"features_file\":\"" << md.features_file << "\",";
+        } else {
+            entry << "\"features_file\":\"\",";
         }
         if (md.opt_report_file) {
-            entry << "\"opt_report_file\":\"" << md.opt_report_file << "\",";
-        }
-
-        if (md.sdfg_name && md.sdfg_file) {
-            entry << "\"element_id\":" << md.element_id << ",";
-        }
-        if (md.element_type) {
-            entry << "\"element_type\":\"" << md.element_type << "\",";
-        }
-        if (md.sdfg_name && md.sdfg_file) {
-            entry << "\"loopnest_index\":" << md.loopnest_index;
-            if (md.num_loops > 0) {
-                entry << ",";
-                entry << "\"loop_info\":{";
-                entry << "\"num_loops\":" << md.num_loops << ",";
-                entry << "\"num_maps\":" << md.num_maps << ",";
-                entry << "\"num_fors\":" << md.num_fors << ",";
-                entry << "\"num_whiles\":" << md.num_whiles << ",";
-                entry << "\"max_depth\":" << md.max_depth << ",";
-                entry << "\"is_perfectly_nested\":" << (md.is_perfectly_nested ? "true" : "false") << ",";
-                entry << "\"is_perfectly_parallel\":" << (md.is_perfectly_parallel ? "true" : "false") << ",";
-                entry << "\"is_elementwise\":" << (md.is_elementwise ? "true" : "false") << ",";
-                entry << "\"has_side_effects\":" << (md.has_side_effects ? "true" : "false");
-                entry << "}";
-            }
+            entry << "\"opt_report_file\":\"" << md.opt_report_file << "\"";
         } else {
-            entry << "\"loopnest_index\":-1";
+            entry << "\"opt_report_file\":\"\"";
         }
 
+        if (md.sdfg_name && md.sdfg_file) {
+            entry << ",";
+
+            // Element metadata
+            entry << "\"element_id\":" << md.element_id << ",";
+            entry << "\"element_type\":\"" << md.element_type << "\",";
+
+            // Deprecated, is also inside loop info
+            entry << "\"loopnest_index\":" << md.loopnest_index << ",";
+
+            // Loop info
+            entry << "\"loop_info\":{";
+            entry << "\"loopnest_index\":" << md.loopnest_index << ",";
+            entry << "\"num_loops\":" << md.num_loops << ",";
+            entry << "\"num_maps\":" << md.num_maps << ",";
+            entry << "\"num_fors\":" << md.num_fors << ",";
+            entry << "\"num_whiles\":" << md.num_whiles << ",";
+            entry << "\"max_depth\":" << md.max_depth << ",";
+            entry << "\"is_perfectly_nested\":" << (md.is_perfectly_nested ? "true" : "false") << ",";
+            entry << "\"is_perfectly_parallel\":" << (md.is_perfectly_parallel ? "true" : "false") << ",";
+            entry << "\"is_elementwise\":" << (md.is_elementwise ? "true" : "false") << ",";
+            entry << "\"has_side_effects\":" << (md.has_side_effects ? "true" : "false");
+            entry << "}";
+        }
         entry << "},";
 
         if (md.target_type) {
             entry << "\"target_type\":\"" << md.target_type << "\",";
+        } else {
+            entry << "\"target_type\":\"\",";
         }
 
         entry << "\"metrics\":{";
