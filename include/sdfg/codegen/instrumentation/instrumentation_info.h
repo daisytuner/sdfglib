@@ -34,10 +34,7 @@ private:
     size_t element_id_;
     ElementType element_type_;
     TargetType target_type_;
-
-    // Loop-specific properties
     analysis::LoopInfo loop_info_;
-    long long loopnest_index_;
 
     std::unordered_map<std::string, std::string> metrics_;
 
@@ -46,8 +43,7 @@ public:
         size_t element_id,
         const ElementType& element_type,
         const TargetType& target_type,
-        const analysis::LoopInfo& loop_info,
-        long long loopnest_index,
+        const analysis::LoopInfo& loop_info = {},
         const std::unordered_map<std::string, std::string>& metrics = {}
     );
 
@@ -55,11 +51,9 @@ public:
 
     const ElementType& element_type() const;
 
-    const analysis::LoopInfo& loop_info() const;
-
     const TargetType& target_type() const;
 
-    long long loopnest_index() const;
+    const analysis::LoopInfo& loop_info() const;
 
     const std::unordered_map<std::string, std::string>& metrics() const;
 };
