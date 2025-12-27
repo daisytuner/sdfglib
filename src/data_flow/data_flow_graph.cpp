@@ -344,7 +344,10 @@ std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_determ
                         const auto* primary_dst = &edges_map.at(code_node->output(0))->dst();
                         if (primary_dst == successor) {
                             for (size_t j = 1; j < code_node->outputs().size(); j++) {
-                                memlet_queues.at(sink).push_back(edges_map.at(code_node->output(j)));
+                                const auto* edge = edges_map.at(code_node->output(j));
+                                if (&edge->dst() != successor) {
+                                    memlet_queues.at(sink).push_back(edge);
+                                }
                             }
                         } else {
                             if (primary_blocker.empty()) {
@@ -381,7 +384,10 @@ std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_determ
                         const auto* primary_dst = &edges_list.front().first->dst();
                         if (primary_dst == successor) {
                             for (size_t j = 1; j < edges_list.size(); j++) {
-                                memlet_queues.at(sink).push_back(edges_list.at(j).first);
+                                const auto* edge = edges_list.at(j).first;
+                                if (&edge->dst() != successor) {
+                                    memlet_queues.at(sink).push_back(edge);
+                                }
                             }
                         } else {
                             if (primary_blocker.empty()) {
@@ -407,6 +413,7 @@ std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_determ
 
                 // Put all predecessors on the stack
                 if (const auto* code_node = dynamic_cast<const CodeNode*>(current)) {
+                    std::unordered_set<const DataFlowNode*> pushed_predecessors;
                     for (const auto& input : code_node->inputs()) {
                         const Memlet* iedge = nullptr;
                         for (auto& in_edge : this->in_edges(*code_node)) {
@@ -419,7 +426,11 @@ std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_determ
                             continue;
                         }
                         const auto* src = &iedge->src();
+                        if (pushed_predecessors.contains(src)) {
+                            continue;
+                        }
                         stack.push({src, current});
+                        pushed_predecessors.insert(src);
                     }
                 } else {
                     std::vector<std::pair<const DataFlowNode*, size_t>> tmp_inputs;
@@ -440,8 +451,13 @@ std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_determ
                         return a.second > b.second ||
                                (a.second == b.second && a.first->element_id() < b.first->element_id());
                     });
+                    std::unordered_set<const DataFlowNode*> pushed_predecessors;
                     for (const auto& tmp_input : tmp_inputs) {
+                        if (pushed_predecessors.contains(tmp_input.first)) {
+                            continue;
+                        }
                         stack.push({tmp_input.first, current});
+                        pushed_predecessors.insert(tmp_input.first);
                     }
                 }
             }
