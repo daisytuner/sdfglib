@@ -34,6 +34,12 @@ symbolic::Expression DotNode::incx() const { return this->incx_; };
 
 symbolic::Expression DotNode::incy() const { return this->incy_; };
 
+void DotNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
+    this->n_ = symbolic::subs(this->n_, old_expression, new_expression);
+    this->incx_ = symbolic::subs(this->incx_, old_expression, new_expression);
+    this->incy_ = symbolic::subs(this->incy_, old_expression, new_expression);
+}
+
 void DotNode::validate(const Function& function) const {}
 
 bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {

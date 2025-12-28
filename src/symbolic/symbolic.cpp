@@ -6,6 +6,7 @@
 #include <symengine/subs.h>
 #include "sdfg/exceptions.h"
 #include "sdfg/symbolic/polynomials.h"
+#include "sdfg/types/scalar.h"
 #include "sdfg/types/type.h"
 #include "symengine/functions.h"
 #include "symengine/logic.h"
@@ -118,6 +119,9 @@ Expression trunc_i32(const Expression expr) {
 }
 
 Expression size_of_type(const types::IType& type) {
+    if (auto scalar = dynamic_cast<const types::Scalar*>(&type)) {
+        return integer((types::bit_width(scalar->primitive_type()) + 7) / 8);
+    }
     auto so = SymEngine::make_rcp<SizeOfTypeFunction>(type);
     return so;
 }

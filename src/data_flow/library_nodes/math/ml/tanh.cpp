@@ -37,7 +37,7 @@ bool TanhNode::expand_operation(
 
     auto& tasklet = builder.add_library_node<math::IntrinsicNode>(code_block, code_block.debug_info(), "tanhf", 1);
 
-    builder.add_computational_memlet(code_block, input_node, tasklet, "_in", subset, input_type);
+    builder.add_computational_memlet(code_block, input_node, tasklet, "_in1", subset, input_type);
     builder.add_computational_memlet(code_block, tasklet, "_out", output_node, subset, output_type);
 
     return true;
