@@ -35,10 +35,10 @@ bool AbsNode::expand_operation(
 
     auto& input_node_new = builder.add_access(code_block, input_name);
     auto& output_node_new = builder.add_access(code_block, output_name);
-    
+
     auto& libnode = builder.add_library_node<math::IntrinsicNode>(code_block, body.debug_info(), "fabs", 1);
-    
-    builder.add_computational_memlet(code_block, input_node_new, libnode, "_in", subset, input_type);
+
+    builder.add_computational_memlet(code_block, input_node_new, libnode, "_in1", subset, input_type);
     builder.add_computational_memlet(code_block, libnode, "_out", output_node_new, subset, output_type);
 
     return true;
