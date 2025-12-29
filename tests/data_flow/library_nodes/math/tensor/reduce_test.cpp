@@ -2,8 +2,9 @@
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/reduce_ops/mean_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/reduce_ops/std_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/reduce_ops/sum_node.h"
-#include "sdfg/types/array.h"
 
 using namespace sdfg;
 
@@ -64,7 +65,7 @@ TEST(ReduceTest, SumNode_1D) {
 
         auto& iedge = *dataflow.in_edges(*init_tasklet).begin();
         EXPECT_EQ(iedge.subset().size(), 0);
-        EXPECT_EQ(iedge.base_type(), types::Scalar(types::PrimitiveType::Float));
+        EXPECT_EQ(iedge.base_type(), desc);
 
         auto src = dynamic_cast<data_flow::ConstantNode*>(&iedge.src());
         EXPECT_NE(src, nullptr);
@@ -313,4 +314,176 @@ TEST(ReduceTest, SumNode_3D_Reduce_0_2) {
         auto& oedge = *dataflow.out_edges(*reduce_tasklet).begin();
         EXPECT_EQ(oedge.subset().size(), 1);
     }
+}
+
+TEST(ReduceTest, MeanNode_1D) {
+    builder::StructuredSDFGBuilder builder("sdfg_sum", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+
+    types::Scalar desc(types::PrimitiveType::Double);
+    types::Pointer desc_ptr(desc);
+
+    types::Pointer opaque_desc;
+    builder.add_container("a", opaque_desc);
+    builder.add_container("b", desc);
+
+    auto& block = builder.add_block(sdfg.root());
+
+    auto& a_node = builder.add_access(block, "a");
+    auto& b_node = builder.add_access(block, "b");
+
+    std::vector<symbolic::Expression> shape = {symbolic::integer(32)};
+    std::vector<int64_t> axes = {0};
+    bool keepdims = false;
+
+    auto& mean_node =
+        static_cast<math::tensor::MeanNode&>(builder.add_library_node<
+                                             math::tensor::MeanNode>(block, DebugInfo(), shape, axes, keepdims));
+
+    builder.add_computational_memlet(block, a_node, mean_node, "X", {}, desc_ptr, block.debug_info());
+    builder.add_computational_memlet(block, mean_node, "Y", b_node, {}, desc, block.debug_info());
+
+    // Check inputs and outputs
+    EXPECT_EQ(mean_node.inputs().size(), 1);
+    EXPECT_EQ(mean_node.inputs()[0], "X");
+    EXPECT_EQ(mean_node.outputs().size(), 1);
+    EXPECT_EQ(mean_node.outputs()[0], "Y");
+
+    EXPECT_EQ(block.dataflow().nodes().size(), 3);
+
+    analysis::AnalysisManager analysis_manager(sdfg);
+    EXPECT_TRUE(mean_node.expand(builder, analysis_manager));
+
+    EXPECT_EQ(sdfg.root().size(), 3);
+    auto& sum_block = dynamic_cast<structured_control_flow::Block&>(sdfg.root().at(0).first);
+    EXPECT_EQ(sum_block.dataflow().nodes().size(), 3);
+    EXPECT_EQ(sum_block.dataflow().edges().size(), 2);
+    EXPECT_EQ(sum_block.dataflow().library_nodes().size(), 1);
+
+    auto& count_block = dynamic_cast<structured_control_flow::Block&>(sdfg.root().at(1).first);
+    EXPECT_EQ(count_block.dataflow().nodes().size(), 0);
+    auto& count_transition = sdfg.root().at(1).second;
+    EXPECT_EQ(count_transition.assignments().size(), 1);
+    auto count_var = count_transition.assignments().begin()->first;
+    auto count_expr = count_transition.assignments().begin()->second;
+    EXPECT_TRUE(symbolic::eq(count_expr, symbolic::integer(32)));
+
+    auto& div_block = dynamic_cast<structured_control_flow::Block&>(sdfg.root().at(2).first);
+    EXPECT_EQ(div_block.dataflow().nodes().size(), 4);
+    EXPECT_EQ(div_block.dataflow().edges().size(), 3);
+    EXPECT_EQ(div_block.dataflow().library_nodes().size(), 1);
+}
+
+TEST(ReduceTest, MeanNode_2D) {
+    builder::StructuredSDFGBuilder builder("sdfg_sum", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+
+    types::Scalar desc(types::PrimitiveType::Double);
+    types::Pointer desc_ptr(desc);
+
+    types::Pointer opaque_desc;
+    builder.add_container("a", opaque_desc);
+    builder.add_container("b", desc);
+
+    auto& block = builder.add_block(sdfg.root());
+
+    auto& a_node = builder.add_access(block, "a");
+    auto& b_node = builder.add_access(block, "b");
+
+    std::vector<symbolic::Expression> shape = {symbolic::integer(32), symbolic::integer(16)};
+    std::vector<int64_t> axes = {-1};
+    bool keepdims = false;
+
+    auto& mean_node =
+        static_cast<math::tensor::MeanNode&>(builder.add_library_node<
+                                             math::tensor::MeanNode>(block, DebugInfo(), shape, axes, keepdims));
+
+    builder.add_computational_memlet(block, a_node, mean_node, "X", {}, desc_ptr, block.debug_info());
+    builder.add_computational_memlet(block, mean_node, "Y", b_node, {}, desc, block.debug_info());
+
+    // Check inputs and outputs
+    EXPECT_EQ(mean_node.inputs().size(), 1);
+    EXPECT_EQ(mean_node.inputs()[0], "X");
+    EXPECT_EQ(mean_node.outputs().size(), 1);
+    EXPECT_EQ(mean_node.outputs()[0], "Y");
+
+    EXPECT_EQ(block.dataflow().nodes().size(), 3);
+
+    analysis::AnalysisManager analysis_manager(sdfg);
+    EXPECT_TRUE(mean_node.expand(builder, analysis_manager));
+
+    EXPECT_EQ(sdfg.root().size(), 3);
+    auto& sum_block = dynamic_cast<structured_control_flow::Block&>(sdfg.root().at(0).first);
+    EXPECT_EQ(sum_block.dataflow().nodes().size(), 3);
+    EXPECT_EQ(sum_block.dataflow().edges().size(), 2);
+    EXPECT_EQ(sum_block.dataflow().library_nodes().size(), 1);
+
+    auto& count_block = dynamic_cast<structured_control_flow::Block&>(sdfg.root().at(1).first);
+    EXPECT_EQ(count_block.dataflow().nodes().size(), 0);
+    auto& count_transition = sdfg.root().at(1).second;
+    EXPECT_EQ(count_transition.assignments().size(), 1);
+    auto count_var = count_transition.assignments().begin()->first;
+    auto count_expr = count_transition.assignments().begin()->second;
+    EXPECT_TRUE(symbolic::eq(count_expr, symbolic::integer(16)));
+
+    auto& div_block = dynamic_cast<structured_control_flow::Block&>(sdfg.root().at(2).first);
+    EXPECT_EQ(div_block.dataflow().nodes().size(), 4);
+    EXPECT_EQ(div_block.dataflow().edges().size(), 3);
+    EXPECT_EQ(div_block.dataflow().library_nodes().size(), 1);
+}
+
+TEST(ReduceTest, StdNode_1D) {
+    builder::StructuredSDFGBuilder builder("sdfg_std", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+
+    types::Scalar desc(types::PrimitiveType::Double);
+    types::Pointer desc_ptr(desc);
+
+    types::Pointer opaque_desc;
+    builder.add_container("a", opaque_desc);
+    builder.add_container("b", desc);
+
+    auto& block = builder.add_block(sdfg.root());
+
+    auto& a_node = builder.add_access(block, "a");
+    auto& b_node = builder.add_access(block, "b");
+
+    std::vector<symbolic::Expression> shape = {symbolic::integer(32)};
+    std::vector<int64_t> axes = {0};
+    bool keepdims = false;
+
+    auto& std_node =
+        static_cast<math::tensor::StdNode&>(builder.add_library_node<
+                                            math::tensor::StdNode>(block, DebugInfo(), shape, axes, keepdims));
+
+    builder.add_computational_memlet(block, a_node, std_node, "X", {}, desc_ptr, block.debug_info());
+    builder.add_computational_memlet(block, std_node, "Y", b_node, {}, desc, block.debug_info());
+
+    // Check inputs and outputs
+    EXPECT_EQ(std_node.inputs().size(), 1);
+    EXPECT_EQ(std_node.inputs()[0], "X");
+    EXPECT_EQ(std_node.outputs().size(), 1);
+    EXPECT_EQ(std_node.outputs()[0], "Y");
+
+    EXPECT_EQ(block.dataflow().nodes().size(), 3);
+
+    analysis::AnalysisManager analysis_manager(sdfg);
+    EXPECT_TRUE(std_node.expand(builder, analysis_manager));
+
+    EXPECT_EQ(sdfg.root().size(), 7);
+
+    // Check first block (Pow X^2)
+    auto& pow_block = dynamic_cast<structured_control_flow::Block&>(sdfg.root().at(1).first);
+    EXPECT_EQ(pow_block.dataflow().library_nodes().size(), 1);
+
+    // Check second block (Mean X^2)
+    auto& mean_x2_block = dynamic_cast<structured_control_flow::Block&>(sdfg.root().at(2).first);
+    EXPECT_EQ(mean_x2_block.dataflow().library_nodes().size(), 1);
+
+    // Check last block (Sqrt)
+    auto& sqrt_block = dynamic_cast<structured_control_flow::Block&>(sdfg.root().at(6).first);
+    EXPECT_EQ(sqrt_block.dataflow().library_nodes().size(), 1);
 }

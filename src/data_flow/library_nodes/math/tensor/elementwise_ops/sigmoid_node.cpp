@@ -38,7 +38,7 @@ bool SigmoidNode::expand_operation(
     auto& output_node_add = builder.add_access(code_block, output_name);
     auto& output_node_div = builder.add_access(code_block, output_name);
 
-    types::Scalar desc(types::PrimitiveType::Float);
+    sdfg::types::Scalar element_type(output_type.primitive_type());
 
     // -x
     {
@@ -56,17 +56,17 @@ bool SigmoidNode::expand_operation(
 
     // 1 + x
     {
-        auto& one_node = builder.add_constant(code_block, "1.0f", types::Scalar(input_type.primitive_type()));
+        auto& one_node = builder.add_constant(code_block, "1.0", element_type);
         auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
-        builder.add_computational_memlet(code_block, one_node, tasklet, "_in1", {}, desc);
+        builder.add_computational_memlet(code_block, one_node, tasklet, "_in1", {}, element_type);
         builder.add_computational_memlet(code_block, output_node_exp, tasklet, "_in2", subset, output_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_add, subset, output_type);
     }
-    // 1.0f / x
+    // 1.0 / x
     {
-        auto& one_node = builder.add_constant(code_block, "1.0f", types::Scalar(input_type.primitive_type()));
+        auto& one_node = builder.add_constant(code_block, "1.0", element_type);
         auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::fp_div, "_out", {"_in1", "_in2"});
-        builder.add_computational_memlet(code_block, one_node, tasklet, "_in1", {}, desc);
+        builder.add_computational_memlet(code_block, one_node, tasklet, "_in1", {}, element_type);
         builder.add_computational_memlet(code_block, output_node_add, tasklet, "_in2", subset, output_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_div, subset, output_type);
     }

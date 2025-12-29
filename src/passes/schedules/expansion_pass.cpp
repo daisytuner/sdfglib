@@ -10,8 +10,13 @@ Expansion::Expansion(builder::StructuredSDFGBuilder& builder, analysis::Analysis
 
 bool Expansion::accept(structured_control_flow::Block& node) {
     auto& dataflow = node.dataflow();
+    std::vector<data_flow::DataFlowNode*> nodes;
     for (auto& library_node : dataflow.nodes()) {
-        if (auto math_node = dynamic_cast<math::MathNode*>(&library_node)) {
+        nodes.push_back(&library_node);
+    }
+
+    for (auto* library_node : nodes) {
+        if (auto math_node = dynamic_cast<math::MathNode*>(library_node)) {
             if (math_node->expand(this->builder_, this->analysis_manager_)) {
                 return true;
             }
