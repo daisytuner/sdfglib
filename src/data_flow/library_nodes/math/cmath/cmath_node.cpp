@@ -62,7 +62,8 @@ data_flow::LibraryNode& CMathNodeSerializer::deserialize(
     assert(j.contains("debug_info"));
 
     auto code = j["code"].get<std::string>();
-    if (code != LibraryNodeType_CMath.value()) {
+    // Backward compatibility
+    if (code != LibraryNodeType_CMath.value() && code != LibraryNodeType_CMath_Deprecated.value()) {
         throw std::runtime_error("Invalid library node code");
     }
 
