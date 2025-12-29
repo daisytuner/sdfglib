@@ -10,9 +10,6 @@
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 #include "sdfg/data_flow/library_nodes/call_node.h"
 #include "sdfg/data_flow/library_nodes/invoke_node.h"
-#include "sdfg/data_flow/library_nodes/math/blas/blas.h"
-#include "sdfg/data_flow/library_nodes/math/blas/dot.h"
-#include "sdfg/data_flow/library_nodes/math/blas/gemm.h"
 #include "sdfg/data_flow/library_nodes/math/math.h"
 #include "sdfg/data_flow/library_nodes/metadata_node.h"
 #include "sdfg/data_flow/library_nodes/stdlib/stdlib.h"
@@ -380,15 +377,15 @@ void register_default_dispatchers() {
 
     // Math
 
-    // Intrinsic
+    // CMath
     LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
-        math::LibraryNodeType_Intrinsic.value() + "::" + data_flow::ImplementationType_NONE.value(),
+        math::cmath::LibraryNodeType_CMath.value() + "::" + data_flow::ImplementationType_NONE.value(),
         [](LanguageExtension& language_extension,
            const Function& function,
            const data_flow::DataFlowGraph& data_flow_graph,
            const data_flow::LibraryNode& node) {
-            return std::make_unique<math::IntrinsicNodeDispatcher>(
-                language_extension, function, data_flow_graph, dynamic_cast<const math::IntrinsicNode&>(node)
+            return std::make_unique<math::cmath::CMathNodeDispatcher>(
+                language_extension, function, data_flow_graph, dynamic_cast<const math::cmath::CMathNode&>(node)
             );
         }
     );

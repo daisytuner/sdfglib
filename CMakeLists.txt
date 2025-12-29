@@ -105,25 +105,27 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/invoke_node.cpp
     src/data_flow/library_nodes/metadata_node.cpp
     src/data_flow/library_nodes/math/math_node.cpp
-    src/data_flow/library_nodes/math/intrinsic.cpp
-    src/data_flow/library_nodes/math/blas/blas.cpp
-    src/data_flow/library_nodes/math/blas/dot.cpp
-    src/data_flow/library_nodes/math/blas/gemm.cpp
-    src/data_flow/library_nodes/math/ml/abs.cpp
-    src/data_flow/library_nodes/math/ml/add.cpp
-    src/data_flow/library_nodes/math/ml/div.cpp
-    src/data_flow/library_nodes/math/ml/element_wise.cpp
-    src/data_flow/library_nodes/math/ml/elu.cpp
-    src/data_flow/library_nodes/math/ml/erf.cpp
-    src/data_flow/library_nodes/math/ml/hard_sigmoid.cpp
-    src/data_flow/library_nodes/math/ml/leaky_relu.cpp
-    src/data_flow/library_nodes/math/ml/mul.cpp
-    src/data_flow/library_nodes/math/ml/pow.cpp
-    src/data_flow/library_nodes/math/ml/relu.cpp
-    src/data_flow/library_nodes/math/ml/sigmoid.cpp
-    src/data_flow/library_nodes/math/ml/sqrt.cpp
-    src/data_flow/library_nodes/math/ml/sub.cpp
-    src/data_flow/library_nodes/math/ml/tanh.cpp
+    src/data_flow/library_nodes/math/blas/blas_node.cpp
+    src/data_flow/library_nodes/math/blas/dot_node.cpp
+    src/data_flow/library_nodes/math/blas/gemm_node.cpp
+    src/data_flow/library_nodes/math/cmath/cmath_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/abs_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/add_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/div_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/elu_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/erf_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/hard_sigmoid_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/leaky_relu_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/mul_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/pow_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/relu_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/sigmoid_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/sqrt_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/sub_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/tanh_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce_ops/sum_node.cpp
     src/data_flow/library_nodes/stdlib/alloca.cpp
     src/data_flow/library_nodes/stdlib/calloc.cpp
     src/data_flow/library_nodes/stdlib/free.cpp
