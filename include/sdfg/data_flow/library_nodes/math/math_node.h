@@ -30,12 +30,6 @@ public:
     );
 
     virtual bool expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) = 0;
-
-    symbolic::SymbolSet symbols() const override { return {}; }
-
-    void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override {
-        return;
-    }
 };
 
 } // namespace math

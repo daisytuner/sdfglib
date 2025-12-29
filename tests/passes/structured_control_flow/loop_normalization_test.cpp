@@ -1,6 +1,6 @@
 #include "sdfg/passes/structured_control_flow/loop_normalization.h"
 
-#include "sdfg/data_flow/library_nodes/math/intrinsic.h"
+#include "sdfg/data_flow/library_nodes/math/cmath/cmath_node.h"
 
 #include <gtest/gtest.h>
 
@@ -236,7 +236,7 @@ TEST(LoopNormalizationTest, Rotate_NonCommutative) {
         auto& block = builder.add_block(loop.root());
         auto& node_in = builder.add_access(block, "d");
         auto& node_out = builder.add_access(block, "d");
-        auto& tasklet = builder.add_library_node<sdfg::math::IntrinsicNode>(block, DebugInfo(), "sin", 1);
+        auto& tasklet = builder.add_library_node<sdfg::math::cmath::CMathNode>(block, DebugInfo(), "sin", 1);
         builder.add_computational_memlet(block, node_in, tasklet, "_in1", {}, desc_double);
         builder.add_computational_memlet(block, tasklet, "_out", node_out, {}, desc_double);
     }

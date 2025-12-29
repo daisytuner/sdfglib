@@ -3,6 +3,7 @@
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/codegen/code_snippet_factory.h"
 #include "sdfg/codegen/instrumentation/arg_capture_plan.h"
+#include "sdfg/codegen/instrumentation/instrumentation_info.h"
 #include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 #include "sdfg/codegen/language_extension.h"
 #include "sdfg/codegen/utils.h"

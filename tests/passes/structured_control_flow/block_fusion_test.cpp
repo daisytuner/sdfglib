@@ -196,7 +196,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
 
     auto& input_node = builder.add_access(block_1, "input");
     auto& tmp_node_out = builder.add_access(block_1, "tmp");
-    auto& relu_node = static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(
+    auto& relu_node = static_cast<math::tensor::ReLUNode&>(builder.add_library_node<math::tensor::ReLUNode>(
         block_1, DebugInfo(), std::vector<symbolic::Expression>{symbolic::integer(10), symbolic::integer(20)}
     ));
 
@@ -223,7 +223,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
 
     auto& tmp_node_in = builder.add_access(block_2, "tmp");
     auto& output_node = builder.add_access(block_2, "output");
-    auto& relu_node_2 = static_cast<math::ml::ReLUNode&>(builder.add_library_node<math::ml::ReLUNode>(
+    auto& relu_node_2 = static_cast<math::tensor::ReLUNode&>(builder.add_library_node<math::tensor::ReLUNode>(
         block_2, DebugInfo(), std::vector<symbolic::Expression>{symbolic::integer(10), symbolic::integer(20)}
     ));
     builder.add_computational_memlet(
