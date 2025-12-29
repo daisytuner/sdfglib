@@ -1338,6 +1338,14 @@ void register_default_serializers() {
         .register_library_node_serializer(math::tensor::LibraryNodeType_Sum.value(), []() {
             return std::make_unique<math::tensor::SumNodeSerializer>();
         });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Mean.value(), []() {
+            return std::make_unique<math::tensor::MeanNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Std.value(), []() {
+            return std::make_unique<math::tensor::StdNodeSerializer>();
+        });
 }
 
 } // namespace serializer

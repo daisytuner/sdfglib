@@ -25,4 +25,6 @@
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/sqrt_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/sub_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/tanh_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/reduce_ops/mean_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/reduce_ops/std_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/reduce_ops/sum_node.h"
