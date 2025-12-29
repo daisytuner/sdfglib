@@ -1,6 +1,6 @@
-#include "sdfg/analysis/loop_analysis.h"
-
 #include <gtest/gtest.h>
+#include <nlohmann/json.hpp>
+#include "sdfg/analysis/loop_analysis.h"
 
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
@@ -341,4 +341,31 @@ TEST(LoopAnalysisInfoTest, WhileLoop) {
     EXPECT_EQ(info.num_whiles, 1);
     EXPECT_FALSE(info.is_perfectly_parallel);
     EXPECT_FALSE(info.is_elementwise);
+}
+
+TEST(LoopAnalysisInfoTest, LoopInfoSerialization) {
+    sdfg::analysis::LoopInfo info;
+    info.loopnest_index = 2;
+    info.num_loops = 3;
+    info.num_maps = 1;
+    info.num_fors = 1;
+    info.num_whiles = 1;
+    info.max_depth = 3;
+    info.is_perfectly_nested = true;
+    info.is_perfectly_parallel = false;
+    info.is_elementwise = true;
+    info.has_side_effects = false;
+
+    nlohmann::json j = analysis::loop_info_to_json(info);
+
+    EXPECT_EQ(info.loopnest_index, j["loopnest_index"].get<int>());
+    EXPECT_EQ(info.num_loops, j["num_loops"].get<int>());
+    EXPECT_EQ(info.num_maps, j["num_maps"].get<int>());
+    EXPECT_EQ(info.num_fors, j["num_fors"].get<int>());
+    EXPECT_EQ(info.num_whiles, j["num_whiles"].get<int>());
+    EXPECT_EQ(info.max_depth, j["max_depth"].get<int>());
+    EXPECT_EQ(info.is_perfectly_nested, j["is_perfectly_nested"].get<bool>());
+    EXPECT_EQ(info.is_perfectly_parallel, j["is_perfectly_parallel"].get<bool>());
+    EXPECT_EQ(info.is_elementwise, j["is_elementwise"].get<bool>());
+    EXPECT_EQ(info.has_side_effects, j["has_side_effects"].get<bool>());
 }
