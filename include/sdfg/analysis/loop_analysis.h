@@ -22,17 +22,22 @@ struct DFSLoopComparator {
     }
 };
 
+#define LOOP_INFO_PROPERTIES              \
+    X(int, loopnest_index, -1)            \
+    X(size_t, num_loops, 0)               \
+    X(size_t, num_maps, 0)                \
+    X(size_t, num_fors, 0)                \
+    X(size_t, num_whiles, 0)              \
+    X(size_t, max_depth, 0)               \
+    X(bool, is_perfectly_nested, false)   \
+    X(bool, is_perfectly_parallel, false) \
+    X(bool, is_elementwise, false)        \
+    X(bool, has_side_effects, false)
+
 struct LoopInfo {
-    int loopnest_index = -1;
-    size_t num_loops = 0;
-    size_t num_maps = 0;
-    size_t num_fors = 0;
-    size_t num_whiles = 0;
-    size_t max_depth = 0;
-    bool is_perfectly_nested = false;
-    bool is_perfectly_parallel = false;
-    bool is_elementwise = false;
-    bool has_side_effects = false;
+#define X(type, name, val) type name = val;
+    LOOP_INFO_PROPERTIES
+#undef X
 };
 
 class LoopAnalysis : public Analysis {
@@ -61,11 +66,10 @@ private:
             DFSLoopComparator>& tree
     ) const;
 
-protected:
-    void run(analysis::AnalysisManager& analysis_manager) override;
-
 public:
     LoopAnalysis(StructuredSDFG& sdfg);
+
+    void run(analysis::AnalysisManager& analysis_manager) override;
 
     const std::vector<structured_control_flow::ControlFlowNode*> loops() const;
 

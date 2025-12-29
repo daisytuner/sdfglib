@@ -1257,6 +1257,11 @@ void register_default_serializers() {
         .register_library_node_serializer(math::cmath::LibraryNodeType_CMath.value(), []() {
             return std::make_unique<math::cmath::CMathNodeSerializer>();
         });
+    // Backward compatibility
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::cmath::LibraryNodeType_CMath_Deprecated.value(), []() {
+            return std::make_unique<math::cmath::CMathNodeSerializer>();
+        });
 
     // BLAS
     LibraryNodeSerializerRegistry::instance()

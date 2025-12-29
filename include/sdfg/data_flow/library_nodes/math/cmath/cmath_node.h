@@ -11,6 +11,7 @@ namespace math {
 namespace cmath {
 
 inline data_flow::LibraryNodeCode LibraryNodeType_CMath("CMath");
+inline data_flow::LibraryNodeCode LibraryNodeType_CMath_Deprecated("Intrinsic");
 
 class CMathNode : public math::MathNode {
 private:
