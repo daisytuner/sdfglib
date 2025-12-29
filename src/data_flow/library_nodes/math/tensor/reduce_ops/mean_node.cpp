@@ -60,6 +60,7 @@ bool MeanNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
             output_shape.push_back(shape_[i]);
         }
     }
+    sdfg::types::Scalar element_type(out_edge.base_type().primitive_type());
 
     // Create SumNode
     auto& sum_block = builder.add_block_before(parent, block, {}, this->debug_info());
@@ -99,9 +100,7 @@ bool MeanNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 
     // Connect Count -> Div (B)
     auto& div_count_node = builder.add_access(div_block, count_container, this->debug_info());
-    builder.add_computational_memlet(
-        div_block, div_count_node, div_node, "B", {}, types::Scalar(types::PrimitiveType::Float), this->debug_info()
-    );
+    builder.add_computational_memlet(div_block, div_count_node, div_node, "B", {}, element_type, this->debug_info());
 
     // Connect Div -> Output (C)
     auto& div_out_node = builder.add_access(div_block, out_node.data(), this->debug_info());

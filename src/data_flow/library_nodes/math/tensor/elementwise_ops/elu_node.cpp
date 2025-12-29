@@ -39,7 +39,7 @@ bool EluNode::expand_operation(
     auto& output_node_sub = builder.add_access(code_block, output_name);
     auto& output_node_mul = builder.add_access(code_block, output_name);
 
-    types::Scalar desc(types::PrimitiveType::Float);
+    sdfg::types::Scalar element_type(output_type.primitive_type());
 
     // 1. exp(x)
     {
@@ -50,10 +50,10 @@ bool EluNode::expand_operation(
     }
     // 2. x - 1.0f
     {
-        auto& one_node = builder.add_constant(code_block, "1.0f", types::Scalar(output_type.primitive_type()));
+        auto& one_node = builder.add_constant(code_block, "1.0", element_type);
         auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::fp_sub, "_out", {"_in1", "_in2"});
         builder.add_computational_memlet(code_block, output_node_exp, tasklet, "_in1", subset, output_type);
-        builder.add_computational_memlet(code_block, one_node, tasklet, "_in2", {}, desc);
+        builder.add_computational_memlet(code_block, one_node, tasklet, "_in2", {}, element_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_sub, subset, output_type);
     }
     // 3. alpha * x
@@ -84,8 +84,8 @@ bool EluNode::expand_operation(
                 code_block, *alpha_node, tasklet, "_in2", alpha_memlet->subset(), alpha_memlet->base_type()
             );
         } else {
-            alpha_node = &builder.add_constant(code_block, "1.0f", desc);
-            builder.add_computational_memlet(code_block, *alpha_node, tasklet, "_in2", {}, desc);
+            alpha_node = &builder.add_constant(code_block, "1.0", element_type);
+            builder.add_computational_memlet(code_block, *alpha_node, tasklet, "_in2", {}, element_type);
         }
     }
 

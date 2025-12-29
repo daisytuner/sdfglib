@@ -1275,6 +1275,11 @@ void register_default_serializers() {
 
     // Tensor
 
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Broadcast.value(), []() {
+            return std::make_unique<math::tensor::BroadcastNodeSerializer>();
+        });
+
     // Elementwise
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::tensor::LibraryNodeType_Abs.value(), []() {
@@ -1291,6 +1296,10 @@ void register_default_serializers() {
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::tensor::LibraryNodeType_Elu.value(), []() {
             return std::make_unique<math::tensor::EluNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Exp.value(), []() {
+            return std::make_unique<math::tensor::ExpNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::tensor::LibraryNodeType_Erf.value(), []() {
@@ -1337,6 +1346,18 @@ void register_default_serializers() {
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::tensor::LibraryNodeType_Sum.value(), []() {
             return std::make_unique<math::tensor::SumNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Max.value(), []() {
+            return std::make_unique<math::tensor::MaxNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Min.value(), []() {
+            return std::make_unique<math::tensor::MinNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Softmax.value(), []() {
+            return std::make_unique<math::tensor::SoftmaxNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
         .register_library_node_serializer(math::tensor::LibraryNodeType_Mean.value(), []() {

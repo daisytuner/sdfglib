@@ -7,6 +7,7 @@
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/div_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/elu_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/erf_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/exp_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/hard_sigmoid_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/leaky_relu_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/mul_node.h"
@@ -196,6 +197,11 @@ REGISTER_UNARY_TEST(ErfNode, 1)
 REGISTER_UNARY_TEST(ErfNode, 2)
 REGISTER_UNARY_TEST(ErfNode, 3)
 REGISTER_UNARY_TEST(ErfNode, 4)
+
+REGISTER_UNARY_TEST(ExpNode, 1)
+REGISTER_UNARY_TEST(ExpNode, 2)
+REGISTER_UNARY_TEST(ExpNode, 3)
+REGISTER_UNARY_TEST(ExpNode, 4)
 
 REGISTER_UNARY_TEST(ReLUNode, 1)
 REGISTER_UNARY_TEST(ReLUNode, 2)

@@ -65,7 +65,7 @@ TEST(ReduceTest, SumNode_1D) {
 
         auto& iedge = *dataflow.in_edges(*init_tasklet).begin();
         EXPECT_EQ(iedge.subset().size(), 0);
-        EXPECT_EQ(iedge.base_type(), types::Scalar(types::PrimitiveType::Float));
+        EXPECT_EQ(iedge.base_type(), desc);
 
         auto src = dynamic_cast<data_flow::ConstantNode*>(&iedge.src());
         EXPECT_NE(src, nullptr);
@@ -473,17 +473,17 @@ TEST(ReduceTest, StdNode_1D) {
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(std_node.expand(builder, analysis_manager));
 
-    EXPECT_EQ(sdfg.root().size(), 6);
+    EXPECT_EQ(sdfg.root().size(), 7);
 
     // Check first block (Pow X^2)
-    auto& pow_block = dynamic_cast<structured_control_flow::Block&>(sdfg.root().at(0).first);
+    auto& pow_block = dynamic_cast<structured_control_flow::Block&>(sdfg.root().at(1).first);
     EXPECT_EQ(pow_block.dataflow().library_nodes().size(), 1);
 
     // Check second block (Mean X^2)
-    auto& mean_x2_block = dynamic_cast<structured_control_flow::Block&>(sdfg.root().at(1).first);
+    auto& mean_x2_block = dynamic_cast<structured_control_flow::Block&>(sdfg.root().at(2).first);
     EXPECT_EQ(mean_x2_block.dataflow().library_nodes().size(), 1);
 
     // Check last block (Sqrt)
-    auto& sqrt_block = dynamic_cast<structured_control_flow::Block&>(sdfg.root().at(5).first);
+    auto& sqrt_block = dynamic_cast<structured_control_flow::Block&>(sdfg.root().at(6).first);
     EXPECT_EQ(sqrt_block.dataflow().library_nodes().size(), 1);
 }

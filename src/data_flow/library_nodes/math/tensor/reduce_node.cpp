@@ -89,7 +89,7 @@ bool ReduceNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analy
         }
     }
 
-    sdfg::types::Scalar element_type(sdfg::types::PrimitiveType::Float);
+    sdfg::types::Scalar element_type(oedge.base_type().primitive_type());
 
     // Add new sequence
     auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
