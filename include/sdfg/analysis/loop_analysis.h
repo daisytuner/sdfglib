@@ -40,6 +40,22 @@ struct LoopInfo {
 #undef X
 };
 
+inline nlohmann::json loop_info_to_json(LoopInfo info) {
+    nlohmann::json j = nlohmann::json{
+        {"loopnest_index", info.loopnest_index},
+        {"num_loops", info.num_loops},
+        {"num_maps", info.num_maps},
+        {"num_fors", info.num_fors},
+        {"num_whiles", info.num_whiles},
+        {"max_depth", info.max_depth},
+        {"is_perfectly_nested", info.is_perfectly_nested},
+        {"is_perfectly_parallel", info.is_perfectly_parallel},
+        {"is_elementwise", info.is_elementwise},
+        {"has_side_effects", info.has_side_effects}
+    };
+    return j;
+}
+
 class LoopAnalysis : public Analysis {
 private:
     std::vector<structured_control_flow::ControlFlowNode*> loops_;
