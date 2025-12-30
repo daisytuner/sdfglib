@@ -679,3 +679,142 @@ TEST(DataflowTest, StarPattern) {
     EXPECT_LT(position[&T3], position[&C]);
     EXPECT_LT(position[&T4], position[&D]);
 }
+
+// Test: Multiple paths converging to same node via different edges  
+TEST(DataflowTest, ConvergingPaths) {
+    builder::SDFGBuilder builder("converging", FunctionType_CPU);
+    auto& state = builder.add_state();
+
+    types::Scalar desc(types::PrimitiveType::Double);
+    builder.add_container("A", desc);
+    builder.add_container("B", desc);
+    builder.add_container("M1", desc);
+    builder.add_container("M2", desc);
+    builder.add_container("Z", desc);
+
+    auto& A = builder.add_access(state, "A");
+    auto& B = builder.add_access(state, "B");
+    auto& M1 = builder.add_access(state, "M1");
+    auto& M2 = builder.add_access(state, "M2");
+    auto& Z = builder.add_access(state, "Z");
+
+    // A -> T1 -> M1 -> T3 -> Z
+    auto& T1 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, A, T1, "_in", {});
+    builder.add_computational_memlet(state, T1, "_out", M1, {});
+
+    auto& T3 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, M1, T3, "_in", {});
+    builder.add_computational_memlet(state, T3, "_out", Z, {});
+
+    // B -> T2 -> M2 -> T4 -> Z (multiple edges to same sink)
+    auto& T2 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, B, T2, "_in", {});
+    builder.add_computational_memlet(state, T2, "_out", M2, {});
+
+    auto& T4 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, M2, T4, "_in", {});
+    builder.add_computational_memlet(state, T4, "_out", Z, {});
+
+    std::vector<const data_flow::DataFlowNode*> order;
+    EXPECT_NO_THROW({
+        auto list = state.dataflow().topological_sort_deterministic();
+        order.assign(list.begin(), list.end());
+    });
+
+    // Verify all edges are respected
+    std::unordered_map<const data_flow::DataFlowNode*, size_t> position;
+    for (size_t i = 0; i < order.size(); ++i) {
+        position[order[i]] = i;
+    }
+
+    // Path 1: A -> T1 -> M1 -> T3 -> Z
+    EXPECT_LT(position[&A], position[&T1]);
+    EXPECT_LT(position[&T1], position[&M1]);
+    EXPECT_LT(position[&M1], position[&T3]);
+    EXPECT_LT(position[&T3], position[&Z]);
+
+    // Path 2: B -> T2 -> M2 -> T4 -> Z
+    EXPECT_LT(position[&B], position[&T2]);
+    EXPECT_LT(position[&T2], position[&M2]);
+    EXPECT_LT(position[&M2], position[&T4]);
+    EXPECT_LT(position[&T4], position[&Z]);
+}
+
+// Test: Diamond with multiple intermediate nodes
+TEST(DataflowTest, ComplexDiamond) {
+    builder::SDFGBuilder builder("complex_diamond", FunctionType_CPU);
+    auto& state = builder.add_state();
+
+    types::Scalar desc(types::PrimitiveType::Double);
+    builder.add_container("Source", desc);
+    builder.add_container("L1", desc);
+    builder.add_container("L2", desc);
+    builder.add_container("R1", desc);
+    builder.add_container("R2", desc);
+    builder.add_container("Sink", desc);
+
+    auto& Source = builder.add_access(state, "Source");
+    auto& L1 = builder.add_access(state, "L1");
+    auto& L2 = builder.add_access(state, "L2");
+    auto& R1 = builder.add_access(state, "R1");
+    auto& R2 = builder.add_access(state, "R2");
+    auto& Sink = builder.add_access(state, "Sink");
+
+    // Left path: Source -> TL1 -> L1 -> TL2 -> L2 -> TL3 -> Sink
+    auto& TL1 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, Source, TL1, "_in", {});
+    builder.add_computational_memlet(state, TL1, "_out", L1, {});
+
+    auto& TL2 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, L1, TL2, "_in", {});
+    builder.add_computational_memlet(state, TL2, "_out", L2, {});
+
+    auto& TL3 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, L2, TL3, "_in", {});
+    builder.add_computational_memlet(state, TL3, "_out", Sink, {});
+
+    // Right path: Source -> TR1 -> R1 -> TR2 -> R2 -> TR3 -> Sink
+    auto& TR1 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, Source, TR1, "_in", {});
+    builder.add_computational_memlet(state, TR1, "_out", R1, {});
+
+    auto& TR2 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, R1, TR2, "_in", {});
+    builder.add_computational_memlet(state, TR2, "_out", R2, {});
+
+    auto& TR3 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, R2, TR3, "_in", {});
+    builder.add_computational_memlet(state, TR3, "_out", Sink, {});
+
+    std::vector<const data_flow::DataFlowNode*> order;
+    EXPECT_NO_THROW({
+        auto list = state.dataflow().topological_sort_deterministic();
+        order.assign(list.begin(), list.end());
+    });
+
+    // Verify all edges are respected
+    std::unordered_map<const data_flow::DataFlowNode*, size_t> position;
+    for (size_t i = 0; i < order.size(); ++i) {
+        position[order[i]] = i;
+    }
+
+    // Source must be first
+    EXPECT_EQ(order[0], &Source);
+
+    // Left path dependencies
+    EXPECT_LT(position[&Source], position[&TL1]);
+    EXPECT_LT(position[&TL1], position[&L1]);
+    EXPECT_LT(position[&L1], position[&TL2]);
+    EXPECT_LT(position[&TL2], position[&L2]);
+    EXPECT_LT(position[&L2], position[&TL3]);
+    EXPECT_LT(position[&TL3], position[&Sink]);
+
+    // Right path dependencies
+    EXPECT_LT(position[&Source], position[&TR1]);
+    EXPECT_LT(position[&TR1], position[&R1]);
+    EXPECT_LT(position[&R1], position[&TR2]);
+    EXPECT_LT(position[&TR2], position[&R2]);
+    EXPECT_LT(position[&R2], position[&TR3]);
+    EXPECT_LT(position[&TR3], position[&Sink]);
+}
