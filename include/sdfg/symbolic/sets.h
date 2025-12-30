@@ -1,3 +1,45 @@
+/**
+ * @file sets.h
+ * @brief Integer set operations for symbolic expressions
+ *
+ * This file provides operations for interpreting symbolic expressions as integer sets
+ * and computing their relations. It integrates with the ISL (Integer Set Library) to
+ * perform set-theoretic operations on symbolic expressions.
+ *
+ * ## Integer Set Operations
+ *
+ * Symbolic expressions can be interpreted as sets of integer points.
+ *
+ * The primary operations are:
+ * - **Subset checking**: Determining if one set of accesses is contained within another
+ * - **Disjointness checking**: Verifying that two sets of accesses don't overlap
+ *
+ * These operations use assumptions about symbol bounds to compute precise set relations,
+ * which is critical for dependence analysis and optimization.
+ *
+ * ## Example Usage
+ *
+ * @code
+ * // Check if memory accesses A[i] and A[j] are disjoint when 0 <= i < 10 and 10 <= j < 20
+ * auto i = symbolic::symbol("i");
+ * auto j = symbolic::symbol("j");
+ *
+ * MultiExpression expr1 = {i};  // Access pattern A[i]
+ * MultiExpression expr2 = {j};  // Access pattern A[j]
+ *
+ * Assumptions assums1, assums2;
+ * assums1[i].add_lower_bound(symbolic::zero());
+ * assums1[i].add_upper_bound(symbolic::integer(10));
+ * assums2[j].add_lower_bound(symbolic::integer(11));
+ * assums2[j].add_upper_bound(symbolic::integer(20));
+ *
+ * bool disjoint = is_disjoint(expr1, expr2, assums1, assums2);  // true
+ * @endcode
+ *
+ * @see assumptions.h for information about symbol assumptions
+ * @see utils.h for ISL integration utilities
+ */
+
 #pragma once
 
 #include <string>
