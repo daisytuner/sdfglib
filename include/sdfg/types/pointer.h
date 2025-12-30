@@ -1,7 +1,7 @@
 /**
  * @file pointer.h
  * @brief Pointer type representation
- * 
+ *
  * This file defines the Pointer class, which represents pointer types that
  * reference other types in memory.
  */
@@ -19,34 +19,34 @@ namespace types {
 /**
  * @class Pointer
  * @brief Represents a pointer type
- * 
+ *
  * The Pointer class represents a pointer to another type. Pointers can be:
  * - Typed: pointing to a specific type (e.g., `int*`, `float*`)
  * - Opaque: pointing to an unknown or void type (e.g., `void*`)
- * 
+ *
  * Pointers are fundamental for representing memory addresses, dynamic data structures,
  * and references to data in different memory spaces (CPU heap, GPU memory, etc.).
- * 
+ *
  * @note The pointee type is optional to support void pointers and opaque pointers.
  */
 class Pointer : public IType {
 private:
-    std::optional<std::unique_ptr<IType>> pointee_type_;  ///< Type pointed to (optional for void*)
+    std::optional<std::unique_ptr<IType>> pointee_type_; ///< Type pointed to (optional for void*)
 
 public:
     /**
      * @brief Constructs an opaque pointer (void* equivalent)
-     * 
+     *
      * Creates a pointer without a specific pointee type, similar to void* in C/C++.
      */
     Pointer();
 
     /**
      * @brief Constructs a typed pointer to the specified type
-     * 
+     *
      * WARNING: This constructor is less specific than the COPY-constructor,
      * which still EXISTS and behaves differently!
-     * 
+     *
      * @param pointee_type The type of the object pointed to by this pointer
      */
     Pointer(const IType& pointee_type);
@@ -76,17 +76,17 @@ public:
 
     /**
      * @brief Returns the primitive type of the pointee
-     * 
+     *
      * For typed pointers, returns the primitive type of the pointed-to object.
      * For opaque pointers, the behavior depends on the implementation.
-     * 
+     *
      * @return The primitive type of the pointee
      */
     virtual PrimitiveType primitive_type() const override;
 
     /**
-     * @brief Pointers are not symbolic types
-     * @return Always returns false
+     * @brief Pointers are symbolic types
+     * @return Always returns true
      */
     virtual bool is_symbol() const override;
 
