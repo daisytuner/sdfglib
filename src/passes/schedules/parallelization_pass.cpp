@@ -8,8 +8,7 @@ namespace passes {
 
 std::string ParallelizationPass::name() { return "Parallelization"; }
 
-bool ParallelizationPass::run_pass(builder::StructuredSDFGBuilder& builder,
-                                   analysis::AnalysisManager& analysis_manager) {
+bool ParallelizationPass::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
@@ -26,5 +25,5 @@ bool ParallelizationPass::run_pass(builder::StructuredSDFGBuilder& builder,
     return applied;
 }
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

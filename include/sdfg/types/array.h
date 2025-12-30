@@ -1,7 +1,7 @@
 /**
  * @file array.h
  * @brief Array type representation for c-style arrays
- * 
+ *
  * This file defines the Array class, which represents fixed-size arrays
  * in the C/C++ style (not std::array). Arrays have a known element type
  * and a size that can be determined either at compile-time or symbolically.
@@ -18,22 +18,22 @@ namespace types {
 /**
  * @class Array
  * @brief Represents a c-style array type
- * 
+ *
  * The Array class represents a fixed-size sequence of elements of the same type.
  * This corresponds to C-style arrays like `int[10]` or `float[N]` where N is
  * a symbolic expression.
- * 
+ *
  * Arrays can be nested to create multi-dimensional arrays. The number of elements
  * can be specified as either a concrete integer or a symbolic expression that may
  * depend on parameters or variables.
- * 
+ *
  * @note This represents c-style arrays, not C++ std::array or std::vector.
  * @note Arrays are stored contiguously in memory according to the storage type.
  */
 class Array : public IType {
 private:
-    std::unique_ptr<IType> element_type_;  ///< Type of each array element
-    symbolic::Expression num_elements_;     ///< Number of elements (can be symbolic)
+    std::unique_ptr<IType> element_type_; ///< Type of each array element
+    symbolic::Expression num_elements_; ///< Number of elements (can be symbolic)
 
 public:
     /**
@@ -61,9 +61,9 @@ public:
 
     /**
      * @brief Returns the primitive type of the array's elements
-     * 
+     *
      * For nested arrays, this returns the primitive type of the innermost element.
-     * 
+     *
      * @return The primitive type of the elements
      */
     virtual PrimitiveType primitive_type() const override;

@@ -21,7 +21,10 @@ jobs:
           submodules: recursive
 
       - name: Formatting
-        run: clang-format-19 -style=file --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
+        shell: bash
+        run: |
+          shopt -s globstar
+          clang-format-19 -style=file --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
 
       - name: Build and test
         run: |

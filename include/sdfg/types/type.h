@@ -1,7 +1,7 @@
 /**
  * @file type.h
  * @brief Core type system definitions for sdfglib
- * 
+ *
  * This file defines the fundamental types used throughout sdfglib, including
  * primitive types, storage types, and the base type interface.
  */
@@ -28,36 +28,36 @@ namespace types {
 /**
  * @enum PrimitiveType
  * @brief Enumeration of all primitive data types supported by sdfglib
- * 
+ *
  * This enum defines all the basic scalar types that can be used in the type system,
  * including integer types (signed and unsigned), floating-point types, and void.
  */
 enum PrimitiveType {
-    Void,       ///< Void type (0 bits)
-    Bool,       ///< Boolean type (1 bit)
-    Int8,       ///< 8-bit signed integer
-    Int16,      ///< 16-bit signed integer
-    Int32,      ///< 32-bit signed integer
-    Int64,      ///< 64-bit signed integer
-    Int128,     ///< 128-bit signed integer
-    UInt8,      ///< 8-bit unsigned integer
-    UInt16,     ///< 16-bit unsigned integer
-    UInt32,     ///< 32-bit unsigned integer
-    UInt64,     ///< 64-bit unsigned integer
-    UInt128,    ///< 128-bit unsigned integer
-    Half,       ///< 16-bit floating-point (IEEE 754 half precision)
-    BFloat,     ///< 16-bit brain floating-point
-    Float,      ///< 32-bit floating-point (IEEE 754 single precision)
-    Double,     ///< 64-bit floating-point (IEEE 754 double precision)
-    X86_FP80,   ///< 80-bit extended precision floating-point (x86)
-    FP128,      ///< 128-bit floating-point (IEEE 754 quadruple precision)
-    PPC_FP128   ///< 128-bit floating-point (PowerPC double-double)
+    Void, ///< Void type (0 bits)
+    Bool, ///< Boolean type (1 bit)
+    Int8, ///< 8-bit signed integer
+    Int16, ///< 16-bit signed integer
+    Int32, ///< 32-bit signed integer
+    Int64, ///< 64-bit signed integer
+    Int128, ///< 128-bit signed integer
+    UInt8, ///< 8-bit unsigned integer
+    UInt16, ///< 16-bit unsigned integer
+    UInt32, ///< 32-bit unsigned integer
+    UInt64, ///< 64-bit unsigned integer
+    UInt128, ///< 128-bit unsigned integer
+    Half, ///< 16-bit floating-point (IEEE 754 half precision)
+    BFloat, ///< 16-bit brain floating-point
+    Float, ///< 32-bit floating-point (IEEE 754 single precision)
+    Double, ///< 64-bit floating-point (IEEE 754 double precision)
+    X86_FP80, ///< 80-bit extended precision floating-point (x86)
+    FP128, ///< 128-bit floating-point (IEEE 754 quadruple precision)
+    PPC_FP128 ///< 128-bit floating-point (PowerPC double-double)
 };
 
 /**
  * @class StorageType
  * @brief Represents the storage location and management characteristics of data
- * 
+ *
  * StorageType defines where data is stored (e.g., CPU stack, CPU heap, GPU memory)
  * and how its allocation and deallocation are managed.
  */
@@ -68,16 +68,16 @@ public:
      * @brief Defines how memory allocation/deallocation is managed
      */
     enum AllocationType {
-        Unmanaged,  ///< Memory is not automatically managed
-        Managed,    ///< Memory is automatically managed
+        Unmanaged, ///< Memory is not automatically managed
+        Managed, ///< Memory is automatically managed
     };
 
 private:
-    std::string value_;                  ///< Storage location identifier
+    std::string value_; ///< Storage location identifier
     symbolic::Expression allocation_size_; ///< Size to allocate
-    AllocationType allocation_;           ///< Allocation management type
-    AllocationType deallocation_;         ///< Deallocation management type
-    symbolic::Expression arg1_;          ///< Additional argument (e.g., page_size for specialized hardware)
+    AllocationType allocation_; ///< Allocation management type
+    AllocationType deallocation_; ///< Deallocation management type
+    symbolic::Expression arg1_; ///< Additional argument (e.g., page_size for specialized hardware)
 
 public:
     /**
@@ -494,31 +494,31 @@ constexpr PrimitiveType as_unsigned(PrimitiveType e) noexcept {
 /**
  * @enum TypeID
  * @brief Enumeration of high-level type categories
- * 
+ *
  * This enum is used for runtime type identification of IType-derived classes.
  */
 enum class TypeID {
-    Scalar,      ///< Scalar primitive type
-    Array,       ///< Array type (c-style arrays)
-    Structure,   ///< Structure/record type
-    Pointer,     ///< Pointer type
-    Reference,   ///< Reference type
-    Function,    ///< Function type
+    Scalar, ///< Scalar primitive type
+    Array, ///< Array type (c-style arrays)
+    Structure, ///< Structure/record type
+    Pointer, ///< Pointer type
+    Reference, ///< Reference type
+    Function, ///< Function type
 };
 
 /**
  * @class IType
  * @brief Abstract base interface for all types in the sdfglib type system
- * 
+ *
  * IType provides the common interface and properties for all type representations
  * in sdfglib. All concrete type classes (Scalar, Array, Pointer, etc.) inherit
  * from this interface.
  */
 class IType {
 protected:
-    StorageType storage_type_;    ///< Where and how the data is stored
-    size_t alignment_;            ///< Memory alignment requirement in bytes
-    std::string initializer_;     ///< Optional initializer expression
+    StorageType storage_type_; ///< Where and how the data is stored
+    size_t alignment_; ///< Memory alignment requirement in bytes
+    std::string initializer_; ///< Optional initializer expression
 
 public:
     /**
@@ -562,21 +562,21 @@ public:
 
     /**
      * @brief Returns the primitive type for this type
-     * 
+     *
      * For scalar types, this returns the actual primitive type.
      * For composite types (arrays, pointers, etc.), this returns the primitive
      * type of the innermost element.
-     * 
+     *
      * @return The primitive type
      */
     virtual PrimitiveType primitive_type() const = 0;
 
     /**
      * @brief Checks if this type represents a symbolic/integer type
-     * 
+     *
      * Symbolic types are integer types that can be used in symbolic expressions
      * and loop bounds.
-     * 
+     *
      * @return true if this is a symbolic integer type, false otherwise
      */
     virtual bool is_symbol() const = 0;

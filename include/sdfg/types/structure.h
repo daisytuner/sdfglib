@@ -1,7 +1,7 @@
 /**
  * @file structure.h
  * @brief Structure and record type representations
- * 
+ *
  * This file defines classes for representing structured types (similar to C structs)
  * and their definitions, including member types and layout information.
  */
@@ -27,16 +27,16 @@ class FunctionBuilder;
 /**
  * @class Structure
  * @brief Represents a structure type (similar to C struct)
- * 
+ *
  * Structure types represent composite data types with named members of different types.
  * This is analogous to C/C++ structs. The Structure class holds a reference to a
  * structure type by name, while the actual member layout is defined in StructureDefinition.
- * 
+ *
  * Structures can also represent SIMD vector types when configured appropriately.
  */
 class Structure : public IType {
 private:
-    std::string name_;  ///< Name of the structure type
+    std::string name_; ///< Name of the structure type
 
 public:
     /**
@@ -86,9 +86,9 @@ public:
 
     /**
      * @brief Checks if this structure behaves like a pointer
-     * 
+     *
      * Some structures may have pointer-like semantics in certain contexts.
-     * 
+     *
      * @return true if this structure is pointer-like, false otherwise
      */
     bool is_pointer_like() const;
@@ -97,18 +97,18 @@ public:
 /**
  * @class StructureDefinition
  * @brief Defines the layout and members of a structure type
- * 
+ *
  * StructureDefinition contains the complete definition of a structure, including
  * all member types in order and layout information (packed vs. unpacked).
- * 
+ *
  * This class also supports creating and identifying SIMD vector types, which are
  * represented as structures with homogeneous scalar members.
  */
 class StructureDefinition {
 private:
-    std::string name_;                              ///< Name of the structure
-    bool is_packed_;                                ///< Whether the structure is packed (no padding)
-    std::vector<std::unique_ptr<IType>> members_;  ///< Member types in declaration order
+    std::string name_; ///< Name of the structure
+    bool is_packed_; ///< Whether the structure is packed (no padding)
+    std::vector<std::unique_ptr<IType>> members_; ///< Member types in declaration order
 
 public:
     /**
@@ -157,10 +157,10 @@ public:
 
     /**
      * @brief Checks if this structure represents a SIMD vector type
-     * 
+     *
      * A structure is considered a vector if all its members are scalar types
      * of the same primitive type.
-     * 
+     *
      * @return true if this is a vector type, false otherwise
      */
     bool is_vector() const;

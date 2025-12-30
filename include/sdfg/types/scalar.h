@@ -1,7 +1,7 @@
 /**
  * @file scalar.h
  * @brief Scalar (primitive) type representation
- * 
+ *
  * This file defines the Scalar class, which represents primitive scalar types
  * such as integers, floating-point numbers, and booleans.
  */
@@ -17,18 +17,18 @@ namespace types {
 /**
  * @class Scalar
  * @brief Represents a scalar primitive type
- * 
+ *
  * The Scalar class wraps a PrimitiveType and provides operations for working
  * with scalar types, including type conversions between signed and unsigned variants.
- * 
+ *
  * Scalar types are the most basic types in the type system and include integers,
  * floating-point numbers, and booleans.
  */
 class Scalar : public IType {
-   private:
-    PrimitiveType primitive_type_;  ///< The underlying primitive type
+private:
+    PrimitiveType primitive_type_; ///< The underlying primitive type
 
-   public:
+public:
     /**
      * @brief Constructs a Scalar with the specified primitive type
      * @param primitive_type The primitive type (e.g., Int32, Float, Bool)
@@ -42,8 +42,7 @@ class Scalar : public IType {
      * @param initializer Optional initializer expression
      * @param primitive_type The primitive type
      */
-    Scalar(StorageType storage_type, size_t alignment, const std::string& initializer,
-           PrimitiveType primitive_type);
+    Scalar(StorageType storage_type, size_t alignment, const std::string& initializer, PrimitiveType primitive_type);
 
     /// @brief Returns TypeID::Scalar
     virtual TypeID type_id() const override;
@@ -53,30 +52,30 @@ class Scalar : public IType {
 
     /**
      * @brief Checks if this scalar type can be used as a symbol
-     * 
+     *
      * Integer types (signed and unsigned) are considered symbolic and can be used
      * in symbolic expressions. Floating-point types are not symbolic.
-     * 
+     *
      * @return true if this is an integer type, false otherwise
      */
     virtual bool is_symbol() const override;
 
     /**
      * @brief Creates a copy of this scalar with signed integer type
-     * 
+     *
      * If this scalar is an unsigned integer type, returns a new Scalar with the
      * corresponding signed type. Otherwise, returns a copy with the same type.
-     * 
+     *
      * @return A new Scalar with signed type
      */
     Scalar as_signed() const;
 
     /**
      * @brief Creates a copy of this scalar with unsigned integer type
-     * 
+     *
      * If this scalar is a signed integer type, returns a new Scalar with the
      * corresponding unsigned type. Otherwise, returns a copy with the same type.
-     * 
+     *
      * @return A new Scalar with unsigned type
      */
     Scalar as_unsigned() const;
@@ -90,5 +89,5 @@ class Scalar : public IType {
     /// @brief Returns a string representation of this scalar type
     virtual std::string print() const override;
 };
-}  // namespace types
-}  // namespace sdfg
+} // namespace types
+} // namespace sdfg

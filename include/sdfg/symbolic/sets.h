@@ -18,8 +18,9 @@ namespace symbolic {
  * @param assums2 The assumptions for the second expression.
  * @return true if expr1 is a subset of expr2, false otherwise.
  */
-bool is_subset(const MultiExpression& expr1, const MultiExpression& expr2,
-               const Assumptions& assums1, const Assumptions& assums2);
+bool is_subset(
+    const MultiExpression& expr1, const MultiExpression& expr2, const Assumptions& assums1, const Assumptions& assums2
+);
 
 /**
  * @brief Interprets the expressions as integer sets and checks if expr1 is disjoint from expr2.
@@ -30,8 +31,9 @@ bool is_subset(const MultiExpression& expr1, const MultiExpression& expr2,
  * @param assums2 The assumptions for the second expression.
  * @return true if expr1 is disjoint from expr2, false otherwise.
  */
-bool is_disjoint(const MultiExpression& expr1, const MultiExpression& expr2,
-                 const Assumptions& assums1, const Assumptions& assums2);
+bool is_disjoint(
+    const MultiExpression& expr1, const MultiExpression& expr2, const Assumptions& assums1, const Assumptions& assums2
+);
 
-}  // namespace symbolic
-}  // namespace sdfg
+} // namespace symbolic
+} // namespace sdfg
