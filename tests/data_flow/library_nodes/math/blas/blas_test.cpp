@@ -124,7 +124,7 @@ TEST(BlasTest, GemmNode) {
     EXPECT_EQ(init_tasklet->inputs().at(0), "_in");
     EXPECT_EQ(init_tasklet->output(), "_out");
 
-    auto map_3 = dynamic_cast<structured_control_flow::Map*>(&map_2->root().at(1).first);
+    auto map_3 = dynamic_cast<structured_control_flow::For*>(&map_2->root().at(1).first);
     EXPECT_NE(map_3, nullptr);
     EXPECT_EQ(map_3->root().size(), 1);
 
