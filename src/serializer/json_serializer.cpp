@@ -1341,6 +1341,14 @@ void register_default_serializers() {
         .register_library_node_serializer(math::tensor::LibraryNodeType_Tanh.value(), []() {
             return std::make_unique<math::tensor::TanhNodeSerializer>();
         });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Minimum.value(), []() {
+            return std::make_unique<math::tensor::MinimumNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Maximum.value(), []() {
+            return std::make_unique<math::tensor::MaximumNodeSerializer>();
+        });
 
     // Reduce
     LibraryNodeSerializerRegistry::instance()
