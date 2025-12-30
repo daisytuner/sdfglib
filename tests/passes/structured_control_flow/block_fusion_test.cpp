@@ -185,12 +185,11 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::Double);
-    types::Array array_desc(desc, symbolic::integer(10));
-    types::Array array_desc_2(array_desc, symbolic::integer(20));
+    types::Pointer ptr_desc(desc);
 
-    builder.add_container("input", array_desc_2);
-    builder.add_container("tmp", array_desc_2);
-    builder.add_container("output", array_desc_2);
+    builder.add_container("input", ptr_desc);
+    builder.add_container("tmp", ptr_desc);
+    builder.add_container("output", ptr_desc);
 
     auto& block_1 = builder.add_block(builder.subject().root());
 
@@ -200,24 +199,8 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
         block_1, DebugInfo(), std::vector<symbolic::Expression>{symbolic::integer(10), symbolic::integer(20)}
     ));
 
-    builder.add_computational_memlet(
-        block_1,
-        input_node,
-        relu_node,
-        "X",
-        {symbolic::integer(0), symbolic::integer(0)},
-        array_desc_2,
-        block_1.debug_info()
-    );
-    builder.add_computational_memlet(
-        block_1,
-        relu_node,
-        "Y",
-        tmp_node_out,
-        {symbolic::integer(0), symbolic::integer(0)},
-        array_desc_2,
-        block_1.debug_info()
-    );
+    builder.add_computational_memlet(block_1, input_node, relu_node, "X", {}, ptr_desc, block_1.debug_info());
+    builder.add_computational_memlet(block_1, relu_node, "Y", tmp_node_out, {}, ptr_desc, block_1.debug_info());
 
     auto& block_2 = builder.add_block(builder.subject().root());
 
@@ -226,24 +209,8 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
     auto& relu_node_2 = static_cast<math::tensor::ReLUNode&>(builder.add_library_node<math::tensor::ReLUNode>(
         block_2, DebugInfo(), std::vector<symbolic::Expression>{symbolic::integer(10), symbolic::integer(20)}
     ));
-    builder.add_computational_memlet(
-        block_2,
-        tmp_node_in,
-        relu_node_2,
-        "X",
-        {symbolic::integer(0), symbolic::integer(0)},
-        array_desc_2,
-        block_2.debug_info()
-    );
-    builder.add_computational_memlet(
-        block_2,
-        relu_node_2,
-        "Y",
-        output_node,
-        {symbolic::integer(0), symbolic::integer(0)},
-        array_desc_2,
-        block_2.debug_info()
-    );
+    builder.add_computational_memlet(block_2, tmp_node_in, relu_node_2, "X", {}, ptr_desc, block_2.debug_info());
+    builder.add_computational_memlet(block_2, relu_node_2, "Y", output_node, {}, ptr_desc, block_2.debug_info());
 
     auto sdfg = builder.move();
 
