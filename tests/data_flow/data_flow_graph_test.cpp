@@ -663,13 +663,13 @@ TEST(DataflowTest, StarPattern) {
 
     // Center should come first
     EXPECT_EQ(order[0], &Center);
-    
+
     // Verify all dependencies
     std::unordered_map<const data_flow::DataFlowNode*, size_t> position;
     for (size_t i = 0; i < order.size(); ++i) {
         position[order[i]] = i;
     }
-    
+
     EXPECT_LT(position[&Center], position[&T1]);
     EXPECT_LT(position[&Center], position[&T2]);
     EXPECT_LT(position[&Center], position[&T3]);
