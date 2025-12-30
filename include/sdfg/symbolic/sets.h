@@ -8,9 +8,7 @@
  *
  * ## Integer Set Operations
  *
- * Symbolic expressions can be interpreted as sets of integer points. This is particularly
- * useful for analyzing memory access patterns and determining relationships between
- * different memory accesses (e.g., checking for overlaps or disjointness).
+ * Symbolic expressions can be interpreted as sets of integer points.
  *
  * The primary operations are:
  * - **Subset checking**: Determining if one set of accesses is contained within another
@@ -25,16 +23,16 @@
  * // Check if memory accesses A[i] and A[j] are disjoint when 0 <= i < 10 and 10 <= j < 20
  * auto i = symbolic::symbol("i");
  * auto j = symbolic::symbol("j");
- * 
+ *
  * MultiExpression expr1 = {i};  // Access pattern A[i]
  * MultiExpression expr2 = {j};  // Access pattern A[j]
- * 
+ *
  * Assumptions assums1, assums2;
  * assums1[i].add_lower_bound(symbolic::zero());
  * assums1[i].add_upper_bound(symbolic::integer(10));
- * assums2[j].add_lower_bound(symbolic::integer(10));
+ * assums2[j].add_lower_bound(symbolic::integer(11));
  * assums2[j].add_upper_bound(symbolic::integer(20));
- * 
+ *
  * bool disjoint = is_disjoint(expr1, expr2, assums1, assums2);  // true
  * @endcode
  *

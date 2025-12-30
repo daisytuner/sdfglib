@@ -3,11 +3,7 @@
  * @brief Conversion of conditions to conjunctive normal form (CNF)
  *
  * This file provides functionality for converting boolean conditions into
- * conjunctive normal form, which is useful for:
- * - Simplifying complex boolean expressions
- * - Analyzing condition satisfiability
- * - Optimizing conditional control flow
- * - Integration with SAT solvers
+ * conjunctive normal form.
  *
  * ## Conjunctive Normal Form
  *
@@ -16,21 +12,18 @@
  * (OR) of literals. For example:
  *   (A OR B) AND (C OR D OR E) AND (F)
  *
- * This form is particularly useful for automated reasoning and is the standard
- * input format for SAT solvers.
- *
  * ## Example Usage
  *
  * @code
  * auto x = symbolic::symbol("x");
  * auto y = symbolic::symbol("y");
- * 
+ *
  * // Create a complex condition: (x > 0 AND y < 10) OR (x < 0 AND y > 10)
  * auto cond = symbolic::Or(
  *     symbolic::And(symbolic::Gt(x, zero()), symbolic::Lt(y, integer(10))),
  *     symbolic::And(symbolic::Lt(x, zero()), symbolic::Gt(y, integer(10)))
  * );
- * 
+ *
  * // Convert to CNF
  * auto cnf = conjunctive_normal_form(cond);
  * // Result is a vector of clauses, each clause being a vector of conditions

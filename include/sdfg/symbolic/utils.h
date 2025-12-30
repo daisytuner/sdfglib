@@ -3,41 +3,13 @@
  * @brief ISL (Integer Set Library) integration utilities
  *
  * This file provides utilities for converting symbolic expressions to ISL format
- * and performing operations using the Integer Set Library. ISL is used for:
- * - Representing integer sets and relations
- * - Computing set operations (union, intersection, difference)
- * - Checking set properties (emptiness, disjointness, subset relations)
- * - Analyzing iteration spaces and memory access patterns
+ * and performing operations using the Integer Set Library.
  *
  * ## ISL Integration
  *
- * The Integer Set Library (ISL) is a powerful tool for reasoning about integer sets
+ * The Integer Set Library (ISL) is a tool for reasoning about integer sets
  * and relations. This module provides the bridge between sdfglib's symbolic expressions
- * and ISL's representation, enabling sophisticated polyhedral analysis.
- *
- * Key functions include:
- * - Converting expressions to ISL map strings
- * - Generating constraints from assumptions
- * - Canonicalizing map dimensions
- * - Delinearizing multi-dimensional expressions
- *
- * ## Example Usage
- *
- * @code
- * // Convert a memory access pattern to ISL format
- * auto i = symbolic::symbol("i");
- * auto j = symbolic::symbol("j");
- * MultiExpression expr = {i, j};  // 2D access pattern
- * 
- * Assumptions assums;
- * assums[i].add_lower_bound(symbolic::zero());
- * assums[i].add_upper_bound(symbolic::integer(10));
- * assums[j].add_lower_bound(symbolic::zero());
- * assums[j].add_upper_bound(symbolic::integer(20));
- * 
- * std::string isl_str = expression_to_map_str(expr, assums);
- * // ISL string can be used with ISL library functions
- * @endcode
+ * and ISL's representation, enabling polyhedral analysis.
  *
  * @see sets.h for high-level set operations using ISL
  * @see assumptions.h for symbol assumptions used in constraints

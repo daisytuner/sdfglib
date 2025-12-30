@@ -3,11 +3,9 @@
  * @brief Symbol assumptions for reasoning about bounds, constness, and evolution
  *
  * Assumptions are a critical component of the symbolic system that enable reasoning about
- * properties of symbols at different stages of an SDFG. They allow the system to:
- * - Compute bounds of symbolic expressions (determining ranges of memory accesses)
- * - Determine if symbols are constant or evolve over time
- * - Track how symbols evolve through maps (loop iterations)
- * - Compute integer sets and check their relations (e.g., disjointness)
+ * ranges of symbols, how they evolve, and whether they are constant. Examples:
+ * - Ranges of memory accesses
+ * - Ranges and evolution of loop iteration variables
  *
  * ## Assumption System
  *
@@ -17,11 +15,6 @@
  * - **Constness**: Whether the symbol's value remains constant
  * - **Map**: How the symbol evolves (e.g., in loop iterations)
  *
- * These assumptions are computed in different stages of SDFG analysis and are primarily
- * used to:
- * - Find bounds of symbolic expressions (e.g., to determine a range of memory accesses)
- * - Compute integer sets and their relations (disjointness checking via ISL)
- *
  * ## Example Usage
  *
  * @code
@@ -29,14 +22,14 @@
  * auto i = symbolic::symbol("i");
  * auto int32_type = types::Scalar::create(types::PrimitiveType::Int32);
  * auto assumption = Assumption::create(i, int32_type);
- * 
+ *
  * // Add loop bounds (e.g., 0 <= i < 10)
  * assumption.add_lower_bound(symbolic::zero());
  * assumption.add_upper_bound(symbolic::integer(10));
- * 
+ *
  * // Mark as non-constant (evolves in loop)
  * assumption.constant(false);
- * 
+ *
  * // Set evolution map (e.g., i' = i + 1)
  * assumption.map(symbolic::add(i, symbolic::one()));
  * @endcode
@@ -58,15 +51,6 @@ namespace symbolic {
 /**
  * @class Assumption
  * @brief Represents assumptions about a symbol's properties and behavior
- *
- * An Assumption captures constraints and properties of a symbol that can be used
- * for symbolic analysis and optimization. It tracks:
- * - Possible value ranges (lower/upper bounds)
- * - Whether the symbol is constant
- * - How the symbol evolves (through a map expression)
- *
- * Assumptions are built up during SDFG analysis and used by various analysis passes
- * to reason about memory access patterns, loop bounds, and data dependencies.
  */
 class Assumption {
 private:

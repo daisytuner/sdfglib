@@ -3,18 +3,13 @@
  * @brief Polynomial representation and manipulation
  *
  * This file provides utilities for converting symbolic expressions to polynomial
- * form and extracting coefficient information. Polynomial representations are
- * useful for:
- * - Analyzing affine expressions (polynomials of degree 1)
- * - Computing inverse functions for induction variables
- * - Performing polynomial division
- * - Extracting coefficients for analysis
+ * form and extracting coefficient information.
  *
  * ## Polynomial Representation
  *
- * Many symbolic expressions in SDFGs are polynomial in nature, particularly those
- * used in address calculations and loop bounds. This module provides functions to
- * convert expressions to polynomial form and extract structural information.
+ * Many symbolic expressions in SDFGs are polynomial in nature. This module
+ * provides functions to convert expressions to polynomial form
+ * and extract structural information.
  *
  * Affine expressions (degree 1 polynomials) are particularly important as they
  * represent linear transformations commonly found in loop index calculations
@@ -26,10 +21,10 @@
  * // Convert an expression to polynomial form and extract coefficients
  * auto i = symbolic::symbol("i");
  * auto j = symbolic::symbol("j");
- * auto expr = symbolic::add(symbolic::mul(symbolic::integer(2), i), 
- *                          symbolic::add(symbolic::mul(symbolic::integer(3), j), 
+ * auto expr = symbolic::add(symbolic::mul(symbolic::integer(2), i),
+ *                          symbolic::add(symbolic::mul(symbolic::integer(3), j),
  *                                       symbolic::integer(5)));  // 2*i + 3*j + 5
- * 
+ *
  * SymbolVec symbols = {i, j};
  * auto poly = polynomial(expr, symbols);
  * auto coeffs = affine_coefficients(poly, symbols);
@@ -76,7 +71,6 @@ Polynomial polynomial(const Expression expr, SymbolVec& symbols);
  *
  * Extracts the coefficients from a degree-1 (affine) polynomial. For an expression
  * like 2*i + 3*j + 5, this returns a map with entries {i: 2, j: 3} plus the constant term.
- * This is useful for analyzing linear transformations in loop indices and addresses.
  *
  * @code
  * // Extract coefficients from 2*i + 3*j + 5
@@ -95,8 +89,7 @@ AffineCoeffs affine_coefficients(Polynomial poly, SymbolVec& symbols);
  * @return Expression representing the inverse function
  *
  * Given an affine expression y = a*x + b (represented as coefficients),
- * computes the inverse x = (y - b) / a. This is useful for computing
- * loop bounds inversions and analyzing induction variable relationships.
+ * computes the inverse x = (y - b) / a.
  *
  * @code
  * // If we have y = 2*i + 5, compute i in terms of y

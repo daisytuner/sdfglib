@@ -1,24 +1,21 @@
 /**
  * @file symbolic.h
- * @brief Symbolic expression system for integer-based symbol analysis
+ * @brief Symbolic system for integer-based symbol analysis
  *
- * This file defines the symbolic intermediate representation used throughout sdfglib.
- * Symbolic expressions form the basis of the symbolic IR and are used to represent:
+ * This file defines the symbolic system used throughout sdfglib.
+ * Symbolic expressions form the basis of the IR and are used to represent:
  * - Address calculations in memlets
  * - Loop iteration variables and bounds (indvar, bounds)
  * - Conditional expressions in if-else statements (conditions)
  *
- * ## Symbolic Expression System
+ * ## Symbolic System
  *
  * Symbolic expressions are functions of symbols, constants, and other symbolic expressions.
- * The system is limited to integer-based symbol analysis and pointers (interpreted as integers,
- * without dereferencing like load/store operations).
- *
- * Every constant integer and the null pointer are symbolic expressions. Every container (variable)
- * with a matching type (scalar integer or pointer) defined in an SDFG is a symbol.
- *
- * The core system is based on SymEngine with several wrapper functions that provide a convenient
- * interface for building and manipulating symbolic expressions.
+ * The system is thereby constrained to the representation of integer-like symbols:
+ * - Every constant integer is a symbolic expression.
+ * - Every container declared as an integer is a symbol.
+ * - Every pointer declared in the SDFG system is a symbol.
+ * - Arithmetic operations (+, -, *, /, %, min, max, abs, pow) on symbolic expressions yield new symbolic expressions.
  *
  * ## Examples
  *
@@ -121,7 +118,7 @@ typedef std::unordered_map<Expression, Expression, SymEngine::RCPBasicHash, SymE
  * @param name The name of the symbol (must not be "null", "NULL", or "nullptr")
  * @return A new Symbol with the specified name
  * @throws InvalidSDFGException if name is a reserved keyword
- * 
+ *
  * @code
  * auto x = symbolic::symbol("x");
  * auto loop_bound = symbolic::symbol("N");
@@ -133,7 +130,7 @@ Symbol symbol(const std::string& name);
  * @brief Creates an integer constant
  * @param value The integer value
  * @return An Integer constant expression
- * 
+ *
  * @code
  * auto two = symbolic::integer(2);
  * auto negative = symbolic::integer(-5);
@@ -168,7 +165,7 @@ Condition __true__();
 /**
  * @brief Creates a special null pointer symbol
  * @return A Symbol representing the null pointer
- * 
+ *
  * In the symbolic system, pointers are interpreted as integers without dereferencing.
  * This function provides a special symbol to represent null pointer values.
  */
@@ -192,8 +189,8 @@ bool is_pointer(const Symbol symbol);
  * @brief Checks if a symbol is an NVIDIA GPU built-in variable
  * @param symbol The symbol to check
  * @return true if the symbol is threadIdx, blockIdx, blockDim, or gridDim in any dimension
- * 
- * NVIDIA GPU built-in variables include threadIdx_{x,y,z}, blockIdx_{x,y,z}, 
+ *
+ * NVIDIA GPU built-in variables include threadIdx_{x,y,z}, blockIdx_{x,y,z},
  * blockDim_{x,y,z}, and gridDim_{x,y,z}.
  */
 bool is_nv(const Symbol symbol);
@@ -203,7 +200,7 @@ bool is_nv(const Symbol symbol);
 /**
  * @defgroup symbolic_logic Logical Operations
  * @brief Functions for building and evaluating logical conditions
- * 
+ *
  * These functions construct boolean conditions used in control flow (if-else statements)
  * and loop guards. They follow standard boolean logic semantics.
  * @{
@@ -214,7 +211,7 @@ bool is_nv(const Symbol symbol);
  * @param lhs Left-hand side condition
  * @param rhs Right-hand side condition
  * @return A condition representing (lhs AND rhs)
- * 
+ *
  * @code
  * auto cond = symbolic::And(symbolic::Ge(x, zero()), symbolic::Lt(x, integer(10)));
  * // Represents: x >= 0 AND x < 10
@@ -256,17 +253,17 @@ bool is_false(const Expression expr);
 /**
  * @defgroup symbolic_arithmetic Arithmetic Operations
  * @brief Functions for building arithmetic expressions
- * 
+ *
  * These functions construct symbolic arithmetic expressions representing integer operations.
  * They are used in address calculations (memlets) and loop bounds.
- * 
+ *
  * @code
  * // Example: Compute 2*i + j
  * auto i = symbolic::symbol("i");
  * auto j = symbolic::symbol("j");
  * auto expr = symbolic::add(symbolic::mul(symbolic::integer(2), i), j);
  * @endcode
- * 
+ *
  * @{
  */
 
@@ -350,7 +347,7 @@ Expression zext_i64(const Expression expr);
 
 /**
  * @brief Function class for zero-extension to 64-bit integer
- * 
+ *
  * This class represents a symbolic function that zero-extends its argument to 64-bit.
  */
 class ZExtI64Function : public SymEngine::FunctionSymbol {
@@ -367,7 +364,7 @@ Expression trunc_i32(const Expression expr);
 
 /**
  * @brief Function class for truncation to 32-bit integer
- * 
+ *
  * This class represents a symbolic function that truncates its argument to 32-bit.
  */
 class TruncI32Function : public SymEngine::FunctionSymbol {
@@ -392,7 +389,7 @@ Expression size_of_type(const types::IType& type);
 
 /**
  * @brief Function class representing sizeof for a type
- * 
+ *
  * This class represents a symbolic sizeof operation on a type, used for
  * static size computations in the type system.
  */
@@ -411,7 +408,7 @@ public:
  * @brief Computes the dynamic size of a memory region
  * @param symbol Symbol representing a memory allocation
  * @return Expression representing the dynamic size of the allocation
- * 
+ *
  * This is used for dynamically-sized allocations where the size is not
  * known statically.
  */
@@ -429,7 +426,7 @@ public:
  * @brief Computes the usable size of a malloc allocation
  * @param symbol Symbol representing a malloc'd pointer
  * @return Expression representing malloc_usable_size(symbol)
- * 
+ *
  * This represents the actual usable size of a memory allocation, which may
  * be larger than the requested size due to allocator alignment.
  */
@@ -448,7 +445,7 @@ public:
 /**
  * @defgroup symbolic_comparison Comparison Operations
  * @brief Functions for building comparison conditions
- * 
+ *
  * These functions construct relational comparison expressions that evaluate to boolean conditions.
  * Used extensively in loop bounds and conditional statements.
  * @{
@@ -507,7 +504,7 @@ Condition Ge(const Expression lhs, const Expression rhs);
 /**
  * @defgroup symbolic_manipulation Expression Manipulation
  * @brief Functions for transforming and analyzing expressions
- * 
+ *
  * These functions provide utilities for expanding, simplifying, and analyzing symbolic expressions.
  * They are essential for expression optimization and analysis.
  * @{
@@ -517,7 +514,7 @@ Condition Ge(const Expression lhs, const Expression rhs);
  * @brief Expands an expression algebraically
  * @param expr Expression to expand
  * @return Expanded form of the expression
- * 
+ *
  * Performs algebraic expansion, such as distributing multiplications over additions.
  */
 Expression expand(const Expression expr);
@@ -526,7 +523,7 @@ Expression expand(const Expression expr);
  * @brief Simplifies an expression
  * @param expr Expression to simplify
  * @return Simplified form of the expression
- * 
+ *
  * Applies simplification rules to reduce the expression to a canonical form.
  */
 Expression simplify(const Expression expr);
@@ -544,7 +541,7 @@ bool eq(const Expression lhs, const Expression rhs);
  * @param lhs First expression (can be null)
  * @param rhs Second expression (can be null)
  * @return true if expressions are equal; both null is considered equal
- * 
+ *
  * This is a null-safe version of eq() where both inputs being null is also considered equal.
  */
 bool null_safe_eq(const Expression lhs, const Expression rhs);
@@ -625,7 +622,7 @@ ExpressionSet muls(const Expression expr);
  * @param old_expr Sub-expression to replace
  * @param new_expr Expression to substitute
  * @return New expression with substitution applied
- * 
+ *
  * @code
  * auto x = symbolic::symbol("x");
  * auto expr = symbolic::add(x, symbolic::integer(1));  // x + 1
@@ -648,7 +645,7 @@ Condition subs(const Condition expr, const Expression old_expr, const Expression
  * @param expr Expression to invert
  * @param symbol Symbol to solve for
  * @return Inverse expression, or null if inverse doesn't exist
- * 
+ *
  * For an expression y = f(x), computes x = f^(-1)(y).
  */
 Expression inverse(const Expression expr, const Symbol symbol);
@@ -658,7 +655,7 @@ Expression inverse(const Expression expr, const Symbol symbol);
 /**
  * @defgroup symbolic_gpu GPU Built-in Symbols
  * @brief NVIDIA CUDA built-in variable symbols
- * 
+ *
  * These functions provide access to NVIDIA GPU thread and block indexing symbols.
  * They are used when generating GPU code to reference thread/block indices and dimensions.
  * @{
@@ -712,9 +709,9 @@ Symbol gridDim_z();
  * @brief Parses a string into a symbolic expression
  * @param expr_str String representation of an expression
  * @return Parsed symbolic expression
- * 
+ *
  * Uses SymEngine's parser to convert string representations into symbolic expressions.
- * 
+ *
  * @code
  * auto expr = symbolic::parse("2*x + y - 3");
  * @endcode

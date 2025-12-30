@@ -4,10 +4,6 @@
  *
  * This file provides functions for computing the minimum and maximum values that
  * symbolic expressions can take, given a set of assumptions about symbol bounds.
- * This is essential for:
- * - Determining ranges of memory accesses (to check buffer bounds)
- * - Computing loop iteration counts
- * - Optimizing code based on value ranges
  *
  * ## Bound Computation
  *
@@ -25,13 +21,13 @@
  * auto i = symbolic::symbol("i");
  * auto j = symbolic::symbol("j");
  * auto expr = symbolic::add(symbolic::mul(symbolic::integer(2), i), j);
- * 
+ *
  * Assumptions assums;
  * assums[i].add_lower_bound(symbolic::zero());
  * assums[i].add_upper_bound(symbolic::integer(10));
  * assums[j].add_lower_bound(symbolic::zero());
  * assums[j].add_upper_bound(symbolic::integer(5));
- * 
+ *
  * SymbolSet params;  // Empty - treat both as iteration variables
  * auto min_val = minimum(expr, params, assums);  // Result: 0
  * auto max_val = maximum(expr, params, assums);  // Result: 24 (2*9 + 4)
