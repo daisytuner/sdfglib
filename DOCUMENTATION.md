@@ -1,34 +1,6 @@
 # sdfglib Documentation
 
-This document describes how to generate and view the API documentation for sdfglib.
-
-## Overview
-
 The sdfglib codebase uses [Doxygen](https://www.doxygen.nl/) for documentation generation. Doxygen is the de-facto standard for generating documentation from C++ source code.
-
-The documentation is currently focused on the **type system**, which is the foundation of sdfglib's representation of data types in stateful dataflow graphs.
-
-## Type System Documentation
-
-The type system documentation covers:
-
-- **Primitive Types**: Basic scalar types (integers, floats, bool, void)
-- **Scalar Types**: Wrapper around primitive types with additional metadata
-- **Array Types**: C-style arrays with symbolic or concrete sizes
-- **Pointer Types**: Typed and opaque pointers
-- **Structure Types**: Composite types (similar to C structs) and SIMD vectors
-- **Function Types**: Function signatures with parameters and return types
-- **Type Utilities**: Helper functions for type analysis and manipulation
-
-### Key Components
-
-- `type.h` - Base type interface, primitive types, and storage types
-- `scalar.h` - Scalar type implementation
-- `array.h` - Array type (note: these are c-style arrays, not std::array)
-- `pointer.h` - Pointer type implementation
-- `structure.h` - Structure and structure definition classes
-- `function.h` - Function type implementation
-- `utils.h` - Type utility functions (size calculation, type inference, etc.)
 
 ## Building Documentation
 
