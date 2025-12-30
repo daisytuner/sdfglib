@@ -48,9 +48,25 @@ inline bool is_number(const std::string& s) {
     return !s.empty() && it == s.end();
 };
 
-inline uint64_t parse_number_unsigned(const std::string& s) { return std::stoull(s); };
+inline uint64_t parse_number_unsigned(const std::string& s) {
+    if (s == "false") {
+        return 0;
+    } else if (s == "true") {
+        return 1;
+    }
 
-inline int64_t parse_number_signed(const std::string& s) { return std::stoll(s); };
+    return std::stoull(s);
+};
+
+inline int64_t parse_number_signed(const std::string& s) {
+    if (s == "false") {
+        return 0;
+    } else if (s == "true") {
+        return 1;
+    }
+
+    return std::stoll(s);
+};
 
 inline bool endswith(std::string const& value, std::string const& ending) {
     if (ending.size() > value.size()) return false;
