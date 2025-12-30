@@ -32,8 +32,8 @@ GEMMNode::GEMMNode(
           vertex,
           parent,
           LibraryNodeType_GEMM,
-          {"C"},
-          {"A", "B", "C", "alpha", "beta"},
+          {"__C"},
+          {"__A", "__B", "__C", "__alpha", "__beta"},
           implementation_type,
           precision
       ),
@@ -124,15 +124,15 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     while (in_edges_it != in_edges.end()) {
         auto& edge = *in_edges_it;
         auto dst_conn = edge.dst_conn();
-        if (dst_conn == "A") {
+        if (dst_conn == "__A") {
             iedge_a = &edge;
-        } else if (dst_conn == "B") {
+        } else if (dst_conn == "__B") {
             iedge_b = &edge;
-        } else if (dst_conn == "C") {
+        } else if (dst_conn == "__C") {
             iedge_c = &edge;
-        } else if (dst_conn == "alpha") {
+        } else if (dst_conn == "__alpha") {
             alpha_edge = &edge;
-        } else if (dst_conn == "beta") {
+        } else if (dst_conn == "__beta") {
             beta_edge = &edge;
         } else {
             throw InvalidSDFGException("GEMMNode has unexpected input: " + dst_conn);
@@ -485,19 +485,19 @@ void GEMMNodeDispatcher_BLAS::dispatch_code(
     stream << ", ";
     stream << this->language_extension_.expression(gemm_node.k());
     stream << ", ";
-    stream << "alpha";
+    stream << "__alpha";
     stream << ", ";
-    stream << "A";
+    stream << "__A";
     stream << ", ";
     stream << this->language_extension_.expression(gemm_node.lda());
     stream << ", ";
-    stream << "B";
+    stream << "__B";
     stream << ", ";
     stream << this->language_extension_.expression(gemm_node.ldb());
     stream << ", ";
-    stream << "beta";
+    stream << "__beta";
     stream << ", ";
-    stream << "C";
+    stream << "__C";
     stream << ", ";
     stream << this->language_extension_.expression(gemm_node.ldc());
 

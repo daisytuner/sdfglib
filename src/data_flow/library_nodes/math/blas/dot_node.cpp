@@ -24,7 +24,15 @@ DotNode::DotNode(
     symbolic::Expression incy
 )
     : BLASNode(
-          element_id, debug_info, vertex, parent, LibraryNodeType_DOT, {"_out"}, {"x", "y"}, implementation_type, precision
+          element_id,
+          debug_info,
+          vertex,
+          parent,
+          LibraryNodeType_DOT,
+          {"__out"},
+          {"__x", "__y"},
+          implementation_type,
+          precision
       ),
       n_(n), incx_(incx), incy_(incy) {}
 
@@ -70,16 +78,16 @@ bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
     const data_flow::Memlet* iedge_x = nullptr;
     const data_flow::Memlet* iedge_y = nullptr;
     for (const auto& iedge : dataflow.in_edges(*this)) {
-        if (iedge.dst_conn() == "x") {
+        if (iedge.dst_conn() == "__x") {
             iedge_x = &iedge;
-        } else if (iedge.dst_conn() == "y") {
+        } else if (iedge.dst_conn() == "__y") {
             iedge_y = &iedge;
         }
     }
 
     const data_flow::Memlet* oedge_res = nullptr;
     for (const auto& oedge : dataflow.out_edges(*this)) {
-        if (oedge.src_conn() == "_out") {
+        if (oedge.src_conn() == "__out") {
             oedge_res = &oedge;
             break;
         }
@@ -115,7 +123,7 @@ bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
     auto& x = builder.add_access(new_block, input_node_x.data());
     auto& y = builder.add_access(new_block, input_node_y.data());
 
-    auto& tasklet = builder.add_tasklet(new_block, data_flow::TaskletCode::fp_fma, "_out", {"_in1", "_in2", "_in3"});
+    auto& tasklet = builder.add_tasklet(new_block, data_flow::TaskletCode::fp_fma, "__out", {"_in1", "_in2", "_in3"});
 
     builder.add_computational_memlet(
         new_block,
@@ -138,7 +146,7 @@ bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
     builder
         .add_computational_memlet(new_block, res_in, tasklet, "_in3", {}, oedge_res->base_type(), oedge_res->debug_info());
     builder.add_computational_memlet(
-        new_block, tasklet, "_out", res_out, {}, oedge_res->base_type(), oedge_res->debug_info()
+        new_block, tasklet, "__out", res_out, {}, oedge_res->base_type(), oedge_res->debug_info()
     );
 
     // Clean up
@@ -317,8 +325,8 @@ void DotNodeDispatcher_CUBLASWithTransfers::dispatch_code(
     stream << "cudaMalloc(&dx, " << x_size << ");" << std::endl;
     stream << "cudaMalloc(&dy, " << y_size << ");" << std::endl;
 
-    stream << "cudaMemcpy(dx, x, " << x_size << ", cudaMemcpyHostToDevice);" << std::endl;
-    stream << "cudaMemcpy(dy, y, " << y_size << ", cudaMemcpyHostToDevice);" << std::endl;
+    stream << "cudaMemcpy(dx, __x, " << x_size << ", cudaMemcpyHostToDevice);" << std::endl;
+    stream << "cudaMemcpy(dy, __y, " << y_size << ", cudaMemcpyHostToDevice);" << std::endl;
 
     stream << "cublasStatus_t err;" << std::endl;
     stream << "cublasHandle_t handle;" << std::endl;
@@ -330,7 +338,7 @@ void DotNodeDispatcher_CUBLASWithTransfers::dispatch_code(
     stream << "}" << std::endl;
     stream << "err = cublas" << type2 << "dot(handle, " << this->language_extension_.expression(dot_node.n())
            << ", dx, " << this->language_extension_.expression(dot_node.incx()) << ", dy, "
-           << this->language_extension_.expression(dot_node.incy()) << ", &_out);" << std::endl;
+           << this->language_extension_.expression(dot_node.incy()) << ", &__out);" << std::endl;
     stream << "if (err != CUBLAS_STATUS_SUCCESS) {" << std::endl;
     stream.setIndent(stream.indent() + 4);
     stream << this->language_extension_.external_prefix() << "exit(1);" << std::endl;
@@ -384,9 +392,9 @@ void DotNodeDispatcher_CUBLASWithoutTransfers::dispatch_code(
         default:
             throw std::runtime_error("Invalid precision for CUBLAS DOT node");
     }
-    stream << "dot(handle, " << this->language_extension_.expression(dot_node.n()) << ", x, "
-           << this->language_extension_.expression(dot_node.incx()) << ", y, "
-           << this->language_extension_.expression(dot_node.incy()) << ", &_out);" << std::endl;
+    stream << "dot(handle, " << this->language_extension_.expression(dot_node.n()) << ", __x, "
+           << this->language_extension_.expression(dot_node.incx()) << ", __y, "
+           << this->language_extension_.expression(dot_node.incy()) << ", &__out);" << std::endl;
     stream << "if (err != CUBLAS_STATUS_SUCCESS) {" << std::endl;
     stream.setIndent(stream.indent() + 4);
     stream << this->language_extension_.external_prefix() << "exit(1);" << std::endl;
