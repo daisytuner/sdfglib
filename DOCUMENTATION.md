@@ -1,0 +1,87 @@
+# sdfglib Documentation
+
+The sdfglib codebase uses [Doxygen](https://www.doxygen.nl/) for documentation generation. Doxygen is the de-facto standard for generating documentation from C++ source code.
+
+## Building Documentation
+
+### Prerequisites
+
+Install Doxygen and Graphviz (for diagrams):
+
+```bash
+sudo apt-get install -y doxygen graphviz
+```
+
+### Generate Documentation
+
+From the repository root:
+
+```bash
+doxygen Doxyfile
+```
+
+This will generate documentation in the `docs/` directory.
+
+### View Documentation
+
+Open the generated HTML documentation in a web browser:
+
+```bash
+# Linux/WSL
+xdg-open docs/html/index.html
+
+# macOS
+open docs/html/index.html
+
+# Or simply navigate to file:///<repo-path>/docs/html/index.html in your browser
+```
+
+## Documentation Structure
+
+The generated documentation includes:
+
+- **Class List**: All documented classes with brief descriptions
+- **File List**: All documented source files
+- **Namespace List**: Organized by namespace (sdfg::types)
+- **Class Hierarchy**: Inheritance relationships
+- **Class Members**: Detailed member documentation with parameters and return values
+
+## Configuration
+
+The documentation is configured via `Doxyfile` in the repository root. Key settings:
+
+- `INPUT = include/sdfg/types` - Currently documents only the type system
+- `OUTPUT_DIRECTORY = docs` - Output location
+- `RECURSIVE = YES` - Process subdirectories
+- `EXTRACT_ALL = YES` - Document all entities (even without explicit doc comments)
+
+To expand documentation to other parts of sdfglib, modify the `INPUT` setting in `Doxyfile`.
+
+## Website Generation
+
+The documentation can be published as a static website by:
+
+1. Hosting the `docs/html/` directory on a web server
+2. Using GitHub Pages (copy/deploy the html directory to gh-pages branch)
+3. Using documentation hosting services like Read the Docs or GitBook
+
+## Contributing Documentation
+
+When adding new code to the type system:
+
+1. Add Doxygen comments using `/** ... */` or `///` style
+2. Document all public classes, methods, and functions
+3. Include `@param` tags for parameters and `@return` tags for return values
+4. Add `@brief` descriptions for classes and complex methods
+5. Rebuild documentation to verify formatting
+
+### Example
+
+```cpp
+/**
+ * @brief Converts a type to its string representation
+ * @param type The type to convert
+ * @return A human-readable string describing the type
+ */
+std::string type_to_string(const IType& type);
+```
