@@ -70,7 +70,9 @@ const types::IType& FunctionBuilder::
     check_name(name);
 
     auto res = this->function().containers_.insert({name, type.clone()});
-    assert(res.second);
+    if (!res.second) {
+        throw InvalidSDFGException("Container " + name + " already exists");
+    }
 
     if (is_argument) {
         this->function().arguments_.push_back(name);
@@ -92,7 +94,9 @@ const types::IType& FunctionBuilder::
     check_name(name);
 
     auto res = this->function().containers_.insert({name, type.clone()});
-    assert(res.second);
+    if (!res.second) {
+        throw InvalidSDFGException("Container " + name + " already exists");
+    }
 
     this->function().externals_.push_back(name);
     this->function().externals_linkage_types_[name] = linkage_type;
@@ -181,7 +185,9 @@ types::StructureDefinition& FunctionBuilder::add_structure(const std::string& na
 
     auto res = this->function().structures_.insert({name, std::make_unique<types::StructureDefinition>(name, is_packed)}
     );
-    assert(res.second);
+    if (!res.second) {
+        throw InvalidSDFGException("Structure " + name + " already exists");
+    }
 
     return *(*res.first).second;
 };
