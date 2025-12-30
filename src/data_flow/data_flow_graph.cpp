@@ -403,7 +403,7 @@ std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_determ
 
                 // Put the current element in the list
                 if (visited.contains(current)) {
-                    throw boost::not_a_dag();
+                    continue;
                 }
                 visited.insert(current);
                 if (primary_blocker.contains(current)) {

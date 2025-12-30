@@ -458,3 +458,224 @@ TEST(DataflowTest, TriangleWithCrossEdge) {
         EXPECT_EQ(order[i], expected[i]) << "Mismatch at index " << i;
     }
 }
+
+TEST(DataflowTest, LinearChain) {
+    builder::SDFGBuilder builder("linear_chain", FunctionType_CPU);
+    auto& state = builder.add_state();
+
+    types::Scalar desc(types::PrimitiveType::Double);
+    builder.add_container("A", desc);
+    builder.add_container("B", desc);
+    builder.add_container("C", desc);
+    builder.add_container("D", desc);
+    builder.add_container("E", desc);
+
+    auto& A = builder.add_access(state, "A");
+    auto& B = builder.add_access(state, "B");
+    auto& C = builder.add_access(state, "C");
+    auto& D = builder.add_access(state, "D");
+    auto& E = builder.add_access(state, "E");
+
+    // A -> T1 -> B -> T2 -> C -> T3 -> D -> T4 -> E
+    auto& T1 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, A, T1, "_in", {});
+    builder.add_computational_memlet(state, T1, "_out", B, {});
+
+    auto& T2 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, B, T2, "_in", {});
+    builder.add_computational_memlet(state, T2, "_out", C, {});
+
+    auto& T3 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, C, T3, "_in", {});
+    builder.add_computational_memlet(state, T3, "_out", D, {});
+
+    auto& T4 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, D, T4, "_in", {});
+    builder.add_computational_memlet(state, T4, "_out", E, {});
+
+    std::vector<const data_flow::DataFlowNode*> order;
+    EXPECT_NO_THROW({
+        auto list = state.dataflow().topological_sort_deterministic();
+        order.assign(list.begin(), list.end());
+    });
+
+    std::vector<const data_flow::DataFlowNode*> expected = {&A, &T1, &B, &T2, &C, &T3, &D, &T4, &E};
+    ASSERT_EQ(order.size(), expected.size());
+    for (size_t i = 0; i < order.size(); ++i) {
+        EXPECT_EQ(order[i], expected[i]) << "Mismatch at index " << i;
+    }
+}
+
+TEST(DataflowTest, ButterflyPattern) {
+    builder::SDFGBuilder builder("butterfly", FunctionType_CPU);
+    auto& state = builder.add_state();
+
+    types::Scalar desc(types::PrimitiveType::Double);
+    builder.add_container("A", desc);
+    builder.add_container("B", desc);
+    builder.add_container("C", desc);
+    builder.add_container("D", desc);
+    builder.add_container("E", desc);
+    builder.add_container("F", desc);
+
+    auto& A = builder.add_access(state, "A");
+    auto& B = builder.add_access(state, "B");
+    auto& C = builder.add_access(state, "C");
+    auto& D = builder.add_access(state, "D");
+    auto& E = builder.add_access(state, "E");
+    auto& F = builder.add_access(state, "F");
+
+    // A -> T1 -> C
+    auto& T1 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, A, T1, "_in", {});
+    builder.add_computational_memlet(state, T1, "_out", C, {});
+
+    // A -> T2 -> D
+    auto& T2 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, A, T2, "_in", {});
+    builder.add_computational_memlet(state, T2, "_out", D, {});
+
+    // B -> T3 -> C
+    auto& T3 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, B, T3, "_in", {});
+    builder.add_computational_memlet(state, T3, "_out", C, {});
+
+    // B -> T4 -> D
+    auto& T4 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, B, T4, "_in", {});
+    builder.add_computational_memlet(state, T4, "_out", D, {});
+
+    // C -> T5 -> E
+    auto& T5 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, C, T5, "_in", {});
+    builder.add_computational_memlet(state, T5, "_out", E, {});
+
+    // D -> T6 -> F
+    auto& T6 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, D, T6, "_in", {});
+    builder.add_computational_memlet(state, T6, "_out", F, {});
+
+    std::vector<const data_flow::DataFlowNode*> order;
+    EXPECT_NO_THROW({
+        auto list = state.dataflow().topological_sort_deterministic();
+        order.assign(list.begin(), list.end());
+    });
+
+    // Verify the order is valid (all dependencies respected)
+    std::unordered_map<const data_flow::DataFlowNode*, size_t> position;
+    for (size_t i = 0; i < order.size(); ++i) {
+        position[order[i]] = i;
+    }
+
+    // Check dependencies
+    EXPECT_LT(position[&A], position[&T1]);
+    EXPECT_LT(position[&A], position[&T2]);
+    EXPECT_LT(position[&B], position[&T3]);
+    EXPECT_LT(position[&B], position[&T4]);
+    EXPECT_LT(position[&T1], position[&C]);
+    EXPECT_LT(position[&T3], position[&C]);
+    EXPECT_LT(position[&T2], position[&D]);
+    EXPECT_LT(position[&T4], position[&D]);
+    EXPECT_LT(position[&C], position[&T5]);
+    EXPECT_LT(position[&D], position[&T6]);
+    EXPECT_LT(position[&T5], position[&E]);
+    EXPECT_LT(position[&T6], position[&F]);
+}
+
+TEST(DataflowTest, MultipleEdgesSameDirection) {
+    builder::SDFGBuilder builder("multi_edges_same_dir", FunctionType_CPU);
+    auto& state = builder.add_state();
+
+    types::Scalar desc(types::PrimitiveType::Double);
+    builder.add_container("A", desc);
+    builder.add_container("B", desc);
+    builder.add_container("C", desc);
+
+    auto& A = builder.add_access(state, "A");
+    auto& B = builder.add_access(state, "B");
+    auto& C = builder.add_access(state, "C");
+
+    // A -> T1 -> B (with 3 edges from A to T1)
+    auto& T1 = builder.add_tasklet(state, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2", "_in3"});
+    builder.add_computational_memlet(state, A, T1, "_in1", {});
+    builder.add_computational_memlet(state, A, T1, "_in2", {});
+    builder.add_computational_memlet(state, A, T1, "_in3", {});
+    builder.add_computational_memlet(state, T1, "_out", B, {});
+
+    // B -> T2 -> C (with 2 edges from B to T2)
+    auto& T2 = builder.add_tasklet(state, data_flow::TaskletCode::fp_mul, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(state, B, T2, "_in1", {});
+    builder.add_computational_memlet(state, B, T2, "_in2", {});
+    builder.add_computational_memlet(state, T2, "_out", C, {});
+
+    std::vector<const data_flow::DataFlowNode*> order;
+    EXPECT_NO_THROW({
+        auto list = state.dataflow().topological_sort_deterministic();
+        order.assign(list.begin(), list.end());
+    });
+
+    std::vector<const data_flow::DataFlowNode*> expected = {&A, &T1, &B, &T2, &C};
+    ASSERT_EQ(order.size(), expected.size());
+    for (size_t i = 0; i < order.size(); ++i) {
+        EXPECT_EQ(order[i], expected[i]) << "Mismatch at index " << i;
+    }
+}
+
+TEST(DataflowTest, StarPattern) {
+    builder::SDFGBuilder builder("star_pattern", FunctionType_CPU);
+    auto& state = builder.add_state();
+
+    types::Scalar desc(types::PrimitiveType::Double);
+    builder.add_container("Center", desc);
+    builder.add_container("A", desc);
+    builder.add_container("B", desc);
+    builder.add_container("C", desc);
+    builder.add_container("D", desc);
+
+    auto& Center = builder.add_access(state, "Center");
+    auto& A = builder.add_access(state, "A");
+    auto& B = builder.add_access(state, "B");
+    auto& C = builder.add_access(state, "C");
+    auto& D = builder.add_access(state, "D");
+
+    // Center fans out to A, B, C, D
+    auto& T1 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, Center, T1, "_in", {});
+    builder.add_computational_memlet(state, T1, "_out", A, {});
+
+    auto& T2 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, Center, T2, "_in", {});
+    builder.add_computational_memlet(state, T2, "_out", B, {});
+
+    auto& T3 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, Center, T3, "_in", {});
+    builder.add_computational_memlet(state, T3, "_out", C, {});
+
+    auto& T4 = builder.add_tasklet(state, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(state, Center, T4, "_in", {});
+    builder.add_computational_memlet(state, T4, "_out", D, {});
+
+    std::vector<const data_flow::DataFlowNode*> order;
+    EXPECT_NO_THROW({
+        auto list = state.dataflow().topological_sort_deterministic();
+        order.assign(list.begin(), list.end());
+    });
+
+    // Center should come first
+    EXPECT_EQ(order[0], &Center);
+    
+    // Verify all dependencies
+    std::unordered_map<const data_flow::DataFlowNode*, size_t> position;
+    for (size_t i = 0; i < order.size(); ++i) {
+        position[order[i]] = i;
+    }
+    
+    EXPECT_LT(position[&Center], position[&T1]);
+    EXPECT_LT(position[&Center], position[&T2]);
+    EXPECT_LT(position[&Center], position[&T3]);
+    EXPECT_LT(position[&Center], position[&T4]);
+    EXPECT_LT(position[&T1], position[&A]);
+    EXPECT_LT(position[&T2], position[&B]);
+    EXPECT_LT(position[&T3], position[&C]);
+    EXPECT_LT(position[&T4], position[&D]);
+}
