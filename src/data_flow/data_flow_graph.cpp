@@ -350,11 +350,8 @@ std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_determ
                                 }
                             }
                         } else {
-                            if (primary_blocker.empty()) {
-                                memlet_map.insert({memlet, sink});
-                            } else {
-                                memlet_map.insert({memlet, nullptr});
-                            }
+                            // Always map the memlet to the sink, even if there are blockers
+                            memlet_map.insert({memlet, sink});
                             primary_blocker.insert(current);
                             continue;
                         }
@@ -390,11 +387,8 @@ std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_determ
                                 }
                             }
                         } else {
-                            if (primary_blocker.empty()) {
-                                memlet_map.insert({memlet, sink});
-                            } else {
-                                memlet_map.insert({memlet, nullptr});
-                            }
+                            // Always map the memlet to the sink, even if there are blockers
+                            memlet_map.insert({memlet, sink});
                             primary_blocker.insert(current);
                             continue;
                         }
@@ -468,7 +462,23 @@ std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_determ
             }
         }
         if (!primary_sink) {
-            throw boost::not_a_dag();
+            // If no sink has empty primary_blocker, pick the sink with the largest list
+            // (i.e., the one that reached the most nodes via primary edges)
+            size_t max_size = 0;
+            for (const auto* sink : sinks) {
+                if (lists.at(sink).size() > max_size) {
+                    max_size = lists.at(sink).size();
+                    primary_sink = sink;
+                } else if (lists.at(sink).size() == max_size && primary_sink != nullptr) {
+                    // Deterministic tiebreaker: use element_id
+                    if (sink->element_id() < primary_sink->element_id()) {
+                        primary_sink = sink;
+                    }
+                }
+            }
+            if (!primary_sink) {
+                throw boost::not_a_dag();
+            }
         }
 
         std::list<const DataFlowNode*> queue = {primary_sink};
