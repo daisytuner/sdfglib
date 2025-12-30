@@ -179,8 +179,8 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     std::vector<symbolic::Expression> indvar_ends{this->m(), this->n(), this->k()};
     data_flow::Subset new_subset;
     structured_control_flow::Sequence* last_scope = &new_sequence;
-    structured_control_flow::Map* last_map = nullptr;
-    structured_control_flow::Map* output_loop = nullptr;
+    structured_control_flow::StructuredLoop* last_map = nullptr;
+    structured_control_flow::StructuredLoop* output_loop = nullptr;
     std::vector<std::string> indvar_names{"_i", "_j", "_k"};
 
     std::string sum_var = builder.find_new_name("_sum");
@@ -197,16 +197,20 @@ bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         auto init = dim_begin;
         auto update = symbolic::add(indvar, symbolic::one());
         auto condition = symbolic::Lt(indvar, dim_end);
-        last_map = &builder.add_map(
-            *last_scope,
-            indvar,
-            condition,
-            init,
-            update,
-            structured_control_flow::ScheduleType_Sequential::create(),
-            {},
-            block.debug_info()
-        );
+        if (i < 2) {
+            last_map = &builder.add_map(
+                *last_scope,
+                indvar,
+                condition,
+                init,
+                update,
+                structured_control_flow::ScheduleType_Sequential::create(),
+                {},
+                block.debug_info()
+            );
+        } else {
+            last_map = &builder.add_for(*last_scope, indvar, condition, init, update, {}, block.debug_info());
+        }
         last_scope = &last_map->root();
 
         if (i == 1) {
