@@ -1,7 +1,7 @@
 /**
  * @file function.h
  * @brief Function type representation
- * 
+ *
  * This file defines the Function class, which represents function types including
  * parameter types, return type, and variadic argument support.
  */
@@ -17,24 +17,24 @@ namespace types {
 /**
  * @class Function
  * @brief Represents a function type
- * 
+ *
  * The Function class represents a function signature, including:
  * - Parameter types (in order)
  * - Return type
  * - Whether the function accepts variadic arguments (like C's ...)
- * 
+ *
  * Function types are used to represent function pointers, function declarations,
  * and callable objects in the SDFG type system.
- * 
+ *
  * @note This represents the type of a function, not a function definition or call.
  */
 class Function : public IType {
-   private:
-    std::vector<std::unique_ptr<IType>> params_;  ///< Parameter types in order
-    std::unique_ptr<IType> return_type_;          ///< Return type of the function
-    bool is_var_arg_;                              ///< Whether function accepts variadic arguments
+private:
+    std::vector<std::unique_ptr<IType>> params_; ///< Parameter types in order
+    std::unique_ptr<IType> return_type_; ///< Return type of the function
+    bool is_var_arg_; ///< Whether function accepts variadic arguments
 
-   public:
+public:
     /**
      * @brief Constructs a Function with the specified return type
      * @param return_type The return type of the function
@@ -50,8 +50,13 @@ class Function : public IType {
      * @param return_type The return type of the function
      * @param is_var_arg Whether the function accepts variadic arguments (default: false)
      */
-    Function(StorageType storage_type, size_t alignment, const std::string& initializer,
-             const IType& return_type, bool is_var_arg = false);
+    Function(
+        StorageType storage_type,
+        size_t alignment,
+        const std::string& initializer,
+        const IType& return_type,
+        bool is_var_arg = false
+    );
 
     /**
      * @brief Returns the primitive type of the return type
@@ -83,10 +88,10 @@ class Function : public IType {
 
     /**
      * @brief Adds a parameter to the function signature
-     * 
+     *
      * Parameters are added in order. This method should be called for each
      * parameter in the function signature.
-     * 
+     *
      * @param param The type of the parameter to add
      */
     void add_param(const IType& param);
@@ -113,5 +118,5 @@ class Function : public IType {
     virtual std::string print() const override;
 };
 
-}  // namespace types
-}  // namespace sdfg
+} // namespace types
+} // namespace sdfg

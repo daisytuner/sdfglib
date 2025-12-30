@@ -6,20 +6,21 @@ namespace sdfg {
 namespace passes {
 
 class SymbolEvolution : public Pass {
-   private:
-    bool eliminate_symbols(builder::StructuredSDFGBuilder& builder,
-                           analysis::AnalysisManager& analysis_manager,
-                           structured_control_flow::StructuredLoop& loop,
-                           structured_control_flow::Transition& transition);
+private:
+    bool eliminate_symbols(
+        builder::StructuredSDFGBuilder& builder,
+        analysis::AnalysisManager& analysis_manager,
+        structured_control_flow::StructuredLoop& loop,
+        structured_control_flow::Transition& transition
+    );
 
-   public:
+public:
     SymbolEvolution();
 
     std::string name() override;
 
-    virtual bool run_pass(builder::StructuredSDFGBuilder& builder,
-                          analysis::AnalysisManager& analysis_manager) override;
+    virtual bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg
