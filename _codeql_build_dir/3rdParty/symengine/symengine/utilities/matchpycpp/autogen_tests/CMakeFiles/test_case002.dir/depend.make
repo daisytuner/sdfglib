@@ -1,0 +1,2 @@
+# Empty dependencies file for test_case002.
+# This may be replaced when dependencies are built.

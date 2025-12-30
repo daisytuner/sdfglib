@@ -1,0 +1,1 @@
+/home/runner/work/sdfglib/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++ -std=c++11  -fPIC -O3 -DNDEBUG -Wno-unknown-pragmas -Wl,--dependency-file=CMakeFiles/test_tuple.dir/link.d CMakeFiles/test_tuple.dir/test_tuple.cpp.o -o test_tuple  ../../libsymengine.a ../../utilities/catch/libcatch.a ../../libsymengine.a /usr/lib/x86_64-linux-gnu/libgmp.so

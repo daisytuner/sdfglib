@@ -1,0 +1,1 @@
+/home/runner/work/sdfglib/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++ -std=c++11  -fPIC -O3 -DNDEBUG -Wno-unknown-pragmas -Wl,--dependency-file=CMakeFiles/expand2.dir/link.d CMakeFiles/expand2.dir/expand2.cpp.o -o expand2  ../symengine/libsymengine.a /usr/lib/x86_64-linux-gnu/libgmp.so

@@ -1,0 +1,2 @@
+# Empty dependencies file for test_mintpoly.
+# This may be replaced when dependencies are built.
