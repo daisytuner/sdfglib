@@ -40,3 +40,4 @@ build-*/
 *.exe
 *.out
 *.app
+_codeql_build_dir/

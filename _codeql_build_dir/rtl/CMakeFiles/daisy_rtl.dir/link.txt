@@ -1,2 +1,0 @@
-/usr/bin/ar qc libdaisy_rtl.a CMakeFiles/daisy_rtl.dir/src/capture.cpp.o CMakeFiles/daisy_rtl.dir/src/instrumentation.cpp.o
-/usr/bin/ranlib libdaisy_rtl.a

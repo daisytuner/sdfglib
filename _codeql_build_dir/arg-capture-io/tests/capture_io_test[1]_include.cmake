@@ -1,5 +1,0 @@
-if(EXISTS "/home/runner/work/sdfglib/sdfglib/_codeql_build_dir/arg-capture-io/tests/capture_io_test[1]_tests.cmake")
-  include("/home/runner/work/sdfglib/sdfglib/_codeql_build_dir/arg-capture-io/tests/capture_io_test[1]_tests.cmake")
-else()
-  add_test(capture_io_test_NOT_BUILT capture_io_test_NOT_BUILT)
-endif()

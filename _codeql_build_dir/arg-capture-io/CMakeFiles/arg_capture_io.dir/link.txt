@@ -1,2 +1,0 @@
-/usr/bin/ar qc libarg_capture_io.a CMakeFiles/arg_capture_io.dir/src/arg_capture_io.cpp.o CMakeFiles/arg_capture_io.dir/src/base64.cpp.o
-/usr/bin/ranlib libarg_capture_io.a
