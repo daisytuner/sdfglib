@@ -52,10 +52,9 @@ TEST(BlockDispatcherTest, DispatchNode_TopologicalOrder) {
     builder.add_computational_memlet(block, access_node_in1, tasklet, "_in", {});
     builder.add_computational_memlet(block, tasklet, "_out", access_node_out1, {});
 
-    auto& access_node_in2 = builder.add_access(block, "b");
     auto& access_node_out2 = builder.add_access(block, "a");
     auto& tasklet_2 = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
-    builder.add_computational_memlet(block, access_node_in2, tasklet_2, "_in", {});
+    builder.add_computational_memlet(block, access_node_out1, tasklet_2, "_in", {});
     builder.add_computational_memlet(block, tasklet_2, "_out", access_node_out2, {});
 
     auto final_sdfg = builder.move();
@@ -74,8 +73,8 @@ TEST(BlockDispatcherTest, DispatchNode_TopologicalOrder) {
 
     EXPECT_EQ(
         main_stream.str(),
-        "{\n    int _in = b;\n    int _out;\n\n    _out = _in;\n\n    a = _out;\n}\n{\n    int _in = a;\n    int "
-        "_out;\n\n    _out = _in;\n\n    b = _out;\n}\n"
+        "{\n    int _in = a;\n    int _out;\n\n    _out = _in;\n\n    b = _out;\n}\n{\n    int _in = b;\n    int "
+        "_out;\n\n    _out = _in;\n\n    a = _out;\n}\n"
     );
     EXPECT_TRUE(library_factory.snippets().empty());
     EXPECT_EQ(globals_stream.str(), "");

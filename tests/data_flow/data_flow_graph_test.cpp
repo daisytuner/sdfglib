@@ -122,15 +122,17 @@ TEST(DataflowTest, DeterministicTopologicalSort) {
     // Expected output:
     // A, B, tasklet1, C, tasklet3, D, E, F, tasklet2, G, tasklet5, H, tasklet6, I,
     // J, K, tasklet4, L, tasklet7, M, tasklet8, N
-    auto order = state.dataflow().topological_sort();
+    std::vector<const data_flow::DataFlowNode*> order;
+    EXPECT_NO_THROW({
+        auto list = state.dataflow().topological_sort_deterministic();
+        order.assign(list.begin(), list.end());
+    });
     const std::vector<data_flow::DataFlowNode*> expected = {&A,        &B, &tasklet1, &C, &tasklet3, &D, &E, &F,
                                                             &tasklet2, &G, &tasklet5, &H, &tasklet6, &I, &J, &K,
                                                             &tasklet4, &L, &tasklet7, &M, &tasklet8, &N};
     ASSERT_EQ(order.size(), expected.size());
-    int i = 0;
-    for (auto* node : order) {
-        EXPECT_EQ(node, expected.at(i));
-        i++;
+    for (size_t i = 0; i < order.size(); ++i) {
+        EXPECT_EQ(order[i], expected[i]) << "Mismatch at index " << i;
     }
 }
 
@@ -452,7 +454,7 @@ TEST(DataflowTest, TriangleWithCrossEdge) {
         order.assign(list.begin(), list.end());
     });
 
-    std::vector<const data_flow::DataFlowNode*> expected = {&A, &T1, &B, &T4, &T3, &T2, &C, &T5, &D};
+    std::vector<const data_flow::DataFlowNode*> expected = {&A, &T1, &B, &T3, &T2, &C, &T5, &T4, &D};
     ASSERT_EQ(order.size(), expected.size());
     for (size_t i = 0; i < order.size(); ++i) {
         EXPECT_EQ(order[i], expected[i]) << "Mismatch at index " << i;

@@ -47,7 +47,7 @@ DataFlowDispatcher::DataFlowDispatcher(
 void DataFlowDispatcher::
     dispatch(PrettyPrinter& stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory) {
     // Dispatch code nodes in topological order
-    auto nodes = this->data_flow_graph_.topological_sort();
+    auto nodes = this->data_flow_graph_.topological_sort_deterministic();
     for (auto& node : nodes) {
         if (auto tasklet = dynamic_cast<const data_flow::Tasklet*>(node)) {
             this->dispatch_tasklet(stream, *tasklet);
