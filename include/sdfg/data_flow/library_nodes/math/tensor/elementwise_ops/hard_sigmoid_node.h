@@ -32,6 +32,8 @@ public:
         const data_flow::Subset& subset
     ) override;
 
+    bool supports_integer_types() const override { return false; }
+
     std::unique_ptr<data_flow::DataFlowNode>
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override;
 };
