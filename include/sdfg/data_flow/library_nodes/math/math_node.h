@@ -22,7 +22,7 @@
  * Expanding a tensor operation:
  * @code
  * auto& tensor_add = builder.add_library_node<math::tensor::AddNode>(block, debug_info, shape);
- * 
+ *
  * analysis::AnalysisManager analysis_manager(sdfg);
  * if (tensor_add.expand(builder, analysis_manager)) {
  *     // Node was successfully expanded into primitive operations
