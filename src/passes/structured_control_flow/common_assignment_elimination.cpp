@@ -12,8 +12,8 @@ CommonAssignmentElimination::CommonAssignmentElimination()
 
 std::string CommonAssignmentElimination::name() { return "CommonAssignmentElimination"; };
 
-bool CommonAssignmentElimination::run_pass(builder::StructuredSDFGBuilder& builder,
-                                           analysis::AnalysisManager& analysis_manager) {
+bool CommonAssignmentElimination::
+    run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
 
     // Traverse structured SDFG
@@ -26,8 +26,7 @@ bool CommonAssignmentElimination::run_pass(builder::StructuredSDFGBuilder& build
         if (auto sequence_stmt = dynamic_cast<structured_control_flow::Sequence*>(current)) {
             for (size_t i = 0; i < sequence_stmt->size(); i++) {
                 auto child = sequence_stmt->at(i);
-                if (auto if_else_stmt =
-                        dynamic_cast<structured_control_flow::IfElse*>(&child.first)) {
+                if (auto if_else_stmt = dynamic_cast<structured_control_flow::IfElse*>(&child.first)) {
                     if (if_else_stmt->size() < 2) {
                         continue;
                     }
@@ -44,8 +43,7 @@ bool CommonAssignmentElimination::run_pass(builder::StructuredSDFGBuilder& build
                     for (auto& entry : last_transition.assignments()) {
                         auto& first_assign = entry.first;
                         auto& first_assignment = entry.second;
-                        if (child.second.assignments().find(first_assign) !=
-                            child.second.assignments().end()) {
+                        if (child.second.assignments().find(first_assign) != child.second.assignments().end()) {
                             continue;
                         }
 
@@ -59,13 +57,11 @@ bool CommonAssignmentElimination::run_pass(builder::StructuredSDFGBuilder& build
                             }
 
                             auto& transition = branch.at(branch.size() - 1).second;
-                            if (transition.assignments().find(first_assign) ==
-                                transition.assignments().end()) {
+                            if (transition.assignments().find(first_assign) == transition.assignments().end()) {
                                 all_branches_same = false;
                                 break;
                             }
-                            if (!symbolic::eq(first_assignment,
-                                              transition.assignments().at(first_assign))) {
+                            if (!symbolic::eq(first_assignment, transition.assignments().at(first_assign))) {
                                 all_branches_same = false;
                                 break;
                             }
@@ -90,8 +86,7 @@ bool CommonAssignmentElimination::run_pass(builder::StructuredSDFGBuilder& build
             }
         } else if (auto loop_stmt = dynamic_cast<structured_control_flow::While*>(current)) {
             queue.push_back(&loop_stmt->root());
-        } else if (auto sloop_stmt =
-                       dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
+        } else if (auto sloop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(current)) {
             queue.push_back(&sloop_stmt->root());
         }
     }
@@ -99,5 +94,5 @@ bool CommonAssignmentElimination::run_pass(builder::StructuredSDFGBuilder& build
     return applied;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

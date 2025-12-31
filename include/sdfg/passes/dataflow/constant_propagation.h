@@ -7,7 +7,7 @@ namespace passes {
 
 /**
  * @brief A pass that eliminates duplicate defines with the same constant value.
- * 
+ *
  * For example, in the following code, the second definition of `a` inside the loop is redundant and will be removed.
  * a = 5
  * while (cond) {
@@ -16,14 +16,13 @@ namespace passes {
  * }
  */
 class ConstantPropagation : public Pass {
-   public:
+public:
     ConstantPropagation();
 
     virtual std::string name() override;
 
-    virtual bool run_pass(builder::StructuredSDFGBuilder& builder,
-                          analysis::AnalysisManager& analysis_manager) override;
+    virtual bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

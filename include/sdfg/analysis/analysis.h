@@ -10,13 +10,13 @@ class AnalysisManager;
 class Analysis {
     friend class AnalysisManager;
 
-   protected:
+protected:
     StructuredSDFG& sdfg_;
     symbolic::Assumptions additional_assumptions_;
 
     virtual void run(analysis::AnalysisManager& analysis_manager) = 0;
 
-   public:
+public:
     Analysis(StructuredSDFG& sdfg);
 
     virtual ~Analysis() = default;
@@ -26,20 +26,20 @@ class Analysis {
 };
 
 class AnalysisManager {
-   private:
+private:
     StructuredSDFG& sdfg_;
     symbolic::Assumptions additional_assumptions_;
 
     std::unordered_map<std::type_index, std::unique_ptr<Analysis>> cache_;
 
-   public:
+public:
     AnalysisManager(StructuredSDFG& sdfg);
     AnalysisManager(StructuredSDFG& sdfg, const symbolic::Assumptions& additional_assumptions);
 
     AnalysisManager(const AnalysisManager& am) = delete;
     AnalysisManager& operator=(const AnalysisManager&) = delete;
 
-    template <class T>
+    template<class T>
     T& get() {
         std::type_index type = std::type_index(typeid(T));
 
@@ -56,7 +56,7 @@ class AnalysisManager {
         return *static_cast<T*>(cache_[type].get());
     }
 
-    template <class T>
+    template<class T>
     void invalidate() {
         std::type_index type = std::type_index(typeid(T));
         if (cache_.find(type) != cache_.end()) {
@@ -67,5 +67,5 @@ class AnalysisManager {
     void invalidate_all();
 };
 
-}  // namespace analysis
-}  // namespace sdfg
+} // namespace analysis
+} // namespace sdfg

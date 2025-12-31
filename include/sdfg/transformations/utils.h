@@ -7,4 +7,4 @@ namespace sdfg {
 
 sdfg::symbolic::Integer get_iteration_count(sdfg::structured_control_flow::StructuredLoop& loop);
 
-}  // namespace sdfg
+} // namespace sdfg

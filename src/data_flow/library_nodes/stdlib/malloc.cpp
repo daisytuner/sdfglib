@@ -85,9 +85,18 @@ void MallocNodeDispatcher::dispatch_code(
 ) {
     auto& malloc_node = static_cast<const MallocNode&>(node_);
 
+    auto& graph = malloc_node.get_parent();
+    auto& oedge = *graph.out_edges(malloc_node).begin();
+
     stream << malloc_node.outputs().at(0);
     stream << " = ";
-    stream << language_extension_.external_prefix() << "malloc(" << language_extension_.expression(malloc_node.size()) << ")" << ";";
+    stream << "("
+           << language_extension_.type_cast(
+                  language_extension_.external_prefix() + "malloc(" +
+                      language_extension_.expression(malloc_node.size()) + ")",
+                  oedge.base_type()
+              )
+           << ");";
     stream << std::endl;
 }
 

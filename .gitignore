@@ -41,3 +41,6 @@ build-*/
 *.out
 *.app
 _codeql_build_dir/
+
+# Documentation
+docs/

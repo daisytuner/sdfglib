@@ -99,8 +99,9 @@ void MemsetNodeDispatcher::dispatch_code(
 ) {
     auto& node = static_cast<const MemsetNode&>(node_);
 
-    stream << language_extension_.external_prefix() << "memset(" << node.outputs().at(0) << ", " << language_extension_.expression(node.value()) << ", "
-           << language_extension_.expression(node.num()) << ")" << ";";
+    stream << language_extension_.external_prefix() << "memset(" << node.outputs().at(0) << ", "
+           << language_extension_.expression(node.value()) << ", " << language_extension_.expression(node.num()) << ")"
+           << ";";
     stream << std::endl;
 }
 

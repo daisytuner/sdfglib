@@ -101,8 +101,8 @@ void CallocNodeDispatcher::dispatch_code(
 
     stream << Calloc_node.outputs().at(0);
     stream << " = ";
-    stream << language_extension_.external_prefix() << "calloc(" << language_extension_.expression(Calloc_node.num()) << ", "
-           << language_extension_.expression(Calloc_node.size()) << ")" << ";";
+    stream << language_extension_.external_prefix() << "calloc(" << language_extension_.expression(Calloc_node.num())
+           << ", " << language_extension_.expression(Calloc_node.size()) << ")" << ";";
     stream << std::endl;
 }
 

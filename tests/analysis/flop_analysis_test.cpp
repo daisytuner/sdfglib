@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/data_flow/library_nodes/math/intrinsic.h"
+#include "sdfg/data_flow/library_nodes/math/cmath/cmath_node.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/element.h"
 #include "sdfg/function.h"
@@ -247,7 +247,7 @@ TEST(FlopAnalysis, Intrinsic) {
     auto& block = builder.add_block(root);
     auto& a = builder.add_access(block, "a");
     auto& b = builder.add_access(block, "b");
-    auto& libnode = builder.add_library_node<math::IntrinsicNode>(block, DebugInfo(), "sin", 1);
+    auto& libnode = builder.add_library_node<math::cmath::CMathNode>(block, DebugInfo(), "sin", 1);
     builder.add_computational_memlet(block, a, libnode, "_in1", {}, desc);
     builder.add_computational_memlet(block, libnode, "_out", b, {}, desc);
 

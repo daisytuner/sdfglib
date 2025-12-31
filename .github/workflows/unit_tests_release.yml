@@ -29,7 +29,10 @@ jobs:
         run: git config --global --add safe.directory /__w/sdfglib/sdfglib
 
       - name: Formatting
-        run: clang-format-19 -style=file --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
+        shell: bash
+        run: |
+          shopt -s globstar
+          clang-format-19 -style=file --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
 
       - name: CMAKE Setup
         run: |
