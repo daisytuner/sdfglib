@@ -13,13 +13,13 @@ TEST(ConvNodeExpansionTest, Conv2D_SimpleExpansion) {
 
     // Create simple 2D convolution: 1 batch, 1 input channel, 1 output channel
     // Input: [1, 1, 4, 4], Kernel: [1, 1, 3, 3], Output: [1, 1, 2, 2] with stride=1, no padding
-    
+
     types::Scalar desc(types::PrimitiveType::Float);
     types::Pointer desc_ptr(desc);
 
-    builder.add_container("input", desc_ptr);   // 1*1*4*4 = 16 floats
+    builder.add_container("input", desc_ptr); // 1*1*4*4 = 16 floats
     builder.add_container("weights", desc_ptr); // 1*1*3*3 = 9 floats
-    builder.add_container("output", desc_ptr);  // 1*1*2*2 = 4 floats
+    builder.add_container("output", desc_ptr); // 1*1*2*2 = 4 floats
 
     auto& block = builder.add_block(sdfg.root());
 
@@ -29,8 +29,9 @@ TEST(ConvNodeExpansionTest, Conv2D_SimpleExpansion) {
 
     std::vector<symbolic::Expression> kernel_shape = {symbolic::integer(3), symbolic::integer(3)};
     std::vector<symbolic::Expression> strides = {symbolic::integer(1), symbolic::integer(1)};
-    std::vector<symbolic::Expression> pads = {symbolic::integer(0), symbolic::integer(0), 
-                                               symbolic::integer(0), symbolic::integer(0)};
+    std::vector<symbolic::Expression> pads = {
+        symbolic::integer(0), symbolic::integer(0), symbolic::integer(0), symbolic::integer(0)
+    };
     std::vector<symbolic::Expression> dilations = {symbolic::integer(1), symbolic::integer(1)};
     auto group = symbolic::integer(1);
 
@@ -48,7 +49,7 @@ TEST(ConvNodeExpansionTest, Conv2D_SimpleExpansion) {
     // Try to expand the node - expansion should now succeed for 2D convolution
     analysis::AnalysisManager analysis_manager(sdfg);
     bool expanded = conv_node.expand(builder, analysis_manager);
-    
+
     // Expansion should now be implemented and return true
     EXPECT_TRUE(expanded);
 }
@@ -73,8 +74,9 @@ TEST(ConvNodeExpansionTest, Conv2D_ExpansionNotImplemented) {
 
     std::vector<symbolic::Expression> kernel_shape = {symbolic::integer(3), symbolic::integer(3)};
     std::vector<symbolic::Expression> strides = {symbolic::integer(2), symbolic::integer(2)};
-    std::vector<symbolic::Expression> pads = {symbolic::integer(1), symbolic::integer(1), 
-                                               symbolic::integer(1), symbolic::integer(1)};
+    std::vector<symbolic::Expression> pads = {
+        symbolic::integer(1), symbolic::integer(1), symbolic::integer(1), symbolic::integer(1)
+    };
     std::vector<symbolic::Expression> dilations = {symbolic::integer(1), symbolic::integer(1)};
     auto group = symbolic::integer(1);
 
@@ -88,7 +90,7 @@ TEST(ConvNodeExpansionTest, Conv2D_ExpansionNotImplemented) {
 
     analysis::AnalysisManager analysis_manager(sdfg);
     bool expanded = conv_node.expand(builder, analysis_manager);
-    
+
     // Expansion should succeed for 2D convolutions with stride > 1
     EXPECT_TRUE(expanded);
 }
@@ -130,7 +132,7 @@ TEST(ConvNodeExpansionTest, Conv1D_Expansion) {
 
     analysis::AnalysisManager analysis_manager(sdfg);
     bool expanded = conv_node.expand(builder, analysis_manager);
-    
+
     // Expansion should succeed for 1D convolutions
     EXPECT_TRUE(expanded);
 }
@@ -155,8 +157,14 @@ TEST(ConvNodeExpansionTest, Conv3D_Expansion) {
 
     std::vector<symbolic::Expression> kernel_shape = {symbolic::integer(3), symbolic::integer(3), symbolic::integer(3)};
     std::vector<symbolic::Expression> strides = {symbolic::integer(1), symbolic::integer(1), symbolic::integer(1)};
-    std::vector<symbolic::Expression> pads = {symbolic::integer(1), symbolic::integer(1), symbolic::integer(1),
-                                               symbolic::integer(1), symbolic::integer(1), symbolic::integer(1)};
+    std::vector<symbolic::Expression> pads = {
+        symbolic::integer(1),
+        symbolic::integer(1),
+        symbolic::integer(1),
+        symbolic::integer(1),
+        symbolic::integer(1),
+        symbolic::integer(1)
+    };
     std::vector<symbolic::Expression> dilations = {symbolic::integer(1), symbolic::integer(1), symbolic::integer(1)};
     auto group = symbolic::integer(1);
 
@@ -173,7 +181,7 @@ TEST(ConvNodeExpansionTest, Conv3D_Expansion) {
 
     analysis::AnalysisManager analysis_manager(sdfg);
     bool expanded = conv_node.expand(builder, analysis_manager);
-    
+
     // Expansion should succeed for 3D convolutions
     EXPECT_TRUE(expanded);
 }

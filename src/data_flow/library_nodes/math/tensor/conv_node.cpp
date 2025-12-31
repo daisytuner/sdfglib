@@ -29,14 +29,10 @@ ConvNode::ConvNode(
           parent,
           LibraryNodeType_Conv,
           {"Y"},
-          {"X", "W"},  // B (bias) is optional; if provided as an edge, it must use connector "B"
+          {"X", "W"}, // B (bias) is optional; if provided as an edge, it must use connector "B"
           data_flow::ImplementationType_NONE
       ),
-      kernel_shape_(kernel_shape),
-      strides_(strides),
-      pads_(pads),
-      dilations_(dilations),
-      group_(group) {}
+      kernel_shape_(kernel_shape), strides_(strides), pads_(pads), dilations_(dilations), group_(group) {}
 
 void ConvNode::validate(const Function& function) const {
     TensorNode::validate(function);
@@ -48,15 +44,15 @@ void ConvNode::validate(const Function& function) const {
 
     // Validate strides, pads, dilations have consistent dimensions
     size_t spatial_dims = kernel_shape_.size();
-    
+
     if (!strides_.empty() && strides_.size() != spatial_dims) {
         throw InvalidSDFGException("ConvNode strides must match kernel spatial dimensions");
     }
-    
+
     if (!pads_.empty() && pads_.size() != 2 * spatial_dims) {
         throw InvalidSDFGException("ConvNode pads must have 2 * spatial dimensions (start and end for each axis)");
     }
-    
+
     if (!dilations_.empty() && dilations_.size() != spatial_dims) {
         throw InvalidSDFGException("ConvNode dilations must match kernel spatial dimensions");
     }
@@ -111,31 +107,29 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto* y_node = static_cast<data_flow::AccessNode*>(&y_edge.dst());
 
     // Validate nodes are standalone in the block
-    if (!x_node || dataflow.in_degree(*x_node) != 0 ||
-        !w_node || dataflow.in_degree(*w_node) != 0 ||
-        !y_node || dataflow.out_degree(*y_node) != 0) {
+    if (!x_node || dataflow.in_degree(*x_node) != 0 || !w_node || dataflow.in_degree(*w_node) != 0 || !y_node ||
+        dataflow.out_degree(*y_node) != 0) {
         return false;
     }
 
     if (b_node && dataflow.in_degree(*b_node) != 0) {
         return false;
     }
-    
+
     // Check that all other nodes in the block are the expected ones
     for (auto* nd : dataflow.data_nodes()) {
-        if (nd != x_node && nd != w_node && nd != y_node &&
-            (!b_node || nd != b_node)) {
+        if (nd != x_node && nd != w_node && nd != y_node && (!b_node || nd != b_node)) {
             return false; // there are other nodes we cannot handle
         }
     }
 
     // Support n-dimensional convolutions
     size_t spatial_dims = kernel_shape_.size();
-    
+
     if (spatial_dims == 0) {
         return false; // Need at least 1 spatial dimension
     }
-    
+
     // Get strides (default to 1 if not provided)
     std::vector<symbolic::Expression> strides_vec;
     for (size_t i = 0; i < spatial_dims; ++i) {
@@ -145,7 +139,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
             strides_vec.push_back(static_cast<symbolic::Expression>(symbolic::one()));
         }
     }
-    
+
     // Get padding (default to 0 if not provided)
     // Pads format: [begin_0, begin_1, ..., begin_n, end_0, end_1, ..., end_n]
     std::vector<symbolic::Expression> pads_begin_vec;
@@ -167,12 +161,12 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     // Input X shape: [N, C_in, D0_in, D1_in, ..., Dn_in]
     // Weight W shape: [C_out, C_in, K0, K1, ..., Kn]
     // Output Y shape: [N, C_out, D0_out, D1_out, ..., Dn_out]
-    
+
     // Create symbolic dimension variables
     auto N = symbolic::symbol(builder.find_new_name("N"));
     auto C_in = symbolic::symbol(builder.find_new_name("C_in"));
     auto C_out = symbolic::symbol(builder.find_new_name("C_out"));
-    
+
     // Create symbolic variables for output spatial dimensions
     std::vector<symbolic::Expression> output_spatial_dims;
     for (size_t i = 0; i < spatial_dims; ++i) {
@@ -186,11 +180,11 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     // Create nested map structure for convolution:
     // Map over: batch(N), output_channel(C_out), output_height(H_out), output_width(W_out)
     // For loop over: input_channel(C_in), kernel_height(KH), kernel_width(KW)
-    
+
     structured_control_flow::Sequence* current_scope = &new_sequence;
     std::vector<symbolic::Expression> output_indices;
     std::vector<symbolic::Expression> output_spatial_vars;
-    
+
     // Map over batch dimension
     std::string n_str = builder.find_new_name("n");
     builder.add_container(n_str, types::Scalar(types::PrimitiveType::UInt64));
@@ -207,7 +201,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     );
     current_scope = &map_n.root();
     output_indices.push_back(n_var);
-    
+
     // Map over output channel dimension
     std::string oc_str = builder.find_new_name("oc");
     builder.add_container(oc_str, types::Scalar(types::PrimitiveType::UInt64));
@@ -224,7 +218,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     );
     current_scope = &map_oc.root();
     output_indices.push_back(oc_var);
-    
+
     // Map over each output spatial dimension dynamically
     for (size_t i = 0; i < spatial_dims; ++i) {
         std::string od_str = builder.find_new_name("od" + std::to_string(i));
@@ -244,11 +238,11 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         output_indices.push_back(od_var);
         output_spatial_vars.push_back(od_var);
     }
-    
+
     // Create accumulator variable for the sum
     std::string accum_var = builder.find_new_name("_conv_accum");
     builder.add_container(accum_var, scalar_type);
-    
+
     // Initialize accumulator to 0
     auto& init_block = builder.add_block(*current_scope, {}, block.debug_info());
     auto& accum_init = builder.add_access(init_block, accum_var, block.debug_info());
@@ -256,7 +250,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& init_tasklet = builder.add_tasklet(init_block, data_flow::assign, "_out", {"_in"}, block.debug_info());
     builder.add_computational_memlet(init_block, zero_const, init_tasklet, "_in", {}, block.debug_info());
     builder.add_computational_memlet(init_block, init_tasklet, "_out", accum_init, {}, block.debug_info());
-    
+
     // Create nested for loops for input channels and kernel dimensions
     // For loop over input channels
     std::string ic_str = builder.find_new_name("ic");
@@ -272,7 +266,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         block.debug_info()
     );
     auto* loop_scope = &for_ic.root();
-    
+
     // For loops over each kernel spatial dimension
     std::vector<symbolic::Expression> kernel_vars;
     for (size_t i = 0; i < spatial_dims; ++i) {
@@ -291,22 +285,21 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         loop_scope = &for_k.root();
         kernel_vars.push_back(k_var);
     }
-    
+
     // Compute indices for input and weight access
     // Input index: [n, ic, od0 * stride0 - pad0 + k0, od1 * stride1 - pad1 + k1, ...]
     // Weight index: [oc, ic, k0, k1, ...]
     std::vector<symbolic::Expression> input_spatial_indices;
     for (size_t i = 0; i < spatial_dims; ++i) {
-        auto input_idx = symbolic::add(
-            symbolic::sub(symbolic::mul(output_spatial_vars[i], strides_vec[i]), pads_begin_vec[i]),
-            kernel_vars[i]
-        );
+        auto input_idx = symbolic::
+            add(symbolic::sub(symbolic::mul(output_spatial_vars[i], strides_vec[i]), pads_begin_vec[i]),
+                kernel_vars[i]);
         input_spatial_indices.push_back(input_idx);
     }
-    
+
     // Create computation block
     auto& comp_block = builder.add_block(*loop_scope, {}, block.debug_info());
-    
+
     // Access input X[n, ic, input_spatial_indices...]
     auto& x_access = builder.add_access(comp_block, X_var, x_node->debug_info());
     // Access weight W[oc, ic, k0, k1, ...]
@@ -314,62 +307,46 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     // Access accumulator
     auto& accum_read = builder.add_access(comp_block, accum_var, block.debug_info());
     auto& accum_write = builder.add_access(comp_block, accum_var, block.debug_info());
-    
+
     // Create FMA tasklet: accum = accum + x * w
-    auto& fma_tasklet = builder.add_tasklet(
-        comp_block,
-        data_flow::fp_fma,
-        "_out",
-        {"_in1", "_in2", "_in3"},
-        block.debug_info()
-    );
-    
+    auto& fma_tasklet =
+        builder.add_tasklet(comp_block, data_flow::fp_fma, "_out", {"_in1", "_in2", "_in3"}, block.debug_info());
+
     // Connect edges with proper subsets for n-dimensional convolution
     // X subset: [n, ic, input_spatial_indices...]
     std::vector<symbolic::Expression> x_subset_vec = {n_var, ic_var};
     x_subset_vec.insert(x_subset_vec.end(), input_spatial_indices.begin(), input_spatial_indices.end());
-    
+
     // W subset: [oc, ic, k0, k1, ...]
     std::vector<symbolic::Expression> w_subset_vec = {oc_var, ic_var};
     w_subset_vec.insert(w_subset_vec.end(), kernel_vars.begin(), kernel_vars.end());
-    
+
     data_flow::Subset x_subset(x_subset_vec.begin(), x_subset_vec.end());
     data_flow::Subset w_subset(w_subset_vec.begin(), w_subset_vec.end());
-    
+
     builder.add_computational_memlet(
         comp_block, x_access, fma_tasklet, "_in1", x_subset, x_edge->base_type(), x_edge->debug_info()
     );
     builder.add_computational_memlet(
         comp_block, w_access, fma_tasklet, "_in2", w_subset, w_edge->base_type(), w_edge->debug_info()
     );
-    builder.add_computational_memlet(
-        comp_block, accum_read, fma_tasklet, "_in3", {}, block.debug_info()
-    );
-    builder.add_computational_memlet(
-        comp_block, fma_tasklet, "_out", accum_write, {}, block.debug_info()
-    );
-    
+    builder.add_computational_memlet(comp_block, accum_read, fma_tasklet, "_in3", {}, block.debug_info());
+    builder.add_computational_memlet(comp_block, fma_tasklet, "_out", accum_write, {}, block.debug_info());
+
     // After all loops, write accumulated result to output (with optional bias)
     auto& output_block = builder.add_block(*current_scope, {}, block.debug_info());
     auto& accum_final = builder.add_access(output_block, accum_var, block.debug_info());
     auto& y_access = builder.add_access(output_block, Y_var, y_node->debug_info());
-    
+
     data_flow::Subset y_subset(output_indices.begin(), output_indices.end());
-    
+
     if (b_node) {
         // Add bias: output = accum + bias[oc]
         auto& b_access = builder.add_access(output_block, b_node->data(), b_node->debug_info());
-        auto& add_tasklet = builder.add_tasklet(
-            output_block,
-            data_flow::fp_add,
-            "_out",
-            {"_in1", "_in2"},
-            block.debug_info()
-        );
-        
-        builder.add_computational_memlet(
-            output_block, accum_final, add_tasklet, "_in1", {}, block.debug_info()
-        );
+        auto& add_tasklet =
+            builder.add_tasklet(output_block, data_flow::fp_add, "_out", {"_in1", "_in2"}, block.debug_info());
+
+        builder.add_computational_memlet(output_block, accum_final, add_tasklet, "_in1", {}, block.debug_info());
         builder.add_computational_memlet(
             output_block, b_access, add_tasklet, "_in2", {oc_var}, b_edge->base_type(), b_edge->debug_info()
         );
@@ -378,22 +355,15 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         );
     } else {
         // No bias: output = accum
-        auto& assign_tasklet = builder.add_tasklet(
-            output_block,
-            data_flow::assign,
-            "_out",
-            {"_in"},
-            block.debug_info()
-        );
-        
-        builder.add_computational_memlet(
-            output_block, accum_final, assign_tasklet, "_in", {}, block.debug_info()
-        );
+        auto& assign_tasklet =
+            builder.add_tasklet(output_block, data_flow::assign, "_out", {"_in"}, block.debug_info());
+
+        builder.add_computational_memlet(output_block, accum_final, assign_tasklet, "_in", {}, block.debug_info());
         builder.add_computational_memlet(
             output_block, assign_tasklet, "_out", y_access, y_subset, y_edge.base_type(), y_edge.debug_info()
         );
     }
-    
+
     // Clean up the original block
     builder.remove_memlet(block, *x_edge);
     builder.remove_memlet(block, *w_edge);
@@ -407,7 +377,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     builder.remove_node(block, *y_node);
     builder.remove_node(block, *this);
     builder.remove_child(parent, index + 1);
-    
+
     return true;
 }
 
@@ -457,8 +427,8 @@ void ConvNode::replace(const symbolic::Expression old_expression, const symbolic
     group_ = symbolic::subs(group_, old_expression, new_expression);
 }
 
-std::unique_ptr<data_flow::DataFlowNode>
-ConvNode::clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
+std::unique_ptr<data_flow::DataFlowNode> ConvNode::
+    clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
     return std::unique_ptr<data_flow::DataFlowNode>(
         new ConvNode(element_id, this->debug_info(), vertex, parent, kernel_shape_, strides_, pads_, dilations_, group_)
     );
@@ -486,7 +456,7 @@ nlohmann::json ConvNodeSerializer::serialize(const data_flow::LibraryNode& libra
     j["code"] = conv_node.code().value();
 
     serializer::JSONSerializer serializer;
-    
+
     j["kernel_shape"] = nlohmann::json::array();
     for (auto& dim : conv_node.kernel_shape()) {
         j["kernel_shape"].push_back(serializer.expression(dim));

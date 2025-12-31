@@ -29,7 +29,7 @@
  * 3. Compute convolution using FMA (fused multiply-add) operations
  * 4. Add bias (if present)
  * 5. Write results to output tensor
- * 
+ *
  * The expansion supports n-dimensional convolutions (1D, 2D, 3D, etc.) with
  * configurable strides and padding for each spatial dimension.
  */
@@ -87,10 +87,10 @@ inline data_flow::LibraryNodeCode LibraryNodeType_Conv("ml::Conv");
 class ConvNode : public TensorNode {
 protected:
     std::vector<symbolic::Expression> kernel_shape_; ///< Shape of convolution kernel
-    std::vector<symbolic::Expression> strides_;      ///< Stride along each spatial axis
-    std::vector<symbolic::Expression> pads_;         ///< Padding (start and end for each axis)
-    std::vector<symbolic::Expression> dilations_;    ///< Dilation along each spatial axis
-    symbolic::Expression group_;                      ///< Number of groups for grouped convolution
+    std::vector<symbolic::Expression> strides_; ///< Stride along each spatial axis
+    std::vector<symbolic::Expression> pads_; ///< Padding (start and end for each axis)
+    std::vector<symbolic::Expression> dilations_; ///< Dilation along each spatial axis
+    symbolic::Expression group_; ///< Number of groups for grouped convolution
 
 public:
     /**
@@ -158,7 +158,7 @@ public:
      * 3. Computing convolution using FMA (fused multiply-add) tasklets
      * 4. Adding bias if present
      * 5. Writing results to output tensor
-     * 
+     *
      * Supports n-dimensional convolutions (1D, 2D, 3D, and higher) with
      * configurable strides and padding for each spatial dimension.
      *

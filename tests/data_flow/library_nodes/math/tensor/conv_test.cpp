@@ -63,9 +63,9 @@ void TestConvNode(
 
     builder.add_computational_memlet(block, input_node, conv_node, "X", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, weights_node, conv_node, "W", {}, desc_ptr, block.debug_info());
-    
+
     builder.add_computational_memlet(block, conv_node, "Y", output_node, {}, desc_ptr, block.debug_info());
-    
+
     if (has_bias) {
         auto& bias_node = builder.add_access(block, "bias");
         builder.add_computational_memlet(block, bias_node, conv_node, "B", {}, desc_ptr, block.debug_info());
@@ -86,156 +86,156 @@ void TestConvNode(
 // Test 1D convolution with kernel size 3
 TEST(ConvNodeTest, Conv1D_Kernel3) {
     TestConvNode(
-        {3},           // kernel_shape
-        {1},           // strides
-        {1, 1},        // pads (start=1, end=1)
-        {1},           // dilations
-        1,             // group
-        false          // no bias
+        {3}, // kernel_shape
+        {1}, // strides
+        {1, 1}, // pads (start=1, end=1)
+        {1}, // dilations
+        1, // group
+        false // no bias
     );
 }
 
 // Test 1D convolution with kernel size 5
 TEST(ConvNodeTest, Conv1D_Kernel5) {
     TestConvNode(
-        {5},           // kernel_shape
-        {2},           // strides
-        {2, 2},        // pads
-        {1},           // dilations
-        1,             // group
-        false          // no bias
+        {5}, // kernel_shape
+        {2}, // strides
+        {2, 2}, // pads
+        {1}, // dilations
+        1, // group
+        false // no bias
     );
 }
 
 // Test 2D convolution with kernel size 3x3
 TEST(ConvNodeTest, Conv2D_Kernel3x3) {
     TestConvNode(
-        {3, 3},        // kernel_shape
-        {1, 1},        // strides
-        {1, 1, 1, 1},  // pads (top=1, left=1, bottom=1, right=1)
-        {1, 1},        // dilations
-        1,             // group
-        false          // no bias
+        {3, 3}, // kernel_shape
+        {1, 1}, // strides
+        {1, 1, 1, 1}, // pads (top=1, left=1, bottom=1, right=1)
+        {1, 1}, // dilations
+        1, // group
+        false // no bias
     );
 }
 
 // Test 2D convolution with stride 2
 TEST(ConvNodeTest, Conv2D_Stride2) {
     TestConvNode(
-        {3, 3},        // kernel_shape
-        {2, 2},        // strides
-        {1, 1, 1, 1},  // pads
-        {1, 1},        // dilations
-        1,             // group
-        false          // no bias
+        {3, 3}, // kernel_shape
+        {2, 2}, // strides
+        {1, 1, 1, 1}, // pads
+        {1, 1}, // dilations
+        1, // group
+        false // no bias
     );
 }
 
 // Test 2D convolution with no padding
 TEST(ConvNodeTest, Conv2D_NoPadding) {
     TestConvNode(
-        {3, 3},        // kernel_shape
-        {1, 1},        // strides
-        {0, 0, 0, 0},  // pads (no padding)
-        {1, 1},        // dilations
-        1,             // group
-        false          // no bias
+        {3, 3}, // kernel_shape
+        {1, 1}, // strides
+        {0, 0, 0, 0}, // pads (no padding)
+        {1, 1}, // dilations
+        1, // group
+        false // no bias
     );
 }
 
 // Test 2D convolution with asymmetric padding
 TEST(ConvNodeTest, Conv2D_AsymmetricPadding) {
     TestConvNode(
-        {3, 3},        // kernel_shape
-        {1, 1},        // strides
-        {1, 2, 1, 2},  // pads (asymmetric)
-        {1, 1},        // dilations
-        1,             // group
-        false          // no bias
+        {3, 3}, // kernel_shape
+        {1, 1}, // strides
+        {1, 2, 1, 2}, // pads (asymmetric)
+        {1, 1}, // dilations
+        1, // group
+        false // no bias
     );
 }
 
 // Test 2D convolution with dilation
 TEST(ConvNodeTest, Conv2D_Dilation2) {
     TestConvNode(
-        {3, 3},        // kernel_shape
-        {1, 1},        // strides
-        {2, 2, 2, 2},  // pads
-        {2, 2},        // dilations
-        1,             // group
-        false          // no bias
+        {3, 3}, // kernel_shape
+        {1, 1}, // strides
+        {2, 2, 2, 2}, // pads
+        {2, 2}, // dilations
+        1, // group
+        false // no bias
     );
 }
 
 // Test 2D convolution with bias
 TEST(ConvNodeTest, Conv2D_WithBias) {
     TestConvNode(
-        {3, 3},        // kernel_shape
-        {1, 1},        // strides
-        {1, 1, 1, 1},  // pads
-        {1, 1},        // dilations
-        1,             // group
-        true           // with bias
+        {3, 3}, // kernel_shape
+        {1, 1}, // strides
+        {1, 1, 1, 1}, // pads
+        {1, 1}, // dilations
+        1, // group
+        true // with bias
     );
 }
 
 // Test 2D convolution with kernel size 5x5
 TEST(ConvNodeTest, Conv2D_Kernel5x5) {
     TestConvNode(
-        {5, 5},        // kernel_shape
-        {1, 1},        // strides
-        {2, 2, 2, 2},  // pads
-        {1, 1},        // dilations
-        1,             // group
-        false          // no bias
+        {5, 5}, // kernel_shape
+        {1, 1}, // strides
+        {2, 2, 2, 2}, // pads
+        {1, 1}, // dilations
+        1, // group
+        false // no bias
     );
 }
 
 // Test 2D convolution with kernel size 1x1 (pointwise convolution)
 TEST(ConvNodeTest, Conv2D_Kernel1x1) {
     TestConvNode(
-        {1, 1},        // kernel_shape
-        {1, 1},        // strides
-        {0, 0, 0, 0},  // pads (no padding needed for 1x1)
-        {1, 1},        // dilations
-        1,             // group
-        false          // no bias
+        {1, 1}, // kernel_shape
+        {1, 1}, // strides
+        {0, 0, 0, 0}, // pads (no padding needed for 1x1)
+        {1, 1}, // dilations
+        1, // group
+        false // no bias
     );
 }
 
 // Test 2D convolution with grouped convolution
 TEST(ConvNodeTest, Conv2D_Grouped) {
     TestConvNode(
-        {3, 3},        // kernel_shape
-        {1, 1},        // strides
-        {1, 1, 1, 1},  // pads
-        {1, 1},        // dilations
-        2,             // group (grouped convolution)
-        false          // no bias
+        {3, 3}, // kernel_shape
+        {1, 1}, // strides
+        {1, 1, 1, 1}, // pads
+        {1, 1}, // dilations
+        2, // group (grouped convolution)
+        false // no bias
     );
 }
 
 // Test 3D convolution with kernel size 3x3x3
 TEST(ConvNodeTest, Conv3D_Kernel3x3x3) {
     TestConvNode(
-        {3, 3, 3},           // kernel_shape
-        {1, 1, 1},           // strides
-        {1, 1, 1, 1, 1, 1},  // pads (depth, height, width)
-        {1, 1, 1},           // dilations
-        1,                   // group
-        false                // no bias
+        {3, 3, 3}, // kernel_shape
+        {1, 1, 1}, // strides
+        {1, 1, 1, 1, 1, 1}, // pads (depth, height, width)
+        {1, 1, 1}, // dilations
+        1, // group
+        false // no bias
     );
 }
 
 // Test 3D convolution with kernel size 2x2x2 and stride 2
 TEST(ConvNodeTest, Conv3D_Kernel2x2x2_Stride2) {
     TestConvNode(
-        {2, 2, 2},           // kernel_shape
-        {2, 2, 2},           // strides
-        {0, 0, 0, 0, 0, 0},  // pads (no padding)
-        {1, 1, 1},           // dilations
-        1,                   // group
-        false                // no bias
+        {2, 2, 2}, // kernel_shape
+        {2, 2, 2}, // strides
+        {0, 0, 0, 0, 0, 0}, // pads (no padding)
+        {1, 1, 1}, // dilations
+        1, // group
+        false // no bias
     );
 }
 
@@ -259,13 +259,15 @@ TEST(ConvNodeTest, ValidationError_MismatchedStrides) {
 
     std::vector<symbolic::Expression> kernel_shape = {symbolic::integer(3), symbolic::integer(3)};
     std::vector<symbolic::Expression> strides = {symbolic::integer(1)}; // Wrong size!
-    std::vector<symbolic::Expression> pads = {symbolic::integer(1), symbolic::integer(1), symbolic::integer(1), symbolic::integer(1)};
+    std::vector<symbolic::Expression> pads = {
+        symbolic::integer(1), symbolic::integer(1), symbolic::integer(1), symbolic::integer(1)
+    };
     std::vector<symbolic::Expression> dilations = {symbolic::integer(1), symbolic::integer(1)};
     auto group = symbolic::integer(1);
 
-    auto& conv_node = builder.add_library_node<math::tensor::ConvNode>(
-        block, DebugInfo(), kernel_shape, strides, pads, dilations, group
-    );
+    auto& conv_node =
+        builder
+            .add_library_node<math::tensor::ConvNode>(block, DebugInfo(), kernel_shape, strides, pads, dilations, group);
 
     builder.add_computational_memlet(block, input_node, conv_node, "X", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, weights_node, conv_node, "W", {}, desc_ptr, block.debug_info());
@@ -299,9 +301,9 @@ TEST(ConvNodeTest, ValidationError_MismatchedPads) {
     std::vector<symbolic::Expression> dilations = {symbolic::integer(1), symbolic::integer(1)};
     auto group = symbolic::integer(1);
 
-    auto& conv_node = builder.add_library_node<math::tensor::ConvNode>(
-        block, DebugInfo(), kernel_shape, strides, pads, dilations, group
-    );
+    auto& conv_node =
+        builder
+            .add_library_node<math::tensor::ConvNode>(block, DebugInfo(), kernel_shape, strides, pads, dilations, group);
 
     builder.add_computational_memlet(block, input_node, conv_node, "X", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, weights_node, conv_node, "W", {}, desc_ptr, block.debug_info());
@@ -327,18 +329,20 @@ TEST(ConvNodeTest, CloneNode) {
 
     std::vector<symbolic::Expression> kernel_shape = {symbolic::integer(3), symbolic::integer(3)};
     std::vector<symbolic::Expression> strides = {symbolic::integer(1), symbolic::integer(1)};
-    std::vector<symbolic::Expression> pads = {symbolic::integer(1), symbolic::integer(1), symbolic::integer(1), symbolic::integer(1)};
+    std::vector<symbolic::Expression> pads = {
+        symbolic::integer(1), symbolic::integer(1), symbolic::integer(1), symbolic::integer(1)
+    };
     std::vector<symbolic::Expression> dilations = {symbolic::integer(1), symbolic::integer(1)};
     auto group = symbolic::integer(1);
 
-    auto& conv_node = builder.add_library_node<math::tensor::ConvNode>(
-        block, DebugInfo(), kernel_shape, strides, pads, dilations, group
-    );
+    auto& conv_node =
+        builder
+            .add_library_node<math::tensor::ConvNode>(block, DebugInfo(), kernel_shape, strides, pads, dilations, group);
 
     // Clone the node
     auto cloned = conv_node.clone(999, graph::Vertex(), block.dataflow());
     auto* cloned_conv = dynamic_cast<math::tensor::ConvNode*>(cloned.get());
-    
+
     ASSERT_NE(cloned_conv, nullptr);
     EXPECT_EQ(cloned_conv->kernel_shape().size(), kernel_shape.size());
     EXPECT_EQ(cloned_conv->strides().size(), strides.size());
