@@ -41,6 +41,8 @@ public:
 
     types::PrimitiveType target_type() const { return target_type_; }
 
+    void validate(const Function& function) const override;
+
     std::unique_ptr<data_flow::DataFlowNode>
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override;
 };

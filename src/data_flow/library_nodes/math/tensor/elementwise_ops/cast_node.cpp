@@ -44,6 +44,57 @@ bool CastNode::expand_operation(
     return true;
 }
 
+void CastNode::validate(const Function& function) const {
+    auto& graph = this->get_parent();
+
+    // Check that all input memlets are scalar or pointer of scalar
+    for (auto& iedge : graph.in_edges(*this)) {
+        if (iedge.base_type().type_id() != types::TypeID::Scalar &&
+            iedge.base_type().type_id() != types::TypeID::Pointer) {
+            throw InvalidSDFGException(
+                "CastNode: Input memlet must be of scalar or pointer type. Found type: " + iedge.base_type().print()
+            );
+        }
+        if (iedge.base_type().type_id() == types::TypeID::Pointer) {
+            auto& ptr_type = static_cast<const types::Pointer&>(iedge.base_type());
+            if (ptr_type.pointee_type().type_id() != types::TypeID::Scalar) {
+                throw InvalidSDFGException(
+                    "CastNode: Input memlet pointer must be flat (pointer to scalar). Found type: " +
+                    ptr_type.pointee_type().print()
+                );
+            }
+            if (!iedge.subset().empty()) {
+                throw InvalidSDFGException("CastNode: Input memlet pointer must not be dereferenced.");
+            }
+        }
+    }
+
+    // Check that all output memlets are scalar or pointer of scalar
+    for (auto& oedge : graph.out_edges(*this)) {
+        if (oedge.base_type().type_id() != types::TypeID::Scalar &&
+            oedge.base_type().type_id() != types::TypeID::Pointer) {
+            throw InvalidSDFGException(
+                "CastNode: Output memlet must be of scalar or pointer type. Found type: " + oedge.base_type().print()
+            );
+        }
+        if (oedge.base_type().type_id() == types::TypeID::Pointer) {
+            auto& ptr_type = static_cast<const types::Pointer&>(oedge.base_type());
+            if (ptr_type.pointee_type().type_id() != types::TypeID::Scalar) {
+                throw InvalidSDFGException(
+                    "CastNode: Output memlet pointer must be flat (pointer to scalar). Found type: " +
+                    ptr_type.pointee_type().print()
+                );
+            }
+            if (!oedge.subset().empty()) {
+                throw InvalidSDFGException("CastNode: Output memlet pointer must not be dereferenced.");
+            }
+        }
+    }
+
+    // For CastNode, we DON'T check that all memlets have the same primitive type
+    // because the whole point of casting is to convert between types
+}
+
 std::unique_ptr<data_flow::DataFlowNode> CastNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
     return std::unique_ptr<data_flow::DataFlowNode>(
