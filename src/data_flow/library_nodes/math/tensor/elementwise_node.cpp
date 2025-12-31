@@ -17,7 +17,7 @@ ElementWiseUnaryNode::ElementWiseUnaryNode(
     const data_flow::LibraryNodeCode& code,
     const std::vector<symbolic::Expression>& shape
 )
-    : MathNode(element_id, debug_info, vertex, parent, code, {"Y"}, {"X"}, data_flow::ImplementationType_NONE),
+    : TensorNode(element_id, debug_info, vertex, parent, code, {"Y"}, {"X"}, data_flow::ImplementationType_NONE),
       shape_(shape) {}
 
 symbolic::SymbolSet ElementWiseUnaryNode::symbols() const {
@@ -33,52 +33,6 @@ symbolic::SymbolSet ElementWiseUnaryNode::symbols() const {
 void ElementWiseUnaryNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     for (auto& dim : shape_) {
         dim = symbolic::subs(dim, old_expression, new_expression);
-    }
-}
-
-void ElementWiseUnaryNode::validate(const Function& function) const {
-    auto& graph = this->get_parent();
-
-    if (graph.in_degree(*this) != 1 || graph.out_degree(*this) != 1) {
-        throw InvalidSDFGException("ElementWiseUnaryNode: Node must have exactly one input and one output");
-    }
-
-    auto& iedge = *graph.in_edges(*this).begin();
-    if (iedge.base_type().type_id() != types::TypeID::Scalar && iedge.base_type().type_id() != types::TypeID::Pointer) {
-        throw InvalidSDFGException(
-            "ElementWiseUnaryNode: Input memlet must be of scalar or pointer type. Found type: " +
-            iedge.base_type().print()
-        );
-    }
-    if (iedge.base_type().type_id() == types::TypeID::Pointer) {
-        auto& ptr_type = static_cast<const types::Pointer&>(iedge.base_type());
-        if (ptr_type.pointee_type().type_id() != types::TypeID::Scalar) {
-            throw InvalidSDFGException(
-                "ElementWiseUnaryNode: Input memlet pointer be flat. Found type: " + ptr_type.pointee_type().print()
-            );
-        }
-        if (!iedge.subset().empty()) {
-            throw InvalidSDFGException("ElementWiseUnaryNode: Input memlet pointer must not be dereferenced.");
-        }
-    }
-
-    auto& oedge = *graph.out_edges(*this).begin();
-    if (oedge.base_type().type_id() != types::TypeID::Scalar && oedge.base_type().type_id() != types::TypeID::Pointer) {
-        throw InvalidSDFGException(
-            "ElementWiseUnaryNode: Output memlet must be of scalar or pointer type. Found type: " +
-            oedge.base_type().print()
-        );
-    }
-    if (oedge.base_type().type_id() == types::TypeID::Pointer) {
-        auto& ptr_type = static_cast<const types::Pointer&>(oedge.base_type());
-        if (ptr_type.pointee_type().type_id() != types::TypeID::Scalar) {
-            throw InvalidSDFGException(
-                "ElementWiseUnaryNode: Output memlet pointer be flat. Found type: " + ptr_type.pointee_type().print()
-            );
-        }
-        if (!oedge.subset().empty()) {
-            throw InvalidSDFGException("ElementWiseUnaryNode: Output memlet pointer must not be dereferenced.");
-        }
     }
 }
 
@@ -181,7 +135,7 @@ ElementWiseBinaryNode::ElementWiseBinaryNode(
     const data_flow::LibraryNodeCode& code,
     const std::vector<symbolic::Expression>& shape
 )
-    : MathNode(element_id, debug_info, vertex, parent, code, {"C"}, {"A", "B"}, data_flow::ImplementationType_NONE),
+    : TensorNode(element_id, debug_info, vertex, parent, code, {"C"}, {"A", "B"}, data_flow::ImplementationType_NONE),
       shape_(shape) {}
 
 symbolic::SymbolSet ElementWiseBinaryNode::symbols() const {
@@ -197,76 +151,6 @@ symbolic::SymbolSet ElementWiseBinaryNode::symbols() const {
 void ElementWiseBinaryNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     for (auto& dim : shape_) {
         dim = symbolic::subs(dim, old_expression, new_expression);
-    }
-}
-
-void ElementWiseBinaryNode::validate(const Function& function) const {
-    auto& graph = this->get_parent();
-
-    if (graph.in_degree(*this) != 2 || graph.out_degree(*this) != 1) {
-        throw InvalidSDFGException("ElementWiseBinaryNode: Node must have exactly two inputs and one output");
-    }
-
-    auto iedge_a = &(*graph.in_edges(*this).begin());
-    auto iedge_b = &(*(++graph.in_edges(*this).begin()));
-    if (iedge_a->dst_conn() != "A") {
-        std::swap(iedge_a, iedge_b);
-    }
-
-    if (iedge_a->base_type().type_id() != types::TypeID::Scalar &&
-        iedge_a->base_type().type_id() != types::TypeID::Pointer) {
-        throw InvalidSDFGException(
-            "ElementWiseBinaryNode: Input A memlet must be of scalar or pointer type. Found type: " +
-            iedge_a->base_type().print()
-        );
-    }
-    if (iedge_a->base_type().type_id() == types::TypeID::Pointer) {
-        auto& ptr_type = static_cast<const types::Pointer&>(iedge_a->base_type());
-        if (ptr_type.pointee_type().type_id() != types::TypeID::Scalar) {
-            throw InvalidSDFGException(
-                "ElementWiseBinaryNode: Input A memlet pointer be flat. Found type: " + ptr_type.pointee_type().print()
-            );
-        }
-        if (!iedge_a->subset().empty()) {
-            throw InvalidSDFGException("ElementWiseBinaryNode: Input A memlet pointer must not be dereferenced.");
-        }
-    }
-    if (iedge_b->base_type().type_id() != types::TypeID::Scalar &&
-        iedge_b->base_type().type_id() != types::TypeID::Pointer) {
-        throw InvalidSDFGException(
-            "ElementWiseBinaryNode: Input B memlet must be of scalar or pointer type. Found type: " +
-            iedge_b->base_type().print()
-        );
-    }
-    if (iedge_b->base_type().type_id() == types::TypeID::Pointer) {
-        auto& ptr_type = static_cast<const types::Pointer&>(iedge_b->base_type());
-        if (ptr_type.pointee_type().type_id() != types::TypeID::Scalar) {
-            throw InvalidSDFGException(
-                "ElementWiseBinaryNode: Input B memlet pointer be flat. Found type: " + ptr_type.pointee_type().print()
-            );
-        }
-        if (!iedge_b->subset().empty()) {
-            throw InvalidSDFGException("ElementWiseBinaryNode: Input B memlet pointer must not be dereferenced.");
-        }
-    }
-
-    auto& oedge = *graph.out_edges(*this).begin();
-    if (oedge.base_type().type_id() != types::TypeID::Scalar && oedge.base_type().type_id() != types::TypeID::Pointer) {
-        throw InvalidSDFGException(
-            "ElementWiseBinaryNode: Output memlet must be of scalar or pointer type. Found type: " +
-            oedge.base_type().print()
-        );
-    }
-    if (oedge.base_type().type_id() == types::TypeID::Pointer) {
-        auto& ptr_type = static_cast<const types::Pointer&>(oedge.base_type());
-        if (ptr_type.pointee_type().type_id() != types::TypeID::Scalar) {
-            throw InvalidSDFGException(
-                "ElementWiseBinaryNode: Output memlet pointer be flat. Found type: " + ptr_type.pointee_type().print()
-            );
-        }
-        if (!oedge.subset().empty()) {
-            throw InvalidSDFGException("ElementWiseBinaryNode: Output memlet pointer must not be dereferenced.");
-        }
     }
 }
 

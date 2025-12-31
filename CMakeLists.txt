@@ -112,6 +112,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/blas/dot_node.cpp
     src/data_flow/library_nodes/math/blas/gemm_node.cpp
     src/data_flow/library_nodes/math/cmath/cmath_node.cpp
+    src/data_flow/library_nodes/math/tensor/tensor_node.cpp
     src/data_flow/library_nodes/math/tensor/elementwise_node.cpp
     src/data_flow/library_nodes/math/tensor/reduce_node.cpp
     src/data_flow/library_nodes/math/tensor/broadcast_node.cpp
