@@ -121,22 +121,13 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         return false;
     }
 
-    // For simplicity in this initial implementation, we'll expand a basic 2D convolution
-    // The im2col transformation creates a matrix where each column contains the flattened
-    // values from one receptive field of the input
-    
-    // Get variable names (for future implementation)
-    // auto& X_var = x_node->data();
-    // auto& W_var = w_node->data();
-    // auto& Y_var = y_node->data();
-
-    // Full im2col + GEMM expansion not yet implemented
-    // Future implementation will:
-    // 1. Create im2col transformation to convert input patches into columns
+    // TODO: Implement im2col + GEMM expansion
+    // The full implementation will:
+    // 1. Apply im2col transformation to convert input patches into column matrix
     // 2. Reshape weights for matrix multiplication
-    // 3. Create GEMMNode for efficient matrix multiplication
+    // 3. Use GEMMNode for efficient convolution computation
     // 4. Add bias if present
-    // 5. Reshape output to final tensor shape
+    // 5. Reshape output to final tensor dimensions
     
     return false;
 }
