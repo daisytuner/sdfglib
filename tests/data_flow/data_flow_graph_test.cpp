@@ -680,7 +680,7 @@ TEST(DataflowTest, StarPattern) {
     EXPECT_LT(position[&T4], position[&D]);
 }
 
-// Test: Multiple paths converging to same node via different edges  
+// Test: Multiple paths converging to same node via different edges
 TEST(DataflowTest, ConvergingPaths) {
     builder::SDFGBuilder builder("converging", FunctionType_CPU);
     auto& state = builder.add_state();

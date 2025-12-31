@@ -1,6 +1,6 @@
 #include "sdfg/data_flow/data_flow_graph.h"
-#include <queue>
 #include <algorithm>
+#include <queue>
 
 namespace sdfg {
 namespace data_flow {
@@ -297,7 +297,7 @@ const data_flow::Memlet* get_primary_outgoing_edge(const DataFlowGraph& graph, c
         if (code_node->outputs().empty()) {
             return nullptr;
         }
-        
+
         for (const auto& oedge : graph.out_edges(*code_node)) {
             if (oedge.src_conn() == code_node->output(0)) {
                 return &oedge;
@@ -320,13 +320,11 @@ const data_flow::Memlet* get_primary_outgoing_edge(const DataFlowGraph& graph, c
             }
             edges_list.push_back({&oedge, value});
         }
-        
+
         if (!edges_list.empty()) {
-            std::sort(edges_list.begin(), edges_list.end(), 
-                [](const auto& a, const auto& b) {
-                    return a.second > b.second ||
-                           (a.second == b.second && a.first->element_id() < b.first->element_id());
-                });
+            std::sort(edges_list.begin(), edges_list.end(), [](const auto& a, const auto& b) {
+                return a.second > b.second || (a.second == b.second && a.first->element_id() < b.first->element_id());
+            });
             return edges_list.front().first;
         }
     }
@@ -338,7 +336,7 @@ std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_determ
 
     // Build deterministic topological sort for each weakly connected component
     std::vector<std::list<const DataFlowNode*>> components(num_components);
-    
+
     for (size_t i = 0; i < num_components; i++) {
         // Get all nodes in this component
         std::vector<const DataFlowNode*> component_nodes;
@@ -347,11 +345,11 @@ std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_determ
                 component_nodes.push_back(this->nodes_.at(v).get());
             }
         }
-        
+
         if (component_nodes.empty()) {
             continue;
         }
-        
+
         // Check for cycles: if no sinks exist, it's a cycle
         bool has_sink = false;
         for (const auto* node : component_nodes) {
@@ -363,23 +361,23 @@ std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_determ
         if (!has_sink) {
             throw boost::not_a_dag();
         }
-        
+
         // New algorithm: Hybrid Kahn's with priority-based processing
-        
+
         // Step 1: Initialize in-degree and primary_incoming_count
         std::unordered_map<const DataFlowNode*, size_t> in_degree;
         std::unordered_map<const DataFlowNode*, size_t> primary_incoming_count;
-        
+
         for (const auto* node : component_nodes) {
             size_t count = 0;
             for (auto& edge : this->in_edges(*node)) {
-                (void)edge;  // Just count
+                (void) edge; // Just count
                 count++;
             }
             in_degree[node] = count;
             primary_incoming_count[node] = 0;
         }
-        
+
         // Step 2: Mark primary edges
         for (const auto* node : component_nodes) {
             if (this->out_degree(*node) > 1) {
@@ -395,14 +393,14 @@ std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_determ
                 }
             }
         }
-        
+
         // Step 3: Priority queue for node ordering
         // Use a struct to define priority
         struct NodePriority {
             const DataFlowNode* node;
             size_t primary_path_count;
             size_t element_id;
-            
+
             bool operator<(const NodePriority& other) const {
                 // Higher primary_path_count = higher priority (use > for max-heap behavior in std::priority_queue)
                 if (primary_path_count != other.primary_path_count)
@@ -411,38 +409,30 @@ std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_determ
                 return element_id > other.element_id;
             }
         };
-        
+
         std::priority_queue<NodePriority> queue;
-        
+
         // Add all nodes with in-degree 0 to the queue
         for (const auto* node : component_nodes) {
             if (in_degree[node] == 0) {
-                queue.push({
-                    node,
-                    primary_incoming_count[node],
-                    node->element_id()
-                });
+                queue.push({node, primary_incoming_count[node], node->element_id()});
             }
         }
-        
+
         // Step 4: Process nodes
         while (!queue.empty()) {
             NodePriority current = queue.top();
             queue.pop();
-            
+
             components.at(i).push_back(current.node);
-            
+
             // Update successors
             for (auto& edge : this->out_edges(*current.node)) {
                 const DataFlowNode* successor = &edge.dst();
                 in_degree[successor]--;
-                
+
                 if (in_degree[successor] == 0) {
-                    queue.push({
-                        successor,
-                        primary_incoming_count[successor],
-                        successor->element_id()
-                    });
+                    queue.push({successor, primary_incoming_count[successor], successor->element_id()});
                 }
             }
         }
