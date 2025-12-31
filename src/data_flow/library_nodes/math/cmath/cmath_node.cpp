@@ -242,7 +242,12 @@ void CMathNode::validate(const Function& function) const {
         }
         auto& scalar_type = static_cast<const types::Scalar&>(inferred_type);
         if (scalar_type.primitive_type() != this->primitive_type_) {
-            throw InvalidSDFGException("CMathNode: Input primitive type does not match node primitive type");
+            std::string input_primitive_type_str = types::primitive_type_to_string(scalar_type.primitive_type());
+            std::string node_primitive_type_str = types::primitive_type_to_string(this->primitive_type_);
+            throw InvalidSDFGException(
+                "CMathNode: Input primitive type " + input_primitive_type_str + " does not match node primitive type " +
+                node_primitive_type_str + " for function " + cmath_function_to_stem(this->function_)
+            );
         }
     }
     for (const auto& oedge : dataflow.out_edges(*this)) {
@@ -254,13 +259,20 @@ void CMathNode::validate(const Function& function) const {
         if (this->function_ == CMathFunction::lrint || this->function_ == CMathFunction::llrint ||
             this->function_ == CMathFunction::lround || this->function_ == CMathFunction::llround) {
             if (!types::is_integer(scalar_type.primitive_type())) {
+                std::string output_primitive_type_str = types::primitive_type_to_string(scalar_type.primitive_type());
                 throw InvalidSDFGException(
                     "CMathNode: Output primitive type must be an integer type for lrint, llrint, lround, llround "
-                    "functions"
+                    "functions. Found: " +
+                    output_primitive_type_str
                 );
             }
         } else if (scalar_type.primitive_type() != this->primitive_type_) {
-            throw InvalidSDFGException("CMathNode: Output primitive type does not match node primitive type");
+            std::string output_primitive_type_str = types::primitive_type_to_string(scalar_type.primitive_type());
+            std::string node_primitive_type_str = types::primitive_type_to_string(this->primitive_type_);
+            throw InvalidSDFGException(
+                "CMathNode: Output primitive type " + output_primitive_type_str +
+                " does not match node primitive type " + node_primitive_type_str
+            );
         }
     }
 }

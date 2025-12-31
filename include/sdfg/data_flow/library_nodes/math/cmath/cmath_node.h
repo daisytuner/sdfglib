@@ -115,7 +115,7 @@ constexpr size_t cmath_function_to_arity(CMathFunction func) {
         case CMathFunction::atan:
             return 1;
         case CMathFunction::atan2:
-            return 1;
+            return 2;
         case CMathFunction::sinh:
             return 1;
         case CMathFunction::cosh:
@@ -151,7 +151,7 @@ constexpr size_t cmath_function_to_arity(CMathFunction func) {
         case CMathFunction::cbrt:
             return 1;
         case CMathFunction::hypot:
-            return 1;
+            return 2;
         case CMathFunction::erf:
             return 1;
         case CMathFunction::erfc:
@@ -185,13 +185,13 @@ constexpr size_t cmath_function_to_arity(CMathFunction func) {
         case CMathFunction::llrint:
             return 1;
         case CMathFunction::fmod:
-            return 1;
+            return 2;
         case CMathFunction::remainder:
-            return 1;
+            return 2;
         case CMathFunction::frexp:
-            return 1;
+            return 2;
         case CMathFunction::ldexp:
-            return 1;
+            return 2;
         case CMathFunction::modf:
             return 1;
         case CMathFunction::scalbn:
@@ -203,11 +203,11 @@ constexpr size_t cmath_function_to_arity(CMathFunction func) {
         case CMathFunction::logb:
             return 1;
         case CMathFunction::nextafter:
-            return 1;
+            return 2;
         case CMathFunction::nexttoward:
-            return 1;
+            return 2;
         case CMathFunction::copysign:
-            return 1;
+            return 2;
         case CMathFunction::fmax:
             return 2;
         case CMathFunction::fmin:
