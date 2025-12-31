@@ -1,4 +1,6 @@
 #include "sdfg/data_flow/data_flow_graph.h"
+#include <algorithm>
+#include <queue>
 
 namespace sdfg {
 namespace data_flow {
@@ -288,191 +290,149 @@ const std::pair<size_t, const std::unordered_map<const data_flow::DataFlowNode*,
     return {ccs_vertex.first, ccs};
 };
 
+// Helper function to get primary outgoing edge for a node with multiple outputs
+const data_flow::Memlet* get_primary_outgoing_edge(const DataFlowGraph& graph, const data_flow::DataFlowNode* node) {
+    if (const auto* code_node = dynamic_cast<const data_flow::CodeNode*>(node)) {
+        // For CodeNodes: first output is primary
+        if (code_node->outputs().empty()) {
+            return nullptr;
+        }
+
+        for (const auto& oedge : graph.out_edges(*code_node)) {
+            if (oedge.src_conn() == code_node->output(0)) {
+                return &oedge;
+            }
+        }
+        return nullptr;
+    } else {
+        // For other nodes: highest priority edge (by tasklet code or lib name)
+        std::vector<std::pair<const data_flow::Memlet*, size_t>> edges_list;
+        for (const auto& oedge : graph.out_edges(*node)) {
+            const auto* dst = &oedge.dst();
+            size_t value = 0;
+            if (const auto* tasklet = dynamic_cast<const data_flow::Tasklet*>(dst)) {
+                value = tasklet->code();
+            } else if (const auto* libnode = dynamic_cast<const data_flow::LibraryNode*>(dst)) {
+                value = 52;
+                for (char c : libnode->code().value()) {
+                    value += c;
+                }
+            }
+            edges_list.push_back({&oedge, value});
+        }
+
+        if (!edges_list.empty()) {
+            std::sort(edges_list.begin(), edges_list.end(), [](const auto& a, const auto& b) {
+                return a.second > b.second || (a.second == b.second && a.first->element_id() < b.first->element_id());
+            });
+            return edges_list.front().first;
+        }
+    }
+    return nullptr;
+}
+
 std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_deterministic() const {
     auto [num_components, components_map] = graph::weakly_connected_components(this->graph_);
 
     // Build deterministic topological sort for each weakly connected component
     std::vector<std::list<const DataFlowNode*>> components(num_components);
+
     for (size_t i = 0; i < num_components; i++) {
-        // Get all sinks of the current component
-        std::vector<const DataFlowNode*> sinks;
-        bool component_empty = true;
+        // Get all nodes in this component
+        std::vector<const DataFlowNode*> component_nodes;
         for (auto [v, comp] : components_map) {
             if (comp == i) {
-                component_empty = false;
-                if (boost::out_degree(v, this->graph_) == 0) {
-                    sinks.push_back(this->nodes_.at(v).get());
-                }
-            }
-        }
-        if (sinks.size() == 0) {
-            if (component_empty) {
-                continue;
-            } else {
-                throw boost::not_a_dag();
+                component_nodes.push_back(this->nodes_.at(v).get());
             }
         }
 
-        // Go over all sinks
-        const DataFlowNode* primary_sink = nullptr;
-        std::unordered_map<const DataFlowNode*, std::list<const DataFlowNode*>> lists;
-        std::unordered_map<const DataFlowNode*, std::list<const Memlet*>> memlet_queues;
-        std::unordered_map<const Memlet*, const DataFlowNode*> memlet_map;
-        for (const auto* sink : sinks) {
-            lists.insert({sink, {}});
-            memlet_queues.insert({sink, {}});
-            std::unordered_set<const DataFlowNode*> primary_blocker;
+        if (component_nodes.empty()) {
+            continue;
+        }
 
-            // Perform reversed DFS starting form sink node
-            std::unordered_set<const DataFlowNode*> visited;
-            std::stack<std::pair<const DataFlowNode*, const DataFlowNode*>> stack({{sink, nullptr}});
-            while (!stack.empty()) {
-                const auto [current, successor] = stack.top();
-                stack.pop();
-
-                // Special case: Only handle primary edges
-                if (this->out_degree(*current) > 1) {
-                    if (const auto* code_node = dynamic_cast<const CodeNode*>(current)) {
-                        std::unordered_map<std::string, const Memlet*> edges_map;
-                        const Memlet* memlet = nullptr; // Memlet from current to successor
-                        for (const auto& oedge : this->out_edges(*code_node)) {
-                            edges_map.insert({oedge.src_conn(), &oedge});
-                            if (&oedge.dst() == successor) {
-                                memlet = &oedge;
-                            }
-                        }
-                        const auto* primary_dst = &edges_map.at(code_node->output(0))->dst();
-                        if (primary_dst == successor) {
-                            for (size_t j = 1; j < code_node->outputs().size(); j++) {
-                                memlet_queues.at(sink).push_back(edges_map.at(code_node->output(j)));
-                            }
-                        } else {
-                            if (primary_blocker.empty()) {
-                                memlet_map.insert({memlet, sink});
-                            } else {
-                                memlet_map.insert({memlet, nullptr});
-                            }
-                            primary_blocker.insert(current);
-                            continue;
-                        }
-                    } else {
-                        std::vector<std::pair<const Memlet*, size_t>> edges_list;
-                        const Memlet* memlet = nullptr; // Memlet from current to successor
-                        for (const auto& oedge : this->out_edges(*current)) {
-                            const auto* dst = &oedge.dst();
-                            size_t value = 0;
-                            if (const auto* tasklet = dynamic_cast<const Tasklet*>(dst)) {
-                                value = tasklet->code();
-                            } else if (const auto* libnode = dynamic_cast<const LibraryNode*>(dst)) {
-                                value = 52;
-                                for (char c : libnode->code().value()) {
-                                    value += c;
-                                }
-                            }
-                            edges_list.push_back({&oedge, value});
-                            if (&oedge.dst() == successor) {
-                                memlet = &oedge;
-                            }
-                        }
-                        std::sort(edges_list.begin(), edges_list.end(), [](const auto& a, const auto& b) {
-                            return a.second > b.second ||
-                                   (a.second == b.second && a.first->element_id() < b.first->element_id());
-                        });
-                        const auto* primary_dst = &edges_list.front().first->dst();
-                        if (primary_dst == successor) {
-                            for (size_t j = 1; j < edges_list.size(); j++) {
-                                memlet_queues.at(sink).push_back(edges_list.at(j).first);
-                            }
-                        } else {
-                            if (primary_blocker.empty()) {
-                                memlet_map.insert({memlet, sink});
-                            } else {
-                                memlet_map.insert({memlet, nullptr});
-                            }
-                            primary_blocker.insert(current);
-                            continue;
-                        }
-                    }
-                }
-
-                // Put the current element in the list
-                if (visited.contains(current)) {
-                    throw boost::not_a_dag();
-                }
-                visited.insert(current);
-                if (primary_blocker.contains(current)) {
-                    primary_blocker.erase(current);
-                }
-                lists.at(sink).push_front(current);
-
-                // Put all predecessors on the stack
-                if (const auto* code_node = dynamic_cast<const CodeNode*>(current)) {
-                    for (const auto& input : code_node->inputs()) {
-                        const Memlet* iedge = nullptr;
-                        for (auto& in_edge : this->in_edges(*code_node)) {
-                            if (in_edge.dst_conn() == input) {
-                                iedge = &in_edge;
-                                break;
-                            }
-                        }
-                        if (!iedge) {
-                            continue;
-                        }
-                        const auto* src = &iedge->src();
-                        stack.push({src, current});
-                    }
-                } else {
-                    std::vector<std::pair<const DataFlowNode*, size_t>> tmp_inputs;
-                    for (const auto& iedge : this->in_edges(*current)) {
-                        const auto* src = &iedge.src();
-                        size_t value = 0;
-                        if (const auto* tasklet = dynamic_cast<const Tasklet*>(src)) {
-                            value = tasklet->code();
-                        } else if (const auto* libnode = dynamic_cast<const LibraryNode*>(src)) {
-                            value = 52;
-                            for (char c : libnode->code().value()) {
-                                value += c;
-                            }
-                        }
-                        tmp_inputs.push_back({src, value});
-                    }
-                    std::sort(tmp_inputs.begin(), tmp_inputs.end(), [](const auto& a, const auto& b) {
-                        return a.second > b.second ||
-                               (a.second == b.second && a.first->element_id() < b.first->element_id());
-                    });
-                    for (const auto& tmp_input : tmp_inputs) {
-                        stack.push({tmp_input.first, current});
-                    }
-                }
-            }
-
-            // Store primary sink
-            if (primary_blocker.empty()) {
-                primary_sink = sink;
+        // Check for cycles: if no sinks exist, it's a cycle
+        bool has_sink = false;
+        for (const auto* node : component_nodes) {
+            if (boost::out_degree(node->vertex(), this->graph_) == 0) {
+                has_sink = true;
+                break;
             }
         }
-        if (!primary_sink) {
+        if (!has_sink) {
             throw boost::not_a_dag();
         }
 
-        std::list<const DataFlowNode*> queue = {primary_sink};
-        std::unordered_set<const DataFlowNode*> visited;
-        while (!queue.empty()) {
-            const auto* current = queue.front();
-            queue.pop_front();
-            if (visited.contains(current)) {
-                continue;
+        // New algorithm: Hybrid Kahn's with priority-based processing
+
+        // Step 1: Initialize in-degree and primary_incoming_count
+        std::unordered_map<const DataFlowNode*, size_t> in_degree;
+        std::unordered_map<const DataFlowNode*, size_t> primary_incoming_count;
+
+        for (const auto* node : component_nodes) {
+            size_t count = 0;
+            for (auto& edge : this->in_edges(*node)) {
+                (void) edge; // Just count
+                count++;
             }
+            in_degree[node] = count;
+            primary_incoming_count[node] = 0;
+        }
 
-            // Fill global list
-            components.at(i).insert(components.at(i).end(), lists.at(current).begin(), lists.at(current).end());
-            visited.insert(current);
+        // Step 2: Mark primary edges
+        for (const auto* node : component_nodes) {
+            if (this->out_degree(*node) > 1) {
+                const Memlet* primary_edge = get_primary_outgoing_edge(*this, node);
+                if (primary_edge) {
+                    primary_incoming_count[&primary_edge->dst()]++;
+                }
+            } else if (this->out_degree(*node) == 1) {
+                auto edges = this->out_edges(*node);
+                auto it = edges.begin();
+                if (it != edges.end()) {
+                    primary_incoming_count[&(*it).dst()]++;
+                }
+            }
+        }
 
-            // Fill queue
-            for (const auto* memlet : memlet_queues.at(current)) {
-                const auto* node = memlet_map.at(memlet);
-                if (node) {
-                    queue.push_back(node);
+        // Step 3: Priority queue for node ordering
+        // Use a struct to define priority
+        struct NodePriority {
+            const DataFlowNode* node;
+            size_t primary_path_count;
+            size_t element_id;
+
+            bool operator<(const NodePriority& other) const {
+                // Higher primary_path_count = higher priority (use > for max-heap behavior in std::priority_queue)
+                if (primary_path_count != other.primary_path_count)
+                    return primary_path_count < other.primary_path_count;
+                // Lower element_id = higher priority
+                return element_id > other.element_id;
+            }
+        };
+
+        std::priority_queue<NodePriority> queue;
+
+        // Add all nodes with in-degree 0 to the queue
+        for (const auto* node : component_nodes) {
+            if (in_degree[node] == 0) {
+                queue.push({node, primary_incoming_count[node], node->element_id()});
+            }
+        }
+
+        // Step 4: Process nodes
+        while (!queue.empty()) {
+            NodePriority current = queue.top();
+            queue.pop();
+
+            components.at(i).push_back(current.node);
+
+            // Update successors
+            for (auto& edge : this->out_edges(*current.node)) {
+                const DataFlowNode* successor = &edge.dst();
+                in_degree[successor]--;
+
+                if (in_degree[successor] == 0) {
+                    queue.push({successor, primary_incoming_count[successor], successor->element_id()});
                 }
             }
         }
