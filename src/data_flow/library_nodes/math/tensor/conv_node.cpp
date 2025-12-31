@@ -29,7 +29,7 @@ ConvNode::ConvNode(
           parent,
           LibraryNodeType_Conv,
           {"Y"},
-          {"X", "W"},  // B is optional, will be added dynamically if needed
+          {"X", "W"},  // B (bias) is optional; if provided as an edge, it must use connector "B"
           data_flow::ImplementationType_NONE
       ),
       kernel_shape_(kernel_shape),
@@ -125,19 +125,19 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     // The im2col transformation creates a matrix where each column contains the flattened
     // values from one receptive field of the input
     
-    // Get variable names
-    auto& X_var = x_node->data();
-    auto& W_var = w_node->data();
-    auto& Y_var = y_node->data();
+    // Get variable names (for future implementation)
+    // auto& X_var = x_node->data();
+    // auto& W_var = w_node->data();
+    // auto& Y_var = y_node->data();
 
-    // Create new sequence for expansion
-    auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
-
-    // For a simple implementation, we create nested loops to perform the convolution
-    // In a full implementation, this would use im2col + GEMM transformation
+    // Full im2col + GEMM expansion not yet implemented
+    // Future implementation will:
+    // 1. Create im2col transformation to convert input patches into columns
+    // 2. Reshape weights for matrix multiplication
+    // 3. Create GEMMNode for efficient matrix multiplication
+    // 4. Add bias if present
+    // 5. Reshape output to final tensor shape
     
-    // For now, return false to indicate expansion is not yet complete
-    // This is a placeholder that will be expanded in subsequent iterations
     return false;
 }
 
