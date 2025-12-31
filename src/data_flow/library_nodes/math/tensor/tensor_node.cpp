@@ -106,7 +106,7 @@ types::PrimitiveType TensorNode::primitive_type(const data_flow::DataFlowGraph& 
             first = false;
         } else if (result_type != edge_type) {
             throw InvalidSDFGException(
-                "TensorNode: All memlets must have the same primitive type. Found " +
+                "TensorNode: All input memlets must have the same primitive type. Found " +
                 std::string(types::primitive_type_to_string(result_type)) + " and " +
                 std::string(types::primitive_type_to_string(edge_type))
             );
@@ -137,7 +137,7 @@ types::PrimitiveType TensorNode::primitive_type(const data_flow::DataFlowGraph& 
             first = false;
         } else if (result_type != edge_type) {
             throw InvalidSDFGException(
-                "TensorNode: All memlets must have the same primitive type. Found " +
+                "TensorNode: All output memlets must have the same primitive type. Found " +
                 std::string(types::primitive_type_to_string(result_type)) + " and " +
                 std::string(types::primitive_type_to_string(edge_type))
             );
