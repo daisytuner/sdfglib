@@ -129,8 +129,6 @@ data_flow::LibraryNode& CastNodeSerializer::deserialize(
     assert(j.contains("shape"));
     assert(j.contains("target_type"));
 
-    auto code = j["code"].get<std::string>();
-
     std::vector<symbolic::Expression> shape;
     for (const auto& dim : j["shape"]) {
         shape.push_back(symbolic::parse(dim.get<std::string>()));
