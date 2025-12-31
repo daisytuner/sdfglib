@@ -6,7 +6,6 @@
 #include "sdfg/analysis/scope_analysis.h"
 
 #include "sdfg/data_flow/library_nodes/math/cmath/cmath_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/tensor_node.h"
 
 namespace sdfg {
 namespace math {
@@ -48,8 +47,8 @@ bool PowNode::expand_operation(
     }
     auto& output_node = builder.add_access(code_block, output_name);
 
-    std::string intrinsic_name = TensorNode::get_intrinsic_name("pow", input_type_a.primitive_type());
-    auto& tasklet = builder.add_library_node<math::cmath::CMathNode>(code_block, code_block.debug_info(), intrinsic_name, 2);
+    auto& tasklet = builder.add_library_node<math::cmath::CMathNode>(
+        code_block, code_block.debug_info(), cmath::CMathFunction::pow, input_type_a.primitive_type(), 2);
 
     if (input_type_a.type_id() == types::TypeID::Scalar) {
         builder.add_computational_memlet(code_block, *input_node_a, tasklet, "_in1", {}, input_type_a);

@@ -49,8 +49,8 @@ bool MinNode::expand_reduction(
         builder.add_computational_memlet(block, tasklet, "_out", out_write_access, output_subset, output_type, this->debug_info());
     } else {
         // For floating-point, use the correct fmin intrinsic
-        std::string intrinsic_name = TensorNode::get_intrinsic_name("fmin", input_type.primitive_type());
-        auto& libnode = builder.add_library_node<math::cmath::CMathNode>(block, this->debug_info(), intrinsic_name, 2);
+        auto& libnode = builder.add_library_node<math::cmath::CMathNode>(
+            block, this->debug_info(), cmath::CMathFunction::fmin, input_type.primitive_type(), 2);
 
         builder.add_computational_memlet(block, in_access, libnode, "_in1", input_subset, input_type, this->debug_info());
         builder.add_computational_memlet(block, out_read_access, libnode, "_in2", output_subset, output_type, this->debug_info());

@@ -6,7 +6,6 @@
 #include "sdfg/analysis/scope_analysis.h"
 
 #include "sdfg/data_flow/library_nodes/math/cmath/cmath_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/tensor_node.h"
 #include "sdfg/types/type.h"
 
 namespace sdfg {
@@ -47,8 +46,8 @@ bool AbsNode::expand_operation(
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_new, subset, output_type);
     } else {
         // For floating-point, use the correct fabs intrinsic
-        std::string intrinsic_name = TensorNode::get_intrinsic_name("fabs", input_type.primitive_type());
-        auto& libnode = builder.add_library_node<math::cmath::CMathNode>(code_block, body.debug_info(), intrinsic_name, 1);
+        auto& libnode = builder.add_library_node<math::cmath::CMathNode>(
+            code_block, body.debug_info(), cmath::CMathFunction::fabs, input_type.primitive_type(), 1);
         builder.add_computational_memlet(code_block, input_node_new, libnode, "_in1", subset, input_type);
         builder.add_computational_memlet(code_block, libnode, "_out", output_node_new, subset, output_type);
     }

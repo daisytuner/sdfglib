@@ -149,28 +149,6 @@ types::PrimitiveType TensorNode::get_primitive_type(const data_flow::DataFlowGra
     return result_type;
 }
 
-std::string TensorNode::get_intrinsic_name(const std::string& base_name, types::PrimitiveType prim_type) {
-    switch (prim_type) {
-        case types::PrimitiveType::Float:
-            return base_name + "f";
-        case types::PrimitiveType::Double:
-            return base_name;
-        case types::PrimitiveType::X86_FP80:
-        case types::PrimitiveType::FP128:
-        case types::PrimitiveType::PPC_FP128:
-            return base_name + "l";
-        case types::PrimitiveType::Half:
-        case types::PrimitiveType::BFloat:
-            // Half and BFloat are typically promoted to float for C math operations
-            // as there are no standard Half/BFloat intrinsics in C math library
-            return base_name + "f";
-        default:
-            // For integer types, this function shouldn't be called
-            // But if it is, return base name
-            return base_name;
-    }
-}
-
 data_flow::TaskletCode TensorNode::get_integer_minmax_tasklet(types::PrimitiveType prim_type, bool is_max) {
     bool is_signed = types::is_signed(prim_type);
     if (is_max) {

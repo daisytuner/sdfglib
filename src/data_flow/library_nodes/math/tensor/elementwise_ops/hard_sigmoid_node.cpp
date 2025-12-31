@@ -51,7 +51,8 @@ bool HardSigmoidNode::expand_operation(
     {
         auto& one_node = builder.add_constant(code_block, "1.0f", types::Scalar(output_type.primitive_type()));
         auto& tasklet =
-            builder.add_library_node<math::cmath::CMathNode>(code_block, code_block.debug_info(), "fmin", 2);
+            builder.add_library_node<math::cmath::CMathNode>(
+                code_block, code_block.debug_info(), cmath::CMathFunction::fmin, output_type.primitive_type(), 2);
         builder.add_computational_memlet(code_block, output_node_fma, tasklet, "_in1", subset, output_type);
         builder.add_computational_memlet(code_block, one_node, tasklet, "_in2", subset, output_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_min, subset, output_type);
@@ -60,7 +61,8 @@ bool HardSigmoidNode::expand_operation(
     {
         auto& zero_node = builder.add_constant(code_block, "0.0f", types::Scalar(output_type.primitive_type()));
         auto& tasklet =
-            builder.add_library_node<math::cmath::CMathNode>(code_block, code_block.debug_info(), "fmax", 2);
+            builder.add_library_node<math::cmath::CMathNode>(
+                code_block, code_block.debug_info(), cmath::CMathFunction::fmax, output_type.primitive_type(), 2);
         builder.add_computational_memlet(code_block, output_node_min, tasklet, "_in1", subset, output_type);
         builder.add_computational_memlet(code_block, zero_node, tasklet, "_in2", subset, output_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_max, subset, output_type);

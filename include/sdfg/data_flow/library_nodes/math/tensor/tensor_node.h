@@ -96,20 +96,6 @@ public:
 
 protected:
     /**
-     * @brief Get the correct C math intrinsic name for a given base name and primitive type
-     *
-     * Returns the appropriate intrinsic function name based on the primitive type:
-     * - Float: adds 'f' suffix (e.g., "fmax" -> "fmaxf")
-     * - Double: uses base name (e.g., "fmax" -> "fmax")
-     * - Long Double/X86_FP80: adds 'l' suffix (e.g., "fmax" -> "fmaxl")
-     *
-     * @param base_name Base intrinsic name (e.g., "fmax", "fmin", "fabs", "sqrt")
-     * @param prim_type The primitive type to generate the intrinsic for
-     * @return The correct intrinsic function name
-     */
-    static std::string get_intrinsic_name(const std::string& base_name, types::PrimitiveType prim_type);
-
-    /**
      * @brief Get the appropriate tasklet code for min/max operations on integers
      *
      * Selects between signed and unsigned variants based on the primitive type.
