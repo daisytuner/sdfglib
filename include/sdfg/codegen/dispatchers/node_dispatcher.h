@@ -1,3 +1,19 @@
+/**
+ * @file node_dispatcher.h
+ * @brief Dispatcher base class for code generation from control flow nodes
+ *
+ * Dispatchers are responsible for generating code from SDFG control flow nodes.
+ * Each control flow node type (Block, Map, For, While, etc.) has a corresponding
+ * dispatcher that knows how to generate the appropriate code.
+ *
+ * The dispatcher pattern allows separation of code generation logic from the
+ * SDFG representation, making it easier to support multiple target languages
+ * and platforms.
+ *
+ * @see node_dispatcher_registry.h for dispatcher registration
+ * @see block_dispatcher.h for dataflow and library node dispatching
+ */
+
 #pragma once
 
 #include "sdfg/analysis/analysis.h"
@@ -14,6 +30,14 @@
 namespace sdfg {
 namespace codegen {
 
+/**
+ * @class NodeDispatcher
+ * @brief Base class for dispatching control flow nodes to code
+ *
+ * NodeDispatcher provides the interface for generating code from SDFG control
+ * flow nodes. Each node type has a corresponding dispatcher implementation
+ * that knows how to generate appropriate code for that node.
+ */
 class NodeDispatcher {
 private:
     structured_control_flow::ControlFlowNode& node_;
