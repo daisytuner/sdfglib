@@ -7,8 +7,8 @@
  *
  * ## Tensor Library Nodes
  *
- * Like all tensor library nodes, ReduceNode expects **scalars or flat pointers
- * of scalars** as inputs. The tensor operation is performed with **linearized indices**.
+ * ReduceNode expects **scalars or flat pointers of scalars** as inputs.
+ * The tensor operation is performed with **linearized indices**.
  *
  * ## Reduction Operations
  *

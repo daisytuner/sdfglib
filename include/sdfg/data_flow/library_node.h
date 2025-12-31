@@ -2,9 +2,8 @@
  * @file library_node.h
  * @brief Library node definitions for calling functions beyond simple instructions
  *
- * Library nodes are objects of the dataflow graph that allow us to call functions
- * beyond simple instructions (tasklets). They represent pre-defined operations that
- * can have multiple implementations and can be expanded into more primitive operations.
+ * Library nodes are objects of the dataflow graph that represent pre-defined operations
+ * that can have multiple implementations and can be expanded into more primitive operations.
  *
  * ## Key Concepts
  *
@@ -12,16 +11,16 @@
  * Library nodes provide a high-level abstraction for complex operations such as:
  * - Mathematical operations (BLAS, tensor operations)
  * - Standard library functions (malloc, memcpy, memset)
- * - Custom library calls
+ * - Custom function calls
  *
  * ### Implementation Types
  * Library nodes can have different implementations specified via ImplementationType:
- * - ImplementationType_NONE: No specific implementation, should be expanded
- * - Custom implementation types (e.g., BLAS, CUBLAS) for library-specific dispatch
+ * - ImplementationType_NONE: No specific implementation, single dispatcher or expansion
+ * - Custom implementation types (e.g., BLAS, CUBLAS) for selection of dispatcher
  *
  * The implementation type determines how the library node is code-generated:
- * - If implementation_type is NONE, the node may be expanded into primitive operations
- * - If implementation_type is set, a dispatcher generates library-specific code
+ * - If implementation_type is NONE, the node may only have a single dispatcher or must be expanded
+ * - If implementation_type is set, a dispatcher generates specific code
  *
  * ## Example
  *
@@ -68,7 +67,7 @@ typedef StringEnum LibraryNodeCode;
  *
  * Determines how a library node should be implemented during code generation.
  * Each library node can specify an implementation type that indicates:
- * - Whether to expand the node into primitive operations (NONE)
+ * - Whether is only has a single dispatcher or expand the node into primitive operations (NONE)
  * - Which library implementation to use (BLAS, CUBLAS, etc.)
  */
 typedef StringEnum ImplementationType;
@@ -76,8 +75,9 @@ typedef StringEnum ImplementationType;
 /**
  * @brief Default implementation type indicating no specific implementation
  *
- * When a library node has ImplementationType_NONE, it may be expanded into
- * more primitive operations during the expansion pass.
+ * When a library node has ImplementationType_NONE, it may be code-generated
+ * using a single dispatcher or is expanded into more primitive operations
+ * during the expansion pass.
  */
 inline ImplementationType ImplementationType_NONE{""};
 
