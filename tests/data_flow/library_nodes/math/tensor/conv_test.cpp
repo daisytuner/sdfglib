@@ -95,6 +95,18 @@ TEST(ConvNodeTest, Conv1D_Kernel3) {
     );
 }
 
+// Test 1D convolution with kernel size 5
+TEST(ConvNodeTest, Conv1D_Kernel5) {
+    TestConvNode(
+        {5},           // kernel_shape
+        {2},           // strides
+        {2, 2},        // pads
+        {1},           // dilations
+        1,             // group
+        false          // no bias
+    );
+}
+
 // Test 2D convolution with kernel size 3x3
 TEST(ConvNodeTest, Conv2D_Kernel3x3) {
     TestConvNode(
@@ -200,6 +212,30 @@ TEST(ConvNodeTest, Conv2D_Grouped) {
         {1, 1},        // dilations
         2,             // group (grouped convolution)
         false          // no bias
+    );
+}
+
+// Test 3D convolution with kernel size 3x3x3
+TEST(ConvNodeTest, Conv3D_Kernel3x3x3) {
+    TestConvNode(
+        {3, 3, 3},           // kernel_shape
+        {1, 1, 1},           // strides
+        {1, 1, 1, 1, 1, 1},  // pads (depth, height, width)
+        {1, 1, 1},           // dilations
+        1,                   // group
+        false                // no bias
+    );
+}
+
+// Test 3D convolution with kernel size 2x2x2 and stride 2
+TEST(ConvNodeTest, Conv3D_Kernel2x2x2_Stride2) {
+    TestConvNode(
+        {2, 2, 2},           // kernel_shape
+        {2, 2, 2},           // strides
+        {0, 0, 0, 0, 0, 0},  // pads (no padding)
+        {1, 1, 1},           // dilations
+        1,                   // group
+        false                // no bias
     );
 }
 

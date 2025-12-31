@@ -23,12 +23,15 @@
  *
  * ## Expansion via im2col
  *
- * The convolution is expanded into a matrix multiplication using the im2col
- * (image to column) transformation:
- * 1. Transform input patches into columns
- * 2. Perform matrix multiplication (GEMM)
- * 3. Add bias (if present)
- * 4. Reshape to output tensor
+ * The convolution is expanded into nested maps using a direct convolution approach:
+ * 1. Create outer maps for parallel iteration over batch and output dimensions
+ * 2. Create inner loops for sequential accumulation over input channels and kernel
+ * 3. Compute convolution using FMA (fused multiply-add) operations
+ * 4. Add bias (if present)
+ * 5. Write results to output tensor
+ * 
+ * The expansion supports n-dimensional convolutions (1D, 2D, 3D, etc.) with
+ * configurable strides and padding for each spatial dimension.
  */
 
 #pragma once
@@ -49,14 +52,21 @@ inline data_flow::LibraryNodeCode LibraryNodeType_Conv("ml::Conv");
  * @brief Convolution operation following ONNX Conv operator specification
  *
  * ConvNode represents a convolution operation that is compatible with the
- * ONNX Conv operator. The operation is expanded using the im2col transformation
- * into a GEMM operation for efficient computation.
+ * ONNX Conv operator. The operation is expanded using nested maps for
+ * n-dimensional convolutions (1D, 2D, 3D, etc.).
  *
  * ## Input/Output Requirements
  * - Input connector "X": Input tensor [N, C_in, D1, ..., Dn]
  * - Input connector "W": Weight tensor [C_out, C_in/group, k1, ..., kn]
  * - Input connector "B" (optional): Bias tensor [C_out]
  * - Output connector "Y": Output tensor [N, C_out, D1_out, ..., Dn_out]
+ *
+ * ## Expansion Support
+ * - ✅ 1D, 2D, 3D, and higher-dimensional convolutions
+ * - ✅ Configurable strides for each spatial dimension
+ * - ✅ Configurable padding (start and end) for each spatial dimension
+ * - ✅ Optional bias addition
+ * - ⚠️ Grouped convolutions and dilations not yet expanded (returns false)
  *
  * ## Example
  *
@@ -140,18 +150,21 @@ public:
     void validate(const Function& function) const override;
 
     /**
-     * @brief Expand convolution into im2col transformation + GEMM
+     * @brief Expand convolution into nested maps for n-dimensional convolution
      *
      * Expands the convolution operation by:
-     * 1. Creating im2col transformation to convert input patches to columns
-     * 2. Reshaping weights appropriately
-     * 3. Creating GEMM node for matrix multiplication
+     * 1. Creating outer maps for parallel iteration over batch and output dimensions
+     * 2. Creating inner for loops for sequential accumulation over input channels and kernel
+     * 3. Computing convolution using FMA (fused multiply-add) tasklets
      * 4. Adding bias if present
-     * 5. Reshaping output to final tensor shape
+     * 5. Writing results to output tensor
+     * 
+     * Supports n-dimensional convolutions (1D, 2D, 3D, and higher) with
+     * configurable strides and padding for each spatial dimension.
      *
      * @param builder SDFG builder
      * @param analysis_manager Analysis manager
-     * @return True if expansion succeeded
+     * @return True if expansion succeeded, false for unsupported configurations
      */
     bool expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
 

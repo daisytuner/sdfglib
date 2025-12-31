@@ -129,22 +129,33 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         }
     }
 
-    // For now, only support 2D convolution (2 spatial dimensions)
-    if (kernel_shape_.size() != 2) {
-        return false; // Only 2D conv supported for now
+    // Support n-dimensional convolutions
+    size_t spatial_dims = kernel_shape_.size();
+    
+    if (spatial_dims == 0) {
+        return false; // Need at least 1 spatial dimension
     }
     
-    // Extract kernel shape
-    auto kh = kernel_shape_[0];
-    auto kw = kernel_shape_[1];
-    
     // Get strides (default to 1 if not provided)
-    symbolic::Expression stride_h = strides_.size() >= 1 ? strides_[0] : static_cast<symbolic::Expression>(symbolic::one());
-    symbolic::Expression stride_w = strides_.size() >= 2 ? strides_[1] : static_cast<symbolic::Expression>(symbolic::one());
+    std::vector<symbolic::Expression> strides_vec;
+    for (size_t i = 0; i < spatial_dims; ++i) {
+        if (i < strides_.size()) {
+            strides_vec.push_back(strides_[i]);
+        } else {
+            strides_vec.push_back(static_cast<symbolic::Expression>(symbolic::one()));
+        }
+    }
     
     // Get padding (default to 0 if not provided)
-    symbolic::Expression pad_h_begin = pads_.size() >= 1 ? pads_[0] : static_cast<symbolic::Expression>(symbolic::zero());
-    symbolic::Expression pad_w_begin = pads_.size() >= 2 ? pads_[1] : static_cast<symbolic::Expression>(symbolic::zero());
+    // Pads format: [begin_0, begin_1, ..., begin_n, end_0, end_1, ..., end_n]
+    std::vector<symbolic::Expression> pads_begin_vec;
+    for (size_t i = 0; i < spatial_dims; ++i) {
+        if (i < pads_.size()) {
+            pads_begin_vec.push_back(pads_[i]);
+        } else {
+            pads_begin_vec.push_back(static_cast<symbolic::Expression>(symbolic::zero()));
+        }
+    }
 
     // Get variable names
     auto& X_var = x_node->data();
@@ -152,22 +163,22 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& Y_var = y_node->data();
 
     // Symbolic variables for dimensions (these should be defined based on the problem)
-    // For a generic implementation, we define symbolic dimensions
-    // Input X shape: [N, C_in, H_in, W_in]
-    // Weight W shape: [C_out, C_in, KH, KW]
-    // Output Y shape: [N, C_out, H_out, W_out]
-    // where H_out = (H_in + pad_h_begin + pad_h_end - KH) / stride_h + 1
+    // For a generic n-dimensional implementation:
+    // Input X shape: [N, C_in, D0_in, D1_in, ..., Dn_in]
+    // Weight W shape: [C_out, C_in, K0, K1, ..., Kn]
+    // Output Y shape: [N, C_out, D0_out, D1_out, ..., Dn_out]
     
     // Create symbolic dimension variables
     auto N = symbolic::symbol(builder.find_new_name("N"));
     auto C_in = symbolic::symbol(builder.find_new_name("C_in"));
     auto C_out = symbolic::symbol(builder.find_new_name("C_out"));
-    auto H_in = symbolic::symbol(builder.find_new_name("H_in"));
-    auto W_in = symbolic::symbol(builder.find_new_name("W_in"));
     
-    // Calculate output dimensions
-    auto H_out = symbolic::symbol(builder.find_new_name("H_out"));
-    auto W_out = symbolic::symbol(builder.find_new_name("W_out"));
+    // Create symbolic variables for output spatial dimensions
+    std::vector<symbolic::Expression> output_spatial_dims;
+    for (size_t i = 0; i < spatial_dims; ++i) {
+        auto dim_name = builder.find_new_name("D" + std::to_string(i) + "_out");
+        output_spatial_dims.push_back(symbolic::symbol(dim_name));
+    }
 
     // Create new sequence for expansion
     auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
@@ -178,6 +189,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     
     structured_control_flow::Sequence* current_scope = &new_sequence;
     std::vector<symbolic::Expression> output_indices;
+    std::vector<symbolic::Expression> output_spatial_vars;
     
     // Map over batch dimension
     std::string n_str = builder.find_new_name("n");
@@ -213,39 +225,25 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     current_scope = &map_oc.root();
     output_indices.push_back(oc_var);
     
-    // Map over output height dimension
-    std::string oh_str = builder.find_new_name("oh");
-    builder.add_container(oh_str, types::Scalar(types::PrimitiveType::UInt64));
-    auto oh_var = symbolic::symbol(oh_str);
-    auto& map_oh = builder.add_map(
-        *current_scope,
-        oh_var,
-        symbolic::Lt(oh_var, H_out),
-        symbolic::zero(),
-        symbolic::add(oh_var, symbolic::one()),
-        structured_control_flow::ScheduleType_Sequential::create(),
-        {},
-        block.debug_info()
-    );
-    current_scope = &map_oh.root();
-    output_indices.push_back(oh_var);
-    
-    // Map over output width dimension
-    std::string ow_str = builder.find_new_name("ow");
-    builder.add_container(ow_str, types::Scalar(types::PrimitiveType::UInt64));
-    auto ow_var = symbolic::symbol(ow_str);
-    auto& map_ow = builder.add_map(
-        *current_scope,
-        ow_var,
-        symbolic::Lt(ow_var, W_out),
-        symbolic::zero(),
-        symbolic::add(ow_var, symbolic::one()),
-        structured_control_flow::ScheduleType_Sequential::create(),
-        {},
-        block.debug_info()
-    );
-    current_scope = &map_ow.root();
-    output_indices.push_back(ow_var);
+    // Map over each output spatial dimension dynamically
+    for (size_t i = 0; i < spatial_dims; ++i) {
+        std::string od_str = builder.find_new_name("od" + std::to_string(i));
+        builder.add_container(od_str, types::Scalar(types::PrimitiveType::UInt64));
+        auto od_var = symbolic::symbol(od_str);
+        auto& map_od = builder.add_map(
+            *current_scope,
+            od_var,
+            symbolic::Lt(od_var, output_spatial_dims[i]),
+            symbolic::zero(),
+            symbolic::add(od_var, symbolic::one()),
+            structured_control_flow::ScheduleType_Sequential::create(),
+            {},
+            block.debug_info()
+        );
+        current_scope = &map_od.root();
+        output_indices.push_back(od_var);
+        output_spatial_vars.push_back(od_var);
+    }
     
     // Create accumulator variable for the sum
     std::string accum_var = builder.find_new_name("_conv_accum");
@@ -275,53 +273,43 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     );
     auto* loop_scope = &for_ic.root();
     
-    // For loop over kernel height
-    std::string kh_str = builder.find_new_name("kh");
-    builder.add_container(kh_str, types::Scalar(types::PrimitiveType::UInt64));
-    auto kh_var = symbolic::symbol(kh_str);
-    auto& for_kh = builder.add_for(
-        *loop_scope,
-        kh_var,
-        symbolic::Lt(kh_var, kh),
-        symbolic::zero(),
-        symbolic::add(kh_var, symbolic::one()),
-        {},
-        block.debug_info()
-    );
-    loop_scope = &for_kh.root();
-    
-    // For loop over kernel width
-    std::string kw_str = builder.find_new_name("kw");
-    builder.add_container(kw_str, types::Scalar(types::PrimitiveType::UInt64));
-    auto kw_var = symbolic::symbol(kw_str);
-    auto& for_kw = builder.add_for(
-        *loop_scope,
-        kw_var,
-        symbolic::Lt(kw_var, kw),
-        symbolic::zero(),
-        symbolic::add(kw_var, symbolic::one()),
-        {},
-        block.debug_info()
-    );
-    loop_scope = &for_kw.root();
+    // For loops over each kernel spatial dimension
+    std::vector<symbolic::Expression> kernel_vars;
+    for (size_t i = 0; i < spatial_dims; ++i) {
+        std::string k_str = builder.find_new_name("k" + std::to_string(i));
+        builder.add_container(k_str, types::Scalar(types::PrimitiveType::UInt64));
+        auto k_var = symbolic::symbol(k_str);
+        auto& for_k = builder.add_for(
+            *loop_scope,
+            k_var,
+            symbolic::Lt(k_var, kernel_shape_[i]),
+            symbolic::zero(),
+            symbolic::add(k_var, symbolic::one()),
+            {},
+            block.debug_info()
+        );
+        loop_scope = &for_k.root();
+        kernel_vars.push_back(k_var);
+    }
     
     // Compute indices for input and weight access
-    // Input index: [n, ic, oh * stride_h - pad_h + kh, ow * stride_w - pad_w + kw]
-    auto ih = symbolic::add(
-        symbolic::sub(symbolic::mul(oh_var, stride_h), pad_h_begin),
-        kh_var
-    );
-    auto iw = symbolic::add(
-        symbolic::sub(symbolic::mul(ow_var, stride_w), pad_w_begin),
-        kw_var
-    );
+    // Input index: [n, ic, od0 * stride0 - pad0 + k0, od1 * stride1 - pad1 + k1, ...]
+    // Weight index: [oc, ic, k0, k1, ...]
+    std::vector<symbolic::Expression> input_spatial_indices;
+    for (size_t i = 0; i < spatial_dims; ++i) {
+        auto input_idx = symbolic::add(
+            symbolic::sub(symbolic::mul(output_spatial_vars[i], strides_vec[i]), pads_begin_vec[i]),
+            kernel_vars[i]
+        );
+        input_spatial_indices.push_back(input_idx);
+    }
     
     // Create computation block
     auto& comp_block = builder.add_block(*loop_scope, {}, block.debug_info());
     
-    // Access input X[n, ic, ih, iw]
+    // Access input X[n, ic, input_spatial_indices...]
     auto& x_access = builder.add_access(comp_block, X_var, x_node->debug_info());
-    // Access weight W[oc, ic, kh, kw]
+    // Access weight W[oc, ic, k0, k1, ...]
     auto& w_access = builder.add_access(comp_block, W_var, w_node->debug_info());
     // Access accumulator
     auto& accum_read = builder.add_access(comp_block, accum_var, block.debug_info());
@@ -336,10 +324,15 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         block.debug_info()
     );
     
-    // Connect edges with proper subsets
-    // Note: This is a simplified version - proper implementation would need linearized indices
-    std::vector<symbolic::Expression> x_subset_vec = {n_var, ic_var, ih, iw};
-    std::vector<symbolic::Expression> w_subset_vec = {oc_var, ic_var, kh_var, kw_var};
+    // Connect edges with proper subsets for n-dimensional convolution
+    // X subset: [n, ic, input_spatial_indices...]
+    std::vector<symbolic::Expression> x_subset_vec = {n_var, ic_var};
+    x_subset_vec.insert(x_subset_vec.end(), input_spatial_indices.begin(), input_spatial_indices.end());
+    
+    // W subset: [oc, ic, k0, k1, ...]
+    std::vector<symbolic::Expression> w_subset_vec = {oc_var, ic_var};
+    w_subset_vec.insert(w_subset_vec.end(), kernel_vars.begin(), kernel_vars.end());
+    
     data_flow::Subset x_subset(x_subset_vec.begin(), x_subset_vec.end());
     data_flow::Subset w_subset(w_subset_vec.begin(), w_subset_vec.end());
     
