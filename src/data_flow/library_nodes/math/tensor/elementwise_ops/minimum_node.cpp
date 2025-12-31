@@ -67,7 +67,8 @@ bool MinimumNode::expand_operation(
     } else {
         // Use intrinsics for floating-point types with correct suffix
         auto& node = builder.add_library_node<cmath::CMathNode>(
-            code_block, this->debug_info(), cmath::CMathFunction::fmin, input_type_a.primitive_type(), 2);
+            code_block, this->debug_info(), cmath::CMathFunction::fmin, input_type_a.primitive_type(), 2
+        );
 
         if (input_type_a.type_id() == types::TypeID::Scalar) {
             builder.add_computational_memlet(code_block, *input_node_a, node, "_in1", {}, input_type_a, DebugInfo());

@@ -33,7 +33,7 @@ public:
     ) override;
 
     std::string identity() const override;
-    
+
     bool supports_integer_types() const override { return true; }
 
     std::unique_ptr<data_flow::DataFlowNode>

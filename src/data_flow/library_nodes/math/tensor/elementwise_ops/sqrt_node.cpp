@@ -36,7 +36,8 @@ bool SqrtNode::expand_operation(
     auto& output_node = builder.add_access(code_block, output_name);
 
     auto& tasklet = builder.add_library_node<math::cmath::CMathNode>(
-        code_block, code_block.debug_info(), cmath::CMathFunction::sqrt, input_type.primitive_type(), 1);
+        code_block, code_block.debug_info(), cmath::CMathFunction::sqrt, input_type.primitive_type(), 1
+    );
 
     builder.add_computational_memlet(code_block, input_node, tasklet, "_in1", subset, input_type);
     builder.add_computational_memlet(code_block, tasklet, "_out", output_node, subset, output_type);

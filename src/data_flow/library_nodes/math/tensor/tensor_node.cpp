@@ -24,7 +24,8 @@ void TensorNode::validate(const Function& function) const {
 
     // Check that all input memlets are scalar or pointer of scalar
     for (auto& iedge : graph.in_edges(*this)) {
-        if (iedge.base_type().type_id() != types::TypeID::Scalar && iedge.base_type().type_id() != types::TypeID::Pointer) {
+        if (iedge.base_type().type_id() != types::TypeID::Scalar &&
+            iedge.base_type().type_id() != types::TypeID::Pointer) {
             throw InvalidSDFGException(
                 "TensorNode: Input memlet must be of scalar or pointer type. Found type: " + iedge.base_type().print()
             );
@@ -45,7 +46,8 @@ void TensorNode::validate(const Function& function) const {
 
     // Check that all output memlets are scalar or pointer of scalar
     for (auto& oedge : graph.out_edges(*this)) {
-        if (oedge.base_type().type_id() != types::TypeID::Scalar && oedge.base_type().type_id() != types::TypeID::Pointer) {
+        if (oedge.base_type().type_id() != types::TypeID::Scalar &&
+            oedge.base_type().type_id() != types::TypeID::Pointer) {
             throw InvalidSDFGException(
                 "TensorNode: Output memlet must be of scalar or pointer type. Found type: " + oedge.base_type().print()
             );

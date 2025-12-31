@@ -2,15 +2,15 @@
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 
+#include "sdfg/data_flow/library_nodes/math/cmath/cmath_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/abs_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/add_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/div_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/exp_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/maximum_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/minimum_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/exp_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/reduce_ops/max_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/reduce_ops/sum_node.h"
-#include "sdfg/data_flow/library_nodes/math/cmath/cmath_node.h"
 
 using namespace sdfg;
 
@@ -40,7 +40,7 @@ TEST(TensorPrimitiveTypeTest, MaximumNodeInt32) {
 
     // Should not throw and should validate successfully
     EXPECT_NO_THROW(node.validate(*sdfg.root_function()));
-    
+
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(node.expand(builder, analysis_manager));
 }
@@ -70,7 +70,7 @@ TEST(TensorPrimitiveTypeTest, MaximumNodeFloat) {
     builder.add_computational_memlet(block, node, "C", c_node, {}, desc_ptr, block.debug_info());
 
     EXPECT_NO_THROW(node.validate(*sdfg.root_function()));
-    
+
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(node.expand(builder, analysis_manager));
 }
@@ -100,7 +100,7 @@ TEST(TensorPrimitiveTypeTest, MaximumNodeDouble) {
     builder.add_computational_memlet(block, node, "C", c_node, {}, desc_ptr, block.debug_info());
 
     EXPECT_NO_THROW(node.validate(*sdfg.root_function()));
-    
+
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(node.expand(builder, analysis_manager));
 }
@@ -130,7 +130,7 @@ TEST(TensorPrimitiveTypeTest, MaximumNodeUInt32) {
     builder.add_computational_memlet(block, node, "C", c_node, {}, desc_ptr, block.debug_info());
 
     EXPECT_NO_THROW(node.validate(*sdfg.root_function()));
-    
+
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(node.expand(builder, analysis_manager));
 }
@@ -212,7 +212,7 @@ TEST(TensorPrimitiveTypeTest, AbsNodeInt32) {
     builder.add_computational_memlet(block, node, "Y", b_node, {}, desc_ptr, block.debug_info());
 
     EXPECT_NO_THROW(node.validate(*sdfg.root_function()));
-    
+
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(node.expand(builder, analysis_manager));
 }
@@ -240,7 +240,7 @@ TEST(TensorPrimitiveTypeTest, ReduceMaxInt64) {
     builder.add_computational_memlet(block, node, "Y", b_node, {}, desc_ptr, block.debug_info());
 
     EXPECT_NO_THROW(node.validate(*sdfg.root_function()));
-    
+
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(node.expand(builder, analysis_manager));
 }
@@ -268,7 +268,7 @@ TEST(TensorPrimitiveTypeTest, ReduceSumInt32) {
     builder.add_computational_memlet(block, node, "Y", b_node, {}, desc_ptr, block.debug_info());
 
     EXPECT_NO_THROW(node.validate(*sdfg.root_function()));
-    
+
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(node.expand(builder, analysis_manager));
 }
@@ -639,4 +639,3 @@ TEST(TensorPrimitiveTypeTest, ExpNodeFloatGeneratesExpfIntrinsic) {
     ASSERT_NE(cmath_node, nullptr);
     EXPECT_EQ(cmath_node->name(), "expf");
 }
-

@@ -27,7 +27,7 @@ enum class CMathFunction {
     acos,
     atan,
     atan2,
-    
+
     // Hyperbolic functions
     sinh,
     cosh,
@@ -35,7 +35,7 @@ enum class CMathFunction {
     asinh,
     acosh,
     atanh,
-    
+
     // Exponential and logarithmic functions
     exp,
     exp2,
@@ -44,19 +44,19 @@ enum class CMathFunction {
     log10,
     log2,
     log1p,
-    
+
     // Power functions
     pow,
     sqrt,
     cbrt,
     hypot,
-    
+
     // Error and gamma functions
     erf,
     erfc,
     tgamma,
     lgamma,
-    
+
     // Rounding and remainder functions
     ceil,
     floor,
@@ -70,7 +70,7 @@ enum class CMathFunction {
     llrint,
     fmod,
     remainder,
-    
+
     // Floating-point manipulation functions
     frexp,
     ldexp,
@@ -82,12 +82,12 @@ enum class CMathFunction {
     nextafter,
     nexttoward,
     copysign,
-    
+
     // Minimum, maximum, difference functions
     fmax,
     fmin,
     fdim,
-    
+
     // Other functions
     fabs,
     abs,
@@ -101,62 +101,118 @@ enum class CMathFunction {
  */
 constexpr const char* cmath_function_to_stem(CMathFunction func) {
     switch (func) {
-        case CMathFunction::sin: return "sin";
-        case CMathFunction::cos: return "cos";
-        case CMathFunction::tan: return "tan";
-        case CMathFunction::asin: return "asin";
-        case CMathFunction::acos: return "acos";
-        case CMathFunction::atan: return "atan";
-        case CMathFunction::atan2: return "atan2";
-        case CMathFunction::sinh: return "sinh";
-        case CMathFunction::cosh: return "cosh";
-        case CMathFunction::tanh: return "tanh";
-        case CMathFunction::asinh: return "asinh";
-        case CMathFunction::acosh: return "acosh";
-        case CMathFunction::atanh: return "atanh";
-        case CMathFunction::exp: return "exp";
-        case CMathFunction::exp2: return "exp2";
-        case CMathFunction::expm1: return "expm1";
-        case CMathFunction::log: return "log";
-        case CMathFunction::log10: return "log10";
-        case CMathFunction::log2: return "log2";
-        case CMathFunction::log1p: return "log1p";
-        case CMathFunction::pow: return "pow";
-        case CMathFunction::sqrt: return "sqrt";
-        case CMathFunction::cbrt: return "cbrt";
-        case CMathFunction::hypot: return "hypot";
-        case CMathFunction::erf: return "erf";
-        case CMathFunction::erfc: return "erfc";
-        case CMathFunction::tgamma: return "tgamma";
-        case CMathFunction::lgamma: return "lgamma";
-        case CMathFunction::ceil: return "ceil";
-        case CMathFunction::floor: return "floor";
-        case CMathFunction::trunc: return "trunc";
-        case CMathFunction::round: return "round";
-        case CMathFunction::lround: return "lround";
-        case CMathFunction::llround: return "llround";
-        case CMathFunction::nearbyint: return "nearbyint";
-        case CMathFunction::rint: return "rint";
-        case CMathFunction::lrint: return "lrint";
-        case CMathFunction::llrint: return "llrint";
-        case CMathFunction::fmod: return "fmod";
-        case CMathFunction::remainder: return "remainder";
-        case CMathFunction::frexp: return "frexp";
-        case CMathFunction::ldexp: return "ldexp";
-        case CMathFunction::modf: return "modf";
-        case CMathFunction::scalbn: return "scalbn";
-        case CMathFunction::scalbln: return "scalbln";
-        case CMathFunction::ilogb: return "ilogb";
-        case CMathFunction::logb: return "logb";
-        case CMathFunction::nextafter: return "nextafter";
-        case CMathFunction::nexttoward: return "nexttoward";
-        case CMathFunction::copysign: return "copysign";
-        case CMathFunction::fmax: return "fmax";
-        case CMathFunction::fmin: return "fmin";
-        case CMathFunction::fdim: return "fdim";
-        case CMathFunction::fabs: return "fabs";
-        case CMathFunction::abs: return "abs";
-        case CMathFunction::fma: return "fma";
+        case CMathFunction::sin:
+            return "sin";
+        case CMathFunction::cos:
+            return "cos";
+        case CMathFunction::tan:
+            return "tan";
+        case CMathFunction::asin:
+            return "asin";
+        case CMathFunction::acos:
+            return "acos";
+        case CMathFunction::atan:
+            return "atan";
+        case CMathFunction::atan2:
+            return "atan2";
+        case CMathFunction::sinh:
+            return "sinh";
+        case CMathFunction::cosh:
+            return "cosh";
+        case CMathFunction::tanh:
+            return "tanh";
+        case CMathFunction::asinh:
+            return "asinh";
+        case CMathFunction::acosh:
+            return "acosh";
+        case CMathFunction::atanh:
+            return "atanh";
+        case CMathFunction::exp:
+            return "exp";
+        case CMathFunction::exp2:
+            return "exp2";
+        case CMathFunction::expm1:
+            return "expm1";
+        case CMathFunction::log:
+            return "log";
+        case CMathFunction::log10:
+            return "log10";
+        case CMathFunction::log2:
+            return "log2";
+        case CMathFunction::log1p:
+            return "log1p";
+        case CMathFunction::pow:
+            return "pow";
+        case CMathFunction::sqrt:
+            return "sqrt";
+        case CMathFunction::cbrt:
+            return "cbrt";
+        case CMathFunction::hypot:
+            return "hypot";
+        case CMathFunction::erf:
+            return "erf";
+        case CMathFunction::erfc:
+            return "erfc";
+        case CMathFunction::tgamma:
+            return "tgamma";
+        case CMathFunction::lgamma:
+            return "lgamma";
+        case CMathFunction::ceil:
+            return "ceil";
+        case CMathFunction::floor:
+            return "floor";
+        case CMathFunction::trunc:
+            return "trunc";
+        case CMathFunction::round:
+            return "round";
+        case CMathFunction::lround:
+            return "lround";
+        case CMathFunction::llround:
+            return "llround";
+        case CMathFunction::nearbyint:
+            return "nearbyint";
+        case CMathFunction::rint:
+            return "rint";
+        case CMathFunction::lrint:
+            return "lrint";
+        case CMathFunction::llrint:
+            return "llrint";
+        case CMathFunction::fmod:
+            return "fmod";
+        case CMathFunction::remainder:
+            return "remainder";
+        case CMathFunction::frexp:
+            return "frexp";
+        case CMathFunction::ldexp:
+            return "ldexp";
+        case CMathFunction::modf:
+            return "modf";
+        case CMathFunction::scalbn:
+            return "scalbn";
+        case CMathFunction::scalbln:
+            return "scalbln";
+        case CMathFunction::ilogb:
+            return "ilogb";
+        case CMathFunction::logb:
+            return "logb";
+        case CMathFunction::nextafter:
+            return "nextafter";
+        case CMathFunction::nexttoward:
+            return "nexttoward";
+        case CMathFunction::copysign:
+            return "copysign";
+        case CMathFunction::fmax:
+            return "fmax";
+        case CMathFunction::fmin:
+            return "fmin";
+        case CMathFunction::fdim:
+            return "fdim";
+        case CMathFunction::fabs:
+            return "fabs";
+        case CMathFunction::abs:
+            return "abs";
+        case CMathFunction::fma:
+            return "fma";
     }
     return "";
 }
@@ -175,7 +231,7 @@ constexpr const char* cmath_function_to_stem(CMathFunction func) {
  */
 inline std::string get_cmath_intrinsic_name(CMathFunction func, types::PrimitiveType prim_type) {
     std::string base_name = cmath_function_to_stem(func);
-    
+
     switch (prim_type) {
         case types::PrimitiveType::Float:
             return base_name + "f";

@@ -44,17 +44,27 @@ bool MaxNode::expand_reduction(
         auto tasklet_code = TensorNode::get_integer_minmax_tasklet(input_type.primitive_type(), true);
         auto& tasklet = builder.add_tasklet(block, tasklet_code, "_out", {"_in1", "_in2"});
 
-        builder.add_computational_memlet(block, in_access, tasklet, "_in1", input_subset, input_type, this->debug_info());
-        builder.add_computational_memlet(block, out_read_access, tasklet, "_in2", output_subset, output_type, this->debug_info());
-        builder.add_computational_memlet(block, tasklet, "_out", out_write_access, output_subset, output_type, this->debug_info());
+        builder
+            .add_computational_memlet(block, in_access, tasklet, "_in1", input_subset, input_type, this->debug_info());
+        builder.add_computational_memlet(
+            block, out_read_access, tasklet, "_in2", output_subset, output_type, this->debug_info()
+        );
+        builder.add_computational_memlet(
+            block, tasklet, "_out", out_write_access, output_subset, output_type, this->debug_info()
+        );
     } else {
         // For floating-point, use the correct fmax intrinsic
-        auto& libnode = builder.add_library_node<math::cmath::CMathNode>(
-            block, this->debug_info(), cmath::CMathFunction::fmax, input_type.primitive_type(), 2);
+        auto& libnode = builder.add_library_node<
+            math::cmath::CMathNode>(block, this->debug_info(), cmath::CMathFunction::fmax, input_type.primitive_type(), 2);
 
-        builder.add_computational_memlet(block, in_access, libnode, "_in1", input_subset, input_type, this->debug_info());
-        builder.add_computational_memlet(block, out_read_access, libnode, "_in2", output_subset, output_type, this->debug_info());
-        builder.add_computational_memlet(block, libnode, "_out", out_write_access, output_subset, output_type, this->debug_info());
+        builder
+            .add_computational_memlet(block, in_access, libnode, "_in1", input_subset, input_type, this->debug_info());
+        builder.add_computational_memlet(
+            block, out_read_access, libnode, "_in2", output_subset, output_type, this->debug_info()
+        );
+        builder.add_computational_memlet(
+            block, libnode, "_out", out_write_access, output_subset, output_type, this->debug_info()
+        );
     }
 
     return true;

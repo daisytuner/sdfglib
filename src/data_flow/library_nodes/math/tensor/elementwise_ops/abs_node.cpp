@@ -38,7 +38,7 @@ bool AbsNode::expand_operation(
     auto& output_node_new = builder.add_access(code_block, output_name);
 
     bool is_int = types::is_integer(input_type.primitive_type());
-    
+
     if (is_int) {
         // For integers, use the int_abs tasklet
         auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::int_abs, "_out", {"_in"});
@@ -47,7 +47,8 @@ bool AbsNode::expand_operation(
     } else {
         // For floating-point, use the correct fabs intrinsic
         auto& libnode = builder.add_library_node<math::cmath::CMathNode>(
-            code_block, body.debug_info(), cmath::CMathFunction::fabs, input_type.primitive_type(), 1);
+            code_block, body.debug_info(), cmath::CMathFunction::fabs, input_type.primitive_type(), 1
+        );
         builder.add_computational_memlet(code_block, input_node_new, libnode, "_in1", subset, input_type);
         builder.add_computational_memlet(code_block, libnode, "_out", output_node_new, subset, output_type);
     }

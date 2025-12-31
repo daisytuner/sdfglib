@@ -43,9 +43,9 @@ bool EluNode::expand_operation(
 
     // 1. exp(x)
     {
-        auto& tasklet =
-            builder.add_library_node<math::cmath::CMathNode>(
-                code_block, code_block.debug_info(), cmath::CMathFunction::exp, input_type.primitive_type(), 1);
+        auto& tasklet = builder.add_library_node<math::cmath::CMathNode>(
+            code_block, code_block.debug_info(), cmath::CMathFunction::exp, input_type.primitive_type(), 1
+        );
         builder.add_computational_memlet(code_block, input_node, tasklet, "_in1", subset, input_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_exp, subset, output_type);
     }
