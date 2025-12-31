@@ -70,6 +70,35 @@ The symbolic expression system is comprehensively documented, covering:
 - **series.h**: Analysis of symbolic series and sequences
 - **conjunctive_normal_form.h**: CNF conversion for boolean conditions
 
+### Library Nodes (include/sdfg/data_flow/library_nodes)
+
+The library node system is documented with Doxygen comments, covering:
+
+**Core Library Node System:**
+- **library_node.h**: Base class for library nodes, implementation types
+- **math/math_node.h**: Mathematical library nodes with expansion support
+
+**Code Generation (Dispatchers):**
+- **codegen/dispatchers/node_dispatcher.h**: Base dispatcher for control flow nodes
+- **codegen/dispatchers/node_dispatcher_registry.h**: Registry system for dispatchers
+- **codegen/dispatchers/block_dispatcher.h**: Library node dispatcher base class
+
+**Serialization:**
+- **serializer/json_serializer.h**: Library node serializer base class and registry
+
+**Mathematical Operations:**
+- **math/tensor/elementwise_node.h**: Tensor elementwise operations (unary/binary)
+- **math/tensor/reduce_node.h**: Tensor reduction operations
+- **math/blas/blas_node.h**: BLAS operations (GEMM, dot product, etc.)
+
+Library nodes allow calling functions beyond simple instructions (tasklets). They support:
+- Multiple implementation types (NONE for expansion, BLAS, CUBLAS, etc.)
+- Code generation via dispatchers registered in registries
+- JSON serialization via serializers registered in registries
+- Expansion into primitive operations (maps, tasklets)
+
+**Tensor Library Nodes:** Expect scalars or flat pointers of scalars as inputs, with operations performed using linearized indices.
+
 ## Configuration
 
 The documentation is configured via `Doxyfile` in the repository root. Key settings:

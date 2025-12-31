@@ -135,12 +135,41 @@ public:
     void bvisit(const SymEngine::Max& x);
 };
 
+/**
+ * @class LibraryNodeSerializer
+ * @brief Base class for library node serialization
+ *
+ * LibraryNodeSerializer provides the interface for serializing and deserializing
+ * library nodes to/from JSON format. Each library node type should provide a
+ * custom serializer that knows how to handle its specific data members.
+ *
+ * Serializers must handle:
+ * - All node-specific parameters (shapes, axes, options, etc.)
+ * - Debug information
+ * - Element IDs
+ * - Operation codes
+ *
+ * The serialization format is JSON-based and supports round-trip serialization
+ * (serialize then deserialize produces an equivalent node).
+ */
 class LibraryNodeSerializer {
 public:
     virtual ~LibraryNodeSerializer() = default;
 
+    /**
+     * @brief Serialize a library node to JSON
+     * @param library_node Library node to serialize
+     * @return JSON representation of the node
+     */
     virtual nlohmann::json serialize(const sdfg::data_flow::LibraryNode& library_node) = 0;
 
+    /**
+     * @brief Deserialize a library node from JSON
+     * @param j JSON object containing serialized node data
+     * @param builder SDFG builder for creating the node
+     * @param parent Parent block for the node
+     * @return Reference to the deserialized library node
+     */
     virtual data_flow::LibraryNode& deserialize(
         const nlohmann::json& j,
         sdfg::builder::StructuredSDFGBuilder& builder,
@@ -150,6 +179,36 @@ public:
 
 using LibraryNodeSerializerFn = std::function<std::unique_ptr<LibraryNodeSerializer>()>;
 
+/**
+ * @class LibraryNodeSerializerRegistry
+ * @brief Registry for library node serializers
+ *
+ * This registry maps library node codes (operation identifiers) to serializer
+ * factory functions. Each library node type registers its serializer at program
+ * startup, allowing the JSON serializer to correctly handle all node types.
+ *
+ * The registry is thread-safe and follows the singleton pattern.
+ *
+ * ## Usage
+ *
+ * Register a serializer:
+ * @code
+ * LibraryNodeSerializerRegistry::instance().register_library_node_serializer(
+ *     "Add",
+ *     []() { return std::make_unique<ElementWiseBinaryNodeSerializer<AddNode>>(); }
+ * );
+ * @endcode
+ *
+ * Lookup a serializer:
+ * @code
+ * auto factory = LibraryNodeSerializerRegistry::instance()
+ *                    .get_library_node_serializer("Add");
+ * if (factory) {
+ *     auto serializer = factory();
+ *     json j = serializer->serialize(node);
+ * }
+ * @endcode
+ */
 class LibraryNodeSerializerRegistry {
 private:
     mutable std::mutex mutex_;

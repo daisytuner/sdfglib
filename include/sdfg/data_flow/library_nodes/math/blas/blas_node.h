@@ -1,3 +1,32 @@
+/**
+ * @file blas_node.h
+ * @brief BLAS (Basic Linear Algebra Subprograms) library node definitions
+ *
+ * This file defines base classes and enumerations for BLAS operations.
+ * BLAS nodes are mathematical library nodes that can be dispatched to various
+ * BLAS implementations (CPU BLAS, CUBLAS, etc.) based on their implementation type.
+ *
+ * ## BLAS Implementation Types
+ *
+ * BLAS nodes support multiple implementation types:
+ * - ImplementationType_BLAS: Standard CPU BLAS (e.g., OpenBLAS, MKL)
+ * - ImplementationType_CUBLASWithTransfers: CUBLAS with automatic data transfers
+ * - ImplementationType_CUBLASWithoutTransfers: CUBLAS assuming data is on GPU
+ *
+ * The implementation type is used by dispatchers to generate appropriate library calls.
+ *
+ * ## BLAS Operations
+ *
+ * Common BLAS operations include:
+ * - Level 1: Vector operations (dot product)
+ * - Level 2: Matrix-vector operations
+ * - Level 3: Matrix-matrix operations (GEMM)
+ *
+ * @see math::blas::GemmNode for matrix multiplication
+ * @see math::blas::DotNode for dot product
+ * @see math::MathNode for expansion interface
+ */
+
 #pragma once
 
 #include "sdfg/data_flow/library_nodes/math/math_node.h"
@@ -6,6 +35,17 @@ namespace sdfg {
 namespace math {
 namespace blas {
 
+/**
+ * @enum BLAS_Precision
+ * @brief Precision/data type for BLAS operations
+ *
+ * Indicates the floating-point precision of the operation:
+ * - h: Half precision (16-bit)
+ * - s: Single precision (32-bit float)
+ * - d: Double precision (64-bit double)
+ * - c: Complex single precision
+ * - z: Complex double precision
+ */
 enum BLAS_Precision {
     h = 'h',
     s = 's',
@@ -31,6 +71,15 @@ constexpr std::string_view BLAS_Precision_to_string(BLAS_Precision precision) {
     }
 }
 
+/**
+ * @enum BLAS_Transpose
+ * @brief Transpose operation for BLAS matrices
+ *
+ * Specifies whether to use a matrix as-is or transposed:
+ * - No: No transpose (111)
+ * - Trans: Transpose (112)
+ * - ConjTrans: Conjugate transpose (113)
+ */
 enum BLAS_Transpose {
     No = 111,
     Trans = 112,
@@ -63,6 +112,14 @@ inline constexpr char BLAS_Transpose_to_char(BLAS_Transpose transpose) {
     }
 }
 
+/**
+ * @enum BLAS_Layout
+ * @brief Memory layout for BLAS matrices
+ *
+ * Specifies how matrix elements are stored in memory:
+ * - RowMajor: Rows are contiguous (C-style, 101)
+ * - ColMajor: Columns are contiguous (Fortran-style, 102)
+ */
 enum BLAS_Layout {
     RowMajor = 101,
     ColMajor = 102,
@@ -88,15 +145,52 @@ inline constexpr std::string_view BLAS_Layout_to_short_string(BLAS_Layout layout
     }
 }
 
+/**
+ * @brief BLAS implementation type
+ * Uses standard CPU BLAS libraries (OpenBLAS, Intel MKL, etc.)
+ */
 inline data_flow::ImplementationType ImplementationType_BLAS{"BLAS"};
+
+/**
+ * @brief CUBLAS implementation with automatic memory transfers
+ * Uses NVIDIA CUBLAS with automatic host-device data transfers
+ */
 inline data_flow::ImplementationType ImplementationType_CUBLASWithTransfers{"CUBLASWithTransfers"};
+
+/**
+ * @brief CUBLAS implementation without memory transfers
+ * Uses NVIDIA CUBLAS assuming data is already on GPU
+ */
 inline data_flow::ImplementationType ImplementationType_CUBLASWithoutTransfers{"CUBLASWithoutTransfers"};
 
+/**
+ * @class BLASNode
+ * @brief Base class for BLAS operation nodes
+ *
+ * BLASNode extends MathNode with BLAS-specific properties like precision.
+ * All BLAS nodes have a precision type that determines the data type and
+ * which BLAS routine variant to call (e.g., dgemm for double, sgemm for single).
+ *
+ * BLAS nodes typically do not expand into primitive operations but instead
+ * are dispatched to library calls based on their implementation_type.
+ */
 class BLASNode : public math::MathNode {
 protected:
-    BLAS_Precision precision_;
+    BLAS_Precision precision_; ///< Floating-point precision for the operation
 
 public:
+    /**
+     * @brief Construct a BLAS node
+     * @param element_id Unique element identifier
+     * @param debug_info Debug information
+     * @param vertex Graph vertex
+     * @param parent Parent dataflow graph
+     * @param code Operation code
+     * @param outputs Output connector names
+     * @param inputs Input connector names
+     * @param implementation_type Implementation type (BLAS, CUBLAS, etc.)
+     * @param precision Floating-point precision
+     */
     BLASNode(
         size_t element_id,
         const DebugInfo& debug_info,
@@ -109,8 +203,16 @@ public:
         const BLAS_Precision& precision
     );
 
+    /**
+     * @brief Get the precision/data type
+     * @return BLAS precision
+     */
     BLAS_Precision precision() const;
 
+    /**
+     * @brief Get the corresponding scalar primitive type
+     * @return Primitive type for this precision
+     */
     types::PrimitiveType scalar_primitive() const;
 };
 
