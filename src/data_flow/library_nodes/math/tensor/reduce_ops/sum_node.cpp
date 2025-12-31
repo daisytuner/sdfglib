@@ -30,8 +30,10 @@ bool SumNode::expand_reduction(
 ) {
     auto& block = builder.add_block(body, {}, this->debug_info());
 
-    auto& tasklet =
-        builder.add_tasklet(block, data_flow::TaskletCode::fp_add, {"_out"}, {"_in1", "_in2"}, this->debug_info());
+    bool is_int = types::is_integer(output_type.primitive_type());
+    data_flow::TaskletCode opcode = is_int ? data_flow::TaskletCode::int_add : data_flow::TaskletCode::fp_add;
+
+    auto& tasklet = builder.add_tasklet(block, opcode, {"_out"}, {"_in1", "_in2"}, this->debug_info());
 
     auto& in_access = builder.add_access(block, input_name, this->debug_info());
     auto& out_read_access = builder.add_access(block, output_name, this->debug_info());

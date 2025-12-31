@@ -49,7 +49,7 @@
 
 #pragma once
 
-#include "sdfg/data_flow/library_nodes/math/math_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/tensor_node.h"
 
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 #include "sdfg/serializer/json_serializer.h"
@@ -81,7 +81,7 @@ namespace tensor {
  * - Output shape: Input shape with reduced axes removed or set to 1
  * - Indexing: Linearized (flat) memory layout
  */
-class ReduceNode : public math::MathNode {
+class ReduceNode : public TensorNode {
 protected:
     std::vector<symbolic::Expression> shape_; ///< Input tensor shape
     std::vector<int64_t> axes_; ///< Axes to reduce over
@@ -131,8 +131,6 @@ public:
     symbolic::SymbolSet symbols() const override;
 
     void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
-
-    void validate(const Function& function) const override;
 
     /**
      * @brief Expand into nested maps with reduction logic

@@ -35,7 +35,9 @@ bool TanhNode::expand_operation(
     auto& input_node = builder.add_access(code_block, input_name);
     auto& output_node = builder.add_access(code_block, output_name);
 
-    auto& tasklet = builder.add_library_node<math::cmath::CMathNode>(code_block, code_block.debug_info(), "tanhf", 1);
+    auto& tasklet = builder.add_library_node<math::cmath::CMathNode>(
+        code_block, code_block.debug_info(), cmath::CMathFunction::tanh, input_type.primitive_type()
+    );
 
     builder.add_computational_memlet(code_block, input_node, tasklet, "_in1", subset, input_type);
     builder.add_computational_memlet(code_block, tasklet, "_out", output_node, subset, output_type);

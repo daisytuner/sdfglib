@@ -48,8 +48,9 @@ bool SigmoidNode::expand_operation(
     }
     // exp(x)
     {
-        auto& tasklet =
-            builder.add_library_node<math::cmath::CMathNode>(code_block, code_block.debug_info(), "erff", 1);
+        auto& tasklet = builder.add_library_node<math::cmath::CMathNode>(
+            code_block, code_block.debug_info(), cmath::CMathFunction::exp, input_type.primitive_type()
+        );
         builder.add_computational_memlet(code_block, output_node_neg, tasklet, "_in1", subset, output_type);
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node_exp, subset, output_type);
     }

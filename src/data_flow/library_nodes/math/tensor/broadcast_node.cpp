@@ -15,7 +15,7 @@ BroadcastNode::BroadcastNode(
     const std::vector<symbolic::Expression>& input_shape,
     const std::vector<symbolic::Expression>& output_shape
 )
-    : MathNode(
+    : TensorNode(
           element_id,
           debug_info,
           vertex,
@@ -50,8 +50,6 @@ void BroadcastNode::replace(const symbolic::Expression old_expression, const sym
         dim = symbolic::subs(dim, old_expression, new_expression);
     }
 }
-
-void BroadcastNode::validate(const Function& function) const {}
 
 bool BroadcastNode::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& dataflow = this->get_parent();

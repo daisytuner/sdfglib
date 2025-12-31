@@ -247,7 +247,8 @@ TEST(FlopAnalysis, Intrinsic) {
     auto& block = builder.add_block(root);
     auto& a = builder.add_access(block, "a");
     auto& b = builder.add_access(block, "b");
-    auto& libnode = builder.add_library_node<math::cmath::CMathNode>(block, DebugInfo(), "sin", 1);
+    auto& libnode = builder.add_library_node<
+        math::cmath::CMathNode>(block, DebugInfo(), math::cmath::CMathFunction::sin, types::PrimitiveType::Float);
     builder.add_computational_memlet(block, a, libnode, "_in1", {}, desc);
     builder.add_computational_memlet(block, libnode, "_out", b, {}, desc);
 

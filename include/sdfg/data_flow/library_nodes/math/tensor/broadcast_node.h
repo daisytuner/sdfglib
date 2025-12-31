@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sdfg/data_flow/library_nodes/math/math_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/tensor_node.h"
 
 #include "sdfg/serializer/json_serializer.h"
 
@@ -10,7 +10,7 @@ namespace tensor {
 
 inline data_flow::LibraryNodeCode LibraryNodeType_Broadcast("ml::Broadcast");
 
-class BroadcastNode : public MathNode {
+class BroadcastNode : public TensorNode {
 private:
     std::vector<symbolic::Expression> input_shape_;
     std::vector<symbolic::Expression> output_shape_;
@@ -32,7 +32,7 @@ public:
 
     void replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) override;
 
-    void validate(const Function& function) const override;
+    bool supports_integer_types() const override { return true; }
 
     bool expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
 

@@ -22,7 +22,7 @@ ReduceNode::ReduceNode(
     const std::vector<int64_t>& axes,
     bool keepdims
 )
-    : MathNode(element_id, debug_info, vertex, parent, code, {"Y"}, {"X"}, data_flow::ImplementationType_NONE),
+    : TensorNode(element_id, debug_info, vertex, parent, code, {"Y"}, {"X"}, data_flow::ImplementationType_NONE),
       shape_(shape), axes_(axes), keepdims_(keepdims) {}
 
 symbolic::SymbolSet ReduceNode::symbols() const {
@@ -38,50 +38,6 @@ symbolic::SymbolSet ReduceNode::symbols() const {
 void ReduceNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
     for (auto& dim : shape_) {
         dim = symbolic::subs(dim, old_expression, new_expression);
-    }
-}
-
-void ReduceNode::validate(const Function& function) const {
-    auto& graph = this->get_parent();
-
-    if (graph.in_degree(*this) != 1 || graph.out_degree(*this) != 1) {
-        throw InvalidSDFGException("ReduceNode: Node must have exactly one input and one output");
-    }
-
-    auto& iedge = *graph.in_edges(*this).begin();
-    if (iedge.base_type().type_id() != types::TypeID::Scalar && iedge.base_type().type_id() != types::TypeID::Pointer) {
-        throw InvalidSDFGException(
-            "ReduceNode: Input memlet must be of scalar or pointer type. Found type: " + iedge.base_type().print()
-        );
-    }
-    if (iedge.base_type().type_id() == types::TypeID::Pointer) {
-        auto& ptr_type = static_cast<const types::Pointer&>(iedge.base_type());
-        if (ptr_type.pointee_type().type_id() != types::TypeID::Scalar) {
-            throw InvalidSDFGException(
-                "ReduceNode: Input memlet pointer be flat. Found type: " + ptr_type.pointee_type().print()
-            );
-        }
-        if (!iedge.subset().empty()) {
-            throw InvalidSDFGException("ReduceNode: Input memlet pointer must not be dereferenced.");
-        }
-    }
-
-    auto& oedge = *graph.out_edges(*this).begin();
-    if (oedge.base_type().type_id() != types::TypeID::Scalar && oedge.base_type().type_id() != types::TypeID::Pointer) {
-        throw InvalidSDFGException(
-            "ReduceNode: Output memlet must be of scalar or pointer type. Found type: " + oedge.base_type().print()
-        );
-    }
-    if (oedge.base_type().type_id() == types::TypeID::Pointer) {
-        auto& ptr_type = static_cast<const types::Pointer&>(oedge.base_type());
-        if (ptr_type.pointee_type().type_id() != types::TypeID::Scalar) {
-            throw InvalidSDFGException(
-                "ReduceNode: Output memlet pointer be flat. Found type: " + ptr_type.pointee_type().print()
-            );
-        }
-        if (!oedge.subset().empty()) {
-            throw InvalidSDFGException("ReduceNode: Output memlet pointer must not be dereferenced.");
-        }
     }
 }
 
