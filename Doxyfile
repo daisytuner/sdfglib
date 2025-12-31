@@ -953,7 +953,8 @@ INPUT                  = include/sdfg/types \
                          include/sdfg/codegen/dispatchers/node_dispatcher.h \
                          include/sdfg/codegen/dispatchers/node_dispatcher_registry.h \
                          include/sdfg/codegen/dispatchers/block_dispatcher.h \
-                         include/sdfg/serializer/json_serializer.h
+                         include/sdfg/serializer/json_serializer.h \
+                         include/sdfg/passes/schedules/expansion_pass.h
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
