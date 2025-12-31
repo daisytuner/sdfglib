@@ -45,12 +45,12 @@ TEST(ConvNodeExpansionTest, Conv2D_SimpleExpansion) {
     // Validate the SDFG before expansion
     EXPECT_NO_THROW(sdfg.validate());
 
-    // Try to expand the node - for now, it returns false (not yet implemented)
+    // Try to expand the node - expansion should now succeed for 2D convolution
     analysis::AnalysisManager analysis_manager(sdfg);
     bool expanded = conv_node.expand(builder, analysis_manager);
     
-    // Currently expansion is not implemented, so it should return false
-    EXPECT_FALSE(expanded);
+    // Expansion should now be implemented and return true
+    EXPECT_TRUE(expanded);
 }
 
 // Test that expansion is not attempted with unsupported parameters
@@ -89,6 +89,6 @@ TEST(ConvNodeExpansionTest, Conv2D_ExpansionNotImplemented) {
     analysis::AnalysisManager analysis_manager(sdfg);
     bool expanded = conv_node.expand(builder, analysis_manager);
     
-    // Expansion should return false (not implemented yet)
-    EXPECT_FALSE(expanded);
+    // Expansion should succeed for 2D convolutions with stride > 1
+    EXPECT_TRUE(expanded);
 }
