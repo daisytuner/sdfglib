@@ -6,6 +6,7 @@
 #include "sdfg/analysis/scope_analysis.h"
 
 #include "sdfg/data_flow/library_nodes/math/cmath/cmath_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/tensor_node.h"
 
 namespace sdfg {
 namespace math {
@@ -35,7 +36,8 @@ bool SqrtNode::expand_operation(
     auto& input_node = builder.add_access(code_block, input_name);
     auto& output_node = builder.add_access(code_block, output_name);
 
-    auto& tasklet = builder.add_library_node<math::cmath::CMathNode>(code_block, code_block.debug_info(), "sqrtf", 1);
+    std::string intrinsic_name = TensorNode::get_intrinsic_name("sqrt", input_type.primitive_type());
+    auto& tasklet = builder.add_library_node<math::cmath::CMathNode>(code_block, code_block.debug_info(), intrinsic_name, 1);
 
     builder.add_computational_memlet(code_block, input_node, tasklet, "_in1", subset, input_type);
     builder.add_computational_memlet(code_block, tasklet, "_out", output_node, subset, output_type);

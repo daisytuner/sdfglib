@@ -2,6 +2,7 @@
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/types/type.h"
 
 #include "sdfg/analysis/scope_analysis.h"
 
@@ -45,7 +46,17 @@ bool DivNode::expand_operation(
     }
     auto& output_node = builder.add_access(code_block, output_name);
 
-    auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::fp_div, "_out", {"_in1", "_in2"});
+    bool is_int = types::is_integer(input_type_a.primitive_type()) && types::is_integer(input_type_b.primitive_type());
+    data_flow::TaskletCode opcode;
+    if (is_int) {
+        // Distinguish between signed and unsigned division
+        bool is_signed = types::is_signed(input_type_a.primitive_type());
+        opcode = is_signed ? data_flow::TaskletCode::int_sdiv : data_flow::TaskletCode::int_udiv;
+    } else {
+        opcode = data_flow::TaskletCode::fp_div;
+    }
+
+    auto& tasklet = builder.add_tasklet(code_block, opcode, "_out", {"_in1", "_in2"});
 
     if (input_type_a.type_id() == types::TypeID::Scalar) {
         builder.add_computational_memlet(code_block, *input_node_a, tasklet, "_in1", {}, input_type_a);
