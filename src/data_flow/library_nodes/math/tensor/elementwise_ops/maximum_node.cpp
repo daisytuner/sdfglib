@@ -50,8 +50,7 @@ bool MaximumNode::expand_operation(
 
     if (is_int) {
         // Use tasklets for integer types - distinguish between signed and unsigned
-        bool is_signed_int = types::is_signed(input_type_a.primitive_type());
-        auto tasklet_code = is_signed_int ? data_flow::TaskletCode::int_smax : data_flow::TaskletCode::int_umax;
+        auto tasklet_code = TensorNode::get_integer_minmax_tasklet(input_type_a.primitive_type(), true);
         auto& tasklet = builder.add_tasklet(code_block, tasklet_code, "_out", {"_in1", "_in2"});
 
         if (input_type_a.type_id() == types::TypeID::Scalar) {

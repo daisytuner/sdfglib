@@ -41,8 +41,7 @@ bool MaxNode::expand_reduction(
 
     if (is_int) {
         // For integers, use tasklet - distinguish between signed and unsigned
-        bool is_signed_int = types::is_signed(input_type.primitive_type());
-        auto tasklet_code = is_signed_int ? data_flow::TaskletCode::int_smax : data_flow::TaskletCode::int_umax;
+        auto tasklet_code = TensorNode::get_integer_minmax_tasklet(input_type.primitive_type(), true);
         auto& tasklet = builder.add_tasklet(block, tasklet_code, "_out", {"_in1", "_in2"});
 
         builder.add_computational_memlet(block, in_access, tasklet, "_in1", input_subset, input_type, this->debug_info());

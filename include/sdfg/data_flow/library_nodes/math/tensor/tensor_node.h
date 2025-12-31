@@ -108,6 +108,17 @@ protected:
      * @return The correct intrinsic function name
      */
     static std::string get_intrinsic_name(const std::string& base_name, types::PrimitiveType prim_type);
+
+    /**
+     * @brief Get the appropriate tasklet code for min/max operations on integers
+     *
+     * Selects between signed and unsigned variants based on the primitive type.
+     *
+     * @param prim_type The primitive type
+     * @param is_max True for max operation, false for min operation
+     * @return The appropriate tasklet code
+     */
+    static data_flow::TaskletCode get_integer_minmax_tasklet(types::PrimitiveType prim_type, bool is_max);
 };
 
 } // namespace tensor
