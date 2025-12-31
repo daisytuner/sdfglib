@@ -67,7 +67,7 @@ void TensorNode::validate(const Function& function) const {
     }
 
     // Validate that all memlets have the same primitive type
-    types::PrimitiveType prim_type = get_primitive_type(graph);
+    types::PrimitiveType prim_type = primitive_type(graph);
 
     // Check if this operation supports integer types
     if (!supports_integer_types() && types::is_integer(prim_type)) {
@@ -78,7 +78,7 @@ void TensorNode::validate(const Function& function) const {
     }
 }
 
-types::PrimitiveType TensorNode::get_primitive_type(const data_flow::DataFlowGraph& graph) const {
+types::PrimitiveType TensorNode::primitive_type(const data_flow::DataFlowGraph& graph) const {
     types::PrimitiveType result_type = types::PrimitiveType::Void;
     bool first = true;
 

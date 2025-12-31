@@ -46,11 +46,11 @@ bool DivNode::expand_operation(
     }
     auto& output_node = builder.add_access(code_block, output_name);
 
-    bool is_int = types::is_integer(input_type_a.primitive_type()) && types::is_integer(input_type_b.primitive_type());
+    bool is_int = types::is_integer(output_type.primitive_type());
     data_flow::TaskletCode opcode;
     if (is_int) {
         // Distinguish between signed and unsigned division
-        bool is_signed = types::is_signed(input_type_a.primitive_type());
+        bool is_signed = types::is_signed(output_type.primitive_type());
         opcode = is_signed ? data_flow::TaskletCode::int_sdiv : data_flow::TaskletCode::int_udiv;
     } else {
         opcode = data_flow::TaskletCode::fp_div;

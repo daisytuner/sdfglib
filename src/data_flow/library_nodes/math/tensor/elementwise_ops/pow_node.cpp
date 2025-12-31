@@ -48,7 +48,7 @@ bool PowNode::expand_operation(
     auto& output_node = builder.add_access(code_block, output_name);
 
     auto& tasklet = builder.add_library_node<math::cmath::CMathNode>(
-        code_block, code_block.debug_info(), cmath::CMathFunction::pow, input_type_a.primitive_type(), 2
+        code_block, code_block.debug_info(), cmath::CMathFunction::pow, input_type_a.primitive_type()
     );
 
     if (input_type_a.type_id() == types::TypeID::Scalar) {

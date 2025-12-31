@@ -81,7 +81,7 @@ public:
      * @return The primitive type used by this operation
      * @throws InvalidSDFGException if types are inconsistent
      */
-    types::PrimitiveType get_primitive_type(const data_flow::DataFlowGraph& graph) const;
+    types::PrimitiveType primitive_type(const data_flow::DataFlowGraph& graph) const;
 
     /**
      * @brief Check if this operation supports integer types

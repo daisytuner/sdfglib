@@ -4,12 +4,12 @@
 #include <string>
 #include <unordered_map>
 
+#include "sdfg/types/utils.h"
+
 namespace sdfg {
 namespace math {
 namespace cmath {
 
-namespace {
-// Helper function to convert string function name to CMathFunction enum
 CMathFunction string_to_cmath_function(const std::string& name) {
     static const std::unordered_map<std::string, CMathFunction> function_map = {
         {"sin", CMathFunction::sin},
@@ -57,6 +57,9 @@ CMathFunction string_to_cmath_function(const std::string& name) {
         {"exp2", CMathFunction::exp2},
         {"exp2f", CMathFunction::exp2},
         {"exp2l", CMathFunction::exp2},
+        {"exp10", CMathFunction::exp10},
+        {"exp10f", CMathFunction::exp10},
+        {"exp10l", CMathFunction::exp10},
         {"expm1", CMathFunction::expm1},
         {"expm1f", CMathFunction::expm1},
         {"expm1l", CMathFunction::expm1},
@@ -96,6 +99,9 @@ CMathFunction string_to_cmath_function(const std::string& name) {
         {"lgamma", CMathFunction::lgamma},
         {"lgammaf", CMathFunction::lgamma},
         {"lgammal", CMathFunction::lgamma},
+        {"fabs", CMathFunction::fabs},
+        {"fabsf", CMathFunction::fabs},
+        {"fabsl", CMathFunction::fabs},
         {"ceil", CMathFunction::ceil},
         {"ceilf", CMathFunction::ceil},
         {"ceill", CMathFunction::ceil},
@@ -114,6 +120,9 @@ CMathFunction string_to_cmath_function(const std::string& name) {
         {"llround", CMathFunction::llround},
         {"llroundf", CMathFunction::llround},
         {"llroundl", CMathFunction::llround},
+        {"roundeven", CMathFunction::roundeven},
+        {"roundevenf", CMathFunction::roundeven},
+        {"roundevenl", CMathFunction::roundeven},
         {"nearbyint", CMathFunction::nearbyint},
         {"nearbyintf", CMathFunction::nearbyint},
         {"nearbyintl", CMathFunction::nearbyint},
@@ -171,10 +180,6 @@ CMathFunction string_to_cmath_function(const std::string& name) {
         {"fdim", CMathFunction::fdim},
         {"fdimf", CMathFunction::fdim},
         {"fdiml", CMathFunction::fdim},
-        {"fabs", CMathFunction::fabs},
-        {"fabsf", CMathFunction::fabs},
-        {"fabsl", CMathFunction::fabs},
-        {"abs", CMathFunction::abs},
         {"fma", CMathFunction::fma},
         {"fmaf", CMathFunction::fma},
         {"fmal", CMathFunction::fma},
@@ -187,7 +192,6 @@ CMathFunction string_to_cmath_function(const std::string& name) {
 
     throw std::runtime_error("Unknown CMath function: " + name);
 }
-} // namespace
 
 CMathNode::CMathNode(
     size_t element_id,
@@ -195,14 +199,13 @@ CMathNode::CMathNode(
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
     CMathFunction function,
-    types::PrimitiveType primitive_type,
-    size_t arity
+    types::PrimitiveType primitive_type
 )
     : MathNode(
           element_id, debug_info, vertex, parent, LibraryNodeType_CMath, {"_out"}, {}, data_flow::ImplementationType_NONE
       ),
       function_(function), primitive_type_(primitive_type) {
-    for (size_t i = 0; i < arity; i++) {
+    for (size_t i = 0; i < cmath_function_to_arity(function); i++) {
         this->inputs_.push_back("_in" + std::to_string(i + 1));
     }
 }
@@ -220,13 +223,53 @@ void CMathNode::replace(const symbolic::Expression old_expression, const symboli
 }
 
 
-void CMathNode::validate(const Function& function) const {}
+void CMathNode::validate(const Function& function) const {
+    if (!types::is_floating_point(this->primitive_type_)) {
+        throw InvalidSDFGException("CMathNode: Primitive type must be a floating point type");
+    }
+
+    auto& dataflow = this->get_parent();
+    if (this->inputs_.size() != dataflow.in_degree(*this)) {
+        throw InvalidSDFGException("CMathNode: Mismatch between number of inputs and in-degree of the node");
+    }
+    if (this->outputs_.size() != dataflow.out_degree(*this)) {
+        throw InvalidSDFGException("CMathNode: Mismatch between number of outputs and out-degree of the node");
+    }
+    for (const auto& iedge : dataflow.in_edges(*this)) {
+        auto& inferred_type = types::infer_type(function, iedge.base_type(), iedge.subset());
+        if (inferred_type.type_id() != types::TypeID::Scalar) {
+            throw InvalidSDFGException("CMathNode: Input type must be scalar");
+        }
+        auto& scalar_type = static_cast<const types::Scalar&>(inferred_type);
+        if (scalar_type.primitive_type() != this->primitive_type_) {
+            throw InvalidSDFGException("CMathNode: Input primitive type does not match node primitive type");
+        }
+    }
+    for (const auto& oedge : dataflow.out_edges(*this)) {
+        auto& inferred_type = types::infer_type(function, oedge.base_type(), oedge.subset());
+        if (inferred_type.type_id() != types::TypeID::Scalar) {
+            throw InvalidSDFGException("CMathNode: Output type must be scalar");
+        }
+        auto& scalar_type = static_cast<const types::Scalar&>(inferred_type);
+        if (this->function_ == CMathFunction::lrint || this->function_ == CMathFunction::llrint ||
+            this->function_ == CMathFunction::lround || this->function_ == CMathFunction::llround) {
+            if (!types::is_integer(scalar_type.primitive_type())) {
+                throw InvalidSDFGException(
+                    "CMathNode: Output primitive type must be an integer type for lrint, llrint, lround, llround "
+                    "functions"
+                );
+            }
+        } else if (scalar_type.primitive_type() != this->primitive_type_) {
+            throw InvalidSDFGException("CMathNode: Output primitive type does not match node primitive type");
+        }
+    }
+}
 
 std::unique_ptr<data_flow::DataFlowNode> CMathNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
-    return std::unique_ptr<CMathNode>(new CMathNode(
-        element_id, this->debug_info(), vertex, parent, this->function_, this->primitive_type_, this->inputs_.size()
-    ));
+    return std::unique_ptr<
+        CMathNode>(new CMathNode(element_id, this->debug_info(), vertex, parent, this->function_, this->primitive_type_)
+    );
 }
 
 symbolic::Expression CMathNode::flop() const { return symbolic::one(); }
@@ -240,7 +283,6 @@ nlohmann::json CMathNodeSerializer::serialize(const data_flow::LibraryNode& libr
     j["name"] = node.name();
     j["function_stem"] = cmath_function_to_stem(node.function());
     j["primitive_type"] = static_cast<int>(node.primitive_type());
-    j["arity"] = node.inputs().size();
 
     return j;
 }
@@ -262,8 +304,6 @@ data_flow::LibraryNode& CMathNodeSerializer::deserialize(
     // Extract debug info using JSONSerializer
     sdfg::serializer::JSONSerializer serializer;
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
-
-    auto arity = j["arity"].get<size_t>();
 
     // Try new format first (with function_stem and primitive_type)
     CMathFunction function;
@@ -288,7 +328,7 @@ data_flow::LibraryNode& CMathNodeSerializer::deserialize(
         }
     }
 
-    return builder.add_library_node<CMathNode>(parent, debug_info, function, prim_type, arity);
+    return builder.add_library_node<CMathNode>(parent, debug_info, function, prim_type);
 }
 
 CMathNodeDispatcher::CMathNodeDispatcher(

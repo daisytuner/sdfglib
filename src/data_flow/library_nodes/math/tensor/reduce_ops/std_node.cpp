@@ -1,7 +1,7 @@
 #include "sdfg/data_flow/library_nodes/math/tensor/reduce_ops/std_node.h"
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/pow_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/mul_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/sqrt_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/sub_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/reduce_ops/mean_node.h"
@@ -66,6 +66,9 @@ bool StdNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
         }
     }
 
+    types::Scalar element_type(this->primitive_type(dataflow));
+    types::Pointer pointer_type(element_type);
+
     std::string tmp_x2_name = builder.find_new_name("_std_x2");
     builder.add_container(tmp_x2_name, in_edge.base_type());
     std::string tmp_mean_x2_name = builder.find_new_name("_std_mean_x2");
@@ -74,8 +77,7 @@ bool StdNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
     builder.add_container(tmp_mean_x_name, out_edge.base_type());
 
     if (in_edge.base_type().type_id() == types::TypeID::Pointer) {
-        auto& pointee_type = static_cast<const types::Pointer&>(in_edge.base_type()).pointee_type();
-        symbolic::Expression bytes_in = types::get_type_size(pointee_type, false);
+        symbolic::Expression bytes_in = types::get_type_size(element_type, false);
         for (auto& dim : this->shape_) {
             bytes_in = symbolic::mul(dim, bytes_in);
         }
@@ -142,15 +144,11 @@ bool StdNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
     auto& pow_in_node = builder.add_access(pow_block, in_node.data(), this->debug_info());
     auto& pow_out_node = builder.add_access(pow_block, tmp_x2_name, this->debug_info());
 
-    auto& pow_node_1 = builder.add_library_node<PowNode>(pow_block, this->debug_info(), shape_);
-    auto& const_2 =
-        builder.add_constant(pow_block, "2", types::Scalar(types::PrimitiveType::Int64), this->debug_info());
-
+    auto& pow_node_1 = builder.add_library_node<MulNode>(pow_block, this->debug_info(), shape_);
     builder
         .add_computational_memlet(pow_block, pow_in_node, pow_node_1, "A", {}, in_edge.base_type(), this->debug_info());
-    builder.add_computational_memlet(
-        pow_block, const_2, pow_node_1, "B", {}, types::Scalar(types::PrimitiveType::Int64), this->debug_info()
-    );
+    builder
+        .add_computational_memlet(pow_block, pow_in_node, pow_node_1, "B", {}, in_edge.base_type(), this->debug_info());
     builder
         .add_computational_memlet(pow_block, pow_node_1, "C", pow_out_node, {}, in_edge.base_type(), this->debug_info());
 
@@ -185,15 +183,13 @@ bool StdNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
     auto& pow_mean_x_in_node = builder.add_access(pow_mean_x_block, tmp_mean_x_name, this->debug_info());
     auto& pow_mean_x_out_node = builder.add_access(pow_mean_x_block, tmp_mean_x_name, this->debug_info());
 
-    auto& pow_node_2 = builder.add_library_node<PowNode>(pow_mean_x_block, this->debug_info(), output_shape);
-    auto& const_2_2 =
-        builder.add_constant(pow_mean_x_block, "2", types::Scalar(types::PrimitiveType::Int64), this->debug_info());
+    auto& pow_node_2 = builder.add_library_node<MulNode>(pow_mean_x_block, this->debug_info(), output_shape);
 
     builder.add_computational_memlet(
         pow_mean_x_block, pow_mean_x_in_node, pow_node_2, "A", {}, out_edge.base_type(), this->debug_info()
     );
     builder.add_computational_memlet(
-        pow_mean_x_block, const_2_2, pow_node_2, "B", {}, types::Scalar(types::PrimitiveType::Int64), this->debug_info()
+        pow_mean_x_block, pow_mean_x_in_node, pow_node_2, "B", {}, out_edge.base_type(), this->debug_info()
     );
     builder.add_computational_memlet(
         pow_mean_x_block, pow_node_2, "C", pow_mean_x_out_node, {}, out_edge.base_type(), this->debug_info()

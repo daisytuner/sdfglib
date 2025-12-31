@@ -46,7 +46,7 @@ bool MulNode::expand_operation(
     }
     auto& output_node = builder.add_access(code_block, output_name);
 
-    bool is_int = types::is_integer(input_type_a.primitive_type()) && types::is_integer(input_type_b.primitive_type());
+    bool is_int = types::is_integer(output_type.primitive_type());
     data_flow::TaskletCode opcode = is_int ? data_flow::TaskletCode::int_mul : data_flow::TaskletCode::fp_mul;
 
     auto& tasklet = builder.add_tasklet(code_block, opcode, "_out", {"_in1", "_in2"});

@@ -39,6 +39,7 @@ enum class CMathFunction {
     // Exponential and logarithmic functions
     exp,
     exp2,
+    exp10,
     expm1,
     log,
     log10,
@@ -58,12 +59,14 @@ enum class CMathFunction {
     lgamma,
 
     // Rounding and remainder functions
+    fabs,
     ceil,
     floor,
     trunc,
     round,
     lround,
     llround,
+    roundeven,
     nearbyint,
     rint,
     lrint,
@@ -89,10 +92,132 @@ enum class CMathFunction {
     fdim,
 
     // Other functions
-    fabs,
-    abs,
     fma
 };
+
+/**
+ * @brief Get arity of CMathFunction enum
+ * @param func The CMathFunction enum value
+ * @return The arity of the enum as a size_t
+ */
+constexpr size_t cmath_function_to_arity(CMathFunction func) {
+    switch (func) {
+        case CMathFunction::sin:
+            return 1;
+        case CMathFunction::cos:
+            return 1;
+        case CMathFunction::tan:
+            return 1;
+        case CMathFunction::asin:
+            return 1;
+        case CMathFunction::acos:
+            return 1;
+        case CMathFunction::atan:
+            return 1;
+        case CMathFunction::atan2:
+            return 1;
+        case CMathFunction::sinh:
+            return 1;
+        case CMathFunction::cosh:
+            return 1;
+        case CMathFunction::tanh:
+            return 1;
+        case CMathFunction::asinh:
+            return 1;
+        case CMathFunction::acosh:
+            return 1;
+        case CMathFunction::atanh:
+            return 1;
+        case CMathFunction::exp:
+            return 1;
+        case CMathFunction::exp2:
+            return 1;
+        case CMathFunction::exp10:
+            return 1;
+        case CMathFunction::expm1:
+            return 1;
+        case CMathFunction::log:
+            return 1;
+        case CMathFunction::log10:
+            return 1;
+        case CMathFunction::log2:
+            return 1;
+        case CMathFunction::log1p:
+            return 1;
+        case CMathFunction::pow:
+            return 2;
+        case CMathFunction::sqrt:
+            return 1;
+        case CMathFunction::cbrt:
+            return 1;
+        case CMathFunction::hypot:
+            return 1;
+        case CMathFunction::erf:
+            return 1;
+        case CMathFunction::erfc:
+            return 1;
+        case CMathFunction::tgamma:
+            return 1;
+        case CMathFunction::lgamma:
+            return 1;
+        case CMathFunction::fabs:
+            return 1;
+        case CMathFunction::ceil:
+            return 1;
+        case CMathFunction::floor:
+            return 1;
+        case CMathFunction::trunc:
+            return 1;
+        case CMathFunction::round:
+            return 1;
+        case CMathFunction::lround:
+            return 1;
+        case CMathFunction::llround:
+            return 1;
+        case CMathFunction::roundeven:
+            return 1;
+        case CMathFunction::nearbyint:
+            return 1;
+        case CMathFunction::rint:
+            return 1;
+        case CMathFunction::lrint:
+            return 1;
+        case CMathFunction::llrint:
+            return 1;
+        case CMathFunction::fmod:
+            return 1;
+        case CMathFunction::remainder:
+            return 1;
+        case CMathFunction::frexp:
+            return 1;
+        case CMathFunction::ldexp:
+            return 1;
+        case CMathFunction::modf:
+            return 1;
+        case CMathFunction::scalbn:
+            return 1;
+        case CMathFunction::scalbln:
+            return 1;
+        case CMathFunction::ilogb:
+            return 1;
+        case CMathFunction::logb:
+            return 1;
+        case CMathFunction::nextafter:
+            return 1;
+        case CMathFunction::nexttoward:
+            return 1;
+        case CMathFunction::copysign:
+            return 1;
+        case CMathFunction::fmax:
+            return 2;
+        case CMathFunction::fmin:
+            return 2;
+        case CMathFunction::fdim:
+            return 2;
+        case CMathFunction::fma:
+            return 3;
+    }
+}
 
 /**
  * @brief Convert CMathFunction enum to function name stem (without type suffix)
@@ -131,6 +256,8 @@ constexpr const char* cmath_function_to_stem(CMathFunction func) {
             return "exp";
         case CMathFunction::exp2:
             return "exp2";
+        case CMathFunction::exp10:
+            return "exp10";
         case CMathFunction::expm1:
             return "expm1";
         case CMathFunction::log:
@@ -157,6 +284,8 @@ constexpr const char* cmath_function_to_stem(CMathFunction func) {
             return "tgamma";
         case CMathFunction::lgamma:
             return "lgamma";
+        case CMathFunction::fabs:
+            return "fabs";
         case CMathFunction::ceil:
             return "ceil";
         case CMathFunction::floor:
@@ -169,6 +298,8 @@ constexpr const char* cmath_function_to_stem(CMathFunction func) {
             return "lround";
         case CMathFunction::llround:
             return "llround";
+        case CMathFunction::roundeven:
+            return "roundeven";
         case CMathFunction::nearbyint:
             return "nearbyint";
         case CMathFunction::rint:
@@ -207,15 +338,12 @@ constexpr const char* cmath_function_to_stem(CMathFunction func) {
             return "fmin";
         case CMathFunction::fdim:
             return "fdim";
-        case CMathFunction::fabs:
-            return "fabs";
-        case CMathFunction::abs:
-            return "abs";
         case CMathFunction::fma:
             return "fma";
     }
-    return "";
 }
+
+CMathFunction string_to_cmath_function(const std::string& name);
 
 /**
  * @brief Get the correct C math intrinsic name for a given function and primitive type
@@ -247,8 +375,7 @@ inline std::string get_cmath_intrinsic_name(CMathFunction func, types::Primitive
             // as there are no standard Half/BFloat intrinsics in C math library
             return base_name + "f";
         default:
-            // For integer types, return base name (though this shouldn't be called for integers)
-            return base_name;
+            throw InvalidSDFGException("Unsupported primitive type for C math intrinsic name generation.");
     }
 }
 
@@ -264,8 +391,7 @@ public:
         const graph::Vertex vertex,
         data_flow::DataFlowGraph& parent,
         CMathFunction function,
-        types::PrimitiveType primitive_type,
-        size_t arity
+        types::PrimitiveType primitive_type
     );
 
     CMathFunction function() const;

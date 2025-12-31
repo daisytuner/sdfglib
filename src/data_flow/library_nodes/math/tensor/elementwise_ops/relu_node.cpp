@@ -39,7 +39,7 @@ bool ReLUNode::expand_operation(
     auto& zero_node = builder.add_constant(code_block, "0.0", base_type);
 
     auto& tasklet = builder.add_library_node<math::cmath::CMathNode>(
-        code_block, code_block.debug_info(), cmath::CMathFunction::fmax, input_type.primitive_type(), 2
+        code_block, code_block.debug_info(), cmath::CMathFunction::fmax, input_type.primitive_type()
     );
 
     builder.add_computational_memlet(code_block, zero_node, tasklet, "_in1", {}, base_type);

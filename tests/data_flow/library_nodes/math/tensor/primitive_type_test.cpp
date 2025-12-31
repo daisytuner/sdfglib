@@ -32,14 +32,15 @@ TEST(TensorPrimitiveTypeTest, MaximumNodeInt32) {
     auto& c_node = builder.add_access(block, "c");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::MaximumNode>(block, DebugInfo(), shape);
+    auto& node = static_cast<
+        math::tensor::TensorNode&>(builder.add_library_node<math::tensor::MaximumNode>(block, DebugInfo(), shape));
 
     builder.add_computational_memlet(block, a_node, node, "A", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, b_node, node, "B", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "C", c_node, {}, desc_ptr, block.debug_info());
 
     // Should not throw and should validate successfully
-    EXPECT_NO_THROW(node.validate(*sdfg.root_function()));
+    EXPECT_NO_THROW(node.validate(sdfg));
 
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(node.expand(builder, analysis_manager));
@@ -63,13 +64,14 @@ TEST(TensorPrimitiveTypeTest, MaximumNodeFloat) {
     auto& c_node = builder.add_access(block, "c");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::MaximumNode>(block, DebugInfo(), shape);
+    auto& node = static_cast<
+        math::tensor::TensorNode&>(builder.add_library_node<math::tensor::MaximumNode>(block, DebugInfo(), shape));
 
     builder.add_computational_memlet(block, a_node, node, "A", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, b_node, node, "B", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "C", c_node, {}, desc_ptr, block.debug_info());
 
-    EXPECT_NO_THROW(node.validate(*sdfg.root_function()));
+    EXPECT_NO_THROW(node.validate(sdfg));
 
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(node.expand(builder, analysis_manager));
@@ -93,13 +95,14 @@ TEST(TensorPrimitiveTypeTest, MaximumNodeDouble) {
     auto& c_node = builder.add_access(block, "c");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::MaximumNode>(block, DebugInfo(), shape);
+    auto& node = static_cast<
+        math::tensor::TensorNode&>(builder.add_library_node<math::tensor::MaximumNode>(block, DebugInfo(), shape));
 
     builder.add_computational_memlet(block, a_node, node, "A", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, b_node, node, "B", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "C", c_node, {}, desc_ptr, block.debug_info());
 
-    EXPECT_NO_THROW(node.validate(*sdfg.root_function()));
+    EXPECT_NO_THROW(node.validate(sdfg));
 
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(node.expand(builder, analysis_manager));
@@ -123,13 +126,14 @@ TEST(TensorPrimitiveTypeTest, MaximumNodeUInt32) {
     auto& c_node = builder.add_access(block, "c");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::MaximumNode>(block, DebugInfo(), shape);
+    auto& node = static_cast<
+        math::tensor::TensorNode&>(builder.add_library_node<math::tensor::MaximumNode>(block, DebugInfo(), shape));
 
     builder.add_computational_memlet(block, a_node, node, "A", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, b_node, node, "B", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "C", c_node, {}, desc_ptr, block.debug_info());
 
-    EXPECT_NO_THROW(node.validate(*sdfg.root_function()));
+    EXPECT_NO_THROW(node.validate(sdfg));
 
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(node.expand(builder, analysis_manager));
@@ -151,13 +155,15 @@ TEST(TensorPrimitiveTypeTest, ExpNodeRejectsInt32) {
     auto& b_node = builder.add_access(block, "b");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::ExpNode>(block, DebugInfo(), shape);
+    auto& node =
+        static_cast<math::tensor::TensorNode&>(builder.add_library_node<math::tensor::ExpNode>(block, DebugInfo(), shape)
+        );
 
     builder.add_computational_memlet(block, a_node, node, "X", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "Y", b_node, {}, desc_ptr, block.debug_info());
 
     // Should throw because ExpNode doesn't support integer types
-    EXPECT_THROW(node.validate(*sdfg.root_function()), InvalidSDFGException);
+    EXPECT_THROW(node.validate(sdfg), InvalidSDFGException);
 }
 
 // Test that mixed types are rejected
@@ -180,14 +186,16 @@ TEST(TensorPrimitiveTypeTest, MixedTypesRejected) {
     auto& c_node = builder.add_access(block, "c");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::AddNode>(block, DebugInfo(), shape);
+    auto& node =
+        static_cast<math::tensor::TensorNode&>(builder.add_library_node<math::tensor::AddNode>(block, DebugInfo(), shape)
+        );
 
     builder.add_computational_memlet(block, a_node, node, "A", {}, desc_float_ptr, block.debug_info());
     builder.add_computational_memlet(block, b_node, node, "B", {}, desc_double_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "C", c_node, {}, desc_float_ptr, block.debug_info());
 
     // Should throw because types are mixed (Float and Double)
-    EXPECT_THROW(node.validate(*sdfg.root_function()), InvalidSDFGException);
+    EXPECT_THROW(node.validate(sdfg), InvalidSDFGException);
 }
 
 // Test AbsNode with integers
@@ -206,12 +214,14 @@ TEST(TensorPrimitiveTypeTest, AbsNodeInt32) {
     auto& b_node = builder.add_access(block, "b");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::AbsNode>(block, DebugInfo(), shape);
+    auto& node =
+        static_cast<math::tensor::TensorNode&>(builder.add_library_node<math::tensor::AbsNode>(block, DebugInfo(), shape)
+        );
 
     builder.add_computational_memlet(block, a_node, node, "X", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "Y", b_node, {}, desc_ptr, block.debug_info());
 
-    EXPECT_NO_THROW(node.validate(*sdfg.root_function()));
+    EXPECT_NO_THROW(node.validate(sdfg));
 
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(node.expand(builder, analysis_manager));
@@ -234,12 +244,13 @@ TEST(TensorPrimitiveTypeTest, ReduceMaxInt64) {
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10), symbolic::integer(20)};
     std::vector<int64_t> axes = {1};
-    auto& node = builder.add_library_node<math::tensor::MaxNode>(block, DebugInfo(), shape, axes, false);
+    auto& node = static_cast<math::tensor::TensorNode&>(builder.add_library_node<
+                                                        math::tensor::MaxNode>(block, DebugInfo(), shape, axes, false));
 
     builder.add_computational_memlet(block, a_node, node, "X", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "Y", b_node, {}, desc_ptr, block.debug_info());
 
-    EXPECT_NO_THROW(node.validate(*sdfg.root_function()));
+    EXPECT_NO_THROW(node.validate(sdfg));
 
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(node.expand(builder, analysis_manager));
@@ -262,12 +273,13 @@ TEST(TensorPrimitiveTypeTest, ReduceSumInt32) {
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10), symbolic::integer(20)};
     std::vector<int64_t> axes = {0};
-    auto& node = builder.add_library_node<math::tensor::SumNode>(block, DebugInfo(), shape, axes, false);
+    auto& node = static_cast<math::tensor::TensorNode&>(builder.add_library_node<
+                                                        math::tensor::SumNode>(block, DebugInfo(), shape, axes, false));
 
     builder.add_computational_memlet(block, a_node, node, "X", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "Y", b_node, {}, desc_ptr, block.debug_info());
 
-    EXPECT_NO_THROW(node.validate(*sdfg.root_function()));
+    EXPECT_NO_THROW(node.validate(sdfg));
 
     analysis::AnalysisManager analysis_manager(sdfg);
     EXPECT_TRUE(node.expand(builder, analysis_manager));
@@ -291,14 +303,16 @@ TEST(TensorPrimitiveTypeTest, ScalarInputFloat) {
     auto& c_node = builder.add_access(block, "c");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::AddNode>(block, DebugInfo(), shape);
+    auto& node =
+        static_cast<math::tensor::TensorNode&>(builder.add_library_node<math::tensor::AddNode>(block, DebugInfo(), shape)
+        );
 
     // Connect scalar and pointer - should still validate
     builder.add_computational_memlet(block, a_node, node, "A", {}, desc_scalar, block.debug_info());
     builder.add_computational_memlet(block, b_node, node, "B", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "C", c_node, {}, desc_ptr, block.debug_info());
 
-    EXPECT_NO_THROW(node.validate(*sdfg.root_function()));
+    EXPECT_NO_THROW(node.validate(sdfg));
 }
 
 // Test that the correct tasklets are generated for integer operations
@@ -319,7 +333,9 @@ TEST(TensorPrimitiveTypeTest, AddNodeInt32GeneratesIntAddTasklet) {
     auto& c_node = builder.add_access(block, "c");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::AddNode>(block, DebugInfo(), shape);
+    auto& node =
+        static_cast<math::tensor::TensorNode&>(builder.add_library_node<math::tensor::AddNode>(block, DebugInfo(), shape)
+        );
 
     builder.add_computational_memlet(block, a_node, node, "A", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, b_node, node, "B", {}, desc_ptr, block.debug_info());
@@ -361,7 +377,9 @@ TEST(TensorPrimitiveTypeTest, AddNodeFloatGeneratesFpAddTasklet) {
     auto& c_node = builder.add_access(block, "c");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::AddNode>(block, DebugInfo(), shape);
+    auto& node =
+        static_cast<math::tensor::TensorNode&>(builder.add_library_node<math::tensor::AddNode>(block, DebugInfo(), shape)
+        );
 
     builder.add_computational_memlet(block, a_node, node, "A", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, b_node, node, "B", {}, desc_ptr, block.debug_info());
@@ -403,7 +421,9 @@ TEST(TensorPrimitiveTypeTest, DivNodeInt32GeneratesIntSdivTasklet) {
     auto& c_node = builder.add_access(block, "c");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::DivNode>(block, DebugInfo(), shape);
+    auto& node =
+        static_cast<math::tensor::TensorNode&>(builder.add_library_node<math::tensor::DivNode>(block, DebugInfo(), shape)
+        );
 
     builder.add_computational_memlet(block, a_node, node, "A", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, b_node, node, "B", {}, desc_ptr, block.debug_info());
@@ -445,7 +465,9 @@ TEST(TensorPrimitiveTypeTest, DivNodeUInt32GeneratesIntUdivTasklet) {
     auto& c_node = builder.add_access(block, "c");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::DivNode>(block, DebugInfo(), shape);
+    auto& node =
+        static_cast<math::tensor::TensorNode&>(builder.add_library_node<math::tensor::DivNode>(block, DebugInfo(), shape)
+        );
 
     builder.add_computational_memlet(block, a_node, node, "A", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, b_node, node, "B", {}, desc_ptr, block.debug_info());
@@ -487,7 +509,8 @@ TEST(TensorPrimitiveTypeTest, MaximumNodeInt32GeneratesIntSmaxTasklet) {
     auto& c_node = builder.add_access(block, "c");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::MaximumNode>(block, DebugInfo(), shape);
+    auto& node = static_cast<
+        math::tensor::TensorNode&>(builder.add_library_node<math::tensor::MaximumNode>(block, DebugInfo(), shape));
 
     builder.add_computational_memlet(block, a_node, node, "A", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, b_node, node, "B", {}, desc_ptr, block.debug_info());
@@ -529,7 +552,8 @@ TEST(TensorPrimitiveTypeTest, MaximumNodeFloatGeneratesFmaxfIntrinsic) {
     auto& c_node = builder.add_access(block, "c");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::MaximumNode>(block, DebugInfo(), shape);
+    auto& node = static_cast<
+        math::tensor::TensorNode&>(builder.add_library_node<math::tensor::MaximumNode>(block, DebugInfo(), shape));
 
     builder.add_computational_memlet(block, a_node, node, "A", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, b_node, node, "B", {}, desc_ptr, block.debug_info());
@@ -573,7 +597,8 @@ TEST(TensorPrimitiveTypeTest, MaximumNodeDoubleGeneratesFmaxIntrinsic) {
     auto& c_node = builder.add_access(block, "c");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::MaximumNode>(block, DebugInfo(), shape);
+    auto& node = static_cast<
+        math::tensor::TensorNode&>(builder.add_library_node<math::tensor::MaximumNode>(block, DebugInfo(), shape));
 
     builder.add_computational_memlet(block, a_node, node, "A", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, b_node, node, "B", {}, desc_ptr, block.debug_info());
@@ -615,7 +640,9 @@ TEST(TensorPrimitiveTypeTest, ExpNodeFloatGeneratesExpfIntrinsic) {
     auto& b_node = builder.add_access(block, "b");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = builder.add_library_node<math::tensor::ExpNode>(block, DebugInfo(), shape);
+    auto& node =
+        static_cast<math::tensor::TensorNode&>(builder.add_library_node<math::tensor::ExpNode>(block, DebugInfo(), shape)
+        );
 
     builder.add_computational_memlet(block, a_node, node, "X", {}, desc_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "Y", b_node, {}, desc_ptr, block.debug_info());

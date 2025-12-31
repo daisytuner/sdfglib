@@ -55,7 +55,7 @@ bool MaxNode::expand_reduction(
     } else {
         // For floating-point, use the correct fmax intrinsic
         auto& libnode = builder.add_library_node<
-            math::cmath::CMathNode>(block, this->debug_info(), cmath::CMathFunction::fmax, input_type.primitive_type(), 2);
+            math::cmath::CMathNode>(block, this->debug_info(), cmath::CMathFunction::fmax, input_type.primitive_type());
 
         builder
             .add_computational_memlet(block, in_access, libnode, "_in1", input_subset, input_type, this->debug_info());
