@@ -116,6 +116,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/tensor/elementwise_node.cpp
     src/data_flow/library_nodes/math/tensor/reduce_node.cpp
     src/data_flow/library_nodes/math/tensor/broadcast_node.cpp
+    src/data_flow/library_nodes/math/tensor/conv_node.cpp
     src/data_flow/library_nodes/math/tensor/elementwise_ops/abs_node.cpp
     src/data_flow/library_nodes/math/tensor/elementwise_ops/add_node.cpp
     src/data_flow/library_nodes/math/tensor/elementwise_ops/minimum_node.cpp
