@@ -3,6 +3,7 @@
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/library_nodes/math/cmath/cmath_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/tensor_node.h"
 #include "sdfg/types/type.h"
 
 namespace sdfg {
@@ -48,7 +49,10 @@ bool MaximumNode::expand_operation(
     bool is_int = types::is_integer(input_type_a.primitive_type());
 
     if (is_int) {
-        auto& tasklet = builder.add_tasklet(code_block, data_flow::TaskletCode::int_smax, "_out", {"_in1", "_in2"});
+        // Use tasklets for integer types - distinguish between signed and unsigned
+        bool is_signed_int = types::is_signed(input_type_a.primitive_type());
+        auto tasklet_code = is_signed_int ? data_flow::TaskletCode::int_smax : data_flow::TaskletCode::int_umax;
+        auto& tasklet = builder.add_tasklet(code_block, tasklet_code, "_out", {"_in1", "_in2"});
 
         if (input_type_a.type_id() == types::TypeID::Scalar) {
             builder.add_computational_memlet(code_block, *input_node_a, tasklet, "_in1", {}, input_type_a);
@@ -62,7 +66,9 @@ bool MaximumNode::expand_operation(
         }
         builder.add_computational_memlet(code_block, tasklet, "_out", output_node, subset, output_type);
     } else {
-        auto& node = builder.add_library_node<cmath::CMathNode>(code_block, this->debug_info(), "fmax", 2);
+        // Use intrinsics for floating-point types with correct suffix
+        std::string intrinsic_name = TensorNode::get_intrinsic_name("fmax", input_type_a.primitive_type());
+        auto& node = builder.add_library_node<cmath::CMathNode>(code_block, this->debug_info(), intrinsic_name, 2);
 
         if (input_type_a.type_id() == types::TypeID::Scalar) {
             builder.add_computational_memlet(code_block, *input_node_a, node, "_in1", {}, input_type_a, DebugInfo());
