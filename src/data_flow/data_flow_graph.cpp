@@ -13,9 +13,24 @@ void DataFlowGraph::validate(const Function& function) const {
         }
 
         if (auto code_node = dynamic_cast<const data_flow::CodeNode*>(node.second.get())) {
-            if (this->in_degree(*code_node) != code_node->inputs().size()) {
-                throw InvalidSDFGException("DataFlowGraph: Number of input edges does not match number of inputs.");
+            // Count the number of required inputs (non-optional)
+            size_t required_inputs = 0;
+            for (const auto& input_name : code_node->inputs()) {
+                if (!code_node->is_input_optional(input_name)) {
+                    required_inputs++;
+                }
             }
+            
+            // Check that we have at least the required inputs and at most all inputs
+            size_t actual_inputs = this->in_degree(*code_node);
+            if (actual_inputs < required_inputs || actual_inputs > code_node->inputs().size()) {
+                throw InvalidSDFGException(
+                    "DataFlowGraph: Number of input edges (" + std::to_string(actual_inputs) + 
+                    ") does not match expected range [" + std::to_string(required_inputs) + 
+                    ", " + std::to_string(code_node->inputs().size()) + "]."
+                );
+            }
+            
             if (this->out_degree(*code_node) != code_node->outputs().size()) {
                 throw InvalidSDFGException("DataFlowGraph: Number of output edges does not match number of outputs.");
             }
