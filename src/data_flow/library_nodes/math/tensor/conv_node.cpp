@@ -248,8 +248,8 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& accum_init = builder.add_access(init_block, accum_var, block.debug_info());
     auto& zero_const = builder.add_constant(init_block, "0.0", scalar_type, block.debug_info());
     auto& init_tasklet = builder.add_tasklet(init_block, data_flow::assign, "_out", {"_in"}, block.debug_info());
-    builder.add_computational_memlet(init_block, zero_const, init_tasklet, "_in", {}, block.debug_info());
-    builder.add_computational_memlet(init_block, init_tasklet, "_out", accum_init, {}, block.debug_info());
+    builder.add_computational_memlet(init_block, zero_const, init_tasklet, "_in", {}, scalar_type, block.debug_info());
+    builder.add_computational_memlet(init_block, init_tasklet, "_out", accum_init, {}, scalar_type, block.debug_info());
 
     // Create nested for loops for input channels and kernel dimensions
     // For loop over input channels
@@ -330,8 +330,8 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     builder.add_computational_memlet(
         comp_block, w_access, fma_tasklet, "_in2", w_subset, w_edge->base_type(), w_edge->debug_info()
     );
-    builder.add_computational_memlet(comp_block, accum_read, fma_tasklet, "_in3", {}, block.debug_info());
-    builder.add_computational_memlet(comp_block, fma_tasklet, "_out", accum_write, {}, block.debug_info());
+    builder.add_computational_memlet(comp_block, accum_read, fma_tasklet, "_in3", {}, scalar_type, block.debug_info());
+    builder.add_computational_memlet(comp_block, fma_tasklet, "_out", accum_write, {}, scalar_type, block.debug_info());
 
     // After all loops, write accumulated result to output (with optional bias)
     auto& output_block = builder.add_block(*current_scope, {}, block.debug_info());
@@ -346,7 +346,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         auto& add_tasklet =
             builder.add_tasklet(output_block, data_flow::fp_add, "_out", {"_in1", "_in2"}, block.debug_info());
 
-        builder.add_computational_memlet(output_block, accum_final, add_tasklet, "_in1", {}, block.debug_info());
+        builder.add_computational_memlet(output_block, accum_final, add_tasklet, "_in1", {}, scalar_type, block.debug_info());
         builder.add_computational_memlet(
             output_block, b_access, add_tasklet, "_in2", {oc_var}, b_edge->base_type(), b_edge->debug_info()
         );
@@ -358,7 +358,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         auto& assign_tasklet =
             builder.add_tasklet(output_block, data_flow::assign, "_out", {"_in"}, block.debug_info());
 
-        builder.add_computational_memlet(output_block, accum_final, assign_tasklet, "_in", {}, block.debug_info());
+        builder.add_computational_memlet(output_block, accum_final, assign_tasklet, "_in", {}, scalar_type, block.debug_info());
         builder.add_computational_memlet(
             output_block, assign_tasklet, "_out", y_access, y_subset, y_edge.base_type(), y_edge.debug_info()
         );
