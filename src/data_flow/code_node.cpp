@@ -40,5 +40,13 @@ bool CodeNode::has_constant_input(size_t index) const {
     return false;
 }
 
+void CodeNode::mark_input_optional(const std::string& connector_name) {
+    optional_inputs_.insert(connector_name);
+}
+
+bool CodeNode::is_input_optional(const std::string& connector_name) const {
+    return optional_inputs_.find(connector_name) != optional_inputs_.end();
+}
+
 } // namespace data_flow
 } // namespace sdfg

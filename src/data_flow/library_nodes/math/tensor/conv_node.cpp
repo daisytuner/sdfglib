@@ -29,10 +29,13 @@ ConvNode::ConvNode(
           parent,
           LibraryNodeType_Conv,
           {"Y"},
-          {"X", "W"}, // B (bias) is optional; if provided as an edge, it must use connector "B"
+          {"X", "W", "B"}, // X and W are required, B (bias) is optional
           data_flow::ImplementationType_NONE
       ),
-      kernel_shape_(kernel_shape), strides_(strides), pads_(pads), dilations_(dilations), group_(group) {}
+      kernel_shape_(kernel_shape), strides_(strides), pads_(pads), dilations_(dilations), group_(group) {
+    // Mark bias input as optional
+    mark_input_optional("B");
+}
 
 void ConvNode::validate(const Function& function) const {
     TensorNode::validate(function);
