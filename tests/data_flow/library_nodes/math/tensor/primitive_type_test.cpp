@@ -686,9 +686,9 @@ TEST(TensorPrimitiveTypeTest, CastNodeInt32ToFloat) {
     auto& b_node = builder.add_access(block, "b");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = static_cast<math::tensor::TensorNode&>(
-        builder.add_library_node<math::tensor::CastNode>(block, DebugInfo(), shape, types::PrimitiveType::Float)
-    );
+    auto& node = static_cast<
+        math::tensor::TensorNode&>(builder.add_library_node<
+                                   math::tensor::CastNode>(block, DebugInfo(), shape, types::PrimitiveType::Float));
 
     builder.add_computational_memlet(block, a_node, node, "X", {}, input_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "Y", b_node, {}, output_ptr, block.debug_info());
@@ -740,9 +740,9 @@ TEST(TensorPrimitiveTypeTest, CastNodeFloatToInt32) {
     auto& b_node = builder.add_access(block, "b");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = static_cast<math::tensor::TensorNode&>(
-        builder.add_library_node<math::tensor::CastNode>(block, DebugInfo(), shape, types::PrimitiveType::Int32)
-    );
+    auto& node = static_cast<
+        math::tensor::TensorNode&>(builder.add_library_node<
+                                   math::tensor::CastNode>(block, DebugInfo(), shape, types::PrimitiveType::Int32));
 
     builder.add_computational_memlet(block, a_node, node, "X", {}, input_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "Y", b_node, {}, output_ptr, block.debug_info());
@@ -794,9 +794,9 @@ TEST(TensorPrimitiveTypeTest, CastNodeFloatToDouble) {
     auto& b_node = builder.add_access(block, "b");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = static_cast<math::tensor::TensorNode&>(
-        builder.add_library_node<math::tensor::CastNode>(block, DebugInfo(), shape, types::PrimitiveType::Double)
-    );
+    auto& node = static_cast<
+        math::tensor::TensorNode&>(builder.add_library_node<
+                                   math::tensor::CastNode>(block, DebugInfo(), shape, types::PrimitiveType::Double));
 
     builder.add_computational_memlet(block, a_node, node, "X", {}, input_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "Y", b_node, {}, output_ptr, block.debug_info());
@@ -848,9 +848,9 @@ TEST(TensorPrimitiveTypeTest, CastNodeUInt32ToInt64) {
     auto& b_node = builder.add_access(block, "b");
 
     std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
-    auto& node = static_cast<math::tensor::TensorNode&>(
-        builder.add_library_node<math::tensor::CastNode>(block, DebugInfo(), shape, types::PrimitiveType::Int64)
-    );
+    auto& node = static_cast<
+        math::tensor::TensorNode&>(builder.add_library_node<
+                                   math::tensor::CastNode>(block, DebugInfo(), shape, types::PrimitiveType::Int64));
 
     builder.add_computational_memlet(block, a_node, node, "X", {}, input_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "Y", b_node, {}, output_ptr, block.debug_info());

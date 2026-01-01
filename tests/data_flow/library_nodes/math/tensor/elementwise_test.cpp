@@ -279,9 +279,8 @@ void TestCast(std::vector<size_t> shape_dims) {
         shape.push_back(symbolic::integer(d));
     }
 
-    auto& node = static_cast<math::tensor::CastNode&>(
-        builder.add_library_node<math::tensor::CastNode>(block, DebugInfo(), shape, TargetType)
-    );
+    auto& node = static_cast<math::tensor::CastNode&>(builder.add_library_node<
+                                                      math::tensor::CastNode>(block, DebugInfo(), shape, TargetType));
 
     builder.add_computational_memlet(block, a_node, node, "X", {}, source_ptr, block.debug_info());
     builder.add_computational_memlet(block, node, "Y", b_node, {}, target_ptr, block.debug_info());
@@ -336,10 +335,10 @@ void TestCast(std::vector<size_t> shape_dims) {
     }
 }
 
-#define REGISTER_CAST_TEST(SourceType, TargetType, Dim)                                   \
-    TEST(ElementWiseTest, CastNode_##SourceType##_to_##TargetType##_##Dim##D) {          \
-        std::vector<size_t> dims;                                                         \
-        for (int i = 0; i < Dim; ++i) dims.push_back(32);                                \
+#define REGISTER_CAST_TEST(SourceType, TargetType, Dim)                                     \
+    TEST(ElementWiseTest, CastNode_##SourceType##_to_##TargetType##_##Dim##D) {             \
+        std::vector<size_t> dims;                                                           \
+        for (int i = 0; i < Dim; ++i) dims.push_back(32);                                   \
         TestCast<types::PrimitiveType::SourceType, types::PrimitiveType::TargetType>(dims); \
     }
 
