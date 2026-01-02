@@ -122,7 +122,7 @@ bool is_disjoint_isl(
                 isl_map_free(map_3);
             }
             isl_ctx_free(ctx);
-            return false;
+            continue;
         }
 
         // Find aliasing pairs under the constraint that dimensions are different
@@ -137,7 +137,7 @@ bool is_disjoint_isl(
                 isl_map_free(map_3);
             }
             isl_ctx_free(ctx);
-            return false;
+            continue;
         }
         isl_map* alias_pairs = isl_map_intersect(composed, map_1);
         if (!alias_pairs) {
@@ -148,7 +148,7 @@ bool is_disjoint_isl(
                 isl_map_free(map_1);
             }
             isl_ctx_free(ctx);
-            return false;
+            continue;
         }
 
         bool disjoint = isl_map_is_empty(alias_pairs);

@@ -11,6 +11,9 @@ endif()
 option(SDFGLIB_BUILD_TESTS
        "Build tests" ON)
 
+option(SDFGLIB_BUILD_DOCS
+       "Build documentation using Doxygen" OFF)
+
 add_subdirectory(3rdParty/symengine)
 add_subdirectory(rtl)
 add_subdirectory(arg-capture-io)
@@ -105,25 +108,38 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/invoke_node.cpp
     src/data_flow/library_nodes/metadata_node.cpp
     src/data_flow/library_nodes/math/math_node.cpp
-    src/data_flow/library_nodes/math/intrinsic.cpp
-    src/data_flow/library_nodes/math/blas/blas.cpp
-    src/data_flow/library_nodes/math/blas/dot.cpp
-    src/data_flow/library_nodes/math/blas/gemm.cpp
-    src/data_flow/library_nodes/math/ml/abs.cpp
-    src/data_flow/library_nodes/math/ml/add.cpp
-    src/data_flow/library_nodes/math/ml/div.cpp
-    src/data_flow/library_nodes/math/ml/element_wise.cpp
-    src/data_flow/library_nodes/math/ml/elu.cpp
-    src/data_flow/library_nodes/math/ml/erf.cpp
-    src/data_flow/library_nodes/math/ml/hard_sigmoid.cpp
-    src/data_flow/library_nodes/math/ml/leaky_relu.cpp
-    src/data_flow/library_nodes/math/ml/mul.cpp
-    src/data_flow/library_nodes/math/ml/pow.cpp
-    src/data_flow/library_nodes/math/ml/relu.cpp
-    src/data_flow/library_nodes/math/ml/sigmoid.cpp
-    src/data_flow/library_nodes/math/ml/sqrt.cpp
-    src/data_flow/library_nodes/math/ml/sub.cpp
-    src/data_flow/library_nodes/math/ml/tanh.cpp
+    src/data_flow/library_nodes/math/blas/blas_node.cpp
+    src/data_flow/library_nodes/math/blas/dot_node.cpp
+    src/data_flow/library_nodes/math/blas/gemm_node.cpp
+    src/data_flow/library_nodes/math/cmath/cmath_node.cpp
+    src/data_flow/library_nodes/math/tensor/tensor_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce_node.cpp
+    src/data_flow/library_nodes/math/tensor/broadcast_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/abs_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/add_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/cast_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/minimum_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/maximum_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/div_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/elu_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/exp_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/erf_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/hard_sigmoid_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/leaky_relu_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/mul_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/pow_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/relu_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/sigmoid_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/sqrt_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/sub_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/tanh_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce_ops/sum_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce_ops/mean_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce_ops/std_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce_ops/max_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce_ops/min_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce_ops/softmax_node.cpp
     src/data_flow/library_nodes/stdlib/alloca.cpp
     src/data_flow/library_nodes/stdlib/calloc.cpp
     src/data_flow/library_nodes/stdlib/free.cpp
@@ -154,6 +170,7 @@ set(SOURCE_FILES
     src/passes/symbolic/symbol_evolution.cpp
     src/passes/symbolic/symbol_propagation.cpp
     src/passes/symbolic/symbol_promotion.cpp
+    src/passes/symbolic/type_minimization.cpp
     src/passes/structured_control_flow/block_fusion.cpp
     src/passes/structured_control_flow/common_assignment_elimination.cpp
     src/passes/structured_control_flow/condition_elimination.cpp
@@ -282,4 +299,28 @@ install(FILES
 if(SDFGLIB_BUILD_TESTS)
     set(INSTALL_GTEST OFF)
     add_subdirectory(tests)
+endif()
+
+# Documentation
+if(SDFGLIB_BUILD_DOCS)
+    find_package(Doxygen)
+    if(DOXYGEN_FOUND)
+        set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile)
+        set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+
+        # Copy Doxyfile to build directory
+        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+
+        # Add custom target for documentation generation
+        add_custom_target(docs
+            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMENT "Generating API documentation with Doxygen"
+            VERBATIM
+        )
+
+        message(STATUS "Doxygen found. Use 'make docs' to generate documentation.")
+    else()
+        message(WARNING "Doxygen not found. Documentation will not be generated.")
+    endif()
 endif()

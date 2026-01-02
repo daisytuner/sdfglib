@@ -1,4 +1,6 @@
 #include "sdfg/codegen/dispatchers/node_dispatcher.h"
+
+#include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/codegen/instrumentation/instrumentation_info.h"
 
 namespace sdfg {
@@ -20,7 +22,7 @@ bool NodeDispatcher::begin_node(PrettyPrinter& stream) { return false; };
 void NodeDispatcher::end_node(PrettyPrinter& stream, bool applied) {};
 
 InstrumentationInfo NodeDispatcher::instrumentation_info() const {
-    return InstrumentationInfo(ElementType_Unknown, TargetType_SEQUENTIAL, -1, node_.element_id(), {});
+    return InstrumentationInfo(node_.element_id(), ElementType_Unknown, TargetType_SEQUENTIAL);
 };
 
 void NodeDispatcher::

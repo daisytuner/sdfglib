@@ -6,6 +6,7 @@
 #include <symengine/subs.h>
 #include "sdfg/exceptions.h"
 #include "sdfg/symbolic/polynomials.h"
+#include "sdfg/types/scalar.h"
 #include "sdfg/types/type.h"
 #include "symengine/functions.h"
 #include "symengine/logic.h"
@@ -102,13 +103,7 @@ Expression abs(const Expression expr) {
 };
 
 Expression mod(const Expression lhs, const Expression rhs) {
-    if (SymEngine::is_a<SymEngine::Integer>(*lhs) && SymEngine::is_a<SymEngine::Integer>(*rhs)) {
-        auto a = SymEngine::rcp_static_cast<const SymEngine::Integer>(lhs)->as_int();
-        auto b = SymEngine::rcp_static_cast<const SymEngine::Integer>(rhs)->as_int();
-        return integer(a % b);
-    }
-    auto imod = SymEngine::function_symbol("imod", {lhs, rhs});
-    return imod;
+    return symbolic::sub(lhs, symbolic::mul(symbolic::div(lhs, rhs), rhs));
 };
 
 Expression pow(const Expression base, const Expression exp) { return SymEngine::pow(base, exp); };
@@ -118,7 +113,15 @@ Expression zext_i64(const Expression expr) {
     return zext;
 }
 
+Expression trunc_i32(const Expression expr) {
+    auto trunc = SymEngine::make_rcp<TruncI32Function>(expr);
+    return trunc;
+}
+
 Expression size_of_type(const types::IType& type) {
+    if (auto scalar = dynamic_cast<const types::Scalar*>(&type)) {
+        return integer((types::bit_width(scalar->primitive_type()) + 7) / 8);
+    }
     auto so = SymEngine::make_rcp<SizeOfTypeFunction>(type);
     return so;
 }

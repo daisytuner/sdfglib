@@ -23,6 +23,8 @@ public:
     void dispatch_node(
         PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
     ) override;
+
+    InstrumentationInfo instrumentation_info() const override;
 };
 
 class BreakDispatcher : public NodeDispatcher {

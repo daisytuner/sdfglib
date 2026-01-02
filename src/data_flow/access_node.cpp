@@ -81,6 +81,41 @@ void ConstantNode::validate(const Function& function) const {
     if (graph.in_degree(*this) > 0) {
         throw InvalidSDFGException("ConstantNode " + this->data_ + " has incoming edges");
     }
+
+    switch (this->type_->type_id()) {
+        case types::TypeID::Scalar: {
+            auto& scalar_type = static_cast<const types::Scalar&>(*this->type_);
+            switch (scalar_type.primitive_type()) {
+                case types::PrimitiveType::Bool:
+                case types::PrimitiveType::Int8:
+                case types::PrimitiveType::Int16:
+                case types::PrimitiveType::Int32:
+                case types::PrimitiveType::Int64:
+                case types::PrimitiveType::UInt8:
+                case types::PrimitiveType::UInt16:
+                case types::PrimitiveType::UInt32:
+                case types::PrimitiveType::UInt64: {
+                    if (this->data() == "true") {
+                        break;
+                    } else if (this->data() == "false") {
+                        break;
+                    }
+
+                    try {
+                        helpers::parse_number_signed(this->data());
+                    } catch (const std::exception& e) {
+                        throw InvalidSDFGException("ConstantNode " + this->data() + " has non-integer scalar type");
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+            break;
+        }
+        default:
+            break;
+    }
 }
 
 const types::IType& ConstantNode::type() const { return *this->type_; };

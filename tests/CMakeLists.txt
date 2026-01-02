@@ -12,6 +12,7 @@ set(TEST_FILES
     analysis/data_dependency_analysis_test.cpp
     analysis/flop_analysis_test.cpp
     analysis/loop_analysis_test.cpp
+    analysis/loop_analysis_info_test.cpp
     analysis/mem_access_range_analysis_test.cpp
     analysis/type_analysis_test.cpp
     analysis/users_test.cpp
@@ -37,7 +38,11 @@ set(TEST_FILES
     codegen/utils_test.cpp
     data_flow/data_flow_graph_test.cpp
     data_flow/tasklet_test.cpp
-    data_flow/library_nodes/math/blas_test.cpp
+    data_flow/library_nodes/math/blas/blas_test.cpp
+    data_flow/library_nodes/math/cmath/cmath_node_test.cpp
+    data_flow/library_nodes/math/tensor/reduce_test.cpp
+    data_flow/library_nodes/math/tensor/elementwise_test.cpp
+    data_flow/library_nodes/math/tensor/primitive_type_test.cpp
     deepcopy/structured_sdfg_deep_copy_test.cpp
     element_test.cpp
     graph/graph_algorithms_test.cpp
@@ -53,6 +58,7 @@ set(TEST_FILES
     passes/dataflow/tasklet_fusion_test.cpp
     passes/memory/allocation_management_test.cpp
     passes/pipeline_test.cpp
+    passes/schedules/expansion_pass_test.cpp
     passes/schedules/parallelization_pass_test.cpp
     passes/structured_control_flow/block_fusion_test.cpp
     passes/structured_control_flow/condition_elimination_test.cpp

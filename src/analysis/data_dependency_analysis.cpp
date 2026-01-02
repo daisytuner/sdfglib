@@ -330,7 +330,7 @@ void DataDependencyAnalysis::visit_for(
     std::unordered_set<User*> to_close;
     for (auto& previous : open_definitions) {
         for (auto& user : open_definitions_for) {
-            if (this->closes(analysis_manager, *previous.first, *user.first, false)) {
+            if (this->closes(analysis_manager, *previous.first, *user.first, true)) {
                 to_close.insert(previous.first);
                 break;
             }
@@ -673,7 +673,7 @@ void DataDependencyAnalysis::visit_sequence(
 
             std::unordered_set<User*> to_close;
             for (auto& user : open_definitions) {
-                if (user.first->container() == entry.first->get_name()) {
+                if (this->closes(analysis_manager, *user.first, *current_user, true)) {
                     to_close.insert(user.first);
                 }
             }
@@ -840,6 +840,10 @@ bool DataDependencyAnalysis::
         return false;
     }
 
+    if (this->is_undefined_user(previous) || this->is_undefined_user(current)) {
+        return false;
+    }
+
     // Check dominance
     if (requires_dominance) {
         auto& dominance_analysis = analysis_manager.get<analysis::DominanceAnalysis>();
@@ -852,10 +856,6 @@ bool DataDependencyAnalysis::
     auto& type = sdfg_.type(previous.container());
     if (type.type_id() == types::TypeID::Scalar) {
         return true;
-    }
-
-    if (this->is_undefined_user(previous) || this->is_undefined_user(current)) {
-        return false;
     }
 
     if (!this->detailed_) {

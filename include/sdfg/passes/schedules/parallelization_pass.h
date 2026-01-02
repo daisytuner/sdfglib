@@ -6,12 +6,11 @@ namespace sdfg {
 namespace passes {
 
 class ParallelizationPass : public Pass {
-   public:
+public:
     std::string name() override;
 
-    bool run_pass(builder::StructuredSDFGBuilder& builder,
-                  analysis::AnalysisManager& analysis_manager) override;
+    bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
 };
 
-}  // namespace passes
-}  // namespace sdfg
+} // namespace passes
+} // namespace sdfg

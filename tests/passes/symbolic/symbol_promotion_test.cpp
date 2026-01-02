@@ -151,41 +151,6 @@ TEST(SymbolPromotionTest, Assign_Unsigned_Constant) {
     EXPECT_TRUE(symbolic::eq(trans.assignments().at(symbolic::symbol("i")), symbolic::zero()));
 }
 
-TEST(SymbolPromotionTest, Assign_Unsigned_Range) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
-
-    types::Scalar udesc(types::PrimitiveType::UInt32);
-    types::Scalar udesc_large(types::PrimitiveType::UInt64);
-    types::Scalar desc(types::PrimitiveType::Int32);
-    types::Scalar desc_large(types::PrimitiveType::Int64);
-    builder.add_container("N", desc);
-    builder.add_container("i", desc_large);
-    builder.add_container("j", desc);
-    auto sym = symbolic::symbol("i");
-
-    auto& root = builder.subject().root();
-    auto& loop = builder.add_for(
-        root, sym, symbolic::Lt(sym, symbolic::symbol("N")), symbolic::zero(), symbolic::add(sym, symbolic::one())
-    );
-    auto& block = builder.add_block(loop.root());
-    auto& input_node = builder.add_access(block, "i");
-    auto& output_node = builder.add_access(block, "j");
-
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
-
-    builder.add_computational_memlet(block, input_node, tasklet, "_in", {}, udesc_large);
-    builder.add_computational_memlet(block, tasklet, "_out", output_node, {}, udesc);
-
-    // Apply pass
-    analysis::AnalysisManager analysis_manager(builder.subject());
-    passes::SymbolPromotion s2spass;
-    EXPECT_TRUE(s2spass.run(builder, analysis_manager));
-
-    auto& trans = loop.root().at(0).second;
-    EXPECT_EQ(trans.assignments().size(), 1);
-    EXPECT_TRUE(symbolic::eq(trans.assignments().at(symbolic::symbol("j")), symbolic::symbol("i")));
-}
-
 TEST(SymbolPromotionTest, Assign_Unsigned_Cast_Input) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 

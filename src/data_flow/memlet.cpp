@@ -84,7 +84,10 @@ void Memlet::validate(const Function& function) const {
 
             // Criterion: Inferred type must be a scalar
             if (inferred_type.type_id() != types::TypeID::Scalar) {
-                throw InvalidSDFGException("Memlet: Computation memlets must have a scalar destination");
+                throw InvalidSDFGException(
+                    "Memlet: Computation memlets resolve to scalar type. Base type: " + this->base_type_->print() +
+                    " Subset Dim: " + std::to_string(this->subset_.size())
+                );
             }
             break;
         }

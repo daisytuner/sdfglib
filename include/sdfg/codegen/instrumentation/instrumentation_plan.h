@@ -7,7 +7,6 @@
 #include "sdfg/codegen/language_extension.h"
 #include "sdfg/codegen/utils.h"
 #include "sdfg/data_flow/library_node.h"
-#include "sdfg/data_flow/library_nodes/math/blas/blas.h"
 #include "sdfg/element.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_sdfg.h"
