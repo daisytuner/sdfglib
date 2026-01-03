@@ -45,6 +45,7 @@ set(TEST_FILES
     data_flow/library_nodes/math/tensor/primitive_type_test.cpp
     deepcopy/structured_sdfg_deep_copy_test.cpp
     element_test.cpp
+    frontend/mlir_frontend_test.cpp
     graph/graph_algorithms_test.cpp
     helpers/helpers_test.cpp
     passes/code_motion/block_hoisting_test.cpp

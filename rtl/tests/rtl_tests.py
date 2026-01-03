@@ -7,6 +7,7 @@ import numpy as np
 from pathlib import Path
 import base64
 
+
 @pytest.mark.parametrize(
     "event",
     [
@@ -26,7 +27,7 @@ def test_instrumentation(event):
         str(output_path),
         "-ldaisy_rtl",
         "-larg_capture_io",
-        "-lstdc++"
+        "-lstdc++",
     ]
 
     process = subprocess.Popen(
@@ -100,6 +101,7 @@ def test_instrumentation(event):
             assert event_name in events[i]["args"]["metrics"]
             assert events[i]["args"]["metrics"][event_name] > 0
 
+
 @pytest.mark.parametrize(
     "event",
     [
@@ -119,7 +121,7 @@ def test_instrumentation_aggregate(event):
         str(output_path),
         "-ldaisy_rtl",
         "-larg_capture_io",
-        "-lstdc++"
+        "-lstdc++",
     ]
 
     process = subprocess.Popen(
@@ -203,13 +205,19 @@ def test_instrumentation_aggregate(event):
     assert event["args"]["metrics"]["runtime"]["variance"] >= 0
     assert event["args"]["metrics"]["runtime"]["count"] == 10
 
-    assert np.allclose(event["dur"], event["args"]["metrics"]["runtime"]["mean"] * event["args"]["metrics"]["runtime"]["count"])
+    assert np.allclose(
+        event["dur"],
+        event["args"]["metrics"]["runtime"]["mean"] * event["args"]["metrics"]["runtime"]["count"],
+    )
+
 
 @pytest.mark.parametrize(
     "event",
     [
         pytest.param(""),
-        pytest.param("nvml:::NVIDIA_GeForce_RTX_5060_Ti:device_0:gpu_utilization,nvml:::NVIDIA_GeForce_RTX_5060_Ti:device_0:memory_utilization"),
+        pytest.param(
+            "nvml:::NVIDIA_GeForce_RTX_5060_Ti:device_0:gpu_utilization,nvml:::NVIDIA_GeForce_RTX_5060_Ti:device_0:memory_utilization"
+        ),
     ],
 )
 def test_instrumentation_cuda(event):
@@ -224,7 +232,7 @@ def test_instrumentation_cuda(event):
         str(output_path),
         "-ldaisy_rtl",
         "-larg_capture_io",
-        "-lstdc++"
+        "-lstdc++",
     ]
 
     process = subprocess.Popen(
@@ -266,7 +274,7 @@ def test_instrumentation_cuda(event):
 
     result = json.load(open(workdir / "data_cuda.json"))
     events = result["traceEvents"]
-    assert(len(events) > 0)
+    assert len(events) > 0
 
     print(events)
     for i in range(len(events)):
@@ -319,7 +327,7 @@ def test_capture_strats(strat, expected_reports):
         str(output_path),
         "-ldaisy_rtl",
         "-larg_capture_io",
-        "-lstdc++"
+        "-lstdc++",
     ]
 
     process = subprocess.Popen(
@@ -359,7 +367,9 @@ def test_capture_strats(strat, expected_reports):
             for s in args:
                 has_minus = s.startswith("-")
                 num = int(s[1:]) if has_minus else int(s)
-                invocations.append((num, f"__daisy_capture_test_function_inv{num}_123.index.json", has_minus))
+                invocations.append(
+                    (num, f"__daisy_capture_test_function_inv{num}_123.index.json", has_minus)
+                )
 
         def check_ext_file(cap, expected_array):
             ext_file_path = workdir / "arg_captures" / cap["ext_file"]
@@ -392,14 +402,14 @@ def test_capture_strats(strat, expected_reports):
             assert (0, False) in capture_map
             cap = capture_map[(0, False)]
             assert cap["primitive_type"] == 4
-            assert cap["dims"] == [4,10]
+            assert cap["dims"] == [4, 10]
 
             check_ext_file(cap, np.arange(1, 11))
 
             assert (1, False) in capture_map
             cap = capture_map[(1, False)]
             assert cap["primitive_type"] == 4
-            assert cap["dims"] == [4,10]
+            assert cap["dims"] == [4, 10]
             check_ext_file(cap, np.arange(11, 21))
 
             assert (2, False) in capture_map
@@ -411,12 +421,20 @@ def test_capture_strats(strat, expected_reports):
             assert (3, True) in capture_map
             cap = capture_map[(3, True)]
             assert cap["primitive_type"] == 4
-            assert cap["dims"] == [4,10]
-            check_ext_file(cap, np.array([12, 14, 16, 18, 20, 22, 24, 26, 28, 30], dtype=np.int32) if inv == 0 else np.zeros(10, dtype=np.int32))
+            assert cap["dims"] == [4, 10]
+            check_ext_file(
+                cap,
+                (
+                    np.array([12, 14, 16, 18, 20, 22, 24, 26, 28, 30], dtype=np.int32)
+                    if inv == 0
+                    else np.zeros(10, dtype=np.int32)
+                ),
+            )
 
     finally:
         # Cleanup
         subprocess.run(["rm", "-rf", str(workdir / "arg_captures")])
+
 
 @pytest.mark.parametrize(
     "event",
@@ -436,7 +454,7 @@ def test_instrumentation_static(event):
         str(output_path),
         "-ldaisy_rtl",
         "-larg_capture_io",
-        "-lstdc++"
+        "-lstdc++",
     ]
 
     process = subprocess.Popen(
@@ -484,6 +502,7 @@ def test_instrumentation_static(event):
     assert event["args"]["metrics"]["static:::foo"]["count"] == 10
     assert event["args"]["metrics"]["static:::foo"]["variance"] == 8.25
 
+
 @pytest.mark.parametrize(
     "event",
     [
@@ -502,7 +521,7 @@ def test_instrumentation_manual(event):
         str(output_path),
         "-ldaisy_rtl",
         "-larg_capture_io",
-        "-lstdc++"
+        "-lstdc++",
     ]
 
     process = subprocess.Popen(
@@ -550,6 +569,7 @@ def test_instrumentation_manual(event):
     assert event["args"]["metrics"]["static:::foo"]["count"] == 10
     assert event["args"]["metrics"]["static:::foo"]["variance"] == 8.25
 
+
 def test_instrumentation_loop_info():
     workdir = Path(__file__).parent / "applications"
 
@@ -562,7 +582,7 @@ def test_instrumentation_loop_info():
         str(output_path),
         "-ldaisy_rtl",
         "-larg_capture_io",
-        "-lstdc++"
+        "-lstdc++",
     ]
 
     process = subprocess.Popen(

@@ -61,6 +61,7 @@ option(SDFGLIB_ENABLE_COVERAGE "Enable coverage flags" OFF)
 set(SOURCE_FILES
     src/analysis/analysis.cpp
     src/analysis/assumptions_analysis.cpp
+    src/frontend/mlir_frontend.cpp
     src/analysis/control_flow_analysis.cpp
     src/analysis/data_dependency_analysis.cpp
     src/analysis/flop_analysis.cpp

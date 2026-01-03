@@ -44,3 +44,12 @@ _codeql_build_dir/
 
 # Documentation
 docs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.egg-info/
+dist/
+*.egg
