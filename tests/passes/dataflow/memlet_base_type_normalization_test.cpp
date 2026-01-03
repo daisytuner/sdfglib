@@ -20,22 +20,19 @@ TEST(MemletBaseTypeNormalization, FlattenTwoDimensionalArray) {
     types::Array inner_array(scalar, symbolic::integer(4));
     types::Array outer_array(inner_array, symbolic::integer(3));
     types::Pointer pointer_to_array(outer_array);
-    types::Scalar result_scalar(types::PrimitiveType::Int32);
+    types::Pointer opaque_ptr;
 
-    builder.add_container("ptr", pointer_to_array);
-    builder.add_container("result", result_scalar);
+    builder.add_container("source", opaque_ptr);
+    builder.add_container("ptr", opaque_ptr);
 
+    auto& access_source = builder.add_access(block, "source");
     auto& access_ptr = builder.add_access(block, "ptr");
-    auto& access_result = builder.add_access(block, "result");
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
-
-    // Access [1][2] - should become [1*4 + 2] = [6]
-    auto& memlet_in =
-        builder
-            .add_computational_memlet(block, access_ptr, tasklet, "_in", {symbolic::integer(1), symbolic::integer(2)});
-
-    auto& memlet_out = builder.add_computational_memlet(block, tasklet, "_out", access_result, {});
+    // Create a reference memlet with subset [1][2] accessing pointer-to-array
+    // This should become [1*4 + 2] = [6] after normalization
+    auto& memlet = builder.add_reference_memlet(
+        block, access_source, access_ptr, {symbolic::integer(1), symbolic::integer(2)}, pointer_to_array
+    );
 
     auto sdfg = builder.move();
 
@@ -47,14 +44,14 @@ TEST(MemletBaseTypeNormalization, FlattenTwoDimensionalArray) {
     sdfg = builder_opt.move();
 
     // Check that base_type is now a pointer to scalar
-    auto& new_base_type = memlet_in.base_type();
+    auto& new_base_type = memlet.base_type();
     EXPECT_EQ(new_base_type.type_id(), types::TypeID::Pointer);
     auto& new_pointer_type = dynamic_cast<const types::Pointer&>(new_base_type);
     EXPECT_TRUE(new_pointer_type.has_pointee_type());
     EXPECT_EQ(new_pointer_type.pointee_type().type_id(), types::TypeID::Scalar);
 
     // Check that subset is flattened to [6]
-    auto& subset = memlet_in.subset();
+    auto& subset = memlet.subset();
     EXPECT_EQ(subset.size(), 1);
     EXPECT_TRUE(symbolic::eq(subset[0], symbolic::integer(6)));
 }
@@ -70,22 +67,23 @@ TEST(MemletBaseTypeNormalization, FlattenThreeDimensionalArray) {
     types::Array array2(array1, symbolic::integer(3));
     types::Array array3(array2, symbolic::integer(2));
     types::Pointer pointer_to_array(array3);
-    types::Scalar result_scalar(types::PrimitiveType::Int32);
+    types::Pointer opaque_ptr;
 
-    builder.add_container("ptr", pointer_to_array);
-    builder.add_container("result", result_scalar);
+    builder.add_container("source", opaque_ptr);
+    builder.add_container("ptr", opaque_ptr);
 
+    auto& access_source = builder.add_access(block, "source");
     auto& access_ptr = builder.add_access(block, "ptr");
-    auto& access_result = builder.add_access(block, "result");
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
-
-    // Access [1][2][3] - should become [1*3*4 + 2*4 + 3] = [12 + 8 + 3] = [23]
-    auto& memlet_in = builder.add_computational_memlet(
-        block, access_ptr, tasklet, "_in", {symbolic::integer(1), symbolic::integer(2), symbolic::integer(3)}
+    // Create a reference memlet with subset [1][2][3]
+    // This should become [1*3*4 + 2*4 + 3] = [12 + 8 + 3] = [23] after normalization
+    auto& memlet = builder.add_reference_memlet(
+        block,
+        access_source,
+        access_ptr,
+        {symbolic::integer(1), symbolic::integer(2), symbolic::integer(3)},
+        pointer_to_array
     );
-
-    auto& memlet_out = builder.add_computational_memlet(block, tasklet, "_out", access_result, {});
 
     auto sdfg = builder.move();
 
@@ -97,14 +95,14 @@ TEST(MemletBaseTypeNormalization, FlattenThreeDimensionalArray) {
     sdfg = builder_opt.move();
 
     // Check that base_type is now a pointer to scalar
-    auto& new_base_type = memlet_in.base_type();
+    auto& new_base_type = memlet.base_type();
     EXPECT_EQ(new_base_type.type_id(), types::TypeID::Pointer);
     auto& new_pointer_type = dynamic_cast<const types::Pointer&>(new_base_type);
     EXPECT_TRUE(new_pointer_type.has_pointee_type());
     EXPECT_EQ(new_pointer_type.pointee_type().type_id(), types::TypeID::Scalar);
 
     // Check that subset is flattened to [23]
-    auto& subset = memlet_in.subset();
+    auto& subset = memlet.subset();
     EXPECT_EQ(subset.size(), 1);
     EXPECT_TRUE(symbolic::eq(subset[0], symbolic::integer(23)));
 }
@@ -119,22 +117,19 @@ TEST(MemletBaseTypeNormalization, FlattenWithSymbolicIndex) {
     types::Array inner_array(scalar, symbolic::integer(4));
     types::Array outer_array(inner_array, symbolic::integer(3));
     types::Pointer pointer_to_array(outer_array);
-    types::Scalar result_scalar(types::PrimitiveType::Int32);
+    types::Pointer opaque_ptr;
 
-    builder.add_container("ptr", pointer_to_array);
-    builder.add_container("result", result_scalar);
+    builder.add_container("source", opaque_ptr);
+    builder.add_container("ptr", opaque_ptr);
 
+    auto& access_source = builder.add_access(block, "source");
     auto& access_ptr = builder.add_access(block, "ptr");
-    auto& access_result = builder.add_access(block, "result");
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
-
-    // Access [i][j] - should become [i*4 + j]
+    // Create a reference memlet with subset [i][j]
+    // This should become [i*4 + j] after normalization
     symbolic::Expression i_sym = symbolic::symbol("i");
     symbolic::Expression j_sym = symbolic::symbol("j");
-    auto& memlet_in = builder.add_computational_memlet(block, access_ptr, tasklet, "_in", {i_sym, j_sym});
-
-    auto& memlet_out = builder.add_computational_memlet(block, tasklet, "_out", access_result, {});
+    auto& memlet = builder.add_reference_memlet(block, access_source, access_ptr, {i_sym, j_sym}, pointer_to_array);
 
     auto sdfg = builder.move();
 
@@ -146,14 +141,14 @@ TEST(MemletBaseTypeNormalization, FlattenWithSymbolicIndex) {
     sdfg = builder_opt.move();
 
     // Check that base_type is now a pointer to scalar
-    auto& new_base_type = memlet_in.base_type();
+    auto& new_base_type = memlet.base_type();
     EXPECT_EQ(new_base_type.type_id(), types::TypeID::Pointer);
     auto& new_pointer_type = dynamic_cast<const types::Pointer&>(new_base_type);
     EXPECT_TRUE(new_pointer_type.has_pointee_type());
     EXPECT_EQ(new_pointer_type.pointee_type().type_id(), types::TypeID::Scalar);
 
     // Check that subset is flattened to [i*4 + j]
-    auto& subset = memlet_in.subset();
+    auto& subset = memlet.subset();
     EXPECT_EQ(subset.size(), 1);
 
     // Verify the expression: i*4 + j
@@ -169,19 +164,16 @@ TEST(MemletBaseTypeNormalization, NoChangeForScalarPointer) {
     // Create a pointer to scalar (not nested arrays)
     types::Scalar scalar(types::PrimitiveType::Int32);
     types::Pointer pointer_to_scalar(scalar);
-    types::Scalar result_scalar(types::PrimitiveType::Int32);
+    types::Pointer opaque_ptr;
 
-    builder.add_container("ptr", pointer_to_scalar);
-    builder.add_container("result", result_scalar);
+    builder.add_container("source", opaque_ptr);
+    builder.add_container("ptr", opaque_ptr);
 
+    auto& access_source = builder.add_access(block, "source");
     auto& access_ptr = builder.add_access(block, "ptr");
-    auto& access_result = builder.add_access(block, "result");
 
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
-
-    auto& memlet_in = builder.add_computational_memlet(block, access_ptr, tasklet, "_in", {symbolic::integer(0)});
-
-    auto& memlet_out = builder.add_computational_memlet(block, tasklet, "_out", access_result, {});
+    auto& memlet =
+        builder.add_reference_memlet(block, access_source, access_ptr, {symbolic::integer(0)}, pointer_to_scalar);
 
     auto sdfg = builder.move();
 
@@ -193,14 +185,14 @@ TEST(MemletBaseTypeNormalization, NoChangeForScalarPointer) {
     sdfg = builder_opt.move();
 
     // Check that base_type is still a pointer to scalar
-    auto& base_type = memlet_in.base_type();
+    auto& base_type = memlet.base_type();
     EXPECT_EQ(base_type.type_id(), types::TypeID::Pointer);
     auto& pointer_type = dynamic_cast<const types::Pointer&>(base_type);
     EXPECT_TRUE(pointer_type.has_pointee_type());
     EXPECT_EQ(pointer_type.pointee_type().type_id(), types::TypeID::Scalar);
 
     // Check that subset is unchanged
-    auto& subset = memlet_in.subset();
+    auto& subset = memlet.subset();
     EXPECT_EQ(subset.size(), 1);
     EXPECT_TRUE(symbolic::eq(subset[0], symbolic::integer(0)));
 }
@@ -216,20 +208,17 @@ TEST(MemletBaseTypeNormalization, PartialIndex) {
     types::Array array2(array1, symbolic::integer(4));
     types::Array array3(array2, symbolic::integer(3));
     types::Pointer pointer_to_array(array3);
-    types::Scalar result_scalar(types::PrimitiveType::Int32);
+    types::Pointer opaque_ptr;
 
-    builder.add_container("ptr", pointer_to_array);
-    builder.add_container("result", result_scalar);
+    builder.add_container("source", opaque_ptr);
+    builder.add_container("ptr", opaque_ptr);
 
+    auto& access_source = builder.add_access(block, "source");
     auto& access_ptr = builder.add_access(block, "ptr");
-    auto& access_result = builder.add_access(block, "result");
-
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
     // Access only first dimension [1] - should become [1*4*5] = [20]
-    auto& memlet_in = builder.add_computational_memlet(block, access_ptr, tasklet, "_in", {symbolic::integer(1)});
-
-    auto& memlet_out = builder.add_computational_memlet(block, tasklet, "_out", access_result, {});
+    auto& memlet =
+        builder.add_reference_memlet(block, access_source, access_ptr, {symbolic::integer(1)}, pointer_to_array);
 
     auto sdfg = builder.move();
 
@@ -241,14 +230,14 @@ TEST(MemletBaseTypeNormalization, PartialIndex) {
     sdfg = builder_opt.move();
 
     // Check that base_type is now a pointer to scalar
-    auto& new_base_type = memlet_in.base_type();
+    auto& new_base_type = memlet.base_type();
     EXPECT_EQ(new_base_type.type_id(), types::TypeID::Pointer);
     auto& new_pointer_type = dynamic_cast<const types::Pointer&>(new_base_type);
     EXPECT_TRUE(new_pointer_type.has_pointee_type());
     EXPECT_EQ(new_pointer_type.pointee_type().type_id(), types::TypeID::Scalar);
 
     // Check that subset is flattened to [20]
-    auto& subset = memlet_in.subset();
+    auto& subset = memlet.subset();
     EXPECT_EQ(subset.size(), 1);
     EXPECT_TRUE(symbolic::eq(subset[0], symbolic::integer(20)));
 }
@@ -262,20 +251,17 @@ TEST(MemletBaseTypeNormalization, FlattenSingleDimensionArray) {
     types::Scalar scalar(types::PrimitiveType::Int32);
     types::Array array(scalar, symbolic::integer(10));
     types::Pointer pointer_to_array(array);
-    types::Scalar result_scalar(types::PrimitiveType::Int32);
+    types::Pointer opaque_ptr;
 
-    builder.add_container("ptr", pointer_to_array);
-    builder.add_container("result", result_scalar);
+    builder.add_container("source", opaque_ptr);
+    builder.add_container("ptr", opaque_ptr);
 
+    auto& access_source = builder.add_access(block, "source");
     auto& access_ptr = builder.add_access(block, "ptr");
-    auto& access_result = builder.add_access(block, "result");
-
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
 
     // Access [5]
-    auto& memlet_in = builder.add_computational_memlet(block, access_ptr, tasklet, "_in", {symbolic::integer(5)});
-
-    auto& memlet_out = builder.add_computational_memlet(block, tasklet, "_out", access_result, {});
+    auto& memlet =
+        builder.add_reference_memlet(block, access_source, access_ptr, {symbolic::integer(5)}, pointer_to_array);
 
     auto sdfg = builder.move();
 
@@ -287,14 +273,14 @@ TEST(MemletBaseTypeNormalization, FlattenSingleDimensionArray) {
     sdfg = builder_opt.move();
 
     // Check that base_type is now a pointer to scalar
-    auto& new_base_type = memlet_in.base_type();
+    auto& new_base_type = memlet.base_type();
     EXPECT_EQ(new_base_type.type_id(), types::TypeID::Pointer);
     auto& new_pointer_type = dynamic_cast<const types::Pointer&>(new_base_type);
     EXPECT_TRUE(new_pointer_type.has_pointee_type());
     EXPECT_EQ(new_pointer_type.pointee_type().type_id(), types::TypeID::Scalar);
 
     // Check that subset is [5] (unchanged in value but still normalized)
-    auto& subset = memlet_in.subset();
+    auto& subset = memlet.subset();
     EXPECT_EQ(subset.size(), 1);
     EXPECT_TRUE(symbolic::eq(subset[0], symbolic::integer(5)));
 }
