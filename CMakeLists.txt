@@ -165,6 +165,7 @@ set(SOURCE_FILES
     src/passes/dataflow/trivial_reference_conversion.cpp
     src/passes/dataflow/reference_propagation.cpp
     src/passes/dataflow/byte_reference_elimination.cpp
+    src/passes/dataflow/memlet_linearization.cpp
     src/passes/memory/allocation_management.cpp
     src/passes/schedules/expansion_pass.cpp
     src/passes/schedules/parallelization_pass.cpp
