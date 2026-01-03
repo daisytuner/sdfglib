@@ -39,8 +39,8 @@ TEST(MemletBaseTypeNormalization, FlattenTwoDimensionalArray) {
     // Apply pass
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::MemletBaseTypeNormalization pass;
-    EXPECT_TRUE(pass.run_pass(builder_opt, analysis_manager));
+    passes::MemletBaseTypeNormalizationPass pass;
+    EXPECT_TRUE(pass.run(builder_opt, analysis_manager));
     sdfg = builder_opt.move();
 
     // Check that base_type is now a pointer to scalar
@@ -90,8 +90,8 @@ TEST(MemletBaseTypeNormalization, FlattenThreeDimensionalArray) {
     // Apply pass
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::MemletBaseTypeNormalization pass;
-    EXPECT_TRUE(pass.run_pass(builder_opt, analysis_manager));
+    passes::MemletBaseTypeNormalizationPass pass;
+    EXPECT_TRUE(pass.run(builder_opt, analysis_manager));
     sdfg = builder_opt.move();
 
     // Check that base_type is now a pointer to scalar
@@ -136,8 +136,8 @@ TEST(MemletBaseTypeNormalization, FlattenWithSymbolicIndex) {
     // Apply pass
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::MemletBaseTypeNormalization pass;
-    EXPECT_TRUE(pass.run_pass(builder_opt, analysis_manager));
+    passes::MemletBaseTypeNormalizationPass pass;
+    EXPECT_TRUE(pass.run(builder_opt, analysis_manager));
     sdfg = builder_opt.move();
 
     // Check that base_type is now a pointer to scalar
@@ -180,8 +180,8 @@ TEST(MemletBaseTypeNormalization, NoChangeForScalarPointer) {
     // Apply pass
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::MemletBaseTypeNormalization pass;
-    EXPECT_FALSE(pass.run_pass(builder_opt, analysis_manager)); // Should return false (no changes)
+    passes::MemletBaseTypeNormalizationPass pass;
+    EXPECT_FALSE(pass.run(builder_opt, analysis_manager)); // Should return false (no changes)
     sdfg = builder_opt.move();
 
     // Check that base_type is still a pointer to scalar
@@ -225,8 +225,8 @@ TEST(MemletBaseTypeNormalization, PartialIndex) {
     // Apply pass
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::MemletBaseTypeNormalization pass;
-    EXPECT_TRUE(pass.run_pass(builder_opt, analysis_manager));
+    passes::MemletBaseTypeNormalizationPass pass;
+    EXPECT_TRUE(pass.run(builder_opt, analysis_manager));
     sdfg = builder_opt.move();
 
     // Check that base_type is now a pointer to scalar
@@ -268,8 +268,8 @@ TEST(MemletBaseTypeNormalization, FlattenSingleDimensionArray) {
     // Apply pass
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::MemletBaseTypeNormalization pass;
-    EXPECT_TRUE(pass.run_pass(builder_opt, analysis_manager));
+    passes::MemletBaseTypeNormalizationPass pass;
+    EXPECT_TRUE(pass.run(builder_opt, analysis_manager));
     sdfg = builder_opt.move();
 
     // Check that base_type is now a pointer to scalar

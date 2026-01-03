@@ -9,7 +9,13 @@
 
 #pragma once
 
+#include <string>
+
+#include "sdfg/analysis/analysis.h"
+#include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/passes/pass.h"
+#include "sdfg/structured_control_flow/block.h"
+#include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {
 namespace passes {
@@ -29,27 +35,30 @@ namespace passes {
  * This normalization simplifies subsequent passes and code generation by
  * eliminating nested array types in pointer pointees.
  */
-class MemletBaseTypeNormalization : public Pass {
+class MemletBaseTypeNormalization : public visitor::NonStoppingStructuredSDFGVisitor {
 public:
     /**
      * @brief Constructs a new MemletBaseTypeNormalization pass
+     * @param builder The structured SDFG builder
+     * @param analysis_manager The analysis manager
      */
-    MemletBaseTypeNormalization();
+    MemletBaseTypeNormalization(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
 
     /**
      * @brief Returns the name of the pass
      * @return The string "MemletBaseTypeNormalization"
      */
-    virtual std::string name() override;
+    static std::string name() { return "MemletBaseTypeNormalization"; }
 
     /**
-     * @brief Runs the pass on the given SDFG builder
-     * @param builder The structured SDFG builder
-     * @param analysis_manager The analysis manager
-     * @return true if the pass made changes, false otherwise
+     * @brief Accepts a block and normalizes memlets in its dataflow graph
+     * @param block The block to process
+     * @return true if any memlets were normalized
      */
-    virtual bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
+    virtual bool accept(structured_control_flow::Block& block) override;
 };
+
+typedef VisitorPass<MemletBaseTypeNormalization> MemletBaseTypeNormalizationPass;
 
 } // namespace passes
 } // namespace sdfg
