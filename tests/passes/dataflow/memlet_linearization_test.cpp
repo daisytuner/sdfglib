@@ -1,4 +1,4 @@
-#include "sdfg/passes/dataflow/memlet_base_type_normalization.h"
+#include "sdfg/passes/dataflow/memlet_linearization.h"
 
 #include <gtest/gtest.h>
 
@@ -10,7 +10,7 @@
 
 using namespace sdfg;
 
-TEST(MemletBaseTypeNormalization, FlattenTwoDimensionalArray) {
+TEST(MemletLinearization, FlattenTwoDimensionalArray) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     auto& block = builder.add_block(builder.subject().root());
@@ -39,7 +39,7 @@ TEST(MemletBaseTypeNormalization, FlattenTwoDimensionalArray) {
     // Apply pass
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::MemletBaseTypeNormalizationPass pass;
+    passes::MemletLinearizationPass pass;
     EXPECT_TRUE(pass.run(builder_opt, analysis_manager));
     sdfg = builder_opt.move();
 
@@ -56,7 +56,7 @@ TEST(MemletBaseTypeNormalization, FlattenTwoDimensionalArray) {
     EXPECT_TRUE(symbolic::eq(subset[0], symbolic::integer(6)));
 }
 
-TEST(MemletBaseTypeNormalization, FlattenThreeDimensionalArray) {
+TEST(MemletLinearization, FlattenThreeDimensionalArray) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     auto& block = builder.add_block(builder.subject().root());
@@ -90,7 +90,7 @@ TEST(MemletBaseTypeNormalization, FlattenThreeDimensionalArray) {
     // Apply pass
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::MemletBaseTypeNormalizationPass pass;
+    passes::MemletLinearizationPass pass;
     EXPECT_TRUE(pass.run(builder_opt, analysis_manager));
     sdfg = builder_opt.move();
 
@@ -107,7 +107,7 @@ TEST(MemletBaseTypeNormalization, FlattenThreeDimensionalArray) {
     EXPECT_TRUE(symbolic::eq(subset[0], symbolic::integer(23)));
 }
 
-TEST(MemletBaseTypeNormalization, FlattenWithSymbolicIndex) {
+TEST(MemletLinearization, FlattenWithSymbolicIndex) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     auto& block = builder.add_block(builder.subject().root());
@@ -136,7 +136,7 @@ TEST(MemletBaseTypeNormalization, FlattenWithSymbolicIndex) {
     // Apply pass
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::MemletBaseTypeNormalizationPass pass;
+    passes::MemletLinearizationPass pass;
     EXPECT_TRUE(pass.run(builder_opt, analysis_manager));
     sdfg = builder_opt.move();
 
@@ -156,7 +156,7 @@ TEST(MemletBaseTypeNormalization, FlattenWithSymbolicIndex) {
     EXPECT_TRUE(symbolic::eq(subset[0], expected));
 }
 
-TEST(MemletBaseTypeNormalization, NoChangeForScalarPointer) {
+TEST(MemletLinearization, NoChangeForScalarPointer) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     auto& block = builder.add_block(builder.subject().root());
@@ -180,7 +180,7 @@ TEST(MemletBaseTypeNormalization, NoChangeForScalarPointer) {
     // Apply pass
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::MemletBaseTypeNormalizationPass pass;
+    passes::MemletLinearizationPass pass;
     EXPECT_FALSE(pass.run(builder_opt, analysis_manager)); // Should return false (no changes)
     sdfg = builder_opt.move();
 
@@ -197,7 +197,7 @@ TEST(MemletBaseTypeNormalization, NoChangeForScalarPointer) {
     EXPECT_TRUE(symbolic::eq(subset[0], symbolic::integer(0)));
 }
 
-TEST(MemletBaseTypeNormalization, PartialIndex) {
+TEST(MemletLinearization, PartialIndex) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     auto& block = builder.add_block(builder.subject().root());
@@ -225,7 +225,7 @@ TEST(MemletBaseTypeNormalization, PartialIndex) {
     // Apply pass
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::MemletBaseTypeNormalizationPass pass;
+    passes::MemletLinearizationPass pass;
     EXPECT_TRUE(pass.run(builder_opt, analysis_manager));
     sdfg = builder_opt.move();
 
@@ -242,7 +242,7 @@ TEST(MemletBaseTypeNormalization, PartialIndex) {
     EXPECT_TRUE(symbolic::eq(subset[0], symbolic::integer(20)));
 }
 
-TEST(MemletBaseTypeNormalization, FlattenSingleDimensionArray) {
+TEST(MemletLinearization, FlattenSingleDimensionArray) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     auto& block = builder.add_block(builder.subject().root());
@@ -268,7 +268,7 @@ TEST(MemletBaseTypeNormalization, FlattenSingleDimensionArray) {
     // Apply pass
     builder::StructuredSDFGBuilder builder_opt(sdfg);
     analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::MemletBaseTypeNormalizationPass pass;
+    passes::MemletLinearizationPass pass;
     EXPECT_TRUE(pass.run(builder_opt, analysis_manager));
     sdfg = builder_opt.move();
 

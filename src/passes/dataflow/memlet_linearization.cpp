@@ -1,4 +1,4 @@
-#include "sdfg/passes/dataflow/memlet_base_type_normalization.h"
+#include "sdfg/passes/dataflow/memlet_linearization.h"
 
 #include "sdfg/data_flow/data_flow_graph.h"
 #include "sdfg/data_flow/memlet.h"
@@ -12,16 +12,16 @@
 namespace sdfg {
 namespace passes {
 
-MemletBaseTypeNormalization::
-    MemletBaseTypeNormalization(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
+MemletLinearization::
+    MemletLinearization(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
     : visitor::NonStoppingStructuredSDFGVisitor(builder, analysis_manager) {}
 
-bool MemletBaseTypeNormalization::accept(structured_control_flow::Block& block) {
+bool MemletLinearization::accept(structured_control_flow::Block& block) {
     bool applied = false;
     auto& dfg = block.dataflow();
 
-    // Collect all memlets that need normalization
-    std::vector<data_flow::Memlet*> memlets_to_normalize;
+    // Collect all memlets that need linearization
+    std::vector<data_flow::Memlet*> memlets_to_linearize;
 
     for (auto& memlet : dfg.edges()) {
         auto& base_type = memlet.base_type();
@@ -48,14 +48,14 @@ bool MemletBaseTypeNormalization::accept(structured_control_flow::Block& block) 
             current_type = &array_type->element_type();
         }
 
-        // If we found nested arrays, mark this memlet for normalization
+        // If we found nested arrays, mark this memlet for linearization
         if (!array_dimensions.empty()) {
-            memlets_to_normalize.push_back(const_cast<data_flow::Memlet*>(&memlet));
+            memlets_to_linearize.push_back(const_cast<data_flow::Memlet*>(&memlet));
         }
     }
 
-    // Apply normalization to collected memlets
-    for (auto* memlet : memlets_to_normalize) {
+    // Apply linearization to collected memlets
+    for (auto* memlet : memlets_to_linearize) {
         auto& base_type = memlet->base_type();
         auto& pointer_type = dynamic_cast<const types::Pointer&>(base_type);
         auto& pointee_type = pointer_type.pointee_type();

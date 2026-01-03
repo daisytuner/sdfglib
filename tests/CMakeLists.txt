@@ -57,7 +57,7 @@ set(TEST_FILES
     passes/dataflow/trivial_reference_conversion_test.cpp
     passes/dataflow/reference_propagation_test.cpp
     passes/dataflow/tasklet_fusion_test.cpp
-    passes/dataflow/memlet_base_type_normalization_test.cpp
+    passes/dataflow/memlet_linearization_test.cpp
     passes/memory/allocation_management_test.cpp
     passes/pipeline_test.cpp
     passes/schedules/expansion_pass_test.cpp
