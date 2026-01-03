@@ -78,10 +78,11 @@ private:
                 current_type = &array_type->element_type();
             }
 
-            // Create new pointer type with innermost element type
-            types::Pointer new_pointer_type(
-                pointer_type.storage_type(), pointer_type.alignment(), pointer_type.initializer(), *current_type
-            );
+            // Create new pointer type with innermost element type, preserving storage properties
+            auto storage = pointer_type.storage_type();
+            auto alignment = pointer_type.alignment();
+            auto initializer = pointer_type.initializer();
+            types::Pointer new_pointer_type(storage, alignment, initializer, *current_type);
 
             // Linearize subset
             auto old_subset = memlet->subset();
@@ -105,7 +106,9 @@ private:
 
                 new_subset.push_back(linearized_index);
 
-                // Keep any remaining subset dimensions that were beyond the array dimensions
+                // Keep any remaining subset dimensions that were beyond the array dimensions.
+                // This handles cases where the subset has more dimensions than the flattened array,
+                // which can occur when the pointee contains additional structure after the arrays.
                 for (size_t i = array_dimensions.size(); i < old_subset.size(); ++i) {
                     new_subset.push_back(old_subset[i]);
                 }
