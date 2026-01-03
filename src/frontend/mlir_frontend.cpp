@@ -5,8 +5,8 @@
 
 #include "sdfg/frontend/mlir_frontend.h"
 
-#include <stdexcept>
 #include <sstream>
+#include <stdexcept>
 
 namespace sdfg {
 namespace frontend {
@@ -34,7 +34,7 @@ const std::unordered_map<std::string, std::string> MLIRFrontend::elementwise_op_
     {"pow", "Pow"},
     {"minimum", "Minimum"},
     {"maximum", "Maximum"},
-    
+
     // Unary operations
     {"abs", "Abs"},
     {"sqrt", "Sqrt"},
@@ -66,32 +66,27 @@ types::Scalar MLIRFrontend::convert_scalar_type(const std::string& mlir_type_str
         oss << "Unsupported MLIR scalar type: " << mlir_type_str;
         throw std::invalid_argument(oss.str());
     }
-    
+
     return types::Scalar(it->second);
 }
 
-types::Pointer MLIRFrontend::convert_tensor_type(
-    const std::string& element_type_str,
-    const std::vector<int64_t>& shape
-) {
+types::Pointer MLIRFrontend::convert_tensor_type(const std::string& element_type_str, const std::vector<int64_t>& shape) {
     // Convert element type to SDFG scalar
     types::Scalar element_type = convert_scalar_type(element_type_str);
-    
+
     // Create flat pointer to scalar (tensor is represented as 1D array)
     // Shape information is used separately by library nodes
     return types::Pointer(element_type);
 }
 
-std::vector<symbolic::Expression> MLIRFrontend::shape_to_symbolic(
-    const std::vector<int64_t>& shape
-) {
+std::vector<symbolic::Expression> MLIRFrontend::shape_to_symbolic(const std::vector<int64_t>& shape) {
     std::vector<symbolic::Expression> symbolic_shape;
     symbolic_shape.reserve(shape.size());
-    
+
     for (int64_t dim : shape) {
         symbolic_shape.push_back(symbolic::integer(dim));
     }
-    
+
     return symbolic_shape;
 }
 
@@ -102,7 +97,7 @@ std::string MLIRFrontend::get_elementwise_op_code(const std::string& op_name) {
         oss << "Unsupported elementwise operation: " << op_name;
         throw std::invalid_argument(oss.str());
     }
-    
+
     return it->second;
 }
 
@@ -113,24 +108,21 @@ std::string MLIRFrontend::get_reduce_op_code(const std::string& op_name) {
         oss << "Unsupported reduce operation: " << op_name;
         throw std::invalid_argument(oss.str());
     }
-    
+
     return it->second;
 }
 
 bool MLIRFrontend::is_elementwise_unary(const std::string& op_name) {
     static const std::vector<std::string> unary_ops = {
-        "abs", "sqrt", "exp", "erf", "sigmoid", "tanh",
-        "relu", "leaky_relu", "elu", "hard_sigmoid", "cast"
+        "abs", "sqrt", "exp", "erf", "sigmoid", "tanh", "relu", "leaky_relu", "elu", "hard_sigmoid", "cast"
     };
-    
+
     return std::find(unary_ops.begin(), unary_ops.end(), op_name) != unary_ops.end();
 }
 
 bool MLIRFrontend::is_elementwise_binary(const std::string& op_name) {
-    static const std::vector<std::string> binary_ops = {
-        "add", "sub", "mul", "div", "pow", "minimum", "maximum"
-    };
-    
+    static const std::vector<std::string> binary_ops = {"add", "sub", "mul", "div", "pow", "minimum", "maximum"};
+
     return std::find(binary_ops.begin(), binary_ops.end(), op_name) != binary_ops.end();
 }
 

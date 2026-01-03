@@ -47,16 +47,16 @@
 
 #include <memory>
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
-#include "sdfg/types/scalar.h"
-#include "sdfg/types/pointer.h"
-#include "sdfg/symbolic/symbolic.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/data_flow/library_nodes/math/blas/gemm_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/reduce_node.h"
-#include "sdfg/data_flow/library_nodes/math/blas/gemm_node.h"
+#include "sdfg/symbolic/symbolic.h"
+#include "sdfg/types/pointer.h"
+#include "sdfg/types/scalar.h"
 
 namespace sdfg {
 namespace frontend {
@@ -101,10 +101,7 @@ public:
      * @return Flat pointer to scalar type
      * @throws std::invalid_argument if element type is not supported
      */
-    types::Pointer convert_tensor_type(
-        const std::string& element_type_str,
-        const std::vector<int64_t>& shape
-    );
+    types::Pointer convert_tensor_type(const std::string& element_type_str, const std::vector<int64_t>& shape);
 
     /**
      * @brief Convert shape to symbolic expressions
@@ -112,9 +109,7 @@ public:
      * @param shape Integer shape dimensions
      * @return Vector of symbolic expressions
      */
-    static std::vector<symbolic::Expression> shape_to_symbolic(
-        const std::vector<int64_t>& shape
-    );
+    static std::vector<symbolic::Expression> shape_to_symbolic(const std::vector<int64_t>& shape);
 
     /**
      * @brief Get library node code for elementwise operation
