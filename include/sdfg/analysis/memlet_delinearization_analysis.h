@@ -1,0 +1,57 @@
+/**
+ * @file memlet_delinearization_analysis.h
+ * @brief Analysis for delinearizing memlet subsets
+ *
+ * This analysis attempts to delinearize memlet subsets by recovering
+ * multi-dimensional structure from linearized expressions using the
+ * symbolic delinearize function with block-level assumptions.
+ */
+
+#pragma once
+
+#include <unordered_map>
+
+#include "sdfg/analysis/analysis.h"
+#include "sdfg/data_flow/memlet.h"
+#include "sdfg/structured_control_flow/block.h"
+#include "sdfg/symbolic/symbolic.h"
+
+namespace sdfg {
+namespace analysis {
+
+/**
+ * @class MemletDelinearizationAnalysis
+ * @brief Analysis that delinearizes memlet subsets
+ *
+ * This analysis traverses all blocks in the SDFG and attempts to delinearize
+ * the subset of each memlet. For memlets where delinearization is successful,
+ * it stores the delinearized subset. For memlets where delinearization is not
+ * applicable or fails, it stores nullptr.
+ *
+ * The analysis uses the symbolic::delinearize function with assumptions from
+ * the AssumptionsAnalysis for each block.
+ */
+class MemletDelinearizationAnalysis : public Analysis {
+private:
+    std::unordered_map<const data_flow::Memlet*, std::unique_ptr<data_flow::Subset>> delinearized_subsets_;
+
+    void traverse(structured_control_flow::ControlFlowNode& node, analysis::AnalysisManager& analysis_manager);
+
+    void process_block(structured_control_flow::Block& block, analysis::AnalysisManager& analysis_manager);
+
+protected:
+    void run(analysis::AnalysisManager& analysis_manager) override;
+
+public:
+    MemletDelinearizationAnalysis(StructuredSDFG& sdfg);
+
+    /**
+     * @brief Get the delinearized subset for a memlet
+     * @param memlet The memlet to query
+     * @return Pointer to the delinearized subset if delinearization was successful, nullptr otherwise
+     */
+    const data_flow::Subset* get(const data_flow::Memlet& memlet) const;
+};
+
+} // namespace analysis
+} // namespace sdfg

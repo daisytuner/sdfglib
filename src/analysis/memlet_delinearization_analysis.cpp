@@ -1,0 +1,93 @@
+#include "sdfg/analysis/memlet_delinearization_analysis.h"
+
+#include "sdfg/analysis/assumptions_analysis.h"
+#include "sdfg/structured_control_flow/block.h"
+#include "sdfg/structured_control_flow/if_else.h"
+#include "sdfg/structured_control_flow/sequence.h"
+#include "sdfg/structured_control_flow/structured_loop.h"
+#include "sdfg/structured_control_flow/while.h"
+#include "sdfg/symbolic/utils.h"
+
+namespace sdfg {
+namespace analysis {
+
+MemletDelinearizationAnalysis::MemletDelinearizationAnalysis(StructuredSDFG& sdfg) : Analysis(sdfg) {}
+
+void MemletDelinearizationAnalysis::run(analysis::AnalysisManager& analysis_manager) {
+    delinearized_subsets_.clear();
+    traverse(sdfg_.root(), analysis_manager);
+}
+
+void MemletDelinearizationAnalysis::
+    traverse(structured_control_flow::ControlFlowNode& node, analysis::AnalysisManager& analysis_manager) {
+    if (auto block = dynamic_cast<structured_control_flow::Block*>(&node)) {
+        process_block(*block, analysis_manager);
+    } else if (auto sequence = dynamic_cast<structured_control_flow::Sequence*>(&node)) {
+        for (size_t i = 0; i < sequence->size(); i++) {
+            traverse(sequence->at(i).first, analysis_manager);
+        }
+    } else if (auto if_else = dynamic_cast<structured_control_flow::IfElse*>(&node)) {
+        for (size_t i = 0; i < if_else->size(); i++) {
+            traverse(if_else->at(i).first, analysis_manager);
+        }
+    } else if (auto while_stmt = dynamic_cast<structured_control_flow::While*>(&node)) {
+        traverse(while_stmt->root(), analysis_manager);
+    } else if (auto loop = dynamic_cast<structured_control_flow::StructuredLoop*>(&node)) {
+        traverse(loop->root(), analysis_manager);
+    }
+    // Break, Continue, Return nodes don't contain blocks
+}
+
+void MemletDelinearizationAnalysis::
+    process_block(structured_control_flow::Block& block, analysis::AnalysisManager& analysis_manager) {
+    auto& assumptions_analysis = analysis_manager.get<AssumptionsAnalysis>();
+    auto& assumptions = assumptions_analysis.get(block);
+
+    auto& dfg = block.dataflow();
+    for (auto& memlet : dfg.edges()) {
+        const auto& subset = memlet.subset();
+        
+        // Skip empty subsets
+        if (subset.empty()) {
+            delinearized_subsets_[&memlet] = nullptr;
+            continue;
+        }
+
+        // Attempt to delinearize the subset
+        auto delinearized = symbolic::delinearize(subset, assumptions);
+
+        // Check if delinearization changed the subset
+        if (delinearized.size() != subset.size()) {
+            // Delinearization was successful - store the result
+            delinearized_subsets_[&memlet] = std::make_unique<data_flow::Subset>(std::move(delinearized));
+        } else {
+            // Check if any dimension changed
+            bool changed = false;
+            for (size_t i = 0; i < subset.size(); i++) {
+                if (!symbolic::eq(subset[i], delinearized[i])) {
+                    changed = true;
+                    break;
+                }
+            }
+            
+            if (changed) {
+                // Delinearization changed at least one dimension
+                delinearized_subsets_[&memlet] = std::make_unique<data_flow::Subset>(std::move(delinearized));
+            } else {
+                // Delinearization was not applicable
+                delinearized_subsets_[&memlet] = nullptr;
+            }
+        }
+    }
+}
+
+const data_flow::Subset* MemletDelinearizationAnalysis::get(const data_flow::Memlet& memlet) const {
+    auto it = delinearized_subsets_.find(&memlet);
+    if (it == delinearized_subsets_.end()) {
+        return nullptr;
+    }
+    return it->second.get();
+}
+
+} // namespace analysis
+} // namespace sdfg
