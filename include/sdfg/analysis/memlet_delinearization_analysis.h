@@ -5,6 +5,11 @@
  * This analysis attempts to delinearize memlet subsets by recovering
  * multi-dimensional structure from linearized expressions using the
  * symbolic delinearize function with block-level assumptions.
+ *
+ * The delinearization technique is based on the algorithm described in:
+ * "Polyhedral AST generation is more than scanning polyhedra"
+ * by Grosser et al., ACM TACO 2015.
+ * https://dl.acm.org/doi/10.1145/2751205.2751248
  */
 
 #pragma once
@@ -25,11 +30,16 @@ namespace analysis {
  *
  * This analysis traverses all blocks in the SDFG and attempts to delinearize
  * the subset of each memlet. For memlets where delinearization is successful,
- * it stores the delinearized subset. For memlets where delinearization is not
- * applicable or fails, it stores nullptr.
+ * it stores the delinearized subset using sparse storage (only successful
+ * delinearizations are stored in the map).
  *
  * The analysis uses the symbolic::delinearize function with assumptions from
  * the AssumptionsAnalysis for each block.
+ *
+ * The delinearization technique is based on the algorithm described in:
+ * "Polyhedral AST generation is more than scanning polyhedra"
+ * by Grosser et al., ACM TACO 2015.
+ * https://dl.acm.org/doi/10.1145/2751205.2751248
  */
 class MemletDelinearizationAnalysis : public Analysis {
 private:

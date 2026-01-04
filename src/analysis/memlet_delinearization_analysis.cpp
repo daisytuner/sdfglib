@@ -46,10 +46,9 @@ void MemletDelinearizationAnalysis::
     auto& dfg = block.dataflow();
     for (auto& memlet : dfg.edges()) {
         const auto& subset = memlet.subset();
-        
+
         // Skip empty subsets
         if (subset.empty()) {
-            delinearized_subsets_[&memlet] = nullptr;
             continue;
         }
 
@@ -66,12 +65,10 @@ void MemletDelinearizationAnalysis::
                 }
             }
         }
-        
-        // Store result if delinearization was successful
+
+        // Store result only if delinearization was successful (sparse storage)
         if (changed) {
             delinearized_subsets_[&memlet] = std::make_unique<data_flow::Subset>(std::move(delinearized));
-        } else {
-            delinearized_subsets_[&memlet] = nullptr;
         }
     }
 }
