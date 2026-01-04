@@ -57,26 +57,21 @@ void MemletDelinearizationAnalysis::
         auto delinearized = symbolic::delinearize(subset, assumptions);
 
         // Check if delinearization changed the subset
-        if (delinearized.size() != subset.size()) {
-            // Delinearization was successful - store the result
-            delinearized_subsets_[&memlet] = std::make_unique<data_flow::Subset>(std::move(delinearized));
-        } else {
-            // Check if any dimension changed
-            bool changed = false;
+        bool changed = (delinearized.size() != subset.size());
+        if (!changed) {
             for (size_t i = 0; i < subset.size(); i++) {
                 if (!symbolic::eq(subset[i], delinearized[i])) {
                     changed = true;
                     break;
                 }
             }
-            
-            if (changed) {
-                // Delinearization changed at least one dimension
-                delinearized_subsets_[&memlet] = std::make_unique<data_flow::Subset>(std::move(delinearized));
-            } else {
-                // Delinearization was not applicable
-                delinearized_subsets_[&memlet] = nullptr;
-            }
+        }
+        
+        // Store result if delinearization was successful
+        if (changed) {
+            delinearized_subsets_[&memlet] = std::make_unique<data_flow::Subset>(std::move(delinearized));
+        } else {
+            delinearized_subsets_[&memlet] = nullptr;
         }
     }
 }
