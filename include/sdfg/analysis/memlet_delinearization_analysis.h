@@ -7,8 +7,6 @@
  * symbolic delinearize function with block-level assumptions.
  *
  * The delinearization technique is based on the algorithm described in:
- * "Polyhedral AST generation is more than scanning polyhedra"
- * by Grosser et al., ACM TACO 2015.
  * https://dl.acm.org/doi/10.1145/2751205.2751248
  */
 
