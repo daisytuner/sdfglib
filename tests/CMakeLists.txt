@@ -70,6 +70,8 @@ set(TEST_FILES
     passes/structured_control_flow/pointer_evolution_test.cpp
     passes/structured_control_flow/loop_normalization_test.cpp
     passes/debug_info_propagation_test.cpp
+    passes/symbolic/symbol_evolution_test.cpp
+    passes/symbolic/symbol_evolution_extended_test.cpp
     passes/symbolic/symbol_promotion_test.cpp
     passes/symbolic/symbol_propagation_test.cpp
     replace/symbol_replace_test.cpp
