@@ -17,22 +17,23 @@ TEST(MemletDelinearizationAnalysisTest, SimpleLinearAccess) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
-    auto& root = builder.root();
+    auto& root = sdfg.root();
 
-    // Add a container: int A[10]
+    // Add a container: int* A (pointer to scalar, accessed as array)
     types::Scalar scalar_type(types::PrimitiveType::Int32);
-    types::Array array_type(scalar_type, symbolic::integer(10));
-    types::Pointer pointer_type(
-        types::StorageType::Default, types::AlignmentType::None, types::InitializerType::None, array_type
-    );
+    types::Pointer pointer_type(scalar_type);
     builder.add_container("A", pointer_type, true);
+    
+    // Add symbol container for 'i'
+    types::Scalar index_type(types::PrimitiveType::Int64);
+    builder.add_container("i", index_type);
 
     // Create a block with a memlet that has a linear access pattern
     auto& block = builder.add_block(root);
-    auto& access_in = builder.add_access_node(block, "A");
-    auto& tasklet = builder.add_tasklet(block, {"in"}, {});
+    auto& access_in = builder.add_access(block, "A");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "", {"in"});
     auto i = symbolic::symbol("i");
-    builder.add_computational_memlet(block, access_in, "out", tasklet, "in", {i}, scalar_type);
+    builder.add_computational_memlet(block, access_in, tasklet, "in", {i});
 
     // Run the analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -51,25 +52,26 @@ TEST(MemletDelinearizationAnalysisTest, LinearizedAccess) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
-    auto& root = builder.root();
+    auto& root = sdfg.root();
 
-    // Add a container: int A[10][20]
+    // Add a container: int* A (pointer to scalar, accessed as linearized 2D array)
     types::Scalar scalar_type(types::PrimitiveType::Int32);
-    types::Array inner_array(scalar_type, symbolic::integer(20));
-    types::Array outer_array(inner_array, symbolic::integer(10));
-    types::Pointer pointer_type(
-        types::StorageType::Default, types::AlignmentType::None, types::InitializerType::None, outer_array
-    );
+    types::Pointer pointer_type(scalar_type);
     builder.add_container("A", pointer_type, true);
+    
+    // Add symbol containers for 'i' and 'j'
+    types::Scalar index_type(types::PrimitiveType::Int64);
+    builder.add_container("i", index_type);
+    builder.add_container("j", index_type);
 
     // Create a block with a memlet that has a linearized access: i*20 + j
     auto& block = builder.add_block(root);
-    auto& access_in = builder.add_access_node(block, "A");
-    auto& tasklet = builder.add_tasklet(block, {"in"}, {});
+    auto& access_in = builder.add_access(block, "A");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "", {"in"});
     auto i = symbolic::symbol("i");
     auto j = symbolic::symbol("j");
     auto linearized = symbolic::add(symbolic::mul(i, symbolic::integer(20)), j);
-    builder.add_computational_memlet(block, access_in, "out", tasklet, "in", {linearized}, scalar_type);
+    builder.add_computational_memlet(block, access_in, tasklet, "in", {linearized});
 
     // Run the analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -89,7 +91,7 @@ TEST(MemletDelinearizationAnalysisTest, EmptySubset) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     auto& sdfg = builder.subject();
-    auto& root = builder.root();
+    auto& root = sdfg.root();
 
     // Add a container
     types::Scalar scalar_type(types::PrimitiveType::Int32);
@@ -97,9 +99,9 @@ TEST(MemletDelinearizationAnalysisTest, EmptySubset) {
 
     // Create a block with a memlet that has an empty subset (scalar access)
     auto& block = builder.add_block(root);
-    auto& access_in = builder.add_access_node(block, "A");
-    auto& tasklet = builder.add_tasklet(block, {"in"}, {});
-    builder.add_computational_memlet(block, access_in, "out", tasklet, "in", {}, scalar_type);
+    auto& access_in = builder.add_access(block, "A");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "", {"in"});
+    builder.add_computational_memlet(block, access_in, tasklet, "in", {});
 
     // Run the analysis
     analysis::AnalysisManager analysis_manager(sdfg);
@@ -120,29 +122,31 @@ TEST(MemletDelinearizationAnalysisTest, NonExistentMemlet) {
 
     auto& sdfg1 = builder1.subject();
     auto& sdfg2 = builder2.subject();
-    auto& root1 = builder1.root();
-    auto& root2 = builder2.root();
+    auto& root1 = sdfg1.root();
+    auto& root2 = sdfg2.root();
 
     // Add containers in both SDFGs
     types::Scalar scalar_type(types::PrimitiveType::Int32);
-    types::Array array_type(scalar_type, symbolic::integer(10));
-    types::Pointer pointer_type(
-        types::StorageType::Default, types::AlignmentType::None, types::InitializerType::None, array_type
-    );
+    types::Pointer pointer_type(scalar_type);
     builder1.add_container("A", pointer_type, true);
     builder2.add_container("B", pointer_type, true);
+    
+    // Add symbol container for 'i' in both SDFGs
+    types::Scalar index_type(types::PrimitiveType::Int64);
+    builder1.add_container("i", index_type);
+    builder2.add_container("i", index_type);
 
     // Create blocks in both SDFGs
     auto& block1 = builder1.add_block(root1);
-    auto& access_in1 = builder1.add_access_node(block1, "A");
-    auto& tasklet1 = builder1.add_tasklet(block1, {"in"}, {});
+    auto& access_in1 = builder1.add_access(block1, "A");
+    auto& tasklet1 = builder1.add_tasklet(block1, data_flow::TaskletCode::assign, "", {"in"});
     auto i = symbolic::symbol("i");
-    builder1.add_computational_memlet(block1, access_in1, "out", tasklet1, "in", {i}, scalar_type);
+    builder1.add_computational_memlet(block1, access_in1, tasklet1, "in", {i});
 
     auto& block2 = builder2.add_block(root2);
-    auto& access_in2 = builder2.add_access_node(block2, "B");
-    auto& tasklet2 = builder2.add_tasklet(block2, {"in"}, {});
-    builder2.add_computational_memlet(block2, access_in2, "out", tasklet2, "in", {i}, scalar_type);
+    auto& access_in2 = builder2.add_access(block2, "B");
+    auto& tasklet2 = builder2.add_tasklet(block2, data_flow::TaskletCode::assign, "", {"in"});
+    builder2.add_computational_memlet(block2, access_in2, tasklet2, "in", {i});
 
     // Run the analysis on sdfg1
     analysis::AnalysisManager analysis_manager(sdfg1);
