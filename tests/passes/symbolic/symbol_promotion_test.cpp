@@ -600,3 +600,656 @@ TEST(SymbolPromotionTest, SHL_NonConstant) {
     passes::SymbolPromotion s2spass;
     EXPECT_FALSE(s2spass.run(builder_opt, analysis_manager));
 }
+
+TEST(SymbolPromotionTest, Div_Signed) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    builder.add_container("j", desc);
+    builder.add_container("k", desc);
+    auto sym_i = symbolic::symbol("i");
+    auto sym_j = symbolic::symbol("j");
+    auto sym_k = symbolic::symbol("k");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& input_node1 = builder.add_access(block, "j");
+    auto& input_node2 = builder.add_access(block, "k");
+    auto& output_node = builder.add_access(block, "i");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_sdiv, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, input_node1, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, input_node2, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - verify expression is j / k
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    auto block1 = dynamic_cast<const structured_control_flow::Block*>(&child1.first);
+    EXPECT_NE(block1, nullptr);
+    EXPECT_EQ(block1->dataflow().nodes().size(), 0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+
+    auto expected = symbolic::div(sym_j, sym_k);
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym_i), *expected));
+}
+
+TEST(SymbolPromotionTest, Div_Signed_Constant) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    auto sym = symbolic::symbol("i");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& output_node = builder.add_access(block, "i");
+    auto& eight_node = builder.add_constant(block, "8", desc);
+    auto& two_node = builder.add_constant(block, "2", desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_sdiv, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, eight_node, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, two_node, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - 8 / 2 = 4
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym), *symbolic::integer(4)));
+}
+
+TEST(SymbolPromotionTest, Rem_Signed) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    builder.add_container("j", desc);
+    builder.add_container("k", desc);
+    auto sym_i = symbolic::symbol("i");
+    auto sym_j = symbolic::symbol("j");
+    auto sym_k = symbolic::symbol("k");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& input_node1 = builder.add_access(block, "j");
+    auto& input_node2 = builder.add_access(block, "k");
+    auto& output_node = builder.add_access(block, "i");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_srem, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, input_node1, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, input_node2, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - verify expression is j % k
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    auto block1 = dynamic_cast<const structured_control_flow::Block*>(&child1.first);
+    EXPECT_NE(block1, nullptr);
+    EXPECT_EQ(block1->dataflow().nodes().size(), 0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+
+    auto expected = symbolic::mod(sym_j, sym_k);
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym_i), *expected));
+}
+
+TEST(SymbolPromotionTest, Rem_Signed_Constant) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    auto sym = symbolic::symbol("i");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& output_node = builder.add_access(block, "i");
+    auto& seven_node = builder.add_constant(block, "7", desc);
+    auto& three_node = builder.add_constant(block, "3", desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_srem, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, seven_node, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, three_node, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - 7 % 3 = 1
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym), *symbolic::integer(1)));
+}
+
+TEST(SymbolPromotionTest, Min_Signed) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    builder.add_container("j", desc);
+    builder.add_container("k", desc);
+    auto sym_i = symbolic::symbol("i");
+    auto sym_j = symbolic::symbol("j");
+    auto sym_k = symbolic::symbol("k");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& input_node1 = builder.add_access(block, "j");
+    auto& input_node2 = builder.add_access(block, "k");
+    auto& output_node = builder.add_access(block, "i");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_smin, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, input_node1, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, input_node2, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - verify expression is min(j, k)
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    auto block1 = dynamic_cast<const structured_control_flow::Block*>(&child1.first);
+    EXPECT_NE(block1, nullptr);
+    EXPECT_EQ(block1->dataflow().nodes().size(), 0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+
+    auto expected = symbolic::min(sym_j, sym_k);
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym_i), *expected));
+}
+
+TEST(SymbolPromotionTest, Min_Signed_Constant) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    auto sym = symbolic::symbol("i");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& output_node = builder.add_access(block, "i");
+    auto& five_node = builder.add_constant(block, "5", desc);
+    auto& three_node = builder.add_constant(block, "3", desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_smin, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, five_node, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, three_node, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - min(5, 3) = 3
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym), *symbolic::integer(3)));
+}
+
+TEST(SymbolPromotionTest, Max_Signed) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    builder.add_container("j", desc);
+    builder.add_container("k", desc);
+    auto sym_i = symbolic::symbol("i");
+    auto sym_j = symbolic::symbol("j");
+    auto sym_k = symbolic::symbol("k");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& input_node1 = builder.add_access(block, "j");
+    auto& input_node2 = builder.add_access(block, "k");
+    auto& output_node = builder.add_access(block, "i");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_smax, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, input_node1, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, input_node2, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - verify expression is max(j, k)
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    auto block1 = dynamic_cast<const structured_control_flow::Block*>(&child1.first);
+    EXPECT_NE(block1, nullptr);
+    EXPECT_EQ(block1->dataflow().nodes().size(), 0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+
+    auto expected = symbolic::max(sym_j, sym_k);
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym_i), *expected));
+}
+
+TEST(SymbolPromotionTest, Max_Signed_Constant) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    auto sym = symbolic::symbol("i");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& output_node = builder.add_access(block, "i");
+    auto& five_node = builder.add_constant(block, "5", desc);
+    auto& three_node = builder.add_constant(block, "3", desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_smax, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, five_node, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, three_node, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - max(5, 3) = 5
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym), *symbolic::integer(5)));
+}
+
+TEST(SymbolPromotionTest, Abs_Signed) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    builder.add_container("j", desc);
+    auto sym_i = symbolic::symbol("i");
+    auto sym_j = symbolic::symbol("j");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& input_node = builder.add_access(block, "j");
+    auto& output_node = builder.add_access(block, "i");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_abs, "_out", {"_in"});
+    builder.add_computational_memlet(block, input_node, tasklet, "_in", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - verify expression is abs(j)
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    auto block1 = dynamic_cast<const structured_control_flow::Block*>(&child1.first);
+    EXPECT_NE(block1, nullptr);
+    EXPECT_EQ(block1->dataflow().nodes().size(), 0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+
+    auto expected = symbolic::abs(sym_j);
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym_i), *expected));
+}
+
+TEST(SymbolPromotionTest, Abs_Signed_Constant) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    auto sym = symbolic::symbol("i");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& output_node = builder.add_access(block, "i");
+    auto& neg_five_node = builder.add_constant(block, "-5", desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_abs, "_out", {"_in"});
+    builder.add_computational_memlet(block, neg_five_node, tasklet, "_in", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - abs(-5) = 5
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym), *symbolic::integer(5)));
+}
+
+TEST(SymbolPromotionTest, ASHR_Constant) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    builder.add_container("j", desc);
+    auto sym_i = symbolic::symbol("i");
+    auto sym_j = symbolic::symbol("j");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& output_node = builder.add_access(block, "i");
+    auto& input_node = builder.add_access(block, "j");
+    auto& two_node = builder.add_constant(block, "2", desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_ashr, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, input_node, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, two_node, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - verify expression is j / 2^2 = j / 4
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    auto block1 = dynamic_cast<const structured_control_flow::Block*>(&child1.first);
+    EXPECT_NE(block1, nullptr);
+    EXPECT_EQ(block1->dataflow().nodes().size(), 0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+
+    auto expected = symbolic::div(sym_j, symbolic::integer(4));
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym_i), *expected));
+}
+
+TEST(SymbolPromotionTest, ASHR_Constant_Literal) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    auto sym = symbolic::symbol("i");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& output_node = builder.add_access(block, "i");
+    auto& eight_node = builder.add_constant(block, "8", desc);
+    auto& two_node = builder.add_constant(block, "2", desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_ashr, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, eight_node, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, two_node, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - 8 >> 2 = 2
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym), *symbolic::integer(2)));
+}
+
+TEST(SymbolPromotionTest, And_Bool) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Bool);
+    builder.add_container("i", desc);
+    builder.add_container("j", desc);
+    builder.add_container("k", desc);
+    auto sym_i = symbolic::symbol("i");
+    auto sym_j = symbolic::symbol("j");
+    auto sym_k = symbolic::symbol("k");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& input_node1 = builder.add_access(block, "j");
+    auto& input_node2 = builder.add_access(block, "k");
+    auto& output_node = builder.add_access(block, "i");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_and, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, input_node1, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, input_node2, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - verify expression is (j == true) & (k == true)
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    auto block1 = dynamic_cast<const structured_control_flow::Block*>(&child1.first);
+    EXPECT_NE(block1, nullptr);
+    EXPECT_EQ(block1->dataflow().nodes().size(), 0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+
+    auto op1_is_true = symbolic::Eq(sym_j, symbolic::__true__());
+    auto op2_is_true = symbolic::Eq(sym_k, symbolic::__true__());
+    auto expected = symbolic::And(op1_is_true, op2_is_true);
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym_i), *expected));
+}
+
+TEST(SymbolPromotionTest, Or_Bool) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Bool);
+    builder.add_container("i", desc);
+    builder.add_container("j", desc);
+    builder.add_container("k", desc);
+    auto sym_i = symbolic::symbol("i");
+    auto sym_j = symbolic::symbol("j");
+    auto sym_k = symbolic::symbol("k");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& input_node1 = builder.add_access(block, "j");
+    auto& input_node2 = builder.add_access(block, "k");
+    auto& output_node = builder.add_access(block, "i");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_or, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, input_node1, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, input_node2, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - verify expression is (j == true) | (k == true)
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    auto block1 = dynamic_cast<const structured_control_flow::Block*>(&child1.first);
+    EXPECT_NE(block1, nullptr);
+    EXPECT_EQ(block1->dataflow().nodes().size(), 0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+
+    auto op1_is_true = symbolic::Eq(sym_j, symbolic::__true__());
+    auto op2_is_true = symbolic::Eq(sym_k, symbolic::__true__());
+    auto expected = symbolic::Or(op1_is_true, op2_is_true);
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym_i), *expected));
+}
+
+TEST(SymbolPromotionTest, Xor_Bool) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Bool);
+    builder.add_container("i", desc);
+    builder.add_container("j", desc);
+    builder.add_container("k", desc);
+    auto sym_i = symbolic::symbol("i");
+    auto sym_j = symbolic::symbol("j");
+    auto sym_k = symbolic::symbol("k");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& input_node1 = builder.add_access(block, "j");
+    auto& input_node2 = builder.add_access(block, "k");
+    auto& output_node = builder.add_access(block, "i");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_xor, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, input_node1, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, input_node2, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - verify expression is ((j == true) | (k == true)) & !((j == true) & (k == true))
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    auto block1 = dynamic_cast<const structured_control_flow::Block*>(&child1.first);
+    EXPECT_NE(block1, nullptr);
+    EXPECT_EQ(block1->dataflow().nodes().size(), 0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+
+    auto op1_is_true = symbolic::Eq(sym_j, symbolic::__true__());
+    auto op2_is_true = symbolic::Eq(sym_k, symbolic::__true__());
+    auto expected =
+        symbolic::And(symbolic::Or(op1_is_true, op2_is_true), symbolic::Not(symbolic::And(op1_is_true, op2_is_true)));
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym_i), *expected));
+}
+
+TEST(SymbolPromotionTest, ZExt_i32_to_i64) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc32(types::PrimitiveType::UInt32);
+    types::Scalar desc64(types::PrimitiveType::UInt64);
+    builder.add_container("i", desc64);
+    builder.add_container("j", desc32);
+    auto sym_i = symbolic::symbol("i");
+    auto sym_j = symbolic::symbol("j");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& input_node = builder.add_access(block, "j");
+    auto& output_node = builder.add_access(block, "i");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, input_node, tasklet, "_in", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - verify expression is zext_i64(j)
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    auto block1 = dynamic_cast<const structured_control_flow::Block*>(&child1.first);
+    EXPECT_NE(block1, nullptr);
+    EXPECT_EQ(block1->dataflow().nodes().size(), 0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+
+    auto expected = symbolic::zext_i64(SymEngine::rcp_static_cast<const SymEngine::Symbol>(sym_j));
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym_i), *expected));
+}
+
+TEST(SymbolPromotionTest, Trunc_i64_to_i32) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc32(types::PrimitiveType::UInt32);
+    types::Scalar desc64(types::PrimitiveType::UInt64);
+    builder.add_container("i", desc32);
+    builder.add_container("j", desc64);
+    auto sym_i = symbolic::symbol("i");
+    auto sym_j = symbolic::symbol("j");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& input_node = builder.add_access(block, "j");
+    auto& output_node = builder.add_access(block, "i");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, input_node, tasklet, "_in", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    auto sdfg = builder.move();
+
+    // Apply pass
+    builder::StructuredSDFGBuilder builder_opt(sdfg);
+    analysis::AnalysisManager analysis_manager(builder_opt.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder_opt, analysis_manager));
+    sdfg = builder_opt.move();
+
+    // Check result - verify expression is trunc_i32(j)
+    EXPECT_EQ(sdfg->root().size(), 2);
+    auto child1 = sdfg->root().at(0);
+    auto block1 = dynamic_cast<const structured_control_flow::Block*>(&child1.first);
+    EXPECT_NE(block1, nullptr);
+    EXPECT_EQ(block1->dataflow().nodes().size(), 0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+
+    auto expected = symbolic::trunc_i32(SymEngine::rcp_static_cast<const SymEngine::Symbol>(sym_j));
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym_i), *expected));
+}

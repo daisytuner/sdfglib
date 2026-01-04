@@ -350,7 +350,7 @@ void SymbolPromotion::apply(
 };
 
 SymbolPromotion::SymbolPromotion()
-    : Pass() {
+    : Pass(){
 
       };
 
