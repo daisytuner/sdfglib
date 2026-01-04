@@ -233,14 +233,11 @@ bool SymbolEvolution::eliminate_symbols(
     }
 
     return applied;
-};
+}
 
-SymbolEvolution::SymbolEvolution()
-    : Pass(){
+SymbolEvolution::SymbolEvolution() : Pass() {}
 
-      };
-
-std::string SymbolEvolution::name() { return "SymbolEvolution"; };
+std::string SymbolEvolution::name() { return "SymbolEvolution"; }
 
 bool SymbolEvolution::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     bool applied = false;
@@ -274,7 +271,7 @@ bool SymbolEvolution::run_pass(builder::StructuredSDFGBuilder& builder, analysis
     }
 
     return applied;
-};
+}
 
 } // namespace passes
 } // namespace sdfg
