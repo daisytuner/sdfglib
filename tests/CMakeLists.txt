@@ -39,7 +39,11 @@ set(TEST_FILES
     codegen/utils_test.cpp
     control_flow/state_test.cpp
     control_flow/interstate_edge_test.cpp
+    data_flow/access_node_test.cpp
+    data_flow/code_node_test.cpp
     data_flow/data_flow_graph_test.cpp
+    data_flow/data_flow_node_test.cpp
+    data_flow/memlet_test.cpp
     data_flow/tasklet_test.cpp
     data_flow/library_nodes/math/blas/blas_test.cpp
     data_flow/library_nodes/math/cmath/cmath_node_test.cpp
