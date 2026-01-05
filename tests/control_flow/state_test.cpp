@@ -14,10 +14,6 @@ using namespace sdfg;
  * Test fixture for State tests
  */
 class StateTest : public ::testing::Test {
-protected:
-    void SetUp() override {
-        // Common setup can go here
-    }
 };
 
 /**
@@ -121,10 +117,6 @@ TEST_F(StateTest, StateSymbolReplacement) {
  * Test fixture for ReturnState tests
  */
 class ReturnStateTest : public ::testing::Test {
-protected:
-    void SetUp() override {
-        // Common setup
-    }
 };
 
 /**

@@ -12,10 +12,6 @@ using namespace sdfg;
  * Test fixture for InterstateEdge tests
  */
 class InterstateEdgeTest : public ::testing::Test {
-protected:
-    void SetUp() override {
-        // Common setup
-    }
 };
 
 /**
@@ -228,6 +224,7 @@ TEST_F(InterstateEdgeTest, IfElsePattern) {
 
 /**
  * Test edge with multiple assignments
+ * Demonstrates that all assignments use the symbol values from before the edge is traversed
  */
 TEST_F(InterstateEdgeTest, MultipleAssignments) {
     builder::SDFGBuilder builder("test_sdfg", FunctionType_CPU);
@@ -243,10 +240,15 @@ TEST_F(InterstateEdgeTest, MultipleAssignments) {
     auto& state1 = builder.add_state(true);
     auto& state2 = builder.add_state();
 
+    // All assignments use the old values of symbols at edge entry
+    // For example, if entering with x=10, y=20, then:
+    //   - a = 1 (independent)
+    //   - b = 2 (independent)
+    //   - c = x + y = 10 + 20 = 30 (uses old x and y, not 1 and 2)
     control_flow::Assignments assignments;
     assignments[x] = symbolic::integer(1);
     assignments[y] = symbolic::integer(2);
-    assignments[z] = symbolic::add(x, y); // z = x + y (uses old values of x and y)
+    assignments[z] = symbolic::add(x, y);
 
     auto& edge = builder.add_edge(state1, state2, assignments);
 
