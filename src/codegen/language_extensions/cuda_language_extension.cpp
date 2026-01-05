@@ -67,6 +67,9 @@ std::string CUDALanguageExtension::
         val << " ";
         val << name;
     } else if (auto array_type = dynamic_cast<const types::Array*>(&type)) {
+        if (array_type->storage_type().is_nv_shared()) {
+            val << "__shared__ ";
+        }
         auto& element_type = array_type->element_type();
         val << declaration(name + "[" + this->expression(array_type->num_elements()) + "]", element_type);
     } else if (auto pointer_type = dynamic_cast<const types::Pointer*>(&type)) {
