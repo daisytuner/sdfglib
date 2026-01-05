@@ -11,8 +11,7 @@ using namespace sdfg;
 /**
  * Test fixture for InterstateEdge tests
  */
-class InterstateEdgeTest : public ::testing::Test {
-};
+class InterstateEdgeTest : public ::testing::Test {};
 
 /**
  * Test basic unconditional edge creation

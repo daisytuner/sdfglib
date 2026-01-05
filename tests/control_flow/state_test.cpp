@@ -13,8 +13,7 @@ using namespace sdfg;
 /**
  * Test fixture for State tests
  */
-class StateTest : public ::testing::Test {
-};
+class StateTest : public ::testing::Test {};
 
 /**
  * Test basic state creation and properties
@@ -116,8 +115,7 @@ TEST_F(StateTest, StateSymbolReplacement) {
 /**
  * Test fixture for ReturnState tests
  */
-class ReturnStateTest : public ::testing::Test {
-};
+class ReturnStateTest : public ::testing::Test {};
 
 /**
  * Test ReturnState with data container
