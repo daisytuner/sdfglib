@@ -22,18 +22,8 @@ TensorNode::TensorNode(
 void TensorNode::validate(const Function& function) const {
     auto& graph = this->get_parent();
 
-    // Get the set of actually connected input connectors
-    std::set<std::string> connected_inputs;
-    for (auto& iedge : graph.in_edges(*this)) {
-        connected_inputs.insert(iedge.dst_conn());
-    }
-
     // Check that all input memlets are scalar or pointer of scalar
     for (auto& iedge : graph.in_edges(*this)) {
-        // Skip validation for optional inputs that aren't connected
-        // (this check is redundant here since we iterate over connected edges,
-        // but kept for clarity)
-        
         if (iedge.base_type().type_id() != types::TypeID::Scalar &&
             iedge.base_type().type_id() != types::TypeID::Pointer) {
             throw InvalidSDFGException(
@@ -51,21 +41,6 @@ void TensorNode::validate(const Function& function) const {
             if (!iedge.subset().empty()) {
                 throw InvalidSDFGException("TensorNode: Input memlet pointer must not be dereferenced.");
             }
-        }
-    }
-
-    // Check that all required inputs are connected
-    for (const auto& input_name : inputs_) {
-        // Skip optional inputs
-        if (is_input_optional(input_name)) {
-            continue;
-        }
-        
-        // Check if this required input is connected
-        if (connected_inputs.find(input_name) == connected_inputs.end()) {
-            throw InvalidSDFGException(
-                "TensorNode: Required input '" + input_name + "' is not connected"
-            );
         }
     }
 

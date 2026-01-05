@@ -1,5 +1,7 @@
 #include "sdfg/data_flow/library_nodes/math/tensor/conv_node.h"
 
+#include <map>
+
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/types/type.h"
@@ -32,13 +34,82 @@ ConvNode::ConvNode(
           {"X", "W", "B"}, // X and W are required, B (bias) is optional
           data_flow::ImplementationType_NONE
       ),
-      kernel_shape_(kernel_shape), strides_(strides), pads_(pads), dilations_(dilations), group_(group) {
-    // Mark bias input as optional
-    mark_input_optional("B");
-}
+      kernel_shape_(kernel_shape), strides_(strides), pads_(pads), dilations_(dilations), group_(group) {}
 
 void ConvNode::validate(const Function& function) const {
-    TensorNode::validate(function);
+    auto& graph = this->get_parent();
+
+    // Custom validation for ConvNode that handles optional bias input
+    // We expect X, W as required inputs and optionally B (bias)
+    
+    // Collect all input edges by connector name
+    std::map<std::string, const data_flow::Memlet*> input_edges;
+    for (auto& iedge : graph.in_edges(*this)) {
+        input_edges[iedge.dst_conn()] = &iedge;
+    }
+
+    // Check that required inputs X and W are present
+    if (input_edges.find("X") == input_edges.end()) {
+        throw InvalidSDFGException("ConvNode: Required input 'X' is not connected");
+    }
+    if (input_edges.find("W") == input_edges.end()) {
+        throw InvalidSDFGException("ConvNode: Required input 'W' is not connected");
+    }
+
+    // Validate all connected input memlets are scalar or pointer of scalar
+    for (auto& iedge : graph.in_edges(*this)) {
+        if (iedge.base_type().type_id() != types::TypeID::Scalar &&
+            iedge.base_type().type_id() != types::TypeID::Pointer) {
+            throw InvalidSDFGException(
+                "ConvNode: Input memlet must be of scalar or pointer type. Found type: " + iedge.base_type().print()
+            );
+        }
+        if (iedge.base_type().type_id() == types::TypeID::Pointer) {
+            auto& ptr_type = static_cast<const types::Pointer&>(iedge.base_type());
+            if (ptr_type.pointee_type().type_id() != types::TypeID::Scalar) {
+                throw InvalidSDFGException(
+                    "ConvNode: Input memlet pointer must be flat (pointer to scalar). Found type: " +
+                    ptr_type.pointee_type().print()
+                );
+            }
+            if (!iedge.subset().empty()) {
+                throw InvalidSDFGException("ConvNode: Input memlet pointer must not be dereferenced.");
+            }
+        }
+    }
+
+    // Validate output memlets are scalar or pointer of scalar
+    for (auto& oedge : graph.out_edges(*this)) {
+        if (oedge.base_type().type_id() != types::TypeID::Scalar &&
+            oedge.base_type().type_id() != types::TypeID::Pointer) {
+            throw InvalidSDFGException(
+                "ConvNode: Output memlet must be of scalar or pointer type. Found type: " + oedge.base_type().print()
+            );
+        }
+        if (oedge.base_type().type_id() == types::TypeID::Pointer) {
+            auto& ptr_type = static_cast<const types::Pointer&>(oedge.base_type());
+            if (ptr_type.pointee_type().type_id() != types::TypeID::Scalar) {
+                throw InvalidSDFGException(
+                    "ConvNode: Output memlet pointer must be flat (pointer to scalar). Found type: " +
+                    ptr_type.pointee_type().print()
+                );
+            }
+            if (!oedge.subset().empty()) {
+                throw InvalidSDFGException("ConvNode: Output memlet pointer must not be dereferenced.");
+            }
+        }
+    }
+
+    // Validate that all memlets have the same primitive type
+    types::PrimitiveType prim_type = this->primitive_type(graph);
+
+    // ConvNode supports floating-point types (check integer support)
+    if (!this->supports_integer_types() && types::is_integer(prim_type)) {
+        throw InvalidSDFGException(
+            "ConvNode: This operation does not support integer types. Found type: " +
+            std::string(types::primitive_type_to_string(prim_type))
+        );
+    }
 
     // Validate kernel shape is not empty
     if (kernel_shape_.empty()) {
