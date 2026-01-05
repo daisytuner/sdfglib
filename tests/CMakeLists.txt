@@ -37,6 +37,8 @@ set(TEST_FILES
     codegen/language_extensions/cpp_language_extension_test.cpp
     codegen/language_extensions/cuda_language_extension_test.cpp
     codegen/utils_test.cpp
+    control_flow/state_test.cpp
+    control_flow/interstate_edge_test.cpp
     data_flow/data_flow_graph_test.cpp
     data_flow/tasklet_test.cpp
     data_flow/library_nodes/math/blas/blas_test.cpp
