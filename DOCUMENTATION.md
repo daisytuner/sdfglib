@@ -49,6 +49,23 @@ The generated documentation includes:
 
 ## Documented Components
 
+### Control Flow System (include/sdfg/control_flow)
+
+The control-flow system is comprehensively documented, covering:
+- **state.h**: State and ReturnState classes for SDFG control-flow nodes
+- **interstate_edge.h**: InterstateEdge class for transitions between states
+
+**Building SDFGs - Two Approaches:**
+
+1. **Control-Flow Approach** (using this module): Build SDFGs using `State` nodes connected by `InterstateEdge` edges. This creates a general directed graph that can contain cycles. States contain data-flow graphs describing computations, and interstate edges control transitions with conditions and assignments.
+
+2. **Structured Control-Flow Approach**: Use `structured_control_flow` elements (For, While, IfElse, etc.) which yield an acyclic StructuredSDFG with structured programming constructs.
+
+**Key Semantics:**
+- On interstate edges, **conditions are evaluated BEFORE assignments are executed**
+- Conditions see symbol values before the edge's assignments take effect
+- Assignments update symbols for the destination state and subsequent edges
+
 ### Type System (include/sdfg/types)
 
 The type system is fully documented with Doxygen comments, covering:
@@ -103,7 +120,7 @@ Library nodes allow calling functions beyond simple instructions (tasklets). The
 
 The documentation is configured via `Doxyfile` in the repository root. Key settings:
 
-- `INPUT = include/sdfg/types include/sdfg/symbolic` - Documents type and symbolic systems
+- `INPUT = include/sdfg/types include/sdfg/symbolic include/sdfg/control_flow` - Documents type, symbolic, and control-flow systems
 - `OUTPUT_DIRECTORY = docs` - Output location
 - `RECURSIVE = YES` - Process subdirectories
 - `EXTRACT_ALL = YES` - Document all entities (even without explicit doc comments)
