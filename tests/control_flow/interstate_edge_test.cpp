@@ -294,8 +294,7 @@ TEST_F(InterstateEdgeTest, PointerInCondition) {
 }
 
 /**
- * Test edge symbol replacement
- * Note: Currently only assignments are replaced, not the condition
+ * Test edge symbol replacement in assignments
  */
 TEST_F(InterstateEdgeTest, EdgeSymbolReplacement) {
     builder::SDFGBuilder builder("test_sdfg", FunctionType_CPU);
@@ -317,7 +316,7 @@ TEST_F(InterstateEdgeTest, EdgeSymbolReplacement) {
     // Replace i with j
     edge.replace(i, j);
 
-    // Verify replacement in assignments (condition replacement has a bug in the implementation)
+    // Verify replacement in assignments
     EXPECT_EQ(edge.assignments().size(), 1);
     auto& assignment = *edge.assignments().begin();
     EXPECT_EQ(assignment.first->get_name(), "j");

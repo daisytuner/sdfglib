@@ -5,6 +5,7 @@
 #include "sdfg/builder/sdfg_builder.h"
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/tasklet.h"
+#include "sdfg/exceptions.h"
 #include "sdfg/types/scalar.h"
 
 using namespace sdfg;
@@ -190,10 +191,9 @@ TEST_F(ReturnStateTest, ReturnStateNoOutgoingEdges) {
 }
 
 /**
- * Test that ReturnState cannot have outgoing edges
- * The builder itself prevents adding edges from ReturnState
+ * Test that the builder prevents adding outgoing edges from ReturnState
  */
-TEST_F(ReturnStateTest, ReturnStateCannotHaveOutgoingEdges) {
+TEST_F(ReturnStateTest, ReturnStateBuilderPreventsOutgoingEdges) {
     builder::SDFGBuilder builder("test_sdfg", FunctionType_CPU, types::Scalar(types::PrimitiveType::Double));
 
     builder.add_container("result", types::Scalar(types::PrimitiveType::Double));
