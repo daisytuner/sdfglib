@@ -190,9 +190,10 @@ TEST_F(ReturnStateTest, ReturnStateNoOutgoingEdges) {
 }
 
 /**
- * Test that ReturnState validation fails with outgoing edges
+ * Test that ReturnState cannot have outgoing edges
+ * The builder itself prevents adding edges from ReturnState
  */
-TEST_F(ReturnStateTest, ReturnStateValidationFailsWithOutgoingEdges) {
+TEST_F(ReturnStateTest, ReturnStateCannotHaveOutgoingEdges) {
     builder::SDFGBuilder builder("test_sdfg", FunctionType_CPU, types::Scalar(types::PrimitiveType::Double));
 
     builder.add_container("result", types::Scalar(types::PrimitiveType::Double));
@@ -200,13 +201,8 @@ TEST_F(ReturnStateTest, ReturnStateValidationFailsWithOutgoingEdges) {
     auto& return_state = builder.add_return_state("result");
     auto& next_state = builder.add_state();
 
-    // Try to add an outgoing edge (this should be invalid)
-    builder.add_edge(return_state, next_state);
-
-    auto& sdfg = builder.subject();
-
-    // Validation should fail because ReturnState has outgoing edges
-    EXPECT_THROW(return_state.validate(sdfg), InvalidSDFGException);
+    // Try to add an outgoing edge from ReturnState - this should throw
+    EXPECT_THROW(builder.add_edge(return_state, next_state), std::exception);
 }
 
 /**
