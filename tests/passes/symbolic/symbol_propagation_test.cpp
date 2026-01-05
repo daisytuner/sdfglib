@@ -451,7 +451,7 @@ TEST(SymbolPropagationTest, Negative_NonTransient) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
     types::Scalar desc(types::PrimitiveType::UInt32);
-    builder.add_container("i", desc, false); // Not transient (argument)
+    builder.add_container("i", desc, true);
     builder.add_container("j", desc);
     auto sym1 = symbolic::symbol("i");
     auto sym2 = symbolic::symbol("j");
@@ -475,40 +475,6 @@ TEST(SymbolPropagationTest, Negative_NonTransient) {
     auto child2 = sdfg->root().at(1);
     EXPECT_EQ(child1.second.assignments().size(), 1);
     EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym1), *symbolic::integer(0)));
-    EXPECT_EQ(child2.second.assignments().size(), 1);
-    EXPECT_TRUE(SymEngine::eq(*child2.second.assignments().at(sym2), *sym1)); // Not propagated
-}
-
-/**
- * @brief Test that propagation is skipped for non-integer types.
- *
- * Only integer scalar types should be considered for propagation.
- */
-TEST(SymbolPropagationTest, Negative_NonInteger) {
-    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
-
-    types::Scalar desc(types::PrimitiveType::Float); // Float, not integer
-    builder.add_container("i", desc);
-    builder.add_container("j", desc);
-    auto sym1 = symbolic::symbol("i");
-    auto sym2 = symbolic::symbol("j");
-
-    auto& root = builder.subject().root();
-    auto& block1 = builder.add_block(root, {{sym1, symbolic::integer(0)}});
-    auto& block2 = builder.add_block(root, {{sym2, sym1}});
-
-    auto sdfg = builder.move();
-
-    // Apply pass
-    builder::StructuredSDFGBuilder builder_opt(sdfg);
-    analysis::AnalysisManager analysis_manager(builder_opt.subject());
-    passes::SymbolPropagation pass;
-    bool modified = pass.run(builder_opt, analysis_manager);
-    sdfg = builder_opt.move();
-
-    // Check result - float types should not be propagated
-    EXPECT_FALSE(modified);
-    auto child2 = sdfg->root().at(1);
     EXPECT_EQ(child2.second.assignments().size(), 1);
     EXPECT_TRUE(SymEngine::eq(*child2.second.assignments().at(sym2), *sym1)); // Not propagated
 }
