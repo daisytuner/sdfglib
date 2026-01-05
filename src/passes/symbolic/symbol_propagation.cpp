@@ -58,7 +58,7 @@ symbolic::Expression inverse(const symbolic::Symbol lhs, const symbolic::Express
 };
 
 SymbolPropagation::SymbolPropagation()
-    : Pass(){
+    : Pass() {
 
       };
 
