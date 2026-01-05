@@ -487,7 +487,7 @@ TEST(SymbolPropagationTest, Negative_NonTransient) {
 TEST(SymbolPropagationTest, Negative_NonInteger) {
     builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
 
-    types::Scalar desc(types::PrimitiveType::Float32); // Float, not integer
+    types::Scalar desc(types::PrimitiveType::Float); // Float, not integer
     builder.add_container("i", desc);
     builder.add_container("j", desc);
     auto sym1 = symbolic::symbol("i");
