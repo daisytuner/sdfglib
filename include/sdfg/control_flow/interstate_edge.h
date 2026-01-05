@@ -56,11 +56,13 @@ typedef symbolic::SymbolMap Assignments;
  * // Condition uses current value of i, then i is incremented
  * symbolic::Symbol i = symbolic::symbol("i");
  * auto condition = symbolic::Lt(i, symbolic::integer(10));  // Check i < 10
- * Assignments assignments = {{i, symbolic::Add(i, symbolic::integer(1))}};  // Then i = i + 1
+ * Assignments assignments;
+ * assignments[i] = symbolic::add(i, symbolic::integer(1));  // Then i = i + 1
  * 
  * // Example 2: Unconditional transition with assignment
  * auto condition = symbolic::__true__();
- * Assignments assignments = {{i, symbolic::integer(0)}};  // Initialize i = 0
+ * Assignments assignments2;
+ * assignments2[i] = symbolic::integer(0);  // Initialize i = 0
  * @endcode
  * 
  * @see State for the source and destination of transitions
