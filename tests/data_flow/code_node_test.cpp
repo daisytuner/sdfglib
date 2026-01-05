@@ -87,7 +87,7 @@ TEST(CodeNodeTest, OutputByIndex) {
     builder.add_computational_memlet(state, input, tasklet, "_input", {});
     builder.add_computational_memlet(state, tasklet, "_output", output, {});
 
-    EXPECT_EQ(tasklet.output(0), "_output");
+    EXPECT_EQ(tasklet.outputs().at(0), "_output");
 }
 
 TEST(CodeNodeTest, InputByIndex) {
