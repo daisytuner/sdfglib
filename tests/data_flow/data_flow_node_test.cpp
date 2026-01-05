@@ -209,14 +209,11 @@ TEST(DataFlowNodeTest, DebugInfo) {
     types::Scalar desc(types::PrimitiveType::Double);
     builder.add_container("value", desc);
 
-    DebugInfo debug_info;
-    debug_info.file = "test.cpp";
-    debug_info.line = 42;
-    debug_info.column = 10;
+    DebugInfo debug_info("test.cpp", 42, 10, 42, 20);
 
     auto& access_node = builder.add_access(state, "value", debug_info);
 
-    EXPECT_EQ(access_node.debug_info().file, "test.cpp");
-    EXPECT_EQ(access_node.debug_info().line, 42);
-    EXPECT_EQ(access_node.debug_info().column, 10);
+    EXPECT_EQ(access_node.debug_info().filename(), "test.cpp");
+    EXPECT_EQ(access_node.debug_info().start_line(), 42);
+    EXPECT_EQ(access_node.debug_info().start_column(), 10);
 }
