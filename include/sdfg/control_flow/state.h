@@ -20,18 +20,18 @@ namespace control_flow {
 
 /**
  * @brief A state in a Stateful DataFlow Graph (SDFG).
- * 
+ *
  * States are the fundamental building blocks of an SDFG control-flow graph. Each state
  * represents a computational stage and contains a data-flow graph describing the
  * computations performed when the state is executed.
- * 
+ *
  * SDFGs can be constructed in two ways:
  * 1. **Control-Flow Approach**: Using State nodes connected by InterstateEdge edges
  *    (this is the approach using this class). This creates a general directed graph
  *    that can contain cycles.
  * 2. **Structured Control-Flow Approach**: Using structured_control_flow elements
  *    (e.g., For, While, IfElse) which yield an acyclic StructuredSDFG.
- * 
+ *
  * @see InterstateEdge for transitions between states
  * @see data_flow::DataFlowGraph for the computational graph within a state
  */
@@ -86,14 +86,14 @@ public:
 
 /**
  * @brief A special state that returns a value from the SDFG.
- * 
+ *
  * ReturnState represents the termination point of an SDFG execution path.
  * It can return either:
  * - A data container (variable) defined in the function
  * - A constant value with an associated type
- * 
+ *
  * A ReturnState must not have any outgoing edges.
- * 
+ *
  * @see State for the base state functionality
  */
 class ReturnState : public State {

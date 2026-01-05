@@ -117,7 +117,7 @@ TEST_F(InterstateEdgeTest, EdgeWithConditionAndAssignments) {
 
 /**
  * Test that demonstrates condition is evaluated BEFORE assignment
- * 
+ *
  * This is a conceptual test showing the semantics:
  * If we have condition "i < 10" and assignment "i = i + 1",
  * the condition checks the OLD value of i, then i is incremented.
@@ -338,10 +338,7 @@ TEST_F(InterstateEdgeTest, ComplexCondition) {
     auto& state2 = builder.add_state();
 
     // Condition: (i < 10) AND (j > 0)
-    auto condition = symbolic::And(
-        symbolic::Lt(i, symbolic::integer(10)),
-        symbolic::Gt(j, symbolic::integer(0))
-    );
+    auto condition = symbolic::And(symbolic::Lt(i, symbolic::integer(10)), symbolic::Gt(j, symbolic::integer(0)));
 
     auto& edge = builder.add_edge(state1, state2, condition);
 
@@ -354,7 +351,7 @@ TEST_F(InterstateEdgeTest, ComplexCondition) {
 
 /**
  * Test that assignment uses old values in expressions
- * 
+ *
  * When we have assignments like {x = y, y = x}, both should use the OLD values.
  * This test verifies the structure (actual execution would be done by runtime).
  */
