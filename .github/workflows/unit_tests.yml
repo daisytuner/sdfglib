@@ -55,10 +55,16 @@ jobs:
           ./tests/sdfglib_test
 
           # Run coverage
-          gcovr --gcov-executable "llvm-cov-19 gcov" --filter ../include/ --filter ../src/ --coveralls coveralls.json -r ../
+          llvm-profdata-19 merge -sparse default.profraw -o default.profdata
+
+          cd ../
+          llvm-cov-19 export ./tests/sdfglib_test -instr-profile=default.profdata -format=lcov -path-equivalence="$PWD,." -path-filter="^(\./)?(src|include)/" > build/coverage.lcov
 
       - name: Coveralls
         uses: coverallsapp/github-action@v2
+        with:
+          format: lcov
+          file: build/coverage.lcov
 
       - name: Test Arg-Capture-IO
         run: |

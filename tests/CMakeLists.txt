@@ -116,6 +116,15 @@ set(TEST_FILES
 add_executable(sdfglib_test ${TEST_FILES})
 target_include_directories(sdfglib_test PRIVATE ./)
 target_link_libraries(sdfglib_test gtest_main sdfglib)
+if(SDFGLIB_ENABLE_COVERAGE)
+target_compile_options(sdfglib_test PRIVATE
+  -fprofile-instr-generate
+  -fcoverage-mapping
+)
+target_link_options(sdfglib_test PRIVATE
+  -fprofile-instr-generate
+)
+endif()
 
 add_test(NAME sdfglib_test_test COMMAND sdfglib_test)
 
