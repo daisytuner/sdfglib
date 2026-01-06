@@ -250,8 +250,16 @@ endif()
 
 # Add coverage flags if enabled
 if(SDFGLIB_ENABLE_COVERAGE)
-    target_compile_options(sdfglib PUBLIC --coverage)
-    target_link_options(sdfglib PUBLIC --coverage)
+  target_compile_options(sdfglib PRIVATE
+    -fprofile-instr-generate
+    -fcoverage-mapping
+    -O0
+    -g
+    -fno-inline
+  )
+  target_link_options(sdfglib PRIVATE
+    -fprofile-instr-generate
+  )
 endif()
 
 target_link_libraries(sdfglib PUBLIC nlohmann_json::nlohmann_json ${Boost_LIBRARIES} PkgConfig::ISL symengine)
