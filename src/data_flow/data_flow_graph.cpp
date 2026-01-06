@@ -1,4 +1,5 @@
 #include "sdfg/data_flow/data_flow_graph.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/conv_node.h"
 #include <algorithm>
 #include <queue>
 
@@ -13,11 +14,15 @@ void DataFlowGraph::validate(const Function& function) const {
         }
 
         if (auto code_node = dynamic_cast<const data_flow::CodeNode*>(node.second.get())) {
-            if (this->in_degree(*code_node) != code_node->inputs().size()) {
-                throw InvalidSDFGException("DataFlowGraph: Number of input edges does not match number of inputs.");
-            }
-            if (this->out_degree(*code_node) != code_node->outputs().size()) {
-                throw InvalidSDFGException("DataFlowGraph: Number of output edges does not match number of outputs.");
+            // Skip input/output count validation for ConvNode which has custom validation
+            // that handles optional bias input
+            if (dynamic_cast<const math::tensor::ConvNode*>(code_node) == nullptr) {
+                if (this->in_degree(*code_node) != code_node->inputs().size()) {
+                    throw InvalidSDFGException("DataFlowGraph: Number of input edges does not match number of inputs.");
+                }
+                if (this->out_degree(*code_node) != code_node->outputs().size()) {
+                    throw InvalidSDFGException("DataFlowGraph: Number of output edges does not match number of outputs.");
+                }
             }
         }
     }
