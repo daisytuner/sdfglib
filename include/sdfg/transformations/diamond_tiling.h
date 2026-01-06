@@ -14,7 +14,7 @@ namespace transformations {
  * This transformation creates a "diamond" pattern in the iteration space by:
  * 1. Tiling the outer loop with the specified outer tile size
  * 2. Tiling the inner loop with the specified inner tile size
- * 3. Interchanging the tiled outer loop (now at position 1) with the inner loop (at position 2)
+ * 3. Interchanging the original outer loop with the tiled inner loop
  * 
  * The result is a loop structure that improves temporal locality by reusing data
  * within tiles across multiple time steps (when applied to time-space loop nests).
@@ -89,7 +89,7 @@ public:
      * The transformation proceeds in three steps:
      * 1. Tile the outer loop with outer_tile_size
      * 2. Tile the inner loop with inner_tile_size
-     * 3. Interchange the middle two loops (tiled outer with untiled inner)
+     * 3. Interchange the original outer loop with the tiled inner loop
      * 
      * @param builder The SDFG builder for modifying the loop structure
      * @param analysis_manager Analysis manager that will be invalidated after transformation

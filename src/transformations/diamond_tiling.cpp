@@ -75,30 +75,30 @@ void DiamondTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Ana
     outer_tiling.apply(builder, analysis_manager);
 
     // After outer tiling, we need to find the new loops:
-    // - The tiled outer loop (outer_loop_tile) is now at the same position as the original outer_loop_
-    // - The original outer_loop_ is now inside the tiled loop
-    // - The inner_loop_ is still inside the original outer_loop_
+    // - The tiled outer loop is at the top level (replaces the original outer_loop_)
+    // - The original outer_loop_ (modified bounds) is now nested inside the tiled loop
+    // - The inner_loop_ is still nested inside the original outer_loop_
     
     // The structure after outer tiling is:
-    // outer_loop_tile
-    //   outer_loop (modified)
-    //     inner_loop
+    // Level 0: outer_loop_tile
+    //   Level 1: outer_loop (with modified bounds)
+    //     Level 2: inner_loop
 
     // Step 2: Apply tiling to the inner loop
     LoopTiling inner_tiling(inner_loop_, inner_tile_size_);
     inner_tiling.apply(builder, analysis_manager);
 
     // After inner tiling, the structure is:
-    // outer_loop_tile (position 0)
-    //   outer_loop (modified) (position 1)
-    //     inner_loop_tile (position 2)
-    //       inner_loop (modified) (position 3)
+    // Level 0: outer_loop_tile
+    //   Level 1: outer_loop (modified)
+    //     Level 2: inner_loop_tile
+    //       Level 3: inner_loop (with modified bounds)
 
-    // Step 3: We need to interchange loops at positions 1 and 2
-    // To do this, we need to find the tiled inner loop which is now the first child of outer_loop
+    // Step 3: Interchange the original outer_loop with the tiled inner_loop_tile
+    // to create the diamond pattern
     auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     
-    // outer_loop is still valid and is the second level loop
+    // outer_loop is still valid and is at level 1
     // Find the inner_loop_tile which should be the first child of outer_loop's body
     if (outer_loop_.root().size() != 1) {
         throw InvalidTransformationException("Expected outer loop to have exactly one child after tiling");
@@ -110,15 +110,15 @@ void DiamondTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Ana
         throw InvalidTransformationException("Expected first child of outer loop to be a loop after inner tiling");
     }
 
-    // Now interchange outer_loop (at position 1) with inner_loop_tile (at position 2)
+    // Now interchange outer_loop with inner_loop_tile to create the diamond pattern
     LoopInterchange interchange(outer_loop_, *inner_loop_tile);
     interchange.apply(builder, analysis_manager);
 
     // Final structure after all transformations:
-    // outer_loop_tile
-    //   inner_loop_tile (interchanged to position 1)
-    //     outer_loop (interchanged to position 2)
-    //       inner_loop
+    // Level 0: outer_loop_tile
+    //   Level 1: inner_loop_tile (swapped with outer_loop)
+    //     Level 2: outer_loop (swapped with inner_loop_tile)
+    //       Level 3: inner_loop
 
     analysis_manager.invalidate_all();
 }
