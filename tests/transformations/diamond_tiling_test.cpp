@@ -83,10 +83,10 @@ TEST(DiamondTilingTest, Basic2D) {
     EXPECT_EQ(sdfg_opt.root().size(), 1);
     
     // After diamond tiling, the structure should be:
-    // i_tile (outer_tile)
-    //   j_tile (inner_tile - interchanged to position 1)
-    //     i (outer loop - interchanged to position 2)
-    //       j (inner loop)
+    // Level 0: i_tile (tiled outer loop)
+    //   Level 1: j_tile (tiled inner loop, interchanged with original i)
+    //     Level 2: i (original outer loop, interchanged with j_tile)
+    //       Level 3: j (original inner loop)
     
     // Check outermost loop (i_tile)
     auto* outermost_loop = dynamic_cast<structured_control_flow::For*>(&sdfg_opt.root().at(0).first);
