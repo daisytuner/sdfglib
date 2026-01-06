@@ -2,7 +2,6 @@
 
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
-#include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/map.h"
@@ -99,15 +98,8 @@ void DiamondTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Ana
     
     // outer_loop is still valid and is at level 1
     // Find the inner_loop_tile which should be the first child of outer_loop's body
-    if (outer_loop_.root().size() != 1) {
-        throw InvalidTransformationException("Expected outer loop to have exactly one child after tiling");
-    }
-    
     auto& inner_loop_tile_ref = outer_loop_.root().at(0).first;
     auto* inner_loop_tile = dynamic_cast<structured_control_flow::StructuredLoop*>(&inner_loop_tile_ref);
-    if (!inner_loop_tile) {
-        throw InvalidTransformationException("Expected first child of outer loop to be a loop after inner tiling");
-    }
 
     // Now interchange outer_loop with inner_loop_tile to create the diamond pattern
     LoopInterchange interchange(outer_loop_, *inner_loop_tile);
