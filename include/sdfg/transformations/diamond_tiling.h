@@ -7,7 +7,7 @@ namespace sdfg {
 namespace transformations {
 
 /**
- * @brief Diamond tiling transformation for n-dimensional loop nests
+ * @brief Diamond tiling transformation for 2D loop nests
  * 
  * Diamond tiling is a loop transformation that combines tiling and loop interchange
  * to improve data locality and enable parallelization for stencil computations.
