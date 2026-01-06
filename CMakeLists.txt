@@ -204,6 +204,7 @@ set(SOURCE_FILES
     src/symbolic/sets.cpp
     src/symbolic/symbolic.cpp
     src/symbolic/utils.cpp
+    src/transformations/diamond_tiling.cpp
     src/transformations/loop_distribute.cpp
     src/transformations/loop_interchange.cpp
     src/transformations/loop_tiling.cpp
