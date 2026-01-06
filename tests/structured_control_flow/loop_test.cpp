@@ -23,9 +23,9 @@ TEST(ForLoopTest, BasicStructure) {
     auto& for_loop = builder.add_for(
         root,
         symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
         symbolic::integer(0),
-        symbolic::Add(symbolic::symbol("i"), symbolic::integer(1)),
-        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10))
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
     );
     
     // Verify for_loop is a StructuredLoop
@@ -46,10 +46,10 @@ TEST(ForLoopTest, LoopParameters) {
     
     auto indvar = symbolic::symbol("i");
     auto init = symbolic::integer(0);
-    auto update = symbolic::Add(symbolic::symbol("i"), symbolic::integer(1));
+    auto update = symbolic::add(symbolic::symbol("i"), symbolic::integer(1));
     auto condition = symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10));
     
-    auto& for_loop = builder.add_for(root, indvar, init, update, condition);
+    auto& for_loop = builder.add_for(root, indvar, condition, init, update);
     
     // Verify parameters
     EXPECT_TRUE(symbolic::eq(for_loop.indvar(), indvar));
@@ -70,9 +70,9 @@ TEST(ForLoopTest, RootSequence) {
     auto& for_loop = builder.add_for(
         root,
         symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
         symbolic::integer(0),
-        symbolic::Add(symbolic::symbol("i"), symbolic::integer(1)),
-        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10))
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
     );
     
     // Verify loop has a root sequence
@@ -135,9 +135,9 @@ TEST(MapTest, BasicStructure) {
     auto& map = builder.add_map(
         root,
         symbolic::symbol("i"),
-        symbolic::integer(0),
-        symbolic::Add(symbolic::symbol("i"), symbolic::integer(1)),
         symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
         ScheduleType_Sequential::create()
     );
     
@@ -159,10 +159,10 @@ TEST(MapTest, LoopParameters) {
     
     auto indvar = symbolic::symbol("i");
     auto init = symbolic::integer(0);
-    auto update = symbolic::Add(symbolic::symbol("i"), symbolic::integer(1));
+    auto update = symbolic::add(symbolic::symbol("i"), symbolic::integer(1));
     auto condition = symbolic::Lt(symbolic::symbol("i"), symbolic::integer(100));
     
-    auto& map = builder.add_map(root, indvar, init, update, condition, ScheduleType_Sequential::create());
+    auto& map = builder.add_map(root, indvar, condition, init, update, ScheduleType_Sequential::create());
     
     // Verify parameters
     EXPECT_TRUE(symbolic::eq(map.indvar(), indvar));
@@ -185,9 +185,9 @@ TEST(MapTest, ScheduleType) {
     auto& map_seq = builder.add_map(
         root,
         symbolic::symbol("i"),
-        symbolic::integer(0),
-        symbolic::Add(symbolic::symbol("i"), symbolic::integer(1)),
         symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
         schedule_seq
     );
     
@@ -198,9 +198,9 @@ TEST(MapTest, ScheduleType) {
     auto& map_par = builder.add_map(
         root,
         symbolic::symbol("i"),
-        symbolic::integer(0),
-        symbolic::Add(symbolic::symbol("i"), symbolic::integer(1)),
         symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
         schedule_par
     );
     
@@ -244,9 +244,9 @@ TEST(LoopTest, NestedLoops) {
     auto& outer_loop = builder.add_for(
         root,
         symbolic::symbol("i"),
+        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10)),
         symbolic::integer(0),
-        symbolic::Add(symbolic::symbol("i"), symbolic::integer(1)),
-        symbolic::Lt(symbolic::symbol("i"), symbolic::integer(10))
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
     );
     
     auto& outer_root = outer_loop.root();
@@ -255,9 +255,9 @@ TEST(LoopTest, NestedLoops) {
     auto& inner_loop = builder.add_for(
         outer_root,
         symbolic::symbol("j"),
+        symbolic::Lt(symbolic::symbol("j"), symbolic::integer(10)),
         symbolic::integer(0),
-        symbolic::Add(symbolic::symbol("j"), symbolic::integer(1)),
-        symbolic::Lt(symbolic::symbol("j"), symbolic::integer(10))
+        symbolic::add(symbolic::symbol("j"), symbolic::integer(1))
     );
     
     // Verify nesting
