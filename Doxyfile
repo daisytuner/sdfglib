@@ -946,6 +946,7 @@ WARN_LOGFILE           =
 INPUT                  = include/sdfg/types \
                          include/sdfg/symbolic \
                          include/sdfg/control_flow \
+                         include/sdfg/structured_control_flow \
                          include/sdfg/data_flow/library_node.h \
                          include/sdfg/data_flow/library_nodes/math/math_node.h \
                          include/sdfg/data_flow/library_nodes/math/tensor/elementwise_node.h \
