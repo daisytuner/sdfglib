@@ -358,3 +358,88 @@ TEST(OutLocalStorage, Fail) {
     transformations::OutLocalStorage transformation(loop, "C");
     EXPECT_FALSE(transformation.can_be_applied(builder_opt, analysis_manager));
 }
+
+TEST(OutLocalStorage, Serialization) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("C", base_desc, true);
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+
+    // Define loop
+    auto bound = symbolic::integer(4);
+    auto indvar = symbolic::symbol("i");
+    auto init = symbolic::integer(0);
+    auto condition = symbolic::Lt(indvar, bound);
+    auto update = symbolic::add(indvar, symbolic::integer(1));
+
+    auto& loop = builder.add_for(root, indvar, condition, init, update);
+
+    size_t loop_id = loop.element_id();
+    std::string container = "C";
+
+    transformations::OutLocalStorage transformation(loop, container);
+
+    // Test to_json
+    nlohmann::json j;
+    EXPECT_NO_THROW(transformation.to_json(j));
+
+    // Verify JSON structure
+    EXPECT_EQ(j["transformation_type"], "OutLocalStorage");
+    EXPECT_TRUE(j.contains("subgraph"));
+    EXPECT_TRUE(j.contains("parameters"));
+    EXPECT_EQ(j["subgraph"]["0"]["element_id"], loop_id);
+    EXPECT_EQ(j["subgraph"]["0"]["type"], "for");
+    EXPECT_EQ(j["parameters"]["container"], container);
+}
+
+TEST(OutLocalStorage, Deserialization) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+    builder.add_container("C", base_desc, true);
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+
+    // Define loop
+    auto bound = symbolic::integer(4);
+    auto indvar = symbolic::symbol("i");
+    auto init = symbolic::integer(0);
+    auto condition = symbolic::Lt(indvar, bound);
+    auto update = symbolic::add(indvar, symbolic::integer(1));
+
+    auto& loop = builder.add_for(root, indvar, condition, init, update);
+
+    size_t loop_id = loop.element_id();
+
+    // Create JSON description
+    nlohmann::json j;
+    j["transformation_type"] = "OutLocalStorage";
+    j["subgraph"] = {{"0", {{"element_id", loop_id}, {"type", "for"}}}};
+    j["parameters"] = {{"container", "C"}};
+
+    // Test from_json
+    EXPECT_NO_THROW({
+        auto deserialized = transformations::OutLocalStorage::from_json(builder, j);
+        EXPECT_EQ(deserialized.name(), "OutLocalStorage");
+    });
+}

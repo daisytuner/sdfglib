@@ -57,3 +57,116 @@ TEST(ParallelizationTest, Map_2D) {
 
     EXPECT_EQ(loop.schedule_type().value(), structured_control_flow::ScheduleType_CPU_Parallel::value());
 }
+
+TEST(ParallelizationTest, Serialization) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+
+    // Define loop
+    auto indvar = symbolic::symbol("i");
+    auto& loop = builder.add_map(
+        root,
+        indvar,
+        symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential::create()
+    );
+
+    size_t map_id = loop.element_id();
+
+    transformations::Parallelization transformation(loop);
+
+    // Test to_json
+    nlohmann::json j;
+    EXPECT_NO_THROW(transformation.to_json(j));
+
+    // Verify JSON structure
+    EXPECT_EQ(j["transformation_type"], "Parallelization");
+    EXPECT_TRUE(j.contains("subgraph"));
+    EXPECT_EQ(j["subgraph"]["0"]["element_id"], map_id);
+    EXPECT_EQ(j["subgraph"]["0"]["type"], "map");
+}
+
+TEST(ParallelizationTest, Deserialization) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+
+    // Define loop
+    auto indvar = symbolic::symbol("i");
+    auto& loop = builder.add_map(
+        root,
+        indvar,
+        symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential::create()
+    );
+
+    size_t map_id = loop.element_id();
+
+    // Create JSON description
+    nlohmann::json j;
+    j["transformation_type"] = "Parallelization";
+    j["subgraph"] = {{"0", {{"element_id", map_id}, {"type", "map"}}}};
+
+    // Test from_json
+    EXPECT_NO_THROW({
+        auto deserialized = transformations::Parallelization::from_json(builder, j);
+        EXPECT_EQ(deserialized.name(), "Parallelization");
+    });
+}
+
+TEST(ParallelizationTest, ScheduleTypeChange) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+
+    // Define loop
+    auto indvar = symbolic::symbol("i");
+    auto& loop = builder.add_map(
+        root,
+        indvar,
+        symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential::create()
+    );
+
+    // Verify initial schedule type
+    EXPECT_EQ(loop.schedule_type().value(), structured_control_flow::ScheduleType_Sequential::value());
+
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    transformations::Parallelization transformation(loop);
+    EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
+    transformation.apply(builder, analysis_manager);
+
+    // Verify schedule type was changed to parallel
+    EXPECT_EQ(loop.schedule_type().value(), structured_control_flow::ScheduleType_CPU_Parallel::value());
+}
