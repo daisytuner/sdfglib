@@ -32,8 +32,8 @@ namespace transformations {
  * 
  * After diamond tiling (outer_tile_size=32, inner_tile_size=8):
  * @code
- * for j_tile = 0 to M step 8:
- *   for i_tile = 0 to N step 32:
+ * for i_tile = 0 to N step 32:
+ *   for j_tile = 0 to M step 8:
  *     for i = i_tile to min(i_tile+32, N):
  *       for j = j_tile to min(j_tile+8, M):
  *         A[i][j] = ...

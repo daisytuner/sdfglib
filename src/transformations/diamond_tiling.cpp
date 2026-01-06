@@ -96,7 +96,6 @@ void DiamondTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Ana
 
     // Step 3: Interchange the original outer_loop with the tiled inner_loop_tile
     // to create the diamond pattern
-    auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     
     // outer_loop is still valid and is at level 1
     // Find the inner_loop_tile which should be the first child of outer_loop's body
