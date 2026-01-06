@@ -12,21 +12,21 @@ namespace structured_control_flow {
 
 /**
  * @brief Represents a return statement that exits the function with a value
- * 
+ *
  * A Return node represents a function return statement in a StructuredSDFG.
  * It can return either:
  * - A data container (variable): References a container name in the SDFG
  * - A constant value: A literal value with an explicit type
- * 
+ *
  * The return type must match the function's declared return type. Functions
  * with non-void return types typically have Return nodes as the final statement
  * in control flow paths.
- * 
+ *
  * **Examples:**
  * - `return x;` - Returns the value of container "x" (data return)
  * - `return 42;` - Returns constant integer 42 (constant return)
  * - `return 3.14;` - Returns constant float 3.14 (constant return)
- * 
+ *
  * @see StructuredSDFG
  */
 class Return : public ControlFlowNode {

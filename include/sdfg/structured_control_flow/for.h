@@ -17,26 +17,26 @@ namespace structured_control_flow {
 
 /**
  * @brief Represents a traditional for-loop with sequential execution
- * 
+ *
  * A For loop is a structured loop that executes sequentially with:
  * - Initialization: Sets the induction variable to its initial value
  * - Condition: Evaluated before each iteration; loop continues while true
  * - Update: Updates the induction variable after each iteration
  * - Body: Sequence of control flow nodes executed each iteration
- * 
+ *
  * **Example:**
  * ```cpp
  * for (int i = 0; i < 10; i++) {
  *   // body
  * }
  * ```
- * 
+ *
  * Corresponds to:
  * - indvar: i
  * - init: 0
  * - condition: i < 10
  * - update: i + 1
- * 
+ *
  * @see StructuredLoop
  * @see Map
  */

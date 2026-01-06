@@ -17,23 +17,23 @@ namespace structured_control_flow {
 
 /**
  * @brief A control flow node representing a basic block with dataflow computations
- * 
+ *
  * A Block is the fundamental computation unit in a StructuredSDFG. It represents
  * a basic block that contains a dataflow graph describing the computations to be
  * performed. The dataflow graph consists of nodes (tasklets, access nodes, library
  * nodes) and memlets (data movement edges).
- * 
+ *
  * Blocks are analogous to States in the unstructured SDFG model, but they exist
  * within the structured control flow hierarchy. Each Block contains:
  * - A DataFlowGraph describing the computations and data movements
  * - Implicit sequential ordering with respect to other control flow nodes
- * 
+ *
  * Blocks can contain:
  * - Tasklets: Small code snippets performing computations
  * - Access nodes: Read/write access to containers (arrays, scalars)
  * - Library nodes: Calls to library functions (BLAS, tensor operations, etc.)
  * - Memlets: Edges describing data movement between nodes
- * 
+ *
  * @see data_flow::DataFlowGraph
  * @see data_flow::Tasklet
  * @see control_flow::State

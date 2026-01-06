@@ -14,7 +14,7 @@ namespace structured_control_flow {
 
 /**
  * @brief Base class for structured loop constructs
- * 
+ *
  * StructuredLoop is the abstract base class for all structured loop types in
  * a StructuredSDFG. It provides common functionality for loops with:
  * - An induction variable (loop counter)
@@ -22,11 +22,11 @@ namespace structured_control_flow {
  * - An update expression (how the induction variable changes each iteration)
  * - A loop condition (when to continue iterating)
  * - A body sequence containing the loop's control flow
- * 
+ *
  * Derived loop types include:
  * - For: Traditional for-loops with explicit initialization, condition, and update
  * - Map: Parallel loops that can be mapped to parallel execution
- * 
+ *
  * **Loop Structure:**
  * ```
  * indvar = init
@@ -34,10 +34,10 @@ namespace structured_control_flow {
  *   <body sequence>
  *   indvar = update
  * ```
- * 
+ *
  * The loop body is a Sequence that can contain any control flow nodes (blocks,
  * nested loops, conditionals, etc.).
- * 
+ *
  * @see For
  * @see Map
  * @see Sequence

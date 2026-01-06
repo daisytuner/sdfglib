@@ -16,20 +16,20 @@ namespace structured_control_flow {
 
 /**
  * @brief Represents a while-loop with condition-controlled iteration
- * 
+ *
  * A While loop repeatedly executes its body sequence while a condition remains true.
  * Unlike For loops, While loops don't have explicit initialization or update expressions.
- * 
+ *
  * The loop body can contain any control flow nodes, including Break and Continue
  * statements to control loop execution.
- * 
+ *
  * **Example:**
  * ```cpp
  * while (condition) {
  *   // body
  * }
  * ```
- * 
+ *
  * @see For
  * @see Break
  * @see Continue
@@ -70,10 +70,10 @@ public:
 
 /**
  * @brief Represents a break statement that exits the innermost loop
- * 
+ *
  * A Break statement immediately terminates the execution of the innermost
  * enclosing loop (For, While, or Map). Control flow continues after the loop.
- * 
+ *
  * Break statements are typically used within conditional branches inside loops
  * to provide early exit conditions.
  */
@@ -91,11 +91,11 @@ public:
 
 /**
  * @brief Represents a continue statement that skips to the next loop iteration
- * 
+ *
  * A Continue statement immediately skips the rest of the current iteration of
  * the innermost enclosing loop (For, While, or Map) and begins the next iteration
  * (if the loop condition is still satisfied).
- * 
+ *
  * Continue statements are typically used within conditional branches inside loops
  * to skip certain iterations based on runtime conditions.
  */

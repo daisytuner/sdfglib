@@ -17,7 +17,7 @@ namespace structured_control_flow {
 
 /**
  * @brief Base class for all structured control flow nodes in a StructuredSDFG
- * 
+ *
  * ControlFlowNode is the abstract base class for all elements that form the structured
  * control flow of a StructuredSDFG. This includes:
  * - Block: A state containing a dataflow graph
@@ -26,11 +26,11 @@ namespace structured_control_flow {
  * - StructuredLoop: Base for structured loops (For, Map, While)
  * - Return: Function return statement
  * - Break/Continue: Loop control statements
- * 
+ *
  * Control flow nodes form a hierarchical tree structure representing the program's
  * control flow in a structured manner, avoiding the need for arbitrary goto statements
  * or unstructured control flow graphs.
- * 
+ *
  * @see Block
  * @see Sequence
  * @see IfElse

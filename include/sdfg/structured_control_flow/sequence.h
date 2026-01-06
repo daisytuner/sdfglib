@@ -21,16 +21,16 @@ class Sequence;
 
 /**
  * @brief Represents a transition between control flow nodes in a sequence
- * 
+ *
  * A Transition connects consecutive control flow nodes within a Sequence.
  * It can contain assignments that update symbol values when the transition
  * is taken. Transitions are similar to InterstateEdge in the unstructured
  * SDFG model but exist within the structured control flow hierarchy.
- * 
+ *
  * Each control flow node in a Sequence has an associated Transition that
  * is executed after the node completes. The transition's assignments update
  * symbol values for subsequent nodes.
- * 
+ *
  * @see Sequence
  * @see control_flow::InterstateEdge
  */
@@ -99,21 +99,21 @@ public:
 
 /**
  * @brief A sequential container of control flow nodes
- * 
+ *
  * A Sequence represents a sequential execution of control flow nodes. It is
  * the fundamental container in structured control flow, serving as:
  * - The root container of a StructuredSDFG
  * - The body of loops (For, While, Map)
  * - Each branch of an IfElse
- * 
+ *
  * A Sequence contains:
  * - A list of child control flow nodes (Block, IfElse, loops, etc.)
  * - A transition for each child (containing symbol assignments)
- * 
+ *
  * Children are executed sequentially in order. After each child completes,
  * its associated transition executes, potentially updating symbol values
  * before the next child begins.
- * 
+ *
  * **Structure:**
  * ```
  * Sequence:
@@ -122,7 +122,7 @@ public:
  *   ...
  *   Child[n-1] -> Transition[n-1] (assignments)
  * ```
- * 
+ *
  * @see ControlFlowNode
  * @see Transition
  * @see StructuredSDFG::root()
