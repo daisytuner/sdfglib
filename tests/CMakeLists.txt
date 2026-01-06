@@ -83,7 +83,12 @@ set(TEST_FILES
     replace/symbol_replace_test.cpp
     sdfg_test.cpp
     serializer/json_serializer_test.cpp
+    structured_control_flow/block_test.cpp
+    structured_control_flow/if_else_test.cpp
+    structured_control_flow/loop_test.cpp
     structured_control_flow/map_test.cpp
+    structured_control_flow/return_test.cpp
+    structured_control_flow/sequence_test.cpp
     structured_sdfg_test.cpp
     symbolic/assumptions_test.cpp
     symbolic/conjunctive_normal_form_test.cpp

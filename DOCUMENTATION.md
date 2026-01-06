@@ -49,6 +49,34 @@ The generated documentation includes:
 
 ## Documented Components
 
+### Structured Control Flow System (include/sdfg/structured_control_flow)
+
+The structured control-flow system is comprehensively documented, covering:
+- **control_flow_node.h**: Base class for all structured control flow elements
+- **sequence.h**: Sequential containers of control flow nodes and transitions
+- **block.h**: Basic blocks containing dataflow graphs
+- **if_else.h**: Conditional branching with the `is_complete()` method for completeness checking
+- **structured_loop.h**: Base class for structured loops (For, Map, While)
+- **for.h**: Traditional for-loops with sequential execution
+- **map.h**: Parallel loops with configurable scheduling strategies
+- **while.h**: Condition-controlled loops, plus Break and Continue statements
+- **return.h**: Function return statements
+
+**Building StructuredSDFGs:**
+
+Use `structured_control_flow` elements (Block, For, While, Map, IfElse, Return) to build an
+acyclic StructuredSDFG with structured programming constructs. This approach provides:
+- Natural representation of structured programs
+- Easier analysis and optimization
+- Clear control flow hierarchy
+- Support for parallel execution (Map nodes)
+
+**Key Features:**
+- **Completeness Analysis**: The `IfElse::is_complete()` method uses conjunctive normal form (CNF)
+  to determine if all cases are covered, ensuring no undefined behavior
+- **Hierarchical Structure**: Control flow nodes form a tree with Sequence as the container
+- **Parallel Execution**: Map nodes support parallel execution with configurable schedules
+
 ### Control Flow System (include/sdfg/control_flow)
 
 The control-flow system is comprehensively documented, covering:
