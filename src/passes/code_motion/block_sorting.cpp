@@ -45,7 +45,7 @@ bool BlockSorting::bubble_up(structured_control_flow::Sequence& sequence, long l
         return false;
     }
 
-    // Childs must be a blocks
+    // Childs must be blocks
     auto* current_block = dynamic_cast<structured_control_flow::Block*>(&current_child.first);
     if (!current_block) {
         return false;
@@ -59,7 +59,7 @@ bool BlockSorting::bubble_up(structured_control_flow::Sequence& sequence, long l
     bool side_effect = false;
     for (auto* libnode : current_block->dataflow().library_nodes()) {
         if (this->is_libnode_side_effect_white_listed(libnode)) {
-            return false;
+            continue;
         }
         if (libnode->side_effect()) {
             side_effect = true;
@@ -101,7 +101,7 @@ bool BlockSorting::bubble_up(structured_control_flow::Sequence& sequence, long l
     }
 
     // Swap blocks
-    builder_.move_child(sequence, index + 1, sequence, index);
+    this->builder_.move_child(sequence, index + 1, sequence, index);
     return true;
 }
 
@@ -116,7 +116,7 @@ bool BlockSorting::bubble_down(structured_control_flow::Sequence& sequence, long
         return false;
     }
 
-    // Childs must be a blocks
+    // Childs must be blocks
     auto* current_block = dynamic_cast<structured_control_flow::Block*>(&current_child.first);
     if (!current_block) {
         return false;
@@ -130,7 +130,7 @@ bool BlockSorting::bubble_down(structured_control_flow::Sequence& sequence, long
     bool side_effect = false;
     for (auto* libnode : current_block->dataflow().library_nodes()) {
         if (this->is_libnode_side_effect_white_listed(libnode)) {
-            return false;
+            continue;
         }
         if (libnode->side_effect()) {
             side_effect = true;
@@ -172,8 +172,8 @@ bool BlockSorting::bubble_down(structured_control_flow::Sequence& sequence, long
     }
 
     // Swap blocks
-    builder_.move_child(sequence, index - 1, sequence, index);
-    return true; // Restart after modification
+    this->builder_.move_child(sequence, index - 1, sequence, index);
+    return true;
 }
 
 bool BlockSorting::accept(structured_control_flow::Sequence& sequence) {
