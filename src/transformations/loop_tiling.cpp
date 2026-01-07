@@ -1,5 +1,4 @@
 #include "sdfg/transformations/loop_tiling.h"
-#include <stdexcept>
 
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/analysis/loop_analysis.h"
@@ -97,7 +96,7 @@ void LoopTiling::to_json(nlohmann::json& j) const {
     } else if (dynamic_cast<structured_control_flow::Map*>(&loop_)) {
         loop_type = "map";
     } else {
-        throw std::runtime_error("Unsupported loop type for serialization of loop: " + loop_.indvar()->get_name());
+        throw InvalidSDFGException("Unsupported loop type for serialization of loop: " + loop_.indvar()->get_name());
     }
 
     j["transformation_type"] = this->name();
@@ -119,7 +118,7 @@ LoopTiling LoopTiling::from_json(builder::StructuredSDFGBuilder& builder, const 
 
 structured_control_flow::StructuredLoop* LoopTiling::inner_loop() {
     if (!applied_) {
-        throw std::runtime_error("Accessing tiled loop before their creation.");
+        throw InvalidSDFGException("Accessing tiled loop before their creation.");
     }
 
     return inner_loop_;
@@ -127,7 +126,7 @@ structured_control_flow::StructuredLoop* LoopTiling::inner_loop() {
 
 structured_control_flow::StructuredLoop* LoopTiling::outer_loop() {
     if (!applied_) {
-        throw std::runtime_error("Accessing tiled loop before their creation.");
+        throw InvalidSDFGException("Accessing tiled loop before their creation.");
     }
 
     return outer_loop_;
