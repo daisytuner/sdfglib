@@ -12,38 +12,33 @@
 #include "sdfg/symbolic/symbolic.h"
 
 /**
- * Loop Skewing Transformation Implementation Notes:
+ * Loop Skewing Transformation Implementation
  * 
- * This is a basic implementation of loop skewing that modifies the iteration space
- * of nested loops. The transformation adjusts the inner loop's initialization to
- * depend on the outer loop's iteration variable, creating a "skewed" iteration pattern.
+ * This implementation of loop skewing modifies the iteration space of nested loops
+ * by adjusting the inner loop's bounds to depend on the outer loop's iteration variable,
+ * creating a "skewed" iteration pattern.
  * 
- * Current Implementation:
+ * Implementation:
  * - Adjusts inner loop init: init_j + skew_factor * (i - init_i)
- * - Keeps inner loop condition unchanged
- * - Does not modify memory access patterns in loop body
+ * - Adjusts inner loop condition using symbolic::subs to substitute j with (j - skew_offset)
+ * - Updates memory access patterns in loop body using sequence.replace()
  * 
- * Limitations:
- * 1. Condition Bounds: The inner loop condition is not adjusted. This works correctly
- *    when the original inner loop bounds are wide enough to accommodate the skewed
- *    iteration space. A complete implementation would adjust the condition to ensure
- *    the iteration space is correctly bounded.
+ * Data Dependency Safety:
+ * The transformation requires at least one loop to be a Map. Maps in SDFG represent
+ * parallel loops with independent iterations by design - they should not have loop-carried
+ * dependencies. This requirement ensures that:
+ * 1. The transformation is safe for parallel execution
+ * 2. No race conditions are introduced by skewing
+ * 3. The semantics of parallel Maps are preserved
  * 
- * 2. Memory Access Patterns: The transformation does not update memlet access indices
- *    in the loop body. For correct execution, the original access pattern A[i][j] 
- *    should be updated to A[i][j - skew_factor * (i - init_i)]. This would require
- *    traversing the loop body and applying symbolic substitution to all memlet indices.
+ * If both loops are Maps, the nested parallel structure is maintained. If only one
+ * is a Map, the transformation converts one dimension of parallelism into a skewed
+ * iteration space, which can expose different parallelization opportunities.
  * 
- * 3. Dependency Analysis: While can_be_applied() checks that inner loop bounds don't
- *    depend on the outer loop variable, a more thorough analysis using 
- *    DataDependencyAnalysis could verify that the skewing is safe with respect to
- *    data dependencies in the loop body.
- * 
- * Future Enhancements:
- * - Add proper condition adjustment using symbolic framework
- * - Implement memlet access pattern transformation
- * - Add more sophisticated dependency analysis
- * - Support for more general affine transformations
+ * The transformation is safe when:
+ * - Inner loop bounds don't depend on outer loop variable (verified)
+ * - Loops are properly nested (verified)
+ * - At least one loop is a Map with independent iterations (verified by type)
  */
 
 namespace sdfg {
@@ -97,6 +92,9 @@ bool LoopSkewing::can_be_applied(
     }
 
     // Criterion 3: At least one of the loops must be a Map
+    // Maps are designed for parallel execution with independent iterations,
+    // which means they should not have loop-carried dependencies by construction.
+    // Requiring at least one Map ensures the transformation is safe for parallel execution.
     if (!dynamic_cast<structured_control_flow::Map*>(&outer_loop_) &&
         !dynamic_cast<structured_control_flow::Map*>(&inner_loop_)) {
         return false;
@@ -131,14 +129,15 @@ void LoopSkewing::apply(
     auto new_inner_init = symbolic::add(this->inner_loop_.init(), skew_offset);
     
     // New inner loop condition: 
-    // For a complete loop skewing, the condition would need to be adjusted to:
-    //   j < ub_j + skew_factor * (i - lb_i)
-    // However, this requires more complex bound analysis and symbolic manipulation.
-    // For this basic implementation, we keep the original condition.
-    // This means the transformation assumes the inner loop bounds are wide enough
-    // to accommodate the skewed iteration space.
-    // TODO: Implement proper condition adjustment using symbolic framework
-    auto new_inner_condition = this->inner_loop_.condition();
+    // The condition needs to be adjusted to account for the skewed iteration space.
+    // For a condition like "j < M", after skewing by offset, we need "j < M + offset"
+    // We use symbolic::subs to substitute the upper bound expression
+    // Original condition: j < ub becomes (j - offset) < ub, which is j < ub + offset
+    auto new_inner_condition = symbolic::subs(
+        this->inner_loop_.condition(),
+        inner_indvar,
+        symbolic::sub(inner_indvar, skew_offset)
+    );
     
     // New inner loop update: same as before
     auto new_inner_update = this->inner_loop_.update();
@@ -198,10 +197,16 @@ void LoopSkewing::apply(
     }
     
     // Move inner loop body to new inner loop
-    // We need to substitute inner_indvar with (inner_indvar - skew_offset) in the body
-    // For now, we'll move the body as-is
-    // A full implementation would need to traverse and update all memlet accesses
     builder.move_children(this->inner_loop_.root(), new_inner_loop->root());
+    
+    // Adjust memory access patterns in the loop body
+    // After skewing, array accesses need to be adjusted:
+    // Original access: A[i][j] becomes A[i][j - skew_offset]
+    // We replace j with (j - skew_offset) in all expressions within the inner loop body
+    new_inner_loop->root().replace(
+        inner_indvar,
+        symbolic::sub(inner_indvar, skew_offset)
+    );
     
     // Move new inner loop into new outer loop
     builder.move_children(this->outer_loop_.root(), new_outer_loop->root());
