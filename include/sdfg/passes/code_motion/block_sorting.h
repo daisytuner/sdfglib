@@ -10,12 +10,11 @@
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/sequence.h"
-#include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {
 namespace passes {
 
-class BlockSorting : public visitor::StructuredSDFGVisitor {
+class BlockSortingPass : public Pass {
 protected:
     virtual bool is_libnode_side_effect_white_listed(data_flow::LibraryNode* libnode);
 
@@ -29,17 +28,29 @@ protected:
     bool is_libnode_block(structured_control_flow::Block& next_block);
 
 public:
-    BlockSorting(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
+    virtual std::string name() override { return "BlockSorting"; }
 
-    static std::string name() { return "BlockSorting"; }
+    bool bubble_up(
+        builder::StructuredSDFGBuilder& builder,
+        analysis::AnalysisManager& analysis_manager,
+        structured_control_flow::Sequence& sequence,
+        long long index
+    );
+    bool bubble_down(
+        builder::StructuredSDFGBuilder& builder,
+        analysis::AnalysisManager& analysis_manager,
+        structured_control_flow::Sequence& sequence,
+        long long index
+    );
 
-    bool bubble_up(structured_control_flow::Sequence& sequence, long long index);
-    bool bubble_down(structured_control_flow::Sequence& sequence, long long index);
+    bool sort(
+        builder::StructuredSDFGBuilder& builder,
+        analysis::AnalysisManager& analysis_manager,
+        structured_control_flow::Sequence& sequence
+    );
 
-    virtual bool accept(structured_control_flow::Sequence& sequence) override;
+    virtual bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
 };
-
-typedef VisitorPass<BlockSorting> BlockSortingPass;
 
 } // namespace passes
 } // namespace sdfg

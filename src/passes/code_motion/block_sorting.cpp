@@ -26,15 +26,16 @@
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/structured_control_flow/while.h"
-#include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {
 namespace passes {
 
-BlockSorting::BlockSorting(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
-    : visitor::StructuredSDFGVisitor(builder, analysis_manager) {};
-
-bool BlockSorting::bubble_up(structured_control_flow::Sequence& sequence, long long index) {
+bool BlockSortingPass::bubble_up(
+    builder::StructuredSDFGBuilder& builder,
+    analysis::AnalysisManager& analysis_manager,
+    structured_control_flow::Sequence& sequence,
+    long long index
+) {
     // Skip assignments
     auto current_child = sequence.at(index);
     if (!current_child.second.empty()) {
@@ -71,7 +72,7 @@ bool BlockSorting::bubble_up(structured_control_flow::Sequence& sequence, long l
     }
 
     // Check if happens-before relation allows swapping
-    auto& users_analysis = this->analysis_manager_.get<analysis::Users>();
+    auto& users_analysis = analysis_manager.get<analysis::Users>();
     analysis::UsersView current_users(users_analysis, *current_block);
     analysis::UsersView next_users(users_analysis, *next_block);
     bool safe = true;
@@ -101,11 +102,18 @@ bool BlockSorting::bubble_up(structured_control_flow::Sequence& sequence, long l
     }
 
     // Swap blocks
-    this->builder_.move_child(sequence, index + 1, sequence, index);
+    builder.move_child(sequence, index + 1, sequence, index);
+    analysis_manager.invalidate_all();
+
     return true;
 }
 
-bool BlockSorting::bubble_down(structured_control_flow::Sequence& sequence, long long index) {
+bool BlockSortingPass::bubble_down(
+    builder::StructuredSDFGBuilder& builder,
+    analysis::AnalysisManager& analysis_manager,
+    structured_control_flow::Sequence& sequence,
+    long long index
+) {
     // Skip assignments
     auto current_child = sequence.at(index);
     if (!current_child.second.empty()) {
@@ -142,7 +150,7 @@ bool BlockSorting::bubble_down(structured_control_flow::Sequence& sequence, long
     }
 
     // Check if happens-before relation allows swapping
-    auto& users_analysis = this->analysis_manager_.get<analysis::Users>();
+    auto& users_analysis = analysis_manager.get<analysis::Users>();
     analysis::UsersView current_users(users_analysis, *current_block);
     analysis::UsersView next_users(users_analysis, *next_block);
     bool safe = true;
@@ -172,65 +180,77 @@ bool BlockSorting::bubble_down(structured_control_flow::Sequence& sequence, long
     }
 
     // Swap blocks
-    this->builder_.move_child(sequence, index - 1, sequence, index);
+    builder.move_child(sequence, index - 1, sequence, index);
+    analysis_manager.invalidate_all();
+
     return true;
 }
 
-bool BlockSorting::accept(structured_control_flow::Sequence& sequence) {
+bool BlockSortingPass::sort(
+    builder::StructuredSDFGBuilder& builder,
+    analysis::AnalysisManager& analysis_manager,
+    structured_control_flow::Sequence& sequence
+) {
     if (sequence.size() < 2) {
         return false;
     }
+    bool applied = false;
 
     // Bubble up
     size_t i;
     for (i = 0; i < sequence.size() - 1; i++) {
-        // Sorting after return, break, and continue is useless
-        if (dynamic_cast<structured_control_flow::Return*>(&sequence.at(i).first) ||
-            dynamic_cast<structured_control_flow::Break*>(&sequence.at(i).first) ||
-            dynamic_cast<structured_control_flow::Continue*>(&sequence.at(i).first)) {
+        auto* node = &sequence.at(i).first;
+        if (dynamic_cast<structured_control_flow::Return*>(node) ||
+            dynamic_cast<structured_control_flow::Break*>(node) ||
+            dynamic_cast<structured_control_flow::Continue*>(node)) {
+            // Sorting after return, break, and continue is useless
             break;
+        } else if (auto* sequence2 = dynamic_cast<structured_control_flow::Sequence*>(node)) {
+            applied |= this->sort(builder, analysis_manager, *sequence2);
+        } else if (auto* while_loop = dynamic_cast<structured_control_flow::While*>(node)) {
+            applied |= this->sort(builder, analysis_manager, while_loop->root());
+        } else if (auto* loop = dynamic_cast<structured_control_flow::StructuredLoop*>(node)) {
+            applied |= this->sort(builder, analysis_manager, loop->root());
+        } else if (auto* if_else = dynamic_cast<structured_control_flow::IfElse*>(node)) {
+            for (size_t k = 0; k < if_else->size(); k++) {
+                applied |= this->sort(builder, analysis_manager, if_else->at(k).first);
+            }
         }
 
-        bool applied = false;
+        bool local_applied = false;
         long long index = i;
-        while (index >= 0 && this->bubble_up(sequence, index)) {
-            applied = true;
+        while (index >= 0 && this->bubble_up(builder, analysis_manager, sequence, index)) {
+            local_applied = true;
             index--;
-            this->analysis_manager_.invalidate_all();
         }
-
-        // Restart after modification
-        if (applied) {
-            return true;
-        }
+        applied |= local_applied;
     }
 
     // Bubble down
     for (size_t j = i; j > 0; j--) {
-        bool applied = false;
+        bool local_applied = false;
         long long index = j;
-        while (index <= i && this->bubble_down(sequence, index)) {
-            applied = true;
+        while (index <= i && this->bubble_down(builder, analysis_manager, sequence, index)) {
+            local_applied = true;
             index++;
-            this->analysis_manager_.invalidate_all();
         }
-
-        // Restart after modification
-        if (applied) {
-            return true;
-        }
+        applied |= local_applied;
     }
 
-    return false;
+    return applied;
 }
 
-bool BlockSorting::is_libnode_side_effect_white_listed(data_flow::LibraryNode* libnode) {
+bool BlockSortingPass::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
+    return this->sort(builder, analysis_manager, builder.subject().root());
+}
+
+bool BlockSortingPass::is_libnode_side_effect_white_listed(data_flow::LibraryNode* libnode) {
     return dynamic_cast<stdlib::AllocaNode*>(libnode) || dynamic_cast<stdlib::CallocNode*>(libnode) ||
            dynamic_cast<stdlib::FreeNode*>(libnode) || dynamic_cast<stdlib::MallocNode*>(libnode) ||
            dynamic_cast<stdlib::MemsetNode*>(libnode);
 }
 
-bool BlockSorting::can_be_bubbled_up(structured_control_flow::Block& block) {
+bool BlockSortingPass::can_be_bubbled_up(structured_control_flow::Block& block) {
     if (this->is_reference_block(block)) {
         return true;
     }
@@ -244,7 +264,7 @@ bool BlockSorting::can_be_bubbled_up(structured_control_flow::Block& block) {
     return false;
 }
 
-bool BlockSorting::can_be_bubbled_down(structured_control_flow::Block& block) {
+bool BlockSortingPass::can_be_bubbled_down(structured_control_flow::Block& block) {
     if (!this->is_libnode_block(block)) {
         return false;
     }
@@ -252,7 +272,7 @@ bool BlockSorting::can_be_bubbled_down(structured_control_flow::Block& block) {
     return dynamic_cast<stdlib::FreeNode*>(libnode);
 }
 
-std::pair<int, std::string> BlockSorting::get_prio_and_order(structured_control_flow::Block* block) {
+std::pair<int, std::string> BlockSortingPass::get_prio_and_order(structured_control_flow::Block* block) {
     if (this->is_libnode_block(*block)) {
         auto* libnode = *block->dataflow().library_nodes().begin();
         if (dynamic_cast<stdlib::AllocaNode*>(libnode) || dynamic_cast<stdlib::CallocNode*>(libnode) ||
@@ -272,7 +292,7 @@ std::pair<int, std::string> BlockSorting::get_prio_and_order(structured_control_
     return {INT_MIN, ""};
 }
 
-bool BlockSorting::is_reference_block(structured_control_flow::Block& block) {
+bool BlockSortingPass::is_reference_block(structured_control_flow::Block& block) {
     auto& dfg = block.dataflow();
     if (dfg.nodes().size() != 2) {
         return false;
@@ -288,7 +308,7 @@ bool BlockSorting::is_reference_block(structured_control_flow::Block& block) {
     return true;
 }
 
-bool BlockSorting::is_libnode_block(structured_control_flow::Block& next_block) {
+bool BlockSortingPass::is_libnode_block(structured_control_flow::Block& next_block) {
     auto& next_dfg = next_block.dataflow();
     if (next_dfg.library_nodes().size() != 1) {
         return false;
