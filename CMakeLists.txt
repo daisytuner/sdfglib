@@ -160,7 +160,6 @@ set(SOURCE_FILES
     src/passes/dataflow/dead_data_elimination.cpp
     src/passes/dataflow/dead_reference_elimination.cpp
     src/passes/dataflow/constant_propagation.cpp
-    src/passes/dataflow/redundant_array_elimination.cpp
     src/passes/dataflow/tasklet_fusion.cpp
     src/passes/dataflow/trivial_array_elimination.cpp
     src/passes/dataflow/trivial_reference_conversion.cpp
@@ -318,10 +317,10 @@ if(SDFGLIB_BUILD_DOCS)
     if(DOXYGEN_FOUND)
         set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile)
         set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
-        
+
         # Copy Doxyfile to build directory
         configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-        
+
         # Add custom target for documentation generation
         add_custom_target(docs
             COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
@@ -329,7 +328,7 @@ if(SDFGLIB_BUILD_DOCS)
             COMMENT "Generating API documentation with Doxygen"
             VERBATIM
         )
-        
+
         message(STATUS "Doxygen found. Use 'make docs' to generate documentation.")
     else()
         message(WARNING "Doxygen not found. Documentation will not be generated.")

@@ -45,8 +45,7 @@ public:
         const Function& function,
         const data_flow::DataFlowGraph& data_flow_graph,
         const data_flow::BarrierLocalNode& node
-    )
-        : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
+    );
 
     void dispatch(
         codegen::PrettyPrinter& stream,
