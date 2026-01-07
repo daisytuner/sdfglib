@@ -11,6 +11,41 @@
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/symbolic.h"
 
+/**
+ * Loop Skewing Transformation Implementation Notes:
+ * 
+ * This is a basic implementation of loop skewing that modifies the iteration space
+ * of nested loops. The transformation adjusts the inner loop's initialization to
+ * depend on the outer loop's iteration variable, creating a "skewed" iteration pattern.
+ * 
+ * Current Implementation:
+ * - Adjusts inner loop init: init_j + skew_factor * (i - init_i)
+ * - Keeps inner loop condition unchanged
+ * - Does not modify memory access patterns in loop body
+ * 
+ * Limitations:
+ * 1. Condition Bounds: The inner loop condition is not adjusted. This works correctly
+ *    when the original inner loop bounds are wide enough to accommodate the skewed
+ *    iteration space. A complete implementation would adjust the condition to ensure
+ *    the iteration space is correctly bounded.
+ * 
+ * 2. Memory Access Patterns: The transformation does not update memlet access indices
+ *    in the loop body. For correct execution, the original access pattern A[i][j] 
+ *    should be updated to A[i][j - skew_factor * (i - init_i)]. This would require
+ *    traversing the loop body and applying symbolic substitution to all memlet indices.
+ * 
+ * 3. Dependency Analysis: While can_be_applied() checks that inner loop bounds don't
+ *    depend on the outer loop variable, a more thorough analysis using 
+ *    DataDependencyAnalysis could verify that the skewing is safe with respect to
+ *    data dependencies in the loop body.
+ * 
+ * Future Enhancements:
+ * - Add proper condition adjustment using symbolic framework
+ * - Implement memlet access pattern transformation
+ * - Add more sophisticated dependency analysis
+ * - Support for more general affine transformations
+ */
+
 namespace sdfg {
 namespace transformations {
 
