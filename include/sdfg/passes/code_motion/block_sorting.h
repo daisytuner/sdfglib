@@ -9,6 +9,7 @@
 #include "sdfg/passes/pass.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
+#include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {
@@ -32,7 +33,10 @@ public:
 
     static std::string name() { return "BlockSorting"; }
 
-    virtual bool accept(structured_control_flow::Sequence& sequence_stmt) override;
+    bool bubble_up(structured_control_flow::Sequence& sequence, long long index);
+    bool bubble_down(structured_control_flow::Sequence& sequence, long long index);
+
+    virtual bool accept(structured_control_flow::Sequence& sequence) override;
 };
 
 typedef VisitorPass<BlockSorting> BlockSortingPass;
