@@ -8,6 +8,11 @@ namespace transformations {
 class LoopTiling : public Transformation {
     structured_control_flow::StructuredLoop& loop_;
     size_t tile_size_;
+    bool applied_ = false;
+
+    structured_control_flow::StructuredLoop* inner_loop_ = nullptr;
+    structured_control_flow::StructuredLoop* outer_loop_ = nullptr;
+
 
 public:
     LoopTiling(structured_control_flow::StructuredLoop& loop, size_t tile_size);
@@ -22,6 +27,9 @@ public:
     virtual void to_json(nlohmann::json& j) const override;
 
     static LoopTiling from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j);
+
+    structured_control_flow::StructuredLoop* inner_loop();
+    structured_control_flow::StructuredLoop* outer_loop();
 };
 
 } // namespace transformations

@@ -49,6 +49,14 @@ data_flow::LibraryNode& BarrierLocalNodeSerializer::deserialize(
     return builder.add_library_node<data_flow::BarrierLocalNode>(parent, DebugInfo());
 };
 
+BarrierLocalNodeDispatcher::BarrierLocalNodeDispatcher(
+    codegen::LanguageExtension& language_extension,
+    const Function& function,
+    const data_flow::DataFlowGraph& data_flow_graph,
+    const BarrierLocalNode& node
+)
+    : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
+
 void BarrierLocalNodeDispatcher::dispatch(
     codegen::PrettyPrinter& stream,
     codegen::PrettyPrinter& globals_stream,

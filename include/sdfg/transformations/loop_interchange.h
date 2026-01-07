@@ -9,6 +9,9 @@ namespace transformations {
 class LoopInterchange : public Transformation {
     structured_control_flow::StructuredLoop& outer_loop_;
     structured_control_flow::StructuredLoop& inner_loop_;
+    bool applied_ = false;
+    structured_control_flow::StructuredLoop* new_outer_loop_;
+    structured_control_flow::StructuredLoop* new_inner_loop_;
 
 public:
     LoopInterchange(
@@ -25,6 +28,9 @@ public:
     virtual void to_json(nlohmann::json& j) const override;
 
     static LoopInterchange from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j);
+
+    structured_control_flow::StructuredLoop* new_outer_loop() const;
+    structured_control_flow::StructuredLoop* new_inner_loop() const;
 };
 
 } // namespace transformations

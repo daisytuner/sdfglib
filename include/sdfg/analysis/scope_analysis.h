@@ -1,6 +1,8 @@
 #pragma once
 
+#include <vector>
 #include "sdfg/analysis/analysis.h"
+#include "sdfg/structured_control_flow/control_flow_node.h"
 
 namespace sdfg {
 namespace analysis {
@@ -22,6 +24,9 @@ public:
     scope_tree() const;
 
     structured_control_flow::ControlFlowNode* parent_scope(const structured_control_flow::ControlFlowNode* scope) const;
+
+    std::vector<structured_control_flow::ControlFlowNode*> ancestor_scopes(const structured_control_flow::ControlFlowNode*
+                                                                               scope) const;
 };
 
 } // namespace analysis

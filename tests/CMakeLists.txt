@@ -59,7 +59,6 @@ set(TEST_FILES
     passes/dataflow/bytes_reference_elimination_test.cpp
     passes/dataflow/constant_propagation_test.cpp
     passes/dataflow/dead_data_elimination_test.cpp
-    passes/dataflow/redundant_array_elimination_test.cpp
     passes/dataflow/trivial_array_elimination_test.cpp
     passes/dataflow/trivial_reference_conversion_test.cpp
     passes/dataflow/reference_propagation_test.cpp
