@@ -67,6 +67,7 @@ set(SOURCE_FILES
     src/analysis/dominance_analysis.cpp
     src/analysis/loop_analysis.cpp
     src/analysis/mem_access_range_analysis.cpp
+    src/analysis/memlet_delinearization_analysis.cpp
     src/analysis/reference_analysis.cpp
     src/analysis/scope_analysis.cpp
     src/analysis/type_analysis.cpp
@@ -164,6 +165,7 @@ set(SOURCE_FILES
     src/passes/dataflow/trivial_reference_conversion.cpp
     src/passes/dataflow/reference_propagation.cpp
     src/passes/dataflow/byte_reference_elimination.cpp
+    src/passes/dataflow/memlet_linearization.cpp
     src/passes/memory/allocation_management.cpp
     src/passes/schedules/expansion_pass.cpp
     src/passes/schedules/parallelization_pass.cpp
@@ -247,8 +249,16 @@ endif()
 
 # Add coverage flags if enabled
 if(SDFGLIB_ENABLE_COVERAGE)
-    target_compile_options(sdfglib PUBLIC --coverage)
-    target_link_options(sdfglib PUBLIC --coverage)
+  target_compile_options(sdfglib PRIVATE
+    -fprofile-instr-generate
+    -fcoverage-mapping
+    -O0
+    -g
+    -fno-inline
+  )
+  target_link_options(sdfglib PRIVATE
+    -fprofile-instr-generate
+  )
 endif()
 
 target_link_libraries(sdfglib PUBLIC nlohmann_json::nlohmann_json ${Boost_LIBRARIES} PkgConfig::ISL symengine)
