@@ -6,6 +6,18 @@
 namespace sdfg {
 namespace transformations {
 
+/**
+ * @brief Loop interchange transformation that swaps two nested loops
+ *
+ * This transformation swaps the order of two nested loops (outer and inner),
+ * potentially improving data locality and parallelization opportunities.
+ * The transformation preserves the computational semantics while reordering
+ * loop execution.
+ *
+ * @note The inner loop must not depend on the outer loop's induction variable
+ * @note The outer loop must have exactly one child (the inner loop)
+ * @note At least one of the loops must be a Map
+ */
 class LoopInterchange : public Transformation {
     structured_control_flow::StructuredLoop& outer_loop_;
     structured_control_flow::StructuredLoop& inner_loop_;
@@ -14,19 +26,49 @@ class LoopInterchange : public Transformation {
     structured_control_flow::StructuredLoop* new_inner_loop_;
 
 public:
+    /**
+     * @brief Construct a loop interchange transformation
+     * @param outer_loop The outer loop to be interchanged
+     * @param inner_loop The inner loop to be interchanged
+     */
     LoopInterchange(
         structured_control_flow::StructuredLoop& outer_loop, structured_control_flow::StructuredLoop& inner_loop
     );
 
+    /**
+     * @brief Get the name of this transformation
+     * @return "LoopInterchange"
+     */
     virtual std::string name() const override;
 
+    /**
+     * @brief Check if this transformation can be applied
+     * @param builder The SDFG builder
+     * @param analysis_manager The analysis manager
+     * @return true if the transformation can be applied safely
+     */
     virtual bool can_be_applied(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
         override;
 
+    /**
+     * @brief Apply the loop interchange transformation
+     * @param builder The SDFG builder
+     * @param analysis_manager The analysis manager
+     */
     virtual void apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
 
+    /**
+     * @brief Serialize this transformation to JSON
+     * @param j JSON object to populate
+     */
     virtual void to_json(nlohmann::json& j) const override;
 
+    /**
+     * @brief Deserialize a loop interchange transformation from JSON
+     * @param builder The SDFG builder
+     * @param j JSON description of the transformation
+     * @return The deserialized transformation
+     */
     static LoopInterchange from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j);
 
     structured_control_flow::StructuredLoop* new_outer_loop() const;
