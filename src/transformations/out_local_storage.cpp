@@ -4,10 +4,14 @@
 #include <cstddef>
 #include <string>
 
+#include "sdfg/analysis/scope_analysis.h"
+#include "sdfg/analysis/type_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/memlet.h"
 #include "sdfg/passes/structured_control_flow/dead_cfg_elimination.h"
 #include "sdfg/passes/structured_control_flow/sequence_fusion.h"
+#include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/transformations/utils.h"
@@ -37,6 +41,7 @@ bool OutLocalStorage::can_be_applied(builder::StructuredSDFGBuilder& builder, an
     auto accesses = body_users.uses(this->container_);
     auto first_access = accesses.at(0);
     auto first_subset = first_access->subsets().at(0);
+
     if (accesses.size() > 1) {
         for (auto access : accesses) {
             if (first_access->subsets().size() != access->subsets().size()) {
@@ -127,11 +132,20 @@ void OutLocalStorage::apply(builder::StructuredSDFGBuilder& builder, analysis::A
 void OutLocalStorage::apply_array(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
     auto& users = analysis_manager.get<analysis::Users>();
-    auto& parent = builder.parent(loop_);
+    auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+    auto parent_node = scope_analysis.parent_scope(&loop_);
+    auto parent = dynamic_cast<structured_control_flow::Sequence*>(parent_node);
+    if (!parent) {
+        throw InvalidSDFGException("OutLocalStorage: Parent of loop must be a Sequence!");
+    }
+
+    analysis::TypeAnalysis type_analysis(sdfg, &loop_, analysis_manager);
+    auto type = type_analysis.get_outer_type(container_);
+
     auto replacement_name = "__daisy_out_local_storage_" + this->container_;
 
     auto iteration_count = get_iteration_count(this->loop_);
-    types::Scalar scalar_type(sdfg.type(this->container_).primitive_type());
+    types::Scalar scalar_type(type->primitive_type());
     types::Array array_type(scalar_type, iteration_count);
     builder.add_container(replacement_name, array_type);
 
@@ -147,26 +161,26 @@ void OutLocalStorage::apply_array(builder::StructuredSDFGBuilder& builder, analy
     auto accesses = body_users.uses(this->container_);
     auto first_access = accesses.at(0);
     auto first_subset = first_access->subsets().at(0);
-    auto& init_loop = builder.add_for_before(parent, loop_, indvar, condition, init, update, {}, loop_.debug_info());
+    auto& init_loop = builder.add_for_before(*parent, loop_, indvar, condition, init, update, {}, loop_.debug_info());
     auto& init_body = init_loop.root();
     auto& init_block = builder.add_block(init_body);
     auto& init_access_read = builder.add_access(init_block, this->container_);
     auto& init_access_write = builder.add_access(init_block, replacement_name);
     auto& init_tasklet = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, "_out", {"_in"});
     auto& init_memlet_in =
-        builder.add_computational_memlet(init_block, init_access_read, init_tasklet, "_in", first_subset);
+        builder.add_computational_memlet(init_block, init_access_read, init_tasklet, "_in", first_subset, *type);
     init_memlet_in.replace(loop_.indvar(), indvar);
-    builder.add_computational_memlet(init_block, init_tasklet, "_out", init_access_write, {indvar});
+    builder.add_computational_memlet(init_block, init_tasklet, "_out", init_access_write, {indvar}, array_type);
 
-    auto& reset_loop = builder.add_for_after(parent, loop_, indvar, condition, init, update, {}, loop_.debug_info());
+    auto& reset_loop = builder.add_for_after(*parent, loop_, indvar, condition, init, update, {}, loop_.debug_info());
     auto& reset_body = reset_loop.root();
     auto& reset_block = builder.add_block(reset_body);
     auto& reset_access_read = builder.add_access(reset_block, replacement_name);
     auto& reset_access_write = builder.add_access(reset_block, this->container_);
     auto& reset_tasklet = builder.add_tasklet(reset_block, data_flow::TaskletCode::assign, "_out", {"_in"});
-    builder.add_computational_memlet(reset_block, reset_access_read, reset_tasklet, "_in", {indvar});
+    builder.add_computational_memlet(reset_block, reset_access_read, reset_tasklet, "_in", {indvar}, array_type);
     auto& reset_memlet_out =
-        builder.add_computational_memlet(reset_block, reset_tasklet, "_out", reset_access_write, first_subset);
+        builder.add_computational_memlet(reset_block, reset_tasklet, "_out", reset_access_write, first_subset, *type);
     reset_memlet_out.replace(loop_.indvar(), indvar);
 
     for (auto user : body_users.uses(this->container_)) {
@@ -178,35 +192,87 @@ void OutLocalStorage::apply_array(builder::StructuredSDFGBuilder& builder, analy
             memlet->set_subset(subset);
         }
     }
+
+    for (auto user : body_users.uses(this->container_)) {
+        auto element = user->element();
+        if (auto access = dynamic_cast<data_flow::AccessNode*>(element)) {
+            for (auto& iedge : access->get_parent().in_edges(*access)) {
+                auto memlet = &iedge;
+                auto subset = memlet->subset();
+                subset.clear();
+                subset.push_back(this->loop_.indvar());
+                memlet->set_subset(subset);
+                memlet->set_base_type(array_type);
+            }
+            for (auto& oedge : access->get_parent().out_edges(*access)) {
+                auto memlet = &oedge;
+                auto subset = memlet->subset();
+                subset.clear();
+                subset.push_back(this->loop_.indvar());
+                memlet->set_subset(subset);
+                memlet->set_base_type(array_type);
+            }
+        }
+    }
+
     loop_.replace(symbolic::symbol(this->container_), symbolic::symbol(replacement_name));
 };
 
 void OutLocalStorage::apply_scalar(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
     auto& users = analysis_manager.get<analysis::Users>();
-    auto& parent = builder.parent(loop_);
+    auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+    auto parent_node = scope_analysis.parent_scope(&loop_);
+    auto parent = dynamic_cast<structured_control_flow::Sequence*>(parent_node);
+    if (!parent) {
+        throw InvalidSDFGException("OutLocalStorage: Parent of loop must be a Sequence!");
+    }
+
+    analysis::TypeAnalysis type_analysis(sdfg, &loop_, analysis_manager);
+    auto type = type_analysis.get_outer_type(container_);
+
     auto replacement_name = "__daisy_out_local_storage_" + this->container_;
 
-    types::Scalar scalar_type(sdfg.type(this->container_).primitive_type());
+    types::Scalar scalar_type(type->primitive_type());
     builder.add_container(replacement_name, scalar_type);
 
     analysis::UsersView body_users(users, loop_.root());
     auto accesses = body_users.uses(this->container_);
     auto first_access = accesses.at(0);
     auto first_subset = first_access->subsets().at(0);
-    auto& init_block = builder.add_block_before(parent, loop_, {}, loop_.debug_info());
+    auto& init_block = builder.add_block_before(*parent, loop_, {}, loop_.debug_info());
     auto& init_access_read = builder.add_access(init_block, this->container_);
     auto& init_access_write = builder.add_access(init_block, replacement_name);
     auto& init_tasklet = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, "_out", {"_in"});
-    builder.add_computational_memlet(init_block, init_access_read, init_tasklet, "_in", first_subset);
-    builder.add_computational_memlet(init_block, init_tasklet, "_out", init_access_write, {});
+    builder.add_computational_memlet(init_block, init_access_read, init_tasklet, "_in", first_subset, *type);
+    builder.add_computational_memlet(init_block, init_tasklet, "_out", init_access_write, {}, scalar_type);
 
-    auto& reset_block = builder.add_block_after(parent, loop_, {}, loop_.debug_info());
+    auto& reset_block = builder.add_block_after(*parent, loop_, {}, loop_.debug_info());
     auto& reset_access_read = builder.add_access(reset_block, replacement_name);
     auto& reset_access_write = builder.add_access(reset_block, this->container_);
     auto& reset_tasklet = builder.add_tasklet(reset_block, data_flow::TaskletCode::assign, "_out", {"_in"});
-    builder.add_computational_memlet(reset_block, reset_access_read, reset_tasklet, "_in", {});
-    builder.add_computational_memlet(reset_block, reset_tasklet, "_out", reset_access_write, first_subset);
+    builder.add_computational_memlet(reset_block, reset_access_read, reset_tasklet, "_in", {}, scalar_type);
+    builder.add_computational_memlet(reset_block, reset_tasklet, "_out", reset_access_write, first_subset, *type);
+
+    for (auto user : body_users.uses(this->container_)) {
+        auto element = user->element();
+        if (auto access = dynamic_cast<data_flow::AccessNode*>(element)) {
+            for (auto& iedge : access->get_parent().in_edges(*access)) {
+                auto memlet = &iedge;
+                auto subset = memlet->subset();
+                subset.clear();
+                memlet->set_subset(subset);
+                memlet->set_base_type(scalar_type);
+            }
+            for (auto& oedge : access->get_parent().out_edges(*access)) {
+                auto memlet = &oedge;
+                auto subset = memlet->subset();
+                subset.clear();
+                memlet->set_subset(subset);
+                memlet->set_base_type(scalar_type);
+            }
+        }
+    }
 
     this->loop_.replace(symbolic::symbol(this->container_), symbolic::symbol(replacement_name));
 };
