@@ -191,14 +191,14 @@ bool BlockSortingPass::sort(
     analysis::AnalysisManager& analysis_manager,
     structured_control_flow::Sequence& sequence
 ) {
-    if (sequence.size() < 2) {
+    if (sequence.size() == 0) {
         return false;
     }
     bool applied = false;
 
     // Bubble up
     size_t i;
-    for (i = 0; i < sequence.size() - 1; i++) {
+    for (i = 0; i < sequence.size(); i++) {
         auto* node = &sequence.at(i).first;
         if (dynamic_cast<structured_control_flow::Return*>(node) ||
             dynamic_cast<structured_control_flow::Break*>(node) ||
@@ -215,6 +215,10 @@ bool BlockSortingPass::sort(
             for (size_t k = 0; k < if_else->size(); k++) {
                 applied |= this->sort(builder, analysis_manager, if_else->at(k).first);
             }
+        }
+
+        if (i == sequence.size() - 1) {
+            break;
         }
 
         bool local_applied = false;
