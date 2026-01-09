@@ -547,7 +547,7 @@ TEST(LoopSkewingTest, BothLoopsMaps) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_CPU_Parallel_Static::create()
+        structured_control_flow::ScheduleType_CPU_Parallel::create()
     );
     auto& body_i = loop_i.root();
 
@@ -558,7 +558,7 @@ TEST(LoopSkewingTest, BothLoopsMaps) {
         symbolic::Lt(symbolic::symbol("j"), symbolic::symbol("M")),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("j"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_CPU_Parallel_Static::create()
+        structured_control_flow::ScheduleType_CPU_Parallel::create()
     );
     auto& body_j = loop_j.root();
 
@@ -591,7 +591,7 @@ TEST(LoopSkewingTest, BothLoopsMaps) {
     EXPECT_TRUE(inner_loop != nullptr);
 
     // Verify the inner loop maintains its parallel schedule type
-    EXPECT_EQ(inner_loop->schedule_type().value(), "CPU_PARALLEL_STATIC");
+    EXPECT_EQ(inner_loop->schedule_type().value(), "CPU_PARALLEL");
 }
 
 // Note: We don't test for loop-carried dependencies in Maps because Maps are
