@@ -205,6 +205,7 @@ set(SOURCE_FILES
     src/symbolic/utils.cpp
     src/transformations/loop_distribute.cpp
     src/transformations/loop_interchange.cpp
+    src/transformations/loop_skewing.cpp
     src/transformations/loop_tiling.cpp
     src/transformations/out_local_storage.cpp
     src/transformations/parallelization.cpp
