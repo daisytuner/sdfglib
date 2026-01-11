@@ -91,6 +91,7 @@ protected:
     std::vector<symbolic::Expression> strides_; ///< Stride along each spatial axis
     std::vector<symbolic::Expression> pads_; ///< Padding (start and end for each axis)
     std::vector<symbolic::Expression> dilations_; ///< Dilation along each spatial axis
+    symbolic::Expression output_channels_; ///< Number of output channels (C_out)
     symbolic::Expression group_; ///< Number of groups for grouped convolution
 
 public:
@@ -105,6 +106,7 @@ public:
      * @param strides Stride along each spatial axis (defaults to 1 for each axis)
      * @param pads Padding for start and end of each axis (defaults to 0)
      * @param dilations Dilation along each spatial axis (defaults to 1)
+     * @param output_channels Number of output channels
      * @param group Number of groups for grouped convolution (defaults to 1)
      */
     ConvNode(
@@ -117,6 +119,7 @@ public:
         const std::vector<symbolic::Expression>& strides,
         const std::vector<symbolic::Expression>& pads,
         const std::vector<symbolic::Expression>& dilations,
+        symbolic::Expression output_channels,
         symbolic::Expression group
     );
 
@@ -150,6 +153,12 @@ public:
      * @return Dilation vector
      */
     const std::vector<symbolic::Expression>& dilations() const { return dilations_; }
+
+    /**
+     * @brief Get the output channels
+     * @return Number of output channels
+     */
+    symbolic::Expression output_channels() const { return output_channels_; }
 
     /**
      * @brief Get the group count

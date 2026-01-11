@@ -23,6 +23,7 @@ ConvNode::ConvNode(
     const std::vector<symbolic::Expression>& strides,
     const std::vector<symbolic::Expression>& pads,
     const std::vector<symbolic::Expression>& dilations,
+    symbolic::Expression output_channels,
     symbolic::Expression group
 )
     : TensorNode(
@@ -35,8 +36,8 @@ ConvNode::ConvNode(
           {"X", "W", "B"}, // X and W are required, B (bias) is optional
           data_flow::ImplementationType_NONE
       ),
-      shape_(shape), kernel_shape_(kernel_shape), strides_(strides), pads_(pads), dilations_(dilations), group_(group) {
-}
+      shape_(shape), kernel_shape_(kernel_shape), strides_(strides), pads_(pads), dilations_(dilations),
+      output_channels_(output_channels), group_(group) {}
 
 void ConvNode::validate(const Function& function) const {
     TensorNode::validate(function);
@@ -216,8 +217,8 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         }
     }
 
-    // Output Channel (C_out) is not in input shape, treat as symbol
-    auto C_out = symbolic::symbol(builder.find_new_name("C_out"));
+    // Output Channel (C_out) is passed via constructor
+    auto C_out = output_channels_;
 
     // Calculate output spatial dimensions
     std::vector<symbolic::Expression> output_spatial_dims;
@@ -491,6 +492,9 @@ symbolic::SymbolSet ConvNode::symbols() const {
             syms.insert(atom);
         }
     }
+    for (auto& atom : symbolic::atoms(output_channels_)) {
+        syms.insert(atom);
+    }
     for (auto& atom : symbolic::atoms(group_)) {
         syms.insert(atom);
     }
@@ -514,13 +518,24 @@ void ConvNode::replace(const symbolic::Expression old_expression, const symbolic
     for (auto& expr : dilations_) {
         expr = symbolic::subs(expr, old_expression, new_expression);
     }
+    output_channels_ = symbolic::subs(output_channels_, old_expression, new_expression);
     group_ = symbolic::subs(group_, old_expression, new_expression);
 }
 
 std::unique_ptr<data_flow::DataFlowNode> ConvNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
     return std::unique_ptr<data_flow::DataFlowNode>(new ConvNode(
-        element_id, this->debug_info(), vertex, parent, shape_, kernel_shape_, strides_, pads_, dilations_, group_
+        element_id,
+        this->debug_info(),
+        vertex,
+        parent,
+        shape_,
+        kernel_shape_,
+        strides_,
+        pads_,
+        dilations_,
+        output_channels_,
+        group_
     ));
 }
 
@@ -540,7 +555,8 @@ std::string ConvNode::toStr() const {
         if (i > 0) result += ", ";
         result += strides_[i]->__str__();
     }
-    result += "], group=" + group_->__str__() + ")";
+    result += "], output_channels=" + output_channels_->__str__();
+    result += ", group=" + group_->__str__() + ")";
     return result;
 }
 
@@ -577,6 +593,7 @@ nlohmann::json ConvNodeSerializer::serialize(const data_flow::LibraryNode& libra
         j["dilations"].push_back(serializer.expression(dilation));
     }
 
+    j["output_channels"] = serializer.expression(conv_node.output_channels());
     j["group"] = serializer.expression(conv_node.group());
 
     return j;
@@ -623,6 +640,11 @@ data_flow::LibraryNode& ConvNodeSerializer::deserialize(
         }
     }
 
+    symbolic::Expression output_channels = symbolic::one();
+    if (j.contains("output_channels")) {
+        output_channels = symbolic::parse(j["output_channels"].get<std::string>());
+    }
+
     symbolic::Expression group = symbolic::one();
     if (j.contains("group")) {
         group = symbolic::parse(j["group"].get<std::string>());
@@ -631,7 +653,8 @@ data_flow::LibraryNode& ConvNodeSerializer::deserialize(
     sdfg::serializer::JSONSerializer serializer;
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
-    return builder.add_library_node<ConvNode>(parent, debug_info, shape, kernel_shape, strides, pads, dilations, group);
+    return builder.add_library_node<
+        ConvNode>(parent, debug_info, shape, kernel_shape, strides, pads, dilations, output_channels, group);
 }
 
 } // namespace tensor
