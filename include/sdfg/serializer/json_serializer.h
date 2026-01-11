@@ -114,7 +114,7 @@ public:
 
     types::StorageType json_to_storage_type(const nlohmann::json& j);
 
-    std::string expression(const symbolic::Expression expr);
+    static std::string expression(const symbolic::Expression expr);
 };
 
 class JSONSymbolicPrinter : public SymEngine::BaseVisitor<JSONSymbolicPrinter, SymEngine::CodePrinter> {

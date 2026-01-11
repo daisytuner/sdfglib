@@ -222,8 +222,9 @@ void CMathNode::replace(const symbolic::Expression old_expression, const symboli
     return;
 }
 
-
 void CMathNode::validate(const Function& function) const {
+    MathNode::validate(function);
+
     if (!types::is_floating_point(this->primitive_type_)) {
         throw InvalidSDFGException("CMathNode: Primitive type must be a floating point type");
     }

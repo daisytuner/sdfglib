@@ -28,7 +28,7 @@ const symbolic::Expression CallocNode::num() const { return num_; }
 
 const symbolic::Expression CallocNode::size() const { return size_; }
 
-void CallocNode::validate(const Function& function) const {}
+void CallocNode::validate(const Function& function) const { LibraryNode::validate(function); }
 
 symbolic::SymbolSet CallocNode::symbols() const {
     auto num_symbols = symbolic::atoms(this->num_);

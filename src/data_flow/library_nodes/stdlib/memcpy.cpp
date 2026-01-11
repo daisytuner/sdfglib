@@ -25,7 +25,7 @@ MemcpyNode::MemcpyNode(
 
 const symbolic::Expression MemcpyNode::count() const { return count_; }
 
-void MemcpyNode::validate(const Function& function) const {}
+void MemcpyNode::validate(const Function& function) const { LibraryNode::validate(function); }
 
 symbolic::SymbolSet MemcpyNode::symbols() const {
     auto count_symbols = symbolic::atoms(this->count_);

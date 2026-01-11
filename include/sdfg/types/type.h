@@ -174,6 +174,9 @@ public:
     /// @brief Checks if this storage is NVIDIA constant memory
     bool is_nv_constant() const { return value_ == "NV_Constant"; }
 
+    /// @brief Checks if this storage is an NVIDIA symbol
+    bool is_nv_symbol() const { return value_ == "NV_Symbol"; }
+
     /**
      * @brief Creates a CPU stack storage type
      * @return StorageType configured for CPU stack with unmanaged allocation
@@ -216,6 +219,9 @@ public:
 
     /// @brief Creates an NVIDIA constant memory storage type
     static StorageType NV_Constant() { return StorageType("NV_Constant"); }
+
+    /// @brief Creates an NVIDIA symbol storage type
+    static StorageType NV_Symbol() { return StorageType("NV_Symbol"); }
 };
 
 /**

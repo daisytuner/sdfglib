@@ -64,7 +64,7 @@ void DotNode::replace(const symbolic::Expression old_expression, const symbolic:
     this->incy_ = symbolic::subs(this->incy_, old_expression, new_expression);
 };
 
-void DotNode::validate(const Function& function) const {}
+void DotNode::validate(const Function& function) const { BLASNode::validate(function); }
 
 bool DotNode::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();

@@ -18,7 +18,8 @@ MetadataNode::MetadataNode(
       metadata_(metadata) {}
 
 void MetadataNode::validate(const Function& function) const {
-    // TODO: Implement
+    LibraryNode::validate(function);
+    // No specific validation for metadata
 }
 
 const std::unordered_map<std::string, std::string>& MetadataNode::metadata() const { return metadata_; }

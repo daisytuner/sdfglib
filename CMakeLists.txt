@@ -67,6 +67,7 @@ set(SOURCE_FILES
     src/analysis/dominance_analysis.cpp
     src/analysis/loop_analysis.cpp
     src/analysis/mem_access_range_analysis.cpp
+    src/analysis/memlet_delinearization_analysis.cpp
     src/analysis/reference_analysis.cpp
     src/analysis/scope_analysis.cpp
     src/analysis/type_analysis.cpp
@@ -119,6 +120,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/tensor/conv_node.cpp
     src/data_flow/library_nodes/math/tensor/elementwise_ops/abs_node.cpp
     src/data_flow/library_nodes/math/tensor/elementwise_ops/add_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/cast_node.cpp
     src/data_flow/library_nodes/math/tensor/elementwise_ops/minimum_node.cpp
     src/data_flow/library_nodes/math/tensor/elementwise_ops/maximum_node.cpp
     src/data_flow/library_nodes/math/tensor/elementwise_ops/div_node.cpp
@@ -159,12 +161,12 @@ set(SOURCE_FILES
     src/passes/dataflow/dead_data_elimination.cpp
     src/passes/dataflow/dead_reference_elimination.cpp
     src/passes/dataflow/constant_propagation.cpp
-    src/passes/dataflow/redundant_array_elimination.cpp
     src/passes/dataflow/tasklet_fusion.cpp
     src/passes/dataflow/trivial_array_elimination.cpp
     src/passes/dataflow/trivial_reference_conversion.cpp
     src/passes/dataflow/reference_propagation.cpp
     src/passes/dataflow/byte_reference_elimination.cpp
+    src/passes/dataflow/memlet_linearization.cpp
     src/passes/memory/allocation_management.cpp
     src/passes/schedules/expansion_pass.cpp
     src/passes/schedules/parallelization_pass.cpp
@@ -204,6 +206,7 @@ set(SOURCE_FILES
     src/symbolic/utils.cpp
     src/transformations/loop_distribute.cpp
     src/transformations/loop_interchange.cpp
+    src/transformations/loop_skewing.cpp
     src/transformations/loop_tiling.cpp
     src/transformations/out_local_storage.cpp
     src/transformations/parallelization.cpp
@@ -248,8 +251,16 @@ endif()
 
 # Add coverage flags if enabled
 if(SDFGLIB_ENABLE_COVERAGE)
-    target_compile_options(sdfglib PUBLIC --coverage)
-    target_link_options(sdfglib PUBLIC --coverage)
+  target_compile_options(sdfglib PRIVATE
+    -fprofile-instr-generate
+    -fcoverage-mapping
+    -O0
+    -g
+    -fno-inline
+  )
+  target_link_options(sdfglib PRIVATE
+    -fprofile-instr-generate
+  )
 endif()
 
 target_link_libraries(sdfglib PUBLIC nlohmann_json::nlohmann_json ${Boost_LIBRARIES} PkgConfig::ISL symengine)
@@ -308,10 +319,10 @@ if(SDFGLIB_BUILD_DOCS)
     if(DOXYGEN_FOUND)
         set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile)
         set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
-        
+
         # Copy Doxyfile to build directory
         configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-        
+
         # Add custom target for documentation generation
         add_custom_target(docs
             COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
@@ -319,7 +330,7 @@ if(SDFGLIB_BUILD_DOCS)
             COMMENT "Generating API documentation with Doxygen"
             VERBATIM
         )
-        
+
         message(STATUS "Doxygen found. Use 'make docs' to generate documentation.")
     else()
         message(WARNING "Doxygen not found. Documentation will not be generated.")

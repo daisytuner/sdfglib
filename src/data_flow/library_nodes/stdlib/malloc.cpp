@@ -25,7 +25,7 @@ MallocNode::MallocNode(
 
 const symbolic::Expression MallocNode::size() const { return size_; }
 
-void MallocNode::validate(const Function& function) const {}
+void MallocNode::validate(const Function& function) const { LibraryNode::validate(function); }
 
 symbolic::SymbolSet MallocNode::symbols() const { return symbolic::atoms(this->size_); }
 

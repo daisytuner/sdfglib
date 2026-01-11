@@ -5,6 +5,7 @@
 #include "sdfg/data_flow/library_nodes/math/cmath/cmath_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/abs_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/add_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/cast_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/div_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/exp_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/maximum_node.h"
@@ -665,4 +666,220 @@ TEST(TensorPrimitiveTypeTest, ExpNodeFloatGeneratesExpfIntrinsic) {
     auto* cmath_node = dynamic_cast<math::cmath::CMathNode*>(libnode);
     ASSERT_NE(cmath_node, nullptr);
     EXPECT_EQ(cmath_node->name(), "expf");
+}
+
+// Test CastNode with Int32 to Float conversion
+TEST(TensorPrimitiveTypeTest, CastNodeInt32ToFloat) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+    auto& sdfg = builder.subject();
+
+    types::Scalar input_desc(types::PrimitiveType::Int32);
+    types::Scalar output_desc(types::PrimitiveType::Float);
+    types::Pointer input_ptr(input_desc);
+    types::Pointer output_ptr(output_desc);
+
+    builder.add_container("a", input_ptr);
+    builder.add_container("b", output_ptr);
+
+    auto& block = builder.add_block(sdfg.root());
+    auto& a_node = builder.add_access(block, "a");
+    auto& b_node = builder.add_access(block, "b");
+
+    std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
+    auto& node = static_cast<
+        math::tensor::TensorNode&>(builder.add_library_node<
+                                   math::tensor::CastNode>(block, DebugInfo(), shape, types::PrimitiveType::Float));
+
+    builder.add_computational_memlet(block, a_node, node, "X", {}, input_ptr, block.debug_info());
+    builder.add_computational_memlet(block, node, "Y", b_node, {}, output_ptr, block.debug_info());
+
+    EXPECT_NO_THROW(node.validate(sdfg));
+
+    analysis::AnalysisManager analysis_manager(sdfg);
+    EXPECT_TRUE(node.expand(builder, analysis_manager));
+
+    // Navigate to innermost block
+    auto& new_sequence = dynamic_cast<structured_control_flow::Sequence&>(sdfg.root().at(0).first);
+    structured_control_flow::Sequence* current_scope = &new_sequence;
+    auto map_loop = dynamic_cast<structured_control_flow::Map*>(&current_scope->at(0).first);
+    ASSERT_NE(map_loop, nullptr);
+    current_scope = &map_loop->root();
+    auto code_block = dynamic_cast<structured_control_flow::Block*>(&current_scope->at(0).first);
+    ASSERT_NE(code_block, nullptr);
+
+    // Check that there's an assign tasklet for casting
+    EXPECT_FALSE(code_block->dataflow().tasklets().empty());
+    auto* tasklet = *code_block->dataflow().tasklets().begin();
+    EXPECT_EQ(tasklet->code(), data_flow::TaskletCode::assign);
+
+    // Verify input and output types
+    auto& dataflow = tasklet->get_parent();
+    for (auto& edge : dataflow.in_edges(*tasklet)) {
+        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::Int32);
+    }
+    for (auto& edge : dataflow.out_edges(*tasklet)) {
+        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::Float);
+    }
+}
+
+// Test CastNode with Float to Int32 conversion
+TEST(TensorPrimitiveTypeTest, CastNodeFloatToInt32) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+    auto& sdfg = builder.subject();
+
+    types::Scalar input_desc(types::PrimitiveType::Float);
+    types::Scalar output_desc(types::PrimitiveType::Int32);
+    types::Pointer input_ptr(input_desc);
+    types::Pointer output_ptr(output_desc);
+
+    builder.add_container("a", input_ptr);
+    builder.add_container("b", output_ptr);
+
+    auto& block = builder.add_block(sdfg.root());
+    auto& a_node = builder.add_access(block, "a");
+    auto& b_node = builder.add_access(block, "b");
+
+    std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
+    auto& node = static_cast<
+        math::tensor::TensorNode&>(builder.add_library_node<
+                                   math::tensor::CastNode>(block, DebugInfo(), shape, types::PrimitiveType::Int32));
+
+    builder.add_computational_memlet(block, a_node, node, "X", {}, input_ptr, block.debug_info());
+    builder.add_computational_memlet(block, node, "Y", b_node, {}, output_ptr, block.debug_info());
+
+    EXPECT_NO_THROW(node.validate(sdfg));
+
+    analysis::AnalysisManager analysis_manager(sdfg);
+    EXPECT_TRUE(node.expand(builder, analysis_manager));
+
+    // Navigate to innermost block
+    auto& new_sequence = dynamic_cast<structured_control_flow::Sequence&>(sdfg.root().at(0).first);
+    structured_control_flow::Sequence* current_scope = &new_sequence;
+    auto map_loop = dynamic_cast<structured_control_flow::Map*>(&current_scope->at(0).first);
+    ASSERT_NE(map_loop, nullptr);
+    current_scope = &map_loop->root();
+    auto code_block = dynamic_cast<structured_control_flow::Block*>(&current_scope->at(0).first);
+    ASSERT_NE(code_block, nullptr);
+
+    // Check that there's an assign tasklet for casting
+    EXPECT_FALSE(code_block->dataflow().tasklets().empty());
+    auto* tasklet = *code_block->dataflow().tasklets().begin();
+    EXPECT_EQ(tasklet->code(), data_flow::TaskletCode::assign);
+
+    // Verify input and output types
+    auto& dataflow = tasklet->get_parent();
+    for (auto& edge : dataflow.in_edges(*tasklet)) {
+        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::Float);
+    }
+    for (auto& edge : dataflow.out_edges(*tasklet)) {
+        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::Int32);
+    }
+}
+
+// Test CastNode with Float to Double conversion
+TEST(TensorPrimitiveTypeTest, CastNodeFloatToDouble) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+    auto& sdfg = builder.subject();
+
+    types::Scalar input_desc(types::PrimitiveType::Float);
+    types::Scalar output_desc(types::PrimitiveType::Double);
+    types::Pointer input_ptr(input_desc);
+    types::Pointer output_ptr(output_desc);
+
+    builder.add_container("a", input_ptr);
+    builder.add_container("b", output_ptr);
+
+    auto& block = builder.add_block(sdfg.root());
+    auto& a_node = builder.add_access(block, "a");
+    auto& b_node = builder.add_access(block, "b");
+
+    std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
+    auto& node = static_cast<
+        math::tensor::TensorNode&>(builder.add_library_node<
+                                   math::tensor::CastNode>(block, DebugInfo(), shape, types::PrimitiveType::Double));
+
+    builder.add_computational_memlet(block, a_node, node, "X", {}, input_ptr, block.debug_info());
+    builder.add_computational_memlet(block, node, "Y", b_node, {}, output_ptr, block.debug_info());
+
+    EXPECT_NO_THROW(node.validate(sdfg));
+
+    analysis::AnalysisManager analysis_manager(sdfg);
+    EXPECT_TRUE(node.expand(builder, analysis_manager));
+
+    // Navigate to innermost block and verify types
+    auto& new_sequence = dynamic_cast<structured_control_flow::Sequence&>(sdfg.root().at(0).first);
+    structured_control_flow::Sequence* current_scope = &new_sequence;
+    auto map_loop = dynamic_cast<structured_control_flow::Map*>(&current_scope->at(0).first);
+    ASSERT_NE(map_loop, nullptr);
+    current_scope = &map_loop->root();
+    auto code_block = dynamic_cast<structured_control_flow::Block*>(&current_scope->at(0).first);
+    ASSERT_NE(code_block, nullptr);
+
+    // Check that there's an assign tasklet for casting
+    EXPECT_FALSE(code_block->dataflow().tasklets().empty());
+    auto* tasklet = *code_block->dataflow().tasklets().begin();
+    EXPECT_EQ(tasklet->code(), data_flow::TaskletCode::assign);
+
+    // Verify input and output types
+    auto& dataflow = tasklet->get_parent();
+    for (auto& edge : dataflow.in_edges(*tasklet)) {
+        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::Float);
+    }
+    for (auto& edge : dataflow.out_edges(*tasklet)) {
+        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::Double);
+    }
+}
+
+// Test CastNode with UInt32 to Int64 conversion
+TEST(TensorPrimitiveTypeTest, CastNodeUInt32ToInt64) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+    auto& sdfg = builder.subject();
+
+    types::Scalar input_desc(types::PrimitiveType::UInt32);
+    types::Scalar output_desc(types::PrimitiveType::Int64);
+    types::Pointer input_ptr(input_desc);
+    types::Pointer output_ptr(output_desc);
+
+    builder.add_container("a", input_ptr);
+    builder.add_container("b", output_ptr);
+
+    auto& block = builder.add_block(sdfg.root());
+    auto& a_node = builder.add_access(block, "a");
+    auto& b_node = builder.add_access(block, "b");
+
+    std::vector<symbolic::Expression> shape = {symbolic::integer(10)};
+    auto& node = static_cast<
+        math::tensor::TensorNode&>(builder.add_library_node<
+                                   math::tensor::CastNode>(block, DebugInfo(), shape, types::PrimitiveType::Int64));
+
+    builder.add_computational_memlet(block, a_node, node, "X", {}, input_ptr, block.debug_info());
+    builder.add_computational_memlet(block, node, "Y", b_node, {}, output_ptr, block.debug_info());
+
+    EXPECT_NO_THROW(node.validate(sdfg));
+
+    analysis::AnalysisManager analysis_manager(sdfg);
+    EXPECT_TRUE(node.expand(builder, analysis_manager));
+
+    // Verify the expanded structure
+    auto& new_sequence = dynamic_cast<structured_control_flow::Sequence&>(sdfg.root().at(0).first);
+    structured_control_flow::Sequence* current_scope = &new_sequence;
+    auto map_loop = dynamic_cast<structured_control_flow::Map*>(&current_scope->at(0).first);
+    ASSERT_NE(map_loop, nullptr);
+    current_scope = &map_loop->root();
+    auto code_block = dynamic_cast<structured_control_flow::Block*>(&current_scope->at(0).first);
+    ASSERT_NE(code_block, nullptr);
+
+    // Check that there's an assign tasklet for casting
+    EXPECT_FALSE(code_block->dataflow().tasklets().empty());
+    auto* tasklet = *code_block->dataflow().tasklets().begin();
+    EXPECT_EQ(tasklet->code(), data_flow::TaskletCode::assign);
+
+    // Verify input and output types
+    auto& dataflow = tasklet->get_parent();
+    for (auto& edge : dataflow.in_edges(*tasklet)) {
+        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::UInt32);
+    }
+    for (auto& edge : dataflow.out_edges(*tasklet)) {
+        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::Int64);
+    }
 }

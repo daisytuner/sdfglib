@@ -91,7 +91,7 @@ void GEMMNode::replace(const symbolic::Expression old_expression, const symbolic
     this->ldc_ = symbolic::subs(this->ldc_, old_expression, new_expression);
 };
 
-void GEMMNode::validate(const Function& function) const {}
+void GEMMNode::validate(const Function& function) const { BLASNode::validate(function); }
 
 bool GEMMNode::expand(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();

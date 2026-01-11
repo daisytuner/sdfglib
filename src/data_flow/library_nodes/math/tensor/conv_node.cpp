@@ -18,6 +18,7 @@ ConvNode::ConvNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
+    const std::vector<symbolic::Expression>& shape,
     const std::vector<symbolic::Expression>& kernel_shape,
     const std::vector<symbolic::Expression>& strides,
     const std::vector<symbolic::Expression>& pads,
@@ -34,14 +35,17 @@ ConvNode::ConvNode(
           {"X", "W", "B"}, // X and W are required, B (bias) is optional
           data_flow::ImplementationType_NONE
       ),
-      kernel_shape_(kernel_shape), strides_(strides), pads_(pads), dilations_(dilations), group_(group) {}
+      shape_(shape), kernel_shape_(kernel_shape), strides_(strides), pads_(pads), dilations_(dilations), group_(group) {
+}
 
 void ConvNode::validate(const Function& function) const {
+    TensorNode::validate(function);
+
     auto& graph = this->get_parent();
 
     // Custom validation for ConvNode that handles optional bias input
     // We expect X, W as required inputs and optionally B (bias)
-    
+
     // Collect all input edges by connector name
     std::map<std::string, const data_flow::Memlet*> input_edges;
     for (auto& iedge : graph.in_edges(*this)) {
@@ -54,61 +58,6 @@ void ConvNode::validate(const Function& function) const {
     }
     if (input_edges.find("W") == input_edges.end()) {
         throw InvalidSDFGException("ConvNode: Required input 'W' is not connected");
-    }
-
-    // Validate all connected input memlets are scalar or pointer of scalar
-    for (auto& iedge : graph.in_edges(*this)) {
-        if (iedge.base_type().type_id() != types::TypeID::Scalar &&
-            iedge.base_type().type_id() != types::TypeID::Pointer) {
-            throw InvalidSDFGException(
-                "ConvNode: Input memlet must be of scalar or pointer type. Found type: " + iedge.base_type().print()
-            );
-        }
-        if (iedge.base_type().type_id() == types::TypeID::Pointer) {
-            auto& ptr_type = static_cast<const types::Pointer&>(iedge.base_type());
-            if (ptr_type.pointee_type().type_id() != types::TypeID::Scalar) {
-                throw InvalidSDFGException(
-                    "ConvNode: Input memlet pointer must be flat (pointer to scalar). Found type: " +
-                    ptr_type.pointee_type().print()
-                );
-            }
-            if (!iedge.subset().empty()) {
-                throw InvalidSDFGException("ConvNode: Input memlet pointer must not be dereferenced.");
-            }
-        }
-    }
-
-    // Validate output memlets are scalar or pointer of scalar
-    for (auto& oedge : graph.out_edges(*this)) {
-        if (oedge.base_type().type_id() != types::TypeID::Scalar &&
-            oedge.base_type().type_id() != types::TypeID::Pointer) {
-            throw InvalidSDFGException(
-                "ConvNode: Output memlet must be of scalar or pointer type. Found type: " + oedge.base_type().print()
-            );
-        }
-        if (oedge.base_type().type_id() == types::TypeID::Pointer) {
-            auto& ptr_type = static_cast<const types::Pointer&>(oedge.base_type());
-            if (ptr_type.pointee_type().type_id() != types::TypeID::Scalar) {
-                throw InvalidSDFGException(
-                    "ConvNode: Output memlet pointer must be flat (pointer to scalar). Found type: " +
-                    ptr_type.pointee_type().print()
-                );
-            }
-            if (!oedge.subset().empty()) {
-                throw InvalidSDFGException("ConvNode: Output memlet pointer must not be dereferenced.");
-            }
-        }
-    }
-
-    // Validate that all memlets have the same primitive type
-    types::PrimitiveType prim_type = this->primitive_type(graph);
-
-    // ConvNode supports floating-point types (check integer support)
-    if (!this->supports_integer_types() && types::is_integer(prim_type)) {
-        throw InvalidSDFGException(
-            "ConvNode: This operation does not support integer types. Found type: " +
-            std::string(types::primitive_type_to_string(prim_type))
-        );
     }
 
     // Validate kernel shape is not empty
@@ -210,18 +159,35 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         if (i < strides_.size()) {
             strides_vec.push_back(strides_[i]);
         } else {
-            strides_vec.push_back(static_cast<symbolic::Expression>(symbolic::one()));
+            strides_vec.push_back(symbolic::one());
         }
     }
 
     // Get padding (default to 0 if not provided)
     // Pads format: [begin_0, begin_1, ..., begin_n, end_0, end_1, ..., end_n]
     std::vector<symbolic::Expression> pads_begin_vec;
+    std::vector<symbolic::Expression> pads_end_vec;
     for (size_t i = 0; i < spatial_dims; ++i) {
         if (i < pads_.size()) {
             pads_begin_vec.push_back(pads_[i]);
         } else {
-            pads_begin_vec.push_back(static_cast<symbolic::Expression>(symbolic::zero()));
+            pads_begin_vec.push_back(symbolic::zero());
+        }
+
+        if (spatial_dims + i < pads_.size()) {
+            pads_end_vec.push_back(pads_[spatial_dims + i]);
+        } else {
+            pads_end_vec.push_back(symbolic::zero());
+        }
+    }
+
+    // Get dilations (default to 1 if not provided)
+    std::vector<symbolic::Expression> dilations_vec;
+    for (size_t i = 0; i < spatial_dims; ++i) {
+        if (i < dilations_.size()) {
+            dilations_vec.push_back(dilations_[i]);
+        } else {
+            dilations_vec.push_back(symbolic::one());
         }
     }
 
@@ -230,31 +196,45 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& W_var = w_node->data();
     auto& Y_var = y_node->data();
 
-    // Symbolic variables for dimensions (these should be defined based on the problem)
+    // Use shape_ for dimensions if available
     // For a generic n-dimensional implementation:
     // Input X shape: [N, C_in, D0_in, D1_in, ..., Dn_in]
-    // Weight W shape: [C_out, C_in, K0, K1, ..., Kn]
-    // Output Y shape: [N, C_out, D0_out, D1_out, ..., Dn_out]
+    symbolic::Expression N, C_in;
+    std::vector<symbolic::Expression> input_spatial_dims;
 
-    // Create symbolic dimension variables
-    auto N = symbolic::symbol(builder.find_new_name("N"));
-    auto C_in = symbolic::symbol(builder.find_new_name("C_in"));
+    if (shape_.size() >= 2 + spatial_dims) {
+        N = shape_[0];
+        C_in = shape_[1];
+        for (size_t i = 0; i < spatial_dims; ++i) {
+            input_spatial_dims.push_back(shape_[2 + i]);
+        }
+    } else {
+        N = symbolic::symbol(builder.find_new_name("N"));
+        C_in = symbolic::symbol(builder.find_new_name("C_in"));
+        for (size_t i = 0; i < spatial_dims; ++i) {
+            input_spatial_dims.push_back(symbolic::symbol(builder.find_new_name("D" + std::to_string(i) + "_in")));
+        }
+    }
+
+    // Output Channel (C_out) is not in input shape, treat as symbol
     auto C_out = symbolic::symbol(builder.find_new_name("C_out"));
 
-    // Create symbolic variables for output spatial dimensions
+    // Calculate output spatial dimensions
     std::vector<symbolic::Expression> output_spatial_dims;
     for (size_t i = 0; i < spatial_dims; ++i) {
-        auto dim_name = builder.find_new_name("D" + std::to_string(i) + "_out");
-        output_spatial_dims.push_back(symbolic::symbol(dim_name));
+        // D_out = floor((D_in + pads_begin + pads_end - dilation * (kernel - 1) - 1) / stride) + 1
+        auto d_in = input_spatial_dims[i];
+        auto pad = symbolic::add(pads_begin_vec[i], pads_end_vec[i]);
+        auto dk = symbolic::mul(dilations_vec[i], symbolic::sub(kernel_shape_[i], symbolic::one()));
+        auto num = symbolic::sub(symbolic::add(d_in, pad), symbolic::add(dk, symbolic::one()));
+        auto d_out = symbolic::add(symbolic::div(num, strides_vec[i]), symbolic::one());
+        output_spatial_dims.push_back(d_out);
     }
 
     // Create new sequence for expansion
     auto& new_sequence = builder.add_sequence_before(parent, block, transition.assignments(), block.debug_info());
 
-    // Create nested map structure for convolution:
-    // Map over: batch(N), output_channel(C_out), output_height(H_out), output_width(W_out)
-    // For loop over: input_channel(C_in), kernel_height(KH), kernel_width(KW)
-
+    // Create nested map structure for convolution
     structured_control_flow::Sequence* current_scope = &new_sequence;
     std::vector<symbolic::Expression> output_indices;
     std::vector<symbolic::Expression> output_spatial_vars;
@@ -361,13 +341,13 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     }
 
     // Compute indices for input and weight access
-    // Input index: [n, ic, od0 * stride0 - pad0 + k0, od1 * stride1 - pad1 + k1, ...]
-    // Weight index: [oc, ic, k0, k1, ...]
+    // Input index: [n, ic, od0 * stride0 - pad0 + k0 * dilation0, ...]
+    // Note: taking dilation into account for input index calculation
     std::vector<symbolic::Expression> input_spatial_indices;
     for (size_t i = 0; i < spatial_dims; ++i) {
+        auto k_dilated = symbolic::mul(kernel_vars[i], dilations_vec[i]);
         auto input_idx = symbolic::
-            add(symbolic::sub(symbolic::mul(output_spatial_vars[i], strides_vec[i]), pads_begin_vec[i]),
-                kernel_vars[i]);
+            add(symbolic::sub(symbolic::mul(output_spatial_vars[i], strides_vec[i]), pads_begin_vec[i]), k_dilated);
         input_spatial_indices.push_back(input_idx);
     }
 
@@ -386,17 +366,38 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& fma_tasklet =
         builder.add_tasklet(comp_block, data_flow::fp_fma, "_out", {"_in1", "_in2", "_in3"}, block.debug_info());
 
-    // Connect edges with proper subsets for n-dimensional convolution
-    // X subset: [n, ic, input_spatial_indices...]
-    std::vector<symbolic::Expression> x_subset_vec = {n_var, ic_var};
-    x_subset_vec.insert(x_subset_vec.end(), input_spatial_indices.begin(), input_spatial_indices.end());
+    // Linearization helper
+    auto linearize = [&](const std::vector<symbolic::Expression>& indices,
+                         const std::vector<symbolic::Expression>& shape) -> symbolic::Expression {
+        symbolic::Expression idx = symbolic::zero();
+        symbolic::Expression stride = symbolic::one();
+        for (int i = shape.size() - 1; i >= 0; --i) {
+            idx = symbolic::add(idx, symbolic::mul(indices[i], stride));
+            stride = symbolic::mul(stride, shape[i]);
+        }
+        return idx;
+    };
 
-    // W subset: [oc, ic, k0, k1, ...]
-    std::vector<symbolic::Expression> w_subset_vec = {oc_var, ic_var};
-    w_subset_vec.insert(w_subset_vec.end(), kernel_vars.begin(), kernel_vars.end());
+    // Calculate shapes for linearization
+    // X shape: [N, C_in, D0, D1...]
+    std::vector<symbolic::Expression> x_shape_vec = {N, C_in};
+    x_shape_vec.insert(x_shape_vec.end(), input_spatial_dims.begin(), input_spatial_dims.end());
 
-    data_flow::Subset x_subset(x_subset_vec.begin(), x_subset_vec.end());
-    data_flow::Subset w_subset(w_subset_vec.begin(), w_subset_vec.end());
+    // W shape: [C_out, C_in/group, k0, k1...]
+    std::vector<symbolic::Expression> w_shape_vec = {C_out, symbolic::div(C_in, group_)};
+    w_shape_vec.insert(w_shape_vec.end(), kernel_shape_.begin(), kernel_shape_.end());
+
+    // Connect edges with linearized subsets
+    std::vector<symbolic::Expression> x_indices_vec = {n_var, ic_var};
+    x_indices_vec.insert(x_indices_vec.end(), input_spatial_indices.begin(), input_spatial_indices.end());
+
+    std::vector<symbolic::Expression> w_indices_vec = {oc_var, ic_var}; // Assuming group=1 for now for simplicity of
+                                                                        // indices
+    // TODO: Handle groups properly in indices if needed, but for standard conv:
+    w_indices_vec.insert(w_indices_vec.end(), kernel_vars.begin(), kernel_vars.end());
+
+    data_flow::Subset x_subset({linearize(x_indices_vec, x_shape_vec)});
+    data_flow::Subset w_subset({linearize(w_indices_vec, w_shape_vec)});
 
     builder.add_computational_memlet(
         comp_block, x_access, fma_tasklet, "_in1", x_subset, x_edge->base_type(), x_edge->debug_info()
@@ -412,7 +413,11 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& accum_final = builder.add_access(output_block, accum_var, block.debug_info());
     auto& y_access = builder.add_access(output_block, Y_var, y_node->debug_info());
 
-    data_flow::Subset y_subset(output_indices.begin(), output_indices.end());
+    // Y shape: [N, C_out, D0_out, ...]
+    std::vector<symbolic::Expression> y_shape_vec = {N, C_out};
+    y_shape_vec.insert(y_shape_vec.end(), output_spatial_dims.begin(), output_spatial_dims.end());
+
+    data_flow::Subset y_subset({linearize(output_indices, y_shape_vec)});
 
     if (b_node) {
         // Add bias: output = accum + bias[oc]
@@ -420,7 +425,8 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         auto& add_tasklet =
             builder.add_tasklet(output_block, data_flow::fp_add, "_out", {"_in1", "_in2"}, block.debug_info());
 
-        builder.add_computational_memlet(output_block, accum_final, add_tasklet, "_in1", {}, scalar_type, block.debug_info());
+        builder
+            .add_computational_memlet(output_block, accum_final, add_tasklet, "_in1", {}, scalar_type, block.debug_info());
         builder.add_computational_memlet(
             output_block, b_access, add_tasklet, "_in2", {oc_var}, b_edge->base_type(), b_edge->debug_info()
         );
@@ -432,7 +438,9 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
         auto& assign_tasklet =
             builder.add_tasklet(output_block, data_flow::assign, "_out", {"_in"}, block.debug_info());
 
-        builder.add_computational_memlet(output_block, accum_final, assign_tasklet, "_in", {}, scalar_type, block.debug_info());
+        builder.add_computational_memlet(
+            output_block, accum_final, assign_tasklet, "_in", {}, scalar_type, block.debug_info()
+        );
         builder.add_computational_memlet(
             output_block, assign_tasklet, "_out", y_access, y_subset, y_edge.base_type(), y_edge.debug_info()
         );
@@ -458,6 +466,11 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 symbolic::SymbolSet ConvNode::symbols() const {
     symbolic::SymbolSet syms;
 
+    for (auto& expr : shape_) {
+        for (auto& atom : symbolic::atoms(expr)) {
+            syms.insert(atom);
+        }
+    }
     for (auto& expr : kernel_shape_) {
         for (auto& atom : symbolic::atoms(expr)) {
             syms.insert(atom);
@@ -486,6 +499,9 @@ symbolic::SymbolSet ConvNode::symbols() const {
 }
 
 void ConvNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
+    for (auto& expr : shape_) {
+        expr = symbolic::subs(expr, old_expression, new_expression);
+    }
     for (auto& expr : kernel_shape_) {
         expr = symbolic::subs(expr, old_expression, new_expression);
     }
@@ -503,13 +519,18 @@ void ConvNode::replace(const symbolic::Expression old_expression, const symbolic
 
 std::unique_ptr<data_flow::DataFlowNode> ConvNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
-    return std::unique_ptr<data_flow::DataFlowNode>(
-        new ConvNode(element_id, this->debug_info(), vertex, parent, kernel_shape_, strides_, pads_, dilations_, group_)
-    );
+    return std::unique_ptr<data_flow::DataFlowNode>(new ConvNode(
+        element_id, this->debug_info(), vertex, parent, shape_, kernel_shape_, strides_, pads_, dilations_, group_
+    ));
 }
 
 std::string ConvNode::toStr() const {
-    std::string result = "Conv(kernel_shape=[";
+    std::string result = "Conv(shape=[";
+    for (size_t i = 0; i < shape_.size(); ++i) {
+        if (i > 0) result += ", ";
+        result += shape_[i]->__str__();
+    }
+    result += "], kernel_shape=[";
     for (size_t i = 0; i < kernel_shape_.size(); ++i) {
         if (i > 0) result += ", ";
         result += kernel_shape_[i]->__str__();
@@ -530,6 +551,11 @@ nlohmann::json ConvNodeSerializer::serialize(const data_flow::LibraryNode& libra
     j["code"] = conv_node.code().value();
 
     serializer::JSONSerializer serializer;
+
+    j["shape"] = nlohmann::json::array();
+    for (auto& dim : conv_node.shape()) {
+        j["shape"].push_back(serializer.expression(dim));
+    }
 
     j["kernel_shape"] = nlohmann::json::array();
     for (auto& dim : conv_node.kernel_shape()) {
@@ -563,6 +589,13 @@ data_flow::LibraryNode& ConvNodeSerializer::deserialize(
     assert(j.contains("code"));
     assert(j.contains("debug_info"));
     assert(j.contains("kernel_shape"));
+
+    std::vector<symbolic::Expression> shape;
+    if (j.contains("shape")) {
+        for (const auto& dim : j["shape"]) {
+            shape.push_back(symbolic::parse(dim.get<std::string>()));
+        }
+    }
 
     std::vector<symbolic::Expression> kernel_shape;
     for (const auto& dim : j["kernel_shape"]) {
@@ -598,7 +631,7 @@ data_flow::LibraryNode& ConvNodeSerializer::deserialize(
     sdfg::serializer::JSONSerializer serializer;
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
-    return builder.add_library_node<ConvNode>(parent, debug_info, kernel_shape, strides, pads, dilations, group);
+    return builder.add_library_node<ConvNode>(parent, debug_info, shape, kernel_shape, strides, pads, dilations, group);
 }
 
 } // namespace tensor

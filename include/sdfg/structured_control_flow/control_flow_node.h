@@ -15,10 +15,37 @@ class StructuredSDFGBuilder;
 
 namespace structured_control_flow {
 
+/**
+ * @brief Base class for all structured control flow nodes in a StructuredSDFG
+ *
+ * ControlFlowNode is the abstract base class for all elements that form the structured
+ * control flow of a StructuredSDFG. This includes:
+ * - Block: A state containing a dataflow graph
+ * - Sequence: A sequential container of control flow nodes
+ * - IfElse: Conditional branching with multiple cases
+ * - StructuredLoop: Base for structured loops (For, Map, While)
+ * - Return: Function return statement
+ * - Break/Continue: Loop control statements
+ *
+ * Control flow nodes form a hierarchical tree structure representing the program's
+ * control flow in a structured manner, avoiding the need for arbitrary goto statements
+ * or unstructured control flow graphs.
+ *
+ * @see Block
+ * @see Sequence
+ * @see IfElse
+ * @see StructuredLoop
+ * @see Return
+ */
 class ControlFlowNode : public Element {
     friend class builder::StructuredSDFGBuilder;
 
 protected:
+    /**
+     * @brief Protected constructor for control flow nodes
+     * @param element_id Unique identifier for this element
+     * @param debug_info Debug information for this node
+     */
     ControlFlowNode(size_t element_id, const DebugInfo& debug_info);
 
 public:

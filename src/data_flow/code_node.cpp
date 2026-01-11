@@ -16,6 +16,41 @@ CodeNode::CodeNode(
 )
     : DataFlowNode(element_id, debug_info, vertex, parent), outputs_(outputs), inputs_(inputs) {};
 
+void CodeNode::validate(const Function& function) const {
+    auto& graph = this->get_parent();
+
+    // No two access nodes for same data
+    std::unordered_map<std::string, const AccessNode*> input_names;
+    for (auto& iedge : graph.in_edges(*this)) {
+        if (dynamic_cast<const ConstantNode*>(&iedge.src()) != nullptr) {
+            continue;
+        }
+        auto& src = static_cast<const AccessNode&>(iedge.src());
+        if (input_names.find(src.data()) != input_names.end()) {
+            if (input_names.at(src.data()) != &src) {
+                throw InvalidSDFGException("Two access nodes with the same data as iedge: " + src.data());
+            }
+        } else {
+            input_names.insert({src.data(), &src});
+        }
+    }
+
+    std::unordered_map<std::string, const AccessNode*> output_names;
+    for (auto& oedge : graph.out_edges(*this)) {
+        if (dynamic_cast<const ConstantNode*>(&oedge.dst()) != nullptr) {
+            continue;
+        }
+        auto& dst = static_cast<const AccessNode&>(oedge.dst());
+        if (output_names.find(dst.data()) != output_names.end()) {
+            if (output_names.at(dst.data()) != &dst) {
+                throw InvalidSDFGException("Two access nodes with the same data as oedge: " + dst.data());
+            }
+        } else {
+            output_names.insert({dst.data(), &dst});
+        }
+    }
+}
+
 const std::vector<std::string>& CodeNode::outputs() const { return this->outputs_; };
 
 const std::vector<std::string>& CodeNode::inputs() const { return this->inputs_; };

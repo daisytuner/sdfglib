@@ -86,6 +86,7 @@ inline data_flow::LibraryNodeCode LibraryNodeType_Conv("ml::Conv");
  */
 class ConvNode : public TensorNode {
 protected:
+    std::vector<symbolic::Expression> shape_; ///< Input shape [N, C_in, D1, ..., Dn]
     std::vector<symbolic::Expression> kernel_shape_; ///< Shape of convolution kernel
     std::vector<symbolic::Expression> strides_; ///< Stride along each spatial axis
     std::vector<symbolic::Expression> pads_; ///< Padding (start and end for each axis)
@@ -99,6 +100,7 @@ public:
      * @param debug_info Debug information
      * @param vertex Graph vertex
      * @param parent Parent dataflow graph
+     * @param shape Input tensor shape [N, C_in, D1, ..., Dn]
      * @param kernel_shape Shape of the convolution kernel
      * @param strides Stride along each spatial axis (defaults to 1 for each axis)
      * @param pads Padding for start and end of each axis (defaults to 0)
@@ -110,12 +112,20 @@ public:
         const DebugInfo& debug_info,
         const graph::Vertex vertex,
         data_flow::DataFlowGraph& parent,
+        const std::vector<symbolic::Expression>& shape,
         const std::vector<symbolic::Expression>& kernel_shape,
         const std::vector<symbolic::Expression>& strides,
         const std::vector<symbolic::Expression>& pads,
         const std::vector<symbolic::Expression>& dilations,
         symbolic::Expression group
     );
+
+    /**
+     * @brief Get the input tensor shape
+     * @return Input shape vector
+     */
+    const std::vector<symbolic::Expression>& shape() const { return shape_; }
+
 
     /**
      * @brief Get the convolution kernel shape

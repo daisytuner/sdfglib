@@ -1,4 +1,6 @@
 #include "sdfg/analysis/scope_analysis.h"
+#include <vector>
+#include "sdfg/structured_control_flow/control_flow_node.h"
 
 namespace sdfg {
 namespace analysis {
@@ -52,6 +54,19 @@ structured_control_flow::ControlFlowNode* ScopeAnalysis::parent_scope(const stru
         return nullptr;
     }
     return this->scope_tree_.at(scope);
+}
+
+std::vector<structured_control_flow::ControlFlowNode*> ScopeAnalysis::
+    ancestor_scopes(const structured_control_flow::ControlFlowNode* node) const {
+    std::vector<structured_control_flow::ControlFlowNode*> result;
+    auto parent = parent_scope(node);
+
+    while (parent) {
+        result.push_back(parent);
+        parent = parent_scope(parent);
+    }
+
+    return result;
 }
 
 } // namespace analysis
