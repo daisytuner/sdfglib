@@ -165,21 +165,8 @@ bool SymbolEvolution::eliminate_symbols(
         auto& update_transition = static_cast<structured_control_flow::Transition&>(*update_write_element);
         auto update_sym = update_transition.assignments().at(symbolic::symbol(sym));
 
-        // Criterion: Not in a nested loop
-        bool nested_loop = false;
-        auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
-        structured_control_flow::ControlFlowNode* scope = &update_transition.parent();
-        while (scope != nullptr && scope != &loop.root()) {
-            if (auto loop_stmt = dynamic_cast<structured_control_flow::StructuredLoop*>(scope)) {
-                nested_loop = true;
-                break;
-            } else if (auto while_stmt = dynamic_cast<structured_control_flow::While*>(scope)) {
-                nested_loop = true;
-                break;
-            }
-            scope = scope_analysis.parent_scope(scope);
-        }
-        if (nested_loop) {
+        // Criterion: Must always be executed in the loop body
+        if (&update_transition.parent() != &loop.root()) {
             continue;
         }
 
