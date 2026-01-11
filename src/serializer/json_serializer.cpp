@@ -1279,6 +1279,14 @@ void register_default_serializers() {
         .register_library_node_serializer(math::tensor::LibraryNodeType_Broadcast.value(), []() {
             return std::make_unique<math::tensor::BroadcastNodeSerializer>();
         });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Conv.value(), []() {
+            return std::make_unique<math::tensor::ConvNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Transpose.value(), []() {
+            return std::make_unique<math::tensor::TransposeNodeSerializer>();
+        });
 
     // Elementwise
     LibraryNodeSerializerRegistry::instance()
