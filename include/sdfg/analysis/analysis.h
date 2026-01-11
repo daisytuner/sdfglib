@@ -12,7 +12,6 @@ class Analysis {
 
 protected:
     StructuredSDFG& sdfg_;
-    symbolic::Assumptions additional_assumptions_;
 
     virtual void run(analysis::AnalysisManager& analysis_manager) = 0;
 
@@ -28,13 +27,11 @@ public:
 class AnalysisManager {
 private:
     StructuredSDFG& sdfg_;
-    symbolic::Assumptions additional_assumptions_;
 
     std::unordered_map<std::type_index, std::unique_ptr<Analysis>> cache_;
 
 public:
     AnalysisManager(StructuredSDFG& sdfg);
-    AnalysisManager(StructuredSDFG& sdfg, const symbolic::Assumptions& additional_assumptions);
 
     AnalysisManager(const AnalysisManager& am) = delete;
     AnalysisManager& operator=(const AnalysisManager&) = delete;
@@ -51,7 +48,6 @@ public:
 
         // Run a new analysis
         cache_[type] = std::make_unique<T>(this->sdfg_);
-        cache_[type]->additional_assumptions_ = this->additional_assumptions_;
         cache_[type]->run(*this);
         return *static_cast<T*>(cache_[type].get());
     }

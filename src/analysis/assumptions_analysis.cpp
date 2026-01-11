@@ -78,7 +78,6 @@ void AssumptionsAnalysis::run(analysis::AnalysisManager& analysis_manager) {
     this->determine_parameters(analysis_manager);
 
     // Initialize root assumptions with SDFG-level assumptions
-    this->assumptions_.insert({&sdfg_.root(), this->additional_assumptions_});
     auto& initial = this->assumptions_[&sdfg_.root()];
 
     this->assumptions_with_trivial_.insert({&sdfg_.root(), initial});
