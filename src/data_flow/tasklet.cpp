@@ -43,23 +43,18 @@ void Tasklet::validate(const Function& function) const {
         }
     }
 
-    // Validate: Graph - No two access nodes for same data
-    std::unordered_map<std::string, const AccessNode*> input_names;
-    for (auto& iedge : graph.in_edges(*this)) {
-        if (dynamic_cast<const ConstantNode*>(&iedge.src()) != nullptr) {
-            continue;
-        }
-        auto& src = static_cast<const AccessNode&>(iedge.src());
-        if (input_names.find(src.data()) != input_names.end()) {
-            if (input_names.at(src.data()) != &src) {
-                throw InvalidSDFGException(
-                    "Tasklet (Code: " + std::to_string(this->code_) +
-                    "): Two access nodes with the same data as iedge: " + src.data()
-                );
-            }
-        } else {
-            input_names.insert({src.data(), &src});
-        }
+    // Validate: Edges
+    if (graph.in_degree(*this) != this->inputs_.size()) {
+        throw InvalidSDFGException(
+            "Tasklet (Code: " + std::to_string(this->code_) +
+            "): Number of input edges does not match number of inputs."
+        );
+    }
+    if (graph.out_degree(*this) != this->outputs_.size()) {
+        throw InvalidSDFGException(
+            "Tasklet (Code: " + std::to_string(this->code_) +
+            "): Number of output edges does not match number of outputs."
+        );
     }
 }
 

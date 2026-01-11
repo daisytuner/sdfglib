@@ -1,5 +1,5 @@
 #include "sdfg/data_flow/data_flow_graph.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/conv_node.h"
+
 #include <algorithm>
 #include <queue>
 
@@ -13,16 +13,19 @@ void DataFlowGraph::validate(const Function& function) const {
             throw InvalidSDFGException("DataFlowGraph: Node parent mismatch.");
         }
 
-        if (auto code_node = dynamic_cast<const data_flow::CodeNode*>(node.second.get())) {
-            // Skip input/output count validation for ConvNode which has custom validation
-            // that handles optional bias input
-            if (dynamic_cast<const math::tensor::ConvNode*>(code_node) == nullptr) {
-                if (this->in_degree(*code_node) != code_node->inputs().size()) {
-                    throw InvalidSDFGException("DataFlowGraph: Number of input edges does not match number of inputs.");
+        // No two access nodes for same data
+        std::unordered_map<std::string, const AccessNode*> input_names;
+        for (auto& iedge : this->in_edges(*node.second)) {
+            if (dynamic_cast<const ConstantNode*>(&iedge.src()) != nullptr) {
+                continue;
+            }
+            auto& src = static_cast<const AccessNode&>(iedge.src());
+            if (input_names.find(src.data()) != input_names.end()) {
+                if (input_names.at(src.data()) != &src) {
+                    throw InvalidSDFGException("Two access nodes with the same data as iedge: " + src.data());
                 }
-                if (this->out_degree(*code_node) != code_node->outputs().size()) {
-                    throw InvalidSDFGException("DataFlowGraph: Number of output edges does not match number of outputs.");
-                }
+            } else {
+                input_names.insert({src.data(), &src});
             }
         }
     }
