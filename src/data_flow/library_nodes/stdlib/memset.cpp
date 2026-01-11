@@ -28,7 +28,7 @@ const symbolic::Expression MemsetNode::value() const { return value_; }
 
 const symbolic::Expression MemsetNode::num() const { return num_; }
 
-void MemsetNode::validate(const Function& function) const {}
+void MemsetNode::validate(const Function& function) const { LibraryNode::validate(function); }
 
 symbolic::SymbolSet MemsetNode::symbols() const {
     auto value_symbols = symbolic::atoms(this->value_);

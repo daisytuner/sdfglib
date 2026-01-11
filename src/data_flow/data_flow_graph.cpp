@@ -1,4 +1,5 @@
 #include "sdfg/data_flow/data_flow_graph.h"
+
 #include <algorithm>
 #include <queue>
 
@@ -10,15 +11,6 @@ void DataFlowGraph::validate(const Function& function) const {
         node.second->validate(function);
         if (&node.second->get_parent() != this) {
             throw InvalidSDFGException("DataFlowGraph: Node parent mismatch.");
-        }
-
-        if (auto code_node = dynamic_cast<const data_flow::CodeNode*>(node.second.get())) {
-            if (this->in_degree(*code_node) != code_node->inputs().size()) {
-                throw InvalidSDFGException("DataFlowGraph: Number of input edges does not match number of inputs.");
-            }
-            if (this->out_degree(*code_node) != code_node->outputs().size()) {
-                throw InvalidSDFGException("DataFlowGraph: Number of output edges does not match number of outputs.");
-            }
         }
     }
     for (auto& edge : this->edges_) {

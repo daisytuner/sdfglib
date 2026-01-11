@@ -10,7 +10,7 @@ TrapNode::TrapNode(
           element_id, debug_info, vertex, parent, LibraryNodeType_Trap, {}, {}, true, data_flow::ImplementationType_NONE
       ) {}
 
-void TrapNode::validate(const Function& function) const {}
+void TrapNode::validate(const Function& function) const { LibraryNode::validate(function); }
 
 symbolic::SymbolSet TrapNode::symbols() const { return symbolic::SymbolSet(); }
 

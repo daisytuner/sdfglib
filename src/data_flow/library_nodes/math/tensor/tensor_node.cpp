@@ -20,6 +20,8 @@ TensorNode::TensorNode(
     : MathNode(element_id, debug_info, vertex, parent, code, outputs, inputs, impl_type) {}
 
 void TensorNode::validate(const Function& function) const {
+    MathNode::validate(function);
+
     auto& graph = this->get_parent();
 
     // Check that all input memlets are scalar or pointer of scalar

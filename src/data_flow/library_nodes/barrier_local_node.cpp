@@ -16,7 +16,8 @@ BarrierLocalNode::
       };
 
 void BarrierLocalNode::validate(const Function& function) const {
-    // TODO: Implement
+    LibraryNode::validate(function);
+    // No specific validation for barrier local
 }
 
 symbolic::SymbolSet BarrierLocalNode::symbols() const { return {}; };

@@ -116,6 +116,15 @@ public:
     CodeNode& operator=(const CodeNode&) = delete;
 
     /**
+     * @brief Validate the code node's configuration
+     * @param function Function context for validation
+     *
+     * Ensures that:
+     * - No two access nodes connect to the same data for inputs/outputs
+     */
+    void validate(const Function& function) const override;
+
+    /**
      * @brief Get output connector names (const)
      * @return Const reference to vector of output connector names
      */
@@ -159,18 +168,6 @@ public:
      * @return True if the input is connected to a ConstantNode, false otherwise
      */
     bool has_constant_input(size_t index) const;
-
-    /**
-     * @brief Clone this code node for graph transformations
-     * @param element_id New element identifier for the clone
-     * @param vertex New graph vertex for the clone
-     * @param parent Parent graph for the clone
-     * @return Unique pointer to the cloned node
-     *
-     * Pure virtual function that must be implemented by derived classes.
-     */
-    virtual std::unique_ptr<DataFlowNode> clone(size_t element_id, const graph::Vertex vertex, DataFlowGraph& parent)
-        const = 0;
 };
 } // namespace data_flow
 } // namespace sdfg

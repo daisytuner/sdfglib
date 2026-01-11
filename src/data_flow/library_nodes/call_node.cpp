@@ -35,6 +35,8 @@ bool CallNode::is_indirect_call(const Function& sdfg) const {
 }
 
 void CallNode::validate(const Function& function) const {
+    LibraryNode::validate(function);
+
     if (!function.exists(this->callee_name_)) {
         throw InvalidSDFGException("CallNode: Function '" + this->callee_name_ + "' does not exist.");
     }

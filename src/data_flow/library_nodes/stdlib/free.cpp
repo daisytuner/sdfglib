@@ -19,7 +19,7 @@ FreeNode::FreeNode(
       ) {}
 
 
-void FreeNode::validate(const Function& function) const {}
+void FreeNode::validate(const Function& function) const { LibraryNode::validate(function); }
 
 symbolic::SymbolSet FreeNode::symbols() const { return {}; }
 
