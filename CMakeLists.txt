@@ -55,6 +55,9 @@ find_package(Boost REQUIRED COMPONENTS graph)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(ISL REQUIRED IMPORTED_TARGET isl)
 
+# CURL
+find_package(CURL REQUIRED)
+
 # Coverage option
 option(SDFGLIB_ENABLE_COVERAGE "Enable coverage flags" OFF)
 
@@ -220,6 +223,7 @@ set(SOURCE_FILES
     src/types/scalar.cpp
     src/types/structure.cpp
     src/types/utils.cpp
+    src/util/utils_curl.cpp
     src/visitor/immutable_structured_sdfg_visitor.cpp
     src/visitor/structured_sdfg_visitor.cpp
     src/visualizer/dot_visualizer.cpp
@@ -264,7 +268,7 @@ if(SDFGLIB_ENABLE_COVERAGE)
   )
 endif()
 
-target_link_libraries(sdfglib PUBLIC nlohmann_json::nlohmann_json ${Boost_LIBRARIES} PkgConfig::ISL symengine)
+target_link_libraries(sdfglib PUBLIC nlohmann_json::nlohmann_json ${Boost_LIBRARIES} PkgConfig::ISL symengine CURL::libcurl)
 set_target_properties(sdfglib PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
