@@ -84,6 +84,9 @@ void LoopTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
     builder.move_child(*parent, index + 1, outer_loop->root());
 
     analysis_manager.invalidate_all();
+    applied_ = true;
+    inner_loop_ = &loop_;
+    outer_loop_ = outer_loop;
 };
 
 void LoopTiling::to_json(nlohmann::json& j) const {
@@ -93,7 +96,7 @@ void LoopTiling::to_json(nlohmann::json& j) const {
     } else if (dynamic_cast<structured_control_flow::Map*>(&loop_)) {
         loop_type = "map";
     } else {
-        throw std::runtime_error("Unsupported loop type for serialization of loop: " + loop_.indvar()->get_name());
+        throw InvalidSDFGException("Unsupported loop type for serialization of loop: " + loop_.indvar()->get_name());
     }
 
     j["transformation_type"] = this->name();
@@ -112,6 +115,22 @@ LoopTiling LoopTiling::from_json(builder::StructuredSDFGBuilder& builder, const 
 
     return LoopTiling(*loop, tile_size);
 };
+
+structured_control_flow::StructuredLoop* LoopTiling::inner_loop() {
+    if (!applied_) {
+        throw InvalidSDFGException("Accessing tiled loop before their creation.");
+    }
+
+    return inner_loop_;
+}
+
+structured_control_flow::StructuredLoop* LoopTiling::outer_loop() {
+    if (!applied_) {
+        throw InvalidSDFGException("Accessing tiled loop before their creation.");
+    }
+
+    return outer_loop_;
+}
 
 } // namespace transformations
 } // namespace sdfg

@@ -4,7 +4,6 @@
 #include "sdfg/passes/dataflow/constant_propagation.h"
 #include "sdfg/passes/dataflow/dead_data_elimination.h"
 #include "sdfg/passes/dataflow/dead_reference_elimination.h"
-#include "sdfg/passes/dataflow/redundant_array_elimination.h"
 #include "sdfg/passes/dataflow/reference_propagation.h"
 #include "sdfg/passes/dataflow/trivial_array_elimination.h"
 #include "sdfg/passes/debug_info_propagation.h"

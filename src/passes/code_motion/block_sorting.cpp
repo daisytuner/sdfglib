@@ -26,181 +26,235 @@
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/structured_control_flow/while.h"
-#include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {
 namespace passes {
 
-BlockSorting::BlockSorting(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
-    : visitor::StructuredSDFGVisitor(builder, analysis_manager) {};
-
-bool BlockSorting::accept(structured_control_flow::Sequence& sequence) {
-    if (sequence.size() == 0) {
+bool BlockSortingPass::bubble_up(
+    builder::StructuredSDFGBuilder& builder,
+    analysis::AnalysisManager& analysis_manager,
+    structured_control_flow::Sequence& sequence,
+    long long index
+) {
+    // Skip assignments
+    auto current_child = sequence.at(index);
+    if (!current_child.second.empty()) {
+        return false;
+    }
+    auto next_child = sequence.at(index + 1);
+    if (!next_child.second.empty()) {
         return false;
     }
 
-    // Bubble up:
-    size_t i;
-    for (i = 0; i < sequence.size() - 1; i++) {
-        // Skip assignments
-        auto current_child = sequence.at(i);
-        if (!current_child.second.empty()) {
+    // Childs must be blocks
+    auto* current_block = dynamic_cast<structured_control_flow::Block*>(&current_child.first);
+    if (!current_block) {
+        return false;
+    }
+    auto* next_block = dynamic_cast<structured_control_flow::Block*>(&next_child.first);
+    if (!next_block) {
+        return false;
+    }
+
+    // Check if current block has side-effects
+    bool side_effect = false;
+    for (auto* libnode : current_block->dataflow().library_nodes()) {
+        if (this->is_libnode_side_effect_white_listed(libnode)) {
             continue;
         }
-        auto next_child = sequence.at(i + 1);
-        if (!next_child.second.empty()) {
+        if (libnode->side_effect()) {
+            side_effect = true;
+            break;
+        }
+    }
+    if (side_effect) {
+        return false;
+    }
+
+    // Check if happens-before relation allows swapping
+    auto& users_analysis = analysis_manager.get<analysis::Users>();
+    analysis::UsersView current_users(users_analysis, *current_block);
+    analysis::UsersView next_users(users_analysis, *next_block);
+    bool safe = true;
+    for (auto user : next_users.uses()) {
+        if (current_users.uses(user->container()).size() > 0) {
+            safe = false;
+            break;
+        }
+    }
+    if (!safe) {
+        return false;
+    }
+
+    // Check if libnode/reference can be bubbled up
+    if (!this->can_be_bubbled_up(*next_block)) {
+        return false;
+    }
+
+    // Compare priority and order
+    auto [current_prio, current_order] = this->get_prio_and_order(current_block);
+    auto [next_prio, next_order] = this->get_prio_and_order(next_block);
+    if (current_prio > next_prio) {
+        return false;
+    }
+    if (current_prio == next_prio && current_order <= next_order) {
+        return false;
+    }
+
+    // Swap blocks
+    builder.move_child(sequence, index + 1, sequence, index);
+    analysis_manager.invalidate_all();
+
+    return true;
+}
+
+bool BlockSortingPass::bubble_down(
+    builder::StructuredSDFGBuilder& builder,
+    analysis::AnalysisManager& analysis_manager,
+    structured_control_flow::Sequence& sequence,
+    long long index
+) {
+    // Skip assignments
+    auto current_child = sequence.at(index);
+    if (!current_child.second.empty()) {
+        return false;
+    }
+    auto next_child = sequence.at(index - 1);
+    if (!next_child.second.empty()) {
+        return false;
+    }
+
+    // Childs must be blocks
+    auto* current_block = dynamic_cast<structured_control_flow::Block*>(&current_child.first);
+    if (!current_block) {
+        return false;
+    }
+    auto* next_block = dynamic_cast<structured_control_flow::Block*>(&next_child.first);
+    if (!next_block) {
+        return false;
+    }
+
+    // Check if current block has side-effects
+    bool side_effect = false;
+    for (auto* libnode : current_block->dataflow().library_nodes()) {
+        if (this->is_libnode_side_effect_white_listed(libnode)) {
             continue;
+        }
+        if (libnode->side_effect()) {
+            side_effect = true;
+            break;
+        }
+    }
+    if (side_effect) {
+        return false;
+    }
+
+    // Check if happens-before relation allows swapping
+    auto& users_analysis = analysis_manager.get<analysis::Users>();
+    analysis::UsersView current_users(users_analysis, *current_block);
+    analysis::UsersView next_users(users_analysis, *next_block);
+    bool safe = true;
+    for (auto user : next_users.uses()) {
+        if (current_users.uses(user->container()).size() > 0) {
+            safe = false;
+            break;
+        }
+    }
+    if (!safe) {
+        return false;
+    }
+
+    // Check if libnode can be bubbled down
+    if (!this->can_be_bubbled_down(*next_block)) {
+        return false;
+    }
+
+    // Compare priority and order
+    auto [current_prio, current_order] = this->get_prio_and_order(current_block);
+    auto [next_prio, next_order] = this->get_prio_and_order(next_block);
+    if (current_prio > next_prio) {
+        return false;
+    }
+    if (current_prio == next_prio && current_order <= next_order) {
+        return false;
+    }
+
+    // Swap blocks
+    builder.move_child(sequence, index - 1, sequence, index);
+    analysis_manager.invalidate_all();
+
+    return true;
+}
+
+bool BlockSortingPass::sort(
+    builder::StructuredSDFGBuilder& builder,
+    analysis::AnalysisManager& analysis_manager,
+    structured_control_flow::Sequence& sequence
+) {
+    if (sequence.size() == 0) {
+        return false;
+    }
+    bool applied = false;
+
+    // Bubble up
+    size_t i;
+    for (i = 0; i < sequence.size(); i++) {
+        auto* node = &sequence.at(i).first;
+        if (dynamic_cast<structured_control_flow::Return*>(node) ||
+            dynamic_cast<structured_control_flow::Break*>(node) ||
+            dynamic_cast<structured_control_flow::Continue*>(node)) {
+            // Sorting after return, break, and continue is useless
+            break;
+        } else if (auto* sequence2 = dynamic_cast<structured_control_flow::Sequence*>(node)) {
+            applied |= this->sort(builder, analysis_manager, *sequence2);
+        } else if (auto* while_loop = dynamic_cast<structured_control_flow::While*>(node)) {
+            applied |= this->sort(builder, analysis_manager, while_loop->root());
+        } else if (auto* loop = dynamic_cast<structured_control_flow::StructuredLoop*>(node)) {
+            applied |= this->sort(builder, analysis_manager, loop->root());
+        } else if (auto* if_else = dynamic_cast<structured_control_flow::IfElse*>(node)) {
+            for (size_t k = 0; k < if_else->size(); k++) {
+                applied |= this->sort(builder, analysis_manager, if_else->at(k).first);
+            }
         }
 
-        // Sorting after return, break, and continue is useless
-        if (dynamic_cast<structured_control_flow::Return*>(&current_child.first) ||
-            dynamic_cast<structured_control_flow::Break*>(&current_child.first) ||
-            dynamic_cast<structured_control_flow::Continue*>(&current_child.first)) {
+        if (i == sequence.size() - 1) {
             break;
         }
 
-        // Childs must be a blocks
-        auto* current_block = dynamic_cast<structured_control_flow::Block*>(&current_child.first);
-        if (!current_block) {
-            continue;
+        bool local_applied = false;
+        long long index = i;
+        while (index >= 0 && this->bubble_up(builder, analysis_manager, sequence, index)) {
+            local_applied = true;
+            index--;
         }
-        auto* next_block = dynamic_cast<structured_control_flow::Block*>(&next_child.first);
-        if (!next_block) {
-            continue;
-        }
-
-        // Check if current block has side-effects
-        bool side_effect = false;
-        for (auto* libnode : current_block->dataflow().library_nodes()) {
-            if (this->is_libnode_side_effect_white_listed(libnode)) {
-                continue;
-            }
-            if (libnode->side_effect()) {
-                side_effect = true;
-                break;
-            }
-        }
-        if (side_effect) {
-            continue;
-        }
-
-        // Check if happens-before relation allows swapping
-        auto& users_analysis = this->analysis_manager_.get<analysis::Users>();
-        analysis::UsersView current_users(users_analysis, *current_block);
-        analysis::UsersView next_users(users_analysis, *next_block);
-        bool safe = true;
-        for (auto user : next_users.uses()) {
-            if (current_users.uses(user->container()).size() > 0) {
-                safe = false;
-                break;
-            }
-        }
-        if (!safe) {
-            continue;
-        }
-
-        // Check if libnode/reference can be bubbled up
-        if (!this->can_be_bubbled_up(*next_block)) {
-            continue;
-        }
-
-        // Compare priority and order
-        auto [current_prio, current_order] = this->get_prio_and_order(current_block);
-        auto [next_prio, next_order] = this->get_prio_and_order(next_block);
-        if (current_prio > next_prio) {
-            continue;
-        }
-        if (current_prio == next_prio && current_order <= next_order) {
-            continue;
-        }
-
-        // Swap blocks
-        builder_.move_child(sequence, i + 1, sequence, i);
-        return true; // Restart after modification
+        applied |= local_applied;
     }
 
-    // Bubble down:
+    // Bubble down
     for (size_t j = i; j > 0; j--) {
-        // Skip assignments
-        auto current_child = sequence.at(j);
-        if (!current_child.second.empty()) {
-            continue;
+        bool local_applied = false;
+        long long index = j;
+        while (index <= i && this->bubble_down(builder, analysis_manager, sequence, index)) {
+            local_applied = true;
+            index++;
         }
-        auto next_child = sequence.at(j - 1);
-        if (!next_child.second.empty()) {
-            continue;
-        }
-
-        // Childs must be a blocks
-        auto* current_block = dynamic_cast<structured_control_flow::Block*>(&current_child.first);
-        if (!current_block) {
-            continue;
-        }
-        auto* next_block = dynamic_cast<structured_control_flow::Block*>(&next_child.first);
-        if (!next_block) {
-            continue;
-        }
-
-        // Check if current block has side-effects
-        bool side_effect = false;
-        for (auto* libnode : current_block->dataflow().library_nodes()) {
-            if (this->is_libnode_side_effect_white_listed(libnode)) {
-                continue;
-            }
-            if (libnode->side_effect()) {
-                side_effect = true;
-                break;
-            }
-        }
-        if (side_effect) {
-            continue;
-        }
-
-        // Check if happens-before relation allows swapping
-        auto& users_analysis = this->analysis_manager_.get<analysis::Users>();
-        analysis::UsersView current_users(users_analysis, *current_block);
-        analysis::UsersView next_users(users_analysis, *next_block);
-        bool safe = true;
-        for (auto user : next_users.uses()) {
-            if (current_users.uses(user->container()).size() > 0) {
-                safe = false;
-                break;
-            }
-        }
-        if (!safe) {
-            continue;
-        }
-
-        // Check if libnode can be bubbled down
-        if (!this->can_be_bubbled_down(*next_block)) {
-            continue;
-        }
-
-        // Compare priority and order
-        auto [current_prio, current_order] = this->get_prio_and_order(current_block);
-        auto [next_prio, next_order] = this->get_prio_and_order(next_block);
-        if (current_prio > next_prio) {
-            continue;
-        }
-        if (current_prio == next_prio && current_order <= next_order) {
-            continue;
-        }
-
-        // Swap blocks
-        builder_.move_child(sequence, j - 1, sequence, j);
-        return true; // Restart after modification
+        applied |= local_applied;
     }
 
-    return false;
+    return applied;
 }
 
-bool BlockSorting::is_libnode_side_effect_white_listed(data_flow::LibraryNode* libnode) {
+bool BlockSortingPass::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
+    return this->sort(builder, analysis_manager, builder.subject().root());
+}
+
+bool BlockSortingPass::is_libnode_side_effect_white_listed(data_flow::LibraryNode* libnode) {
     return dynamic_cast<stdlib::AllocaNode*>(libnode) || dynamic_cast<stdlib::CallocNode*>(libnode) ||
            dynamic_cast<stdlib::FreeNode*>(libnode) || dynamic_cast<stdlib::MallocNode*>(libnode) ||
            dynamic_cast<stdlib::MemsetNode*>(libnode);
 }
 
-bool BlockSorting::can_be_bubbled_up(structured_control_flow::Block& block) {
+bool BlockSortingPass::can_be_bubbled_up(structured_control_flow::Block& block) {
     if (this->is_reference_block(block)) {
         return true;
     }
@@ -214,7 +268,7 @@ bool BlockSorting::can_be_bubbled_up(structured_control_flow::Block& block) {
     return false;
 }
 
-bool BlockSorting::can_be_bubbled_down(structured_control_flow::Block& block) {
+bool BlockSortingPass::can_be_bubbled_down(structured_control_flow::Block& block) {
     if (!this->is_libnode_block(block)) {
         return false;
     }
@@ -222,7 +276,7 @@ bool BlockSorting::can_be_bubbled_down(structured_control_flow::Block& block) {
     return dynamic_cast<stdlib::FreeNode*>(libnode);
 }
 
-std::pair<int, std::string> BlockSorting::get_prio_and_order(structured_control_flow::Block* block) {
+std::pair<int, std::string> BlockSortingPass::get_prio_and_order(structured_control_flow::Block* block) {
     if (this->is_libnode_block(*block)) {
         auto* libnode = *block->dataflow().library_nodes().begin();
         if (dynamic_cast<stdlib::AllocaNode*>(libnode) || dynamic_cast<stdlib::CallocNode*>(libnode) ||
@@ -242,7 +296,7 @@ std::pair<int, std::string> BlockSorting::get_prio_and_order(structured_control_
     return {INT_MIN, ""};
 }
 
-bool BlockSorting::is_reference_block(structured_control_flow::Block& block) {
+bool BlockSortingPass::is_reference_block(structured_control_flow::Block& block) {
     auto& dfg = block.dataflow();
     if (dfg.nodes().size() != 2) {
         return false;
@@ -258,7 +312,7 @@ bool BlockSorting::is_reference_block(structured_control_flow::Block& block) {
     return true;
 }
 
-bool BlockSorting::is_libnode_block(structured_control_flow::Block& next_block) {
+bool BlockSortingPass::is_libnode_block(structured_control_flow::Block& next_block) {
     auto& next_dfg = next_block.dataflow();
     if (next_dfg.library_nodes().size() != 1) {
         return false;

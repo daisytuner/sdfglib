@@ -295,3 +295,201 @@ TEST(LoopInterchangeTest, OuterLoopHasOuterBlocks) {
     transformations::LoopInterchange transformation(loop, loop_2);
     EXPECT_FALSE(transformation.can_be_applied(builder, analysis_manager));
 }
+
+TEST(LoopInterchangeTest, Serialization) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Array desc_1(base_desc, symbolic::symbol("M"));
+    types::Pointer desc_2(desc_1);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("M", sym_desc, true);
+    builder.add_container("i", sym_desc);
+    builder.add_container("j", sym_desc);
+
+    // Define loop 1
+    auto indvar = symbolic::symbol("i");
+    auto& loop = builder.add_map(
+        root,
+        indvar,
+        symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential::create()
+    );
+    auto& body = loop.root();
+
+    // Define loop 2
+    auto indvar_2 = symbolic::symbol("j");
+    auto& loop_2 = builder.add_map(
+        body,
+        indvar_2,
+        symbolic::Lt(symbolic::symbol("j"), symbolic::symbol("M")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("j"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential::create()
+    );
+
+    size_t outer_loop_id = loop.element_id();
+    size_t inner_loop_id = loop_2.element_id();
+
+    transformations::LoopInterchange transformation(loop, loop_2);
+
+    // Test to_json
+    nlohmann::json j;
+    EXPECT_NO_THROW(transformation.to_json(j));
+
+    // Verify JSON structure
+    EXPECT_EQ(j["transformation_type"], "LoopInterchange");
+    EXPECT_TRUE(j.contains("subgraph"));
+    EXPECT_TRUE(j["subgraph"].contains("0"));
+    EXPECT_TRUE(j["subgraph"].contains("1"));
+    EXPECT_EQ(j["subgraph"]["0"]["element_id"], outer_loop_id);
+    EXPECT_EQ(j["subgraph"]["1"]["element_id"], inner_loop_id);
+    EXPECT_EQ(j["subgraph"]["0"]["type"], "map");
+    EXPECT_EQ(j["subgraph"]["1"]["type"], "map");
+}
+
+TEST(LoopInterchangeTest, Deserialization) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("M", sym_desc, true);
+    builder.add_container("i", sym_desc);
+    builder.add_container("j", sym_desc);
+
+    // Define nested loops
+    auto indvar = symbolic::symbol("i");
+    auto& loop = builder.add_for(
+        root,
+        indvar,
+        symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1))
+    );
+    auto& body = loop.root();
+
+    auto indvar_2 = symbolic::symbol("j");
+    auto& loop_2 = builder.add_for(
+        body,
+        indvar_2,
+        symbolic::Lt(symbolic::symbol("j"), symbolic::symbol("M")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("j"), symbolic::integer(1))
+    );
+
+    size_t outer_loop_id = loop.element_id();
+    size_t inner_loop_id = loop_2.element_id();
+
+    // Create JSON description
+    nlohmann::json j;
+    j["transformation_type"] = "LoopInterchange";
+    j["subgraph"] = {
+        {"0", {{"element_id", outer_loop_id}, {"type", "for"}}}, {"1", {{"element_id", inner_loop_id}, {"type", "for"}}}
+    };
+
+    // Test from_json
+    EXPECT_NO_THROW({
+        auto deserialized = transformations::LoopInterchange::from_json(builder, j);
+        EXPECT_EQ(deserialized.name(), "LoopInterchange");
+    });
+}
+
+TEST(LoopInterchangeTest, CreatedAndDeletedElements) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Array desc_1(base_desc, symbolic::symbol("M"));
+    types::Pointer desc_2(desc_1);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("M", sym_desc, true);
+    builder.add_container("i", sym_desc);
+    builder.add_container("j", sym_desc);
+
+    // Define loop 1
+    auto indvar = symbolic::symbol("i");
+    auto& loop = builder.add_map(
+        root,
+        indvar,
+        symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential::create()
+    );
+    auto& body = loop.root();
+
+    // Define loop 2
+    auto indvar_2 = symbolic::symbol("j");
+    auto& loop_2 = builder.add_map(
+        body,
+        indvar_2,
+        symbolic::Lt(symbolic::symbol("j"), symbolic::symbol("M")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("j"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential::create()
+    );
+    auto& body_2 = loop_2.root();
+
+    // Add computation
+    auto& block = builder.add_block(body_2);
+
+    // Store original loop IDs
+    size_t original_outer_id = loop.element_id();
+    size_t original_inner_id = loop_2.element_id();
+
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    transformations::LoopInterchange transformation(loop, loop_2);
+    EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
+    transformation.apply(builder, analysis_manager);
+
+    auto& new_sdfg = builder.subject();
+    EXPECT_EQ(new_sdfg.root().size(), 1);
+
+    // Verify new outer loop exists and has correct indvar
+    auto outer_loop = dynamic_cast<structured_control_flow::Map*>(&new_sdfg.root().at(0).first);
+    EXPECT_TRUE(outer_loop != nullptr);
+    EXPECT_EQ(outer_loop->indvar()->get_name(), "j");
+
+    // Verify new inner loop exists and has correct indvar
+    auto inner_loop = dynamic_cast<structured_control_flow::Map*>(&outer_loop->root().at(0).first);
+    EXPECT_TRUE(inner_loop != nullptr);
+    EXPECT_EQ(inner_loop->indvar()->get_name(), "i");
+
+    // Verify the original loops were replaced (element IDs should be different)
+    EXPECT_NE(outer_loop->element_id(), original_outer_id);
+    EXPECT_NE(inner_loop->element_id(), original_inner_id);
+
+    // Verify loop structure is preserved: 2 loops with 1 block
+    EXPECT_EQ(outer_loop->root().size(), 1);
+    EXPECT_EQ(inner_loop->root().size(), 1);
+    EXPECT_EQ(&inner_loop->root().at(0).first, &block);
+}

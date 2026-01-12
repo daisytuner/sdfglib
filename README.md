@@ -22,6 +22,26 @@ cmake -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOG
 cmake --build .
 ```
 
+## Documentation
+
+sdfglib uses [Doxygen](https://www.doxygen.nl/) for API documentation. The type system is fully documented with Doxygen comments.
+
+### Generate Documentation
+
+Install Doxygen:
+```bash
+sudo apt-get install -y doxygen graphviz
+```
+
+Generate the documentation:
+```bash
+doxygen Doxyfile
+```
+
+View the documentation by opening `docs/html/index.html` in a web browser.
+
+For more details, see [DOCUMENTATION.md](DOCUMENTATION.md).
+
 ## Attribution
 
 sdfglib is implemented based on the specification of the [original paper](https://www.arxiv.org/abs/1902.10345) and its [reference implementation](https://github.com/spcl/dace).

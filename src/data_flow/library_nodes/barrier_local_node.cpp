@@ -16,7 +16,8 @@ BarrierLocalNode::
       };
 
 void BarrierLocalNode::validate(const Function& function) const {
-    // TODO: Implement
+    LibraryNode::validate(function);
+    // No specific validation for barrier local
 }
 
 symbolic::SymbolSet BarrierLocalNode::symbols() const { return {}; };
@@ -48,6 +49,14 @@ data_flow::LibraryNode& BarrierLocalNodeSerializer::deserialize(
     }
     return builder.add_library_node<data_flow::BarrierLocalNode>(parent, DebugInfo());
 };
+
+BarrierLocalNodeDispatcher::BarrierLocalNodeDispatcher(
+    codegen::LanguageExtension& language_extension,
+    const Function& function,
+    const data_flow::DataFlowGraph& data_flow_graph,
+    const BarrierLocalNode& node
+)
+    : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
 void BarrierLocalNodeDispatcher::dispatch(
     codegen::PrettyPrinter& stream,

@@ -7,6 +7,18 @@
 namespace sdfg {
 namespace passes {
 
+/**
+ * @brief Computes the inverse of a simple symbolic expression.
+ *
+ * This function attempts to compute the inverse of an expression containing
+ * a symbol. It handles limited cases:
+ * - Addition: lhs + c -> lhs - c
+ * - Multiplication: lhs * c -> lhs / c
+ *
+ * @param lhs The symbol to solve for
+ * @param rhs The expression containing the symbol
+ * @return The inverse expression, or null if inversion is not possible
+ */
 symbolic::Expression inverse(const symbolic::Symbol lhs, const symbolic::Expression rhs) {
     if (!symbolic::uses(rhs, lhs)) {
         return SymEngine::null;

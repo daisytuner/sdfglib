@@ -28,7 +28,7 @@ const symbolic::Expression MemsetNode::value() const { return value_; }
 
 const symbolic::Expression MemsetNode::num() const { return num_; }
 
-void MemsetNode::validate(const Function& function) const {}
+void MemsetNode::validate(const Function& function) const { LibraryNode::validate(function); }
 
 symbolic::SymbolSet MemsetNode::symbols() const {
     auto value_symbols = symbolic::atoms(this->value_);
@@ -99,8 +99,9 @@ void MemsetNodeDispatcher::dispatch_code(
 ) {
     auto& node = static_cast<const MemsetNode&>(node_);
 
-    stream << language_extension_.external_prefix() << "memset(" << node.outputs().at(0) << ", " << language_extension_.expression(node.value()) << ", "
-           << language_extension_.expression(node.num()) << ")" << ";";
+    stream << language_extension_.external_prefix() << "memset(" << node.outputs().at(0) << ", "
+           << language_extension_.expression(node.value()) << ", " << language_extension_.expression(node.num()) << ")"
+           << ";";
     stream << std::endl;
 }
 

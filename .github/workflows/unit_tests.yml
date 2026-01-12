@@ -29,7 +29,10 @@ jobs:
         run: git config --global --add safe.directory /__w/sdfglib/sdfglib
 
       - name: Formatting
-        run: clang-format-19 -style=file --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
+        shell: bash
+        run: |
+          shopt -s globstar
+          clang-format-19 -style=file --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
 
       - name: CMAKE Setup
         run: |
@@ -43,6 +46,9 @@ jobs:
       # - name: Linting
       #   run: clang-tidy-19 --config-file=".clang-tidy" src/**/*.cpp tests/**/*.cpp include/**/*.h
 
+      - name: Install lcov
+        run: apt-get update && apt-get install -y lcov
+
       - name: Build and test
         run: |
           cd build
@@ -52,10 +58,17 @@ jobs:
           ./tests/sdfglib_test
 
           # Run coverage
-          gcovr --gcov-executable "llvm-cov-19 gcov" --filter ../include/ --filter ../src/ --coveralls coveralls.json -r ../
+          llvm-profdata-19 merge -sparse default.profraw -o default.profdata
+
+          cd ../
+          llvm-cov-19 export ./build/tests/sdfglib_test -instr-profile=build/default.profdata -format=lcov > build/coverage_full.lcov
+          lcov --extract build/coverage_full.lcov '*/src/*' '*/include/*' --output-file build/coverage.lcov
 
       - name: Coveralls
         uses: coverallsapp/github-action@v2
+        with:
+          format: lcov
+          file: build/coverage.lcov
 
       - name: Test Arg-Capture-IO
         run: |

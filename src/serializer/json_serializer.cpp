@@ -1252,10 +1252,15 @@ void register_default_serializers() {
             return std::make_unique<data_flow::InvokeNodeSerializer>();
         });
 
-    // Intrinsic
+    // CMath
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::LibraryNodeType_Intrinsic.value(), []() {
-            return std::make_unique<math::IntrinsicNodeSerializer>();
+        .register_library_node_serializer(math::cmath::LibraryNodeType_CMath.value(), []() {
+            return std::make_unique<math::cmath::CMathNodeSerializer>();
+        });
+    // Backward compatibility
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::cmath::LibraryNodeType_CMath_Deprecated.value(), []() {
+            return std::make_unique<math::cmath::CMathNodeSerializer>();
         });
 
     // BLAS
@@ -1268,62 +1273,115 @@ void register_default_serializers() {
             return std::make_unique<math::blas::GEMMNodeSerializer>();
         });
 
-    // ML
+    // Tensor
+
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Abs.value(), []() {
-            return std::make_unique<math::ml::AbsNodeSerializer>();
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Broadcast.value(), []() {
+            return std::make_unique<math::tensor::BroadcastNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Add.value(), []() {
-            return std::make_unique<math::ml::AddNodeSerializer>();
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Conv.value(), []() {
+            return std::make_unique<math::tensor::ConvNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Div.value(), []() {
-            return std::make_unique<math::ml::DivNodeSerializer>();
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Transpose.value(), []() {
+            return std::make_unique<math::tensor::TransposeNodeSerializer>();
+        });
+
+    // Elementwise
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Abs.value(), []() {
+            return std::make_unique<math::tensor::AbsNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Elu.value(), []() {
-            return std::make_unique<math::ml::EluNodeSerializer>();
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Add.value(), []() {
+            return std::make_unique<math::tensor::AddNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Erf.value(), []() {
-            return std::make_unique<math::ml::ErfNodeSerializer>();
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Div.value(), []() {
+            return std::make_unique<math::tensor::DivNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_HardSigmoid.value(), []() {
-            return std::make_unique<math::ml::HardSigmoidNodeSerializer>();
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Elu.value(), []() {
+            return std::make_unique<math::tensor::EluNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_LeakyReLU.value(), []() {
-            return std::make_unique<math::ml::LeakyReLUNodeSerializer>();
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Exp.value(), []() {
+            return std::make_unique<math::tensor::ExpNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Mul.value(), []() {
-            return std::make_unique<math::ml::MulNodeSerializer>();
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Erf.value(), []() {
+            return std::make_unique<math::tensor::ErfNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Pow.value(), []() {
-            return std::make_unique<math::ml::PowNodeSerializer>();
+        .register_library_node_serializer(math::tensor::LibraryNodeType_HardSigmoid.value(), []() {
+            return std::make_unique<math::tensor::HardSigmoidNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_ReLU.value(), []() {
-            return std::make_unique<math::ml::ReLUNodeSerializer>();
+        .register_library_node_serializer(math::tensor::LibraryNodeType_LeakyReLU.value(), []() {
+            return std::make_unique<math::tensor::LeakyReLUNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Sigmoid.value(), []() {
-            return std::make_unique<math::ml::SigmoidNodeSerializer>();
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Mul.value(), []() {
+            return std::make_unique<math::tensor::MulNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Sqrt.value(), []() {
-            return std::make_unique<math::ml::SqrtNodeSerializer>();
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Pow.value(), []() {
+            return std::make_unique<math::tensor::PowNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Sub.value(), []() {
-            return std::make_unique<math::ml::SubNodeSerializer>();
+        .register_library_node_serializer(math::tensor::LibraryNodeType_ReLU.value(), []() {
+            return std::make_unique<math::tensor::ReLUNodeSerializer>();
         });
     LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::ml::LibraryNodeType_Tanh.value(), []() {
-            return std::make_unique<math::ml::TanhNodeSerializer>();
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Sigmoid.value(), []() {
+            return std::make_unique<math::tensor::SigmoidNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Sqrt.value(), []() {
+            return std::make_unique<math::tensor::SqrtNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Sub.value(), []() {
+            return std::make_unique<math::tensor::SubNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Tanh.value(), []() {
+            return std::make_unique<math::tensor::TanhNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Minimum.value(), []() {
+            return std::make_unique<math::tensor::MinimumNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Maximum.value(), []() {
+            return std::make_unique<math::tensor::MaximumNodeSerializer>();
+        });
+
+    // Reduce
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Sum.value(), []() {
+            return std::make_unique<math::tensor::SumNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Max.value(), []() {
+            return std::make_unique<math::tensor::MaxNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Min.value(), []() {
+            return std::make_unique<math::tensor::MinNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Softmax.value(), []() {
+            return std::make_unique<math::tensor::SoftmaxNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Mean.value(), []() {
+            return std::make_unique<math::tensor::MeanNodeSerializer>();
+        });
+    LibraryNodeSerializerRegistry::instance()
+        .register_library_node_serializer(math::tensor::LibraryNodeType_Std.value(), []() {
+            return std::make_unique<math::tensor::StdNodeSerializer>();
         });
 }
 

@@ -549,3 +549,66 @@ def test_instrumentation_manual(event):
     assert event["args"]["metrics"]["static:::foo"]["max"] == 9
     assert event["args"]["metrics"]["static:::foo"]["count"] == 10
     assert event["args"]["metrics"]["static:::foo"]["variance"] == 8.25
+
+def test_instrumentation_loop_info():
+    workdir = Path(__file__).parent / "applications"
+
+    benchmark_path = workdir / "instrumentation_loop_info_test.c"
+    output_path = workdir / "instrumentation_loop_info_test.out"
+    cmd = [
+        "gcc",
+        str(benchmark_path),
+        "-o",
+        str(output_path),
+        "-ldaisy_rtl",
+        "-larg_capture_io",
+        "-lstdc++"
+    ]
+
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        print(stdout)
+        print(stderr)
+    assert process.returncode == 0
+
+    (workdir / "data_cpu.json").unlink(missing_ok=True)
+
+    ## THIS VERSION IS RUNNER-SPECIFIC and points to CI version of PAPI
+    os.environ["__DAISY_PAPI_VERSION"] = "0x07020000"
+    os.environ["__DAISY_INSTRUMENTATION_FILE"] = str(workdir / "data_cpu.json")
+    os.environ["__DAISY_INSTRUMENTATION_EVENTS"] = "perf::CYCLES"
+    os.environ["__DAISY_INSTRUMENTATION_MODE"] = ""
+
+    # Run benchmark
+    process = subprocess.Popen(
+        [str(output_path)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        print(stdout)
+        print(stderr)
+    assert process.returncode == 0
+
+    result = json.load(open(workdir / "data_cpu.json"))
+    events = result["traceEvents"]
+    assert len(events) == 1
+
+    loop_info = events[0]["args"]["docc"]["loop_info"]
+    assert loop_info["num_loops"] == 3
+    assert loop_info["num_maps"] == 2
+    assert loop_info["num_fors"] == 1
+    assert loop_info["num_whiles"] == 0
+    assert loop_info["max_depth"] == 3
+    assert loop_info["is_perfectly_nested"] == True
+    assert loop_info["is_perfectly_parallel"] == False
+    assert loop_info["is_elementwise"] == False
+    assert loop_info["has_side_effects"] == False

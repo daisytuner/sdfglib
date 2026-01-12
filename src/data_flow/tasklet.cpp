@@ -23,7 +23,7 @@ void Tasklet::validate(const Function& function) const {
     // Validate: inputs match arity
     if (arity(this->code_) != this->inputs_.size()) {
         throw InvalidSDFGException(
-            "Tasklet: Invalid number of inputs for code " + std::to_string(this->code_) + ": expected " +
+            "Tasklet (Code: " + std::to_string(this->code_) + "): Invalid number of inputs. Expected " +
             std::to_string(arity(this->code_)) + ", got " + std::to_string(this->inputs_.size())
         );
     }
@@ -32,27 +32,29 @@ void Tasklet::validate(const Function& function) const {
     for (auto& iedge : graph.in_edges(*this)) {
         auto& input_type = iedge.result_type(function);
         if (is_integer(this->code_) && !types::is_integer(input_type.primitive_type())) {
-            throw InvalidSDFGException("Tasklet: Integer operation with non-integer input type");
+            throw InvalidSDFGException(
+                "Tasklet (Code: " + std::to_string(this->code_) + "): Integer operation with non-integer input type"
+            );
         }
         if (is_floating_point(this->code_) && !types::is_floating_point(input_type.primitive_type())) {
-            throw InvalidSDFGException("Tasklet: Floating point operation with integer input type");
+            throw InvalidSDFGException(
+                "Tasklet (Code: " + std::to_string(this->code_) + "): Floating point operation with integer input type"
+            );
         }
     }
 
-    // Validate: Graph - No two access nodes for same data
-    std::unordered_map<std::string, const AccessNode*> input_names;
-    for (auto& iedge : graph.in_edges(*this)) {
-        if (dynamic_cast<const ConstantNode*>(&iedge.src()) != nullptr) {
-            continue;
-        }
-        auto& src = static_cast<const AccessNode&>(iedge.src());
-        if (input_names.find(src.data()) != input_names.end()) {
-            if (input_names.at(src.data()) != &src) {
-                throw InvalidSDFGException("Tasklet: Two access nodes with the same data as iedge: " + src.data());
-            }
-        } else {
-            input_names.insert({src.data(), &src});
-        }
+    // Validate: Edges
+    if (graph.in_degree(*this) != this->inputs_.size()) {
+        throw InvalidSDFGException(
+            "Tasklet (Code: " + std::to_string(this->code_) +
+            "): Number of input edges does not match number of inputs."
+        );
+    }
+    if (graph.out_degree(*this) != this->outputs_.size()) {
+        throw InvalidSDFGException(
+            "Tasklet (Code: " + std::to_string(this->code_) +
+            "): Number of output edges does not match number of outputs."
+        );
     }
 }
 

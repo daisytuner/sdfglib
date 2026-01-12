@@ -25,7 +25,7 @@ AllocaNode::AllocaNode(
 
 const symbolic::Expression AllocaNode::size() const { return size_; }
 
-void AllocaNode::validate(const Function& function) const {}
+void AllocaNode::validate(const Function& function) const { LibraryNode::validate(function); }
 
 symbolic::SymbolSet AllocaNode::symbols() const { return symbolic::atoms(this->size_); }
 

@@ -47,16 +47,8 @@ void ForDispatcher::dispatch_node(
 };
 
 InstrumentationInfo ForDispatcher::instrumentation_info() const {
-    size_t loopnest_index = -1;
-    auto& loop_tree_analysis = analysis_manager_.get<analysis::LoopAnalysis>();
-
-    auto outermost_loops = loop_tree_analysis.outermost_loops();
-    for (size_t i = 0; i < outermost_loops.size(); i++) {
-        if (outermost_loops[i] == &node_) {
-            loopnest_index = i;
-            break;
-        }
-    }
+    auto& loop_analysis = analysis_manager_.get<analysis::LoopAnalysis>();
+    analysis::LoopInfo loop_info = loop_analysis.loop_info(&node_);
 
     // Perform FlopAnalysis
     std::unordered_map<std::string, std::string> metrics;
@@ -67,7 +59,7 @@ InstrumentationInfo ForDispatcher::instrumentation_info() const {
         metrics.insert({"flop", flop_str});
     }
 
-    return InstrumentationInfo(ElementType_For, TargetType_SEQUENTIAL, loopnest_index, node_.element_id(), metrics);
+    return InstrumentationInfo(node_.element_id(), ElementType_For, TargetType_SEQUENTIAL, loop_info, metrics);
 };
 
 } // namespace codegen

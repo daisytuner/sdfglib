@@ -18,7 +18,7 @@ UnreachableNode::UnreachableNode(
           data_flow::ImplementationType_NONE
       ) {}
 
-void UnreachableNode::validate(const Function& function) const {}
+void UnreachableNode::validate(const Function& function) const { LibraryNode::validate(function); }
 
 symbolic::SymbolSet UnreachableNode::symbols() const { return symbolic::SymbolSet(); }
 

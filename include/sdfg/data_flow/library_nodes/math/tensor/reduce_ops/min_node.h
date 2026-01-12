@@ -1,0 +1,47 @@
+#pragma once
+
+#include "sdfg/data_flow/library_nodes/math/tensor/reduce_node.h"
+
+namespace sdfg {
+namespace math {
+namespace tensor {
+
+inline data_flow::LibraryNodeCode LibraryNodeType_Min("ml::Min");
+
+class MinNode : public ReduceNode {
+public:
+    MinNode(
+        size_t element_id,
+        const DebugInfo& debug_info,
+        const graph::Vertex vertex,
+        data_flow::DataFlowGraph& parent,
+        const std::vector<symbolic::Expression>& shape,
+        const std::vector<int64_t>& axes,
+        bool keepdims
+    );
+
+    bool expand_reduction(
+        builder::StructuredSDFGBuilder& builder,
+        analysis::AnalysisManager& analysis_manager,
+        structured_control_flow::Sequence& body,
+        const std::string& input_name,
+        const std::string& output_name,
+        const types::IType& input_type,
+        const types::IType& output_type,
+        const data_flow::Subset& input_subset,
+        const data_flow::Subset& output_subset
+    ) override;
+
+    std::string identity() const override;
+
+    bool supports_integer_types() const override { return true; }
+
+    std::unique_ptr<data_flow::DataFlowNode>
+    clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const override;
+};
+
+typedef ReduceNodeSerializer<MinNode> MinNodeSerializer;
+
+} // namespace tensor
+} // namespace math
+} // namespace sdfg

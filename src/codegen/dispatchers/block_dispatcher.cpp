@@ -1,5 +1,6 @@
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 
+#include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 #include "sdfg/codegen/instrumentation/instrumentation_info.h"
 #include "sdfg/types/structure.h"
@@ -46,7 +47,7 @@ DataFlowDispatcher::DataFlowDispatcher(
 void DataFlowDispatcher::
     dispatch(PrettyPrinter& stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory) {
     // Dispatch code nodes in topological order
-    auto nodes = this->data_flow_graph_.topological_sort();
+    auto nodes = this->data_flow_graph_.topological_sort_deterministic();
     for (auto& node : nodes) {
         if (auto tasklet = dynamic_cast<const data_flow::Tasklet*>(node)) {
             this->dispatch_tasklet(stream, *tasklet);
@@ -426,7 +427,7 @@ void LibraryNodeDispatcher::
 }
 
 InstrumentationInfo LibraryNodeDispatcher::instrumentation_info() const {
-    return InstrumentationInfo(ElementType_Unknown, TargetType_SEQUENTIAL, -1, node_.element_id(), {});
+    return InstrumentationInfo(node_.element_id(), ElementType_Unknown, TargetType_SEQUENTIAL);
 };
 
 

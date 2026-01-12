@@ -20,15 +20,6 @@ void DataFlowGraph::validate(const Function& function) const {
         if (&node.second->get_parent() != this) {
             throw InvalidSDFGException("DataFlowGraph: Node parent mismatch.");
         }
-
-        if (auto code_node = dynamic_cast<const data_flow::CodeNode*>(node.second.get())) {
-            if (this->in_degree(*code_node) != code_node->inputs().size()) {
-                throw InvalidSDFGException("DataFlowGraph: Number of input edges does not match number of inputs.");
-            }
-            if (this->out_degree(*code_node) != code_node->outputs().size()) {
-                throw InvalidSDFGException("DataFlowGraph: Number of output edges does not match number of outputs.");
-            }
-        }
     }
     for (auto& edge : this->edges_) {
         edge.second->validate(function);
@@ -686,6 +677,7 @@ const std::pair<size_t, const std::unordered_map<const data_flow::DataFlowNode*,
 
     return {ccs_vertex.first, ccs};
 };
+
 
 } // namespace data_flow
 } // namespace sdfg

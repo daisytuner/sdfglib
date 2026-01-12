@@ -28,7 +28,7 @@ const symbolic::Expression CallocNode::num() const { return num_; }
 
 const symbolic::Expression CallocNode::size() const { return size_; }
 
-void CallocNode::validate(const Function& function) const {}
+void CallocNode::validate(const Function& function) const { LibraryNode::validate(function); }
 
 symbolic::SymbolSet CallocNode::symbols() const {
     auto num_symbols = symbolic::atoms(this->num_);
@@ -101,8 +101,8 @@ void CallocNodeDispatcher::dispatch_code(
 
     stream << Calloc_node.outputs().at(0);
     stream << " = ";
-    stream << language_extension_.external_prefix() << "calloc(" << language_extension_.expression(Calloc_node.num()) << ", "
-           << language_extension_.expression(Calloc_node.size()) << ")" << ";";
+    stream << language_extension_.external_prefix() << "calloc(" << language_extension_.expression(Calloc_node.num())
+           << ", " << language_extension_.expression(Calloc_node.size()) << ")" << ";";
     stream << std::endl;
 }
 

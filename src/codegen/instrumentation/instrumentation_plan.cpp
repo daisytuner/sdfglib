@@ -53,16 +53,33 @@ void InstrumentationPlan::begin_instrumentation(
     stream << metadata_var << ".column_begin = " << dbg_info.start_column() << ";" << std::endl;
     stream << metadata_var << ".column_end = " << dbg_info.end_column() << ";" << std::endl;
 
-    // Docc metadata
+    // DOCC Metadata
     stream << metadata_var << ".sdfg_name = \"" << sdfg_name << "\";" << std::endl;
     stream << metadata_var << ".sdfg_file = \"" << sdfg_file << "\";" << std::endl;
     stream << metadata_var << ".arg_capture_path = \"" << arg_capture_path << "\";" << std::endl;
     stream << metadata_var << ".features_file = \"" << features_file << "\";" << std::endl;
     stream << metadata_var << ".opt_report_file = \"" << opt_report_file << "\";" << std::endl;
+
+    // Element metadata
     stream << metadata_var << ".element_id = " << info.element_id() << ";" << std::endl;
     stream << metadata_var << ".element_type = \"" << info.element_type().value() << "\";" << std::endl;
     stream << metadata_var << ".target_type = \"" << info.target_type().value() << "\";" << std::endl;
-    stream << metadata_var << ".loopnest_index = " << info.loopnest_index() << ";" << std::endl;
+
+    // Loop info metadata
+    stream << metadata_var << ".loopnest_index = " << info.loop_info().loopnest_index << ";" << std::endl;
+    stream << metadata_var << ".num_loops = " << info.loop_info().num_loops << ";" << std::endl;
+    stream << metadata_var << ".num_maps = " << info.loop_info().num_maps << ";" << std::endl;
+    stream << metadata_var << ".num_fors = " << info.loop_info().num_fors << ";" << std::endl;
+    stream << metadata_var << ".num_whiles = " << info.loop_info().num_whiles << ";" << std::endl;
+    stream << metadata_var << ".max_depth = " << info.loop_info().max_depth << ";" << std::endl;
+    stream << metadata_var << ".is_perfectly_nested = " << (info.loop_info().is_perfectly_nested ? "1" : "0") << ";"
+           << std::endl;
+    stream << metadata_var << ".is_perfectly_parallel = " << (info.loop_info().is_perfectly_parallel ? "1" : "0") << ";"
+           << std::endl;
+    stream << metadata_var << ".is_elementwise = " << (info.loop_info().is_elementwise ? "1" : "0") << ";" << std::endl;
+    stream << metadata_var << ".has_side_effects = " << (info.loop_info().has_side_effects ? "1" : "0") << ";"
+           << std::endl;
+
     stream << metadata_var << ".region_uuid = \"" << region_uuid << "\";" << std::endl;
 
     // Initialize region

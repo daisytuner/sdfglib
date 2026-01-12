@@ -1,3 +1,43 @@
+/**
+ * @file node_dispatcher_registry.h
+ * @brief Registry system for dispatchers and library node dispatchers
+ *
+ * This file defines registry classes for dispatchers, allowing dynamic registration
+ * and lookup of code generation handlers for different node types and library nodes.
+ *
+ * ## Dispatcher Registries
+ *
+ * The registry system provides three main registries:
+ * 1. **NodeDispatcherRegistry**: Maps control flow node types to dispatchers
+ * 2. **MapDispatcherRegistry**: Maps map schedule types to specialized dispatchers
+ * 3. **LibraryNodeDispatcherRegistry**: Maps library node codes to dispatchers
+ *
+ * Each registry follows the singleton pattern and provides thread-safe registration
+ * and lookup of factory functions.
+ *
+ * ## Library Node Dispatchers
+ *
+ * Library node dispatchers generate code for specific library operations. Each library
+ * node code (e.g., "GEMM", "Memcpy") can be registered with a custom dispatcher that
+ * knows how to generate the appropriate library call or implementation.
+ *
+ * ## Example
+ *
+ * Registering a library node dispatcher:
+ * @code
+ * LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+ *     "GEMM",
+ *     [](LanguageExtension& lang, const Function& func,
+ *        const data_flow::DataFlowGraph& dfg, const data_flow::LibraryNode& node) {
+ *         return std::make_unique<GemmDispatcher>(lang, func, dfg, node);
+ *     }
+ * );
+ * @endcode
+ *
+ * @see node_dispatcher.h for the base dispatcher class
+ * @see block_dispatcher.h for LibraryNodeDispatcher base class
+ */
+
 #pragma once
 
 #include <mutex>
@@ -59,6 +99,14 @@ std::unique_ptr<NodeDispatcher> create_dispatcher(
 using MapDispatcherFn = std::function<std::unique_ptr<
     NodeDispatcher>(LanguageExtension&, StructuredSDFG&, analysis::AnalysisManager&, structured_control_flow::Map&, InstrumentationPlan&, ArgCapturePlan&)>;
 
+/**
+ * @class MapDispatcherRegistry
+ * @brief Registry for map-specific dispatchers based on schedule type
+ *
+ * Maps can have different schedule types (CPU_Sequential, GPU_Default, etc.)
+ * that require different code generation strategies. This registry maps
+ * schedule type strings to appropriate dispatcher factories.
+ */
 class MapDispatcherRegistry {
 private:
     mutable std::mutex mutex_;
@@ -92,6 +140,40 @@ public:
 using LibraryNodeDispatcherFn = std::function<std::unique_ptr<
     LibraryNodeDispatcher>(LanguageExtension&, const Function&, const data_flow::DataFlowGraph&, const data_flow::LibraryNode&)>;
 
+/**
+ * @class LibraryNodeDispatcherRegistry
+ * @brief Registry for library node dispatchers
+ *
+ * This registry maps library node codes (operation identifiers like "GEMM", "Memcpy")
+ * to dispatcher factory functions. Each library node type can register a custom
+ * dispatcher that generates the appropriate code for that operation.
+ *
+ * The registry is thread-safe and follows the singleton pattern. Dispatchers are
+ * registered at program startup and looked up during code generation.
+ *
+ * ## Usage
+ *
+ * Register a dispatcher:
+ * @code
+ * LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+ *     "MyOperation",
+ *     [](LanguageExtension& lang, const Function& func,
+ *        const data_flow::DataFlowGraph& dfg, const data_flow::LibraryNode& node) {
+ *         return std::make_unique<MyOperationDispatcher>(lang, func, dfg, node);
+ *     }
+ * );
+ * @endcode
+ *
+ * Lookup a dispatcher:
+ * @code
+ * auto factory = LibraryNodeDispatcherRegistry::instance()
+ *                    .get_library_node_dispatcher("MyOperation");
+ * if (factory) {
+ *     auto dispatcher = factory(lang, func, dfg, node);
+ *     // Use dispatcher...
+ * }
+ * @endcode
+ */
 class LibraryNodeDispatcherRegistry {
 private:
     mutable std::mutex mutex_;
