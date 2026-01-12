@@ -159,8 +159,6 @@ public:
 
     std::list<const data_flow::DataFlowNode*> topological_sort() const;
 
-    std::list<const data_flow::DataFlowNode*> topological_sort_deterministic() const;
-
     std::list<data_flow::DataFlowNode*> topological_sort();
 
     std::unordered_map<std::string, const data_flow::AccessNode*> dominators() const;
