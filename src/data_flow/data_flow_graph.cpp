@@ -4,6 +4,9 @@
 #include <boost/graph/exception.hpp>
 #include <cstddef>
 #include <list>
+#include <map>
+#include <stdexcept>
+#include <unordered_set>
 
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/code_node.h"
@@ -436,53 +439,57 @@ std::list<DataFlowNode*> DataFlowGraph::topological_sort() {
             }
         }
 
-        // Go over all sinks
-        DataFlowNode* primary_sink = nullptr;
-        std::unordered_map<DataFlowNode*, std::list<DataFlowNode*>> lists;
-        std::unordered_map<DataFlowNode*, std::list<Memlet*>> memlet_queues;
-        std::unordered_map<Memlet*, DataFlowNode*> memlet_map;
-        for (auto* sink : sinks) {
-            lists.insert({sink, {}});
-            memlet_queues.insert({sink, {}});
-            std::unordered_set<DataFlowNode*> primary_blocker;
+        // Create a queue with all sinks
+        std::list<DataFlowNode*> queue;
+        queue.insert(queue.end(), sinks.begin(), sinks.end());
 
-            // Perform reversed DFS starting form sink node
-            std::unordered_set<DataFlowNode*> visited;
-            std::stack<std::pair<DataFlowNode*, DataFlowNode*>> stack({{sink, nullptr}});
+        // Perform a reversed DFS for each element in the queue
+        std::unordered_map<DataFlowNode*, std::list<DataFlowNode*>> lists;
+        std::map<std::pair<DataFlowNode*, long long>, DataFlowNode*> dependencies;
+        std::unordered_set<DataFlowNode*> visited, no_dependency;
+        while (!queue.empty()) {
+            auto* start = queue.front();
+            queue.pop_front();
+
+            if (visited.contains(start)) {
+                continue;
+            }
+
+            // Reversed DFS
+            lists.insert({start, {}});
+            no_dependency.insert(start);
+            std::stack<std::pair<DataFlowNode*, DataFlowNode*>> stack({{start, nullptr}});
             while (!stack.empty()) {
-                auto [current, successor] = stack.top();
+                auto* current = stack.top().first;
+                auto* successor = stack.top().second;
                 stack.pop();
 
-                // Special case: Only handle primary edges
-                if (this->out_degree(*current) > 1) {
+                // If multiple out edges, add to queue, add dependency, and skip
+                if (current != start && this->out_degree(*current) > 1) {
+                    queue.push_back(current);
+                    long long dependecy_id = -1;
                     if (auto* code_node = dynamic_cast<CodeNode*>(current)) {
-                        std::unordered_map<std::string, Memlet*> edges_map;
-                        Memlet* memlet = nullptr; // Memlet from current to successor
-                        for (auto& oedge : this->out_edges(*code_node)) {
-                            edges_map.insert({oedge.src_conn(), &oedge});
-                            if (&oedge.dst() == successor) {
-                                memlet = &oedge;
-                            }
-                        }
-                        auto* primary_dst = &edges_map.at(code_node->output(0))->dst();
-                        if (primary_dst == successor) {
-                            for (size_t j = 1; j < code_node->outputs().size(); j++) {
-                                memlet_queues.at(sink).push_back(edges_map.at(code_node->output(j)));
-                            }
-                        } else {
-                            if (primary_blocker.empty()) {
-                                memlet_map.insert({memlet, sink});
-                            } else {
-                                memlet_map.insert({memlet, nullptr});
-                            }
-                            primary_blocker.insert(current);
-                            continue;
-                        }
-                    } else {
-                        std::vector<std::pair<Memlet*, size_t>> edges_list;
-                        Memlet* memlet = nullptr; // Memlet from current to successor
                         for (auto& oedge : this->out_edges(*current)) {
                             auto* dst = &oedge.dst();
+                            if (dst == successor) {
+                                for (long long j = 0; j < code_node->outputs().size(); j++) {
+                                    if (oedge.src_conn() == code_node->output(j)) {
+                                        dependecy_id = j;
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    } else {
+                        std::vector<std::pair<DataFlowNode*, size_t>> tmp_outputs;
+                        std::unordered_set<DataFlowNode*> local_visited;
+                        for (auto& oedge : this->out_edges(*current)) {
+                            auto* dst = &oedge.dst();
+                            if (local_visited.contains(dst)) {
+                                continue;
+                            }
+                            local_visited.insert(dst);
                             size_t value = 0;
                             if (auto* tasklet = dynamic_cast<Tasklet*>(dst)) {
                                 value = tasklet->code();
@@ -492,30 +499,25 @@ std::list<DataFlowNode*> DataFlowGraph::topological_sort() {
                                     value += c;
                                 }
                             }
-                            edges_list.push_back({&oedge, value});
-                            if (&oedge.dst() == successor) {
-                                memlet = &oedge;
-                            }
+                            tmp_outputs.push_back({dst, value});
                         }
-                        std::sort(edges_list.begin(), edges_list.end(), [](const auto& a, const auto& b) {
+                        std::sort(tmp_outputs.begin(), tmp_outputs.end(), [](const auto& a, const auto& b) {
                             return a.second > b.second ||
                                    (a.second == b.second && a.first->element_id() < b.first->element_id());
                         });
-                        auto* primary_dst = &edges_list.front().first->dst();
-                        if (primary_dst == successor) {
-                            for (size_t j = 1; j < edges_list.size(); j++) {
-                                memlet_queues.at(sink).push_back(edges_list.at(j).first);
+                        for (long long j = 0; j < tmp_outputs.size(); j++) {
+                            if (tmp_outputs.at(j).first == successor) {
+                                dependecy_id = j;
+                                break;
                             }
-                        } else {
-                            if (primary_blocker.empty()) {
-                                memlet_map.insert({memlet, sink});
-                            } else {
-                                memlet_map.insert({memlet, nullptr});
-                            }
-                            primary_blocker.insert(current);
-                            continue;
                         }
                     }
+                    if (dependecy_id == -1 || dependencies.contains({current, dependecy_id})) {
+                        throw std::runtime_error("Could not create dependency in topological sort");
+                    }
+                    dependencies.insert({{current, dependecy_id}, start});
+                    no_dependency.erase(start);
+                    continue;
                 }
 
                 // Put the current element in the list
@@ -523,13 +525,11 @@ std::list<DataFlowNode*> DataFlowGraph::topological_sort() {
                     throw boost::not_a_dag();
                 }
                 visited.insert(current);
-                if (primary_blocker.contains(current)) {
-                    primary_blocker.erase(current);
-                }
-                lists.at(sink).push_front(current);
+                lists.at(start).push_front(current);
 
                 // Put all predecessors on the stack
                 if (auto* code_node = dynamic_cast<CodeNode*>(current)) {
+                    std::unordered_set<DataFlowNode*> local_visited;
                     for (auto& input : code_node->inputs()) {
                         Memlet* iedge = nullptr;
                         for (auto& in_edge : this->in_edges(*code_node)) {
@@ -542,12 +542,20 @@ std::list<DataFlowNode*> DataFlowGraph::topological_sort() {
                             continue;
                         }
                         auto* src = &iedge->src();
-                        stack.push({src, current});
+                        if (!local_visited.contains(src)) {
+                            local_visited.insert(src);
+                            stack.push({src, current});
+                        }
                     }
                 } else {
                     std::vector<std::pair<DataFlowNode*, size_t>> tmp_inputs;
+                    std::unordered_set<DataFlowNode*> local_visited;
                     for (auto& iedge : this->in_edges(*current)) {
                         auto* src = &iedge.src();
+                        if (local_visited.contains(src)) {
+                            continue;
+                        }
+                        local_visited.insert(src);
                         size_t value = 0;
                         if (auto* tasklet = dynamic_cast<Tasklet*>(src)) {
                             value = tasklet->code();
@@ -568,34 +576,59 @@ std::list<DataFlowNode*> DataFlowGraph::topological_sort() {
                     }
                 }
             }
-
-            // Store primary sink
-            if (primary_blocker.empty()) {
-                primary_sink = sink;
-            }
         }
-        if (!primary_sink) {
+
+        // Collect and sort dependency-free
+        std::vector<DataFlowNode*> no_dependency_vec(no_dependency.begin(), no_dependency.end());
+        if (no_dependency.size() == 0) {
             throw boost::not_a_dag();
+        } else if (no_dependency.size() > 1) {
+            std::sort(no_dependency_vec.begin(), no_dependency_vec.end(), [](const DataFlowNode* a, const DataFlowNode* b) {
+                const auto* a_tasklet = dynamic_cast<const Tasklet*>(a);
+                const auto* b_tasklet = dynamic_cast<const Tasklet*>(b);
+                const auto* a_libnode = dynamic_cast<const LibraryNode*>(a);
+                const auto* b_libnode = dynamic_cast<const LibraryNode*>(b);
+                const auto* a_access_node = dynamic_cast<const AccessNode*>(a);
+                const auto* b_access_node = dynamic_cast<const AccessNode*>(b);
+                if (a_tasklet && b_tasklet) {
+                    return a_tasklet->code() < b_tasklet->code() || (a_tasklet->code() == b_tasklet->code() &&
+                                                                     a_tasklet->element_id() < b_tasklet->element_id());
+                } else if (a_tasklet && b_libnode) {
+                    return true;
+                } else if (a_tasklet && b_access_node) {
+                    return true;
+                } else if (a_libnode && b_libnode) {
+                    return a_libnode->code().value() < b_libnode->code().value() ||
+                           (a_libnode->code().value() == b_libnode->code().value() &&
+                            a_libnode->element_id() < b_libnode->element_id());
+                } else if (a_libnode && b_access_node) {
+                    return true;
+                } else if (a_access_node && b_access_node) {
+                    return a_access_node->data() < b_access_node->data() ||
+                           (a_access_node->data() == b_access_node->data() &&
+                            a_access_node->element_id() < b_access_node->element_id());
+                } else {
+                    return false;
+                }
+            });
         }
 
-        std::list<DataFlowNode*> queue = {primary_sink};
-        std::unordered_set<DataFlowNode*> visited;
+        // Stich together by resolving dependencies
+        visited.clear();
+        queue.insert(queue.end(), no_dependency_vec.begin(), no_dependency_vec.end());
         while (!queue.empty()) {
             auto* current = queue.front();
             queue.pop_front();
-            if (visited.contains(current)) {
-                continue;
+
+            if (!visited.contains(current)) {
+                components.at(i).insert(components.at(i).end(), lists.at(current).begin(), lists.at(current).end());
+                visited.insert(current);
             }
 
-            // Fill global list
-            components.at(i).insert(components.at(i).end(), lists.at(current).begin(), lists.at(current).end());
-            visited.insert(current);
-
-            // Fill queue
-            for (auto* memlet : memlet_queues.at(current)) {
-                auto* node = memlet_map.at(memlet);
-                if (node) {
-                    queue.push_back(node);
+            size_t out_degree = this->out_degree(*current);
+            for (size_t j = 0; j < out_degree; j++) {
+                if (dependencies.contains({current, j})) {
+                    queue.push_back(dependencies.at({current, j}));
                 }
             }
         }
