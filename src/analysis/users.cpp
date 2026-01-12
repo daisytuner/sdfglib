@@ -361,12 +361,15 @@ std::pair<graph::Vertex, graph::Vertex> Users::traverse(structured_control_flow:
             this->add_user(std::make_unique<ForUser>(v, atom->get_name(), for_stmt, Use::READ, false, true, false));
 
             boost::add_edge(last, v, this->graph_);
-            boost::add_edge(v, t, this->graph_);
             last = v;
         }
+        auto before_body = last;
+
+        // Not executed - TODO: Prove loop is executed at least once
+        // boost::add_edge(before_body, t, this->graph_);
 
         auto subgraph = this->traverse(for_stmt->root());
-        boost::add_edge(last, subgraph.first, this->graph_);
+        boost::add_edge(before_body, subgraph.first, this->graph_);
 
         // Update
         auto end = subgraph.second;
