@@ -56,6 +56,12 @@ private:
 public:
     MemoryAccess(AccessType access_type, isl_map* relation, const std::string& data, const data_flow::Memlet* memlet);
 
+    ~MemoryAccess() {
+        if (relation_) {
+            isl_map_free(relation_);
+        }
+    }
+
     AccessType access_type() const { return access_type_; }
 
     isl_map* relation() const { return relation_; }
@@ -92,6 +98,16 @@ public:
     ScopStatement(const std::string& name, isl_set* domain, data_flow::CodeNode* code_node);
 
     ScopStatement(const std::string& name, isl_set* domain, symbolic::Expression expression);
+
+    ~ScopStatement() {
+        if (domain_) {
+            isl_set_free(domain_);
+        }
+        if (schedule_) {
+            isl_map_free(schedule_);
+        }
+        this->memory_accesses_.clear();
+    }
 
     const std::string& name() const { return name_; }
 
@@ -142,11 +158,15 @@ public:
     // Overload operator for print
     friend std::ostream& operator<<(std::ostream& os, const ScopStatement& stmt) {
         os << "ScopStatement: " << stmt.name_ << "\n";
-        os << "Domain: " << isl_set_to_str(stmt.domain_) << "\n";
+        char* domain_str = isl_set_to_str(stmt.domain_);
+        os << "Domain: " << domain_str << "\n";
+        free(domain_str);
         os << "Memory Accesses:\n";
         for (const auto& access : stmt.memory_accesses_) {
+            char* relation_str = isl_map_to_str(access->relation());
             os << "  - Type: " << (access->access_type() == AccessType::READ ? "READ" : "WRITE")
-               << ", Data: " << access->data() << ", Relation: " << isl_map_to_str(access->relation()) << "\n";
+               << ", Data: " << access->data() << ", Relation: " << relation_str << "\n";
+            free(relation_str);
         }
         return os;
     }
@@ -162,6 +182,14 @@ private:
 
 public:
     Scop(isl_ctx* ctx, isl_space* param_space);
+
+    ~Scop() {
+        if (param_space_) {
+            isl_space_free(param_space_);
+        }
+        this->statements_.clear();
+        isl_ctx_free(ctx_);
+    }
 
     isl_ctx* ctx() const { return ctx_; }
 
@@ -190,7 +218,11 @@ public:
         for (const auto& stmt : scop.statements_) {
             os << *stmt;
         }
-        os << "Schedule:\n" << isl_union_map_to_str(scop.schedule()) << "\n";
+        isl_union_map* schedule = scop.schedule();
+        char* schedule_str = isl_union_map_to_str(schedule);
+        os << "Schedule:\n" << schedule_str << "\n";
+        free(schedule_str);
+        isl_union_map_free(schedule);
         // os << "AST:\n" << scop.ast() << "\n";
         return os;
     }
@@ -257,6 +289,18 @@ private:
 
 public:
     Dependences(Scop& scop) : ctx_(scop.ctx()) { calculate_dependences(scop); }
+
+    ~Dependences() {
+        if (RAW) isl_union_map_free(RAW);
+        if (WAR) isl_union_map_free(WAR);
+        if (WAW) isl_union_map_free(WAW);
+        if (RED) isl_union_map_free(RED);
+        if (TC_RED) isl_union_map_free(TC_RED);
+        for (auto& pair : reduction_dependences_) {
+            isl_map_free(pair.second);
+        }
+        reduction_dependences_.clear();
+    }
 
     /// The type of the dependences.
     ///

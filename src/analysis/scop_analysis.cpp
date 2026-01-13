@@ -61,30 +61,31 @@ static isl_stat pad_schedule(isl_map *map, void *user) {
 
 MemoryAccess::
     MemoryAccess(AccessType access_type, isl_map *relation, const std::string &data, const data_flow::Memlet *memlet)
-    : access_type_(access_type), relation_(relation), data_(data), memlet_(memlet) {}
+    : access_type_(access_type), relation_(isl_map_copy(relation)), data_(data), memlet_(memlet) {}
 
 ScopStatement::ScopStatement(const std::string &name, isl_set *domain, data_flow::CodeNode *code_node)
     : name_(name), code_node_(code_node), expression_(SymEngine::null) {
-    domain_ = isl_set_set_tuple_name(domain, name.c_str());
+    domain_ = isl_set_set_tuple_name(isl_set_copy(domain), name.c_str());
     isl_space *space = isl_set_get_space(domain_);
-    schedule_ = isl_map_identity(isl_space_map_from_set(space));
+    auto space_map = isl_space_map_from_set(space);
+    schedule_ = isl_map_identity(space_map);
 }
 
 ScopStatement::ScopStatement(const std::string &name, isl_set *domain, symbolic::Expression expression)
     : name_(name), code_node_(nullptr), expression_(expression) {
-    domain_ = isl_set_set_tuple_name(domain, name.c_str());
+    domain_ = isl_set_set_tuple_name(isl_set_copy(domain), name.c_str());
     isl_space *space = isl_set_get_space(domain_);
     schedule_ = isl_map_identity(isl_space_map_from_set(space));
 }
 
-Scop::Scop(isl_ctx *ctx, isl_space *param_space) : ctx_(ctx), param_space_(param_space) {}
+Scop::Scop(isl_ctx *ctx, isl_space *param_space) : ctx_(ctx), param_space_(isl_space_copy(param_space)) {}
 
 isl_union_set *Scop::domains() const {
     isl_space *empty_space = isl_space_params_alloc(this->ctx_, 0);
     isl_union_set *domain = isl_union_set_empty(empty_space);
 
     for (auto &stmt : this->statements_) {
-        domain = isl_union_set_add_set(domain, stmt->domain());
+        domain = isl_union_set_add_set(domain, isl_set_copy(stmt->domain()));
     }
 
     return domain;
@@ -143,6 +144,7 @@ std::unique_ptr<Scop> ScopBuilder::build(analysis::AnalysisManager &analysis_man
     isl_options_set_on_error(ctx, ISL_ON_ERROR_CONTINUE);
     isl_space *param_space = isl_space_set_alloc(ctx, 0, 0);
     this->scop_ = std::make_unique<Scop>(ctx, param_space);
+    isl_space_free(param_space);
 
     this->visit(analysis_manager, node_);
 
@@ -180,6 +182,7 @@ void ScopBuilder::visit_sequence(analysis::AnalysisManager &analysis_manager, st
             auto statement = std::make_unique<ScopStatement>(
                 "S_" + std::to_string(transition.element_id()) + "_" + std::to_string(j), domain, assignment.second
             );
+            isl_set_free(domain);
             j++;
 
             AccessType access_type = AccessType::WRITE;
@@ -192,16 +195,26 @@ void ScopBuilder::visit_sequence(analysis::AnalysisManager &analysis_manager, st
             }
             relation += "{ [] -> [0] }";
             isl_map *isl_relation = isl_map_read_from_str(scop_->ctx(), relation.c_str());
+            if (!isl_relation) {
+                this->scop_ = nullptr;
+                return;
+            }
             isl_relation = isl_map_set_tuple_name(isl_relation, isl_dim_in, statement->name().c_str());
             auto memory_access = std::make_unique<MemoryAccess>(access_type, isl_relation, data, nullptr);
+            isl_map_free(isl_relation);
             statement->insert(memory_access);
 
             for (auto &sym : symbolic::atoms(assignment.second)) {
                 AccessType access_type = AccessType::READ;
                 std::string data = sym->get_name();
                 isl_map *isl_relation = isl_map_read_from_str(scop_->ctx(), relation.c_str());
+                if (!isl_relation) {
+                    this->scop_ = nullptr;
+                    return;
+                }
                 isl_relation = isl_map_set_tuple_name(isl_relation, isl_dim_in, statement->name().c_str());
                 auto memory_access = std::make_unique<MemoryAccess>(access_type, isl_relation, data, nullptr);
+                isl_map_free(isl_relation);
                 statement->insert(memory_access);
             }
 
@@ -224,6 +237,7 @@ void ScopBuilder::visit_block(analysis::AnalysisManager &analysis_manager, struc
             isl_set *domain = isl_set_universe(isl_space_set_alloc(scop_->ctx(), 0, 0));
             auto statement =
                 std::make_unique<ScopStatement>("S_" + std::to_string(code_node->element_id()), domain, code_node);
+            isl_set_free(domain);
 
             // Add reads
             for (auto &iedge : graph.in_edges(*node)) {
@@ -241,6 +255,7 @@ void ScopBuilder::visit_block(analysis::AnalysisManager &analysis_manager, struc
                 }
                 isl_relation = isl_map_set_tuple_name(isl_relation, isl_dim_in, statement->name().c_str());
                 auto memory_access = std::make_unique<MemoryAccess>(access_type, isl_relation, data, &iedge);
+                isl_map_free(isl_relation);
                 statement->insert(memory_access);
             }
 
@@ -258,6 +273,7 @@ void ScopBuilder::visit_block(analysis::AnalysisManager &analysis_manager, struc
                 }
                 isl_relation = isl_map_set_tuple_name(isl_relation, isl_dim_in, statement->name().c_str());
                 auto memory_access = std::make_unique<MemoryAccess>(access_type, isl_relation, data, &oedge);
+                isl_map_free(isl_relation);
                 statement->insert(memory_access);
             }
 
@@ -348,11 +364,6 @@ void ScopBuilder::
     for (size_t i = stmt_start; i < stmts.size(); ++i) {
         ScopStatement *stmt = stmts[i];
         isl_set *domain = isl_set_copy(stmt->domain());
-
-        if (!domain) {
-            // Should not happen with valid visitation
-            continue;
-        }
 
         // Insert indvar dimension at 0
         domain = isl_set_insert_dims(domain, isl_dim_set, 0, 1);
@@ -767,7 +778,7 @@ void Dependences::calculate_dependences(Scop &S) {
 
     bool HasReductions = !isl_union_map_is_empty(ReductionTagMap);
 
-    Schedule = isl_schedule_copy(S.schedule_tree());
+    Schedule = S.schedule_tree();
 
     if (!HasReductions) {
         isl_union_map_free(ReductionTagMap);
@@ -924,7 +935,11 @@ void Dependences::calculate_dependences(Scop &S) {
 
     // Step 2)
     RED = isl_union_map_intersect(RED, isl_union_map_copy(RAW));
-    RED = isl_union_map_intersect(RED, StrictWAW);
+    if (isl_union_map_is_empty(RED)) {
+        isl_union_map_free(StrictWAW);
+    } else {
+        RED = isl_union_map_intersect(RED, StrictWAW);
+    }
 
     if (!isl_union_map_is_empty(RED)) {
         // Step 3)
