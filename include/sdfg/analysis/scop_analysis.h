@@ -252,6 +252,7 @@ public:
         for (const auto& stmt : scop.statements_) {
             os << *stmt;
         }
+        scop.schedule_tree();
         isl_union_map* schedule = scop.schedule();
         char* schedule_str = isl_union_map_to_str(schedule);
         os << "Schedule:\n" << schedule_str << "\n";
