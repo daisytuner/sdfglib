@@ -37,7 +37,6 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Tasklet) {
     auto scop = scop_builder.build(am);
 
     ASSERT_NE(scop, nullptr);
-    std::cout << *scop << std::endl;
     auto statements = scop->statements();
     ASSERT_EQ(statements.size(), 1);
 
@@ -90,7 +89,6 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Expression) {
     auto scop = scop_builder.build(am);
 
     ASSERT_NE(scop, nullptr);
-    std::cout << *scop << std::endl;
     auto statements = scop->statements();
     ASSERT_EQ(statements.size(), 1);
 
@@ -141,12 +139,11 @@ TEST(ScopAnalysisTest, ScopBuilderTest_LoopWithConstantBounds_StaticStatements) 
     auto scop = scop_builder.build(am);
 
     ASSERT_NE(scop, nullptr);
-    std::cout << *scop << std::endl;
     auto statements = scop->statements();
     ASSERT_EQ(statements.size(), 1);
 
     auto* stmt = statements[0];
-    isl_set* domain = isl_set_copy(stmt->domain());
+    isl_set* domain = stmt->domain();
     ASSERT_NE(domain, nullptr);
 
     // Verify properties of domain
@@ -241,7 +238,6 @@ TEST(ScopAnalysisTest, ScopBuilderTest_LoopWithConstantBounds) {
     auto scop = scop_builder.build(am);
 
     ASSERT_NE(scop, nullptr);
-    std::cout << *scop << std::endl;
     auto statements = scop->statements();
     ASSERT_EQ(statements.size(), 1);
 
@@ -303,7 +299,6 @@ TEST(ScopAnalysisTest, ScopBuilderTest_LoopWithConstantBounds) {
     std::string expected_str = "{ " + stmt->name() + "[i] -> [i] }";
     isl_union_map* expected = isl_union_map_read_from_str(scop->ctx(), expected_str.c_str());
     EXPECT_TRUE(isl_union_map_is_equal(schedule, expected));
-    isl_union_map_free(schedule);
     isl_union_map_free(expected);
 
     // Verify AST
@@ -362,7 +357,6 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D) {
     auto scop = scop_builder.build(am);
 
     ASSERT_NE(scop, nullptr);
-    std::cout << *scop << std::endl;
     auto statements = scop->statements();
     ASSERT_EQ(statements.size(), 1);
 
@@ -430,7 +424,6 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D) {
     std::string expected_str = "{ " + stmt->name() + "[i, j] -> [i, j] }";
     isl_union_map* expected = isl_union_map_read_from_str(scop->ctx(), expected_str.c_str());
     EXPECT_TRUE(isl_union_map_is_equal(schedule, expected));
-    isl_union_map_free(schedule);
     isl_union_map_free(expected);
 
     // Verify AST
@@ -486,7 +479,6 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D_TriangularDomain) {
     auto scop = scop_builder.build(am);
 
     ASSERT_NE(scop, nullptr);
-    std::cout << *scop << std::endl;
     auto statements = scop->statements();
     ASSERT_EQ(statements.size(), 1);
 
@@ -531,7 +523,6 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D_TriangularDomain) {
     std::string expected_str = "{ " + stmt->name() + "[i, j] -> [i, j] }";
     isl_union_map* expected = isl_union_map_read_from_str(scop->ctx(), expected_str.c_str());
     EXPECT_TRUE(isl_union_map_is_equal(schedule, expected));
-    isl_union_map_free(schedule);
     isl_union_map_free(expected);
 
     // Verify AST
@@ -584,7 +575,6 @@ TEST(ScopAnalysisTest, ScopBuilderTest_LoopWithSymbolicBounds) {
     auto scop = scop_builder.build(am);
 
     ASSERT_NE(scop, nullptr);
-    std::cout << *scop << std::endl;
     auto statements = scop->statements();
     ASSERT_EQ(statements.size(), 1);
 
@@ -663,7 +653,6 @@ TEST(ScopAnalysisTest, ScopBuilderTest_LoopWithStrides) {
     auto scop = scop_builder.build(am);
 
     ASSERT_NE(scop, nullptr);
-    std::cout << *scop << std::endl;
     auto statements = scop->statements();
     ASSERT_EQ(statements.size(), 1);
 
@@ -757,7 +746,6 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D_Symbolic) {
     auto scop = scop_builder.build(am);
 
     ASSERT_NE(scop, nullptr);
-    std::cout << *scop << std::endl;
     auto statements = scop->statements();
     ASSERT_EQ(statements.size(), 1);
 
@@ -801,7 +789,6 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D_Symbolic) {
     std::string expected_str = "{ " + stmt->name() + "[i, j] -> [i, j] }";
     isl_union_map* expected = isl_union_map_read_from_str(scop->ctx(), expected_str.c_str());
     EXPECT_TRUE(isl_union_map_is_equal(schedule, expected));
-    isl_union_map_free(schedule);
     isl_union_map_free(expected);
 
     // Verify AST
@@ -1170,7 +1157,7 @@ TEST(ScopAnalysisTest, DependenceInfoTest_Validity) {
     analysis::Dependences deps(*scop);
 
     // Default schedule should be valid
-    // EXPECT_TRUE(deps.is_valid(*scop, scop->schedule_tree()));
+    EXPECT_TRUE(deps.is_valid(*scop, scop->schedule_tree()));
 
     // Create reversed schedule: i -> -i
     // We can create a new schedule map
@@ -1184,7 +1171,7 @@ TEST(ScopAnalysisTest, DependenceInfoTest_Validity) {
     sched_str += "[i] -> [-i] }";
 
     isl_map* new_sched_map = isl_map_read_from_str(scop->ctx(), sched_str.c_str());
-    new_sched_map = isl_map_intersect_domain(new_sched_map, isl_set_copy(domain));
+    new_sched_map = isl_map_intersect_domain(new_sched_map, domain);
 
     std::unordered_map<analysis::ScopStatement*, isl_map*> new_schedule;
     new_schedule[scop->statements()[0]] = new_sched_map;
@@ -2932,7 +2919,6 @@ TEST(ScopAnalysisTest, ScopToSDFGTest_SimpleLoopWithExpression) {
 
     analysis::ScopBuilder scop_builder(sdfg, loop);
     auto scop = scop_builder.build(am);
-    std::cout << "Scop built successfully." << std::endl;
     ASSERT_NE(scop, nullptr);
 
     // Check initial statement count
@@ -2940,9 +2926,7 @@ TEST(ScopAnalysisTest, ScopToSDFGTest_SimpleLoopWithExpression) {
 
     // 2. Convert Scop back to SDFG
     analysis::ScopToSDFG converter(*scop, builder);
-    std::cout << "Starting Scop to SDFG conversion." << std::endl;
     converter.build(am);
-    std::cout << "Scop to SDFG conversion completed." << std::endl;
 
     ASSERT_EQ(root.size(), 1);
     auto* new_seq = dynamic_cast<structured_control_flow::Sequence*>(&root.at(0).first);
@@ -2968,6 +2952,4 @@ TEST(ScopAnalysisTest, ScopToSDFGTest_SimpleLoopWithExpression) {
     EXPECT_EQ(inner_seq.at(0).second.size(), 1);
     EXPECT_TRUE(symbolic::eq((*inner_seq.at(0).second.assignments().begin()).first, symbolic::symbol("A")));
     EXPECT_TRUE(symbolic::eq((*inner_seq.at(0).second.assignments().begin()).second, symbolic::symbol("B")));
-
-    std::cout << "Scop to SDFG test completed successfully." << std::endl;
 }

@@ -1270,7 +1270,6 @@ void ScopToSDFG::build(analysis::AnalysisManager &analysis_manager) {
 
     isl_ast_node_free(root_node);
     isl_ast_build_free(ast_builder);
-    std::cout << "Finished ScopToSDFG build." << std::endl;
 }
 
 void ScopToSDFG::visit_node(isl_ast_node *node, structured_control_flow::Sequence &scope) {
@@ -1289,10 +1288,13 @@ void ScopToSDFG::visit_node(isl_ast_node *node, structured_control_flow::Sequenc
         case isl_ast_node_user:
             visit_user(node, scope);
             break;
-        case isl_ast_node_mark:
+        case isl_ast_node_mark: {
             // Handle markers (e.g., parallelism annotations) here if needed
-            visit_node(isl_ast_node_mark_get_node(node), scope);
+            isl_ast_node *child = isl_ast_node_mark_get_node(node);
+            visit_node(child, scope);
+            isl_ast_node_free(child);
             break;
+        }
         default:
             break;
     }
@@ -1368,7 +1370,6 @@ void ScopToSDFG::visit_user(isl_ast_node *node, structured_control_flow::Sequenc
     // Usually 'expr' is a call operation: "StatementName(i, j)"
     // The identifier of the operation is the statement name.
 
-    isl_ast_expr *op = isl_ast_expr_get_op_arg(expr, 0); // Logic depends on how ISL builds the call
     // A more robust way to get tuple name directly from expr if it is an ID or Call:
     isl_id *id = isl_ast_expr_get_id(expr); // If it's just an ID
     if (!id && isl_ast_expr_get_type(expr) == isl_ast_expr_op) {
