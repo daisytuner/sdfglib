@@ -1,0 +1,25 @@
+{
+  "name": "transfer-server",
+  "version": "0.0.1",
+  "description": "Example Webserver to handle transfer tuning requests from sdfglib",
+  "license": "BSD-3-Clause",
+  "author": "Daisytuner GmbH",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.0.7",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.8",
+    "hono": "^4.11.4"
+  }
+}

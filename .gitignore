@@ -44,3 +44,7 @@ _codeql_build_dir/
 
 # Documentation
 docs/
+
+
+node_modules/
+dist/
