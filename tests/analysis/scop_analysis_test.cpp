@@ -54,20 +54,20 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Tasklet) {
     auto read_access = *reads.begin();
     EXPECT_EQ(read_access->data(), "A");
     EXPECT_EQ(read_access->access_type(), analysis::AccessType::READ);
-    const char* read_relation_cstr = isl_map_to_str(read_access->relation());
+    char* read_relation_cstr = isl_map_to_str(read_access->relation());
     std::string read_relation = read_relation_cstr;
     EXPECT_EQ(read_relation, "{ S_5[] -> [0] }");
-    free((void*) read_relation_cstr);
+    free(read_relation_cstr);
 
     auto writes = stmt->writes();
     EXPECT_EQ(writes.size(), 1);
     auto write_access = *writes.begin();
     EXPECT_EQ(write_access->data(), "B");
     EXPECT_EQ(write_access->access_type(), analysis::AccessType::WRITE);
-    const char* write_relation_cstr = isl_map_to_str(write_access->relation());
+    char* write_relation_cstr = isl_map_to_str(write_access->relation());
     std::string write_relation = write_relation_cstr;
     EXPECT_EQ(write_relation, "{ S_5[] -> [0] }");
-    free((void*) write_relation_cstr);
+    free(write_relation_cstr);
 }
 
 TEST(ScopAnalysisTest, ScopBuilderTest_Expression) {
@@ -180,22 +180,20 @@ TEST(ScopAnalysisTest, ScopBuilderTest_LoopWithConstantBounds_StaticStatements) 
     auto read_access = *reads.begin();
     EXPECT_EQ(read_access->data(), "A");
     EXPECT_EQ(read_access->access_type(), analysis::AccessType::READ);
-    const char* read_relation_cstr = isl_map_to_str(read_access->relation());
+    char* read_relation_cstr = isl_map_to_str(read_access->relation());
     std::string read_relation = read_relation_cstr;
     EXPECT_EQ(read_relation, "{ S_8[i] -> [0] }");
-    free((void*) read_relation_cstr);
+    free(read_relation_cstr);
 
     auto writes = stmt->writes();
     EXPECT_EQ(writes.size(), 1);
     auto write_access = *writes.begin();
     EXPECT_EQ(write_access->data(), "B");
     EXPECT_EQ(write_access->access_type(), analysis::AccessType::WRITE);
-    const char* write_relation_cstr = isl_map_to_str(write_access->relation());
+    char* write_relation_cstr = isl_map_to_str(write_access->relation());
     std::string write_relation = write_relation_cstr;
     EXPECT_EQ(write_relation, "{ S_8[i] -> [0] }");
-    free((void*) write_relation_cstr);
-
-    isl_set_free(domain);
+    free(write_relation_cstr);
 }
 
 TEST(ScopAnalysisTest, ScopBuilderTest_LoopWithConstantBounds) {
@@ -279,20 +277,20 @@ TEST(ScopAnalysisTest, ScopBuilderTest_LoopWithConstantBounds) {
     auto read_access = *reads.begin();
     EXPECT_EQ(read_access->data(), "A");
     EXPECT_EQ(read_access->access_type(), analysis::AccessType::READ);
-    const char* read_relation_cstr = isl_map_to_str(read_access->relation());
+    char* read_relation_cstr = isl_map_to_str(read_access->relation());
     std::string read_relation = read_relation_cstr;
     EXPECT_EQ(read_relation, "{ S_8[i] -> [i] }");
-    free((void*) read_relation_cstr);
+    free(read_relation_cstr);
 
     auto writes = stmt->writes();
     EXPECT_EQ(writes.size(), 1);
     auto write_access = *writes.begin();
     EXPECT_EQ(write_access->data(), "B");
     EXPECT_EQ(write_access->access_type(), analysis::AccessType::WRITE);
-    const char* write_relation_cstr = isl_map_to_str(write_access->relation());
+    char* write_relation_cstr = isl_map_to_str(write_access->relation());
     std::string write_relation = write_relation_cstr;
     EXPECT_EQ(write_relation, "{ S_8[i] -> [i] }");
-    free((void*) write_relation_cstr);
+    free(write_relation_cstr);
 
     // Verify Schedule
     isl_union_map* schedule = scop->schedule();
@@ -404,20 +402,20 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D) {
     auto read_access = *reads.begin();
     EXPECT_EQ(read_access->data(), "A");
     EXPECT_EQ(read_access->access_type(), analysis::AccessType::READ);
-    const char* read_relation_cstr = isl_map_to_str(read_access->relation());
+    char* read_relation_cstr = isl_map_to_str(read_access->relation());
     std::string read_relation = read_relation_cstr;
     EXPECT_EQ(read_relation, "{ S_11[i, j] -> [i, j] }");
-    free((void*) read_relation_cstr);
+    free(read_relation_cstr);
 
     auto writes = stmt->writes();
     EXPECT_EQ(writes.size(), 1);
     auto write_access = *writes.begin();
     EXPECT_EQ(write_access->data(), "B");
     EXPECT_EQ(write_access->access_type(), analysis::AccessType::WRITE);
-    const char* write_relation_cstr = isl_map_to_str(write_access->relation());
+    char* write_relation_cstr = isl_map_to_str(write_access->relation());
     std::string write_relation = write_relation_cstr;
     EXPECT_EQ(write_relation, "{ S_11[i, j] -> [i, j] }");
-    free((void*) write_relation_cstr);
+    free(write_relation_cstr);
 
     // Verify Schedule
     isl_union_map* schedule = scop->schedule();
@@ -503,20 +501,20 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D_TriangularDomain) {
     auto read_access = *reads.begin();
     EXPECT_EQ(read_access->data(), "A");
     EXPECT_EQ(read_access->access_type(), analysis::AccessType::READ);
-    const char* read_relation_cstr = isl_map_to_str(read_access->relation());
+    char* read_relation_cstr = isl_map_to_str(read_access->relation());
     std::string read_relation = read_relation_cstr;
     EXPECT_EQ(read_relation, "{ S_11[i, j] -> [i, j] }");
-    free((void*) read_relation_cstr);
+    free(read_relation_cstr);
 
     auto writes = stmt->writes();
     EXPECT_EQ(writes.size(), 1);
     auto write_access = *writes.begin();
     EXPECT_EQ(write_access->data(), "B");
     EXPECT_EQ(write_access->access_type(), analysis::AccessType::WRITE);
-    const char* write_relation_cstr = isl_map_to_str(write_access->relation());
+    char* write_relation_cstr = isl_map_to_str(write_access->relation());
     std::string write_relation = write_relation_cstr;
     EXPECT_EQ(write_relation, "{ S_11[i, j] -> [i, j] }");
-    free((void*) write_relation_cstr);
+    free(write_relation_cstr);
 
     // Verify Schedule
     isl_union_map* schedule = scop->schedule();
@@ -596,20 +594,20 @@ TEST(ScopAnalysisTest, ScopBuilderTest_LoopWithSymbolicBounds) {
     auto read_access = *reads.begin();
     EXPECT_EQ(read_access->data(), "A");
     EXPECT_EQ(read_access->access_type(), analysis::AccessType::READ);
-    const char* read_relation_cstr = isl_map_to_str(read_access->relation());
+    char* read_relation_cstr = isl_map_to_str(read_access->relation());
     std::string read_relation = read_relation_cstr;
     EXPECT_EQ(read_relation, "[N] -> { S_8[i] -> [i] }");
-    free((void*) read_relation_cstr);
+    free(read_relation_cstr);
 
     auto writes = stmt->writes();
     EXPECT_EQ(writes.size(), 1);
     auto write_access = *writes.begin();
     EXPECT_EQ(write_access->data(), "B");
     EXPECT_EQ(write_access->access_type(), analysis::AccessType::WRITE);
-    const char* write_relation_cstr = isl_map_to_str(write_access->relation());
+    char* write_relation_cstr = isl_map_to_str(write_access->relation());
     std::string write_relation = write_relation_cstr;
     EXPECT_EQ(write_relation, "[N] -> { S_8[i] -> [i] }");
-    free((void*) write_relation_cstr);
+    free(write_relation_cstr);
 }
 
 TEST(ScopAnalysisTest, ScopBuilderTest_LoopWithStrides) {
@@ -674,20 +672,20 @@ TEST(ScopAnalysisTest, ScopBuilderTest_LoopWithStrides) {
     auto read_access = *reads.begin();
     EXPECT_EQ(read_access->data(), "A");
     EXPECT_EQ(read_access->access_type(), analysis::AccessType::READ);
-    const char* read_relation_cstr = isl_map_to_str(read_access->relation());
+    char* read_relation_cstr = isl_map_to_str(read_access->relation());
     std::string read_relation = read_relation_cstr;
     EXPECT_EQ(read_relation, "[N] -> { S_8[i] -> [i] }");
-    free((void*) read_relation_cstr);
+    free(read_relation_cstr);
 
     auto writes = stmt->writes();
     EXPECT_EQ(writes.size(), 1);
     auto write_access = *writes.begin();
     EXPECT_EQ(write_access->data(), "B");
     EXPECT_EQ(write_access->access_type(), analysis::AccessType::WRITE);
-    const char* write_relation_cstr = isl_map_to_str(write_access->relation());
+    char* write_relation_cstr = isl_map_to_str(write_access->relation());
     std::string write_relation = write_relation_cstr;
     EXPECT_EQ(write_relation, "[N] -> { S_8[i] -> [i] }");
-    free((void*) write_relation_cstr);
+    free(write_relation_cstr);
 
     std::string ast = scop->ast();
     EXPECT_TRUE(ast.find("for (int c0 = 0; c0 < N; c0 += 2)") != std::string::npos);
@@ -769,20 +767,20 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D_Symbolic) {
     auto read_access = *reads.begin();
     EXPECT_EQ(read_access->data(), "A");
     EXPECT_EQ(read_access->access_type(), analysis::AccessType::READ);
-    const char* read_relation_cstr = isl_map_to_str(read_access->relation());
+    char* read_relation_cstr = isl_map_to_str(read_access->relation());
     std::string read_relation = read_relation_cstr;
     EXPECT_EQ(read_relation, "[N, M] -> { S_11[i, j] -> [i, j] }");
-    free((void*) read_relation_cstr);
+    free(read_relation_cstr);
 
     auto writes = stmt->writes();
     EXPECT_EQ(writes.size(), 1);
     auto write_access = *writes.begin();
     EXPECT_EQ(write_access->data(), "B");
     EXPECT_EQ(write_access->access_type(), analysis::AccessType::WRITE);
-    const char* write_relation_cstr = isl_map_to_str(write_access->relation());
+    char* write_relation_cstr = isl_map_to_str(write_access->relation());
     std::string write_relation = write_relation_cstr;
     EXPECT_EQ(write_relation, "[N, M] -> { S_11[i, j] -> [i, j] }");
-    free((void*) write_relation_cstr);
+    free(write_relation_cstr);
 
     // Verify Schedule
     isl_union_map* schedule = scop->schedule();
@@ -899,7 +897,7 @@ TEST(ScopAnalysisTest, DependenceInfoTest_RAW_Dependence) {
     // Create loop: for i = 1 to 10
     auto i_sym = symbolic::symbol("i");
     auto start = symbolic::integer(1);
-    auto end = symbolic::integer(11); // Loop upper bound is exclusive usually? add_for cond usually '<'.
+    auto end = symbolic::integer(11);
     // Cond: i < 11
     auto cond = symbolic::Lt(i_sym, end);
     auto update = symbolic::add(i_sym, symbolic::integer(1));
@@ -931,19 +929,8 @@ TEST(ScopAnalysisTest, DependenceInfoTest_RAW_Dependence) {
     ASSERT_FALSE(isl_union_map_is_empty(raw));
 
     // Expected: { Stmt[i] -> Stmt[i+1] : 1 <= i <= 9 }
-    // Note: Stmt names might be generated. Let's get the statement instance.
     auto stmts = scop->statements();
     ASSERT_EQ(stmts.size(), 1);
-    // Since we don't know the statement name easily (it's generated), we can iterate or build expected string with
-    // wildcard or verify using subset.
-
-    // Let's print for debugging if test fails (but here I'm writing code)
-    // Checking if Stmt[1] -> Stmt[2] exists.
-
-    // Construct domain point for Statement at i=1
-    // And range point for Statement at i=2
-
-    // Actually, easier to check if the map is exactly { S[i] -> S[i+1] : 1 <= i <= 9 }
     // Get the statement id/name
     isl_set* domain = stmts[0]->domain();
     const char* stmt_name = isl_set_get_tuple_name(domain);
@@ -955,16 +942,6 @@ TEST(ScopAnalysisTest, DependenceInfoTest_RAW_Dependence) {
     expected_str += "[i + 1] : 1 <= i <= 9 }";
 
     isl_union_map* expected = isl_union_map_read_from_str(scop->ctx(), expected_str.c_str());
-
-    // Intersect with calculated RAW to see if it matches
-    // But RAW might contain more info or have different domain constraints if I messed up loop bounds.
-    // Loop 1 to 10 inclusive (i < 11).
-    // i=1: read A[0], write A[1].
-    // i=2: read A[1], write A[2]. raw dep on A[1] from i=1.
-    // ...
-    // i=10: read A[9], write A[10]. raw dep on A[9] from i=9.
-    // So source i=1..9. Sink i=2..10.
-    // S[i] -> S[i+1] for i in 1..9.
 
     // The Dependences class returns both tagged (fine-grained) and statement-level dependences.
     // We verify that our expected statement-level dependence is present.
@@ -1050,9 +1027,6 @@ TEST(ScopAnalysisTest, DependenceInfoTest_WAR_Dependence) {
 }
 
 TEST(ScopAnalysisTest, DependenceInfoTest_WAW_Dependence) {
-    // For WAW, maybe 2 statements writing to same location?
-    // Or same statement: A[0] = ... inside a loop.
-
     builder::StructuredSDFGBuilder builder("waw_test", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1069,21 +1043,12 @@ TEST(ScopAnalysisTest, DependenceInfoTest_WAW_Dependence) {
 
     auto& loop = builder.add_for(root, i_sym, cond, start, update);
 
-    // A[0] = i
     auto& block = builder.add_block(loop.root());
 
-    auto& val_node = builder.add_access(block, "i"); // reading loop var?
-    // Wait, "i" is a container created by add_for if I added it as container?
-    // In RAW test I didn't add "i" as container explicitly, but maybe "A" memlet used symbol directly.
-    // symbol usage in memlet index is fine. But tasklet input needs a memlet from a node.
-
-    // Let's just do A[0] = 5;
-    // Actually simpler: just write to A[0].
-
+    auto& in_node = builder.add_access(block, "i");
     auto& out_node = builder.add_access(block, "A");
-    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {});
-
-    // write A[0]
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
+    builder.add_computational_memlet(block, in_node, tasklet, "_in", {}, int_type);
     builder.add_computational_memlet(block, tasklet, "_out", out_node, {symbolic::integer(0)}, int_ptr);
 
     analysis::AnalysisManager am(sdfg);
@@ -1095,11 +1060,6 @@ TEST(ScopAnalysisTest, DependenceInfoTest_WAW_Dependence) {
 
     isl_union_map* waw = deps.dependences(analysis::Dependences::TYPE_WAW);
 
-    // i=0: Write A[0]
-    // i=1: Write A[0] -> WAW on i=0
-    // ...
-    // S[i] -> S[i+1]
-
     isl_set* domain = scop->statements()[0]->domain();
     const char* stmt_name = isl_set_get_tuple_name(domain);
 
@@ -1108,7 +1068,6 @@ TEST(ScopAnalysisTest, DependenceInfoTest_WAW_Dependence) {
     expected_str += "[i] -> ";
     expected_str += stmt_name;
     expected_str += "[i + 1] : 0 <= i <= 8 }";
-    // 0 to 9. i=8 writes -> i=9 writes.
 
     isl_union_map* expected = isl_union_map_read_from_str(scop->ctx(), expected_str.c_str());
     bool isSubset = isl_union_map_is_subset(expected, waw);
@@ -1124,10 +1083,6 @@ TEST(ScopAnalysisTest, DependenceInfoTest_WAW_Dependence) {
 
 // Validity Check Test
 TEST(ScopAnalysisTest, DependenceInfoTest_Validity) {
-    // RAW S[i] -> S[i+1].
-    // Schedule i -> i is valid.
-    // Schedule i -> -i is invalid (reversed). S[i+1] executes before S[i].
-
     builder::StructuredSDFGBuilder builder("validity_test", FunctionType_CPU);
     auto& sdfg = builder.subject();
     auto& root = sdfg.root();
@@ -1145,7 +1100,6 @@ TEST(ScopAnalysisTest, DependenceInfoTest_Validity) {
     auto& in_node = builder.add_access(block, "A");
     auto& out_node = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_int"});
-    // A[i] = A[i-1] -> RAW S[i-1] -> S[i]
     builder
         .add_computational_memlet(block, in_node, tasklet, "_int", {symbolic::sub(i_sym, symbolic::integer(1))}, int_ptr);
     builder.add_computational_memlet(block, tasklet, "_out", out_node, {i_sym}, int_ptr);
@@ -1156,12 +1110,7 @@ TEST(ScopAnalysisTest, DependenceInfoTest_Validity) {
     ASSERT_NE(scop, nullptr);
     analysis::Dependences deps(*scop);
 
-    // Default schedule should be valid
     EXPECT_TRUE(deps.is_valid(*scop, scop->schedule_tree()));
-
-    // Create reversed schedule: i -> -i
-    // We can create a new schedule map
-    // { S[i] -> [-i] }
 
     isl_set* domain = scop->statements()[0]->domain();
     const char* stmt_name = isl_set_get_tuple_name(domain);

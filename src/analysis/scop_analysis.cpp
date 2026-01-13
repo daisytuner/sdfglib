@@ -134,7 +134,7 @@ void Scop::set_schedule_tree(isl_schedule *schedule) {
 }
 
 std::string Scop::ast() {
-    isl_schedule *schedule = this->schedule_tree();
+    isl_schedule *schedule = isl_schedule_copy(this->schedule_tree());
     isl_ast_build *build = isl_ast_build_alloc(this->ctx_);
     isl_ast_node *tree = isl_ast_build_node_from_schedule(build, schedule);
     char *str = isl_ast_node_to_C_str(tree);
