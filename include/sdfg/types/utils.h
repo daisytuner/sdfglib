@@ -113,5 +113,17 @@ symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_tim
  */
 const types::IType* peel_to_next_element(const types::IType& type);
 
+/**
+ * @brief Checks if a type is contiguous in memory
+ *
+ * This function determines if the given type represents a contiguous memory layout.
+ * Non-contiguous types include types with nested pointers.
+ * Outermost pointers are allowed as they can still point to contiguous memory.
+ * @param type The type to check
+ * @param sdfg The StructuredSDFG context, to access structure definitions if needed
+ * @return True if the type is contiguous, false otherwise
+ */
+bool is_contiguous_type(const types::IType& type, StructuredSDFG& sdfg);
+
 } // namespace types
 } // namespace sdfg
