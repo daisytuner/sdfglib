@@ -105,6 +105,7 @@ set(TEST_FILES
     transformations/out_local_storage_test.cpp
     transformations/parallelization_test.cpp
     transformations/recorder_test.cpp
+    transformations/isl_scheduler_test.cpp
     types/array_test.cpp
     types/function_test.cpp
     types/pointer_test.cpp

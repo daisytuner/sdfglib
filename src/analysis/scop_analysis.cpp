@@ -80,9 +80,9 @@ ScopStatement::ScopStatement(const std::string &name, isl_set *domain, symbolic:
 }
 
 Scop::Scop(structured_control_flow::ControlFlowNode &node, isl_ctx *ctx, isl_space *param_space)
-    : node_(node), ctx_(ctx), param_space_(isl_space_copy(param_space)) {}
+    : node_(node), ctx_(ctx), param_space_(isl_space_copy(param_space)), schedule_tree_(nullptr) {}
 
-isl_union_set *Scop::domains() const {
+isl_union_set *Scop::domains() {
     isl_space *empty_space = isl_space_params_alloc(this->ctx_, 0);
     isl_union_set *domain = isl_union_set_empty(empty_space);
 
@@ -93,20 +93,21 @@ isl_union_set *Scop::domains() const {
     return domain;
 }
 
-isl_union_map *Scop::schedule() const {
-    isl_space *empty_space = isl_space_params_alloc(this->ctx_, 0);
-    isl_union_map *schedule = isl_union_map_empty(empty_space);
+isl_union_map *Scop::schedule() { return isl_schedule_get_map(this->schedule_tree()); }
 
-    for (auto &stmt : this->statements_) {
-        schedule = isl_union_map_add_map(schedule, isl_map_copy(stmt->schedule()));
+isl_schedule *Scop::schedule_tree() {
+    if (this->schedule_tree_ != nullptr) {
+        return isl_schedule_copy(this->schedule_tree_);
     }
 
-    return schedule;
-}
+    // Construct default schedule from statements
+    isl_space *empty_space = isl_space_params_alloc(this->ctx_, 0);
+    isl_union_map *sched_map = isl_union_map_empty(empty_space);
+    for (auto &stmt : this->statements_) {
+        sched_map = isl_union_map_add_map(sched_map, isl_map_copy(stmt->schedule()));
+    }
 
-isl_schedule *Scop::schedule_tree() const {
     isl_schedule *sched = isl_schedule_from_domain(domains());
-    isl_union_map *sched_map = schedule();
     if (!isl_union_map_is_empty(sched_map)) {
         // Ensure consistent dimensionality
         int max_dim = 0;
@@ -123,10 +124,19 @@ isl_schedule *Scop::schedule_tree() const {
     } else {
         isl_union_map_free(sched_map);
     }
-    return sched;
+
+    this->schedule_tree_ = sched;
+    return isl_schedule_copy(this->schedule_tree_);
 }
 
-std::string Scop::ast() const {
+void Scop::set_schedule_tree(isl_schedule *schedule) {
+    if (this->schedule_tree_ != nullptr) {
+        isl_schedule_free(this->schedule_tree_);
+    }
+    this->schedule_tree_ = isl_schedule_copy(schedule);
+}
+
+std::string Scop::ast() {
     isl_schedule *schedule = this->schedule_tree();
     isl_ast_build *build = isl_ast_build_alloc(this->ctx_);
     isl_ast_node *tree = isl_ast_build_node_from_schedule(build, schedule);
@@ -385,7 +395,7 @@ void ScopBuilder::
 
         // Prepare loop bound set with compatible dimensions
         isl_set *loop_bound = isl_set_copy(loop_bound_base);
-        int n_dims = isl_set_dim(domain, isl_dim_set); // Total dims including the one we just added
+        int n_dims = isl_set_dim(domain, isl_dim_set);
         int inner_dims = n_dims - 1;
 
         if (inner_dims > 0) {
@@ -435,8 +445,6 @@ void ScopBuilder::
         for (auto access : stmt->accesses()) {
             isl_map *relation = isl_map_copy(access->relation());
 
-            // Note: stmt->domain() pointer is valid as long as stmt is valid.
-            // We just updated it.
             int dom_n = isl_set_dim(stmt->domain(), isl_dim_set);
             int rel_n_in = isl_map_dim(relation, isl_dim_in);
 
@@ -1171,7 +1179,7 @@ bool Dependences::is_valid(Scop &scop, isl_schedule *schedule) const {
     return check_validity(this, scop, isl_schedule_get_map(schedule));
 }
 
-ScopToSDFG::ScopToSDFG(const Scop &scop, builder::StructuredSDFGBuilder &builder) : scop_(scop), builder_(builder) {
+ScopToSDFG::ScopToSDFG(Scop &scop, builder::StructuredSDFGBuilder &builder) : scop_(scop), builder_(builder) {
     for (auto *stmt : scop_.statements()) {
         stmt_map_[stmt->name()] = stmt;
     }
@@ -1188,14 +1196,43 @@ static isl_stat collect_dim_names(isl_map *map, void *user) {
         info->names.resize(dim);
     }
 
+    isl_space *space = isl_map_get_space(map);
+    isl_local_space *ls = isl_local_space_from_space(space);
+
     for (int i = 0; i < dim; ++i) {
-        if (info->names[i].empty()) {
-            const char *name = isl_map_get_dim_name(map, isl_dim_out, i);
-            if (name) {
-                info->names[i] = name;
+        if (!info->names[i].empty()) {
+            continue;
+        }
+
+        const char *name = isl_map_get_dim_name(map, isl_dim_out, i);
+        if (name) {
+            info->names[i] = name;
+            continue;
+        }
+
+        // Try to recover from input dimensions
+        int in_dim = isl_map_dim(map, isl_dim_in);
+        for (int j = 0; j < in_dim; ++j) {
+            isl_constraint *c = isl_constraint_alloc_equality(isl_local_space_copy(ls));
+            c = isl_constraint_set_coefficient_si(c, isl_dim_out, i, 1);
+            c = isl_constraint_set_coefficient_si(c, isl_dim_in, j, -1);
+
+            isl_basic_map *eq_bmap = isl_basic_map_from_constraint(c);
+            isl_map *eq_map = isl_map_from_basic_map(eq_bmap);
+
+            bool is_subset = isl_map_is_subset(map, eq_map);
+            isl_map_free(eq_map);
+
+            if (is_subset) {
+                const char *in_name = isl_map_get_dim_name(map, isl_dim_in, j);
+                if (in_name) {
+                    info->names[i] = in_name;
+                    break;
+                }
             }
         }
     }
+    isl_local_space_free(ls);
     isl_map_free(map);
     return isl_stat_ok;
 }
@@ -1208,8 +1245,9 @@ void ScopToSDFG::build(analysis::AnalysisManager &analysis_manager) {
 
     // 2. Generate AST from Schedule
     isl_schedule *schedule = scop_.schedule_tree();
-
     isl_union_map *schedule_map = scop_.schedule();
+
+    // Apply dimension names to schedule
     NameConnectInfo info;
     isl_union_map_foreach_map(schedule_map, collect_dim_names, &info);
     isl_union_map_free(schedule_map);
@@ -1551,9 +1589,7 @@ bool ScopAnalysis::has(const structured_control_flow::ControlFlowNode *node) con
     return this->scops_.find(node) != this->scops_.end();
 }
 
-const Scop &ScopAnalysis::scop(const structured_control_flow::ControlFlowNode *node) const {
-    return *this->scops_.at(node);
-}
+Scop &ScopAnalysis::scop(const structured_control_flow::ControlFlowNode *node) const { return *this->scops_.at(node); }
 
 const Dependences &ScopAnalysis::dependences(const structured_control_flow::ControlFlowNode *node) const {
     return *this->dependences_.at(node);

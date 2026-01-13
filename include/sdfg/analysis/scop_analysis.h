@@ -184,6 +184,8 @@ private:
 
     isl_space* param_space_;
 
+    isl_schedule* schedule_tree_;
+
     std::vector<std::unique_ptr<ScopStatement>> statements_;
 
 public:
@@ -194,6 +196,7 @@ public:
             isl_space_free(param_space_);
         }
         this->statements_.clear();
+        isl_schedule_free(schedule_tree_);
         isl_ctx_free(ctx_);
     }
 
@@ -213,15 +216,17 @@ public:
         return stmt_ptrs;
     }
 
-    isl_union_set* domains() const;
+    isl_union_set* domains();
 
-    isl_union_map* schedule() const;
+    isl_union_map* schedule();
 
-    isl_schedule* schedule_tree() const;
+    isl_schedule* schedule_tree();
 
-    std::string ast() const;
+    void set_schedule_tree(isl_schedule* schedule);
 
-    friend std::ostream& operator<<(std::ostream& os, const Scop& scop) {
+    std::string ast();
+
+    friend std::ostream& operator<<(std::ostream& os, Scop& scop) {
         os << "Scop:\n";
         for (const auto& stmt : scop.statements_) {
             os << *stmt;
@@ -362,7 +367,7 @@ public:
 
 class ScopToSDFG {
 private:
-    const Scop& scop_;
+    Scop& scop_;
     builder::StructuredSDFGBuilder& builder_;
     std::unordered_map<std::string, ScopStatement*> stmt_map_;
 
@@ -383,7 +388,7 @@ private:
     symbolic::Condition convert_cond(struct isl_ast_expr* expr);
 
 public:
-    ScopToSDFG(const Scop& scop, builder::StructuredSDFGBuilder& builder);
+    ScopToSDFG(Scop& scop, builder::StructuredSDFGBuilder& builder);
 
     void build(analysis::AnalysisManager& analysis_manager);
 };
@@ -400,7 +405,7 @@ public:
 
     bool has(const structured_control_flow::ControlFlowNode* node) const;
 
-    const Scop& scop(const structured_control_flow::ControlFlowNode* node) const;
+    Scop& scop(const structured_control_flow::ControlFlowNode* node) const;
 
     const Dependences& dependences(const structured_control_flow::ControlFlowNode* node) const;
 };

@@ -215,6 +215,7 @@ set(SOURCE_FILES
     src/transformations/recorder.cpp
     src/transformations/replayer.cpp
     src/transformations/utils.cpp
+    src/transformations/isl_scheduler.cpp
     src/types/array.cpp
     src/types/function.cpp
     src/types/pointer.cpp
