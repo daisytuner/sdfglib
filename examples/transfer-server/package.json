@@ -8,7 +8,8 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "dev": "ts-node src/ts/index.ts"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
@@ -20,6 +21,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.8",
+    "@hono/zod-validator": "^0.7.6",
     "hono": "^4.11.4"
   }
 }
