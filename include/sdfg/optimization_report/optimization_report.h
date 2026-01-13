@@ -15,6 +15,7 @@ struct TransformReport {
     bool possible;
     bool applied;
     std::string reason;
+    nlohmann::json info;
 };
 
 class OptimizationReport {
