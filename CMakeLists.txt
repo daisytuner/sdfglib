@@ -69,6 +69,7 @@ set(SOURCE_FILES
     src/analysis/mem_access_range_analysis.cpp
     src/analysis/memlet_delinearization_analysis.cpp
     src/analysis/reference_analysis.cpp
+    src/analysis/scop_analysis.cpp
     src/analysis/scope_analysis.cpp
     src/analysis/type_analysis.cpp
     src/analysis/users.cpp

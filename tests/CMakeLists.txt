@@ -13,6 +13,7 @@ set(TEST_FILES
     analysis/flop_analysis_test.cpp
     analysis/loop_analysis_test.cpp
     analysis/loop_analysis_info_test.cpp
+    analysis/scop_analysis_test.cpp
     analysis/mem_access_range_analysis_test.cpp
     analysis/memlet_delinearization_analysis_test.cpp
     analysis/type_analysis_test.cpp
