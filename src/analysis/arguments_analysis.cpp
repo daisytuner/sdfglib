@@ -85,6 +85,7 @@ void ArgumentsAnalysis::collect_arg_sizes(
 ) {
     std::unordered_set<std::string> internal_vars;
     argument_sizes_.insert({&node, {}});
+    argument_element_sizes_.insert({&node, {}});
 
     auto& mem_access_ranges = analysis_manager.get<analysis::MemAccessRanges>();
 
