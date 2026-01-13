@@ -3,6 +3,7 @@
 #include <boost/graph/graphviz.hpp>
 #include <nlohmann/json.hpp>
 #include <string>
+#include <vector>
 
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/data_flow_node.h"
@@ -94,6 +95,10 @@ public:
         return memlets;
     };
 
+    std::vector<data_flow::Memlet*> in_edges_by_connector(const data_flow::CodeNode& node);
+
+    std::vector<const data_flow::Memlet*> in_edges_by_connector(const data_flow::CodeNode& node) const;
+
     auto out_edges(const data_flow::DataFlowNode& node) const {
         auto [eb, ee] = boost::out_edges(node.vertex(), this->graph_);
         auto edges = std::ranges::subrange(eb, ee);
@@ -120,6 +125,10 @@ public:
 
         return memlets;
     };
+
+    std::vector<data_flow::Memlet*> out_edges_by_connector(const data_flow::CodeNode& node);
+
+    std::vector<const data_flow::Memlet*> out_edges_by_connector(const data_flow::CodeNode& node) const;
 
     size_t in_degree(const data_flow::DataFlowNode& node) const;
 

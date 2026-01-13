@@ -7,11 +7,13 @@
 #include <map>
 #include <stdexcept>
 #include <unordered_set>
+#include <vector>
 
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/code_node.h"
 #include "sdfg/data_flow/data_flow_node.h"
 #include "sdfg/data_flow/library_node.h"
+#include "sdfg/data_flow/memlet.h"
 #include "sdfg/graph/graph.h"
 
 namespace sdfg {
@@ -32,6 +34,58 @@ void DataFlowGraph::validate(const Function& function) const {
 const Element* DataFlowGraph::get_parent() const { return this->parent_; };
 
 Element* DataFlowGraph::get_parent() { return this->parent_; };
+
+std::vector<data_flow::Memlet*> DataFlowGraph::in_edges_by_connector(const data_flow::CodeNode& node) {
+    std::vector<data_flow::Memlet*> in_edges(node.inputs().size(), nullptr);
+    for (auto& iedge : this->in_edges(node)) {
+        for (size_t i = 0; i < node.inputs().size(); i++) {
+            if (iedge.dst_conn() == node.input(i)) {
+                in_edges[i] = &iedge;
+                break;
+            }
+        }
+    }
+    return in_edges;
+}
+
+std::vector<const data_flow::Memlet*> DataFlowGraph::in_edges_by_connector(const data_flow::CodeNode& node) const {
+    std::vector<const data_flow::Memlet*> in_edges(node.inputs().size(), nullptr);
+    for (const auto& iedge : this->in_edges(node)) {
+        for (size_t i = 0; i < node.inputs().size(); i++) {
+            if (iedge.dst_conn() == node.input(i)) {
+                in_edges[i] = &iedge;
+                break;
+            }
+        }
+    }
+    return in_edges;
+}
+
+std::vector<data_flow::Memlet*> DataFlowGraph::out_edges_by_connector(const data_flow::CodeNode& node) {
+    std::vector<data_flow::Memlet*> out_edges(node.outputs().size(), nullptr);
+    for (auto& oedge : this->out_edges(node)) {
+        for (size_t i = 0; i < node.outputs().size(); i++) {
+            if (oedge.src_conn() == node.output(i)) {
+                out_edges[i] = &oedge;
+                break;
+            }
+        }
+    }
+    return out_edges;
+}
+
+std::vector<const data_flow::Memlet*> DataFlowGraph::out_edges_by_connector(const data_flow::CodeNode& node) const {
+    std::vector<const data_flow::Memlet*> out_edges(node.outputs().size(), nullptr);
+    for (const auto& oedge : this->out_edges(node)) {
+        for (size_t i = 0; i < node.outputs().size(); i++) {
+            if (oedge.src_conn() == node.output(i)) {
+                out_edges[i] = &oedge;
+                break;
+            }
+        }
+    }
+    return out_edges;
+}
 
 size_t DataFlowGraph::in_degree(const data_flow::DataFlowNode& node) const {
     return boost::in_degree(node.vertex(), this->graph_);
