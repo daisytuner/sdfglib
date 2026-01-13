@@ -111,6 +111,10 @@ public:
 
     const std::string& name() const { return name_; }
 
+    symbolic::Expression expression() const { return expression_; }
+
+    data_flow::CodeNode* code_node() const { return code_node_; }
+
     isl_set* domain() const { return domain_; }
 
     void set_domain(isl_set* domain) {
@@ -174,6 +178,8 @@ public:
 
 class Scop {
 private:
+    structured_control_flow::ControlFlowNode& node_;
+
     isl_ctx* ctx_;
 
     isl_space* param_space_;
@@ -181,7 +187,7 @@ private:
     std::vector<std::unique_ptr<ScopStatement>> statements_;
 
 public:
-    Scop(isl_ctx* ctx, isl_space* param_space);
+    Scop(structured_control_flow::ControlFlowNode& node, isl_ctx* ctx, isl_space* param_space);
 
     ~Scop() {
         if (param_space_) {
@@ -190,6 +196,8 @@ public:
         this->statements_.clear();
         isl_ctx_free(ctx_);
     }
+
+    structured_control_flow::ControlFlowNode& node() const { return node_; }
 
     isl_ctx* ctx() const { return ctx_; }
 
@@ -350,6 +358,34 @@ public:
     bool is_valid(Scop& scop, const std::unordered_map<ScopStatement*, isl_map*>& new_schedule) const;
 
     bool is_valid(Scop& scop, isl_schedule* schedule) const;
+};
+
+class ScopToSDFG {
+private:
+    const Scop& scop_;
+    builder::StructuredSDFGBuilder& builder_;
+    std::unordered_map<std::string, ScopStatement*> stmt_map_;
+
+    // AST Traversal
+    void visit_node(struct isl_ast_node* node, structured_control_flow::Sequence& scope);
+
+    void visit_for(struct isl_ast_node* node, structured_control_flow::Sequence& scope);
+
+    void visit_if(struct isl_ast_node* node, structured_control_flow::Sequence& scope);
+
+    void visit_block(struct isl_ast_node* node, structured_control_flow::Sequence& scope);
+
+    void visit_user(struct isl_ast_node* node, structured_control_flow::Sequence& scope);
+
+    // Helpers
+    symbolic::Expression convert_expr(struct isl_ast_expr* expr);
+
+    symbolic::Condition convert_cond(struct isl_ast_expr* expr);
+
+public:
+    ScopToSDFG(const Scop& scop, builder::StructuredSDFGBuilder& builder);
+
+    void build(analysis::AnalysisManager& analysis_manager);
 };
 
 class ScopAnalysis : public Analysis {

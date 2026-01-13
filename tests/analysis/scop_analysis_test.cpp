@@ -2812,3 +2812,153 @@ TEST(ScopAnalysisTest, DependenceInfoTest_ReductionWithLocalStorage) {
     EXPECT_EQ(dependencies2.size(), 1);
     EXPECT_EQ(dependencies2.at("local"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_READ_WRITE);
 }
+
+TEST(ScopAnalysisTest, ScopToSDFGTest_SimpleLoopWithTasklet) {
+    builder::StructuredSDFGBuilder builder("reconstruction_test", FunctionType_CPU);
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    types::Scalar int_type(types::PrimitiveType::Int32);
+    types::Pointer int_ptr_type(int_type);
+    builder.add_container("i", int_type);
+    builder.add_container("A", int_ptr_type);
+    builder.add_container("B", int_ptr_type);
+
+    auto i_sym = symbolic::symbol("i");
+    auto& loop = builder.add_for(
+        root,
+        i_sym,
+        symbolic::Lt(i_sym, symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(i_sym, symbolic::integer(1))
+    );
+
+    // Add tasklet
+    auto& block = builder.add_block(loop.root());
+    auto& in_node = builder.add_access(block, "A");
+    auto& out_node = builder.add_access(block, "B");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_int"});
+    builder.add_computational_memlet(block, in_node, tasklet, "_int", {i_sym}, int_ptr_type);
+    builder.add_computational_memlet(block, tasklet, "_out", out_node, {i_sym}, int_ptr_type);
+
+    // Run Analysis to build Scop
+    analysis::AnalysisManager am(sdfg);
+    am.get<analysis::ScopeAnalysis>();
+
+    analysis::ScopBuilder scop_builder(sdfg, loop);
+    auto scop = scop_builder.build(am);
+    ASSERT_NE(scop, nullptr);
+
+    // Check initial statement count
+    ASSERT_EQ(scop->statements().size(), 1);
+
+    // 2. Convert Scop back to SDFG
+    analysis::ScopToSDFG converter(*scop, builder);
+    converter.build(am);
+
+    ASSERT_EQ(root.size(), 1);
+    auto* new_seq = dynamic_cast<structured_control_flow::Sequence*>(&root.at(0).first);
+    ASSERT_NE(new_seq, nullptr);
+    ASSERT_EQ(new_seq->size(), 1);
+
+    auto* new_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(&new_seq->at(0).first);
+    ASSERT_NE(new_loop, nullptr);
+    EXPECT_EQ(new_loop->indvar()->get_name(), i_sym->get_name());
+    EXPECT_TRUE(symbolic::eq(new_loop->condition(), symbolic::Le(i_sym, symbolic::integer(9))));
+    EXPECT_TRUE(symbolic::eq(new_loop->init(), symbolic::integer(0)));
+    EXPECT_TRUE(symbolic::eq(new_loop->update(), symbolic::add(i_sym, symbolic::integer(1))));
+
+    auto& inner_seq = new_loop->root();
+    ASSERT_EQ(inner_seq.size(), 1);
+
+    auto inner_block = dynamic_cast<structured_control_flow::Block*>(&inner_seq.at(0).first);
+    ASSERT_NE(inner_block, nullptr);
+    auto& dfg = inner_block->dataflow();
+    ASSERT_EQ(dfg.nodes().size(), 3); // A access, tasklet, B access
+    ASSERT_EQ(dfg.edges().size(), 2); // A -> tasklet, tasklet -> B
+
+    bool found_tasklet = false;
+    bool found_A_access = false;
+    bool found_B_access = false;
+    for (const auto& node : dfg.nodes()) {
+        if (auto* tasklet_node = dynamic_cast<const data_flow::Tasklet*>(&node)) {
+            EXPECT_EQ(tasklet_node->code(), data_flow::TaskletCode::assign);
+            ASSERT_EQ(found_tasklet, false); // Ensure only one tasklet
+            found_tasklet = true;
+        } else if (auto* access_node = dynamic_cast<const data_flow::AccessNode*>(&node)) {
+            if (access_node->data() == "A") {
+                ASSERT_EQ(found_A_access, false); // Ensure only one A access
+                found_A_access = true;
+            } else if (access_node->data() == "B") {
+                ASSERT_EQ(found_B_access, false); // Ensure only one B access
+                found_B_access = true;
+            }
+        }
+    }
+    ASSERT_TRUE(found_tasklet);
+    ASSERT_TRUE(found_A_access);
+    ASSERT_TRUE(found_B_access);
+}
+
+TEST(ScopAnalysisTest, ScopToSDFGTest_SimpleLoopWithExpression) {
+    builder::StructuredSDFGBuilder builder("reconstruction_test", FunctionType_CPU);
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    types::Scalar int_type(types::PrimitiveType::Int32);
+    builder.add_container("i", int_type);
+    builder.add_container("A", int_type);
+    builder.add_container("B", int_type);
+
+    auto i_sym = symbolic::symbol("i");
+    auto& loop = builder.add_for(
+        root,
+        i_sym,
+        symbolic::Lt(i_sym, symbolic::integer(10)),
+        symbolic::integer(0),
+        symbolic::add(i_sym, symbolic::integer(1))
+    );
+
+    // Add tasklet
+    auto& block = builder.add_block(loop.root(), {{symbolic::symbol("A"), symbolic::symbol("B")}});
+
+    // Run Analysis to build Scop
+    analysis::AnalysisManager am(sdfg);
+    am.get<analysis::ScopeAnalysis>();
+
+    analysis::ScopBuilder scop_builder(sdfg, loop);
+    auto scop = scop_builder.build(am);
+    ASSERT_NE(scop, nullptr);
+
+    // Check initial statement count
+    ASSERT_EQ(scop->statements().size(), 1);
+
+    // 2. Convert Scop back to SDFG
+    analysis::ScopToSDFG converter(*scop, builder);
+    converter.build(am);
+
+    ASSERT_EQ(root.size(), 1);
+    auto* new_seq = dynamic_cast<structured_control_flow::Sequence*>(&root.at(0).first);
+    ASSERT_NE(new_seq, nullptr);
+    ASSERT_EQ(new_seq->size(), 1);
+
+    auto* new_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(&new_seq->at(0).first);
+    ASSERT_NE(new_loop, nullptr);
+    EXPECT_EQ(new_loop->indvar()->get_name(), i_sym->get_name());
+    EXPECT_TRUE(symbolic::eq(new_loop->condition(), symbolic::Le(i_sym, symbolic::integer(9))));
+    EXPECT_TRUE(symbolic::eq(new_loop->init(), symbolic::integer(0)));
+    EXPECT_TRUE(symbolic::eq(new_loop->update(), symbolic::add(i_sym, symbolic::integer(1))));
+
+    auto& inner_seq = new_loop->root();
+    ASSERT_EQ(inner_seq.size(), 1);
+
+    auto inner_block = dynamic_cast<structured_control_flow::Block*>(&inner_seq.at(0).first);
+    ASSERT_NE(inner_block, nullptr);
+    auto& dfg = inner_block->dataflow();
+    ASSERT_EQ(dfg.nodes().size(), 0);
+    ASSERT_EQ(dfg.edges().size(), 0);
+
+    EXPECT_EQ(inner_seq.at(0).second.size(), 1);
+    EXPECT_TRUE(symbolic::eq((*inner_seq.at(0).second.assignments().begin()).first, symbolic::symbol("A")));
+    EXPECT_TRUE(symbolic::eq((*inner_seq.at(0).second.assignments().begin()).second, symbolic::symbol("B")));
+}

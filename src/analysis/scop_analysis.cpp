@@ -22,6 +22,7 @@
 #include <isl/id.h>
 #include <isl/local_space.h>
 #include <isl/options.h>
+#include <isl/val.h>
 
 #include <sdfg/analysis/assumptions_analysis.h>
 #include <sdfg/analysis/loop_analysis.h>
@@ -78,7 +79,8 @@ ScopStatement::ScopStatement(const std::string &name, isl_set *domain, symbolic:
     schedule_ = isl_map_identity(isl_space_map_from_set(space));
 }
 
-Scop::Scop(isl_ctx *ctx, isl_space *param_space) : ctx_(ctx), param_space_(isl_space_copy(param_space)) {}
+Scop::Scop(structured_control_flow::ControlFlowNode &node, isl_ctx *ctx, isl_space *param_space)
+    : node_(node), ctx_(ctx), param_space_(isl_space_copy(param_space)) {}
 
 isl_union_set *Scop::domains() const {
     isl_space *empty_space = isl_space_params_alloc(this->ctx_, 0);
@@ -143,7 +145,7 @@ std::unique_ptr<Scop> ScopBuilder::build(analysis::AnalysisManager &analysis_man
     isl_ctx *ctx = isl_ctx_alloc();
     isl_options_set_on_error(ctx, ISL_ON_ERROR_CONTINUE);
     isl_space *param_space = isl_space_set_alloc(ctx, 0, 0);
-    this->scop_ = std::make_unique<Scop>(ctx, param_space);
+    this->scop_ = std::make_unique<Scop>(this->node_, ctx, param_space);
     isl_space_free(param_space);
 
     this->visit(analysis_manager, node_);
@@ -1167,6 +1169,354 @@ bool Dependences::is_valid(Scop &scop, const std::unordered_map<ScopStatement *,
 
 bool Dependences::is_valid(Scop &scop, isl_schedule *schedule) const {
     return check_validity(this, scop, isl_schedule_get_map(schedule));
+}
+
+ScopToSDFG::ScopToSDFG(const Scop &scop, builder::StructuredSDFGBuilder &builder) : scop_(scop), builder_(builder) {
+    for (auto *stmt : scop_.statements()) {
+        stmt_map_[stmt->name()] = stmt;
+    }
+}
+
+struct NameConnectInfo {
+    std::vector<std::string> names;
+};
+
+static isl_stat collect_dim_names(isl_map *map, void *user) {
+    auto *info = static_cast<NameConnectInfo *>(user);
+    int dim = isl_map_dim(map, isl_dim_out);
+    if (dim > info->names.size()) {
+        info->names.resize(dim);
+    }
+
+    for (int i = 0; i < dim; ++i) {
+        if (info->names[i].empty()) {
+            const char *name = isl_map_get_dim_name(map, isl_dim_out, i);
+            if (name) {
+                info->names[i] = name;
+            }
+        }
+    }
+    isl_map_free(map);
+    return isl_stat_ok;
+}
+
+void ScopToSDFG::build(analysis::AnalysisManager &analysis_manager) {
+    isl_ctx *ctx = scop_.ctx();
+
+    // 1. Create AST Builder
+    isl_ast_build *ast_builder = isl_ast_build_alloc(ctx);
+
+    // 2. Generate AST from Schedule
+    isl_schedule *schedule = scop_.schedule_tree();
+
+    isl_union_map *schedule_map = scop_.schedule();
+    NameConnectInfo info;
+    isl_union_map_foreach_map(schedule_map, collect_dim_names, &info);
+    isl_union_map_free(schedule_map);
+
+    if (!info.names.empty()) {
+        isl_id_list *iterators = isl_id_list_alloc(ctx, info.names.size());
+        for (int i = 0; i < info.names.size(); ++i) {
+            std::string id_name = info.names[i].empty() ? "c" + std::to_string(i) : info.names[i];
+            iterators = isl_id_list_add(iterators, isl_id_alloc(ctx, id_name.c_str(), nullptr));
+        }
+        ast_builder = isl_ast_build_set_iterators(ast_builder, iterators);
+    }
+
+    isl_ast_node *root_node = isl_ast_build_node_from_schedule(ast_builder, schedule);
+
+    // 3. Start Traversal
+    auto &scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+    auto parent_scope = scope_analysis.parent_scope(&scop_.node());
+    if (!parent_scope) {
+        return; // Cannot build SDFG without a parent scope
+    }
+    auto parent_sequence = static_cast<structured_control_flow::Sequence *>(parent_scope);
+    int index = parent_sequence->index(scop_.node());
+    auto &target_sequence = builder_.add_sequence_before(*parent_sequence, scop_.node(), {}, scop_.node().debug_info());
+
+    visit_node(root_node, target_sequence);
+    builder_.remove_child(*parent_sequence, index + 1);
+
+    isl_ast_node_free(root_node);
+    isl_ast_build_free(ast_builder);
+}
+
+void ScopToSDFG::visit_node(isl_ast_node *node, structured_control_flow::Sequence &scope) {
+    if (!node) return;
+
+    switch (isl_ast_node_get_type(node)) {
+        case isl_ast_node_for:
+            visit_for(node, scope);
+            break;
+        case isl_ast_node_if:
+            visit_if(node, scope);
+            break;
+        case isl_ast_node_block:
+            visit_block(node, scope);
+            break;
+        case isl_ast_node_user:
+            visit_user(node, scope);
+            break;
+        case isl_ast_node_mark:
+            // Handle markers (e.g., parallelism annotations) here if needed
+            visit_node(isl_ast_node_mark_get_node(node), scope);
+            break;
+        default:
+            break;
+    }
+}
+
+void ScopToSDFG::visit_for(isl_ast_node *node, structured_control_flow::Sequence &scope) {
+    // Extract Loop Components from ISL
+    isl_ast_expr *iterator = isl_ast_node_for_get_iterator(node);
+    isl_ast_expr *init = isl_ast_node_for_get_init(node);
+    isl_ast_expr *cond = isl_ast_node_for_get_cond(node);
+    isl_ast_expr *inc = isl_ast_node_for_get_inc(node);
+    isl_ast_node *body = isl_ast_node_for_get_body(node);
+
+    // Convert to Symbolic
+    auto id = isl_ast_expr_get_id(iterator);
+    symbolic::Symbol sym_iter = symbolic::symbol(isl_id_get_name(id));
+    symbolic::Expression sym_init = convert_expr(init);
+    symbolic::Condition sym_cond = convert_cond(cond);
+    symbolic::Expression step = convert_expr(inc);
+    symbolic::Expression update_expr = symbolic::add(sym_iter, step);
+
+    auto &loop = builder_.add_for(scope, sym_iter, sym_cond, sym_init, update_expr);
+
+    // Recurse into body
+    visit_node(body, loop.root());
+
+    isl_ast_expr_free(iterator);
+    isl_ast_expr_free(init);
+    isl_ast_expr_free(cond);
+    isl_ast_expr_free(inc);
+    isl_ast_node_free(body);
+    isl_id_free(id);
+}
+
+void ScopToSDFG::visit_if(isl_ast_node *node, structured_control_flow::Sequence &scope) {
+    isl_ast_expr *cond = isl_ast_node_if_get_cond(node);
+    isl_ast_node *then_node = isl_ast_node_if_get_then(node);
+    isl_ast_node *else_node = isl_ast_node_if_get_else(node);
+
+    auto &if_stmt = builder_.add_if_else(scope);
+
+    // Then Block
+    symbolic::Condition sym_cond = convert_cond(cond);
+    auto &then_seq = builder_.add_case(if_stmt, sym_cond);
+    visit_node(then_node, then_seq);
+
+    // Else Block (if exists)
+    if (else_node) {
+        auto &else_seq = builder_.add_case(if_stmt, symbolic::Not(sym_cond));
+        visit_node(else_node, else_seq);
+    }
+
+    isl_ast_expr_free(cond);
+    isl_ast_node_free(then_node);
+    isl_ast_node_free(else_node);
+}
+
+void ScopToSDFG::visit_block(isl_ast_node *node, structured_control_flow::Sequence &scope) {
+    isl_ast_node_list *list = isl_ast_node_block_get_children(node);
+    int n = isl_ast_node_list_n_ast_node(list);
+
+    // Just iterate and append to current sequence
+    for (int i = 0; i < n; ++i) {
+        isl_ast_node *child = isl_ast_node_list_get_ast_node(list, i);
+        visit_node(child, scope);
+        isl_ast_node_free(child);
+    }
+    isl_ast_node_list_free(list);
+}
+
+void ScopToSDFG::visit_user(isl_ast_node *node, structured_control_flow::Sequence &scope) {
+    isl_ast_expr *expr = isl_ast_node_user_get_expr(node);
+    // Usually 'expr' is a call operation: "StatementName(i, j)"
+    // The identifier of the operation is the statement name.
+
+    isl_ast_expr *op = isl_ast_expr_get_op_arg(expr, 0); // Logic depends on how ISL builds the call
+    // A more robust way to get tuple name directly from expr if it is an ID or Call:
+    isl_id *id = isl_ast_expr_get_id(expr); // If it's just an ID
+    if (!id && isl_ast_expr_get_type(expr) == isl_ast_expr_op) {
+        // It's likely a call: S(i, j)
+        // The first "arg" or the operation type might hold ID.
+        // Actually, isl_ast_expr_get_op_type(expr) == isl_ast_expr_op_call
+        isl_ast_expr *func = isl_ast_expr_get_op_arg(expr, 0);
+        id = isl_ast_expr_get_id(func);
+        isl_ast_expr_free(func);
+    }
+
+    if (id) {
+        std::string name = isl_id_get_name(id);
+        if (stmt_map_.count(name)) {
+            ScopStatement *stmt = stmt_map_[name];
+
+            if (!stmt->expression().is_null()) {
+                std::string rhs = (*stmt->writes().begin())->data();
+                builder_.add_block(scope, {{symbolic::symbol(rhs), stmt->expression()}});
+            } else {
+                auto &new_block = builder_.add_block(scope);
+                auto &new_code_node =
+                    static_cast<data_flow::CodeNode &>(builder_.copy_node(new_block, *stmt->code_node()));
+
+                // Create Access Node Mapping
+                auto &old_graph = stmt->code_node()->get_parent();
+                auto &new_graph = new_code_node.get_parent();
+                std::unordered_map<const data_flow::DataFlowNode *, data_flow::DataFlowNode *> in_node_map;
+                for (auto &iedge : old_graph.in_edges(*stmt->code_node())) {
+                    if (in_node_map.find(&iedge.src()) == in_node_map.end()) {
+                        in_node_map[&iedge.src()] = &builder_.copy_node(new_block, iedge.src());
+                    }
+                    builder_.add_memlet(
+                        new_block,
+                        *in_node_map[&iedge.src()],
+                        iedge.src_conn(),
+                        new_code_node,
+                        iedge.dst_conn(),
+                        iedge.subset(),
+                        iedge.base_type(),
+                        iedge.debug_info()
+                    );
+                }
+
+                std::unordered_map<const data_flow::DataFlowNode *, data_flow::DataFlowNode *> out_node_map;
+                for (auto &oedge : old_graph.out_edges(*stmt->code_node())) {
+                    if (out_node_map.find(&oedge.dst()) == out_node_map.end()) {
+                        out_node_map[&oedge.dst()] = &builder_.copy_node(new_block, oedge.dst());
+                    }
+                    builder_.add_memlet(
+                        new_block,
+                        new_code_node,
+                        oedge.src_conn(),
+                        *out_node_map[&oedge.dst()],
+                        oedge.dst_conn(),
+                        oedge.subset(),
+                        oedge.base_type(),
+                        oedge.debug_info()
+                    );
+                }
+            }
+        }
+        isl_id_free(id);
+    }
+    isl_ast_expr_free(expr);
+}
+
+symbolic::Expression ScopToSDFG::convert_expr(isl_ast_expr *expr) {
+    if (!expr) return SymEngine::null;
+
+    isl_ast_expr_type type = isl_ast_expr_get_type(expr);
+    if (type == isl_ast_expr_int) {
+        isl_val *v = isl_ast_expr_get_val(expr);
+        long val = isl_val_get_num_si(v);
+        isl_val_free(v);
+        return symbolic::integer(val);
+    } else if (type == isl_ast_expr_id) {
+        isl_id *id = isl_ast_expr_get_id(expr);
+        std::string name = isl_id_get_name(id);
+        isl_id_free(id);
+        return symbolic::symbol(name);
+    } else if (type == isl_ast_expr_op) {
+        isl_ast_op_type op = isl_ast_expr_get_op_type(expr);
+        int n_args = isl_ast_expr_get_op_n_arg(expr);
+
+        if (n_args == 1) {
+            isl_ast_expr *arg0 = isl_ast_expr_get_op_arg(expr, 0);
+            symbolic::Expression res;
+            if (op == isl_ast_op_minus) {
+                res = symbolic::mul(symbolic::integer(-1), convert_expr(arg0));
+            }
+            isl_ast_expr_free(arg0);
+            return res;
+        }
+
+        if (n_args == 2) {
+            isl_ast_expr *arg0 = isl_ast_expr_get_op_arg(expr, 0);
+            isl_ast_expr *arg1 = isl_ast_expr_get_op_arg(expr, 1);
+            symbolic::Expression s0 = convert_expr(arg0);
+            symbolic::Expression s1 = convert_expr(arg1);
+            isl_ast_expr_free(arg0);
+            isl_ast_expr_free(arg1);
+
+            switch (op) {
+                case isl_ast_op_add:
+                    return symbolic::add(s0, s1);
+                case isl_ast_op_sub:
+                    return symbolic::sub(s0, s1);
+                case isl_ast_op_mul:
+                    return symbolic::mul(s0, s1);
+                case isl_ast_op_div:
+                case isl_ast_op_pdiv_q:
+                case isl_ast_op_fdiv_q:
+                    return symbolic::div(s0, s1);
+                case isl_ast_op_pdiv_r:
+                case isl_ast_op_zdiv_r:
+                    return symbolic::mod(s0, s1);
+                case isl_ast_op_min:
+                    return symbolic::min(s0, s1);
+                case isl_ast_op_max:
+                    return symbolic::max(s0, s1);
+                default:
+                    break;
+            }
+        }
+    }
+    return SymEngine::null;
+}
+
+symbolic::Condition ScopToSDFG::convert_cond(isl_ast_expr *expr) {
+    if (!expr) return SymEngine::null;
+
+    if (isl_ast_expr_get_type(expr) != isl_ast_expr_op) {
+        return SymEngine::null;
+    }
+
+    isl_ast_op_type op = isl_ast_expr_get_op_type(expr);
+    int n_args = isl_ast_expr_get_op_n_arg(expr);
+
+    if (n_args == 2) {
+        isl_ast_expr *arg0 = isl_ast_expr_get_op_arg(expr, 0);
+        isl_ast_expr *arg1 = isl_ast_expr_get_op_arg(expr, 1);
+
+        symbolic::Condition res;
+
+        switch (op) {
+            case isl_ast_op_eq:
+                res = symbolic::Eq(convert_expr(arg0), convert_expr(arg1));
+                break;
+            case isl_ast_op_lt:
+                res = symbolic::Lt(convert_expr(arg0), convert_expr(arg1));
+                break;
+            case isl_ast_op_le:
+                res = symbolic::Le(convert_expr(arg0), convert_expr(arg1));
+                break;
+            case isl_ast_op_gt:
+                res = symbolic::Gt(convert_expr(arg0), convert_expr(arg1));
+                break;
+            case isl_ast_op_ge:
+                res = symbolic::Ge(convert_expr(arg0), convert_expr(arg1));
+                break;
+            case isl_ast_op_and:
+            case isl_ast_op_and_then:
+                res = symbolic::And(convert_cond(arg0), convert_cond(arg1));
+                break;
+            case isl_ast_op_or:
+            case isl_ast_op_or_else:
+                res = symbolic::Or(convert_cond(arg0), convert_cond(arg1));
+                break;
+            default:
+                break;
+        }
+
+        isl_ast_expr_free(arg0);
+        isl_ast_expr_free(arg1);
+        return res;
+    }
+
+    return SymEngine::null;
 }
 
 ScopAnalysis::ScopAnalysis(StructuredSDFG &sdfg) : Analysis(sdfg) {}
