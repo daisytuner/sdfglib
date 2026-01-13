@@ -85,7 +85,9 @@ TEST_F(RecorderLoopTilingTest, Save_SingleTransformation) {
     EXPECT_NO_THROW(recorder.apply<transformations::LoopTiling>(*builder_, *analysis_manager_, true, *loop_, 32));
 
     // Use temporary file to save the transformation
-    std::filesystem::path tmp_file = std::filesystem::temp_directory_path() / "Save_SingleTransformation.json";
+    std::string user = std::getenv("USER");
+    std::filesystem::path tmp_file = std::filesystem::temp_directory_path() /
+                                     (user + "_Save_SingleTransformation.json");
     EXPECT_NO_THROW(recorder.save(tmp_file));
     EXPECT_TRUE(std::filesystem::exists(tmp_file));
 
@@ -277,7 +279,8 @@ TEST_F(RecorderMultiTransformationTest, Apply_Transformations) {
 
     /**** Save ****/
 
-    std::filesystem::path tmp_file = std::filesystem::temp_directory_path() / "Replay_Transformations.json";
+    std::string user = std::getenv("USER");
+    std::filesystem::path tmp_file = std::filesystem::temp_directory_path() / (user + "_Replay_Transformations.json");
     EXPECT_NO_THROW(recorder.save(tmp_file));
     EXPECT_TRUE(std::filesystem::exists(tmp_file));
 
