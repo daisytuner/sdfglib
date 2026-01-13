@@ -2,46 +2,32 @@
 
 #include <unordered_map>
 #include "sdfg/analysis/analysis.h"
-#include "sdfg/analysis/flop_analysis.h"
-#include "sdfg/analysis/mem_access_range_analysis.h"
-#include "sdfg/codegen/instrumentation/instrumentation_info.h"
+#include "sdfg/analysis/arguments_analysis.h"
 #include "sdfg/codegen/language_extension.h"
 #include "sdfg/codegen/utils.h"
-#include "sdfg/data_flow/library_node.h"
-#include "sdfg/element.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_sdfg.h"
-#include "sdfg/symbolic/symbolic.h"
-#include "sdfg/visitor/immutable_structured_sdfg_visitor.h"
 
 namespace sdfg {
 namespace codegen {
-
-enum class CaptureVarType { None, CapRaw, Cap1D, Cap2D, Cap3D };
 
 class CaptureVarPlan {
 public:
     const bool capture_input;
     const bool capture_output;
-    const CaptureVarType type;
     const int arg_idx;
     const bool is_external;
+    const symbolic::Expression size;
 
     const sdfg::types::PrimitiveType inner_type;
-    const sdfg::symbolic::Expression dim1;
-    const sdfg::symbolic::Expression dim2;
-    const sdfg::symbolic::Expression dim3;
 
     CaptureVarPlan(
         bool capture_input,
         bool capture_output,
-        CaptureVarType type,
         int arg_idx,
         bool is_external,
         sdfg::types::PrimitiveType inner_type,
-        const sdfg::symbolic::Expression dim1 = sdfg::symbolic::Expression(),
-        const sdfg::symbolic::Expression dim2 = sdfg::symbolic::Expression(),
-        const sdfg::symbolic::Expression dim3 = sdfg::symbolic::Expression()
+        const symbolic::Expression size
     );
 };
 
@@ -56,22 +42,10 @@ private:
         analysis::AnalysisManager& analysis_manager,
         structured_control_flow::ControlFlowNode& node,
         const std::string& var_name,
+        analysis::RegionArgument region_arg,
         int arg_idx,
         bool is_external,
-        std::unordered_map<std::string, CaptureVarPlan>& plan,
-        analysis::MemAccessRanges& ranges
-    );
-
-    static std::tuple<int, types::PrimitiveType> analyze_type_rec(
-        StructuredSDFG& sdfg,
-        analysis::AnalysisManager& analysis_manager,
-        symbolic::Expression* dims,
-        int max_dim,
-        int dim_idx,
-        const types::IType& type,
-        int arg_idx,
-        const analysis::MemAccessRange* range,
-        std::string var_name
+        std::unordered_map<std::string, CaptureVarPlan>& plan
     );
 
 public:
@@ -114,12 +88,6 @@ public:
     static std::unique_ptr<ArgCapturePlan> outermost_loops_plan(StructuredSDFG& sdfg);
 
     static std::unordered_map<std::string, CaptureVarPlan> create_capture_plan(
-        StructuredSDFG& sdfg,
-        analysis::AnalysisManager& analysis_manager,
-        structured_control_flow::ControlFlowNode& node
-    );
-
-    static std::unordered_map<std::string, std::pair<bool, bool>> find_arguments(
         StructuredSDFG& sdfg,
         analysis::AnalysisManager& analysis_manager,
         structured_control_flow::ControlFlowNode& node

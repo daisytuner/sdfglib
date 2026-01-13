@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <malloc.h>
 #include <nlohmann/json.hpp>
 #include <numeric>
 #include <utility>
@@ -12,15 +13,21 @@
 #include "daisy_rtl/primitive_types.h"
 
 #ifndef NDEBUG
-  #define DEBUG_PRINTLN(msg) \
-      do { std::cout << "[DEBUG] " << msg << std::endl; } while (0)
-  #define DEBUG_PRINT(msg) \
-      do { std::cout << "[DEBUG] " << msg; } while (0)
+#define DEBUG_PRINTLN(msg)                           \
+    do {                                             \
+        std::cout << "[DEBUG] " << msg << std::endl; \
+    } while (0)
+#define DEBUG_PRINT(msg)                \
+    do {                                \
+        std::cout << "[DEBUG] " << msg; \
+    } while (0)
 #else
-  #define DEBUG_PRINTLN(msg) \
-      do { } while (0)
-  #define DEBUG_PRINT(msg) \
-      do { } while (0)
+#define DEBUG_PRINTLN(msg) \
+    do {                   \
+    } while (0)
+#define DEBUG_PRINT(msg) \
+    do {                 \
+    } while (0)
 #endif
 
 namespace arg_capture {
@@ -94,6 +101,9 @@ bool ArgCaptureIO::create_and_capture_inline(
 ) {
     auto key = std::make_pair(arg_idx, after);
 
+    // FIX 1: Erase the old entry to ensure we capture with FRESH dimensions and types.
+    // If current_captures_ has an entry, emplace does nothing, keeping old dimensions.
+    current_captures_[element_id].erase(key);
     auto it = current_captures_[element_id].emplace(key, ArgCapture(arg_idx, after, primitive_type, dims));
 
     return capture_inline(it.first->second, data, element_id);
@@ -110,6 +120,8 @@ bool ArgCaptureIO::create_and_capture_to_file(
 ) {
     auto key = std::make_pair(arg_idx, after);
 
+    // FIX 1: Erase same as above
+    current_captures_[element_id].erase(key);
     auto it = current_captures_[element_id].emplace(key, ArgCapture(arg_idx, after, primitive_type, dims));
 
     DEBUG_PRINTLN("Writing capture file " + file.string());
@@ -119,23 +131,24 @@ bool ArgCaptureIO::create_and_capture_to_file(
 bool ArgCaptureIO::capture_inline(ArgCapture& capture, const void* data, std::string element_id) {
     auto size = std::accumulate(capture.dims.begin(), capture.dims.end(), 1, std::multiplies<size_t>());
 
-    DEBUG_PRINT("Capturing " << (capture.dims.size() - 1) << "D arg" << capture.arg_idx
-                << ": type " << primitive_type_names[capture.primitive_type] << "(" << size << " bytes): 0x"
-                << std::hex);
+    DEBUG_PRINT(
+        "Capturing " << (capture.dims.size() - 1) << "D arg" << capture.arg_idx << ": type "
+                     << primitive_type_names[capture.primitive_type] << "(" << size << " bytes): 0x" << std::hex
+    );
     int perGroup = 0;
-    for (int i = 0; i < size; ++i) {
-        const uint8_t* ptr = static_cast<const uint8_t*>(data) + i;
-        uint32_t byte = *ptr;
-        DEBUG_PRINT(byte);
+    // for (int i = 0; i < size; ++i) {
+    //     const uint8_t* ptr = static_cast<const uint8_t*>(data) + i;
+    //     uint32_t byte = *ptr;
+    //     DEBUG_PRINT(byte);
 
-        ++perGroup;
-        if (perGroup == 16) {
-            perGroup = 0;
-            DEBUG_PRINT("\n\t");
-        } else if (perGroup % 4 == 0) {
-            DEBUG_PRINT(" ");
-        }
-    }
+    //     ++perGroup;
+    //     if (perGroup == 16) {
+    //         perGroup = 0;
+    //         DEBUG_PRINT("\n\t");
+    //     } else if (perGroup % 4 == 0) {
+    //         DEBUG_PRINT(" ");
+    //     }
+    // }
     DEBUG_PRINTLN(std::dec);
 
     auto capturedData = std::make_shared<std::vector<uint8_t>>(size);
@@ -147,8 +160,11 @@ bool ArgCaptureIO::capture_inline(ArgCapture& capture, const void* data, std::st
 }
 
 bool ArgCaptureIO::write_capture_to_file(ArgCapture& capture, std::filesystem::path file, const void* data) {
-    DEBUG_PRINT("Capturing " << (capture.dims.size() - 1) << "D arg" << capture.arg_idx << " as " << (capture.after ? "result" : "input")
-                << ": type " << primitive_type_names[capture.primitive_type] << ": 0x" << std::hex << data << std::dec << ", ");
+    DEBUG_PRINT(
+        "Capturing " << (capture.dims.size() - 1) << "D arg" << capture.arg_idx << " as "
+                     << (capture.after ? "result" : "input") << ": type "
+                     << primitive_type_names[capture.primitive_type] << ": 0x" << std::hex << data << std::dec << ", "
+    );
     for (size_t i = 0; i < capture.dims.size(); ++i) {
         auto dim = capture.dims.at(i);
         DEBUG_PRINT(dim);
@@ -161,23 +177,45 @@ bool ArgCaptureIO::write_capture_to_file(ArgCapture& capture, std::filesystem::p
 
     std::filesystem::create_directories(file.parent_path());
 
+    // Use local stream with exceptions enabled to catch the specific error
+    std::ofstream ofs;
+    ofs.exceptions(std::ofstream::failbit | std::ofstream::badbit);
 
-    std::ofstream ofs(file, std::ofstream::binary | std::ofstream::out);
-    if (!ofs.is_open()) {
-        throw std::runtime_error(
-            "Failed to open file for dumping arg" + std::to_string(capture.arg_idx) + ": " + file.string()
-        );
+    try {
+        ofs.open(file, std::ofstream::binary | std::ofstream::out);
+
+        // FIX 2: Use size_t{1} explicitly. Passing '1' (int) causes the accumulation
+        // to happen as 'int', overflowing if data > 2GB.
+        auto totalSize =
+            std::accumulate(capture.dims.begin(), capture.dims.end(), size_t{1}, std::multiplies<size_t>());
+
+        DEBUG_PRINTLN(" total size: " << totalSize << " bytes");
+
+        if (totalSize > 0 && data == nullptr) {
+            throw std::runtime_error("Data pointer is NULL");
+        }
+
+        ofs.write(reinterpret_cast<const char*>(data), totalSize);
+
+        DEBUG_PRINTLN(" written");
+
+        ofs.close();
+
+        DEBUG_PRINTLN(" closed");
+
+        capture.ext_file = std::make_shared<std::filesystem::path>(file);
+
+        return true;
+    } catch (const std::ios_base::failure& e) {
+        // FIX 3: Catch ios_base::failure specifically to print the system error code.
+        // This will reveal if it is "No space left on device" or something else.
+        std::cerr << "[ArgCaptureIO] IO Error writing " << file.string() << ": " << e.what() << "\n";
+        std::cerr << "  System Error Code: " << e.code().value() << " (" << e.code().message() << ")\n";
+        return false;
+    } catch (const std::exception& e) {
+        std::cerr << "[ArgCaptureIO] Error writing " << file.string() << ": " << e.what() << std::endl;
+        return false;
     }
-
-    auto totalSize = std::accumulate(capture.dims.begin(), capture.dims.end(), 1, std::multiplies<size_t>());
-
-    ofs.write(reinterpret_cast<const char*>(data), totalSize);
-
-    ofs.close();
-
-    capture.ext_file = std::make_shared<std::filesystem::path>(file);
-
-    return !ofs.bad();
 }
 
 void ArgCaptureIO::write_index(std::filesystem::path base_path) {

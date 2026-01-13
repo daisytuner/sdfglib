@@ -23,9 +23,7 @@ protected:
 
 public:
     explicit DaisyRtlCapture(
-        const char* name,
-        std::filesystem::path base_dir,
-        uint32_t invocation_to_capture = ALL_INVOCATIONS
+        const char* name, std::filesystem::path base_dir, uint32_t invocation_to_capture = ALL_INVOCATIONS
     )
         : ArgCaptureIO(name), output_dir_(std::move(base_dir)), invocation_to_capture_(invocation_to_capture) {}
 
@@ -81,7 +79,15 @@ bool DaisyRtlCapture::enter(std::string element_id) {
 
 void DaisyRtlCapture::
     capture_raw(int arg_idx, const void* data, size_t size, int primitive_type, bool after, size_t element_id) {
-    create_and_capture_inline(arg_idx, after, primitive_type, {size}, data, std::to_string(element_id));
+    if (size <= 32) {
+        create_and_capture_inline(arg_idx, after, primitive_type, {size}, data, std::to_string(element_id));
+    }
+
+    auto file = generate_arg_capture_output_filename(arg_idx, after, std::to_string(element_id));
+
+    if (!create_and_capture_to_file(arg_idx, after, primitive_type, {size}, file, data, std::to_string(element_id))) {
+        throw std::runtime_error("Failed to write capture for arg" + std::to_string(arg_idx) + " to file");
+    }
 }
 
 void DaisyRtlCapture::capture_1d(
@@ -151,8 +157,8 @@ void DaisyRtlCapture::exit() {
 std::filesystem::path DaisyRtlCapture::generate_arg_capture_output_filename(int arg_idx, bool after, std::string element_id)
     const {
     std::string capType = after ? "out" : "in";
-    return output_dir_ / (name_ + "_inv" + std::to_string(invokes_.at(element_id)) + "_arg" + std::to_string(arg_idx) + "_" + capType +
-                          "_" + element_id + ".bin");
+    return output_dir_ / (name_ + "_inv" + std::to_string(invokes_.at(element_id)) + "_arg" + std::to_string(arg_idx) +
+                          "_" + capType + "_" + element_id + ".bin");
 }
 
 
@@ -257,7 +263,8 @@ void __daisy_capture_3d(
     size_t element_id
 ) {
     if (context) {
-        ((DaisyRtlCapture*) context)->capture_3d(arg_idx, data, size, primitive_type, num_x, num_y, num_z, after, element_id);
+        ((DaisyRtlCapture*) context)
+            ->capture_3d(arg_idx, data, size, primitive_type, num_x, num_y, num_z, after, element_id);
     }
 }
 
