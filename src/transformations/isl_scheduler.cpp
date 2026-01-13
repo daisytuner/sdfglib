@@ -22,8 +22,8 @@ bool ISLScheduler::can_be_applied(builder::StructuredSDFGBuilder& builder, analy
     }
     this->dependences_ = std::make_unique<analysis::Dependences>(*this->scop_);
     if (!this->dependences_->has_valid_dependences()) {
-        this->scop_ = nullptr;
         this->dependences_ = nullptr;
+        this->scop_ = nullptr;
         return false;
     }
 
@@ -108,15 +108,18 @@ void ISLScheduler::apply(builder::StructuredSDFGBuilder& builder, analysis::Anal
     SC = isl_schedule_constraints_set_coincidence(SC, isl_union_map_copy(validity));
     isl_schedule* S = isl_schedule_constraints_compute_schedule(SC);
     scop_->set_schedule_tree(S);
-    isl_schedule_free(S);
+
+    isl_union_map_free(validity);
+    isl_union_map_free(proximity);
+    isl_union_set_free(domain);
 
     auto& sdfg = builder.subject();
     analysis::ScopToSDFG converter(*scop_, builder);
     converter.build(analysis_manager);
 
     this->applied_ = true;
-    this->scop_ = nullptr;
     this->dependences_ = nullptr;
+    this->scop_ = nullptr;
 };
 
 void ISLScheduler::to_json(nlohmann::json& j) const {
