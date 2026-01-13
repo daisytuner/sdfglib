@@ -62,6 +62,9 @@ public:
         }
     }
 
+    MemoryAccess(const MemoryAccess&) = delete;
+    MemoryAccess& operator=(const MemoryAccess&) = delete;
+
     AccessType access_type() const { return access_type_; }
 
     isl_map* relation() const { return relation_; }
@@ -109,6 +112,9 @@ public:
         this->memory_accesses_.clear();
     }
 
+    ScopStatement(const ScopStatement&) = delete;
+    ScopStatement& operator=(const ScopStatement&) = delete;
+
     const std::string& name() const { return name_; }
 
     symbolic::Expression expression() const { return expression_; }
@@ -118,14 +124,18 @@ public:
     isl_set* domain() const { return domain_; }
 
     void set_domain(isl_set* domain) {
-        if (domain_) isl_set_free(domain_);
+        if (domain_) {
+            isl_set_free(domain_);
+        }
         domain_ = isl_set_set_tuple_name(domain, name_.c_str());
     }
 
     isl_map* schedule() const { return schedule_; }
 
     void set_schedule(isl_map* schedule) {
-        if (schedule_) isl_map_free(schedule_);
+        if (schedule_) {
+            isl_map_free(schedule_);
+        }
         schedule_ = isl_map_set_tuple_name(schedule, isl_dim_in, name_.c_str());
     }
 
@@ -186,19 +196,30 @@ private:
 
     isl_schedule* schedule_tree_;
 
+    isl_union_map* schedule_;
+
     std::vector<std::unique_ptr<ScopStatement>> statements_;
 
 public:
     Scop(structured_control_flow::ControlFlowNode& node, isl_ctx* ctx, isl_space* param_space);
 
     ~Scop() {
+        this->statements_.clear();
+
         if (param_space_) {
             isl_space_free(param_space_);
         }
-        this->statements_.clear();
-        isl_schedule_free(schedule_tree_);
+        if (schedule_tree_) {
+            isl_schedule_free(schedule_tree_);
+        }
+        if (schedule_) {
+            isl_union_map_free(schedule_);
+        }
         isl_ctx_free(ctx_);
     }
+
+    Scop(const Scop&) = delete;
+    Scop& operator=(const Scop&) = delete;
 
     structured_control_flow::ControlFlowNode& node() const { return node_; }
 
@@ -235,8 +256,6 @@ public:
         char* schedule_str = isl_union_map_to_str(schedule);
         os << "Schedule:\n" << schedule_str << "\n";
         free(schedule_str);
-        isl_union_map_free(schedule);
-        // os << "AST:\n" << scop.ast() << "\n";
         return os;
     }
 };
@@ -301,14 +320,25 @@ private:
     void set_reduction_dependences(MemoryAccess* memory_access, isl_map* deps);
 
 public:
-    Dependences(Scop& scop) : ctx_(scop.ctx()) { calculate_dependences(scop); }
+    Dependences(Scop& scop)
+        : ctx_(scop.ctx()), RAW(nullptr), WAR(nullptr), WAW(nullptr), RED(nullptr), TC_RED(nullptr) {
+        calculate_dependences(scop);
+    }
+
+    Dependences(const Dependences&) = delete;
+    Dependences& operator=(const Dependences&) = delete;
 
     ~Dependences() {
         if (RAW) isl_union_map_free(RAW);
+        RAW = nullptr;
         if (WAR) isl_union_map_free(WAR);
+        WAR = nullptr;
         if (WAW) isl_union_map_free(WAW);
+        WAW = nullptr;
         if (RED) isl_union_map_free(RED);
+        RED = nullptr;
         if (TC_RED) isl_union_map_free(TC_RED);
+        TC_RED = nullptr;
         for (auto& pair : reduction_dependences_) {
             isl_map_free(pair.second);
         }

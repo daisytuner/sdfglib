@@ -32,55 +32,27 @@
 namespace sdfg {
 namespace analysis {
 
-static isl_stat get_max_out_dim(isl_map *map, void *user) {
-    int *max_dim = (int *) user;
-    int dim = isl_map_dim(map, isl_dim_out);
-    if (dim > *max_dim) {
-        *max_dim = dim;
-    }
-    isl_map_free(map);
-    return isl_stat_ok;
-}
-
-struct PadScheduleInfo {
-    int max_dim;
-    isl_union_map *res;
-};
-
-static isl_stat pad_schedule(isl_map *map, void *user) {
-    PadScheduleInfo *info = (PadScheduleInfo *) user;
-    int dim = isl_map_dim(map, isl_dim_out);
-    if (dim < info->max_dim) {
-        map = isl_map_add_dims(map, isl_dim_out, info->max_dim - dim);
-        for (int i = dim; i < info->max_dim; ++i) {
-            map = isl_map_fix_si(map, isl_dim_out, i, 0);
-        }
-    }
-    info->res = isl_union_map_add_map(info->res, map);
-    return isl_stat_ok;
-}
 
 MemoryAccess::
     MemoryAccess(AccessType access_type, isl_map *relation, const std::string &data, const data_flow::Memlet *memlet)
-    : access_type_(access_type), relation_(isl_map_copy(relation)), data_(data), memlet_(memlet) {}
+    : access_type_(access_type), relation_(relation), data_(data), memlet_(memlet) {}
 
 ScopStatement::ScopStatement(const std::string &name, isl_set *domain, data_flow::CodeNode *code_node)
     : name_(name), code_node_(code_node), expression_(SymEngine::null) {
-    domain_ = isl_set_set_tuple_name(isl_set_copy(domain), name.c_str());
+    domain_ = isl_set_set_tuple_name(domain, name.c_str());
     isl_space *space = isl_set_get_space(domain_);
-    auto space_map = isl_space_map_from_set(space);
-    schedule_ = isl_map_identity(space_map);
+    schedule_ = isl_map_identity(isl_space_map_from_set(space));
 }
 
 ScopStatement::ScopStatement(const std::string &name, isl_set *domain, symbolic::Expression expression)
     : name_(name), code_node_(nullptr), expression_(expression) {
-    domain_ = isl_set_set_tuple_name(isl_set_copy(domain), name.c_str());
+    domain_ = isl_set_set_tuple_name(domain, name.c_str());
     isl_space *space = isl_set_get_space(domain_);
     schedule_ = isl_map_identity(isl_space_map_from_set(space));
 }
 
 Scop::Scop(structured_control_flow::ControlFlowNode &node, isl_ctx *ctx, isl_space *param_space)
-    : node_(node), ctx_(ctx), param_space_(isl_space_copy(param_space)), schedule_tree_(nullptr) {}
+    : node_(node), ctx_(ctx), param_space_(param_space), schedule_tree_(nullptr), schedule_(nullptr) {}
 
 isl_union_set *Scop::domains() {
     isl_space *empty_space = isl_space_params_alloc(this->ctx_, 0);
@@ -93,11 +65,11 @@ isl_union_set *Scop::domains() {
     return domain;
 }
 
-isl_union_map *Scop::schedule() { return isl_schedule_get_map(this->schedule_tree()); }
+isl_union_map *Scop::schedule() { return this->schedule_; }
 
 isl_schedule *Scop::schedule_tree() {
-    if (this->schedule_tree_ != nullptr) {
-        return isl_schedule_copy(this->schedule_tree_);
+    if (this->schedule_tree_) {
+        return this->schedule_tree_;
     }
 
     // Construct default schedule from statements
@@ -110,13 +82,34 @@ isl_schedule *Scop::schedule_tree() {
     isl_schedule *sched = isl_schedule_from_domain(domains());
     if (!isl_union_map_is_empty(sched_map)) {
         // Ensure consistent dimensionality
+        isl_map_list *map_list = isl_union_map_get_map_list(sched_map);
+        int n_maps = isl_map_list_n_map(map_list);
         int max_dim = 0;
-        isl_union_map_foreach_map(sched_map, get_max_out_dim, &max_dim);
 
-        PadScheduleInfo info = {max_dim, isl_union_map_empty(isl_union_map_get_space(sched_map))};
-        isl_union_map_foreach_map(sched_map, pad_schedule, &info);
+        for (int i = 0; i < n_maps; ++i) {
+            isl_map *map = isl_map_list_get_map(map_list, i);
+            int dim = isl_map_dim(map, isl_dim_out);
+            if (dim > max_dim) {
+                max_dim = dim;
+            }
+            isl_map_free(map);
+        }
+
+        isl_union_map *padded_map = isl_union_map_empty(isl_union_map_get_space(sched_map));
+        for (int i = 0; i < n_maps; ++i) {
+            isl_map *map = isl_map_list_get_map(map_list, i);
+            int dim = isl_map_dim(map, isl_dim_out);
+            if (dim < max_dim) {
+                map = isl_map_add_dims(map, isl_dim_out, max_dim - dim);
+                for (int j = dim; j < max_dim; ++j) {
+                    map = isl_map_fix_si(map, isl_dim_out, j, 0);
+                }
+            }
+            padded_map = isl_union_map_add_map(padded_map, map);
+        }
+        isl_map_list_free(map_list);
         isl_union_map_free(sched_map);
-        sched_map = info.res;
+        sched_map = padded_map;
 
         isl_union_pw_multi_aff *upma = isl_union_pw_multi_aff_from_union_map(sched_map);
         isl_multi_union_pw_aff *mupa = isl_multi_union_pw_aff_from_union_pw_multi_aff(upma);
@@ -126,14 +119,18 @@ isl_schedule *Scop::schedule_tree() {
     }
 
     this->schedule_tree_ = sched;
-    return isl_schedule_copy(this->schedule_tree_);
+    this->schedule_ = isl_schedule_get_map(this->schedule_tree_);
+
+    return this->schedule_tree_;
 }
 
 void Scop::set_schedule_tree(isl_schedule *schedule) {
-    if (this->schedule_tree_ != nullptr) {
+    if (this->schedule_tree_) {
         isl_schedule_free(this->schedule_tree_);
+        isl_union_map_free(this->schedule_);
     }
-    this->schedule_tree_ = isl_schedule_copy(schedule);
+    this->schedule_tree_ = schedule;
+    this->schedule_ = isl_schedule_get_map(schedule);
 }
 
 std::string Scop::ast() {
@@ -156,9 +153,11 @@ std::unique_ptr<Scop> ScopBuilder::build(analysis::AnalysisManager &analysis_man
     isl_options_set_on_error(ctx, ISL_ON_ERROR_CONTINUE);
     isl_space *param_space = isl_space_set_alloc(ctx, 0, 0);
     this->scop_ = std::make_unique<Scop>(this->node_, ctx, param_space);
-    isl_space_free(param_space);
 
     this->visit(analysis_manager, node_);
+    if (this->scop_ == nullptr) {
+        return nullptr;
+    }
 
     return std::move(scop_);
 }
@@ -194,7 +193,6 @@ void ScopBuilder::visit_sequence(analysis::AnalysisManager &analysis_manager, st
             auto statement = std::make_unique<ScopStatement>(
                 "S_" + std::to_string(transition.element_id()) + "_" + std::to_string(j), domain, assignment.second
             );
-            isl_set_free(domain);
             j++;
 
             AccessType access_type = AccessType::WRITE;
@@ -213,7 +211,6 @@ void ScopBuilder::visit_sequence(analysis::AnalysisManager &analysis_manager, st
             }
             isl_relation = isl_map_set_tuple_name(isl_relation, isl_dim_in, statement->name().c_str());
             auto memory_access = std::make_unique<MemoryAccess>(access_type, isl_relation, data, nullptr);
-            isl_map_free(isl_relation);
             statement->insert(memory_access);
 
             for (auto &sym : symbolic::atoms(assignment.second)) {
@@ -226,7 +223,6 @@ void ScopBuilder::visit_sequence(analysis::AnalysisManager &analysis_manager, st
                 }
                 isl_relation = isl_map_set_tuple_name(isl_relation, isl_dim_in, statement->name().c_str());
                 auto memory_access = std::make_unique<MemoryAccess>(access_type, isl_relation, data, nullptr);
-                isl_map_free(isl_relation);
                 statement->insert(memory_access);
             }
 
@@ -249,7 +245,6 @@ void ScopBuilder::visit_block(analysis::AnalysisManager &analysis_manager, struc
             isl_set *domain = isl_set_universe(isl_space_set_alloc(scop_->ctx(), 0, 0));
             auto statement =
                 std::make_unique<ScopStatement>("S_" + std::to_string(code_node->element_id()), domain, code_node);
-            isl_set_free(domain);
 
             // Add reads
             for (auto &iedge : graph.in_edges(*node)) {
@@ -267,7 +262,6 @@ void ScopBuilder::visit_block(analysis::AnalysisManager &analysis_manager, struc
                 }
                 isl_relation = isl_map_set_tuple_name(isl_relation, isl_dim_in, statement->name().c_str());
                 auto memory_access = std::make_unique<MemoryAccess>(access_type, isl_relation, data, &iedge);
-                isl_map_free(isl_relation);
                 statement->insert(memory_access);
             }
 
@@ -285,7 +279,6 @@ void ScopBuilder::visit_block(analysis::AnalysisManager &analysis_manager, struc
                 }
                 isl_relation = isl_map_set_tuple_name(isl_relation, isl_dim_in, statement->name().c_str());
                 auto memory_access = std::make_unique<MemoryAccess>(access_type, isl_relation, data, &oedge);
-                isl_map_free(isl_relation);
                 statement->insert(memory_access);
             }
 
@@ -573,12 +566,14 @@ static void collectInfo(
         }
     }
 
-    StmtSchedule = isl_union_map_intersect_params(StmtSchedule, isl_set_universe(isl_space_copy(S.param_space())));
+    StmtSchedule = isl_union_map_intersect_params(StmtSchedule, isl_set_universe(isl_space_copy(Space)));
     TaggedStmtDomain = isl_union_map_domain(StmtSchedule);
 
     ReductionTagMap = isl_union_map_coalesce(ReductionTagMap);
     Read = isl_union_map_coalesce(Read);
     MustWrite = isl_union_map_coalesce(MustWrite);
+
+    isl_space_free(Space);
 }
 
 static isl_union_flow *
@@ -667,11 +662,13 @@ static isl_stat collect_deps(isl_map *bmap, void *user) {
         isl_space *map_space_final = isl_map_get_space(map_for_deltas);
         isl_space *domain_space = isl_space_domain(isl_space_copy(map_space_final));
         isl_space *range_space = isl_space_range(isl_space_copy(map_space_final));
+        isl_space_free(map_space_final);
 
         if (!isl_space_is_equal(domain_space, range_space)) {
             isl_space_free(domain_space);
             isl_space_free(range_space);
             isl_map_free(map_for_deltas);
+            isl_map_free(bmap);
             return isl_stat_ok;
         }
         isl_space_free(domain_space);
@@ -771,47 +768,39 @@ std::unordered_map<std::string, analysis::LoopCarriedDependency> Dependences::
 
 bool Dependences::has_valid_dependences() const { return (RAW != nullptr) && (WAR != nullptr) && (WAW != nullptr); }
 
-isl_map *Dependences::reduction_dependences(MemoryAccess *MA) const {
-    return isl_map_copy(reduction_dependences_.at(MA));
-}
+isl_map *Dependences::reduction_dependences(MemoryAccess *MA) const { return reduction_dependences_.at(MA); }
 
 void Dependences::set_reduction_dependences(MemoryAccess *memory_access, isl_map *deps) {
-    reduction_dependences_[memory_access] = isl_map_copy(deps);
+    reduction_dependences_[memory_access] = deps;
 }
 
 void Dependences::calculate_dependences(Scop &S) {
     isl_union_map *Read, *MustWrite, *ReductionTagMap;
-    isl_schedule *Schedule;
     isl_union_set *TaggedStmtDomain;
-
     collectInfo(S, Read, MustWrite, ReductionTagMap, TaggedStmtDomain);
 
-    bool HasReductions = !isl_union_map_is_empty(ReductionTagMap);
+    isl_schedule *Schedule = isl_schedule_copy(S.schedule_tree());
 
-    Schedule = S.schedule_tree();
-
-    if (!HasReductions) {
+    bool has_reductions = !isl_union_map_is_empty(ReductionTagMap);
+    if (!has_reductions) {
         isl_union_map_free(ReductionTagMap);
         // Tag the schedule tree if we want fine-grain dependence info
         auto TaggedMap = isl_union_set_unwrap(isl_union_set_copy(TaggedStmtDomain));
         auto Tags = isl_union_map_domain_map_union_pw_multi_aff(TaggedMap);
         Schedule = isl_schedule_pullback_union_pw_multi_aff(Schedule, Tags);
     } else {
-        isl_union_map *IdentityMap;
-        isl_union_pw_multi_aff *ReductionTags, *IdentityTags, *Tags;
-
         // Extract Reduction tags from the combined access domains in the given
         // SCoP. The result is a map that maps each tagged element in the domain to
         // the memory location it accesses. ReductionTags = {[Stmt[i] ->
         // Array[f(i)]] -> Stmt[i] }
-        ReductionTags = isl_union_map_domain_map_union_pw_multi_aff(ReductionTagMap);
+        isl_union_pw_multi_aff *ReductionTags = isl_union_map_domain_map_union_pw_multi_aff(ReductionTagMap);
 
         // Compute an identity map from each statement in domain to itself.
         // IdentityTags = { [Stmt[i] -> Stmt[i] }
-        IdentityMap = isl_union_set_identity(isl_union_set_copy(TaggedStmtDomain));
-        IdentityTags = isl_union_pw_multi_aff_from_union_map(IdentityMap);
+        isl_union_map *IdentityMap = isl_union_set_identity(isl_union_set_copy(TaggedStmtDomain));
+        isl_union_pw_multi_aff *IdentityTags = isl_union_pw_multi_aff_from_union_map(IdentityMap);
 
-        Tags = isl_union_pw_multi_aff_union_add(ReductionTags, IdentityTags);
+        isl_union_pw_multi_aff *Tags = isl_union_pw_multi_aff_union_add(ReductionTags, IdentityTags);
 
         // By pulling back Tags from Schedule, we have a schedule tree that can
         // be used to compute normal dependences, as well as 'tagged' reduction
@@ -911,10 +900,13 @@ void Dependences::calculate_dependences(Scop &S) {
         // End of max_operations scope.
     }
 
-    isl_union_map *STMT_RAW, *STMT_WAW, *STMT_WAR;
-    STMT_RAW = isl_union_map_intersect_domain(isl_union_map_copy(RAW), isl_union_set_copy(TaggedStmtDomain));
-    STMT_WAW = isl_union_map_intersect_domain(isl_union_map_copy(WAW), isl_union_set_copy(TaggedStmtDomain));
-    STMT_WAR = isl_union_map_intersect_domain(isl_union_map_copy(WAR), TaggedStmtDomain);
+    isl_union_map *STMT_RAW =
+        isl_union_map_intersect_domain(isl_union_map_copy(RAW), isl_union_set_copy(TaggedStmtDomain));
+    isl_union_map *STMT_WAW =
+        isl_union_map_intersect_domain(isl_union_map_copy(WAW), isl_union_set_copy(TaggedStmtDomain));
+    isl_union_map *STMT_WAR =
+        isl_union_map_intersect_domain(isl_union_map_copy(WAR), isl_union_set_copy(TaggedStmtDomain));
+    isl_union_set_free(TaggedStmtDomain);
 
     // To handle reduction dependences we proceed as follows:
     // 1) Aggregate all possible reduction dependences, namely all self
@@ -1244,8 +1236,8 @@ void ScopToSDFG::build(analysis::AnalysisManager &analysis_manager) {
     isl_ast_build *ast_builder = isl_ast_build_alloc(ctx);
 
     // 2. Generate AST from Schedule
-    isl_schedule *schedule = scop_.schedule_tree();
-    isl_union_map *schedule_map = scop_.schedule();
+    isl_schedule *schedule = isl_schedule_copy(scop_.schedule_tree());
+    isl_union_map *schedule_map = isl_union_map_copy(scop_.schedule());
 
     // Apply dimension names to schedule
     NameConnectInfo info;
@@ -1278,6 +1270,7 @@ void ScopToSDFG::build(analysis::AnalysisManager &analysis_manager) {
 
     isl_ast_node_free(root_node);
     isl_ast_build_free(ast_builder);
+    std::cout << "Finished ScopToSDFG build." << std::endl;
 }
 
 void ScopToSDFG::visit_node(isl_ast_node *node, structured_control_flow::Sequence &scope) {
