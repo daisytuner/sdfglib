@@ -294,8 +294,9 @@ std::list<const DataFlowNode*> DataFlowGraph::topological_sort() const {
 
         // Perform a reversed DFS for each element in the queue
         std::unordered_map<const DataFlowNode*, std::list<const DataFlowNode*>> lists;
-        std::map<std::pair<const DataFlowNode*, long long>, const DataFlowNode*> dependencies;
-        std::unordered_set<const DataFlowNode*> visited, no_dependency;
+        std::unordered_map<const DataFlowNode*, std::list<std::pair<const DataFlowNode*, long long>>> dependencies;
+        std::map<std::pair<const DataFlowNode*, long long>, const DataFlowNode*> backward_dependencies;
+        std::unordered_set<const DataFlowNode*> visited;
         while (!queue.empty()) {
             const auto* start = queue.front();
             queue.pop_front();
@@ -306,7 +307,7 @@ std::list<const DataFlowNode*> DataFlowGraph::topological_sort() const {
 
             // Reversed DFS
             lists.insert({start, {}});
-            no_dependency.insert(start);
+            dependencies.insert({start, {}});
             std::stack<std::pair<const DataFlowNode*, const DataFlowNode*>> stack({{start, nullptr}});
             while (!stack.empty()) {
                 const auto* current = stack.top().first;
@@ -316,14 +317,14 @@ std::list<const DataFlowNode*> DataFlowGraph::topological_sort() const {
                 // If multiple out edges, add to queue, add dependency, and skip
                 if (current != start && this->out_degree(*current) > 1) {
                     queue.push_back(current);
-                    long long dependecy_id = -1;
+                    long long dependency_id = -1;
                     if (const auto* code_node = dynamic_cast<const CodeNode*>(current)) {
                         for (const auto& oedge : this->out_edges(*current)) {
                             const auto* dst = &oedge.dst();
                             if (dst == successor) {
                                 for (long long j = 0; j < code_node->outputs().size(); j++) {
                                     if (oedge.src_conn() == code_node->output(j)) {
-                                        dependecy_id = j;
+                                        dependency_id = j;
                                         break;
                                     }
                                 }
@@ -356,16 +357,16 @@ std::list<const DataFlowNode*> DataFlowGraph::topological_sort() const {
                         });
                         for (long long j = 0; j < tmp_outputs.size(); j++) {
                             if (tmp_outputs.at(j).first == successor) {
-                                dependecy_id = j;
+                                dependency_id = j;
                                 break;
                             }
                         }
                     }
-                    if (dependecy_id == -1 || dependencies.contains({current, dependecy_id})) {
+                    if (dependency_id == -1 || backward_dependencies.contains({current, dependency_id})) {
                         throw std::runtime_error("Could not create dependency in topological sort");
                     }
-                    dependencies.insert({{current, dependecy_id}, start});
-                    no_dependency.erase(start);
+                    dependencies.at(start).push_front({current, dependency_id});
+                    backward_dependencies.insert({{current, dependency_id}, start});
                     continue;
                 }
 
@@ -427,12 +428,9 @@ std::list<const DataFlowNode*> DataFlowGraph::topological_sort() const {
             }
         }
 
-        // Collect and sort dependency-free
-        std::vector<const DataFlowNode*> no_dependency_vec(no_dependency.begin(), no_dependency.end());
-        if (no_dependency.size() == 0) {
-            throw boost::not_a_dag();
-        } else if (no_dependency.size() > 1) {
-            std::sort(no_dependency_vec.begin(), no_dependency_vec.end(), [](const DataFlowNode* a, const DataFlowNode* b) {
+        // Sort sinks if necessary
+        if (sinks.size() > 1) {
+            std::sort(sinks.begin(), sinks.end(), [](const DataFlowNode* a, const DataFlowNode* b) {
                 const auto* a_tasklet = dynamic_cast<const Tasklet*>(a);
                 const auto* b_tasklet = dynamic_cast<const Tasklet*>(b);
                 const auto* a_libnode = dynamic_cast<const LibraryNode*>(a);
@@ -464,21 +462,45 @@ std::list<const DataFlowNode*> DataFlowGraph::topological_sort() const {
 
         // Stich together by resolving dependencies
         visited.clear();
-        queue.insert(queue.end(), no_dependency_vec.begin(), no_dependency_vec.end());
-        while (!queue.empty()) {
-            const auto* current = queue.front();
-            queue.pop_front();
-
-            if (!visited.contains(current)) {
-                components.at(i).insert(components.at(i).end(), lists.at(current).begin(), lists.at(current).end());
-                visited.insert(current);
+        for (const auto* sink : sinks) {
+            if (visited.contains(sink)) {
+                continue;
             }
 
-            size_t out_degree = this->out_degree(*current);
-            for (size_t j = 0; j < out_degree; j++) {
-                if (dependencies.contains({current, j})) {
-                    queue.push_back(dependencies.at({current, j}));
+            std::stack<const DataFlowNode*> stack({sink});
+            while (!stack.empty()) {
+                const auto* current = stack.top();
+                visited.insert(current);
+
+                bool all_resolved = true;
+                for (auto [node, dependency_id] : dependencies.at(current)) {
+                    if (!visited.contains(node)) {
+                        stack.push(node);
+                        all_resolved = false;
+                        break;
+                    }
+
+                    for (long long j = 0; j < dependency_id; j++) {
+                        if (!backward_dependencies.contains({node, j})) {
+                            continue;
+                        }
+                        const auto* node2 = backward_dependencies.at({node, j});
+                        if (!visited.contains(node2)) {
+                            stack.push(node2);
+                            all_resolved = false;
+                            break;
+                        }
+                    }
+                    if (!all_resolved) {
+                        break;
+                    }
                 }
+                if (!all_resolved) {
+                    continue;
+                }
+
+                components.at(i).insert(components.at(i).end(), lists.at(current).begin(), lists.at(current).end());
+                stack.pop();
             }
         }
     }
@@ -529,8 +551,9 @@ std::list<DataFlowNode*> DataFlowGraph::topological_sort() {
 
         // Perform a reversed DFS for each element in the queue
         std::unordered_map<DataFlowNode*, std::list<DataFlowNode*>> lists;
-        std::map<std::pair<DataFlowNode*, long long>, DataFlowNode*> dependencies;
-        std::unordered_set<DataFlowNode*> visited, no_dependency;
+        std::unordered_map<DataFlowNode*, std::list<std::pair<DataFlowNode*, long long>>> dependencies;
+        std::map<std::pair<DataFlowNode*, long long>, DataFlowNode*> backward_dependencies;
+        std::unordered_set<DataFlowNode*> visited;
         while (!queue.empty()) {
             auto* start = queue.front();
             queue.pop_front();
@@ -541,7 +564,7 @@ std::list<DataFlowNode*> DataFlowGraph::topological_sort() {
 
             // Reversed DFS
             lists.insert({start, {}});
-            no_dependency.insert(start);
+            dependencies.insert({start, {}});
             std::stack<std::pair<DataFlowNode*, DataFlowNode*>> stack({{start, nullptr}});
             while (!stack.empty()) {
                 auto* current = stack.top().first;
@@ -551,14 +574,14 @@ std::list<DataFlowNode*> DataFlowGraph::topological_sort() {
                 // If multiple out edges, add to queue, add dependency, and skip
                 if (current != start && this->out_degree(*current) > 1) {
                     queue.push_back(current);
-                    long long dependecy_id = -1;
+                    long long dependency_id = -1;
                     if (auto* code_node = dynamic_cast<CodeNode*>(current)) {
                         for (auto& oedge : this->out_edges(*current)) {
                             auto* dst = &oedge.dst();
                             if (dst == successor) {
                                 for (long long j = 0; j < code_node->outputs().size(); j++) {
                                     if (oedge.src_conn() == code_node->output(j)) {
-                                        dependecy_id = j;
+                                        dependency_id = j;
                                         break;
                                     }
                                 }
@@ -591,16 +614,16 @@ std::list<DataFlowNode*> DataFlowGraph::topological_sort() {
                         });
                         for (long long j = 0; j < tmp_outputs.size(); j++) {
                             if (tmp_outputs.at(j).first == successor) {
-                                dependecy_id = j;
+                                dependency_id = j;
                                 break;
                             }
                         }
                     }
-                    if (dependecy_id == -1 || dependencies.contains({current, dependecy_id})) {
+                    if (dependency_id == -1 || backward_dependencies.contains({current, dependency_id})) {
                         throw std::runtime_error("Could not create dependency in topological sort");
                     }
-                    dependencies.insert({{current, dependecy_id}, start});
-                    no_dependency.erase(start);
+                    dependencies.at(start).push_front({current, dependency_id});
+                    backward_dependencies.insert({{current, dependency_id}, start});
                     continue;
                 }
 
@@ -662,12 +685,9 @@ std::list<DataFlowNode*> DataFlowGraph::topological_sort() {
             }
         }
 
-        // Collect and sort dependency-free
-        std::vector<DataFlowNode*> no_dependency_vec(no_dependency.begin(), no_dependency.end());
-        if (no_dependency.size() == 0) {
-            throw boost::not_a_dag();
-        } else if (no_dependency.size() > 1) {
-            std::sort(no_dependency_vec.begin(), no_dependency_vec.end(), [](const DataFlowNode* a, const DataFlowNode* b) {
+        // Sort sinks if necessary
+        if (sinks.size() > 1) {
+            std::sort(sinks.begin(), sinks.end(), [](const DataFlowNode* a, const DataFlowNode* b) {
                 const auto* a_tasklet = dynamic_cast<const Tasklet*>(a);
                 const auto* b_tasklet = dynamic_cast<const Tasklet*>(b);
                 const auto* a_libnode = dynamic_cast<const LibraryNode*>(a);
@@ -699,21 +719,45 @@ std::list<DataFlowNode*> DataFlowGraph::topological_sort() {
 
         // Stich together by resolving dependencies
         visited.clear();
-        queue.insert(queue.end(), no_dependency_vec.begin(), no_dependency_vec.end());
-        while (!queue.empty()) {
-            auto* current = queue.front();
-            queue.pop_front();
-
-            if (!visited.contains(current)) {
-                components.at(i).insert(components.at(i).end(), lists.at(current).begin(), lists.at(current).end());
-                visited.insert(current);
+        for (auto* sink : sinks) {
+            if (visited.contains(sink)) {
+                continue;
             }
 
-            size_t out_degree = this->out_degree(*current);
-            for (size_t j = 0; j < out_degree; j++) {
-                if (dependencies.contains({current, j})) {
-                    queue.push_back(dependencies.at({current, j}));
+            std::stack<DataFlowNode*> stack({sink});
+            while (!stack.empty()) {
+                auto* current = stack.top();
+                visited.insert(current);
+
+                bool all_resolved = true;
+                for (auto [node, dependency_id] : dependencies.at(current)) {
+                    if (!visited.contains(node)) {
+                        stack.push(node);
+                        all_resolved = false;
+                        break;
+                    }
+
+                    for (long long j = 0; j < dependency_id; j++) {
+                        if (!backward_dependencies.contains({node, j})) {
+                            continue;
+                        }
+                        auto* node2 = backward_dependencies.at({node, j});
+                        if (!visited.contains(node2)) {
+                            stack.push(node2);
+                            all_resolved = false;
+                            break;
+                        }
+                    }
+                    if (!all_resolved) {
+                        break;
+                    }
                 }
+                if (!all_resolved) {
+                    continue;
+                }
+
+                components.at(i).insert(components.at(i).end(), lists.at(current).begin(), lists.at(current).end());
+                stack.pop();
             }
         }
     }

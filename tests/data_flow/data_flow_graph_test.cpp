@@ -258,7 +258,7 @@ TEST(DataflowTest, CrossedDependencies) {
     builder.add_computational_memlet(block, T2, "_out1", S2, {}, desc);
     builder.add_computational_memlet(block, T2, "_out2", S1, {}, desc);
 
-    check_topo_sort(builder, {&A, &T1, &B, &T2, &S1, &S2});
+    check_topo_sort(builder, {&A, &T1, &B, &T2, &S2, &S1});
 }
 
 TEST(DataflowTest, FanOutGraph) {
@@ -758,4 +758,63 @@ TEST(DataflowTest, ComplexDiamond) {
     EXPECT_LT(position[&TR2], position[&R2]);
     EXPECT_LT(position[&R2], position[&TR3]);
     EXPECT_LT(position[&TR3], position[&Sink]);
+}
+
+TEST(DataflowTest, ComplexDependencyResolve) {
+    builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+
+    types::Scalar desc(types::PrimitiveType::Double);
+    builder.add_container("A", desc);
+    builder.add_container("B", desc);
+    builder.add_container("C", desc);
+    builder.add_container("D", desc);
+    builder.add_container("E", desc);
+    builder.add_container("F", desc);
+    builder.add_container("G", desc);
+
+    types::Function func_desc(desc);
+    func_desc.add_param(desc);
+    func_desc.add_param(desc);
+    func_desc.add_param(desc);
+    func_desc.add_param(desc);
+    func_desc.add_param(desc);
+    func_desc.add_param(desc);
+    builder.add_container("func", func_desc, false, true);
+
+    auto& A = builder.add_access(block, "A");
+    auto& B = builder.add_access(block, "B");
+    auto& C = builder.add_access(block, "C");
+    auto& D = builder.add_access(block, "D");
+    auto& E = builder.add_access(block, "E");
+    auto& F = builder.add_access(block, "F");
+    auto& G = builder.add_access(block, "G");
+
+    auto& tasklet1 = builder.add_tasklet(block, data_flow::TaskletCode::fp_mul, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, A, tasklet1, "_in1", {});
+    builder.add_computational_memlet(block, B, tasklet1, "_in2", {});
+    builder.add_computational_memlet(block, tasklet1, "_out", C, {});
+
+    auto& tasklet2 = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, C, tasklet2, "_in1", {});
+    builder.add_computational_memlet(block, E, tasklet2, "_in2", {});
+    builder.add_computational_memlet(block, tasklet2, "_out", D, {});
+
+    auto& libnode3 = builder.add_library_node<data_flow::CallNode>(
+        block,
+        DebugInfo(),
+        "func",
+        std::vector<std::string>{"_out"},
+        std::vector<std::string>{"_in1", "_in2", "_in3", "_in4", "_in5", "_in6"}
+    );
+    builder.add_computational_memlet(block, D, libnode3, "_in1", {}, desc);
+    builder.add_computational_memlet(block, C, libnode3, "_in2", {}, desc);
+    builder.add_computational_memlet(block, F, libnode3, "_in3", {}, desc);
+    builder.add_computational_memlet(block, A, libnode3, "_in4", {}, desc);
+    builder.add_computational_memlet(block, E, libnode3, "_in5", {}, desc);
+    builder.add_computational_memlet(block, B, libnode3, "_in6", {}, desc);
+    builder.add_computational_memlet(block, libnode3, "_out", G, {}, desc);
+
+    check_topo_sort(builder, {&A, &B, &tasklet1, &C, &E, &tasklet2, &D, &F, &libnode3, &G});
 }
