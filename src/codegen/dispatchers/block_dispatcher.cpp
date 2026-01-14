@@ -339,8 +339,8 @@ void LibraryNodeDispatcher::
             // Handle array and structure types
             stream << this->language_extension_.declaration(conn, conn_type) << ";" << std::endl;
             stream << "memcpy(" << "&" << conn << ", " << "&" << src_name
-                   << this->language_extension_.subset(iedge->base_type(), iedge->subset()) << ", sizeof " << conn << ");"
-                   << std::endl;
+                   << this->language_extension_.subset(iedge->base_type(), iedge->subset()) << ", sizeof " << conn
+                   << ");" << std::endl;
         } else {
             stream << this->language_extension_.declaration(conn, conn_type);
             stream << " = ";
@@ -377,8 +377,8 @@ void LibraryNodeDispatcher::
             // Handle array and structure types
             stream << this->language_extension_.declaration(conn, conn_type) << ";" << std::endl;
             stream << "memcpy(" << "&" << conn << ", " << "&" << dst_name
-                   << this->language_extension_.subset(oedge->base_type(), oedge->subset()) << ", sizeof " << conn << ");"
-                   << std::endl;
+                   << this->language_extension_.subset(oedge->base_type(), oedge->subset()) << ", sizeof " << conn
+                   << ");" << std::endl;
         } else {
             stream << this->language_extension_.declaration(conn, conn_type);
             stream << " = ";
