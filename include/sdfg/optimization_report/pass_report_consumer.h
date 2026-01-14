@@ -1,4 +1,5 @@
 #pragma once
+#include <nlohmann/json.hpp>
 
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/transformations/transformation.h"
@@ -17,7 +18,7 @@ public:
         transform_possible(transform->name());
     }
 
-    virtual void transform_applied(const std::string& transform) = 0;
+    virtual void transform_applied(const std::string& transform, nlohmann::json transform_info = {}) = 0;
     virtual void transform_applied(const sdfg::transformations::Transformation* transform) {
         transform_applied(transform->name());
     }

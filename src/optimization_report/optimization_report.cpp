@@ -79,6 +79,9 @@ void OptimizationReport::add_transformation_entry(
     if (!report.reason.empty()) {
         rep["reason"] = report.reason;
     }
+    if (!report.info.empty()) {
+        rep["info"] = report.info;
+    }
 
     /* if (!aggregate_) {
         if (!report_.contains("transformations")) {
