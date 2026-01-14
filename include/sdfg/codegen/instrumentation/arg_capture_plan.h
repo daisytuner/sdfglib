@@ -18,6 +18,7 @@ public:
     const int arg_idx;
     const bool is_external;
     const symbolic::Expression size;
+    const bool is_scalar;
 
     const sdfg::types::PrimitiveType inner_type;
 
@@ -27,7 +28,8 @@ public:
         int arg_idx,
         bool is_external,
         sdfg::types::PrimitiveType inner_type,
-        const symbolic::Expression size
+        const symbolic::Expression size,
+        bool is_scalar
     );
 };
 

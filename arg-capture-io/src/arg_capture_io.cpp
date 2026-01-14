@@ -175,47 +175,61 @@ bool ArgCaptureIO::write_capture_to_file(ArgCapture& capture, std::filesystem::p
     }
     DEBUG_PRINTLN(" bytes");
 
-    std::filesystem::create_directories(file.parent_path());
-
-    // Use local stream with exceptions enabled to catch the specific error
-    std::ofstream ofs;
-    ofs.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-
-    try {
-        ofs.open(file, std::ofstream::binary | std::ofstream::out);
-
-        // FIX 2: Use size_t{1} explicitly. Passing '1' (int) causes the accumulation
-        // to happen as 'int', overflowing if data > 2GB.
-        auto totalSize =
-            std::accumulate(capture.dims.begin(), capture.dims.end(), size_t{1}, std::multiplies<size_t>());
-
-        DEBUG_PRINTLN(" total size: " << totalSize << " bytes");
-
-        if (totalSize > 0 && data == nullptr) {
-            throw std::runtime_error("Data pointer is NULL");
-        }
-
-        ofs.write(reinterpret_cast<const char*>(data), totalSize);
-
-        DEBUG_PRINTLN(" written");
-
-        ofs.close();
-
-        DEBUG_PRINTLN(" closed");
-
-        capture.ext_file = std::make_shared<std::filesystem::path>(file);
-
-        return true;
-    } catch (const std::ios_base::failure& e) {
-        // FIX 3: Catch ios_base::failure specifically to print the system error code.
-        // This will reveal if it is "No space left on device" or something else.
-        std::cerr << "[ArgCaptureIO] IO Error writing " << file.string() << ": " << e.what() << "\n";
-        std::cerr << "  System Error Code: " << e.code().value() << " (" << e.code().message() << ")\n";
-        return false;
-    } catch (const std::exception& e) {
-        std::cerr << "[ArgCaptureIO] Error writing " << file.string() << ": " << e.what() << std::endl;
+    // Ensure directory exists
+    std::error_code ec;
+    std::filesystem::create_directories(file.parent_path(), ec);
+    if (ec) {
+        std::cerr << "[ArgCaptureIO] Failed to create directories: " << ec.message() << std::endl;
         return false;
     }
+
+    // Use standard stream without exceptions to capture errno correctly
+    std::ofstream ofs(file, std::ofstream::binary | std::ofstream::out);
+
+    if (!ofs.is_open()) {
+        // Reset errno might be needed, but usually is_open fail sets it
+        std::cerr << "[ArgCaptureIO] Failed to open file: " << file.string() << std::endl;
+        std::cerr << "  System Error: " << std::strerror(errno) << std::endl;
+        return false;
+    }
+
+    // Calculate size safely
+    auto totalSize = std::accumulate(capture.dims.begin(), capture.dims.end(), size_t{1}, std::multiplies<size_t>());
+
+    DEBUG_PRINTLN(" total size: " << totalSize << " bytes");
+
+    if (totalSize > 0 && data == nullptr) {
+        std::cerr << "[ArgCaptureIO] Error: Data pointer is NULL for size " << totalSize << std::endl;
+        return false;
+    }
+
+    // Perform write
+    ofs.write(reinterpret_cast<const char*>(data), totalSize);
+
+    // Check for write errors using stream state + errno
+    if (ofs.bad()) {
+        std::cerr << "[ArgCaptureIO] Critical IO Error (badbit) writing " << file.string() << std::endl;
+        std::cerr << "  System Error: " << std::strerror(errno) << std::endl;
+        return false;
+    }
+    if (ofs.fail()) {
+        std::cerr << "[ArgCaptureIO] IO Failure (failbit) writing " << file.string() << std::endl;
+        std::cerr << "  System Error: " << std::strerror(errno) << std::endl;
+        return false;
+    }
+
+    ofs.close();
+
+    if (ofs.fail()) {
+        std::cerr << "[ArgCaptureIO] Error closing file " << file.string() << std::endl;
+        return false;
+    }
+
+    DEBUG_PRINTLN(" closed");
+
+    capture.ext_file = std::make_shared<std::filesystem::path>(file);
+
+    return true;
 }
 
 void ArgCaptureIO::write_index(std::filesystem::path base_path) {

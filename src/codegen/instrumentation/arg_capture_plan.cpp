@@ -23,10 +23,11 @@ CaptureVarPlan::CaptureVarPlan(
     int argIdx,
     bool isExternal,
     sdfg::types::PrimitiveType innerType,
-    const sdfg::symbolic::Expression size
+    const sdfg::symbolic::Expression size,
+    bool isScalar
 )
     : capture_input(capture_input), capture_output(capture_output), arg_idx(argIdx), is_external(isExternal),
-      inner_type(innerType), size(size) {}
+      inner_type(innerType), size(size), is_scalar(isScalar) {}
 
 bool ArgCapturePlan::should_instrument(const structured_control_flow::ControlFlowNode& node) const {
     return this->nodes_.count(&node);
@@ -115,9 +116,10 @@ void ArgCapturePlan::emit_arg_captures(
                 safe_name = argName;
             }
 
-            stream << "\t__daisy_capture_raw(" << "__capture_ctx, " << argIdx << ", " << "&" << safe_name << ", "
-                   << language_extension.expression(varPlan.size) << ", " << varPlan.inner_type << ", " << afterBoolStr
-                   << ", " << element_id << ");" << std::endl;
+
+            stream << "\t__daisy_capture_raw(" << "__capture_ctx, " << argIdx << ", " << (varPlan.is_scalar ? "&" : "")
+                   << safe_name << ", " << language_extension.expression(varPlan.size) << ", " << varPlan.inner_type
+                   << ", " << afterBoolStr << ", " << element_id << ");" << std::endl;
         }
     }
 }
@@ -156,7 +158,10 @@ bool ArgCapturePlan::add_capture_plan(
     auto size = arg_sizes.at(var_name);
 
     plan.insert(
-        {var_name, CaptureVarPlan(region_arg.is_input, region_arg.is_output, arg_idx, is_external, inner_type, size)}
+        {var_name,
+         CaptureVarPlan(
+             region_arg.is_input, region_arg.is_output, arg_idx, is_external, inner_type, size, region_arg.is_scalar
+         )}
     );
 
     DEBUG_PRINTLN("Successfully added capture plan for variable " + var_name);
