@@ -172,15 +172,6 @@ void ArgumentsAnalysis::collect_arg_sizes(
                 argument_element_sizes_.at(&node).insert({argument, elem_size});
             }
         }
-        // should we set size for scalars? would just be whatever the type statically says or sizeof(var)
-        if (meta.is_scalar && meta.is_output) {
-            if (do_not_throw) {
-                known_sizes_.insert({&node, false});
-                return;
-            } else {
-                throw std::runtime_error("Scalar output unsupported: " + argument);
-            }
-        }
     }
 
     known_sizes_.insert({&node, true});

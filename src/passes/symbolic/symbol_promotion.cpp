@@ -161,8 +161,7 @@ bool SymbolPromotion::can_be_applied(
             return tasklet->has_constant_input(1);
         }
         case data_flow::TaskletCode::int_and:
-        case data_flow::TaskletCode::int_or:
-        case data_flow::TaskletCode::int_xor: {
+        case data_flow::TaskletCode::int_or: {
             // Only for booleans
             for (auto& iedge : dataflow.in_edges(*tasklet)) {
                 auto& type = iedge.result_type(sdfg);
@@ -174,6 +173,44 @@ bool SymbolPromotion::can_be_applied(
                 return false;
             }
             return true;
+        }
+        case data_flow::TaskletCode::int_xor: {
+            // Only for booleans
+            bool all_bool = true;
+            for (auto& iedge : dataflow.in_edges(*tasklet)) {
+                auto& type = iedge.result_type(sdfg);
+                if (type.primitive_type() != types::PrimitiveType::Bool) {
+                    all_bool = false;
+                }
+            }
+            if (oedge.base_type().primitive_type() != types::PrimitiveType::Bool) {
+                all_bool = false;
+            }
+            if (all_bool) {
+                return true;
+            }
+            // check if one input is -1 and the rest are signed integers
+            bool one_is_neg_one = false;
+            for (auto& iedge : dataflow.in_edges(*tasklet)) {
+                auto& type = iedge.result_type(sdfg);
+                if (type.primitive_type() != types::PrimitiveType::Int8 &&
+                    type.primitive_type() != types::PrimitiveType::Int16 &&
+                    type.primitive_type() != types::PrimitiveType::Int32 &&
+                    type.primitive_type() != types::PrimitiveType::Int64 &&
+                    type.primitive_type() != types::PrimitiveType::Int128) {
+                    return false;
+                }
+                if (auto const_node = dynamic_cast<const data_flow::ConstantNode*>(&iedge.src())) {
+                    int64_t value = helpers::parse_number_signed(const_node->data());
+                    if (value == -1) {
+                        one_is_neg_one = true;
+                    }
+                }
+            }
+            if (one_is_neg_one) {
+                return true;
+            }
+            return false;
         }
         default:
             return false;
@@ -333,11 +370,40 @@ void SymbolPromotion::apply(
             break;
         }
         case data_flow::TaskletCode::int_xor: {
-            auto op_1_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(0)), symbolic::__true__());
-            auto op_2_is_true = symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(1)), symbolic::__true__());
-            rhs = symbolic::
-                And(symbolic::Or(op_1_is_true, op_2_is_true), symbolic::Not(symbolic::And(op_1_is_true, op_2_is_true)));
-            break;
+            bool all_bool = true;
+            for (auto& iedge : dataflow.in_edges(*tasklet)) {
+                auto& type = iedge.result_type(builder.subject());
+                if (type.primitive_type() != types::PrimitiveType::Bool) {
+                    all_bool = false;
+                }
+            }
+            auto& oedge = *dataflow.out_edges(*tasklet).begin();
+            if (oedge.base_type().primitive_type() != types::PrimitiveType::Bool) {
+                all_bool = false;
+            }
+            if (all_bool) {
+                auto op_1_is_true =
+                    symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(0)), symbolic::__true__());
+                auto op_2_is_true =
+                    symbolic::Eq(as_symbol(dataflow, *tasklet, tasklet->input(1)), symbolic::__true__());
+                rhs = symbolic::
+                    And(symbolic::Or(op_1_is_true, op_2_is_true),
+                        symbolic::Not(symbolic::And(op_1_is_true, op_2_is_true)));
+                break;
+            } else {
+                // one input is -1
+                bool neg_1_lhs = false;
+                symbolic::Expression other_op;
+                for (auto& iedge : dataflow.in_edges(*tasklet)) {
+                    auto& type = iedge.result_type(builder.subject());
+                    if (auto const_node = dynamic_cast<const data_flow::ConstantNode*>(&iedge.src())) {
+                    } else {
+                        other_op = as_symbol(dataflow, *tasklet, iedge.dst_conn());
+                    }
+                }
+                rhs = symbolic::add(symbolic::mul(other_op, symbolic::integer(-1)), symbolic::integer(-1));
+                break;
+            }
         }
         default: {
             throw InvalidSDFGException("SymbolPromotion: Invalid tasklet code");
