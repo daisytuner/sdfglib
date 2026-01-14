@@ -11,6 +11,7 @@
 #include "sdfg/analysis/type_analysis.h"
 #include "sdfg/codegen/language_extension.h"
 #include "sdfg/helpers/helpers.h"
+#include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/types/utils.h"
 
@@ -151,11 +152,11 @@ bool ArgCapturePlan::add_capture_plan(
 
     auto& arguments_analysis = analysis_manager.get<analysis::ArgumentsAnalysis>();
     auto arg_sizes = arguments_analysis.argument_sizes(analysis_manager, node, true);
-    if (arg_sizes.find(var_name) == arg_sizes.end()) {
+    if (arg_sizes.find(var_name) == arg_sizes.end() && !region_arg.is_scalar) {
         DEBUG_PRINTLN("Could not determine size for variable " + var_name + ", cannot add to capture plan.");
         return false;
     }
-    auto size = arg_sizes.at(var_name);
+    auto size = region_arg.is_scalar ? types::get_contiguous_element_size(*type) : arg_sizes.at(var_name);
 
     plan.insert(
         {var_name,
@@ -171,6 +172,11 @@ bool ArgCapturePlan::add_capture_plan(
 std::unordered_map<std::string, CaptureVarPlan> ArgCapturePlan::create_capture_plan(
     StructuredSDFG& sdfg, analysis::AnalysisManager& analysis_manager, structured_control_flow::ControlFlowNode& node
 ) {
+    if (auto loop_node = dynamic_cast<structured_control_flow::StructuredLoop*>(&node)) {
+        DEBUG_PRINTLN("Creating capture plan for loop node " << loop_node->indvar()->__str__());
+    } else {
+        DEBUG_PRINTLN("Creating capture plan for node " << node.element_id());
+    }
     auto& arguments_analysis = analysis_manager.get<analysis::ArgumentsAnalysis>();
     if (!arguments_analysis.inferred_types(analysis_manager, node)) {
         DEBUG_PRINTLN(
