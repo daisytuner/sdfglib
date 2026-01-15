@@ -1253,3 +1253,40 @@ TEST(SymbolPromotionTest, Trunc_i64_to_i32) {
     auto expected = symbolic::trunc_i32(SymEngine::rcp_static_cast<const SymEngine::Symbol>(sym_j));
     EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym_i), *expected));
 }
+
+TEST(SymbolPromotionTest, Signed_Int_neg_1_xor) {
+    builder::StructuredSDFGBuilder builder("sdfg", FunctionType_CPU);
+
+    types::Scalar desc(types::PrimitiveType::Int32);
+    builder.add_container("i", desc);
+    builder.add_container("j", desc);
+    auto sym_i = symbolic::symbol("i");
+    auto sym_j = symbolic::symbol("j");
+
+    auto& root = builder.subject().root();
+    auto& block = builder.add_block(root);
+    auto& input_node = builder.add_access(block, "j");
+    auto& output_node = builder.add_access(block, "i");
+    auto& constant = builder.add_constant(block, "-1", desc);
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::int_xor, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, input_node, tasklet, "_in1", {});
+    builder.add_computational_memlet(block, constant, tasklet, "_in2", {});
+    builder.add_computational_memlet(block, tasklet, "_out", output_node, {});
+
+    // Apply pass
+    auto& sdfg = builder.subject();
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    passes::SymbolPromotion s2spass;
+    EXPECT_TRUE(s2spass.run(builder, analysis_manager));
+
+    // Check result - verify expression is - sym_j - 1
+    EXPECT_EQ(sdfg.root().size(), 2);
+    auto child1 = sdfg.root().at(0);
+    auto block1 = dynamic_cast<const structured_control_flow::Block*>(&child1.first);
+    EXPECT_NE(block1, nullptr);
+    EXPECT_EQ(block1->dataflow().nodes().size(), 0);
+    EXPECT_EQ(child1.second.assignments().size(), 1);
+
+    auto expected = symbolic::add(symbolic::mul(symbolic::integer(-1), sym_j), symbolic::integer(-1));
+    EXPECT_TRUE(SymEngine::eq(*child1.second.assignments().at(sym_i), *expected));
+}

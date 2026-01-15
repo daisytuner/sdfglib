@@ -73,6 +73,8 @@ void LoopAnalysis::run(AnalysisManager& analysis_manager) {
         info.loopnest_index = loopnest_index;
         loopnest_index++;
 
+        info.element_id = loop->element_id();
+
         auto descendants = this->descendants(loop);
         descendants.insert(loop);
 

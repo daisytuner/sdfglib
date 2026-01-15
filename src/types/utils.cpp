@@ -178,5 +178,43 @@ const types::IType* peel_to_next_element(const types::IType& type) {
     }
 }
 
+bool is_contiguous_type(const types::IType& base_type, StructuredSDFG& sdfg) {
+    auto& type = types::peel_to_innermost_element(base_type);
+    if (type.type_id() == types::TypeID::Pointer) {
+        return false;
+    }
+
+    // Check for distant nests
+    if (type != types::peel_to_innermost_element(base_type, -1)) {
+        return false;
+    }
+
+    // Check for nested structures
+    if (type.type_id() == types::TypeID::Structure) {
+        std::list<types::Structure> structures;
+        std::unordered_set<std::string> visited_structures;
+        structures.push_back(dynamic_cast<const types::Structure&>(type));
+        while (structures.size() > 0) {
+            auto structure = structures.front();
+            structures.pop_front();
+            if (visited_structures.contains(structure.name())) {
+                return false; // infinitely nested structures are not supported
+            }
+
+            visited_structures.insert(structure.name());
+            auto& definition = sdfg.structure(structure.name());
+            for (size_t i = 0; i < definition.num_members(); i++) {
+                auto& member_type = definition.member_type(symbolic::integer(i));
+                if (member_type.type_id() == types::TypeID::Structure) {
+                    structures.push_back(dynamic_cast<const types::Structure&>(member_type));
+                } else if (member_type.type_id() == types::TypeID::Pointer) {
+                    return false; // pointers in structures are not supported
+                }
+            }
+        }
+    }
+    return true;
+}
+
 } // namespace types
 } // namespace sdfg

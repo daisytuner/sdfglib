@@ -406,7 +406,7 @@ def test_capture_strats(strat, expected_reports):
             cap = capture_map[(2, False)]
             assert cap["primitive_type"] == 5
             assert cap["dims"] == [8]
-            check_base64(cap, (-1 if inv == 0 else 0).to_bytes(8, byteorder="little", signed=True))
+            check_ext_file(cap, np.array([-1, -1], dtype=np.int32) if inv == 0 else np.zeros(2, dtype=np.int32))
 
             assert (3, True) in capture_map
             cap = capture_map[(3, True)]

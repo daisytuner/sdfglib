@@ -7,6 +7,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 set(TEST_FILES
+    analysis/arguments_analysis_test.cpp
     analysis/assumptions_analysis_test.cpp
     analysis/control_flow_analysis_test.cpp
     analysis/data_dependency_analysis_test.cpp

@@ -24,6 +24,7 @@ struct DFSLoopComparator {
 
 #define LOOP_INFO_PROPERTIES              \
     X(int, loopnest_index, -1)            \
+    X(size_t, element_id, 0)              \
     X(size_t, num_loops, 0)               \
     X(size_t, num_maps, 0)                \
     X(size_t, num_fors, 0)                \
@@ -43,6 +44,7 @@ struct LoopInfo {
 inline nlohmann::json loop_info_to_json(LoopInfo info) {
     nlohmann::json j = nlohmann::json{
         {"loopnest_index", info.loopnest_index},
+        {"element_id", info.element_id},
         {"num_loops", info.num_loops},
         {"num_maps", info.num_maps},
         {"num_fors", info.num_fors},
