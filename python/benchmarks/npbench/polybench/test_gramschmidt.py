@@ -1,17 +1,18 @@
 import pytest
-import docc
 import numpy as np
-from benchmarks.npbench.harness import run_benchmark, run_pytest
+from npbench.harness import run_benchmark, run_pytest
 
 PARAMETERS = {
-    "S": { "M": 70, "N": 60 },
-    "M": { "M": 220, "N": 180 },
-    "L": { "M": 600, "N": 500 },
-    "paper": { "M": 240, "N": 200 }
+    "S": {"M": 70, "N": 60},
+    "M": {"M": 220, "N": 180},
+    "L": {"M": 600, "N": 500},
+    "paper": {"M": 240, "N": 200},
 }
+
 
 def initialize(M, N, datatype=np.float64):
     from numpy.random import default_rng
+
     rng = default_rng(42)
 
     A = rng.random((M, N), dtype=datatype)
@@ -35,10 +36,12 @@ def kernel(A):
 
     return Q, R
 
+
 @pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
 def test_gramschmidt(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
+
 
 if __name__ == "__main__":
     run_benchmark(initialize, kernel, PARAMETERS, "gramschmidt")

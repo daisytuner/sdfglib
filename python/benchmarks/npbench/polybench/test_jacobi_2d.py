@@ -1,14 +1,14 @@
 import pytest
-import docc
 import numpy as np
-from benchmarks.npbench.harness import run_benchmark, run_pytest
+from npbench.harness import run_benchmark, run_pytest
 
 PARAMETERS = {
-    "S": { "TSTEPS": 50, "N": 150 },
-    "M": { "TSTEPS": 80, "N": 350 },
-    "L": { "TSTEPS": 200, "N": 700 },
-    "paper": { "TSTEPS": 1000, "N": 2800 }
+    "S": {"TSTEPS": 50, "N": 150},
+    "M": {"TSTEPS": 80, "N": 350},
+    "L": {"TSTEPS": 200, "N": 700},
+    "paper": {"TSTEPS": 1000, "N": 2800},
 }
+
 
 def initialize(TSTEPS, N, datatype=np.float64):
     A = np.fromfunction(lambda i, j: i * (j + 2) / N, (N, N), dtype=datatype)
@@ -20,15 +20,19 @@ def initialize(TSTEPS, N, datatype=np.float64):
 def kernel(TSTEPS, A, B):
 
     for t in range(1, TSTEPS):
-        B[1:-1, 1:-1] = 0.2 * (A[1:-1, 1:-1] + A[1:-1, :-2] + A[1:-1, 2:] +
-                               A[2:, 1:-1] + A[:-2, 1:-1])
-        A[1:-1, 1:-1] = 0.2 * (B[1:-1, 1:-1] + B[1:-1, :-2] + B[1:-1, 2:] +
-                               B[2:, 1:-1] + B[:-2, 1:-1])
+        B[1:-1, 1:-1] = 0.2 * (
+            A[1:-1, 1:-1] + A[1:-1, :-2] + A[1:-1, 2:] + A[2:, 1:-1] + A[:-2, 1:-1]
+        )
+        A[1:-1, 1:-1] = 0.2 * (
+            B[1:-1, 1:-1] + B[1:-1, :-2] + B[1:-1, 2:] + B[2:, 1:-1] + B[:-2, 1:-1]
+        )
+
 
 @pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
 def test_jacobi_2d(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
+
 
 if __name__ == "__main__":
     run_benchmark(initialize, kernel, PARAMETERS, "jacobi_2d")

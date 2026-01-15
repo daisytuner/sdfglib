@@ -1,26 +1,21 @@
 import pytest
-import docc
 import numpy as np
-from benchmarks.npbench.harness import run_benchmark, run_pytest
+from npbench.harness import run_benchmark, run_pytest
 
-PARAMETERS = {
-    "S": { "N": 60 },
-    "M": { "N": 220 },
-    "L": { "N": 650 },
-    "paper": { "N": 2000 }
-}
+PARAMETERS = {"S": {"N": 60}, "M": {"N": 220}, "L": {"N": 650}, "paper": {"N": 2000}}
+
 
 def initialize(N, datatype=np.float64):
     A = np.empty((N, N), dtype=datatype)
     for i in range(N):
-        A[i, :i + 1] = np.fromfunction(lambda j: (-j % N) / N + 1, (i + 1, ),
-                                       dtype=datatype)
-        A[i, i + 1:] = 0.0
+        A[i, : i + 1] = np.fromfunction(
+            lambda j: (-j % N) / N + 1, (i + 1,), dtype=datatype
+        )
+        A[i, i + 1 :] = 0.0
         A[i, i] = 1.0
     A[:] = A @ np.transpose(A)
     fn = datatype(N)
-    b = np.fromfunction(lambda i: (i + 1) / fn / 2.0 + 4.0, (N, ),
-                        dtype=datatype)
+    b = np.fromfunction(lambda i: (i + 1) / fn / 2.0 + 4.0, (N,), dtype=datatype)
 
     return A, b
 
@@ -39,14 +34,16 @@ def kernel(A, b):
     for i in range(A.shape[0]):
         y[i] = b[i] - A[i, :i] @ y[:i]
     for i in range(A.shape[0] - 1, -1, -1):
-        x[i] = (y[i] - A[i, i + 1:] @ x[i + 1:]) / A[i, i]
+        x[i] = (y[i] - A[i, i + 1 :] @ x[i + 1 :]) / A[i, i]
 
     return x, y
+
 
 @pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
 def test_ludcmp(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
+
 
 if __name__ == "__main__":
     run_benchmark(initialize, kernel, PARAMETERS, "ludcmp")

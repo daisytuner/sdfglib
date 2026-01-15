@@ -1,14 +1,14 @@
 import pytest
-import docc
 import numpy as np
-from benchmarks.npbench.harness import run_benchmark, run_pytest
+from npbench.harness import run_benchmark, run_pytest
 
 PARAMETERS = {
-    "S": { "M": 35, "N": 50 },
-    "M": { "M": 110, "N": 140 },
-    "L": { "M": 350, "N": 400 },
-    "paper": { "M": 1000, "N": 1200 }
+    "S": {"M": 35, "N": 50},
+    "M": {"M": 110, "N": 140},
+    "L": {"M": 350, "N": 400},
+    "paper": {"M": 1000, "N": 1200},
 }
+
 
 def initialize(M, N, datatype=np.float64):
     alpha = datatype(1.5)
@@ -21,13 +21,17 @@ def initialize(M, N, datatype=np.float64):
 
 def kernel(alpha, beta, C, A, B):
     for i in range(A.shape[0]):
-        C[i, :i + 1] *= beta
+        C[i, : i + 1] *= beta
         for k in range(A.shape[1]):
-            C[i, :i + 1] += A[:i + 1, k] * alpha * B[i, k] + B[:i + 1, k] * alpha * A[i, k]
+            C[i, : i + 1] += (
+                A[: i + 1, k] * alpha * B[i, k] + B[: i + 1, k] * alpha * A[i, k]
+            )
+
 
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
 def test_syr2k(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
+
 
 if __name__ == "__main__":
     run_benchmark(initialize, kernel, PARAMETERS, "syr2k")
