@@ -30,70 +30,6 @@
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
-namespace {
-
-std::string getEnv(std::string const& key) {
-    char* val = std::getenv(key.c_str());
-    return val == NULL ? std::string("") : std::string(val);
-}
-
-std::vector<std::string> split_env(std::string env, char delim) {
-    std::vector<std::string> res;
-    std::stringstream ss(std::move(env));
-    std::string part;
-    while (std::getline(ss, part, delim)) res.emplace_back(std::move(part));
-    return res;
-}
-
-fs::path find_docc_executable() {
-    std::string path_env = getEnv("PATH");
-    auto paths = split_env(path_env, ':');
-    for (const auto& path : paths) {
-        fs::path p(path);
-        p /= "docc";
-        if (fs::exists(p)) return p;
-    }
-    return {};
-}
-
-struct DoccPaths {
-    fs::path include_dir;
-    fs::path lib_dir;
-    fs::path arg_capture_lib_dir;
-};
-
-DoccPaths find_paths() {
-    fs::path docc_exec = find_docc_executable();
-    if (docc_exec.empty()) {
-        throw std::runtime_error("docc executable not found in PATH. Please install docc.");
-    }
-
-    if (fs::is_symlink(docc_exec)) {
-        docc_exec = fs::canonical(docc_exec);
-    }
-
-    fs::path bin_dir = docc_exec.parent_path();
-    fs::path install_prefix = bin_dir.parent_path();
-
-    // Try Dist mode
-    fs::path docc_root = install_prefix / "lib" / ("docc-" DOCC_VERSION);
-
-    if (fs::exists(docc_root)) {
-        return {docc_root / "include", docc_root / "lib", docc_root / "lib"};
-    }
-
-    // Try CMake mode
-    fs::path cmake_root = install_prefix;
-    fs::path cmake_rtl = cmake_root / "sdfglib" / "rtl";
-    if (fs::exists(cmake_rtl)) {
-        return {cmake_rtl / "include", cmake_rtl, cmake_root / "sdfglib" / "arg-capture-io"};
-    }
-
-    throw std::runtime_error("docc root not found at " + docc_root.string());
-}
-
-} // namespace
-
 PyStructuredSDFG::PyStructuredSDFG(std::unique_ptr<sdfg::StructuredSDFG>& sdfg) : sdfg_(std::move(sdfg)) {}
 
 PyStructuredSDFG PyStructuredSDFG::from_json(const std::string& json_path) {
@@ -333,14 +269,9 @@ std::string PyStructuredSDFG::
     // Compile
     fs::path lib_path = build_path / ("lib" + sdfg_->name() + ".so");
 
-    auto paths = find_paths();
-
     std::stringstream cmd;
     cmd << "c++ -shared -fopenmp -fPIC -O3";
-    cmd << " -I" << paths.include_dir.string();
     cmd << " " << source_path.string();
-    cmd << " " << paths.lib_dir.string() << "/libdaisy_rtl.a";
-    cmd << " " << paths.arg_capture_lib_dir.string() << "/libarg_capture_io.a";
     cmd << " -lblas";
     cmd << " -o " << lib_path.string();
 

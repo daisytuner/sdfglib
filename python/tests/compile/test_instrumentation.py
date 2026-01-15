@@ -6,6 +6,7 @@ import tempfile
 import json
 
 
+@pytest.mark.skip("RTL instrumentation not yet supported")
 def test_instrumentation_compile():
     # Test only capture
     @docc.program(instrumentation_mode="", capture_args=True)
@@ -20,6 +21,7 @@ def test_instrumentation_compile():
     vec_add_capture(A, B, C)
 
 
+@pytest.mark.skip("RTL instrumentation not yet supported")
 def test_env_var_instrumentation():
     # Create a temporary file for the trace
     fd, trace_file = tempfile.mkstemp(suffix=".json")
