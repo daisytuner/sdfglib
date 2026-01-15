@@ -24,13 +24,25 @@ jobs:
         shell: bash
         run: |
           shopt -s globstar
-          clang-format-19 -style=file --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
+          clang-format-19 -style=file --dry-run --Werror sdfg/include/**/*.h sdfg/src/**/*.cpp sdfg/tests/**/*.cpp
 
       - name: Build and test
         run: |
           mkdir build
           cd build
-          cmake -G Ninja -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Debug -DSDFGLIB_ENABLE_SANITIZER=ON -DSDFGLIB_SANITIZER=undefined -DWITH_SYMENGINE_THREAD_SAFE=ON -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
+          cmake \
+            -G Ninja \
+            -DCMAKE_C_COMPILER=clang-19 \
+            -DCMAKE_CXX_COMPILER=clang++-19 \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DSDFG_ENABLE_SANITIZER=ON \
+            -DSDFG_SANITIZER=undefined \
+            -DWITH_SYMENGINE_THREAD_SAFE=ON \
+            -DWITH_SYMENGINE_RCP=ON \
+            -DBUILD_TESTS:BOOL=OFF \
+            -DBUILD_BENCHMARKS:BOOL=OFF \
+            -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  \
+            ..
           ninja -j$(nproc)
 
-          ./tests/sdfglib_test
+          ./sdfg/tests/sdfglib_test
