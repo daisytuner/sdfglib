@@ -1,5 +1,5 @@
 import ctypes
-from ._docc import Scalar, Array, Pointer, Structure, PrimitiveType
+from ._sdfg import Scalar, Array, Pointer, Structure, PrimitiveType
 
 try:
     import numpy as np
@@ -35,10 +35,10 @@ class CompiledSDFG:
 
         # Set up argument types
         self.arg_types = []
-        self.arg_docc_types = []  # Keep track of original docc types
+        self.arg_sdfg_types = []  # Keep track of original sdfg types
         for arg_name in sdfg.arguments:
             arg_type = sdfg.type(arg_name)
-            self.arg_docc_types.append(arg_type)
+            self.arg_sdfg_types.append(arg_type)
             ct_type = self._get_ctypes_type(arg_type)
             self.arg_types.append(ct_type)
 
@@ -73,18 +73,18 @@ class CompiledSDFG:
         self._ctypes_structures[struct_name] = CStructure
         return CStructure
 
-    def _get_ctypes_type(self, docc_type):
-        if isinstance(docc_type, Scalar):
-            return _CTYPES_MAP.get(docc_type.primitive_type, ctypes.c_void_p)
-        elif isinstance(docc_type, Array):
+    def _get_ctypes_type(self, sdfg_type):
+        if isinstance(sdfg_type, Scalar):
+            return _CTYPES_MAP.get(sdfg_type.primitive_type, ctypes.c_void_p)
+        elif isinstance(sdfg_type, Array):
             # Arrays are passed as pointers
-            elem_type = _CTYPES_MAP.get(docc_type.primitive_type, ctypes.c_void_p)
+            elem_type = _CTYPES_MAP.get(sdfg_type.primitive_type, ctypes.c_void_p)
             return ctypes.POINTER(elem_type)
-        elif isinstance(docc_type, Pointer):
+        elif isinstance(sdfg_type, Pointer):
             # Check if pointee is a Structure
             # Note: has_pointee_type() is guaranteed to exist on Pointer instances from C++ bindings
-            if docc_type.has_pointee_type():
-                pointee = docc_type.pointee_type
+            if sdfg_type.has_pointee_type():
+                pointee = sdfg_type.pointee_type
                 if isinstance(pointee, Structure):
                     # Create ctypes structure and return pointer to it
                     struct_class = self._create_ctypes_structure(pointee.name)
@@ -120,7 +120,7 @@ class CompiledSDFG:
 
         for i, arg in enumerate(expanded_args):
             target_type = self.arg_types[i]
-            docc_type = self.arg_docc_types[i] if i < len(self.arg_docc_types) else None
+            sdfg_type = self.arg_sdfg_types[i] if i < len(self.arg_sdfg_types) else None
 
             # Handle numpy arrays
             if np is not None and isinstance(arg, np.ndarray):
@@ -132,13 +132,13 @@ class CompiledSDFG:
             # Handle class instances (structures)
             # Note: has_pointee_type() is guaranteed on Pointer instances
             elif (
-                docc_type
-                and isinstance(docc_type, Pointer)
-                and docc_type.has_pointee_type()
-                and isinstance(docc_type.pointee_type, Structure)
+                sdfg_type
+                and isinstance(sdfg_type, Pointer)
+                and sdfg_type.has_pointee_type()
+                and isinstance(sdfg_type.pointee_type, Structure)
             ):
                 # Convert Python object to ctypes structure
-                struct_name = docc_type.pointee_type.name
+                struct_name = sdfg_type.pointee_type.name
                 struct_class = self._ctypes_structures.get(struct_name)
 
                 # This should not happen if type setup was done correctly

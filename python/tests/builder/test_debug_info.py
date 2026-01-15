@@ -1,5 +1,5 @@
 import pytest
-from docc._docc import DebugInfo, StructuredSDFGBuilder, Scalar, PrimitiveType
+from docc._sdfg import DebugInfo, StructuredSDFGBuilder, Scalar, PrimitiveType
 
 
 def test_debug_info_creation():

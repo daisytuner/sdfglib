@@ -1,6 +1,6 @@
 import ast
 import copy
-from ._docc import Scalar, PrimitiveType, Pointer
+from ._sdfg import Scalar, PrimitiveType, Pointer
 from .ast_utils import SliceRewriter, get_debug_info
 from .expression_visitor import ExpressionVisitor
 from .linear_algebra import LinearAlgebraHandler

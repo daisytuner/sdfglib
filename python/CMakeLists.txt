@@ -8,26 +8,23 @@ find_package(nlohmann_json REQUIRED)
 
 # Define module
 set(PYTHON_SOURCES
-    src/bindings.cpp
-    src/py_structured_sdfg.cpp
-    src/py_structured_sdfg_builder.cpp
-    src/types/py_types.cpp
+    bindings/bindings.cpp
+    bindings/py_structured_sdfg.cpp
+    bindings/py_structured_sdfg_builder.cpp
+    bindings/types/py_types.cpp
 )
 
-pybind11_add_module(docc-py ${PYTHON_SOURCES})
-set_target_properties(docc-py PROPERTIES
+pybind11_add_module(sdfg-py ${PYTHON_SOURCES})
+set_target_properties(sdfg-py PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
-    OUTPUT_NAME "_docc"
+    OUTPUT_NAME "_sdfg"
 )
 
-target_compile_definitions(docc-py PRIVATE
-    DOCC_VERSION=\"${SDFGLIB_VERSION}\"
-)
-target_link_libraries(docc-py PRIVATE sdfglib::sdfglib nlohmann_json::nlohmann_json ${CMAKE_DL_LIBS})
+target_link_libraries(sdfg-py PRIVATE sdfglib::sdfglib nlohmann_json::nlohmann_json ${CMAKE_DL_LIBS})
 
 # Install artifacts for the Python wheel
-install(TARGETS docc-py DESTINATION docc)
+install(TARGETS sdfg-py DESTINATION docc)
 
 install(FILES
     $<TARGET_FILE:daisy_rtl>

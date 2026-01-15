@@ -24,7 +24,7 @@
 namespace py = pybind11;
 using namespace sdfg::types;
 
-PYBIND11_MODULE(_docc, m) {
+PYBIND11_MODULE(_sdfg, m) {
     m.doc() = "A JIT compiler for Numpy-based Python programs targeting various hardware backends.";
 
     sdfg::codegen::register_default_dispatchers();
@@ -372,8 +372,4 @@ PYBIND11_MODULE(_docc, m) {
             py::arg("member_types"),
             "Define a structure type with the given name and member types"
         );
-
-#ifdef DOCC_HAS_MLIR
-    init_mlir_bindings(m);
-#endif
 }

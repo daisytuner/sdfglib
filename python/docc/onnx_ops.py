@@ -1,5 +1,5 @@
 import ast
-from ._docc import Scalar, PrimitiveType, Pointer
+from ._sdfg import Scalar, PrimitiveType, Pointer
 from .ast_utils import get_debug_info
 
 

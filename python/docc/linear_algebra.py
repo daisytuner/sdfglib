@@ -1,5 +1,5 @@
 import ast
-from ._docc import Scalar, PrimitiveType
+from ._sdfg import Scalar, PrimitiveType
 
 
 class LinearAlgebraHandler:
