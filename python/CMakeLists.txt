@@ -27,7 +27,7 @@ target_compile_definitions(docc-py PRIVATE
 )
 target_link_libraries(docc-py PRIVATE sdfglib::sdfglib nlohmann_json::nlohmann_json)
 
-# Install module
-install(TARGETS docc-py
-    LIBRARY DESTINATION ${Python3_SITELIB}
-)
+# # Install module
+# install(TARGETS docc-py
+#     LIBRARY DESTINATION ${Python3_SITELIB}
+# )
