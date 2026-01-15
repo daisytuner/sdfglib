@@ -272,6 +272,8 @@ std::string PyStructuredSDFG::
     std::stringstream cmd;
     cmd << "c++ -shared -fopenmp -fPIC -O3";
     cmd << " " << source_path.string();
+    cmd << " -ldaisy_rtl";
+    cmd << " -larg_capture_io";
     cmd << " -lblas";
     cmd << " -o " << lib_path.string();
 
