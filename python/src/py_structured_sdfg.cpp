@@ -1,0 +1,361 @@
+#include "py_structured_sdfg.h"
+
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+
+#include <nlohmann/json.hpp>
+
+#include <sdfg/analysis/analysis.h>
+#include <sdfg/builder/structured_sdfg_builder.h>
+#include <sdfg/codegen/code_generators/cpp_code_generator.h>
+#include <sdfg/codegen/instrumentation/arg_capture_plan.h>
+#include <sdfg/codegen/instrumentation/instrumentation_plan.h>
+#include <sdfg/passes/dataflow/constant_propagation.h>
+#include <sdfg/passes/dataflow/dead_data_elimination.h>
+#include <sdfg/passes/pipeline.h>
+#include <sdfg/passes/structured_control_flow/common_assignment_elimination.h>
+#include <sdfg/passes/structured_control_flow/condition_elimination.h>
+#include <sdfg/passes/structured_control_flow/for2map.h>
+#include <sdfg/passes/structured_control_flow/loop_normalization.h>
+#include <sdfg/passes/structured_control_flow/pointer_evolution.h>
+#include <sdfg/passes/structured_control_flow/while_to_for_conversion.h>
+#include <sdfg/passes/symbolic/symbol_evolution.h>
+#include <sdfg/passes/symbolic/symbol_promotion.h>
+#include <sdfg/passes/symbolic/symbol_propagation.h>
+#include <sdfg/passes/symbolic/type_minimization.h>
+#include <sdfg/serializer/json_serializer.h>
+
+namespace fs = std::filesystem;
+using json = nlohmann::json;
+
+namespace {
+
+std::string getEnv(std::string const& key) {
+    char* val = std::getenv(key.c_str());
+    return val == NULL ? std::string("") : std::string(val);
+}
+
+std::vector<std::string> split_env(std::string env, char delim) {
+    std::vector<std::string> res;
+    std::stringstream ss(std::move(env));
+    std::string part;
+    while (std::getline(ss, part, delim)) res.emplace_back(std::move(part));
+    return res;
+}
+
+fs::path find_docc_executable() {
+    std::string path_env = getEnv("PATH");
+    auto paths = split_env(path_env, ':');
+    for (const auto& path : paths) {
+        fs::path p(path);
+        p /= "docc";
+        if (fs::exists(p)) return p;
+    }
+    return {};
+}
+
+struct DoccPaths {
+    fs::path include_dir;
+    fs::path lib_dir;
+    fs::path arg_capture_lib_dir;
+};
+
+DoccPaths find_paths() {
+    fs::path docc_exec = find_docc_executable();
+    if (docc_exec.empty()) {
+        throw std::runtime_error("docc executable not found in PATH. Please install docc.");
+    }
+
+    if (fs::is_symlink(docc_exec)) {
+        docc_exec = fs::canonical(docc_exec);
+    }
+
+    fs::path bin_dir = docc_exec.parent_path();
+    fs::path install_prefix = bin_dir.parent_path();
+
+    // Try Dist mode
+    fs::path docc_root = install_prefix / "lib" / ("docc-" DOCC_VERSION);
+
+    if (fs::exists(docc_root)) {
+        return {docc_root / "include", docc_root / "lib", docc_root / "lib"};
+    }
+
+    // Try CMake mode
+    fs::path cmake_root = install_prefix;
+    fs::path cmake_rtl = cmake_root / "sdfglib" / "rtl";
+    if (fs::exists(cmake_rtl)) {
+        return {cmake_rtl / "include", cmake_rtl, cmake_root / "sdfglib" / "arg-capture-io"};
+    }
+
+    throw std::runtime_error("docc root not found at " + docc_root.string());
+}
+
+} // namespace
+
+PyStructuredSDFG::PyStructuredSDFG(std::unique_ptr<sdfg::StructuredSDFG>& sdfg) : sdfg_(std::move(sdfg)) {}
+
+PyStructuredSDFG PyStructuredSDFG::from_json(const std::string& json_path) {
+    std::ifstream sdfg_file(json_path);
+    if (!sdfg_file.is_open()) {
+        throw std::runtime_error("Failed to open SDFG file: " + json_path);
+    }
+
+    json j;
+    sdfg_file >> j;
+    sdfg::serializer::JSONSerializer serializer;
+    auto sdfg = serializer.deserialize(j);
+
+    return PyStructuredSDFG(sdfg);
+}
+
+std::string PyStructuredSDFG::name() const { return sdfg_->name(); }
+
+const sdfg::types::IType& PyStructuredSDFG::return_type() const { return sdfg_->return_type(); }
+
+const sdfg::types::IType& PyStructuredSDFG::type(const std::string& name) const { return sdfg_->type(name); }
+
+bool PyStructuredSDFG::exists(const std::string& name) const { return sdfg_->exists(name); }
+
+bool PyStructuredSDFG::is_argument(const std::string& name) const { return sdfg_->is_argument(name); }
+
+bool PyStructuredSDFG::is_transient(const std::string& name) const { return sdfg_->is_transient(name); }
+
+std::vector<std::string> PyStructuredSDFG::arguments() const { return sdfg_->arguments(); }
+
+pybind11::dict PyStructuredSDFG::containers() const {
+    pybind11::dict result;
+    for (const auto& name : sdfg_->containers()) {
+        result[name.c_str()] = pybind11::cast(sdfg_->type(name), pybind11::return_value_policy::reference);
+    }
+    return result;
+}
+
+void PyStructuredSDFG::expand() {
+    sdfg::builder::StructuredSDFGBuilder builder_opt(*sdfg_);
+    sdfg::analysis::AnalysisManager analysis_manager(*sdfg_);
+
+    sdfg::passes::Pipeline libnode_expansion = sdfg::passes::Pipeline::expansion();
+    libnode_expansion.run(builder_opt, analysis_manager);
+}
+
+void PyStructuredSDFG::simplify() {
+    sdfg::builder::StructuredSDFGBuilder builder_opt(*sdfg_);
+    sdfg::analysis::AnalysisManager analysis_manager(*sdfg_);
+
+    // Optimization Pipelines
+    sdfg::passes::Pipeline dataflow_simplification = sdfg::passes::Pipeline::dataflow_simplification();
+    sdfg::passes::Pipeline symbolic_simplification = sdfg::passes::Pipeline::symbolic_simplification();
+    sdfg::passes::Pipeline dce = sdfg::passes::Pipeline::dead_code_elimination();
+    sdfg::passes::Pipeline memlet_combine = sdfg::passes::Pipeline::memlet_combine();
+    sdfg::passes::DeadDataElimination dde;
+    sdfg::passes::SymbolPropagation symbol_propagation_pass;
+
+    // Promote tasklets into symbolic assignments
+    sdfg::passes::SymbolPromotion symbol_promotion_pass;
+    symbol_promotion_pass.run(builder_opt, analysis_manager);
+
+    // Minimize SDFG by fusing blocks, tasklets and sequences
+    dataflow_simplification.run(builder_opt, analysis_manager);
+    dde.run(builder_opt, analysis_manager);
+    dce.run(builder_opt, analysis_manager);
+
+    // Minimize SDFG by fusing symbolic expressions
+    symbolic_simplification.run(builder_opt, analysis_manager);
+    dde.run(builder_opt, analysis_manager);
+    dce.run(builder_opt, analysis_manager);
+
+    /***** Structured Loops *****/
+
+    // Unify continue/break inside branches
+    {
+        sdfg::passes::CommonAssignmentElimination common_assignment_elimination;
+        bool applies = false;
+        do {
+            applies = false;
+            applies |= common_assignment_elimination.run(builder_opt, analysis_manager);
+        } while (applies);
+        dde.run(builder_opt, analysis_manager);
+        dce.run(builder_opt, analysis_manager);
+        symbolic_simplification.run(builder_opt, analysis_manager);
+    }
+
+    // Propagate variables into constants
+    {
+        sdfg::passes::ConstantPropagation constant_propagation_pass;
+        bool applies = false;
+        do {
+            applies = false;
+            applies |= constant_propagation_pass.run(builder_opt, analysis_manager);
+        } while (applies);
+    }
+
+    // Convert loops into structured loops
+    sdfg::passes::WhileToForConversion for_conversion_pass;
+    for_conversion_pass.run(builder_opt, analysis_manager);
+
+    // Propagate for simpler indvar usage
+    symbol_propagation_pass.run(builder_opt, analysis_manager);
+
+    // Eliminate redundant branches
+    {
+        bool applies = false;
+        sdfg::passes::ConditionEliminationPass condition_elimination_pass;
+        do {
+            applies = false;
+            applies |= condition_elimination_pass.run(builder_opt, analysis_manager);
+        } while (applies);
+    }
+
+    // Normalize loop condition and update (run twice)
+    sdfg::passes::LoopNormalizationPass loop_normalization_pass;
+    loop_normalization_pass.run(builder_opt, analysis_manager);
+    loop_normalization_pass.run(builder_opt, analysis_manager);
+
+    // Eliminate symbols correlated to loop iterators
+    // sdfg::passes::SymbolEvolution symbol_evolution_pass;
+    // symbol_evolution_pass.run(builder_opt, analysis_manager);
+
+    // Dead code elimination
+    symbol_propagation_pass.run(builder_opt, analysis_manager);
+    dde.run(builder_opt, analysis_manager);
+    dce.run(builder_opt, analysis_manager);
+
+    /***** Data Parallelism *****/
+
+    // Combine address calculations in memlets
+    memlet_combine.run(builder_opt, analysis_manager);
+
+    // Move code out of loops where possible
+    sdfg::passes::Pipeline code_motion = sdfg::passes::Pipeline::code_motion();
+    code_motion.run(builder_opt, analysis_manager);
+
+    // Convert pointer-based iterators to indvar usage
+    sdfg::passes::PointerEvolution pointer_evolution_pass;
+    pointer_evolution_pass.run(builder_opt, analysis_manager);
+    loop_normalization_pass.run(builder_opt, analysis_manager);
+
+    sdfg::passes::TypeMinimizationPass type_minimization_pass;
+    type_minimization_pass.run(builder_opt, analysis_manager);
+    type_minimization_pass.run(builder_opt, analysis_manager);
+
+    // Dead code elimination
+    symbol_propagation_pass.run(builder_opt, analysis_manager);
+    dce.run(builder_opt, analysis_manager);
+    dde.run(builder_opt, analysis_manager);
+
+    // Convert for loops into maps
+    sdfg::passes::For2MapPass map_conversion_pass;
+    map_conversion_pass.run(builder_opt, analysis_manager);
+
+    // Move code out of maps where possible
+    code_motion.run(builder_opt, analysis_manager);
+
+    // Dead code elimination
+    dde.run(builder_opt, analysis_manager);
+    dce.run(builder_opt, analysis_manager);
+    dataflow_simplification.run(builder_opt, analysis_manager);
+}
+
+void PyStructuredSDFG::dump(const std::string& path) {
+    fs::path build_path(path);
+    if (!fs::exists(build_path)) {
+        fs::create_directories(build_path);
+    }
+
+    // Add metadata to SDFG
+    fs::path sdfg_file = build_path / (sdfg_->name() + ".json");
+    fs::path features_file = build_path / (sdfg_->name() + ".npz");
+    fs::path arg_captures_path = build_path / "arg_captures";
+    sdfg_->add_metadata("sdfg_file", sdfg_file.string());
+    sdfg_->add_metadata("arg_capture_path", arg_captures_path.string());
+    sdfg_->add_metadata("features_file", features_file.string());
+    sdfg_->add_metadata("opt_report_file", (build_path / (sdfg_->name() + ".opt_report.json")).string());
+
+    // Dump json
+    sdfg::serializer::JSONSerializer serializer;
+    nlohmann::json j = serializer.serialize(*this->sdfg_);
+
+    std::ofstream ofs(sdfg_file);
+    if (!ofs.is_open()) {
+        throw std::runtime_error("Failed to open file: " + sdfg_file.string());
+    }
+    ofs << j.dump(2);
+    ofs.close();
+}
+
+void PyStructuredSDFG::normalize() {
+    // Add loop normalization pass
+}
+
+void PyStructuredSDFG::schedule(const std::string& target, const std::string& category) {
+    // Apply scheduling pass
+}
+
+std::string PyStructuredSDFG::
+    compile(const std::string& output_folder, const std::string& instrumentation_mode, bool capture_args) const {
+    fs::path build_path(output_folder);
+    if (!fs::exists(build_path)) {
+        fs::create_directories(build_path);
+    }
+
+    sdfg::analysis::AnalysisManager analysis_manager(*sdfg_);
+
+    // Run expansion pass
+    sdfg::passes::Pipeline expansion = sdfg::passes::Pipeline::expansion();
+    sdfg::builder::StructuredSDFGBuilder builder_opt(*sdfg_);
+    expansion.run(builder_opt, analysis_manager);
+
+    std::unique_ptr<sdfg::codegen::InstrumentationPlan> instrumentation_plan;
+    if (instrumentation_mode.empty()) {
+        instrumentation_plan = sdfg::codegen::InstrumentationPlan::none(*sdfg_);
+    } else if (instrumentation_mode == "ols") {
+        instrumentation_plan = sdfg::codegen::InstrumentationPlan::outermost_loops_plan(*sdfg_);
+    } else {
+        throw std::runtime_error("Unsupported instrumentation plan: " + instrumentation_mode);
+    }
+
+    std::unique_ptr<sdfg::codegen::ArgCapturePlan> arg_capture_plan;
+    if (capture_args) {
+        arg_capture_plan = sdfg::codegen::ArgCapturePlan::outermost_loops_plan(*sdfg_);
+    } else {
+        arg_capture_plan = sdfg::codegen::ArgCapturePlan::none(*sdfg_);
+    }
+
+    sdfg::codegen::CPPCodeGenerator generator(*sdfg_, analysis_manager, *instrumentation_plan, *arg_capture_plan);
+    generator.generate();
+
+    fs::path header_path = build_path / (sdfg_->name() + ".h");
+    fs::path source_path = build_path / (sdfg_->name() + ".cpp");
+    generator.as_source(header_path, source_path);
+
+    // Compile
+    fs::path lib_path = build_path / ("lib" + sdfg_->name() + ".so");
+
+    auto paths = find_paths();
+
+    std::stringstream cmd;
+    cmd << "c++ -shared -fopenmp -fPIC -O3";
+    cmd << " -I" << paths.include_dir.string();
+    cmd << " " << source_path.string();
+    cmd << " " << paths.lib_dir.string() << "/libdaisy_rtl.a";
+    cmd << " " << paths.arg_capture_lib_dir.string() << "/libarg_capture_io.a";
+    cmd << " -lblas";
+    cmd << " -o " << lib_path.string();
+
+    int ret = std::system(cmd.str().c_str());
+    if (ret != 0) {
+        throw std::runtime_error("Compilation failed: " + cmd.str());
+    }
+
+    return lib_path.string();
+}
+
+std::string PyStructuredSDFG::metadata(const std::string& key) const {
+    try {
+        return sdfg_->metadata(key);
+    } catch (const std::out_of_range&) {
+        return "";
+    }
+}
