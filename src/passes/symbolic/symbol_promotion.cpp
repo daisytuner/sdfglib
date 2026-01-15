@@ -193,13 +193,6 @@ bool SymbolPromotion::can_be_applied(
             bool one_is_neg_one = false;
             for (auto& iedge : dataflow.in_edges(*tasklet)) {
                 auto& type = iedge.result_type(sdfg);
-                if (type.primitive_type() != types::PrimitiveType::Int8 &&
-                    type.primitive_type() != types::PrimitiveType::Int16 &&
-                    type.primitive_type() != types::PrimitiveType::Int32 &&
-                    type.primitive_type() != types::PrimitiveType::Int64 &&
-                    type.primitive_type() != types::PrimitiveType::Int128) {
-                    return false;
-                }
                 if (auto const_node = dynamic_cast<const data_flow::ConstantNode*>(&iedge.src())) {
                     int64_t value = helpers::parse_number_signed(const_node->data());
                     if (value == -1) {

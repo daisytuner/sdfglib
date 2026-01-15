@@ -1279,7 +1279,7 @@ TEST(SymbolPromotionTest, Signed_Int_neg_1_xor) {
     passes::SymbolPromotion s2spass;
     EXPECT_TRUE(s2spass.run(builder, analysis_manager));
 
-    // Check result - verify expression is trunc_i32(j)
+    // Check result - verify expression is - sym_j - 1
     EXPECT_EQ(sdfg.root().size(), 2);
     auto child1 = sdfg.root().at(0);
     auto block1 = dynamic_cast<const structured_control_flow::Block*>(&child1.first);

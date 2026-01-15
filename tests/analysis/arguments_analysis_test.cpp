@@ -14,7 +14,7 @@
 
 using namespace sdfg;
 
-TEST(ArgumentsAnalysisTest, block_arguments_empty) {
+TEST(ArgumentsAnalysisTest, Block_Arguments_Empty) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     // Add containers
@@ -42,7 +42,7 @@ TEST(ArgumentsAnalysisTest, block_arguments_empty) {
     EXPECT_TRUE(analysis.argument_element_sizes(analysis_manager, block, false).empty());
 }
 
-TEST(ArgumentsAnalysisTest, block_arguments_scalars) {
+TEST(ArgumentsAnalysisTest, Block_Arguments_Scalars) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     // Add containers
@@ -85,7 +85,7 @@ TEST(ArgumentsAnalysisTest, block_arguments_scalars) {
     EXPECT_TRUE(symbolic::eq(arg_sizes.at("arg1"), symbolic::integer(4)));
 }
 
-TEST(ArgumentsAnalysisTest, block_arguments_arrays) {
+TEST(ArgumentsAnalysisTest, Block_Arguments_Arrays) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     // Add containers
@@ -135,7 +135,7 @@ TEST(ArgumentsAnalysisTest, block_arguments_arrays) {
     );
 }
 
-TEST(ArgumentsAnalysisTest, block_arguments_pointers) {
+TEST(ArgumentsAnalysisTest, Block_Arguments_Pointers) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     // Add containers
@@ -184,7 +184,7 @@ TEST(ArgumentsAnalysisTest, block_arguments_pointers) {
     );
 }
 
-TEST(ArgumentsAnalysisTest, sequence_blocks) {
+TEST(ArgumentsAnalysisTest, Sequence_Blocks) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     // Add containers
@@ -254,7 +254,7 @@ TEST(ArgumentsAnalysisTest, sequence_blocks) {
     EXPECT_TRUE(symbolic::eq(arg_sizes.at("arg1"), symbolic::integer(4)));
 }
 
-TEST(ArgumentsAnalysisTest, loop_array) {
+TEST(ArgumentsAnalysisTest, Loop_Array) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     // Add containers
@@ -309,7 +309,7 @@ TEST(ArgumentsAnalysisTest, loop_array) {
     EXPECT_TRUE(symbolic::eq(arg_sizes.at("arg1"), symbolic::mul(symbolic::symbol("N"), symbolic::integer(4))));
 }
 
-TEST(ArgumentsAnalysisTest, map_array) {
+TEST(ArgumentsAnalysisTest, Map_Array) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     // Add containers
@@ -365,7 +365,7 @@ TEST(ArgumentsAnalysisTest, map_array) {
     EXPECT_TRUE(symbolic::eq(arg_sizes.at("arg1"), symbolic::mul(symbolic::symbol("N"), symbolic::integer(4))));
 }
 
-TEST(ArgumentsAnalysisTest, loop_pointer) {
+TEST(ArgumentsAnalysisTest, Loop_Pointer) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     // Add containers
@@ -420,7 +420,7 @@ TEST(ArgumentsAnalysisTest, loop_pointer) {
     EXPECT_TRUE(symbolic::eq(arg_sizes.at("arg1"), symbolic::mul(symbolic::symbol("N"), symbolic::integer(4))));
 }
 
-TEST(ArgumentsAnalysisTest, map_pointer) {
+TEST(ArgumentsAnalysisTest, Map_Pointer) {
     builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
     // Add containers

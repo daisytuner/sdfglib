@@ -101,7 +101,7 @@ bool ArgCaptureIO::create_and_capture_inline(
 ) {
     auto key = std::make_pair(arg_idx, after);
 
-    // FIX 1: Erase the old entry to ensure we capture with FRESH dimensions and types.
+    // Erase the old entry to ensure we capture with FRESH dimensions and types.
     // If current_captures_ has an entry, emplace does nothing, keeping old dimensions.
     current_captures_[element_id].erase(key);
     auto it = current_captures_[element_id].emplace(key, ArgCapture(arg_idx, after, primitive_type, dims));
@@ -120,7 +120,7 @@ bool ArgCaptureIO::create_and_capture_to_file(
 ) {
     auto key = std::make_pair(arg_idx, after);
 
-    // FIX 1: Erase same as above
+    // Erase same as above
     current_captures_[element_id].erase(key);
     auto it = current_captures_[element_id].emplace(key, ArgCapture(arg_idx, after, primitive_type, dims));
 
