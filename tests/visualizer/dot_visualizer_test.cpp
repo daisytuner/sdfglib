@@ -118,7 +118,6 @@ TEST(DotVisualizerTest, transpose) {
     EXPECT_EQ(dot.getStream().str(), exp.str());
 }
 
-
 TEST(DotVisualizerTest, syrk) {
     builder::StructuredSDFGBuilder sdfg("sdfg_1", FunctionType_CPU);
 
@@ -236,8 +235,8 @@ TEST(DotVisualizerTest, syrk) {
         << "subgraph cluster_" << escapeDotId(block1.element_id(), "block_") << " {" << std::endl;
     exp.setIndent(20);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
-        << escapeDotId(beta_node.element_id(), "n_") << " [penwidth=3.0,label=\"beta\"];" << std::endl
         << escapeDotId(C_in_node_1.element_id(), "n_") << " [penwidth=3.0,label=\"C\"];" << std::endl
+        << escapeDotId(beta_node.element_id(), "n_") << " [penwidth=3.0,label=\"beta\"];" << std::endl
         << escapeDotId(tasklet1.element_id(), "n_") << " [shape=octagon,label=\"_out = *(_in1, _in2)\"];" << std::endl
         << escapeDotId(C_in_node_1.element_id(), "n_") << " -> " << escapeDotId(tasklet1.element_id(), "n_")
         << " [label=\"   _in1 = C[i][j_1]   \"];" << std::endl
@@ -275,9 +274,9 @@ TEST(DotVisualizerTest, syrk) {
     exp << "}" << std::endl << "subgraph cluster_" << escapeDotId(block3.element_id(), "block_") << " {" << std::endl;
     exp.setIndent(24);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
+        << escapeDotId(C_in_node_2.element_id(), "n_") << " [penwidth=3.0,label=\"C\"];" << std::endl
         << escapeDotId(tmp_node_2.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"tmp\"];"
         << std::endl
-        << escapeDotId(C_in_node_2.element_id(), "n_") << " [penwidth=3.0,label=\"C\"];" << std::endl
         << escapeDotId(tasklet3.element_id(), "n_") << " [shape=octagon,label=\"_out = +(_in1, _in2)\"];" << std::endl
         << escapeDotId(C_in_node_2.element_id(), "n_") << " -> " << escapeDotId(tasklet3.element_id(), "n_")
         << " [label=\"   _in1 = C[i][j_2]   \"];" << std::endl
@@ -288,7 +287,7 @@ TEST(DotVisualizerTest, syrk) {
         << " [label=\"   C[i][j_2] = _out   \"];" << std::endl;
     exp.setIndent(20);
     exp << "}" << std::endl
-        << escapeDotId(A_node.element_id(), "n_") << " -> " << escapeDotId(tmp_node_2.element_id(), "n_")
+        << escapeDotId(A_node.element_id(), "n_") << " -> " << escapeDotId(C_in_node_2.element_id(), "n_")
         << " [ltail=\"cluster_" << escapeDotId(block2.element_id(), "block_") << "\",lhead=\"cluster_"
         << escapeDotId(block3.element_id(), "block_") << "\",minlen=3];" << std::endl;
     exp.setIndent(16);
@@ -309,7 +308,6 @@ TEST(DotVisualizerTest, syrk) {
     dot.visualize();
     EXPECT_EQ(dot.getStream().str(), exp.str());
 }
-
 
 TEST(DotVisualizerTest, multi_tasklet_block) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
@@ -629,9 +627,9 @@ TEST(DotVisualizerTest, test_return) {
         << "subgraph cluster_" << escapeDotId(block2.element_id(), "block_") << " {" << std::endl;
     exp.setIndent(24);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
+        << escapeDotId(input2.element_id(), "n_") << " [penwidth=3.0,label=\"A\"];" << std::endl
         << escapeDotId(two_node.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"2.0\"];"
         << std::endl
-        << escapeDotId(input2.element_id(), "n_") << " [penwidth=3.0,label=\"A\"];" << std::endl
         << escapeDotId(tasklet2.element_id(), "n_") << " [shape=octagon,label=\"_out = *(_in1, _in2)\"];" << std::endl
         << escapeDotId(input2.element_id(), "n_") << " -> " << escapeDotId(tasklet2.element_id(), "n_")
         << " [label=\"   _in1 = A[i]   \"];" << std::endl
@@ -644,9 +642,9 @@ TEST(DotVisualizerTest, test_return) {
     exp << "}" << std::endl << "subgraph cluster_" << escapeDotId(block3.element_id(), "block_") << " {" << std::endl;
     exp.setIndent(24);
     exp << "style=filled;shape=box;fillcolor=white;color=black;label=\"\";" << std::endl
+        << escapeDotId(input3.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"i\"];" << std::endl
         << escapeDotId(one_node.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"1\"];"
         << std::endl
-        << escapeDotId(input3.element_id(), "n_") << " [penwidth=3.0,style=\"dashed,filled\",label=\"i\"];" << std::endl
         << escapeDotId(tasklet3.element_id(), "n_") << " [shape=octagon,label=\"_out = +(_in1, _in2)\"];" << std::endl
         << escapeDotId(input3.element_id(), "n_") << " -> " << escapeDotId(tasklet3.element_id(), "n_")
         << " [label=\"   _in1 = i   \"];" << std::endl
@@ -658,7 +656,7 @@ TEST(DotVisualizerTest, test_return) {
         << " [label=\"   i = _out   \"];" << std::endl;
     exp.setIndent(20);
     exp << "}" << std::endl
-        << escapeDotId(two_node.element_id(), "n_") << " -> " << escapeDotId(one_node.element_id(), "n_")
+        << escapeDotId(input2.element_id(), "n_") << " -> " << escapeDotId(input3.element_id(), "n_")
         << " [ltail=\"cluster_" << escapeDotId(block2.element_id(), "block_") << "\",lhead=\"cluster_"
         << escapeDotId(block3.element_id(), "block_") << "\",minlen=3];" << std::endl;
     exp.setIndent(16);

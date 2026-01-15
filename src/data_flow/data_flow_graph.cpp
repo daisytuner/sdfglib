@@ -1,7 +1,20 @@
 #include "sdfg/data_flow/data_flow_graph.h"
 
 #include <algorithm>
-#include <queue>
+#include <boost/graph/exception.hpp>
+#include <cstddef>
+#include <list>
+#include <map>
+#include <stdexcept>
+#include <unordered_set>
+#include <vector>
+
+#include "sdfg/data_flow/access_node.h"
+#include "sdfg/data_flow/code_node.h"
+#include "sdfg/data_flow/data_flow_node.h"
+#include "sdfg/data_flow/library_node.h"
+#include "sdfg/data_flow/memlet.h"
+#include "sdfg/graph/graph.h"
 
 namespace sdfg {
 namespace data_flow {
@@ -21,6 +34,58 @@ void DataFlowGraph::validate(const Function& function) const {
 const Element* DataFlowGraph::get_parent() const { return this->parent_; };
 
 Element* DataFlowGraph::get_parent() { return this->parent_; };
+
+std::vector<data_flow::Memlet*> DataFlowGraph::in_edges_by_connector(const data_flow::CodeNode& node) {
+    std::vector<data_flow::Memlet*> in_edges(node.inputs().size(), nullptr);
+    for (auto& iedge : this->in_edges(node)) {
+        for (size_t i = 0; i < node.inputs().size(); i++) {
+            if (iedge.dst_conn() == node.input(i)) {
+                in_edges[i] = &iedge;
+                break;
+            }
+        }
+    }
+    return in_edges;
+}
+
+std::vector<const data_flow::Memlet*> DataFlowGraph::in_edges_by_connector(const data_flow::CodeNode& node) const {
+    std::vector<const data_flow::Memlet*> in_edges(node.inputs().size(), nullptr);
+    for (const auto& iedge : this->in_edges(node)) {
+        for (size_t i = 0; i < node.inputs().size(); i++) {
+            if (iedge.dst_conn() == node.input(i)) {
+                in_edges[i] = &iedge;
+                break;
+            }
+        }
+    }
+    return in_edges;
+}
+
+std::vector<data_flow::Memlet*> DataFlowGraph::out_edges_by_connector(const data_flow::CodeNode& node) {
+    std::vector<data_flow::Memlet*> out_edges(node.outputs().size(), nullptr);
+    for (auto& oedge : this->out_edges(node)) {
+        for (size_t i = 0; i < node.outputs().size(); i++) {
+            if (oedge.src_conn() == node.output(i)) {
+                out_edges[i] = &oedge;
+                break;
+            }
+        }
+    }
+    return out_edges;
+}
+
+std::vector<const data_flow::Memlet*> DataFlowGraph::out_edges_by_connector(const data_flow::CodeNode& node) const {
+    std::vector<const data_flow::Memlet*> out_edges(node.outputs().size(), nullptr);
+    for (const auto& oedge : this->out_edges(node)) {
+        for (size_t i = 0; i < node.outputs().size(); i++) {
+            if (oedge.src_conn() == node.output(i)) {
+                out_edges[i] = &oedge;
+                break;
+            }
+        }
+    }
+    return out_edges;
+}
 
 size_t DataFlowGraph::in_degree(const data_flow::DataFlowNode& node) const {
     return boost::in_degree(node.vertex(), this->graph_);
@@ -198,27 +263,519 @@ std::unordered_set<const data_flow::DataFlowNode*> DataFlowGraph::successors(con
     return ss;
 };
 
-std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort() const {
-    std::list<graph::Vertex> order = graph::topological_sort(this->graph_);
+std::list<const DataFlowNode*> DataFlowGraph::topological_sort() const {
+    auto [num_components, components_map] = graph::weakly_connected_components(this->graph_);
 
-    std::list<const data_flow::DataFlowNode*> topo_nodes;
-    for (auto& vertex : order) {
-        topo_nodes.push_back(this->nodes_.at(vertex).get());
+    // Build deterministic topological sort for each weakly connected component
+    std::vector<std::list<const DataFlowNode*>> components(num_components);
+    for (size_t i = 0; i < num_components; i++) {
+        // Get all sinks of the current component
+        std::vector<const DataFlowNode*> sinks;
+        bool component_empty = true;
+        for (auto [v, comp] : components_map) {
+            if (comp == i) {
+                component_empty = false;
+                if (boost::out_degree(v, this->graph_) == 0) {
+                    sinks.push_back(this->nodes_.at(v).get());
+                }
+            }
+        }
+        if (sinks.size() == 0) {
+            if (component_empty) {
+                continue;
+            } else {
+                throw boost::not_a_dag();
+            }
+        }
+
+        // Create a queue with all sinks
+        std::list<const DataFlowNode*> queue;
+        queue.insert(queue.end(), sinks.begin(), sinks.end());
+
+        // Perform a reversed DFS for each element in the queue
+        std::unordered_map<const DataFlowNode*, std::list<const DataFlowNode*>> lists;
+        std::unordered_map<const DataFlowNode*, std::list<std::pair<const DataFlowNode*, long long>>> dependencies;
+        std::map<std::pair<const DataFlowNode*, long long>, const DataFlowNode*> backward_dependencies;
+        std::unordered_set<const DataFlowNode*> visited;
+        while (!queue.empty()) {
+            const auto* start = queue.front();
+            queue.pop_front();
+
+            if (visited.contains(start)) {
+                continue;
+            }
+
+            // Reversed DFS
+            lists.insert({start, {}});
+            dependencies.insert({start, {}});
+            std::stack<std::pair<const DataFlowNode*, const DataFlowNode*>> stack({{start, nullptr}});
+            while (!stack.empty()) {
+                const auto* current = stack.top().first;
+                const auto* successor = stack.top().second;
+                stack.pop();
+
+                // If multiple out edges, add to queue, add dependency, and skip
+                if (current != start && this->out_degree(*current) > 1) {
+                    queue.push_back(current);
+                    long long dependency_id = -1;
+                    if (const auto* code_node = dynamic_cast<const CodeNode*>(current)) {
+                        for (const auto& oedge : this->out_edges(*current)) {
+                            const auto* dst = &oedge.dst();
+                            if (dst == successor) {
+                                for (long long j = 0; j < code_node->outputs().size(); j++) {
+                                    if (oedge.src_conn() == code_node->output(j)) {
+                                        dependency_id = j;
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    } else {
+                        std::vector<std::pair<const DataFlowNode*, size_t>> tmp_outputs;
+                        std::unordered_set<const DataFlowNode*> local_visited;
+                        for (const auto& oedge : this->out_edges(*current)) {
+                            const auto* dst = &oedge.dst();
+                            if (local_visited.contains(dst)) {
+                                continue;
+                            }
+                            local_visited.insert(dst);
+                            size_t value = 0;
+                            if (const auto* tasklet = dynamic_cast<const Tasklet*>(dst)) {
+                                value = tasklet->code();
+                            } else if (const auto* libnode = dynamic_cast<const LibraryNode*>(dst)) {
+                                value = 52;
+                                for (char c : libnode->code().value()) {
+                                    value += c;
+                                }
+                            }
+                            tmp_outputs.push_back({dst, value});
+                        }
+                        std::sort(tmp_outputs.begin(), tmp_outputs.end(), [](const auto& a, const auto& b) {
+                            return a.second > b.second ||
+                                   (a.second == b.second && a.first->element_id() < b.first->element_id());
+                        });
+                        for (long long j = 0; j < tmp_outputs.size(); j++) {
+                            if (tmp_outputs.at(j).first == successor) {
+                                dependency_id = j;
+                                break;
+                            }
+                        }
+                    }
+                    if (dependency_id == -1 || backward_dependencies.contains({current, dependency_id})) {
+                        throw std::runtime_error("Could not create dependency in topological sort");
+                    }
+                    dependencies.at(start).push_front({current, dependency_id});
+                    backward_dependencies.insert({{current, dependency_id}, start});
+                    continue;
+                }
+
+                // Put the current element in the list
+                if (visited.contains(current)) {
+                    throw boost::not_a_dag();
+                }
+                visited.insert(current);
+                lists.at(start).push_front(current);
+
+                // Put all predecessors on the stack
+                if (const auto* code_node = dynamic_cast<const CodeNode*>(current)) {
+                    std::unordered_set<const DataFlowNode*> local_visited;
+                    for (const auto& input : code_node->inputs()) {
+                        const Memlet* iedge = nullptr;
+                        for (const auto& in_edge : this->in_edges(*code_node)) {
+                            if (in_edge.dst_conn() == input) {
+                                iedge = &in_edge;
+                                break;
+                            }
+                        }
+                        if (!iedge) {
+                            continue;
+                        }
+                        const auto* src = &iedge->src();
+                        if (!local_visited.contains(src)) {
+                            local_visited.insert(src);
+                            stack.push({src, current});
+                        }
+                    }
+                } else {
+                    std::vector<std::pair<const DataFlowNode*, size_t>> tmp_inputs;
+                    std::unordered_set<const DataFlowNode*> local_visited;
+                    for (const auto& iedge : this->in_edges(*current)) {
+                        const auto* src = &iedge.src();
+                        if (local_visited.contains(src)) {
+                            continue;
+                        }
+                        local_visited.insert(src);
+                        size_t value = 0;
+                        if (const auto* tasklet = dynamic_cast<const Tasklet*>(src)) {
+                            value = tasklet->code();
+                        } else if (const auto* libnode = dynamic_cast<const LibraryNode*>(src)) {
+                            value = 52;
+                            for (char c : libnode->code().value()) {
+                                value += c;
+                            }
+                        }
+                        tmp_inputs.push_back({src, value});
+                    }
+                    std::sort(tmp_inputs.begin(), tmp_inputs.end(), [](const auto& a, const auto& b) {
+                        return a.second > b.second ||
+                               (a.second == b.second && a.first->element_id() < b.first->element_id());
+                    });
+                    for (auto& tmp_input : tmp_inputs) {
+                        stack.push({tmp_input.first, current});
+                    }
+                }
+            }
+        }
+
+        // Sort sinks if necessary
+        if (sinks.size() > 1) {
+            std::sort(sinks.begin(), sinks.end(), [](const DataFlowNode* a, const DataFlowNode* b) {
+                const auto* a_tasklet = dynamic_cast<const Tasklet*>(a);
+                const auto* b_tasklet = dynamic_cast<const Tasklet*>(b);
+                const auto* a_libnode = dynamic_cast<const LibraryNode*>(a);
+                const auto* b_libnode = dynamic_cast<const LibraryNode*>(b);
+                const auto* a_access_node = dynamic_cast<const AccessNode*>(a);
+                const auto* b_access_node = dynamic_cast<const AccessNode*>(b);
+                if (a_tasklet && b_tasklet) {
+                    return a_tasklet->code() < b_tasklet->code() || (a_tasklet->code() == b_tasklet->code() &&
+                                                                     a_tasklet->element_id() < b_tasklet->element_id());
+                } else if (a_tasklet && b_libnode) {
+                    return true;
+                } else if (a_tasklet && b_access_node) {
+                    return true;
+                } else if (a_libnode && b_libnode) {
+                    return a_libnode->code().value() < b_libnode->code().value() ||
+                           (a_libnode->code().value() == b_libnode->code().value() &&
+                            a_libnode->element_id() < b_libnode->element_id());
+                } else if (a_libnode && b_access_node) {
+                    return true;
+                } else if (a_access_node && b_access_node) {
+                    return a_access_node->data() < b_access_node->data() ||
+                           (a_access_node->data() == b_access_node->data() &&
+                            a_access_node->element_id() < b_access_node->element_id());
+                } else {
+                    return false;
+                }
+            });
+        }
+
+        // Stich together by resolving dependencies
+        visited.clear();
+        for (const auto* sink : sinks) {
+            if (visited.contains(sink)) {
+                continue;
+            }
+
+            std::stack<const DataFlowNode*> stack({sink});
+            while (!stack.empty()) {
+                const auto* current = stack.top();
+                visited.insert(current);
+
+                bool all_resolved = true;
+                for (auto [node, dependency_id] : dependencies.at(current)) {
+                    if (!visited.contains(node)) {
+                        stack.push(node);
+                        all_resolved = false;
+                        break;
+                    }
+
+                    for (long long j = 0; j < dependency_id; j++) {
+                        if (!backward_dependencies.contains({node, j})) {
+                            continue;
+                        }
+                        const auto* node2 = backward_dependencies.at({node, j});
+                        if (!visited.contains(node2)) {
+                            stack.push(node2);
+                            all_resolved = false;
+                            break;
+                        }
+                    }
+                    if (!all_resolved) {
+                        break;
+                    }
+                }
+                if (!all_resolved) {
+                    continue;
+                }
+
+                components.at(i).insert(components.at(i).end(), lists.at(current).begin(), lists.at(current).end());
+                stack.pop();
+            }
+        }
     }
 
-    return topo_nodes;
-};
+    // Sort components
+    std::sort(components.begin(), components.end(), [](const auto& a, const auto& b) {
+        return a.size() > b.size() ||
+               (a.size() == b.size() && a.size() > 0 && a.front()->element_id() < b.front()->element_id());
+    });
 
-std::list<data_flow::DataFlowNode*> DataFlowGraph::topological_sort() {
-    std::list<graph::Vertex> order = graph::topological_sort(this->graph_);
-
-    std::list<data_flow::DataFlowNode*> topo_nodes;
-    for (auto& vertex : order) {
-        topo_nodes.push_back(this->nodes_.at(vertex).get());
+    // Resulting data structure
+    std::list<const DataFlowNode*> order;
+    for (auto& component : components) {
+        order.insert(order.end(), component.begin(), component.end());
     }
 
-    return topo_nodes;
-};
+    return order;
+}
+
+std::list<DataFlowNode*> DataFlowGraph::topological_sort() {
+    auto [num_components, components_map] = graph::weakly_connected_components(this->graph_);
+
+    // Build deterministic topological sort for each weakly connected component
+    std::vector<std::list<DataFlowNode*>> components(num_components);
+    for (size_t i = 0; i < num_components; i++) {
+        // Get all sinks of the current component
+        std::vector<DataFlowNode*> sinks;
+        bool component_empty = true;
+        for (auto [v, comp] : components_map) {
+            if (comp == i) {
+                component_empty = false;
+                if (boost::out_degree(v, this->graph_) == 0) {
+                    sinks.push_back(this->nodes_.at(v).get());
+                }
+            }
+        }
+        if (sinks.size() == 0) {
+            if (component_empty) {
+                continue;
+            } else {
+                throw boost::not_a_dag();
+            }
+        }
+
+        // Create a queue with all sinks
+        std::list<DataFlowNode*> queue;
+        queue.insert(queue.end(), sinks.begin(), sinks.end());
+
+        // Perform a reversed DFS for each element in the queue
+        std::unordered_map<DataFlowNode*, std::list<DataFlowNode*>> lists;
+        std::unordered_map<DataFlowNode*, std::list<std::pair<DataFlowNode*, long long>>> dependencies;
+        std::map<std::pair<DataFlowNode*, long long>, DataFlowNode*> backward_dependencies;
+        std::unordered_set<DataFlowNode*> visited;
+        while (!queue.empty()) {
+            auto* start = queue.front();
+            queue.pop_front();
+
+            if (visited.contains(start)) {
+                continue;
+            }
+
+            // Reversed DFS
+            lists.insert({start, {}});
+            dependencies.insert({start, {}});
+            std::stack<std::pair<DataFlowNode*, DataFlowNode*>> stack({{start, nullptr}});
+            while (!stack.empty()) {
+                auto* current = stack.top().first;
+                auto* successor = stack.top().second;
+                stack.pop();
+
+                // If multiple out edges, add to queue, add dependency, and skip
+                if (current != start && this->out_degree(*current) > 1) {
+                    queue.push_back(current);
+                    long long dependency_id = -1;
+                    if (auto* code_node = dynamic_cast<CodeNode*>(current)) {
+                        for (auto& oedge : this->out_edges(*current)) {
+                            auto* dst = &oedge.dst();
+                            if (dst == successor) {
+                                for (long long j = 0; j < code_node->outputs().size(); j++) {
+                                    if (oedge.src_conn() == code_node->output(j)) {
+                                        dependency_id = j;
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    } else {
+                        std::vector<std::pair<DataFlowNode*, size_t>> tmp_outputs;
+                        std::unordered_set<DataFlowNode*> local_visited;
+                        for (auto& oedge : this->out_edges(*current)) {
+                            auto* dst = &oedge.dst();
+                            if (local_visited.contains(dst)) {
+                                continue;
+                            }
+                            local_visited.insert(dst);
+                            size_t value = 0;
+                            if (auto* tasklet = dynamic_cast<Tasklet*>(dst)) {
+                                value = tasklet->code();
+                            } else if (auto* libnode = dynamic_cast<LibraryNode*>(dst)) {
+                                value = 52;
+                                for (char c : libnode->code().value()) {
+                                    value += c;
+                                }
+                            }
+                            tmp_outputs.push_back({dst, value});
+                        }
+                        std::sort(tmp_outputs.begin(), tmp_outputs.end(), [](const auto& a, const auto& b) {
+                            return a.second > b.second ||
+                                   (a.second == b.second && a.first->element_id() < b.first->element_id());
+                        });
+                        for (long long j = 0; j < tmp_outputs.size(); j++) {
+                            if (tmp_outputs.at(j).first == successor) {
+                                dependency_id = j;
+                                break;
+                            }
+                        }
+                    }
+                    if (dependency_id == -1 || backward_dependencies.contains({current, dependency_id})) {
+                        throw std::runtime_error("Could not create dependency in topological sort");
+                    }
+                    dependencies.at(start).push_front({current, dependency_id});
+                    backward_dependencies.insert({{current, dependency_id}, start});
+                    continue;
+                }
+
+                // Put the current element in the list
+                if (visited.contains(current)) {
+                    throw boost::not_a_dag();
+                }
+                visited.insert(current);
+                lists.at(start).push_front(current);
+
+                // Put all predecessors on the stack
+                if (auto* code_node = dynamic_cast<CodeNode*>(current)) {
+                    std::unordered_set<DataFlowNode*> local_visited;
+                    for (auto& input : code_node->inputs()) {
+                        Memlet* iedge = nullptr;
+                        for (auto& in_edge : this->in_edges(*code_node)) {
+                            if (in_edge.dst_conn() == input) {
+                                iedge = &in_edge;
+                                break;
+                            }
+                        }
+                        if (!iedge) {
+                            continue;
+                        }
+                        auto* src = &iedge->src();
+                        if (!local_visited.contains(src)) {
+                            local_visited.insert(src);
+                            stack.push({src, current});
+                        }
+                    }
+                } else {
+                    std::vector<std::pair<DataFlowNode*, size_t>> tmp_inputs;
+                    std::unordered_set<DataFlowNode*> local_visited;
+                    for (auto& iedge : this->in_edges(*current)) {
+                        auto* src = &iedge.src();
+                        if (local_visited.contains(src)) {
+                            continue;
+                        }
+                        local_visited.insert(src);
+                        size_t value = 0;
+                        if (auto* tasklet = dynamic_cast<Tasklet*>(src)) {
+                            value = tasklet->code();
+                        } else if (auto* libnode = dynamic_cast<LibraryNode*>(src)) {
+                            value = 52;
+                            for (char c : libnode->code().value()) {
+                                value += c;
+                            }
+                        }
+                        tmp_inputs.push_back({src, value});
+                    }
+                    std::sort(tmp_inputs.begin(), tmp_inputs.end(), [](const auto& a, const auto& b) {
+                        return a.second > b.second ||
+                               (a.second == b.second && a.first->element_id() < b.first->element_id());
+                    });
+                    for (auto& tmp_input : tmp_inputs) {
+                        stack.push({tmp_input.first, current});
+                    }
+                }
+            }
+        }
+
+        // Sort sinks if necessary
+        if (sinks.size() > 1) {
+            std::sort(sinks.begin(), sinks.end(), [](const DataFlowNode* a, const DataFlowNode* b) {
+                const auto* a_tasklet = dynamic_cast<const Tasklet*>(a);
+                const auto* b_tasklet = dynamic_cast<const Tasklet*>(b);
+                const auto* a_libnode = dynamic_cast<const LibraryNode*>(a);
+                const auto* b_libnode = dynamic_cast<const LibraryNode*>(b);
+                const auto* a_access_node = dynamic_cast<const AccessNode*>(a);
+                const auto* b_access_node = dynamic_cast<const AccessNode*>(b);
+                if (a_tasklet && b_tasklet) {
+                    return a_tasklet->code() < b_tasklet->code() || (a_tasklet->code() == b_tasklet->code() &&
+                                                                     a_tasklet->element_id() < b_tasklet->element_id());
+                } else if (a_tasklet && b_libnode) {
+                    return true;
+                } else if (a_tasklet && b_access_node) {
+                    return true;
+                } else if (a_libnode && b_libnode) {
+                    return a_libnode->code().value() < b_libnode->code().value() ||
+                           (a_libnode->code().value() == b_libnode->code().value() &&
+                            a_libnode->element_id() < b_libnode->element_id());
+                } else if (a_libnode && b_access_node) {
+                    return true;
+                } else if (a_access_node && b_access_node) {
+                    return a_access_node->data() < b_access_node->data() ||
+                           (a_access_node->data() == b_access_node->data() &&
+                            a_access_node->element_id() < b_access_node->element_id());
+                } else {
+                    return false;
+                }
+            });
+        }
+
+        // Stich together by resolving dependencies
+        visited.clear();
+        for (auto* sink : sinks) {
+            if (visited.contains(sink)) {
+                continue;
+            }
+
+            std::stack<DataFlowNode*> stack({sink});
+            while (!stack.empty()) {
+                auto* current = stack.top();
+                visited.insert(current);
+
+                bool all_resolved = true;
+                for (auto [node, dependency_id] : dependencies.at(current)) {
+                    if (!visited.contains(node)) {
+                        stack.push(node);
+                        all_resolved = false;
+                        break;
+                    }
+
+                    for (long long j = 0; j < dependency_id; j++) {
+                        if (!backward_dependencies.contains({node, j})) {
+                            continue;
+                        }
+                        auto* node2 = backward_dependencies.at({node, j});
+                        if (!visited.contains(node2)) {
+                            stack.push(node2);
+                            all_resolved = false;
+                            break;
+                        }
+                    }
+                    if (!all_resolved) {
+                        break;
+                    }
+                }
+                if (!all_resolved) {
+                    continue;
+                }
+
+                components.at(i).insert(components.at(i).end(), lists.at(current).begin(), lists.at(current).end());
+                stack.pop();
+            }
+        }
+    }
+
+    // Sort components
+    std::sort(components.begin(), components.end(), [](const auto& a, const auto& b) {
+        return a.size() > b.size() ||
+               (a.size() == b.size() && a.size() > 0 && a.front()->element_id() < b.front()->element_id());
+    });
+
+    // Resulting data structure
+    std::list<DataFlowNode*> order;
+    for (auto& component : components) {
+        order.insert(order.end(), component.begin(), component.end());
+    }
+
+    return order;
+}
 
 std::unordered_map<std::string, const data_flow::AccessNode*> DataFlowGraph::dominators() const {
     std::unordered_map<std::string, const data_flow::AccessNode*> frontier;
@@ -280,169 +837,6 @@ const std::pair<size_t, const std::unordered_map<const data_flow::DataFlowNode*,
     }
 
     return {ccs_vertex.first, ccs};
-};
-
-// Helper function to get primary outgoing edge for a node with multiple outputs
-const data_flow::Memlet* get_primary_outgoing_edge(const DataFlowGraph& graph, const data_flow::DataFlowNode* node) {
-    if (const auto* code_node = dynamic_cast<const data_flow::CodeNode*>(node)) {
-        // For CodeNodes: first output is primary
-        if (code_node->outputs().empty()) {
-            return nullptr;
-        }
-
-        for (const auto& oedge : graph.out_edges(*code_node)) {
-            if (oedge.src_conn() == code_node->output(0)) {
-                return &oedge;
-            }
-        }
-        return nullptr;
-    } else {
-        // For other nodes: highest priority edge (by tasklet code or lib name)
-        std::vector<std::pair<const data_flow::Memlet*, size_t>> edges_list;
-        for (const auto& oedge : graph.out_edges(*node)) {
-            const auto* dst = &oedge.dst();
-            size_t value = 0;
-            if (const auto* tasklet = dynamic_cast<const data_flow::Tasklet*>(dst)) {
-                value = tasklet->code();
-            } else if (const auto* libnode = dynamic_cast<const data_flow::LibraryNode*>(dst)) {
-                value = 52;
-                for (char c : libnode->code().value()) {
-                    value += c;
-                }
-            }
-            edges_list.push_back({&oedge, value});
-        }
-
-        if (!edges_list.empty()) {
-            std::sort(edges_list.begin(), edges_list.end(), [](const auto& a, const auto& b) {
-                return a.second > b.second || (a.second == b.second && a.first->element_id() < b.first->element_id());
-            });
-            return edges_list.front().first;
-        }
-    }
-    return nullptr;
-}
-
-std::list<const data_flow::DataFlowNode*> DataFlowGraph::topological_sort_deterministic() const {
-    auto [num_components, components_map] = graph::weakly_connected_components(this->graph_);
-
-    // Build deterministic topological sort for each weakly connected component
-    std::vector<std::list<const DataFlowNode*>> components(num_components);
-
-    for (size_t i = 0; i < num_components; i++) {
-        // Get all nodes in this component
-        std::vector<const DataFlowNode*> component_nodes;
-        for (auto [v, comp] : components_map) {
-            if (comp == i) {
-                component_nodes.push_back(this->nodes_.at(v).get());
-            }
-        }
-
-        if (component_nodes.empty()) {
-            continue;
-        }
-
-        // Check for cycles: if no sinks exist, it's a cycle
-        bool has_sink = false;
-        for (const auto* node : component_nodes) {
-            if (boost::out_degree(node->vertex(), this->graph_) == 0) {
-                has_sink = true;
-                break;
-            }
-        }
-        if (!has_sink) {
-            throw boost::not_a_dag();
-        }
-
-        // New algorithm: Hybrid Kahn's with priority-based processing
-
-        // Step 1: Initialize in-degree and primary_incoming_count
-        std::unordered_map<const DataFlowNode*, size_t> in_degree;
-        std::unordered_map<const DataFlowNode*, size_t> primary_incoming_count;
-
-        for (const auto* node : component_nodes) {
-            size_t count = 0;
-            for (auto& edge : this->in_edges(*node)) {
-                (void) edge; // Just count
-                count++;
-            }
-            in_degree[node] = count;
-            primary_incoming_count[node] = 0;
-        }
-
-        // Step 2: Mark primary edges
-        for (const auto* node : component_nodes) {
-            if (this->out_degree(*node) > 1) {
-                const Memlet* primary_edge = get_primary_outgoing_edge(*this, node);
-                if (primary_edge) {
-                    primary_incoming_count[&primary_edge->dst()]++;
-                }
-            } else if (this->out_degree(*node) == 1) {
-                auto edges = this->out_edges(*node);
-                auto it = edges.begin();
-                if (it != edges.end()) {
-                    primary_incoming_count[&(*it).dst()]++;
-                }
-            }
-        }
-
-        // Step 3: Priority queue for node ordering
-        // Use a struct to define priority
-        struct NodePriority {
-            const DataFlowNode* node;
-            size_t primary_path_count;
-            size_t element_id;
-
-            bool operator<(const NodePriority& other) const {
-                // Higher primary_path_count = higher priority (use > for max-heap behavior in std::priority_queue)
-                if (primary_path_count != other.primary_path_count)
-                    return primary_path_count < other.primary_path_count;
-                // Lower element_id = higher priority
-                return element_id > other.element_id;
-            }
-        };
-
-        std::priority_queue<NodePriority> queue;
-
-        // Add all nodes with in-degree 0 to the queue
-        for (const auto* node : component_nodes) {
-            if (in_degree[node] == 0) {
-                queue.push({node, primary_incoming_count[node], node->element_id()});
-            }
-        }
-
-        // Step 4: Process nodes
-        while (!queue.empty()) {
-            NodePriority current = queue.top();
-            queue.pop();
-
-            components.at(i).push_back(current.node);
-
-            // Update successors
-            for (auto& edge : this->out_edges(*current.node)) {
-                const DataFlowNode* successor = &edge.dst();
-                in_degree[successor]--;
-
-                if (in_degree[successor] == 0) {
-                    queue.push({successor, primary_incoming_count[successor], successor->element_id()});
-                }
-            }
-        }
-    }
-
-    // Sort components
-    std::sort(components.begin(), components.end(), [](const auto& a, const auto& b) {
-        return a.size() > b.size() ||
-               (a.size() == b.size() && a.size() > 0 && a.front()->element_id() < b.front()->element_id());
-    });
-
-    // Resulting data structure
-    std::list<const DataFlowNode*> order;
-    for (auto& component : components) {
-        order.insert(order.end(), component.begin(), component.end());
-    }
-
-    return order;
 };
 
 
