@@ -10,7 +10,7 @@ on:
     - cron: "0 4 * * *"
 
 jobs:
-  build:
+  cpp-tests:
     runs-on:
       group: dahlia
       labels: cuda
@@ -68,6 +68,8 @@ jobs:
       - name: Coveralls
         uses: coverallsapp/github-action@v2
         with:
+          flag-name: sdfg
+          parallel: true
           format: lcov
           file: build/coverage.lcov
 
@@ -88,3 +90,80 @@ jobs:
 
           cd rtl/tests
           pytest -v -s rtl_tests.py
+
+  python-tests:
+    runs-on:
+      group: dahlia
+      labels: openmp
+    container:
+      image: daisytuner/docc-v2:latest
+      options: >-
+        --cap-add=PERFMON
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Create virtual environment
+        run: |
+          python -m venv .venv
+          echo "$PWD/.venv/bin" >> $GITHUB_PATH
+
+      - name: Mark GitHub Actions workdir as safe
+        run: git config --global --add safe.directory /__w/docc/docc
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pybind11 pytest coverage black==25.9.0 build scikit-build-core
+          pip install numpy scipy
+
+      - name: Formatting
+        shell: bash
+        run: |
+          shopt -s globstar
+          clang-format-19 -style=file --dry-run --Werror python/bindings/**/*.h python/bindings/**/*.cpp
+          black --check python/docc/ python/tests/
+
+      - name: Build
+        run: |
+          pyproject-build --wheel python
+          pip install python/dist/*.whl
+
+      - name: Unit Tests
+        run: |
+          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+          coverage run --source=python/docc -m pytest -v python/tests
+          coverage xml
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          flag-name: python-${{ matrix.python-version }}
+          parallel: true
+          format: cobertura
+          file: coverage.xml
+
+      - name: Integration Tests
+        run: |
+          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+          pytest -v python/benchmarks/
+
+  finish:
+    needs: [cpp-tests, python-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true
