@@ -111,16 +111,20 @@ void ArgCapturePlan::emit_arg_captures(
         auto argIdx = varPlan.arg_idx;
         if ((!after && varPlan.capture_input) || (after && varPlan.capture_output)) {
             std::string safe_name;
+            symbolic::Expression size = varPlan.size;
             if (varPlan.is_external) {
                 safe_name = language_extension.external_prefix() + argName;
+                size = symbolic::subs(
+                    size, symbolic::symbol(argName), symbolic::symbol(language_extension.external_prefix() + argName)
+                );
             } else {
                 safe_name = argName;
             }
 
 
             stream << "\t__daisy_capture_raw(" << "__capture_ctx, " << argIdx << ", " << (varPlan.is_scalar ? "&" : "")
-                   << safe_name << ", " << language_extension.expression(varPlan.size) << ", " << varPlan.inner_type
-                   << ", " << afterBoolStr << ", " << element_id << ");" << std::endl;
+                   << safe_name << ", " << language_extension.expression(size) << ", " << varPlan.inner_type << ", "
+                   << afterBoolStr << ", " << element_id << ");" << std::endl;
         }
     }
 }
