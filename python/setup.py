@@ -18,7 +18,7 @@ setup(
     author="Daisytuner",
     python_requires=">=3.10, <3.13",
     packages=find_packages(),
-    package_data={"docc": ["*.so", "*.pyd"]},
+    package_data={"docc": ["*.so", "*.pyd", "*.a", "include/**/*"]},
     include_package_data=True,
     has_ext_modules=lambda: True,
     install_requires=[

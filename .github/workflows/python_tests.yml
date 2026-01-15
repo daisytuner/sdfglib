@@ -70,7 +70,6 @@ jobs:
             -Dpybind11_DIR=$(python -m pybind11 --cmakedir) \
             ..
           ninja -j$(nproc)
-          ninja install
 
           cd ../
           cp VERSION python/VERSION
@@ -79,16 +78,8 @@ jobs:
 
       - name: Unit Tests
         run: |
-          export CPATH=/usr/local/include:$CPATH
-          export LIBRARY_PATH=/usr/local/lib:$LIBRARY_PATH
-          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-          export PATH=/usr/local/bin:$PATH
           pytest -v python/tests
 
       - name: Integration Tests
         run: |
-          export CPATH=/usr/local/include:$CPATH
-          export LIBRARY_PATH=/usr/local/lib:$LIBRARY_PATH
-          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-          export PATH=/usr/local/bin:$PATH
           pytest -v python/benchmarks/

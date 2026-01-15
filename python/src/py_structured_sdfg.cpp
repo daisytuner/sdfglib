@@ -5,6 +5,9 @@
 #include <fstream>
 #include <sstream>
 
+#include <dlfcn.h>
+#include <unistd.h>
+
 #include <nlohmann/json.hpp>
 
 #include <sdfg/analysis/analysis.h>
@@ -67,6 +70,10 @@ pybind11::dict PyStructuredSDFG::containers() const {
     }
     return result;
 }
+
+namespace {
+void _anchor() {}
+} // namespace
 
 void PyStructuredSDFG::expand() {
     sdfg::builder::StructuredSDFGBuilder builder_opt(*sdfg_);
@@ -272,6 +279,16 @@ std::string PyStructuredSDFG::
     std::stringstream cmd;
     cmd << "c++ -shared -fopenmp -fPIC -O3";
     cmd << " " << source_path.string();
+
+    // Find libraries relative to the module location
+    Dl_info info;
+    if (dladdr((void*) &_anchor, &info)) {
+        fs::path lib_path = fs::canonical(info.dli_fname);
+        fs::path package_path = lib_path.parent_path();
+        cmd << " -L" << package_path.string();
+        cmd << " -I" << (package_path / "include").string();
+    }
+
     cmd << " -ldaisy_rtl";
     cmd << " -larg_capture_io";
     cmd << " -lblas";

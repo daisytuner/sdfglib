@@ -25,9 +25,16 @@ set_target_properties(docc-py PROPERTIES
 target_compile_definitions(docc-py PRIVATE
     DOCC_VERSION=\"${SDFGLIB_VERSION}\"
 )
-target_link_libraries(docc-py PRIVATE sdfglib::sdfglib nlohmann_json::nlohmann_json)
+target_link_libraries(docc-py PRIVATE sdfglib::sdfglib nlohmann_json::nlohmann_json ${CMAKE_DL_LIBS})
 
-# # Install module
-# install(TARGETS docc-py
-#     LIBRARY DESTINATION ${Python3_SITELIB}
-# )
+# Copy libraries and headers to be packaged
+add_custom_command(TARGET docc-py POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    $<TARGET_FILE:daisy_rtl>
+    $<TARGET_FILE:arg_capture_io>
+    "${CMAKE_CURRENT_SOURCE_DIR}/docc"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_SOURCE_DIR}/docc/include"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../rtl/include" "${CMAKE_CURRENT_SOURCE_DIR}/docc/include"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../arg-capture-io/include" "${CMAKE_CURRENT_SOURCE_DIR}/docc/include"
+    COMMENT "Copying static libraries and headers to python package"
+)

@@ -11,12 +11,6 @@ from ._docc import *
 from .compiled_sdfg import CompiledSDFG
 from .ast_parser import ASTParser
 
-# Import minimal PyTorch/Torch-MLIR integration for inference
-from .pytorch_integration import (
-    import_pytorch_model,
-    import_torch_mlir,
-)
-
 
 def _compile_wrapper(self, output_folder=None):
     lib_path = self._compile(output_folder)
