@@ -46,7 +46,3 @@ If you use the sdfg, cite the paper:
   series = {SC '19}
 }
 ```
-
-## License
-
-sdfg is published under the new BSD license, see [LICENSE](LICENSE).

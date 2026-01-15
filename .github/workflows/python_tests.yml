@@ -46,6 +46,7 @@ jobs:
           pip install numpy scipy
 
       - name: Formatting
+        shell: bash
         run: |
           shopt -s globstar
           clang-format-19 -style=file --dry-run --Werror python/src/**/*.h python/src/**/*.cpp
