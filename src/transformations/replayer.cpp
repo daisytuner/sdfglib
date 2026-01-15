@@ -34,6 +34,13 @@ void Replayer::replay(
                 "Unknown transformation: " + transformation_name.get<std::string>()
             );
         }
+
+#ifndef NDEBUG
+        std::cout << "Applied transformation: " << transformation_name << std::endl;
+        builder.subject().validate();
+#endif
+
+        analysis_manager.invalidate_all();
     }
 }
 

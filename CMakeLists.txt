@@ -49,7 +49,7 @@ find_package(nlohmann_json REQUIRED)
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost REQUIRED COMPONENTS graph)
+find_package(Boost REQUIRED COMPONENTS graph program_options)
 
 # Find the ISL library
 find_package(PkgConfig REQUIRED)
@@ -216,6 +216,7 @@ set(SOURCE_FILES
     src/transformations/parallelization.cpp
     src/transformations/recorder.cpp
     src/transformations/replayer.cpp
+    src/transformations/transfertuning_transform.cpp
     src/transformations/utils.cpp
     src/types/array.cpp
     src/types/function.cpp
@@ -273,6 +274,13 @@ set_target_properties(sdfglib PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
 )
+
+# tutorials
+
+add_executable(matmul_tuner
+    examples/applications/matmul_replayer.cpp
+)
+target_link_libraries(matmul_tuner PRIVATE sdfglib Boost::program_options)
 
 ## INSTALLATION
 
