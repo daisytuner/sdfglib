@@ -57,9 +57,11 @@ public:
     MemoryAccess(AccessType access_type, isl_map* relation, const std::string& data, const data_flow::Memlet* memlet);
 
     ~MemoryAccess() {
+        std::cout << "Destroying MemoryAccess for data\n";
         if (relation_) {
             isl_map_free(relation_);
         }
+        std::cout << "Destroyed MemoryAccess\n";
     }
 
     MemoryAccess(const MemoryAccess&) = delete;
@@ -103,13 +105,15 @@ public:
     ScopStatement(const std::string& name, isl_set* domain, symbolic::Expression expression);
 
     ~ScopStatement() {
-        if (domain_) {
-            isl_set_free(domain_);
-        }
+        std::cout << "Destroying ScopStatement\n";
+        this->memory_accesses_.clear();
         if (schedule_) {
             isl_map_free(schedule_);
         }
-        this->memory_accesses_.clear();
+        if (domain_) {
+            isl_set_free(domain_);
+        }
+        std::cout << "Destroyed ScopStatement\n";
     }
 
     ScopStatement(const ScopStatement&) = delete;
@@ -204,18 +208,20 @@ public:
     Scop(structured_control_flow::ControlFlowNode& node, isl_ctx* ctx, isl_space* param_space);
 
     ~Scop() {
+        std::cout << "Destroying Scop\n";
         this->statements_.clear();
 
-        if (param_space_) {
-            isl_space_free(param_space_);
+        if (schedule_) {
+            isl_union_map_free(schedule_);
         }
         if (schedule_tree_) {
             isl_schedule_free(schedule_tree_);
         }
-        if (schedule_) {
-            isl_union_map_free(schedule_);
+        if (param_space_) {
+            isl_space_free(param_space_);
         }
         isl_ctx_free(ctx_);
+        std::cout << "Destroyed Scop\n";
     }
 
     Scop(const Scop&) = delete;
@@ -299,7 +305,7 @@ public:
 
 class Dependences {
 private:
-    isl_ctx* ctx_;
+    Scop& scop_;
 
     std::unordered_map<MemoryAccess*, isl_map*> reduction_dependences_;
 
@@ -321,15 +327,15 @@ private:
     void set_reduction_dependences(MemoryAccess* memory_access, isl_map* deps);
 
 public:
-    Dependences(Scop& scop)
-        : ctx_(scop.ctx()), RAW(nullptr), WAR(nullptr), WAW(nullptr), RED(nullptr), TC_RED(nullptr) {
-        calculate_dependences(scop);
+    Dependences(Scop& scop) : scop_(scop), RAW(nullptr), WAR(nullptr), WAW(nullptr), RED(nullptr), TC_RED(nullptr) {
+        calculate_dependences(scop_);
     }
 
     Dependences(const Dependences&) = delete;
     Dependences& operator=(const Dependences&) = delete;
 
     ~Dependences() {
+        std::cout << "Destroying Dependences\n";
         if (RAW) isl_union_map_free(RAW);
         RAW = nullptr;
         if (WAR) isl_union_map_free(WAR);
@@ -344,6 +350,7 @@ public:
             isl_map_free(pair.second);
         }
         reduction_dependences_.clear();
+        std::cout << "Destroyed Dependences\n";
     }
 
     /// The type of the dependences.
@@ -374,7 +381,9 @@ public:
         TYPE_TC_RED = 1 << 4,
     };
 
-    const isl_ctx* ctx() const { return this->ctx_; }
+    Scop& scop() const { return scop_; }
+
+    const isl_ctx* ctx() const { return scop_.ctx(); }
 
     isl_union_map* dependences(int Kinds) const;
 

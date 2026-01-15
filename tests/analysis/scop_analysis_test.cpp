@@ -1120,7 +1120,7 @@ TEST(ScopAnalysisTest, DependenceInfoTest_Validity) {
     sched_str += "[i] -> [-i] }";
 
     isl_map* new_sched_map = isl_map_read_from_str(scop->ctx(), sched_str.c_str());
-    new_sched_map = isl_map_intersect_domain(new_sched_map, domain);
+    new_sched_map = isl_map_intersect_domain(new_sched_map, isl_set_copy(domain));
 
     std::unordered_map<analysis::ScopStatement*, isl_map*> new_schedule;
     new_schedule[scop->statements()[0]] = new_sched_map;
@@ -1171,10 +1171,12 @@ TEST(ScopAnalysisTest, DependenceInfoTest_Last_1D) {
     ASSERT_NE(scop, nullptr);
     analysis::Dependences deps(*scop);
     auto dependencies = deps.dependencies(loop);
+    std::cout << "Dependencies: " << dependencies.size() << std::endl;
 
     // Check
     EXPECT_EQ(dependencies.size(), 1);
     EXPECT_EQ(dependencies.at("B"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
+    std::cout << "Finished test." << std::endl;
 }
 
 TEST(ScopAnalysisTest, DependenceInfoTest_Sum_1D) {

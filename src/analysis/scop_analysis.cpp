@@ -24,7 +24,6 @@
 #include <isl/options.h>
 #include <isl/val.h>
 
-#include <sdfg/analysis/assumptions_analysis.h>
 #include <sdfg/analysis/loop_analysis.h>
 #include <sdfg/data_flow/library_nodes/math/math.h>
 #include <sdfg/symbolic/utils.h>
@@ -138,8 +137,11 @@ std::string Scop::ast() {
     isl_ast_build *build = isl_ast_build_alloc(this->ctx_);
     isl_ast_node *tree = isl_ast_build_node_from_schedule(build, schedule);
     char *str = isl_ast_node_to_C_str(tree);
-    std::string result(str);
-    free(str);
+    std::string result = "";
+    if (str) {
+        result = std::string(str);
+        free(str);
+    }
     isl_ast_node_free(tree);
     isl_ast_build_free(build);
     return result;
@@ -150,11 +152,12 @@ ScopBuilder::ScopBuilder(StructuredSDFG &sdfg, structured_control_flow::ControlF
 
 std::unique_ptr<Scop> ScopBuilder::build(analysis::AnalysisManager &analysis_manager) {
     isl_ctx *ctx = isl_ctx_alloc();
-    isl_options_set_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+    // isl_options_set_on_error(ctx, ISL_ON_ERROR_CONTINUE);
     isl_space *param_space = isl_space_set_alloc(ctx, 0, 0);
     this->scop_ = std::make_unique<Scop>(this->node_, ctx, param_space);
 
     this->visit(analysis_manager, node_);
+    std::cout << "Finished building SCoP for node " << node_.element_id() << "\n";
     if (this->scop_ == nullptr) {
         return nullptr;
     }
@@ -168,11 +171,17 @@ void ScopBuilder::visit(analysis::AnalysisManager &analysis_manager, structured_
     }
 
     if (auto block = dynamic_cast<structured_control_flow::Block *>(&node)) {
+        std::cout << "Visiting block " << block->element_id() << "\n";
         this->visit_block(analysis_manager, *block);
+        std::cout << "Finished visiting block " << block->element_id() << "\n";
     } else if (auto sequence = dynamic_cast<structured_control_flow::Sequence *>(&node)) {
+        std::cout << "Visiting sequence " << sequence->element_id() << "\n";
         this->visit_sequence(analysis_manager, *sequence);
+        std::cout << "Finished visiting sequence " << sequence->element_id() << "\n";
     } else if (auto loop = dynamic_cast<structured_control_flow::StructuredLoop *>(&node)) {
+        std::cout << "Visiting structured loop " << loop->element_id() << "\n";
         this->visit_structured_loop(analysis_manager, *loop);
+        std::cout << "Finished visiting structured loop " << loop->element_id() << "\n";
     } else {
         this->scop_ = nullptr;
         return;
@@ -301,7 +310,8 @@ void ScopBuilder::
         this->scop_ = nullptr;
         return;
     }
-    std::string condition = indvar + " >= " + init;
+    std::vector<std::string> constraints;
+    constraints.push_back(indvar + " >= " + init);
     for (auto &clause : condition_cnf) {
         if (clause.size() != 1) {
             this->scop_ = nullptr;
@@ -326,7 +336,7 @@ void ScopBuilder::
                 this->scop_ = nullptr;
                 return;
             }
-            condition += " and " + literal_str;
+            constraints.push_back(literal_str);
         }
     }
     auto stride = analysis::LoopAnalysis::stride(&loop);
@@ -335,14 +345,13 @@ void ScopBuilder::
         return;
     }
     int stride_value = stride->as_int();
-    std::string iter = "__daisy_iterator_" + indvar;
-    std::string update_constraint = "exists " + iter + " : " + indvar + " = " + init + " + " + iter + " * " +
-                                    std::to_string(stride_value);
-    if (condition.empty()) {
-        condition = update_constraint;
-    } else {
-        condition += " and " + update_constraint;
+    if (stride_value != 1) {
+        std::string iter = "__daisy_iterator_" + indvar;
+        std::string update_constraint = "exists " + iter + " : " + indvar + " = " + init + " + " + iter + " * " +
+                                        std::to_string(stride_value);
+        constraints.push_back(update_constraint);
     }
+    std::string condition = helpers::join(constraints, " and ");
     dimension_constraints_[indvar] = condition;
 
     // Construct constraints string.
@@ -355,15 +364,24 @@ void ScopBuilder::
         set_str += "[ " + helpers::join(params, ", ") + " ] -> ";
     }
     set_str += "{ [" + indvar + "] : " + condition + " }";
+    std::cout << "Loop Bound Set String: " << set_str << std::endl;
+
+    isl_ctx *ctx = scop_->ctx();
+    isl_set *loop_bound_base = isl_set_read_from_str(ctx, set_str.c_str());
+    if (!loop_bound_base) {
+        DEBUG_PRINTLN("Failed to parse loop bound set: " << set_str);
+        this->scop_ = nullptr;
+        return;
+    }
+    char *loop_bound_str = isl_set_to_str(loop_bound_base);
+    std::cout << "Loop Bound Set: " << loop_bound_str << std::endl;
+    free(loop_bound_str);
 
     size_t stmt_start = this->scop_->statements().size();
     this->visit_sequence(analysis_manager, loop.root());
     if (this->scop_ == nullptr) {
         return;
     }
-
-    isl_ctx *ctx = scop_->ctx();
-    isl_set *loop_bound_base = isl_set_read_from_str(ctx, set_str.c_str());
 
     auto stmts = this->scop_->statements();
     for (size_t i = stmt_start; i < stmts.size(); ++i) {
@@ -472,8 +490,6 @@ std::string ScopBuilder::generate_subset(
     structured_control_flow::ControlFlowNode &node,
     const symbolic::MultiExpression &subset
 ) {
-    auto &assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
-
     std::string relation = "";
     if (!this->parameters_.empty()) {
         relation += "[ " + helpers::join(this->parameters_, ", ") + " ] -> ";
@@ -516,7 +532,7 @@ static void collectInfo(
     Read = isl_union_map_empty(isl_space_copy(Space));
     MustWrite = isl_union_map_empty(isl_space_copy(Space));
     ReductionTagMap = isl_union_map_empty(isl_space_copy(Space));
-    isl_union_map *StmtSchedule = isl_union_map_empty(Space);
+    isl_union_map *StmtSchedule = isl_union_map_empty(isl_space_copy(Space));
 
     std::unordered_set<std::string> ReductionArrays;
     for (auto stmt : S.statements())
@@ -547,14 +563,16 @@ static void collectInfo(
                 ReductionTagMap = isl_union_map_add_map(ReductionTagMap, isl_map_copy(accdom));
                 accdom = isl_map_range_map(accdom);
             } else {
-                accdom = tag(accdom, isl_id_alloc(S.ctx(), MA->data().c_str(), MA));
                 isl_map *StmtScheduleMap = isl_map_copy(stmt->schedule());
                 assert(
                     StmtScheduleMap &&
                     "Schedules that contain extension nodes require special "
                     "handling."
                 );
-                isl_map *Schedule = tag(StmtScheduleMap, isl_id_alloc(S.ctx(), MA->data().c_str(), MA));
+
+                isl_id *id = isl_id_alloc(S.ctx(), MA->data().c_str(), nullptr);
+                accdom = tag(accdom, isl_id_copy(id));
+                isl_map *Schedule = tag(StmtScheduleMap, id);
                 StmtSchedule = isl_union_map_add_map(StmtSchedule, Schedule);
             }
 
