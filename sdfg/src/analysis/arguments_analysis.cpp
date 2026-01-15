@@ -2,6 +2,7 @@
 #include "sdfg/analysis/mem_access_range_analysis.h"
 #include "sdfg/analysis/type_analysis.h"
 #include "sdfg/analysis/users.h"
+#include "sdfg/helpers/helpers.h"
 #include "sdfg/types/utils.h"
 
 namespace sdfg {
@@ -181,7 +182,9 @@ void ArgumentsAnalysis::collect_arg_sizes(
                     throw std::runtime_error("Could not infer type for argument: " + argument);
                 }
             }
+            DEBUG_PRINTLN("type of argument: " << type->print());
             auto size = types::get_contiguous_element_size(*type);
+            DEBUG_PRINTLN("Size of " << argument << " is " << size->__str__());
             argument_sizes_.at(&node).insert({argument, size});
             argument_element_sizes_.at(&node).insert({argument, size});
         }

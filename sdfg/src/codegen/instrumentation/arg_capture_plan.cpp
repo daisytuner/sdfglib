@@ -120,11 +120,11 @@ void ArgCapturePlan::emit_arg_captures(
             } else {
                 safe_name = argName;
             }
-
-
-            stream << "\t__daisy_capture_raw(" << "__capture_ctx, " << argIdx << ", " << (varPlan.is_scalar ? "&" : "")
-                   << safe_name << ", " << language_extension.expression(size) << ", " << varPlan.inner_type << ", "
-                   << afterBoolStr << ", " << element_id << ");" << std::endl;
+            DEBUG_PRINTLN("size: " << size->__str__());
+            stream << "\t__daisy_capture_raw(" << "__capture_ctx, " << argIdx << ", "
+                   << (varPlan.is_scalar || varPlan.is_external ? "&" : "") << safe_name << ", "
+                   << language_extension.expression(size) << ", " << varPlan.inner_type << ", " << afterBoolStr << ", "
+                   << element_id << ");" << std::endl;
         }
     }
 }
