@@ -9,8 +9,8 @@ endif()
 set(_CMAKE_INSTALL_DEFAULT_COMPONENT_NAME ${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME})
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME sdfglib-development)
 
-set(WITH_SYMENGINE_THREAD_SAFE ON)
-set(WITH_SYMENGINE_RCP ON)
+set(WITH_SYMENGINE_THREAD_SAFE ON CACHE BOOL "override" FORCE)
+set(WITH_SYMENGINE_RCP ON CACHE BOOL "override" FORCE)
 
 add_subdirectory(3rdParty/symengine)
 # Restore install dirs for sub-projects to avoid conflicts
