@@ -171,6 +171,19 @@ void ArgumentsAnalysis::collect_arg_sizes(
                 argument_sizes_.at(&node).insert({argument, size});
                 argument_element_sizes_.at(&node).insert({argument, elem_size});
             }
+        } else {
+            auto type = type_analysis.get_outer_type(argument);
+            if (type == nullptr) {
+                if (do_not_throw) {
+                    known_sizes_.insert({&node, false});
+                    return;
+                } else {
+                    throw std::runtime_error("Could not infer type for argument: " + argument);
+                }
+            }
+            auto size = types::get_contiguous_element_size(*type);
+            argument_sizes_.at(&node).insert({argument, size});
+            argument_element_sizes_.at(&node).insert({argument, size});
         }
     }
 

@@ -156,7 +156,7 @@ bool ArgCapturePlan::add_capture_plan(
         DEBUG_PRINTLN("Could not determine size for variable " + var_name + ", cannot add to capture plan.");
         return false;
     }
-    auto size = region_arg.is_scalar ? types::get_contiguous_element_size(*type) : arg_sizes.at(var_name);
+    auto size = arg_sizes.at(var_name);
 
     plan.insert(
         {var_name,
