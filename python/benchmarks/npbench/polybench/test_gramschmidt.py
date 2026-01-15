@@ -1,0 +1,44 @@
+import pytest
+import docc
+import numpy as np
+from benchmarks.npbench.harness import run_benchmark, run_pytest
+
+PARAMETERS = {
+    "S": { "M": 70, "N": 60 },
+    "M": { "M": 220, "N": 180 },
+    "L": { "M": 600, "N": 500 },
+    "paper": { "M": 240, "N": 200 }
+}
+
+def initialize(M, N, datatype=np.float64):
+    from numpy.random import default_rng
+    rng = default_rng(42)
+
+    A = rng.random((M, N), dtype=datatype)
+    while np.linalg.matrix_rank(A) < N:
+        A = rng.random((M, N), dtype=datatype)
+
+    return (A,)
+
+
+def kernel(A):
+    Q = np.zeros_like(A)
+    R = np.zeros((A.shape[1], A.shape[1]), dtype=A.dtype)
+
+    for k in range(A.shape[1]):
+        nrm = np.dot(A[:, k], A[:, k])
+        R[k, k] = np.sqrt(nrm)
+        Q[:, k] = A[:, k] / R[k, k]
+        for j in range(k + 1, A.shape[1]):
+            R[k, j] = np.dot(Q[:, k], A[:, j])
+            A[:, j] -= Q[:, k] * R[k, j]
+
+    return Q, R
+
+@pytest.mark.skip()
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+def test_gramschmidt(target):
+    run_pytest(initialize, kernel, PARAMETERS, target)
+
+if __name__ == "__main__":
+    run_benchmark(initialize, kernel, PARAMETERS, "gramschmidt")

@@ -1,0 +1,17 @@
+# Python compiled files
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+
+# Build artifacts
+*.so
+*.dll
+*.dylib
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+docc/include/
