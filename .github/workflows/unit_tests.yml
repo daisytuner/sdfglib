@@ -28,41 +28,42 @@ jobs:
       - name: Mark GitHub Actions workdir as safe
         run: git config --global --add safe.directory /__w/sdfglib/sdfglib
 
+      - name: Install lcov
+        run: apt-get update && apt-get install -y lcov
+
       - name: Formatting
         shell: bash
         run: |
           shopt -s globstar
-          clang-format-19 -style=file --dry-run --Werror src/**/*.cpp tests/**/*.cpp include/**/*.h
+          clang-format-19 -style=file --dry-run --Werror sdfg/include/**/*.h sdfg/src/**/*.cpp sdfg/tests/**/*.cpp
 
       - name: CMAKE Setup
         run: |
           mkdir build
           cd build
-
-          # Enable coverage
-          cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DCMAKE_BUILD_TYPE=Debug -DSDFGLIB_ENABLE_COVERAGE=ON -DWITH_SYMENGINE_THREAD_SAFE=ON -DWITH_SYMENGINE_RCP=ON -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  ..
-          ln -s compile_commands.json ../compile_commands.json
-
-      # - name: Linting
-      #   run: clang-tidy-19 --config-file=".clang-tidy" src/**/*.cpp tests/**/*.cpp include/**/*.h
-
-      - name: Install lcov
-        run: apt-get update && apt-get install -y lcov
-
-      - name: Build and test
-        run: |
-          cd build
+          cmake \
+            -G Ninja \
+            -DCMAKE_C_COMPILER=clang-19 \
+            -DCMAKE_CXX_COMPILER=clang++-19 \
+            -DCMAKE_INSTALL_PREFIX=/usr/local \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DSDFG_ENABLE_COVERAGE=ON \
+            -DWITH_SYMENGINE_THREAD_SAFE=ON \
+            -DWITH_SYMENGINE_RCP=ON \
+            -DBUILD_TESTS:BOOL=OFF \
+            -DBUILD_BENCHMARKS:BOOL=OFF \
+            -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  \
+            ..
           ninja -j$(nproc)
           ninja install
 
-          ./tests/sdfglib_test
+          ./sdfg/tests/sdfglib_test
 
           # Run coverage
           llvm-profdata-19 merge -sparse default.profraw -o default.profdata
-
           cd ../
-          llvm-cov-19 export ./build/tests/sdfglib_test -instr-profile=build/default.profdata -format=lcov > build/coverage_full.lcov
-          lcov --extract build/coverage_full.lcov '*/src/*' '*/include/*' --output-file build/coverage.lcov
+          llvm-cov-19 export ./build/sdfg/tests/sdfglib_test -instr-profile=build/default.profdata -format=lcov > build/coverage_full.lcov
+          lcov --extract build/coverage_full.lcov '*/sdfg/src/*' '*/sdfg/include/*' --output-file build/coverage.lcov
 
       - name: Coveralls
         uses: coverallsapp/github-action@v2

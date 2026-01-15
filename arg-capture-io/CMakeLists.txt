@@ -47,7 +47,7 @@ install(TARGETS arg_capture_io
 
 install(DIRECTORY include/daisy_rtl DESTINATION ${PARENT_PROJECT_INSTALL_PREFIX}include COMPONENT runtime)
 
-if(SDFGLIB_BUILD_TESTS)
+if(SDFG_BUILD_TESTS)
     set(INSTALL_GTEST OFF)
     add_subdirectory(tests)
 endif()
