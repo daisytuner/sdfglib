@@ -1,23 +1,20 @@
 import pytest
-import docc
 import numpy as np
-from benchmarks.npbench.harness import run_benchmark, run_pytest
+from npbench.harness import run_benchmark, run_pytest
 
 PARAMETERS = {
-    "S": { "TMAX": 20, "NX": 200, "NY": 220 },
-    "M": { "TMAX": 60, "NX": 400, "NY": 450 },
-    "L": { "TMAX": 150, "NX": 800, "NY": 900 },
-    "paper": { "TMAX": 500, "NX": 1000, "NY": 1200 }
+    "S": {"TMAX": 20, "NX": 200, "NY": 220},
+    "M": {"TMAX": 60, "NX": 400, "NY": 450},
+    "L": {"TMAX": 150, "NX": 800, "NY": 900},
+    "paper": {"TMAX": 500, "NX": 1000, "NY": 1200},
 }
 
+
 def initialize(TMAX, NX, NY, datatype=np.float64):
-    ex = np.fromfunction(lambda i, j: (i * (j + 1)) / NX, (NX, NY),
-                         dtype=datatype)
-    ey = np.fromfunction(lambda i, j: (i * (j + 2)) / NY, (NX, NY),
-                         dtype=datatype)
-    hz = np.fromfunction(lambda i, j: (i * (j + 3)) / NX, (NX, NY),
-                         dtype=datatype)
-    _fict_ = np.fromfunction(lambda i: i, (TMAX, ), dtype=datatype)
+    ex = np.fromfunction(lambda i, j: (i * (j + 1)) / NX, (NX, NY), dtype=datatype)
+    ey = np.fromfunction(lambda i, j: (i * (j + 2)) / NY, (NX, NY), dtype=datatype)
+    hz = np.fromfunction(lambda i, j: (i * (j + 3)) / NX, (NX, NY), dtype=datatype)
+    _fict_ = np.fromfunction(lambda i: i, (TMAX,), dtype=datatype)
 
     return TMAX, ex, ey, hz, _fict_
 
@@ -27,13 +24,14 @@ def kernel(TMAX, ex, ey, hz, _fict_):
         ey[0, :] = _fict_[t]
         ey[1:, :] -= 0.5 * (hz[1:, :] - hz[:-1, :])
         ex[:, 1:] -= 0.5 * (hz[:, 1:] - hz[:, :-1])
-        hz[:-1, :-1] -= 0.7 * (ex[:-1, 1:] - ex[:-1, :-1] + ey[1:, :-1] -
-                               ey[:-1, :-1])
+        hz[:-1, :-1] -= 0.7 * (ex[:-1, 1:] - ex[:-1, :-1] + ey[1:, :-1] - ey[:-1, :-1])
+
 
 @pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
 def test_fdtd_2d(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
+
 
 if __name__ == "__main__":
     run_benchmark(initialize, kernel, PARAMETERS, "fdtd_2d")

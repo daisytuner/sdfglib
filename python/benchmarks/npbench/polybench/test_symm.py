@@ -1,36 +1,33 @@
 import pytest
-import docc
 import numpy as np
-from benchmarks.npbench.harness import run_benchmark, run_pytest
+from npbench.harness import run_benchmark, run_pytest
 
 PARAMETERS = {
-    "S": { "M": 40, "N": 50 },
-    "M": { "M": 120, "N": 150 },
-    "L": { "M": 350, "N": 550 },
-    "paper": { "M": 1000, "N": 1200 }
+    "S": {"M": 40, "N": 50},
+    "M": {"M": 120, "N": 150},
+    "L": {"M": 350, "N": 550},
+    "paper": {"M": 1000, "N": 1200},
 }
+
 
 def initialize(M, N, datatype=np.float64):
     alpha = datatype(1.5)
     beta = datatype(1.2)
-    C = np.fromfunction(lambda i, j: ((i + j) % 100) / M, (M, N),
-                        dtype=datatype)
-    B = np.fromfunction(lambda i, j: ((N + i - j) % 100) / M, (M, N),
-                        dtype=datatype)
+    C = np.fromfunction(lambda i, j: ((i + j) % 100) / M, (M, N), dtype=datatype)
+    B = np.fromfunction(lambda i, j: ((N + i - j) % 100) / M, (M, N), dtype=datatype)
     A = np.empty((M, M), dtype=datatype)
     for i in range(M):
-        A[i, :i + 1] = np.fromfunction(lambda j: ((i + j) % 100) / M,
-                                       (i + 1, ),
-                                       dtype=datatype)
-        A[i, i + 1:] = -999
+        A[i, : i + 1] = np.fromfunction(
+            lambda j: ((i + j) % 100) / M, (i + 1,), dtype=datatype
+        )
+        A[i, i + 1 :] = -999
 
     return alpha, beta, C, A, B
 
 
-
 def kernel(alpha, beta, C, A, B):
 
-    temp2 = np.empty((C.shape[1], ), dtype=C.dtype)
+    temp2 = np.empty((C.shape[1],), dtype=C.dtype)
     C *= beta
     for i in range(C.shape[0]):
         for j in range(C.shape[1]):
@@ -38,9 +35,11 @@ def kernel(alpha, beta, C, A, B):
             temp2[j] = B[:i, j] @ A[i, :i]
         C[i, :] += alpha * B[i, :] * A[i, i] + alpha * temp2
 
+
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
 def test_symm(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
+
 
 if __name__ == "__main__":
     run_benchmark(initialize, kernel, PARAMETERS, "symm")

@@ -42,7 +42,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pybind11 pytest black==25.9.0 build
+          pip install pybind11 pytest black==25.9.0 build scikit-build-core
           pip install numpy scipy
 
       - name: Formatting
@@ -50,29 +50,10 @@ jobs:
         run: |
           shopt -s globstar
           clang-format-19 -style=file --dry-run --Werror python/src/**/*.h python/src/**/*.cpp
-          black --check python/docc/ python/tests/ python/setup.py
+          black --check python/docc/ python/tests/
 
       - name: Build
         run: |
-          mkdir build
-          cd build
-          cmake -G Ninja \
-            -DCMAKE_C_COMPILER=clang-19 \
-            -DCMAKE_CXX_COMPILER=clang++-19 \
-            -DCMAKE_BUILD_TYPE=Debug \
-            -DPYTHON_BUILD_FRONTEND=ON \
-            -DWITH_SYMENGINE_THREAD_SAFE=ON \
-            -DWITH_SYMENGINE_RCP=ON \
-            -DINSTALL_GTEST=OFF \
-            -DBUILD_TESTS:BOOL=OFF \
-            -DBUILD_BENCHMARKS:BOOL=OFF \
-            -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF \
-            -Dpybind11_DIR=$(python -m pybind11 --cmakedir) \
-            ..
-          ninja -j$(nproc)
-
-          cd ../
-          cp VERSION python/VERSION
           pyproject-build --wheel python
           pip install python/dist/*.whl
 

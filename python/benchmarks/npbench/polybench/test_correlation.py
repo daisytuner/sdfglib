@@ -1,19 +1,18 @@
 import pytest
-import docc
 import numpy as np
-from benchmarks.npbench.harness import run_benchmark, run_pytest
+from npbench.harness import run_benchmark, run_pytest
 
 PARAMETERS = {
-    "S": { "M": 500, "N": 600 },
-    "M": { "M": 1400, "N": 1800 },
-    "L": { "M": 3200, "N": 4000 },
-    "paper": { "M": 1200, "N": 1400 }
+    "S": {"M": 500, "N": 600},
+    "M": {"M": 1400, "N": 1800},
+    "L": {"M": 3200, "N": 4000},
+    "paper": {"M": 1200, "N": 1400},
 }
+
 
 def initialize(M, N, datatype=np.float64):
     float_n = datatype(N)
-    data = np.fromfunction(lambda i, j: (i * j) / M + i, (N, M),
-                           dtype=datatype)
+    data = np.fromfunction(lambda i, j: (i * j) / M + i, (N, M), dtype=datatype)
 
     return M, float_n, data
 
@@ -27,14 +26,16 @@ def kernel(M, float_n, data):
     data /= np.sqrt(float_n) * stddev
     corr = np.eye(M, dtype=data.dtype)
     for i in range(M - 1):
-        corr[i + 1:M, i] = corr[i, i + 1:M] = data[:, i] @ data[:, i + 1:M]
+        corr[i + 1 : M, i] = corr[i, i + 1 : M] = data[:, i] @ data[:, i + 1 : M]
 
     return corr
+
 
 @pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
 def test_correlation(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
+
 
 if __name__ == "__main__":
     run_benchmark(initialize, kernel, PARAMETERS, "correlation")

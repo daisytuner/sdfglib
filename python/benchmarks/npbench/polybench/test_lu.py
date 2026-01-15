@@ -1,25 +1,21 @@
 import pytest
-import docc
 import numpy as np
-from benchmarks.npbench.harness import run_benchmark, run_pytest
+from npbench.harness import run_benchmark, run_pytest
 
-PARAMETERS = {
-    "S": { "N": 60 },
-    "M": { "N": 220 },
-    "L": { "N": 700 },
-    "paper": { "N": 2000 }
-}
+PARAMETERS = {"S": {"N": 60}, "M": {"N": 220}, "L": {"N": 700}, "paper": {"N": 2000}}
+
 
 def initialize(N, datatype=np.float64):
     A = np.empty((N, N), dtype=datatype)
     for i in range(N):
-        A[i, :i + 1] = np.fromfunction(lambda j: (-j % N) / N + 1, (i + 1, ),
-                                       dtype=datatype)
-        A[i, i + 1:] = 0.0
+        A[i, : i + 1] = np.fromfunction(
+            lambda j: (-j % N) / N + 1, (i + 1,), dtype=datatype
+        )
+        A[i, i + 1 :] = 0.0
         A[i, i] = 1.0
     A[:] = A @ np.transpose(A)
 
-    return (A, )
+    return (A,)
 
 
 def kernel(A):
@@ -31,10 +27,12 @@ def kernel(A):
         for j in range(i, A.shape[0]):
             A[i, j] -= A[i, :i] @ A[:i, j]
 
+
 @pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
 def test_lu(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
+
 
 if __name__ == "__main__":
     run_benchmark(initialize, kernel, PARAMETERS, "lu")
