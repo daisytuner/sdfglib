@@ -1,0 +1,18 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "docc"
+version = "0.0.1"
+description = "A JIT compiler for Numpy-based Python programs targeting various hardware backends."
+authors = [{name = "Daisytuner"}]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.19.0",
+]
+
+[tool.scikit-build]
+wheel.packages = ["docc"]
+cmake.source-dir = ".."
+cmake.define = { PYTHON_BUILD_FRONTEND = "ON", SDFG_BUILD_TESTS = "OFF", BUILD_TESTS = "OFF", BUILD_BENCHMARKS = "OFF", BUILD_BENCHMARKS_GOOGLE = "OFF" }
