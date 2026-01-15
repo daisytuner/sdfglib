@@ -7,7 +7,7 @@ import getpass
 import hashlib
 import numpy as np
 from typing import Annotated, get_origin, get_args
-from ._docc import *
+from ._sdfg import *
 from .compiled_sdfg import CompiledSDFG
 from .ast_parser import ASTParser
 
@@ -21,7 +21,7 @@ StructuredSDFG.compile = _compile_wrapper
 
 
 def _map_python_type(dtype):
-    # If it is already a docc Type, return it
+    # If it is already a sdfg Type, return it
     if isinstance(dtype, Type):
         return dtype
 

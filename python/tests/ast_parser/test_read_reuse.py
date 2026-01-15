@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 from docc.expression_visitor import ExpressionVisitor
-from docc._docc import Scalar, PrimitiveType
+from docc._sdfg import Scalar, PrimitiveType
 
 
 class TestReadReuse(unittest.TestCase):

@@ -1,6 +1,6 @@
 import ast
 import copy
-from ._docc import DebugInfo
+from ._sdfg import DebugInfo
 
 
 def get_debug_info(node, filename, function_name=""):

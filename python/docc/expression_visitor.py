@@ -1,7 +1,7 @@
 import ast
 import inspect
 import textwrap
-from ._docc import Scalar, PrimitiveType, Pointer, Type, DebugInfo, Structure
+from ._sdfg import Scalar, PrimitiveType, Pointer, Type, DebugInfo, Structure
 
 
 class ExpressionVisitor(ast.NodeVisitor):
