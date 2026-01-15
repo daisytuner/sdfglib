@@ -1,4 +1,5 @@
 #include "sdfg/types/utils.h"
+#include <cmath>
 #include <memory>
 #include <string>
 
@@ -149,8 +150,8 @@ symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_tim
         }
     } else { // should just be a primitive type
         auto prim_type = type.primitive_type();
-
-        long size_of_type = static_cast<long>(types::bit_width(prim_type)) / 8;
+        double size = std::ceil(static_cast<double>(types::bit_width(prim_type)) / 8.0);
+        long size_of_type = static_cast<long>(size);
         if (size_of_type != 0) {
             return symbolic::integer(size_of_type);
         } else {
