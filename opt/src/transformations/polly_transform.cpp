@@ -1,3 +1,53 @@
+//===- ScheduleOptimizer.cpp - Calculate an optimized schedule ------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+//
+// This pass generates an entirely new schedule tree from the data dependences
+// and iteration domains. The new schedule tree is computed in two steps:
+//
+// 1) The isl scheduling optimizer is run
+//
+// The isl scheduling optimizer creates a new schedule tree that maximizes
+// parallelism and tileability and minimizes data-dependence distances. The
+// algorithm used is a modified version of the ``Pluto'' algorithm:
+//
+//   U. Bondhugula, A. Hartono, J. Ramanujam, and P. Sadayappan.
+//   A Practical Automatic Polyhedral Parallelizer and Locality Optimizer.
+//   In Proceedings of the 2008 ACM SIGPLAN Conference On Programming Language
+//   Design and Implementation, PLDI ’08, pages 101–113. ACM, 2008.
+//
+// 2) A set of post-scheduling transformations is applied on the schedule tree.
+//
+// These optimizations include:
+//
+//  - Tiling of the innermost tilable bands
+//  - Prevectorization - The choice of a possible outer loop that is strip-mined
+//                       to the innermost level to enable inner-loop
+//                       vectorization.
+//  - Some optimizations for spatial locality are also planned.
+//
+// For a detailed description of the schedule tree itself please see section 6
+// of:
+//
+// Polyhedral AST generation is more than scanning polyhedra
+// Tobias Grosser, Sven Verdoolaege, Albert Cohen
+// ACM Transactions on Programming Languages and Systems (TOPLAS),
+// 37(4), July 2015
+// http://www.grosser.es/#pub-polyhedral-AST-generation
+//
+// This publication also contains a detailed discussion of the different options
+// for polyhedral loop unrolling, full/partial tile separation and other uses
+// of the schedule tree.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file is based on the original source files which were modified for sdfglib.
+//
+//===----------------------------------------------------------------------===//
 #include "sdfg/transformations/polly_transform.h"
 
 #include <isl/constraint.h>
