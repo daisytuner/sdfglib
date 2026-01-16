@@ -884,7 +884,6 @@ TEST(ScopAnalysisTest, ScopBuilderTest_NonPerfectlyNestedLoop) {
     EXPECT_TRUE(ast.find("S_7(c0);") != std::string::npos);
 }
 
-/*
 TEST(ScopAnalysisTest, DependenceInfoTest_RAW_Dependence) {
     builder::StructuredSDFGBuilder builder("raw_test", FunctionType_CPU);
     auto& sdfg = builder.subject();
@@ -914,8 +913,7 @@ TEST(ScopAnalysisTest, DependenceInfoTest_RAW_Dependence) {
 
     // Read A[i-1]
     builder
-        .add_computational_memlet(block, in_node, tasklet, "_int", {symbolic::sub(i_sym, symbolic::integer(1))},
-int_ptr);
+        .add_computational_memlet(block, in_node, tasklet, "_int", {symbolic::sub(i_sym, symbolic::integer(1))}, int_ptr);
     // Write A[i]
     builder.add_computational_memlet(block, tasklet, "_out", out_node, {i_sym}, int_ptr);
 
@@ -984,8 +982,7 @@ TEST(ScopAnalysisTest, DependenceInfoTest_WAR_Dependence) {
 
     // Read A[i+1]
     builder
-        .add_computational_memlet(block, in_node, tasklet, "_int", {symbolic::add(i_sym, symbolic::integer(1))},
-int_ptr);
+        .add_computational_memlet(block, in_node, tasklet, "_int", {symbolic::add(i_sym, symbolic::integer(1))}, int_ptr);
     // Write A[i]
     builder.add_computational_memlet(block, tasklet, "_out", out_node, {i_sym}, int_ptr);
 
@@ -1104,8 +1101,8 @@ TEST(ScopAnalysisTest, DependenceInfoTest_Validity) {
     auto& out_node = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_int"});
     builder
-        .add_computational_memlet(block, in_node, tasklet, "_int", {symbolic::sub(i_sym, symbolic::integer(1))},
-int_ptr); builder.add_computational_memlet(block, tasklet, "_out", out_node, {i_sym}, int_ptr);
+        .add_computational_memlet(block, in_node, tasklet, "_int", {symbolic::sub(i_sym, symbolic::integer(1))}, int_ptr);
+    builder.add_computational_memlet(block, tasklet, "_out", out_node, {i_sym}, int_ptr);
 
     analysis::AnalysisManager am(sdfg);
     analysis::ScopBuilder scop_builder(sdfg, loop);
@@ -1174,12 +1171,10 @@ TEST(ScopAnalysisTest, DependenceInfoTest_Last_1D) {
     ASSERT_NE(scop, nullptr);
     analysis::Dependences deps(*scop);
     auto dependencies = deps.dependencies(loop);
-    std::cout << "Dependencies: " << dependencies.size() << std::endl;
 
     // Check
     EXPECT_EQ(dependencies.size(), 1);
     EXPECT_EQ(dependencies.at("B"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    std::cout << "Finished test." << std::endl;
 }
 
 TEST(ScopAnalysisTest, DependenceInfoTest_Sum_1D) {
@@ -2196,10 +2191,10 @@ TEST(ScopAnalysisTest, DependenceInfoTest_Map_2D) {
     auto& a_out = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     builder
-        .add_computational_memlet(block, a_in, tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")},
-edge_desc); builder.add_computational_memlet(block, one_node, tasklet, "_in2", {}); builder
-        .add_computational_memlet(block, tasklet, "_out", a_out, {symbolic::symbol("i"), symbolic::symbol("j")},
-edge_desc);
+        .add_computational_memlet(block, a_in, tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")}, edge_desc);
+    builder.add_computational_memlet(block, one_node, tasklet, "_in2", {});
+    builder
+        .add_computational_memlet(block, tasklet, "_out", a_out, {symbolic::symbol("i"), symbolic::symbol("j")}, edge_desc);
 
     // Analysis
     analysis::AnalysisManager am(sdfg);
@@ -2510,9 +2505,9 @@ TEST(ScopAnalysisTest, DependenceInfoTest_TransposeTriangle_2D) {
     auto& A_out = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
     builder
-        .add_computational_memlet(block, A_in, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")},
-edge_desc); builder .add_computational_memlet(block, tasklet, "_out", A_out, {symbolic::symbol("j"),
-symbolic::symbol("i")}, edge_desc);
+        .add_computational_memlet(block, A_in, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")}, edge_desc);
+    builder
+        .add_computational_memlet(block, tasklet, "_out", A_out, {symbolic::symbol("j"), symbolic::symbol("i")}, edge_desc);
 
     // Analysis
     analysis::AnalysisManager am(sdfg);
@@ -2568,9 +2563,9 @@ TEST(ScopAnalysisTest, DependenceInfoTest_TransposeTriangleWithDiagonal_2D) {
     auto& A_out = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
     builder
-        .add_computational_memlet(block, A_in, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")},
-edge_desc); builder .add_computational_memlet(block, tasklet, "_out", A_out, {symbolic::symbol("j"),
-symbolic::symbol("i")}, edge_desc);
+        .add_computational_memlet(block, A_in, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")}, edge_desc);
+    builder
+        .add_computational_memlet(block, tasklet, "_out", A_out, {symbolic::symbol("j"), symbolic::symbol("i")}, edge_desc);
 
     // Analysis
     analysis::AnalysisManager am(sdfg);
@@ -2681,8 +2676,7 @@ TEST(ScopAnalysisTest, DependenceInfoTest_ReductionWithLocalStorage) {
         auto& zero_node = builder.add_constant(init_block, "0.0", base_desc);
         auto& tasklet_init = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, "_out", {"_in"});
         builder.add_computational_memlet(init_block, zero_node, tasklet_init, "_in", {});
-        builder.add_computational_memlet(init_block, tasklet_init, "_out", local_init_0, {symbolic::zero()},
-array_desc);
+        builder.add_computational_memlet(init_block, tasklet_init, "_out", local_init_0, {symbolic::zero()}, array_desc);
     }
 
     // local[1] = 0.0 block
@@ -2908,4 +2902,3 @@ TEST(ScopAnalysisTest, ScopToSDFGTest_SimpleLoopWithExpression) {
     EXPECT_TRUE(symbolic::eq((*inner_seq.at(0).second.assignments().begin()).first, symbolic::symbol("A")));
     EXPECT_TRUE(symbolic::eq((*inner_seq.at(0).second.assignments().begin()).second, symbolic::symbol("B")));
 }
-*/

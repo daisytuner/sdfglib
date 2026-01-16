@@ -57,11 +57,9 @@ public:
     MemoryAccess(AccessType access_type, isl_map* relation, const std::string& data, const data_flow::Memlet* memlet);
 
     ~MemoryAccess() {
-        std::cout << "Destroying MemoryAccess for data\n";
         if (relation_) {
             isl_map_free(relation_);
         }
-        std::cout << "Destroyed MemoryAccess\n";
     }
 
     MemoryAccess(const MemoryAccess&) = delete;
@@ -105,7 +103,6 @@ public:
     ScopStatement(const std::string& name, isl_set* domain, symbolic::Expression expression);
 
     ~ScopStatement() {
-        std::cout << "Destroying ScopStatement\n";
         this->memory_accesses_.clear();
         if (schedule_) {
             isl_map_free(schedule_);
@@ -113,7 +110,6 @@ public:
         if (domain_) {
             isl_set_free(domain_);
         }
-        std::cout << "Destroyed ScopStatement\n";
     }
 
     ScopStatement(const ScopStatement&) = delete;
@@ -208,7 +204,6 @@ public:
     Scop(structured_control_flow::ControlFlowNode& node, isl_ctx* ctx, isl_space* param_space);
 
     ~Scop() {
-        std::cout << "Destroying Scop\n";
         this->statements_.clear();
 
         if (schedule_) {
@@ -221,7 +216,6 @@ public:
             isl_space_free(param_space_);
         }
         isl_ctx_free(ctx_);
-        std::cout << "Destroyed Scop\n";
     }
 
     Scop(const Scop&) = delete;
@@ -335,7 +329,6 @@ public:
     Dependences& operator=(const Dependences&) = delete;
 
     ~Dependences() {
-        std::cout << "Destroying Dependences\n";
         if (RAW) isl_union_map_free(RAW);
         RAW = nullptr;
         if (WAR) isl_union_map_free(WAR);
@@ -350,7 +343,6 @@ public:
             isl_map_free(pair.second);
         }
         reduction_dependences_.clear();
-        std::cout << "Destroyed Dependences\n";
     }
 
     /// The type of the dependences.

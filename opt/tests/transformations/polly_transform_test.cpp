@@ -9,7 +9,6 @@
 
 using namespace sdfg;
 
-/*
 TEST(PollyTransformTest, Proximity) {
     builder::StructuredSDFGBuilder builder("sdfg_test_proximity", FunctionType_CPU);
 
@@ -206,4 +205,3 @@ TEST(PollyTransformTest, SpatialProximityIdenticalDomains) {
     ASSERT_NE(new_inner_loop, nullptr);
     EXPECT_TRUE(symbolic::eq(new_inner_loop->indvar(), indvar1));
 }
-*/
