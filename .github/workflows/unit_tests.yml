@@ -137,8 +137,7 @@ jobs:
 
       - name: Build
         run: |
-          pyproject-build --wheel python
-          pip install python/dist/*.whl
+          pip install --no-build-isolation -v -e python/
 
       - name: Unit Tests
         run: |
