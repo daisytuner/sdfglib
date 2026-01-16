@@ -56,13 +56,13 @@ jobs:
           ninja -j$(nproc)
           ninja install
 
-          ./sdfg/tests/sdfglib_test
-          ./opt/tests/sdfgopt_test
+          LLVM_PROFILE_FILE="sdfglib_test.profraw" ./sdfg/tests/sdfglib_test
+          LLVM_PROFILE_FILE="sdfgopt_test.profraw" ./opt/tests/sdfgopt_test
 
           # Run coverage
-          llvm-profdata-19 merge -sparse default.profraw -o default.profdata
+          llvm-profdata-19 merge -sparse sdfglib_test.profraw sdfgopt_test.profraw -o default.profdata
           cd ../
-          llvm-cov-19 export ./build/sdfg/tests/sdfglib_test -instr-profile=build/default.profdata -format=lcov > build/coverage_full.lcov
+          llvm-cov-19 export ./build/sdfg/tests/sdfglib_test -object ./build/opt/tests/sdfgopt_test -instr-profile=build/default.profdata -format=lcov > build/coverage_full.lcov
           lcov --extract build/coverage_full.lcov '*/sdfg/src/*' '*/sdfg/include/*' '*/opt/src/*' '*/opt/include/*' --output-file build/coverage.lcov
 
       - name: Coveralls
