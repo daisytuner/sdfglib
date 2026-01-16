@@ -16,24 +16,6 @@ add_subdirectory(3rdParty/symengine)
 # Restore install dirs for sub-projects to avoid conflicts
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME ${_CMAKE_INSTALL_DEFAULT_COMPONENT_NAME})
 
-option(SDFG_ENABLE_SANITIZER "Enable Address/Memory/Undefined/Leak/Thread sanitizers" OFF)
-set(SDFG_SANITIZER
-    "address"
-    CACHE STRING
-    "List of sanitizers to enable; supported: \
-     address, memory, undefined, leak, thread")
-
-if(SDFG_ENABLE_SANITIZER)
-  message(STATUS "Enabling sanitizer: ${SDFG_SANITIZER}")
-  set(_SAN_COMPILE_OPTS
-    -fno-omit-frame-pointer
-    -fsanitize=${SDFG_SANITIZER}
-  )
-  set(_SAN_LINK_OPTS
-    -fsanitize=${SDFG_SANITIZER}
-  )
-endif()
-
 # NLohmann json
 find_package(nlohmann_json REQUIRED)
 
@@ -46,9 +28,6 @@ find_package(Boost REQUIRED COMPONENTS graph)
 # Find the ISL library
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(ISL REQUIRED IMPORTED_TARGET isl)
-
-# Coverage option
-option(SDFG_ENABLE_COVERAGE "Enable coverage flags" OFF)
 
 set(SOURCE_FILES
     src/analysis/analysis.cpp
@@ -321,7 +300,6 @@ install(FILES
     COMPONENT sdfglib-development
 )
 
-option(SDFG_BUILD_TESTS "Build tests" ON)
 if(SDFG_BUILD_TESTS)
     set(INSTALL_GTEST OFF)
     add_subdirectory(tests)
