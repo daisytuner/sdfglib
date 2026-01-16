@@ -53,6 +53,17 @@ bool is_nv(const Symbol symbol) {
     }
 };
 
+Expression divide_ceil(const Expression dividend, const Expression divisor) {
+    Expression result;
+    SymEngine::set_basic params = SymEngine::free_symbols(*dividend);
+    if (params.empty()) { // will simplify to a statically known result, ok to use ceiling
+        result = SymEngine::ceiling(SymEngine::div(dividend, divisor));
+    } else { // if we know it will get generated, do integer math to cause ceiling a runtime without using float
+        result = symbolic::div(SymEngine::add(dividend, SymEngine::sub(divisor, one())), divisor);
+    }
+    return result;
+}
+
 /***** Logical Expressions *****/
 
 Condition And(const Condition lhs, const Condition rhs) { return SymEngine::logical_and({lhs, rhs}); };
