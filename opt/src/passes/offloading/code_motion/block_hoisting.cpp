@@ -673,6 +673,9 @@ void BlockHoisting::if_else_extract_invariant_front(
 ) {
     auto& first_block = static_cast<structured_control_flow::Block&>(if_else.at(0).first.at(0).first);
     auto& first_dfg = first_block.dataflow();
+    if (first_dfg.library_nodes().empty()) {
+        return;
+    }
     auto* first_libnode = *first_dfg.library_nodes().begin();
     if (auto* offloading_node = dynamic_cast<offloading::DataOffloadingNode*>(first_libnode)) {
         if (offloading_node->is_d2h()) {
