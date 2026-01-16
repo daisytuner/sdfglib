@@ -9,9 +9,25 @@ pkg_check_modules(ISL REQUIRED IMPORTED_TARGET isl)
 
 set(SOURCE_FILES
     src/analysis/scop_analysis.cpp
-    src/transformations/polly_transform.cpp
+    src/cuda/codegen/cuda_map_dispatcher.cpp
+    src/cuda/nodes/cuda_data_offloading_node.cpp
+    src/cuda/passes/sync_condition_propagation.cpp
+    src/cuda/transformations/cublas_offloading_expansion.cpp
+    src/cuda/transformations/cuda_parallelize_nested_map.cpp
+    src/cuda/transformations/gpu_condition_propagation.cpp
+    src/cuda/transformations/gpu_loop_reordering.cpp
+    src/cuda/transformations/gpu_tiling.cpp
+    src/cuda/transformations/kernel_local_storage.cpp
+    src/offloading/data_offloading_node.cpp
+    src/offloading/utils.cpp
     src/passes/normalization/perfect_loop_distribution.cpp
     src/passes/normalization/stride_minimization.cpp
+    src/passes/offloading/code_motion/block_hoisting.cpp
+    src/passes/offloading/code_motion/block_sorting.cpp
+    src/passes/offloading/data_transfer_minimization_pass.cpp
+    src/passes/offloading/remove_redundant_transfers_pass.cpp
+    src/transformations/offloading/offload_transform.cpp
+    src/transformations/polly_transform.cpp
 )
 add_library(sdfgopt
     ${SOURCE_FILES}

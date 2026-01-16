@@ -1,9 +1,9 @@
 #include "sdfg/passes/pipeline.h"
 
-#include "sdfg/passes/code_motion/block_hoisting.h"
-#include "sdfg/passes/code_motion/block_sorting.h"
 #include "sdfg/passes/dataflow/tasklet_fusion.h"
 #include "sdfg/passes/dataflow/trivial_reference_conversion.h"
+#include "sdfg/passes/offloading/code_motion/block_hoisting.h"
+#include "sdfg/passes/offloading/code_motion/block_sorting.h"
 #include "sdfg/passes/schedules/expansion_pass.h"
 
 namespace sdfg {
