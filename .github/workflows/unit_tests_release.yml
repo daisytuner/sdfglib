@@ -33,6 +33,7 @@ jobs:
         run: |
           shopt -s globstar
           clang-format-19 -style=file --dry-run --Werror sdfg/include/**/*.h sdfg/src/**/*.cpp sdfg/tests/**/*.cpp
+          clang-format-19 -style=file --dry-run --Werror opt/include/**/*.h opt/src/**/*.cpp opt/tests/**/*.cpp
 
       - name: Build and test
         run: |
@@ -52,6 +53,7 @@ jobs:
           ninja install
 
           ./sdfg/tests/sdfglib_test
+          ./opt/tests/sdfgopt_test
 
       - name: Test RTL
         run: |

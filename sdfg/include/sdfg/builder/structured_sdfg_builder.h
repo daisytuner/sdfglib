@@ -480,12 +480,12 @@ public:
         return static_cast<data_flow::LibraryNode&>(*(res.first->second));
     };
 
-    data_flow::LibraryNode& copy_library_node(structured_control_flow::Block& block, const data_flow::LibraryNode& node) {
+    data_flow::DataFlowNode& copy_node(structured_control_flow::Block& block, const data_flow::DataFlowNode& node) {
         auto& dataflow = block.dataflow();
         auto vertex = boost::add_vertex(dataflow.graph_);
         auto node_clone = node.clone(this->new_element_id(), vertex, dataflow);
         auto res = dataflow.nodes_.insert({vertex, std::move(node_clone)});
-        return static_cast<data_flow::LibraryNode&>(*(res.first->second));
+        return *res.first->second;
     };
 
     void remove_memlet(structured_control_flow::Block& block, const data_flow::Memlet& edge);
