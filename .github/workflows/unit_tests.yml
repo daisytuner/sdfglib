@@ -48,8 +48,6 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=/usr/local \
             -DCMAKE_BUILD_TYPE=Debug \
             -DSDFG_ENABLE_COVERAGE=ON \
-            -DWITH_SYMENGINE_THREAD_SAFE=ON \
-            -DWITH_SYMENGINE_RCP=ON \
             -DBUILD_TESTS:BOOL=OFF \
             -DBUILD_BENCHMARKS:BOOL=OFF \
             -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  \

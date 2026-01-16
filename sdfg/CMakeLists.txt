@@ -5,7 +5,16 @@ if(NOT DEFINED PARENT_PROJECT_INSTALL_PREFIX)
            "Path prefix (trailing /!) for installing sdfglib artifacts. For example 'lib/docc-0.1.6/'" )
 endif()
 
+# Enable packaging of symengine
+set(_CMAKE_INSTALL_DEFAULT_COMPONENT_NAME ${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME})
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME sdfglib-development)
+
+set(WITH_SYMENGINE_THREAD_SAFE ON CACHE BOOL "override" FORCE)
+set(WITH_SYMENGINE_RCP ON CACHE BOOL "override" FORCE)
+
 add_subdirectory(3rdParty/symengine)
+# Restore install dirs for sub-projects to avoid conflicts
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME ${_CMAKE_INSTALL_DEFAULT_COMPONENT_NAME})
 
 option(SDFG_ENABLE_SANITIZER "Enable Address/Memory/Undefined/Leak/Thread sanitizers" OFF)
 set(SDFG_SANITIZER
@@ -258,12 +267,29 @@ set_target_properties(sdfglib PROPERTIES
 
 install(TARGETS sdfglib
     EXPORT sdfglibTargets
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT sdfglib-development
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT sdfglib-development
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT sdfglib-development
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
-install(DIRECTORY include/sdfg DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY include/sdfg DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT sdfglib-development)
+
+set(CPACK_DEB_SDFGLIB_RUNTIME_PACKAGE_DEPENDS
+    libgmp10
+    libgmpxx4ldbl
+    libisl23
+    libzstd1
+    libzip4t64
+    ziptool
+    zipcmp
+    zipmerge
+    libboost-graph1.83.0
+    libboost-regex1.83.0
+    libboost-atomic1.83.0
+    libboost-iostreams1.83.0
+    libboost-filesystem1.83.0
+    CACHE INTERNAL "SDFG runtime dependencies"
+)
 
 ## CMAKE CONFIGURATION
 
@@ -271,6 +297,7 @@ install(EXPORT sdfglibTargets
     NAMESPACE sdfglib::
     FILE sdfglibTargets.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfglib
+    COMPONENT sdfglib-development
 )
 
 include(CMakePackageConfigHelpers)
@@ -291,6 +318,7 @@ install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/sdfglibConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/sdfglibConfigVersion.cmake"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfglib
+    COMPONENT sdfglib-development
 )
 
 option(SDFG_BUILD_TESTS "Build tests" ON)
