@@ -152,12 +152,11 @@ ScopBuilder::ScopBuilder(StructuredSDFG &sdfg, structured_control_flow::ControlF
 
 std::unique_ptr<Scop> ScopBuilder::build(analysis::AnalysisManager &analysis_manager) {
     isl_ctx *ctx = isl_ctx_alloc();
-    // isl_options_set_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+    isl_options_set_on_error(ctx, ISL_ON_ERROR_CONTINUE);
     isl_space *param_space = isl_space_set_alloc(ctx, 0, 0);
     this->scop_ = std::make_unique<Scop>(this->node_, ctx, param_space);
 
     this->visit(analysis_manager, node_);
-    std::cout << "Finished building SCoP for node " << node_.element_id() << "\n";
     if (this->scop_ == nullptr) {
         return nullptr;
     }
@@ -171,17 +170,11 @@ void ScopBuilder::visit(analysis::AnalysisManager &analysis_manager, structured_
     }
 
     if (auto block = dynamic_cast<structured_control_flow::Block *>(&node)) {
-        std::cout << "Visiting block " << block->element_id() << "\n";
         this->visit_block(analysis_manager, *block);
-        std::cout << "Finished visiting block " << block->element_id() << "\n";
     } else if (auto sequence = dynamic_cast<structured_control_flow::Sequence *>(&node)) {
-        std::cout << "Visiting sequence " << sequence->element_id() << "\n";
         this->visit_sequence(analysis_manager, *sequence);
-        std::cout << "Finished visiting sequence " << sequence->element_id() << "\n";
     } else if (auto loop = dynamic_cast<structured_control_flow::StructuredLoop *>(&node)) {
-        std::cout << "Visiting structured loop " << loop->element_id() << "\n";
         this->visit_structured_loop(analysis_manager, *loop);
-        std::cout << "Finished visiting structured loop " << loop->element_id() << "\n";
     } else {
         this->scop_ = nullptr;
         return;
@@ -364,17 +357,14 @@ void ScopBuilder::
         set_str += "[ " + helpers::join(params, ", ") + " ] -> ";
     }
     set_str += "{ [" + indvar + "] : " + condition + " }";
-    std::cout << "Loop Bound Set String: " << set_str << std::endl;
 
     isl_ctx *ctx = scop_->ctx();
     isl_set *loop_bound_base = isl_set_read_from_str(ctx, set_str.c_str());
     if (!loop_bound_base) {
-        DEBUG_PRINTLN("Failed to parse loop bound set: " << set_str);
         this->scop_ = nullptr;
         return;
     }
     char *loop_bound_str = isl_set_to_str(loop_bound_base);
-    std::cout << "Loop Bound Set: " << loop_bound_str << std::endl;
     free(loop_bound_str);
 
     size_t stmt_start = this->scop_->statements().size();
@@ -570,7 +560,7 @@ static void collectInfo(
                     "handling."
                 );
 
-                isl_id *id = isl_id_alloc(S.ctx(), MA->data().c_str(), nullptr);
+                isl_id *id = isl_id_alloc(S.ctx(), MA->data().c_str(), MA);
                 accdom = tag(accdom, isl_id_copy(id));
                 isl_map *Schedule = tag(StmtScheduleMap, id);
                 StmtSchedule = isl_union_map_add_map(StmtSchedule, Schedule);
@@ -733,7 +723,8 @@ static isl_stat collect_deps(isl_map *bmap, void *user) {
     isl_space *domain_space = isl_space_domain(space);
 
     if (isl_space_is_wrapping(domain_space)) {
-        isl_space *unwrapped = isl_space_unwrap(domain_space);
+        isl_space *domain_space_copy = isl_space_copy(domain_space);
+        isl_space *unwrapped = isl_space_unwrap(domain_space_copy);
         isl_space *range = isl_space_range(unwrapped);
 
         if (isl_space_has_tuple_name(range, isl_dim_set)) {
@@ -751,10 +742,9 @@ static isl_stat collect_deps(isl_map *bmap, void *user) {
             }
         }
         isl_space_free(range);
-        isl_space_free(unwrapped);
-    } else {
-        isl_space_free(domain_space);
     }
+
+    isl_space_free(domain_space);
     isl_map_free(bmap);
     return isl_stat_ok;
 }
@@ -1081,7 +1071,6 @@ void Dependences::add_privatization_dependences() {
 bool Dependences::is_parallel(isl_union_map *schedule, isl_pw_aff **min_distance_ptr) const {
     isl_set *Deltas, *Distance;
     isl_union_map *deps = this->dependences(TYPE_RAW | TYPE_WAR | TYPE_WAW);
-    std::cout << "Dependences for parallel check: " << isl_union_map_to_str(deps) << std::endl;
     isl_map *schedule_deps;
     unsigned Dimension;
     bool IsParallel;
