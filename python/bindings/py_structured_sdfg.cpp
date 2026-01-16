@@ -17,6 +17,7 @@
 #include <sdfg/codegen/instrumentation/instrumentation_plan.h>
 #include <sdfg/passes/dataflow/constant_propagation.h>
 #include <sdfg/passes/dataflow/dead_data_elimination.h>
+#include <sdfg/passes/normalization/normalization.h>
 #include <sdfg/passes/pipeline.h>
 #include <sdfg/passes/structured_control_flow/common_assignment_elimination.h>
 #include <sdfg/passes/structured_control_flow/condition_elimination.h>
@@ -229,7 +230,11 @@ void PyStructuredSDFG::dump(const std::string& path) {
 }
 
 void PyStructuredSDFG::normalize() {
-    // Add loop normalization pass
+    sdfg::builder::StructuredSDFGBuilder builder(*sdfg_);
+    sdfg::analysis::AnalysisManager analysis_manager(*sdfg_);
+
+    auto pipeline = sdfg::passes::normalization::loop_normalization();
+    pipeline.run(builder, analysis_manager);
 }
 
 void PyStructuredSDFG::schedule(const std::string& target, const std::string& category) {

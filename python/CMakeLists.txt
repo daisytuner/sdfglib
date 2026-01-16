@@ -21,7 +21,7 @@ set_target_properties(sdfg-py PROPERTIES
     OUTPUT_NAME "_sdfg"
 )
 
-target_link_libraries(sdfg-py PRIVATE sdfglib::sdfglib nlohmann_json::nlohmann_json ${CMAKE_DL_LIBS})
+target_link_libraries(sdfg-py PRIVATE sdfglib::sdfglib sdfgopt::sdfgopt nlohmann_json::nlohmann_json ${CMAKE_DL_LIBS})
 
 # Install artifacts for the Python wheel
 install(TARGETS sdfg-py DESTINATION docc)

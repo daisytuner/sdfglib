@@ -36,6 +36,7 @@ jobs:
         run: |
           shopt -s globstar
           clang-format-19 -style=file --dry-run --Werror sdfg/include/**/*.h sdfg/src/**/*.cpp sdfg/tests/**/*.cpp
+          clang-format-19 -style=file --dry-run --Werror opt/include/**/*.h opt/src/**/*.cpp opt/tests/**/*.cpp
 
       - name: CMAKE Setup
         run: |
@@ -48,8 +49,6 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=/usr/local \
             -DCMAKE_BUILD_TYPE=Debug \
             -DSDFG_ENABLE_COVERAGE=ON \
-            -DWITH_SYMENGINE_THREAD_SAFE=ON \
-            -DWITH_SYMENGINE_RCP=ON \
             -DBUILD_TESTS:BOOL=OFF \
             -DBUILD_BENCHMARKS:BOOL=OFF \
             -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  \
@@ -57,13 +56,14 @@ jobs:
           ninja -j$(nproc)
           ninja install
 
-          ./sdfg/tests/sdfglib_test
+          LLVM_PROFILE_FILE="sdfglib_test.profraw" ./sdfg/tests/sdfglib_test
+          LLVM_PROFILE_FILE="sdfgopt_test.profraw" ./opt/tests/sdfgopt_test
 
           # Run coverage
-          llvm-profdata-19 merge -sparse default.profraw -o default.profdata
+          llvm-profdata-19 merge -sparse sdfglib_test.profraw sdfgopt_test.profraw -o default.profdata
           cd ../
-          llvm-cov-19 export ./build/sdfg/tests/sdfglib_test -instr-profile=build/default.profdata -format=lcov > build/coverage_full.lcov
-          lcov --extract build/coverage_full.lcov '*/sdfg/src/*' '*/sdfg/include/*' --output-file build/coverage.lcov
+          llvm-cov-19 export ./build/sdfg/tests/sdfglib_test -object ./build/opt/tests/sdfgopt_test -instr-profile=build/default.profdata -format=lcov > build/coverage_full.lcov
+          lcov --extract build/coverage_full.lcov '*/sdfg/src/*' '*/sdfg/include/*' '*/opt/src/*' '*/opt/include/*' --output-file build/coverage.lcov
 
       - name: Coveralls
         uses: coverallsapp/github-action@v2
