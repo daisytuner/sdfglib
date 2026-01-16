@@ -288,7 +288,7 @@ set(CPACK_DEB_SDFGLIB_RUNTIME_PACKAGE_DEPENDS
     libboost-atomic1.83.0
     libboost-iostreams1.83.0
     libboost-filesystem1.83.0
-    PARENT_SCOPE
+    CACHE INTERNAL "SDFG runtime dependencies"
 )
 
 ## CMAKE CONFIGURATION
