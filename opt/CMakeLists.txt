@@ -86,7 +86,6 @@ install(FILES
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfgopt
 )
 
-option(SDFG_BUILD_TESTS "Build tests" ON)
 if(SDFG_BUILD_TESTS)
     set(INSTALL_GTEST OFF)
     add_subdirectory(tests)

@@ -10,6 +10,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Tests Options
+option(SDFG_BUILD_TESTS "Build tests" ON)
+
 # Sanitizer Options
 option(SDFG_ENABLE_SANITIZER "Enable Address/Memory/Undefined/Leak/Thread sanitizers" OFF)
 set(SDFG_SANITIZER "address" CACHE STRING

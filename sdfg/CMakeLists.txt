@@ -300,7 +300,6 @@ install(FILES
     COMPONENT sdfglib-development
 )
 
-option(SDFG_BUILD_TESTS "Build tests" ON)
 if(SDFG_BUILD_TESTS)
     set(INSTALL_GTEST OFF)
     add_subdirectory(tests)
