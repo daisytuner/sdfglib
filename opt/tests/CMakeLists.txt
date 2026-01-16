@@ -9,6 +9,8 @@ FetchContent_MakeAvailable(googletest)
 set(TEST_FILES
     analysis/scop_analysis_test.cpp
     transformations/polly_transform_test.cpp
+    passes/normalization/perfect_loop_distribution_test.cpp
+    passes/normalization/stride_minimization_test.cpp
     test.cpp
 )
 

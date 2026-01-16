@@ -10,6 +10,8 @@ pkg_check_modules(ISL REQUIRED IMPORTED_TARGET isl)
 set(SOURCE_FILES
     src/analysis/scop_analysis.cpp
     src/transformations/polly_transform.cpp
+    src/passes/normalization/perfect_loop_distribution.cpp
+    src/passes/normalization/stride_minimization.cpp
 )
 add_library(sdfgopt
     ${SOURCE_FILES}
