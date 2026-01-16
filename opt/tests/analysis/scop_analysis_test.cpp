@@ -43,6 +43,7 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Tasklet) {
     auto* stmt = statements[0];
     isl_set* domain = stmt->domain();
     ASSERT_NE(domain, nullptr);
+    EXPECT_EQ(stmt->iterators().size(), 0);
 
     // Verify properties of domain
     // It should be 0-dimensional
@@ -95,6 +96,7 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Expression) {
     auto* stmt = statements[0];
     isl_set* domain = stmt->domain();
     ASSERT_NE(domain, nullptr);
+    EXPECT_EQ(stmt->iterators().size(), 0);
 
     // Verify properties of domain
     // It should be 0-dimensional
@@ -145,6 +147,8 @@ TEST(ScopAnalysisTest, ScopBuilderTest_LoopWithConstantBounds_StaticStatements) 
     auto* stmt = statements[0];
     isl_set* domain = stmt->domain();
     ASSERT_NE(domain, nullptr);
+    EXPECT_EQ(stmt->iterators().size(), 1);
+    EXPECT_TRUE(symbolic::eq(stmt->iterators().at(0), i_sym));
 
     // Verify properties of domain
     // It should be 1-dimensional
@@ -242,6 +246,8 @@ TEST(ScopAnalysisTest, ScopBuilderTest_LoopWithConstantBounds) {
     auto* stmt = statements[0];
     isl_set* domain = stmt->domain();
     ASSERT_NE(domain, nullptr);
+    EXPECT_EQ(stmt->iterators().size(), 1);
+    EXPECT_TRUE(symbolic::eq(stmt->iterators().at(0), i_sym));
 
     // Verify properties of domain
     // It should be 1-dimensional
@@ -361,6 +367,9 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D) {
     auto* stmt = statements[0];
     isl_set* domain = stmt->domain();
     ASSERT_NE(domain, nullptr);
+    EXPECT_EQ(stmt->iterators().size(), 2);
+    EXPECT_TRUE(symbolic::eq(stmt->iterators().at(0), i_sym));
+    EXPECT_TRUE(symbolic::eq(stmt->iterators().at(1), sym_j));
 
     // Verify properties of domain
     // It should be 2-dimensional
@@ -483,6 +492,9 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D_TriangularDomain) {
     auto* stmt = statements[0];
     isl_set* domain = stmt->domain();
     ASSERT_NE(domain, nullptr);
+    EXPECT_EQ(stmt->iterators().size(), 2);
+    EXPECT_TRUE(symbolic::eq(stmt->iterators().at(0), i_sym));
+    EXPECT_TRUE(symbolic::eq(stmt->iterators().at(1), sym_j));
 
     // Verify properties of domain
     // It should be 2-dimensional
@@ -2803,15 +2815,21 @@ TEST(ScopAnalysisTest, ScopToSDFGTest_SimpleLoopWithTasklet) {
 
     auto* new_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(&new_seq->at(0).first);
     ASSERT_NE(new_loop, nullptr);
-    EXPECT_EQ(new_loop->indvar()->get_name(), i_sym->get_name());
-    EXPECT_TRUE(symbolic::eq(new_loop->condition(), symbolic::Le(i_sym, symbolic::integer(9))));
+    symbolic::Symbol c_0 = symbolic::symbol("c0");
+    EXPECT_EQ(new_loop->indvar()->get_name(), c_0->get_name());
+    EXPECT_TRUE(symbolic::eq(new_loop->condition(), symbolic::Le(c_0, symbolic::integer(9))));
     EXPECT_TRUE(symbolic::eq(new_loop->init(), symbolic::integer(0)));
-    EXPECT_TRUE(symbolic::eq(new_loop->update(), symbolic::add(i_sym, symbolic::integer(1))));
+    EXPECT_TRUE(symbolic::eq(new_loop->update(), symbolic::add(c_0, symbolic::integer(1))));
 
     auto& inner_seq = new_loop->root();
-    ASSERT_EQ(inner_seq.size(), 1);
+    ASSERT_EQ(inner_seq.size(), 2);
 
-    auto inner_block = dynamic_cast<structured_control_flow::Block*>(&inner_seq.at(0).first);
+    auto& mapping_transition = inner_seq.at(0).second;
+    EXPECT_EQ(mapping_transition.size(), 1);
+    EXPECT_TRUE(symbolic::eq((*mapping_transition.assignments().begin()).first, symbolic::symbol("i")));
+    EXPECT_TRUE(symbolic::eq((*mapping_transition.assignments().begin()).second, c_0));
+
+    auto inner_block = dynamic_cast<structured_control_flow::Block*>(&inner_seq.at(1).first);
     ASSERT_NE(inner_block, nullptr);
     auto& dfg = inner_block->dataflow();
     ASSERT_EQ(dfg.nodes().size(), 3); // A access, tasklet, B access
@@ -2884,21 +2902,27 @@ TEST(ScopAnalysisTest, ScopToSDFGTest_SimpleLoopWithExpression) {
 
     auto* new_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(&new_seq->at(0).first);
     ASSERT_NE(new_loop, nullptr);
-    EXPECT_EQ(new_loop->indvar()->get_name(), i_sym->get_name());
-    EXPECT_TRUE(symbolic::eq(new_loop->condition(), symbolic::Le(i_sym, symbolic::integer(9))));
+    symbolic::Symbol c_0 = symbolic::symbol("c0");
+    EXPECT_EQ(new_loop->indvar()->get_name(), c_0->get_name());
+    EXPECT_TRUE(symbolic::eq(new_loop->condition(), symbolic::Le(c_0, symbolic::integer(9))));
     EXPECT_TRUE(symbolic::eq(new_loop->init(), symbolic::integer(0)));
-    EXPECT_TRUE(symbolic::eq(new_loop->update(), symbolic::add(i_sym, symbolic::integer(1))));
+    EXPECT_TRUE(symbolic::eq(new_loop->update(), symbolic::add(c_0, symbolic::integer(1))));
 
     auto& inner_seq = new_loop->root();
-    ASSERT_EQ(inner_seq.size(), 1);
+    ASSERT_EQ(inner_seq.size(), 2);
 
-    auto inner_block = dynamic_cast<structured_control_flow::Block*>(&inner_seq.at(0).first);
+    auto& mapping_transition = inner_seq.at(0).second;
+    EXPECT_EQ(mapping_transition.size(), 1);
+    EXPECT_TRUE(symbolic::eq((*mapping_transition.assignments().begin()).first, symbolic::symbol("i")));
+    EXPECT_TRUE(symbolic::eq((*mapping_transition.assignments().begin()).second, c_0));
+
+    auto inner_block = dynamic_cast<structured_control_flow::Block*>(&inner_seq.at(1).first);
     ASSERT_NE(inner_block, nullptr);
     auto& dfg = inner_block->dataflow();
     ASSERT_EQ(dfg.nodes().size(), 0);
     ASSERT_EQ(dfg.edges().size(), 0);
 
-    EXPECT_EQ(inner_seq.at(0).second.size(), 1);
-    EXPECT_TRUE(symbolic::eq((*inner_seq.at(0).second.assignments().begin()).first, symbolic::symbol("A")));
-    EXPECT_TRUE(symbolic::eq((*inner_seq.at(0).second.assignments().begin()).second, symbolic::symbol("B")));
+    EXPECT_EQ(inner_seq.at(1).second.size(), 1);
+    EXPECT_TRUE(symbolic::eq((*inner_seq.at(1).second.assignments().begin()).first, symbolic::symbol("A")));
+    EXPECT_TRUE(symbolic::eq((*inner_seq.at(1).second.assignments().begin()).second, symbolic::symbol("B")));
 }

@@ -376,6 +376,8 @@ void ScopBuilder::
     auto stmts = this->scop_->statements();
     for (size_t i = stmt_start; i < stmts.size(); ++i) {
         ScopStatement *stmt = stmts[i];
+        stmt->push_front(loop.indvar());
+
         isl_set *domain = isl_set_copy(stmt->domain());
 
         // Insert indvar dimension at 0
@@ -1245,21 +1247,6 @@ void ScopToSDFG::build(analysis::AnalysisManager &analysis_manager) {
     // 2. Generate AST from Schedule
     isl_schedule *schedule = isl_schedule_copy(scop_.schedule_tree());
     isl_union_map *schedule_map = isl_union_map_copy(scop_.schedule());
-
-    // Apply dimension names to schedule
-    NameConnectInfo info;
-    isl_union_map_foreach_map(schedule_map, collect_dim_names, &info);
-    isl_union_map_free(schedule_map);
-
-    if (!info.names.empty()) {
-        isl_id_list *iterators = isl_id_list_alloc(ctx, info.names.size());
-        for (int i = 0; i < info.names.size(); ++i) {
-            std::string id_name = info.names[i].empty() ? "c" + std::to_string(i) : info.names[i];
-            iterators = isl_id_list_add(iterators, isl_id_alloc(ctx, id_name.c_str(), nullptr));
-        }
-        ast_builder = isl_ast_build_set_iterators(ast_builder, iterators);
-    }
-
     isl_ast_node *root_node = isl_ast_build_node_from_schedule(ast_builder, schedule);
 
     // 3. Start Traversal
@@ -1318,6 +1305,9 @@ void ScopToSDFG::visit_for(isl_ast_node *node, structured_control_flow::Sequence
     // Convert to Symbolic
     auto id = isl_ast_expr_get_id(iterator);
     symbolic::Symbol sym_iter = symbolic::symbol(isl_id_get_name(id));
+    if (!builder_.subject().exists(sym_iter->get_name())) {
+        builder_.add_container(sym_iter->get_name(), types::Scalar(types::PrimitiveType::Int64));
+    }
     symbolic::Expression sym_init = convert_expr(init);
     symbolic::Condition sym_cond = convert_cond(cond);
     symbolic::Expression step = convert_expr(inc);
@@ -1392,6 +1382,26 @@ void ScopToSDFG::visit_user(isl_ast_node *node, structured_control_flow::Sequenc
         std::string name = isl_id_get_name(id);
         if (stmt_map_.count(name)) {
             ScopStatement *stmt = stmt_map_[name];
+
+            // Get args of expr
+            int n_args = isl_ast_expr_get_op_n_arg(expr);
+            std::vector<symbolic::Expression> args;
+            for (int i = 1; i < n_args; ++i) {
+                isl_ast_expr *arg_expr = isl_ast_expr_get_op_arg(expr, i);
+                symbolic::Expression arg_sym = convert_expr(arg_expr);
+                args.push_back(arg_sym);
+                isl_ast_expr_free(arg_expr);
+            }
+
+            // Add transition mapping stmt->iterator_i = arg_i
+            assert(args.size() == stmt->iterators().size());
+            Assignments assignments;
+            for (size_t i = 0; i < stmt->iterators().size(); ++i) {
+                assignments[stmt->iterators().at(i)] = args[i];
+            }
+            if (!assignments.empty()) {
+                builder_.add_block(scope, assignments);
+            }
 
             if (!stmt->expression().is_null()) {
                 std::string rhs = (*stmt->writes().begin())->data();

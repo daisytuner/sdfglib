@@ -7,6 +7,8 @@
 #include "sdfg/passes/structured_control_flow/dead_cfg_elimination.h"
 #include "sdfg/passes/structured_control_flow/sequence_fusion.h"
 
+#include "fixtures/polybench.h"
+
 using namespace sdfg;
 
 TEST(PollyTransformTest, Proximity) {
@@ -58,7 +60,7 @@ TEST(PollyTransformTest, Proximity) {
 
     // Apply
     analysis::AnalysisManager analysis_manager(builder.subject());
-    transformations::PollyTransform transformation(loop1);
+    transformations::PollyTransform transformation(loop1, "sequential", "server", false);
     EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
     transformation.apply(builder, analysis_manager);
 
@@ -67,11 +69,16 @@ TEST(PollyTransformTest, Proximity) {
     EXPECT_TRUE(new_seq->size() == 1);
     auto new_loop = dynamic_cast<structured_control_flow::For*>(&new_seq->at(0).first);
     ASSERT_NE(new_loop, nullptr);
-    EXPECT_TRUE(symbolic::eq(new_loop->indvar(), indvar2));
+    EXPECT_TRUE(symbolic::eq(new_loop->indvar(), symbolic::symbol("c0")));
 
     auto new_inner_loop = dynamic_cast<structured_control_flow::For*>(&new_loop->root().at(0).first);
     ASSERT_NE(new_inner_loop, nullptr);
-    EXPECT_TRUE(symbolic::eq(new_inner_loop->indvar(), indvar1));
+    EXPECT_TRUE(symbolic::eq(new_inner_loop->indvar(), symbolic::symbol("c1")));
+
+    auto& transition = new_inner_loop->root().at(0).second;
+    EXPECT_EQ(transition.assignments().size(), 2);
+    EXPECT_TRUE(symbolic::eq(transition.assignments().at(indvar1), symbolic::symbol("c1")));
+    EXPECT_TRUE(symbolic::eq(transition.assignments().at(indvar2), symbolic::symbol("c0")));
 }
 
 TEST(PollyTransformTest, SpatialProximity) {
@@ -124,7 +131,7 @@ TEST(PollyTransformTest, SpatialProximity) {
 
     // Apply
     analysis::AnalysisManager analysis_manager(builder.subject());
-    transformations::PollyTransform transformation(loop1);
+    transformations::PollyTransform transformation(loop1, "sequential", "server", false);
     EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
     transformation.apply(builder, analysis_manager);
 
@@ -133,11 +140,16 @@ TEST(PollyTransformTest, SpatialProximity) {
     EXPECT_TRUE(new_seq->size() == 1);
     auto new_loop = dynamic_cast<structured_control_flow::For*>(&new_seq->at(0).first);
     ASSERT_NE(new_loop, nullptr);
-    EXPECT_TRUE(symbolic::eq(new_loop->indvar(), indvar2));
+    EXPECT_TRUE(symbolic::eq(new_loop->indvar(), symbolic::symbol("c0")));
 
     auto new_inner_loop = dynamic_cast<structured_control_flow::For*>(&new_loop->root().at(0).first);
     ASSERT_NE(new_inner_loop, nullptr);
-    EXPECT_TRUE(symbolic::eq(new_inner_loop->indvar(), indvar1));
+    EXPECT_TRUE(symbolic::eq(new_inner_loop->indvar(), symbolic::symbol("c1")));
+
+    auto& transition = new_inner_loop->root().at(0).second;
+    EXPECT_EQ(transition.assignments().size(), 2);
+    EXPECT_TRUE(symbolic::eq(transition.assignments().at(indvar1), symbolic::symbol("c1")));
+    EXPECT_TRUE(symbolic::eq(transition.assignments().at(indvar2), symbolic::symbol("c0")));
 }
 
 TEST(PollyTransformTest, SpatialProximityIdenticalDomains) {
@@ -190,7 +202,7 @@ TEST(PollyTransformTest, SpatialProximityIdenticalDomains) {
 
     // Apply
     analysis::AnalysisManager analysis_manager(builder.subject());
-    transformations::PollyTransform transformation(loop1);
+    transformations::PollyTransform transformation(loop1, "sequential", "server", false);
     EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
     transformation.apply(builder, analysis_manager);
 
@@ -199,9 +211,27 @@ TEST(PollyTransformTest, SpatialProximityIdenticalDomains) {
     EXPECT_TRUE(new_seq->size() == 1);
     auto new_loop = dynamic_cast<structured_control_flow::For*>(&new_seq->at(0).first);
     ASSERT_NE(new_loop, nullptr);
-    EXPECT_TRUE(symbolic::eq(new_loop->indvar(), indvar2));
+    EXPECT_TRUE(symbolic::eq(new_loop->indvar(), symbolic::symbol("c0")));
 
     auto new_inner_loop = dynamic_cast<structured_control_flow::For*>(&new_loop->root().at(0).first);
     ASSERT_NE(new_inner_loop, nullptr);
-    EXPECT_TRUE(symbolic::eq(new_inner_loop->indvar(), indvar1));
+    EXPECT_TRUE(symbolic::eq(new_inner_loop->indvar(), symbolic::symbol("c1")));
+
+    auto& transition = new_inner_loop->root().at(0).second;
+    EXPECT_EQ(transition.assignments().size(), 2);
+    EXPECT_TRUE(symbolic::eq(transition.assignments().at(indvar1), symbolic::symbol("c1")));
+    EXPECT_TRUE(symbolic::eq(transition.assignments().at(indvar2), symbolic::symbol("c0")));
+}
+
+TEST(PollyTransformTest, Polybench_fdtd_2d) {
+    auto sdfg = fdtd_2d();
+    builder::StructuredSDFGBuilder builder(sdfg);
+
+    auto& root = builder.subject().root();
+    auto& loop1 = dynamic_cast<structured_control_flow::For&>(root.at(0).first);
+
+    analysis::AnalysisManager analysis_manager(builder.subject());
+    transformations::PollyTransform transformation(loop1, "sequential", "server", true);
+    EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
+    transformation.apply(builder, analysis_manager);
 }

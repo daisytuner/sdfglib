@@ -51,16 +51,123 @@
 #include "sdfg/transformations/polly_transform.h"
 
 #include <isl/constraint.h>
+#include <isl/id.h>
 #include <isl/map.h>
 #include <isl/schedule_node.h>
 #include <isl/space.h>
 #include <isl/union_map.h>
+#include <isl/union_set.h>
+#include <isl/val.h>
 
 namespace sdfg {
 namespace transformations {
 
-PollyTransform::PollyTransform(structured_control_flow::StructuredLoop& loop)
-    : loop_(loop), scop_(nullptr), dependences_(nullptr) {};
+static bool isSimpleInnermostBand(isl_schedule_node* node) {
+    assert(isl_schedule_node_get_type(node) == isl_schedule_node_band);
+    assert(isl_schedule_node_n_children(node) == 1);
+
+    isl_schedule_node* child = isl_schedule_node_get_child(node, 0);
+    enum isl_schedule_node_type child_type = isl_schedule_node_get_type(child);
+
+    if (child_type == isl_schedule_node_leaf) {
+        isl_schedule_node_free(child);
+        return true;
+    }
+
+    if (child_type != isl_schedule_node_sequence) {
+        isl_schedule_node_free(child);
+        return false;
+    }
+
+    int nc = isl_schedule_node_n_children(child);
+    for (int c = 0; c < nc; ++c) {
+        isl_schedule_node* seq_child = isl_schedule_node_get_child(child, c);
+        if (isl_schedule_node_get_type(seq_child) != isl_schedule_node_filter) {
+            isl_schedule_node_free(seq_child);
+            isl_schedule_node_free(child);
+            return false;
+        }
+
+        isl_schedule_node* filter_child = isl_schedule_node_get_child(seq_child, 0);
+        bool is_leaf = (isl_schedule_node_get_type(filter_child) == isl_schedule_node_leaf);
+        isl_schedule_node_free(filter_child);
+        isl_schedule_node_free(seq_child);
+
+        if (!is_leaf) {
+            isl_schedule_node_free(child);
+            return false;
+        }
+    }
+
+    isl_schedule_node_free(child);
+    return true;
+}
+
+static bool isOneTimeParentBandNode(isl_schedule_node* node) {
+    if (isl_schedule_node_get_type(node) != isl_schedule_node_band) return false;
+
+    if (isl_schedule_node_n_children(node) != 1) return false;
+
+    return true;
+}
+
+static bool isTileableBandNode(isl_schedule_node* node) {
+    if (!isOneTimeParentBandNode(node)) return false;
+
+    if (!isl_schedule_node_band_get_permutable(node)) return false;
+
+    isl_space* space = isl_schedule_node_band_get_space(node);
+    int dim = isl_space_dim(space, isl_dim_set);
+    isl_space_free(space);
+
+    if (dim <= 1) return false;
+
+    return isSimpleInnermostBand(node);
+}
+
+static isl_schedule_node* tile_node(isl_ctx* ctx, isl_schedule_node* node, const char* identifier, int default_tile_size) {
+    isl_space* space = isl_schedule_node_band_get_space(node);
+    int dims = isl_space_dim(space, isl_dim_set);
+
+    isl_multi_val* sizes = isl_multi_val_zero(space);
+    std::string identifierString(identifier);
+    for (int i = 0; i < dims; ++i) {
+        sizes = isl_multi_val_set_val(sizes, i, isl_val_int_from_si(ctx, default_tile_size));
+    }
+
+    std::string tileLoopMarkerStr = identifierString + " - Tiles";
+    isl_id* tileLoopMarker = isl_id_alloc(ctx, tileLoopMarkerStr.c_str(), nullptr);
+    node = isl_schedule_node_insert_mark(node, tileLoopMarker);
+    node = isl_schedule_node_child(node, 0);
+    node = isl_schedule_node_band_tile(node, sizes);
+    node = isl_schedule_node_child(node, 0);
+
+    std::string pointLoopMarkerStr = identifierString + " - Points";
+    isl_id* pointLoopMarker = isl_id_alloc(ctx, pointLoopMarkerStr.c_str(), nullptr);
+
+    node = isl_schedule_node_insert_mark(node, pointLoopMarker);
+    return isl_schedule_node_child(node, 0);
+}
+
+static isl_schedule_node* optimize_band(isl_schedule_node* node, void* User) {
+    if (!isTileableBandNode(node)) {
+        return node;
+    }
+
+    isl_ctx* ctx = isl_schedule_node_get_ctx(node);
+    // First level tiling
+    node = tile_node(ctx, node, "1st level tiling", 32);
+
+    // Second level tiling
+    node = tile_node(ctx, node, "2nd level tiling", 16);
+
+    return node;
+}
+
+PollyTransform::PollyTransform(
+    structured_control_flow::StructuredLoop& loop, const std::string& target, const std::string& category, bool tile
+)
+    : loop_(loop), target(target), category_(category), tile_(tile), scop_(nullptr), dependences_(nullptr) {};
 
 std::string PollyTransform::name() const { return "PollyTransform"; };
 
@@ -157,6 +264,16 @@ void PollyTransform::apply(builder::StructuredSDFGBuilder& builder, analysis::An
     SC = isl_schedule_constraints_set_validity(SC, isl_union_map_copy(validity));
     SC = isl_schedule_constraints_set_coincidence(SC, isl_union_map_copy(validity));
     isl_schedule* S = isl_schedule_constraints_compute_schedule(SC);
+
+    if (this->tile_) {
+        isl_schedule_node* root = isl_schedule_get_root(S);
+        root = isl_schedule_node_map_descendant_bottom_up(root, optimize_band, nullptr);
+        isl_schedule_free(S);
+
+        S = isl_schedule_node_get_schedule(root);
+        isl_schedule_node_free(root);
+    }
+
     scop_->set_schedule_tree(S);
 
     isl_union_map_free(validity);
