@@ -9,11 +9,13 @@ pkg_check_modules(ISL REQUIRED IMPORTED_TARGET isl)
 
 set(SOURCE_FILES
     src/analysis/scop_analysis.cpp
+    src/cuda/cuda.cpp
     src/cuda/codegen/cuda_map_dispatcher.cpp
     src/cuda/nodes/cuda_data_offloading_node.cpp
     src/cuda/passes/sync_condition_propagation.cpp
     src/cuda/transformations/cublas_offloading_expansion.cpp
     src/cuda/transformations/cuda_parallelize_nested_map.cpp
+    src/cuda/transformations/cuda_transform.cpp
     src/cuda/transformations/gpu_condition_propagation.cpp
     src/cuda/transformations/gpu_loop_reordering.cpp
     src/cuda/transformations/gpu_tiling.cpp
@@ -26,6 +28,7 @@ set(SOURCE_FILES
     src/passes/offloading/code_motion/block_sorting.cpp
     src/passes/offloading/data_transfer_minimization_pass.cpp
     src/passes/offloading/remove_redundant_transfers_pass.cpp
+    src/passes/opt_pipeline.cpp
     src/transformations/offloading/offload_transform.cpp
     src/transformations/polly_transform.cpp
 )

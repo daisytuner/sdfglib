@@ -1,11 +1,11 @@
-#include "sdfg/transformations/kernel_local_storage.h"
+#include "sdfg/cuda/transformations/kernel_local_storage.h"
 
 #include <gtest/gtest.h>
 #include <nlohmann/json_fwd.hpp>
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/cuda/schedule.h"
+#include "sdfg/cuda/cuda.h"
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"

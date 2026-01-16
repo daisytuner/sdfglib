@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/cuda/cuda_offloading_node.h"
+#include "sdfg/cuda/nodes/cuda_data_offloading_node.h"
 #include "sdfg/element.h"
 #include "sdfg/function.h"
-#include "sdfg/memory/offloading_node.h"
-#include "sdfg/passes/remove_redundant_transfers_pass.h"
+#include "sdfg/offloading/data_offloading_node.h"
+#include "sdfg/passes/offloading/remove_redundant_transfers_pass.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/symbolic/symbolic.h"
 
@@ -27,13 +27,13 @@ TEST(RemoveRedundantTransfersPassTest, SingleTransferTest) {
     auto& access_node_in = builder.add_access(block, "__daisy_offload_A");
     auto& access_node_out = builder.add_access(block, "A");
 
-    auto& memcpy_node = builder.add_library_node<cuda::CUDAOffloadingNode>(
+    auto& memcpy_node = builder.add_library_node<cuda::CUDADataOffloadingNode>(
         block,
         DebugInfo(),
         symbolic::integer(400),
         symbolic::integer(0),
-        memory::DataTransferDirection::D2H,
-        memory::BufferLifecycle::NO_CHANGE
+        offloading::DataTransferDirection::D2H,
+        offloading::BufferLifecycle::NO_CHANGE
     );
 
     auto& in_type = builder.subject().type("A");
@@ -62,13 +62,13 @@ TEST(RemoveRedundantTransfersPassTest, MultiMapTest) {
     auto& access_node_in = builder.add_access(block, "_daisy_offload_A");
     auto& access_node_out = builder.add_access(block, "A");
 
-    auto& memcpy_node = builder.add_library_node<cuda::CUDAOffloadingNode>(
+    auto& memcpy_node = builder.add_library_node<cuda::CUDADataOffloadingNode>(
         block,
         DebugInfo(),
         symbolic::integer(400),
         symbolic::integer(0),
-        memory::DataTransferDirection::D2H,
-        memory::BufferLifecycle::NO_CHANGE
+        offloading::DataTransferDirection::D2H,
+        offloading::BufferLifecycle::NO_CHANGE
     );
 
     auto& in_type = builder.subject().type("A");
@@ -82,13 +82,13 @@ TEST(RemoveRedundantTransfersPassTest, MultiMapTest) {
     auto& access_node_in2 = builder.add_access(block2, "__daisy_offload_A");
     auto& access_node_out2 = builder.add_access(block2, "A");
 
-    auto& memcpy_node2 = builder.add_library_node<cuda::CUDAOffloadingNode>(
+    auto& memcpy_node2 = builder.add_library_node<cuda::CUDADataOffloadingNode>(
         block2,
         DebugInfo(),
         symbolic::integer(400),
         symbolic::integer(0),
-        memory::DataTransferDirection::D2H,
-        memory::BufferLifecycle::NO_CHANGE
+        offloading::DataTransferDirection::D2H,
+        offloading::BufferLifecycle::NO_CHANGE
     );
 
     auto& in_type2 = builder.subject().type("A");
@@ -105,7 +105,7 @@ TEST(RemoveRedundantTransfersPassTest, MultiMapTest) {
         auto& cf_node = root.at(i).first;
         if (auto* block = dynamic_cast<structured_control_flow::Block*>(&cf_node)) {
             for (auto& node : block->dataflow().nodes()) {
-                if (auto* data_transfer = dynamic_cast<memory::OffloadingNode*>(&node)) {
+                if (auto* data_transfer = dynamic_cast<offloading::DataOffloadingNode*>(&node)) {
                     if (data_transfer->is_d2h()) {
                         d2h_count++;
                     }
@@ -132,13 +132,13 @@ TEST(RemoveRedundantTransfersPassTest, MultiMapWithLatterUseTest) {
     auto& access_node_in = builder.add_access(block, "__daisy_offload_A");
     auto& access_node_out = builder.add_access(block, "A");
 
-    auto& memcpy_node = builder.add_library_node<cuda::CUDAOffloadingNode>(
+    auto& memcpy_node = builder.add_library_node<cuda::CUDADataOffloadingNode>(
         block,
         DebugInfo(),
         symbolic::integer(400),
         symbolic::integer(0),
-        memory::DataTransferDirection::D2H,
-        memory::BufferLifecycle::NO_CHANGE
+        offloading::DataTransferDirection::D2H,
+        offloading::BufferLifecycle::NO_CHANGE
     );
 
     auto& in_type = builder.subject().type("A");
@@ -152,13 +152,13 @@ TEST(RemoveRedundantTransfersPassTest, MultiMapWithLatterUseTest) {
     auto& access_node_in2 = builder.add_access(block2, "__daisy_offload_A");
     auto& access_node_out2 = builder.add_access(block2, "A");
 
-    auto& memcpy_node2 = builder.add_library_node<cuda::CUDAOffloadingNode>(
+    auto& memcpy_node2 = builder.add_library_node<cuda::CUDADataOffloadingNode>(
         block2,
         DebugInfo(),
         symbolic::integer(400),
         symbolic::integer(0),
-        memory::DataTransferDirection::D2H,
-        memory::BufferLifecycle::NO_CHANGE
+        offloading::DataTransferDirection::D2H,
+        offloading::BufferLifecycle::NO_CHANGE
     );
 
     auto& in_type2 = builder.subject().type("A");
@@ -183,7 +183,7 @@ TEST(RemoveRedundantTransfersPassTest, MultiMapWithLatterUseTest) {
         auto& cf_node = root.at(i).first;
         if (auto* block = dynamic_cast<structured_control_flow::Block*>(&cf_node)) {
             for (auto& node : block->dataflow().nodes()) {
-                if (auto* data_transfer = dynamic_cast<memory::OffloadingNode*>(&node)) {
+                if (auto* data_transfer = dynamic_cast<offloading::DataOffloadingNode*>(&node)) {
                     if (data_transfer->is_h2d()) {
                         h2d_count++;
                     } else if (data_transfer->is_d2h()) {
