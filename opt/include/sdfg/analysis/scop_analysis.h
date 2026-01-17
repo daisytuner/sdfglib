@@ -406,6 +406,7 @@ public:
 class ScopToSDFG {
 private:
     Scop& scop_;
+    const Dependences& dependences_;
     builder::StructuredSDFGBuilder& builder_;
     std::unordered_map<std::string, ScopStatement*> stmt_map_;
 
@@ -426,7 +427,7 @@ private:
     symbolic::Condition convert_cond(struct isl_ast_expr* expr);
 
 public:
-    ScopToSDFG(Scop& scop, builder::StructuredSDFGBuilder& builder);
+    ScopToSDFG(Scop& scop, const Dependences& dependences, builder::StructuredSDFGBuilder& builder);
 
     structured_control_flow::ControlFlowNode& build(analysis::AnalysisManager& analysis_manager);
 };

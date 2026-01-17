@@ -1071,28 +1071,22 @@ void Dependences::add_privatization_dependences() {
 }
 
 bool Dependences::is_parallel(isl_union_map *schedule, isl_pw_aff **min_distance_ptr) const {
-    isl_set *Deltas, *Distance;
     isl_union_map *deps = this->dependences(TYPE_RAW | TYPE_WAR | TYPE_WAW);
-    isl_map *schedule_deps;
-    unsigned Dimension;
-    bool IsParallel;
-
     deps = isl_union_map_apply_range(deps, isl_union_map_copy(schedule));
     deps = isl_union_map_apply_domain(deps, isl_union_map_copy(schedule));
-
     if (isl_union_map_is_empty(deps)) {
         isl_union_map_free(deps);
         return true;
     }
 
-    schedule_deps = isl_map_from_union_map(deps);
-    Dimension = isl_map_dim(schedule_deps, isl_dim_out) - 1;
+    isl_map *schedule_deps = isl_map_from_union_map(deps);
+    unsigned Dimension = isl_map_dim(schedule_deps, isl_dim_out) - 1;
 
     for (unsigned i = 0; i < Dimension; i++)
         schedule_deps = isl_map_equate(schedule_deps, isl_dim_out, i, isl_dim_in, i);
 
-    Deltas = isl_map_deltas(schedule_deps);
-    Distance = isl_set_universe(isl_set_get_space(Deltas));
+    isl_set *Deltas = isl_map_deltas(schedule_deps);
+    isl_set *Distance = isl_set_universe(isl_set_get_space(Deltas));
 
     // [0, ..., 0, +] - All zeros and last dimension larger than zero
     for (unsigned i = 0; i < Dimension; i++) Distance = isl_set_fix_si(Distance, isl_dim_set, i, 0);
@@ -1100,7 +1094,7 @@ bool Dependences::is_parallel(isl_union_map *schedule, isl_pw_aff **min_distance
     Distance = isl_set_lower_bound_si(Distance, isl_dim_set, Dimension, 1);
     Distance = isl_set_intersect(Distance, Deltas);
 
-    IsParallel = isl_set_is_empty(Distance);
+    bool IsParallel = isl_set_is_empty(Distance);
     if (IsParallel || !min_distance_ptr) {
         isl_set_free(Distance);
         return IsParallel;
@@ -1180,7 +1174,8 @@ bool Dependences::is_valid(Scop &scop, isl_schedule *schedule) const {
     return check_validity(this, scop, isl_schedule_get_map(schedule));
 }
 
-ScopToSDFG::ScopToSDFG(Scop &scop, builder::StructuredSDFGBuilder &builder) : scop_(scop), builder_(builder) {
+ScopToSDFG::ScopToSDFG(Scop &scop, const Dependences &dependences, builder::StructuredSDFGBuilder &builder)
+    : scop_(scop), dependences_(dependences), builder_(builder) {
     for (auto *stmt : scop_.statements()) {
         stmt_map_[stmt->name()] = stmt;
     }
@@ -1238,15 +1233,28 @@ static isl_stat collect_dim_names(isl_map *map, void *user) {
     return isl_stat_ok;
 }
 
+static __isl_give isl_ast_node *after_each_for(__isl_take isl_ast_node *node, __isl_keep isl_ast_build *build, void *user) {
+    auto *deps = static_cast<const Dependences *>(user);
+    isl_union_map *schedule = isl_ast_build_get_schedule(build);
+    bool is_parallel = deps->is_parallel(schedule);
+    isl_union_map_free(schedule);
+
+    if (is_parallel) {
+        isl_id *id = isl_id_alloc(isl_ast_node_get_ctx(node), "parallel", nullptr);
+        node = isl_ast_node_set_annotation(node, id);
+    }
+    return node;
+}
+
 structured_control_flow::ControlFlowNode &ScopToSDFG::build(analysis::AnalysisManager &analysis_manager) {
     isl_ctx *ctx = scop_.ctx();
 
     // 1. Create AST Builder
     isl_ast_build *ast_builder = isl_ast_build_alloc(ctx);
+    ast_builder = isl_ast_build_set_after_each_for(ast_builder, &after_each_for, (void *) &dependences_);
 
     // 2. Generate AST from Schedule
     isl_schedule *schedule = isl_schedule_copy(scop_.schedule_tree());
-    isl_union_map *schedule_map = isl_union_map_copy(scop_.schedule());
     isl_ast_node *root_node = isl_ast_build_node_from_schedule(ast_builder, schedule);
 
     // 3. Start Traversal
@@ -1284,15 +1292,10 @@ void ScopToSDFG::visit_node(isl_ast_node *node, structured_control_flow::Sequenc
         case isl_ast_node_user:
             visit_user(node, scope);
             break;
-        case isl_ast_node_mark: {
-            // Handle markers (e.g., parallelism annotations) here if needed
-            isl_ast_node *child = isl_ast_node_mark_get_node(node);
-            visit_node(child, scope);
-            isl_ast_node_free(child);
+        default: {
+            throw std::runtime_error("Unsupported AST node type encountered during SCoP to SDFG conversion.");
             break;
         }
-        default:
-            break;
     }
 }
 
@@ -1315,10 +1318,30 @@ void ScopToSDFG::visit_for(isl_ast_node *node, structured_control_flow::Sequence
     symbolic::Expression step = convert_expr(inc);
     symbolic::Expression update_expr = symbolic::add(sym_iter, step);
 
-    auto &loop = builder_.add_for(scope, sym_iter, sym_cond, sym_init, update_expr);
+    // Create map for parallel loops
+    bool is_parallel = false;
 
-    // Recurse into body
-    visit_node(body, loop.root());
+    isl_id *annotation = isl_ast_node_get_annotation(node);
+    if (annotation) {
+        if (std::string(isl_id_get_name(annotation)) == "parallel") {
+            is_parallel = true;
+        }
+        isl_id_free(annotation);
+    }
+
+    if (is_parallel) {
+        auto &loop = builder_.add_map(
+            scope, sym_iter, sym_cond, sym_init, update_expr, structured_control_flow::ScheduleType_Sequential::create()
+        );
+
+        // Recurse into body
+        visit_node(body, loop.root());
+    } else {
+        auto &loop = builder_.add_for(scope, sym_iter, sym_cond, sym_init, update_expr);
+
+        // Recurse into body
+        visit_node(body, loop.root());
+    }
 
     isl_ast_expr_free(iterator);
     isl_ast_expr_free(init);

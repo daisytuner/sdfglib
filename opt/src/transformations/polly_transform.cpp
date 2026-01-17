@@ -281,7 +281,7 @@ void PollyTransform::apply(builder::StructuredSDFGBuilder& builder, analysis::An
     DEBUG_PRINTLN("PollyTransform:" << std::endl << scop_->ast());
 
     auto& sdfg = builder.subject();
-    analysis::ScopToSDFG converter(*scop_, builder);
+    analysis::ScopToSDFG converter(*scop_, *dependences_, builder);
     converter.build(analysis_manager);
 
     this->applied_ = true;

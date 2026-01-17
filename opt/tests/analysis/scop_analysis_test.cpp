@@ -2805,7 +2805,8 @@ TEST(ScopAnalysisTest, ScopToSDFGTest_SimpleLoopWithTasklet) {
     ASSERT_EQ(scop->statements().size(), 1);
 
     // 2. Convert Scop back to SDFG
-    analysis::ScopToSDFG converter(*scop, builder);
+    analysis::Dependences dependences(*scop);
+    analysis::ScopToSDFG converter(*scop, dependences, builder);
     converter.build(am);
 
     ASSERT_EQ(root.size(), 1);
@@ -2892,7 +2893,8 @@ TEST(ScopAnalysisTest, ScopToSDFGTest_SimpleLoopWithExpression) {
     ASSERT_EQ(scop->statements().size(), 1);
 
     // 2. Convert Scop back to SDFG
-    analysis::ScopToSDFG converter(*scop, builder);
+    analysis::Dependences dependences(*scop);
+    analysis::ScopToSDFG converter(*scop, dependences, builder);
     converter.build(am);
 
     ASSERT_EQ(root.size(), 1);

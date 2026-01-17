@@ -60,11 +60,11 @@ TEST(PollySchedulerTest, SpatialProximity) {
     auto new_seq = dynamic_cast<structured_control_flow::Sequence*>(&builder.subject().root().at(0).first);
     ASSERT_TRUE(new_seq != nullptr);
     EXPECT_TRUE(new_seq->size() == 1);
-    auto new_loop = dynamic_cast<structured_control_flow::For*>(&new_seq->at(0).first);
+    auto new_loop = dynamic_cast<structured_control_flow::Map*>(&new_seq->at(0).first);
     ASSERT_NE(new_loop, nullptr);
     EXPECT_TRUE(symbolic::eq(new_loop->indvar(), symbolic::symbol("c0")));
 
-    auto new_inner_loop = dynamic_cast<structured_control_flow::For*>(&new_loop->root().at(0).first);
+    auto new_inner_loop = dynamic_cast<structured_control_flow::Map*>(&new_loop->root().at(0).first);
     ASSERT_NE(new_inner_loop, nullptr);
     EXPECT_TRUE(symbolic::eq(new_inner_loop->indvar(), symbolic::symbol("c1")));
 
@@ -136,11 +136,11 @@ TEST(PollySchedulerTest, OuterWhileWithSpatialProximity) {
     auto new_seq = dynamic_cast<structured_control_flow::Sequence*>(&while_root->root().at(0).first);
     ASSERT_TRUE(new_seq != nullptr);
     EXPECT_TRUE(new_seq->size() == 1);
-    auto new_loop = dynamic_cast<structured_control_flow::For*>(&new_seq->at(0).first);
+    auto new_loop = dynamic_cast<structured_control_flow::Map*>(&new_seq->at(0).first);
     ASSERT_NE(new_loop, nullptr);
     EXPECT_TRUE(symbolic::eq(new_loop->indvar(), symbolic::symbol("c0")));
 
-    auto new_inner_loop = dynamic_cast<structured_control_flow::For*>(&new_loop->root().at(0).first);
+    auto new_inner_loop = dynamic_cast<structured_control_flow::Map*>(&new_loop->root().at(0).first);
     ASSERT_NE(new_inner_loop, nullptr);
     EXPECT_TRUE(symbolic::eq(new_inner_loop->indvar(), symbolic::symbol("c1")));
 
