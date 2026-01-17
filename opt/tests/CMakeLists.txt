@@ -8,12 +8,14 @@ FetchContent_MakeAvailable(googletest)
 
 set(TEST_FILES
     analysis/scop_analysis_test.cpp
-    transformations/omp_transform_test.cpp
-    transformations/polly_transform_test.cpp
     passes/normalization/perfect_loop_distribution_test.cpp
     passes/normalization/stride_minimization_test.cpp
     passes/scheduler/omp_scheduler_test.cpp
     passes/scheduler/polly_scheduler_test.cpp
+    targets/omp/codegen/omp_map_dispatcher_test.cpp
+    targets/omp/schedule_test.cpp
+    transformations/omp_transform_test.cpp
+    transformations/polly_transform_test.cpp
     test.cpp
 )
 

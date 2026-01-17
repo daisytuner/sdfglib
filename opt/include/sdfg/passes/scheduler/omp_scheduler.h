@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sdfg/passes/scheduler/loop_scheduler.h"
+#include "sdfg/targets/omp/schedule.h"
 
 namespace sdfg {
 namespace passes {

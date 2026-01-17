@@ -14,6 +14,7 @@ set(SOURCE_FILES
     src/passes/scheduler/loop_scheduler.cpp
     src/passes/scheduler/omp_scheduler.cpp
     src/passes/scheduler/polly_scheduler.cpp
+    src/targets/omp/codegen/omp_map_dispatcher.cpp
     src/transformations/omp_transform.cpp
     src/transformations/polly_transform.cpp
 )

@@ -64,7 +64,7 @@ TEST(OMPSchedulerTest, OuterParallelMapWithInnerMap) {
     passes::scheduler::OMPScheduler omp_scheduler;
     EXPECT_TRUE(omp_scheduler.run(builder, analysis_manager));
 
-    EXPECT_EQ(loop.schedule_type().value(), structured_control_flow::ScheduleType_CPU_Parallel::value());
+    EXPECT_EQ(loop.schedule_type().value(), omp::ScheduleType_OMP::value());
     EXPECT_EQ(loop_2.schedule_type().value(), structured_control_flow::ScheduleType_Sequential::value());
 }
 
@@ -149,8 +149,8 @@ TEST(OMPSchedulerTest, OuterSequentialForWithInnerMaps) {
     passes::scheduler::OMPScheduler omp_scheduler;
     EXPECT_TRUE(omp_scheduler.run(builder, analysis_manager));
 
-    EXPECT_EQ(loop_2.schedule_type().value(), structured_control_flow::ScheduleType_CPU_Parallel::value());
-    EXPECT_EQ(loop_3.schedule_type().value(), structured_control_flow::ScheduleType_CPU_Parallel::value());
+    EXPECT_EQ(loop_2.schedule_type().value(), omp::ScheduleType_OMP::value());
+    EXPECT_EQ(loop_3.schedule_type().value(), omp::ScheduleType_OMP::value());
 }
 
 TEST(OMPSchedulerTest, OuterSequentialForWith2DMap) {
@@ -224,7 +224,7 @@ TEST(OMPSchedulerTest, OuterSequentialForWith2DMap) {
     passes::scheduler::OMPScheduler omp_scheduler;
     EXPECT_TRUE(omp_scheduler.run(builder, analysis_manager));
 
-    EXPECT_EQ(loop_2.schedule_type().value(), structured_control_flow::ScheduleType_CPU_Parallel::value());
+    EXPECT_EQ(loop_2.schedule_type().value(), omp::ScheduleType_OMP::value());
     EXPECT_EQ(loop_3.schedule_type().value(), structured_control_flow::ScheduleType_Sequential::value());
 }
 
@@ -303,6 +303,6 @@ TEST(OMPSchedulerTest, OuterWhileWithInnerMaps) {
     passes::scheduler::OMPScheduler omp_scheduler;
     EXPECT_TRUE(omp_scheduler.run(builder, analysis_manager));
 
-    EXPECT_EQ(loop_2.schedule_type().value(), structured_control_flow::ScheduleType_CPU_Parallel::value());
-    EXPECT_EQ(loop_3.schedule_type().value(), structured_control_flow::ScheduleType_CPU_Parallel::value());
+    EXPECT_EQ(loop_2.schedule_type().value(), omp::ScheduleType_OMP::value());
+    EXPECT_EQ(loop_3.schedule_type().value(), omp::ScheduleType_OMP::value());
 }

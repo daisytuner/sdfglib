@@ -85,7 +85,6 @@ set(TEST_FILES
     structured_control_flow/block_test.cpp
     structured_control_flow/if_else_test.cpp
     structured_control_flow/loop_test.cpp
-    structured_control_flow/map_test.cpp
     structured_control_flow/return_test.cpp
     structured_control_flow/sequence_test.cpp
     structured_sdfg_test.cpp

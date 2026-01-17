@@ -25,7 +25,7 @@ bool OMPTransform::can_be_applied(builder::StructuredSDFGBuilder& builder, analy
 }
 
 void OMPTransform::apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
-    builder.update_schedule_type(this->map_, structured_control_flow::ScheduleType_CPU_Parallel::create());
+    builder.update_schedule_type(this->map_, omp::ScheduleType_OMP::create());
     if (report_) report_->transform_applied(this);
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sdfg/targets/omp/schedule.h"
 #include "sdfg/transformations/transformation.h"
 
 namespace sdfg {

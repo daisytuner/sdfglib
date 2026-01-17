@@ -50,7 +50,7 @@ TEST(OMPTransformTest, MapWithSequentialSchedule) {
     EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
     transformation.apply(builder, analysis_manager);
 
-    EXPECT_EQ(loop1.schedule_type().value(), structured_control_flow::ScheduleType_CPU_Parallel::value());
+    EXPECT_EQ(loop1.schedule_type().value(), omp::ScheduleType_OMP::value());
 }
 
 TEST(OMPTransformTest, MapWithParallelSchedule) {
@@ -79,9 +79,7 @@ TEST(OMPTransformTest, MapWithParallelSchedule) {
     auto condition1 = symbolic::Lt(indvar1, bound1);
     auto update1 = symbolic::add(indvar1, symbolic::integer(1));
 
-    auto& loop1 = builder.add_map(
-        root, indvar1, condition1, init1, update1, structured_control_flow::ScheduleType_CPU_Parallel::create()
-    );
+    auto& loop1 = builder.add_map(root, indvar1, condition1, init1, update1, omp::ScheduleType_OMP::create());
     auto& body1 = loop1.root();
 
     // Add computation
