@@ -19,6 +19,8 @@
 #include <sdfg/passes/dataflow/dead_data_elimination.h>
 #include <sdfg/passes/normalization/normalization.h>
 #include <sdfg/passes/pipeline.h>
+#include <sdfg/passes/scheduler/omp_scheduler.h>
+#include <sdfg/passes/scheduler/polly_scheduler.h>
 #include <sdfg/passes/structured_control_flow/common_assignment_elimination.h>
 #include <sdfg/passes/structured_control_flow/condition_elimination.h>
 #include <sdfg/passes/structured_control_flow/for2map.h>
@@ -238,7 +240,21 @@ void PyStructuredSDFG::normalize() {
 }
 
 void PyStructuredSDFG::schedule(const std::string& target, const std::string& category) {
-    // Apply scheduling pass
+    if (target == "none") {
+        return;
+    }
+
+    sdfg::builder::StructuredSDFGBuilder builder(*sdfg_);
+    sdfg::analysis::AnalysisManager analysis_manager(*sdfg_);
+
+    // PollyScheduler as baseline for any opt-target
+    sdfg::passes::scheduler::PollyScheduler scheduler;
+    scheduler.run(builder, analysis_manager);
+
+    if (target == "openmp") {
+        sdfg::passes::scheduler::OMPScheduler omp_scheduler;
+        omp_scheduler.run(builder, analysis_manager);
+    }
 }
 
 std::string PyStructuredSDFG::

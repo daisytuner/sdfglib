@@ -164,10 +164,8 @@ static isl_schedule_node* optimize_band(isl_schedule_node* node, void* User) {
     return node;
 }
 
-PollyTransform::PollyTransform(
-    structured_control_flow::StructuredLoop& loop, const std::string& target, const std::string& category, bool tile
-)
-    : loop_(loop), target(target), category_(category), tile_(tile), scop_(nullptr), dependences_(nullptr) {};
+PollyTransform::PollyTransform(structured_control_flow::StructuredLoop& loop, bool tile)
+    : loop_(loop), tile_(tile), scop_(nullptr), dependences_(nullptr) {};
 
 std::string PollyTransform::name() const { return "PollyTransform"; };
 
@@ -280,6 +278,8 @@ void PollyTransform::apply(builder::StructuredSDFGBuilder& builder, analysis::An
     isl_union_map_free(proximity);
     isl_union_set_free(domain);
 
+    DEBUG_PRINTLN("PollyTransform:" << std::endl << scop_->ast());
+
     auto& sdfg = builder.subject();
     analysis::ScopToSDFG converter(*scop_, builder);
     converter.build(analysis_manager);
@@ -301,7 +301,7 @@ void PollyTransform::to_json(nlohmann::json& j) const {
 
     j["transformation_type"] = this->name();
     j["subgraph"] = {{"0", {{"element_id", this->loop_.element_id()}, {"type", loop_type}}}};
-    j["parameters"] = {};
+    j["parameters"] = {{"tile", this->tile_}};
 };
 
 PollyTransform PollyTransform::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
@@ -311,8 +311,9 @@ PollyTransform PollyTransform::from_json(builder::StructuredSDFGBuilder& builder
         throw InvalidTransformationDescriptionException("Element with ID " + std::to_string(loop_id) + " not found.");
     }
     auto loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element);
+    bool tile = desc["parameters"]["tile"].get<bool>();
 
-    return PollyTransform(*loop);
+    return PollyTransform(*loop, tile);
 };
 
 } // namespace transformations

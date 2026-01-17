@@ -1,4 +1,4 @@
-#include "sdfg/transformations/parallelization.h"
+#include "sdfg/transformations/omp_transform.h"
 
 #include <stdexcept>
 
@@ -7,11 +7,11 @@
 namespace sdfg {
 namespace transformations {
 
-Parallelization::Parallelization(structured_control_flow::Map& map) : map_(map) {}
+OMPTransform::OMPTransform(structured_control_flow::Map& map) : map_(map) {}
 
-std::string Parallelization::name() const { return "Parallelization"; }
+std::string OMPTransform::name() const { return "OMPTransform"; }
 
-bool Parallelization::can_be_applied(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
+bool OMPTransform::can_be_applied(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     auto result = map_.schedule_type().value() == structured_control_flow::ScheduleType_Sequential::value();
 
     if (report_) {
@@ -24,18 +24,18 @@ bool Parallelization::can_be_applied(builder::StructuredSDFGBuilder& builder, an
     return result;
 }
 
-void Parallelization::apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
+void OMPTransform::apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     builder.update_schedule_type(this->map_, structured_control_flow::ScheduleType_CPU_Parallel::create());
     if (report_) report_->transform_applied(this);
 }
 
-void Parallelization::to_json(nlohmann::json& j) const {
+void OMPTransform::to_json(nlohmann::json& j) const {
     j["transformation_type"] = this->name();
     j["subgraph"] = {{"0", {{"element_id", this->map_.element_id()}, {"type", "map"}}}};
     j["transformation_type"] = this->name();
 }
 
-Parallelization Parallelization::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
+OMPTransform OMPTransform::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
     auto map_id = desc["subgraph"]["0"]["element_id"].get<size_t>();
     auto element = builder.find_element_by_id(map_id);
     if (element == nullptr) {
@@ -48,7 +48,7 @@ Parallelization Parallelization::from_json(builder::StructuredSDFGBuilder& build
         throw std::runtime_error("Element with ID " + std::to_string(map_id) + " is not a Map.");
     }
 
-    return Parallelization(*loop);
+    return OMPTransform(*loop);
 }
 
 } // namespace transformations

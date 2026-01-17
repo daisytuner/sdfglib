@@ -623,6 +623,19 @@ void StructuredSDFGBuilder::move_children(Sequence& source, Sequence& target, si
     source.transitions_.clear();
 };
 
+Sequence& StructuredSDFGBuilder::hoist_root() {
+    auto current_root = std::move(this->structured_sdfg_->root_);
+
+    this->structured_sdfg_->root_ =
+        std::unique_ptr<Sequence>(new Sequence(this->new_element_id(), current_root->debug_info()));
+
+    this->structured_sdfg_->root_->children_.push_back(std::move(current_root));
+    this->structured_sdfg_->root_->transitions_.push_back(std::unique_ptr<Transition>(
+        new Transition(this->new_element_id(), current_root->debug_info(), *this->structured_sdfg_->root_)
+    ));
+    return *this->structured_sdfg_->root_;
+};
+
 Block& StructuredSDFGBuilder::
     add_block(Sequence& parent, const sdfg::control_flow::Assignments& assignments, const DebugInfo& debug_info) {
     parent.children_.push_back(std::unique_ptr<Block>(new Block(this->new_element_id(), debug_info)));

@@ -1238,7 +1238,7 @@ static isl_stat collect_dim_names(isl_map *map, void *user) {
     return isl_stat_ok;
 }
 
-void ScopToSDFG::build(analysis::AnalysisManager &analysis_manager) {
+structured_control_flow::ControlFlowNode &ScopToSDFG::build(analysis::AnalysisManager &analysis_manager) {
     isl_ctx *ctx = scop_.ctx();
 
     // 1. Create AST Builder
@@ -1253,7 +1253,7 @@ void ScopToSDFG::build(analysis::AnalysisManager &analysis_manager) {
     auto &scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto parent_scope = scope_analysis.parent_scope(&scop_.node());
     if (!parent_scope) {
-        return; // Cannot build SDFG without a parent scope
+        parent_scope = &builder_.hoist_root();
     }
     auto parent_sequence = static_cast<structured_control_flow::Sequence *>(parent_scope);
     int index = parent_sequence->index(scop_.node());
@@ -1264,6 +1264,8 @@ void ScopToSDFG::build(analysis::AnalysisManager &analysis_manager) {
 
     isl_ast_node_free(root_node);
     isl_ast_build_free(ast_builder);
+
+    return target_sequence;
 }
 
 void ScopToSDFG::visit_node(isl_ast_node *node, structured_control_flow::Sequence &scope) {

@@ -60,7 +60,7 @@ TEST(PollyTransformTest, Proximity) {
 
     // Apply
     analysis::AnalysisManager analysis_manager(builder.subject());
-    transformations::PollyTransform transformation(loop1, "sequential", "server", false);
+    transformations::PollyTransform transformation(loop1, false);
     EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
     transformation.apply(builder, analysis_manager);
 
@@ -131,7 +131,7 @@ TEST(PollyTransformTest, SpatialProximity) {
 
     // Apply
     analysis::AnalysisManager analysis_manager(builder.subject());
-    transformations::PollyTransform transformation(loop1, "sequential", "server", false);
+    transformations::PollyTransform transformation(loop1, false);
     EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
     transformation.apply(builder, analysis_manager);
 
@@ -202,7 +202,7 @@ TEST(PollyTransformTest, SpatialProximityIdenticalDomains) {
 
     // Apply
     analysis::AnalysisManager analysis_manager(builder.subject());
-    transformations::PollyTransform transformation(loop1, "sequential", "server", false);
+    transformations::PollyTransform transformation(loop1, false);
     EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
     transformation.apply(builder, analysis_manager);
 
@@ -223,15 +223,83 @@ TEST(PollyTransformTest, SpatialProximityIdenticalDomains) {
     EXPECT_TRUE(symbolic::eq(transition.assignments().at(indvar2), symbolic::symbol("c0")));
 }
 
-TEST(PollyTransformTest, Polybench_fdtd_2d) {
-    auto sdfg = fdtd_2d();
-    builder::StructuredSDFGBuilder builder(sdfg);
+TEST(PollyTransform, Serialization) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
 
-    auto& root = builder.subject().root();
-    auto& loop1 = dynamic_cast<structured_control_flow::For&>(root.at(0).first);
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
 
-    analysis::AnalysisManager analysis_manager(builder.subject());
-    transformations::PollyTransform transformation(loop1, "sequential", "server", true);
-    EXPECT_TRUE(transformation.can_be_applied(builder, analysis_manager));
-    transformation.apply(builder, analysis_manager);
+    // Add containers
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer desc(base_desc);
+
+    types::Pointer opaque_desc;
+    builder.add_container("A", opaque_desc, true);
+
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+
+    // Define loop
+    auto indvar = symbolic::symbol("i");
+    auto& loop = builder.add_map(
+        root,
+        indvar,
+        symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential::create()
+    );
+
+    size_t map_id = loop.element_id();
+
+    transformations::PollyTransform transformation(loop);
+
+    // Test to_json
+    nlohmann::json j;
+    EXPECT_NO_THROW(transformation.to_json(j));
+
+    // Verify JSON structure
+    EXPECT_EQ(j["transformation_type"], "PollyTransform");
+    EXPECT_TRUE(j.contains("subgraph"));
+    EXPECT_EQ(j["subgraph"]["0"]["element_id"], map_id);
+    EXPECT_EQ(j["subgraph"]["0"]["type"], "map");
+    EXPECT_EQ(j["parameters"]["tile"], true);
+}
+
+TEST(PollyTransform, Deserialization) {
+    builder::StructuredSDFGBuilder builder("sdfg_test", FunctionType_CPU);
+
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    // Add containers
+    types::Scalar sym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("N", sym_desc, true);
+    builder.add_container("i", sym_desc);
+
+    // Define loop
+    auto indvar = symbolic::symbol("i");
+    auto& loop = builder.add_map(
+        root,
+        indvar,
+        symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
+        symbolic::integer(0),
+        symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
+        structured_control_flow::ScheduleType_Sequential::create()
+    );
+
+    size_t map_id = loop.element_id();
+
+    // Create JSON description
+    nlohmann::json j;
+    j["transformation_type"] = "PollyTransform";
+    j["subgraph"] = {{"0", {{"element_id", map_id}, {"type", "map"}}}};
+    j["parameters"] = {{"tile", true}};
+
+    // Test from_json
+    EXPECT_NO_THROW({
+        auto deserialized = transformations::PollyTransform::from_json(builder, j);
+        EXPECT_EQ(deserialized.name(), "PollyTransform");
+    });
 }

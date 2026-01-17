@@ -428,7 +428,7 @@ private:
 public:
     ScopToSDFG(Scop& scop, builder::StructuredSDFGBuilder& builder);
 
-    void build(analysis::AnalysisManager& analysis_manager);
+    structured_control_flow::ControlFlowNode& build(analysis::AnalysisManager& analysis_manager);
 };
 
 class ScopAnalysis : public Analysis {

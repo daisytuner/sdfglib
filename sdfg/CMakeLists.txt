@@ -142,7 +142,6 @@ set(SOURCE_FILES
     src/passes/dataflow/memlet_linearization.cpp
     src/passes/memory/allocation_management.cpp
     src/passes/schedules/expansion_pass.cpp
-    src/passes/schedules/parallelization_pass.cpp
     src/passes/symbolic/symbol_evolution.cpp
     src/passes/symbolic/symbol_propagation.cpp
     src/passes/symbolic/symbol_promotion.cpp
@@ -182,7 +181,6 @@ set(SOURCE_FILES
     src/transformations/loop_skewing.cpp
     src/transformations/loop_tiling.cpp
     src/transformations/out_local_storage.cpp
-    src/transformations/parallelization.cpp
     src/transformations/recorder.cpp
     src/transformations/replayer.cpp
     src/transformations/utils.cpp

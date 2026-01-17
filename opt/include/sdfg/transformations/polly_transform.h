@@ -24,21 +24,12 @@ class PollyTransform : public Transformation {
 
     std::unique_ptr<analysis::Dependences> dependences_;
 
-    std::string target;
-
-    std::string category_;
-
     bool tile_;
 
     bool applied_ = false;
 
 public:
-    PollyTransform(
-        structured_control_flow::StructuredLoop& loop,
-        const std::string& target = "sequential",
-        const std::string& category = "server",
-        bool tile = true
-    );
+    PollyTransform(structured_control_flow::StructuredLoop& loop, bool tile = true);
 
     virtual std::string name() const override;
 
