@@ -26,7 +26,8 @@ inline ElementType ElementType_Unknown{"unknown"};
 
 typedef StringEnum TargetType;
 inline TargetType TargetType_SEQUENTIAL{structured_control_flow::ScheduleType_Sequential::value()};
-inline TargetType TargetType_CPU_PARALLEL{structured_control_flow::ScheduleType_CPU_Parallel::value()};
+// Legacy name for OMP parallelism
+inline TargetType TargetType_CPU_PARALLEL{"CPU_PARALLEL"};
 
 class InstrumentationInfo {
 private:

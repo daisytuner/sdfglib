@@ -77,57 +77,6 @@ public:
 };
 
 /**
- * @brief OpenMP scheduling strategies
- */
-enum OpenMPSchedule {
-    Static, ///< Iterations distributed statically at compile time
-    Dynamic, ///< Iterations distributed dynamically at runtime
-    Guided ///< Chunk sizes decrease over time (dynamic with feedback)
-};
-
-/**
- * @brief CPU parallel schedule type with OpenMP support
- *
- * Indicates that loop iterations can execute in parallel on CPU threads
- * using OpenMP directives. Supports configuration of:
- * - Number of threads
- * - OpenMP scheduling strategy (static, dynamic, guided)
- */
-class ScheduleType_CPU_Parallel {
-public:
-    /**
-     * @brief Set the number of threads for parallel execution
-     * @param schedule Schedule to configure
-     * @param num_threads Symbolic expression for number of threads
-     */
-    static void num_threads(ScheduleType& schedule, const symbolic::Expression num_threads);
-
-    /**
-     * @brief Get the number of threads
-     * @param schedule Schedule to query
-     * @return Symbolic expression for number of threads
-     */
-    static const symbolic::Expression num_threads(const ScheduleType& schedule);
-
-    /**
-     * @brief Set the OpenMP scheduling strategy
-     * @param schedule Schedule to configure
-     * @param schedule_type OpenMP scheduling strategy
-     */
-    static void omp_schedule(ScheduleType& schedule, const OpenMPSchedule schedule_type);
-
-    /**
-     * @brief Get the OpenMP scheduling strategy
-     * @param schedule Schedule to query
-     * @return OpenMP scheduling strategy
-     */
-    static OpenMPSchedule omp_schedule(const ScheduleType& schedule);
-
-    static const std::string value() { return "CPU_PARALLEL"; }
-    static ScheduleType create() { return ScheduleType(value()); }
-};
-
-/**
  * @brief Represents a parallel map loop with configurable scheduling
  *
  * A Map is a special type of structured loop that can be executed in parallel.

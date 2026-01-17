@@ -63,26 +63,5 @@ public:
     InstrumentationInfo instrumentation_info() const override;
 };
 
-class CPUParallelMapDispatcher : public NodeDispatcher {
-private:
-    structured_control_flow::Map& node_;
-
-public:
-    CPUParallelMapDispatcher(
-        LanguageExtension& language_extension,
-        StructuredSDFG& sdfg,
-        analysis::AnalysisManager& analysis_manager,
-        structured_control_flow::Map& node,
-        InstrumentationPlan& instrumentation_plan,
-        ArgCapturePlan& arg_capture_plan
-    );
-
-    void dispatch_node(
-        PrettyPrinter& main_stream, PrettyPrinter& globals_stream, CodeSnippetFactory& library_snippet_factory
-    ) override;
-
-    InstrumentationInfo instrumentation_info() const override;
-};
-
 } // namespace codegen
 } // namespace sdfg

@@ -137,6 +137,8 @@ public:
 
     void move_children(Sequence& source, Sequence& target, size_t target_index);
 
+    Sequence& hoist_root();
+
     Block& add_block(
         Sequence& parent,
         const sdfg::control_flow::Assignments& assignments = {},

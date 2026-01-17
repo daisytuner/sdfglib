@@ -194,7 +194,7 @@ TEST(MapTest, ScheduleType) {
     EXPECT_EQ(map_seq.schedule_type().value(), ScheduleType_Sequential::value());
 
     // Test CPU Parallel schedule
-    auto schedule_par = ScheduleType_CPU_Parallel::create();
+    auto schedule_par = ScheduleType_Sequential::create();
     auto& map_par = builder.add_map(
         root,
         symbolic::symbol("i"),
@@ -204,7 +204,7 @@ TEST(MapTest, ScheduleType) {
         schedule_par
     );
 
-    EXPECT_EQ(map_par.schedule_type().value(), ScheduleType_CPU_Parallel::value());
+    EXPECT_EQ(map_par.schedule_type().value(), ScheduleType_Sequential::value());
 }
 
 // Test Break and Continue structures

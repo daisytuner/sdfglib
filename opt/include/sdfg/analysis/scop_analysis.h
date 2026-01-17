@@ -91,6 +91,8 @@ private:
 
     isl_map* schedule_;
 
+    symbolic::SymbolVec iterators_;
+
     std::vector<std::unique_ptr<MemoryAccess>> memory_accesses_;
 
     data_flow::CodeNode* code_node_;
@@ -129,6 +131,10 @@ public:
         }
         domain_ = isl_set_set_tuple_name(domain, name_.c_str());
     }
+
+    void push_front(const symbolic::Symbol& iterator) { iterators_.insert(iterators_.begin(), iterator); }
+
+    const symbolic::SymbolVec& iterators() const { return iterators_; }
 
     isl_map* schedule() const { return schedule_; }
 
@@ -400,6 +406,7 @@ public:
 class ScopToSDFG {
 private:
     Scop& scop_;
+    const Dependences& dependences_;
     builder::StructuredSDFGBuilder& builder_;
     std::unordered_map<std::string, ScopStatement*> stmt_map_;
 
@@ -420,9 +427,9 @@ private:
     symbolic::Condition convert_cond(struct isl_ast_expr* expr);
 
 public:
-    ScopToSDFG(Scop& scop, builder::StructuredSDFGBuilder& builder);
+    ScopToSDFG(Scop& scop, const Dependences& dependences, builder::StructuredSDFGBuilder& builder);
 
-    void build(analysis::AnalysisManager& analysis_manager);
+    structured_control_flow::ControlFlowNode& build(analysis::AnalysisManager& analysis_manager);
 };
 
 class ScopAnalysis : public Analysis {

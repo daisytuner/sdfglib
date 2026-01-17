@@ -153,7 +153,7 @@ TEST(LoopAnalysisInfoTest, PerfectlyParallel) {
     auto update = symbolic::add(indvar, symbolic::one());
     auto condition = symbolic::Lt(indvar, symbolic::symbol("N"));
     auto init = symbolic::zero();
-    auto schedule = structured_control_flow::ScheduleType_CPU_Parallel::create();
+    auto schedule = structured_control_flow::ScheduleType_Sequential::create();
     auto& loop = builder.add_map(root, indvar, condition, init, update, schedule);
 
     analysis::AnalysisManager manager(sdfg);
@@ -182,7 +182,7 @@ TEST(LoopAnalysisInfoTest, ElementWise) {
     auto update = symbolic::add(indvar, symbolic::one());
     auto condition = symbolic::Lt(indvar, symbolic::symbol("N"));
     auto init = symbolic::zero();
-    auto schedule = structured_control_flow::ScheduleType_CPU_Parallel::create();
+    auto schedule = structured_control_flow::ScheduleType_Sequential::create();
     auto& loop = builder.add_map(root, indvar, condition, init, update, schedule);
 
     analysis::AnalysisManager manager(sdfg);
@@ -205,7 +205,7 @@ TEST(LoopAnalysisInfoTest, NotElementWise_NotContiguous) {
     auto update = symbolic::add(indvar, symbolic::integer(2));
     auto condition = symbolic::Lt(indvar, symbolic::symbol("N"));
     auto init = symbolic::zero();
-    auto schedule = structured_control_flow::ScheduleType_CPU_Parallel::create();
+    auto schedule = structured_control_flow::ScheduleType_Sequential::create();
     auto& loop = builder.add_map(root, indvar, condition, init, update, schedule);
 
     analysis::AnalysisManager manager(sdfg);
@@ -236,7 +236,7 @@ TEST(LoopAnalysisInfoTest, MixedLoopTypes) {
     auto update_j = symbolic::add(indvar_j, symbolic::one());
     auto condition_j = symbolic::Lt(indvar_j, symbolic::symbol("N"));
     auto init_j = symbolic::zero();
-    auto schedule = structured_control_flow::ScheduleType_CPU_Parallel::create();
+    auto schedule = structured_control_flow::ScheduleType_Sequential::create();
     auto& loop_map = builder.add_map(loop_for.root(), indvar_j, condition_j, init_j, update_j, schedule);
 
     // Inner While
@@ -270,7 +270,7 @@ TEST(LoopAnalysisInfoTest, NotPerfectlyParallel_MapFor) {
     auto update_i = symbolic::add(indvar_i, symbolic::one());
     auto condition_i = symbolic::Lt(indvar_i, symbolic::symbol("N"));
     auto init_i = symbolic::zero();
-    auto schedule = structured_control_flow::ScheduleType_CPU_Parallel::create();
+    auto schedule = structured_control_flow::ScheduleType_Sequential::create();
     auto& loop_map = builder.add_map(root, indvar_i, condition_i, init_i, update_i, schedule);
 
     // Inner For
@@ -305,7 +305,7 @@ TEST(LoopAnalysisInfoTest, NotElementWise_NotPerfectlyNested) {
     auto update_i = symbolic::add(indvar_i, symbolic::one());
     auto condition_i = symbolic::Lt(indvar_i, symbolic::symbol("N"));
     auto init_i = symbolic::zero();
-    auto schedule = structured_control_flow::ScheduleType_CPU_Parallel::create();
+    auto schedule = structured_control_flow::ScheduleType_Sequential::create();
     auto& loop_map_outer = builder.add_map(root, indvar_i, condition_i, init_i, update_i, schedule);
 
     // Extra statement
