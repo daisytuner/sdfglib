@@ -11,10 +11,13 @@ set(SOURCE_FILES
     src/analysis/scop_analysis.cpp
     src/passes/normalization/perfect_loop_distribution.cpp
     src/passes/normalization/stride_minimization.cpp
+    src/passes/scheduler/highway_scheduler.cpp
     src/passes/scheduler/loop_scheduler.cpp
     src/passes/scheduler/omp_scheduler.cpp
     src/passes/scheduler/polly_scheduler.cpp
+    src/targets/highway/codegen/highway_map_dispatcher.cpp
     src/targets/omp/codegen/omp_map_dispatcher.cpp
+    src/transformations/highway_transform.cpp
     src/transformations/omp_transform.cpp
     src/transformations/polly_transform.cpp
 )
