@@ -8,6 +8,7 @@
 #include <sdfg/codegen/dispatchers/node_dispatcher_registry.h>
 #include <sdfg/codegen/dispatchers/sequence_dispatcher.h>
 #include <sdfg/codegen/instrumentation/instrumentation_info.h>
+#include <sdfg/codegen/utils.h>
 #include <sdfg/helpers/helpers.h>
 #include <sdfg/structured_control_flow/map.h>
 
@@ -24,14 +25,15 @@ HighwayMapDispatcher::HighwayMapDispatcher(
 )
     : NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan, arg_capture_plan),
       node_(node), indvar_(node.indvar()), arguments_(), arguments_declaration_(), arguments_lookup_(), locals_(),
-      local_symbols_(), vec_type_(types::PrimitiveType::Float) {
+      local_symbols_(), vec_type_(types::PrimitiveType::Double) {
     auto& arguments_analysis = analysis_manager.get<analysis::ArgumentsAnalysis>();
     for (auto& entry : arguments_analysis.arguments(analysis_manager, node_)) {
         arguments_.push_back(entry.first);
         arguments_lookup_.insert(entry.first);
 
         auto& type = sdfg_.type(entry.first);
-        arguments_declaration_.push_back(this->language_extension_.declaration(entry.first, type));
+        codegen::Reference ref_type(type);
+        arguments_declaration_.push_back(this->language_extension_.declaration(entry.first, ref_type));
     }
     for (auto& local : arguments_analysis.locals(analysis_manager, node_)) {
         locals_.insert(local);
@@ -185,9 +187,9 @@ void HighwayMapDispatcher::dispatch_node(
     std::filesystem::path sdfg_path = sdfg_.metadata("sdfg_file");
     std::filesystem::path kernel_file = sdfg_path.parent_path() / (kernel_name + ".cpp");
     library_stream << "#include " << library_snippet_factory.header_path().filename() << std::endl;
-    library_stream << "#undef HWY_TARGET_INCLUDE" << std::endl;
-    library_stream << "#define HWY_TARGET_INCLUDE " << "\"" << kernel_file.string() << "\"" << std::endl;
-    library_stream << "#include <hwy/foreach_target.h>" << std::endl;
+    // library_stream << "#undef HWY_TARGET_INCLUDE" << std::endl;
+    // library_stream << "#define HWY_TARGET_INCLUDE " << "\"" << kernel_file.string() << "\"" << std::endl;
+    // library_stream << "#include <hwy/foreach_target.h>" << std::endl;
     library_stream << "#include <hwy/highway.h>" << std::endl;
     library_stream << "#include <hwy/contrib/math/math-inl.h>" << std::endl;
     library_stream << std::endl;
@@ -214,8 +216,9 @@ void HighwayMapDispatcher::dispatch_node(
 
     // Dispatch wrapper
     library_stream << std::endl;
-    library_stream << "#if HWY_ONCE" << std::endl << std::endl;
-    library_stream << "HWY_EXPORT(" << kernel_name << ");" << std::endl;
+    // Uncomment for dynamic dispatch
+    // library_stream << "#if HWY_ONCE" << std::endl << std::endl;
+    // library_stream << "HWY_EXPORT(" << kernel_name << ");" << std::endl;
     library_stream << std::endl;
 
     library_stream << "extern \"C\" void " << kernel_name;
@@ -225,7 +228,8 @@ void HighwayMapDispatcher::dispatch_node(
     library_stream << "{" << std::endl;
     library_stream.setIndent(library_stream.indent() + 4);
 
-    library_stream << "HWY_DYNAMIC_DISPATCH";
+    // library_stream << "HWY_DYNAMIC_DISPATCH";
+    library_stream << "HWY_STATIC_DISPATCH";
     library_stream << "(" << kernel_name << ")";
     library_stream << "(";
     library_stream << helpers::join(arguments_, ", ");
@@ -233,7 +237,7 @@ void HighwayMapDispatcher::dispatch_node(
 
     library_stream.setIndent(library_stream.indent() - 4);
     library_stream << "}" << std::endl << std::endl;
-    library_stream << "#endif" << std::endl;
+    // library_stream << "#endif" << std::endl;
 };
 
 void HighwayMapDispatcher::dispatch_highway(
@@ -554,7 +558,7 @@ void HighwayMapDispatcher::dispatch_iedge(codegen::PrettyPrinter& library_stream
     if (base_type.type_id() == types::TypeID::Scalar) {
         library_stream << "const auto " << memlet.dst_conn() << " = ";
         library_stream << "hn::Set(" << daisy_vec(base_type.primitive_type()) << ", ";
-        library_stream << src.data() << ";" << std::endl;
+        library_stream << src.data() << ");" << std::endl;
         return;
     } else {
         // Distinguish access type

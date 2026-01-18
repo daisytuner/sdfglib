@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from npbench.harness import run_benchmark, run_pytest
+from benchmarks.npbench.harness import run_benchmark, run_pytest
 
 PARAMETERS = {"S": {"N": 40}, "M": {"N": 90}, "L": {"N": 200}, "paper": {"N": 500}}
 
