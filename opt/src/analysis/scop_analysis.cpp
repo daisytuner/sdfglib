@@ -234,6 +234,9 @@ void ScopBuilder::visit_sequence(analysis::AnalysisManager &analysis_manager, st
 }
 
 void ScopBuilder::visit_block(analysis::AnalysisManager &analysis_manager, structured_control_flow::Block &block) {
+    auto &assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    auto &assumptions = assumptions_analysis.get(block, true);
+
     auto &graph = block.dataflow();
     for (auto node : graph.topological_sort()) {
         if (auto code_node = dynamic_cast<data_flow::CodeNode *>(node)) {
@@ -255,7 +258,8 @@ void ScopBuilder::visit_block(analysis::AnalysisManager &analysis_manager, struc
                 }
 
                 AccessType access_type = AccessType::READ;
-                std::string relation = generate_subset(analysis_manager, block, iedge.subset());
+                auto delinearized_subset = symbolic::delinearize(iedge.subset(), assumptions);
+                std::string relation = generate_subset(analysis_manager, block, delinearized_subset);
                 std::string data = static_cast<data_flow::AccessNode &>(iedge.src()).data();
                 isl_map *isl_relation = isl_map_read_from_str(scop_->ctx(), relation.c_str());
                 if (!isl_relation) {
@@ -272,7 +276,8 @@ void ScopBuilder::visit_block(analysis::AnalysisManager &analysis_manager, struc
                 AccessType access_type = AccessType::WRITE;
 
                 std::set<std::string> symbols;
-                std::string relation = generate_subset(analysis_manager, block, oedge.subset());
+                auto delinearized_subset = symbolic::delinearize(oedge.subset(), assumptions);
+                std::string relation = generate_subset(analysis_manager, block, delinearized_subset);
                 std::string data = static_cast<data_flow::AccessNode &>(oedge.dst()).data();
                 isl_map *isl_relation = isl_map_read_from_str(scop_->ctx(), relation.c_str());
                 if (!isl_relation) {
@@ -1289,6 +1294,9 @@ void ScopToSDFG::visit_node(isl_ast_node *node, structured_control_flow::Sequenc
         case isl_ast_node_block:
             visit_block(node, scope);
             break;
+        case isl_ast_node_mark:
+            visit_mark(node, scope);
+            break;
         case isl_ast_node_user:
             visit_user(node, scope);
             break;
@@ -1385,6 +1393,12 @@ void ScopToSDFG::visit_block(isl_ast_node *node, structured_control_flow::Sequen
         isl_ast_node_free(child);
     }
     isl_ast_node_list_free(list);
+}
+
+void ScopToSDFG::visit_mark(isl_ast_node *node, structured_control_flow::Sequence &scope) {
+    isl_ast_node *child = isl_ast_node_mark_get_node(node);
+    visit_node(child, scope);
+    isl_ast_node_free(child);
 }
 
 void ScopToSDFG::visit_user(isl_ast_node *node, structured_control_flow::Sequence &scope) {

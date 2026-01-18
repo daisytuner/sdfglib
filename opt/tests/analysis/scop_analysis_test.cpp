@@ -807,6 +807,113 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D_Symbolic) {
     EXPECT_TRUE(ast.find("for (int c1 = 0; c1 < M; c1 += 1)") != std::string::npos);
 }
 
+TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D_Symbolic_Linearized) {
+    builder::StructuredSDFGBuilder builder("simple_loop_test", FunctionType_CPU);
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    types::Scalar int_type(types::PrimitiveType::Int32);
+    types::Pointer int_ptr(int_type);
+    types::Pointer opaque_desc;
+    builder.add_container("i", int_type);
+    builder.add_container("j", int_type);
+    builder.add_container("N", int_type);
+    builder.add_container("M", int_type);
+    builder.add_container("A", opaque_desc);
+    builder.add_container("B", opaque_desc);
+
+    // Create loop: for i = 0 to 10
+    auto i_sym = symbolic::symbol("i");
+    auto n_val = symbolic::symbol("N");
+    auto init = symbolic::integer(0);
+    // update: i + 1
+    auto update = symbolic::add(i_sym, symbolic::integer(1));
+    // condition: i < 10
+    auto cond = symbolic::Lt(i_sym, n_val);
+
+    auto& loop = builder.add_for(root, i_sym, cond, init, update);
+
+    auto sym_j = symbolic::symbol("j");
+    auto& loop2 = builder.add_for(
+        loop.root(),
+        sym_j,
+        symbolic::Lt(sym_j, symbolic::symbol("M")),
+        symbolic::integer(0),
+        symbolic::add(sym_j, symbolic::integer(1))
+    );
+
+    // Add body
+    auto& block = builder.add_block(loop2.root());
+
+    // Add dummy tasklet
+    auto& in_node = builder.add_access(block, "A");
+    auto& out_node = builder.add_access(block, "B");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_int"});
+    builder.add_computational_memlet(
+        block, in_node, tasklet, "_int", {symbolic::add(sym_j, symbolic::mul(i_sym, symbolic::symbol("M")))}, int_ptr
+    );
+    builder.add_computational_memlet(
+        block, tasklet, "_out", out_node, {symbolic::add(sym_j, symbolic::mul(i_sym, symbolic::symbol("M")))}, int_ptr
+    );
+
+    // Run Analysis
+    analysis::AnalysisManager am(sdfg);
+
+    analysis::ScopBuilder scop_builder(sdfg, loop);
+    auto scop = scop_builder.build(am);
+
+    ASSERT_NE(scop, nullptr);
+    auto statements = scop->statements();
+    ASSERT_EQ(statements.size(), 1);
+
+    auto* stmt = statements[0];
+    isl_set* domain = stmt->domain();
+    ASSERT_NE(domain, nullptr);
+
+    // Verify properties of domain
+    // It should be 2-dimensional
+    EXPECT_EQ(isl_set_dim(domain, isl_dim_set), 2);
+
+    // Verify name of dimension
+    const char* dim_name = isl_set_get_dim_name(domain, isl_dim_set, 0);
+    EXPECT_STREQ(dim_name, "i");
+    dim_name = isl_set_get_dim_name(domain, isl_dim_set, 1);
+    EXPECT_STREQ(dim_name, "j");
+
+    // Verify memory accesses
+    auto reads = stmt->reads();
+    EXPECT_EQ(reads.size(), 1);
+    auto read_access = *reads.begin();
+    EXPECT_EQ(read_access->data(), "A");
+    EXPECT_EQ(read_access->access_type(), analysis::AccessType::READ);
+    char* read_relation_cstr = isl_map_to_str(read_access->relation());
+    std::string read_relation = read_relation_cstr;
+    EXPECT_EQ(read_relation, "[N, M] -> { S_11[i, j] -> [i, j] }");
+    free(read_relation_cstr);
+
+    auto writes = stmt->writes();
+    EXPECT_EQ(writes.size(), 1);
+    auto write_access = *writes.begin();
+    EXPECT_EQ(write_access->data(), "B");
+    EXPECT_EQ(write_access->access_type(), analysis::AccessType::WRITE);
+    char* write_relation_cstr = isl_map_to_str(write_access->relation());
+    std::string write_relation = write_relation_cstr;
+    EXPECT_EQ(write_relation, "[N, M] -> { S_11[i, j] -> [i, j] }");
+    free(write_relation_cstr);
+
+    // Verify Schedule
+    isl_union_map* schedule = scop->schedule();
+    std::string expected_str = "{ " + stmt->name() + "[i, j] -> [i, j] }";
+    isl_union_map* expected = isl_union_map_read_from_str(scop->ctx(), expected_str.c_str());
+    EXPECT_TRUE(isl_union_map_is_equal(schedule, expected));
+    isl_union_map_free(expected);
+
+    // Verify AST
+    std::string ast = scop->ast();
+    EXPECT_TRUE(ast.find("for (int c0 = 0; c0 < N; c0 += 1)") != std::string::npos);
+    EXPECT_TRUE(ast.find("for (int c1 = 0; c1 < M; c1 += 1)") != std::string::npos);
+}
+
 TEST(ScopAnalysisTest, ScopBuilderTest_NonPerfectlyNestedLoop) {
     builder::StructuredSDFGBuilder builder("non_perfectly_nested", FunctionType_CPU);
     auto& sdfg = builder.subject();
