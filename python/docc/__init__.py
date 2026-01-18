@@ -207,7 +207,9 @@ class DoccProgram:
         if os.path.exists(output_folder):
             # Multiple python processes running the same code?
             shutil.rmtree(output_folder)
-        sdfg = self._build_sdfg(arg_types, args, arg_shape_mapping, len(shape_values))
+        sdfg, out_args, out_shapes = self._build_sdfg(
+            arg_types, args, arg_shape_mapping, len(shape_values)
+        )
         sdfg.expand()
         sdfg.simplify()
 
@@ -230,7 +232,12 @@ class DoccProgram:
 
         # 5. Create CompiledSDFG
         compiled = CompiledSDFG(
-            lib_path, sdfg, shape_sources, self._last_structure_member_info
+            lib_path,
+            sdfg,
+            shape_sources,
+            self._last_structure_member_info,
+            out_args,
+            out_shapes,
         )
 
         # Cache if using default output folder
@@ -293,18 +300,53 @@ class DoccProgram:
     def _build_sdfg(self, arg_types, args, arg_shape_mapping, num_unique_shapes):
         sig = inspect.signature(self.func)
 
-        # Handle return type
+        # Handle return type - always void for SDFG, output args used for returns
         return_type = Scalar(PrimitiveType.Void)
         infer_return_type = True
+
+        # Parse return annotation to determine output arguments if possible
+        explicit_returns = []
         if sig.return_annotation is not inspect.Signature.empty:
-            return_type = _map_python_type(sig.return_annotation)
             infer_return_type = False
-            if not isinstance(return_type, Type):
-                raise ValueError(
-                    f"Return type has invalid type annotation: {return_type}"
-                )
+
+            # Helper to normalize annotation to list of types
+            def normalize_annotation(ann):
+                # Handle Tuple[type, ...]
+                origin = get_origin(ann)
+                if origin is tuple:
+                    type_args = get_args(ann)
+                    # Tuple[()] or Tuple w/o args
+                    if not type_args:
+                        return []
+                    # Tuple[int, float]
+                    if len(type_args) > 0 and type_args[-1] is not Ellipsis:
+                        return [_map_python_type(t) for t in type_args]
+                    # Tuple[int, ...] - not supported for fixed number of returns yet?
+                    # For now assume fixed tuple
+                    return [_map_python_type(t) for t in type_args]
+                else:
+                    return [_map_python_type(ann)]
+
+            explicit_returns = normalize_annotation(sig.return_annotation)
+            for rt in explicit_returns:
+                if not isinstance(rt, Type):
+                    # Fallback if map failed (e.g. invalid annotation)
+                    infer_return_type = True
+                    explicit_returns = []
+                    break
 
         builder = StructuredSDFGBuilder(f"{self.name}_sdfg", return_type)
+
+        # Add pre-defined return arguments if we know them
+        if not infer_return_type:
+            for i, dtype in enumerate(explicit_returns):
+                # Scalar -> Pointer(Scalar)
+                # Array -> Already Pointer(Scalar). Keep it.
+                arg_type = dtype
+                if isinstance(dtype, Scalar):
+                    arg_type = Pointer(dtype)
+
+                builder.add_container(f"_docc_ret_{i}", arg_type, is_argument=True)
 
         # Register structure types for any class arguments
         # Also track member name to index mapping for each structure
@@ -425,7 +467,13 @@ class DoccProgram:
             parser.visit(node)
 
         sdfg = builder.move()
-        return sdfg
+        # Mark return arguments metadata
+        out_args = []
+        for name in sdfg.arguments:
+            if name.startswith("_docc_ret_"):
+                out_args.append(name)
+
+        return sdfg, out_args, parser.captured_return_shapes
 
 
 def program(

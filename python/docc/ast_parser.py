@@ -49,6 +49,7 @@ class ASTParser(ast.NodeVisitor):
             self.builder, self.array_info, self.symbol_table, self.expr_visitor
         )
         self.expr_visitor.la_handler = self.la_handler
+        self.captured_return_shapes = {}  # Map param name to shape string list
 
     def _get_unique_id(self):
         self._unique_counter_ref[0] += 1
@@ -59,38 +60,118 @@ class ASTParser(ast.NodeVisitor):
 
     def visit_Return(self, node):
         if node.value is None:
+            debug_info = get_debug_info(node, self.filename, self.function_name)
+            self.builder.add_return("", debug_info)
             return
 
-        res = self._parse_expr(node.value)
+        if isinstance(node.value, ast.Tuple):
+            values = node.value.elts
+        else:
+            values = [node.value]
+
+        parsed_values = [self._parse_expr(v) for v in values]
         debug_info = get_debug_info(node, self.filename, self.function_name)
 
-        if isinstance(node.value, ast.Constant):
-            val = node.value.value
-            if isinstance(val, bool):
-                dtype = Scalar(PrimitiveType.Bool)
-            elif isinstance(val, int):
-                dtype = Scalar(PrimitiveType.Int64)
-            elif isinstance(val, float):
-                dtype = Scalar(PrimitiveType.Double)
-            else:
-                raise NotImplementedError(
-                    f"Unsupported constant return type: {type(val)}"
-                )
-            self.builder.add_constant_return(res, dtype, debug_info)
-            if self.infer_return_type:
-                self.builder.set_return_type(dtype)
-                self.infer_return_type = False
-        else:
-            self.builder.add_return(res, debug_info)
-            if self.infer_return_type:
-                if res in self.symbol_table:
-                    self.builder.set_return_type(self.symbol_table[res])
+        if self.infer_return_type:
+            for i, res in enumerate(parsed_values):
+                ret_name = f"_docc_ret_{i}"
+                if not self.builder.has_container(ret_name):
+                    dtype = Scalar(PrimitiveType.Double)
+                    if res in self.symbol_table:
+                        dtype = self.symbol_table[res]
+                    elif isinstance(values[i], ast.Constant):
+                        val = values[i].value
+                        if isinstance(val, int):
+                            dtype = Scalar(PrimitiveType.Int64)
+                        elif isinstance(val, float):
+                            dtype = Scalar(PrimitiveType.Double)
+                        elif isinstance(val, bool):
+                            dtype = Scalar(PrimitiveType.Bool)
+
+                    # Wrap Scalar in Pointer. Keep Arrays/Pointers as is.
+                    arg_type = dtype
+                    if isinstance(dtype, Scalar):
+                        arg_type = Pointer(dtype)
+
+                    self.builder.add_container(ret_name, arg_type, is_argument=True)
+                    self.symbol_table[ret_name] = arg_type
+
                     if res in self.array_info:
-                        shape = self.array_info[res]["shapes"]
-                        # Convert shape elements to strings
-                        shape_str = [str(s) for s in shape]
-                        self.builder.set_return_shape(shape_str)
-                    self.infer_return_type = False
+                        self.array_info[ret_name] = self.array_info[res]
+
+            self.infer_return_type = False
+
+        for i, res in enumerate(parsed_values):
+            ret_name = f"_docc_ret_{i}"
+            typ = self.symbol_table.get(ret_name)
+
+            is_array_return = False
+            if res in self.array_info:
+                # Only treat as array return if it has dimensions
+                # 0-d arrays (scalars) should be handled by scalar assignment
+                if self.array_info[res]["ndim"] > 0:
+                    is_array_return = True
+            elif res in self.symbol_table:
+                if isinstance(self.symbol_table[res], Pointer):
+                    is_array_return = True
+
+            # Simple Scalar Assignment
+            if not is_array_return:
+                block = self.builder.add_block(debug_info)
+                t_dst = self.builder.add_access(block, ret_name, debug_info)
+
+                t_src, src_sub = self.expr_visitor._add_read(block, res, debug_info)
+
+                t_task = self.builder.add_tasklet(
+                    block, "assign", ["_in"], ["_out"], debug_info
+                )
+                self.builder.add_memlet(
+                    block, t_src, "void", t_task, "_in", src_sub, None, debug_info
+                )
+                self.builder.add_memlet(
+                    block, t_task, "_out", t_dst, "void", "0", None, debug_info
+                )
+
+            # Array Assignment (Copy)
+            else:
+                # Record shape for metadata
+                if res in self.array_info:
+                    shape = self.array_info[res]["shapes"]
+                    # Convert to string expressions
+                    self.captured_return_shapes[ret_name] = [str(s) for s in shape]
+
+                    # Ensure destination array info exists
+                    if ret_name not in self.array_info:
+                        self.array_info[ret_name] = self.array_info[res]
+
+                # Copy Logic using visit_Assign
+                ndim = 1
+                if ret_name in self.array_info:
+                    ndim = self.array_info[ret_name]["ndim"]
+
+                slice_node = ast.Slice(lower=None, upper=None, step=None)
+                if ndim > 1:
+                    target_slice = ast.Tuple(elts=[slice_node] * ndim, ctx=ast.Load())
+                else:
+                    target_slice = slice_node
+
+                target_sub = ast.Subscript(
+                    value=ast.Name(id=ret_name, ctx=ast.Load()),
+                    slice=target_slice,
+                    ctx=ast.Store(),
+                )
+
+                # Value node reconstruction
+                if isinstance(values[i], ast.Name):
+                    val_node = values[i]
+                else:
+                    val_node = ast.Name(id=res, ctx=ast.Load())
+
+                assign_node = ast.Assign(targets=[target_sub], value=val_node)
+                self.visit_Assign(assign_node)
+
+        # Add control flow return to exit the function/path
+        self.builder.add_return("", debug_info)
 
     def visit_AugAssign(self, node):
         if isinstance(node.target, ast.Name) and node.target.id in self.array_info:
