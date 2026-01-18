@@ -123,8 +123,23 @@ class ASTParser(ast.NodeVisitor):
             self.visit_Assign(new_node)
 
     def visit_Assign(self, node):
-        if len(node.targets) != 1:
-            raise NotImplementedError("Only single assignment supported")
+        if len(node.targets) > 1:
+            tmp_name = f"_assign_tmp_{self._get_unique_id()}"
+            # Assign value to temporary
+            val_assign = ast.Assign(
+                targets=[ast.Name(id=tmp_name, ctx=ast.Store())], value=node.value
+            )
+            ast.copy_location(val_assign, node)
+            self.visit_Assign(val_assign)
+
+            # Assign temporary to targets
+            for target in node.targets:
+                assign = ast.Assign(
+                    targets=[target], value=ast.Name(id=tmp_name, ctx=ast.Load())
+                )
+                ast.copy_location(assign, node)
+                self.visit_Assign(assign)
+            return
 
         target = node.targets[0]
 
