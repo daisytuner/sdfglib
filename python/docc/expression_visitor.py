@@ -65,6 +65,7 @@ class ExpressionVisitor(ast.NodeVisitor):
             "matmul": self._handle_numpy_matmul,
             "dot": self._handle_numpy_matmul,
             "matvec": self._handle_numpy_matmul,
+            "outer": self._handle_numpy_outer,
             "minimum": self._handle_numpy_binary_op,
             "maximum": self._handle_numpy_binary_op,
         }
@@ -1483,6 +1484,65 @@ class ExpressionVisitor(ast.NodeVisitor):
         if len(node.args) != 2:
             raise NotImplementedError("matmul/dot requires 2 arguments")
         return self._handle_matmul_helper(node.args[0], node.args[1])
+
+    def _handle_numpy_outer(self, node, func_name):
+        if len(node.args) != 2:
+            raise NotImplementedError("outer requires 2 arguments")
+
+        arg0 = node.args[0]
+        arg1 = node.args[1]
+
+        if not self.la_handler:
+            raise RuntimeError("LinearAlgebraHandler not initialized")
+
+        res_a = self.la_handler.parse_arg(arg0)
+        res_b = self.la_handler.parse_arg(arg1)
+
+        # Resolve standard names if parse_arg failed (likely complex expression)
+        if not res_a[0]:
+            left_name = self.visit(arg0)
+            arg0 = ast.Name(id=left_name)
+            res_a = self.la_handler.parse_arg(arg0)
+
+        if not res_b[0]:
+            right_name = self.visit(arg1)
+            arg1 = ast.Name(id=right_name)
+            res_b = self.la_handler.parse_arg(arg1)
+
+        name_a, subset_a, shape_a, indices_a = res_a
+        name_b, subset_b, shape_b, indices_b = res_b
+
+        if not name_a or not name_b:
+            raise NotImplementedError("Could not resolve outer operands")
+
+        def get_flattened_size_expr(name, indices, shapes):
+            # Simplified: if slice, we use parse_arg's returned `shapes` (which are dim sizes of the slice)
+            # And multiply them.
+            size_expr = "1"
+            for s in shapes:
+                if size_expr == "1":
+                    size_expr = str(s)
+                else:
+                    size_expr = f"({size_expr} * {str(s)})"
+            return size_expr
+
+        m_expr = get_flattened_size_expr(name_a, indices_a, shape_a)
+        n_expr = get_flattened_size_expr(name_b, indices_b, shape_b)
+
+        # Create temporary container
+        # Since outer usually promotes types or uses standard types, we default to double for now.
+        dtype = Scalar(PrimitiveType.Double)
+
+        # Use helper to create array temp which handles symbol table and array info
+        tmp_name = self._create_array_temp([m_expr, n_expr], dtype)
+
+        new_call_node = ast.Call(
+            func=node.func, args=[arg0, arg1], keywords=node.keywords
+        )
+
+        self.la_handler.handle_outer(tmp_name, new_call_node)
+
+        return tmp_name
 
     def _handle_matmul_helper(self, left_node, right_node):
         if not self.la_handler:
