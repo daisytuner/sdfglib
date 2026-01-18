@@ -353,7 +353,7 @@ std::string PyStructuredSDFG::
         std::string name = lib_path.stem().string();
         std::string object_file = build_path.string() + "/" + name + ".o";
         std::stringstream cmd;
-        cmd << "c++ -c -fPIC -O3 -march=native -mtune=native -funroll-loops";
+        cmd << "c++ -c -fPIC -O3  -march=native -mtune=native -funroll-loops";
         if (!package_path_str.empty()) {
             cmd << " -L" << package_path_str;
             cmd << " -I" << package_include_path_str;
@@ -375,7 +375,7 @@ std::string PyStructuredSDFG::
     fs::path lib_path = build_path / ("lib" + sdfg_->name() + ".so");
 
     std::stringstream cmd;
-    cmd << "c++ -shared -fopenmp -fPIC -O3 -march=native -mtune=native -funroll-loops";
+    cmd << "c++ -shared -fopenmp -fPIC -O3";
     if (!package_path_str.empty()) {
         cmd << " -L" << package_path_str;
         cmd << " -I" << package_include_path_str;

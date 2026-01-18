@@ -5,6 +5,7 @@
 
 #include "sdfg/analysis/assumptions_analysis.h"
 #include "sdfg/optimization_report/pass_report_consumer.h"
+#include "sdfg/symbolic/polynomials.h"
 #include "sdfg/targets/highway/codegen/highway_map_dispatcher.h"
 
 namespace sdfg {
@@ -31,24 +32,17 @@ bool HighwayTransform::can_be_applied(builder::StructuredSDFGBuilder& builder, a
         return false;
     }
 
-    // Check all arguments and locals of the map
+    // Check all outputs are pointers
     auto& arguments_analysis = analysis_manager.get<analysis::ArgumentsAnalysis>();
     std::vector<std::string> arguments;
     for (auto& entry : arguments_analysis.arguments(analysis_manager, map_)) {
-        if (entry.second.is_scalar) {
-            if (entry.second.is_output) {
+        if (entry.second.is_output) {
+            if (!entry.second.is_ptr) {
                 if (report_) {
-                    report_->transform_impossible(this, "contains scalar output argument " + entry.first);
+                    report_->transform_impossible(this, "contains non-pointer output argument " + entry.first);
                 }
                 return false;
             }
-            continue;
-        }
-        if (!entry.second.is_ptr) {
-            if (report_) {
-                report_->transform_impossible(this, "contains non-pointer argument " + entry.first);
-            }
-            return false;
         }
         if (entry.first == map_.indvar()->get_name()) {
             if (report_) {
@@ -57,6 +51,7 @@ bool HighwayTransform::can_be_applied(builder::StructuredSDFGBuilder& builder, a
             return false;
         }
     }
+
     // Check: all locals are scalar (implicitly converted into vectors)
     symbolic::SymbolSet local_symbols;
     for (auto& local : arguments_analysis.locals(analysis_manager, map_)) {
@@ -257,9 +252,26 @@ HighwayTransform::MemletAccessType HighwayTransform::classify_memlet_access_type
     if (symbolic::uses(dimN, indvar)) {
         if (symbolic::eq(dimN, indvar)) {
             return HighwayTransform::CONTIGUOUS;
-        } else {
+        }
+
+        symbolic::SymbolVec poly_gens = {indvar};
+        auto poly = symbolic::polynomial(dimN, poly_gens);
+        if (poly.is_null()) {
             return HighwayTransform::UNKNOWN;
         }
+        auto affine_coeffs = symbolic::affine_coefficients(poly, poly_gens);
+        if (affine_coeffs.size() != 2) {
+            return HighwayTransform::UNKNOWN;
+        }
+        auto mul_coeff = affine_coeffs.at(indvar);
+        if (symbolic::eq(mul_coeff, symbolic::zero())) {
+            return HighwayTransform::CONSTANT;
+        }
+        if (symbolic::eq(mul_coeff, symbolic::one())) {
+            return HighwayTransform::CONTIGUOUS;
+        }
+
+        return HighwayTransform::UNKNOWN;
     }
 
     // dimN does not use indvar or moving symbols -> constant

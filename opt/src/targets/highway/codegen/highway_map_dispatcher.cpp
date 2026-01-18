@@ -8,6 +8,7 @@
 #include <sdfg/codegen/dispatchers/node_dispatcher_registry.h>
 #include <sdfg/codegen/dispatchers/sequence_dispatcher.h>
 #include <sdfg/codegen/instrumentation/instrumentation_info.h>
+#include <sdfg/codegen/utils.h>
 #include <sdfg/helpers/helpers.h>
 #include <sdfg/structured_control_flow/map.h>
 
@@ -31,7 +32,8 @@ HighwayMapDispatcher::HighwayMapDispatcher(
         arguments_lookup_.insert(entry.first);
 
         auto& type = sdfg_.type(entry.first);
-        arguments_declaration_.push_back(this->language_extension_.declaration(entry.first, type));
+        codegen::Reference ref_type(type);
+        arguments_declaration_.push_back(this->language_extension_.declaration(entry.first, ref_type));
     }
     for (auto& local : arguments_analysis.locals(analysis_manager, node_)) {
         locals_.insert(local);
@@ -556,7 +558,7 @@ void HighwayMapDispatcher::dispatch_iedge(codegen::PrettyPrinter& library_stream
     if (base_type.type_id() == types::TypeID::Scalar) {
         library_stream << "const auto " << memlet.dst_conn() << " = ";
         library_stream << "hn::Set(" << daisy_vec(base_type.primitive_type()) << ", ";
-        library_stream << src.data() << ";" << std::endl;
+        library_stream << src.data() << ");" << std::endl;
         return;
     } else {
         // Distinguish access type

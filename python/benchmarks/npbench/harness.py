@@ -29,7 +29,6 @@ def run_benchmark(initialize_func, kernel_func, parameters, name, args=None):
     if args.numpy:
         # Create a copy of inputs for numpy execution to avoid modification
         inputs_ref = [x.copy() if isinstance(x, np.ndarray) else x for x in inputs]
-        kernel_func(*inputs_ref)
         start = time.time()
         # Execute the original python function (undecorated)
         kernel_func(*inputs_ref)
@@ -44,11 +43,15 @@ def run_benchmark(initialize_func, kernel_func, parameters, name, args=None):
             kernel_func,
             target=args.target,
         )
-        kernel_with_target(*inputs_docc)
         start = time.time()
         kernel_with_target(*inputs_docc)
         end = time.time()
         print(f"Docc execution time: {end - start:.6f} seconds")
+
+        start = time.time()
+        kernel_with_target(*inputs_docc)
+        end = time.time()
+        print(f"Docc execution time (cached): {end - start:.6f} seconds")
 
 
 def run_pytest(initialize_func, kernel_func, parameters, target="none"):

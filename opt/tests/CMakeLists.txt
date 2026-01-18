@@ -16,6 +16,7 @@ set(TEST_FILES
     targets/omp/codegen/omp_map_dispatcher_test.cpp
     targets/omp/schedule_test.cpp
     targets/highway/codegen/highway_map_dispatcher_test.cpp
+    transformations/highway_transform_test.cpp
     transformations/omp_transform_test.cpp
     transformations/polly_transform_test.cpp
     test.cpp
