@@ -28,9 +28,6 @@ jobs:
       - name: Mark GitHub Actions workdir as safe
         run: git config --global --add safe.directory /__w/sdfglib/sdfglib
 
-      - name: Install lcov
-        run: apt-get update && apt-get install -y lcov
-
       - name: Formatting
         shell: bash
         run: |
@@ -124,8 +121,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          apt-get install -y libhwy-dev
-
           python -m pip install --upgrade pip
           pip install pybind11 pytest coverage black==25.9.0 build scikit-build-core
           pip install numpy scipy

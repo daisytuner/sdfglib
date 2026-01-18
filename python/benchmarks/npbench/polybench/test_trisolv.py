@@ -24,7 +24,6 @@ def kernel(L, x, b):
         x[i] = (b[i] - L[i, :i] @ x[:i]) / L[i, i]
 
 
-@pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
 def test_trisolv(target):
     run_pytest(initialize, kernel, PARAMETERS, target)

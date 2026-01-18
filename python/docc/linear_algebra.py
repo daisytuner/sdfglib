@@ -377,6 +377,8 @@ class LinearAlgebraHandler:
                 return True
             if isinstance(node.func, ast.Name) and node.func.id == "dot":
                 return True
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.MatMult):
+            return True
         return False
 
     def handle_dot(self, target, value_node):
@@ -398,12 +400,21 @@ class LinearAlgebraHandler:
         if not dot_node:
             return False
 
-        args = dot_node.args
-        if len(args) != 2:
-            return False
+        arg0 = None
+        arg1 = None
 
-        res_a = self.parse_arg(args[0])
-        res_b = self.parse_arg(args[1])
+        if isinstance(dot_node, ast.Call):
+            args = dot_node.args
+            if len(args) != 2:
+                return False
+            arg0 = args[0]
+            arg1 = args[1]
+        elif isinstance(dot_node, ast.BinOp) and isinstance(dot_node.op, ast.MatMult):
+            arg0 = dot_node.left
+            arg1 = dot_node.right
+
+        res_a = self.parse_arg(arg0)
+        res_b = self.parse_arg(arg1)
 
         if not res_a[0] or not res_b[0]:
             return False
@@ -455,11 +466,11 @@ class LinearAlgebraHandler:
             name_a, name_b, tmp_res, n, incx, incy, flat_subset_a, flat_subset_b
         )
 
+        target_str = target if isinstance(target, str) else self._parse_expr(target)
+
         if is_accumulate:
-            target_str = self._parse_expr(target)
             self.builder.add_assignment(target_str, f"{target_str} + {tmp_res}")
         else:
-            target_str = self._parse_expr(target)
             self.builder.add_assignment(target_str, tmp_res)
 
         return True

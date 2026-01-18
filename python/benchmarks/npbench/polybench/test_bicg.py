@@ -23,7 +23,6 @@ def kernel(A, p, r):
     return r @ A, A @ p
 
 
-@pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
 def test_bicg(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
