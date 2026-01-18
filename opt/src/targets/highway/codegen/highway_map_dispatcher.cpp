@@ -24,7 +24,7 @@ HighwayMapDispatcher::HighwayMapDispatcher(
 )
     : NodeDispatcher(language_extension, sdfg, analysis_manager, node, instrumentation_plan, arg_capture_plan),
       node_(node), indvar_(node.indvar()), arguments_(), arguments_declaration_(), arguments_lookup_(), locals_(),
-      local_symbols_(), vec_type_(types::PrimitiveType::Float) {
+      local_symbols_(), vec_type_(types::PrimitiveType::Double) {
     auto& arguments_analysis = analysis_manager.get<analysis::ArgumentsAnalysis>();
     for (auto& entry : arguments_analysis.arguments(analysis_manager, node_)) {
         arguments_.push_back(entry.first);
@@ -185,9 +185,9 @@ void HighwayMapDispatcher::dispatch_node(
     std::filesystem::path sdfg_path = sdfg_.metadata("sdfg_file");
     std::filesystem::path kernel_file = sdfg_path.parent_path() / (kernel_name + ".cpp");
     library_stream << "#include " << library_snippet_factory.header_path().filename() << std::endl;
-    library_stream << "#undef HWY_TARGET_INCLUDE" << std::endl;
-    library_stream << "#define HWY_TARGET_INCLUDE " << "\"" << kernel_file.string() << "\"" << std::endl;
-    library_stream << "#include <hwy/foreach_target.h>" << std::endl;
+    // library_stream << "#undef HWY_TARGET_INCLUDE" << std::endl;
+    // library_stream << "#define HWY_TARGET_INCLUDE " << "\"" << kernel_file.string() << "\"" << std::endl;
+    // library_stream << "#include <hwy/foreach_target.h>" << std::endl;
     library_stream << "#include <hwy/highway.h>" << std::endl;
     library_stream << "#include <hwy/contrib/math/math-inl.h>" << std::endl;
     library_stream << std::endl;
@@ -214,8 +214,9 @@ void HighwayMapDispatcher::dispatch_node(
 
     // Dispatch wrapper
     library_stream << std::endl;
-    library_stream << "#if HWY_ONCE" << std::endl << std::endl;
-    library_stream << "HWY_EXPORT(" << kernel_name << ");" << std::endl;
+    // Uncomment for dynamic dispatch
+    // library_stream << "#if HWY_ONCE" << std::endl << std::endl;
+    // library_stream << "HWY_EXPORT(" << kernel_name << ");" << std::endl;
     library_stream << std::endl;
 
     library_stream << "extern \"C\" void " << kernel_name;
@@ -225,7 +226,8 @@ void HighwayMapDispatcher::dispatch_node(
     library_stream << "{" << std::endl;
     library_stream.setIndent(library_stream.indent() + 4);
 
-    library_stream << "HWY_DYNAMIC_DISPATCH";
+    // library_stream << "HWY_DYNAMIC_DISPATCH";
+    library_stream << "HWY_STATIC_DISPATCH";
     library_stream << "(" << kernel_name << ")";
     library_stream << "(";
     library_stream << helpers::join(arguments_, ", ");
@@ -233,7 +235,7 @@ void HighwayMapDispatcher::dispatch_node(
 
     library_stream.setIndent(library_stream.indent() - 4);
     library_stream << "}" << std::endl << std::endl;
-    library_stream << "#endif" << std::endl;
+    // library_stream << "#endif" << std::endl;
 };
 
 void HighwayMapDispatcher::dispatch_highway(
