@@ -231,6 +231,11 @@ class ASTParser(ast.NodeVisitor):
             if self.la_handler.handle_dot(target, node.value):
                 return
 
+        # Special case: outer product
+        if self.la_handler.is_outer(node.value):
+            if self.la_handler.handle_outer(target, node.value):
+                return
+
         # Special case: convolution
         if self.conv_handler.is_conv(node.value):
             if self.conv_handler.handle_conv(target, node.value):
