@@ -28,8 +28,14 @@ def kernel(A):
             A[i, j] -= A[i, :i] @ A[:i, j]
 
 
-@pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize(
+    "target",
+    [
+        "none",
+        "sequential",
+        # "openmp"
+    ],
+)
 def test_lu(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

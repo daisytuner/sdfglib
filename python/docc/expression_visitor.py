@@ -1546,9 +1546,16 @@ class ExpressionVisitor(ast.NodeVisitor):
             for _ in range(batch_dims):
                 self.builder.end_for()
         else:
-            self.la_handler.handle_gemm(
-                tmp_name, ast.BinOp(left=left_node, op=ast.MatMult(), right=right_node)
-            )
+            if is_scalar:
+                self.la_handler.handle_dot(
+                    tmp_name,
+                    ast.BinOp(left=left_node, op=ast.MatMult(), right=right_node),
+                )
+            else:
+                self.la_handler.handle_gemm(
+                    tmp_name,
+                    ast.BinOp(left=left_node, op=ast.MatMult(), right=right_node),
+                )
 
         return tmp_name
 

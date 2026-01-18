@@ -84,3 +84,25 @@ def test_matmul_matvec():
     b = np.random.rand(10)
     res = matmul_mv(a, b)
     assert np.allclose(res, np.matmul(a, b))
+
+
+def test_dot_product_operator():
+    @program
+    def dot_op(a: float64[10], b: float64[10]) -> float:
+        return a @ b
+
+    a = np.random.rand(10)
+    b = np.random.rand(10)
+    res = dot_op(a, b)
+    assert np.allclose(res, a @ b)
+
+
+def test_dot_product_slicing_scalar():
+    @program
+    def dot_slice(a: float64[10], b: float64[10]) -> float:
+        return a[:5] @ b[:5]
+
+    a = np.random.rand(10)
+    b = np.random.rand(10)
+    res = dot_slice(a, b)
+    assert np.allclose(res, a[:5] @ b[:5])
