@@ -210,6 +210,7 @@ class DoccProgram:
         sdfg, out_args, out_shapes = self._build_sdfg(
             arg_types, args, arg_shape_mapping, len(shape_values)
         )
+        sdfg.validate()
         sdfg.expand()
         sdfg.simplify()
 

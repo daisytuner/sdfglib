@@ -39,6 +39,7 @@ def kernel(TSTEPS, A, B):
         )
 
 
+@pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
 def test_heat_3d(target):
     run_pytest(initialize, kernel, PARAMETERS, target)

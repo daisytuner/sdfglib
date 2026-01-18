@@ -768,6 +768,13 @@ class ExpressionVisitor(ast.NodeVisitor):
         return tmp_name
 
     def visit_UnaryOp(self, node):
+        if (
+            isinstance(node.op, ast.USub)
+            and isinstance(node.operand, ast.Constant)
+            and isinstance(node.operand.value, (int, float))
+        ):
+            return f"-{node.operand.value}"
+
         op = self.visit(node.op)
         operand = self.visit(node.operand)
 

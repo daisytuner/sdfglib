@@ -79,6 +79,8 @@ namespace {
 void _anchor() {}
 } // namespace
 
+void PyStructuredSDFG::validate() { sdfg_->validate(); }
+
 void PyStructuredSDFG::expand() {
     sdfg::builder::StructuredSDFGBuilder builder_opt(*sdfg_);
     sdfg::analysis::AnalysisManager analysis_manager(*sdfg_);
