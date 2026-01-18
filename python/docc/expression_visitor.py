@@ -44,6 +44,7 @@ class ExpressionVisitor(ast.NodeVisitor):
             "empty": self._handle_numpy_alloc,
             "empty_like": self._handle_numpy_empty_like,
             "zeros": self._handle_numpy_alloc,
+            "zeros_like": self._handle_numpy_zeros_like,
             "ones": self._handle_numpy_alloc,
             "eye": self._handle_numpy_eye,
             "add": self._handle_numpy_binary_op,
@@ -1342,6 +1343,44 @@ class ExpressionVisitor(ast.NodeVisitor):
             dims,
             element_type,
             zero_init=False,
+            ones_init=False,
+        )
+
+    def _handle_numpy_zeros_like(self, node, func_name):
+        prototype_arg = node.args[0]
+        prototype_name = self.visit(prototype_arg)
+
+        # Parse shape from prototype
+        dims = []
+        if prototype_name in self.array_info:
+            dims = self.array_info[prototype_name]["shapes"]
+
+        # Parse dtype
+        dtype_arg = None
+        if len(node.args) > 1:
+            dtype_arg = node.args[1]
+
+        for kw in node.keywords:
+            if kw.arg == "dtype":
+                dtype_arg = kw.value
+                break
+
+        element_type = None
+        if dtype_arg:
+            element_type = self._map_numpy_dtype(dtype_arg)
+        else:
+            if prototype_name in self.symbol_table:
+                sym_type = self.symbol_table[prototype_name]
+                if isinstance(sym_type, Pointer) and sym_type.has_pointee_type():
+                    element_type = sym_type.pointee_type
+
+        if element_type is None:
+            element_type = Scalar(PrimitiveType.Double)
+
+        return self._create_array_temp(
+            dims,
+            element_type,
+            zero_init=True,
             ones_init=False,
         )
 
