@@ -33,6 +33,7 @@ endif()
 option(SDFG_ENABLE_COVERAGE "Enable coverage flags" OFF)
 
 add_subdirectory(sdfg)
+add_subdirectory(examples/applications)
 add_subdirectory(opt)
 add_subdirectory(rtl)
 add_subdirectory(arg-capture-io)
