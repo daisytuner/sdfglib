@@ -177,7 +177,7 @@ void PyStructuredSDFG::simplify() {
     memlet_combine.run(builder_opt, analysis_manager);
 
     // Move code out of loops where possible
-    sdfg::passes::Pipeline code_motion = sdfg::passes::Pipeline::code_motion();
+    sdfg::passes::Pipeline code_motion = sdfg::passes::code_motion();
     code_motion.run(builder_opt, analysis_manager);
 
     // Convert pointer-based iterators to indvar usage
