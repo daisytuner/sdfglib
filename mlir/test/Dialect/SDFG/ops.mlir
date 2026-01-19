@@ -1,7 +1,58 @@
 // RUN: sdfg-opt %s | sdfg-opt | FileCheck %s
 
-// CHECK-LABEL: test_constant
-func.func @test_constant() -> i32 {
+// CHECK-LABEL: @test_sdfg
+sdfg.sdfg @test_sdfg()
+
+// CHECK-LABEL: @test_ext_sdfg_with_args
+sdfg.sdfg @test_ext_sdfg_with_args(i32, f32, i64) -> i32
+
+// CHECK-LABEL: @test_ext_sdfg_with_args_and_names
+sdfg.sdfg @test_ext_sdfg_with_args_and_names(%0 : i32, %1 : f32, %2 : i64) -> i32
+
+// CHECK-LABEL: @test_empty_return
+sdfg.sdfg @test_empty_return() {
+    sdfg.return
+}
+
+// CHECK-LABEL: @test_identity
+sdfg.sdfg @test_identity(%0: i32) -> i32 {
+    sdfg.return %0 : i32
+}
+
+// CHECK-LABEL: @test_constant
+sdfg.sdfg @test_constant() -> i32 {
     %0 = sdfg.constant 1 : i32
-    return %0 : i32
+    sdfg.return %0 : i32
+}
+
+// CHECK-LABEL: @test_tasklet_assign
+sdfg.sdfg @test_tasklet_assign() -> i32 {
+    %0 = sdfg.constant 1 : i32
+    %1 = sdfg.tasklet assign, %0 : (i32) -> i32
+    sdfg.return %1 : i32
+}
+
+// CHECK-LABEL: @test_tasklet_int_add
+sdfg.sdfg @test_tasklet_int_add() -> i32 {
+    %0 = sdfg.constant 1 : i32
+    %1 = sdfg.constant 2 : i32
+    %3 = sdfg.tasklet int_add, %0, %1 : (i32, i32) -> i32
+    sdfg.return %3 : i32
+}
+
+// CHECK-LABEL: @test_tasklet_int_add2
+sdfg.sdfg @test_tasklet_int_add2() -> i32 {
+    %0 = sdfg.constant 1 : i32
+    %1 = sdfg.constant 2 : i16
+    %3 = sdfg.tasklet int_add, %0, %1 : (i32, i16) -> i32
+    sdfg.return %3 : i32
+}
+
+// CHECK-LABEL: @test_tasklet_fp_fma
+sdfg.sdfg @test_tasklet_fp_fma() -> f32 {
+    %0 = sdfg.constant 1.0 : f32
+    %1 = sdfg.constant 2.0 : f32
+    %2 = sdfg.constant 3.0 : f32
+    %3 = sdfg.tasklet fp_fma, %0, %1, %2 : (f32, f32, f32) -> f32
+    sdfg.return %3 : f32
 }

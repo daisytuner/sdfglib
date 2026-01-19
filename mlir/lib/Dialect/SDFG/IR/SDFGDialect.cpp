@@ -1,4 +1,5 @@
 #include <llvm-19/llvm/Support/Casting.h>
+
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/SDFG/IR/SDFG.h"
 #include "mlir/IR/BuiltinTypes.h"
