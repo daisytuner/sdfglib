@@ -13,10 +13,11 @@ SchedulerAction CUDAScheduler::schedule(
     structured_control_flow::StructuredLoop& loop,
     const SchedulerLoopInfo& loop_info
 ) {
+    bool cuda_plan = false;
     if (auto map_node = dynamic_cast<structured_control_flow::Map*>(&loop)) {
         // Apply OpenMP parallelization to the loop
         cuda::CUDATransform cuda_transform(*map_node, 32, false);
-        auto cuda_plan = cuda_transform.can_be_applied(builder, analysis_manager);
+        cuda_plan = cuda_transform.can_be_applied(builder, analysis_manager);
         if (cuda_plan) {
             cuda_transform.apply(builder, analysis_manager);
 
@@ -36,7 +37,7 @@ SchedulerAction CUDAScheduler::schedule(
     }
 
     // Check if in not outermost loop
-    if (loop_info.loop_info.loopnest_index == -1) {
+    if (cuda_plan || loop_info.loop_info.loopnest_index == -1) {
         return NEXT;
     } else {
         // Visit 1st-level children
