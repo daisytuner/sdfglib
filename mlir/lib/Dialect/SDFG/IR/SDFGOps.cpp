@@ -148,7 +148,7 @@ ParseResult SDFGOp::parse(OpAsmParser& parser, OperationState& result) {
         }
         // Function body was parsed, make sure ist not empty.
         if (body->empty()) {
-            return parser.emitError(body_loc, "expected non-empty function body");
+            return parser.emitError(body_loc, "expected non-empty SDFG body");
         }
     }
 
