@@ -1,4 +1,4 @@
-#include "sdfg/offloading/utils.h"
+#include "sdfg/targets/offloading/utils.h"
 
 namespace cuda_offloading_codegen {
 

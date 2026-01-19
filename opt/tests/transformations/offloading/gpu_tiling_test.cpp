@@ -1,11 +1,10 @@
-#include "sdfg/cuda/transformations/gpu_tiling.h"
+#include "sdfg/transformations/offloading/gpu_tiling.h"
 
 #include <gtest/gtest.h>
 #include <nlohmann/json_fwd.hpp>
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/cuda/cuda.h"
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
@@ -15,6 +14,7 @@
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/if_else.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/targets/cuda/cuda.h"
 #include "sdfg/types/array.h"
 #include "sdfg/types/pointer.h"
 #include "sdfg/types/scalar.h"

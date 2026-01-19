@@ -1,9 +1,8 @@
-#include "sdfg/cuda/passes/sync_condition_propagation.h"
+#include "sdfg/passes/offloading/sync_condition_propagation.h"
 
 #include "sdfg/analysis/loop_analysis.h"
-#include "sdfg/cuda/cuda.h"
-#include "sdfg/cuda/transformations/gpu_condition_propagation.h"
-
+#include "sdfg/targets/cuda/cuda.h"
+#include "sdfg/transformations/offloading/gpu_condition_propagation.h"
 namespace sdfg::passes {
 
 bool SyncConditionPropagation::

@@ -1,4 +1,4 @@
-#include "sdfg/cuda/transformations/cublas_offloading_expansion.h"
+#include "sdfg/transformations/offloading/cublas_offloading_expansion.h"
 
 #include <cassert>
 #include <cstddef>
@@ -9,8 +9,6 @@
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/cuda/cuda.h"
-#include "sdfg/cuda/nodes/cuda_data_offloading_node.h"
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/library_nodes/math/blas/dot_node.h"
 #include "sdfg/data_flow/library_nodes/math/math.h"
@@ -19,6 +17,8 @@
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/targets/cuda/cuda.h"
+#include "sdfg/targets/cuda/cuda_data_offloading_node.h"
 #include "sdfg/transformations/transformation.h"
 #include "sdfg/types/type.h"
 #include "sdfg/types/utils.h"

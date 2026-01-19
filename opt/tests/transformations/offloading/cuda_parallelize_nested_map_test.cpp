@@ -1,4 +1,4 @@
-#include "sdfg/cuda/transformations/cuda_parallelize_nested_map.h"
+#include "sdfg/transformations/offloading/cuda_parallelize_nested_map.h"
 #include <gtest/gtest.h>
 
 
@@ -8,7 +8,7 @@
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/symbolic/symbolic.h"
 
-#include "sdfg/cuda/cuda.h"
+#include "sdfg/targets/cuda/cuda.h"
 
 namespace sdfg::cuda {
 

@@ -19,7 +19,6 @@
 #include "sdfg/data_flow/memlet.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/element.h"
-#include "sdfg/offloading/data_offloading_node.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/if_else.h"
@@ -27,6 +26,7 @@
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/structured_control_flow/while.h"
+#include "sdfg/targets/offloading/data_offloading_node.h"
 
 namespace sdfg {
 namespace passes {

@@ -1,13 +1,13 @@
-#include "sdfg/cuda/transformations/gpu_condition_propagation.h"
+#include "sdfg/transformations/offloading/gpu_condition_propagation.h"
 #include <vector>
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/analysis/users.h"
-#include "sdfg/cuda/cuda.h"
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 #include "sdfg/element.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_sdfg.h"
+#include "sdfg/targets/cuda/cuda.h"
 #include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {

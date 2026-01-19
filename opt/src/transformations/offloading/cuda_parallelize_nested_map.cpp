@@ -1,9 +1,9 @@
-#include "sdfg/cuda/transformations/cuda_parallelize_nested_map.h"
+#include "sdfg/transformations/offloading/cuda_parallelize_nested_map.h"
 
 #include <sdfg/analysis/loop_analysis.h>
-#include "sdfg/cuda/cuda.h"
 #include "sdfg/exceptions.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/targets/cuda/cuda.h"
 
 namespace sdfg {
 namespace transformations {

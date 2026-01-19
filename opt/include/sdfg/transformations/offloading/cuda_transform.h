@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sdfg/cuda/cuda.h"
+#include "sdfg/targets/cuda/cuda.h"
 #include "sdfg/transformations/offloading/offload_transform.h"
 
 namespace sdfg {

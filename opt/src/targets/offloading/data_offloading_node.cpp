@@ -1,4 +1,4 @@
-#include "sdfg/offloading/data_offloading_node.h"
+#include "sdfg/targets/offloading/data_offloading_node.h"
 
 #include <cstddef>
 #include <string>

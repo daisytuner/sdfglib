@@ -3,13 +3,13 @@
 #include <sdfg/serializer/json_serializer.h>
 #include <symengine/eval.h>
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
-#include "sdfg/cuda/codegen/cuda_map_dispatcher.h"
-#include "sdfg/cuda/transformations/cuda_transform.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/function.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/targets/cuda/cuda_map_dispatcher.h"
+#include "sdfg/transformations/offloading/cuda_transform.h"
 
-#include "sdfg/cuda/cuda.h"
+#include "sdfg/targets/cuda/cuda.h"
 
 namespace sdfg::cuda {
 

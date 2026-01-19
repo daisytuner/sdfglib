@@ -3,9 +3,9 @@
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/codegen/dispatchers/node_dispatcher.h"
 #include "sdfg/codegen/instrumentation/instrumentation_info.h"
-#include "sdfg/cuda/cuda.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/targets/cuda/cuda.h"
 
 
 namespace sdfg {

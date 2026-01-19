@@ -3,9 +3,9 @@
 #include <sdfg/codegen/dispatchers/node_dispatcher_registry.h>
 #include <sdfg/serializer/json_serializer.h>
 
-#include "sdfg/cuda/codegen/cuda_map_dispatcher.h"
-#include "sdfg/cuda/cuda.h"
-#include "sdfg/cuda/nodes/cuda_data_offloading_node.h"
+#include "sdfg/targets/cuda/cuda.h"
+#include "sdfg/targets/cuda/cuda_data_offloading_node.h"
+#include "sdfg/targets/cuda/cuda_map_dispatcher.h"
 
 namespace sdfg {
 namespace cuda {

@@ -9,9 +9,9 @@
 #include "sdfg/element.h"
 #include "sdfg/function.h"
 #include "sdfg/graph/graph.h"
-#include "sdfg/offloading/data_offloading_node.h"
 #include "sdfg/serializer/json_serializer.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/targets/offloading/data_offloading_node.h"
 
 namespace sdfg {
 namespace cuda {

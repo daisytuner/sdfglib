@@ -1,14 +1,14 @@
-#include "sdfg/cuda/transformations/gpu_tiling.h"
+#include "sdfg/transformations/offloading/gpu_tiling.h"
 #include <set>
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/analysis/type_analysis.h"
 #include "sdfg/analysis/users.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/cuda/passes/sync_condition_propagation.h"
-#include "sdfg/cuda/transformations/kernel_local_storage.h"
+#include "sdfg/passes/offloading/sync_condition_propagation.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/transformations/loop_tiling.h"
+#include "sdfg/transformations/offloading/kernel_local_storage.h"
 #include "sdfg/transformations/out_local_storage.h"
 
 

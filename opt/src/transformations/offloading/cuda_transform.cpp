@@ -1,9 +1,9 @@
-#include "sdfg/cuda/transformations/cuda_transform.h"
+#include "sdfg/transformations/offloading/cuda_transform.h"
 
 #include <unordered_set>
 
-#include "sdfg/cuda/nodes/cuda_data_offloading_node.h"
 #include "sdfg/structured_control_flow/block.h"
+#include "sdfg/targets/cuda/cuda_data_offloading_node.h"
 #include "sdfg/transformations/transformation.h"
 #include "symengine/symengine_rcp.h"
 

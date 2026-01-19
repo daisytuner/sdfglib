@@ -1,11 +1,11 @@
-#include "sdfg/cuda/transformations/gpu_loop_reordering.h"
+#include "sdfg/transformations/offloading/gpu_loop_reordering.h"
 
 #include <sdfg/transformations/loop_interchange.h>
 #include <vector>
 
 #include "sdfg/analysis/loop_analysis.h"
-#include "sdfg/cuda/cuda.h"
 #include "sdfg/structured_control_flow/for.h"
+#include "sdfg/targets/cuda/cuda.h"
 
 namespace sdfg {
 namespace transformations {

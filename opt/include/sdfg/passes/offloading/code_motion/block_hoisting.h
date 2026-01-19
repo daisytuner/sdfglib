@@ -6,7 +6,6 @@
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/data_flow_graph.h"
 #include "sdfg/data_flow/library_node.h"
-#include "sdfg/offloading/data_offloading_node.h"
 #include "sdfg/passes/pass.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
@@ -14,6 +13,7 @@
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/targets/offloading/data_offloading_node.h"
 #include "sdfg/visitor/structured_sdfg_visitor.h"
 #include "symengine/symengine_rcp.h"
 

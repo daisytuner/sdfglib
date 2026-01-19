@@ -1,14 +1,13 @@
 #include <gtest/gtest.h>
-#include <iostream>
 #include <sdfg/serializer/json_serializer.h>
 
 #include "sdfg/codegen/language_extensions/c_language_extension.h"
 #include "sdfg/codegen/utils.h"
-#include "sdfg/cuda/cuda.h"
-#include "sdfg/cuda/nodes/cuda_data_offloading_node.h"
-#include "sdfg/offloading/data_offloading_node.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/targets/cuda/cuda.h"
+#include "sdfg/targets/cuda/cuda_data_offloading_node.h"
+#include "sdfg/targets/offloading/data_offloading_node.h"
 #include "symengine/symengine_rcp.h"
 
 namespace sdfg::cuda {

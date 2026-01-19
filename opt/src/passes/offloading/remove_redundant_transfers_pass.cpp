@@ -3,8 +3,8 @@
 #include "sdfg/analysis/dominance_analysis.h"
 #include "sdfg/analysis/users.h"
 #include "sdfg/data_flow/access_node.h"
-#include "sdfg/offloading/data_offloading_node.h"
 #include "sdfg/structured_control_flow/block.h"
+#include "sdfg/targets/offloading/data_offloading_node.h"
 
 
 namespace sdfg {

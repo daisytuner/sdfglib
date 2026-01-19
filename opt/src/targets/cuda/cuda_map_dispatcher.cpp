@@ -1,6 +1,6 @@
-#include "sdfg/cuda/codegen/cuda_map_dispatcher.h"
+#include "sdfg/targets/cuda/cuda_map_dispatcher.h"
 
-#include "sdfg/cuda/cuda.h"
+#include "sdfg/targets/cuda/cuda.h"
 
 #include <sdfg/analysis/analysis.h>
 #include <sdfg/analysis/assumptions_analysis.h>
@@ -8,7 +8,6 @@
 #include <sdfg/analysis/users.h>
 #include <sdfg/builder/structured_sdfg_builder.h>
 #include <sdfg/codegen/dispatchers/sequence_dispatcher.h>
-#include <sdfg/cuda/cuda.h>
 #include <sdfg/exceptions.h>
 #include <sdfg/helpers/helpers.h>
 #include <sdfg/serializer/json_serializer.h>

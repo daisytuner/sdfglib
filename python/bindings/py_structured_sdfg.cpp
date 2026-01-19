@@ -18,6 +18,7 @@
 #include <sdfg/passes/dataflow/constant_propagation.h>
 #include <sdfg/passes/dataflow/dead_data_elimination.h>
 #include <sdfg/passes/normalization/normalization.h>
+#include <sdfg/passes/opt_pipeline.h>
 #include <sdfg/passes/pipeline.h>
 #include <sdfg/passes/scheduler/highway_scheduler.h>
 #include <sdfg/passes/scheduler/omp_scheduler.h>

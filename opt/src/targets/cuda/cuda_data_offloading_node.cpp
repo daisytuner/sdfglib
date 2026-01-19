@@ -1,4 +1,4 @@
-#include "sdfg/cuda/nodes/cuda_data_offloading_node.h"
+#include "sdfg/targets/cuda/cuda_data_offloading_node.h"
 
 #include <cstddef>
 #include <memory>
@@ -10,14 +10,14 @@
 #include "sdfg/codegen/instrumentation/instrumentation_info.h"
 #include "sdfg/codegen/language_extension.h"
 #include "sdfg/codegen/utils.h"
-#include "sdfg/cuda/cuda.h"
 #include "sdfg/data_flow/data_flow_graph.h"
 #include "sdfg/data_flow/data_flow_node.h"
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/function.h"
 #include "sdfg/graph/graph.h"
-#include "sdfg/offloading/data_offloading_node.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/targets/cuda/cuda.h"
+#include "sdfg/targets/offloading/data_offloading_node.h"
 #include "symengine/symengine_rcp.h"
 
 namespace sdfg {

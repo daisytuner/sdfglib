@@ -8,10 +8,10 @@
 #include "sdfg/data_flow/access_node.h"
 #include "sdfg/data_flow/code_node.h"
 #include "sdfg/data_flow/data_flow_graph.h"
-#include "sdfg/offloading/data_offloading_node.h"
 #include "sdfg/passes/pass.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/sequence.h"
+#include "sdfg/targets/offloading/data_offloading_node.h"
 #include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {

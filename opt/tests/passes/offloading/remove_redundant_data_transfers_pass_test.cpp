@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/cuda/nodes/cuda_data_offloading_node.h"
 #include "sdfg/element.h"
 #include "sdfg/function.h"
-#include "sdfg/offloading/data_offloading_node.h"
 #include "sdfg/passes/offloading/remove_redundant_transfers_pass.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/targets/cuda/cuda_data_offloading_node.h"
+#include "sdfg/targets/offloading/data_offloading_node.h"
 
 using namespace sdfg;
 
