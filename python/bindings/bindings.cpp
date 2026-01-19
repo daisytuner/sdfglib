@@ -76,6 +76,7 @@ PYBIND11_MODULE(_sdfg, m) {
         .def("is_transient", &PyStructuredSDFG::is_transient, py::arg("name"))
         .def_property_readonly("arguments", &PyStructuredSDFG::arguments)
         .def_property_readonly("containers", &PyStructuredSDFG::containers)
+        .def("validate", &PyStructuredSDFG::validate, "Validates the SDFG")
         .def("expand", &PyStructuredSDFG::expand, "Expands all library nodes")
         .def("simplify", &PyStructuredSDFG::simplify, "Simplify the SDFG")
         .def("dump", &PyStructuredSDFG::dump, py::arg("path"))

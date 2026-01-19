@@ -35,6 +35,8 @@ public:
 
     pybind11::dict containers() const;
 
+    void validate();
+
     void expand();
 
     void simplify();

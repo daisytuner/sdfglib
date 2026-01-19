@@ -419,6 +419,8 @@ private:
 
     void visit_block(struct isl_ast_node* node, structured_control_flow::Sequence& scope);
 
+    void visit_mark(struct isl_ast_node* node, structured_control_flow::Sequence& scope);
+
     void visit_user(struct isl_ast_node* node, structured_control_flow::Sequence& scope);
 
     // Helpers
