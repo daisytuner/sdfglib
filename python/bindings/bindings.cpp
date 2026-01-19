@@ -20,6 +20,8 @@
 #include <sdfg/codegen/dispatchers/node_dispatcher_registry.h>
 #include <sdfg/plugins/plugins.h>
 #include <sdfg/serializer/json_serializer.h>
+#include <sdfg/targets/highway/plugin.h>
+#include <sdfg/targets/omp/plugin.h>
 
 namespace py = pybind11;
 using namespace sdfg::types;
@@ -29,6 +31,8 @@ PYBIND11_MODULE(_sdfg, m) {
 
     sdfg::codegen::register_default_dispatchers();
     sdfg::serializer::register_default_serializers();
+    sdfg::omp::register_omp_plugin();
+    sdfg::highway::register_highway_plugin();
 
     register_types(m);
     register_loop_analysis(m);
@@ -72,6 +76,7 @@ PYBIND11_MODULE(_sdfg, m) {
         .def("is_transient", &PyStructuredSDFG::is_transient, py::arg("name"))
         .def_property_readonly("arguments", &PyStructuredSDFG::arguments)
         .def_property_readonly("containers", &PyStructuredSDFG::containers)
+        .def("validate", &PyStructuredSDFG::validate, "Validates the SDFG")
         .def("expand", &PyStructuredSDFG::expand, "Expands all library nodes")
         .def("simplify", &PyStructuredSDFG::simplify, "Simplify the SDFG")
         .def("dump", &PyStructuredSDFG::dump, py::arg("path"))

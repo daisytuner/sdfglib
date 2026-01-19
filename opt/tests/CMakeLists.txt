@@ -20,6 +20,15 @@ set(TEST_FILES
     transformations/offloading/gpu_tiling_test.cpp
     transformations/offloading/kernel_local_storage_test.cpp
     transformations/polly_transform_test.cpp
+    passes/scheduler/highway_scheduler_test.cpp
+    passes/scheduler/omp_scheduler_test.cpp
+    passes/scheduler/polly_scheduler_test.cpp
+    targets/omp/codegen/omp_map_dispatcher_test.cpp
+    targets/omp/schedule_test.cpp
+    targets/highway/codegen/highway_map_dispatcher_test.cpp
+    transformations/highway_transform_test.cpp
+    transformations/omp_transform_test.cpp
+    transformations/polly_transform_test.cpp
     test.cpp
 )
 

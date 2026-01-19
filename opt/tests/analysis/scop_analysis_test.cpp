@@ -43,6 +43,7 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Tasklet) {
     auto* stmt = statements[0];
     isl_set* domain = stmt->domain();
     ASSERT_NE(domain, nullptr);
+    EXPECT_EQ(stmt->iterators().size(), 0);
 
     // Verify properties of domain
     // It should be 0-dimensional
@@ -95,6 +96,7 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Expression) {
     auto* stmt = statements[0];
     isl_set* domain = stmt->domain();
     ASSERT_NE(domain, nullptr);
+    EXPECT_EQ(stmt->iterators().size(), 0);
 
     // Verify properties of domain
     // It should be 0-dimensional
@@ -145,6 +147,8 @@ TEST(ScopAnalysisTest, ScopBuilderTest_LoopWithConstantBounds_StaticStatements) 
     auto* stmt = statements[0];
     isl_set* domain = stmt->domain();
     ASSERT_NE(domain, nullptr);
+    EXPECT_EQ(stmt->iterators().size(), 1);
+    EXPECT_TRUE(symbolic::eq(stmt->iterators().at(0), i_sym));
 
     // Verify properties of domain
     // It should be 1-dimensional
@@ -242,6 +246,8 @@ TEST(ScopAnalysisTest, ScopBuilderTest_LoopWithConstantBounds) {
     auto* stmt = statements[0];
     isl_set* domain = stmt->domain();
     ASSERT_NE(domain, nullptr);
+    EXPECT_EQ(stmt->iterators().size(), 1);
+    EXPECT_TRUE(symbolic::eq(stmt->iterators().at(0), i_sym));
 
     // Verify properties of domain
     // It should be 1-dimensional
@@ -361,6 +367,9 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D) {
     auto* stmt = statements[0];
     isl_set* domain = stmt->domain();
     ASSERT_NE(domain, nullptr);
+    EXPECT_EQ(stmt->iterators().size(), 2);
+    EXPECT_TRUE(symbolic::eq(stmt->iterators().at(0), i_sym));
+    EXPECT_TRUE(symbolic::eq(stmt->iterators().at(1), sym_j));
 
     // Verify properties of domain
     // It should be 2-dimensional
@@ -483,6 +492,9 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D_TriangularDomain) {
     auto* stmt = statements[0];
     isl_set* domain = stmt->domain();
     ASSERT_NE(domain, nullptr);
+    EXPECT_EQ(stmt->iterators().size(), 2);
+    EXPECT_TRUE(symbolic::eq(stmt->iterators().at(0), i_sym));
+    EXPECT_TRUE(symbolic::eq(stmt->iterators().at(1), sym_j));
 
     // Verify properties of domain
     // It should be 2-dimensional
@@ -795,6 +807,113 @@ TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D_Symbolic) {
     EXPECT_TRUE(ast.find("for (int c1 = 0; c1 < M; c1 += 1)") != std::string::npos);
 }
 
+TEST(ScopAnalysisTest, ScopBuilderTest_Loop_2D_Symbolic_Linearized) {
+    builder::StructuredSDFGBuilder builder("simple_loop_test", FunctionType_CPU);
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+
+    types::Scalar int_type(types::PrimitiveType::Int32);
+    types::Pointer int_ptr(int_type);
+    types::Pointer opaque_desc;
+    builder.add_container("i", int_type);
+    builder.add_container("j", int_type);
+    builder.add_container("N", int_type);
+    builder.add_container("M", int_type);
+    builder.add_container("A", opaque_desc);
+    builder.add_container("B", opaque_desc);
+
+    // Create loop: for i = 0 to 10
+    auto i_sym = symbolic::symbol("i");
+    auto n_val = symbolic::symbol("N");
+    auto init = symbolic::integer(0);
+    // update: i + 1
+    auto update = symbolic::add(i_sym, symbolic::integer(1));
+    // condition: i < 10
+    auto cond = symbolic::Lt(i_sym, n_val);
+
+    auto& loop = builder.add_for(root, i_sym, cond, init, update);
+
+    auto sym_j = symbolic::symbol("j");
+    auto& loop2 = builder.add_for(
+        loop.root(),
+        sym_j,
+        symbolic::Lt(sym_j, symbolic::symbol("M")),
+        symbolic::integer(0),
+        symbolic::add(sym_j, symbolic::integer(1))
+    );
+
+    // Add body
+    auto& block = builder.add_block(loop2.root());
+
+    // Add dummy tasklet
+    auto& in_node = builder.add_access(block, "A");
+    auto& out_node = builder.add_access(block, "B");
+    auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_int"});
+    builder.add_computational_memlet(
+        block, in_node, tasklet, "_int", {symbolic::add(sym_j, symbolic::mul(i_sym, symbolic::symbol("M")))}, int_ptr
+    );
+    builder.add_computational_memlet(
+        block, tasklet, "_out", out_node, {symbolic::add(sym_j, symbolic::mul(i_sym, symbolic::symbol("M")))}, int_ptr
+    );
+
+    // Run Analysis
+    analysis::AnalysisManager am(sdfg);
+
+    analysis::ScopBuilder scop_builder(sdfg, loop);
+    auto scop = scop_builder.build(am);
+
+    ASSERT_NE(scop, nullptr);
+    auto statements = scop->statements();
+    ASSERT_EQ(statements.size(), 1);
+
+    auto* stmt = statements[0];
+    isl_set* domain = stmt->domain();
+    ASSERT_NE(domain, nullptr);
+
+    // Verify properties of domain
+    // It should be 2-dimensional
+    EXPECT_EQ(isl_set_dim(domain, isl_dim_set), 2);
+
+    // Verify name of dimension
+    const char* dim_name = isl_set_get_dim_name(domain, isl_dim_set, 0);
+    EXPECT_STREQ(dim_name, "i");
+    dim_name = isl_set_get_dim_name(domain, isl_dim_set, 1);
+    EXPECT_STREQ(dim_name, "j");
+
+    // Verify memory accesses
+    auto reads = stmt->reads();
+    EXPECT_EQ(reads.size(), 1);
+    auto read_access = *reads.begin();
+    EXPECT_EQ(read_access->data(), "A");
+    EXPECT_EQ(read_access->access_type(), analysis::AccessType::READ);
+    char* read_relation_cstr = isl_map_to_str(read_access->relation());
+    std::string read_relation = read_relation_cstr;
+    EXPECT_EQ(read_relation, "[N, M] -> { S_11[i, j] -> [i, j] }");
+    free(read_relation_cstr);
+
+    auto writes = stmt->writes();
+    EXPECT_EQ(writes.size(), 1);
+    auto write_access = *writes.begin();
+    EXPECT_EQ(write_access->data(), "B");
+    EXPECT_EQ(write_access->access_type(), analysis::AccessType::WRITE);
+    char* write_relation_cstr = isl_map_to_str(write_access->relation());
+    std::string write_relation = write_relation_cstr;
+    EXPECT_EQ(write_relation, "[N, M] -> { S_11[i, j] -> [i, j] }");
+    free(write_relation_cstr);
+
+    // Verify Schedule
+    isl_union_map* schedule = scop->schedule();
+    std::string expected_str = "{ " + stmt->name() + "[i, j] -> [i, j] }";
+    isl_union_map* expected = isl_union_map_read_from_str(scop->ctx(), expected_str.c_str());
+    EXPECT_TRUE(isl_union_map_is_equal(schedule, expected));
+    isl_union_map_free(expected);
+
+    // Verify AST
+    std::string ast = scop->ast();
+    EXPECT_TRUE(ast.find("for (int c0 = 0; c0 < N; c0 += 1)") != std::string::npos);
+    EXPECT_TRUE(ast.find("for (int c1 = 0; c1 < M; c1 += 1)") != std::string::npos);
+}
+
 TEST(ScopAnalysisTest, ScopBuilderTest_NonPerfectlyNestedLoop) {
     builder::StructuredSDFGBuilder builder("non_perfectly_nested", FunctionType_CPU);
     auto& sdfg = builder.subject();
@@ -884,7 +1003,6 @@ TEST(ScopAnalysisTest, ScopBuilderTest_NonPerfectlyNestedLoop) {
     EXPECT_TRUE(ast.find("S_7(c0);") != std::string::npos);
 }
 
-/*
 TEST(ScopAnalysisTest, DependenceInfoTest_RAW_Dependence) {
     builder::StructuredSDFGBuilder builder("raw_test", FunctionType_CPU);
     auto& sdfg = builder.subject();
@@ -914,8 +1032,7 @@ TEST(ScopAnalysisTest, DependenceInfoTest_RAW_Dependence) {
 
     // Read A[i-1]
     builder
-        .add_computational_memlet(block, in_node, tasklet, "_int", {symbolic::sub(i_sym, symbolic::integer(1))},
-int_ptr);
+        .add_computational_memlet(block, in_node, tasklet, "_int", {symbolic::sub(i_sym, symbolic::integer(1))}, int_ptr);
     // Write A[i]
     builder.add_computational_memlet(block, tasklet, "_out", out_node, {i_sym}, int_ptr);
 
@@ -984,8 +1101,7 @@ TEST(ScopAnalysisTest, DependenceInfoTest_WAR_Dependence) {
 
     // Read A[i+1]
     builder
-        .add_computational_memlet(block, in_node, tasklet, "_int", {symbolic::add(i_sym, symbolic::integer(1))},
-int_ptr);
+        .add_computational_memlet(block, in_node, tasklet, "_int", {symbolic::add(i_sym, symbolic::integer(1))}, int_ptr);
     // Write A[i]
     builder.add_computational_memlet(block, tasklet, "_out", out_node, {i_sym}, int_ptr);
 
@@ -1104,8 +1220,8 @@ TEST(ScopAnalysisTest, DependenceInfoTest_Validity) {
     auto& out_node = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_int"});
     builder
-        .add_computational_memlet(block, in_node, tasklet, "_int", {symbolic::sub(i_sym, symbolic::integer(1))},
-int_ptr); builder.add_computational_memlet(block, tasklet, "_out", out_node, {i_sym}, int_ptr);
+        .add_computational_memlet(block, in_node, tasklet, "_int", {symbolic::sub(i_sym, symbolic::integer(1))}, int_ptr);
+    builder.add_computational_memlet(block, tasklet, "_out", out_node, {i_sym}, int_ptr);
 
     analysis::AnalysisManager am(sdfg);
     analysis::ScopBuilder scop_builder(sdfg, loop);
@@ -1174,12 +1290,10 @@ TEST(ScopAnalysisTest, DependenceInfoTest_Last_1D) {
     ASSERT_NE(scop, nullptr);
     analysis::Dependences deps(*scop);
     auto dependencies = deps.dependencies(loop);
-    std::cout << "Dependencies: " << dependencies.size() << std::endl;
 
     // Check
     EXPECT_EQ(dependencies.size(), 1);
     EXPECT_EQ(dependencies.at("B"), analysis::LoopCarriedDependency::LOOP_CARRIED_DEPENDENCY_WRITE_WRITE);
-    std::cout << "Finished test." << std::endl;
 }
 
 TEST(ScopAnalysisTest, DependenceInfoTest_Sum_1D) {
@@ -2196,10 +2310,10 @@ TEST(ScopAnalysisTest, DependenceInfoTest_Map_2D) {
     auto& a_out = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
     builder
-        .add_computational_memlet(block, a_in, tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")},
-edge_desc); builder.add_computational_memlet(block, one_node, tasklet, "_in2", {}); builder
-        .add_computational_memlet(block, tasklet, "_out", a_out, {symbolic::symbol("i"), symbolic::symbol("j")},
-edge_desc);
+        .add_computational_memlet(block, a_in, tasklet, "_in1", {symbolic::symbol("i"), symbolic::symbol("j")}, edge_desc);
+    builder.add_computational_memlet(block, one_node, tasklet, "_in2", {});
+    builder
+        .add_computational_memlet(block, tasklet, "_out", a_out, {symbolic::symbol("i"), symbolic::symbol("j")}, edge_desc);
 
     // Analysis
     analysis::AnalysisManager am(sdfg);
@@ -2510,9 +2624,9 @@ TEST(ScopAnalysisTest, DependenceInfoTest_TransposeTriangle_2D) {
     auto& A_out = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
     builder
-        .add_computational_memlet(block, A_in, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")},
-edge_desc); builder .add_computational_memlet(block, tasklet, "_out", A_out, {symbolic::symbol("j"),
-symbolic::symbol("i")}, edge_desc);
+        .add_computational_memlet(block, A_in, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")}, edge_desc);
+    builder
+        .add_computational_memlet(block, tasklet, "_out", A_out, {symbolic::symbol("j"), symbolic::symbol("i")}, edge_desc);
 
     // Analysis
     analysis::AnalysisManager am(sdfg);
@@ -2568,9 +2682,9 @@ TEST(ScopAnalysisTest, DependenceInfoTest_TransposeTriangleWithDiagonal_2D) {
     auto& A_out = builder.add_access(block, "A");
     auto& tasklet = builder.add_tasklet(block, data_flow::TaskletCode::assign, "_out", {"_in"});
     builder
-        .add_computational_memlet(block, A_in, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")},
-edge_desc); builder .add_computational_memlet(block, tasklet, "_out", A_out, {symbolic::symbol("j"),
-symbolic::symbol("i")}, edge_desc);
+        .add_computational_memlet(block, A_in, tasklet, "_in", {symbolic::symbol("i"), symbolic::symbol("j")}, edge_desc);
+    builder
+        .add_computational_memlet(block, tasklet, "_out", A_out, {symbolic::symbol("j"), symbolic::symbol("i")}, edge_desc);
 
     // Analysis
     analysis::AnalysisManager am(sdfg);
@@ -2681,8 +2795,7 @@ TEST(ScopAnalysisTest, DependenceInfoTest_ReductionWithLocalStorage) {
         auto& zero_node = builder.add_constant(init_block, "0.0", base_desc);
         auto& tasklet_init = builder.add_tasklet(init_block, data_flow::TaskletCode::assign, "_out", {"_in"});
         builder.add_computational_memlet(init_block, zero_node, tasklet_init, "_in", {});
-        builder.add_computational_memlet(init_block, tasklet_init, "_out", local_init_0, {symbolic::zero()},
-array_desc);
+        builder.add_computational_memlet(init_block, tasklet_init, "_out", local_init_0, {symbolic::zero()}, array_desc);
     }
 
     // local[1] = 0.0 block
@@ -2799,7 +2912,8 @@ TEST(ScopAnalysisTest, ScopToSDFGTest_SimpleLoopWithTasklet) {
     ASSERT_EQ(scop->statements().size(), 1);
 
     // 2. Convert Scop back to SDFG
-    analysis::ScopToSDFG converter(*scop, builder);
+    analysis::Dependences dependences(*scop);
+    analysis::ScopToSDFG converter(*scop, dependences, builder);
     converter.build(am);
 
     ASSERT_EQ(root.size(), 1);
@@ -2809,15 +2923,21 @@ TEST(ScopAnalysisTest, ScopToSDFGTest_SimpleLoopWithTasklet) {
 
     auto* new_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(&new_seq->at(0).first);
     ASSERT_NE(new_loop, nullptr);
-    EXPECT_EQ(new_loop->indvar()->get_name(), i_sym->get_name());
-    EXPECT_TRUE(symbolic::eq(new_loop->condition(), symbolic::Le(i_sym, symbolic::integer(9))));
+    symbolic::Symbol c_0 = symbolic::symbol("c0");
+    EXPECT_EQ(new_loop->indvar()->get_name(), c_0->get_name());
+    EXPECT_TRUE(symbolic::eq(new_loop->condition(), symbolic::Le(c_0, symbolic::integer(9))));
     EXPECT_TRUE(symbolic::eq(new_loop->init(), symbolic::integer(0)));
-    EXPECT_TRUE(symbolic::eq(new_loop->update(), symbolic::add(i_sym, symbolic::integer(1))));
+    EXPECT_TRUE(symbolic::eq(new_loop->update(), symbolic::add(c_0, symbolic::integer(1))));
 
     auto& inner_seq = new_loop->root();
-    ASSERT_EQ(inner_seq.size(), 1);
+    ASSERT_EQ(inner_seq.size(), 2);
 
-    auto inner_block = dynamic_cast<structured_control_flow::Block*>(&inner_seq.at(0).first);
+    auto& mapping_transition = inner_seq.at(0).second;
+    EXPECT_EQ(mapping_transition.size(), 1);
+    EXPECT_TRUE(symbolic::eq((*mapping_transition.assignments().begin()).first, symbolic::symbol("i")));
+    EXPECT_TRUE(symbolic::eq((*mapping_transition.assignments().begin()).second, c_0));
+
+    auto inner_block = dynamic_cast<structured_control_flow::Block*>(&inner_seq.at(1).first);
     ASSERT_NE(inner_block, nullptr);
     auto& dfg = inner_block->dataflow();
     ASSERT_EQ(dfg.nodes().size(), 3); // A access, tasklet, B access
@@ -2880,7 +3000,8 @@ TEST(ScopAnalysisTest, ScopToSDFGTest_SimpleLoopWithExpression) {
     ASSERT_EQ(scop->statements().size(), 1);
 
     // 2. Convert Scop back to SDFG
-    analysis::ScopToSDFG converter(*scop, builder);
+    analysis::Dependences dependences(*scop);
+    analysis::ScopToSDFG converter(*scop, dependences, builder);
     converter.build(am);
 
     ASSERT_EQ(root.size(), 1);
@@ -2890,22 +3011,27 @@ TEST(ScopAnalysisTest, ScopToSDFGTest_SimpleLoopWithExpression) {
 
     auto* new_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(&new_seq->at(0).first);
     ASSERT_NE(new_loop, nullptr);
-    EXPECT_EQ(new_loop->indvar()->get_name(), i_sym->get_name());
-    EXPECT_TRUE(symbolic::eq(new_loop->condition(), symbolic::Le(i_sym, symbolic::integer(9))));
+    symbolic::Symbol c_0 = symbolic::symbol("c0");
+    EXPECT_EQ(new_loop->indvar()->get_name(), c_0->get_name());
+    EXPECT_TRUE(symbolic::eq(new_loop->condition(), symbolic::Le(c_0, symbolic::integer(9))));
     EXPECT_TRUE(symbolic::eq(new_loop->init(), symbolic::integer(0)));
-    EXPECT_TRUE(symbolic::eq(new_loop->update(), symbolic::add(i_sym, symbolic::integer(1))));
+    EXPECT_TRUE(symbolic::eq(new_loop->update(), symbolic::add(c_0, symbolic::integer(1))));
 
     auto& inner_seq = new_loop->root();
-    ASSERT_EQ(inner_seq.size(), 1);
+    ASSERT_EQ(inner_seq.size(), 2);
 
-    auto inner_block = dynamic_cast<structured_control_flow::Block*>(&inner_seq.at(0).first);
+    auto& mapping_transition = inner_seq.at(0).second;
+    EXPECT_EQ(mapping_transition.size(), 1);
+    EXPECT_TRUE(symbolic::eq((*mapping_transition.assignments().begin()).first, symbolic::symbol("i")));
+    EXPECT_TRUE(symbolic::eq((*mapping_transition.assignments().begin()).second, c_0));
+
+    auto inner_block = dynamic_cast<structured_control_flow::Block*>(&inner_seq.at(1).first);
     ASSERT_NE(inner_block, nullptr);
     auto& dfg = inner_block->dataflow();
     ASSERT_EQ(dfg.nodes().size(), 0);
     ASSERT_EQ(dfg.edges().size(), 0);
 
-    EXPECT_EQ(inner_seq.at(0).second.size(), 1);
-    EXPECT_TRUE(symbolic::eq((*inner_seq.at(0).second.assignments().begin()).first, symbolic::symbol("A")));
-    EXPECT_TRUE(symbolic::eq((*inner_seq.at(0).second.assignments().begin()).second, symbolic::symbol("B")));
+    EXPECT_EQ(inner_seq.at(1).second.size(), 1);
+    EXPECT_TRUE(symbolic::eq((*inner_seq.at(1).second.assignments().begin()).first, symbolic::symbol("A")));
+    EXPECT_TRUE(symbolic::eq((*inner_seq.at(1).second.assignments().begin()).second, symbolic::symbol("B")));
 }
-*/

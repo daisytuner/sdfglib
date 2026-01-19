@@ -28,9 +28,6 @@ jobs:
       - name: Mark GitHub Actions workdir as safe
         run: git config --global --add safe.directory /__w/sdfglib/sdfglib
 
-      - name: Install lcov
-        run: apt-get update && apt-get install -y lcov
-
       - name: Formatting
         shell: bash
         run: |

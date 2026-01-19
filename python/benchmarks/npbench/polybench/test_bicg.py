@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from npbench.harness import run_benchmark, run_pytest
+from benchmarks.npbench.harness import run_benchmark, run_pytest
 
 PARAMETERS = {
     "S": {"M": 4000, "N": 5000},
@@ -23,7 +23,6 @@ def kernel(A, p, r):
     return r @ A, A @ p
 
 
-@pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
 def test_bicg(target):
     run_pytest(initialize, kernel, PARAMETERS, target)

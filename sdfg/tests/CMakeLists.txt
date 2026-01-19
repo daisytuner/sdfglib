@@ -67,7 +67,6 @@ set(TEST_FILES
     passes/memory/allocation_management_test.cpp
     passes/pipeline_test.cpp
     passes/schedules/expansion_pass_test.cpp
-    passes/schedules/parallelization_pass_test.cpp
     passes/structured_control_flow/block_fusion_test.cpp
     passes/structured_control_flow/condition_elimination_test.cpp
     passes/structured_control_flow/dead_cfg_elimination_test.cpp
@@ -84,7 +83,6 @@ set(TEST_FILES
     structured_control_flow/block_test.cpp
     structured_control_flow/if_else_test.cpp
     structured_control_flow/loop_test.cpp
-    structured_control_flow/map_test.cpp
     structured_control_flow/return_test.cpp
     structured_control_flow/sequence_test.cpp
     structured_sdfg_test.cpp
@@ -101,7 +99,6 @@ set(TEST_FILES
     transformations/loop_skewing_test.cpp
     transformations/loop_tiling_test.cpp
     transformations/out_local_storage_test.cpp
-    transformations/parallelization_test.cpp
     transformations/recorder_test.cpp
     types/array_test.cpp
     types/function_test.cpp

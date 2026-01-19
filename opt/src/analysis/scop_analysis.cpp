@@ -152,12 +152,11 @@ ScopBuilder::ScopBuilder(StructuredSDFG &sdfg, structured_control_flow::ControlF
 
 std::unique_ptr<Scop> ScopBuilder::build(analysis::AnalysisManager &analysis_manager) {
     isl_ctx *ctx = isl_ctx_alloc();
-    // isl_options_set_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+    isl_options_set_on_error(ctx, ISL_ON_ERROR_CONTINUE);
     isl_space *param_space = isl_space_set_alloc(ctx, 0, 0);
     this->scop_ = std::make_unique<Scop>(this->node_, ctx, param_space);
 
     this->visit(analysis_manager, node_);
-    std::cout << "Finished building SCoP for node " << node_.element_id() << "\n";
     if (this->scop_ == nullptr) {
         return nullptr;
     }
@@ -171,17 +170,11 @@ void ScopBuilder::visit(analysis::AnalysisManager &analysis_manager, structured_
     }
 
     if (auto block = dynamic_cast<structured_control_flow::Block *>(&node)) {
-        std::cout << "Visiting block " << block->element_id() << "\n";
         this->visit_block(analysis_manager, *block);
-        std::cout << "Finished visiting block " << block->element_id() << "\n";
     } else if (auto sequence = dynamic_cast<structured_control_flow::Sequence *>(&node)) {
-        std::cout << "Visiting sequence " << sequence->element_id() << "\n";
         this->visit_sequence(analysis_manager, *sequence);
-        std::cout << "Finished visiting sequence " << sequence->element_id() << "\n";
     } else if (auto loop = dynamic_cast<structured_control_flow::StructuredLoop *>(&node)) {
-        std::cout << "Visiting structured loop " << loop->element_id() << "\n";
         this->visit_structured_loop(analysis_manager, *loop);
-        std::cout << "Finished visiting structured loop " << loop->element_id() << "\n";
     } else {
         this->scop_ = nullptr;
         return;
@@ -241,6 +234,9 @@ void ScopBuilder::visit_sequence(analysis::AnalysisManager &analysis_manager, st
 }
 
 void ScopBuilder::visit_block(analysis::AnalysisManager &analysis_manager, structured_control_flow::Block &block) {
+    auto &assumptions_analysis = analysis_manager.get<analysis::AssumptionsAnalysis>();
+    auto &assumptions = assumptions_analysis.get(block, true);
+
     auto &graph = block.dataflow();
     for (auto node : graph.topological_sort()) {
         if (auto code_node = dynamic_cast<data_flow::CodeNode *>(node)) {
@@ -262,7 +258,8 @@ void ScopBuilder::visit_block(analysis::AnalysisManager &analysis_manager, struc
                 }
 
                 AccessType access_type = AccessType::READ;
-                std::string relation = generate_subset(analysis_manager, block, iedge.subset());
+                auto delinearized_subset = symbolic::delinearize(iedge.subset(), assumptions);
+                std::string relation = generate_subset(analysis_manager, block, delinearized_subset);
                 std::string data = static_cast<data_flow::AccessNode &>(iedge.src()).data();
                 isl_map *isl_relation = isl_map_read_from_str(scop_->ctx(), relation.c_str());
                 if (!isl_relation) {
@@ -279,7 +276,8 @@ void ScopBuilder::visit_block(analysis::AnalysisManager &analysis_manager, struc
                 AccessType access_type = AccessType::WRITE;
 
                 std::set<std::string> symbols;
-                std::string relation = generate_subset(analysis_manager, block, oedge.subset());
+                auto delinearized_subset = symbolic::delinearize(oedge.subset(), assumptions);
+                std::string relation = generate_subset(analysis_manager, block, delinearized_subset);
                 std::string data = static_cast<data_flow::AccessNode &>(oedge.dst()).data();
                 isl_map *isl_relation = isl_map_read_from_str(scop_->ctx(), relation.c_str());
                 if (!isl_relation) {
@@ -364,17 +362,14 @@ void ScopBuilder::
         set_str += "[ " + helpers::join(params, ", ") + " ] -> ";
     }
     set_str += "{ [" + indvar + "] : " + condition + " }";
-    std::cout << "Loop Bound Set String: " << set_str << std::endl;
 
     isl_ctx *ctx = scop_->ctx();
     isl_set *loop_bound_base = isl_set_read_from_str(ctx, set_str.c_str());
     if (!loop_bound_base) {
-        DEBUG_PRINTLN("Failed to parse loop bound set: " << set_str);
         this->scop_ = nullptr;
         return;
     }
     char *loop_bound_str = isl_set_to_str(loop_bound_base);
-    std::cout << "Loop Bound Set: " << loop_bound_str << std::endl;
     free(loop_bound_str);
 
     size_t stmt_start = this->scop_->statements().size();
@@ -386,6 +381,8 @@ void ScopBuilder::
     auto stmts = this->scop_->statements();
     for (size_t i = stmt_start; i < stmts.size(); ++i) {
         ScopStatement *stmt = stmts[i];
+        stmt->push_front(loop.indvar());
+
         isl_set *domain = isl_set_copy(stmt->domain());
 
         // Insert indvar dimension at 0
@@ -570,7 +567,7 @@ static void collectInfo(
                     "handling."
                 );
 
-                isl_id *id = isl_id_alloc(S.ctx(), MA->data().c_str(), nullptr);
+                isl_id *id = isl_id_alloc(S.ctx(), MA->data().c_str(), MA);
                 accdom = tag(accdom, isl_id_copy(id));
                 isl_map *Schedule = tag(StmtScheduleMap, id);
                 StmtSchedule = isl_union_map_add_map(StmtSchedule, Schedule);
@@ -733,7 +730,8 @@ static isl_stat collect_deps(isl_map *bmap, void *user) {
     isl_space *domain_space = isl_space_domain(space);
 
     if (isl_space_is_wrapping(domain_space)) {
-        isl_space *unwrapped = isl_space_unwrap(domain_space);
+        isl_space *domain_space_copy = isl_space_copy(domain_space);
+        isl_space *unwrapped = isl_space_unwrap(domain_space_copy);
         isl_space *range = isl_space_range(unwrapped);
 
         if (isl_space_has_tuple_name(range, isl_dim_set)) {
@@ -751,10 +749,9 @@ static isl_stat collect_deps(isl_map *bmap, void *user) {
             }
         }
         isl_space_free(range);
-        isl_space_free(unwrapped);
-    } else {
-        isl_space_free(domain_space);
     }
+
+    isl_space_free(domain_space);
     isl_map_free(bmap);
     return isl_stat_ok;
 }
@@ -1079,29 +1076,22 @@ void Dependences::add_privatization_dependences() {
 }
 
 bool Dependences::is_parallel(isl_union_map *schedule, isl_pw_aff **min_distance_ptr) const {
-    isl_set *Deltas, *Distance;
     isl_union_map *deps = this->dependences(TYPE_RAW | TYPE_WAR | TYPE_WAW);
-    std::cout << "Dependences for parallel check: " << isl_union_map_to_str(deps) << std::endl;
-    isl_map *schedule_deps;
-    unsigned Dimension;
-    bool IsParallel;
-
     deps = isl_union_map_apply_range(deps, isl_union_map_copy(schedule));
     deps = isl_union_map_apply_domain(deps, isl_union_map_copy(schedule));
-
     if (isl_union_map_is_empty(deps)) {
         isl_union_map_free(deps);
         return true;
     }
 
-    schedule_deps = isl_map_from_union_map(deps);
-    Dimension = isl_map_dim(schedule_deps, isl_dim_out) - 1;
+    isl_map *schedule_deps = isl_map_from_union_map(deps);
+    unsigned Dimension = isl_map_dim(schedule_deps, isl_dim_out) - 1;
 
     for (unsigned i = 0; i < Dimension; i++)
         schedule_deps = isl_map_equate(schedule_deps, isl_dim_out, i, isl_dim_in, i);
 
-    Deltas = isl_map_deltas(schedule_deps);
-    Distance = isl_set_universe(isl_set_get_space(Deltas));
+    isl_set *Deltas = isl_map_deltas(schedule_deps);
+    isl_set *Distance = isl_set_universe(isl_set_get_space(Deltas));
 
     // [0, ..., 0, +] - All zeros and last dimension larger than zero
     for (unsigned i = 0; i < Dimension; i++) Distance = isl_set_fix_si(Distance, isl_dim_set, i, 0);
@@ -1109,7 +1099,7 @@ bool Dependences::is_parallel(isl_union_map *schedule, isl_pw_aff **min_distance
     Distance = isl_set_lower_bound_si(Distance, isl_dim_set, Dimension, 1);
     Distance = isl_set_intersect(Distance, Deltas);
 
-    IsParallel = isl_set_is_empty(Distance);
+    bool IsParallel = isl_set_is_empty(Distance);
     if (IsParallel || !min_distance_ptr) {
         isl_set_free(Distance);
         return IsParallel;
@@ -1189,7 +1179,8 @@ bool Dependences::is_valid(Scop &scop, isl_schedule *schedule) const {
     return check_validity(this, scop, isl_schedule_get_map(schedule));
 }
 
-ScopToSDFG::ScopToSDFG(Scop &scop, builder::StructuredSDFGBuilder &builder) : scop_(scop), builder_(builder) {
+ScopToSDFG::ScopToSDFG(Scop &scop, const Dependences &dependences, builder::StructuredSDFGBuilder &builder)
+    : scop_(scop), dependences_(dependences), builder_(builder) {
     for (auto *stmt : scop_.statements()) {
         stmt_map_[stmt->name()] = stmt;
     }
@@ -1247,37 +1238,35 @@ static isl_stat collect_dim_names(isl_map *map, void *user) {
     return isl_stat_ok;
 }
 
-void ScopToSDFG::build(analysis::AnalysisManager &analysis_manager) {
+static __isl_give isl_ast_node *after_each_for(__isl_take isl_ast_node *node, __isl_keep isl_ast_build *build, void *user) {
+    auto *deps = static_cast<const Dependences *>(user);
+    isl_union_map *schedule = isl_ast_build_get_schedule(build);
+    bool is_parallel = deps->is_parallel(schedule);
+    isl_union_map_free(schedule);
+
+    if (is_parallel) {
+        isl_id *id = isl_id_alloc(isl_ast_node_get_ctx(node), "parallel", nullptr);
+        node = isl_ast_node_set_annotation(node, id);
+    }
+    return node;
+}
+
+structured_control_flow::ControlFlowNode &ScopToSDFG::build(analysis::AnalysisManager &analysis_manager) {
     isl_ctx *ctx = scop_.ctx();
 
     // 1. Create AST Builder
     isl_ast_build *ast_builder = isl_ast_build_alloc(ctx);
+    ast_builder = isl_ast_build_set_after_each_for(ast_builder, &after_each_for, (void *) &dependences_);
 
     // 2. Generate AST from Schedule
     isl_schedule *schedule = isl_schedule_copy(scop_.schedule_tree());
-    isl_union_map *schedule_map = isl_union_map_copy(scop_.schedule());
-
-    // Apply dimension names to schedule
-    NameConnectInfo info;
-    isl_union_map_foreach_map(schedule_map, collect_dim_names, &info);
-    isl_union_map_free(schedule_map);
-
-    if (!info.names.empty()) {
-        isl_id_list *iterators = isl_id_list_alloc(ctx, info.names.size());
-        for (int i = 0; i < info.names.size(); ++i) {
-            std::string id_name = info.names[i].empty() ? "c" + std::to_string(i) : info.names[i];
-            iterators = isl_id_list_add(iterators, isl_id_alloc(ctx, id_name.c_str(), nullptr));
-        }
-        ast_builder = isl_ast_build_set_iterators(ast_builder, iterators);
-    }
-
     isl_ast_node *root_node = isl_ast_build_node_from_schedule(ast_builder, schedule);
 
     // 3. Start Traversal
     auto &scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
     auto parent_scope = scope_analysis.parent_scope(&scop_.node());
     if (!parent_scope) {
-        return; // Cannot build SDFG without a parent scope
+        parent_scope = &builder_.hoist_root();
     }
     auto parent_sequence = static_cast<structured_control_flow::Sequence *>(parent_scope);
     int index = parent_sequence->index(scop_.node());
@@ -1288,6 +1277,8 @@ void ScopToSDFG::build(analysis::AnalysisManager &analysis_manager) {
 
     isl_ast_node_free(root_node);
     isl_ast_build_free(ast_builder);
+
+    return target_sequence;
 }
 
 void ScopToSDFG::visit_node(isl_ast_node *node, structured_control_flow::Sequence &scope) {
@@ -1303,18 +1294,16 @@ void ScopToSDFG::visit_node(isl_ast_node *node, structured_control_flow::Sequenc
         case isl_ast_node_block:
             visit_block(node, scope);
             break;
+        case isl_ast_node_mark:
+            visit_mark(node, scope);
+            break;
         case isl_ast_node_user:
             visit_user(node, scope);
             break;
-        case isl_ast_node_mark: {
-            // Handle markers (e.g., parallelism annotations) here if needed
-            isl_ast_node *child = isl_ast_node_mark_get_node(node);
-            visit_node(child, scope);
-            isl_ast_node_free(child);
+        default: {
+            throw std::runtime_error("Unsupported AST node type encountered during SCoP to SDFG conversion.");
             break;
         }
-        default:
-            break;
     }
 }
 
@@ -1329,15 +1318,38 @@ void ScopToSDFG::visit_for(isl_ast_node *node, structured_control_flow::Sequence
     // Convert to Symbolic
     auto id = isl_ast_expr_get_id(iterator);
     symbolic::Symbol sym_iter = symbolic::symbol(isl_id_get_name(id));
+    if (!builder_.subject().exists(sym_iter->get_name())) {
+        builder_.add_container(sym_iter->get_name(), types::Scalar(types::PrimitiveType::Int64));
+    }
     symbolic::Expression sym_init = convert_expr(init);
     symbolic::Condition sym_cond = convert_cond(cond);
     symbolic::Expression step = convert_expr(inc);
     symbolic::Expression update_expr = symbolic::add(sym_iter, step);
 
-    auto &loop = builder_.add_for(scope, sym_iter, sym_cond, sym_init, update_expr);
+    // Create map for parallel loops
+    bool is_parallel = false;
 
-    // Recurse into body
-    visit_node(body, loop.root());
+    isl_id *annotation = isl_ast_node_get_annotation(node);
+    if (annotation) {
+        if (std::string(isl_id_get_name(annotation)) == "parallel") {
+            is_parallel = true;
+        }
+        isl_id_free(annotation);
+    }
+
+    if (is_parallel) {
+        auto &loop = builder_.add_map(
+            scope, sym_iter, sym_cond, sym_init, update_expr, structured_control_flow::ScheduleType_Sequential::create()
+        );
+
+        // Recurse into body
+        visit_node(body, loop.root());
+    } else {
+        auto &loop = builder_.add_for(scope, sym_iter, sym_cond, sym_init, update_expr);
+
+        // Recurse into body
+        visit_node(body, loop.root());
+    }
 
     isl_ast_expr_free(iterator);
     isl_ast_expr_free(init);
@@ -1383,6 +1395,12 @@ void ScopToSDFG::visit_block(isl_ast_node *node, structured_control_flow::Sequen
     isl_ast_node_list_free(list);
 }
 
+void ScopToSDFG::visit_mark(isl_ast_node *node, structured_control_flow::Sequence &scope) {
+    isl_ast_node *child = isl_ast_node_mark_get_node(node);
+    visit_node(child, scope);
+    isl_ast_node_free(child);
+}
+
 void ScopToSDFG::visit_user(isl_ast_node *node, structured_control_flow::Sequence &scope) {
     isl_ast_expr *expr = isl_ast_node_user_get_expr(node);
     // Usually 'expr' is a call operation: "StatementName(i, j)"
@@ -1403,6 +1421,26 @@ void ScopToSDFG::visit_user(isl_ast_node *node, structured_control_flow::Sequenc
         std::string name = isl_id_get_name(id);
         if (stmt_map_.count(name)) {
             ScopStatement *stmt = stmt_map_[name];
+
+            // Get args of expr
+            int n_args = isl_ast_expr_get_op_n_arg(expr);
+            std::vector<symbolic::Expression> args;
+            for (int i = 1; i < n_args; ++i) {
+                isl_ast_expr *arg_expr = isl_ast_expr_get_op_arg(expr, i);
+                symbolic::Expression arg_sym = convert_expr(arg_expr);
+                args.push_back(arg_sym);
+                isl_ast_expr_free(arg_expr);
+            }
+
+            // Add transition mapping stmt->iterator_i = arg_i
+            assert(args.size() == stmt->iterators().size());
+            Assignments assignments;
+            for (size_t i = 0; i < stmt->iterators().size(); ++i) {
+                assignments[stmt->iterators().at(i)] = args[i];
+            }
+            if (!assignments.empty()) {
+                builder_.add_block(scope, assignments);
+            }
 
             if (!stmt->expression().is_null()) {
                 std::string rhs = (*stmt->writes().begin())->data();

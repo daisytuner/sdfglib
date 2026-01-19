@@ -42,7 +42,9 @@ class ExpressionVisitor(ast.NodeVisitor):
     def _init_numpy_handlers(self):
         self.numpy_handlers = {
             "empty": self._handle_numpy_alloc,
+            "empty_like": self._handle_numpy_empty_like,
             "zeros": self._handle_numpy_alloc,
+            "zeros_like": self._handle_numpy_zeros_like,
             "ones": self._handle_numpy_alloc,
             "eye": self._handle_numpy_eye,
             "add": self._handle_numpy_binary_op,
@@ -63,6 +65,7 @@ class ExpressionVisitor(ast.NodeVisitor):
             "matmul": self._handle_numpy_matmul,
             "dot": self._handle_numpy_matmul,
             "matvec": self._handle_numpy_matmul,
+            "outer": self._handle_numpy_outer,
             "minimum": self._handle_numpy_binary_op,
             "maximum": self._handle_numpy_binary_op,
         }
@@ -765,6 +768,13 @@ class ExpressionVisitor(ast.NodeVisitor):
         return tmp_name
 
     def visit_UnaryOp(self, node):
+        if (
+            isinstance(node.op, ast.USub)
+            and isinstance(node.operand, ast.Constant)
+            and isinstance(node.operand.value, (int, float))
+        ):
+            return f"-{node.operand.value}"
+
         op = self.visit(node.op)
         operand = self.visit(node.operand)
 
@@ -1306,6 +1316,82 @@ class ExpressionVisitor(ast.NodeVisitor):
             ones_init=(func_name == "ones"),
         )
 
+    def _handle_numpy_empty_like(self, node, func_name):
+        prototype_arg = node.args[0]
+        prototype_name = self.visit(prototype_arg)
+
+        # Parse shape from prototype
+        dims = []
+        if prototype_name in self.array_info:
+            dims = self.array_info[prototype_name]["shapes"]
+
+        # Parse dtype
+        dtype_arg = None
+        if len(node.args) > 1:
+            dtype_arg = node.args[1]
+
+        for kw in node.keywords:
+            if kw.arg == "dtype":
+                dtype_arg = kw.value
+                break
+
+        element_type = None
+        if dtype_arg:
+            element_type = self._map_numpy_dtype(dtype_arg)
+        else:
+            if prototype_name in self.symbol_table:
+                sym_type = self.symbol_table[prototype_name]
+                if isinstance(sym_type, Pointer) and sym_type.has_pointee_type():
+                    element_type = sym_type.pointee_type
+
+        if element_type is None:
+            element_type = Scalar(PrimitiveType.Double)
+
+        return self._create_array_temp(
+            dims,
+            element_type,
+            zero_init=False,
+            ones_init=False,
+        )
+
+    def _handle_numpy_zeros_like(self, node, func_name):
+        prototype_arg = node.args[0]
+        prototype_name = self.visit(prototype_arg)
+
+        # Parse shape from prototype
+        dims = []
+        if prototype_name in self.array_info:
+            dims = self.array_info[prototype_name]["shapes"]
+
+        # Parse dtype
+        dtype_arg = None
+        if len(node.args) > 1:
+            dtype_arg = node.args[1]
+
+        for kw in node.keywords:
+            if kw.arg == "dtype":
+                dtype_arg = kw.value
+                break
+
+        element_type = None
+        if dtype_arg:
+            element_type = self._map_numpy_dtype(dtype_arg)
+        else:
+            if prototype_name in self.symbol_table:
+                sym_type = self.symbol_table[prototype_name]
+                if isinstance(sym_type, Pointer) and sym_type.has_pointee_type():
+                    element_type = sym_type.pointee_type
+
+        if element_type is None:
+            element_type = Scalar(PrimitiveType.Double)
+
+        return self._create_array_temp(
+            dims,
+            element_type,
+            zero_init=True,
+            ones_init=False,
+        )
+
     def _handle_numpy_eye(self, node, func_name):
         # Parse N
         N_arg = node.args[0]
@@ -1405,6 +1491,65 @@ class ExpressionVisitor(ast.NodeVisitor):
         if len(node.args) != 2:
             raise NotImplementedError("matmul/dot requires 2 arguments")
         return self._handle_matmul_helper(node.args[0], node.args[1])
+
+    def _handle_numpy_outer(self, node, func_name):
+        if len(node.args) != 2:
+            raise NotImplementedError("outer requires 2 arguments")
+
+        arg0 = node.args[0]
+        arg1 = node.args[1]
+
+        if not self.la_handler:
+            raise RuntimeError("LinearAlgebraHandler not initialized")
+
+        res_a = self.la_handler.parse_arg(arg0)
+        res_b = self.la_handler.parse_arg(arg1)
+
+        # Resolve standard names if parse_arg failed (likely complex expression)
+        if not res_a[0]:
+            left_name = self.visit(arg0)
+            arg0 = ast.Name(id=left_name)
+            res_a = self.la_handler.parse_arg(arg0)
+
+        if not res_b[0]:
+            right_name = self.visit(arg1)
+            arg1 = ast.Name(id=right_name)
+            res_b = self.la_handler.parse_arg(arg1)
+
+        name_a, subset_a, shape_a, indices_a = res_a
+        name_b, subset_b, shape_b, indices_b = res_b
+
+        if not name_a or not name_b:
+            raise NotImplementedError("Could not resolve outer operands")
+
+        def get_flattened_size_expr(name, indices, shapes):
+            # Simplified: if slice, we use parse_arg's returned `shapes` (which are dim sizes of the slice)
+            # And multiply them.
+            size_expr = "1"
+            for s in shapes:
+                if size_expr == "1":
+                    size_expr = str(s)
+                else:
+                    size_expr = f"({size_expr} * {str(s)})"
+            return size_expr
+
+        m_expr = get_flattened_size_expr(name_a, indices_a, shape_a)
+        n_expr = get_flattened_size_expr(name_b, indices_b, shape_b)
+
+        # Create temporary container
+        # Since outer usually promotes types or uses standard types, we default to double for now.
+        dtype = Scalar(PrimitiveType.Double)
+
+        # Use helper to create array temp which handles symbol table and array info
+        tmp_name = self._create_array_temp([m_expr, n_expr], dtype)
+
+        new_call_node = ast.Call(
+            func=node.func, args=[arg0, arg1], keywords=node.keywords
+        )
+
+        self.la_handler.handle_outer(tmp_name, new_call_node)
+
+        return tmp_name
 
     def _handle_matmul_helper(self, left_node, right_node):
         if not self.la_handler:
@@ -1507,9 +1652,16 @@ class ExpressionVisitor(ast.NodeVisitor):
             for _ in range(batch_dims):
                 self.builder.end_for()
         else:
-            self.la_handler.handle_gemm(
-                tmp_name, ast.BinOp(left=left_node, op=ast.MatMult(), right=right_node)
-            )
+            if is_scalar:
+                self.la_handler.handle_dot(
+                    tmp_name,
+                    ast.BinOp(left=left_node, op=ast.MatMult(), right=right_node),
+                )
+            else:
+                self.la_handler.handle_gemm(
+                    tmp_name,
+                    ast.BinOp(left=left_node, op=ast.MatMult(), right=right_node),
+                )
 
         return tmp_name
 

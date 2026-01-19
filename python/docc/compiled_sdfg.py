@@ -22,7 +22,15 @@ _CTYPES_MAP = {
 
 
 class CompiledSDFG:
-    def __init__(self, lib_path, sdfg, shape_sources=None, structure_member_info=None):
+    def __init__(
+        self,
+        lib_path,
+        sdfg,
+        shape_sources=None,
+        structure_member_info=None,
+        output_args=None,
+        output_shapes=None,
+    ):
         self.lib_path = lib_path
         self.sdfg = sdfg
         self.shape_sources = shape_sources or []
@@ -30,10 +38,20 @@ class CompiledSDFG:
         self.lib = ctypes.CDLL(lib_path)
         self.func = getattr(self.lib, sdfg.name)
 
+        # Check for output args
+        self.output_args = output_args or []
+        if not self.output_args and hasattr(sdfg, "metadata"):
+            out_args_str = sdfg.metadata("output_args")
+            if out_args_str:
+                self.output_args = out_args_str.split(",")
+
+        self.output_shapes = output_shapes or {}
+
         # Cache for ctypes structure definitions
         self._ctypes_structures = {}
 
         # Set up argument types
+        self.arg_names = sdfg.arguments
         self.arg_types = []
         self.arg_sdfg_types = []  # Keep track of original sdfg types
         for arg_name in sdfg.arguments:
@@ -96,87 +114,160 @@ class CompiledSDFG:
         return ctypes.c_void_p
 
     def __call__(self, *args):
-        # Expand arguments (handle numpy arrays and their shapes)
-        expanded_args = list(args)
+        # Identify user arguments vs implicit arguments (shapes, return values)
 
-        # Append unified shape arguments
-        for arg_idx, dim_idx in self.shape_sources:
-            arg = args[arg_idx]
-            if np is not None and isinstance(arg, np.ndarray):
-                expanded_args.append(arg.shape[dim_idx])
-            else:
-                raise ValueError(
-                    f"Expected ndarray at index {arg_idx} for shape source"
-                )
+        # 1. Compute shape symbol values from user args input
+        shape_symbol_values = {}
+        for u_idx, dim_idx in self.shape_sources:
+            if u_idx < len(args):
+                val = args[u_idx].shape[dim_idx]
+                s_idx = self.shape_sources.index((u_idx, dim_idx))
+                shape_symbol_values[f"_s{s_idx}"] = val
 
-        if len(expanded_args) != len(self.arg_types):
-            raise ValueError(
-                f"Expected {len(self.arg_types)} arguments (including implicit shapes), got {len(expanded_args)}"
-            )
+        param_arg_idx = 0
+        for name in self.arg_names:
+            if name in self.output_args:
+                continue
+            if name.startswith("_s") and name[2:].isdigit():
+                continue
+
+            # Must be a user parameter
+            if param_arg_idx < len(args):
+                val = args[param_arg_idx]
+                if isinstance(val, (int, float, np.integer, np.floating)):
+                    shape_symbol_values[name] = val
+                param_arg_idx += 1
 
         converted_args = []
-        # Keep references to ctypes structures to prevent garbage collection
         structure_refs = []
+        return_buffers = {}
 
-        for i, arg in enumerate(expanded_args):
+        next_user_arg_idx = 0
+
+        for i, arg_name in enumerate(self.arg_names):
             target_type = self.arg_types[i]
-            sdfg_type = self.arg_sdfg_types[i] if i < len(self.arg_sdfg_types) else None
 
-            # Handle numpy arrays
+            if arg_name in self.output_args:
+                base_type = target_type._type_
+
+                # If array (pointer type) and we have shape info, we need to allocate array.
+                # If not in output_shapes, assume scalar return (pointer to single value).
+                if arg_name in self.output_shapes:
+                    size = 1
+                    dims = self.output_shapes[arg_name]
+                    # Evaluate
+                    for dim_str in dims:
+                        try:
+                            val = eval(str(dim_str), {}, shape_symbol_values)
+                            size *= int(val)
+                        except Exception as e:
+                            raise RuntimeError(
+                                f"Could not evaluate shape {dim_str} for {arg_name}: {e}"
+                            )
+
+                    buf_type = base_type * size
+                    buf = buf_type()
+                    return_buffers[arg_name] = (buf, size, dims)
+                    converted_args.append(
+                        ctypes.cast(ctypes.addressof(buf), target_type)
+                    )
+                    continue
+
+                # Scalar Return (Pointer(Scalar))
+                buf = base_type()
+                return_buffers[arg_name] = (buf, 1, None)
+                converted_args.append(ctypes.byref(buf))
+                continue
+
+            if arg_name.startswith("_s") and arg_name[2:].isdigit():
+                s_idx = int(arg_name[2:])
+                if f"_s{s_idx}" in shape_symbol_values:
+                    val = shape_symbol_values[f"_s{s_idx}"]
+                    converted_args.append(ctypes.c_int64(val))
+                else:
+                    converted_args.append(ctypes.c_int64(0))
+                continue
+
+            # User Argument
+            if next_user_arg_idx >= len(args):
+                raise ValueError("Not enough arguments provided")
+
+            arg = args[next_user_arg_idx]
+            next_user_arg_idx += 1
+
+            # ... Conversion logic (numpy to ctypes) ...
+            sdfg_type = self.arg_sdfg_types[i]
+
             if np is not None and isinstance(arg, np.ndarray):
-                # Check if it's a pointer type
-                if hasattr(target_type, "contents"):  # It's a pointer
+                if hasattr(target_type, "contents"):
                     converted_args.append(arg.ctypes.data_as(target_type))
                 else:
                     converted_args.append(arg)
-            # Handle class instances (structures)
-            # Note: has_pointee_type() is guaranteed on Pointer instances
             elif (
                 sdfg_type
                 and isinstance(sdfg_type, Pointer)
                 and sdfg_type.has_pointee_type()
                 and isinstance(sdfg_type.pointee_type, Structure)
             ):
-                # Convert Python object to ctypes structure
+                # Struct logic
                 struct_name = sdfg_type.pointee_type.name
                 struct_class = self._ctypes_structures.get(struct_name)
-
-                # This should not happen if type setup was done correctly
-                if struct_class is None:
-                    raise RuntimeError(
-                        f"Internal error: Structure '{struct_name}' was not created during type setup. "
-                        f"This indicates a bug in the compilation process."
-                    )
-
-                # Validate the Python object has the required structure
-                if not hasattr(arg, "__dict__"):
-                    raise TypeError(
-                        f"Expected object with attributes for structure '{struct_name}', "
-                        f"but got {type(arg).__name__} without __dict__"
-                    )
-
-                # Get member info to know the order
                 members = self.structure_member_info[struct_name]
                 sorted_members = sorted(members.items(), key=lambda x: x[1][0])
-
-                # Create ctypes structure instance with values from Python object
                 struct_values = {}
                 for member_name, (index, member_type) in sorted_members:
                     if hasattr(arg, member_name):
                         struct_values[member_name] = getattr(arg, member_name)
-                    else:
-                        raise ValueError(
-                            f"Python object missing attribute '{member_name}' for structure '{struct_name}'"
-                        )
-
                 c_struct = struct_class(**struct_values)
-                structure_refs.append(c_struct)  # Keep alive
-                # Pass pointer to the structure
+                structure_refs.append(c_struct)
                 converted_args.append(ctypes.pointer(c_struct))
             else:
-                converted_args.append(arg)
+                converted_args.append(
+                    target_type(arg)
+                )  # Explicit cast to ensure int stays int
 
-        return self.func(*converted_args)
+        self.func(*converted_args)
+
+        # Process returns
+        results = []
+        sorted_ret_names = sorted(
+            return_buffers.keys(), key=lambda x: int(x.split("_")[-1])
+        )
+
+        for name in sorted_ret_names:
+            buf, size, dims = return_buffers[name]
+            if size == 1 and dims is None:
+                # Scalar
+                # buf is c_double / c_int instance
+                results.append(buf.value)
+            else:
+                # Array
+                # buf is (c_double * size) instance.
+                # Convert to numpy
+                if np is not None:
+                    # Create numpy array from buffer
+                    arr = np.ctypeslib.as_array(buf)  # 1D
+                    if dims:
+                        # Reshape
+                        try:
+                            shape = []
+                            for dim_str in dims:
+                                val = eval(str(dim_str), {}, shape_symbol_values)
+                                shape.append(int(val))
+                            arr = arr.reshape(shape)
+                        except:
+                            pass
+                    results.append(arr)
+                else:
+                    # fallback list
+                    results.append(list(buf))
+
+        if len(results) == 1:
+            return results[0]
+        elif len(results) > 1:
+            return tuple(results)
+
+        return None
 
     def get_return_shape(self, *args):
         shape_str = self.sdfg.metadata("return_shape")
@@ -184,10 +275,6 @@ class CompiledSDFG:
             return None
 
         shape_exprs = shape_str.split(",")
-
-        # We need to evaluate these expressions
-        # They might contain _s0, _s1 etc.
-        # We have shape_sources which maps (arg_idx, dim_idx) -> unique_shape_idx
 
         # Reconstruct shape values
         shape_values = {}

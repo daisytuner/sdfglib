@@ -1747,22 +1747,3 @@ TEST(JSONSerializerTest, SerializeDeserialize_LibraryNode) {
     EXPECT_TRUE(dynamic_cast<data_flow::BarrierLocalNode*>(&lib_node_new));
     auto barrier_local_node = dynamic_cast<data_flow::BarrierLocalNode*>(&lib_node_new);
 }
-
-TEST(JSONSerializerTest, SerializeDeserialize_ScheduleType) {
-    ScheduleType sched_type = ScheduleType_CPU_Parallel::create();
-
-    sched_type.set_property("num_threads", "4");
-
-    sdfg::serializer::JSONSerializer serializer;
-
-    // Serialize the schedule type
-    nlohmann::json j;
-    serializer.schedule_type_to_json(j, sched_type);
-
-    // Deserialize the schedule type
-    ScheduleType sched_type_new = serializer.json_to_schedule_type(j);
-
-    EXPECT_EQ(sched_type_new.value(), sched_type.value());
-    EXPECT_EQ(sched_type_new.properties().size(), sched_type.properties().size());
-    EXPECT_EQ(sched_type_new.properties().at("num_threads"), sched_type.properties().at("num_threads"));
-}

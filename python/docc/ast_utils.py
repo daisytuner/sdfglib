@@ -67,6 +67,21 @@ class SliceRewriter(ast.NodeTransformer):
                 )
         return node
 
+    def visit_BinOp(self, node):
+        if isinstance(node.op, ast.MatMult):
+            if self.loop_vars:
+                indices = [ast.Name(id=lv, ctx=ast.Load()) for lv in self.loop_vars]
+                return ast.Subscript(
+                    value=node,
+                    slice=(
+                        ast.Tuple(elts=indices, ctx=ast.Load())
+                        if len(indices) > 1
+                        else indices[0]
+                    ),
+                    ctx=ast.Load(),
+                )
+        return self.generic_visit(node)
+
     def visit_Subscript(self, node):
         node.value = self.visit(node.value)
 

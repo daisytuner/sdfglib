@@ -377,6 +377,8 @@ class LinearAlgebraHandler:
                 return True
             if isinstance(node.func, ast.Name) and node.func.id == "dot":
                 return True
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.MatMult):
+            return True
         return False
 
     def handle_dot(self, target, value_node):
@@ -398,12 +400,21 @@ class LinearAlgebraHandler:
         if not dot_node:
             return False
 
-        args = dot_node.args
-        if len(args) != 2:
-            return False
+        arg0 = None
+        arg1 = None
 
-        res_a = self.parse_arg(args[0])
-        res_b = self.parse_arg(args[1])
+        if isinstance(dot_node, ast.Call):
+            args = dot_node.args
+            if len(args) != 2:
+                return False
+            arg0 = args[0]
+            arg1 = args[1]
+        elif isinstance(dot_node, ast.BinOp) and isinstance(dot_node.op, ast.MatMult):
+            arg0 = dot_node.left
+            arg1 = dot_node.right
+
+        res_a = self.parse_arg(arg0)
+        res_b = self.parse_arg(arg1)
 
         if not res_a[0] or not res_b[0]:
             return False
@@ -455,11 +466,150 @@ class LinearAlgebraHandler:
             name_a, name_b, tmp_res, n, incx, incy, flat_subset_a, flat_subset_b
         )
 
+        target_str = target if isinstance(target, str) else self._parse_expr(target)
+
         if is_accumulate:
-            target_str = self._parse_expr(target)
             self.builder.add_assignment(target_str, f"{target_str} + {tmp_res}")
         else:
-            target_str = self._parse_expr(target)
             self.builder.add_assignment(target_str, tmp_res)
+
+        return True
+
+    def is_outer(self, node):
+        if isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Attribute) and node.func.attr == "outer":
+                return True
+            if isinstance(node.func, ast.Name) and node.func.id == "outer":
+                return True
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+            return self.is_outer(node.left) or self.is_outer(node.right)
+        return False
+
+    def handle_outer(self, target, value_node):
+        target_name = None
+        target_subset = []
+
+        if isinstance(target, str):
+            target_name = target
+        elif isinstance(target, ast.Name):
+            target_name = target.id
+        elif isinstance(target, ast.Subscript):
+            res = self.parse_arg(target)
+            if res[0]:
+                target_name = res[0]
+                target_subset = self.flatten_subset(target_name, res[1])
+            else:
+                if isinstance(target.value, ast.Name):
+                    target_name = target.value.id
+
+        if not target_name:
+            return False
+
+        outer_calls = []
+        target_found = False
+        terms = []
+
+        def collect_terms(node):
+            if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+                collect_terms(node.left)
+                collect_terms(node.right)
+            else:
+                terms.append(node)
+
+        collect_terms(value_node)
+
+        for term in terms:
+            if self._is_target(term, target_name):
+                target_found = True
+            elif isinstance(term, ast.Call) and (
+                (isinstance(term.func, ast.Attribute) and term.func.attr == "outer")
+                or (isinstance(term.func, ast.Name) and term.func.id == "outer")
+            ):
+                if len(term.args) != 2:
+                    return False
+                outer_calls.append(term)
+            else:
+                return False
+
+        if not outer_calls:
+            return False
+
+        parsed_outers = []
+        for outer_node in outer_calls:
+            arg0 = outer_node.args[0]
+            arg1 = outer_node.args[1]
+
+            res_a = self.parse_arg(arg0)
+            res_b = self.parse_arg(arg1)
+
+            if not res_a[0] or not res_b[0]:
+                return False
+
+            parsed_outers.append((res_a, res_b))
+
+        alpha = "1.0"
+        beta = "1.0" if target_found else "0.0"
+
+        # Determine shapes M and N
+        # outer(a, b) -> a is flattened to (M,), b is flattened to (N,)
+        # result is (M, N)
+
+        # We need to compute size of M and N from shapes and subsets if sliced.
+        def get_flattened_size(name, indices, shapes):
+            size_expr = "1"
+            for s in shapes:
+                if size_expr == "1":
+                    size_expr = str(s)
+                else:
+                    size_expr = f"({size_expr} * {str(s)})"
+            return size_expr
+
+        def get_ld_2d(name):
+            if name in self.array_info:
+                shapes = self.array_info[name]["shapes"]
+                if len(shapes) >= 2:
+                    return str(shapes[1])
+            return "1"
+
+        ldc = get_ld_2d(target_name)
+
+        for res_a, res_b in parsed_outers:
+            name_a, subset_a, shape_a, indices_a = res_a
+            name_b, subset_b, shape_b, indices_b = res_b
+
+            m = get_flattened_size(name_a, indices_a, shape_a)
+            n = get_flattened_size(name_b, indices_b, shape_b)
+            k = "1"
+
+            # A: (M, 1) Column Vector. Use as is.
+            # B: (N, 1) Column Vector. Transpose to get (1, N).
+            trans_a = False
+            trans_b = True
+
+            flat_subset_a = self.flatten_subset(name_a, subset_a)
+            flat_subset_b = self.flatten_subset(name_b, subset_b)
+
+            lda = "1"
+            ldb = "1"
+
+            self.builder.add_gemm(
+                name_a,
+                name_b,
+                target_name,
+                alpha,
+                beta,
+                m,
+                n,
+                k,
+                trans_a,
+                trans_b,
+                flat_subset_a,
+                flat_subset_b,
+                target_subset,
+                lda,
+                ldb,
+                ldc,
+            )
+            beta = "1.0"
 
         return True

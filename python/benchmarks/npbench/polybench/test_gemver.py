@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from npbench.harness import run_benchmark, run_pytest
+from benchmarks.npbench.harness import run_benchmark, run_pytest
 
 PARAMETERS = {
     "S": {"N": 1000},
@@ -33,7 +33,6 @@ def kernel(alpha, beta, A, u1, v1, u2, v2, w, x, y, z):
     w += alpha * A @ x
 
 
-@pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
 def test_gemver(target):
     run_pytest(initialize, kernel, PARAMETERS, target)

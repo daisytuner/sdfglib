@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from npbench.harness import run_benchmark, run_pytest
+from benchmarks.npbench.harness import run_benchmark, run_pytest
 
 PARAMETERS = {
     "S": {"TSTEPS": 8, "N": 50},
@@ -34,7 +34,6 @@ def kernel(TSTEPS, N, A):
                 A[i, j] /= 9.0
 
 
-@pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
 def test_seidel_2d(target):
     run_pytest(initialize, kernel, PARAMETERS, target)

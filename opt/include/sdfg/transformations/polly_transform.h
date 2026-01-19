@@ -24,10 +24,12 @@ class PollyTransform : public Transformation {
 
     std::unique_ptr<analysis::Dependences> dependences_;
 
+    bool tile_;
+
     bool applied_ = false;
 
 public:
-    PollyTransform(structured_control_flow::StructuredLoop& loop);
+    PollyTransform(structured_control_flow::StructuredLoop& loop, bool tile = true);
 
     virtual std::string name() const override;
 
