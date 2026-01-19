@@ -20,6 +20,7 @@ set(TEST_FILES
     transformations/offloading/gpu_tiling_test.cpp
     transformations/offloading/kernel_local_storage_test.cpp
     transformations/polly_transform_test.cpp
+    passes/scheduler/cuda_scheduler_test.cpp
     passes/scheduler/highway_scheduler_test.cpp
     passes/scheduler/omp_scheduler_test.cpp
     passes/scheduler/polly_scheduler_test.cpp

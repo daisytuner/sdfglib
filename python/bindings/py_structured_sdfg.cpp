@@ -20,6 +20,7 @@
 #include <sdfg/passes/normalization/normalization.h>
 #include <sdfg/passes/opt_pipeline.h>
 #include <sdfg/passes/pipeline.h>
+#include <sdfg/passes/scheduler/cuda_scheduler.h>
 #include <sdfg/passes/scheduler/highway_scheduler.h>
 #include <sdfg/passes/scheduler/omp_scheduler.h>
 #include <sdfg/passes/scheduler/polly_scheduler.h>
