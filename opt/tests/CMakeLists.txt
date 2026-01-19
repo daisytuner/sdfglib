@@ -8,8 +8,19 @@ FetchContent_MakeAvailable(googletest)
 
 set(TEST_FILES
     analysis/scop_analysis_test.cpp
+    cuda/cuda_kernel_test.cpp
+    cuda/cuda_library_nodes_test.cpp
     passes/normalization/perfect_loop_distribution_test.cpp
     passes/normalization/stride_minimization_test.cpp
+    passes/offloading/code_motion/block_hoisting_test.cpp
+    passes/offloading/code_motion/block_sorting_test.cpp
+    passes/offloading/data_transfer_minimization_pass_test.cpp
+    passes/offloading/remove_redundant_data_transfers_pass_test.cpp
+    transformations/offloading/cuda_parallelize_nested_map_test.cpp
+    transformations/offloading/gpu_tiling_test.cpp
+    transformations/offloading/kernel_local_storage_test.cpp
+    transformations/polly_transform_test.cpp
+    passes/scheduler/cuda_scheduler_test.cpp
     passes/scheduler/highway_scheduler_test.cpp
     passes/scheduler/omp_scheduler_test.cpp
     passes/scheduler/polly_scheduler_test.cpp

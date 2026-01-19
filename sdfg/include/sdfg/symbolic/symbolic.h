@@ -195,6 +195,24 @@ bool is_pointer(const Symbol symbol);
  */
 bool is_nv(const Symbol symbol);
 
+/**
+ * @brief Ceiling division of two expressions
+ * @param dividend The dividend expression
+ * @param divisor The divisor expression
+ * @return An Expression representing ceil(dividend / divisor)
+ *
+ * This function computes the ceiling of the division of two symbolic expressions.
+ * If both expressions are constant, it performs integer arithmetic to compute the result.
+ * Otherwise, it constructs a symbolic expression representing the ceiling division.
+ *
+ * @code
+ * auto x = symbolic::symbol("x");
+ * auto y = symbolic::symbol("y");
+ * auto result = symbolic::divide_ceil(x, y); // Represents ceil(x / y)
+ * @endcode
+ */
+Expression divide_ceil(const Expression dividend, const Expression divisor);
+
 /** @} */ // end of symbolic_creation group
 
 /**

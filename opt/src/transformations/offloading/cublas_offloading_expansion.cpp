@@ -1,0 +1,303 @@
+#include "sdfg/transformations/offloading/cublas_offloading_expansion.h"
+
+#include <cassert>
+#include <cstddef>
+#include <nlohmann/json_fwd.hpp>
+#include <string>
+#include <unordered_map>
+
+#include "sdfg/analysis/analysis.h"
+#include "sdfg/analysis/scope_analysis.h"
+#include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/data_flow/access_node.h"
+#include "sdfg/data_flow/library_nodes/math/blas/dot_node.h"
+#include "sdfg/data_flow/library_nodes/math/math.h"
+#include "sdfg/element.h"
+#include "sdfg/exceptions.h"
+#include "sdfg/structured_control_flow/block.h"
+#include "sdfg/structured_control_flow/sequence.h"
+#include "sdfg/symbolic/symbolic.h"
+#include "sdfg/targets/cuda/cuda.h"
+#include "sdfg/targets/cuda/cuda_data_offloading_node.h"
+#include "sdfg/transformations/transformation.h"
+#include "sdfg/types/type.h"
+#include "sdfg/types/utils.h"
+#include "symengine/symengine_rcp.h"
+
+namespace sdfg {
+namespace cuda {
+
+std::string CUBLASOffloadingExpansion::create_device_container(
+    builder::StructuredSDFGBuilder& builder, const types::Pointer& type, const symbolic::Expression& size
+) {
+    auto new_type = type.clone();
+    new_type->storage_type(types::StorageType(
+        "NV_Generic", size, types::StorageType::AllocationType::Unmanaged, types::StorageType::AllocationType::Unmanaged
+    ));
+    auto device_container = builder.find_new_name(CUDA_DEVICE_PREFIX);
+    builder.add_container(device_container, *new_type);
+    return device_container;
+}
+
+void CUBLASOffloadingExpansion::create_allocate(
+    builder::StructuredSDFGBuilder& builder,
+    structured_control_flow::Sequence& sequence,
+    structured_control_flow::Block& block,
+    const std::string& device_container,
+    const symbolic::Expression& size
+) {
+    auto& alloc_block = builder.add_block_before(sequence, block, {}, block.debug_info());
+    auto& d_cont = builder.add_access(alloc_block, device_container);
+    auto& alloc_node = builder.add_library_node<CUDADataOffloadingNode>(
+        alloc_block,
+        this->blas_node_.debug_info(),
+        size,
+        symbolic::zero(),
+        offloading::DataTransferDirection::NONE,
+        offloading::BufferLifecycle::ALLOC
+    );
+    auto& alloc_type = builder.subject().type(device_container);
+    builder.add_computational_memlet(alloc_block, alloc_node, "_ret", d_cont, {}, alloc_type);
+}
+
+void CUBLASOffloadingExpansion::create_deallocate(
+    builder::StructuredSDFGBuilder& builder,
+    structured_control_flow::Sequence& sequence,
+    structured_control_flow::Block& block,
+    const std::string& device_container
+) {
+    auto& dealloc_block = builder.add_block_after(sequence, block, {}, block.debug_info());
+    auto& d_cont_in = builder.add_access(dealloc_block, device_container);
+    auto& d_cont_out = builder.add_access(dealloc_block, device_container);
+    auto& dealloc_node = builder.add_library_node<CUDADataOffloadingNode>(
+        dealloc_block,
+        this->blas_node_.debug_info(),
+        SymEngine::null,
+        symbolic::zero(),
+        offloading::DataTransferDirection::NONE,
+        offloading::BufferLifecycle::FREE
+    );
+    auto& dealloc_type = builder.subject().type(device_container);
+    builder.add_computational_memlet(dealloc_block, d_cont_in, dealloc_node, "_ptr", {}, dealloc_type);
+    builder.add_computational_memlet(dealloc_block, dealloc_node, "_ptr", d_cont_out, {}, dealloc_type);
+}
+
+void CUBLASOffloadingExpansion::create_copy_to_device(
+    builder::StructuredSDFGBuilder& builder,
+    structured_control_flow::Sequence& sequence,
+    structured_control_flow::Block& block,
+    const std::string& host_container,
+    const std::string& device_container,
+    const symbolic::Expression& size
+) {
+    auto& copy_block = builder.add_block_before(sequence, block, {}, block.debug_info());
+    auto& cont = builder.add_access(copy_block, host_container);
+    auto& d_cont = builder.add_access(copy_block, device_container);
+    auto& copy_node = builder.add_library_node<CUDADataOffloadingNode>(
+        copy_block,
+        this->blas_node_.debug_info(),
+        size,
+        symbolic::zero(),
+        offloading::DataTransferDirection::H2D,
+        offloading::BufferLifecycle::NO_CHANGE
+    );
+    auto& src_type = builder.subject().type(host_container);
+    builder.add_computational_memlet(copy_block, cont, copy_node, "_src", {}, src_type);
+    auto& dst_type = builder.subject().type(device_container);
+    builder.add_computational_memlet(copy_block, copy_node, "_dst", d_cont, {}, dst_type);
+}
+
+void CUBLASOffloadingExpansion::create_copy_from_device(
+    builder::StructuredSDFGBuilder& builder,
+    structured_control_flow::Sequence& sequence,
+    structured_control_flow::Block& block,
+    const std::string& host_container,
+    const std::string& device_container,
+    const symbolic::Expression& size
+) {
+    auto& copy_block = builder.add_block_after(sequence, block, {}, block.debug_info());
+    auto& cont = builder.add_access(copy_block, host_container);
+    auto& d_cont = builder.add_access(copy_block, device_container);
+    auto& copy_node = builder.add_library_node<CUDADataOffloadingNode>(
+        copy_block,
+        this->blas_node_.debug_info(),
+        size,
+        symbolic::zero(),
+        offloading::DataTransferDirection::D2H,
+        offloading::BufferLifecycle::NO_CHANGE
+    );
+    auto& src_type = builder.subject().type(device_container);
+    builder.add_computational_memlet(copy_block, d_cont, copy_node, "_src", {}, src_type);
+    auto& dst_type = builder.subject().type(host_container);
+    builder.add_computational_memlet(copy_block, copy_node, "_dst", cont, {}, dst_type);
+}
+
+void CUBLASOffloadingExpansion::create_copy_to_device_with_allocation(
+    builder::StructuredSDFGBuilder& builder,
+    structured_control_flow::Sequence& sequence,
+    structured_control_flow::Block& block,
+    const std::string& host_container,
+    const std::string& device_container,
+    const symbolic::Expression& size
+) {
+    auto& copy_block = builder.add_block_before(sequence, block, {}, block.debug_info());
+    auto& cont = builder.add_access(copy_block, host_container);
+    auto& d_cont = builder.add_access(copy_block, device_container);
+    auto& copy_node = builder.add_library_node<CUDADataOffloadingNode>(
+        copy_block,
+        this->blas_node_.debug_info(),
+        size,
+        symbolic::zero(),
+        offloading::DataTransferDirection::H2D,
+        offloading::BufferLifecycle::ALLOC
+    );
+    auto& src_type = builder.subject().type(host_container);
+    builder.add_computational_memlet(copy_block, cont, copy_node, "_src", {}, src_type);
+    auto& dst_type = builder.subject().type(device_container);
+    builder.add_computational_memlet(copy_block, copy_node, "_dst", d_cont, {}, dst_type);
+}
+
+void CUBLASOffloadingExpansion::create_copy_from_device_with_deallocation(
+    builder::StructuredSDFGBuilder& builder,
+    structured_control_flow::Sequence& sequence,
+    structured_control_flow::Block& block,
+    const std::string& host_container,
+    const std::string& device_container,
+    const symbolic::Expression& size
+) {
+    auto& copy_block = builder.add_block_after(sequence, block, {}, block.debug_info());
+    auto& cont = builder.add_access(copy_block, host_container);
+    auto& d_cont = builder.add_access(copy_block, device_container);
+    auto& copy_node = builder.add_library_node<CUDADataOffloadingNode>(
+        copy_block,
+        this->blas_node_.debug_info(),
+        size,
+        symbolic::zero(),
+        offloading::DataTransferDirection::D2H,
+        offloading::BufferLifecycle::FREE
+    );
+    auto& src_type = builder.subject().type(device_container);
+    builder.add_computational_memlet(copy_block, d_cont, copy_node, "_src", {}, src_type);
+    auto& dst_type = builder.subject().type(host_container);
+    builder.add_computational_memlet(copy_block, copy_node, "_dst", cont, {}, dst_type);
+}
+
+CUBLASOffloadingExpansion::CUBLASOffloadingExpansion(math::blas::BLASNode& blas_node) : blas_node_(blas_node) {}
+
+std::string CUBLASOffloadingExpansion::name() const { return "CUBLASOffloadingExpansion"; }
+
+bool CUBLASOffloadingExpansion::
+    can_be_applied(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
+    // BLAS node must have implementation type CUBLAS without data transfers
+    if (this->blas_node_.implementation_type().value() != math::blas::ImplementationType_CUBLASWithTransfers.value()) {
+        return false;
+    }
+
+
+    // Restrict to BLAS nodes in their own block
+    auto& dfg = this->blas_node_.get_parent();
+    if (dfg.nodes().size() != dfg.in_degree(this->blas_node_) + dfg.out_degree(this->blas_node_) + 1) {
+        return false;
+    }
+
+    // Supported BLAS nodes
+    if (dynamic_cast<math::blas::DotNode*>(&this->blas_node_)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void CUBLASOffloadingExpansion::apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
+    // Get data flow graph and block
+    auto& dfg = this->blas_node_.get_parent();
+    auto* block = dynamic_cast<structured_control_flow::Block*>(dfg.get_parent());
+    assert(block);
+
+    // Get sequence
+    auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+    auto* sequence = dynamic_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(block));
+    assert(sequence);
+
+    // Determine type
+    types::PrimitiveType precision;
+    switch (this->blas_node_.precision()) {
+        case math::blas::h:
+            precision = types::PrimitiveType::Half;
+            break;
+        case math::blas::s:
+            precision = types::PrimitiveType::Float;
+            break;
+        case math::blas::d:
+            precision = types::PrimitiveType::Double;
+            break;
+        default:
+            throw InvalidSDFGException("CUBLASOffloadingExpansion: Unsupported precision");
+    }
+    types::Scalar base_type(precision);
+    types::Pointer type(base_type);
+
+    // Capture in and out accesses
+    std::unordered_map<std::string, data_flow::AccessNode&> in_access, out_access;
+    for (auto& iedge : dfg.in_edges(this->blas_node_)) {
+        in_access.insert({iedge.dst_conn(), static_cast<data_flow::AccessNode&>(iedge.src())});
+    }
+    for (auto& oedge : dfg.out_edges(this->blas_node_)) {
+        out_access.insert({oedge.src_conn(), static_cast<data_flow::AccessNode&>(oedge.dst())});
+    }
+
+    if (auto* dot_node = dynamic_cast<math::blas::DotNode*>(&this->blas_node_)) {
+        auto x_size = symbolic::mul(
+            symbolic::add(symbolic::mul(symbolic::sub(dot_node->n(), symbolic::one()), dot_node->incx()), symbolic::one()),
+            types::get_contiguous_element_size(type, true)
+        );
+        auto y_size = symbolic::mul(
+            symbolic::add(symbolic::mul(symbolic::sub(dot_node->n(), symbolic::one()), dot_node->incy()), symbolic::one()),
+            types::get_contiguous_element_size(type, true)
+        );
+        auto dx = this->create_device_container(builder, type, x_size);
+        auto dy = this->create_device_container(builder, type, y_size);
+
+        this->create_copy_to_device_with_allocation(builder, *sequence, *block, in_access.at("__x").data(), dx, x_size);
+        this->create_copy_to_device_with_allocation(builder, *sequence, *block, in_access.at("__y").data(), dy, y_size);
+
+        this->create_deallocate(builder, *sequence, *block, dx);
+        this->create_deallocate(builder, *sequence, *block, dy);
+
+        in_access.at("__x").data(dx);
+        in_access.at("__y").data(dy);
+    } else {
+        throw InvalidSDFGException("CUBLASOffloadingExpansion: Unsupported BLAS type");
+    }
+
+    // Change the implementation type to CUBLAS without data transfers
+    this->blas_node_.implementation_type() = math::blas::ImplementationType_CUBLASWithoutTransfers;
+}
+
+void CUBLASOffloadingExpansion::to_json(nlohmann::json& j) const {
+    j["transformation_type"] = this->name();
+    j["blas_node_element_id"] = this->blas_node_.element_id();
+}
+
+CUBLASOffloadingExpansion CUBLASOffloadingExpansion::
+    from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j) {
+    assert(j.contains("blas_node_element_id"));
+    assert(j["blas_node_element_id"].is_number_unsigned());
+    size_t blas_node_id = j["blas_node_element_id"].get<size_t>();
+    auto* blas_node_element = builder.find_element_by_id(blas_node_id);
+    if (!blas_node_element) {
+        throw transformations::
+            InvalidTransformationDescriptionException("Element with ID " + std::to_string(blas_node_id) + " not found");
+    }
+    auto* blas_node = dynamic_cast<math::blas::BLASNode*>(blas_node_element);
+    if (!blas_node) {
+        throw transformations::InvalidTransformationDescriptionException(
+            "Element with ID " + std::to_string(blas_node_id) + " is not a BLASNode"
+        );
+    }
+
+    return CUBLASOffloadingExpansion(*blas_node);
+}
+
+} // namespace cuda
+} // namespace sdfg
