@@ -72,6 +72,7 @@ def run_pytest(initialize_func, kernel_func, parameters, target="none"):
 
     # Run Docc version
     inputs_docc = [x.copy() if isinstance(x, np.ndarray) else x for x in inputs]
+
     kernel_with_target = docc.program(
         kernel_func,
         target=target,

@@ -15,6 +15,7 @@
 #include <sdfg/codegen/code_generators/cpp_code_generator.h>
 #include <sdfg/codegen/instrumentation/arg_capture_plan.h>
 #include <sdfg/codegen/instrumentation/instrumentation_plan.h>
+#include <sdfg/codegen/loop_report.h>
 #include <sdfg/passes/dataflow/constant_propagation.h>
 #include <sdfg/passes/dataflow/dead_data_elimination.h>
 #include <sdfg/passes/normalization/normalization.h>
@@ -281,6 +282,40 @@ void PyStructuredSDFG::schedule(const std::string& target, const std::string& ca
     else if (target == "cuda") {
         sdfg::passes::scheduler::CUDAScheduler cuda_scheduler;
         cuda_scheduler.run(builder, analysis_manager);
+    }
+
+    bool opt_report = true;
+    auto opt_report_str = getenv("DOCC_OPT_REPORT");
+    if (opt_report_str == "1" || opt_report_str == "true" || opt_report_str == "on") {
+        opt_report = true;
+    }
+
+    if (opt_report) {
+        // Collect report
+        std::unordered_map<std::string, size_t> cumulated_report;
+        sdfg::analysis::AnalysisManager analysis_manager(builder.subject());
+
+        sdfg::codegen::LoopReport generator(builder, analysis_manager);
+        generator.visit();
+
+        for (auto& [key, value] : generator.report()) {
+            if (cumulated_report.find(key) == cumulated_report.end()) {
+                cumulated_report[key] = 0;
+            }
+            cumulated_report[key] += value;
+        }
+
+        // Dump report
+        std::stringstream opt_report_stream;
+        opt_report_stream << "\nDOCC Optimization Report Start:\n";
+        opt_report_stream << "  source_language: Python\n";
+        opt_report_stream << "  sdfgs: 1\n";
+        for (auto& [key, value] : cumulated_report) {
+            opt_report_stream << "  " << key << ": " << value << "\n";
+        }
+        opt_report_stream << "DOCC Optimization Report End\n";
+
+        std::cerr << opt_report_stream.str();
     }
 }
 
