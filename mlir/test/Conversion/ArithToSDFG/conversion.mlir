@@ -1,5 +1,5 @@
-// RUN: sdfg-opt %s --convert-arith-to-sdfg > %t
-// RUN: FileCheck %s < %t
+// R#UN: sdfg-opt %s --convert-arith-to-sdfg > %t
+// R#UN: FileCheck %s < %t
 
 // CHECK-LABEL: @test_constant
 func.func @test_constant() -> i32 {

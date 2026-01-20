@@ -4,6 +4,7 @@
 #include "mlir/Dialect/SDFG/IR/SDFG.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
+#include "mlir/IR/Location.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/SymbolTable.h"
@@ -19,14 +20,9 @@
 namespace mlir {
 namespace sdfg {
 
-llvm::LogicalResult TaskletOp::verify() {
-    size_t code_arity = arity(this->getCode());
-    size_t num_operands = this->getNumOperands();
-    if (code_arity != num_operands) {
-        return this->emitError() << "expects " << code_arity << " operands, but got " << num_operands;
-    }
-    return success();
-}
+//===----------------------------------------------------------------------===//
+// SDFGOp
+//===----------------------------------------------------------------------===//
 
 void SDFGOp::print(OpAsmPrinter& p) {
     bool is_external = this->getBody().empty();
@@ -155,6 +151,10 @@ ParseResult SDFGOp::parse(OpAsmParser& parser, OperationState& result) {
     return success();
 }
 
+//===----------------------------------------------------------------------===//
+// ReturnOp
+//===----------------------------------------------------------------------===//
+
 LogicalResult ReturnOp::verify() {
     auto sdfg_op = cast<SDFGOp>(this->getParentOp());
     const auto& results = sdfg_op.getFunctionType().getResults();
@@ -177,6 +177,161 @@ LogicalResult ReturnOp::verify() {
             return this->emitOpError("has no operand, but enclosing SDFG (@")
                    << sdfg_op.getSymName() << ") has a result type";
         }
+    }
+    return success();
+}
+
+//===----------------------------------------------------------------------===//
+// BlockOp
+//===----------------------------------------------------------------------===//
+
+void BlockOp::build(OpBuilder& builder, OperationState& state, TypeRange results) {
+    Region* body = state.addRegion();
+    state.addTypes(results);
+    OpBuilder::InsertionGuard g(builder);
+    BlockOp::ensureTerminator(*body, builder, state.location, results.size());
+}
+
+void BlockOp::build(
+    OpBuilder& builder,
+    OperationState& state,
+    TypeRange resultTypes,
+    ValueRange operands,
+    ::llvm::ArrayRef<NamedAttribute> attributes
+) {
+    assert(operands.size() == 0u && "mismatched number of parameters");
+    state.addOperands(operands);
+    state.addAttributes(attributes);
+    Region* body = state.addRegion();
+    state.addTypes(resultTypes);
+    OpBuilder::InsertionGuard g(builder);
+    BlockOp::ensureTerminator(*body, builder, state.location, resultTypes.size());
+}
+
+void BlockOp::print(OpAsmPrinter& p) {
+    // Print optional result types
+    auto results = this->getResults();
+    size_t results_size = results.size();
+    if (results_size > 0) {
+        p << " -> ";
+        if (results_size > 1) {
+            p << "(";
+        }
+        for (size_t i = 0; i < results_size; i++) {
+            if (i > 0) {
+                p << ", ";
+            }
+            p.printType(results[i].getType());
+        }
+        if (results_size > 1) {
+            p << ")";
+        }
+    }
+
+    // Print optional function body
+    if (!this->getBody().empty()) {
+        p << " ";
+        p.printRegion(this->getBody(), false, true, true);
+    }
+}
+
+ParseResult BlockOp::parse(OpAsmParser& parser, OperationState& result) {
+    // Parse optional result types
+    if (parser.parseOptionalArrowTypeList(result.types)) {
+        return failure();
+    }
+
+    // Parse optional body
+    auto* body = result.addRegion();
+    SMLoc body_loc = parser.getCurrentLocation();
+    OptionalParseResult parse_result = parser.parseOptionalRegion(*body);
+    if (parse_result.has_value()) {
+        if (failed(*parse_result)) {
+            return failure();
+        }
+        // Function body was parsed, make sure ist not empty.
+        if (body->empty()) {
+            return parser.emitError(body_loc, "expected non-empty block body");
+        }
+
+        BlockOp::ensureTerminator(*body, parser.getBuilder(), result.location, result.types.size());
+    }
+
+    return success();
+}
+
+void BlockOp::ensureTerminator(Region& region, OpBuilder& builder, Location loc, size_t num_results) {
+    OpBuilder::InsertionGuard guard(builder);
+    if (region.empty()) {
+        builder.createBlock(&region);
+    }
+
+    Block& block = region.back();
+    if (!block.empty() && block.back().hasTrait<OpTrait::IsTerminator>()) {
+        return;
+    }
+
+    builder.setInsertionPointToEnd(&block);
+    OperationState state(loc, YieldOp::getOperationName());
+    if (num_results == 0) {
+        YieldOp::build(builder, state);
+    } else {
+        SmallVector<Value> all_operands;
+        for (auto& op : block.getOperations()) {
+            for (unsigned int i = 0, e = op.getNumResults(); i < e; i++) {
+                all_operands.push_back(op.getResult(i));
+            }
+        }
+        size_t num_all_operands = all_operands.size();
+        if (num_all_operands <= num_results) {
+            YieldOp::build(builder, state, all_operands);
+        } else {
+            SmallVector<Value> operands;
+            operands.reserve(num_results);
+            for (size_t i = num_all_operands - num_results; i < num_all_operands; i++) {
+                operands.push_back(all_operands[i]);
+            }
+            YieldOp::build(builder, state, operands);
+        }
+    }
+    builder.insert(Operation::create(state));
+}
+
+void BlockOp::ensureTerminator(Region& region, Builder& builder, Location loc, size_t num_results) {
+    OpBuilder op_builder(builder.getContext());
+    BlockOp::ensureTerminator(region, op_builder, loc, num_results);
+}
+
+//===----------------------------------------------------------------------===//
+// YieldOp
+//===----------------------------------------------------------------------===//
+
+LogicalResult YieldOp::verify() {
+    auto block_op = cast<BlockOp>(this->getParentOp());
+    const auto& results = block_op->getResults();
+    size_t num_operands = this->getNumOperands();
+    if (num_operands != results.size()) {
+        return emitOpError("has ") << num_operands << " operands, but enclosing block yields " << results.size();
+    } else {
+        for (size_t i = 0; i < num_operands; i++) {
+            if (this->getOperand(i).getType() != results[i].getType()) {
+                return emitError() << "type of yield operand " << i << " (" << this->getOperand(i).getType()
+                                   << ") doesn't match enclosing block result type (" << results[i].getType() << ")";
+            }
+        }
+    }
+    return success();
+}
+
+//===----------------------------------------------------------------------===//
+// TaskletOp
+//===----------------------------------------------------------------------===//
+
+llvm::LogicalResult TaskletOp::verify() {
+    size_t code_arity = arity(this->getCode());
+    size_t num_operands = this->getNumOperands();
+    if (code_arity != num_operands) {
+        return this->emitError() << "expects " << code_arity << " operands, but got " << num_operands;
     }
     return success();
 }

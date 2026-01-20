@@ -19,40 +19,99 @@ sdfg.sdfg @test_identity(%0: i32) -> i32 {
     sdfg.return %0 : i32
 }
 
+// CHECK-LABEL: @test_empty_block
+sdfg.sdfg @test_empty_block() {
+    sdfg.block
+    sdfg.return
+}
+
+// CHECK-LABEL: @test_block_yield
+sdfg.sdfg @test_block_yield() -> i32 {
+    %0 = sdfg.block -> i32 {
+        %1 = sdfg.constant 1 : i32
+        sdfg.yield %1 : i32
+    }
+    sdfg.return %0 : i32
+}
+
+// CHECK-LABEL: @test_block_yield_multi_dim
+sdfg.sdfg @test_block_yield_multi_dim() -> i32 {
+    %0, %1 = sdfg.block -> (i32, f32) {
+        %2 = sdfg.constant 1 : i32
+        %3 = sdfg.constant 2.0 : f32
+        sdfg.yield %2, %3 : i32, f32
+    }
+    sdfg.return %0 : i32
+}
+
+// CHECK-LABEL: @test_block_implicit_yield
+sdfg.sdfg @test_block_implicit_yield() -> i32 {
+    %0 = sdfg.block -> i32 {
+        %1 = sdfg.constant 1 : i32
+        // CHECK: sdfg.yield
+    }
+    sdfg.return %0 : i32
+}
+
+// CHECK-LABEL: @test_block_implicit_yield_multi_dim
+sdfg.sdfg @test_block_implicit_yield_multi_dim() -> i32 {
+    %0, %1 = sdfg.block -> (i32, f32) {
+        %2 = sdfg.constant 1 : i32
+        %3 = sdfg.constant 2.0 : f32
+        // CHECK: sdfg.yield
+    }
+    sdfg.return %0 : i32
+}
+
 // CHECK-LABEL: @test_constant
 sdfg.sdfg @test_constant() -> i32 {
-    %0 = sdfg.constant 1 : i32
+    %0 = sdfg.block -> i32 {
+        %1 = sdfg.constant 1 : i32
+        sdfg.yield %1 : i32
+    }
     sdfg.return %0 : i32
 }
 
 // CHECK-LABEL: @test_tasklet_assign
 sdfg.sdfg @test_tasklet_assign() -> i32 {
-    %0 = sdfg.constant 1 : i32
-    %1 = sdfg.tasklet assign, %0 : (i32) -> i32
-    sdfg.return %1 : i32
+    %0 = sdfg.block -> i32 {
+        %1 = sdfg.constant 1 : i32
+        %2 = sdfg.tasklet assign, %1 : (i32) -> i32
+        sdfg.yield %2 : i32
+    }
+    sdfg.return %0 : i32
 }
 
 // CHECK-LABEL: @test_tasklet_int_add
 sdfg.sdfg @test_tasklet_int_add() -> i32 {
-    %0 = sdfg.constant 1 : i32
-    %1 = sdfg.constant 2 : i32
-    %3 = sdfg.tasklet int_add, %0, %1 : (i32, i32) -> i32
-    sdfg.return %3 : i32
+    %0 = sdfg.block -> i32 {
+        %1 = sdfg.constant 1 : i32
+        %2 = sdfg.constant 2 : i32
+        %3 = sdfg.tasklet int_add, %1, %2 : (i32, i32) -> i32
+        sdfg.yield %3 : i32
+    }
+    sdfg.return %0 : i32
 }
 
 // CHECK-LABEL: @test_tasklet_int_add2
 sdfg.sdfg @test_tasklet_int_add2() -> i32 {
-    %0 = sdfg.constant 1 : i32
-    %1 = sdfg.constant 2 : i16
-    %3 = sdfg.tasklet int_add, %0, %1 : (i32, i16) -> i32
-    sdfg.return %3 : i32
+    %0 = sdfg.block -> i32 {
+        %1 = sdfg.constant 1 : i32
+        %2 = sdfg.constant 2 : i16
+        %3 = sdfg.tasklet int_add, %1, %2 : (i32, i16) -> i32
+        sdfg.yield %3 : i32
+    }
+    sdfg.return %0 : i32
 }
 
 // CHECK-LABEL: @test_tasklet_fp_fma
 sdfg.sdfg @test_tasklet_fp_fma() -> f32 {
-    %0 = sdfg.constant 1.0 : f32
-    %1 = sdfg.constant 2.0 : f32
-    %2 = sdfg.constant 3.0 : f32
-    %3 = sdfg.tasklet fp_fma, %0, %1, %2 : (f32, f32, f32) -> f32
-    sdfg.return %3 : f32
+    %0 = sdfg.block -> f32 {
+        %1 = sdfg.constant 1.0 : f32
+        %2 = sdfg.constant 2.0 : f32
+        %3 = sdfg.constant 3.0 : f32
+        %4 = sdfg.tasklet fp_fma, %1, %2, %3 : (f32, f32, f32) -> f32
+        sdfg.yield %4 : f32
+    }
+    sdfg.return %0 : f32
 }

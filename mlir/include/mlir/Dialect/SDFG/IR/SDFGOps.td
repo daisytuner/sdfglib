@@ -12,14 +12,8 @@ include "mlir/Interfaces/ControlFlowInterfaces.td"
 // Generell SDFG operation
 class SDFG_Op<string mnemonic, list<Trait> traits = []> : Op<SDFG_Dialect, mnemonic, traits>;
 
-// SDFG operation that represents structured control flow
-class SDFG_ControlFlowNode<string mnemonic, list<Trait> traits = []> : SDFG_Op<mnemonic, traits>;
-
-// SDFG operation that represents data flow
-class SDFG_DataFlowNode<string mnemonic, list<Trait> traits = []> : SDFG_Op<mnemonic, traits>;
-
 // SDFG operation that represents a structured SDFG
-def SDFG_SDFGOp : SDFG_Op<"sdfg", [HasParent<"ModuleOp">, NoTerminator, IsolatedFromAbove]> {
+def SDFG_SDFGOp : SDFG_Op<"sdfg", [NoTerminator, IsolatedFromAbove, HasParent<"ModuleOp">]> {
     let summary = "Strutured Stateful Data Flow Multigraph";
     let description = [{
         A dataflow-based graph representation for programs.
@@ -34,7 +28,7 @@ def SDFG_SDFGOp : SDFG_Op<"sdfg", [HasParent<"ModuleOp">, NoTerminator, Isolated
 }
 
 // SDFG operations that represents a return
-def SDFG_ReturnOp : SDFG_ControlFlowNode<"return", [Pure, HasParent<"SDFGOp">, ReturnLike, Terminator]> {
+def SDFG_ReturnOp : SDFG_Op<"return", [Pure, ReturnLike, Terminator, HasParent<"SDFGOp">]> {
     let summary = "Represents a return statement that exits the SDFG";
     let description = [{
         Can return an operand or nothing depending on the result type of the SDFG.
@@ -47,8 +41,51 @@ def SDFG_ReturnOp : SDFG_ControlFlowNode<"return", [Pure, HasParent<"SDFGOp">, R
     let hasVerifier = 1;
 }
 
+// SDFG operation that holds data flow nodes
+def SDFG_BlockOp : SDFG_Op<"block", [SingleBlock, SingleBlockImplicitTerminator<"YieldOp">, ParentOneOf<["SDFGOp"]>]> {
+    let summary = "A basic block with dataflow computations";
+    let description = [{
+        A Block is the fundamental computation unit in a StructuredSDFG. It represents a basic block that contains
+        dataflow nodes describing the computations to be performed. These can be constants, memlets, tasklets, and
+        library nodes.
+    }];
+
+    let results = (outs Variadic<AnyType>:$results);
+    let regions = (region MaxSizedRegion<1>:$body);
+
+    let builders = [
+        OpBuilder<(ins "TypeRange":$results)>,
+        OpBuilder<(ins "TypeRange":$resultTypes,
+                       "ValueRange":$operands,
+                       CArg<"::llvm::ArrayRef<NamedAttribute>", "{}">:$attributes)>
+    ];
+
+    let hasCustomAssemblyFormat = 1;
+    let skipDefaultBuilders = 1;
+
+    let extraClassDeclaration = [{
+        static void ensureTerminator(Region& region, OpBuilder& builder, Location loc, size_t num_results);
+        static void ensureTerminator(Region& region, Builder& builder, Location loc, size_t num_results);
+    }];
+}
+
+// SDFG operation that yields a result
+def SDFG_YieldOp : SDFG_Op<"yield", [Pure, ReturnLike, Terminator, ParentOneOf<["BlockOp"]>]> {
+    let summary = "Block yield and termination operation";
+    let description = [{
+        Yields an SSA value from a block.
+    }];
+
+    let arguments = (ins Variadic<AnyType>:$operands);
+
+    let assemblyFormat = "attr-dict ($operands^ `:` type($operands))?";
+    let builders = [OpBuilder<(ins), [{ /* nothing to do */ }]>];
+
+    let hasVerifier = 1;
+}
+
 // SDFG data flow node that represents a constant literal value
-def SDFG_ConstantOp : SDFG_DataFlowNode<"constant", [ConstantLike, AllTypesMatch<["value", "result"]>]> {
+def SDFG_ConstantOp : SDFG_Op<"constant", [ConstantLike, AllTypesMatch<["value", "result"]>, HasParent<"BlockOp">]> {
     let summary = "Represents a constant literal value";
 
     let arguments = (ins TypedAttrInterface:$value);
@@ -58,7 +95,7 @@ def SDFG_ConstantOp : SDFG_DataFlowNode<"constant", [ConstantLike, AllTypesMatch
 }
 
 // SDFG data flow node that represents a simple computation operation
-def SDFG_TaskletOp : SDFG_DataFlowNode<"tasklet"> {
+def SDFG_TaskletOp : SDFG_Op<"tasklet", [HasParent<"BlockOp">]> {
     let summary = "Simple computational operations";
     let description = [{
         Tasklets represent primitive computational operations like arithmetic, logic, and type conversions. They are the
