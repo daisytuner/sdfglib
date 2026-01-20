@@ -1,8 +1,5 @@
 #include "sdfg/codegen/loop_report.h"
 
-#include <sdfg/targets/cuda/plugin.h>
-#include <sdfg/targets/omp/schedule.h>
-
 namespace sdfg {
 namespace codegen {
 
