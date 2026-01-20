@@ -339,7 +339,6 @@ Expression parse(const std::string& expr_str) {
     auto expr = SymEngine::parse(expr_str);
     expr = symbolic::subs(expr, symbolic::symbol("true"), symbolic::one());
     expr = symbolic::subs(expr, symbolic::symbol("false"), symbolic::zero());
-    std::cerr << "Parsed expression: " << expr_str << " to " << expr->__str__() << std::endl;
     return expr;
 };
 
