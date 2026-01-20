@@ -54,8 +54,6 @@ public:
 
     static Pipeline controlflow_simplification();
 
-    static Pipeline code_motion();
-
     static Pipeline data_parallelism();
 
     static Pipeline memory();

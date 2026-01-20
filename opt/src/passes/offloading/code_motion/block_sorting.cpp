@@ -1,4 +1,4 @@
-#include "sdfg/passes/code_motion/block_sorting.h"
+#include "sdfg/passes/offloading/code_motion/block_sorting.h"
 
 #include <climits>
 #include <string>
@@ -26,6 +26,7 @@
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/structured_control_flow/while.h"
+#include "sdfg/targets/offloading/data_offloading_node.h"
 
 namespace sdfg {
 namespace passes {
@@ -251,7 +252,7 @@ bool BlockSortingPass::run_pass(builder::StructuredSDFGBuilder& builder, analysi
 bool BlockSortingPass::is_libnode_side_effect_white_listed(data_flow::LibraryNode* libnode) {
     return dynamic_cast<stdlib::AllocaNode*>(libnode) || dynamic_cast<stdlib::CallocNode*>(libnode) ||
            dynamic_cast<stdlib::FreeNode*>(libnode) || dynamic_cast<stdlib::MallocNode*>(libnode) ||
-           dynamic_cast<stdlib::MemsetNode*>(libnode);
+           dynamic_cast<stdlib::MemsetNode*>(libnode) || dynamic_cast<offloading::DataOffloadingNode*>(libnode);
 }
 
 bool BlockSortingPass::can_be_bubbled_up(structured_control_flow::Block& block) {
@@ -261,6 +262,9 @@ bool BlockSortingPass::can_be_bubbled_up(structured_control_flow::Block& block) 
 
     if (this->is_libnode_block(block)) {
         auto* libnode = *block.dataflow().library_nodes().begin();
+        if (auto* offloading_node = dynamic_cast<offloading::DataOffloadingNode*>(libnode)) {
+            return offloading_node->is_h2d() || offloading_node->is_alloc();
+        }
         return dynamic_cast<stdlib::AllocaNode*>(libnode) || dynamic_cast<stdlib::CallocNode*>(libnode) ||
                dynamic_cast<stdlib::MallocNode*>(libnode) || dynamic_cast<stdlib::MemsetNode*>(libnode);
     }
@@ -272,11 +276,16 @@ bool BlockSortingPass::can_be_bubbled_down(structured_control_flow::Block& block
     if (!this->is_libnode_block(block)) {
         return false;
     }
+
     auto* libnode = *block.dataflow().library_nodes().begin();
+    if (auto* offloading_node = dynamic_cast<offloading::DataOffloadingNode*>(libnode)) {
+        return offloading_node->is_d2h() || offloading_node->is_free();
+    }
     return dynamic_cast<stdlib::FreeNode*>(libnode);
 }
 
 std::pair<int, std::string> BlockSortingPass::get_prio_and_order(structured_control_flow::Block* block) {
+    auto& dfg = block->dataflow();
     if (this->is_libnode_block(*block)) {
         auto* libnode = *block->dataflow().library_nodes().begin();
         if (dynamic_cast<stdlib::AllocaNode*>(libnode) || dynamic_cast<stdlib::CallocNode*>(libnode) ||
@@ -288,6 +297,18 @@ std::pair<int, std::string> BlockSortingPass::get_prio_and_order(structured_cont
             auto& oedge = *block->dataflow().out_edges(*libnode).begin();
             auto& dst = static_cast<data_flow::AccessNode&>(oedge.dst());
             return {200, dst.data()};
+        } else if (auto* offloading_node = dynamic_cast<offloading::DataOffloadingNode*>(libnode)) {
+            std::string order = "";
+            if (offloading_node->is_h2d()) {
+                auto& iedge = *dfg.in_edges(*offloading_node).begin();
+                auto& src = static_cast<data_flow::AccessNode&>(iedge.src());
+                order = src.data();
+            } else if (offloading_node->is_alloc() || offloading_node->is_d2h() || offloading_node->is_free()) {
+                auto& oedge = *dfg.out_edges(*offloading_node).begin();
+                auto& dst = static_cast<data_flow::AccessNode&>(oedge.dst());
+                order = dst.data();
+            }
+            return {400, order};
         }
     } else if (this->is_reference_block(*block)) {
         return {100, ""};

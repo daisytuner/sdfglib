@@ -13,6 +13,7 @@
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/symbolic/symbolic.h"
+#include "sdfg/targets/offloading/data_offloading_node.h"
 #include "sdfg/visitor/structured_sdfg_visitor.h"
 #include "symengine/symengine_rcp.h"
 
@@ -40,6 +41,7 @@ private:
     bool equal_moves(structured_control_flow::Block& block1, structured_control_flow::Block& block2);
     bool equal_views(structured_control_flow::Block& block1, structured_control_flow::Block& block2);
     bool equal_libnodes(data_flow::LibraryNode* libnode1, data_flow::LibraryNode* libnode2);
+    bool equal_lib_blocks(structured_control_flow::Block& block1, structured_control_flow::Block& block2);
 
     bool map_invariant_front(structured_control_flow::Sequence& parent, structured_control_flow::Map& map_stmt);
     bool map_invariant_back(structured_control_flow::Sequence& parent, structured_control_flow::Map& map_stmt);
@@ -71,6 +73,13 @@ private:
     );
     void
     if_else_extract_invariant_back(structured_control_flow::Sequence& parent, structured_control_flow::IfElse& if_else);
+
+    bool equal_offloading_nodes(
+        structured_control_flow::Block& block1,
+        offloading::DataOffloadingNode* offloading_node1,
+        structured_control_flow::Block& block2,
+        offloading::DataOffloadingNode* offloading_node2
+    );
 
 protected:
     virtual bool is_libnode_allowed(

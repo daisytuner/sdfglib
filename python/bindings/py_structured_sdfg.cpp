@@ -18,7 +18,9 @@
 #include <sdfg/passes/dataflow/constant_propagation.h>
 #include <sdfg/passes/dataflow/dead_data_elimination.h>
 #include <sdfg/passes/normalization/normalization.h>
+#include <sdfg/passes/opt_pipeline.h>
 #include <sdfg/passes/pipeline.h>
+#include <sdfg/passes/scheduler/cuda_scheduler.h>
 #include <sdfg/passes/scheduler/highway_scheduler.h>
 #include <sdfg/passes/scheduler/omp_scheduler.h>
 #include <sdfg/passes/scheduler/polly_scheduler.h>
@@ -177,7 +179,7 @@ void PyStructuredSDFG::simplify() {
     memlet_combine.run(builder_opt, analysis_manager);
 
     // Move code out of loops where possible
-    sdfg::passes::Pipeline code_motion = sdfg::passes::Pipeline::code_motion();
+    sdfg::passes::Pipeline code_motion = sdfg::passes::code_motion();
     code_motion.run(builder_opt, analysis_manager);
 
     // Convert pointer-based iterators to indvar usage

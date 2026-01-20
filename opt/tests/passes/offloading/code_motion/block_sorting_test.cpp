@@ -1,4 +1,4 @@
-#include "sdfg/passes/code_motion/block_sorting.h"
+#include "sdfg/passes/offloading/code_motion/block_sorting.h"
 
 #include <gtest/gtest.h>
 

@@ -56,8 +56,6 @@ set(TEST_FILES
     element_test.cpp
     graph/graph_algorithms_test.cpp
     helpers/helpers_test.cpp
-    passes/code_motion/block_hoisting_test.cpp
-    passes/code_motion/block_sorting_test.cpp
     passes/dataflow/bytes_reference_elimination_test.cpp
     passes/dataflow/constant_propagation_test.cpp
     passes/dataflow/dead_data_elimination_test.cpp
@@ -119,7 +117,7 @@ set(TEST_FILES
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(sdfglib_test ${TEST_FILES})
 target_include_directories(sdfglib_test PRIVATE ./)
-target_link_libraries(sdfglib_test gtest_main sdfglib)
+target_link_libraries(sdfglib_test gtest_main sdfg::sdfg)
 if(SDFG_ENABLE_COVERAGE)
 target_compile_options(sdfglib_test PRIVATE
   -fprofile-instr-generate
