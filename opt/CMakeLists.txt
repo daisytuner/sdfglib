@@ -1,6 +1,6 @@
 # Find SDFG
-if(NOT TARGET sdfglib::sdfglib)
-    find_package(sdfglib CONFIG REQUIRED)
+if(NOT TARGET sdfg::sdfg)
+    find_package(sdfg CONFIG REQUIRED)
 endif()
 
 # Find ISL
@@ -44,8 +44,9 @@ set(SOURCE_FILES
 add_library(sdfgopt
     ${SOURCE_FILES}
 )
+add_library(sdfg::opt ALIAS sdfgopt)
 add_library(sdfgopt::sdfgopt ALIAS sdfgopt)
-target_include_directories(sdfglib
+target_include_directories(sdfgopt
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
@@ -71,7 +72,7 @@ if(SDFG_ENABLE_COVERAGE)
   )
 endif()
 
-target_link_libraries(sdfgopt PUBLIC sdfglib PkgConfig::ISL)
+target_link_libraries(sdfgopt PUBLIC sdfg::sdfg PkgConfig::ISL)
 set_target_properties(sdfgopt PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
@@ -91,9 +92,9 @@ install(DIRECTORY include/sdfg DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 ## CMAKE CONFIGURATION
 
 install(EXPORT sdfgoptTargets
-    NAMESPACE sdfgopt::
+    NAMESPACE sdfg::
     FILE sdfgoptTargets.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfgopt
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfg
 )
 
 include(CMakePackageConfigHelpers)
@@ -107,13 +108,13 @@ write_basic_package_version_file(
 configure_package_config_file(
     ${CMAKE_CURRENT_LIST_DIR}/cmake/sdfgoptConfig.cmake.in
     "${CMAKE_CURRENT_BINARY_DIR}/sdfgoptConfig.cmake"
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfgopt
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfg
 )
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/sdfgoptConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/sdfgoptConfigVersion.cmake"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfgopt
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfg
 )
 
 if(SDFG_BUILD_TESTS)
