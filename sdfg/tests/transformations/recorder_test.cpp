@@ -346,8 +346,6 @@ protected:
     std::unique_ptr<analysis::AnalysisManager> analysis_manager_;
 
     void SetUp() override {
-        std::cout << "Starting setup for RecorderMultiTransformationTest" << std::endl;
-
         builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU);
 
         auto& sdfg = builder_->subject();

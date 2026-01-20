@@ -25,6 +25,10 @@ set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost REQUIRED COMPONENTS graph)
 
+# CURL
+find_package(CURL REQUIRED)
+
+
 # Find the ISL library
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(ISL REQUIRED IMPORTED_TARGET isl)
@@ -181,6 +185,7 @@ set(SOURCE_FILES
     src/transformations/out_local_storage.cpp
     src/transformations/recorder.cpp
     src/transformations/replayer.cpp
+    src/transformations/local_transfertuning_transform.cpp
     src/transformations/utils.cpp
     src/types/array.cpp
     src/types/function.cpp
@@ -188,6 +193,7 @@ set(SOURCE_FILES
     src/types/scalar.cpp
     src/types/structure.cpp
     src/types/utils.cpp
+    src/util/utils_curl.cpp
     src/visitor/immutable_structured_sdfg_visitor.cpp
     src/visitor/structured_sdfg_visitor.cpp
     src/visualizer/dot_visualizer.cpp
@@ -233,7 +239,7 @@ if(SDFG_ENABLE_COVERAGE)
   )
 endif()
 
-target_link_libraries(sdfglib PUBLIC nlohmann_json::nlohmann_json ${Boost_LIBRARIES} PkgConfig::ISL symengine)
+target_link_libraries(sdfglib PUBLIC nlohmann_json::nlohmann_json ${Boost_LIBRARIES} PkgConfig::ISL symengine CURL::libcurl)
 set_target_properties(sdfglib PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
