@@ -33,7 +33,7 @@ def kernel(alpha, beta, A, u1, v1, u2, v2, w, x, y, z):
     w += alpha * A @ x
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_gemver(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

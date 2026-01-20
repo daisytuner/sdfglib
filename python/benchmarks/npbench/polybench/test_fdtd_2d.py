@@ -28,7 +28,7 @@ def kernel(TMAX, ex, ey, hz, _fict_):
 
 
 @pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_fdtd_2d(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

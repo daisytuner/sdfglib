@@ -23,7 +23,7 @@ def kernel(A, x):
     return (A @ x) @ A
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_atax(target):
     run_pytest(initialize, kernel, PARAMETERS, target=target)
 

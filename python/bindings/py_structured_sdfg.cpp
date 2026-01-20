@@ -276,6 +276,12 @@ void PyStructuredSDFG::schedule(const std::string& target, const std::string& ca
         sdfg::passes::scheduler::HighwayScheduler highway_scheduler;
         highway_scheduler.run(builder, analysis_manager);
     }
+
+    // GPU Opt Pipeline
+    else if (target == "cuda") {
+        sdfg::passes::scheduler::CUDAScheduler cuda_scheduler;
+        cuda_scheduler.run(builder, analysis_manager);
+    }
 }
 
 std::string PyStructuredSDFG::
@@ -351,16 +357,21 @@ std::string PyStructuredSDFG::
         package_include_path_str = (package_path / "include").string();
     }
 
+    bool has_cuda_lib = false;
     std::unordered_set<std::string> object_files;
     for (const auto& lib_file : lib_files) {
         std::filesystem::path lib_path(lib_file);
         std::string name = lib_path.stem().string();
         std::string object_file = build_path.string() + "/" + name + ".o";
         std::stringstream cmd;
-        cmd << "c++ -c -fPIC -O3  -march=native -mtune=native -funroll-loops";
+        cmd << "clang-19 -c -fPIC -O3  -march=native -mtune=native -funroll-loops";
         if (!package_path_str.empty()) {
             cmd << " -L" << package_path_str;
             cmd << " -I" << package_include_path_str;
+        }
+        if (lib_file.ends_with(".cu")) {
+            cmd << " -x cuda --cuda-gpu-arch=sm_70 --cuda-path=/usr/local/cuda";
+            has_cuda_lib = true;
         }
         cmd << " " << lib_file;
         cmd << " -o " << object_file;
@@ -375,16 +386,36 @@ std::string PyStructuredSDFG::
         object_files.insert(object_file);
     }
 
-    // Compile
+    // Compile 
+    {
+        std::stringstream cmd;
+        cmd << "clang-19 -c -fPIC -O3 -march=native -mtune=native -funroll-loops";
+        if (!package_path_str.empty()) {
+            cmd << " -L" << package_path_str;
+            cmd << " -I" << package_include_path_str;
+        }
+        if (has_cuda_lib) {
+            cmd << " -x cuda -lcuda";
+        }
+        cmd << " " << source_path.string();
+        cmd << " -o " << (build_path / (sdfg_->name() + ".o")).string();
+        int ret = std::system(cmd.str().c_str());
+        if (ret != 0) {
+            throw std::runtime_error("Compilation failed: " + cmd.str());
+        }
+        object_files.insert((build_path / (sdfg_->name() + ".o")).string());
+    }
+
+    // Link into shared library
     fs::path lib_path = build_path / ("lib" + sdfg_->name() + ".so");
 
     std::stringstream cmd;
-    cmd << "c++ -shared -fopenmp -fPIC -O3";
+    cmd << "clang-19 -shared -fopenmp -fPIC -O3";
     if (!package_path_str.empty()) {
         cmd << " -L" << package_path_str;
         cmd << " -I" << package_include_path_str;
     }
-    cmd << " " << source_path.string();
+    // cmd << " " << source_path.string();
     for (const auto& object_file : object_files) {
         cmd << " " << object_file;
     }
@@ -395,6 +426,7 @@ std::string PyStructuredSDFG::
     cmd << " -larg_capture_io";
     cmd << " -lblas";
     cmd << " -lm";
+    cmd << " /usr/local/cuda/lib64/libcudart.so";
     cmd << " -o " << lib_path.string();
 
     int ret = std::system(cmd.str().c_str());

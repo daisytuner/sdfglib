@@ -32,7 +32,7 @@ def kernel(A, B, C, D):
     return A @ B @ C @ D
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_k3mm(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

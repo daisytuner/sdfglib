@@ -8,6 +8,7 @@
 #include "analysis/py_loop_analysis.h"
 #include "py_structured_sdfg.h"
 #include "py_structured_sdfg_builder.h"
+#include "sdfg/targets/cuda/plugin.h"
 #include "types/py_types.h"
 
 #include <sdfg/element.h>
@@ -33,6 +34,7 @@ PYBIND11_MODULE(_sdfg, m) {
     sdfg::serializer::register_default_serializers();
     sdfg::omp::register_omp_plugin();
     sdfg::highway::register_highway_plugin();
+    sdfg::cuda::register_cuda_plugin();
 
     register_types(m);
     register_loop_analysis(m);

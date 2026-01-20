@@ -36,7 +36,7 @@ def kernel(alpha, beta, C, A, B):
         C[i, :] += alpha * B[i, :] * A[i, i] + alpha * temp2
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_symm(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

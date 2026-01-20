@@ -31,7 +31,7 @@ def kernel(r):
 
 
 @pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_durbin(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

@@ -28,7 +28,7 @@ def kernel(alpha, beta, C, A, B):
             )
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_syr2k(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

@@ -22,7 +22,7 @@ def kernel(M, float_n, data):
 
 
 @pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_covariance2(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

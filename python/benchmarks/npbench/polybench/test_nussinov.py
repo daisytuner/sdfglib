@@ -41,7 +41,7 @@ def kernel(N, seq):
     return table
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_nussinov(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

@@ -30,7 +30,7 @@ def kernel(A):
 
 
 @pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_cholesky(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

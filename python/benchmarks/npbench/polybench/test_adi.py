@@ -71,7 +71,7 @@ def kernel(TSTEPS, N, u):
     return u
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_adi(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

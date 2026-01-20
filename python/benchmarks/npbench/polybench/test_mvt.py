@@ -26,7 +26,7 @@ def kernel(x1, x2, y_1, y_2, A):
     x2 += y_2 @ A
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_mvt(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

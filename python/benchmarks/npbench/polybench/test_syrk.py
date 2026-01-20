@@ -25,7 +25,7 @@ def kernel(alpha, beta, C, A):
             C[i, : i + 1] += alpha * A[i, k] * A[: i + 1, k]
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_syrk(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

@@ -40,7 +40,7 @@ def kernel(A, b):
 
 
 @pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_ludcmp(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

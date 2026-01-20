@@ -25,7 +25,7 @@ def kernel(TSTEPS, A, B):
 
 
 @pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_jacobi_1d(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

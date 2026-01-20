@@ -27,7 +27,7 @@ def kernel(alpha, beta, A, B, C, D):
     D[:] = alpha * A @ B @ C + beta * D
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_k2mm(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

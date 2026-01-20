@@ -24,7 +24,7 @@ def kernel(alpha, beta, A, B, x):
     return alpha * A @ x + beta * B @ x
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_gesummv(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

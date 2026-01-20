@@ -21,7 +21,7 @@ def kernel(path):
 
 
 @pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_floyd_warshall(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

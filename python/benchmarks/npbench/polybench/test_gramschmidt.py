@@ -38,7 +38,7 @@ def kernel(A):
 
 
 @pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_gramschmidt(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 

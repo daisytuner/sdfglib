@@ -24,7 +24,7 @@ def kernel(NR, NQ, NP, A, C4):
 
 
 @pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_doitgen(target):
     run_pytest(initialize, kernel, PARAMETERS, target)
 
