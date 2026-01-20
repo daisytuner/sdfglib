@@ -117,7 +117,7 @@ set(TEST_FILES
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(sdfglib_test ${TEST_FILES})
 target_include_directories(sdfglib_test PRIVATE ./)
-target_link_libraries(sdfglib_test gtest_main sdfglib)
+target_link_libraries(sdfglib_test gtest_main sdfg::sdfg)
 if(SDFG_ENABLE_COVERAGE)
 target_compile_options(sdfglib_test PRIVATE
   -fprofile-instr-generate

@@ -1,0 +1,11 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(sdfg CONFIG REQUIRED)
+
+find_package(CURL REQUIRED)
+
+include("${CMAKE_CURRENT_LIST_DIR}/sdfgrpcTargets.cmake")
+
+check_required_components(sdfgrpc)
