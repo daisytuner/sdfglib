@@ -8,4 +8,9 @@ def ConvertArithToSDFG : Pass<"convert-arith-to-sdfg"> {
     let dependentDialects = ["::mlir::sdfg::SDFGDialect"];
 }
 
+def ConvertFuncToSDFG : Pass<"convert-func-to-sdfg"> {
+    let summary = "Convert Func dialect to SDFG dialect";
+    let dependentDialects = ["::mlir::sdfg::SDFGDialect"];
+}
+
 #endif // SDFG_CONVERSION_PASSES

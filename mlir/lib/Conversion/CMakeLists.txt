@@ -1,1 +1,2 @@
 add_subdirectory(ArithToSDFG)
+add_subdirectory(FuncToSDFG)

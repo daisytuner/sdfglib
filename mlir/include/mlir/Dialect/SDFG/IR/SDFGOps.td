@@ -20,8 +20,7 @@ def SDFG_SDFGOp : SDFG_Op<"sdfg", [NoTerminator, IsolatedFromAbove, HasParent<"M
     }];
 
     let arguments = (ins SymbolNameAttr:$sym_name,
-                         TypeAttrOf<FunctionType>:$function_type,
-                         OptionalAttr<StrAttr>:$sym_visibility);
+                         TypeAttrOf<FunctionType>:$function_type);
     let regions = (region AnyRegion:$body);
 
     let hasCustomAssemblyFormat = 1;
@@ -108,6 +107,16 @@ def SDFG_TaskletOp : SDFG_Op<"tasklet", [HasParent<"BlockOp">]> {
     let assemblyFormat = "$code `,` $inputs attr-dict `:` `(` type($inputs) `)` `->` type($output)";
 
     let hasVerifier = 1;
+}
+
+// SDFG data flow node that represents a memlet
+def SDFG_MemletOp : SDFG_Op<"memlet", [Pure, HasParent<"BlockOp">]> {
+    let summary = "Edges representing data movement";
+
+    let arguments = (ins AnyType:$input);
+    let results = (outs AnyType:$output);
+
+    let assemblyFormat = "attr-dict $input `:` type($input) `->` type($output)";
 }
 
 #endif // SDFG_OPS

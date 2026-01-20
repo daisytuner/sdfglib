@@ -77,7 +77,8 @@ sdfg.sdfg @test_tasklet_assign() -> i32 {
     %0 = sdfg.block -> i32 {
         %1 = sdfg.constant 1 : i32
         %2 = sdfg.tasklet assign, %1 : (i32) -> i32
-        sdfg.yield %2 : i32
+        %3 = sdfg.memlet %2 : i32 -> i32
+        sdfg.yield %3 : i32
     }
     sdfg.return %0 : i32
 }
@@ -88,7 +89,8 @@ sdfg.sdfg @test_tasklet_int_add() -> i32 {
         %1 = sdfg.constant 1 : i32
         %2 = sdfg.constant 2 : i32
         %3 = sdfg.tasklet int_add, %1, %2 : (i32, i32) -> i32
-        sdfg.yield %3 : i32
+        %4 = sdfg.memlet %3 : i32 -> i32
+        sdfg.yield %4 : i32
     }
     sdfg.return %0 : i32
 }
@@ -99,7 +101,8 @@ sdfg.sdfg @test_tasklet_int_add2() -> i32 {
         %1 = sdfg.constant 1 : i32
         %2 = sdfg.constant 2 : i16
         %3 = sdfg.tasklet int_add, %1, %2 : (i32, i16) -> i32
-        sdfg.yield %3 : i32
+        %4 = sdfg.memlet %3 : i32 -> i32
+        sdfg.yield %4 : i32
     }
     sdfg.return %0 : i32
 }
@@ -111,7 +114,20 @@ sdfg.sdfg @test_tasklet_fp_fma() -> f32 {
         %2 = sdfg.constant 2.0 : f32
         %3 = sdfg.constant 3.0 : f32
         %4 = sdfg.tasklet fp_fma, %1, %2, %3 : (f32, f32, f32) -> f32
-        sdfg.yield %4 : f32
+        %5 = sdfg.memlet %4 : f32 -> f32
+        sdfg.yield %5 : f32
     }
     sdfg.return %0 : f32
+}
+
+// CHECK-LABEL: @test_int_add
+sdfg.sdfg @test_int_add(%0 : i32, %1 : i32) -> i32 {
+    %2 = sdfg.block -> i32 {
+        %3 = sdfg.memlet %0 : i32 -> i32
+        %4 = sdfg.memlet %1 : i32 -> i32
+        %5 = sdfg.tasklet int_add, %3, %4 : (i32, i32) -> i32
+        %6 = sdfg.memlet %5 : i32 -> i32
+        sdfg.yield %6 : i32
+    }
+    sdfg.return %2 : i32
 }

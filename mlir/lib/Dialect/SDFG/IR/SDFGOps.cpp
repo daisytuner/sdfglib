@@ -28,11 +28,6 @@ void SDFGOp::print(OpAsmPrinter& p) {
     bool is_external = this->getBody().empty();
     p << " ";
 
-    // Print visibility
-    if (auto visibility = this->getSymVisibilityAttr()) {
-        p << visibility.getValue() << " ";
-    }
-
     // Print name as symbol
     p.printSymbolName(this->getSymName());
 
@@ -68,9 +63,6 @@ void SDFGOp::print(OpAsmPrinter& p) {
 
 ParseResult SDFGOp::parse(OpAsmParser& parser, OperationState& result) {
     auto& builder = parser.getBuilder();
-
-    // Parse visibility
-    (void) impl::parseOptionalVisibilityKeyword(parser, result.attributes);
 
     // Parse name as symbol
     StringAttr nameAttr;
