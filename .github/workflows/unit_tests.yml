@@ -96,6 +96,7 @@ jobs:
       image: daisytuner/docc-v2:latest
       options: >-
         --cap-add=PERFMON
+        --gpus=all
     strategy:
       fail-fast: false
       matrix:
