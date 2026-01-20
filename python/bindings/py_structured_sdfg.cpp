@@ -386,7 +386,7 @@ std::string PyStructuredSDFG::
         object_files.insert(object_file);
     }
 
-    // Compile 
+    // Compile
     {
         std::stringstream cmd;
         cmd << "clang-19 -c -fPIC -O3 -march=native -mtune=native -funroll-loops";
@@ -428,6 +428,7 @@ std::string PyStructuredSDFG::
     cmd << " -lm";
     cmd << " /usr/local/cuda/lib64/libcudart.so";
     cmd << " -o " << lib_path.string();
+
 
     int ret = std::system(cmd.str().c_str());
     if (ret != 0) {
