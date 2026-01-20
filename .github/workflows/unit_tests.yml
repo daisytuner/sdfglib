@@ -91,7 +91,7 @@ jobs:
   python-tests:
     runs-on:
       group: dahlia
-      labels: openmp
+      labels: cuda
     container:
       image: daisytuner/docc-v2:latest
       options: >-
