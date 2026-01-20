@@ -138,6 +138,7 @@ jobs:
 
       - name: Unit Tests
         run: |
+          nvidia-smi
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
           coverage run --source=python/docc -m pytest -v python/tests
           coverage xml
