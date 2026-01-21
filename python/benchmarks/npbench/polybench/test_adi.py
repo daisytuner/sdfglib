@@ -82,6 +82,8 @@ def test_adi(target):
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 0,
             }
         )
     elif target == "sequential":
@@ -93,6 +95,8 @@ def test_adi(target):
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 3,
+                "GEMM": 0,
+                "DOT": 0,
             }
         )
     elif target == "openmp":
@@ -104,6 +108,8 @@ def test_adi(target):
                 "CUDA": 0,
                 "CPU_PARALLEL": 3,
                 "HIGHWAY": 1,
+                "GEMM": 0,
+                "DOT": 0,
             }
         )
     else:  # cuda
@@ -115,6 +121,8 @@ def test_adi(target):
                 "CUDA": 4,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 0,
             }
         )
 

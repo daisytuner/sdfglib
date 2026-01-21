@@ -38,6 +38,8 @@ def test_k2mm(target):
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
+                "GEMM": 2,
+                "DOT": 0,
             }
         )
     elif target == "sequential":
@@ -49,6 +51,8 @@ def test_k2mm(target):
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 1,
+                "GEMM": 2,
+                "DOT": 0,
             }
         )
     elif target == "openmp":
@@ -60,6 +64,8 @@ def test_k2mm(target):
                 "CUDA": 0,
                 "CPU_PARALLEL": 1,
                 "HIGHWAY": 1,
+                "GEMM": 2,
+                "DOT": 0,
             }
         )
     else:  # cuda
@@ -71,6 +77,8 @@ def test_k2mm(target):
                 "CUDA": 2,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
+                "GEMM": 2,
+                "DOT": 0,
             }
         )
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)

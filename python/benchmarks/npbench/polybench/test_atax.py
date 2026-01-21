@@ -34,6 +34,8 @@ def test_atax(target):
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
+                "GEMM": 2,
+                "DOT": 0,
             }
         )
     elif target == "sequential":
@@ -45,6 +47,8 @@ def test_atax(target):
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 1,
+                "GEMM": 2,
+                "DOT": 0,
             }
         )
     elif target == "openmp":
@@ -56,6 +60,8 @@ def test_atax(target):
                 "CUDA": 0,
                 "CPU_PARALLEL": 1,
                 "HIGHWAY": 0,
+                "GEMM": 2,
+                "DOT": 0,
             }
         )
     else:  # cuda
@@ -67,6 +73,8 @@ def test_atax(target):
                 "CUDA": 1,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
+                "GEMM": 2,
+                "DOT": 0,
             }
         )
     run_pytest(initialize, kernel, PARAMETERS, target=target, verifier=verifier)

@@ -35,6 +35,8 @@ def test_gemm(target):
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
+                "GEMM": 1,
+                "DOT": 0,
             }
         )
     elif target == "sequential":
@@ -46,6 +48,8 @@ def test_gemm(target):
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
+                "GEMM": 1,
+                "DOT": 0,
             }
         )
     elif target == "openmp":
@@ -57,6 +61,8 @@ def test_gemm(target):
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
+                "GEMM": 1,
+                "DOT": 0,
             }
         )
     else:  # cuda
@@ -68,6 +74,8 @@ def test_gemm(target):
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
+                "GEMM": 1,
+                "DOT": 0,
             }
         )
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)
