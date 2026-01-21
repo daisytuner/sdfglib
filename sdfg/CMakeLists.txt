@@ -71,6 +71,7 @@ set(SOURCE_FILES
     src/codegen/dispatchers/for_dispatcher.cpp
     src/codegen/dispatchers/map_dispatcher.cpp
     src/codegen/dispatchers/while_dispatcher.cpp
+    src/codegen/loop_report.cpp
     src/control_flow/interstate_edge.cpp
     src/control_flow/state.cpp
     src/data_flow/access_node.cpp

@@ -335,7 +335,12 @@ Condition subs(const Condition expr, const Expression old_expr, const Expression
     return SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(subs(expr, d));
 };
 
-Expression parse(const std::string& expr_str) { return SymEngine::parse(expr_str); };
+Expression parse(const std::string& expr_str) {
+    auto expr = SymEngine::parse(expr_str);
+    expr = symbolic::subs(expr, symbolic::symbol("true"), symbolic::one());
+    expr = symbolic::subs(expr, symbolic::symbol("false"), symbolic::zero());
+    return expr;
+};
 
 Expression inverse(const Expression expr, const Symbol symbol) {
     // Currently only affine inverse is supported

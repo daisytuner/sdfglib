@@ -5,6 +5,22 @@ import pytest
 import docc
 
 
+class SDFGVerification:
+    def __init__(self, verification: dict):
+        self._verification = verification
+
+    def verify(self, stats: dict) -> None:
+        print(stats)
+        for key, val in self._verification.items():
+            if key not in stats:
+                assert val == 0, f"Key {key} not found in stats"
+            else:
+                assert (
+                    stats[key] == val
+                ), f"Key {key} has value {stats[key]} but expected {val}"
+        print("All verifications passed.")
+
+
 def run_benchmark(initialize_func, kernel_func, parameters, name, args=None):
     if args is None:
         parser = argparse.ArgumentParser()
@@ -54,7 +70,13 @@ def run_benchmark(initialize_func, kernel_func, parameters, name, args=None):
         print(f"Docc execution time (cached): {end - start:.6f} seconds")
 
 
-def run_pytest(initialize_func, kernel_func, parameters, target="none"):
+def run_pytest(
+    initialize_func,
+    kernel_func,
+    parameters,
+    target="none",
+    verifier: SDFGVerification = None,
+):
     # Use the smallest size for testing
     size = "S"
     if "S" not in parameters:
@@ -72,11 +94,18 @@ def run_pytest(initialize_func, kernel_func, parameters, target="none"):
 
     # Run Docc version
     inputs_docc = [x.copy() if isinstance(x, np.ndarray) else x for x in inputs]
+
     kernel_with_target = docc.program(
         kernel_func,
         target=target,
     )
     res_docc = kernel_with_target(*inputs_docc)
+
+    sdfg = kernel_with_target.last_sdfg
+    stats = sdfg.loop_report()
+    print(stats)  # {'FOR': 5, 'MAP': 2, 'CPU': 2, ...}
+    assert stats is not None, "No stats found in SDFG."
+    verifier.verify(stats)
 
     # Validate return values if they exist
     if res_ref is not None:

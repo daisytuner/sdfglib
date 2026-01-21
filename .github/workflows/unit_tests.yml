@@ -91,15 +91,16 @@ jobs:
   python-tests:
     runs-on:
       group: dahlia
-      labels: openmp
+      labels: cuda
     container:
       image: daisytuner/docc-v2:latest
       options: >-
         --cap-add=PERFMON
+        --gpus=all
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - uses: actions/checkout@v4
@@ -138,6 +139,7 @@ jobs:
 
       - name: Unit Tests
         run: |
+          nvidia-smi
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
           coverage run --source=python/docc -m pytest -v python/tests
           coverage xml
