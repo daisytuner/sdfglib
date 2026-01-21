@@ -15,16 +15,15 @@
 namespace sdfg {
 namespace transformations {
 
-const std::string TT_ENDPOINT = "http://localhost:3000/docc";
-
 
 LocalTransferTuningTransform::LocalTransferTuningTransform(
     const std::string& target,
     const std::string& category,
     sdfg::StructuredSDFG* sdfg,
-    const analysis::LoopInfo& loop_info
+    const analysis::LoopInfo& loop_info,
+    const sdfg::passes::rpc::RpcContext& rpc_context
 )
-    : target_(target), category_(category), sdfg_(sdfg), loop_info_(loop_info) {}
+    : target_(target), category_(category), sdfg_(sdfg), loop_info_(loop_info), rpc_context_(rpc_context) {}
 
 std::string LocalTransferTuningTransform::name() const { return "LocalTransferTuningTransform"; }
 
@@ -39,19 +38,13 @@ bool LocalTransferTuningTransform::
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
 
-    // Optional testing headers: allow pointing the local server at JSON fixture files.
-    if (const char* sdfg_path = std::getenv("SDFG_TEST_SDFG_PATH")) {
-        if (*sdfg_path) {
-            std::string hdr = std::string("sdfg-path: ") + sdfg_path;
-            headers = curl_slist_append(headers, hdr.c_str());
-        }
+    // Add all headers provided by the RPC context (auth and optional testing headers).
+    auto context_headers = rpc_context_.get_auth_headers();
+    for (const auto& [key, value] : context_headers) {
+        std::string hdr = key + ": " + value;
+        headers = curl_slist_append(headers, hdr.c_str());
     }
-    if (const char* seq_path = std::getenv("SDFG_TEST_SEQUENCE_PATH")) {
-        if (*seq_path) {
-            std::string hdr = std::string("sequence-path: ") + seq_path;
-            headers = curl_slist_append(headers, hdr.c_str());
-        }
-    }
+
     curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, headers);
 
     this->applied_recipe_ = TransfertuningRecipe();
@@ -122,7 +115,7 @@ std::vector<TransfertuningRecipe> LocalTransferTuningTransform::
     std::string payload_str = payload.dump();
 
     // Send query
-    HttpResult res = post_json(curl_handle, TT_ENDPOINT + "/get-recipe", payload_str, headers);
+    HttpResult res = post_json(curl_handle, this->rpc_context_.get_remote_address(), payload_str, headers);
     if (res.curl_code != CURLE_OK) {
         DEBUG_PRINTLN("[ERROR] Nearest neighbor query failed " << ": " << res.error_message);
         return {};
