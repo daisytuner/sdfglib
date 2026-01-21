@@ -6,18 +6,13 @@
 #include "sdfg/structured_sdfg.h"
 
 #include "sdfg/analysis/loop_analysis.h"
+#include "sdfg/passes/rpc/rpc_context.h"
+#include "sdfg/passes/rpc/rpc_test_context.h"
 #include "sdfg/transformations/transformation.h"
+#include "sdfg/transformations/utils.h"
 
 namespace sdfg {
 namespace transformations {
-
-struct TransfertuningRecipe {
-    nlohmann::json sdfg;
-    nlohmann::json sequence;
-    std::string region_id;
-    double speedup;
-    double distance;
-};
 
 class LocalTransferTuningTransform : public sdfg::transformations::Transformation {
 private:
@@ -32,6 +27,7 @@ private:
     // TT state
     std::vector<TransfertuningRecipe> recipes_;
     TransfertuningRecipe applied_recipe_;
+    const sdfg::passes::rpc::RpcContext& rpc_context_;
 
     std::vector<TransfertuningRecipe>
     query_recipes(sdfg::StructuredSDFG& sdfg, CURL* curl_handle, struct curl_slist* headers);
@@ -41,7 +37,8 @@ public:
         const std::string& target,
         const std::string& category,
         sdfg::StructuredSDFG* sdfg,
-        const sdfg::analysis::LoopInfo& loop_info
+        const sdfg::analysis::LoopInfo& loop_info,
+        const sdfg::passes::rpc::RpcContext& rpc_context = sdfg::passes::rpc::RpcTestContext::default_context()
     );
 
     virtual std::string name() const override;
