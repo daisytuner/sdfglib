@@ -7,17 +7,10 @@
 
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/transformations/transformation.h"
+#include "sdfg/transformations/utils.h"
 
 namespace sdfg {
 namespace transformations {
-
-struct TransfertuningRecipe {
-    nlohmann::json sdfg;
-    nlohmann::json sequence;
-    std::string region_id;
-    double speedup;
-    double distance;
-};
 
 class LocalTransferTuningTransform : public sdfg::transformations::Transformation {
 private:

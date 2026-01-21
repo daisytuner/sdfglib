@@ -1,0 +1,77 @@
+[
+    {
+        "parameters": {
+            "tile_size": 32
+        },
+        "subgraph": {
+            "0": {
+                "element_id": 1,
+                "type": "map"
+            }
+        },
+        "transformation_type": "LoopTiling"
+    },
+    {
+        "parameters": {
+            "tile_size": 32
+        },
+        "subgraph": {
+            "0": {
+                "element_id": 4,
+                "type": "for"
+            }
+        },
+        "transformation_type": "LoopTiling"
+    },
+    {
+        "parameters": {
+            "tile_size": 32
+        },
+        "subgraph": {
+            "0": {
+                "element_id": 7,
+                "type": "map"
+            }
+        },
+        "transformation_type": "LoopTiling"
+    },
+    {
+        "subgraph": {
+            "0": {
+                "element_id": 1,
+                "type": "map"
+            },
+            "1": {
+                "element_id": 24,
+                "type": "for"
+            }
+        },
+        "transformation_type": "LoopInterchange"
+    },
+    {
+        "subgraph": {
+            "0": {
+                "element_id": 4,
+                "type": "for"
+            },
+            "1": {
+                "element_id": 27,
+                "type": "map"
+            }
+        },
+        "transformation_type": "LoopInterchange"
+    },
+    {
+        "subgraph": {
+            "0": {
+                "element_id": 33,
+                "type": "map"
+            },
+            "1": {
+                "element_id": 36,
+                "type": "map"
+            }
+        },
+        "transformation_type": "LoopInterchange"
+    }
+]

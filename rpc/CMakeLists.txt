@@ -40,6 +40,11 @@ if(SDFG_ENABLE_COVERAGE)
   )
 endif()
 
+target_include_directories(sdfgrpc
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+
 target_link_libraries(sdfgrpc PUBLIC sdfg::sdfg CURL::libcurl)
 set_target_properties(sdfgrpc PROPERTIES
     VERSION ${PROJECT_VERSION}
