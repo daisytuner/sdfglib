@@ -144,7 +144,6 @@ int main(int argc, char* argv[]) {
         loopnest_index++;
     }
 
-
     // Generate code for initial sdfg
 
     auto localPrefix = output_prefix.filename().string();

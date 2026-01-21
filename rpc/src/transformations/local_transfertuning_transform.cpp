@@ -36,14 +36,28 @@ bool LocalTransferTuningTransform::
         return false;
     }
 
-    std::string auth_header = "";
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
-    headers = curl_slist_append(headers, auth_header.c_str());
+
+    // Optional testing headers: allow pointing the local server at JSON fixture files.
+    if (const char* sdfg_path = std::getenv("SDFG_TEST_SDFG_PATH")) {
+        if (*sdfg_path) {
+            std::string hdr = std::string("sdfg-path: ") + sdfg_path;
+            headers = curl_slist_append(headers, hdr.c_str());
+        }
+    }
+    if (const char* seq_path = std::getenv("SDFG_TEST_SEQUENCE_PATH")) {
+        if (*seq_path) {
+            std::string hdr = std::string("sequence-path: ") + seq_path;
+            headers = curl_slist_append(headers, hdr.c_str());
+        }
+    }
     curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, headers);
 
     this->applied_recipe_ = TransfertuningRecipe();
     this->recipes_ = query_recipes(*sdfg_, curl_handle, headers);
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl_handle);
     if (this->recipes_.empty()) {
         if (report_) transformations::Transformation::report_->transform_impossible(this, "No neighbors found");
         DEBUG_PRINTLN("[INFO] No transfertuning recipes found for loop");
@@ -70,7 +84,8 @@ void LocalTransferTuningTransform::
         break;
     }
     if (success == false) {
-        if (this->recipes_[0].sdfg != "") {
+        // If a full SDFG was returned instead of a sequence, rebuild from JSON.
+        if (!this->recipes_[0].sdfg.is_null()) {
             sdfg::serializer::JSONSerializer serializer;
             auto final_sdfg = serializer.deserialize(this->recipes_[0].sdfg);
             builder = sdfg::builder::StructuredSDFGBuilder(final_sdfg);
@@ -126,14 +141,19 @@ std::vector<TransfertuningRecipe> LocalTransferTuningTransform::
     }
 
     std::vector<TransfertuningRecipe> recipes;
-    for (auto entry : parsed["data"]) {
-        recipes.push_back(TransfertuningRecipe{
-            entry.value("sdfg", ""),
-            entry["sequence"],
-            entry["region_id"],
-            entry["speedup"],
-            entry["vector_distance"].get<double>()
-        });
+    for (auto& entry : parsed["data"]) {
+        try {
+            nlohmann::json sdfg_field = entry.contains("sdfg") ? entry["sdfg"] : nlohmann::json();
+            recipes.push_back(TransfertuningRecipe{
+                sdfg_field,
+                entry["sequence"],
+                entry["region_id"],
+                entry["speedup"],
+                entry["vector_distance"].get<double>()
+            });
+        } catch (...) {
+            continue;
+        }
     }
 
     return recipes;
