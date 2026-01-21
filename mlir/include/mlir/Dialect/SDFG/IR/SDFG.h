@@ -28,7 +28,7 @@
 namespace mlir {
 namespace sdfg {
 
-bool is_primitive(Type& type);
+bool is_primitive(const Type& type);
 
 /**
  * @brief Get the number of inputs for a tasklet operation

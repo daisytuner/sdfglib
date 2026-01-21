@@ -17,7 +17,7 @@
 namespace mlir {
 namespace sdfg {
 
-bool is_primitive(Type& type) {
+bool is_primitive(const Type& type) {
     if (auto int_type = llvm::dyn_cast<IntegerType>(type)) {
         switch (int_type.getWidth()) {
             case 1:

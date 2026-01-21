@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mlir/Conversion/ArithToSDFG/ArithToSDFG.h"
+#include "mlir/Conversion/ConvertToSDFG/ConvertToSDFG.h"
 #include "mlir/Conversion/FuncToSDFG/FuncToSDFG.h"
 #include "mlir/Pass/PassRegistry.h"
 
