@@ -6,6 +6,7 @@
 #include <string>
 
 #include "sdfg/optimization_report/pass_report_consumer.h"
+#include "sdfg/passes/rpc/rpc_responses.h"
 #include "sdfg/serializer/json_serializer.h"
 #include "sdfg/structured_sdfg.h"
 #include "sdfg/transformations/replayer.h"

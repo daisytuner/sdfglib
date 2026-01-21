@@ -14,6 +14,17 @@
 namespace sdfg {
 namespace transformations {
 
+/**
+ * @deprecated This is only here to make the other code compile. it is not to be used by any other library!
+ */
+struct TransfertuningRecipe {
+    nlohmann::json sdfg;
+    nlohmann::json sequence;
+    std::string region_id;
+    double speedup;
+    double distance;
+};
+
 class LocalTransferTuningTransform : public sdfg::transformations::Transformation {
 private:
     // TT parameters
