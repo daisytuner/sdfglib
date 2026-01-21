@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from benchmarks.npbench.harness import run_benchmark, run_pytest
+from benchmarks.npbench.harness import SDFGVerification, run_benchmark, run_pytest
 
 PARAMETERS = {
     "S": {"TSTEPS": 8, "N": 50},
@@ -36,7 +36,51 @@ def kernel(TSTEPS, N, A):
 
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_seidel_2d(target):
-    run_pytest(initialize, kernel, PARAMETERS, target)
+    if target == "none":
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 4,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+            }
+        )
+    elif target == "sequential":
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 4,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+            }
+        )
+    elif target == "openmp":
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 4,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+            }
+        )
+    else:  # cuda
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 4,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+            }
+        )
+    run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)
 
 
 if __name__ == "__main__":

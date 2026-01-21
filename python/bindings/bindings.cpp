@@ -91,7 +91,8 @@ PYBIND11_MODULE(_sdfg, m) {
             py::arg("instrumentation_mode") = "",
             py::arg("capture_args") = false
         )
-        .def("metadata", &PyStructuredSDFG::metadata, py::arg("key"), "Get metadata value");
+        .def("metadata", &PyStructuredSDFG::metadata, py::arg("key"), "Get metadata value")
+        .def("loop_report", &PyStructuredSDFG::loop_report, "Get loop statistics from the SDFG");
 
     // Register StructuredSDFGBuilder class
     py::class_<PyStructuredSDFGBuilder>(m, "StructuredSDFGBuilder")

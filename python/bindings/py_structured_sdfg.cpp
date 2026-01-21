@@ -283,40 +283,6 @@ void PyStructuredSDFG::schedule(const std::string& target, const std::string& ca
         sdfg::passes::scheduler::CUDAScheduler cuda_scheduler;
         cuda_scheduler.run(builder, analysis_manager);
     }
-
-    bool opt_report = true;
-    auto opt_report_str = getenv("DOCC_OPT_REPORT");
-    if (opt_report_str == "1" || opt_report_str == "true" || opt_report_str == "on") {
-        opt_report = true;
-    }
-
-    if (opt_report) {
-        // Collect report
-        std::unordered_map<std::string, size_t> cumulated_report;
-        sdfg::analysis::AnalysisManager analysis_manager(builder.subject());
-
-        sdfg::codegen::LoopReport generator(builder, analysis_manager);
-        generator.visit();
-
-        for (auto& [key, value] : generator.report()) {
-            if (cumulated_report.find(key) == cumulated_report.end()) {
-                cumulated_report[key] = 0;
-            }
-            cumulated_report[key] += value;
-        }
-
-        // Dump report
-        std::stringstream opt_report_stream;
-        opt_report_stream << "\nDOCC Optimization Report Start:\n";
-        opt_report_stream << "  source_language: Python\n";
-        opt_report_stream << "  sdfgs: 1\n";
-        for (auto& [key, value] : cumulated_report) {
-            opt_report_stream << "  " << key << ": " << value << "\n";
-        }
-        opt_report_stream << "DOCC Optimization Report End\n";
-
-        std::cerr << opt_report_stream.str();
-    }
 }
 
 std::string PyStructuredSDFG::
@@ -479,4 +445,19 @@ std::string PyStructuredSDFG::metadata(const std::string& key) const {
     } catch (const std::out_of_range&) {
         return "";
     }
+}
+
+pybind11::dict PyStructuredSDFG::loop_report() const {
+    sdfg::builder::StructuredSDFGBuilder builder(*sdfg_);
+    sdfg::analysis::AnalysisManager analysis_manager(*sdfg_);
+
+    sdfg::codegen::LoopReport report_visitor(builder, analysis_manager);
+    report_visitor.visit();
+
+    pybind11::dict result;
+    for (const auto& [key, value] : report_visitor.report()) {
+        result[key.c_str()] = value;
+    }
+
+    return result;
 }
