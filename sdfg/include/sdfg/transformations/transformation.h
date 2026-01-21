@@ -82,7 +82,7 @@ public:
      * @param j JSON object to populate with transformation description
      * @throws std::logic_error if not implemented
      */
-    virtual void to_json(nlohmann::json& j) const { throw std::logic_error("Not implemented"); };
+    virtual void to_json(nlohmann::json& j) const = 0;
 };
 
 /**

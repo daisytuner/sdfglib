@@ -548,20 +548,62 @@ void KernelLocalStorage::apply(builder::StructuredSDFGBuilder& builder, analysis
 
 void KernelLocalStorage::to_json(nlohmann::json& j) const {
     j["transformation_type"] = this->name();
+
+    std::string loop_type;
+    if (dynamic_cast<structured_control_flow::For*>(&loop_)) {
+        loop_type = "for";
+    } else if (dynamic_cast<structured_control_flow::While*>(&loop_)) {
+        loop_type = "while";
+    } else if (dynamic_cast<structured_control_flow::Map*>(&loop_)) {
+        loop_type = "map";
+    } else {
+        loop_type = "unknown";
+    }
+
+    j["subgraph"] = {{"0", {{"element_id", this->loop_.element_id()}, {"type", loop_type}}}};
+
+    j["parameters"] = {{"offset", serializer::JSONSerializer::expression(offset_)}, {"container", this->container_}};
+
+    // Legacy fields for backward compatibility
     j["loop_element_id"] = this->loop_.element_id();
     j["offset"] = serializer::JSONSerializer::expression(offset_);
     j["container"] = this->container_;
 };
 
 KernelLocalStorage KernelLocalStorage::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& desc) {
-    auto loop_id = desc["loop_element_id"].get<size_t>();
+    size_t loop_id;
+    if (desc.contains("subgraph")) {
+        const auto& node_desc = desc.at("subgraph").at("0");
+        loop_id = node_desc.at("element_id").get<size_t>();
+    } else {
+        loop_id = desc.at("loop_element_id").get<size_t>();
+    }
+
     auto element = builder.find_element_by_id(loop_id);
     if (!element) {
         throw InvalidTransformationDescriptionException("Element with ID " + std::to_string(loop_id) + " not found.");
     }
     auto outer_loop = dynamic_cast<structured_control_flow::For*>(element);
-    auto offset = symbolic::parse(desc["offset"]);
-    auto container = desc["container"].get<std::string>();
+
+    nlohmann::json offset_json;
+    std::string container;
+    if (desc.contains("parameters")) {
+        const auto& params = desc.at("parameters");
+        if (params.contains("offset")) {
+            offset_json = params.at("offset");
+        }
+        if (params.contains("container")) {
+            container = params.at("container").get<std::string>();
+        }
+    }
+    if (offset_json.is_null() && desc.contains("offset")) {
+        offset_json = desc.at("offset");
+    }
+    if (container.empty() && desc.contains("container")) {
+        container = desc.at("container").get<std::string>();
+    }
+
+    auto offset = symbolic::parse(offset_json);
 
     return KernelLocalStorage(*outer_loop, offset, container);
 };
