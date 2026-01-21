@@ -7,6 +7,8 @@ find_package(CURL REQUIRED)
 
 set(SOURCE_FILES
     src/passes/rpc/rpc_context.cpp
+    src/transformations/local_transfertuning_transform.cpp
+    src/util/utils_curl.cpp
 )
 add_library(sdfgrpc
     ${SOURCE_FILES}
