@@ -86,11 +86,37 @@ TEST(KernelLocalStorageTest, json_serialization) {
 
     EXPECT_EQ(kernel_local_storage.name(), copy_transformation.name());
 
-    auto str = j.dump(2);
-    std::string base =
-        "{\n  \"container\": \"A\",\n  \"loop_element_id\": 7,\n  \"offset\": \"0\",\n  \"transformation_type\": "
-        "\"KernelLocalStorage\"\n}";
-    EXPECT_EQ(str, base);
+    // New serialization: embedding-compatible description plus legacy fields.
+    ASSERT_TRUE(j.contains("transformation_type"));
+    EXPECT_EQ(j["transformation_type"], "KernelLocalStorage");
+
+    // Embedding-style subgraph description
+    ASSERT_TRUE(j.contains("subgraph"));
+    ASSERT_TRUE(j["subgraph"].is_object());
+    ASSERT_TRUE(j["subgraph"].contains("0"));
+    const auto& node = j["subgraph"]["0"];
+    ASSERT_TRUE(node.contains("element_id"));
+    ASSERT_TRUE(node["element_id"].is_number_unsigned());
+    EXPECT_EQ(node["element_id"].get<size_t>(), loop.element_id());
+    ASSERT_TRUE(node.contains("type"));
+    ASSERT_TRUE(node["type"].is_string());
+
+    // Parameters section
+    ASSERT_TRUE(j.contains("parameters"));
+    ASSERT_TRUE(j["parameters"].is_object());
+    ASSERT_TRUE(j["parameters"].contains("container"));
+    EXPECT_EQ(j["parameters"]["container"].get<std::string>(), "A");
+    ASSERT_TRUE(j["parameters"].contains("offset"));
+    // Offsets are serialized as string expressions
+    EXPECT_EQ(j["parameters"]["offset"].get<std::string>(), "0");
+
+    // Legacy fields kept for backward compatibility
+    ASSERT_TRUE(j.contains("loop_element_id"));
+    EXPECT_EQ(j["loop_element_id"].get<size_t>(), loop.element_id());
+    ASSERT_TRUE(j.contains("container"));
+    EXPECT_EQ(j["container"].get<std::string>(), "A");
+    ASSERT_TRUE(j.contains("offset"));
+    EXPECT_EQ(j["offset"].get<std::string>(), "0");
 }
 
 TEST(KernelLocalStorageTest, NoOffset) {

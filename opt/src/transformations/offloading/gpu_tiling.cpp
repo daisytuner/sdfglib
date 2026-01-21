@@ -6,7 +6,10 @@
 #include "sdfg/analysis/users.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/passes/offloading/sync_condition_propagation.h"
+#include "sdfg/structured_control_flow/for.h"
+#include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
+#include "sdfg/structured_control_flow/while.h"
 #include "sdfg/transformations/loop_tiling.h"
 #include "sdfg/transformations/offloading/kernel_local_storage.h"
 #include "sdfg/transformations/out_local_storage.h"
@@ -122,18 +125,50 @@ void GPUTiling::apply(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 
 void GPUTiling::to_json(nlohmann::json& j) const {
     j["transformation_type"] = this->name();
+
+    // Determine loop type consistent with GNN feature extractor labelling.
+    std::string loop_type;
+    if (dynamic_cast<structured_control_flow::For*>(&loop_)) {
+        loop_type = "for";
+    } else if (dynamic_cast<structured_control_flow::While*>(&loop_)) {
+        loop_type = "while";
+    } else if (dynamic_cast<structured_control_flow::Map*>(&loop_)) {
+        loop_type = "map";
+    } else {
+        loop_type = "unknown";
+    }
+
+    // Embedding-compatible description used by EmbeddingRecorder/EmbeddingReplayer.
+    j["subgraph"] = {{"0", {{"element_id", this->loop_.element_id()}, {"type", loop_type}}}};
+    j["parameters"] = {{"size", this->size_}};
+
+    // Legacy fields for backward compatibility.
     j["loop_element_id"] = this->loop_.element_id();
     j["size"] = this->size_;
 }
 
 GPUTiling GPUTiling::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j) {
-    auto loop_id = j["loop_element_id"].get<size_t>();
+    // Prefer embedding-compatible representation, but support legacy layout.
+    size_t loop_id;
+    if (j.contains("subgraph")) {
+        const auto& node_desc = j.at("subgraph").at("0");
+        loop_id = node_desc.at("element_id").get<size_t>();
+    } else {
+        loop_id = j.at("loop_element_id").get<size_t>();
+    }
+
     auto element = builder.find_element_by_id(loop_id);
     if (!element) {
         throw InvalidTransformationDescriptionException("Element with ID " + std::to_string(loop_id) + " not found.");
     }
     auto loop = dynamic_cast<structured_control_flow::StructuredLoop*>(element);
-    auto size = j["size"].get<size_t>();
+
+    size_t size;
+    if (j.contains("parameters") && j.at("parameters").contains("size")) {
+        size = j.at("parameters").at("size").get<size_t>();
+    } else {
+        size = j.at("size").get<size_t>();
+    }
 
     return GPUTiling(*loop, size);
 }

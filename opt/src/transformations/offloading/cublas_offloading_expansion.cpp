@@ -276,14 +276,24 @@ void CUBLASOffloadingExpansion::apply(builder::StructuredSDFGBuilder& builder, a
 
 void CUBLASOffloadingExpansion::to_json(nlohmann::json& j) const {
     j["transformation_type"] = this->name();
+
+    // BLAS nodes are not loops; they appear as generic elements in GNN data.
+    // Use type "unknown" to match the feature extractor's classification.
+    j["subgraph"] = {{"0", {{"element_id", this->blas_node_.element_id()}, {"type", "unknown"}}}};
+
+    // Legacy field for backward compatibility.
     j["blas_node_element_id"] = this->blas_node_.element_id();
 }
 
 CUBLASOffloadingExpansion CUBLASOffloadingExpansion::
     from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j) {
-    assert(j.contains("blas_node_element_id"));
-    assert(j["blas_node_element_id"].is_number_unsigned());
-    size_t blas_node_id = j["blas_node_element_id"].get<size_t>();
+    size_t blas_node_id;
+    if (j.contains("subgraph")) {
+        const auto& node_desc = j.at("subgraph").at("0");
+        blas_node_id = node_desc.at("element_id").get<size_t>();
+    } else {
+        blas_node_id = j.at("blas_node_element_id").get<size_t>();
+    }
     auto* blas_node_element = builder.find_element_by_id(blas_node_id);
     if (!blas_node_element) {
         throw transformations::
