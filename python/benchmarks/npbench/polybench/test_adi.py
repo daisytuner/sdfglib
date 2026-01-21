@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from npbench.harness import run_benchmark, run_pytest
+from benchmarks.npbench.harness import SDFGVerification, run_benchmark, run_pytest
 
 PARAMETERS = {
     "S": {"TSTEPS": 5, "N": 100},
@@ -71,9 +71,62 @@ def kernel(TSTEPS, N, u):
     return u
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_adi(target):
-    run_pytest(initialize, kernel, PARAMETERS, target)
+    if target == "none":
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 21,
+                "MAP": 4,
+                "SEQUENTIAL": 4,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 0,
+            }
+        )
+    elif target == "sequential":
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 21,
+                "MAP": 4,
+                "SEQUENTIAL": 1,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 3,
+                "GEMM": 0,
+                "DOT": 0,
+            }
+        )
+    elif target == "openmp":
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 21,
+                "MAP": 4,
+                "SEQUENTIAL": 0,
+                "CUDA": 0,
+                "CPU_PARALLEL": 3,
+                "HIGHWAY": 1,
+                "GEMM": 0,
+                "DOT": 0,
+            }
+        )
+    else:  # cuda
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 21,
+                "MAP": 4,
+                "SEQUENTIAL": 0,
+                "CUDA": 4,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 0,
+            }
+        )
+
+    run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)
 
 
 if __name__ == "__main__":

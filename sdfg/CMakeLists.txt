@@ -25,6 +25,7 @@ set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost REQUIRED COMPONENTS graph)
 
+
 # Find the ISL library
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(ISL REQUIRED IMPORTED_TARGET isl)
@@ -67,6 +68,7 @@ set(SOURCE_FILES
     src/codegen/dispatchers/for_dispatcher.cpp
     src/codegen/dispatchers/map_dispatcher.cpp
     src/codegen/dispatchers/while_dispatcher.cpp
+    src/codegen/loop_report.cpp
     src/control_flow/interstate_edge.cpp
     src/control_flow/state.cpp
     src/data_flow/access_node.cpp
@@ -129,8 +131,6 @@ set(SOURCE_FILES
     src/optimization_report/optimization_report.cpp
     src/passes/pass.cpp
     src/passes/pipeline.cpp
-    src/passes/code_motion/block_hoisting.cpp
-    src/passes/code_motion/block_sorting.cpp
     src/passes/dataflow/dead_data_elimination.cpp
     src/passes/dataflow/dead_reference_elimination.cpp
     src/passes/dataflow/constant_propagation.cpp
@@ -142,7 +142,6 @@ set(SOURCE_FILES
     src/passes/dataflow/memlet_linearization.cpp
     src/passes/memory/allocation_management.cpp
     src/passes/schedules/expansion_pass.cpp
-    src/passes/schedules/parallelization_pass.cpp
     src/passes/symbolic/symbol_evolution.cpp
     src/passes/symbolic/symbol_propagation.cpp
     src/passes/symbolic/symbol_promotion.cpp
@@ -182,7 +181,6 @@ set(SOURCE_FILES
     src/transformations/loop_skewing.cpp
     src/transformations/loop_tiling.cpp
     src/transformations/out_local_storage.cpp
-    src/transformations/parallelization.cpp
     src/transformations/recorder.cpp
     src/transformations/replayer.cpp
     src/transformations/utils.cpp
@@ -206,6 +204,7 @@ set(SOURCE_FILES
 add_library(sdfglib
     ${SOURCE_FILES}
 )
+add_library(sdfg::sdfg ALIAS sdfglib)
 add_library(sdfglib::sdfglib ALIAS sdfglib)
 target_include_directories(sdfglib
     PUBLIC

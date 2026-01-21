@@ -35,6 +35,8 @@ public:
 
     pybind11::dict containers() const;
 
+    void validate();
+
     void expand();
 
     void simplify();
@@ -50,4 +52,6 @@ public:
     ) const;
 
     std::string metadata(const std::string& key) const;
+
+    pybind11::dict loop_report() const;
 };

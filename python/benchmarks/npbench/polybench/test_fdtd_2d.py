@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from npbench.harness import run_benchmark, run_pytest
+from benchmarks.npbench.harness import SDFGVerification, run_benchmark, run_pytest
 
 PARAMETERS = {
     "S": {"TMAX": 20, "NX": 200, "NY": 220},
@@ -28,9 +28,61 @@ def kernel(TMAX, ex, ey, hz, _fict_):
 
 
 @pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_fdtd_2d(target):
-    run_pytest(initialize, kernel, PARAMETERS, target)
+    if target == "none":
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 0,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 0,
+            }
+        )
+    elif target == "sequential":
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 0,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 0,
+            }
+        )
+    elif target == "openmp":
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 0,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 0,
+            }
+        )
+    else:  # cuda
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 0,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 0,
+            }
+        )
+    run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)
 
 
 if __name__ == "__main__":

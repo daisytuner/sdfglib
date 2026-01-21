@@ -53,6 +53,17 @@ bool is_nv(const Symbol symbol) {
     }
 };
 
+Expression divide_ceil(const Expression dividend, const Expression divisor) {
+    Expression result;
+    SymEngine::set_basic params = SymEngine::free_symbols(*dividend);
+    if (params.empty()) { // will simplify to a statically known result, ok to use ceiling
+        result = SymEngine::ceiling(SymEngine::div(dividend, divisor));
+    } else { // if we know it will get generated, do integer math to cause ceiling a runtime without using float
+        result = symbolic::div(SymEngine::add(dividend, SymEngine::sub(divisor, one())), divisor);
+    }
+    return result;
+}
+
 /***** Logical Expressions *****/
 
 Condition And(const Condition lhs, const Condition rhs) { return SymEngine::logical_and({lhs, rhs}); };
@@ -324,7 +335,12 @@ Condition subs(const Condition expr, const Expression old_expr, const Expression
     return SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(subs(expr, d));
 };
 
-Expression parse(const std::string& expr_str) { return SymEngine::parse(expr_str); };
+Expression parse(const std::string& expr_str) {
+    auto expr = SymEngine::parse(expr_str);
+    expr = symbolic::subs(expr, symbolic::symbol("true"), symbolic::one());
+    expr = symbolic::subs(expr, symbolic::symbol("false"), symbolic::zero());
+    return expr;
+};
 
 Expression inverse(const Expression expr, const Symbol symbol) {
     // Currently only affine inverse is supported

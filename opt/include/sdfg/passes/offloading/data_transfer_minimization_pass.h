@@ -1,0 +1,49 @@
+#pragma once
+
+#include <string>
+#include <utility>
+
+#include "sdfg/analysis/analysis.h"
+#include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/data_flow/access_node.h"
+#include "sdfg/data_flow/code_node.h"
+#include "sdfg/data_flow/data_flow_graph.h"
+#include "sdfg/passes/pass.h"
+#include "sdfg/structured_control_flow/block.h"
+#include "sdfg/structured_control_flow/sequence.h"
+#include "sdfg/targets/offloading/data_offloading_node.h"
+#include "sdfg/visitor/structured_sdfg_visitor.h"
+
+namespace sdfg {
+namespace passes {
+
+class DataTransferMinimization : public visitor::NonStoppingStructuredSDFGVisitor {
+private:
+    virtual std::pair<data_flow::AccessNode*, data_flow::AccessNode*>
+    get_src_and_dst(data_flow::DataFlowGraph& dfg, offloading::DataOffloadingNode* offloading_node);
+
+protected:
+    data_flow::AccessNode* get_in_access(data_flow::CodeNode* node, const std::string& dst_conn);
+    data_flow::AccessNode* get_out_access(data_flow::CodeNode* node, const std::string& src_conn);
+
+    bool check_container_dependency(
+        structured_control_flow::Block* copy_out_block,
+        const std::string& copy_out_container,
+        structured_control_flow::Block* copy_in_block,
+        const std::string& copy_in_container
+    );
+
+public:
+    DataTransferMinimization(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager);
+
+    static std::string name() { return "DataTransferMinimization"; }
+
+    virtual bool visit() override;
+
+    virtual bool accept(structured_control_flow::Sequence& sequence) override;
+};
+
+typedef VisitorPass<DataTransferMinimization> DataTransferMinimizationPass;
+
+} // namespace passes
+} // namespace sdfg

@@ -15,10 +15,16 @@
 #include <sdfg/codegen/code_generators/cpp_code_generator.h>
 #include <sdfg/codegen/instrumentation/arg_capture_plan.h>
 #include <sdfg/codegen/instrumentation/instrumentation_plan.h>
+#include <sdfg/codegen/loop_report.h>
 #include <sdfg/passes/dataflow/constant_propagation.h>
 #include <sdfg/passes/dataflow/dead_data_elimination.h>
 #include <sdfg/passes/normalization/normalization.h>
+#include <sdfg/passes/opt_pipeline.h>
 #include <sdfg/passes/pipeline.h>
+#include <sdfg/passes/scheduler/cuda_scheduler.h>
+#include <sdfg/passes/scheduler/highway_scheduler.h>
+#include <sdfg/passes/scheduler/omp_scheduler.h>
+#include <sdfg/passes/scheduler/polly_scheduler.h>
 #include <sdfg/passes/structured_control_flow/common_assignment_elimination.h>
 #include <sdfg/passes/structured_control_flow/condition_elimination.h>
 #include <sdfg/passes/structured_control_flow/for2map.h>
@@ -75,6 +81,8 @@ pybind11::dict PyStructuredSDFG::containers() const {
 namespace {
 void _anchor() {}
 } // namespace
+
+void PyStructuredSDFG::validate() { sdfg_->validate(); }
 
 void PyStructuredSDFG::expand() {
     sdfg::builder::StructuredSDFGBuilder builder_opt(*sdfg_);
@@ -172,7 +180,7 @@ void PyStructuredSDFG::simplify() {
     memlet_combine.run(builder_opt, analysis_manager);
 
     // Move code out of loops where possible
-    sdfg::passes::Pipeline code_motion = sdfg::passes::Pipeline::code_motion();
+    sdfg::passes::Pipeline code_motion = sdfg::passes::code_motion();
     code_motion.run(builder_opt, analysis_manager);
 
     // Convert pointer-based iterators to indvar usage
@@ -238,7 +246,43 @@ void PyStructuredSDFG::normalize() {
 }
 
 void PyStructuredSDFG::schedule(const std::string& target, const std::string& category) {
-    // Apply scheduling pass
+    if (target == "none") {
+        return;
+    }
+
+    sdfg::builder::StructuredSDFGBuilder builder(*sdfg_);
+    sdfg::analysis::AnalysisManager analysis_manager(*sdfg_);
+
+    // CPU Opt Pipeline
+    if (target == "sequential" || target == "openmp") {
+        // CPU Tiling
+        // sdfg::passes::scheduler::PollyScheduler polly_scheduler;
+        // polly_scheduler.run(builder, analysis_manager);
+
+        sdfg::passes::Pipeline dce = sdfg::passes::Pipeline::dead_code_elimination();
+        sdfg::passes::DeadDataElimination dde;
+        sdfg::passes::SymbolPropagation symbol_propagation_pass;
+        symbol_propagation_pass.run(builder, analysis_manager);
+        dde.run(builder, analysis_manager);
+        dce.run(builder, analysis_manager);
+
+
+        // CPU Parallelization
+        if (target == "openmp") {
+            sdfg::passes::scheduler::OMPScheduler omp_scheduler;
+            omp_scheduler.run(builder, analysis_manager);
+        }
+
+        // CPU Vectorization
+        sdfg::passes::scheduler::HighwayScheduler highway_scheduler;
+        highway_scheduler.run(builder, analysis_manager);
+    }
+
+    // GPU Opt Pipeline
+    else if (target == "cuda") {
+        sdfg::passes::scheduler::CUDAScheduler cuda_scheduler;
+        cuda_scheduler.run(builder, analysis_manager);
+    }
 }
 
 std::string PyStructuredSDFG::
@@ -247,6 +291,8 @@ std::string PyStructuredSDFG::
     if (!fs::exists(build_path)) {
         fs::create_directories(build_path);
     }
+    fs::path header_path = build_path / (sdfg_->name() + ".h");
+    fs::path source_path = build_path / (sdfg_->name() + ".cpp");
 
     sdfg::analysis::AnalysisManager analysis_manager(*sdfg_);
 
@@ -255,6 +301,7 @@ std::string PyStructuredSDFG::
     sdfg::builder::StructuredSDFGBuilder builder_opt(*sdfg_);
     expansion.run(builder_opt, analysis_manager);
 
+    // Instrumentation plan
     std::unique_ptr<sdfg::codegen::InstrumentationPlan> instrumentation_plan;
     if (instrumentation_mode.empty()) {
         instrumentation_plan = sdfg::codegen::InstrumentationPlan::none(*sdfg_);
@@ -264,6 +311,7 @@ std::string PyStructuredSDFG::
         throw std::runtime_error("Unsupported instrumentation plan: " + instrumentation_mode);
     }
 
+    // Argument capture plan
     std::unique_ptr<sdfg::codegen::ArgCapturePlan> arg_capture_plan;
     if (capture_args) {
         arg_capture_plan = sdfg::codegen::ArgCapturePlan::outermost_loops_plan(*sdfg_);
@@ -271,33 +319,117 @@ std::string PyStructuredSDFG::
         arg_capture_plan = sdfg::codegen::ArgCapturePlan::none(*sdfg_);
     }
 
-    sdfg::codegen::CPPCodeGenerator generator(*sdfg_, analysis_manager, *instrumentation_plan, *arg_capture_plan);
+    std::pair<std::filesystem::path, std::filesystem::path> lib_config = std::make_pair(build_path, header_path);
+    std::shared_ptr<sdfg::codegen::CodeSnippetFactory> snippet_factory =
+        std::make_shared<sdfg::codegen::CodeSnippetFactory>(&lib_config);
+    sdfg::codegen::CPPCodeGenerator
+        generator(*sdfg_, analysis_manager, *instrumentation_plan, *arg_capture_plan, snippet_factory);
     generator.generate();
 
-    fs::path header_path = build_path / (sdfg_->name() + ".h");
-    fs::path source_path = build_path / (sdfg_->name() + ".cpp");
     generator.as_source(header_path, source_path);
 
-    // Compile
-    fs::path lib_path = build_path / ("lib" + sdfg_->name() + ".so");
-
-    std::stringstream cmd;
-    cmd << "c++ -shared -fopenmp -fPIC -O3";
-    cmd << " " << source_path.string();
+    // Write library snippets
+    std::unordered_set<std::string> lib_files;
+    for (auto& [name, snippet] : snippet_factory->snippets()) {
+        if (snippet.is_as_file()) {
+            auto p = build_path / (name + "." + snippet.extension());
+            std::ofstream outfile_lib;
+            if (lib_files.insert(p.string()).second) {
+                outfile_lib.open(p, std::ios_base::out);
+            } else {
+                outfile_lib.open(p, std::ios_base::app);
+            }
+            if (!outfile_lib.is_open()) {
+                throw std::runtime_error("Failed to open library file: " + p.string());
+            }
+            outfile_lib << snippet.stream().str() << std::endl;
+            outfile_lib.close();
+        }
+    }
 
     // Find libraries relative to the module location
     Dl_info info;
+    std::string package_path_str;
+    std::string package_include_path_str;
     if (dladdr((void*) &_anchor, &info)) {
         fs::path lib_path = fs::canonical(info.dli_fname);
         fs::path package_path = lib_path.parent_path();
-        cmd << " -L" << package_path.string();
-        cmd << " -I" << (package_path / "include").string();
+        package_path_str = package_path.string();
+        package_include_path_str = (package_path / "include").string();
     }
 
+    bool has_cuda_lib = false;
+    std::unordered_set<std::string> object_files;
+    for (const auto& lib_file : lib_files) {
+        std::filesystem::path lib_path(lib_file);
+        std::string name = lib_path.stem().string();
+        std::string object_file = build_path.string() + "/" + name + ".o";
+        std::stringstream cmd;
+        cmd << "clang-19 -c -fPIC -O3  -march=native -mtune=native -funroll-loops";
+        if (!package_path_str.empty()) {
+            cmd << " -L" << package_path_str;
+            cmd << " -I" << package_include_path_str;
+        }
+        if (lib_file.ends_with(".cu")) {
+            cmd << " -x cuda --cuda-gpu-arch=sm_70 --cuda-path=/usr/local/cuda";
+            has_cuda_lib = true;
+        }
+        cmd << " " << lib_file;
+        cmd << " -o " << object_file;
+        if (name.starts_with("highway_")) {
+            cmd << " -lhwy";
+        }
+        cmd << " -lm";
+        int ret = std::system(cmd.str().c_str());
+        if (ret != 0) {
+            throw std::runtime_error("Compilation failed: " + cmd.str());
+        }
+        object_files.insert(object_file);
+    }
+
+    // Compile
+    {
+        std::stringstream cmd;
+        cmd << "clang-19 -c -fPIC -O3 -march=native -mtune=native -funroll-loops";
+        if (!package_path_str.empty()) {
+            cmd << " -L" << package_path_str;
+            cmd << " -I" << package_include_path_str;
+        }
+        if (has_cuda_lib) {
+            cmd << " -x cuda -lcuda";
+        }
+        cmd << " " << source_path.string();
+        cmd << " -o " << (build_path / (sdfg_->name() + ".o")).string();
+        int ret = std::system(cmd.str().c_str());
+        if (ret != 0) {
+            throw std::runtime_error("Compilation failed: " + cmd.str());
+        }
+        object_files.insert((build_path / (sdfg_->name() + ".o")).string());
+    }
+
+    // Link into shared library
+    fs::path lib_path = build_path / ("lib" + sdfg_->name() + ".so");
+
+    std::stringstream cmd;
+    cmd << "clang-19 -shared -fopenmp -fPIC -O3";
+    if (!package_path_str.empty()) {
+        cmd << " -L" << package_path_str;
+        cmd << " -I" << package_include_path_str;
+    }
+    // cmd << " " << source_path.string();
+    for (const auto& object_file : object_files) {
+        cmd << " " << object_file;
+    }
+    if (!object_files.empty()) {
+        cmd << " -lhwy";
+    }
     cmd << " -ldaisy_rtl";
     cmd << " -larg_capture_io";
     cmd << " -lblas";
+    cmd << " -lm";
+    cmd << " /usr/local/cuda/lib64/libcudart.so";
     cmd << " -o " << lib_path.string();
+
 
     int ret = std::system(cmd.str().c_str());
     if (ret != 0) {
@@ -313,4 +445,19 @@ std::string PyStructuredSDFG::metadata(const std::string& key) const {
     } catch (const std::out_of_range&) {
         return "";
     }
+}
+
+pybind11::dict PyStructuredSDFG::loop_report() const {
+    sdfg::builder::StructuredSDFGBuilder builder(*sdfg_);
+    sdfg::analysis::AnalysisManager analysis_manager(*sdfg_);
+
+    sdfg::codegen::LoopReport report_visitor(builder, analysis_manager);
+    report_visitor.visit();
+
+    pybind11::dict result;
+    for (const auto& [key, value] : report_visitor.report()) {
+        result[key.c_str()] = value;
+    }
+
+    return result;
 }

@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from npbench.harness import run_benchmark, run_pytest
+from benchmarks.npbench.harness import SDFGVerification, run_benchmark, run_pytest
 
 PARAMETERS = {
     "S": {"N": 2000},
@@ -24,10 +24,61 @@ def kernel(L, x, b):
         x[i] = (b[i] - L[i, :i] @ x[:i]) / L[i, i]
 
 
-@pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_trisolv(target):
-    run_pytest(initialize, kernel, PARAMETERS, target)
+    if target == "none":
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 1,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 1,
+            }
+        )
+    elif target == "sequential":
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 1,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 1,
+            }
+        )
+    elif target == "openmp":
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 1,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 1,
+            }
+        )
+    else:  # cuda
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 1,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 1,
+            }
+        )
+    run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)
 
 
 if __name__ == "__main__":

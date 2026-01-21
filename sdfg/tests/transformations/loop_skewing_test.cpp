@@ -547,7 +547,7 @@ TEST(LoopSkewingTest, BothLoopsMaps) {
         symbolic::Lt(symbolic::symbol("i"), symbolic::symbol("N")),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("i"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_CPU_Parallel::create()
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     auto& body_i = loop_i.root();
 
@@ -558,7 +558,7 @@ TEST(LoopSkewingTest, BothLoopsMaps) {
         symbolic::Lt(symbolic::symbol("j"), symbolic::symbol("M")),
         symbolic::integer(0),
         symbolic::add(symbolic::symbol("j"), symbolic::integer(1)),
-        structured_control_flow::ScheduleType_CPU_Parallel::create()
+        structured_control_flow::ScheduleType_Sequential::create()
     );
     auto& body_j = loop_j.root();
 
@@ -589,13 +589,4 @@ TEST(LoopSkewingTest, BothLoopsMaps) {
     EXPECT_EQ(outer_loop->root().size(), 1);
     auto inner_loop = dynamic_cast<structured_control_flow::Map*>(&outer_loop->root().at(0).first);
     EXPECT_TRUE(inner_loop != nullptr);
-
-    // Verify the inner loop maintains its parallel schedule type
-    EXPECT_EQ(inner_loop->schedule_type().value(), "CPU_PARALLEL");
 }
-
-// Note: We don't test for loop-carried dependencies in Maps because Maps are
-// designed by construction to have independent iterations (no loop-carried dependencies).
-// The transformation requires the inner loop to be a Map, which ensures safety for parallel execution.
-// If a user creates a Map with dependencies, that's a semantic error in their code,
-// not something the transformation needs to check for.

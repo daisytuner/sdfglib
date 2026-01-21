@@ -1,6 +1,6 @@
 # Find SDFG
-if(NOT TARGET sdfglib::sdfglib)
-    find_package(sdfglib CONFIG REQUIRED)
+if(NOT TARGET sdfg::sdfg)
+    find_package(sdfg CONFIG REQUIRED)
 endif()
 
 # Find ISL
@@ -9,15 +9,44 @@ pkg_check_modules(ISL REQUIRED IMPORTED_TARGET isl)
 
 set(SOURCE_FILES
     src/analysis/scop_analysis.cpp
-    src/transformations/polly_transform.cpp
     src/passes/normalization/perfect_loop_distribution.cpp
     src/passes/normalization/stride_minimization.cpp
+    src/passes/offloading/code_motion/block_hoisting.cpp
+    src/passes/offloading/code_motion/block_sorting.cpp
+    src/passes/offloading/data_transfer_minimization_pass.cpp
+    src/passes/offloading/remove_redundant_transfers_pass.cpp
+    src/passes/offloading/sync_condition_propagation.cpp
+    src/passes/opt_pipeline.cpp
+    src/passes/scheduler/cuda_scheduler.cpp
+    src/passes/scheduler/highway_scheduler.cpp
+    src/passes/scheduler/loop_scheduler.cpp
+    src/passes/scheduler/omp_scheduler.cpp
+    src/passes/scheduler/polly_scheduler.cpp
+    src/targets/cuda/cuda.cpp
+    src/targets/cuda/cuda_data_offloading_node.cpp
+    src/targets/cuda/cuda_map_dispatcher.cpp
+    src/targets/highway/codegen/highway_map_dispatcher.cpp
+    src/targets/offloading/data_offloading_node.cpp
+    src/targets/offloading/utils.cpp
+    src/targets/omp/codegen/omp_map_dispatcher.cpp
+    src/transformations/offloading/cublas_offloading_expansion.cpp
+    src/transformations/offloading/cuda_parallelize_nested_map.cpp
+    src/transformations/offloading/cuda_transform.cpp
+    src/transformations/offloading/gpu_condition_propagation.cpp
+    src/transformations/offloading/gpu_loop_reordering.cpp
+    src/transformations/offloading/gpu_tiling.cpp
+    src/transformations/offloading/kernel_local_storage.cpp
+    src/transformations/highway_transform.cpp
+    src/transformations/omp_transform.cpp
+    src/transformations/offloading/offload_transform.cpp
+    src/transformations/polly_transform.cpp
 )
 add_library(sdfgopt
     ${SOURCE_FILES}
 )
+add_library(sdfg::opt ALIAS sdfgopt)
 add_library(sdfgopt::sdfgopt ALIAS sdfgopt)
-target_include_directories(sdfglib
+target_include_directories(sdfgopt
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
@@ -43,7 +72,7 @@ if(SDFG_ENABLE_COVERAGE)
   )
 endif()
 
-target_link_libraries(sdfgopt PUBLIC sdfglib PkgConfig::ISL)
+target_link_libraries(sdfgopt PUBLIC sdfg::sdfg PkgConfig::ISL)
 set_target_properties(sdfgopt PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
@@ -63,9 +92,9 @@ install(DIRECTORY include/sdfg DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 ## CMAKE CONFIGURATION
 
 install(EXPORT sdfgoptTargets
-    NAMESPACE sdfgopt::
+    NAMESPACE sdfg::
     FILE sdfgoptTargets.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfgopt
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfg
 )
 
 include(CMakePackageConfigHelpers)
@@ -79,13 +108,13 @@ write_basic_package_version_file(
 configure_package_config_file(
     ${CMAKE_CURRENT_LIST_DIR}/cmake/sdfgoptConfig.cmake.in
     "${CMAKE_CURRENT_BINARY_DIR}/sdfgoptConfig.cmake"
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfgopt
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfg
 )
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/sdfgoptConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/sdfgoptConfigVersion.cmake"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfgopt
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sdfg
 )
 
 if(SDFG_BUILD_TESTS)

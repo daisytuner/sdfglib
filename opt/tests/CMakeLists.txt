@@ -8,16 +8,35 @@ FetchContent_MakeAvailable(googletest)
 
 set(TEST_FILES
     analysis/scop_analysis_test.cpp
-    transformations/polly_transform_test.cpp
+    cuda/cuda_kernel_test.cpp
+    cuda/cuda_library_nodes_test.cpp
     passes/normalization/perfect_loop_distribution_test.cpp
     passes/normalization/stride_minimization_test.cpp
+    passes/offloading/code_motion/block_hoisting_test.cpp
+    passes/offloading/code_motion/block_sorting_test.cpp
+    passes/offloading/data_transfer_minimization_pass_test.cpp
+    passes/offloading/remove_redundant_data_transfers_pass_test.cpp
+    transformations/offloading/cuda_parallelize_nested_map_test.cpp
+    transformations/offloading/gpu_tiling_test.cpp
+    transformations/offloading/kernel_local_storage_test.cpp
+    transformations/polly_transform_test.cpp
+    passes/scheduler/cuda_scheduler_test.cpp
+    passes/scheduler/highway_scheduler_test.cpp
+    passes/scheduler/omp_scheduler_test.cpp
+    passes/scheduler/polly_scheduler_test.cpp
+    targets/omp/codegen/omp_map_dispatcher_test.cpp
+    targets/omp/schedule_test.cpp
+    targets/highway/codegen/highway_map_dispatcher_test.cpp
+    transformations/highway_transform_test.cpp
+    transformations/omp_transform_test.cpp
+    transformations/polly_transform_test.cpp
     test.cpp
 )
 
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(sdfgopt_test ${TEST_FILES})
 target_include_directories(sdfgopt_test PRIVATE ./)
-target_link_libraries(sdfgopt_test gtest_main sdfgopt)
+target_link_libraries(sdfgopt_test gtest_main sdfg::opt)
 if(SDFG_ENABLE_COVERAGE)
   target_compile_options(sdfgopt_test PRIVATE
     -fprofile-instr-generate

@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from npbench.harness import run_benchmark, run_pytest
+from benchmarks.npbench.harness import SDFGVerification, run_benchmark, run_pytest
 
 PARAMETERS = {"S": {"N": 60}, "M": {"N": 220}, "L": {"N": 700}, "paper": {"N": 2000}}
 
@@ -28,10 +28,68 @@ def kernel(A):
             A[i, j] -= A[i, :i] @ A[:i, j]
 
 
-@pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp"])
+@pytest.mark.parametrize(
+    "target",
+    [
+        "none",
+        "sequential",
+        # "openmp"
+    ],
+)
 def test_lu(target):
-    run_pytest(initialize, kernel, PARAMETERS, target)
+    if target == "none":
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 3,
+                "MAP": 2,
+                "SEQUENTIAL": 2,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 2,
+            }
+        )
+    elif target == "sequential":
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 3,
+                "MAP": 2,
+                "SEQUENTIAL": 2,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 2,
+            }
+        )
+    elif target == "openmp":
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 0,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 0,
+            }
+        )
+    else:  # cuda
+        verifier = SDFGVerification(
+            verification={
+                "FOR": 0,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "CUDA": 0,
+                "CPU_PARALLEL": 0,
+                "HIGHWAY": 0,
+                "GEMM": 0,
+                "DOT": 0,
+            }
+        )
+    run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)
 
 
 if __name__ == "__main__":

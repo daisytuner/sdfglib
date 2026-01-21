@@ -56,8 +56,6 @@ set(TEST_FILES
     element_test.cpp
     graph/graph_algorithms_test.cpp
     helpers/helpers_test.cpp
-    passes/code_motion/block_hoisting_test.cpp
-    passes/code_motion/block_sorting_test.cpp
     passes/dataflow/bytes_reference_elimination_test.cpp
     passes/dataflow/constant_propagation_test.cpp
     passes/dataflow/dead_data_elimination_test.cpp
@@ -69,7 +67,6 @@ set(TEST_FILES
     passes/memory/allocation_management_test.cpp
     passes/pipeline_test.cpp
     passes/schedules/expansion_pass_test.cpp
-    passes/schedules/parallelization_pass_test.cpp
     passes/structured_control_flow/block_fusion_test.cpp
     passes/structured_control_flow/condition_elimination_test.cpp
     passes/structured_control_flow/dead_cfg_elimination_test.cpp
@@ -86,7 +83,6 @@ set(TEST_FILES
     structured_control_flow/block_test.cpp
     structured_control_flow/if_else_test.cpp
     structured_control_flow/loop_test.cpp
-    structured_control_flow/map_test.cpp
     structured_control_flow/return_test.cpp
     structured_control_flow/sequence_test.cpp
     structured_sdfg_test.cpp
@@ -103,7 +99,6 @@ set(TEST_FILES
     transformations/loop_skewing_test.cpp
     transformations/loop_tiling_test.cpp
     transformations/out_local_storage_test.cpp
-    transformations/parallelization_test.cpp
     transformations/recorder_test.cpp
     types/array_test.cpp
     types/function_test.cpp
@@ -122,7 +117,7 @@ set(TEST_FILES
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(sdfglib_test ${TEST_FILES})
 target_include_directories(sdfglib_test PRIVATE ./)
-target_link_libraries(sdfglib_test gtest_main sdfglib)
+target_link_libraries(sdfglib_test gtest_main sdfg::sdfg)
 if(SDFG_ENABLE_COVERAGE)
 target_compile_options(sdfglib_test PRIVATE
   -fprofile-instr-generate

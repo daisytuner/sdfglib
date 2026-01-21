@@ -211,18 +211,6 @@ void register_default_dispatchers() {
                 SequentialMapDispatcher>(language_extension, sdfg, analysis_manager, node, instrumentation, arg_capture);
         }
     );
-    MapDispatcherRegistry::instance().register_map_dispatcher(
-        structured_control_flow::ScheduleType_CPU_Parallel::value(),
-        [](LanguageExtension& language_extension,
-           StructuredSDFG& sdfg,
-           analysis::AnalysisManager& analysis_manager,
-           structured_control_flow::Map& node,
-           InstrumentationPlan& instrumentation,
-           ArgCapturePlan& arg_capture) {
-            return std::make_unique<
-                CPUParallelMapDispatcher>(language_extension, sdfg, analysis_manager, node, instrumentation, arg_capture);
-        }
-    );
 
     // stdlib
     LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
