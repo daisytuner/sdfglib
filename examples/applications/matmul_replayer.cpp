@@ -14,7 +14,7 @@
 #include <sdfg/helpers/helpers.h>
 #include <sdfg/structured_control_flow/control_flow_node.h>
 #include <sdfg/structured_sdfg.h>
-#include "sdfg/transformations/local_transfertuning_transform.h"
+#include "sdfg/transformations/rpc_transfer_tuning_transform.h"
 
 using json = nlohmann::json;
 namespace po = boost::program_options;
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
 
     size_t loopnest_index = 0;
     for (auto loopnest : outer_loops) {
-        sdfg::transformations::LocalTransferTuningTransform
+        sdfg::transformations::RPCTransferTuningTransform
             transfer_tuning(target, category, &builder->subject(), loop_analysis.loop_info(loopnest));
 
         if (!transfer_tuning.can_be_applied(*builder, analysis_manager)) {

@@ -16,7 +16,7 @@ target_include_directories(daisy_rtl PUBLIC
 
 # Don't link against PAPI!
 # Just link against the dynamic linker
-target_link_libraries(daisy_rtl PRIVATE dl arg_capture_io)
+target_link_libraries(daisy_rtl PRIVATE dl sdfg::arg_capture_io)
 
 set_target_properties(daisy_rtl PROPERTIES
     VERSION ${PROJECT_VERSION}
