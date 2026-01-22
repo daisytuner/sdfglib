@@ -116,7 +116,6 @@ query_rpc_opt(passes::rpc::RpcOptRequest request, sdfg::passes::rpc::RpcContext&
                 meta.vector_distance = vectorDistanceJ->get<double>();
             }
         }
-
     } catch (const std::exception& e) {
         DEBUG_PRINTLN("[ERROR] Failed to parse RPC optimization response: " << e.what());
     }
@@ -162,8 +161,7 @@ bool RPCNodeTransform::
          .loop_info = loop_info},
         rpc_context_
     );
-    return this->applied_opt_ != nullptr &&
-           (this->applied_opt_->sdfg_result.has_value() || this->applied_opt_->local_replay.has_value());
+    return this->applied_opt_ != nullptr && (this->applied_opt_->sdfg_result.has_value());
 }
 
 void RPCNodeTransform::
@@ -184,10 +182,11 @@ void RPCNodeTransform::
     // TODO: add transitions from after loop to tmp_scope
     auto& tmp_scope = builder.add_sequence_before(*parent_scope, this->node_, {}, this->node_.debug_info());
     builder.move_child(*parent_scope, index + 1, tmp_scope);
-    opt.sdfg_result->sdfg.reset();
 
     builder.move_children(opt.sdfg_result->sdfg->root(), tmp_scope);
     builder.remove_child(*parent_scope, index + 1);
+
+    opt.sdfg_result->sdfg.reset();
 
     if (opt.local_replay.has_value()) {
         auto recipe = opt.local_replay.value();

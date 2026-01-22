@@ -19,10 +19,19 @@ using namespace sdfg;
 
 class RPCNodeTransformTest : public ::testing::Test {
 protected:
+    std::unique_ptr<passes::rpc::RpcContext> ctx_;
+
     std::unique_ptr<builder::StructuredSDFGBuilder> builder_;
     nlohmann::json desc_;
 
     void SetUp() override {
+        if (false) {
+            ctx_ = std::make_unique<passes::rpc::SimpleRpcContext>("http://localhost:8080/docc", "/transfertune");
+        } else {
+            ctx_ = passes::rpc::build_rpc_context_from_file(); // defaults to local unless $SDFG_RPC_CONFIG is set. Also
+                                                               // respects RPC_HEADER
+        }
+
         builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU);
 
         auto& root = builder_->subject().root();
@@ -247,11 +256,8 @@ TEST_F(RPCNodeTransformTest, Matmul_FMA) {
     auto outer_loops = loop_analysis.outermost_loops();
     EXPECT_EQ(outer_loops.size(), 1);
 
-    std::unique_ptr<passes::rpc::RpcContext> ctx =
-        std::make_unique<passes::rpc::SimpleRpcContext>("http://localhost:8080/docc", "/transfertuning");
-
     auto outer_loop = static_cast<structured_control_flow::StructuredLoop*>(outer_loops[0]);
-    sdfg::transformations::RPCNodeTransform transfer_tuning(*outer_loop, "sequential", "server", *ctx);
+    sdfg::transformations::RPCNodeTransform transfer_tuning(*outer_loop, "sequential", "server", *ctx_, true);
     ASSERT_TRUE(transfer_tuning.can_be_applied(builder, analysis_manager));
     transfer_tuning.apply(builder, analysis_manager);
 
