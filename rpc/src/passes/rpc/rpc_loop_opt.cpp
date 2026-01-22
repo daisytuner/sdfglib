@@ -22,13 +22,7 @@ SchedulerAction RpcLoopOpt::schedule(
         return NEXT;
     }
 
-    // Check if in not outermost loop
-    if (loop_info.loop_info.loopnest_index == -1) {
-        return NEXT;
-    } else {
-        // Visit 1st-level children
-        return CHILDREN;
-    }
+    return NEXT;
 }
 
 SchedulerAction RpcLoopOpt::schedule(
@@ -44,13 +38,7 @@ SchedulerAction RpcLoopOpt::schedule(
         return NEXT;
     }
 
-    // Check if in not outermost loop
-    if (loop_info.loop_info.loopnest_index == -1) {
-        return NEXT;
-    } else {
-        // Visit 1st-level children
-        return CHILDREN;
-    }
+    return NEXT;
 }
 
 } // namespace scheduler
