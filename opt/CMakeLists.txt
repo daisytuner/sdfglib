@@ -22,6 +22,8 @@ set(SOURCE_FILES
     src/passes/scheduler/loop_scheduler.cpp
     src/passes/scheduler/omp_scheduler.cpp
     src/passes/scheduler/polly_scheduler.cpp
+    src/targets/cuda/blas/dot.cpp
+    src/targets/cuda/blas/gemm.cpp
     src/targets/cuda/cuda.cpp
     src/targets/cuda/cuda_data_offloading_node.cpp
     src/targets/cuda/cuda_map_dispatcher.cpp

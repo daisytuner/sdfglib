@@ -1,8 +1,13 @@
 #pragma once
 
 #include <sdfg/codegen/dispatchers/node_dispatcher_registry.h>
+#include <sdfg/data_flow/library_nodes/math/blas/dot_node.h>
+#include <sdfg/data_flow/library_nodes/math/blas/gemm_node.h>
 #include <sdfg/serializer/json_serializer.h>
 
+#include "sdfg/codegen/language_extension.h"
+#include "sdfg/targets/cuda/blas/dot.h"
+#include "sdfg/targets/cuda/blas/gemm.h"
 #include "sdfg/targets/cuda/cuda.h"
 #include "sdfg/targets/cuda/cuda_data_offloading_node.h"
 #include "sdfg/targets/cuda/cuda_map_dispatcher.h"
@@ -40,6 +45,57 @@ inline void register_cuda_plugin() {
         .register_library_node_serializer(cuda::LibraryNodeType_CUDA_Offloading.value(), []() {
             return std::make_unique<cuda::CUDADataOffloadingNodeSerializer>();
         });
+
+
+    // Dot - CUBLAS with data transfers
+    codegen::LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        math::blas::LibraryNodeType_DOT.value() + "::" + math::blas::ImplementationType_CUBLASWithTransfers.value(),
+        [](codegen::LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<blas::DotNodeDispatcher_CUBLASWithTransfers>(
+                language_extension, function, data_flow_graph, dynamic_cast<const math::blas::DotNode&>(node)
+            );
+        }
+    );
+    // Dot - CUBLAS without data transfers
+    codegen::LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        math::blas::LibraryNodeType_DOT.value() + "::" + math::blas::ImplementationType_CUBLASWithoutTransfers.value(),
+        [](codegen::LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<blas::DotNodeDispatcher_CUBLASWithoutTransfers>(
+                language_extension, function, data_flow_graph, dynamic_cast<const math::blas::DotNode&>(node)
+            );
+        }
+    );
+
+    // GEMM - CUBLAS with data transfers
+    codegen::LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        math::blas::LibraryNodeType_GEMM.value() + "::" + math::blas::ImplementationType_CUBLASWithTransfers.value(),
+        [](codegen::LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<blas::GEMMNodeDispatcher_CUBLASWithTransfers>(
+                language_extension, function, data_flow_graph, dynamic_cast<const math::blas::GEMMNode&>(node)
+            );
+        }
+    );
+    // GEMM - CUBLAS without data transfers
+    codegen::LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
+        math::blas::LibraryNodeType_GEMM.value() + "::" + math::blas::ImplementationType_CUBLASWithoutTransfers.value(),
+        [](codegen::LanguageExtension& language_extension,
+           const Function& function,
+           const data_flow::DataFlowGraph& data_flow_graph,
+           const data_flow::LibraryNode& node) {
+            return std::make_unique<blas::GEMMNodeDispatcher_CUBLASWithoutTransfers>(
+                language_extension, function, data_flow_graph, dynamic_cast<const math::blas::GEMMNode&>(node)
+            );
+        }
+    );
 }
 
 } // namespace cuda
