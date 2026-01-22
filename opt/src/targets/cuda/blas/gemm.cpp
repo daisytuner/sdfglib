@@ -72,8 +72,12 @@ void GEMMNodeDispatcher_CUBLASWithTransfers::dispatch_code(
     stream << "cublasStatus_t err;" << std::endl;
 
     bool invert_transpose = false;
+    auto first_dim = gemm_node.m();
+    auto second_dim = gemm_node.n();
     if (gemm_node.layout() != sdfg::math::blas::BLAS_Layout::RowMajor) {
         invert_transpose = true;
+        first_dim = gemm_node.n();
+        second_dim = gemm_node.m();
     }
 
     auto trans_a = gemm_node.trans_a();
@@ -86,8 +90,8 @@ void GEMMNodeDispatcher_CUBLASWithTransfers::dispatch_code(
     }
 
     stream << "err = cublas" << type2 << "gemm(handle, " << trans_a << ", " << trans_b << ", "
-           << this->language_extension_.expression(gemm_node.n()) << ", "
-           << this->language_extension_.expression(gemm_node.m()) << ", "
+           << this->language_extension_.expression(first_dim) << ", "
+           << this->language_extension_.expression(second_dim) << ", "
            << this->language_extension_.expression(gemm_node.k()) << ", "
            << "__alpha, "
            << "dB, " << this->language_extension_.expression(gemm_node.ldb()) << ", "
@@ -139,8 +143,12 @@ void GEMMNodeDispatcher_CUBLASWithoutTransfers::dispatch_code(
     stream << "cublasStatus_t err;" << std::endl;
 
     bool invert_transpose = false;
+    auto first_dim = gemm_node.m();
+    auto second_dim = gemm_node.n();
     if (gemm_node.layout() != sdfg::math::blas::BLAS_Layout::RowMajor) {
         invert_transpose = true;
+        first_dim = gemm_node.n();
+        second_dim = gemm_node.m();
     }
 
     auto trans_a = gemm_node.trans_a();
@@ -153,8 +161,8 @@ void GEMMNodeDispatcher_CUBLASWithoutTransfers::dispatch_code(
     }
 
     stream << "err = cublas" << type << "gemm(handle, " << trans_a << ", " << trans_b << ", "
-           << this->language_extension_.expression(gemm_node.n()) << ", "
-           << this->language_extension_.expression(gemm_node.m()) << ", "
+           << this->language_extension_.expression(first_dim) << ", "
+           << this->language_extension_.expression(second_dim) << ", "
            << this->language_extension_.expression(gemm_node.k()) << ", "
            << "__alpha, "
            << "__B, " << this->language_extension_.expression(gemm_node.ldb()) << ", "

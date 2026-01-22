@@ -189,7 +189,7 @@ std::string CUBLASOffloadingExpansion::name() const { return "CUBLASOffloadingEx
 bool CUBLASOffloadingExpansion::
     can_be_applied(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
     // BLAS node must have implementation type CUBLAS without data transfers
-    if (this->blas_node_.implementation_type().value() != math::blas::ImplementationType_CUBLASWithTransfers.value()) {
+    if (this->blas_node_.implementation_type().value() != cuda::blas::ImplementationType_CUBLASWithTransfers.value()) {
         return false;
     }
 
@@ -271,7 +271,7 @@ void CUBLASOffloadingExpansion::apply(builder::StructuredSDFGBuilder& builder, a
     }
 
     // Change the implementation type to CUBLAS without data transfers
-    this->blas_node_.implementation_type() = math::blas::ImplementationType_CUBLASWithoutTransfers;
+    this->blas_node_.implementation_type() = cuda::blas::ImplementationType_CUBLASWithoutTransfers;
 }
 
 void CUBLASOffloadingExpansion::to_json(nlohmann::json& j) const {

@@ -10,6 +10,20 @@ namespace cuda {
 
 inline std::string CUDA_DEVICE_PREFIX = "__daisy_cuda_";
 
+namespace blas {
+/**
+ * @brief CUBLAS implementation with automatic memory transfers
+ * Uses NVIDIA CUBLAS with automatic host-device data transfers
+ */
+inline data_flow::ImplementationType ImplementationType_CUBLASWithTransfers{"CUBLASWithTransfers"};
+
+/**
+ * @brief CUBLAS implementation without memory transfers
+ * Uses NVIDIA CUBLAS assuming data is already on GPU
+ */
+inline data_flow::ImplementationType ImplementationType_CUBLASWithoutTransfers{"CUBLASWithoutTransfers"};
+} // namespace blas
+
 enum CUDADimension { X = 0, Y = 1, Z = 2 };
 
 class ScheduleType_CUDA {

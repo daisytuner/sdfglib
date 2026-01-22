@@ -49,7 +49,7 @@ inline void register_cuda_plugin() {
 
     // Dot - CUBLAS with data transfers
     codegen::LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
-        math::blas::LibraryNodeType_DOT.value() + "::" + math::blas::ImplementationType_CUBLASWithTransfers.value(),
+        math::blas::LibraryNodeType_DOT.value() + "::" + cuda::blas::ImplementationType_CUBLASWithTransfers.value(),
         [](codegen::LanguageExtension& language_extension,
            const Function& function,
            const data_flow::DataFlowGraph& data_flow_graph,
@@ -61,7 +61,7 @@ inline void register_cuda_plugin() {
     );
     // Dot - CUBLAS without data transfers
     codegen::LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
-        math::blas::LibraryNodeType_DOT.value() + "::" + math::blas::ImplementationType_CUBLASWithoutTransfers.value(),
+        math::blas::LibraryNodeType_DOT.value() + "::" + cuda::blas::ImplementationType_CUBLASWithoutTransfers.value(),
         [](codegen::LanguageExtension& language_extension,
            const Function& function,
            const data_flow::DataFlowGraph& data_flow_graph,
@@ -74,7 +74,7 @@ inline void register_cuda_plugin() {
 
     // GEMM - CUBLAS with data transfers
     codegen::LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
-        math::blas::LibraryNodeType_GEMM.value() + "::" + math::blas::ImplementationType_CUBLASWithTransfers.value(),
+        math::blas::LibraryNodeType_GEMM.value() + "::" + cuda::blas::ImplementationType_CUBLASWithTransfers.value(),
         [](codegen::LanguageExtension& language_extension,
            const Function& function,
            const data_flow::DataFlowGraph& data_flow_graph,
@@ -86,7 +86,7 @@ inline void register_cuda_plugin() {
     );
     // GEMM - CUBLAS without data transfers
     codegen::LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
-        math::blas::LibraryNodeType_GEMM.value() + "::" + math::blas::ImplementationType_CUBLASWithoutTransfers.value(),
+        math::blas::LibraryNodeType_GEMM.value() + "::" + cuda::blas::ImplementationType_CUBLASWithoutTransfers.value(),
         [](codegen::LanguageExtension& language_extension,
            const Function& function,
            const data_flow::DataFlowGraph& data_flow_graph,

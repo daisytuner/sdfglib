@@ -152,18 +152,6 @@ inline constexpr std::string_view BLAS_Layout_to_short_string(BLAS_Layout layout
 inline data_flow::ImplementationType ImplementationType_BLAS{"BLAS"};
 
 /**
- * @brief CUBLAS implementation with automatic memory transfers
- * Uses NVIDIA CUBLAS with automatic host-device data transfers
- */
-inline data_flow::ImplementationType ImplementationType_CUBLASWithTransfers{"CUBLASWithTransfers"};
-
-/**
- * @brief CUBLAS implementation without memory transfers
- * Uses NVIDIA CUBLAS assuming data is already on GPU
- */
-inline data_flow::ImplementationType ImplementationType_CUBLASWithoutTransfers{"CUBLASWithoutTransfers"};
-
-/**
  * @class BLASNode
  * @brief Base class for BLAS operation nodes
  *
