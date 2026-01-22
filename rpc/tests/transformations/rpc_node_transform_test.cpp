@@ -1,9 +1,11 @@
 #include <gtest/gtest.h>
-#include <sdfg/transformations/rpc_transfer_tuning_transform.h>
+#include <memory>
+#include <sdfg/transformations/rpc_node_transform.h>
 
 
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/structured_sdfg.h"
@@ -15,7 +17,7 @@
 
 using namespace sdfg;
 
-class RPCTransferTuningTransformTest : public ::testing::Test {
+class RPCNodeTransformTest : public ::testing::Test {
 protected:
     std::unique_ptr<builder::StructuredSDFGBuilder> builder_;
     nlohmann::json desc_;
@@ -234,7 +236,7 @@ protected:
     };
 };
 
-TEST_F(RPCTransferTuningTransformTest, Matmul_FMA) {
+TEST_F(RPCNodeTransformTest, Matmul_FMA) {
     auto sdfg_initial = builder_->subject().clone();
     sdfg::builder::StructuredSDFGBuilder builder(sdfg_initial);
 
@@ -245,8 +247,11 @@ TEST_F(RPCTransferTuningTransformTest, Matmul_FMA) {
     auto outer_loops = loop_analysis.outermost_loops();
     EXPECT_EQ(outer_loops.size(), 1);
 
+    std::unique_ptr<passes::rpc::RpcContext> ctx =
+        std::make_unique<passes::rpc::SimpleRpcContext>("http://localhost:8080/docc", "/transfertuning");
+
     auto outer_loop = static_cast<structured_control_flow::StructuredLoop*>(outer_loops[0]);
-    sdfg::transformations::RPCTransferTuningTransform transfer_tuning(*outer_loop, "sequential", "server");
+    sdfg::transformations::RPCNodeTransform transfer_tuning(*outer_loop, "sequential", "server", *ctx);
     ASSERT_TRUE(transfer_tuning.can_be_applied(builder, analysis_manager));
     transfer_tuning.apply(builder, analysis_manager);
 

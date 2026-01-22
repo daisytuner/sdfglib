@@ -1,23 +1,24 @@
-#include "sdfg/passes/scheduler/transfer_tuning_scheduler.h"
+#include "sdfg/passes/rpc/rpc_loop_opt.h"
 
-#include "sdfg/transformations/rpc_transfer_tuning_transform.h"
+#include "sdfg/transformations/rpc_node_transform.h"
 
 namespace sdfg {
 namespace passes {
 namespace scheduler {
 
-SchedulerAction TransferTuningScheduler::schedule(
+RpcLoopOpt::RpcLoopOpt(rpc::RpcContext& rpc_context) : LoopScheduler(), rpc_context_(rpc_context) {}
+
+SchedulerAction RpcLoopOpt::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
     structured_control_flow::StructuredLoop& loop,
     const SchedulerLoopInfo& loop_info
 ) {
     // Apply transfer tuning to the loop
-    transformations::LocalTransferTuningTransform
-        transfer_tuning_transform("sequential", "server", &builder.subject(), loop_info.loop_info);
+    transformations::RPCNodeTransform rpc_transform(loop, "sequential", "server", rpc_context_);
 
-    if (transfer_tuning_transform.can_be_applied(builder, analysis_manager)) {
-        transfer_tuning_transform.apply(builder, analysis_manager);
+    if (rpc_transform.can_be_applied(builder, analysis_manager)) {
+        rpc_transform.apply(builder, analysis_manager);
         return NEXT;
     }
 
@@ -30,17 +31,16 @@ SchedulerAction TransferTuningScheduler::schedule(
     }
 }
 
-SchedulerAction TransferTuningScheduler::schedule(
+SchedulerAction RpcLoopOpt::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
     structured_control_flow::While& loop,
     const SchedulerLoopInfo& loop_info
 ) {
     // Apply transfer tuning to the loop
-    transformations::LocalTransferTuningTransform
-        transfer_tuning_transform("sequential", "server", &builder.subject(), loop_info.loop_info);
-    if (transfer_tuning_transform.can_be_applied(builder, analysis_manager)) {
-        transfer_tuning_transform.apply(builder, analysis_manager);
+    transformations::RPCNodeTransform rpc_transform(loop, "sequential", "server", rpc_context_);
+    if (rpc_transform.can_be_applied(builder, analysis_manager)) {
+        rpc_transform.apply(builder, analysis_manager);
         return NEXT;
     }
 

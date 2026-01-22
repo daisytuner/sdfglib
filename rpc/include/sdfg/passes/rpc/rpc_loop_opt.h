@@ -1,12 +1,17 @@
 #pragma once
 
+#include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/passes/scheduler/loop_scheduler.h"
 
 namespace sdfg {
 namespace passes {
 namespace scheduler {
 
-class TransferTuningScheduler : public LoopScheduler {
+class RpcLoopOpt : public LoopScheduler {
+private:
+    rpc::RpcContext& rpc_context_;
+
+
 protected:
     SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
@@ -23,7 +28,9 @@ protected:
     ) override;
 
 public:
-    std::string name() override { return "TransferTuningScheduler"; };
+    RpcLoopOpt(rpc::RpcContext& rpc_context);
+
+    std::string name() override { return "RpcLoopOpt"; };
 };
 
 } // namespace scheduler

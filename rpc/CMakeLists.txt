@@ -7,9 +7,8 @@ find_package(CURL REQUIRED)
 
 set(SOURCE_FILES
     src/passes/rpc/rpc_context.cpp
-    src/passes/rpc/rpc_test_context.cpp
-    # src/passes/scheduler/transfer_tuning_scheduler.cpp
-    src/transformations/rpc_transfer_tuning_transform.cpp
+    src/passes/rpc/rpc_loop_opt.cpp
+    src/transformations/rpc_node_transform.cpp
     src/util/utils_curl.cpp
 )
 add_library(sdfgrpc
