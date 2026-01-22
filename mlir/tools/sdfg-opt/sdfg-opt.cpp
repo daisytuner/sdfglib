@@ -1,9 +1,9 @@
+#include "mlir/Conversion/SDFGPasses.h"
 #include "mlir/Dialect/SDFG/IR/SDFG.h"
 #include "mlir/IR/DialectRegistry.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
-#include "mlir/Conversion/SDFGPasses.h"
 
 int main(int argc, char** argv) {
     mlir::DialectRegistry registry;
@@ -11,5 +11,5 @@ int main(int argc, char** argv) {
     mlir::registerAllDialects(registry);
     mlir::registerAllPasses();
     mlir::registerSDFGConversionPasses();
-    return mlir::asMainReturnCode(mlir::MlirOptMain(argc, argv, "SDFG MLIR front-end", registry));
+    return mlir::asMainReturnCode(mlir::MlirOptMain(argc, argv, "SDFG MLIR optimization driver", registry));
 }
