@@ -67,11 +67,22 @@ std::string GPULoopReordering::name() const { return "GPULoopReordering"; };
 
 void GPULoopReordering::to_json(nlohmann::json& j) const {
     j["transformation_type"] = this->name();
+
+    j["subgraph"] = {{"0", {{"element_id", this->map_.element_id()}, {"type", "map"}}}};
+
+    // Legacy field for backward compatibility
     j["map_element_id"] = this->map_.element_id();
 }
 
-GPULoopReordering from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j) {
-    auto first_loop_id = j.at("map_element_id").get<size_t>();
+GPULoopReordering GPULoopReordering::from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j) {
+    size_t first_loop_id;
+    if (j.contains("subgraph")) {
+        const auto& node_desc = j.at("subgraph").at("0");
+        first_loop_id = node_desc.at("element_id").get<size_t>();
+    } else {
+        first_loop_id = j.at("map_element_id").get<size_t>();
+    }
+
     auto* first_loop = dynamic_cast<structured_control_flow::Map*>(builder.find_element_by_id(first_loop_id));
     if (!first_loop) {
         throw std::runtime_error("Invalid first_loop_id in GPULoopReordering deserialization");

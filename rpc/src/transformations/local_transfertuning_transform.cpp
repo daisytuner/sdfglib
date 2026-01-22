@@ -6,6 +6,7 @@
 #include <string>
 
 #include "sdfg/optimization_report/pass_report_consumer.h"
+#include "sdfg/passes/rpc/rpc_responses.h"
 #include "sdfg/serializer/json_serializer.h"
 #include "sdfg/structured_sdfg.h"
 #include "sdfg/transformations/replayer.h"
@@ -15,16 +16,15 @@
 namespace sdfg {
 namespace transformations {
 
-const std::string TT_ENDPOINT = "http://localhost:3000/docc";
-
 
 LocalTransferTuningTransform::LocalTransferTuningTransform(
     const std::string& target,
     const std::string& category,
     sdfg::StructuredSDFG* sdfg,
-    const analysis::LoopInfo& loop_info
+    const analysis::LoopInfo& loop_info,
+    const sdfg::passes::rpc::RpcContext& rpc_context
 )
-    : target_(target), category_(category), sdfg_(sdfg), loop_info_(loop_info) {}
+    : target_(target), category_(category), sdfg_(sdfg), loop_info_(loop_info), rpc_context_(rpc_context) {}
 
 std::string LocalTransferTuningTransform::name() const { return "LocalTransferTuningTransform"; }
 
@@ -36,14 +36,22 @@ bool LocalTransferTuningTransform::
         return false;
     }
 
-    std::string auth_header = "";
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/json");
-    headers = curl_slist_append(headers, auth_header.c_str());
+
+    // Add all headers provided by the RPC context (auth and optional testing headers).
+    auto context_headers = rpc_context_.get_auth_headers();
+    for (const auto& [key, value] : context_headers) {
+        std::string hdr = key + ": " + value;
+        headers = curl_slist_append(headers, hdr.c_str());
+    }
+
     curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, headers);
 
     this->applied_recipe_ = TransfertuningRecipe();
     this->recipes_ = query_recipes(*sdfg_, curl_handle, headers);
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl_handle);
     if (this->recipes_.empty()) {
         if (report_) transformations::Transformation::report_->transform_impossible(this, "No neighbors found");
         DEBUG_PRINTLN("[INFO] No transfertuning recipes found for loop");
@@ -70,7 +78,8 @@ void LocalTransferTuningTransform::
         break;
     }
     if (success == false) {
-        if (this->recipes_[0].sdfg != "") {
+        // If a full SDFG was returned instead of a sequence, rebuild from JSON.
+        if (!this->recipes_[0].sdfg.is_null()) {
             sdfg::serializer::JSONSerializer serializer;
             auto final_sdfg = serializer.deserialize(this->recipes_[0].sdfg);
             builder = sdfg::builder::StructuredSDFGBuilder(final_sdfg);
@@ -107,7 +116,7 @@ std::vector<TransfertuningRecipe> LocalTransferTuningTransform::
     std::string payload_str = payload.dump();
 
     // Send query
-    HttpResult res = post_json(curl_handle, TT_ENDPOINT + "/get-recipe", payload_str, headers);
+    HttpResult res = post_json(curl_handle, this->rpc_context_.get_remote_address(), payload_str, headers);
     if (res.curl_code != CURLE_OK) {
         DEBUG_PRINTLN("[ERROR] Nearest neighbor query failed " << ": " << res.error_message);
         return {};
@@ -126,14 +135,19 @@ std::vector<TransfertuningRecipe> LocalTransferTuningTransform::
     }
 
     std::vector<TransfertuningRecipe> recipes;
-    for (auto entry : parsed["data"]) {
-        recipes.push_back(TransfertuningRecipe{
-            entry.value("sdfg", ""),
-            entry["sequence"],
-            entry["region_id"],
-            entry["speedup"],
-            entry["vector_distance"].get<double>()
-        });
+    for (auto& entry : parsed["data"]) {
+        try {
+            nlohmann::json sdfg_field = entry.contains("sdfg") ? entry["sdfg"] : nlohmann::json();
+            recipes.push_back(TransfertuningRecipe{
+                sdfg_field,
+                entry["sequence"],
+                entry["region_id"],
+                entry["speedup"],
+                entry["vector_distance"].get<double>()
+            });
+        } catch (...) {
+            continue;
+        }
     }
 
     return recipes;
