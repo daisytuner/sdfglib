@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <sdfg/transformations/local_transfertuning_transform.h>
+#include <sdfg/transformations/rpc_transfer_tuning_transform.h>
 
 
 #include "sdfg/analysis/loop_analysis.h"
@@ -15,7 +15,7 @@
 
 using namespace sdfg;
 
-class LocalTransfertuningTransformTest : public ::testing::Test {
+class RPCTransferTuningTransformTest : public ::testing::Test {
 protected:
     std::unique_ptr<builder::StructuredSDFGBuilder> builder_;
     nlohmann::json desc_;
@@ -234,7 +234,7 @@ protected:
     };
 };
 
-TEST_F(LocalTransfertuningTransformTest, Matmul_FMA) {
+TEST_F(RPCTransferTuningTransformTest, Matmul_FMA) {
     auto sdfg_initial = builder_->subject().clone();
     sdfg::builder::StructuredSDFGBuilder builder(sdfg_initial);
 
@@ -243,21 +243,12 @@ TEST_F(LocalTransfertuningTransformTest, Matmul_FMA) {
     sdfg::analysis::AnalysisManager analysis_manager(builder.subject());
     auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
     auto outer_loops = loop_analysis.outermost_loops();
+    EXPECT_EQ(outer_loops.size(), 1);
 
-    size_t loopnest_index = 0;
-    for (auto loopnest : outer_loops) {
-        sdfg::transformations::LocalTransferTuningTransform
-            transfer_tuning("sequential", "server", &builder.subject(), loop_analysis.loop_info(loopnest));
-
-        if (!transfer_tuning.can_be_applied(builder, analysis_manager)) {
-            continue;
-        }
-        transfer_tuning.apply(builder, analysis_manager);
-
-        analysis_manager.invalidate_all();
-
-        loopnest_index++;
-    }
+    auto outer_loop = static_cast<structured_control_flow::StructuredLoop*>(outer_loops[0]);
+    sdfg::transformations::RPCTransferTuningTransform transfer_tuning(*outer_loop, "sequential", "server");
+    ASSERT_TRUE(transfer_tuning.can_be_applied(builder, analysis_manager));
+    transfer_tuning.apply(builder, analysis_manager);
 
     sdfg::analysis::AnalysisManager test_analysis_manager(builder.subject());
 

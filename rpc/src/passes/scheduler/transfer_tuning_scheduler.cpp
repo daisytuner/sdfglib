@@ -1,6 +1,6 @@
 #include "sdfg/passes/scheduler/transfer_tuning_scheduler.h"
 
-#include "sdfg/transformations/local_transfertuning_transform.h"
+#include "sdfg/transformations/rpc_transfer_tuning_transform.h"
 
 namespace sdfg {
 namespace passes {

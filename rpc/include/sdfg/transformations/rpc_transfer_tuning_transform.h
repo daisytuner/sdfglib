@@ -17,7 +17,7 @@ namespace transformations {
 /**
  * @deprecated This is only here to make the other code compile. it is not to be used by any other library!
  */
-struct TransfertuningRecipe {
+struct TransferTuningRecipe {
     nlohmann::json sdfg;
     nlohmann::json sequence;
     std::string region_id;
@@ -25,30 +25,25 @@ struct TransfertuningRecipe {
     double distance;
 };
 
-class LocalTransferTuningTransform : public sdfg::transformations::Transformation {
+class RPCTransferTuningTransform : public sdfg::transformations::Transformation {
 private:
-    // TT parameters
+    structured_control_flow::StructuredLoop& loop_;
     std::string target_;
     std::string category_;
 
-    // TT target
-    sdfg::StructuredSDFG* sdfg_;
-    analysis::LoopInfo loop_info_;
-
-    // TT state
-    std::vector<TransfertuningRecipe> recipes_;
-    TransfertuningRecipe applied_recipe_;
     const sdfg::passes::rpc::RpcContext& rpc_context_;
 
-    std::vector<TransfertuningRecipe>
-    query_recipes(sdfg::StructuredSDFG& sdfg, CURL* curl_handle, struct curl_slist* headers);
+    // TT state
+    std::vector<TransferTuningRecipe> recipes_;
+    TransferTuningRecipe applied_recipe_;
+
+    std::vector<TransferTuningRecipe> query_recipes(sdfg::StructuredSDFG& sdfg, analysis::LoopInfo& loop_info);
 
 public:
-    LocalTransferTuningTransform(
+    RPCTransferTuningTransform(
+        structured_control_flow::StructuredLoop& loop,
         const std::string& target,
         const std::string& category,
-        sdfg::StructuredSDFG* sdfg,
-        const sdfg::analysis::LoopInfo& loop_info,
         const sdfg::passes::rpc::RpcContext& rpc_context = sdfg::passes::rpc::RpcTestContext::default_context()
     );
 
@@ -61,7 +56,7 @@ public:
     virtual void apply(sdfg::builder::StructuredSDFGBuilder& builder, sdfg::analysis::AnalysisManager& analysis_manager)
         override;
 
-    TransfertuningRecipe applied_recipe() const { return applied_recipe_; }
+    TransferTuningRecipe applied_recipe() const { return applied_recipe_; }
 
     void to_json(nlohmann::json& j) const override {
         j["transformation_type"] = name();
