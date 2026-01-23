@@ -8,6 +8,7 @@
 #include "analysis/py_loop_analysis.h"
 #include "py_structured_sdfg.h"
 #include "py_structured_sdfg_builder.h"
+#include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/targets/cuda/plugin.h"
 #include "types/py_types.h"
 
@@ -24,6 +25,10 @@
 #include <sdfg/targets/highway/plugin.h>
 #include <sdfg/targets/omp/plugin.h>
 
+#include "sdfg/passes/rpc/daisytuner_rpc_context.h"
+#include "sdfg/passes/rpc/rpc_loop_opt.h"
+#include "sdfg/passes/scheduler/cuda_scheduler.h"
+
 namespace py = pybind11;
 using namespace sdfg::types;
 
@@ -38,6 +43,59 @@ PYBIND11_MODULE(_sdfg, m) {
 
     register_types(m);
     register_loop_analysis(m);
+
+    // Register function to setup remote optimization
+    m.def(
+        "set_remote_opt_context",
+        []() {
+            sdfg::codegen::register_default_dispatchers();
+            sdfg::serializer::register_default_serializers();
+        },
+        "Register default node dispatchers"
+    );
+
+    py::class_<sdfg::passes::rpc::RpcContext>(m, "RpcContext");
+
+    py::class_<sdfg::passes::rpc::SimpleRpcContext, sdfg::passes::rpc::RpcContext>(m, "SimpleRpcContext")
+        .def(
+            py::init<std::string, std::string, std::unordered_map<std::string, std::string>>(),
+            py::arg("host"),
+            py::arg("endpoint"),
+            py::arg("headers")
+        )
+        .def_static(
+            "build_from_file",
+            &sdfg::passes::rpc::build_rpc_context_from_file,
+            py::arg("path"),
+            "Read Server Context from JSON file"
+        )
+        .def_static(
+            "build_from_env",
+            []() {
+                sdfg::passes::rpc::SimpleRpcContextBuilder b;
+                return b.from_env().build();
+            },
+            "Read from the file pointed to by $SDFG_RPC_CONFIG"
+        )
+        .def_static(
+            "build_auto",
+            &sdfg::passes::rpc::build_rpc_context_auto,
+            "Use whatever config you can find to build a context. Default to local server"
+        )
+        .def_static(
+            "build_local", &sdfg::passes::rpc::build_rpc_context_local, "Use localhost:8080/docc as in example server"
+        );
+
+
+    py::class_<
+        sdfg::passes::rpc::DaisytunerTransfertuningRpcContext,
+        sdfg::passes::rpc::SimpleRpcContext>(m, "DaisytunerTransfertuningRpcContext")
+        .def(py::init<std::string>(), py::arg("license_token"))
+        .def_static(
+            "from_docc_config",
+            sdfg::passes::rpc::DaisytunerTransfertuningRpcContext::from_docc_config,
+            "Read license config from an already setup DOCC"
+        );
 
     py::class_<sdfg::DebugInfo>(m, "DebugInfo")
         .def(py::init<>())
@@ -83,7 +141,14 @@ PYBIND11_MODULE(_sdfg, m) {
         .def("simplify", &PyStructuredSDFG::simplify, "Simplify the SDFG")
         .def("dump", &PyStructuredSDFG::dump, py::arg("path"))
         .def("normalize", &PyStructuredSDFG::normalize, "Normalize the SDFG")
-        .def("schedule", &PyStructuredSDFG::schedule, py::arg("target"), py::arg("category"), "Schedule the SDFG")
+        .def(
+            "schedule",
+            &PyStructuredSDFG::schedule,
+            py::arg("target"),
+            py::arg("category"),
+            py::arg("remote_ctx").none(true) = nullptr,
+            "Schedule the SDFG"
+        )
         .def(
             "_compile",
             &PyStructuredSDFG::compile,

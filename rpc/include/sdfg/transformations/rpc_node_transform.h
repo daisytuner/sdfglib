@@ -28,13 +28,15 @@ private:
 
     bool dump_steps_;
 
+    std::string get_node_id_str() const;
+
 public:
     RPCNodeTransform(
         structured_control_flow::ControlFlowNode& node,
         const std::string& target,
         const std::string& category,
         sdfg::passes::rpc::RpcContext& rpc_context,
-        bool dump_steps = false
+        bool print_steps = false
     );
 
     virtual std::string name() const override;

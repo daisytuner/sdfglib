@@ -4,43 +4,44 @@
 
 namespace sdfg {
 namespace passes {
-namespace scheduler {
+namespace rpc {
 
-RpcLoopOpt::RpcLoopOpt(rpc::RpcContext& rpc_context) : LoopScheduler(), rpc_context_(rpc_context) {}
+RpcLoopOpt::RpcLoopOpt(rpc::RpcContext& rpc_context, std::string target, std::string category)
+    : LoopScheduler(), rpc_context_(rpc_context), target_(std::move(target)), category_(std::move(category)) {}
 
-SchedulerAction RpcLoopOpt::schedule(
+scheduler::SchedulerAction RpcLoopOpt::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
     structured_control_flow::StructuredLoop& loop,
-    const SchedulerLoopInfo& loop_info
+    const scheduler::SchedulerLoopInfo& loop_info
 ) {
     // Apply transfer tuning to the loop
-    transformations::RPCNodeTransform rpc_transform(loop, "sequential", "server", rpc_context_);
+    transformations::RPCNodeTransform rpc_transform(loop, target_, category_, rpc_context_);
 
     if (rpc_transform.can_be_applied(builder, analysis_manager)) {
         rpc_transform.apply(builder, analysis_manager);
-        return NEXT;
+        return scheduler::NEXT;
     }
 
-    return NEXT;
+    return scheduler::NEXT;
 }
 
-SchedulerAction RpcLoopOpt::schedule(
+scheduler::SchedulerAction RpcLoopOpt::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
     structured_control_flow::While& loop,
-    const SchedulerLoopInfo& loop_info
+    const scheduler::SchedulerLoopInfo& loop_info
 ) {
     // Apply transfer tuning to the loop
-    transformations::RPCNodeTransform rpc_transform(loop, "sequential", "server", rpc_context_);
+    transformations::RPCNodeTransform rpc_transform(loop, target_, category_, rpc_context_);
     if (rpc_transform.can_be_applied(builder, analysis_manager)) {
         rpc_transform.apply(builder, analysis_manager);
-        return NEXT;
+        return scheduler::NEXT;
     }
 
-    return NEXT;
+    return scheduler::NEXT;
 }
 
-} // namespace scheduler
+} // namespace rpc
 } // namespace passes
 } // namespace sdfg

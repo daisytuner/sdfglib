@@ -24,12 +24,12 @@
 namespace sdfg {
 namespace transformations {
 
-std::unique_ptr<passes::rpc::RpcOptResponse>
+std::variant<std::unique_ptr<passes::rpc::RpcOptResponse>, std::string>
 query_rpc_opt(passes::rpc::RpcOptRequest request, sdfg::passes::rpc::RpcContext& ctx) {
     CURL* curl_handle = curl_easy_init();
     if (!curl_handle) {
-        DEBUG_PRINTLN("[ERROR] Could not initialize CURL!");
-        return {};
+        std::cerr << "[ERROR] Could not initialize CURL!" << std::endl;
+        return {"CurlInit"};
     }
 
     struct curl_slist* headers = nullptr;
@@ -60,14 +60,11 @@ query_rpc_opt(passes::rpc::RpcOptRequest request, sdfg::passes::rpc::RpcContext&
 
     // Send query
     HttpResult res = post_json(curl_handle, ctx.get_remote_address(), payload_str, headers);
-    if (res.curl_code != CURLE_OK) {
-        DEBUG_PRINTLN("[ERROR] Nearest neighbor query failed " << ": " << res.error_message);
-        return {};
-    }
 
     if (res.curl_code != CURLE_OK) {
-        DEBUG_PRINTLN("[ERROR] RPC optimization query failed " << res.curl_code << ": " << res.error_message);
-        return {};
+        std::cerr << "[ERROR] RPC optimization query failed " << res.curl_code << ": " << res.error_message
+                  << std::endl;
+        return {"CurlReq"};
     }
 
     std::unique_ptr<passes::rpc::RpcOptResponse> rpc_response;
@@ -78,15 +75,16 @@ query_rpc_opt(passes::rpc::RpcOptRequest request, sdfg::passes::rpc::RpcContext&
         try {
             parsed = nlohmann::json::parse(res.body);
         } catch (const std::exception& e) {
-            return {};
+            std::cerr << "[ERROR] RPC optimization response failed to parse: " << e.what() << std::endl;
+            return {"InvalidJsonResp"};
         }
 
         rpc_response = std::make_unique<passes::rpc::RpcOptResponse>();
 
         auto errorJ = parsed.find("error");
         if (errorJ != parsed.end()) {
-            DEBUG_PRINTLN("[ERROR] RPC optimization query returned error: " << errorJ->get<std::string>());
-            return {};
+            std::cerr << "[ERROR] RPC optimization query returned error: " << errorJ->get<std::string>() << std::endl;
+            rpc_response->error = errorJ->get<std::string>();
         }
 
         auto sdfgResJ = parsed.find("sdfg_result");
@@ -117,7 +115,7 @@ query_rpc_opt(passes::rpc::RpcOptRequest request, sdfg::passes::rpc::RpcContext&
             }
         }
     } catch (const std::exception& e) {
-        DEBUG_PRINTLN("[ERROR] Failed to parse RPC optimization response: " << e.what());
+        std::cerr << "[ERROR] Failed to parse RPC optimization response: " << e.what() << std::endl;
     }
 
     curl_slist_free_all(headers);
@@ -137,6 +135,8 @@ RPCNodeTransform::RPCNodeTransform(
 
 std::string RPCNodeTransform::name() const { return "RPCNodeTransform"; }
 
+std::string RPCNodeTransform::get_node_id_str() const { return std::to_string(this->node_.element_id()); }
+
 bool RPCNodeTransform::
     can_be_applied(sdfg::builder::StructuredSDFGBuilder& builder, sdfg::analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
@@ -144,6 +144,9 @@ bool RPCNodeTransform::
     // Criterion: Must be outmost loop for now
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     if (!loop_analysis.is_outermost_loop(&this->node_)) {
+        if (report_) {
+            report_->transform_impossible(this->name(), "Not outermost loop (" + get_node_id_str() + ")");
+        }
         return false;
     }
 
@@ -154,14 +157,33 @@ bool RPCNodeTransform::
     // Cutout SDFG
     std::unique_ptr<sdfg::StructuredSDFG> loop_sdfg = util::cutout(builder, analysis_manager, this->node_);
 
-    this->applied_opt_ = query_rpc_opt(
+    auto opt_resp = query_rpc_opt(
         {.sdfg = *loop_sdfg,
          .category = this->category_.empty() ? std::nullopt : std::optional<std::string>(this->category_),
          .target = this->target_.empty() ? std::nullopt : std::optional<std::string>(this->target_),
          .loop_info = loop_info},
         rpc_context_
     );
-    return this->applied_opt_ != nullptr && (this->applied_opt_->sdfg_result.has_value());
+    if (std::holds_alternative<std::unique_ptr<passes::rpc::RpcOptResponse>>(opt_resp)) {
+        this->applied_opt_ = std::move(std::get<std::unique_ptr<passes::rpc::RpcOptResponse>>(opt_resp));
+    }
+    bool can_apply = this->applied_opt_ != nullptr && (this->applied_opt_->sdfg_result.has_value());
+    if (report_) {
+        if (!can_apply) {
+            if (report_) {
+                std::string error_msg;
+                if (std::holds_alternative<std::string>(opt_resp)) {
+                    error_msg = std::get<std::string>(opt_resp);
+                } else if (this->applied_opt_->error.has_value()) {
+                    error_msg = this->applied_opt_->error.value();
+                }
+                report_->transform_impossible(
+                    this->name(), "No opt. SDFG received (" + get_node_id_str() + ", " + error_msg + ")"
+                );
+            }
+        }
+    }
+    return can_apply;
 }
 
 void RPCNodeTransform::
@@ -187,6 +209,12 @@ void RPCNodeTransform::
     builder.remove_child(*parent_scope, index + 1);
 
     opt.sdfg_result->sdfg.reset();
+
+    if (report_) {
+        nlohmann::json j;
+        this->to_json(j);
+        report_->transform_applied(this->name(), j);
+    }
 
     if (opt.local_replay.has_value()) {
         auto recipe = opt.local_replay.value();

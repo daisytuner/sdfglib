@@ -28,6 +28,7 @@ struct RpcOptResponse {
     std::optional<RpcSdfgResult> sdfg_result;
     std::optional<RpcLocalReplayRecipe> local_replay;
     RpcOptimizationMetadata metadata;
+    std::optional<std::string> error;
 };
 
 struct RpcOptRequest {

@@ -14,7 +14,8 @@
 #include <sdfg/helpers/helpers.h>
 #include <sdfg/structured_control_flow/control_flow_node.h>
 #include <sdfg/structured_sdfg.h>
-#include "sdfg/transformations/rpc_transfer_tuning_transform.h"
+#include "sdfg/passes/rpc/rpc_context.h"
+#include "sdfg/transformations/rpc_node_transform.h"
 
 using json = nlohmann::json;
 namespace po = boost::program_options;
@@ -123,21 +124,22 @@ int main(int argc, char* argv[]) {
 
     auto sdfg_initial = builder->subject().clone();
 
-    // Transfer tuning replayer
+    // RPC node transform
 
     sdfg::analysis::AnalysisManager analysis_manager(builder->subject());
     auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
     auto outer_loops = loop_analysis.outermost_loops();
 
+    auto ctx = sdfg::passes::rpc::build_rpc_context_auto();
+
     size_t loopnest_index = 0;
     for (auto loopnest : outer_loops) {
-        sdfg::transformations::RPCTransferTuningTransform
-            transfer_tuning(target, category, &builder->subject(), loop_analysis.loop_info(loopnest));
+        sdfg::transformations::RPCNodeTransform rpc_tuner(*loopnest, target, category, *ctx, true);
 
-        if (!transfer_tuning.can_be_applied(*builder, analysis_manager)) {
+        if (!rpc_tuner.can_be_applied(*builder, analysis_manager)) {
             continue;
         }
-        transfer_tuning.apply(*builder, analysis_manager);
+        rpc_tuner.apply(*builder, analysis_manager);
 
         analysis_manager.invalidate_all();
 
