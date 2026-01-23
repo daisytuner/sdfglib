@@ -19,6 +19,7 @@
 #include <sdfg/passes/dataflow/constant_propagation.h>
 #include <sdfg/passes/dataflow/dead_data_elimination.h>
 #include <sdfg/passes/normalization/normalization.h>
+#include <sdfg/passes/offloading/blas2cublas_pass.h>
 #include <sdfg/passes/opt_pipeline.h>
 #include <sdfg/passes/pipeline.h>
 #include <sdfg/passes/scheduler/cuda_scheduler.h>
@@ -282,6 +283,9 @@ void PyStructuredSDFG::schedule(const std::string& target, const std::string& ca
     else if (target == "cuda") {
         sdfg::passes::scheduler::CUDAScheduler cuda_scheduler;
         cuda_scheduler.run(builder, analysis_manager);
+
+        sdfg::cuda::Blas2CuBlasPass blas2cublas_pass;
+        blas2cublas_pass.run(builder, analysis_manager);
     }
 }
 
@@ -428,6 +432,7 @@ std::string PyStructuredSDFG::
     cmd << " -lblas";
     cmd << " -lm";
     cmd << " /usr/local/cuda/lib64/libcudart.so";
+    cmd << " /usr/local/cuda/lib64/libcublas.so";
     cmd << " -o " << lib_path.string();
 
 

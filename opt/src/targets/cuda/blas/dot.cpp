@@ -1,5 +1,3 @@
-#pragma once
-
 #include "sdfg/targets/cuda/blas/dot.h"
 #include <sdfg/data_flow/library_nodes/math/blas/dot_node.h>
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"

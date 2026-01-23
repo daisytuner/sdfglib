@@ -1,5 +1,3 @@
-#pragma once
-
 #include "sdfg/targets/cuda/blas/gemm.h"
 #include "sdfg/data_flow/library_nodes/math/blas/gemm_node.h"
 #include "sdfg/targets/cuda/blas/utils.h"
@@ -38,32 +36,20 @@ void GEMMNodeDispatcher_CUBLASWithTransfers::dispatch_code(
             throw std::runtime_error("Invalid precision for CUBLAS GEMM node");
     }
 
-    std::string size_A =
-        this->language_extension_.expression(symbolic::mul(
-            symbolic::add(symbolic::mul(symbolic::sub(gemm_node.m(), symbolic::one()), gemm_node.lda()), symbolic::one()),
-            gemm_node.k()
-        )) +
-        " * sizeof(" + type + ")";
+    std::string size_A = this->language_extension_.expression(symbolic::mul(gemm_node.m(), gemm_node.k())) +
+                         " * sizeof(" + type + ")";
 
-    std::string size_B =
-        this->language_extension_.expression(symbolic::mul(
-            symbolic::add(symbolic::mul(symbolic::sub(gemm_node.k(), symbolic::one()), gemm_node.ldb()), symbolic::one()),
-            gemm_node.n()
-        )) +
-        " * sizeof(" + type + ")";
+    std::string size_B = this->language_extension_.expression(symbolic::mul(gemm_node.k(), gemm_node.n())) +
+                         " * sizeof(" + type + ")";
 
-    std::string size_C =
-        this->language_extension_.expression(symbolic::mul(
-            symbolic::add(symbolic::mul(symbolic::sub(gemm_node.m(), symbolic::one()), gemm_node.ldc()), symbolic::one()),
-            gemm_node.n()
-        )) +
-        " * sizeof(" + type + ")";
+    std::string size_C = this->language_extension_.expression(symbolic::mul(gemm_node.m(), gemm_node.n())) +
+                         " * sizeof(" + type + ")";
 
     stream << type << " *dA, *dB, *dC;" << std::endl;
 
-    stream << "cudaMalloc(&dA, " << size_A << ");" << std::endl;
-    stream << "cudaMalloc(&dB, " << size_B << ");" << std::endl;
-    stream << "cudaMalloc(&dC, " << size_C << ");" << std::endl;
+    stream << "cudaMalloc((void**) &dA, " << size_A << ");" << std::endl;
+    stream << "cudaMalloc((void**) &dB, " << size_B << ");" << std::endl;
+    stream << "cudaMalloc((void**) &dC, " << size_C << ");" << std::endl;
 
     stream << "cudaMemcpy(dA, __A, " << size_A << ", cudaMemcpyHostToDevice);" << std::endl;
     stream << "cudaMemcpy(dB, __B, " << size_B << ", cudaMemcpyHostToDevice);" << std::endl;
@@ -74,10 +60,10 @@ void GEMMNodeDispatcher_CUBLASWithTransfers::dispatch_code(
     bool invert_transpose = false;
     auto first_dim = gemm_node.m();
     auto second_dim = gemm_node.n();
-    if (gemm_node.layout() != sdfg::math::blas::BLAS_Layout::RowMajor) {
+    if (gemm_node.layout() == sdfg::math::blas::BLAS_Layout::RowMajor) {
         invert_transpose = true;
-        first_dim = gemm_node.n();
-        second_dim = gemm_node.m();
+        // first_dim = gemm_node.n();
+        // second_dim = gemm_node.m();
     }
 
     auto trans_a = gemm_node.trans_a();
@@ -89,15 +75,18 @@ void GEMMNodeDispatcher_CUBLASWithTransfers::dispatch_code(
                                                                     : sdfg::math::blas::BLAS_Transpose::No;
     }
 
-    stream << "err = cublas" << type2 << "gemm(handle, " << trans_a << ", " << trans_b << ", "
+    std::string trans_a_str = (trans_a == sdfg::math::blas::BLAS_Transpose::No) ? "CUBLAS_OP_N" : "CUBLAS_OP_T";
+    std::string trans_b_str = (trans_b == sdfg::math::blas::BLAS_Transpose::No) ? "CUBLAS_OP_N" : "CUBLAS_OP_T";
+
+    stream << "err = cublas" << type2 << "gemm(handle, " << trans_a_str << ", " << trans_b_str << ", "
            << this->language_extension_.expression(first_dim) << ", "
            << this->language_extension_.expression(second_dim) << ", "
            << this->language_extension_.expression(gemm_node.k()) << ", "
-           << "__alpha, "
-           << "dB, " << this->language_extension_.expression(gemm_node.ldb()) << ", "
+           << "&__alpha, "
            << "dA, " << this->language_extension_.expression(gemm_node.lda()) << ", "
-           << "__beta, "
-           << "dC, " << this->language_extension_.expression(gemm_node.ldc()) << ");" << std::endl;
+           << "dB, " << this->language_extension_.expression(gemm_node.ldb()) << ", "
+           << "&__beta, "
+           << "dC, " << this->language_extension_.expression(gemm_node.k()) << ");" << std::endl;
     cublas_error_checking(stream, this->language_extension_, "err");
 
     stream << "cudaMemcpy(__C, dC, " << size_C << ", cudaMemcpyDeviceToHost);" << std::endl;
@@ -145,7 +134,7 @@ void GEMMNodeDispatcher_CUBLASWithoutTransfers::dispatch_code(
     bool invert_transpose = false;
     auto first_dim = gemm_node.m();
     auto second_dim = gemm_node.n();
-    if (gemm_node.layout() != sdfg::math::blas::BLAS_Layout::RowMajor) {
+    if (gemm_node.layout() == sdfg::math::blas::BLAS_Layout::RowMajor) {
         invert_transpose = true;
         first_dim = gemm_node.n();
         second_dim = gemm_node.m();
@@ -160,14 +149,17 @@ void GEMMNodeDispatcher_CUBLASWithoutTransfers::dispatch_code(
                                                                     : sdfg::math::blas::BLAS_Transpose::No;
     }
 
-    stream << "err = cublas" << type << "gemm(handle, " << trans_a << ", " << trans_b << ", "
+    std::string trans_a_str = (trans_a == sdfg::math::blas::BLAS_Transpose::No) ? "CUBLAS_OP_N" : "CUBLAS_OP_T";
+    std::string trans_b_str = (trans_b == sdfg::math::blas::BLAS_Transpose::No) ? "CUBLAS_OP_N" : "CUBLAS_OP_T";
+
+    stream << "err = cublas" << type << "gemm(handle, " << trans_a_str << ", " << trans_b_str << ", "
            << this->language_extension_.expression(first_dim) << ", "
            << this->language_extension_.expression(second_dim) << ", "
            << this->language_extension_.expression(gemm_node.k()) << ", "
-           << "__alpha, "
-           << "__B, " << this->language_extension_.expression(gemm_node.ldb()) << ", "
+           << "&__alpha, "
            << "__A, " << this->language_extension_.expression(gemm_node.lda()) << ", "
-           << "__beta, "
+           << "__B, " << this->language_extension_.expression(gemm_node.ldb()) << ", "
+           << "&__beta, "
            << "__C, " << this->language_extension_.expression(gemm_node.ldc()) << ");" << std::endl;
     cublas_error_checking(stream, this->language_extension_, "err");
 

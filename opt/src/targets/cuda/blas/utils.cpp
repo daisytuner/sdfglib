@@ -24,8 +24,8 @@ void cublas_error_checking(
 ) {
     stream << "if (" << status_variable << " != CUBLAS_STATUS_SUCCESS) {" << std::endl;
     stream.setIndent(stream.indent() + 4);
-    stream << language_extension.external_prefix() << "fprintf(stderr, \"CUBLAS error: %d\\n\", " << status_variable
-           << ");" << std::endl;
+    stream << language_extension.external_prefix() << "fprintf(stderr, \"CUBLAS error: %d File: %s, Line: %d\\n\", "
+           << status_variable << ", __FILE__, __LINE__);" << std::endl;
     stream << language_extension.external_prefix() << "exit(EXIT_FAILURE);" << std::endl;
     stream.setIndent(stream.indent() - 4);
     stream << "}" << std::endl;

@@ -4,7 +4,7 @@
 #include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {
-namespace tenstorrent {
+namespace cuda {
 
 
 /**
@@ -16,12 +16,9 @@ public:
 
     static std::string name() { return "Blas2CuBlasPass"; };
     bool accept(structured_control_flow::Block& node) override;
-
-    std::optional<data_flow::ImplementationType>
-    try_library_node_implementation(const data_flow::LibraryNodeCode& code, types::PrimitiveType data_type);
 };
 
 typedef passes::VisitorPass<Blas2CuBlas> Blas2CuBlasPass;
 
-} // namespace tenstorrent
+} // namespace cuda
 } // namespace sdfg
