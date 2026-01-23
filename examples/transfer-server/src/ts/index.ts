@@ -13,7 +13,10 @@ app.get('/', (c) => {
 
 app.route('/docc', transfertuningRouter)
 
-const server = serve(app, (info) => {
+const server = serve({
+    fetch: app.fetch,
+    port: 8080
+}, (info) => {
     console.log(`Listening on port ${info.port}`)
 })
 

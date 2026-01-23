@@ -9,6 +9,7 @@ add_library(arg_capture_io STATIC
     src/base64.cpp
 )
 
+add_library(sdfg::arg_capture_io ALIAS arg_capture_io)
 add_library(sdfglib::arg_capture_io ALIAS arg_capture_io)
 
 target_include_directories(arg_capture_io PUBLIC

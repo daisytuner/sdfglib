@@ -2,11 +2,14 @@
 
 #include <memory>
 #include <nlohmann/json.hpp>
+#include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/structured_sdfg.h"
 
+namespace sdfg::passes::rpc {
+
 struct RpcOptimizationMetadata {
-    std::string region_id;
-    double speedup;
+    std::optional<std::string> region_id;
+    double speedup = NAN;
     std::optional<double> vector_distance;
 };
 
@@ -26,3 +29,12 @@ struct RpcOptResponse {
     std::optional<RpcLocalReplayRecipe> local_replay;
     RpcOptimizationMetadata metadata;
 };
+
+struct RpcOptRequest {
+    StructuredSDFG& sdfg;
+    std::optional<std::string> category;
+    std::optional<std::string> target;
+    std::optional<analysis::LoopInfo> loop_info;
+};
+
+} // namespace sdfg::passes::rpc
