@@ -83,7 +83,8 @@ bool do_cuda_error_checking() {
         return false;
     }
     std::string env_str(env);
-    if (env_str == "1" || env_str == "true" || env_str == "TRUE" || env_str == "True") {
+    std::transform(env_str.begin(), env_str.end(), env_str.begin(), ::tolower);
+    if (env_str == "1" || env_str == "true") {
         return true;
     }
     return false;

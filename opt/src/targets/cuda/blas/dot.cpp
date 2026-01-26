@@ -52,9 +52,9 @@ void DotNodeDispatcher_CUBLASWithTransfers::dispatch_code(
 
     stream << "cudaError_t err_cuda;" << std::endl;
     stream << type << " *dx, *dy;" << std::endl;
-    stream << "err_cuda = cudaMalloc(&dx, " << x_size << ");" << std::endl;
+    stream << "err_cuda = cudaMalloc((void**) &dx, " << x_size << ");" << std::endl;
     cuda_error_checking(stream, this->language_extension_, "err_cuda");
-    stream << "err_cuda = cudaMalloc(&dy, " << y_size << ");" << std::endl;
+    stream << "err_cuda = cudaMalloc((void**) &dy, " << y_size << ");" << std::endl;
     cuda_error_checking(stream, this->language_extension_, "err_cuda");
 
     stream << "err_cuda = cudaMemcpy(dx, __x, " << x_size << ", cudaMemcpyHostToDevice);" << std::endl;
