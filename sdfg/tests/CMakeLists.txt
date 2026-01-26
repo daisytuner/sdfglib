@@ -109,6 +109,7 @@ set(TEST_FILES
     types/sizeof_test.cpp
     types/structure_test.cpp
     types/utils_test.cpp
+    util/cutouts_test.cpp
     visitor/structured_sdfg_visitor_test.cpp
     visualizer/dot_visualizer_test.cpp
     test.cpp
