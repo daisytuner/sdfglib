@@ -5,6 +5,11 @@
 
 namespace sdfg::cuda::blas {
 
+void generate_kernel_gemm(
+    codegen::PrettyPrinter& stream,
+    codegen::LanguageExtension& language_extension,
+    const math::blas::GEMMNode& gemm_node
+);
 
 class GEMMNodeDispatcher_CUBLASWithTransfers : public codegen::LibraryNodeDispatcher {
 public:
