@@ -14,6 +14,22 @@ GEMMNodeDispatcher_CUBLASWithTransfers::GEMMNodeDispatcher_CUBLASWithTransfers(
     : codegen::LibraryNodeDispatcher(language_extension, function, data_flow_graph, node) {}
 
 
+void add_guard_clause(
+    codegen::PrettyPrinter& stream,
+    codegen::LanguageExtension& language_extension,
+    const math::blas::GEMMNode& gemm_node
+) {
+    stream << "if (" << language_extension.expression(gemm_node.m()) << " != 0 && "
+           << language_extension.expression(gemm_node.n()) << " != 0 && "
+           << language_extension.expression(gemm_node.k()) << " != 0) {" << std::endl;
+    stream.setIndent(stream.indent() + 4);
+}
+
+void remove_guard_clause(codegen::PrettyPrinter& stream) {
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
+}
+
 void GEMMNodeDispatcher_CUBLASWithTransfers::dispatch_code(
     codegen::PrettyPrinter& stream,
     codegen::PrettyPrinter& globals_stream,
@@ -44,6 +60,8 @@ void GEMMNodeDispatcher_CUBLASWithTransfers::dispatch_code(
 
     std::string size_C = this->language_extension_.expression(symbolic::mul(gemm_node.m(), gemm_node.n())) +
                          " * sizeof(" + type + ")";
+
+    add_guard_clause(stream, this->language_extension_, gemm_node);
 
     stream << "cudaError_t err_cuda;" << std::endl;
 
@@ -76,6 +94,8 @@ void GEMMNodeDispatcher_CUBLASWithTransfers::dispatch_code(
     cuda_error_checking(stream, this->language_extension_, "err_cuda");
 
     destroy_blas_handle(stream, this->language_extension_);
+
+    remove_guard_clause(stream);
 }
 
 GEMMNodeDispatcher_CUBLASWithoutTransfers::GEMMNodeDispatcher_CUBLASWithoutTransfers(
@@ -96,11 +116,14 @@ void GEMMNodeDispatcher_CUBLASWithoutTransfers::dispatch_code(
     globals_stream << "#include <cuda.h>" << std::endl;
     globals_stream << "#include <cublas_v2.h>" << std::endl;
 
+    add_guard_clause(stream, this->language_extension_, gemm_node);
+
     create_blas_handle(stream, this->language_extension_);
 
     generate_kernel_gemm(stream, this->language_extension_, gemm_node);
 
     destroy_blas_handle(stream, this->language_extension_);
+    remove_guard_clause(stream);
 }
 
 void generate_kernel_gemm(
