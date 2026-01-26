@@ -52,14 +52,14 @@ void GEMMNodeDispatcher_CUBLASWithTransfers::dispatch_code(
             throw std::runtime_error("Invalid precision for CUBLAS GEMM node");
     }
 
-    std::string size_A = this->language_extension_.expression(symbolic::mul(gemm_node.m(), gemm_node.k())) +
-                         " * sizeof(" + type + ")";
+    std::string size_A = "(" + this->language_extension_.expression(symbolic::mul(gemm_node.m(), gemm_node.k())) +
+                         ") * sizeof(" + type + ")";
 
-    std::string size_B = this->language_extension_.expression(symbolic::mul(gemm_node.k(), gemm_node.n())) +
-                         " * sizeof(" + type + ")";
+    std::string size_B = "(" + this->language_extension_.expression(symbolic::mul(gemm_node.k(), gemm_node.n())) +
+                         ") * sizeof(" + type + ")";
 
-    std::string size_C = this->language_extension_.expression(symbolic::mul(gemm_node.m(), gemm_node.n())) +
-                         " * sizeof(" + type + ")";
+    std::string size_C = "(" + this->language_extension_.expression(symbolic::mul(gemm_node.m(), gemm_node.n())) +
+                         ") * sizeof(" + type + ")";
 
     add_guard_clause(stream, this->language_extension_, gemm_node);
 
