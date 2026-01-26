@@ -1,5 +1,6 @@
 #include "sdfg/targets/cuda/cuda.h"
 
+#include <cstdlib>
 #include <sdfg/analysis/analysis.h>
 #include <sdfg/analysis/assumptions_analysis.h>
 #include <sdfg/analysis/loop_analysis.h>
@@ -56,6 +57,36 @@ bool ScheduleType_CUDA::nested_sync(const structured_control_flow::ScheduleType&
 
 void ScheduleType_CUDA::nested_sync(structured_control_flow::ScheduleType& schedule, const bool nested_sync) {
     schedule.set_property("nested_sync", nested_sync ? "true" : "false");
+}
+
+void cuda_error_checking(
+    codegen::PrettyPrinter& stream,
+    const codegen::LanguageExtension& language_extension,
+    const std::string& status_variable
+) {
+    if (!do_cuda_error_checking()) {
+        return;
+    }
+    stream << "if (" << status_variable << " != cudaSuccess) {" << std::endl;
+    stream.setIndent(stream.indent() + 4);
+    stream << language_extension.external_prefix()
+           << "fprintf(stderr, \"CUDA error: %s File: %s, Line: %d\\n\", cudaGetErrorString(" << status_variable
+           << "), __FILE__, __LINE__);" << std::endl;
+    stream << language_extension.external_prefix() << "exit(EXIT_FAILURE);" << std::endl;
+    stream.setIndent(stream.indent() - 4);
+    stream << "}" << std::endl;
+}
+
+bool do_cuda_error_checking() {
+    auto env = getenv("DOCC_CUDA_DEBUG");
+    if (env == nullptr) {
+        return false;
+    }
+    std::string env_str(env);
+    if (env_str == "1" || env_str == "true" || env_str == "TRUE" || env_str == "True") {
+        return true;
+    }
+    return false;
 }
 
 } // namespace cuda

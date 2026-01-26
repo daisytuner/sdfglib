@@ -3,6 +3,8 @@
 #include <string>
 
 #include "sdfg/codegen/instrumentation/instrumentation_info.h"
+#include "sdfg/codegen/language_extension.h"
+#include "sdfg/codegen/utils.h"
 #include "sdfg/structured_control_flow/map.h"
 
 namespace sdfg {
@@ -43,6 +45,15 @@ public:
 };
 
 inline codegen::TargetType TargetType_CUDA{ScheduleType_CUDA::value()};
+
+
+void cuda_error_checking(
+    codegen::PrettyPrinter& stream,
+    const codegen::LanguageExtension& language_extension,
+    const std::string& status_variable
+);
+
+bool do_cuda_error_checking();
 
 } // namespace cuda
 } // namespace sdfg

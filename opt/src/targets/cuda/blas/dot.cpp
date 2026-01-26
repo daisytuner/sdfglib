@@ -3,6 +3,7 @@
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
 #include "sdfg/data_flow/library_nodes/math/blas/blas_node.h"
 #include "sdfg/targets/cuda/blas/utils.h"
+#include "sdfg/targets/cuda/cuda.h"
 
 namespace sdfg::cuda::blas {
 
@@ -49,12 +50,17 @@ void DotNodeDispatcher_CUBLASWithTransfers::dispatch_code(
         ) +
         " * sizeof(" + type + ")";
 
+    stream << "cudaError_t err_cuda;" << std::endl;
     stream << type << " *dx, *dy;" << std::endl;
-    stream << "cudaMalloc(&dx, " << x_size << ");" << std::endl;
-    stream << "cudaMalloc(&dy, " << y_size << ");" << std::endl;
+    stream << "err_cuda = cudaMalloc(&dx, " << x_size << ");" << std::endl;
+    cuda_error_checking(stream, this->language_extension_, "err_cuda");
+    stream << "err_cuda = cudaMalloc(&dy, " << y_size << ");" << std::endl;
+    cuda_error_checking(stream, this->language_extension_, "err_cuda");
 
-    stream << "cudaMemcpy(dx, __x, " << x_size << ", cudaMemcpyHostToDevice);" << std::endl;
-    stream << "cudaMemcpy(dy, __y, " << y_size << ", cudaMemcpyHostToDevice);" << std::endl;
+    stream << "err_cuda = cudaMemcpy(dx, __x, " << x_size << ", cudaMemcpyHostToDevice);" << std::endl;
+    cuda_error_checking(stream, this->language_extension_, "err_cuda");
+    stream << "err_cuda = cudaMemcpy(dy, __y, " << y_size << ", cudaMemcpyHostToDevice);" << std::endl;
+    cuda_error_checking(stream, this->language_extension_, "err_cuda");
 
     create_blas_handle(stream, this->language_extension_);
     stream << "cublasStatus_t err;" << std::endl;
@@ -63,11 +69,19 @@ void DotNodeDispatcher_CUBLASWithTransfers::dispatch_code(
            << ", dx, " << this->language_extension_.expression(dot_node.incx()) << ", dy, "
            << this->language_extension_.expression(dot_node.incy()) << ", &__out);" << std::endl;
     cublas_error_checking(stream, this->language_extension_, "err");
+    if (do_cuda_error_checking()) {
+        stream << "err_cuda = cudaDeviceSynchronize();" << std::endl;
+        cuda_error_checking(stream, this->language_extension_, "err_cuda");
+        stream << "err_cuda = cudaGetLastError();" << std::endl;
+        cuda_error_checking(stream, this->language_extension_, "err_cuda");
+    }
 
     destroy_blas_handle(stream, this->language_extension_);
 
-    stream << "cudaFree(dx);" << std::endl;
-    stream << "cudaFree(dy);" << std::endl;
+    stream << "err_cuda = cudaFree(dx);" << std::endl;
+    cuda_error_checking(stream, this->language_extension_, "err_cuda");
+    stream << "err_cuda = cudaFree(dy);" << std::endl;
+    cuda_error_checking(stream, this->language_extension_, "err_cuda");
 }
 
 DotNodeDispatcher_CUBLASWithoutTransfers::DotNodeDispatcher_CUBLASWithoutTransfers(
@@ -87,6 +101,7 @@ void DotNodeDispatcher_CUBLASWithoutTransfers::dispatch_code(
     globals_stream << "#include <cuda.h>" << std::endl;
     globals_stream << "#include <cublas_v2.h>" << std::endl;
 
+    stream << "cudaError_t err_cuda;" << std::endl;
     stream << "cublasStatus_t err;" << std::endl;
 
     create_blas_handle(stream, this->language_extension_);
@@ -107,6 +122,12 @@ void DotNodeDispatcher_CUBLASWithoutTransfers::dispatch_code(
            << this->language_extension_.expression(dot_node.incy()) << ", &__out);" << std::endl;
 
     cublas_error_checking(stream, this->language_extension_, "err");
+    if (do_cuda_error_checking()) {
+        stream << "err_cuda = cudaDeviceSynchronize();" << std::endl;
+        cuda_error_checking(stream, this->language_extension_, "err_cuda");
+        stream << "err_cuda = cudaGetLastError();" << std::endl;
+        cuda_error_checking(stream, this->language_extension_, "err_cuda");
+    }
 
     destroy_blas_handle(stream, this->language_extension_);
 }

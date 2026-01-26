@@ -2,6 +2,7 @@
 
 #include "sdfg/codegen/language_extension.h"
 #include "sdfg/codegen/utils.h"
+#include "sdfg/targets/cuda/cuda.h"
 namespace sdfg {
 namespace cuda {
 namespace blas {
@@ -22,6 +23,9 @@ void cublas_error_checking(
     const codegen::LanguageExtension& language_extension,
     const std::string& status_variable
 ) {
+    if (!do_cuda_error_checking()) {
+        return;
+    }
     stream << "if (" << status_variable << " != CUBLAS_STATUS_SUCCESS) {" << std::endl;
     stream.setIndent(stream.indent() + 4);
     stream << language_extension.external_prefix() << "fprintf(stderr, \"CUBLAS error: %d File: %s, Line: %d\\n\", "
