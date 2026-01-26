@@ -551,8 +551,8 @@ TEST(CUDAD2HTransferTest, DispatcherTest) {
 
     // Check if the generated code contains the expected function call
     std::string expected_code =
-        "{\n    float *_src = ((float *) A_device);\n    float *_dst = ((float *) A_host);\n\n  "
-        "  cudaMemcpy(_dst, _src, N, cudaMemcpyDeviceToHost);\n\n    A_host = _dst;\n}\n";
+        "{\n    float *_src = ((float *) A_device);\n    float *_dst = ((float *) A_host);\n\n    cudaError_t err;\n   "
+        " err = cudaMemcpy(_dst, _src, N, cudaMemcpyDeviceToHost);\n\n    A_host = _dst;\n}\n";
     std::string generated_code = pretty_printer.str();
     EXPECT_EQ(expected_code, generated_code);
 }
@@ -598,8 +598,8 @@ TEST(CUDAH2DTransferTest, DispatcherTest) {
 
     // Check if the generated code contains the expected function call
     std::string expected_code =
-        "{\n    float *_src = ((float *) A_host);\n    float *_dst = ((float *) A_device);\n\n  "
-        "  cudaMemcpy(_dst, _src, N, cudaMemcpyHostToDevice);\n\n    A_device = _dst;\n}\n";
+        "{\n    float *_src = ((float *) A_host);\n    float *_dst = ((float *) A_device);\n\n    cudaError_t err;\n   "
+        " err = cudaMemcpy(_dst, _src, N, cudaMemcpyHostToDevice);\n\n    A_device = _dst;\n}\n";
     std::string generated_code = pretty_printer.str();
     EXPECT_EQ(expected_code, generated_code);
 }
@@ -642,7 +642,7 @@ TEST(CUDAMallocTest, DispatcherTest) {
 
     // Check if the generated code contains the expected function call
     std::string expected_code =
-        "{\n    float *_ret = ((float *) A_device);\n\n    cudaMalloc(&_ret, N);\n\n    "
+        "{\n    float *_ret = ((float *) A_device);\n\n    cudaError_t err;\n    err = cudaMalloc(&_ret, N);\n\n    "
         "A_device = _ret;\n}\n";
     std::string generated_code = pretty_printer.str();
     EXPECT_EQ(expected_code, generated_code);
@@ -685,8 +685,8 @@ TEST(CUDAFreeTest, DispatcherTest) {
 
     // Check if the generated code contains the expected function call
     std::string expected_code =
-        "{\n    float *_ptr = ((float *) A_device);\n\n    cudaFree(_ptr);\n\n    A_device = "
-        "_ptr;\n}\n";
+        "{\n    float *_ptr = ((float *) A_device);\n\n    cudaError_t err;\n    err = cudaFree(_ptr);\n\n    A_device "
+        "= _ptr;\n}\n";
     std::string generated_code = pretty_printer.str();
     EXPECT_EQ(expected_code, generated_code);
 }

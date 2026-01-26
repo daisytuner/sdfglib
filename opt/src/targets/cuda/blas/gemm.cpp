@@ -102,12 +102,7 @@ void GEMMNodeDispatcher_CUBLASWithTransfers::dispatch_code(
 
 
     cublas_error_checking(stream, this->language_extension_, "err");
-    if (do_cuda_error_checking()) {
-        stream << "err_cuda = cudaDeviceSynchronize();" << std::endl;
-        cuda_error_checking(stream, this->language_extension_, "err_cuda");
-        stream << "err_cuda = cudaGetLastError();" << std::endl;
-        cuda_error_checking(stream, this->language_extension_, "err_cuda");
-    }
+    check_cuda_kernel_launch_errors(stream, this->language_extension_);
 
     stream << "err_cuda = cudaMemcpy(__C, dC, " << size_C << ", cudaMemcpyDeviceToHost);" << std::endl;
     cuda_error_checking(stream, this->language_extension_, "err_cuda");
@@ -186,12 +181,7 @@ void GEMMNodeDispatcher_CUBLASWithoutTransfers::dispatch_code(
            << "&__beta, "
            << "__C, " << this->language_extension_.expression(gemm_node.ldc()) << ");" << std::endl;
     cublas_error_checking(stream, this->language_extension_, "err");
-    if (do_cuda_error_checking()) {
-        stream << "err_cuda = cudaDeviceSynchronize();" << std::endl;
-        cuda_error_checking(stream, this->language_extension_, "err_cuda");
-        stream << "err_cuda = cudaGetLastError();" << std::endl;
-        cuda_error_checking(stream, this->language_extension_, "err_cuda");
-    }
+    check_cuda_kernel_launch_errors(stream, this->language_extension_);
 
     destroy_blas_handle(stream, this->language_extension_);
 }

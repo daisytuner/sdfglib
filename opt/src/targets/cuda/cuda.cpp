@@ -89,5 +89,15 @@ bool do_cuda_error_checking() {
     return false;
 }
 
+void check_cuda_kernel_launch_errors(codegen::PrettyPrinter& stream, const codegen::LanguageExtension& language_extension) {
+    if (!do_cuda_error_checking()) {
+        return;
+    }
+    stream << "cudaError_t launch_err = cudaDeviceSynchronize();" << std::endl;
+    cuda_error_checking(stream, language_extension, "launch_err");
+    stream << "launch_err = cudaGetLastError();" << std::endl;
+    cuda_error_checking(stream, language_extension, "launch_err");
+}
+
 } // namespace cuda
 } // namespace sdfg

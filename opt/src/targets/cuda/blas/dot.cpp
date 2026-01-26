@@ -69,12 +69,7 @@ void DotNodeDispatcher_CUBLASWithTransfers::dispatch_code(
            << ", dx, " << this->language_extension_.expression(dot_node.incx()) << ", dy, "
            << this->language_extension_.expression(dot_node.incy()) << ", &__out);" << std::endl;
     cublas_error_checking(stream, this->language_extension_, "err");
-    if (do_cuda_error_checking()) {
-        stream << "err_cuda = cudaDeviceSynchronize();" << std::endl;
-        cuda_error_checking(stream, this->language_extension_, "err_cuda");
-        stream << "err_cuda = cudaGetLastError();" << std::endl;
-        cuda_error_checking(stream, this->language_extension_, "err_cuda");
-    }
+    check_cuda_kernel_launch_errors(stream, this->language_extension_);
 
     destroy_blas_handle(stream, this->language_extension_);
 
@@ -122,12 +117,7 @@ void DotNodeDispatcher_CUBLASWithoutTransfers::dispatch_code(
            << this->language_extension_.expression(dot_node.incy()) << ", &__out);" << std::endl;
 
     cublas_error_checking(stream, this->language_extension_, "err");
-    if (do_cuda_error_checking()) {
-        stream << "err_cuda = cudaDeviceSynchronize();" << std::endl;
-        cuda_error_checking(stream, this->language_extension_, "err_cuda");
-        stream << "err_cuda = cudaGetLastError();" << std::endl;
-        cuda_error_checking(stream, this->language_extension_, "err_cuda");
-    }
+    check_cuda_kernel_launch_errors(stream, this->language_extension_);
 
     destroy_blas_handle(stream, this->language_extension_);
 }

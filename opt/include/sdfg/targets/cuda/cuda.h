@@ -55,5 +55,7 @@ void cuda_error_checking(
 
 bool do_cuda_error_checking();
 
+void check_cuda_kernel_launch_errors(codegen::PrettyPrinter& stream, const codegen::LanguageExtension& language_extension);
+
 } // namespace cuda
 } // namespace sdfg

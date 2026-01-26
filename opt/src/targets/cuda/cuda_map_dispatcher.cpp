@@ -259,10 +259,7 @@ void CUDAMapDispatcher::dispatch_kernel_call(
     main_stream << ";" << std::endl;
 
     // Synchronize
-    main_stream << "cudaError_t err = cudaDeviceSynchronize();" << std::endl;
-    main_stream << "if (err != cudaSuccess) {" << std::endl;
-    main_stream << "    " << "exit(1);" << std::endl;
-    main_stream << "}" << std::endl;
+    check_cuda_kernel_launch_errors(main_stream, this->language_extension_);
 
     main_stream.setIndent(main_stream.indent() - 4);
     main_stream << "}" << std::endl;
