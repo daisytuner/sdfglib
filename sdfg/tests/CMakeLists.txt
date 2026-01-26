@@ -40,6 +40,7 @@ set(TEST_FILES
     codegen/utils_test.cpp
     control_flow/state_test.cpp
     control_flow/interstate_edge_test.cpp
+    cutouts/cutouts_test.cpp
     data_flow/access_node_test.cpp
     data_flow/code_node_test.cpp
     data_flow/data_flow_graph_test.cpp
@@ -109,7 +110,6 @@ set(TEST_FILES
     types/sizeof_test.cpp
     types/structure_test.cpp
     types/utils_test.cpp
-    util/cutouts_test.cpp
     visitor/structured_sdfg_visitor_test.cpp
     visualizer/dot_visualizer_test.cpp
     test.cpp

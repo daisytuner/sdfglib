@@ -6,6 +6,7 @@
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/codegen/code_generators/cpp_code_generator.h"
 #include "sdfg/codegen/instrumentation/instrumentation_plan.h"
+#include "sdfg/cutouts/cutouts.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/structured_sdfg.h"
@@ -13,7 +14,6 @@
 #include "sdfg/transformations/loop_tiling.h"
 #include "sdfg/types/pointer.h"
 #include "sdfg/types/type.h"
-#include "sdfg/util/cutouts.h"
 
 using namespace sdfg;
 

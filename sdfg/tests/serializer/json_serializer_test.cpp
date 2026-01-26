@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/codegen/utils.h"
 #include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 #include "sdfg/element.h"
 #include "sdfg/serializer/json_serializer.h"
@@ -137,6 +138,202 @@ TEST(JSONSerializerTest, DatatypeToJSON_Array) {
     EXPECT_EQ(j["alignment"], array_type.alignment());
     EXPECT_TRUE(j.contains("initializer"));
     EXPECT_EQ(j["initializer"], array_type.initializer());
+}
+
+TEST(JSONSerializerTest, DatatypeReferenceToJSON_Scalar) {
+    // Create a sample data type
+    types::Scalar scalar_type(types::PrimitiveType::Int32);
+    nlohmann::json j;
+
+    sdfg::codegen::Reference reference_type(scalar_type);
+
+    sdfg::serializer::JSONSerializer serializer;
+
+    // Serialize the data type to JSON
+    serializer.type_to_json(j, reference_type);
+
+    // Check if the JSON contains the expected keys
+    EXPECT_TRUE(j.contains("type"));
+    EXPECT_EQ(j["type"], "reference");
+    EXPECT_TRUE(j.contains("reference_type"));
+    EXPECT_TRUE(j["reference_type"].contains("type"));
+    EXPECT_EQ(j["reference_type"]["type"], "scalar");
+    EXPECT_TRUE(j["reference_type"].contains("primitive_type"));
+    EXPECT_EQ(j["reference_type"]["primitive_type"], scalar_type.primitive_type());
+    EXPECT_TRUE(j["reference_type"].contains("storage_type"));
+    EXPECT_EQ(j["reference_type"]["storage_type"]["value"].get<std::string>(), scalar_type.storage_type().value());
+    EXPECT_TRUE(j["reference_type"].contains("alignment"));
+    EXPECT_EQ(j["reference_type"]["alignment"], scalar_type.alignment());
+    EXPECT_TRUE(j["reference_type"].contains("initializer"));
+    EXPECT_EQ(j["reference_type"]["initializer"], scalar_type.initializer());
+}
+
+TEST(JSONSerializerTest, JSONToDatatypeReference_Scalar) {
+    types::Scalar scalar_type(types::PrimitiveType::Int32);
+    sdfg::codegen::Reference reference_type(scalar_type);
+
+    sdfg::serializer::JSONSerializer serializer;
+    nlohmann::json j;
+    serializer.type_to_json(j, reference_type);
+
+    auto deserialized = serializer.json_to_type(j);
+    ASSERT_TRUE(deserialized != nullptr);
+    ASSERT_TRUE(dynamic_cast<sdfg::codegen::Reference*>(deserialized.get()) != nullptr);
+
+    auto* ref = dynamic_cast<sdfg::codegen::Reference*>(deserialized.get());
+    EXPECT_TRUE(reference_type == *deserialized);
+    EXPECT_TRUE(dynamic_cast<const types::Scalar*>(&ref->reference_type()) != nullptr);
+    auto& inner = dynamic_cast<const types::Scalar&>(ref->reference_type());
+    EXPECT_EQ(inner.primitive_type(), scalar_type.primitive_type());
+}
+
+TEST(JSONSerializerTest, DatatypeReferenceToJSON_Pointer) {
+    // Create a sample data type
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer pointer_type(base_desc);
+    nlohmann::json j;
+
+    sdfg::codegen::Reference reference_type(pointer_type);
+
+    sdfg::serializer::JSONSerializer serializer;
+
+    // Serialize the data type to JSON
+    serializer.type_to_json(j, reference_type);
+
+    // Check if the JSON contains the expected keys
+    EXPECT_TRUE(j.contains("type"));
+    EXPECT_EQ(j["type"], "reference");
+    EXPECT_TRUE(j.contains("reference_type"));
+    EXPECT_TRUE(j["reference_type"].contains("type"));
+    EXPECT_EQ(j["reference_type"]["type"], "pointer");
+    EXPECT_TRUE(j["reference_type"].contains("pointee_type"));
+    EXPECT_EQ(j["reference_type"]["pointee_type"]["type"], "scalar");
+    EXPECT_EQ(j["reference_type"]["pointee_type"]["primitive_type"], base_desc.primitive_type());
+    EXPECT_TRUE(j["reference_type"].contains("storage_type"));
+    EXPECT_EQ(j["reference_type"]["storage_type"]["value"].get<std::string>(), pointer_type.storage_type().value());
+    EXPECT_TRUE(j["reference_type"].contains("alignment"));
+    EXPECT_EQ(j["reference_type"]["alignment"], pointer_type.alignment());
+    EXPECT_TRUE(j["reference_type"].contains("initializer"));
+    EXPECT_EQ(j["reference_type"]["initializer"], pointer_type.initializer());
+}
+
+TEST(JSONSerializerTest, JSONToDatatypeReference_Pointer) {
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Pointer pointer_type(base_desc);
+    sdfg::codegen::Reference reference_type(pointer_type);
+
+    sdfg::serializer::JSONSerializer serializer;
+    nlohmann::json j;
+    serializer.type_to_json(j, reference_type);
+
+    auto deserialized = serializer.json_to_type(j);
+    ASSERT_TRUE(deserialized != nullptr);
+    ASSERT_TRUE(dynamic_cast<sdfg::codegen::Reference*>(deserialized.get()) != nullptr);
+
+    auto* ref = dynamic_cast<sdfg::codegen::Reference*>(deserialized.get());
+    EXPECT_TRUE(reference_type == *deserialized);
+    EXPECT_TRUE(dynamic_cast<const types::Pointer*>(&ref->reference_type()) != nullptr);
+    auto& inner = dynamic_cast<const types::Pointer&>(ref->reference_type());
+    EXPECT_TRUE(inner.has_pointee_type());
+    EXPECT_EQ(inner.pointee_type().primitive_type(), base_desc.primitive_type());
+}
+
+TEST(JSONSerializerTest, DatatypeReferenceToJSON_Structure) {
+    // Create a sample data type
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Structure structure_type("MyStruct");
+    nlohmann::json j;
+
+    sdfg::serializer::JSONSerializer serializer;
+    sdfg::codegen::Reference reference_type(structure_type);
+
+    // Serialize the data type to JSON
+    serializer.type_to_json(j, reference_type);
+
+    // Check if the JSON contains the expected keys
+    EXPECT_TRUE(j.contains("type"));
+    EXPECT_EQ(j["type"], "reference");
+    EXPECT_TRUE(j.contains("reference_type"));
+    EXPECT_TRUE(j["reference_type"].contains("type"));
+    EXPECT_EQ(j["reference_type"]["type"], "structure");
+    EXPECT_TRUE(j["reference_type"].contains("name"));
+    EXPECT_EQ(j["reference_type"]["name"], "MyStruct");
+    EXPECT_TRUE(j["reference_type"].contains("storage_type"));
+    EXPECT_EQ(j["reference_type"]["storage_type"]["value"].get<std::string>(), structure_type.storage_type().value());
+    EXPECT_TRUE(j["reference_type"].contains("alignment"));
+    EXPECT_EQ(j["reference_type"]["alignment"], structure_type.alignment());
+    EXPECT_TRUE(j["reference_type"].contains("initializer"));
+    EXPECT_EQ(j["reference_type"]["initializer"], structure_type.initializer());
+}
+
+TEST(JSONSerializerTest, JSONToDatatypeReference_Structure) {
+    types::Structure structure_type("MyStruct");
+    sdfg::codegen::Reference reference_type(structure_type);
+
+    sdfg::serializer::JSONSerializer serializer;
+    nlohmann::json j;
+    serializer.type_to_json(j, reference_type);
+
+    auto deserialized = serializer.json_to_type(j);
+    ASSERT_TRUE(deserialized != nullptr);
+    ASSERT_TRUE(dynamic_cast<sdfg::codegen::Reference*>(deserialized.get()) != nullptr);
+
+    auto* ref = dynamic_cast<sdfg::codegen::Reference*>(deserialized.get());
+    EXPECT_TRUE(reference_type == *deserialized);
+    EXPECT_TRUE(dynamic_cast<const types::Structure*>(&ref->reference_type()) != nullptr);
+    auto& inner = dynamic_cast<const types::Structure&>(ref->reference_type());
+    EXPECT_EQ(inner.name(), structure_type.name());
+}
+
+TEST(JSONSerializerTest, DatatypeReferenceToJSON_Array) {
+    // Create a sample data type
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Array array_type(base_desc, {symbolic::symbol("N")});
+    nlohmann::json j;
+    sdfg::codegen::Reference reference_type(array_type);
+
+    sdfg::serializer::JSONSerializer serializer;
+
+    // Serialize the data type to JSON
+    serializer.type_to_json(j, reference_type);
+
+    // Check if the JSON contains the expected keys
+    EXPECT_TRUE(j.contains("type"));
+    EXPECT_EQ(j["type"], "reference");
+    EXPECT_TRUE(j.contains("reference_type"));
+    EXPECT_TRUE(j["reference_type"].contains("type"));
+    EXPECT_EQ(j["reference_type"]["type"], "array");
+    EXPECT_EQ(j["reference_type"]["element_type"]["type"], "scalar");
+    EXPECT_EQ(j["reference_type"]["element_type"]["primitive_type"], base_desc.primitive_type());
+    EXPECT_TRUE(j["reference_type"].contains("num_elements"));
+    EXPECT_TRUE(symbolic::eq(SymEngine::Expression(j["reference_type"]["num_elements"]), symbolic::symbol("N")));
+    EXPECT_TRUE(j["reference_type"].contains("storage_type"));
+    EXPECT_EQ(j["reference_type"]["storage_type"]["value"].get<std::string>(), array_type.storage_type().value());
+    EXPECT_TRUE(j["reference_type"].contains("alignment"));
+    EXPECT_EQ(j["reference_type"]["alignment"], array_type.alignment());
+    EXPECT_TRUE(j["reference_type"].contains("initializer"));
+    EXPECT_EQ(j["reference_type"]["initializer"], array_type.initializer());
+}
+
+TEST(JSONSerializerTest, JSONToDatatypeReference_Array) {
+    types::Scalar base_desc(types::PrimitiveType::Float);
+    types::Array array_type(base_desc, {symbolic::symbol("N")});
+    sdfg::codegen::Reference reference_type(array_type);
+
+    sdfg::serializer::JSONSerializer serializer;
+    nlohmann::json j;
+    serializer.type_to_json(j, reference_type);
+
+    auto deserialized = serializer.json_to_type(j);
+    ASSERT_TRUE(deserialized != nullptr);
+    ASSERT_TRUE(dynamic_cast<sdfg::codegen::Reference*>(deserialized.get()) != nullptr);
+
+    auto* ref = dynamic_cast<sdfg::codegen::Reference*>(deserialized.get());
+    EXPECT_TRUE(reference_type == *deserialized);
+    EXPECT_TRUE(dynamic_cast<const types::Array*>(&ref->reference_type()) != nullptr);
+    auto& inner = dynamic_cast<const types::Array&>(ref->reference_type());
+    EXPECT_EQ(inner.element_type().primitive_type(), base_desc.primitive_type());
+    EXPECT_TRUE(sdfg::symbolic::eq(inner.num_elements(), array_type.num_elements()));
 }
 
 TEST(JSONSerializerTest, DatatypeToJSON_Function) {
