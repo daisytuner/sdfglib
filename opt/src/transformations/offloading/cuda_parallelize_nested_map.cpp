@@ -95,14 +95,36 @@ void CUDAParallelizeNestedMap::to_json(nlohmann::json& j) const {
         throw std::runtime_error("CUDAParallelizeNestedMap transformation does not support for-loops.");
     }
     j["transformation_type"] = this->name();
+
+    // Describe the subgraph in a form compatible with EmbeddingRecorder/EmbeddingReplayer.
+    // Keep the existing "loop" and "block_size" fields for backward compatibility.
+    j["subgraph"] = {{"0", {{"element_id", loop_.element_id()}, {"type", "map"}}}};
+
+    j["parameters"] = {{"block_size", block_size_}};
+
     j["loop"] = loop_.element_id();
     j["block_size"] = block_size_;
 }
 
 CUDAParallelizeNestedMap CUDAParallelizeNestedMap::
     from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j) {
-    auto loop_id = j["loop"].get<size_t>();
-    size_t block_size = j["block_size"].get<size_t>();
+    // Prefer the embedding-compatible representation (subgraph/parameters),
+    // but fall back to legacy fields (loop/block_size) if needed.
+    size_t loop_id;
+    if (j.contains("subgraph")) {
+        const auto& subgraph = j.at("subgraph");
+        const auto& node_desc = subgraph.at("0");
+        loop_id = node_desc.at("element_id").get<size_t>();
+    } else {
+        loop_id = j.at("loop").get<size_t>();
+    }
+
+    size_t block_size;
+    if (j.contains("parameters") && j.at("parameters").contains("block_size")) {
+        block_size = j.at("parameters").at("block_size").get<size_t>();
+    } else {
+        block_size = j.at("block_size").get<size_t>();
+    }
     auto element = builder.find_element_by_id(loop_id);
     if (!element) {
         throw InvalidTransformationDescriptionException("Element with ID " + std::to_string(loop_id) + " not found.");

@@ -7,7 +7,8 @@ find_package(CURL REQUIRED)
 
 set(SOURCE_FILES
     src/passes/rpc/rpc_context.cpp
-    src/transformations/local_transfertuning_transform.cpp
+    src/passes/rpc/rpc_loop_opt.cpp
+    src/transformations/rpc_node_transform.cpp
     src/util/utils_curl.cpp
 )
 add_library(sdfgrpc
@@ -40,7 +41,12 @@ if(SDFG_ENABLE_COVERAGE)
   )
 endif()
 
-target_link_libraries(sdfgrpc PUBLIC sdfg::sdfg CURL::libcurl)
+target_include_directories(sdfgrpc
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+
+target_link_libraries(sdfgrpc PUBLIC sdfg::sdfg sdfg::opt CURL::libcurl)
 set_target_properties(sdfgrpc PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}

@@ -7,7 +7,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 set(TEST_FILES
-    
+    transformations/rpc_node_transform_test.cpp
     test.cpp
 )
 

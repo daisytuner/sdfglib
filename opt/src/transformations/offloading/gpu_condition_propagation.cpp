@@ -122,11 +122,23 @@ std::string GPUConditionPropagation::name() const { return "GPUConditionPropagat
 
 void GPUConditionPropagation::to_json(nlohmann::json& j) const {
     j["transformation_type"] = this->name();
+
+    j["subgraph"] = {{"0", {{"element_id", this->map_.element_id()}, {"type", "map"}}}};
+
+    // Legacy field for backward compatibility
     j["map_element_id"] = this->map_.element_id();
 }
 
-static GPUConditionPropagation from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j) {
-    auto map_id = j["map_element_id"].get<size_t>();
+GPUConditionPropagation GPUConditionPropagation::
+    from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j) {
+    size_t map_id;
+    if (j.contains("subgraph")) {
+        const auto& node_desc = j.at("subgraph").at("0");
+        map_id = node_desc.at("element_id").get<size_t>();
+    } else {
+        map_id = j.at("map_element_id").get<size_t>();
+    }
+
     auto element = builder.find_element_by_id(map_id);
     if (!element) {
         throw InvalidTransformationDescriptionException("Element with ID " + std::to_string(map_id) + " not found.");
