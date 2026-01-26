@@ -19,7 +19,7 @@
 #include <sdfg/passes/dataflow/constant_propagation.h>
 #include <sdfg/passes/dataflow/dead_data_elimination.h>
 #include <sdfg/passes/normalization/normalization.h>
-#include <sdfg/passes/offloading/blas2cublas_pass.h>
+#include <sdfg/passes/offloading/cuda_library_node_rewriter_pass.h>
 #include <sdfg/passes/opt_pipeline.h>
 #include <sdfg/passes/pipeline.h>
 #include <sdfg/passes/scheduler/cuda_scheduler.h>
@@ -284,8 +284,8 @@ void PyStructuredSDFG::schedule(const std::string& target, const std::string& ca
         sdfg::passes::scheduler::CUDAScheduler cuda_scheduler;
         cuda_scheduler.run(builder, analysis_manager);
 
-        sdfg::cuda::Blas2CuBlasPass blas2cublas_pass;
-        blas2cublas_pass.run(builder, analysis_manager);
+        sdfg::cuda::CudaLibraryNodeRewriterPass cuda_library_node_rewriter_pass;
+        cuda_library_node_rewriter_pass.run(builder, analysis_manager);
     }
 }
 

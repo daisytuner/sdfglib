@@ -11,7 +11,7 @@ set(SOURCE_FILES
     src/analysis/scop_analysis.cpp
     src/passes/normalization/perfect_loop_distribution.cpp
     src/passes/normalization/stride_minimization.cpp
-    src/passes/offloading/blas2cublas_pass.cpp
+    src/passes/offloading/cuda_library_node_rewriter_pass.cpp
     src/passes/offloading/code_motion/block_hoisting.cpp
     src/passes/offloading/code_motion/block_sorting.cpp
     src/passes/offloading/data_transfer_minimization_pass.cpp

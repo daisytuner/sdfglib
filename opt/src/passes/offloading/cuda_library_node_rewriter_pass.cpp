@@ -1,4 +1,4 @@
-#include "sdfg/passes/offloading/blas2cublas_pass.h"
+#include "sdfg/passes/offloading/cuda_library_node_rewriter_pass.h"
 
 #include "sdfg/data_flow/library_nodes/math/math.h"
 #include "sdfg/targets/cuda/cuda.h"
@@ -21,10 +21,11 @@ try_library_node_implementation(const data_flow::LibraryNodeCode& code, types::P
     }
 }
 
-Blas2CuBlas::Blas2CuBlas(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
+CudaLibraryNodeRewriter::
+    CudaLibraryNodeRewriter(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager)
     : visitor::StructuredSDFGVisitor(builder, analysis_manager) {}
 
-bool Blas2CuBlas::accept(structured_control_flow::Block& node) {
+bool CudaLibraryNodeRewriter::accept(structured_control_flow::Block& node) {
     auto& dataflow = node.dataflow();
     for (auto& library_node : dataflow.nodes()) {
         if (auto lib_node = dynamic_cast<math::blas::BLASNode*>(&library_node)) {
