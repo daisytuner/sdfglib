@@ -150,36 +150,40 @@ void GEMMNodeDispatcher_CUBLASWithoutTransfers::dispatch_code(
     create_blas_handle(stream, this->language_extension_);
     stream << "cublasStatus_t err;" << std::endl;
 
-    bool invert_transpose = false;
     auto first_dim = gemm_node.m();
     auto second_dim = gemm_node.n();
+    auto first_mat = "A";
+    auto second_mat = "B";
+    auto ld_first = gemm_node.lda();
+    auto ld_second = gemm_node.ldb();
+    auto ldc = gemm_node.ldc();
+    auto trans_first = gemm_node.trans_a();
+    auto trans_second = gemm_node.trans_b();
     if (gemm_node.layout() == sdfg::math::blas::BLAS_Layout::RowMajor) {
-        invert_transpose = true;
         first_dim = gemm_node.n();
         second_dim = gemm_node.m();
+        first_mat = "B";
+        second_mat = "A";
+        ldc = gemm_node.n();
+        trans_first = gemm_node.trans_b();
+        trans_second = gemm_node.trans_a();
+        ld_first = (trans_first == sdfg::math::blas::BLAS_Transpose::No) ? gemm_node.n() : gemm_node.k();
+        ld_second = (trans_second == sdfg::math::blas::BLAS_Transpose::No) ? gemm_node.k() : gemm_node.m();
     }
 
-    auto trans_a = gemm_node.trans_a();
-    auto trans_b = gemm_node.trans_b();
-    if (invert_transpose) {
-        trans_a = (trans_a == sdfg::math::blas::BLAS_Transpose::No) ? sdfg::math::blas::BLAS_Transpose::Trans
-                                                                    : sdfg::math::blas::BLAS_Transpose::No;
-        trans_b = (trans_b == sdfg::math::blas::BLAS_Transpose::No) ? sdfg::math::blas::BLAS_Transpose::Trans
-                                                                    : sdfg::math::blas::BLAS_Transpose::No;
-    }
+    std::string trans_first_str = (trans_first == sdfg::math::blas::BLAS_Transpose::No) ? "CUBLAS_OP_N" : "CUBLAS_OP_T";
+    std::string trans_second_str = (trans_second == sdfg::math::blas::BLAS_Transpose::No) ? "CUBLAS_OP_N"
+                                                                                          : "CUBLAS_OP_T";
 
-    std::string trans_a_str = (trans_a == sdfg::math::blas::BLAS_Transpose::No) ? "CUBLAS_OP_N" : "CUBLAS_OP_T";
-    std::string trans_b_str = (trans_b == sdfg::math::blas::BLAS_Transpose::No) ? "CUBLAS_OP_N" : "CUBLAS_OP_T";
-
-    stream << "err = cublas" << type << "gemm(handle, " << trans_a_str << ", " << trans_b_str << ", "
+    stream << "err = cublas" << type << "gemm(handle, " << trans_first_str << ", " << trans_second_str << ", "
            << this->language_extension_.expression(first_dim) << ", "
            << this->language_extension_.expression(second_dim) << ", "
            << this->language_extension_.expression(gemm_node.k()) << ", "
            << "&__alpha, "
-           << "__A, " << this->language_extension_.expression(gemm_node.lda()) << ", "
-           << "__B, " << this->language_extension_.expression(gemm_node.ldb()) << ", "
+           << "d" << first_mat << ", " << this->language_extension_.expression(ld_first) << ", "
+           << "d" << second_mat << ", " << this->language_extension_.expression(ld_second) << ", "
            << "&__beta, "
-           << "__C, " << this->language_extension_.expression(gemm_node.ldc()) << ");" << std::endl;
+           << "dC, " << this->language_extension_.expression(ldc) << ");" << std::endl;
     cublas_error_checking(stream, this->language_extension_, "err");
     check_cuda_kernel_launch_errors(stream, this->language_extension_);
 
