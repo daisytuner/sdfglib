@@ -22,6 +22,8 @@ steps:
 
     pip install --no-build-isolation -v -e python/
 
+    export DOCC_CI=regions
+
   run:
     adi_numpy:
       command: venv/bin/python3 python/benchmarks/npbench/polybench/test_adi.py --numpy --size=M
