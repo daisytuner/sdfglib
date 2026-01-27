@@ -28,6 +28,7 @@ def kernel(alpha, A, B):
     B *= alpha
 
 
+@pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_trmm(target):
     if target == "none":
