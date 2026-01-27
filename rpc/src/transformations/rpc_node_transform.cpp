@@ -135,6 +135,18 @@ RPCNodeTransform::RPCNodeTransform(
 
 std::string RPCNodeTransform::name() const { return "RPCNodeTransform"; }
 
+bool RPCNodeTransform::can_apply_opt_sdfg(std::optional<passes::rpc::RpcSdfgResult>& opt_sdfg) const {
+    return opt_sdfg.has_value();
+}
+
+bool RPCNodeTransform::can_apply_replay(std::optional<passes::rpc::RpcLocalReplayRecipe>& replay) const {
+    if (replay.has_value()) {
+        return false;
+    } else {
+        return false;
+    }
+}
+
 std::string RPCNodeTransform::get_node_id_str() const { return std::to_string(this->node_.element_id()); }
 
 bool RPCNodeTransform::
@@ -165,22 +177,21 @@ bool RPCNodeTransform::
         rpc_context_
     );
     if (std::holds_alternative<std::unique_ptr<passes::rpc::RpcOptResponse>>(opt_resp)) {
-        this->applied_opt_ = std::move(std::get<std::unique_ptr<passes::rpc::RpcOptResponse>>(opt_resp));
+        this->opt_resp_ = std::move(std::get<std::unique_ptr<passes::rpc::RpcOptResponse>>(opt_resp));
     }
-    bool can_apply = this->applied_opt_ != nullptr && (this->applied_opt_->sdfg_result.has_value());
+    bool can_apply = this->opt_resp_ != nullptr && (can_apply_opt_sdfg(this->opt_resp_->sdfg_result) ||
+                                                    can_apply_replay(this->opt_resp_->local_replay));
     if (report_) {
         if (!can_apply) {
-            if (report_) {
-                std::string error_msg;
-                if (std::holds_alternative<std::string>(opt_resp)) {
-                    error_msg = std::get<std::string>(opt_resp);
-                } else if (this->applied_opt_->error.has_value()) {
-                    error_msg = this->applied_opt_->error.value();
-                }
-                report_->transform_impossible(
-                    this->name(), "No opt. SDFG received (" + get_node_id_str() + ", " + error_msg + ")"
-                );
+            std::string error_msg;
+            if (std::holds_alternative<std::string>(opt_resp)) {
+                error_msg = std::get<std::string>(opt_resp);
+            } else if (this->opt_resp_->error.has_value()) {
+                error_msg = this->opt_resp_->error.value();
             }
+            report_->transform_impossible(
+                this->name(), "No opt. SDFG received (" + get_node_id_str() + ", " + error_msg + ")"
+            );
         }
     }
     return can_apply;
@@ -188,27 +199,40 @@ bool RPCNodeTransform::
 
 void RPCNodeTransform::
     apply(sdfg::builder::StructuredSDFGBuilder& builder, sdfg::analysis::AnalysisManager& analysis_manager) {
-    auto& opt = *this->applied_opt_;
+    auto& opt = *this->opt_resp_;
 
-    if (!opt.sdfg_result.has_value()) {
-        throw std::runtime_error("RPCNodeTransform: No SDFG result to apply.");
+    if (!opt.sdfg_result.has_value() && !opt.local_replay.has_value()) {
+        throw std::runtime_error("RPCNodeTransform: No SDFG result or replay to apply.");
     }
-    // Apply SDFG result
 
-    auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
-    auto parent_scope = static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&this->node_));
-    size_t index = parent_scope->index(this->node_);
+    if (opt.sdfg_result.has_value()) {
+        auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
+        auto parent_scope = static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&this->node_));
+        size_t index = parent_scope->index(this->node_);
 
-    // this consumes the SDFG result
+        // this consumes the SDFG result
 
-    // TODO: add transitions from after loop to tmp_scope
-    auto& tmp_scope = builder.add_sequence_before(*parent_scope, this->node_, {}, this->node_.debug_info());
-    builder.move_child(*parent_scope, index + 1, tmp_scope);
+        // TODO: add transitions from after loop to tmp_scope
+        auto& tmp_scope = builder.add_sequence_before(*parent_scope, this->node_, {}, this->node_.debug_info());
+        builder.move_child(*parent_scope, index + 1, tmp_scope);
 
-    builder.move_children(opt.sdfg_result->sdfg->root(), tmp_scope);
-    builder.remove_child(*parent_scope, index + 1);
+        builder.move_children(opt.sdfg_result->sdfg->root(), tmp_scope);
+        builder.remove_child(*parent_scope, index + 1);
 
-    opt.sdfg_result->sdfg.reset();
+        opt.sdfg_result->sdfg.reset();
+    } else if (opt.local_replay.has_value()) {
+        try {
+            Replayer replayer;
+            replayer.replay(builder, analysis_manager, opt.local_replay.value().sequence, false);
+        } catch (const std::exception& e) {
+            std::cerr << "[ERROR] Failed to replay rpc optimization: " << e.what() << std::endl;
+            if (report_) {
+                report_
+                    ->transform_impossible(this->name(), "Failed to replay local optimization: " + std::string(e.what()));
+            }
+            return;
+        }
+    }
 
     if (report_) {
         nlohmann::json j;
@@ -253,12 +277,12 @@ void RPCNodeTransform::
 
 void RPCNodeTransform::to_json(nlohmann::json& j) const {
     j["transformation_type"] = name();
-    nlohmann::json params = {{"target", target_}, {"category", category_}, {"speedup", applied_opt_->metadata.speedup}};
-    if (applied_opt_->metadata.region_id.has_value()) {
-        params["region_id"] = applied_opt_->metadata.region_id.value();
+    nlohmann::json params = {{"target", target_}, {"category", category_}, {"speedup", opt_resp_->metadata.speedup}};
+    if (opt_resp_->metadata.region_id.has_value()) {
+        params["region_id"] = opt_resp_->metadata.region_id.value();
     }
-    if (applied_opt_->metadata.vector_distance.has_value()) {
-        params["vector_distance"] = applied_opt_->metadata.vector_distance.value();
+    if (opt_resp_->metadata.vector_distance.has_value()) {
+        params["vector_distance"] = opt_resp_->metadata.vector_distance.value();
     };
     j["parameters"] = params;
 }
