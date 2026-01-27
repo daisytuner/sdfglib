@@ -78,6 +78,8 @@ void GEMMNodeDispatcher_CUBLASWithTransfers::dispatch_code(
     cuda_error_checking(stream, this->language_extension_, "err_cuda");
     stream << "err_cuda = cudaMemcpy(dB, __B, " << size_B << ", cudaMemcpyHostToDevice);" << std::endl;
     cuda_error_checking(stream, this->language_extension_, "err_cuda");
+    stream << "err_cuda = cudaMemcpy(dC, __C, " << size_C << ", cudaMemcpyHostToDevice);" << std::endl;
+    cuda_error_checking(stream, this->language_extension_, "err_cuda");
 
     create_blas_handle(stream, this->language_extension_);
 
