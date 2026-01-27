@@ -375,10 +375,10 @@ std::string PyStructuredSDFG::
             cmd << " -I" << package_include_path_str;
         }
         if (lib_file.ends_with(".cu")) {
-            cmd << " -x cuda --cuda-gpu-arch=sm_70 --cuda-path=/usr/local/cuda";
+            cmd << " -x cuda --cuda-gpu-arch=sm_70";
             has_cuda_lib = true;
         }
-        cmd << " -I/usr/local/cuda/include";
+        cmd << " --cuda-path=/usr/local/cuda";
 
         cmd << " " << lib_file;
         cmd << " -o " << object_file;
