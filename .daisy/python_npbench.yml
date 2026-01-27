@@ -16,9 +16,11 @@ steps:
     python3 -m venv venv
     . venv/bin/activate
 
-    pip install pybind11 numpy scipy build pytest
+    python -m pip install --upgrade pip
+    pip install pybind11 pytest coverage black==25.9.0 build scikit-build-core
+    pip install numpy scipy
 
-    pip install python/
+    pip install --no-build-isolation -v -e python/
 
   run:
     adi_numpy:
