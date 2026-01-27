@@ -378,6 +378,8 @@ std::string PyStructuredSDFG::
             cmd << " -x cuda --cuda-gpu-arch=sm_70 --cuda-path=/usr/local/cuda";
             has_cuda_lib = true;
         }
+        cmd << " -I/usr/local/cuda/include";
+
         cmd << " " << lib_file;
         cmd << " -o " << object_file;
         if (name.starts_with("highway_")) {
