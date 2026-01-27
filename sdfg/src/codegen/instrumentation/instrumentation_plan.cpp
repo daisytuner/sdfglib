@@ -24,8 +24,21 @@ void InstrumentationPlan::begin_instrumentation(
 ) const {
     auto& metadata = sdfg_.metadata();
     std::string sdfg_name = sdfg_.name();
-    std::string sdfg_file = metadata.at("sdfg_file");
-    std::string arg_capture_path = metadata.at("arg_capture_path");
+
+    std::string sdfg_file;
+    if (auto it = metadata.find("sdfg_file"); it != metadata.end()) {
+        sdfg_file = it->second;
+    } else {
+        sdfg_file = "";
+    }
+
+    std::string arg_capture_path;
+    if (auto it = metadata.find("arg_capture_path"); it != metadata.end()) {
+        arg_capture_path = it->second;
+    } else {
+        arg_capture_path = "";
+    }
+
     std::string features_file;
     if (auto it = metadata.find("features_file"); it != metadata.end()) {
         features_file = it->second;
@@ -33,7 +46,13 @@ void InstrumentationPlan::begin_instrumentation(
         features_file = "";
     }
 
-    std::string opt_report_file = metadata.at("opt_report_file");
+    std::string opt_report_file;
+    if (auto it = metadata.find("opt_report_file"); it != metadata.end()) {
+        opt_report_file = it->second;
+    } else {
+        opt_report_file = "";
+    }
+
 
     std::string region_uuid = sdfg_name + "_" + std::to_string(node.element_id());
 
