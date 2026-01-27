@@ -19,6 +19,9 @@ def _compile_wrapper(self, output_folder=None):
 
 StructuredSDFG.compile = _compile_wrapper
 
+# Global RPC context for scheduling SDFGs
+sdfg_rpc_context = None
+
 
 def _map_python_type(dtype):
     # If it is already a sdfg Type, return it
@@ -221,7 +224,7 @@ class DoccProgram:
 
         # Schedule if target is specified
         if self.target != "none":
-            sdfg.schedule(self.target, self.category)
+            sdfg.schedule(self.target, self.category, sdfg_rpc_context)
 
         self.last_sdfg = sdfg
 

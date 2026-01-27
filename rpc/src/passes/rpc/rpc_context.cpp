@@ -6,55 +6,69 @@
 
 namespace sdfg::passes::rpc {
 
-std::unique_ptr<RpcContext> build_rpc_context_local() {
-    return std::make_unique<SimpleRpcContext>("http://localhost:8080/docc", "transfertune");
+std::unique_ptr<SimpleRpcContext> SimpleRpcContextBuilder::build(bool print) const {
+    if (server.empty()) {
+        throw std::runtime_error("No server configured");
+    }
+    if (print) {
+        std::cerr << "[INFO] Using RPC target " << server << "/" << endpoint << ", headers: [";
+        for (const auto& key : headers | std::views::keys) {
+            std::cerr << key << ", ";
+        }
+        std::cerr << "]" << std::endl;
+    }
+    return std::make_unique<SimpleRpcContext>(server, endpoint, headers);
 }
 
-std::unique_ptr<RpcContext> build_rpc_context_from_file(std::optional<std::filesystem::path> config_file) {
-    std::filesystem::path cfg_path;
+SimpleRpcContextBuilder& SimpleRpcContextBuilder::initialize_local_default() {
+    this->server = "http://localhost:8080/docc";
+    this->endpoint = "transfertune";
 
-    if (!config_file) {
-        auto envVar = std::getenv("SDFG_RPC_CONFIG");
-        if (envVar && *envVar) {
-            cfg_path = std::filesystem::path(envVar);
-        }
-    } else {
-        cfg_path = *config_file;
+    return *this;
+}
+
+SimpleRpcContextBuilder& SimpleRpcContextBuilder::from_file(std::filesystem::path config_file) {
+    std::ifstream in(config_file);
+
+    if (!in) {
+        throw std::runtime_error("Config file not readable: " + config_file.string());
     }
 
-    std::string server = "http://localhost:8080/docc";
-    std::string endpoint = "transfertune";
-    std::unordered_map<std::string, std::string> headers;
+    nlohmann::json j;
+    in >> j;
 
-    if (!cfg_path.empty()) {
-        std::ifstream in(cfg_path);
-        if (!in) {
-            throw std::runtime_error("Config file not readable: " + cfg_path.string());
-        }
+    auto serverJ = j.find("SERVER");
+    if (serverJ != j.end() && serverJ->is_string()) {
+        server = serverJ->get<std::string>();
+    }
+    auto endpointJ = j.find("ENDPOINT");
+    if (endpointJ != j.end() && endpointJ->is_string()) {
+        endpoint = endpointJ->get<std::string>();
+    }
 
-        nlohmann::json j;
-        in >> j;
-
-        auto serverJ = j.find("SERVER");
-        if (serverJ != j.end() && serverJ->is_string()) {
-            server = serverJ->get<std::string>();
-        }
-        auto endpointJ = j.find("ENDPOINT");
-        if (endpointJ != j.end() && endpointJ->is_string()) {
-            endpoint = endpointJ->get<std::string>();
-        }
-
-        auto headersJ = j.find("HEADERS");
-        if (headersJ != j.end() && headersJ->is_object()) {
-            for (auto& [key, value] : headersJ->items()) {
-                if (value.is_string()) {
-                    headers[key] = value.get<std::string>();
-                }
+    auto headersJ = j.find("HEADERS");
+    if (headersJ != j.end() && headersJ->is_object()) {
+        for (auto& [key, value] : headersJ->items()) {
+            if (value.is_string()) {
+                headers[key] = value.get<std::string>();
             }
         }
     }
 
-    auto headerOverrideVar = std::getenv("RPC_HEADER");
+    return *this;
+}
+
+SimpleRpcContextBuilder& SimpleRpcContextBuilder::from_env(std::string env_var) {
+    auto envVar = std::getenv(env_var.c_str());
+    if (envVar && *envVar) {
+        auto cfg_path = std::filesystem::path(envVar);
+        from_file(envVar);
+    }
+    return *this;
+}
+
+SimpleRpcContextBuilder& SimpleRpcContextBuilder::from_header_env(std::string env_var) {
+    auto headerOverrideVar = std::getenv(env_var.c_str());
     if (headerOverrideVar && *headerOverrideVar) {
         std::string headerOverride = headerOverrideVar;
         auto idx = headerOverride.find_first_of(':');
@@ -66,14 +80,7 @@ std::unique_ptr<RpcContext> build_rpc_context_from_file(std::optional<std::files
             headers["RPC-Hint"] = headerOverride;
         }
     }
-
-    std::cerr << "[INFO] Using RPC target " << server << "/" << endpoint << ", headers: [";
-    for (const auto& [key, value] : headers) {
-        std::cerr << key << ", ";
-    }
-    std::cerr << "]" << std::endl;
-
-    return std::make_unique<SimpleRpcContext>(server, endpoint, headers);
+    return *this;
 }
 
 // // Optional testing headers: allow pointing the local server at JSON fixture files.

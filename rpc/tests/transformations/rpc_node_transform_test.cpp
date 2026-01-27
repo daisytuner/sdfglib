@@ -25,12 +25,13 @@ protected:
     nlohmann::json desc_;
 
     void SetUp() override {
-        if (false) {
-            ctx_ = std::make_unique<passes::rpc::SimpleRpcContext>("http://localhost:8080/docc", "/transfertune");
-        } else {
-            ctx_ = passes::rpc::build_rpc_context_from_file(); // defaults to local unless $SDFG_RPC_CONFIG is set. Also
-                                                               // respects RPC_HEADER
-        }
+        passes::rpc::SimpleRpcContextBuilder ctxBuilder;
+        ctx_ = ctxBuilder
+                   .initialize_local_default() // localhost:8080/docc
+                   .from_env() // $SDFG_RPC_CONFIG can override
+                   .from_header_env() // $RPC_HEADER can override/add headers
+                   .build();
+
 
         builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU);
 
