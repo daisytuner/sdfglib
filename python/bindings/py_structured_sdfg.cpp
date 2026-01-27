@@ -19,6 +19,7 @@
 #include <sdfg/passes/dataflow/constant_propagation.h>
 #include <sdfg/passes/dataflow/dead_data_elimination.h>
 #include <sdfg/passes/normalization/normalization.h>
+#include <sdfg/passes/offloading/cuda_library_node_rewriter_pass.h>
 #include <sdfg/passes/opt_pipeline.h>
 #include <sdfg/passes/pipeline.h>
 #include <sdfg/passes/scheduler/cuda_scheduler.h>
@@ -282,6 +283,9 @@ void PyStructuredSDFG::schedule(const std::string& target, const std::string& ca
     else if (target == "cuda") {
         sdfg::passes::scheduler::CUDAScheduler cuda_scheduler;
         cuda_scheduler.run(builder, analysis_manager);
+
+        sdfg::cuda::CudaLibraryNodeRewriterPass cuda_library_node_rewriter_pass;
+        cuda_library_node_rewriter_pass.run(builder, analysis_manager);
     }
 }
 
@@ -374,6 +378,7 @@ std::string PyStructuredSDFG::
             cmd << " -x cuda --cuda-gpu-arch=sm_70 --cuda-path=/usr/local/cuda";
             has_cuda_lib = true;
         }
+
         cmd << " " << lib_file;
         cmd << " -o " << object_file;
         if (name.starts_with("highway_")) {
@@ -395,7 +400,7 @@ std::string PyStructuredSDFG::
             cmd << " -L" << package_path_str;
             cmd << " -I" << package_include_path_str;
         }
-        if (has_cuda_lib) {
+        if (has_cuda_lib || true) {
             cmd << " -x cuda -lcuda";
         }
         cmd << " " << source_path.string();
@@ -428,6 +433,7 @@ std::string PyStructuredSDFG::
     cmd << " -lblas";
     cmd << " -lm";
     cmd << " /usr/local/cuda/lib64/libcudart.so";
+    cmd << " /usr/local/cuda/lib64/libcublas.so";
     cmd << " -o " << lib_path.string();
 
 

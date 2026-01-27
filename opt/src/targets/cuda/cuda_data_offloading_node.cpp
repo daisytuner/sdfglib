@@ -146,23 +146,29 @@ void CUDADataOffloadingNodeDispatcher::dispatch_code(
     // stream << "cudaSetDevice(" << this->language_extension_.expression(offloading_node.device_id()) << ");"
     //        << std::endl;
 
+    stream << "cudaError_t err;" << std::endl;
+
     if (offloading_node.is_alloc()) {
-        stream << "cudaMalloc(&" << offloading_node.output(0) << ", "
+        stream << "err = cudaMalloc(&" << offloading_node.output(0) << ", "
                << this->language_extension_.expression(offloading_node.size()) << ");" << std::endl;
+        cuda_error_checking(stream, this->language_extension_, "err");
     }
 
     if (offloading_node.is_h2d()) {
-        stream << "cudaMemcpy(" << offloading_node.output(0) << ", " << offloading_node.input(0) << ", "
+        stream << "err = cudaMemcpy(" << offloading_node.output(0) << ", " << offloading_node.input(0) << ", "
                << this->language_extension_.expression(offloading_node.size()) << ", cudaMemcpyHostToDevice);"
                << std::endl;
+        cuda_error_checking(stream, this->language_extension_, "err");
     } else if (offloading_node.is_d2h()) {
-        stream << "cudaMemcpy(" << offloading_node.output(0) << ", " << offloading_node.input(0) << ", "
+        stream << "err = cudaMemcpy(" << offloading_node.output(0) << ", " << offloading_node.input(0) << ", "
                << this->language_extension_.expression(offloading_node.size()) << ", cudaMemcpyDeviceToHost);"
                << std::endl;
+        cuda_error_checking(stream, this->language_extension_, "err");
     }
 
     if (offloading_node.is_free()) {
-        stream << "cudaFree(" << offloading_node.input(0) << ");" << std::endl;
+        stream << "err = cudaFree(" << offloading_node.input(0) << ");" << std::endl;
+        cuda_error_checking(stream, this->language_extension_, "err");
     }
 }
 
