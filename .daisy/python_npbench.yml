@@ -18,8 +18,7 @@ steps:
 
     pip install pybind11 numpy scipy build pytest
 
-    cd python/
-    pip install .
+    pip install python/
 
   run:
     adi_numpy:
