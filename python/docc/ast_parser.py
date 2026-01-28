@@ -647,7 +647,7 @@ class ASTParser(ast.NodeVisitor):
                     if start_str.startswith("-"):
                         shapes = self.array_info[target_name].get("shapes", [])
                         dim_size = (
-                            shapes[i]
+                            str(shapes[i])
                             if i < len(shapes)
                             else f"_{target_name}_shape_{i}"
                         )
@@ -661,7 +661,7 @@ class ASTParser(ast.NodeVisitor):
                     if stop_str.startswith("-") or stop_str.startswith("(-"):
                         shapes = self.array_info[target_name].get("shapes", [])
                         dim_size = (
-                            shapes[i]
+                            str(shapes[i])
                             if i < len(shapes)
                             else f"_{target_name}_shape_{i}"
                         )
@@ -669,7 +669,9 @@ class ASTParser(ast.NodeVisitor):
                 else:
                     shapes = self.array_info[target_name].get("shapes", [])
                     stop_str = (
-                        shapes[i] if i < len(shapes) else f"_{target_name}_shape_{i}"
+                        str(shapes[i])
+                        if i < len(shapes)
+                        else f"_{target_name}_shape_{i}"
                     )
 
                 step_str = "1"

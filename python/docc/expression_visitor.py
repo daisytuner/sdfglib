@@ -1020,6 +1020,180 @@ class ExpressionVisitor(ast.NodeVisitor):
 
         raise NotImplementedError(f"Attribute access {node.attr} not supported")
 
+    def _handle_expression_slicing(self, node, value_str, indices_nodes, shapes, ndim):
+        """Handle slicing in expressions (e.g., arr[1:, :, k+1]).
+
+        Creates a temporary array, generates loops to copy sliced data,
+        and returns the temporary array name.
+        """
+        if not self.builder:
+            raise ValueError("Builder required for expression slicing")
+
+        # Determine element type from source array
+        dtype = Scalar(PrimitiveType.Double)
+        if value_str in self.symbol_table:
+            t = self.symbol_table[value_str]
+            if isinstance(t, Pointer) and t.has_pointee_type():
+                dtype = t.pointee_type
+
+        # Analyze each dimension: is it a slice or an index?
+        # For slices, compute the resulting shape dimension
+        # For indices, that dimension is collapsed
+        result_shapes = []  # Shape of the resulting array
+        slice_info = []  # List of (dim_idx, start_str, stop_str, step_str) for slices
+        index_info = []  # List of (dim_idx, index_str) for point indices
+
+        for i, idx in enumerate(indices_nodes):
+            shape_val = shapes[i] if i < len(shapes) else f"_{value_str}_shape_{i}"
+
+            if isinstance(idx, ast.Slice):
+                # Parse slice bounds
+                start_str = "0"
+                if idx.lower is not None:
+                    start_str = self.visit(idx.lower)
+                    # Handle negative indices
+                    if start_str.startswith("-") or start_str.startswith("(-"):
+                        start_str = f"({shape_val} + {start_str})"
+
+                stop_str = str(shape_val)
+                if idx.upper is not None:
+                    stop_str = self.visit(idx.upper)
+                    # Handle negative indices
+                    if stop_str.startswith("-") or stop_str.startswith("(-"):
+                        stop_str = f"({shape_val} + {stop_str})"
+
+                step_str = "1"
+                if idx.step is not None:
+                    step_str = self.visit(idx.step)
+
+                # Compute the size of this dimension in the result
+                dim_size = f"({stop_str} - {start_str})"
+                result_shapes.append(dim_size)
+                slice_info.append((i, start_str, stop_str, step_str))
+            else:
+                # Point index - dimension is collapsed
+                index_str = self.visit(idx)
+                # Handle negative indices
+                if isinstance(index_str, str) and (
+                    index_str.startswith("-") or index_str.startswith("(-")
+                ):
+                    index_str = f"({shape_val} + {index_str})"
+                index_info.append((i, index_str))
+
+        # Create temporary array for the result
+        tmp_name = self._get_temp_name("_slice_tmp_")
+        result_ndim = len(result_shapes)
+
+        if result_ndim == 0:
+            # All dimensions indexed - result is a scalar
+            self.builder.add_container(tmp_name, dtype, False)
+            self.symbol_table[tmp_name] = dtype
+        else:
+            # Result is an array - use _create_array_temp to handle allocation
+            # Calculate size for malloc
+            size_str = "1"
+            for dim in result_shapes:
+                size_str = f"({size_str} * {dim})"
+
+            element_size = self.builder.get_sizeof(dtype)
+            total_size = f"({size_str} * {element_size})"
+
+            # Create pointer
+            ptr_type = Pointer(dtype)
+            self.builder.add_container(tmp_name, ptr_type, False)
+            self.symbol_table[tmp_name] = ptr_type
+            self.array_info[tmp_name] = {"ndim": result_ndim, "shapes": result_shapes}
+
+            # Malloc for the temporary array
+            debug_info = DebugInfo()
+            block_alloc = self.builder.add_block(debug_info)
+            t_malloc = self.builder.add_malloc(block_alloc, total_size)
+            t_ptr = self.builder.add_access(block_alloc, tmp_name, debug_info)
+            self.builder.add_memlet(
+                block_alloc, t_malloc, "_ret", t_ptr, "void", "", ptr_type, debug_info
+            )
+
+        # Generate loops to copy the sliced data
+        loop_vars = []
+        debug_info = DebugInfo()
+
+        for dim_idx, (orig_dim, start_str, stop_str, step_str) in enumerate(slice_info):
+            loop_var = f"_slice_loop_{dim_idx}_{self._get_unique_id()}"
+            loop_vars.append((loop_var, orig_dim, start_str, step_str))
+
+            if not self.builder.exists(loop_var):
+                self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
+                self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+
+            # Loop from 0 to (stop - start)
+            count_str = f"({stop_str} - {start_str})"
+            self.builder.begin_for(loop_var, "0", count_str, "1", debug_info)
+
+        # Build source and destination indices
+        src_indices = [""] * ndim
+        dst_indices = []
+
+        # Fill in point indices for source
+        for orig_dim, index_str in index_info:
+            src_indices[orig_dim] = index_str
+
+        # Fill in slice indices for source and build destination indices
+        for loop_var, orig_dim, start_str, step_str in loop_vars:
+            if step_str == "1":
+                src_indices[orig_dim] = f"({start_str} + {loop_var})"
+            else:
+                src_indices[orig_dim] = f"({start_str} + {loop_var} * {step_str})"
+            dst_indices.append(loop_var)
+
+        # Compute linear indices
+        src_linear = self._compute_linear_index(src_indices, shapes, value_str, ndim)
+        if result_ndim > 0:
+            dst_linear = self._compute_linear_index(
+                dst_indices, result_shapes, tmp_name, result_ndim
+            )
+        else:
+            dst_linear = "0"
+
+        # Create the copy block
+        block = self.builder.add_block(debug_info)
+        t_src = self.builder.add_access(block, value_str, debug_info)
+        t_dst = self.builder.add_access(block, tmp_name, debug_info)
+        t_task = self.builder.add_tasklet(
+            block, TaskletCode.assign, ["_in"], ["_out"], debug_info
+        )
+
+        self.builder.add_memlet(
+            block, t_src, "void", t_task, "_in", src_linear, None, debug_info
+        )
+        self.builder.add_memlet(
+            block, t_task, "_out", t_dst, "void", dst_linear, None, debug_info
+        )
+
+        # Close all loops
+        for _ in loop_vars:
+            self.builder.end_for()
+
+        return tmp_name
+
+    def _compute_linear_index(self, indices, shapes, array_name, ndim):
+        """Compute linear index from multi-dimensional indices."""
+        if ndim == 0:
+            return "0"
+
+        linear_index = ""
+        for i in range(ndim):
+            term = str(indices[i])
+            for j in range(i + 1, ndim):
+                shape_val = shapes[j] if j < len(shapes) else f"_{array_name}_shape_{j}"
+                term = f"(({term}) * {shape_val})"
+
+            if i == 0:
+                linear_index = term
+            else:
+                linear_index = f"({linear_index} + {term})"
+
+        return linear_index
+
     def visit_Subscript(self, node):
         value_str = self.visit(node.value)
 
@@ -1074,9 +1248,13 @@ class ExpressionVisitor(ast.NodeVisitor):
                 # This is path[:] or path[:,:] - return the array name
                 return value_str
 
-            for idx in indices_nodes:
-                if isinstance(idx, ast.Slice):
-                    raise ValueError("Slices not supported in expression indexing")
+            # Check if there are any slices in the indices
+            has_slices = any(isinstance(idx, ast.Slice) for idx in indices_nodes)
+            if has_slices:
+                # Handle mixed slicing (e.g., arr[1:, :, k] or arr[:-1, :, k+1])
+                return self._handle_expression_slicing(
+                    node, value_str, indices_nodes, shapes, ndim
+                )
 
             if isinstance(node.slice, ast.Tuple):
                 indices = [self.visit(elt) for elt in node.slice.elts]
