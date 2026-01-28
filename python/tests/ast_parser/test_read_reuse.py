@@ -7,8 +7,8 @@ from docc._sdfg import Scalar, PrimitiveType
 class TestReadReuse(unittest.TestCase):
     def setUp(self):
         self.builder = MagicMock()
-        # Mock has_container to return True so _add_read takes the path calling add_access
-        self.builder.has_container.return_value = True
+        # Mock exists to return True so _add_read takes the path calling add_access
+        self.builder.exists.return_value = True
 
         self.visitor = ExpressionVisitor(builder=self.builder)
 
@@ -104,8 +104,8 @@ class TestReadReuse(unittest.TestCase):
         block = MagicMock()
         block.__hash__.return_value = 1
 
-        # Mock has_container to return False so it treats it as constant
-        self.builder.has_container.return_value = False
+        # Mock exists to return False so it treats it as constant
+        self.builder.exists.return_value = False
 
         expr = "1.0"
 

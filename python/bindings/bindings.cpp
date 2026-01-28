@@ -6,8 +6,11 @@
 #include <fstream>
 
 #include "analysis/py_loop_analysis.h"
+#include "data_flow/py_cmath.h"
+#include "data_flow/py_tasklet.h"
 #include "py_structured_sdfg.h"
 #include "py_structured_sdfg_builder.h"
+#include "sdfg/data_flow/tasklet.h"
 #include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/targets/cuda/plugin.h"
 #include "types/py_types.h"
@@ -42,6 +45,8 @@ PYBIND11_MODULE(_sdfg, m) {
     sdfg::cuda::register_cuda_plugin();
 
     register_types(m);
+    register_tasklet(m);
+    register_cmath(m);
     register_loop_analysis(m);
 
     // Register function to setup remote optimization
@@ -177,23 +182,12 @@ PYBIND11_MODULE(_sdfg, m) {
             py::arg("is_argument") = false,
             "Add a container to the SDFG"
         )
+        .def("exists", &PyStructuredSDFGBuilder::exists, py::arg("name"), "Check if a container exists in the SDFG")
         .def(
             "set_return_type",
             &PyStructuredSDFGBuilder::set_return_type,
             py::arg("type"),
             "Set the return type of the SDFG"
-        )
-        .def(
-            "set_return_shape",
-            &PyStructuredSDFGBuilder::set_return_shape,
-            py::arg("shape"),
-            "Set the return shape of the SDFG"
-        )
-        .def(
-            "has_container",
-            &PyStructuredSDFGBuilder::has_container,
-            py::arg("name"),
-            "Check if a container exists in the SDFG"
         )
         .def(
             "add_return",
@@ -243,6 +237,13 @@ PYBIND11_MODULE(_sdfg, m) {
             py::arg("debug_info") = sdfg::DebugInfo()
         )
         .def("end_for", &PyStructuredSDFGBuilder::end_for)
+        .def(
+            "add_transition",
+            &PyStructuredSDFGBuilder::add_transition,
+            py::arg("lhs"),
+            py::arg("rhs"),
+            py::arg("debug_info") = sdfg::DebugInfo()
+        )
         .def(
             "add_gemm",
             &PyStructuredSDFGBuilder::add_gemm,
@@ -366,10 +367,10 @@ PYBIND11_MODULE(_sdfg, m) {
             py::arg("debug_info") = sdfg::DebugInfo()
         )
         .def(
-            "add_intrinsic",
-            &PyStructuredSDFGBuilder::add_intrinsic,
+            "add_cmath",
+            &PyStructuredSDFGBuilder::add_cmath,
             py::arg("block_ptr"),
-            py::arg("name"),
+            py::arg("func"),
             py::arg("debug_info") = sdfg::DebugInfo()
         )
         .def(

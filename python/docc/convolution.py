@@ -116,7 +116,7 @@ class ConvolutionHandler:
         if not target_name:
             return False
 
-        if self.builder.has_container(target_name):
+        if self.builder.exists(target_name):
             # Ensure shape is inferred
             pass
         else:
