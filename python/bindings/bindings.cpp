@@ -6,6 +6,7 @@
 #include <fstream>
 
 #include "analysis/py_loop_analysis.h"
+#include "data_flow/py_cmath.h"
 #include "data_flow/py_tasklet.h"
 #include "py_structured_sdfg.h"
 #include "py_structured_sdfg_builder.h"
@@ -45,6 +46,7 @@ PYBIND11_MODULE(_sdfg, m) {
 
     register_types(m);
     register_tasklet(m);
+    register_cmath(m);
     register_loop_analysis(m);
 
     // Register function to setup remote optimization
@@ -368,7 +370,7 @@ PYBIND11_MODULE(_sdfg, m) {
             "add_cmath",
             &PyStructuredSDFGBuilder::add_cmath,
             py::arg("block_ptr"),
-            py::arg("name"),
+            py::arg("func"),
             py::arg("debug_info") = sdfg::DebugInfo()
         )
         .def(

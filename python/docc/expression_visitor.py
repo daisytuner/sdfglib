@@ -9,6 +9,7 @@ from ._sdfg import (
     DebugInfo,
     Structure,
     TaskletCode,
+    CMathFunction,
 )
 
 
@@ -298,7 +299,9 @@ class ExpressionVisitor(ast.NodeVisitor):
             block = self.builder.add_block()
             t_out = self.builder.add_access(block, tmp_name)
 
-            intrinsic_name = "fmax" if func_name == "max" else "fmin"
+            intrinsic_name = (
+                CMathFunction.fmax if func_name == "max" else CMathFunction.fmin
+            )
             t_task = self.builder.add_cmath(block, intrinsic_name)
 
             for i, arg in enumerate(casted_args):
@@ -425,24 +428,24 @@ class ExpressionVisitor(ast.NodeVisitor):
         if func_name in ["int", "float", "bool"]:
             return self._handle_python_cast(node, func_name)
 
-        math_funcs = [
-            "sin",
-            "cos",
-            "tan",
-            "exp",
-            "log",
-            "sqrt",
-            "pow",
-            "abs",
-            "ceil",
-            "floor",
-            "asin",
-            "acos",
-            "atan",
-            "sinh",
-            "cosh",
-            "tanh",
-        ]
+        math_funcs = {
+            "sin": CMathFunction.sin,
+            "cos": CMathFunction.cos,
+            "tan": CMathFunction.tan,
+            "exp": CMathFunction.exp,
+            "log": CMathFunction.log,
+            "sqrt": CMathFunction.sqrt,
+            "pow": CMathFunction.pow,
+            "abs": CMathFunction.fabs,
+            "ceil": CMathFunction.ceil,
+            "floor": CMathFunction.floor,
+            "asin": CMathFunction.asin,
+            "acos": CMathFunction.acos,
+            "atan": CMathFunction.atan,
+            "sinh": CMathFunction.sinh,
+            "cosh": CMathFunction.cosh,
+            "tanh": CMathFunction.tanh,
+        }
 
         if func_name in math_funcs:
             args = [self.visit(arg) for arg in node.args]
@@ -455,7 +458,7 @@ class ExpressionVisitor(ast.NodeVisitor):
             block = self.builder.add_block()
             t_out = self.builder.add_access(block, tmp_name)
 
-            t_task = self.builder.add_cmath(block, func_name)
+            t_task = self.builder.add_cmath(block, math_funcs[func_name])
 
             for i, arg in enumerate(args):
                 t_arg, arg_sub = self._add_read(block, arg)
@@ -658,7 +661,7 @@ class ExpressionVisitor(ast.NodeVisitor):
             t_right, right_sub = self._add_read(block, real_right)
             t_out = self.builder.add_access(block, tmp_name)
 
-            t_task = self.builder.add_cmath(block, "pow")
+            t_task = self.builder.add_cmath(block, CMathFunction.pow)
             self.builder.add_memlet(block, t_left, "void", t_task, "_in1", left_sub)
             self.builder.add_memlet(block, t_right, "void", t_task, "_in2", right_sub)
             self.builder.add_memlet(block, t_task, "_out", t_out, "void", "")
@@ -713,7 +716,7 @@ class ExpressionVisitor(ast.NodeVisitor):
 
                 return tmp_name
             else:
-                t_task = self.builder.add_cmath(block, "fmod")
+                t_task = self.builder.add_cmath(block, CMathFunction.fmod)
                 self.builder.add_memlet(block, t_left, "void", t_task, "_in1", left_sub)
                 self.builder.add_memlet(
                     block, t_right, "void", t_task, "_in2", right_sub
@@ -1380,18 +1383,17 @@ class ExpressionVisitor(ast.NodeVisitor):
 
             # Map op_type to C function names
             func_map = {
-                "sqrt": "sqrt",
-                "abs": "fabs",
-                "absolute": "fabs",
-                "exp": "exp",
-                "tanh": "tanh",
+                "sqrt": CMathFunction.sqrt,
+                "abs": CMathFunction.fabs,
+                "absolute": CMathFunction.fabs,
+                "exp": CMathFunction.exp,
+                "tanh": CMathFunction.tanh,
             }
-            func_name = func_map.get(op_type, op_type)
 
             block = self.builder.add_block()
             t_src = self.builder.add_access(block, operand)
             t_dst = self.builder.add_access(block, tmp_name)
-            t_task = self.builder.add_cmath(block, func_name)
+            t_task = self.builder.add_cmath(block, func_map[op_type])
 
             # CMathNode uses _in1, _in2, etc for inputs and _out for output
             self.builder.add_memlet(block, t_src, "void", t_task, "_in1", "", dtype)
@@ -1768,8 +1770,8 @@ class ExpressionVisitor(ast.NodeVisitor):
             "add": ("add", TaskletCode.fp_add, TaskletCode.int_add),
             "subtract": ("sub", TaskletCode.fp_sub, TaskletCode.int_sub),
             "divide": ("div", TaskletCode.fp_div, TaskletCode.int_sdiv),
-            "minimum": ("min", "fmin", TaskletCode.int_smin),
-            "maximum": ("max", "fmax", TaskletCode.int_smax),
+            "minimum": ("min", CMathFunction.fmin, TaskletCode.int_smin),
+            "maximum": ("max", CMathFunction.fmax, TaskletCode.int_smax),
         }
 
         if ufunc_name not in op_map:
