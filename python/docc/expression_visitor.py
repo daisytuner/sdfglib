@@ -1,7 +1,15 @@
 import ast
 import inspect
 import textwrap
-from ._sdfg import Scalar, PrimitiveType, Pointer, Type, DebugInfo, Structure
+from ._sdfg import (
+    Scalar,
+    PrimitiveType,
+    Pointer,
+    Type,
+    DebugInfo,
+    Structure,
+    TaskletCode,
+)
 
 
 class ExpressionVisitor(ast.NodeVisitor):
@@ -198,7 +206,7 @@ class ExpressionVisitor(ast.NodeVisitor):
                 pass
             return access, subset
 
-        if self.builder.has_container(expr_str):
+        if self.builder.exists(expr_str):
             access = self.builder.add_access(block, expr_str, debug_info)
             # For pointer types representing 0-D arrays, dereference with "0"
             subset = ""
@@ -291,7 +299,7 @@ class ExpressionVisitor(ast.NodeVisitor):
             t_out = self.builder.add_access(block, tmp_name)
 
             intrinsic_name = "fmax" if func_name == "max" else "fmin"
-            t_task = self.builder.add_intrinsic(block, intrinsic_name)
+            t_task = self.builder.add_cmath(block, intrinsic_name)
 
             for i, arg in enumerate(casted_args):
                 t_arg, arg_sub = self._add_read(block, arg)
@@ -303,7 +311,11 @@ class ExpressionVisitor(ast.NodeVisitor):
             t_out = self.builder.add_access(block, tmp_name)
 
             # Use int_smax/int_smin tasklet
-            opcode = "int_smax" if func_name == "max" else "int_smin"
+            opcode = None
+            if func_name == "max":
+                opcode = TaskletCode.int_smax
+            else:
+                opcode = TaskletCode.int_smin
             t_task = self.builder.add_tasklet(block, opcode, ["_in1", "_in2"], ["_out"])
 
             for i, arg in enumerate(args):
@@ -359,7 +371,7 @@ class ExpressionVisitor(ast.NodeVisitor):
         block = self.builder.add_block()
         t_src, src_sub = self._add_read(block, arg)
         t_dst = self.builder.add_access(block, tmp_name)
-        t_task = self.builder.add_tasklet(block, "assign", ["_in"], ["_out"])
+        t_task = self.builder.add_tasklet(block, TaskletCode.assign, ["_in"], ["_out"])
         self.builder.add_memlet(block, t_src, "void", t_task, "_in", src_sub)
         self.builder.add_memlet(block, t_task, "_out", t_dst, "void", "")
 
@@ -443,7 +455,7 @@ class ExpressionVisitor(ast.NodeVisitor):
             block = self.builder.add_block()
             t_out = self.builder.add_access(block, tmp_name)
 
-            t_task = self.builder.add_intrinsic(block, func_name)
+            t_task = self.builder.add_cmath(block, func_name)
 
             for i, arg in enumerate(args):
                 t_arg, arg_sub = self._add_read(block, arg)
@@ -613,7 +625,9 @@ class ExpressionVisitor(ast.NodeVisitor):
                 c_block = self.builder.add_block()
                 t_src, src_sub = self._add_read(c_block, left)
                 t_dst = self.builder.add_access(c_block, left_cast)
-                t_task = self.builder.add_tasklet(c_block, "assign", ["_in"], ["_out"])
+                t_task = self.builder.add_tasklet(
+                    c_block, TaskletCode.assign, ["_in"], ["_out"]
+                )
                 self.builder.add_memlet(c_block, t_src, "void", t_task, "_in", src_sub)
                 self.builder.add_memlet(c_block, t_task, "_out", t_dst, "void", "")
 
@@ -629,7 +643,9 @@ class ExpressionVisitor(ast.NodeVisitor):
                 c_block = self.builder.add_block()
                 t_src, src_sub = self._add_read(c_block, right)
                 t_dst = self.builder.add_access(c_block, right_cast)
-                t_task = self.builder.add_tasklet(c_block, "assign", ["_in"], ["_out"])
+                t_task = self.builder.add_tasklet(
+                    c_block, TaskletCode.assign, ["_in"], ["_out"]
+                )
                 self.builder.add_memlet(c_block, t_src, "void", t_task, "_in", src_sub)
                 self.builder.add_memlet(c_block, t_task, "_out", t_dst, "void", "")
 
@@ -642,7 +658,7 @@ class ExpressionVisitor(ast.NodeVisitor):
             t_right, right_sub = self._add_read(block, real_right)
             t_out = self.builder.add_access(block, tmp_name)
 
-            t_task = self.builder.add_intrinsic(block, "pow")
+            t_task = self.builder.add_cmath(block, "pow")
             self.builder.add_memlet(block, t_left, "void", t_task, "_in1", left_sub)
             self.builder.add_memlet(block, t_right, "void", t_task, "_in2", right_sub)
             self.builder.add_memlet(block, t_task, "_out", t_out, "void", "")
@@ -659,7 +675,7 @@ class ExpressionVisitor(ast.NodeVisitor):
 
                 # 1. rem1 = a % b
                 t_rem1 = self.builder.add_tasklet(
-                    block, "int_rem", ["_in1", "_in2"], ["_out"]
+                    block, TaskletCode.int_srem, ["_in1", "_in2"], ["_out"]
                 )
                 self.builder.add_memlet(block, t_left, "void", t_rem1, "_in1", left_sub)
                 self.builder.add_memlet(
@@ -673,7 +689,7 @@ class ExpressionVisitor(ast.NodeVisitor):
 
                 # 2. add = rem1 + b
                 t_add = self.builder.add_tasklet(
-                    block, "int_add", ["_in1", "_in2"], ["_out"]
+                    block, TaskletCode.int_add, ["_in1", "_in2"], ["_out"]
                 )
                 self.builder.add_memlet(block, t_rem1_out, "void", t_add, "_in1", "")
                 self.builder.add_memlet(
@@ -687,7 +703,7 @@ class ExpressionVisitor(ast.NodeVisitor):
 
                 # 3. res = add % b
                 t_rem2 = self.builder.add_tasklet(
-                    block, "int_rem", ["_in1", "_in2"], ["_out"]
+                    block, TaskletCode.int_srem, ["_in1", "_in2"], ["_out"]
                 )
                 self.builder.add_memlet(block, t_add_out, "void", t_rem2, "_in1", "")
                 self.builder.add_memlet(
@@ -697,7 +713,7 @@ class ExpressionVisitor(ast.NodeVisitor):
 
                 return tmp_name
             else:
-                t_task = self.builder.add_intrinsic(block, "fmod")
+                t_task = self.builder.add_cmath(block, "fmod")
                 self.builder.add_memlet(block, t_left, "void", t_task, "_in1", left_sub)
                 self.builder.add_memlet(
                     block, t_right, "void", t_task, "_in2", right_sub
@@ -705,29 +721,41 @@ class ExpressionVisitor(ast.NodeVisitor):
                 self.builder.add_memlet(block, t_task, "_out", t_out, "void", "")
                 return tmp_name
 
-        prefix = "int" if dtype.primitive_type == PrimitiveType.Int64 else "fp"
-        op_name = ""
-        if op == "+":
-            op_name = "add"
-        elif op == "-":
-            op_name = "sub"
-        elif op == "*":
-            op_name = "mul"
-        elif op == "/":
-            op_name = "div"
-        elif op == "//":
-            op_name = "div"
-        elif op == "|":
-            op_name = "or"
-        elif op == "^":
-            op_name = "xor"
+        tasklet_code = None
+        if dtype.primitive_type == PrimitiveType.Int64:
+            if op == "+":
+                tasklet_code = TaskletCode.int_add
+            elif op == "-":
+                tasklet_code = TaskletCode.int_sub
+            elif op == "*":
+                tasklet_code = TaskletCode.int_mul
+            elif op == "/":
+                tasklet_code = TaskletCode.int_sdiv
+            elif op == "//":
+                tasklet_code = TaskletCode.int_sdiv
+            elif op == "|":
+                tasklet_code = TaskletCode.int_or
+            elif op == "^":
+                tasklet_code = TaskletCode.int_xor
+        else:
+            if op == "+":
+                tasklet_code = TaskletCode.fp_add
+            elif op == "-":
+                tasklet_code = TaskletCode.fp_sub
+            elif op == "*":
+                tasklet_code = TaskletCode.fp_mul
+            elif op == "/":
+                tasklet_code = TaskletCode.fp_div
+            elif op == "//":
+                tasklet_code = TaskletCode.fp_div
+            else:
+                raise NotImplementedError(f"Operation {op} not supported for floats")
 
         block = self.builder.add_block()
         t_left, left_sub = self._add_read(block, real_left)
         t_right, right_sub = self._add_read(block, real_right)
         t_out = self.builder.add_access(block, tmp_name)
 
-        tasklet_code = f"{prefix}_{op_name}"
         t_task = self.builder.add_tasklet(
             block, tasklet_code, ["_in1", "_in2"], ["_out"]
         )
@@ -742,7 +770,7 @@ class ExpressionVisitor(ast.NodeVisitor):
         block = self.builder.add_block()
         t_const = self.builder.add_constant(block, value_str, dtype)
         t_dst = self.builder.add_access(block, target_name)
-        t_task = self.builder.add_tasklet(block, "assign", ["_in"], ["_out"])
+        t_task = self.builder.add_tasklet(block, TaskletCode.assign, ["_in"], ["_out"])
         self.builder.add_memlet(block, t_const, "void", t_task, "_in", "")
         self.builder.add_memlet(block, t_task, "_out", t_dst, "void", "")
 
@@ -780,9 +808,9 @@ class ExpressionVisitor(ast.NodeVisitor):
 
         # Use control flow to assign boolean value
         self.builder.begin_if(expr_str)
-        self.builder.add_assignment(tmp_name, "true")
+        self.builder.add_transition(tmp_name, "true")
         self.builder.begin_else()
-        self.builder.add_assignment(tmp_name, "false")
+        self.builder.add_transition(tmp_name, "false")
         self.builder.end_if()
 
         self.symbol_table[tmp_name] = dtype
@@ -820,7 +848,7 @@ class ExpressionVisitor(ast.NodeVisitor):
                 block, "true", Scalar(PrimitiveType.Bool)
             )
             t_task = self.builder.add_tasklet(
-                block, "int_xor", ["_in1", "_in2"], ["_out"]
+                block, TaskletCode.int_xor, ["_in1", "_in2"], ["_out"]
             )
             self.builder.add_memlet(block, t_src, "void", t_task, "_in1", src_sub)
             self.builder.add_memlet(block, t_const, "void", t_task, "_in2", "")
@@ -830,17 +858,21 @@ class ExpressionVisitor(ast.NodeVisitor):
             if dtype.primitive_type == PrimitiveType.Int64:
                 t_const = self.builder.add_constant(block, "0", dtype)
                 t_task = self.builder.add_tasklet(
-                    block, "int_sub", ["_in1", "_in2"], ["_out"]
+                    block, TaskletCode.int_sub, ["_in1", "_in2"], ["_out"]
                 )
                 self.builder.add_memlet(block, t_const, "void", t_task, "_in1", "")
                 self.builder.add_memlet(block, t_src, "void", t_task, "_in2", src_sub)
                 self.builder.add_memlet(block, t_task, "_out", t_dst, "void", "")
             else:
-                t_task = self.builder.add_tasklet(block, "fp_neg", ["_in"], ["_out"])
+                t_task = self.builder.add_tasklet(
+                    block, TaskletCode.fp_neg, ["_in"], ["_out"]
+                )
                 self.builder.add_memlet(block, t_src, "void", t_task, "_in", src_sub)
                 self.builder.add_memlet(block, t_task, "_out", t_dst, "void", "")
         else:
-            t_task = self.builder.add_tasklet(block, "assign", ["_in"], ["_out"])
+            t_task = self.builder.add_tasklet(
+                block, TaskletCode.assign, ["_in"], ["_out"]
+            )
             self.builder.add_memlet(block, t_src, "void", t_task, "_in", src_sub)
             self.builder.add_memlet(block, t_task, "_out", t_dst, "void", "")
 
@@ -970,7 +1002,7 @@ class ExpressionVisitor(ast.NodeVisitor):
                         # Use tasklet to pass through the value
                         # The actual member selection is done via the memlet subset
                         tasklet = self.builder.add_tasklet(
-                            block, "assign", ["_in"], ["_out"]
+                            block, TaskletCode.assign, ["_in"], ["_out"]
                         )
 
                         # Use member index in the subset to select the correct member
@@ -1105,7 +1137,9 @@ class ExpressionVisitor(ast.NodeVisitor):
                 block = self.builder.add_block()
                 t_src = self.builder.add_access(block, value_str)
                 t_dst = self.builder.add_access(block, tmp_name)
-                t_task = self.builder.add_tasklet(block, "assign", ["_in"], ["_out"])
+                t_task = self.builder.add_tasklet(
+                    block, TaskletCode.assign, ["_in"], ["_out"]
+                )
 
                 self.builder.add_memlet(
                     block, t_src, "void", t_task, "_in", linear_index
@@ -1293,7 +1327,7 @@ class ExpressionVisitor(ast.NodeVisitor):
         elif ones_init:
             # Initialize array with ones using a loop
             loop_var = f"_i_{self._get_unique_id()}"
-            if not self.builder.has_container(loop_var):
+            if not self.builder.exists(loop_var):
                 self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
                 self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
 
@@ -1317,7 +1351,9 @@ class ExpressionVisitor(ast.NodeVisitor):
             t_const = self.builder.add_constant(block_assign, val, dtype)
             t_arr = self.builder.add_access(block_assign, tmp_name)
 
-            t_task = self.builder.add_tasklet(block_assign, "assign", ["_in"], ["_out"])
+            t_task = self.builder.add_tasklet(
+                block_assign, TaskletCode.assign, ["_in"], ["_out"]
+            )
             self.builder.add_memlet(
                 block_assign, t_const, "void", t_task, "_in", "", dtype
             )
@@ -1355,7 +1391,7 @@ class ExpressionVisitor(ast.NodeVisitor):
             block = self.builder.add_block()
             t_src = self.builder.add_access(block, operand)
             t_dst = self.builder.add_access(block, tmp_name)
-            t_task = self.builder.add_intrinsic(block, func_name)
+            t_task = self.builder.add_cmath(block, func_name)
 
             # CMathNode uses _in1, _in2, etc for inputs and _out for output
             self.builder.add_memlet(block, t_src, "void", t_task, "_in1", "", dtype)
@@ -1405,7 +1441,9 @@ class ExpressionVisitor(ast.NodeVisitor):
             c_block = self.builder.add_block()
             t_src, src_sub = self._add_read(c_block, left)
             t_dst = self.builder.add_access(c_block, left_cast)
-            t_task = self.builder.add_tasklet(c_block, "assign", ["_in"], ["_out"])
+            t_task = self.builder.add_tasklet(
+                c_block, TaskletCode.assign, ["_in"], ["_out"]
+            )
             self.builder.add_memlet(c_block, t_src, "void", t_task, "_in", src_sub)
             self.builder.add_memlet(c_block, t_task, "_out", t_dst, "void", "")
 
@@ -1420,7 +1458,9 @@ class ExpressionVisitor(ast.NodeVisitor):
             c_block = self.builder.add_block()
             t_src, src_sub = self._add_read(c_block, right)
             t_dst = self.builder.add_access(c_block, right_cast)
-            t_task = self.builder.add_tasklet(c_block, "assign", ["_in"], ["_out"])
+            t_task = self.builder.add_tasklet(
+                c_block, TaskletCode.assign, ["_in"], ["_out"]
+            )
             self.builder.add_memlet(c_block, t_src, "void", t_task, "_in", src_sub)
             self.builder.add_memlet(c_block, t_task, "_out", t_dst, "void", "")
 
@@ -1580,7 +1620,7 @@ class ExpressionVisitor(ast.NodeVisitor):
 
         # Loop to set diagonal
         loop_var = f"_i_{self._get_unique_id()}"
-        if not self.builder.has_container(loop_var):
+        if not self.builder.exists(loop_var):
             self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
             self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
 
@@ -1610,7 +1650,9 @@ class ExpressionVisitor(ast.NodeVisitor):
         flat_index = f"(({loop_var}) * ({M_str}) + ({loop_var}) + ({k_str}))"
         subset = flat_index
 
-        t_task = self.builder.add_tasklet(block_assign, "assign", ["_in"], ["_out"])
+        t_task = self.builder.add_tasklet(
+            block_assign, TaskletCode.assign, ["_in"], ["_out"]
+        )
         self.builder.add_memlet(
             block_assign, t_const, "void", t_task, "_in", "", element_type
         )
@@ -1723,11 +1765,11 @@ class ExpressionVisitor(ast.NodeVisitor):
 
         # Map ufunc names to operation names and tasklet opcodes
         op_map = {
-            "add": ("add", "fp_add", "int_add"),
-            "subtract": ("sub", "fp_sub", "int_sub"),
-            "divide": ("div", "fp_div", "int_div"),
-            "minimum": ("min", "fmin", "int_smin"),
-            "maximum": ("max", "fmax", "int_smax"),
+            "add": ("add", TaskletCode.fp_add, TaskletCode.int_add),
+            "subtract": ("sub", TaskletCode.fp_sub, TaskletCode.int_sub),
+            "divide": ("div", TaskletCode.fp_div, TaskletCode.int_sdiv),
+            "minimum": ("min", "fmin", TaskletCode.int_smin),
+            "maximum": ("max", "fmax", TaskletCode.int_smax),
         }
 
         if ufunc_name not in op_map:
@@ -1799,10 +1841,10 @@ class ExpressionVisitor(ast.NodeVisitor):
         j_var = self._get_temp_name("_outer_j_")
 
         # Ensure loop variables exist
-        if not self.builder.has_container(i_var):
+        if not self.builder.exists(i_var):
             self.builder.add_container(i_var, Scalar(PrimitiveType.Int64), False)
             self.symbol_table[i_var] = Scalar(PrimitiveType.Int64)
-        if not self.builder.has_container(j_var):
+        if not self.builder.exists(j_var):
             self.builder.add_container(j_var, Scalar(PrimitiveType.Int64), False)
             self.symbol_table[j_var] = Scalar(PrimitiveType.Int64)
 
@@ -1891,17 +1933,18 @@ class ExpressionVisitor(ast.NodeVisitor):
         # Determine tasklet type based on operation
         if ufunc_name in ["minimum", "maximum"]:
             # Use intrinsic for min/max
-            opcode = fp_opcode if not is_int else int_opcode
             if is_int:
                 t_task = self.builder.add_tasklet(
-                    block, opcode, ["_in1", "_in2"], ["_out"]
+                    block, int_opcode, ["_in1", "_in2"], ["_out"]
                 )
             else:
-                t_task = self.builder.add_intrinsic(block, opcode)
+                t_task = self.builder.add_cmath(block, fp_opcode)
         else:
             # Use regular tasklet for arithmetic ops
-            opcode = int_opcode if is_int else fp_opcode
-            t_task = self.builder.add_tasklet(block, opcode, ["_in1", "_in2"], ["_out"])
+            tasklet_code = int_opcode if is_int else fp_opcode
+            t_task = self.builder.add_tasklet(
+                block, tasklet_code, ["_in1", "_in2"], ["_out"]
+            )
 
         # Compute the linear index for A[i]
         a_index = compute_linear_index(name_a, subset_a, indices_a, i_var)
