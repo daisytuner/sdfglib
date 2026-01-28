@@ -46,11 +46,12 @@ def run_benchmark(initialize_func, kernel_func, parameters, name, args=None):
     if args.numpy:
         # Create a copy of inputs for numpy execution to avoid modification
         inputs_ref = [x.copy() if isinstance(x, np.ndarray) else x for x in inputs]
-        start = time.time()
-        # Execute the original python function (undecorated)
-        kernel_func(*inputs_ref)
-        end = time.time()
-        print(f"Numpy execution time: {end - start:.6f} seconds")
+        for _ in range(args.n_runs):
+            start = time.time()
+            # Execute the original python function (undecorated)
+            kernel_func(*inputs_ref)
+            end = time.time()
+            print(f"Numpy execution time: {end - start:.6f} seconds")
 
     if args.docc:
         # Create a copy of inputs for docc execution
