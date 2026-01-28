@@ -78,6 +78,7 @@ class ExpressionVisitor(ast.NodeVisitor):
             "outer": self._handle_numpy_outer,
             "minimum": self._handle_numpy_binary_op,
             "maximum": self._handle_numpy_binary_op,
+            "where": self._handle_numpy_where,
         }
 
     def generic_visit(self, node):
@@ -812,6 +813,18 @@ class ExpressionVisitor(ast.NodeVisitor):
 
         op = self.visit(node.ops[0])
         right = self.visit(node.comparators[0])
+
+        # Check if this is an array comparison
+        left_is_array = left in self.array_info
+        right_is_array = right in self.array_info
+
+        if left_is_array or right_is_array:
+            # Handle array comparison - return boolean array
+            return self._handle_array_compare(
+                left, op, right, left_is_array, right_is_array
+            )
+
+        # Scalar comparison
         expr_str = f"{left} {op} {right}"
 
         tmp_name = f"_tmp_{self._get_unique_id()}"
@@ -926,6 +939,146 @@ class ExpressionVisitor(ast.NodeVisitor):
 
         # Now subtract: tmp = 0 - operand (broadcast scalar subtraction)
         self.builder.add_elementwise_op("sub", zero_name, operand, tmp_name, shape)
+
+        return tmp_name
+
+    def _handle_array_compare(self, left, op, right, left_is_array, right_is_array):
+        """Handle elementwise comparison of arrays, returning a boolean array.
+
+        Supports: arr > 0, arr < scalar, arr1 > arr2, etc.
+        """
+        # Determine shape from the array operand
+        if left_is_array:
+            shape = self.array_info[left]["shapes"]
+            arr_name = left
+        else:
+            shape = self.array_info[right]["shapes"]
+            arr_name = right
+
+        # Determine if we need integer or floating point comparison
+        # based on the array element type
+        use_int_cmp = False
+        arr_dtype = self._get_dtype(arr_name)
+        if arr_dtype.primitive_type in (PrimitiveType.Int32, PrimitiveType.Int64):
+            use_int_cmp = True
+
+        # Create output boolean array
+        dtype = Scalar(PrimitiveType.Bool)
+        tmp_name = self._create_array_temp(shape, dtype)
+
+        # Map comparison operators to tasklet codes
+        if use_int_cmp:
+            cmp_ops = {
+                ">": TaskletCode.int_sgt,
+                ">=": TaskletCode.int_sge,
+                "<": TaskletCode.int_slt,
+                "<=": TaskletCode.int_sle,
+                "==": TaskletCode.int_eq,
+                "!=": TaskletCode.int_ne,
+            }
+        else:
+            # Floating point ordered comparisons
+            cmp_ops = {
+                ">": TaskletCode.fp_ogt,
+                ">=": TaskletCode.fp_oge,
+                "<": TaskletCode.fp_olt,
+                "<=": TaskletCode.fp_ole,
+                "==": TaskletCode.fp_oeq,
+                "!=": TaskletCode.fp_one,
+            }
+
+        if op not in cmp_ops:
+            raise NotImplementedError(
+                f"Comparison operator {op} not supported for arrays"
+            )
+
+        tasklet_code = cmp_ops[op]
+
+        # For scalar operand, we may need to convert integer to float
+        # Create a float constant if needed
+        scalar_name = None
+        if not left_is_array:
+            scalar_name = left
+        elif not right_is_array:
+            scalar_name = right
+
+        if scalar_name is not None and not use_int_cmp:
+            # Check if scalar is an integer literal and convert to float
+            if self._is_int(scalar_name):
+                # Create a float constant
+                float_name = f"_tmp_{self._get_unique_id()}"
+                self.builder.add_container(
+                    float_name, Scalar(PrimitiveType.Double), False
+                )
+                self.symbol_table[float_name] = Scalar(PrimitiveType.Double)
+
+                block_conv = self.builder.add_block()
+                t_const = self.builder.add_constant(
+                    block_conv, f"{scalar_name}.0", Scalar(PrimitiveType.Double)
+                )
+                t_float = self.builder.add_access(block_conv, float_name)
+                t_assign = self.builder.add_tasklet(
+                    block_conv, TaskletCode.assign, ["_in"], ["_out"]
+                )
+                self.builder.add_memlet(
+                    block_conv, t_const, "void", t_assign, "_in", ""
+                )
+                self.builder.add_memlet(
+                    block_conv, t_assign, "_out", t_float, "void", ""
+                )
+
+                # Replace the scalar name with the converted float
+                if not left_is_array:
+                    left = float_name
+                else:
+                    right = float_name
+
+        # Generate nested loops
+        loop_vars = []
+        for i, dim in enumerate(shape):
+            loop_var = f"_cmp_i{i}_{self._get_unique_id()}"
+            if not self.builder.exists(loop_var):
+                self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
+                self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+            loop_vars.append(loop_var)
+            self.builder.begin_for(loop_var, "0", str(dim), "1")
+
+        # Compute linear index for array access
+        linear_idx = self._compute_linear_index(loop_vars, shape, tmp_name, len(shape))
+
+        # Create comparison block
+        block = self.builder.add_block()
+
+        # Read left operand
+        if left_is_array:
+            t_left = self.builder.add_access(block, left)
+            left_sub = linear_idx
+        else:
+            t_left, left_sub = self._add_read(block, left)
+
+        # Read right operand
+        if right_is_array:
+            t_right = self.builder.add_access(block, right)
+            right_sub = linear_idx
+        else:
+            t_right, right_sub = self._add_read(block, right)
+
+        # Output access
+        t_out = self.builder.add_access(block, tmp_name)
+
+        # Create tasklet for comparison
+        t_task = self.builder.add_tasklet(
+            block, tasklet_code, ["_in1", "_in2"], ["_out"]
+        )
+
+        # Connect memlets
+        self.builder.add_memlet(block, t_left, "void", t_task, "_in1", left_sub)
+        self.builder.add_memlet(block, t_right, "void", t_task, "_in2", right_sub)
+        self.builder.add_memlet(block, t_task, "_out", t_out, "void", linear_idx)
+
+        # Close loops
+        for _ in loop_vars:
+            self.builder.end_for()
 
         return tmp_name
 
@@ -1908,6 +2061,157 @@ class ExpressionVisitor(ast.NodeVisitor):
             "maximum": "max",
         }
         return self._handle_array_binary_op(op_map[func_name], args[0], args[1])
+
+    def _handle_numpy_where(self, node, func_name):
+        """Handle np.where(condition, x, y) - elementwise ternary selection.
+
+        Returns an array where elements are taken from x where condition is True,
+        and from y where condition is False.
+        """
+        if len(node.args) != 3:
+            raise NotImplementedError("np.where requires 3 arguments (condition, x, y)")
+
+        # Visit all arguments
+        cond_name = self.visit(node.args[0])
+        x_name = self.visit(node.args[1])
+        y_name = self.visit(node.args[2])
+
+        # Determine output shape from the array arguments
+        # Priority: condition > y > x (since x might be scalar 0)
+        shape = []
+        dtype = Scalar(PrimitiveType.Double)
+
+        # Check condition shape
+        if cond_name in self.array_info:
+            shape = self.array_info[cond_name]["shapes"]
+
+        # If condition is scalar, check y
+        if not shape and y_name in self.array_info:
+            shape = self.array_info[y_name]["shapes"]
+
+        # If y is scalar, check x
+        if not shape and x_name in self.array_info:
+            shape = self.array_info[x_name]["shapes"]
+
+        if not shape:
+            raise NotImplementedError("np.where requires at least one array argument")
+
+        # Determine dtype from y (since x might be scalar 0)
+        if y_name in self.symbol_table:
+            y_type = self.symbol_table[y_name]
+            if isinstance(y_type, Pointer) and y_type.has_pointee_type():
+                dtype = y_type.pointee_type
+            elif isinstance(y_type, Scalar):
+                dtype = y_type
+
+        # Create output array
+        tmp_name = self._create_array_temp(shape, dtype)
+
+        # Generate nested loops for the shape
+        loop_vars = []
+        for i, dim in enumerate(shape):
+            loop_var = f"_where_i{i}_{self._get_unique_id()}"
+            if not self.builder.exists(loop_var):
+                self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
+                self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+            loop_vars.append(loop_var)
+            self.builder.begin_for(loop_var, "0", str(dim), "1")
+
+        # Compute linear index
+        linear_idx = self._compute_linear_index(loop_vars, shape, tmp_name, len(shape))
+
+        # Read condition value
+        cond_tmp = f"_where_cond_{self._get_unique_id()}"
+        self.builder.add_container(cond_tmp, Scalar(PrimitiveType.Bool), False)
+        self.symbol_table[cond_tmp] = Scalar(PrimitiveType.Bool)
+
+        block_cond = self.builder.add_block()
+        if cond_name in self.array_info:
+            t_cond_arr = self.builder.add_access(block_cond, cond_name)
+            t_cond_out = self.builder.add_access(block_cond, cond_tmp)
+            t_cond_task = self.builder.add_tasklet(
+                block_cond, TaskletCode.assign, ["_in"], ["_out"]
+            )
+            self.builder.add_memlet(
+                block_cond, t_cond_arr, "void", t_cond_task, "_in", linear_idx
+            )
+            self.builder.add_memlet(
+                block_cond, t_cond_task, "_out", t_cond_out, "void", ""
+            )
+        else:
+            # Scalar condition - just use it directly
+            t_cond_src, cond_sub = self._add_read(block_cond, cond_name)
+            t_cond_out = self.builder.add_access(block_cond, cond_tmp)
+            t_cond_task = self.builder.add_tasklet(
+                block_cond, TaskletCode.assign, ["_in"], ["_out"]
+            )
+            self.builder.add_memlet(
+                block_cond, t_cond_src, "void", t_cond_task, "_in", cond_sub
+            )
+            self.builder.add_memlet(
+                block_cond, t_cond_task, "_out", t_cond_out, "void", ""
+            )
+
+        # If-else based on condition
+        self.builder.begin_if(f"{cond_tmp} == true")
+
+        # True branch: assign x
+        block_true = self.builder.add_block()
+        t_out_true = self.builder.add_access(block_true, tmp_name)
+        if x_name in self.array_info:
+            # x is an array
+            t_x = self.builder.add_access(block_true, x_name)
+            t_task_true = self.builder.add_tasklet(
+                block_true, TaskletCode.assign, ["_in"], ["_out"]
+            )
+            self.builder.add_memlet(
+                block_true, t_x, "void", t_task_true, "_in", linear_idx
+            )
+        else:
+            # x is a scalar
+            t_x, x_sub = self._add_read(block_true, x_name)
+            t_task_true = self.builder.add_tasklet(
+                block_true, TaskletCode.assign, ["_in"], ["_out"]
+            )
+            self.builder.add_memlet(block_true, t_x, "void", t_task_true, "_in", x_sub)
+        self.builder.add_memlet(
+            block_true, t_task_true, "_out", t_out_true, "void", linear_idx
+        )
+
+        self.builder.begin_else()
+
+        # False branch: assign y
+        block_false = self.builder.add_block()
+        t_out_false = self.builder.add_access(block_false, tmp_name)
+        if y_name in self.array_info:
+            # y is an array
+            t_y = self.builder.add_access(block_false, y_name)
+            t_task_false = self.builder.add_tasklet(
+                block_false, TaskletCode.assign, ["_in"], ["_out"]
+            )
+            self.builder.add_memlet(
+                block_false, t_y, "void", t_task_false, "_in", linear_idx
+            )
+        else:
+            # y is a scalar
+            t_y, y_sub = self._add_read(block_false, y_name)
+            t_task_false = self.builder.add_tasklet(
+                block_false, TaskletCode.assign, ["_in"], ["_out"]
+            )
+            self.builder.add_memlet(
+                block_false, t_y, "void", t_task_false, "_in", y_sub
+            )
+        self.builder.add_memlet(
+            block_false, t_task_false, "_out", t_out_false, "void", linear_idx
+        )
+
+        self.builder.end_if()
+
+        # Close all loops
+        for _ in loop_vars:
+            self.builder.end_for()
+
+        return tmp_name
 
     def _handle_numpy_matmul_op(self, left_node, right_node):
         return self._handle_matmul_helper(left_node, right_node)
