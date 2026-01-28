@@ -55,6 +55,7 @@ class ExpressionVisitor(ast.NodeVisitor):
             "zeros": self._handle_numpy_alloc,
             "zeros_like": self._handle_numpy_zeros_like,
             "ones": self._handle_numpy_alloc,
+            "ndarray": self._handle_numpy_alloc,  # np.ndarray() constructor
             "eye": self._handle_numpy_eye,
             "add": self._handle_numpy_binary_op,
             "subtract": self._handle_numpy_binary_op,
