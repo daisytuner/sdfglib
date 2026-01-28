@@ -17,6 +17,7 @@ set(SOURCE_FILES
     src/passes/offloading/data_transfer_minimization_pass.cpp
     src/passes/offloading/remove_redundant_transfers_pass.cpp
     src/passes/offloading/sync_condition_propagation.cpp
+    src/passes/dot_expansion_pass.cpp
     src/passes/opt_pipeline.cpp
     src/passes/scheduler/cuda_scheduler.cpp
     src/passes/scheduler/highway_scheduler.cpp
