@@ -48,6 +48,145 @@ class ExpressionVisitor(ast.NodeVisitor):
             return self.builder.find_new_name(prefix)
         return f"{prefix}{self._get_unique_id()}"
 
+    def _is_indirect_access(self, node):
+        """Check if a node represents an indirect array access (e.g., A[B[i]]).
+
+        Returns True if the node is a subscript where the index itself is a subscript
+        into an array (indirect access pattern).
+        """
+        if not isinstance(node, ast.Subscript):
+            return False
+        # Check if value is a subscripted array access
+        if isinstance(node.value, ast.Name):
+            arr_name = node.value.id
+            if arr_name in self.array_info:
+                # Check if slice/index is itself an array access
+                if isinstance(node.slice, ast.Subscript):
+                    if isinstance(node.slice.value, ast.Name):
+                        idx_arr_name = node.slice.value.id
+                        if idx_arr_name in self.array_info:
+                            return True
+        return False
+
+    def _contains_indirect_access(self, node):
+        """Check if an AST node contains any indirect array access.
+
+        Used to detect expressions like A_row[i] that would be used as slice bounds.
+        """
+        if isinstance(node, ast.Subscript):
+            if isinstance(node.value, ast.Name):
+                arr_name = node.value.id
+                if arr_name in self.array_info:
+                    return True
+        elif isinstance(node, ast.BinOp):
+            return self._contains_indirect_access(
+                node.left
+            ) or self._contains_indirect_access(node.right)
+        elif isinstance(node, ast.UnaryOp):
+            return self._contains_indirect_access(node.operand)
+        return False
+
+    def _materialize_indirect_access(
+        self, node, debug_info=None, return_original_expr=False
+    ):
+        """Materialize an array access into a scalar variable using tasklet+memlets.
+
+        For indirect memory access patterns in SDFGs, we need to:
+        1. Create a scalar container for the result
+        2. Create a tasklet that performs the assignment
+        3. Use memlets to read from the array and write to the scalar
+        4. Return the scalar name (which can be used as a symbolic expression)
+
+        This is the canonical SDFG pattern for indirect access.
+
+        If return_original_expr is True, also returns the original array access
+        expression using parentheses notation (e.g., "A_row(0)") which is consistent
+        with SDFG subset notation. The runtime evaluator will convert this to
+        bracket notation for Python evaluation.
+        """
+        if not self.builder:
+            # Without builder, just return the expression string
+            expr = self.visit(node)
+            return (expr, expr) if return_original_expr else expr
+
+        if debug_info is None:
+            debug_info = DebugInfo()
+
+        if not isinstance(node, ast.Subscript):
+            expr = self.visit(node)
+            return (expr, expr) if return_original_expr else expr
+
+        if not isinstance(node.value, ast.Name):
+            expr = self.visit(node)
+            return (expr, expr) if return_original_expr else expr
+
+        arr_name = node.value.id
+        if arr_name not in self.array_info:
+            expr = self.visit(node)
+            return (expr, expr) if return_original_expr else expr
+
+        # Determine the element type
+        dtype = Scalar(PrimitiveType.Int64)  # Default for indices
+        if arr_name in self.symbol_table:
+            t = self.symbol_table[arr_name]
+            if isinstance(t, Pointer) and t.has_pointee_type():
+                dtype = t.pointee_type
+
+        # Create scalar container for the result
+        tmp_name = self._get_temp_name("_idx_")
+        self.builder.add_container(tmp_name, dtype, False)
+        self.symbol_table[tmp_name] = dtype
+
+        # Get the index expression
+        ndim = self.array_info[arr_name]["ndim"]
+        shapes = self.array_info[arr_name].get("shapes", [])
+
+        # Compute linear index from the subscript
+        if isinstance(node.slice, ast.Tuple):
+            indices = [self.visit(elt) for elt in node.slice.elts]
+        else:
+            indices = [self.visit(node.slice)]
+
+        # Handle cases where we need recursive materialization
+        materialized_indices = []
+        for i, idx_str in enumerate(indices):
+            # Check if the index itself needs materialization (nested indirect)
+            # This happens when idx_str looks like an array access e.g., "arr(i)"
+            if "(" in idx_str and idx_str.endswith(")"):
+                # This is an array access, it should already be a valid symbolic expression
+                # or a scalar variable name
+                materialized_indices.append(idx_str)
+            else:
+                materialized_indices.append(idx_str)
+
+        # Compute linear index
+        linear_index = self._compute_linear_index(
+            materialized_indices, shapes, arr_name, ndim
+        )
+
+        # Create block with tasklet and memlets
+        block = self.builder.add_block(debug_info)
+        t_src = self.builder.add_access(block, arr_name, debug_info)
+        t_dst = self.builder.add_access(block, tmp_name, debug_info)
+        t_task = self.builder.add_tasklet(
+            block, TaskletCode.assign, ["_in"], ["_out"], debug_info
+        )
+
+        self.builder.add_memlet(
+            block, t_src, "void", t_task, "_in", linear_index, None, debug_info
+        )
+        self.builder.add_memlet(
+            block, t_task, "_out", t_dst, "void", "", None, debug_info
+        )
+
+        if return_original_expr:
+            # Return both the materialized variable name and the original array access expression
+            # Use parentheses notation which is consistent with SDFG subset syntax
+            original_expr = f"{arr_name}({linear_index})"
+            return (tmp_name, original_expr)
+
+        return tmp_name
+
     def _init_numpy_handlers(self):
         self.numpy_handlers = {
             "empty": self._handle_numpy_alloc,
@@ -597,8 +736,31 @@ class ExpressionVisitor(ast.NodeVisitor):
             return self._handle_numpy_matmul_op(node.left, node.right)
 
         left = self.visit(node.left)
-        right = self.visit(node.right)
-        op = self.visit(node.op)
+        right = self.visit(node.op)
+        right_val = self.visit(node.right)
+        op = right  # The visited op
+        right = right_val
+
+        def is_shape_symbol_or_const(val):
+            if isinstance(val, (int, float)):
+                return True
+            if isinstance(val, str):
+                # Check if it's a numeric constant
+                try:
+                    float(val)
+                    return True
+                except ValueError:
+                    pass
+                # Check if it's a shape symbol like _s0, _sN, _X_shape_N
+                if val.startswith("_s") and val[2:].isdigit():
+                    return True
+                if "_shape_" in val:
+                    return True
+            return False
+
+        # If both operands are shape symbols/constants, return symbolic expression
+        if is_shape_symbol_or_const(left) and is_shape_symbol_or_const(right):
+            return f"({left} {op} {right})"
 
         # Check if left or right are arrays
         left_is_array = left in self.array_info
@@ -1239,7 +1401,8 @@ class ExpressionVisitor(ast.NodeVisitor):
         # Analyze each dimension: is it a slice or an index?
         # For slices, compute the resulting shape dimension
         # For indices, that dimension is collapsed
-        result_shapes = []  # Shape of the resulting array
+        result_shapes = []  # Shape of the resulting array (for SDFG)
+        result_shapes_runtime = []  # Shape expressions for runtime evaluation
         slice_info = []  # List of (dim_idx, start_str, stop_str, step_str) for slices
         index_info = []  # List of (dim_idx, index_str) for point indices
 
@@ -1247,20 +1410,44 @@ class ExpressionVisitor(ast.NodeVisitor):
             shape_val = shapes[i] if i < len(shapes) else f"_{value_str}_shape_{i}"
 
             if isinstance(idx, ast.Slice):
-                # Parse slice bounds
+                # Parse slice bounds - check for indirect access patterns
                 start_str = "0"
+                start_str_runtime = "0"  # For runtime shape evaluation
                 if idx.lower is not None:
-                    start_str = self.visit(idx.lower)
+                    # Check if lower bound contains indirect array access
+                    if self._contains_indirect_access(idx.lower):
+                        start_str, start_str_runtime = (
+                            self._materialize_indirect_access(
+                                idx.lower, return_original_expr=True
+                            )
+                        )
+                    else:
+                        start_str = self.visit(idx.lower)
+                        start_str_runtime = start_str
                     # Handle negative indices
-                    if start_str.startswith("-") or start_str.startswith("(-"):
+                    if isinstance(start_str, str) and (
+                        start_str.startswith("-") or start_str.startswith("(-")
+                    ):
                         start_str = f"({shape_val} + {start_str})"
+                        start_str_runtime = f"({shape_val} + {start_str_runtime})"
 
                 stop_str = str(shape_val)
+                stop_str_runtime = str(shape_val)
                 if idx.upper is not None:
-                    stop_str = self.visit(idx.upper)
+                    # Check if upper bound contains indirect array access
+                    if self._contains_indirect_access(idx.upper):
+                        stop_str, stop_str_runtime = self._materialize_indirect_access(
+                            idx.upper, return_original_expr=True
+                        )
+                    else:
+                        stop_str = self.visit(idx.upper)
+                        stop_str_runtime = stop_str
                     # Handle negative indices
-                    if stop_str.startswith("-") or stop_str.startswith("(-"):
+                    if isinstance(stop_str, str) and (
+                        stop_str.startswith("-") or stop_str.startswith("(-")
+                    ):
                         stop_str = f"({shape_val} + {stop_str})"
+                        stop_str_runtime = f"({shape_val} + {stop_str_runtime})"
 
                 step_str = "1"
                 if idx.step is not None:
@@ -1268,11 +1455,17 @@ class ExpressionVisitor(ast.NodeVisitor):
 
                 # Compute the size of this dimension in the result
                 dim_size = f"({stop_str} - {start_str})"
+                dim_size_runtime = f"({stop_str_runtime} - {start_str_runtime})"
                 result_shapes.append(dim_size)
+                result_shapes_runtime.append(dim_size_runtime)
                 slice_info.append((i, start_str, stop_str, step_str))
             else:
                 # Point index - dimension is collapsed
-                index_str = self.visit(idx)
+                # Check for indirect array access in the index
+                if self._contains_indirect_access(idx):
+                    index_str = self._materialize_indirect_access(idx)
+                else:
+                    index_str = self.visit(idx)
                 # Handle negative indices
                 if isinstance(index_str, str) and (
                     index_str.startswith("-") or index_str.startswith("(-")
@@ -1290,7 +1483,7 @@ class ExpressionVisitor(ast.NodeVisitor):
             self.symbol_table[tmp_name] = dtype
         else:
             # Result is an array - use _create_array_temp to handle allocation
-            # Calculate size for malloc
+            # Calculate size for malloc - use SDFG symbolic shapes
             size_str = "1"
             for dim in result_shapes:
                 size_str = f"({size_str} * {dim})"
@@ -1302,7 +1495,14 @@ class ExpressionVisitor(ast.NodeVisitor):
             ptr_type = Pointer(dtype)
             self.builder.add_container(tmp_name, ptr_type, False)
             self.symbol_table[tmp_name] = ptr_type
-            self.array_info[tmp_name] = {"ndim": result_ndim, "shapes": result_shapes}
+            # Store both SDFG shapes (for compilation) and runtime shapes (for evaluation)
+            # The "shapes" field uses SDFG symbolic variables for malloc sizing
+            # The "shapes_runtime" field uses original expressions for Python runtime evaluation
+            self.array_info[tmp_name] = {
+                "ndim": result_ndim,
+                "shapes": result_shapes,  # Uses materialized variables for SDFG
+                "shapes_runtime": result_shapes_runtime,  # Uses original expressions for runtime
+            }
 
             # Malloc for the temporary array
             debug_info = DebugInfo()
@@ -1394,6 +1594,163 @@ class ExpressionVisitor(ast.NodeVisitor):
 
         return linear_index
 
+    def _is_array_index(self, node):
+        """Check if a node represents an array that could be used as an index (gather).
+
+        Returns True if the node is a Name referring to an array in array_info.
+        """
+        if isinstance(node, ast.Name):
+            return node.id in self.array_info
+        return False
+
+    def _handle_gather(self, value_str, index_node, debug_info=None):
+        """Handle gather operation: x[indices] where indices is an array.
+
+        Creates a temporary array and generates a loop to gather elements
+        from the source array using the index array.
+
+        This is the canonical SDFG pattern for gather operations:
+        - Create a loop over the index array
+        - Load the index value using a tasklet+memlets
+        - Use that index in the memlet subset for the source array
+        """
+        if debug_info is None:
+            debug_info = DebugInfo()
+
+        # Get the index array name
+        if isinstance(index_node, ast.Name):
+            idx_array_name = index_node.id
+        else:
+            # Visit the index to get its name (handles slices like cols)
+            idx_array_name = self.visit(index_node)
+
+        if idx_array_name not in self.array_info:
+            raise ValueError(f"Gather index must be an array, got {idx_array_name}")
+
+        # Get shapes
+        idx_shapes = self.array_info[idx_array_name].get("shapes", [])
+        src_ndim = self.array_info[value_str]["ndim"]
+        idx_ndim = self.array_info[idx_array_name]["ndim"]
+
+        if idx_ndim != 1:
+            raise NotImplementedError("Only 1D index arrays supported for gather")
+
+        # Result array has same shape as index array
+        result_shape = idx_shapes[0] if idx_shapes else f"_{idx_array_name}_shape_0"
+
+        # Determine element type from source array
+        dtype = Scalar(PrimitiveType.Double)
+        if value_str in self.symbol_table:
+            t = self.symbol_table[value_str]
+            if isinstance(t, Pointer) and t.has_pointee_type():
+                dtype = t.pointee_type
+
+        # Determine index type from index array
+        idx_dtype = Scalar(PrimitiveType.Int64)
+        if idx_array_name in self.symbol_table:
+            t = self.symbol_table[idx_array_name]
+            if isinstance(t, Pointer) and t.has_pointee_type():
+                idx_dtype = t.pointee_type
+
+        # Create result array
+        tmp_name = self._get_temp_name("_gather_")
+
+        # Calculate size for malloc
+        element_size = self.builder.get_sizeof(dtype)
+        total_size = f"({result_shape} * {element_size})"
+
+        # Create pointer for result
+        ptr_type = Pointer(dtype)
+        self.builder.add_container(tmp_name, ptr_type, False)
+        self.symbol_table[tmp_name] = ptr_type
+        self.array_info[tmp_name] = {"ndim": 1, "shapes": [result_shape]}
+
+        # Malloc for the result array
+        block_alloc = self.builder.add_block(debug_info)
+        t_malloc = self.builder.add_malloc(block_alloc, total_size)
+        t_ptr = self.builder.add_access(block_alloc, tmp_name, debug_info)
+        self.builder.add_memlet(
+            block_alloc, t_malloc, "_ret", t_ptr, "void", "", ptr_type, debug_info
+        )
+
+        # Create loop variable
+        loop_var = f"_gather_i_{self._get_unique_id()}"
+        self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
+        self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+
+        # Create variable to hold the loaded index
+        idx_var = f"_gather_idx_{self._get_unique_id()}"
+        self.builder.add_container(idx_var, idx_dtype, False)
+        self.symbol_table[idx_var] = idx_dtype
+
+        # Begin loop
+        self.builder.begin_for(loop_var, "0", str(result_shape), "1", debug_info)
+
+        # Block 1: Load the index from index array using tasklet+memlets
+        block_load_idx = self.builder.add_block(debug_info)
+        idx_arr_access = self.builder.add_access(
+            block_load_idx, idx_array_name, debug_info
+        )
+        idx_var_access = self.builder.add_access(block_load_idx, idx_var, debug_info)
+        tasklet_load = self.builder.add_tasklet(
+            block_load_idx, TaskletCode.assign, ["_in"], ["_out"], debug_info
+        )
+        self.builder.add_memlet(
+            block_load_idx,
+            idx_arr_access,
+            "void",
+            tasklet_load,
+            "_in",
+            loop_var,
+            None,
+            debug_info,
+        )
+        self.builder.add_memlet(
+            block_load_idx,
+            tasklet_load,
+            "_out",
+            idx_var_access,
+            "void",
+            "",
+            None,
+            debug_info,
+        )
+
+        # Block 2: Use the loaded index to gather from source array
+        block_gather = self.builder.add_block(debug_info)
+        src_access = self.builder.add_access(block_gather, value_str, debug_info)
+        dst_access = self.builder.add_access(block_gather, tmp_name, debug_info)
+        tasklet_gather = self.builder.add_tasklet(
+            block_gather, TaskletCode.assign, ["_in"], ["_out"], debug_info
+        )
+
+        # Use the symbolic variable name (idx_var) in the memlet subset - this is key!
+        self.builder.add_memlet(
+            block_gather,
+            src_access,
+            "void",
+            tasklet_gather,
+            "_in",
+            idx_var,
+            None,
+            debug_info,
+        )
+        self.builder.add_memlet(
+            block_gather,
+            tasklet_gather,
+            "_out",
+            dst_access,
+            "void",
+            loop_var,
+            None,
+            debug_info,
+        )
+
+        # End loop
+        self.builder.end_for()
+
+        return tmp_name
+
     def visit_Subscript(self, node):
         value_str = self.visit(node.value)
 
@@ -1455,6 +1812,12 @@ class ExpressionVisitor(ast.NodeVisitor):
                 return self._handle_expression_slicing(
                     node, value_str, indices_nodes, shapes, ndim
                 )
+
+            # Check for gather operation: x[indices_array] where indices_array is an array
+            # This happens when we have a 1D source array and a 1D index array
+            if len(indices_nodes) == 1 and self._is_array_index(indices_nodes[0]):
+                if self.builder:
+                    return self._handle_gather(value_str, indices_nodes[0])
 
             if isinstance(node.slice, ast.Tuple):
                 indices = [self.visit(elt) for elt in node.slice.elts]

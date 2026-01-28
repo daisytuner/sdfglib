@@ -69,6 +69,9 @@ class LinearAlgebraHandler:
                         size = f"({stop} - {start})"
                         slice_shape.append(size)
                     else:
+                        if isinstance(idx, ast.Name) and idx.id in self.array_info:
+                            # This is an array index (gather operation)
+                            return None, None, None, None
                         val = self._parse_expr(idx)
                         start_indices.append(val)
 
