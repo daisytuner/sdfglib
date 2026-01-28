@@ -27,7 +27,7 @@ def kernel(A):
     A[:] = np.linalg.cholesky(A) + np.triu(A, k=1)
 
 
-@pytest.mark.skip()
+@pytest.mark.skip("lingalg.cholesky not yet supported")
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_cholesky2(target):
     if target == "none":

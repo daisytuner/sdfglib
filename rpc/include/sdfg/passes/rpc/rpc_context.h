@@ -24,15 +24,42 @@ private:
 
 public:
     SimpleRpcContext(std::string server, std::string endpoint, std::unordered_map<std::string, std::string> headers = {})
-        : server_(server), endpoint_(endpoint), headers_(headers) {}
+        : server_(std::move(server)), endpoint_(std::move(endpoint)), headers_(std::move(headers)) {}
 
     std::string get_remote_address() const override { return server_ + "/" + endpoint_; }
 
     std::unordered_map<std::string, std::string> get_auth_headers() const override { return headers_; }
 };
 
-std::unique_ptr<RpcContext> build_rpc_context_local();
+struct SimpleRpcContextBuilder {
+    std::string server;
+    std::string endpoint;
+    std::unordered_map<std::string, std::string> headers;
 
-std::unique_ptr<RpcContext> build_rpc_context_from_file(std::optional<std::filesystem::path> config_file = std::nullopt);
+    SimpleRpcContextBuilder() {}
+
+    SimpleRpcContextBuilder& initialize_local_default();
+    SimpleRpcContextBuilder& from_file(std::filesystem::path config_file);
+    SimpleRpcContextBuilder& from_header_env(std::string env_var = "RPC_HEADER");
+    SimpleRpcContextBuilder& from_env(std::string env_var = "SDFG_RPC_CONFIG");
+
+    std::unique_ptr<SimpleRpcContext> build(bool print = true) const;
+};
+
+
+inline std::unique_ptr<RpcContext> build_rpc_context_local() {
+    SimpleRpcContextBuilder b;
+    return b.initialize_local_default().build();
+}
+
+inline std::unique_ptr<RpcContext> build_rpc_context_from_file(std::filesystem::path config_file) {
+    SimpleRpcContextBuilder b;
+    return b.from_file(std::move(config_file)).build();
+}
+
+inline std::unique_ptr<RpcContext> build_rpc_context_auto() {
+    SimpleRpcContextBuilder b;
+    return b.initialize_local_default().from_env().from_header_env().build();
+}
 
 } // namespace sdfg::passes::rpc

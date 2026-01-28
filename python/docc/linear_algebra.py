@@ -468,6 +468,11 @@ class LinearAlgebraHandler:
 
         target_str = target if isinstance(target, str) else self._parse_expr(target)
 
+        # Ensure target container exists for new scalar variables
+        if not self.builder.has_container(target_str):
+            self.builder.add_container(target_str, Scalar(PrimitiveType.Double), False)
+            self.symbol_table[target_str] = Scalar(PrimitiveType.Double)
+
         if is_accumulate:
             self.builder.add_assignment(target_str, f"{target_str} + {tmp_res}")
         else:

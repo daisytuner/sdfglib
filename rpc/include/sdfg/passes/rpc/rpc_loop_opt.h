@@ -5,34 +5,35 @@
 
 namespace sdfg {
 namespace passes {
-namespace scheduler {
+namespace rpc {
 
-class RpcLoopOpt : public LoopScheduler {
+class RpcLoopOpt : public scheduler::LoopScheduler {
 private:
     rpc::RpcContext& rpc_context_;
-
+    const std::string target_;
+    const std::string category_;
 
 protected:
-    SchedulerAction schedule(
+    scheduler::SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
         structured_control_flow::StructuredLoop& loop,
-        const SchedulerLoopInfo& loop_info
+        const scheduler::SchedulerLoopInfo& loop_info
     ) override;
 
-    SchedulerAction schedule(
+    scheduler::SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
         structured_control_flow::While& loop,
-        const SchedulerLoopInfo& loop_info
+        const scheduler::SchedulerLoopInfo& loop_info
     ) override;
 
 public:
-    RpcLoopOpt(rpc::RpcContext& rpc_context);
+    RpcLoopOpt(rpc::RpcContext& rpc_context, std::string target, std::string category);
 
     std::string name() override { return "RpcLoopOpt"; };
 };
 
-} // namespace scheduler
+} // namespace rpc
 } // namespace passes
 } // namespace sdfg

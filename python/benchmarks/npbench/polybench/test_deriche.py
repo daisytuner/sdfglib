@@ -82,46 +82,46 @@ def kernel(alpha, imgIn):
     return imgOut
 
 
-@pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
+@pytest.mark.parametrize(
+    "target",
+    [
+        "none",
+        # "sequential",
+        # "openmp",
+        # "cuda"
+    ],
+)
 def test_deriche(target):
     if target == "none":
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
+                "MAP": 14,
+                "SEQUENTIAL": 14,
+                "FOR": 24,
+                "CMath": 9,
+                "Malloc": 4,
             }
         )
     elif target == "sequential":
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
+                "HIGHWAY": 9,
+                "MAP": 14,
+                "SEQUENTIAL": 5,
+                "FOR": 24,
+                "CMath": 9,
+                "Malloc": 4,
             }
         )
     elif target == "openmp":
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
+                "HIGHWAY": 4,
+                "MAP": 14,
+                "FOR": 24,
+                "CPU_PARALLEL": 10,
+                "CMath": 9,
+                "Malloc": 4,
             }
         )
     else:  # cuda

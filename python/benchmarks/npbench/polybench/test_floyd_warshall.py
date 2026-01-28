@@ -20,60 +20,35 @@ def kernel(path):
         path[:] = np.minimum(path[:], np.add.outer(path[:, k], path[k, :]))
 
 
-@pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_floyd_warshall(target):
     if target == "none":
         verifier = SDFGVerification(
-            verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
+            verification={"MAP": 6, "Malloc": 2, "SEQUENTIAL": 6, "FOR": 7}
         )
     elif target == "sequential":
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
+                "HIGHWAY": 3,
+                "MAP": 6,
+                "Malloc": 2,
+                "SEQUENTIAL": 3,
+                "FOR": 7,
             }
         )
     elif target == "openmp":
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
+                "HIGHWAY": 3,
+                "MAP": 6,
+                "Malloc": 2,
+                "SEQUENTIAL": 3,
+                "FOR": 7,
             }
         )
     else:  # cuda
         verifier = SDFGVerification(
-            verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
+            verification={"MAP": 6, "Malloc": 2, "SEQUENTIAL": 6, "FOR": 7}
         )
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)
 

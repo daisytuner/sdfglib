@@ -24,60 +24,19 @@ def kernel(TSTEPS, A, B):
         A[1:-1] = 0.33333 * (B[:-2] + B[1:-1] + B[2:])
 
 
-@pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_jacobi_1d(target):
     if target == "none":
-        verifier = SDFGVerification(
-            verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
-        )
+        verifier = SDFGVerification(verification={"MAP": 2, "SEQUENTIAL": 2, "FOR": 3})
     elif target == "sequential":
-        verifier = SDFGVerification(
-            verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
-        )
+        verifier = SDFGVerification(verification={"HIGHWAY": 2, "MAP": 2, "FOR": 3})
     elif target == "openmp":
         verifier = SDFGVerification(
-            verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
+            verification={"CPU_PARALLEL": 2, "MAP": 2, "FOR": 3}
         )
     else:  # cuda
         verifier = SDFGVerification(
-            verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
+            verification={"CUDA": 2, "MAP": 2, "CUDAOffloading": 8, "FOR": 3}
         )
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)
 

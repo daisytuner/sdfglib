@@ -2,6 +2,7 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <sdfg/passes/rpc/rpc_context.h>
 #include <sdfg/structured_sdfg.h>
 
 class PyStructuredSDFGBuilder;
@@ -45,7 +46,9 @@ public:
 
     void normalize();
 
-    void schedule(const std::string& target, const std::string& category);
+    void schedule(
+        const std::string& target, const std::string& category, sdfg::passes::rpc::RpcContext* remote_ctx = nullptr
+    );
 
     std::string compile(
         const std::string& output_folder, const std::string& instrumentation_mode = "", bool capture_args = false

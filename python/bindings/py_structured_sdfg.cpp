@@ -39,6 +39,9 @@
 #include <sdfg/passes/symbolic/type_minimization.h>
 #include <sdfg/serializer/json_serializer.h>
 
+#include "sdfg/passes/rpc/rpc_context.h"
+#include "sdfg/passes/rpc/rpc_loop_opt.h"
+
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
@@ -251,7 +254,8 @@ void PyStructuredSDFG::normalize() {
     pipeline.run(builder, analysis_manager);
 }
 
-void PyStructuredSDFG::schedule(const std::string& target, const std::string& category) {
+void PyStructuredSDFG::
+    schedule(const std::string& target, const std::string& category, sdfg::passes::rpc::RpcContext* remote_ctx) {
     if (target == "none") {
         return;
     }
@@ -261,6 +265,13 @@ void PyStructuredSDFG::schedule(const std::string& target, const std::string& ca
 
     // CPU Opt Pipeline
     if (target == "sequential" || target == "openmp") {
+        if (remote_ctx) {
+            std::cout << "Running RPC Loop Optimization for target: " << target << ", category: " << category << " on "
+                      << remote_ctx->get_remote_address() << std::endl;
+            sdfg::passes::rpc::RpcLoopOpt rpcOpt(*remote_ctx, target, category);
+            rpcOpt.run(builder, analysis_manager);
+        }
+
         // CPU Tiling
         // sdfg::passes::scheduler::PollyScheduler polly_scheduler;
         // polly_scheduler.run(builder, analysis_manager);
