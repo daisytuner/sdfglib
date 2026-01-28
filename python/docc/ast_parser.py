@@ -229,6 +229,22 @@ class ASTParser(ast.NodeVisitor):
 
         target = node.targets[0]
 
+        # Handle tuple unpacking: I, J, K = expr1, expr2, expr3
+        if isinstance(target, ast.Tuple):
+            if isinstance(node.value, ast.Tuple):
+                # Unpacking tuple to tuple: a, b, c = x, y, z
+                if len(target.elts) != len(node.value.elts):
+                    raise ValueError("Tuple unpacking size mismatch")
+                for tgt, val in zip(target.elts, node.value.elts):
+                    assign = ast.Assign(targets=[tgt], value=val)
+                    ast.copy_location(assign, node)
+                    self.visit_Assign(assign)
+            else:
+                raise NotImplementedError(
+                    "Tuple unpacking from non-tuple values not supported"
+                )
+            return
+
         # Special case: linear algebra functions
         if self.la_handler.is_gemm(node.value):
             if self.la_handler.handle_gemm(target, node.value):
@@ -631,7 +647,7 @@ class ASTParser(ast.NodeVisitor):
                     if start_str.startswith("-"):
                         shapes = self.array_info[target_name].get("shapes", [])
                         dim_size = (
-                            shapes[i]
+                            str(shapes[i])
                             if i < len(shapes)
                             else f"_{target_name}_shape_{i}"
                         )
@@ -645,7 +661,7 @@ class ASTParser(ast.NodeVisitor):
                     if stop_str.startswith("-") or stop_str.startswith("(-"):
                         shapes = self.array_info[target_name].get("shapes", [])
                         dim_size = (
-                            shapes[i]
+                            str(shapes[i])
                             if i < len(shapes)
                             else f"_{target_name}_shape_{i}"
                         )
@@ -653,7 +669,9 @@ class ASTParser(ast.NodeVisitor):
                 else:
                     shapes = self.array_info[target_name].get("shapes", [])
                     stop_str = (
-                        shapes[i] if i < len(shapes) else f"_{target_name}_shape_{i}"
+                        str(shapes[i])
+                        if i < len(shapes)
+                        else f"_{target_name}_shape_{i}"
                     )
 
                 step_str = "1"
