@@ -725,6 +725,7 @@ void PyStructuredSDFGBuilder::add_dot(
     const sdfg::DebugInfo& debug_info
 ) {
     auto& parent = current_sequence();
+    auto& ref_block = builder.add_block(parent, {}, debug_info);
     auto& block = builder.add_block(parent, {}, debug_info);
 
     auto sym_n = sdfg::symbolic::parse(n);
@@ -740,21 +741,24 @@ void PyStructuredSDFGBuilder::add_dot(
     auto ptr_double = sdfg::types::Pointer(sdfg::types::Scalar(sdfg::types::PrimitiveType::Double));
 
     auto handle_input = [&](const std::string& name, const std::vector<std::string>& subset, const std::string& port) {
-        auto& origin = builder.add_access(block, name, debug_info);
         if (subset.empty()) {
+            auto& origin = builder.add_access(block, name, debug_info);
             builder.add_computational_memlet(block, origin, dot_node, port, {}, ptr_double, debug_info);
         } else {
             std::string view_name = builder.find_new_name(name + "_view_");
             builder.add_container(view_name, ptr_double, false);
-            auto& view = builder.add_access(block, view_name, debug_info);
+            auto& view = builder.add_access(ref_block, view_name, debug_info);
 
             sdfg::data_flow::Subset s;
             for (const auto& str : subset) {
                 s.push_back(sdfg::symbolic::parse(str));
             }
 
-            builder.add_reference_memlet(block, origin, view, s, ptr_double, debug_info);
-            builder.add_computational_memlet(block, view, dot_node, port, {}, ptr_double, debug_info);
+            auto& origin = builder.add_access(ref_block, name, debug_info);
+            builder.add_reference_memlet(ref_block, origin, view, s, ptr_double, debug_info);
+
+            auto& view2 = builder.add_access(block, view_name, debug_info);
+            builder.add_computational_memlet(block, view2, dot_node, port, {}, ptr_double, debug_info);
         }
     };
 
