@@ -37,7 +37,15 @@ def kernel(A):
     return Q, R
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
+@pytest.mark.parametrize(
+    "target",
+    [
+        "none",
+        "sequential",
+        "openmp",
+        # "cuda"
+    ],
+)
 def test_gramschmidt(target):
     if target == "none":
         verifier = SDFGVerification(

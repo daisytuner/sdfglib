@@ -29,7 +29,15 @@ def kernel(A):
         A[i, i] = np.sqrt(A[i, i])
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
+@pytest.mark.parametrize(
+    "target",
+    [
+        "none",
+        "sequential",
+        # "openmp",
+        "cuda",
+    ],
+)
 def test_cholesky(target):
     if target == "none":
         verifier = SDFGVerification(

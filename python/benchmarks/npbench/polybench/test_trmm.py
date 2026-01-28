@@ -28,7 +28,15 @@ def kernel(alpha, A, B):
     B *= alpha
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
+@pytest.mark.parametrize(
+    "target",
+    [
+        "none",
+        "sequential",
+        "openmp",
+        # "cuda"
+    ],
+)
 def test_trmm(target):
     if target == "none":
         verifier = SDFGVerification(

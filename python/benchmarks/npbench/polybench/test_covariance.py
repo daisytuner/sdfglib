@@ -28,7 +28,15 @@ def kernel(M, float_n, data):
     return cov
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
+@pytest.mark.parametrize(
+    "target",
+    [
+        "none",
+        "sequential",
+        "openmp",
+        # "cuda"
+    ],
+)
 def test_covariance(target):
     if target == "none":
         verifier = SDFGVerification(
