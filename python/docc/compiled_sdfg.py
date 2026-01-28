@@ -65,6 +65,46 @@ class CompiledSDFG:
         # Set up return type
         self.func.restype = self._get_ctypes_type(sdfg.return_type)
 
+    def _convert_to_python_syntax(self, expr_str):
+        """Convert SDFG parentheses notation to Python bracket notation.
+
+        SDFG uses parentheses for array indexing (e.g., "A_row(0)") while Python
+        uses brackets (e.g., "A_row[0]"). This method converts the notation for
+        runtime evaluation.
+
+        Examples:
+            "A_row(0)" -> "A_row[0]"
+            "(A_row(1) - A_row(0))" -> "(A_row[1] - A_row[0])"
+        """
+        import re
+
+        result = expr_str
+
+        while True:
+            pattern = r"([a-zA-Z_][a-zA-Z0-9_]*)\(([^()]+)\)"
+            match = re.search(pattern, result)
+            if not match:
+                break
+
+            name = match.group(1)
+            index = match.group(2)
+
+            # Skip known function names
+            known_functions = {"int", "float", "abs", "min", "max", "sum", "len"}
+            if name.lower() in known_functions:
+                placeholder = f"__FUNC__{name}__{index}__"
+                result = result[: match.start()] + placeholder + result[match.end() :]
+            else:
+                result = (
+                    result[: match.start()] + f"{name}[{index}]" + result[match.end() :]
+                )
+
+        result = re.sub(
+            r"__FUNC__([a-zA-Z_][a-zA-Z0-9_]*)__([^_]+)__", r"\1(\2)", result
+        )
+
+        return result
+
     def _create_ctypes_structure(self, struct_name):
         """Create a ctypes Structure class for the given structure name."""
         if struct_name in self._ctypes_structures:
@@ -124,6 +164,25 @@ class CompiledSDFG:
                 s_idx = self.shape_sources.index((u_idx, dim_idx))
                 shape_symbol_values[f"_s{s_idx}"] = val
 
+        # Add input arrays to the shape context for expressions with indirect access
+        # This allows evaluating expressions like A_row[0] at runtime
+        user_arg_idx = 0
+        for name in self.arg_names:
+            if name in self.output_args:
+                continue
+            if name.startswith("_s") and name[2:].isdigit():
+                continue
+
+            # Must be a user parameter - add it to shape context if it's an array
+            if user_arg_idx < len(args):
+                val = args[user_arg_idx]
+                if isinstance(val, (int, float, np.integer, np.floating)):
+                    shape_symbol_values[name] = val
+                elif np is not None and isinstance(val, np.ndarray):
+                    # Add numpy arrays to context for indirect access shape evaluation
+                    shape_symbol_values[name] = val
+                user_arg_idx += 1
+
         param_arg_idx = 0
         for name in self.arg_names:
             if name in self.output_args:
@@ -158,7 +217,10 @@ class CompiledSDFG:
                     # Evaluate
                     for dim_str in dims:
                         try:
-                            val = eval(str(dim_str), {}, shape_symbol_values)
+                            # Convert SDFG parentheses notation to Python bracket notation
+                            # e.g., "A_row(0)" -> "A_row[0]"
+                            eval_str = self._convert_to_python_syntax(str(dim_str))
+                            val = eval(eval_str, {}, shape_symbol_values)
                             size *= int(val)
                         except Exception as e:
                             raise RuntimeError(
@@ -252,7 +314,8 @@ class CompiledSDFG:
                         try:
                             shape = []
                             for dim_str in dims:
-                                val = eval(str(dim_str), {}, shape_symbol_values)
+                                eval_str = self._convert_to_python_syntax(str(dim_str))
+                                val = eval(eval_str, {}, shape_symbol_values)
                                 shape.append(int(val))
                             arr = arr.reshape(shape)
                         except:

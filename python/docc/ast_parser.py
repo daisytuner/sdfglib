@@ -141,7 +141,12 @@ class ASTParser(ast.NodeVisitor):
             else:
                 # Record shape for metadata
                 if res in self.array_info:
-                    shape = self.array_info[res]["shapes"]
+                    # Prefer runtime shapes if available (for indirect access patterns)
+                    # Fall back to regular shapes otherwise
+                    if "shapes_runtime" in self.array_info[res]:
+                        shape = self.array_info[res]["shapes_runtime"]
+                    else:
+                        shape = self.array_info[res]["shapes"]
                     # Convert to string expressions
                     self.captured_return_shapes[ret_name] = [str(s) for s in shape]
 
