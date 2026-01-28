@@ -11,6 +11,7 @@ set(PYTHON_SOURCES
     bindings/bindings.cpp
     bindings/py_structured_sdfg.cpp
     bindings/py_structured_sdfg_builder.cpp
+    bindings/data_flow/py_tasklet.cpp
     bindings/types/py_types.cpp
 )
 

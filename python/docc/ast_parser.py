@@ -1,6 +1,6 @@
 import ast
 import copy
-from ._sdfg import Scalar, PrimitiveType, Pointer
+from ._sdfg import Scalar, PrimitiveType, Pointer, TaskletCode
 from .ast_utils import (
     SliceRewriter,
     get_debug_info,
@@ -80,7 +80,7 @@ class ASTParser(ast.NodeVisitor):
         if self.infer_return_type:
             for i, res in enumerate(parsed_values):
                 ret_name = f"_docc_ret_{i}"
-                if not self.builder.has_container(ret_name):
+                if not self.builder.exists(ret_name):
                     dtype = Scalar(PrimitiveType.Double)
                     if res in self.symbol_table:
                         dtype = self.symbol_table[res]
@@ -128,7 +128,7 @@ class ASTParser(ast.NodeVisitor):
                 t_src, src_sub = self.expr_visitor._add_read(block, res, debug_info)
 
                 t_task = self.builder.add_tasklet(
-                    block, "assign", ["_in"], ["_out"], debug_info
+                    block, TaskletCode.assign, ["_in"], ["_out"], debug_info
                 )
                 self.builder.add_memlet(
                     block, t_src, "void", t_task, "_in", src_sub, None, debug_info
@@ -291,7 +291,7 @@ class ASTParser(ast.NodeVisitor):
                 dst_sub = ""
 
             t_task = self.builder.add_tasklet(
-                block, "assign", ["_in"], ["_out"], debug_info
+                block, TaskletCode.assign, ["_in"], ["_out"], debug_info
             )
 
             self.builder.add_memlet(
@@ -310,7 +310,7 @@ class ASTParser(ast.NodeVisitor):
         value_str = self._parse_expr(node.value)
         debug_info = get_debug_info(node, self.filename, self.function_name)
 
-        if not self.builder.has_container(target_name):
+        if not self.builder.exists(target_name):
             if isinstance(node.value, ast.Constant):
                 val = node.value.value
                 if isinstance(val, int):
@@ -351,7 +351,7 @@ class ASTParser(ast.NodeVisitor):
             block = self.builder.add_block(debug_info)
             t_dst = self.builder.add_access(block, target_name, debug_info)
             t_task = self.builder.add_tasklet(
-                block, "assign", ["_in"], ["_out"], debug_info
+                block, TaskletCode.assign, ["_in"], ["_out"], debug_info
             )
 
             if src_type:
@@ -432,7 +432,7 @@ class ASTParser(ast.NodeVisitor):
         else:
             raise ValueError("Invalid range arguments")
 
-        if not self.builder.has_container(var):
+        if not self.builder.exists(var):
             self.builder.add_container(var, Scalar(PrimitiveType.Int64), False)
             self.symbol_table[var] = Scalar(PrimitiveType.Int64)
 
@@ -478,7 +478,7 @@ class ASTParser(ast.NodeVisitor):
             loop_var = f"_bcast_iter_{i}_{self._get_unique_id()}"
             outer_loop_vars.append(loop_var)
 
-            if not self.builder.has_container(loop_var):
+            if not self.builder.exists(loop_var):
                 self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
                 self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
 
@@ -619,7 +619,7 @@ class ASTParser(ast.NodeVisitor):
                 loop_var = f"_slice_iter_{len(loop_vars)}_{self._get_unique_id()}"
                 loop_vars.append(loop_var)
 
-                if not self.builder.has_container(loop_var):
+                if not self.builder.exists(loop_var):
                     self.builder.add_container(
                         loop_var, Scalar(PrimitiveType.Int64), False
                     )
@@ -730,7 +730,7 @@ class ASTParser(ast.NodeVisitor):
             t_src, src_sub = self.expr_visitor._add_read(block, result_name, debug_info)
             t_dst = self.builder.add_access(block, target_str, debug_info)
             t_task = self.builder.add_tasklet(
-                block, "assign", ["_in"], ["_out"], debug_info
+                block, TaskletCode.assign, ["_in"], ["_out"], debug_info
             )
             self.builder.add_memlet(
                 block, t_src, "void", t_task, "_in", src_sub, None, debug_info
@@ -753,7 +753,7 @@ class ASTParser(ast.NodeVisitor):
                 loop_var = f"_copy_iter_{len(loop_vars)}_{self._get_unique_id()}"
                 loop_vars.append(loop_var)
 
-                if not self.builder.has_container(loop_var):
+                if not self.builder.exists(loop_var):
                     self.builder.add_container(
                         loop_var, Scalar(PrimitiveType.Int64), False
                     )
@@ -806,7 +806,7 @@ class ASTParser(ast.NodeVisitor):
         t_src = self.builder.add_access(block, result_name, debug_info)
         t_dst = self.builder.add_access(block, target_name, debug_info)
         t_task = self.builder.add_tasklet(
-            block, "assign", ["_in"], ["_out"], debug_info
+            block, TaskletCode.assign, ["_in"], ["_out"], debug_info
         )
 
         # Source index - just use loop vars for flat array from ufunc outer

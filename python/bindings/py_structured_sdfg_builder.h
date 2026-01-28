@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sdfg/builder/structured_sdfg_builder.h>
+#include <sdfg/data_flow/tasklet.h>
 #include <sdfg/structured_control_flow/control_flow_node.h>
 #include <sdfg/structured_control_flow/for.h>
 #include <sdfg/structured_control_flow/if_else.h>
@@ -31,13 +32,19 @@ public:
 
     PyStructuredSDFG move();
 
+    /***** Containers *****/
+
     void add_container(const std::string& name, const sdfg::types::IType& type, bool is_argument);
+
+    void add_structure(const std::string& name, const std::vector<const sdfg::types::IType*>& member_types);
+
+    bool exists(const std::string& name);
 
     void set_return_type(const sdfg::types::IType& type);
 
-    void set_return_shape(const std::vector<std::string>& shape);
+    std::string get_sizeof(const sdfg::types::IType& type);
 
-    bool has_container(const std::string& name);
+    /***** Control Flow *****/
 
     void add_return(const std::string& data, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
 
@@ -65,8 +72,66 @@ public:
 
     void end_for();
 
+    void add_transition(
+        const std::string& lhs, const std::string& rhs, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
+    );
+
     void add_assignment(
         const std::string& target, const std::string& value, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
+    );
+
+    /***** Dataflow *****/
+
+    size_t add_block(const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
+
+    size_t add_access(size_t block_ptr, const std::string& name, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
+
+    size_t add_constant(
+        size_t block_ptr,
+        const std::string& value,
+        const sdfg::types::IType& type,
+        const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
+    );
+
+    size_t add_tasklet(
+        size_t block_ptr,
+        sdfg::data_flow::TaskletCode code,
+        const std::vector<std::string>& inputs,
+        const std::vector<std::string>& outputs,
+        const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
+    );
+
+    void add_memlet(
+        size_t block_ptr,
+        size_t src_ptr,
+        const std::string& src_conn,
+        size_t dst_ptr,
+        const std::string& dst_conn,
+        const std::string& subset = "",
+        const sdfg::types::IType* type = nullptr,
+        const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
+    );
+
+    void add_reference_memlet(
+        size_t block_ptr,
+        size_t src_ptr,
+        size_t dst_ptr,
+        const std::string& subset = "",
+        const sdfg::types::IType* type = nullptr,
+        const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
+    );
+
+    /***** Library Nodes *****/
+
+    size_t add_cmath(size_t block_ptr, const std::string& name, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
+
+    size_t add_malloc(size_t block_ptr, const std::string& size, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
+
+    size_t add_memset(
+        size_t block_ptr,
+        const std::string& value,
+        const std::string& num,
+        const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
     );
 
     void add_gemm(
@@ -117,6 +182,7 @@ public:
         const std::vector<std::string>& shape,
         const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
     );
+
     void add_transpose(
         const std::string& A,
         const std::string& C,
@@ -124,6 +190,7 @@ public:
         const std::vector<int64_t>& perm,
         const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
     );
+
     void add_conv(
         const std::string& X,
         const std::string& W,
@@ -155,60 +222,4 @@ public:
         bool keepdims,
         const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
     );
-
-    // Low-level API
-    size_t add_block(const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
-
-    size_t add_access(size_t block_ptr, const std::string& name, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
-
-    size_t add_constant(
-        size_t block_ptr,
-        const std::string& value,
-        const sdfg::types::IType& type,
-        const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
-    );
-
-    size_t add_tasklet(
-        size_t block_ptr,
-        const std::string& code,
-        const std::vector<std::string>& inputs,
-        const std::vector<std::string>& outputs,
-        const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
-    );
-
-    size_t add_intrinsic(size_t block_ptr, const std::string& name, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
-
-    size_t add_malloc(size_t block_ptr, const std::string& size, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
-
-    size_t add_memset(
-        size_t block_ptr,
-        const std::string& value,
-        const std::string& num,
-        const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
-    );
-
-    std::string get_sizeof(const sdfg::types::IType& type);
-
-    void add_memlet(
-        size_t block_ptr,
-        size_t src_ptr,
-        const std::string& src_conn,
-        size_t dst_ptr,
-        const std::string& dst_conn,
-        const std::string& subset = "",
-        const sdfg::types::IType* type = nullptr,
-        const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
-    );
-
-    void add_reference_memlet(
-        size_t block_ptr,
-        size_t src_ptr,
-        size_t dst_ptr,
-        const std::string& subset = "",
-        const sdfg::types::IType* type = nullptr,
-        const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
-    );
-
-    // Structure definition support
-    void add_structure(const std::string& name, const std::vector<const sdfg::types::IType*>& member_types);
 };

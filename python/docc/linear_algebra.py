@@ -469,7 +469,7 @@ class LinearAlgebraHandler:
         target_str = target if isinstance(target, str) else self._parse_expr(target)
 
         # Ensure target container exists for new scalar variables
-        if not self.builder.has_container(target_str):
+        if not self.builder.exists(target_str):
             self.builder.add_container(target_str, Scalar(PrimitiveType.Double), False)
             self.symbol_table[target_str] = Scalar(PrimitiveType.Double)
 
