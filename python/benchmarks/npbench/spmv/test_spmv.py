@@ -96,4 +96,4 @@ def test_spmv(target):
 
 
 if __name__ == "__main__":
-    run_benchmark(initialize, kernel, PARAMETERS, "hdiff")
+    run_benchmark(initialize, kernel, PARAMETERS, "spmv")
