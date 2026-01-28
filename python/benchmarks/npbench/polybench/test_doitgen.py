@@ -23,7 +23,7 @@ def kernel(NR, NQ, NP, A, C4):
     A[:] = np.reshape(np.reshape(A, (NR, NQ, 1, NP)) @ C4, (NR, NQ, NP))
 
 
-@pytest.mark.skip()
+@pytest.mark.skip("np.reshape not yet supported")
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_doitgen(target):
     if target == "none":

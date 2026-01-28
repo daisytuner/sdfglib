@@ -248,7 +248,10 @@ bool ElementWiseBinaryNode::expand(builder::StructuredSDFGBuilder& builder, anal
     builder.remove_memlet(block, *iedge_b);
     builder.remove_memlet(block, oedge);
     builder.remove_node(block, input_node_a);
-    builder.remove_node(block, input_node_b);
+    // Only remove input_node_b if it's different from input_node_a
+    if (&input_node_b != &input_node_a) {
+        builder.remove_node(block, input_node_b);
+    }
     builder.remove_node(block, output_node);
     builder.remove_node(block, *this);
     builder.remove_child(parent, index + 1);

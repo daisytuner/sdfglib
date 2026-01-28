@@ -117,7 +117,7 @@ bool StdNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
                 "_ret",
                 tmp_mean_x2_name_access,
                 {},
-                in_edge.base_type(),
+                out_edge.base_type(),
                 this->debug_info()
             );
         }
@@ -133,7 +133,7 @@ bool StdNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysis
                 "_ret",
                 tmp_mean_x_name_access,
                 {},
-                in_edge.base_type(),
+                out_edge.base_type(),
                 this->debug_info()
             );
         }

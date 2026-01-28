@@ -309,7 +309,14 @@ void HighwayMapDispatcher::dispatch_highway(
 
         // Dispatch code nodes
         if (auto tasklet = dynamic_cast<data_flow::Tasklet*>(dnode)) {
-            std::string tasklet_code = HighwayMapDispatcher::tasklet(*tasklet);
+            std::string tasklet_code;
+            if (tasklet->is_fptosi(this->sdfg_) || tasklet->is_sitofp(this->sdfg_) || tasklet->is_uitofp(this->sdfg_) ||
+                tasklet->is_fptoui(this->sdfg_)) {
+                tasklet_code = "hn::ConvertTo(" + daisy_vec(oedge.base_type().primitive_type()) + ", " +
+                               tasklet->input(0) + ");";
+            } else {
+                tasklet_code = HighwayMapDispatcher::tasklet(*tasklet);
+            }
             if (tasklet_code.empty()) {
                 throw InvalidSDFGException("Schedule type Highway applied on unsupported tasklet node");
             }
