@@ -24,11 +24,9 @@ bool DotExpansion::accept(structured_control_flow::Block& block) {
 
     auto& scope_analysis = analysis_manager_.get<analysis::ScopeAnalysis>();
     for (auto lib_node : block.dataflow().library_nodes()) {
-        std::cerr << "DotExpansionPass visiting libnode " << lib_node->code().value() << "\n";
         if (lib_node->code() == math::blas::LibraryNodeType_DOT) {
             auto dot_node = static_cast<math::blas::DotNode*>(lib_node);
             if (dot_node->expand(builder_, analysis_manager_)) {
-                std::cerr << "  expanded!\n";
                 return true;
             }
         }

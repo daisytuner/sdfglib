@@ -162,11 +162,33 @@ def get_all_polybench_tests():
         benchmark_name = test_file.stem.replace("test_", "")
 
         # Check if the test function is marked with @pytest.mark.skip()
+        # and extract available targets from pytest.mark.parametrize
         with open(test_file, "r") as f:
             content = f.read()
-            if "@pytest.mark.skip()" in content:
+            if "@pytest.mark.skip(" in content:
                 print(f"Skipping {benchmark_name}: marked with @pytest.mark.skip()")
                 continue
+
+            # Extract available targets from @pytest.mark.parametrize("target", [...])
+            available_targets = None
+            parametrize_match = re.search(
+                r'@pytest\.mark\.parametrize\(\s*["\']target["\']\s*,\s*\[(.*?)\]',
+                content,
+                re.DOTALL,
+            )
+            if parametrize_match:
+                targets_str = parametrize_match.group(1)
+                # Extract all non-commented target strings
+                target_matches = re.findall(r'["\'](\w+)["\']', targets_str)
+                available_targets = target_matches
+                # Check for commented out targets
+                commented_targets = re.findall(r'#\s*["\'](\w+)["\']', targets_str)
+                if commented_targets:
+                    # Remove commented targets from available list
+                    available_targets = [
+                        t for t in available_targets if t not in commented_targets
+                    ]
+                print(f"  {benchmark_name}: available targets = {available_targets}")
 
         try:
             # Import the module
@@ -185,6 +207,7 @@ def get_all_polybench_tests():
                         "initialize": module.initialize,
                         "kernel": module.kernel,
                         "parameters": module.PARAMETERS,
+                        "available_targets": available_targets,
                     }
                 )
             else:
@@ -235,15 +258,43 @@ def main():
     # Collect all results
     all_results = []
 
-    total_runs = len(benchmarks) * len(targets)
+    # Calculate total runs by checking available targets for each benchmark
+    total_runs = 0
+    for benchmark in benchmarks:
+        available_targets = benchmark.get("available_targets")
+        if available_targets is not None:
+            benchmark_targets = [
+                t for t in targets if t == "numpy" or t in available_targets
+            ]
+        else:
+            benchmark_targets = targets
+        total_runs += len(benchmark_targets)
+
     current_run = 0
 
     for benchmark in benchmarks:
         print(f"\n{'='*80}")
         print(f"Running benchmark: {benchmark['benchmark_name']}")
+
+        # Filter targets based on what's available for this benchmark
+        available_targets = benchmark.get("available_targets")
+        if available_targets is not None:
+            # Filter the requested targets to only those available in the pytest
+            # Always keep numpy as an option even if not in pytest targets
+            benchmark_targets = [
+                t for t in targets if t == "numpy" or t in available_targets
+            ]
+            if len(benchmark_targets) < len(targets):
+                unavailable = [t for t in targets if t not in benchmark_targets]
+                print(f"Note: Targets {unavailable} not available for this benchmark")
+        else:
+            # If we couldn't parse targets, use all requested targets
+            benchmark_targets = targets
+
+        print(f"Available targets: {benchmark_targets}")
         print(f"{'='*80}")
 
-        for target in targets:
+        for target in benchmark_targets:
             current_run += 1
             # Check if this is a numpy baseline run
             is_numpy = target == "numpy"
