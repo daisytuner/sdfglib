@@ -4,6 +4,7 @@
 #include <nlohmann/json_fwd.hpp>
 #include <string>
 
+#include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"
@@ -22,7 +23,11 @@ class JSONSerializer {
 public:
     JSONSerializer() {}
 
-    nlohmann::json serialize(const sdfg::StructuredSDFG& sdfg);
+    virtual nlohmann::json serialize(
+        const sdfg::StructuredSDFG& sdfg,
+        analysis::AnalysisManager* analysis_manager = nullptr,
+        structured_control_flow::Sequence* root = nullptr
+    );
 
     std::unique_ptr<sdfg::StructuredSDFG> deserialize(nlohmann::json& j);
 

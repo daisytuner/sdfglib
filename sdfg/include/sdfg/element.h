@@ -13,6 +13,10 @@ class SDFGBuilder;
 class StructuredSDFGBuilder;
 } // namespace builder
 
+namespace deepcopy {
+class StructuredSDFGDeepCopy;
+} // namespace deepcopy
+
 namespace serializer {
 class JSONSerializer;
 } // namespace serializer
@@ -65,6 +69,7 @@ class Element {
     friend class builder::SDFGBuilder;
     friend class builder::StructuredSDFGBuilder;
     friend class serializer::JSONSerializer;
+    friend class deepcopy::StructuredSDFGDeepCopy;
 
 protected:
     size_t element_id_;
