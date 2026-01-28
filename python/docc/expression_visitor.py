@@ -200,11 +200,24 @@ class ExpressionVisitor(ast.NodeVisitor):
 
         if self.builder.has_container(expr_str):
             access = self.builder.add_access(block, expr_str, debug_info)
+            # For pointer types representing 0-D arrays, dereference with "0"
+            subset = ""
+            if expr_str in self.symbol_table:
+                sym_type = self.symbol_table[expr_str]
+                if isinstance(sym_type, Pointer):
+                    # Check if it's a 0-D array (scalar wrapped in pointer)
+                    if expr_str in self.array_info:
+                        ndim = self.array_info[expr_str].get("ndim", 0)
+                        if ndim == 0:
+                            subset = "0"
+                    else:
+                        # Pointer without array_info is treated as 0-D
+                        subset = "0"
             try:
-                self._access_cache[(block, expr_str)] = (access, "")
+                self._access_cache[(block, expr_str)] = (access, subset)
             except TypeError:
                 pass
-            return access, ""
+            return access, subset
 
         dtype = Scalar(PrimitiveType.Double)
         if self._is_int(expr_str):
@@ -1171,8 +1184,44 @@ class ExpressionVisitor(ast.NodeVisitor):
 
         return Scalar(PrimitiveType.Double)
 
+    def _promote_dtypes(self, dtype_left, dtype_right):
+        """Promote two dtypes following NumPy rules: float > int, wider > narrower."""
+        # Priority order: Double > Float > Int64 > Int32
+        priority = {
+            PrimitiveType.Double: 4,
+            PrimitiveType.Float: 3,
+            PrimitiveType.Int64: 2,
+            PrimitiveType.Int32: 1,
+        }
+        left_prio = priority.get(dtype_left.primitive_type, 0)
+        right_prio = priority.get(dtype_right.primitive_type, 0)
+        if left_prio >= right_prio:
+            return dtype_left
+        else:
+            return dtype_right
+
     def _create_array_temp(self, shape, dtype, zero_init=False, ones_init=False):
         tmp_name = f"_tmp_{self._get_unique_id()}"
+
+        # Handle 0-dimensional arrays as scalars
+        if not shape or (len(shape) == 0):
+            # 0-D array is just a scalar
+            self.builder.add_container(tmp_name, dtype, False)
+            self.symbol_table[tmp_name] = dtype
+            self.array_info[tmp_name] = {"ndim": 0, "shapes": []}
+
+            if zero_init:
+                self.builder.add_assignment(
+                    tmp_name,
+                    "0.0" if dtype.primitive_type == PrimitiveType.Double else "0",
+                )
+            elif ones_init:
+                self.builder.add_assignment(
+                    tmp_name,
+                    "1.0" if dtype.primitive_type == PrimitiveType.Double else "1",
+                )
+
+            return tmp_name
 
         # Calculate size
         size_str = "1"
@@ -1249,6 +1298,31 @@ class ExpressionVisitor(ast.NodeVisitor):
         # Determine dtype
         dtype = self._get_dtype(operand)
 
+        # For 0-D arrays (scalars), use an intrinsic (CMathNode) instead of library node
+        if not shape or len(shape) == 0:
+            tmp_name = self._create_array_temp(shape, dtype)
+
+            # Map op_type to C function names
+            func_map = {
+                "sqrt": "sqrt",
+                "abs": "fabs",
+                "absolute": "fabs",
+                "exp": "exp",
+                "tanh": "tanh",
+            }
+            func_name = func_map.get(op_type, op_type)
+
+            block = self.builder.add_block()
+            t_src = self.builder.add_access(block, operand)
+            t_dst = self.builder.add_access(block, tmp_name)
+            t_task = self.builder.add_intrinsic(block, func_name)
+
+            # CMathNode uses _in1, _in2, etc for inputs and _out for output
+            self.builder.add_memlet(block, t_src, "void", t_task, "_in1", "", dtype)
+            self.builder.add_memlet(block, t_task, "_out", t_dst, "void", "", dtype)
+
+            return tmp_name
+
         tmp_name = self._create_array_temp(shape, dtype)
 
         # Add operation
@@ -1257,24 +1331,65 @@ class ExpressionVisitor(ast.NodeVisitor):
         return tmp_name
 
     def _handle_array_binary_op(self, op_type, left, right):
-        # Determine output shape
-        shape = []
+        # Determine output shape (handle broadcasting by picking the larger shape)
+        left_shape = []
+        right_shape = []
         if left in self.array_info:
-            shape = self.array_info[left]["shapes"]
-        elif right in self.array_info:
-            shape = self.array_info[right]["shapes"]
+            left_shape = self.array_info[left]["shapes"]
+        if right in self.array_info:
+            right_shape = self.array_info[right]["shapes"]
+        # Pick the shape with more dimensions for broadcasting
+        shape = left_shape if len(left_shape) >= len(right_shape) else right_shape
 
-        # Determine dtype
+        # Determine dtype with promotion (float > int, wider > narrower)
         dtype_left = self._get_dtype(left)
         dtype_right = self._get_dtype(right)
 
-        assert dtype_left.primitive_type == dtype_right.primitive_type
-        dtype = dtype_left
+        # Promote dtypes: Double > Float > Int64 > Int32
+        dtype = self._promote_dtypes(dtype_left, dtype_right)
+
+        # Cast scalar operands to the promoted dtype if needed
+        real_left = left
+        real_right = right
+
+        # Helper to check if operand is a scalar (not an array)
+        left_is_scalar = left not in self.array_info
+        right_is_scalar = right not in self.array_info
+
+        # Cast left operand if needed (scalar int to float)
+        if left_is_scalar and dtype_left.primitive_type != dtype.primitive_type:
+            left_cast = f"_tmp_{self._get_unique_id()}"
+            self.builder.add_container(left_cast, dtype, False)
+            self.symbol_table[left_cast] = dtype
+
+            c_block = self.builder.add_block()
+            t_src, src_sub = self._add_read(c_block, left)
+            t_dst = self.builder.add_access(c_block, left_cast)
+            t_task = self.builder.add_tasklet(c_block, "assign", ["_in"], ["_out"])
+            self.builder.add_memlet(c_block, t_src, "void", t_task, "_in", src_sub)
+            self.builder.add_memlet(c_block, t_task, "_out", t_dst, "void", "")
+
+            real_left = left_cast
+
+        # Cast right operand if needed (scalar int to float)
+        if right_is_scalar and dtype_right.primitive_type != dtype.primitive_type:
+            right_cast = f"_tmp_{self._get_unique_id()}"
+            self.builder.add_container(right_cast, dtype, False)
+            self.symbol_table[right_cast] = dtype
+
+            c_block = self.builder.add_block()
+            t_src, src_sub = self._add_read(c_block, right)
+            t_dst = self.builder.add_access(c_block, right_cast)
+            t_task = self.builder.add_tasklet(c_block, "assign", ["_in"], ["_out"])
+            self.builder.add_memlet(c_block, t_src, "void", t_task, "_in", src_sub)
+            self.builder.add_memlet(c_block, t_task, "_out", t_dst, "void", "")
+
+            real_right = right_cast
 
         tmp_name = self._create_array_temp(shape, dtype)
 
-        # Add operation
-        self.builder.add_elementwise_op(op_type, left, right, tmp_name, shape)
+        # Add operation with promoted dtype for implicit casting
+        self.builder.add_elementwise_op(op_type, real_left, real_right, tmp_name, shape)
 
         return tmp_name
 

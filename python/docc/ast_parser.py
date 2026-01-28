@@ -439,6 +439,128 @@ class ASTParser(ast.NodeVisitor):
 
         self.builder.end_for()
 
+    def _get_max_array_ndim_in_expr(self, node):
+        """Get the maximum array dimensionality in an expression."""
+        max_ndim = 0
+
+        class NdimVisitor(ast.NodeVisitor):
+            def __init__(self, array_info):
+                self.array_info = array_info
+                self.max_ndim = 0
+
+            def visit_Name(self, node):
+                if node.id in self.array_info:
+                    ndim = self.array_info[node.id].get("ndim", 0)
+                    self.max_ndim = max(self.max_ndim, ndim)
+                return self.generic_visit(node)
+
+        visitor = NdimVisitor(self.array_info)
+        visitor.visit(node)
+        return visitor.max_ndim
+
+    def _handle_broadcast_slice_assignment(
+        self, target, value, target_name, indices, target_ndim, value_ndim, debug_info
+    ):
+        """Handle slice assignment with broadcasting (e.g., 2D -= 1D)."""
+        # Number of broadcast dimensions (outer loops)
+        broadcast_dims = target_ndim - value_ndim
+
+        shapes = self.array_info[target_name].get("shapes", [])
+
+        # Create outer loops for broadcast dimensions
+        outer_loop_vars = []
+        for i in range(broadcast_dims):
+            loop_var = f"_bcast_iter_{i}_{self._get_unique_id()}"
+            outer_loop_vars.append(loop_var)
+
+            if not self.builder.has_container(loop_var):
+                self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
+                self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+
+            dim_size = shapes[i] if i < len(shapes) else f"_{target_name}_shape_{i}"
+            self.builder.begin_for(loop_var, "0", dim_size, "1", debug_info)
+
+        # Create a row view (reference) for the inner dimensions
+        row_view_name = f"_row_view_{self._get_unique_id()}"
+
+        # Get inner shape for the row view
+        inner_shapes = shapes[broadcast_dims:] if len(shapes) > broadcast_dims else []
+
+        # Determine element type from the target
+        target_type = self.symbol_table.get(target_name)
+        if isinstance(target_type, Pointer) and target_type.has_pointee_type():
+            element_type = target_type.pointee_type
+        else:
+            element_type = Scalar(PrimitiveType.Double)
+
+        # Create pointer type for row view
+        row_type = Pointer(element_type)
+        self.builder.add_container(row_view_name, row_type, False)
+        self.symbol_table[row_view_name] = row_type
+
+        # Register row view in array_info
+        self.array_info[row_view_name] = {"ndim": value_ndim, "shapes": inner_shapes}
+
+        # Create reference memlet: row_view = &target[i, 0, 0, ...]
+        # The index is: outer_loop_vars joined, then zeros for inner dims
+        ref_index_parts = outer_loop_vars[:]
+        for _ in range(value_ndim):
+            ref_index_parts.append("0")
+
+        # Compute linearized index for reference
+        # For target[i, j] with shape (n, m), linear index for row i is i * m
+        linear_idx = outer_loop_vars[0] if outer_loop_vars else "0"
+        for dim_idx in range(1, broadcast_dims):
+            dim_size = (
+                shapes[dim_idx]
+                if dim_idx < len(shapes)
+                else f"_{target_name}_shape_{dim_idx}"
+            )
+            linear_idx = f"({linear_idx}) * ({dim_size}) + {outer_loop_vars[dim_idx]}"
+
+        # Multiply by inner dimension sizes to get the start of the row
+        for dim_idx in range(broadcast_dims, target_ndim):
+            dim_size = (
+                shapes[dim_idx]
+                if dim_idx < len(shapes)
+                else f"_{target_name}_shape_{dim_idx}"
+            )
+            linear_idx = f"({linear_idx}) * ({dim_size})"
+
+        # Create the reference memlet block
+        block = self.builder.add_block(debug_info)
+        t_src = self.builder.add_access(block, target_name, debug_info)
+        t_dst = self.builder.add_access(block, row_view_name, debug_info)
+        self.builder.add_reference_memlet(
+            block, t_src, t_dst, linear_idx, row_type, debug_info
+        )
+
+        # Now handle the inner slice assignment with the row view
+        # Create inner indices (all slices for the inner dimensions)
+        inner_indices = [
+            ast.Slice(lower=None, upper=None, step=None) for _ in range(value_ndim)
+        ]
+
+        # Create new target using row view
+        new_target = ast.Subscript(
+            value=ast.Name(id=row_view_name, ctx=ast.Load()),
+            slice=(
+                ast.Tuple(elts=inner_indices, ctx=ast.Load())
+                if len(inner_indices) > 1
+                else inner_indices[0]
+            ),
+            ctx=ast.Store(),
+        )
+
+        # Recursively handle the inner assignment (now same-dimension)
+        self._handle_slice_assignment(
+            new_target, value, row_view_name, inner_indices, debug_info
+        )
+
+        # Close outer loops
+        for _ in outer_loop_vars:
+            self.builder.end_for()
+
     def _handle_slice_assignment(
         self, target, value, target_name, indices, debug_info=None
     ):
@@ -451,6 +573,28 @@ class ASTParser(ast.NodeVisitor):
                 indices = list(indices)
                 for _ in range(ndim - len(indices)):
                     indices.append(ast.Slice(lower=None, upper=None, step=None))
+
+        # Count slice dimensions to determine effective target dimensionality
+        # (slice indices produce array dimensions, point indices collapse them)
+        target_slice_ndim = sum(1 for idx in indices if isinstance(idx, ast.Slice))
+        value_max_ndim = self._get_max_array_ndim_in_expr(value)
+
+        if (
+            target_slice_ndim > 0
+            and value_max_ndim > 0
+            and target_slice_ndim > value_max_ndim
+        ):
+            # Broadcasting case: use row-by-row approach with reference memlets
+            self._handle_broadcast_slice_assignment(
+                target,
+                value,
+                target_name,
+                indices,
+                target_slice_ndim,
+                value_max_ndim,
+                debug_info,
+            )
+            return
 
         loop_vars = []
         new_target_indices = []

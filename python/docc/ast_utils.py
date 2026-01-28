@@ -54,8 +54,12 @@ class SliceRewriter(ast.NodeTransformer):
     def visit_Name(self, node):
         if node.id in self.array_info and self.loop_vars:
             ndim = self.array_info[node.id]["ndim"]
-            if ndim == len(self.loop_vars):
-                indices = [ast.Name(id=lv, ctx=ast.Load()) for lv in self.loop_vars]
+            if ndim <= len(self.loop_vars) and ndim > 0:
+                # For broadcasting: use the LAST ndim loop vars
+                # e.g., for 1D array with 2 loop vars [i, j], use [j]
+                indices = [
+                    ast.Name(id=lv, ctx=ast.Load()) for lv in self.loop_vars[-ndim:]
+                ]
                 return ast.Subscript(
                     value=ast.Name(id=node.id, ctx=ast.Load()),
                     slice=(
@@ -81,22 +85,28 @@ class SliceRewriter(ast.NodeTransformer):
                     ctx=ast.Load(),
                 )
         return self.generic_visit(node)
+        return node
 
     def visit_Subscript(self, node):
-        node.value = self.visit(node.value)
-
-        # We need to visit the value to get its string representation for array_info lookup
-        # But expr_visitor.visit returns a string.
-        # We assume expr_visitor can handle the node.
-        value_str = self.expr_visitor.visit(node.value)
-        if value_str not in self.array_info:
-            return node
-
+        # First check if this subscript has any slice indices that need loop vars
         indices = []
         if isinstance(node.slice, ast.Tuple):
             indices = node.slice.elts
         else:
             indices = [node.slice]
+
+        has_slice = any(isinstance(idx, ast.Slice) for idx in indices)
+
+        # If no slices (all point indices), don't transform this subscript at all
+        # The array is already fully indexed (e.g., _fict_[0])
+        if not has_slice:
+            return node
+
+        # We need to visit the value to get its string representation for array_info lookup
+        # But DO NOT transform it - the slices in THIS subscript will be replaced by loop vars
+        value_str = self.expr_visitor.visit(node.value)
+        if value_str not in self.array_info:
+            return node
 
         ndim = self.array_info[value_str]["ndim"]
         if len(indices) < ndim:

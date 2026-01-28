@@ -75,26 +75,26 @@ def test_mean_all():
     assert np.allclose(res, np.mean(A))
 
 
-# def test_std_simple():
-#     @program
-#     def std_simple(
-#         A: Annotated[np.ndarray, (10, 10), np.float64],
-#     ) -> Annotated[np.ndarray, (10,), np.float64]:
-#         return np.std(A, axis=0)
+def test_std_simple():
+    @program
+    def std_simple(
+        A: Annotated[np.ndarray, (10, 10), np.float64],
+    ) -> Annotated[np.ndarray, (10,), np.float64]:
+        return np.std(A, axis=0)
 
-#     A = np.random.rand(10, 10)
-#     res = std_simple(A)
-#     assert np.allclose(res, np.std(A, axis=0))
+    A = np.random.rand(10, 10)
+    res = std_simple(A)
+    assert np.allclose(res, np.std(A, axis=0))
 
 
-# def test_std_all():
-#     @program
-#     def std_all(A: Annotated[np.ndarray, (10, 10), np.float64]) -> float:
-#         return np.std(A)
+def test_std_all():
+    @program
+    def std_all(A: Annotated[np.ndarray, (10, 10), np.float64]) -> float:
+        return np.std(A)
 
-#     A = np.random.rand(10, 10)
-#     res = std_all(A)
-#     assert np.allclose(res, np.std(A))
+    A = np.random.rand(10, 10)
+    res = std_all(A)
+    assert np.allclose(res, np.std(A))
 
 
 def test_max_simple():

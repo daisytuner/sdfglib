@@ -28,61 +28,46 @@ def kernel(M, float_n, data):
     return cov
 
 
-@pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_covariance(target):
     if target == "none":
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
+                "GEMM": 1,
+                "Memset": 1,
+                "SEQUENTIAL": 10,
+                "FOR": 12,
+                "MAP": 10,
+                "Malloc": 4,
             }
         )
     elif target == "sequential":
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
+                "GEMM": 1,
+                "HIGHWAY": 5,
+                "Memset": 1,
+                "SEQUENTIAL": 5,
+                "FOR": 12,
+                "MAP": 10,
+                "Malloc": 4,
             }
         )
     elif target == "openmp":
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
+                "HIGHWAY": 3,
+                "GEMM": 1,
+                "CPU_PARALLEL": 5,
+                "Memset": 1,
+                "SEQUENTIAL": 2,
+                "FOR": 12,
+                "MAP": 10,
+                "Malloc": 4,
             }
         )
     else:  # cuda
-        verifier = SDFGVerification(
-            verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
-        )
+        verifier = SDFGVerification(verification={})
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)
 
 

@@ -28,60 +28,21 @@ def kernel(TSTEPS, A, B):
         )
 
 
-@pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_jacobi_2d(target):
     if target == "none":
-        verifier = SDFGVerification(
-            verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
-        )
+        verifier = SDFGVerification(verification={"MAP": 4, "SEQUENTIAL": 4, "FOR": 5})
     elif target == "sequential":
         verifier = SDFGVerification(
-            verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
+            verification={"HIGHWAY": 2, "MAP": 4, "SEQUENTIAL": 2, "FOR": 5}
         )
     elif target == "openmp":
         verifier = SDFGVerification(
-            verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
+            verification={"HIGHWAY": 2, "CPU_PARALLEL": 2, "MAP": 4, "FOR": 5}
         )
     else:  # cuda
         verifier = SDFGVerification(
-            verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
+            verification={"CUDA": 4, "MAP": 4, "CUDAOffloading": 8, "FOR": 5}
         )
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)
 
