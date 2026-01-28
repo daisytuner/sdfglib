@@ -1,7 +1,7 @@
 import ast
 import copy
 from ._sdfg import Scalar, PrimitiveType, Pointer
-from .ast_utils import SliceRewriter, get_debug_info
+from .ast_utils import SliceRewriter, get_debug_info, contains_ufunc_outer
 from .expression_visitor import ExpressionVisitor
 from .linear_algebra import LinearAlgebraHandler
 from .convolution import ConvolutionHandler
@@ -574,6 +574,16 @@ class ASTParser(ast.NodeVisitor):
                 for _ in range(ndim - len(indices)):
                     indices.append(ast.Slice(lower=None, upper=None, step=None))
 
+        # Check if the RHS contains a ufunc outer operation
+        # If so, we handle it specially to avoid the loop transformation
+        # which would destroy the slice shape information
+        has_outer, ufunc_name, outer_node = contains_ufunc_outer(value)
+        if has_outer:
+            self._handle_ufunc_outer_slice_assignment(
+                target, value, target_name, indices, debug_info
+            )
+            return
+
         # Count slice dimensions to determine effective target dimensionality
         # (slice indices produce array dimensions, point indices collapse them)
         target_slice_ndim = sum(1 for idx in indices if isinstance(idx, ast.Slice))
@@ -671,5 +681,207 @@ class ASTParser(ast.NodeVisitor):
         value_str = self._parse_expr(new_value)
         self.builder.add_assignment(target_str, value_str, debug_info)
 
+        for _ in loop_vars:
+            self.builder.end_for()
+
+    def _handle_ufunc_outer_slice_assignment(
+        self, target, value, target_name, indices, debug_info=None
+    ):
+        """Handle slice assignment where RHS contains a ufunc outer operation.
+
+        Example: path[:] = np.minimum(path[:], np.add.outer(path[:, k], path[k, :]))
+
+        The strategy is:
+        1. Evaluate the entire RHS expression, which will create a temporary array
+           containing the result of the ufunc outer (potentially wrapped in other ops)
+        2. Copy the temporary result to the target slice
+
+        This avoids the loop transformation that would destroy slice shape info.
+        """
+        if debug_info is None:
+            from ._sdfg import DebugInfo
+
+            debug_info = DebugInfo()
+
+        # Evaluate the full RHS expression
+        # This will:
+        # - Create temp arrays for ufunc outer results
+        # - Apply any wrapping operations (np.minimum, etc.)
+        # - Return the name of the final result array
+        result_name = self._parse_expr(value)
+
+        # Now we need to copy result to target slice
+        # Count slice dimensions to determine if we need loops
+        target_slice_ndim = sum(1 for idx in indices if isinstance(idx, ast.Slice))
+
+        if target_slice_ndim == 0:
+            # No slices on target - just simple assignment
+            target_str = self._parse_expr(target)
+            block = self.builder.add_block(debug_info)
+            t_src, src_sub = self.expr_visitor._add_read(block, result_name, debug_info)
+            t_dst = self.builder.add_access(block, target_str, debug_info)
+            t_task = self.builder.add_tasklet(
+                block, "assign", ["_in"], ["_out"], debug_info
+            )
+            self.builder.add_memlet(
+                block, t_src, "void", t_task, "_in", src_sub, None, debug_info
+            )
+            self.builder.add_memlet(
+                block, t_task, "_out", t_dst, "void", "", None, debug_info
+            )
+            return
+
+        # We have slices on the target - need to create loops for copying
+        # Get target array info
+        target_info = self.array_info.get(target_name, {})
+        target_shapes = target_info.get("shapes", [])
+
+        loop_vars = []
+        new_target_indices = []
+
+        for i, idx in enumerate(indices):
+            if isinstance(idx, ast.Slice):
+                loop_var = f"_copy_iter_{len(loop_vars)}_{self._get_unique_id()}"
+                loop_vars.append(loop_var)
+
+                if not self.builder.has_container(loop_var):
+                    self.builder.add_container(
+                        loop_var, Scalar(PrimitiveType.Int64), False
+                    )
+                    self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+
+                start_str = "0"
+                if idx.lower:
+                    start_str = self._parse_expr(idx.lower)
+
+                stop_str = ""
+                if idx.upper and not (
+                    isinstance(idx.upper, ast.Constant) and idx.upper.value is None
+                ):
+                    stop_str = self._parse_expr(idx.upper)
+                else:
+                    stop_str = (
+                        target_shapes[i]
+                        if i < len(target_shapes)
+                        else f"_{target_name}_shape_{i}"
+                    )
+
+                step_str = "1"
+                if idx.step:
+                    step_str = self._parse_expr(idx.step)
+
+                count_str = f"({stop_str} - {start_str})"
+
+                self.builder.begin_for(loop_var, "0", count_str, "1", debug_info)
+                self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+
+                new_target_indices.append(
+                    ast.Name(
+                        id=f"{start_str} + {loop_var} * {step_str}", ctx=ast.Load()
+                    )
+                )
+            else:
+                new_target_indices.append(idx)
+
+        # Create assignment block: target[i,j,...] = result[i,j,...]
+        block = self.builder.add_block(debug_info)
+
+        # Access nodes
+        t_src = self.builder.add_access(block, result_name, debug_info)
+        t_dst = self.builder.add_access(block, target_name, debug_info)
+        t_task = self.builder.add_tasklet(
+            block, "assign", ["_in"], ["_out"], debug_info
+        )
+
+        # Source index - just use loop vars for flat array from ufunc outer
+        # The ufunc outer result is a flat array of size M*N
+        if len(loop_vars) == 2:
+            # 2D case: result is indexed as i * N + j
+            # Get the second dimension size from target shapes
+            n_dim = (
+                target_shapes[1]
+                if len(target_shapes) > 1
+                else f"_{target_name}_shape_1"
+            )
+            src_index = f"(({loop_vars[0]}) * ({n_dim}) + ({loop_vars[1]}))"
+        elif len(loop_vars) == 1:
+            src_index = loop_vars[0]
+        else:
+            # General case - compute linear index
+            src_terms = []
+            stride = "1"
+            for i in range(len(loop_vars) - 1, -1, -1):
+                if stride == "1":
+                    src_terms.insert(0, loop_vars[i])
+                else:
+                    src_terms.insert(0, f"({loop_vars[i]} * {stride})")
+                if i > 0:
+                    dim_size = (
+                        target_shapes[i]
+                        if i < len(target_shapes)
+                        else f"_{target_name}_shape_{i}"
+                    )
+                    stride = (
+                        f"({stride} * {dim_size})" if stride != "1" else str(dim_size)
+                    )
+            src_index = " + ".join(src_terms) if src_terms else "0"
+
+        # Target index - compute linear index (row-major order)
+        # For 2D array with shape (M, N): linear_index = i * N + j
+        target_index_parts = []
+        for idx in new_target_indices:
+            if isinstance(idx, ast.Name):
+                target_index_parts.append(idx.id)
+            else:
+                target_index_parts.append(self._parse_expr(idx))
+
+        # Convert to linear index
+        if len(target_index_parts) == 2:
+            # 2D case
+            n_dim = (
+                target_shapes[1]
+                if len(target_shapes) > 1
+                else f"_{target_name}_shape_1"
+            )
+            target_index = (
+                f"(({target_index_parts[0]}) * ({n_dim}) + ({target_index_parts[1]}))"
+            )
+        elif len(target_index_parts) == 1:
+            target_index = target_index_parts[0]
+        else:
+            # General case - compute linear index with strides
+            stride = "1"
+            target_index = "0"
+            for i in range(len(target_index_parts) - 1, -1, -1):
+                idx_part = target_index_parts[i]
+                if stride == "1":
+                    term = idx_part
+                else:
+                    term = f"(({idx_part}) * ({stride}))"
+
+                if target_index == "0":
+                    target_index = term
+                else:
+                    target_index = f"({term} + {target_index})"
+
+                if i > 0:
+                    dim_size = (
+                        target_shapes[i]
+                        if i < len(target_shapes)
+                        else f"_{target_name}_shape_{i}"
+                    )
+                    stride = (
+                        f"({stride} * {dim_size})" if stride != "1" else str(dim_size)
+                    )
+
+        # Connect memlets
+        self.builder.add_memlet(
+            block, t_src, "void", t_task, "_in", src_index, None, debug_info
+        )
+        self.builder.add_memlet(
+            block, t_task, "_out", t_dst, "void", target_index, None, debug_info
+        )
+
+        # End loops
         for _ in loop_vars:
             self.builder.end_for()

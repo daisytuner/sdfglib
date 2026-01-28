@@ -390,6 +390,14 @@ class ExpressionVisitor(ast.NodeVisitor):
                 ):
                     if node.func.attr == "softmax":
                         return self._handle_scipy_softmax(node, "softmax")
+                # Handle np.add.outer, np.subtract.outer, np.multiply.outer, etc.
+                elif (
+                    isinstance(node.func.value.value, ast.Name)
+                    and node.func.value.value.id in ["numpy", "np"]
+                    and node.func.attr == "outer"
+                ):
+                    ufunc_name = node.func.value.attr  # "add", "subtract", etc.
+                    return self._handle_ufunc_outer(node, ufunc_name)
 
         elif isinstance(node.func, ast.Name):
             func_name = node.func.id
@@ -1010,6 +1018,25 @@ class ExpressionVisitor(ast.NodeVisitor):
                 indices_nodes = node.slice.elts
             else:
                 indices_nodes = [node.slice]
+
+            # Check if all indices are full slices (e.g., path[:] or path[:, :])
+            # In this case, return just the array name since it's the full array
+            all_full_slices = True
+            for idx in indices_nodes:
+                if isinstance(idx, ast.Slice):
+                    # A full slice has no lower, upper bounds or only None
+                    if idx.lower is not None or idx.upper is not None:
+                        all_full_slices = False
+                        break
+                else:
+                    all_full_slices = False
+                    break
+
+            # path[:] on an nD array returns the full array
+            # So if we have a single full slice, it covers all dimensions
+            if all_full_slices:
+                # This is path[:] or path[:,:] - return the array name
+                return value_str
 
             for idx in indices_nodes:
                 if isinstance(idx, ast.Slice):
@@ -1665,6 +1692,236 @@ class ExpressionVisitor(ast.NodeVisitor):
         self.la_handler.handle_outer(tmp_name, new_call_node)
 
         return tmp_name
+
+    def _handle_ufunc_outer(self, node, ufunc_name):
+        """Handle np.add.outer, np.subtract.outer, np.multiply.outer, etc.
+
+        These compute the outer operation for the given ufunc:
+        - np.add.outer(a, b) -> a[:, np.newaxis] + b (outer sum)
+        - np.subtract.outer(a, b) -> a[:, np.newaxis] - b (outer difference)
+        - np.multiply.outer(a, b) -> a[:, np.newaxis] * b (same as np.outer)
+        """
+        if len(node.args) != 2:
+            raise NotImplementedError(f"{ufunc_name}.outer requires 2 arguments")
+
+        # For np.multiply.outer, use the existing GEMM-based outer handler
+        if ufunc_name == "multiply":
+            return self._handle_numpy_outer(node, "outer")
+
+        # Map ufunc names to operation names and tasklet opcodes
+        op_map = {
+            "add": ("add", "fp_add", "int_add"),
+            "subtract": ("sub", "fp_sub", "int_sub"),
+            "divide": ("div", "fp_div", "int_div"),
+            "minimum": ("min", "fmin", "int_smin"),
+            "maximum": ("max", "fmax", "int_smax"),
+        }
+
+        if ufunc_name not in op_map:
+            raise NotImplementedError(f"{ufunc_name}.outer not supported")
+
+        op_name, fp_opcode, int_opcode = op_map[ufunc_name]
+
+        # Use la_handler.parse_arg to properly handle sliced arrays
+        if not self.la_handler:
+            raise RuntimeError("LinearAlgebraHandler not initialized")
+
+        arg0 = node.args[0]
+        arg1 = node.args[1]
+
+        res_a = self.la_handler.parse_arg(arg0)
+        res_b = self.la_handler.parse_arg(arg1)
+
+        # If parse_arg fails for complex expressions, try visiting and re-parsing
+        if not res_a[0]:
+            left_name = self.visit(arg0)
+            arg0 = ast.Name(id=left_name)
+            res_a = self.la_handler.parse_arg(arg0)
+
+        if not res_b[0]:
+            right_name = self.visit(arg1)
+            arg1 = ast.Name(id=right_name)
+            res_b = self.la_handler.parse_arg(arg1)
+
+        name_a, subset_a, shape_a, indices_a = res_a
+        name_b, subset_b, shape_b, indices_b = res_b
+
+        if not name_a or not name_b:
+            raise NotImplementedError("Could not resolve ufunc outer operands")
+
+        # Compute flattened sizes - outer treats inputs as 1D
+        def get_flattened_size_expr(shapes):
+            if not shapes:
+                return "1"
+            size_expr = str(shapes[0])
+            for s in shapes[1:]:
+                size_expr = f"({size_expr} * {str(s)})"
+            return size_expr
+
+        m_expr = get_flattened_size_expr(shape_a)
+        n_expr = get_flattened_size_expr(shape_b)
+
+        # Determine output dtype - infer from inputs or default to double
+        dtype_left = self._get_dtype(name_a)
+        dtype_right = self._get_dtype(name_b)
+        dtype = self._promote_dtypes(dtype_left, dtype_right)
+
+        # Determine if we're working with integers
+        is_int = dtype.primitive_type in [
+            PrimitiveType.Int64,
+            PrimitiveType.Int32,
+            PrimitiveType.Int8,
+            PrimitiveType.Int16,
+            PrimitiveType.UInt64,
+            PrimitiveType.UInt32,
+            PrimitiveType.UInt8,
+            PrimitiveType.UInt16,
+        ]
+
+        # Create output array with shape (M, N)
+        tmp_name = self._create_array_temp([m_expr, n_expr], dtype)
+
+        # Generate unique loop variable names
+        i_var = self._get_temp_name("_outer_i_")
+        j_var = self._get_temp_name("_outer_j_")
+
+        # Ensure loop variables exist
+        if not self.builder.has_container(i_var):
+            self.builder.add_container(i_var, Scalar(PrimitiveType.Int64), False)
+            self.symbol_table[i_var] = Scalar(PrimitiveType.Int64)
+        if not self.builder.has_container(j_var):
+            self.builder.add_container(j_var, Scalar(PrimitiveType.Int64), False)
+            self.symbol_table[j_var] = Scalar(PrimitiveType.Int64)
+
+        # Helper function to compute the linear index for a sliced array access
+        def compute_linear_index(name, subset, indices, loop_var):
+            """
+            Compute linear index for accessing element loop_var of a sliced array.
+
+            For array A with shape (N, M):
+            - A[:, k] (column k): linear_index = loop_var * M + k
+            - A[k, :] (row k): linear_index = k * M + loop_var
+            - A[:] (1D array): linear_index = loop_var
+
+            The indices list contains AST nodes showing which dims are sliced vs fixed.
+            subset contains start indices for each dimension.
+            """
+            if not indices:
+                # Simple 1D array, no slicing
+                return loop_var
+
+            info = self.array_info.get(name, {})
+            shapes = info.get("shapes", [])
+            ndim = info.get("ndim", len(shapes))
+
+            if ndim == 0:
+                return loop_var
+
+            # Compute strides (row-major order)
+            strides = []
+            current_stride = "1"
+            for i in range(ndim - 1, -1, -1):
+                strides.insert(0, current_stride)
+                if i > 0:
+                    dim_size = shapes[i] if i < len(shapes) else f"_{name}_shape_{i}"
+                    if current_stride == "1":
+                        current_stride = str(dim_size)
+                    else:
+                        current_stride = f"({current_stride} * {dim_size})"
+
+            # Build linear index from subset and indices info
+            terms = []
+            loop_var_used = False
+
+            for i, idx in enumerate(indices):
+                stride = strides[i] if i < len(strides) else "1"
+                start = subset[i] if i < len(subset) else "0"
+
+                if isinstance(idx, ast.Slice):
+                    # This dimension is sliced - use loop_var
+                    if stride == "1":
+                        term = f"({start} + {loop_var})"
+                    else:
+                        term = f"(({start} + {loop_var}) * {stride})"
+                    loop_var_used = True
+                else:
+                    # This dimension has a fixed index
+                    if stride == "1":
+                        term = start
+                    else:
+                        term = f"({start} * {stride})"
+
+                terms.append(term)
+
+            # Sum all terms
+            if not terms:
+                return loop_var
+
+            result = terms[0]
+            for t in terms[1:]:
+                result = f"({result} + {t})"
+
+            return result
+
+        # Create nested for loops: for i in range(M): for j in range(N): C[i,j] = A[i] op B[j]
+        self.builder.begin_for(i_var, "0", m_expr, "1")
+        self.builder.begin_for(j_var, "0", n_expr, "1")
+
+        # Create the assignment block: C[i, j] = A[i] op B[j]
+        block = self.builder.add_block()
+
+        # Add access nodes
+        t_a = self.builder.add_access(block, name_a)
+        t_b = self.builder.add_access(block, name_b)
+        t_c = self.builder.add_access(block, tmp_name)
+
+        # Determine tasklet type based on operation
+        if ufunc_name in ["minimum", "maximum"]:
+            # Use intrinsic for min/max
+            opcode = fp_opcode if not is_int else int_opcode
+            if is_int:
+                t_task = self.builder.add_tasklet(
+                    block, opcode, ["_in1", "_in2"], ["_out"]
+                )
+            else:
+                t_task = self.builder.add_intrinsic(block, opcode)
+        else:
+            # Use regular tasklet for arithmetic ops
+            opcode = int_opcode if is_int else fp_opcode
+            t_task = self.builder.add_tasklet(block, opcode, ["_in1", "_in2"], ["_out"])
+
+        # Compute the linear index for A[i]
+        a_index = compute_linear_index(name_a, subset_a, indices_a, i_var)
+
+        # Compute the linear index for B[j]
+        b_index = compute_linear_index(name_b, subset_b, indices_b, j_var)
+
+        # Connect A[i + offset_a] -> tasklet
+        self.builder.add_memlet(block, t_a, "void", t_task, "_in1", a_index)
+
+        # Connect B[j + offset_b] -> tasklet
+        self.builder.add_memlet(block, t_b, "void", t_task, "_in2", b_index)
+
+        # Connect tasklet -> C[i * N + j] (linear index for 2D output)
+        flat_index = f"(({i_var}) * ({n_expr}) + ({j_var}))"
+        self.builder.add_memlet(block, t_task, "_out", t_c, "void", flat_index)
+
+        self.builder.end_for()  # end j loop
+        self.builder.end_for()  # end i loop
+
+        return tmp_name
+
+    def _op_symbol(self, op_name):
+        """Convert operation name to symbol."""
+        symbols = {
+            "add": "+",
+            "sub": "-",
+            "mul": "*",
+            "div": "/",
+            "min": "min",  # Will need special handling
+            "max": "max",  # Will need special handling
+        }
+        return symbols.get(op_name, op_name)
 
     def _handle_matmul_helper(self, left_node, right_node):
         if not self.la_handler:

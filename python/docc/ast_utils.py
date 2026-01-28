@@ -3,6 +3,38 @@ import copy
 from ._sdfg import DebugInfo
 
 
+def contains_ufunc_outer(node):
+    """Check if an AST node contains a ufunc outer call (e.g., np.add.outer).
+
+    Returns (True, ufunc_name, outer_node) if found, (False, None, None) otherwise.
+    """
+
+    class UfuncOuterFinder(ast.NodeVisitor):
+        def __init__(self):
+            self.found = False
+            self.ufunc_name = None
+            self.outer_node = None
+
+        def visit_Call(self, node):
+            # Check for np.add.outer, np.subtract.outer, etc.
+            if (
+                isinstance(node.func, ast.Attribute)
+                and node.func.attr == "outer"
+                and isinstance(node.func.value, ast.Attribute)
+                and isinstance(node.func.value.value, ast.Name)
+                and node.func.value.value.id in ["numpy", "np"]
+            ):
+                self.found = True
+                self.ufunc_name = node.func.value.attr
+                self.outer_node = node
+                return  # Don't visit children once found
+            self.generic_visit(node)
+
+    finder = UfuncOuterFinder()
+    finder.visit(node)
+    return finder.found, finder.ufunc_name, finder.outer_node
+
+
 def get_debug_info(node, filename, function_name=""):
     if hasattr(node, "lineno"):
         return DebugInfo(
