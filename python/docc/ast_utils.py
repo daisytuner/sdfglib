@@ -3,6 +3,41 @@ import copy
 from ._sdfg import DebugInfo
 
 
+def is_negative_index(node):
+    """Check if an AST node represents a negative constant index.
+
+    Returns (True, abs_value) if the node is a negative constant,
+    (False, None) otherwise.
+    """
+    # Handle -1, -2, etc. (UnaryOp with USub)
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+        if isinstance(node.operand, ast.Constant) and isinstance(
+            node.operand.value, int
+        ):
+            return True, node.operand.value
+    # Handle negative constants directly (rare but possible)
+    if (
+        isinstance(node, ast.Constant)
+        and isinstance(node.value, int)
+        and node.value < 0
+    ):
+        return True, -node.value
+    return False, None
+
+
+def normalize_negative_index(idx_node, dim_size_str):
+    """Create an AST node that normalizes a negative index.
+
+    If idx_node is negative, returns an AST Name node with expression
+    "(dim_size - abs_value)". Otherwise returns the original node.
+    """
+    is_neg, abs_val = is_negative_index(idx_node)
+    if is_neg:
+        # Create: (dim_size - abs_value)
+        return ast.Name(id=f"({dim_size_str} - {abs_val})", ctx=ast.Load())
+    return idx_node
+
+
 def contains_ufunc_outer(node):
     """Check if an AST node contains a ufunc outer call (e.g., np.add.outer).
 
@@ -180,7 +215,11 @@ class SliceRewriter(ast.NodeTransformer):
                     term = f"({start_str} + {loop_var} * {step_str})"
                 new_indices.append(ast.Name(id=term, ctx=ast.Load()))
             else:
-                new_indices.append(self.visit(idx))
+                # Handle non-slice indices - need to normalize negative indices
+                shapes = self.array_info[value_str].get("shapes", [])
+                dim_size = shapes[i] if i < len(shapes) else f"_{value_str}_shape_{i}"
+                normalized_idx = normalize_negative_index(idx, dim_size)
+                new_indices.append(self.visit(normalized_idx))
 
         if len(new_indices) == 1:
             node.slice = new_indices[0]

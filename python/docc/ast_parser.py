@@ -1,7 +1,12 @@
 import ast
 import copy
 from ._sdfg import Scalar, PrimitiveType, Pointer
-from .ast_utils import SliceRewriter, get_debug_info, contains_ufunc_outer
+from .ast_utils import (
+    SliceRewriter,
+    get_debug_info,
+    contains_ufunc_outer,
+    normalize_negative_index,
+)
 from .expression_visitor import ExpressionVisitor
 from .linear_algebra import LinearAlgebraHandler
 from .convolution import ConvolutionHandler
@@ -666,7 +671,11 @@ class ASTParser(ast.NodeVisitor):
                     )
                 )
             else:
-                new_target_indices.append(idx)
+                # Handle non-slice indices - need to normalize negative indices
+                shapes = self.array_info[target_name].get("shapes", [])
+                dim_size = shapes[i] if i < len(shapes) else f"_{target_name}_shape_{i}"
+                normalized_idx = normalize_negative_index(idx, dim_size)
+                new_target_indices.append(normalized_idx)
 
         rewriter = SliceRewriter(loop_vars, self.array_info, self.expr_visitor)
         new_value = rewriter.visit(copy.deepcopy(value))
@@ -781,7 +790,14 @@ class ASTParser(ast.NodeVisitor):
                     )
                 )
             else:
-                new_target_indices.append(idx)
+                # Handle non-slice indices - need to normalize negative indices
+                dim_size = (
+                    target_shapes[i]
+                    if i < len(target_shapes)
+                    else f"_{target_name}_shape_{i}"
+                )
+                normalized_idx = normalize_negative_index(idx, dim_size)
+                new_target_indices.append(normalized_idx)
 
         # Create assignment block: target[i,j,...] = result[i,j,...]
         block = self.builder.add_block(debug_info)

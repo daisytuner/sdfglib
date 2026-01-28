@@ -1052,9 +1052,22 @@ class ExpressionVisitor(ast.NodeVisitor):
                     f"Array {value_str} has {ndim} dimensions, but accessed with {len(indices)} indices"
                 )
 
+            # Normalize negative indices
+            normalized_indices = []
+            for i, idx_str in enumerate(indices):
+                shape_val = shapes[i] if i < len(shapes) else f"_{value_str}_shape_{i}"
+                # Check if index is negative (starts with "-" or "(-")
+                if isinstance(idx_str, str) and (
+                    idx_str.startswith("-") or idx_str.startswith("(-")
+                ):
+                    # Normalize: size + negative_index
+                    normalized_indices.append(f"({shape_val} + {idx_str})")
+                else:
+                    normalized_indices.append(idx_str)
+
             linear_index = ""
             for i in range(ndim):
-                term = indices[i]
+                term = normalized_indices[i]
                 for j in range(i + 1, ndim):
                     shape_val = shapes[j] if j < len(shapes) else None
                     shape_sym = (

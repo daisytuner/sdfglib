@@ -153,3 +153,148 @@ class TestSliceRewriterNoTransform:
         dst = np.zeros(5, dtype=np.float64)
         point_indexed_2d_unchanged(src, dst)
         np.testing.assert_array_equal(dst, np.full(5, src[1, 2]))
+
+
+class TestNegativeIndexHandling:
+    """Tests for negative index normalization in slice assignments."""
+
+    def test_negative_index_last_column(self):
+        """Test assigning to last column using -1 index: arr[:, -1] = value."""
+
+        @docc.program
+        def assign_last_column(dst: np.ndarray):
+            dst[:, -1] = 0.0
+
+        dst = np.ones((4, 5), dtype=np.float64)
+        assign_last_column(dst)
+        # Last column should be all 0.0
+        np.testing.assert_array_equal(dst[:, -1], np.zeros(4))
+        # Other columns unchanged
+        np.testing.assert_array_equal(dst[:, :-1], np.ones((4, 4)))
+
+    def test_negative_index_second_last_column(self):
+        """Test assigning to second-to-last column using -2 index: arr[:, -2] = value."""
+
+        @docc.program
+        def assign_second_last_column(dst: np.ndarray):
+            dst[:, -2] = 5.0
+
+        dst = np.zeros((3, 4), dtype=np.float64)
+        assign_second_last_column(dst)
+        # Second-to-last column should be all 5.0
+        np.testing.assert_array_equal(dst[:, -2], np.full(3, 5.0))
+        # Other columns unchanged
+        np.testing.assert_array_equal(dst[:, -1], np.zeros(3))
+        np.testing.assert_array_equal(dst[:, :-2], np.zeros((3, 2)))
+
+    def test_negative_index_last_row(self):
+        """Test assigning to last row using -1 index: arr[-1, :] = value."""
+
+        @docc.program
+        def assign_last_row(dst: np.ndarray):
+            dst[-1, :] = 3.0
+
+        dst = np.zeros((4, 5), dtype=np.float64)
+        assign_last_row(dst)
+        # Last row should be all 3.0
+        np.testing.assert_array_equal(dst[-1, :], np.full(5, 3.0))
+        # Other rows unchanged
+        np.testing.assert_array_equal(dst[:-1, :], np.zeros((3, 5)))
+
+    def test_negative_index_second_last_row(self):
+        """Test assigning to second-to-last row using -2 index: arr[-2, :] = value."""
+
+        @docc.program
+        def assign_second_last_row(dst: np.ndarray):
+            dst[-2, :] = 7.0
+
+        dst = np.zeros((5, 3), dtype=np.float64)
+        assign_second_last_row(dst)
+        # Second-to-last row should be all 7.0
+        np.testing.assert_array_equal(dst[-2, :], np.full(3, 7.0))
+        # Other rows unchanged
+        np.testing.assert_array_equal(dst[-1, :], np.zeros(3))
+        np.testing.assert_array_equal(dst[:-2, :], np.zeros((3, 3)))
+
+    def test_negative_index_with_expression(self):
+        """Test assigning expression to slice with negative index."""
+
+        @docc.program
+        def negative_index_with_expr(src: np.ndarray, dst: np.ndarray):
+            dst[:, -1] = src[:, 0] * 2.0
+
+        src = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], dtype=np.float64)
+        dst = np.zeros((3, 4), dtype=np.float64)
+        negative_index_with_expr(src, dst)
+        # Last column should be 2 * first column of src
+        np.testing.assert_array_equal(dst[:, -1], np.array([2.0, 6.0, 10.0]))
+
+    def test_negative_index_read_access(self):
+        """Test reading from array with negative index: dst[:] = src[:, -1]."""
+
+        @docc.program
+        def read_last_column(src: np.ndarray, dst: np.ndarray):
+            dst[:] = src[:, -1]
+
+        src = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float64)
+        dst = np.zeros(2, dtype=np.float64)
+        read_last_column(src, dst)
+        # Should get last column of src
+        np.testing.assert_array_equal(dst, np.array([3.0, 6.0]))
+
+    def test_negative_index_read_second_last(self):
+        """Test reading from array with -2 index: dst[:] = src[:, -2]."""
+
+        @docc.program
+        def read_second_last_column(src: np.ndarray, dst: np.ndarray):
+            dst[:] = src[:, -2]
+
+        src = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float64)
+        dst = np.zeros(2, dtype=np.float64)
+        read_second_last_column(src, dst)
+        # Should get second-to-last column of src
+        np.testing.assert_array_equal(dst, np.array([2.0, 5.0]))
+
+    def test_negative_index_deriche_pattern(self):
+        """Test the deriche benchmark pattern: y2[:, -1] = 0.0; y2[:, -2] = a3 * imgIn[:, -1]."""
+
+        @docc.program
+        def deriche_pattern(imgIn: np.ndarray, a3: float):
+            y2 = np.empty_like(imgIn)
+            y2[:, -1] = 0.0
+            y2[:, -2] = a3 * imgIn[:, -1]
+            return y2
+
+        imgIn = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]], dtype=np.float64)
+        a3 = 2.0
+        y2 = deriche_pattern(imgIn, a3)
+
+        # Check last column is 0.0
+        np.testing.assert_array_equal(y2[:, -1], np.zeros(2))
+        # Check second-to-last column is a3 * last column of imgIn
+        np.testing.assert_array_equal(y2[:, -2], np.array([8.0, 16.0]))
+
+    def test_negative_index_row_pattern(self):
+        """Test row-based negative index pattern: y1[0, :] = ...; y2[-1, :] = 0.0."""
+
+        @docc.program
+        def row_pattern(imgOut: np.ndarray, a5: float):
+            y1 = np.empty_like(imgOut)
+            y2 = np.empty_like(imgOut)
+            y1[0, :] = a5 * imgOut[0, :]
+            y2[-1, :] = 0.0
+            y2[-2, :] = a5 * imgOut[-1, :]
+            return y1, y2
+
+        imgOut = np.array(
+            [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]], dtype=np.float64
+        )
+        a5 = 0.5
+        y1, y2 = row_pattern(imgOut, a5)
+
+        # Check y1[0, :] = a5 * imgOut[0, :]
+        np.testing.assert_array_equal(y1[0, :], np.array([0.5, 1.0, 1.5]))
+        # Check y2[-1, :] = 0.0
+        np.testing.assert_array_equal(y2[-1, :], np.zeros(3))
+        # Check y2[-2, :] = a5 * imgOut[-1, :]
+        np.testing.assert_array_equal(y2[-2, :], np.array([3.5, 4.0, 4.5]))
