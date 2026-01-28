@@ -736,31 +736,8 @@ class ExpressionVisitor(ast.NodeVisitor):
             return self._handle_numpy_matmul_op(node.left, node.right)
 
         left = self.visit(node.left)
-        right = self.visit(node.op)
-        right_val = self.visit(node.right)
-        op = right  # The visited op
-        right = right_val
-
-        def is_shape_symbol_or_const(val):
-            if isinstance(val, (int, float)):
-                return True
-            if isinstance(val, str):
-                # Check if it's a numeric constant
-                try:
-                    float(val)
-                    return True
-                except ValueError:
-                    pass
-                # Check if it's a shape symbol like _s0, _sN, _X_shape_N
-                if val.startswith("_s") and val[2:].isdigit():
-                    return True
-                if "_shape_" in val:
-                    return True
-            return False
-
-        # If both operands are shape symbols/constants, return symbolic expression
-        if is_shape_symbol_or_const(left) and is_shape_symbol_or_const(right):
-            return f"({left} {op} {right})"
+        op = self.visit(node.op)
+        right = self.visit(node.right)
 
         # Check if left or right are arrays
         left_is_array = left in self.array_info
@@ -2019,7 +1996,9 @@ class ExpressionVisitor(ast.NodeVisitor):
         else:
             return dtype_right
 
-    def _create_array_temp(self, shape, dtype, zero_init=False, ones_init=False):
+    def _create_array_temp(
+        self, shape, dtype, zero_init=False, ones_init=False, shapes_runtime=None
+    ):
         tmp_name = f"_tmp_{self._get_unique_id()}"
 
         # Handle 0-dimensional arrays as scalars
@@ -2054,7 +2033,10 @@ class ExpressionVisitor(ast.NodeVisitor):
         ptr_type = Pointer(dtype)
         self.builder.add_container(tmp_name, ptr_type, False)
         self.symbol_table[tmp_name] = ptr_type
-        self.array_info[tmp_name] = {"ndim": len(shape), "shapes": shape}
+        array_info_entry = {"ndim": len(shape), "shapes": shape}
+        if shapes_runtime is not None:
+            array_info_entry["shapes_runtime"] = shapes_runtime
+        self.array_info[tmp_name] = array_info_entry
 
         # Malloc
         block1 = self.builder.add_block()
@@ -2217,24 +2199,84 @@ class ExpressionVisitor(ast.NodeVisitor):
 
         return tmp_name
 
+    def _shape_to_runtime_expr(self, shape_node):
+        """Convert a shape expression AST node to a runtime-evaluable string.
+
+        This converts the AST to a string expression that can be evaluated
+        at runtime using only input arrays and shape symbols (_s0, _s1, etc.).
+        It does NOT visit the node (which would create SDFG variables).
+        """
+        if isinstance(shape_node, ast.Constant):
+            return str(shape_node.value)
+        elif isinstance(shape_node, ast.Name):
+            return shape_node.id
+        elif isinstance(shape_node, ast.BinOp):
+            left = self._shape_to_runtime_expr(shape_node.left)
+            right = self._shape_to_runtime_expr(shape_node.right)
+            op = self.visit(shape_node.op)
+            return f"({left} {op} {right})"
+        elif isinstance(shape_node, ast.UnaryOp):
+            operand = self._shape_to_runtime_expr(shape_node.operand)
+            if isinstance(shape_node.op, ast.USub):
+                return f"(-{operand})"
+            elif isinstance(shape_node.op, ast.UAdd):
+                return operand
+            else:
+                # Fall back to visit for other unary ops
+                return self.visit(shape_node)
+        elif isinstance(shape_node, ast.Subscript):
+            # Handle arr.shape[0] -> arr.shape[0] for runtime eval
+            # or _shape_proxy_arr[0] -> _s<idx>
+            val = shape_node.value
+            if isinstance(val, ast.Attribute) and val.attr == "shape":
+                # arr.shape[0] -> use the shape symbol
+                if isinstance(val.value, ast.Name):
+                    arr_name = val.value.id
+                    if isinstance(shape_node.slice, ast.Constant):
+                        idx = shape_node.slice.value
+                        # Get the shape symbol for this array dimension
+                        if arr_name in self.array_info:
+                            shapes = self.array_info[arr_name].get("shapes", [])
+                            if idx < len(shapes):
+                                return shapes[idx]
+                        return f"{arr_name}.shape[{idx}]"
+            # Fall back to visit
+            return self.visit(shape_node)
+        elif isinstance(shape_node, ast.Tuple):
+            return [self._shape_to_runtime_expr(elt) for elt in shape_node.elts]
+        elif isinstance(shape_node, ast.List):
+            return [self._shape_to_runtime_expr(elt) for elt in shape_node.elts]
+        else:
+            # Fall back to visit for complex expressions
+            return self.visit(shape_node)
+
     def _handle_numpy_alloc(self, node, func_name):
         # Parse shape
         shape_arg = node.args[0]
         dims = []
+        dims_runtime = []  # Runtime-evaluable shape expressions
         if isinstance(shape_arg, ast.Tuple):
             dims = [self.visit(elt) for elt in shape_arg.elts]
+            dims_runtime = [self._shape_to_runtime_expr(elt) for elt in shape_arg.elts]
         elif isinstance(shape_arg, ast.List):
             dims = [self.visit(elt) for elt in shape_arg.elts]
+            dims_runtime = [self._shape_to_runtime_expr(elt) for elt in shape_arg.elts]
         else:
             val = self.visit(shape_arg)
+            runtime_val = self._shape_to_runtime_expr(shape_arg)
             if val.startswith("_shape_proxy_"):
                 array_name = val[len("_shape_proxy_") :]
                 if array_name in self.array_info:
                     dims = self.array_info[array_name]["shapes"]
+                    dims_runtime = self.array_info[array_name].get(
+                        "shapes_runtime", dims
+                    )
                 else:
                     dims = [val]
+                    dims_runtime = [runtime_val]
             else:
                 dims = [val]
+                dims_runtime = [runtime_val]
 
         # Parse dtype
         dtype_arg = None
@@ -2253,6 +2295,7 @@ class ExpressionVisitor(ast.NodeVisitor):
             element_type,
             zero_init=(func_name == "zeros"),
             ones_init=(func_name == "ones"),
+            shapes_runtime=dims_runtime,
         )
 
     def _handle_numpy_empty_like(self, node, func_name):
