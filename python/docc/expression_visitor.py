@@ -89,7 +89,15 @@ class ExpressionVisitor(ast.NodeVisitor):
         return str(node.value)
 
     def visit_Name(self, node):
-        return node.id
+        name = node.id
+        # Check if it's a global constant (not a local variable/array)
+        if name not in self.symbol_table and self.globals_dict is not None:
+            if name in self.globals_dict:
+                val = self.globals_dict[name]
+                # Only substitute simple numeric constants
+                if isinstance(val, (int, float)):
+                    return str(val)
+        return name
 
     def _map_numpy_dtype(self, dtype_node):
         # Default to double
@@ -831,10 +839,17 @@ class ExpressionVisitor(ast.NodeVisitor):
         op = self.visit(node.op)
         operand = self.visit(node.operand)
 
+        # Check if operand is an array - handle as array operation
+        if operand in self.array_info and op == "-":
+            return self._handle_array_negate(operand)
+
         tmp_name = f"_tmp_{self._get_unique_id()}"
         dtype = Scalar(PrimitiveType.Double)
         if operand in self.symbol_table:
             dtype = self.symbol_table[operand]
+            # If it's a pointer (array), get the element type
+            if isinstance(dtype, Pointer) and dtype.has_pointee_type():
+                dtype = dtype.pointee_type
         elif self._is_int(operand):
             dtype = Scalar(PrimitiveType.Int64)
         elif isinstance(node.op, ast.Not):
@@ -879,6 +894,38 @@ class ExpressionVisitor(ast.NodeVisitor):
             )
             self.builder.add_memlet(block, t_src, "void", t_task, "_in", src_sub)
             self.builder.add_memlet(block, t_task, "_out", t_dst, "void", "")
+
+        return tmp_name
+
+    def _handle_array_negate(self, operand):
+        """Handle negation of an array operand (-arr)."""
+        shape = self.array_info[operand]["shapes"]
+        dtype = self._get_dtype(operand)
+
+        # Create output array
+        tmp_name = self._create_array_temp(shape, dtype)
+
+        # Use elementwise binary op: 0 - arr
+        # First create a zero constant
+        zero_name = f"_tmp_{self._get_unique_id()}"
+        self.builder.add_container(zero_name, dtype, False)
+        self.symbol_table[zero_name] = dtype
+
+        zero_block = self.builder.add_block()
+        t_const = self.builder.add_constant(
+            zero_block,
+            "0.0" if dtype.primitive_type == PrimitiveType.Double else "0",
+            dtype,
+        )
+        t_zero = self.builder.add_access(zero_block, zero_name)
+        t_assign = self.builder.add_tasklet(
+            zero_block, TaskletCode.assign, ["_in"], ["_out"]
+        )
+        self.builder.add_memlet(zero_block, t_const, "void", t_assign, "_in", "")
+        self.builder.add_memlet(zero_block, t_assign, "_out", t_zero, "void", "")
+
+        # Now subtract: tmp = 0 - operand (broadcast scalar subtraction)
+        self.builder.add_elementwise_op("sub", zero_name, operand, tmp_name, shape)
 
         return tmp_name
 
