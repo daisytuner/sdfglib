@@ -135,6 +135,7 @@ PYBIND11_MODULE(_sdfg, m) {
         .def("expand", &PyStructuredSDFG::expand, "Expands all library nodes")
         .def("simplify", &PyStructuredSDFG::simplify, "Simplify the SDFG")
         .def("dump", &PyStructuredSDFG::dump, py::arg("path"))
+        .def("dumpDot", &PyStructuredSDFG::dumpDot, py::arg("path"))
         .def("normalize", &PyStructuredSDFG::normalize, "Normalize the SDFG")
         .def(
             "schedule",

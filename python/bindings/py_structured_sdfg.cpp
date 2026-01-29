@@ -38,6 +38,7 @@
 #include <sdfg/passes/symbolic/type_minimization.h>
 #include <sdfg/serializer/json_serializer.h>
 
+#include "../../sdfg/include/sdfg/visualizer/dot_visualizer.h"
 #include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/passes/rpc/rpc_loop_opt.h"
 
@@ -212,6 +213,13 @@ void PyStructuredSDFG::simplify() {
     dde.run(builder_opt, analysis_manager);
     dce.run(builder_opt, analysis_manager);
     dataflow_simplification.run(builder_opt, analysis_manager);
+}
+
+void PyStructuredSDFG::dumpDot(const std::string& path) {
+    fs::path build_path(path);
+    fs::path file_path = build_path / (sdfg_->name() + ".dot");
+
+    sdfg::visualizer::DotVisualizer::writeToFile(*this->sdfg_, &file_path);
 }
 
 void PyStructuredSDFG::dump(const std::string& path) {
