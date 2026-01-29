@@ -13,23 +13,23 @@ std::string CPPLanguageExtension::primitive_type(const types::PrimitiveType prim
         case types::PrimitiveType::Bool:
             return "bool";
         case types::PrimitiveType::Int8:
-            return "signed char";
+            return "int8_t";
         case types::PrimitiveType::Int16:
-            return "short";
+            return "int16_t";
         case types::PrimitiveType::Int32:
-            return "int";
+            return "int32_t";
         case types::PrimitiveType::Int64:
-            return "long long";
+            return "int64_t";
         case types::PrimitiveType::Int128:
             return "__int128";
         case types::PrimitiveType::UInt8:
-            return "char";
+            return "uint8_t";
         case types::PrimitiveType::UInt16:
-            return "unsigned short";
+            return "uint16_t";
         case types::PrimitiveType::UInt32:
-            return "unsigned int";
+            return "uint32_t";
         case types::PrimitiveType::UInt64:
-            return "unsigned long long";
+            return "uint64_t";
         case types::PrimitiveType::UInt128:
             return "unsigned __int128";
         case types::PrimitiveType::Half:
