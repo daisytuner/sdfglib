@@ -71,6 +71,7 @@ set(SOURCE_FILES
     src/codegen/loop_report.cpp
     src/control_flow/interstate_edge.cpp
     src/control_flow/state.cpp
+    src/cutouts/cutout_serializer.cpp
     src/data_flow/access_node.cpp
     src/data_flow/code_node.cpp
     src/data_flow/data_flow_graph.cpp

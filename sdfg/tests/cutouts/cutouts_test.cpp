@@ -1,38 +1,27 @@
 #include <gtest/gtest.h>
-#include <memory>
-#include <sdfg/transformations/rpc_node_transform.h>
 
+#include <memory>
 
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/passes/rpc/rpc_context.h"
+#include "sdfg/codegen/code_generators/cpp_code_generator.h"
+#include "sdfg/codegen/instrumentation/instrumentation_plan.h"
+#include "sdfg/cutouts/cutouts.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/structured_sdfg.h"
 #include "sdfg/transformations/loop_interchange.h"
 #include "sdfg/transformations/loop_tiling.h"
-#include "sdfg/transformations/recorder.h"
 #include "sdfg/types/pointer.h"
 #include "sdfg/types/type.h"
 
 using namespace sdfg;
 
-class RPCNodeTransformTest : public ::testing::Test {
+class CutoutTest : public ::testing::Test {
 protected:
-    std::unique_ptr<passes::rpc::RpcContext> ctx_;
-
     std::unique_ptr<builder::StructuredSDFGBuilder> builder_;
-    nlohmann::json desc_;
 
     void SetUp() override {
-        passes::rpc::SimpleRpcContextBuilder ctxBuilder;
-        ctx_ = ctxBuilder
-                   .initialize_local_default() // localhost:8080/docc
-                   .from_env() // $SDFG_RPC_CONFIG can override
-                   .from_header_env() // $RPC_HEADER can override/add headers
-                   .build();
-
-
         builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU);
 
         auto& root = builder_->subject().root();
@@ -121,37 +110,37 @@ protected:
     };
 };
 
-TEST_F(RPCNodeTransformTest, Matmul_FMA) {
-    auto sdfg_initial = builder_->subject().clone();
-    sdfg::builder::StructuredSDFGBuilder builder(sdfg_initial);
+TEST_F(CutoutTest, TestCutoutInstrumentation) {
+    auto sdfg = builder_->move();
 
-    // Transfer tuning replayer
+    auto local_builder = sdfg::builder::StructuredSDFGBuilder(sdfg);
 
-    sdfg::analysis::AnalysisManager analysis_manager(builder.subject());
+    sdfg::analysis::AnalysisManager analysis_manager(local_builder.subject());
     auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
-    auto outer_loops = loop_analysis.outermost_loops();
-    EXPECT_EQ(outer_loops.size(), 1);
+    auto outermost_loops = loop_analysis.outermost_loops();
+    EXPECT_EQ(outermost_loops.size(), 1);
 
-    auto outer_loop = static_cast<structured_control_flow::StructuredLoop*>(outer_loops[0]);
-    sdfg::transformations::RPCNodeTransform transfer_tuning(*outer_loop, "sequential", "server", *ctx_, true);
-    ASSERT_TRUE(transfer_tuning.can_be_applied(builder, analysis_manager));
-    transfer_tuning.apply(builder, analysis_manager);
+    auto region_node = outermost_loops[0];
 
-    sdfg::analysis::AnalysisManager test_analysis_manager(builder.subject());
+    EXPECT_TRUE(region_node != nullptr);
 
-    auto& test_loop_analysis = test_analysis_manager.get<sdfg::analysis::LoopAnalysis>();
-    auto loop_nest_tree = test_loop_analysis.loop_tree();
-    EXPECT_TRUE(test_loop_analysis.find_loop_by_indvar("j") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k")]);
-    EXPECT_TRUE(test_loop_analysis.find_loop_by_indvar("i") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j")]);
-    EXPECT_TRUE(
-        test_loop_analysis.find_loop_by_indvar("k_tile0") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("i")]
-    );
-    EXPECT_TRUE(
-        test_loop_analysis.find_loop_by_indvar("j_tile0") ==
-        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k_tile0")]
-    );
-    EXPECT_TRUE(
-        test_loop_analysis.find_loop_by_indvar("i_tile0") ==
-        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j_tile0")]
-    );
-};
+    auto cutout_sdfg = sdfg::util::cutout(local_builder, analysis_manager, *region_node);
+    EXPECT_TRUE(cutout_sdfg != nullptr);
+
+    EXPECT_GE(cutout_sdfg->root().size(), 1u);
+    EXPECT_TRUE(dynamic_cast<const structured_control_flow::Sequence*>(&(cutout_sdfg->root().at(0).first)) == nullptr);
+
+    auto cutout_analysis_manager = sdfg::analysis::AnalysisManager(*cutout_sdfg);
+    auto& cutoutloop_analysis = cutout_analysis_manager.get<sdfg::analysis::LoopAnalysis>();
+    auto outer_cutout_loops = cutoutloop_analysis.outermost_loops();
+    EXPECT_EQ(outer_cutout_loops.size(), 1);
+
+    auto instrumentation_plan_opt = codegen::InstrumentationPlan::outermost_loops_plan(*cutout_sdfg);
+    auto arg_capture_plan_opt = sdfg::codegen::ArgCapturePlan::none(*cutout_sdfg);
+    analysis::AnalysisManager analysis_manager_opt(*cutout_sdfg);
+    codegen::CPPCodeGenerator
+        code_generator_opt(*cutout_sdfg, analysis_manager_opt, *instrumentation_plan_opt, *arg_capture_plan_opt);
+
+    EXPECT_TRUE(code_generator_opt.generate());
+    EXPECT_TRUE(code_generator_opt.as_source("cutout_sdfg.h", "cutout_sdfg.cpp"));
+}

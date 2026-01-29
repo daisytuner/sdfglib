@@ -12,6 +12,7 @@
 #include "sdfg/data_flow/library_nodes/metadata_node.h"
 #include "sdfg/data_flow/library_nodes/stdlib/stdlib.h"
 
+#include "sdfg/analysis/users.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/element.h"
@@ -49,7 +50,11 @@ FunctionType function_type_from_string(const std::string& str) {
  * * Serialization logic
  */
 
-nlohmann::json JSONSerializer::serialize(const sdfg::StructuredSDFG& sdfg) {
+nlohmann::json JSONSerializer::serialize(
+    const sdfg::StructuredSDFG& sdfg,
+    analysis::AnalysisManager* analysis_manager,
+    structured_control_flow::Sequence* root
+) {
     nlohmann::json j;
 
     j["name"] = sdfg.name();
@@ -396,6 +401,11 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
         storage_type_to_json(j["storage_type"], function_type->storage_type());
         j["initializer"] = function_type->initializer();
         j["alignment"] = function_type->alignment();
+    } else if (auto reference_type = dynamic_cast<const sdfg::codegen::Reference*>(&type)) {
+        j["type"] = "reference";
+        nlohmann::json reference_type_json;
+        type_to_json(reference_type_json, reference_type->reference_type());
+        j["reference_type"] = reference_type_json;
     } else {
         throw std::runtime_error("Unknown type");
     }
@@ -1025,7 +1035,11 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
                 function->add_param(*param);
             }
             return function->clone();
-
+        } else if (j["type"] == "reference") {
+            // Deserialize reference type
+            assert(j.contains("reference_type"));
+            std::unique_ptr<types::IType> reference_type = json_to_type(j["reference_type"]);
+            return std::make_unique<sdfg::codegen::Reference>(*reference_type);
         } else {
             throw std::runtime_error("Unknown type");
         }

@@ -1,4 +1,5 @@
 #include "sdfg/structured_control_flow/sequence.h"
+#include "sdfg/codegen/utils.h"
 
 #include "sdfg/function.h"
 
@@ -27,11 +28,22 @@ void Transition::validate(const Function& function) const {
     for (auto& entry : this->assignments_) {
         auto& lhs = entry.first;
         auto& type = function.type(lhs->get_name());
-        if (type.type_id() != types::TypeID::Scalar) {
-            throw InvalidSDFGException("Assignment - LHS: must be scalar type");
-        }
-        if (!types::is_integer(type.primitive_type())) {
-            throw InvalidSDFGException("Assignment - LHS: must be integer type");
+        if (type.type_id() == types::TypeID::Scalar) {
+            if (!types::is_integer(type.primitive_type())) {
+                throw InvalidSDFGException("Assignment - LHS: must be integer type");
+            }
+        } else if (type.type_id() == types::TypeID::Reference) {
+            auto* reference = dynamic_cast<const sdfg::codegen::Reference*>(&type);
+            assert(reference != nullptr);
+            auto& referenced_type = reference->reference_type();
+            if (referenced_type.type_id() != types::TypeID::Scalar) {
+                throw InvalidSDFGException("Assignment - LHS: must be a reference to a scalar type");
+            }
+            if (!types::is_integer(referenced_type.primitive_type())) {
+                throw InvalidSDFGException("Assignment - LHS: must be integer type");
+            }
+        } else {
+            throw InvalidSDFGException("Assignment - LHS: must be scalar type or a reference thereof");
         }
 
         auto& rhs = entry.second;
@@ -44,6 +56,17 @@ void Transition::validate(const Function& function) const {
             // Scalar integers
             if (atom_type.type_id() == types::TypeID::Scalar) {
                 if (!types::is_integer(atom_type.primitive_type())) {
+                    throw InvalidSDFGException("Assignment - RHS: must evaluate to integer type");
+                }
+                continue;
+            } else if (atom_type.type_id() == types::TypeID::Reference) {
+                auto* reference = dynamic_cast<const sdfg::codegen::Reference*>(&atom_type);
+                assert(reference != nullptr);
+                auto& referenced_type = reference->reference_type();
+                if (referenced_type.type_id() != types::TypeID::Scalar) {
+                    throw InvalidSDFGException("Assignment - RHS: must be a reference to a scalar type");
+                }
+                if (!types::is_integer(referenced_type.primitive_type())) {
                     throw InvalidSDFGException("Assignment - RHS: must evaluate to integer type");
                 }
                 continue;

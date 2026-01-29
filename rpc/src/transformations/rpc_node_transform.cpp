@@ -9,6 +9,7 @@
 
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
+#include "sdfg/cutouts/cutouts.h"
 #include "sdfg/optimization_report/pass_report_consumer.h"
 #include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/passes/rpc/rpc_responses.h"
@@ -18,7 +19,6 @@
 #include "sdfg/transformations/replayer.h"
 #include "sdfg/transformations/rpc_node_transform.h"
 #include "sdfg/transformations/transformation.h"
-#include "sdfg/util/coutouts.h"
 #include "sdfg/util/utils_curl.h"
 
 namespace sdfg {
@@ -81,37 +81,37 @@ query_rpc_opt(passes::rpc::RpcOptRequest request, sdfg::passes::rpc::RpcContext&
 
         rpc_response = std::make_unique<passes::rpc::RpcOptResponse>();
 
-        auto errorJ = parsed.find("error");
-        if (errorJ != parsed.end()) {
-            std::cerr << "[ERROR] RPC optimization query returned error: " << errorJ->get<std::string>() << std::endl;
-            rpc_response->error = errorJ->get<std::string>();
+        auto json_error = parsed.find("error");
+        if (json_error != parsed.end()) {
+            DEBUG_PRINTLN("[ERROR] RPC optimization query returned error: " << json_error->get<std::string>());
+            return {};
         }
 
-        auto sdfgResJ = parsed.find("sdfg_result");
-        if (sdfgResJ != parsed.end()) {
-            auto sdfg_field = sdfgResJ->at("sdfg");
+        auto json_sdfg_result = parsed.find("sdfg_result");
+        if (json_sdfg_result != parsed.end()) {
+            auto sdfg_field = json_sdfg_result->at("sdfg");
             rpc_response->sdfg_result = {.sdfg = serializer.deserialize(sdfg_field)};
         }
 
-        auto localReplayJ = parsed.find("local_replay");
-        if (localReplayJ != parsed.end()) {
-            rpc_response->local_replay = {.sequence = localReplayJ->at("sequence")};
+        auto json_local_replay = parsed.find("local_replay");
+        if (json_local_replay != parsed.end()) {
+            rpc_response->local_replay = {.sequence = json_local_replay->at("sequence")};
         }
 
-        auto metadataJ = parsed.find("metadata");
-        if (metadataJ != parsed.end()) {
+        auto json_metadata = parsed.find("metadata");
+        if (json_metadata != parsed.end()) {
             auto& meta = rpc_response->metadata;
-            auto regionIdJ = metadataJ->find("region_id");
-            if (regionIdJ != metadataJ->end()) {
-                meta.region_id = regionIdJ->get<std::string>();
+            auto json_region_id = json_metadata->find("region_id");
+            if (json_region_id != json_metadata->end()) {
+                meta.region_id = json_region_id->get<std::string>();
             }
-            auto speedupJ = metadataJ->find("speedup");
-            if (speedupJ != metadataJ->end()) {
-                meta.speedup = speedupJ->get<double>();
+            auto json_speedup = json_metadata->find("speedup");
+            if (json_speedup != json_metadata->end()) {
+                meta.speedup = json_speedup->get<double>();
             }
-            auto vectorDistanceJ = metadataJ->find("vector_distance");
-            if (vectorDistanceJ != metadataJ->end()) {
-                meta.vector_distance = vectorDistanceJ->get<double>();
+            auto json_vector_distance = json_metadata->find("vector_distance");
+            if (json_vector_distance != json_metadata->end()) {
+                meta.vector_distance = json_vector_distance->get<double>();
             }
         }
     } catch (const std::exception& e) {
@@ -153,7 +153,7 @@ bool RPCNodeTransform::
     can_be_applied(sdfg::builder::StructuredSDFGBuilder& builder, sdfg::analysis::AnalysisManager& analysis_manager) {
     auto& sdfg = builder.subject();
 
-    // Criterion: Must be outmost loop for now
+    // Criterion: Must be outermost loop for now
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     if (!loop_analysis.is_outermost_loop(&this->node_)) {
         if (report_) {
@@ -247,16 +247,16 @@ void RPCNodeTransform::
         if (dump_steps_) {
             for (auto& desc : recipe.sequence) {
                 bool fail = false;
-                auto typeJ = desc.find("transformation_type");
-                if (typeJ != desc.end()) {
-                    std::cout << "\t" << typeJ->get<std::string>();
+                auto transformation_type = desc.find("transformation_type");
+                if (transformation_type != desc.end()) {
+                    std::cout << "\t" << transformation_type->get<std::string>();
                 } else {
                     fail = true;
                 }
-                auto paramsJ = desc.find("parameters");
-                if (paramsJ != desc.end()) {
+                auto transformation_params = desc.find("parameters");
+                if (transformation_params != desc.end()) {
                     std::cout << " (";
-                    for (auto& [key, value] : paramsJ->items()) {
+                    for (auto& [key, value] : transformation_params->items()) {
                         std::cout << key << "=" << value << ", ";
                     }
                     std::cout << ")";
