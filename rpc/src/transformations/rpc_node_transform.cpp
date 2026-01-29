@@ -68,6 +68,22 @@ query_rpc_opt(passes::rpc::RpcOptRequest request, sdfg::passes::rpc::RpcContext&
         return {"CurlReq"};
     }
 
+    if (res.http_status == 401) {
+        nlohmann::json parsed;
+        try {
+            parsed = nlohmann::json::parse(res.body);
+            auto message = parsed.at("message").get<std::string>();
+            std::cerr << "[ERROR] RPC optimization query authentication issue: " << message << std::endl;
+        } catch (const std::exception& e) {
+            std::cerr << "[ERROR] RPC optimization query failed with " << res.http_status << ":" << res.body
+                      << std::endl;
+            return {"HttpAuth"};
+        }
+    } else if (res.http_status > 299 || res.http_status < 200) {
+        std::cerr << "[ERROR] RPC optimization query failed with " << res.http_status << ":" << res.body << std::endl;
+        return {"HttpReq"};
+    }
+
     std::unique_ptr<passes::rpc::RpcOptResponse> rpc_response;
 
     try {

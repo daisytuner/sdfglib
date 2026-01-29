@@ -48,7 +48,7 @@ DaisytunerTransfertuningRpcContext::DaisytunerTransfertuningRpcContext(std::stri
     : SimpleRpcContext(
           "https://docc-backend-1080482399950.europe-west1.run.app/docc",
           "transfertune",
-          {{"Authentication", token_prefix + " " + license_token}}
+          {{"Authorization", token_prefix + " " + license_token}}
       ) {}
 
 
@@ -57,7 +57,7 @@ std::unique_ptr<DaisytunerTransfertuningRpcContext> DaisytunerTransfertuningRpcC
     if (!auth.has_value()) {
         throw std::runtime_error("DOCC access token not found in DOCC_ACCESS_TOKEN or $HOME/.config/docc/token");
     }
-    std::cerr << "[INFO] Using Diasytuner DOCC Backend" << std::endl;
+    std::cerr << "[INFO] Using Daisytuner DOCC Backend" << std::endl;
 
     return std::make_unique<DaisytunerTransfertuningRpcContext>(auth->first);
 }
