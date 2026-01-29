@@ -541,11 +541,13 @@ class ExpressionVisitor(ast.NodeVisitor):
                     module_name = "numpy"
                     func_name = node.func.attr
                 else:
-                    # Check if it's a method call on an array (e.g., arr.astype(...))
+                    # Check if it's a method call on an array (e.g., arr.astype(...), arr.copy())
                     array_name = node.func.value.id
                     method_name = node.func.attr
                     if array_name in self.array_info and method_name == "astype":
                         return self._handle_numpy_astype(node, array_name)
+                    elif array_name in self.array_info and method_name == "copy":
+                        return self._handle_numpy_copy(node, array_name)
             elif isinstance(node.func.value, ast.Attribute):
                 if (
                     isinstance(node.func.value.value, ast.Name)
@@ -656,12 +658,41 @@ class ExpressionVisitor(ast.NodeVisitor):
 
         # 4. Rename variables
         class VariableRenamer(ast.NodeTransformer):
+            # Builtins that should not be renamed
+            BUILTINS = {
+                "range",
+                "len",
+                "int",
+                "float",
+                "bool",
+                "str",
+                "list",
+                "dict",
+                "tuple",
+                "set",
+                "print",
+                "abs",
+                "min",
+                "max",
+                "sum",
+                "enumerate",
+                "zip",
+                "map",
+                "filter",
+                "sorted",
+                "reversed",
+                "True",
+                "False",
+                "None",
+            }
+
             def __init__(self, suffix, globals_dict):
                 self.suffix = suffix
                 self.globals_dict = globals_dict
 
             def visit_Name(self, node):
-                if node.id in self.globals_dict:
+                # Don't rename builtins or globals
+                if node.id in self.globals_dict or node.id in self.BUILTINS:
                     return node
                 return ast.Name(id=f"{node.id}{self.suffix}", ctx=node.ctx)
 
@@ -3147,6 +3178,44 @@ class ExpressionVisitor(ast.NodeVisitor):
         self.builder.add_cast_op(
             array_name, tmp_name, input_shape, target_dtype.primitive_type
         )
+
+        return tmp_name
+
+    def _handle_numpy_copy(self, node, array_name):
+        """Handle numpy array.copy() method calls using memcpy."""
+        if array_name not in self.array_info:
+            raise ValueError(f"Array {array_name} not found in array_info")
+
+        input_shape = self.array_info[array_name]["shapes"]
+
+        # Get element type from array
+        element_type = Scalar(PrimitiveType.Double)  # Default
+        if array_name in self.symbol_table:
+            sym_type = self.symbol_table[array_name]
+            if isinstance(sym_type, Pointer) and sym_type.has_pointee_type():
+                element_type = sym_type.pointee_type
+
+        # Create output array with same dtype
+        tmp_name = self._create_array_temp(input_shape, element_type)
+
+        # Calculate total number of bytes to copy
+        # count = total_elements * sizeof(element_type)
+        total_elements = " * ".join([f"({s})" for s in input_shape])
+        element_size = self.builder.get_sizeof(element_type)
+        count_expr = f"({total_elements}) * ({element_size})"
+
+        # Get pointer type for memlets
+        ptr_type = Pointer(element_type)
+
+        # Add memcpy operation
+        block = self.builder.add_block()
+        t_src = self.builder.add_access(block, array_name)
+        t_dst = self.builder.add_access(block, tmp_name)
+        t_memcpy = self.builder.add_memcpy(block, count_expr)
+
+        # Connect source and destination
+        self.builder.add_memlet(block, t_src, "void", t_memcpy, "_src", "", ptr_type)
+        self.builder.add_memlet(block, t_memcpy, "_dst", t_dst, "void", "", ptr_type)
 
         return tmp_name
 

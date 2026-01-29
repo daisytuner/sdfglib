@@ -183,6 +183,18 @@ class ASTParser(ast.NodeVisitor):
         # Add control flow return to exit the function/path
         self.builder.add_return("", debug_info)
 
+    def visit_Expr(self, node):
+        """Handle expression statements (e.g., bare function calls)."""
+        # Expression statements are typically function calls without assignment
+        # Like: build_up_b(...) or pressure_poisson(...)
+        if isinstance(node.value, ast.Call):
+            # This is a function call statement - handle it through expression visitor
+            # which will inline the function
+            self._parse_expr(node.value)
+        else:
+            # For other expression statements, just evaluate them
+            self._parse_expr(node.value)
+
     def visit_AugAssign(self, node):
         if isinstance(node.target, ast.Name) and node.target.id in self.array_info:
             # Convert to slice assignment: target[:] = target op value

@@ -101,7 +101,7 @@ void HighwayMapDispatcher::
                        << std::endl;
     }
 
-    auto update_vec = symbolic::symbol("hn::Lanes(" + daisy_vec(vec_type_) + ")");
+    auto update_vec = symbolic::symbol("hn::Lanes(" + HighwayMapDispatcher::daisy_vec(vec_type_) + ")");
     auto condition_vec = symbolic::subs(node_.condition(), indvar_, symbolic::add(indvar_, update_vec));
 
     library_stream << "for";
@@ -304,7 +304,7 @@ void HighwayMapDispatcher::dispatch_highway(
         auto& oedge = *graph.out_edges(*dnode).begin();
         auto& dst_node = static_cast<data_flow::AccessNode&>(oedge.dst());
         library_stream << "auto " << oedge.src_conn() << " = hn::Undefined(";
-        library_stream << daisy_vec(oedge.base_type().primitive_type()) << ");" << std::endl;
+        library_stream << HighwayMapDispatcher::daisy_vec(oedge.base_type().primitive_type()) << ");" << std::endl;
         library_stream << std::endl;
 
         // Dispatch code nodes
@@ -312,8 +312,8 @@ void HighwayMapDispatcher::dispatch_highway(
             std::string tasklet_code;
             if (tasklet->is_fptosi(this->sdfg_) || tasklet->is_sitofp(this->sdfg_) || tasklet->is_uitofp(this->sdfg_) ||
                 tasklet->is_fptoui(this->sdfg_)) {
-                tasklet_code = "hn::ConvertTo(" + daisy_vec(oedge.base_type().primitive_type()) + ", " +
-                               tasklet->input(0) + ");";
+                tasklet_code = "hn::ConvertTo(" + HighwayMapDispatcher::daisy_vec(oedge.base_type().primitive_type()) +
+                               ", " + tasklet->input(0) + ");";
             } else {
                 tasklet_code = HighwayMapDispatcher::tasklet(*tasklet);
             }
@@ -340,7 +340,7 @@ void HighwayMapDispatcher::dispatch_highway(
         } else {
             // Store to memory
             library_stream << "hn::StoreU(" << oedge.src_conn() << ", ";
-            library_stream << daisy_vec(oedge.base_type().primitive_type()) << ", ";
+            library_stream << HighwayMapDispatcher::daisy_vec(oedge.base_type().primitive_type()) << ", ";
             library_stream << "&";
             library_stream << "(" << this->language_extension_.type_cast(dst_node.data(), oedge.base_type()) << ")";
             library_stream << this->language_extension_.subset(oedge.base_type(), oedge.subset());
@@ -352,7 +352,7 @@ void HighwayMapDispatcher::dispatch_highway(
     }
 };
 
-std::string HighwayMapDispatcher::daisy_vec(const types::PrimitiveType& type) {
+std::string HighwayMapDispatcher::HighwayMapDispatcher::daisy_vec(const types::PrimitiveType& type) {
     switch (type) {
         case types::PrimitiveType::Int8:
             return "daisy_vec_s8";
@@ -382,9 +382,11 @@ std::string HighwayMapDispatcher::daisy_vec(const types::PrimitiveType& type) {
 std::string HighwayMapDispatcher::declaration(const std::string& container, const types::Scalar& type) {
     switch (type.primitive_type()) {
         case types::PrimitiveType::Bool:
-            return "auto " + container + " = hn::MaskFalse(" + daisy_vec(types::PrimitiveType::Int8) + ");";
+            return "auto " + container + " = hn::MaskFalse(" +
+                   HighwayMapDispatcher::daisy_vec(types::PrimitiveType::Int8) + ");";
         default:
-            return "auto " + container + " = hn::Undefined(" + daisy_vec(type.primitive_type()) + ");";
+            return "auto " + container + " = hn::Undefined(" + HighwayMapDispatcher::daisy_vec(type.primitive_type()) +
+                   ");";
     }
 }
 
@@ -463,7 +465,9 @@ std::string HighwayMapDispatcher::tasklet(data_flow::Tasklet& tasklet) {
         case data_flow::TaskletCode::fp_div:
             return tasklet.output() + " = hn::Div(" + tasklet.input(0) + ", " + tasklet.input(1) + ");";
         case data_flow::TaskletCode::fp_rem:
-            throw std::runtime_error("fp_rem not implemented for Highway backend");
+            // remainder(x, y) = x - round(x / y) * y (IEEE 754 remainder)
+            return tasklet.output() + " = hn::Sub(" + tasklet.input(0) + ", hn::Mul(hn::Round(hn::Div(" +
+                   tasklet.input(0) + ", " + tasklet.input(1) + ")), " + tasklet.input(1) + "));";
         case data_flow::TaskletCode::fp_oeq:
             return tasklet.output() + " = hn::Eq(" + tasklet.input(0) + ", " + tasklet.input(1) + ");";
         case data_flow::TaskletCode::fp_one:
@@ -501,35 +505,101 @@ std::string HighwayMapDispatcher::tasklet(data_flow::Tasklet& tasklet) {
 };
 
 std::string HighwayMapDispatcher::cmath_node(math::cmath::CMathNode& cmath_node) {
+    std::string d = HighwayMapDispatcher::daisy_vec(cmath_node.primitive_type());
     switch (cmath_node.function()) {
-        case math::cmath::CMathFunction::cos:
-            return cmath_node.output(0) + " = hn::Cos(" + cmath_node.input(0) + ");";
-        case math::cmath::CMathFunction::ceil:
-            return cmath_node.output(0) + " = hn::Ceil(" + cmath_node.input(0) + ");";
-        case math::cmath::CMathFunction::exp:
-            return cmath_node.output(0) + " = hn::Exp(" + cmath_node.input(0) + ");";
-        case math::cmath::CMathFunction::exp2:
-            return cmath_node.output(0) + " = hn::Exp2(" + cmath_node.input(0) + ");";
-        case math::cmath::CMathFunction::fabs:
-            return cmath_node.output(0) + " = hn::Abs(" + cmath_node.input(0) + ");";
-        case math::cmath::CMathFunction::floor:
-            return cmath_node.output(0) + " = hn::Floor(" + cmath_node.input(0) + ");";
-        case math::cmath::CMathFunction::log:
-            return cmath_node.output(0) + " = hn::Log(" + cmath_node.input(0) + ");";
-        case math::cmath::CMathFunction::log2:
-            return cmath_node.output(0) + " = hn::Log2(" + cmath_node.input(0) + ");";
-        case math::cmath::CMathFunction::log10:
-            return cmath_node.output(0) + " = hn::Log10(" + cmath_node.input(0) + ");";
-        case math::cmath::CMathFunction::pow:
-            return cmath_node.output(0) + " = hn::Pow(" + cmath_node.input(0) + ", " + cmath_node.input(1) + ");";
-        case math::cmath::CMathFunction::round:
-            return cmath_node.output(0) + " = hn::Round(" + cmath_node.input(0) + ");";
+        // Trigonometric functions (require tag)
         case math::cmath::CMathFunction::sin:
-            return cmath_node.output(0) + " = hn::Sin(" + cmath_node.input(0) + ");";
+            return cmath_node.output(0) + " = hn::Sin(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::cos:
+            return cmath_node.output(0) + " = hn::Cos(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::tan:
+            return cmath_node.output(0) + " = hn::Tan(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::asin:
+            return cmath_node.output(0) + " = hn::Asin(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::acos:
+            return cmath_node.output(0) + " = hn::Acos(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::atan:
+            return cmath_node.output(0) + " = hn::Atan(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::atan2:
+            return cmath_node.output(0) + " = hn::Atan2(" + d + ", " + cmath_node.input(0) + ", " +
+                   cmath_node.input(1) + ");";
+        // Hyperbolic functions (require tag)
+        case math::cmath::CMathFunction::sinh:
+            return cmath_node.output(0) + " = hn::Sinh(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::cosh:
+            return cmath_node.output(0) + " = hn::Cosh(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::tanh:
+            return cmath_node.output(0) + " = hn::Tanh(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::asinh:
+            return cmath_node.output(0) + " = hn::Asinh(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::acosh:
+            return cmath_node.output(0) + " = hn::Acosh(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::atanh:
+            return cmath_node.output(0) + " = hn::Atanh(" + d + ", " + cmath_node.input(0) + ");";
+        // Exponential and logarithmic functions (require tag)
+        case math::cmath::CMathFunction::exp:
+            return cmath_node.output(0) + " = hn::Exp(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::exp2:
+            return cmath_node.output(0) + " = hn::Exp2(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::expm1:
+            return cmath_node.output(0) + " = hn::Expm1(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::log:
+            return cmath_node.output(0) + " = hn::Log(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::log2:
+            return cmath_node.output(0) + " = hn::Log2(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::log10:
+            return cmath_node.output(0) + " = hn::Log10(" + d + ", " + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::log1p:
+            return cmath_node.output(0) + " = hn::Log1p(" + d + ", " + cmath_node.input(0) + ");";
+        // Power functions
+        case math::cmath::CMathFunction::pow:
+            // pow(x, y) = exp(y * log(x))
+            return cmath_node.output(0) + " = hn::Exp(" + d + ", hn::Mul(" + cmath_node.input(1) + ", hn::Log(" + d +
+                   ", " + cmath_node.input(0) + ")));";
         case math::cmath::CMathFunction::sqrt:
             return cmath_node.output(0) + " = hn::Sqrt(" + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::cbrt:
+            // cbrt(x) = exp(log(x) / 3)
+            return cmath_node.output(0) + " = hn::Exp(" + d + ", hn::Div(hn::Log(" + d + ", " + cmath_node.input(0) +
+                   "), hn::Set(" + d + ", 3.0)));";
+        case math::cmath::CMathFunction::hypot:
+            // hypot(x, y) = sqrt(x*x + y*y)
+            return cmath_node.output(0) + " = hn::Sqrt(hn::Add(hn::Mul(" + cmath_node.input(0) + ", " +
+                   cmath_node.input(0) + "), hn::Mul(" + cmath_node.input(1) + ", " + cmath_node.input(1) + ")));";
+        // Rounding and remainder functions (no tag required)
+        case math::cmath::CMathFunction::fabs:
+            return cmath_node.output(0) + " = hn::Abs(" + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::ceil:
+            return cmath_node.output(0) + " = hn::Ceil(" + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::floor:
+            return cmath_node.output(0) + " = hn::Floor(" + cmath_node.input(0) + ");";
         case math::cmath::CMathFunction::trunc:
             return cmath_node.output(0) + " = hn::Trunc(" + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::round:
+            return cmath_node.output(0) + " = hn::Round(" + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::nearbyint:
+        case math::cmath::CMathFunction::rint:
+            return cmath_node.output(0) + " = hn::NearestInt(" + cmath_node.input(0) + ");";
+        case math::cmath::CMathFunction::fmod:
+            // fmod(x, y) = x - trunc(x / y) * y
+            return cmath_node.output(0) + " = hn::Sub(" + cmath_node.input(0) + ", hn::Mul(hn::Trunc(hn::Div(" +
+                   cmath_node.input(0) + ", " + cmath_node.input(1) + ")), " + cmath_node.input(1) + "));";
+        case math::cmath::CMathFunction::remainder:
+            // remainder(x, y) = x - round(x / y) * y (IEEE 754)
+            return cmath_node.output(0) + " = hn::Sub(" + cmath_node.input(0) + ", hn::Mul(hn::Round(hn::Div(" +
+                   cmath_node.input(0) + ", " + cmath_node.input(1) + ")), " + cmath_node.input(1) + "));";
+        // Minimum, maximum functions (no tag required)
+        case math::cmath::CMathFunction::fmax:
+            return cmath_node.output(0) + " = hn::Max(" + cmath_node.input(0) + ", " + cmath_node.input(1) + ");";
+        case math::cmath::CMathFunction::fmin:
+            return cmath_node.output(0) + " = hn::Min(" + cmath_node.input(0) + ", " + cmath_node.input(1) + ");";
+        // Floating-point manipulation (no tag required)
+        case math::cmath::CMathFunction::copysign:
+            return cmath_node.output(0) + " = hn::CopySign(" + cmath_node.input(0) + ", " + cmath_node.input(1) + ");";
+        // Other functions
+        case math::cmath::CMathFunction::fma:
+            return cmath_node.output(0) + " = hn::MulAdd(" + cmath_node.input(0) + ", " + cmath_node.input(1) + ", " +
+                   cmath_node.input(2) + ");";
         default:
             return "";
     }
@@ -549,7 +619,7 @@ void HighwayMapDispatcher::dispatch_iedge(codegen::PrettyPrinter& library_stream
         auto& scalar_type = static_cast<const types::Scalar&>(base_type);
 
         library_stream << "const auto " << memlet.dst_conn();
-        library_stream << " = hn::Set(" << daisy_vec(scalar_type.primitive_type()) << ", ";
+        library_stream << " = hn::Set(" << HighwayMapDispatcher::daisy_vec(scalar_type.primitive_type()) << ", ";
         library_stream << data << this->language_extension_.subset(base_type, memlet.subset()) << ");" << std::endl;
         return;
     }
@@ -564,7 +634,7 @@ void HighwayMapDispatcher::dispatch_iedge(codegen::PrettyPrinter& library_stream
     // Case 3: Argument (any type)
     if (base_type.type_id() == types::TypeID::Scalar) {
         library_stream << "const auto " << memlet.dst_conn() << " = ";
-        library_stream << "hn::Set(" << daisy_vec(base_type.primitive_type()) << ", ";
+        library_stream << "hn::Set(" << HighwayMapDispatcher::daisy_vec(base_type.primitive_type()) << ", ";
         library_stream << src.data() << ");" << std::endl;
         return;
     } else {
@@ -575,13 +645,13 @@ void HighwayMapDispatcher::dispatch_iedge(codegen::PrettyPrinter& library_stream
         if (access_type == transformations::HighwayTransform::CONSTANT) {
             library_stream << "const auto " << memlet.dst_conn() << " = ";
             library_stream << "hn::Set(";
-            library_stream << daisy_vec(base_type.primitive_type()) << ", ";
+            library_stream << HighwayMapDispatcher::daisy_vec(base_type.primitive_type()) << ", ";
             library_stream << "(" << this->language_extension_.type_cast(src.data(), base_type) << ")";
             library_stream << this->language_extension_.subset(base_type, memlet.subset());
             library_stream << ");" << std::endl;
         } else if (access_type == transformations::HighwayTransform::CONTIGUOUS) {
             library_stream << "const auto " << memlet.dst_conn() << " = hn::LoadU(";
-            library_stream << daisy_vec(base_type.primitive_type()) << ", ";
+            library_stream << HighwayMapDispatcher::daisy_vec(base_type.primitive_type()) << ", ";
             library_stream << "&";
             library_stream << "(" << this->language_extension_.type_cast(src.data(), base_type) << ")";
             library_stream << this->language_extension_.subset(base_type, memlet.subset());

@@ -137,6 +137,8 @@ public:
         const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
     );
 
+    size_t add_memcpy(size_t block_ptr, const std::string& count, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
+
     void add_gemm(
         const std::string& A,
         const std::string& B,
