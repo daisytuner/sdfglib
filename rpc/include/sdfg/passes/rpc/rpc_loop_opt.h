@@ -12,6 +12,7 @@ private:
     rpc::RpcContext& rpc_context_;
     const std::string target_;
     const std::string category_;
+    const bool print_steps_;
 
 protected:
     scheduler::SchedulerAction schedule(
@@ -29,7 +30,7 @@ protected:
     ) override;
 
 public:
-    RpcLoopOpt(rpc::RpcContext& rpc_context, std::string target, std::string category);
+    RpcLoopOpt(rpc::RpcContext& rpc_context, std::string target, std::string category, bool print_steps = false);
 
     std::string name() override { return "RpcLoopOpt"; };
 };
