@@ -580,22 +580,46 @@ class ExpressionVisitor(ast.NodeVisitor):
             return self._handle_python_cast(node, func_name)
 
         math_funcs = {
+            # Trigonometric functions
             "sin": CMathFunction.sin,
             "cos": CMathFunction.cos,
             "tan": CMathFunction.tan,
-            "exp": CMathFunction.exp,
-            "log": CMathFunction.log,
-            "sqrt": CMathFunction.sqrt,
-            "pow": CMathFunction.pow,
-            "abs": CMathFunction.fabs,
-            "ceil": CMathFunction.ceil,
-            "floor": CMathFunction.floor,
             "asin": CMathFunction.asin,
             "acos": CMathFunction.acos,
             "atan": CMathFunction.atan,
+            "atan2": CMathFunction.atan2,
+            # Hyperbolic functions
             "sinh": CMathFunction.sinh,
             "cosh": CMathFunction.cosh,
             "tanh": CMathFunction.tanh,
+            "asinh": CMathFunction.asinh,
+            "acosh": CMathFunction.acosh,
+            "atanh": CMathFunction.atanh,
+            # Exponential and logarithmic functions
+            "exp": CMathFunction.exp,
+            "exp2": CMathFunction.exp2,
+            "expm1": CMathFunction.expm1,
+            "log": CMathFunction.log,
+            "log2": CMathFunction.log2,
+            "log10": CMathFunction.log10,
+            "log1p": CMathFunction.log1p,
+            # Power functions
+            "pow": CMathFunction.pow,
+            "sqrt": CMathFunction.sqrt,
+            "cbrt": CMathFunction.cbrt,
+            "hypot": CMathFunction.hypot,
+            # Rounding and remainder functions
+            "abs": CMathFunction.fabs,
+            "fabs": CMathFunction.fabs,
+            "ceil": CMathFunction.ceil,
+            "floor": CMathFunction.floor,
+            "trunc": CMathFunction.trunc,
+            "fmod": CMathFunction.fmod,
+            "remainder": CMathFunction.remainder,
+            # Floating-point manipulation functions
+            "copysign": CMathFunction.copysign,
+            # Other functions
+            "fma": CMathFunction.fma,
         }
 
         if func_name in math_funcs:
@@ -896,12 +920,48 @@ class ExpressionVisitor(ast.NodeVisitor):
 
                 return tmp_name
             else:
-                t_task = self.builder.add_cmath(block, CMathFunction.fmod)
-                self.builder.add_memlet(block, t_left, "void", t_task, "_in1", left_sub)
-                self.builder.add_memlet(
-                    block, t_right, "void", t_task, "_in2", right_sub
+                # Python's floored modulo: a % b = a - floor(a / b) * b
+                # This differs from fmod which uses trunc instead of floor
+                # Implement as: fmod(fmod(a, b) + b, b) to handle negative values
+
+                # 1. rem1 = fmod(a, b)
+                t_rem1 = self.builder.add_tasklet(
+                    block, TaskletCode.fp_rem, ["_in1", "_in2"], ["_out"]
                 )
-                self.builder.add_memlet(block, t_task, "_out", t_out, "void", "")
+                self.builder.add_memlet(block, t_left, "void", t_rem1, "_in1", left_sub)
+                self.builder.add_memlet(
+                    block, t_right, "void", t_rem1, "_in2", right_sub
+                )
+
+                rem1_name = f"_tmp_{self._get_unique_id()}"
+                self.builder.add_container(rem1_name, dtype, False)
+                t_rem1_out = self.builder.add_access(block, rem1_name)
+                self.builder.add_memlet(block, t_rem1, "_out", t_rem1_out, "void", "")
+
+                # 2. add = rem1 + b
+                t_add = self.builder.add_tasklet(
+                    block, TaskletCode.fp_add, ["_in1", "_in2"], ["_out"]
+                )
+                self.builder.add_memlet(block, t_rem1_out, "void", t_add, "_in1", "")
+                self.builder.add_memlet(
+                    block, t_right, "void", t_add, "_in2", right_sub
+                )
+
+                add_name = f"_tmp_{self._get_unique_id()}"
+                self.builder.add_container(add_name, dtype, False)
+                t_add_out = self.builder.add_access(block, add_name)
+                self.builder.add_memlet(block, t_add, "_out", t_add_out, "void", "")
+
+                # 3. res = fmod(add, b)
+                t_rem2 = self.builder.add_tasklet(
+                    block, TaskletCode.fp_rem, ["_in1", "_in2"], ["_out"]
+                )
+                self.builder.add_memlet(block, t_add_out, "void", t_rem2, "_in1", "")
+                self.builder.add_memlet(
+                    block, t_right, "void", t_rem2, "_in2", right_sub
+                )
+                self.builder.add_memlet(block, t_rem2, "_out", t_out, "void", "")
+
                 return tmp_name
 
         tasklet_code = None

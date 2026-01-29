@@ -465,8 +465,8 @@ std::string HighwayMapDispatcher::tasklet(data_flow::Tasklet& tasklet) {
         case data_flow::TaskletCode::fp_div:
             return tasklet.output() + " = hn::Div(" + tasklet.input(0) + ", " + tasklet.input(1) + ");";
         case data_flow::TaskletCode::fp_rem:
-            // remainder(x, y) = x - round(x / y) * y (IEEE 754 remainder)
-            return tasklet.output() + " = hn::Sub(" + tasklet.input(0) + ", hn::Mul(hn::Round(hn::Div(" +
+            // fmod(x, y) = x - trunc(x / y) * y (same sign as dividend)
+            return tasklet.output() + " = hn::Sub(" + tasklet.input(0) + ", hn::Mul(hn::Trunc(hn::Div(" +
                    tasklet.input(0) + ", " + tasklet.input(1) + ")), " + tasklet.input(1) + "));";
         case data_flow::TaskletCode::fp_oeq:
             return tasklet.output() + " = hn::Eq(" + tasklet.input(0) + ", " + tasklet.input(1) + ");";
@@ -512,8 +512,8 @@ std::string HighwayMapDispatcher::cmath_node(math::cmath::CMathNode& cmath_node)
             return cmath_node.output(0) + " = hn::Sin(" + d + ", " + cmath_node.input(0) + ");";
         case math::cmath::CMathFunction::cos:
             return cmath_node.output(0) + " = hn::Cos(" + d + ", " + cmath_node.input(0) + ");";
-        case math::cmath::CMathFunction::tan:
-            return cmath_node.output(0) + " = hn::Tan(" + d + ", " + cmath_node.input(0) + ");";
+        // case math::cmath::CMathFunction::tan:
+        //     return cmath_node.output(0) + " = hn::Tan(" + d + ", " + cmath_node.input(0) + ");";
         case math::cmath::CMathFunction::asin:
             return cmath_node.output(0) + " = hn::Asin(" + d + ", " + cmath_node.input(0) + ");";
         case math::cmath::CMathFunction::acos:
@@ -526,8 +526,8 @@ std::string HighwayMapDispatcher::cmath_node(math::cmath::CMathNode& cmath_node)
         // Hyperbolic functions (require tag)
         case math::cmath::CMathFunction::sinh:
             return cmath_node.output(0) + " = hn::Sinh(" + d + ", " + cmath_node.input(0) + ");";
-        case math::cmath::CMathFunction::cosh:
-            return cmath_node.output(0) + " = hn::Cosh(" + d + ", " + cmath_node.input(0) + ");";
+        // case math::cmath::CMathFunction::cosh:
+        //     return cmath_node.output(0) + " = hn::Cosh(" + d + ", " + cmath_node.input(0) + ");";
         case math::cmath::CMathFunction::tanh:
             return cmath_node.output(0) + " = hn::Tanh(" + d + ", " + cmath_node.input(0) + ");";
         case math::cmath::CMathFunction::asinh:
@@ -539,8 +539,8 @@ std::string HighwayMapDispatcher::cmath_node(math::cmath::CMathNode& cmath_node)
         // Exponential and logarithmic functions (require tag)
         case math::cmath::CMathFunction::exp:
             return cmath_node.output(0) + " = hn::Exp(" + d + ", " + cmath_node.input(0) + ");";
-        case math::cmath::CMathFunction::exp2:
-            return cmath_node.output(0) + " = hn::Exp2(" + d + ", " + cmath_node.input(0) + ");";
+        // case math::cmath::CMathFunction::exp2:
+        //     return cmath_node.output(0) + " = hn::Exp2(" + d + ", " + cmath_node.input(0) + ");";
         case math::cmath::CMathFunction::expm1:
             return cmath_node.output(0) + " = hn::Expm1(" + d + ", " + cmath_node.input(0) + ");";
         case math::cmath::CMathFunction::log:
