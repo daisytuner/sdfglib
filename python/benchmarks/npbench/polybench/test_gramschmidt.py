@@ -19,7 +19,7 @@ def initialize(M, N, datatype=np.float64):
     while np.linalg.matrix_rank(A) < N:
         A = rng.random((M, N), dtype=datatype)
 
-    return (A,)
+    return A
 
 
 def kernel(A):

@@ -15,7 +15,7 @@ def initialize(M, N, datatype=np.float64):
     beta = datatype(1.2)
     C = np.fromfunction(lambda i, j: (i * j + 2) % N / M, (N, N), dtype=datatype)
     A = np.fromfunction(lambda i, j: (i * j + 1) % N / N, (N, M), dtype=datatype)
-    return (alpha, beta, C, A)
+    return alpha, beta, C, A
 
 
 def kernel(alpha, beta, C, A):

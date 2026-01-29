@@ -23,11 +23,11 @@ def initialize(M, N, nnz):
     matrix = random(
         M, N, density=nnz / (M * N), format="csr", dtype=np.float64, random_state=rng
     )
-    rows = np.int32(matrix.indptr)
-    cols = np.int32(matrix.indices)
-    vals = matrix.data
+    A_row = np.int32(matrix.indptr)
+    A_col = np.int32(matrix.indices)
+    A_val = matrix.data
 
-    return rows, cols, vals, x
+    return A_row, A_col, A_val, x
 
 
 # Matrix-Vector Multiplication with the matrix given in Compressed Sparse Row
