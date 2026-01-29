@@ -23,8 +23,8 @@ def initialize(M, N, nnz):
     matrix = random(
         M, N, density=nnz / (M * N), format="csr", dtype=np.float64, random_state=rng
     )
-    A_row = np.int32(matrix.indptr)
-    A_col = np.int32(matrix.indices)
+    A_row = np.int64(matrix.indptr)  # Originally np.int32
+    A_col = np.int64(matrix.indices)  # Originally np.int32
     A_val = matrix.data
 
     return A_row, A_col, A_val, x
