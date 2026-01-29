@@ -15,6 +15,7 @@
 #include <sdfg/structured_control_flow/control_flow_node.h>
 #include <sdfg/structured_sdfg.h>
 #include "sdfg/passes/rpc/rpc_context.h"
+#include "sdfg/passes/rpc/rpc_loop_opt.h"
 #include "sdfg/serializer/json_serializer.h"
 #include "sdfg/transformations/rpc_node_transform.h"
 
@@ -177,19 +178,8 @@ int main(int argc, char* argv[]) {
     b.server = "http://localhost:8080/docc";
     auto ctx = b.build();
 
-    size_t loopnest_index = 0;
-    for (auto loopnest : outer_loops) {
-        sdfg::transformations::RPCNodeTransform rpc_tuner(*loopnest, target, category, *ctx, true);
-
-        if (!rpc_tuner.can_be_applied(*builder, analysis_manager)) {
-            continue;
-        }
-        rpc_tuner.apply(*builder, analysis_manager);
-
-        analysis_manager.invalidate_all();
-
-        loopnest_index++;
-    }
+    passes::rpc::RpcLoopOpt rpc_pass(*ctx, target, category, true);
+    rpc_pass.run(*builder, analysis_manager);
 
     // generate code for tuned sdfg
 
