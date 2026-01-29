@@ -124,7 +124,7 @@ int main(int argc, char* argv[]) {
 
     // Register default dispatchers
     codegen::register_default_dispatchers();
-    // sdfg::serializer::register_default_serializers();
+    sdfg::serializer::register_default_serializers();
     //  sdfg::cuda::register_cuda_plugin();
 
     // Create sdfg

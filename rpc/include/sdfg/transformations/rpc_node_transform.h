@@ -37,6 +37,9 @@ private:
 
     bool can_apply_replay(std::optional<passes::rpc::RpcLocalReplayRecipe>& replay) const;
 
+    std::variant<std::unique_ptr<passes::rpc::RpcOptResponse>, std::string>
+    query_rpc_opt(passes::rpc::RpcOptRequest request, sdfg::passes::rpc::RpcContext& ctx);
+
 public:
     RPCNodeTransform(
         structured_control_flow::ControlFlowNode& node,

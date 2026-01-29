@@ -25,8 +25,8 @@
 namespace sdfg {
 namespace transformations {
 
-std::variant<std::unique_ptr<passes::rpc::RpcOptResponse>, std::string>
-query_rpc_opt(passes::rpc::RpcOptRequest request, sdfg::passes::rpc::RpcContext& ctx) {
+std::variant<std::unique_ptr<passes::rpc::RpcOptResponse>, std::string> RPCNodeTransform::RPCNodeTransform::
+    query_rpc_opt(passes::rpc::RpcOptRequest request, sdfg::passes::rpc::RpcContext& ctx) {
     CURL* curl_handle = curl_easy_init();
     if (!curl_handle) {
         std::cerr << "[ERROR] Could not initialize CURL!" << std::endl;
