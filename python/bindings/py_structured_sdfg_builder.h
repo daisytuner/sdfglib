@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sdfg/builder/structured_sdfg_builder.h>
+#include <sdfg/data_flow/library_nodes/math/math.h>
 #include <sdfg/data_flow/tasklet.h>
 #include <sdfg/structured_control_flow/control_flow_node.h>
 #include <sdfg/structured_control_flow/for.h>
@@ -123,7 +124,9 @@ public:
 
     /***** Library Nodes *****/
 
-    size_t add_cmath(size_t block_ptr, const std::string& name, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
+    size_t add_cmath(
+        size_t block_ptr, sdfg::math::cmath::CMathFunction func, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
+    );
 
     size_t add_malloc(size_t block_ptr, const std::string& size, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
 
@@ -133,6 +136,8 @@ public:
         const std::string& num,
         const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
     );
+
+    size_t add_memcpy(size_t block_ptr, const std::string& count, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
 
     void add_gemm(
         const std::string& A,

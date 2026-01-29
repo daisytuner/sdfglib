@@ -141,7 +141,12 @@ class ASTParser(ast.NodeVisitor):
             else:
                 # Record shape for metadata
                 if res in self.array_info:
-                    shape = self.array_info[res]["shapes"]
+                    # Prefer runtime shapes if available (for indirect access patterns)
+                    # Fall back to regular shapes otherwise
+                    if "shapes_runtime" in self.array_info[res]:
+                        shape = self.array_info[res]["shapes_runtime"]
+                    else:
+                        shape = self.array_info[res]["shapes"]
                     # Convert to string expressions
                     self.captured_return_shapes[ret_name] = [str(s) for s in shape]
 
@@ -177,6 +182,18 @@ class ASTParser(ast.NodeVisitor):
 
         # Add control flow return to exit the function/path
         self.builder.add_return("", debug_info)
+
+    def visit_Expr(self, node):
+        """Handle expression statements (e.g., bare function calls)."""
+        # Expression statements are typically function calls without assignment
+        # Like: build_up_b(...) or pressure_poisson(...)
+        if isinstance(node.value, ast.Call):
+            # This is a function call statement - handle it through expression visitor
+            # which will inline the function
+            self._parse_expr(node.value)
+        else:
+            # For other expression statements, just evaluate them
+            self._parse_expr(node.value)
 
     def visit_AugAssign(self, node):
         if isinstance(node.target, ast.Name) and node.target.id in self.array_info:
@@ -228,6 +245,22 @@ class ASTParser(ast.NodeVisitor):
             return
 
         target = node.targets[0]
+
+        # Handle tuple unpacking: I, J, K = expr1, expr2, expr3
+        if isinstance(target, ast.Tuple):
+            if isinstance(node.value, ast.Tuple):
+                # Unpacking tuple to tuple: a, b, c = x, y, z
+                if len(target.elts) != len(node.value.elts):
+                    raise ValueError("Tuple unpacking size mismatch")
+                for tgt, val in zip(target.elts, node.value.elts):
+                    assign = ast.Assign(targets=[tgt], value=val)
+                    ast.copy_location(assign, node)
+                    self.visit_Assign(assign)
+            else:
+                raise NotImplementedError(
+                    "Tuple unpacking from non-tuple values not supported"
+                )
+            return
 
         # Special case: linear algebra functions
         if self.la_handler.is_gemm(node.value):
@@ -631,7 +664,7 @@ class ASTParser(ast.NodeVisitor):
                     if start_str.startswith("-"):
                         shapes = self.array_info[target_name].get("shapes", [])
                         dim_size = (
-                            shapes[i]
+                            str(shapes[i])
                             if i < len(shapes)
                             else f"_{target_name}_shape_{i}"
                         )
@@ -645,7 +678,7 @@ class ASTParser(ast.NodeVisitor):
                     if stop_str.startswith("-") or stop_str.startswith("(-"):
                         shapes = self.array_info[target_name].get("shapes", [])
                         dim_size = (
-                            shapes[i]
+                            str(shapes[i])
                             if i < len(shapes)
                             else f"_{target_name}_shape_{i}"
                         )
@@ -653,7 +686,9 @@ class ASTParser(ast.NodeVisitor):
                 else:
                     shapes = self.array_info[target_name].get("shapes", [])
                     stop_str = (
-                        shapes[i] if i < len(shapes) else f"_{target_name}_shape_{i}"
+                        str(shapes[i])
+                        if i < len(shapes)
+                        else f"_{target_name}_shape_{i}"
                     )
 
                 step_str = "1"
