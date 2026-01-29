@@ -150,71 +150,82 @@ def run_benchmark_with_target(
 
 
 def get_all_polybench_tests():
-    """Discover all test modules in polybench directory."""
-    polybench_dir = script_dir / "benchmarks" / "npbench" / "polybench"
-
-    test_files = sorted(polybench_dir.glob("test_*.py"))
+    """Discover all test modules in polybench and other benchmark directories."""
+    benchmark_dirs = ["polybench", "cavity_flow", "go_fast", "spmv", "weather_stencils"]
 
     benchmarks = []
-    for test_file in test_files:
 
-        module_name = f"benchmarks.npbench.polybench.{test_file.stem}"
-        benchmark_name = test_file.stem.replace("test_", "")
+    for dir_name in benchmark_dirs:
+        bench_dir = script_dir / "benchmarks" / "npbench" / dir_name
 
-        # Check if the test function is marked with @pytest.mark.skip()
-        # and extract available targets from pytest.mark.parametrize
-        with open(test_file, "r") as f:
-            content = f.read()
-            if "@pytest.mark.skip(" in content:
-                print(f"Skipping {benchmark_name}: marked with @pytest.mark.skip()")
-                continue
+        if not bench_dir.exists():
+            print(f"Warning: Directory {bench_dir} does not exist, skipping...")
+            continue
 
-            # Extract available targets from @pytest.mark.parametrize("target", [...])
-            available_targets = None
-            parametrize_match = re.search(
-                r'@pytest\.mark\.parametrize\(\s*["\']target["\']\s*,\s*\[(.*?)\]',
-                content,
-                re.DOTALL,
-            )
-            if parametrize_match:
-                targets_str = parametrize_match.group(1)
-                # Extract all non-commented target strings
-                target_matches = re.findall(r'["\'](\w+)["\']', targets_str)
-                available_targets = target_matches
-                # Check for commented out targets
-                commented_targets = re.findall(r'#\s*["\'](\w+)["\']', targets_str)
-                if commented_targets:
-                    # Remove commented targets from available list
-                    available_targets = [
-                        t for t in available_targets if t not in commented_targets
-                    ]
-                print(f"  {benchmark_name}: available targets = {available_targets}")
+        print(f"\nScanning directory: {dir_name}")
+        test_files = sorted(bench_dir.glob("test_*.py"))
 
-        try:
-            # Import the module
-            module = importlib.import_module(module_name)
+        for test_file in test_files:
 
-            # Check if it has the required functions
-            if (
-                hasattr(module, "initialize")
-                and hasattr(module, "kernel")
-                and hasattr(module, "PARAMETERS")
-            ):
-                benchmarks.append(
-                    {
-                        "module_name": module_name,
-                        "benchmark_name": benchmark_name,
-                        "initialize": module.initialize,
-                        "kernel": module.kernel,
-                        "parameters": module.PARAMETERS,
-                        "available_targets": available_targets,
-                    }
+            module_name = f"benchmarks.npbench.{dir_name}.{test_file.stem}"
+            benchmark_name = test_file.stem.replace("test_", "")
+
+            # Check if the test function is marked with @pytest.mark.skip()
+            # and extract available targets from pytest.mark.parametrize
+            with open(test_file, "r") as f:
+                content = f.read()
+                if "@pytest.mark.skip(" in content:
+                    print(f"Skipping {benchmark_name}: marked with @pytest.mark.skip()")
+                    continue
+
+                # Extract available targets from @pytest.mark.parametrize("target", [...])
+                available_targets = None
+                parametrize_match = re.search(
+                    r'@pytest\.mark\.parametrize\(\s*["\']target["\']\s*,\s*\[(.*?)\]',
+                    content,
+                    re.DOTALL,
                 )
-            else:
-                print(f"Skipping {module_name}: missing required attributes")
+                if parametrize_match:
+                    targets_str = parametrize_match.group(1)
+                    # Extract all non-commented target strings
+                    target_matches = re.findall(r'["\'](\w+)["\']', targets_str)
+                    available_targets = target_matches
+                    # Check for commented out targets
+                    commented_targets = re.findall(r'#\s*["\'](\w+)["\']', targets_str)
+                    if commented_targets:
+                        # Remove commented targets from available list
+                        available_targets = [
+                            t for t in available_targets if t not in commented_targets
+                        ]
+                    print(
+                        f"  {benchmark_name}: available targets = {available_targets}"
+                    )
 
-        except Exception as e:
-            print(f"Failed to import {module_name}: {e}")
+            try:
+                # Import the module
+                module = importlib.import_module(module_name)
+
+                # Check if it has the required functions
+                if (
+                    hasattr(module, "initialize")
+                    and hasattr(module, "kernel")
+                    and hasattr(module, "PARAMETERS")
+                ):
+                    benchmarks.append(
+                        {
+                            "module_name": module_name,
+                            "benchmark_name": benchmark_name,
+                            "initialize": module.initialize,
+                            "kernel": module.kernel,
+                            "parameters": module.PARAMETERS,
+                            "available_targets": available_targets,
+                        }
+                    )
+                else:
+                    print(f"Skipping {module_name}: missing required attributes")
+
+            except Exception as e:
+                print(f"Failed to import {module_name}: {e}")
 
     return benchmarks
 
