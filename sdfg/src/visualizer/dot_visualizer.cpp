@@ -287,7 +287,12 @@ void DotVisualizer::writeToFile(const StructuredSDFG& sdfg, const std::filesyste
 
     std::filesystem::path fileName = file ? *file : std::filesystem::path(sdfg.name() + ".dot");
 
+    std::filesystem::create_directories(fileName.parent_path());
+
     std::ofstream dotOutput(fileName, std::ofstream::out);
+    if (!dotOutput.is_open()) {
+        std::cerr << "Could not open file " << fileName << " for writing DOT output." << std::endl;
+    }
 
     dotOutput << viz.getStream().str();
     dotOutput.close();

@@ -67,6 +67,22 @@ query_rpc_opt(passes::rpc::RpcOptRequest request, sdfg::passes::rpc::RpcContext&
         return {"CurlReq"};
     }
 
+    if (res.http_status == 401) {
+        nlohmann::json parsed;
+        try {
+            parsed = nlohmann::json::parse(res.body);
+            auto message = parsed.at("message").get<std::string>();
+            std::cerr << "[ERROR] RPC optimization query authentication issue: " << message << std::endl;
+        } catch (const std::exception& e) {
+            std::cerr << "[ERROR] RPC optimization query failed with " << res.http_status << ":" << res.body
+                      << std::endl;
+            return {"HttpAuth"};
+        }
+    } else if (res.http_status > 299 || res.http_status < 200) {
+        std::cerr << "[ERROR] RPC optimization query failed with " << res.http_status << ":" << res.body << std::endl;
+        return {"HttpReq"};
+    }
+
     std::unique_ptr<passes::rpc::RpcOptResponse> rpc_response;
 
     try {
@@ -205,6 +221,8 @@ void RPCNodeTransform::
         throw std::runtime_error("RPCNodeTransform: No SDFG result or replay to apply.");
     }
 
+    int element_id = this->node_.element_id();
+
     if (opt.sdfg_result.has_value()) {
         auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
         auto parent_scope = static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&this->node_));
@@ -242,29 +260,33 @@ void RPCNodeTransform::
 
     if (opt.local_replay.has_value()) {
         auto recipe = opt.local_replay.value();
-        std::cout << "Applied RPC optimization seq to " << this->node_.element_id() << " with speedup "
-                  << opt.metadata.speedup << ":\n";
+        std::cout << "Applied RPC optimization seq to " << element_id << " with speedup " << opt.metadata.speedup
+                  << ":\n";
         if (dump_steps_) {
-            for (auto& desc : recipe.sequence) {
-                bool fail = false;
-                auto typeJ = desc.find("transformation_type");
-                if (typeJ != desc.end()) {
-                    std::cout << "\t" << typeJ->get<std::string>();
-                } else {
-                    fail = true;
-                }
-                auto paramsJ = desc.find("parameters");
-                if (paramsJ != desc.end()) {
-                    std::cout << " (";
-                    for (auto& [key, value] : paramsJ->items()) {
-                        std::cout << key << "=" << value << ", ";
+            if (recipe.sequence.empty()) {
+                std::cerr << "Server sent empty sequence!" << std::endl;
+            } else {
+                for (auto& desc : recipe.sequence) {
+                    bool fail = false;
+                    auto typeJ = desc.find("transformation_type");
+                    if (typeJ != desc.end()) {
+                        std::cout << "\t" << typeJ->get<std::string>();
+                    } else {
+                        fail = true;
                     }
-                    std::cout << ")";
-                }
-                if (fail) {
-                    std::cout << "\t ## Broken step\n";
-                } else {
-                    std::cout << "\n";
+                    auto paramsJ = desc.find("parameters");
+                    if (paramsJ != desc.end()) {
+                        std::cout << " (";
+                        for (auto& [key, value] : paramsJ->items()) {
+                            std::cout << key << "=" << value << ", ";
+                        }
+                        std::cout << ")";
+                    }
+                    if (fail) {
+                        std::cout << "\t ## Broken step\n";
+                    } else {
+                        std::cout << "\n";
+                    }
                 }
             }
         }

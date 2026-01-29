@@ -44,6 +44,8 @@ public:
 
     void dump(const std::string& path);
 
+    void dumpDot(const std::string& path);
+
     void normalize();
 
     void schedule(
