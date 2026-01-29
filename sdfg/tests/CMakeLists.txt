@@ -11,6 +11,7 @@ set(TEST_FILES
     analysis/assumptions_analysis_test.cpp
     analysis/control_flow_analysis_test.cpp
     analysis/data_dependency_analysis_test.cpp
+    analysis/escape_analysis_test.cpp
     analysis/flop_analysis_test.cpp
     analysis/loop_analysis_test.cpp
     analysis/loop_analysis_info_test.cpp
@@ -40,6 +41,7 @@ set(TEST_FILES
     codegen/utils_test.cpp
     control_flow/state_test.cpp
     control_flow/interstate_edge_test.cpp
+    cutouts/cutouts_test.cpp
     data_flow/access_node_test.cpp
     data_flow/code_node_test.cpp
     data_flow/data_flow_graph_test.cpp
@@ -65,6 +67,7 @@ set(TEST_FILES
     passes/dataflow/tasklet_fusion_test.cpp
     passes/dataflow/memlet_linearization_test.cpp
     passes/memory/allocation_management_test.cpp
+    passes/memory/insert_frees_test.cpp
     passes/pipeline_test.cpp
     passes/schedules/expansion_pass_test.cpp
     passes/structured_control_flow/block_fusion_test.cpp

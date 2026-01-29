@@ -22,6 +22,13 @@
 
 using namespace sdfg::structured_control_flow;
 
+sdfg::symbolic::Expression parse_and_expand(const std::string& expr_str) {
+    auto expr = sdfg::symbolic::parse(expr_str);
+    expr = sdfg::symbolic::simplify(expr);
+    expr = sdfg::symbolic::expand(expr);
+    return expr;
+}
+
 PyStructuredSDFGBuilder::PyStructuredSDFGBuilder(const std::string& name)
     : builder(name, sdfg::FunctionType_CPU, sdfg::types::Scalar(sdfg::types::PrimitiveType::Void)) {
     scope_stack.push_back({&builder.subject().root(), nullptr, -1});
@@ -85,7 +92,7 @@ void PyStructuredSDFGBuilder::
 
 void PyStructuredSDFGBuilder::begin_if(const std::string& condition, const sdfg::DebugInfo& debug_info) {
     auto& parent = current_sequence();
-    auto cond_expr = sdfg::symbolic::parse(condition);
+    auto cond_expr = parse_and_expand(condition);
 
     auto cond_bool = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(cond_expr);
     if (cond_bool.is_null()) {
@@ -128,7 +135,7 @@ void PyStructuredSDFGBuilder::begin_while(const std::string& condition, const sd
 
     auto& while_body = while_node.root();
 
-    auto cond_expr = sdfg::symbolic::parse(condition);
+    auto cond_expr = parse_and_expand(condition);
     auto cond_bool = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(cond_expr);
     if (cond_bool.is_null()) {
         throw std::runtime_error("Condition must be a boolean expression: " + condition);
@@ -162,9 +169,9 @@ void PyStructuredSDFGBuilder::begin_for(
 ) {
     auto& parent = current_sequence();
     auto var_sym = sdfg::symbolic::symbol(var);
-    auto start_expr = sdfg::symbolic::parse(start);
-    auto end_expr = sdfg::symbolic::parse(end);
-    auto step_expr = sdfg::symbolic::parse(step);
+    auto start_expr = parse_and_expand(start);
+    auto end_expr = parse_and_expand(end);
+    auto step_expr = parse_and_expand(step);
 
     bool is_negative = false;
     if (SymEngine::is_a<SymEngine::Integer>(*step_expr)) {
@@ -202,8 +209,8 @@ void PyStructuredSDFGBuilder::
     add_transition(const std::string& lhs, const std::string& rhs, const sdfg::DebugInfo& debug_info) {
     auto& parent = current_sequence();
 
-    sdfg::symbolic::Symbol lhs_sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(sdfg::symbolic::parse(lhs));
-    sdfg::symbolic::Expression rhs_sym = sdfg::symbolic::parse(rhs);
+    sdfg::symbolic::Symbol lhs_sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(parse_and_expand(lhs));
+    sdfg::symbolic::Expression rhs_sym = parse_and_expand(rhs);
 
     builder.add_block(parent, {{lhs_sym, rhs_sym}}, debug_info);
 }
@@ -213,7 +220,7 @@ void PyStructuredSDFGBuilder::
     auto& parent = current_sequence();
     auto& block = builder.add_block(parent, {}, debug_info);
 
-    auto expr = sdfg::symbolic::parse(value);
+    auto expr = parse_and_expand(value);
 
     // Parse target
     std::string target_name = target;
@@ -240,7 +247,8 @@ void PyStructuredSDFGBuilder::
 
         if (close_paren == std::string::npos) throw std::runtime_error("Invalid target format: unbalanced parentheses");
         std::string idx_str = target.substr(open_paren + 1, close_paren - open_paren - 1);
-        target_indices.push_back(sdfg::symbolic::parse(idx_str));
+        auto index_sym = parse_and_expand(idx_str);
+        target_indices.push_back(index_sym);
     }
 
     // Get target type
@@ -284,7 +292,8 @@ void PyStructuredSDFGBuilder::
 
             if (close_paren != std::string::npos) {
                 std::string idx_str = name.substr(open_paren + 1, close_paren - open_paren - 1);
-                src_indices.push_back(sdfg::symbolic::parse(idx_str));
+                auto index_sym = parse_and_expand(idx_str);
+                src_indices.push_back(index_sym);
             }
         }
 
@@ -488,7 +497,8 @@ void PyStructuredSDFGBuilder::add_memlet(
         std::stringstream ss(subset);
         std::string segment;
         while (std::getline(ss, segment, ',')) {
-            indices.push_back(sdfg::symbolic::parse(segment));
+            auto dim = parse_and_expand(segment);
+            indices.push_back(dim);
         }
     }
 
@@ -552,7 +562,8 @@ void PyStructuredSDFGBuilder::add_reference_memlet(
         std::stringstream ss(subset);
         std::string segment;
         while (std::getline(ss, segment, ',')) {
-            indices.push_back(sdfg::symbolic::parse(segment));
+            auto index = parse_and_expand(segment);
+            indices.push_back(index);
         }
     }
 
@@ -585,7 +596,7 @@ size_t PyStructuredSDFGBuilder::
 
 size_t PyStructuredSDFGBuilder::add_malloc(size_t block_ptr, const std::string& size, const sdfg::DebugInfo& debug_info) {
     auto* block = reinterpret_cast<sdfg::structured_control_flow::Block*>(block_ptr);
-    auto size_expr = sdfg::symbolic::parse(size);
+    auto size_expr = parse_and_expand(size);
     auto& node = builder.add_library_node<sdfg::stdlib::MallocNode>(*block, debug_info, size_expr);
     return reinterpret_cast<size_t>(&node);
 }
@@ -593,15 +604,15 @@ size_t PyStructuredSDFGBuilder::add_malloc(size_t block_ptr, const std::string& 
 size_t PyStructuredSDFGBuilder::
     add_memset(size_t block_ptr, const std::string& value, const std::string& num, const sdfg::DebugInfo& debug_info) {
     auto* block = reinterpret_cast<sdfg::structured_control_flow::Block*>(block_ptr);
-    auto value_expr = sdfg::symbolic::parse(value);
-    auto num_expr = sdfg::symbolic::parse(num);
+    auto value_expr = parse_and_expand(value);
+    auto num_expr = parse_and_expand(num);
     auto& node = builder.add_library_node<sdfg::stdlib::MemsetNode>(*block, debug_info, value_expr, num_expr);
     return reinterpret_cast<size_t>(&node);
 }
 
 size_t PyStructuredSDFGBuilder::add_memcpy(size_t block_ptr, const std::string& count, const sdfg::DebugInfo& debug_info) {
     auto* block = reinterpret_cast<sdfg::structured_control_flow::Block*>(block_ptr);
-    auto count_expr = sdfg::symbolic::parse(count);
+    auto count_expr = parse_and_expand(count);
     auto& node = builder.add_library_node<sdfg::stdlib::MemcpyNode>(*block, debug_info, count_expr);
     return reinterpret_cast<size_t>(&node);
 }
@@ -629,13 +640,13 @@ void PyStructuredSDFGBuilder::add_gemm(
     auto& view_block = builder.add_block(parent, {}, debug_info);
     auto& block = builder.add_block(parent, {}, debug_info);
 
-    auto sym_m = sdfg::symbolic::parse(m);
-    auto sym_n = sdfg::symbolic::parse(n);
-    auto sym_k = sdfg::symbolic::parse(k);
+    auto sym_m = parse_and_expand(m);
+    auto sym_n = parse_and_expand(n);
+    auto sym_k = parse_and_expand(k);
 
-    auto sym_lda = lda.empty() ? (trans_a ? sym_m : sym_k) : sdfg::symbolic::parse(lda);
-    auto sym_ldb = ldb.empty() ? (trans_b ? sym_k : sym_n) : sdfg::symbolic::parse(ldb);
-    auto sym_ldc = ldc.empty() ? sym_n : sdfg::symbolic::parse(ldc);
+    auto sym_lda = lda.empty() ? (trans_a ? sym_m : sym_k) : parse_and_expand(lda);
+    auto sym_ldb = ldb.empty() ? (trans_b ? sym_k : sym_n) : parse_and_expand(ldb);
+    auto sym_ldc = ldc.empty() ? sym_n : parse_and_expand(ldc);
 
     auto layout = sdfg::math::blas::BLAS_Layout::RowMajor;
     auto ta = trans_a ? sdfg::math::blas::BLAS_Transpose::Trans : sdfg::math::blas::BLAS_Transpose::No;
@@ -676,7 +687,7 @@ void PyStructuredSDFGBuilder::add_gemm(
 
                 sdfg::data_flow::Subset s;
                 for (const auto& str : subset) {
-                    s.push_back(sdfg::symbolic::parse(str));
+                    s.push_back(parse_and_expand(str));
                 }
 
                 auto& origin = builder.add_access(view_block, name, debug_info);
@@ -736,9 +747,9 @@ void PyStructuredSDFGBuilder::add_dot(
     auto& ref_block = builder.add_block(parent, {}, debug_info);
     auto& block = builder.add_block(parent, {}, debug_info);
 
-    auto sym_n = sdfg::symbolic::parse(n);
-    auto sym_incx = sdfg::symbolic::parse(incx);
-    auto sym_incy = sdfg::symbolic::parse(incy);
+    auto sym_n = parse_and_expand(n);
+    auto sym_incx = parse_and_expand(incx);
+    auto sym_incy = parse_and_expand(incy);
 
     auto precision = sdfg::math::blas::BLAS_Precision::d;
 
@@ -759,7 +770,8 @@ void PyStructuredSDFGBuilder::add_dot(
 
             sdfg::data_flow::Subset s;
             for (const auto& str : subset) {
-                s.push_back(sdfg::symbolic::parse(str));
+                auto dim = parse_and_expand(str);
+                s.push_back(dim);
             }
 
             auto& origin = builder.add_access(ref_block, name, debug_info);
@@ -792,7 +804,8 @@ void PyStructuredSDFGBuilder::add_elementwise_op(
 
     std::vector<sdfg::symbolic::Expression> shape;
     for (const auto& s : shape_strs) {
-        shape.push_back(sdfg::symbolic::parse(s));
+        auto dim = parse_and_expand(s);
+        shape.push_back(dim);
     }
 
     sdfg::math::tensor::ElementWiseBinaryNode* node = nullptr;
@@ -869,7 +882,7 @@ void PyStructuredSDFGBuilder::add_elementwise_unary_op(
 
     std::vector<sdfg::symbolic::Expression> shape;
     for (const auto& s : shape_strs) {
-        shape.push_back(sdfg::symbolic::parse(s));
+        shape.push_back(parse_and_expand(s));
     }
 
     sdfg::math::tensor::ElementWiseUnaryNode* node = nullptr;
@@ -933,7 +946,7 @@ void PyStructuredSDFGBuilder::add_transpose(
 
     std::vector<sdfg::symbolic::Expression> shape;
     for (const auto& s : shape_strs) {
-        shape.push_back(sdfg::symbolic::parse(s));
+        shape.push_back(parse_and_expand(s));
     }
 
     auto& node = builder.add_library_node<sdfg::math::tensor::TransposeNode>(block, debug_info, shape, perm);
@@ -977,7 +990,7 @@ void PyStructuredSDFGBuilder::add_conv(
 
     auto transform_dims = [](const std::vector<std::string>& strs) {
         std::vector<sdfg::symbolic::Expression> exprs;
-        for (const auto& s : strs) exprs.push_back(sdfg::symbolic::parse(s));
+        for (const auto& s : strs) exprs.push_back(parse_and_expand(s));
         return exprs;
     };
 
@@ -986,8 +999,8 @@ void PyStructuredSDFGBuilder::add_conv(
     auto strides = transform_dims(strides_strs);
     auto pads = transform_dims(pads_strs);
     auto dilations = transform_dims(dilations_strs);
-    auto output_channels = sdfg::symbolic::parse(output_channels_str);
-    auto group = sdfg::symbolic::parse(group_str);
+    auto output_channels = parse_and_expand(output_channels_str);
+    auto group = parse_and_expand(group_str);
 
     auto& conv_node = builder.add_library_node<sdfg::math::tensor::ConvNode>(
         block, debug_info, shape, kernel_shape, strides, pads, dilations, output_channels, group
@@ -1025,7 +1038,7 @@ void PyStructuredSDFGBuilder::add_cast_op(
 
     std::vector<sdfg::symbolic::Expression> shape;
     for (const auto& s : shape_strs) {
-        shape.push_back(sdfg::symbolic::parse(s));
+        shape.push_back(parse_and_expand(s));
     }
 
     auto& node = builder.add_library_node<sdfg::math::tensor::CastNode>(block, debug_info, shape, target_type);
@@ -1065,7 +1078,7 @@ void PyStructuredSDFGBuilder::add_reduce_op(
 
     std::vector<sdfg::symbolic::Expression> shape_exprs;
     for (const auto& s : input_shape) {
-        shape_exprs.push_back(sdfg::symbolic::parse(s));
+        shape_exprs.push_back(parse_and_expand(s));
     }
 
     sdfg::math::tensor::ReduceNode* node = nullptr;

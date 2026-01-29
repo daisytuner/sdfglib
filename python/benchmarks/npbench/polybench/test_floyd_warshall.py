@@ -40,15 +40,21 @@ def test_floyd_warshall(target):
         verifier = SDFGVerification(
             verification={
                 "HIGHWAY": 3,
+                "CPU_PARALLEL": 3,
                 "MAP": 6,
                 "Malloc": 2,
-                "SEQUENTIAL": 3,
                 "FOR": 7,
             }
         )
     else:  # cuda
         verifier = SDFGVerification(
-            verification={"MAP": 6, "Malloc": 2, "SEQUENTIAL": 6, "FOR": 7}
+            verification={
+                "CUDA": 6,
+                "MAP": 6,
+                "CUDAOffloading": 14,
+                "Malloc": 2,
+                "FOR": 7,
+            }
         )
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)
 

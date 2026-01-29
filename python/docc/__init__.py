@@ -169,6 +169,18 @@ class DoccProgram:
         # Mapping from (arg_idx, dim_idx) -> unique_shape_idx
         arg_shape_mapping = {}
 
+        # First pass: collect scalar integer arguments and their values
+        sig = inspect.signature(self.func)
+        params = list(sig.parameters.items())
+        scalar_int_params = {}  # Maps value -> parameter name (first one wins)
+        for i, ((name, param), arg) in enumerate(zip(params, args)):
+            if isinstance(arg, (int, np.integer)) and not isinstance(
+                arg, (bool, np.bool_)
+            ):
+                val = int(arg)
+                if val not in scalar_int_params:
+                    scalar_int_params[val] = name
+
         for i, arg in enumerate(args):
             t = self._infer_type(arg)
             arg_types.append(t)
@@ -187,10 +199,18 @@ class DoccProgram:
 
                     arg_shape_mapping[(i, dim_idx)] = u_idx
 
-        # 2. Signature
+        # Detect scalar-shape equivalences: which shape indices have a matching scalar param
+        # Maps unique_shape_idx -> scalar parameter name
+        shape_to_scalar = {}
+        for s_idx, s_val in enumerate(shape_values):
+            if s_val in scalar_int_params:
+                shape_to_scalar[s_idx] = scalar_int_params[s_val]
+
+        # 2. Signature - include scalar-shape equivalences for correct caching
         mapping_sig = sorted(arg_shape_mapping.items())
+        equiv_sig = sorted(shape_to_scalar.items())
         type_sig = ", ".join(self._type_to_str(t) for t in arg_types)
-        signature = f"{type_sig}|{mapping_sig}"
+        signature = f"{type_sig}|{mapping_sig}|{equiv_sig}"
 
         if output_folder is None:
             filename = inspect.getsourcefile(self.func)
@@ -214,7 +234,7 @@ class DoccProgram:
             # Multiple python processes running the same code?
             shutil.rmtree(output_folder)
         sdfg, out_args, out_shapes = self._build_sdfg(
-            arg_types, args, arg_shape_mapping, len(shape_values)
+            arg_types, args, arg_shape_mapping, len(shape_values), shape_to_scalar
         )
         sdfg.validate()
         sdfg.expand()
@@ -304,7 +324,16 @@ class DoccProgram:
                 return Pointer(Structure(arg.__class__.__name__))
             raise ValueError(f"Unsupported argument type: {type(arg)}")
 
-    def _build_sdfg(self, arg_types, args, arg_shape_mapping, num_unique_shapes):
+    def _build_sdfg(
+        self,
+        arg_types,
+        args,
+        arg_shape_mapping,
+        num_unique_shapes,
+        shape_to_scalar=None,
+    ):
+        if shape_to_scalar is None:
+            shape_to_scalar = {}
         sig = inspect.signature(self.func)
 
         # Handle return type - always void for SDFG, output args used for returns
@@ -432,15 +461,20 @@ class DoccProgram:
                 shapes = []
                 for dim_idx in range(arg.ndim):
                     u_idx = arg_shape_mapping[(i, dim_idx)]
-                    shapes.append(f"_s{u_idx}")
+                    # Use scalar parameter name if there's an equivalence, otherwise _sX
+                    if u_idx in shape_to_scalar:
+                        shapes.append(shape_to_scalar[u_idx])
+                    else:
+                        shapes.append(f"_s{u_idx}")
 
                 array_info[name] = {"ndim": arg.ndim, "shapes": shapes}
 
-        # Add unified shape arguments
+        # Add unified shape arguments only for shapes without scalar equivalents
         for i in range(num_unique_shapes):
-            builder.add_container(
-                f"_s{i}", Scalar(PrimitiveType.Int64), is_argument=True
-            )
+            if i not in shape_to_scalar:
+                builder.add_container(
+                    f"_s{i}", Scalar(PrimitiveType.Int64), is_argument=True
+                )
 
         # Create symbol table for parser
         symbol_table = {}
@@ -448,7 +482,8 @@ class DoccProgram:
             symbol_table[name] = dtype
 
         for i in range(num_unique_shapes):
-            symbol_table[f"_s{i}"] = Scalar(PrimitiveType.Int64)
+            if i not in shape_to_scalar:
+                symbol_table[f"_s{i}"] = Scalar(PrimitiveType.Int64)
 
         # Parse AST
         source_lines, start_line = inspect.getsourcelines(self.func)
