@@ -9,6 +9,7 @@ import importlib
 import io
 import re
 import sys
+import signal
 from contextlib import redirect_stdout, redirect_stderr
 from pathlib import Path
 from types import SimpleNamespace
@@ -20,6 +21,14 @@ script_dir = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(script_dir))
 
 from benchmarks.npbench.harness import run_benchmark
+
+
+class TimeoutError(Exception):
+    pass
+
+
+def timeout_handler(signum, frame):
+    raise TimeoutError("Benchmark execution timed out")
 
 
 def run_benchmark_with_target(
@@ -57,10 +66,19 @@ def run_benchmark_with_target(
         # Capture the output from run_benchmark (silence stdout and stderr)
         output_buffer = io.StringIO()
         error_buffer = io.StringIO()
-        with redirect_stdout(output_buffer), redirect_stderr(error_buffer):
-            run_benchmark(
-                initialize_func, kernel_func, parameters, benchmark_name, args=args
-            )
+
+        # Set up timeout (200 seconds)
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(200 * n_runs)  # Total timeout based on number of runs
+
+        try:
+            with redirect_stdout(output_buffer), redirect_stderr(error_buffer):
+                run_benchmark(
+                    initialize_func, kernel_func, parameters, benchmark_name, args=args
+                )
+        finally:
+            # Cancel the alarm
+            signal.alarm(0)
 
         output = output_buffer.getvalue()
 
@@ -129,6 +147,22 @@ def run_benchmark_with_target(
 
         return result
 
+    except TimeoutError as e:
+        target_str = "numpy" if use_numpy else target
+        error_msg = f"Benchmark timed out after 200 seconds"
+        print(f"Timeout running {benchmark_name} with target {target_str}: {error_msg}")
+        return {
+            "module": module_name,
+            "benchmark": benchmark_name,
+            "target": target_str,
+            "size": size,
+            "first_execution_time": None,
+            "avg_cached_time": None,
+            "min_cached_time": None,
+            "max_cached_time": None,
+            "success": False,
+            "error": error_msg,
+        }
     except Exception as e:
         import traceback
 

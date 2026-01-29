@@ -8,20 +8,34 @@ from pathlib import Path
 
 
 def discover_all_polybench_benchmarks(script_dir):
-    """Discover all polybench benchmarks including skipped ones."""
-    polybench_dir = script_dir / "benchmarks" / "npbench" / "polybench"
-    test_files = sorted(polybench_dir.glob("test_*.py"))
+    """Discover all benchmarks from multiple directories including skipped ones."""
+    benchmark_dirs = ["polybench", "cavity_flow", "go_fast", "spmv", "weather_stencils"]
 
     all_benchmarks = {}
-    for test_file in test_files:
-        benchmark_name = test_file.stem.replace("test_", "")
 
-        # Check if the test function is marked with @pytest.mark.skip()
-        with open(test_file, "r") as f:
-            content = f.read()
-            is_skipped = "@pytest.mark.skip()" in content
+    for dir_name in benchmark_dirs:
+        bench_dir = script_dir / "benchmarks" / "npbench" / dir_name
 
-        all_benchmarks[benchmark_name] = {"skipped": is_skipped, "file": test_file}
+        if not bench_dir.exists():
+            print(f"Warning: Directory {bench_dir} does not exist, skipping...")
+            continue
+
+        print(f"Scanning directory: {dir_name}")
+        test_files = sorted(bench_dir.glob("test_*.py"))
+
+        for test_file in test_files:
+            benchmark_name = test_file.stem.replace("test_", "")
+
+            # Check if the test function is marked with @pytest.mark.skip()
+            with open(test_file, "r") as f:
+                content = f.read()
+                is_skipped = "@pytest.mark.skip(" in content
+
+            all_benchmarks[benchmark_name] = {
+                "skipped": is_skipped,
+                "file": test_file,
+                "directory": dir_name,
+            }
 
     return all_benchmarks
 
