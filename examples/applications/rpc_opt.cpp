@@ -15,36 +15,14 @@
 #include <sdfg/structured_control_flow/control_flow_node.h>
 #include <sdfg/structured_sdfg.h>
 #include "sdfg/passes/rpc/rpc_context.h"
+#include "sdfg/serializer/json_serializer.h"
 #include "sdfg/transformations/rpc_node_transform.h"
 
 using json = nlohmann::json;
 namespace po = boost::program_options;
 using namespace sdfg;
 
-int main(int argc, char* argv[]) {
-    std::filesystem::path sdfg_path;
-    std::filesystem::path output_prefix;
-    std::string category;
-    std::string target;
-
-    po::options_description desc("Allowed options");
-    desc.add_options()
-        ("help", "produce help message")
-        ("output,o", po::value<std::filesystem::path>(&output_prefix)->default_value("./"), "prefix of generated files")
-        ("category,c", po::value<std::string>(&category)->default_value("server"), "category to tune for")
-        ("target", po::value<std::string>(&target)->default_value("SEQUENTIAL"), "target device");
-
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);
-
-    // Register default dispatchers
-    codegen::register_default_dispatchers();
-    // sdfg::serializer::register_default_serializers();
-    //  sdfg::cuda::register_cuda_plugin();
-
-    // Create sdfg
-
+std::unique_ptr<StructuredSDFG> build_demo_sdfg() {
     auto builder = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU);
 
     auto& root = builder->subject().root();
@@ -122,29 +100,50 @@ int main(int argc, char* argv[]) {
         builder->add_computational_memlet(block, tasklet, "_out", c_out, {symbolic::symbol("i"), symbolic::symbol("k")});
     }
 
-    auto sdfg_initial = builder->subject().clone();
+    return builder->move();
+}
 
-    // RPC node transform
+int main(int argc, char* argv[]) {
+    std::filesystem::path sdfg_path;
+    std::filesystem::path output_prefix;
+    std::string category;
+    std::string target;
 
-    sdfg::analysis::AnalysisManager analysis_manager(builder->subject());
-    auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
-    auto outer_loops = loop_analysis.outermost_loops();
+    po::options_description desc("Allowed options");
+    desc.add_options()
+        ("help", "produce help message")
+        ("input,i", po::value<std::filesystem::path>(&sdfg_path)->default_value(""), "path to sdfg json file")
+        ("output,o", po::value<std::filesystem::path>(&output_prefix)->default_value("./"), "prefix of generated files")
+        ("category,c", po::value<std::string>(&category)->default_value("server"), "category to tune for")
+        ("target", po::value<std::string>(&target)->default_value("sequential"), "target device");
 
-    auto ctx = sdfg::passes::rpc::build_rpc_context_auto();
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
 
-    size_t loopnest_index = 0;
-    for (auto loopnest : outer_loops) {
-        sdfg::transformations::RPCNodeTransform rpc_tuner(*loopnest, target, category, *ctx, true);
+    // Register default dispatchers
+    codegen::register_default_dispatchers();
+    // sdfg::serializer::register_default_serializers();
+    //  sdfg::cuda::register_cuda_plugin();
 
-        if (!rpc_tuner.can_be_applied(*builder, analysis_manager)) {
-            continue;
+    // Create sdfg
+    std::unique_ptr<StructuredSDFG> sdfg;
+    if (sdfg_path.empty()) {
+        sdfg = build_demo_sdfg();
+    } else {
+        serializer::JSONSerializer serializer;
+        nlohmann::json j;
+        std::ifstream sdfg_file(sdfg_path);
+        if (sdfg_file.is_open()) {
+            sdfg_file >> j;
+            sdfg_file.close();
         }
-        rpc_tuner.apply(*builder, analysis_manager);
-
-        analysis_manager.invalidate_all();
-
-        loopnest_index++;
+        sdfg = serializer.deserialize(j);
     }
+
+
+    auto sdfg_initial = sdfg->clone();
+    auto builder = std::make_unique<builder::StructuredSDFGBuilder>(sdfg);
 
     // Generate code for initial sdfg
 
@@ -159,9 +158,37 @@ int main(int argc, char* argv[]) {
     codegen::CPPCodeGenerator
         code_generator(*sdfg_initial, analysis_manager_initial, *instrumentation_plan, *arg_capture_plan);
     bool success = code_generator.generate();
+    success &= code_generator.as_source(init_header_path, init_source_path);
     if (!success) {
         std::cerr << "Code generation for initial sdfg failed" << std::endl;
         return 1;
+    }
+
+    // RPC node transform
+
+    sdfg::analysis::AnalysisManager analysis_manager(builder->subject());
+    auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
+    auto outer_loops = loop_analysis.outermost_loops();
+
+    passes::rpc::SimpleRpcContextBuilder b;
+    b.initialize_local_default();
+    b.from_env();
+    b.from_docc_config();
+    b.server = "http://localhost:8080/docc";
+    auto ctx = b.build();
+
+    size_t loopnest_index = 0;
+    for (auto loopnest : outer_loops) {
+        sdfg::transformations::RPCNodeTransform rpc_tuner(*loopnest, target, category, *ctx, true);
+
+        if (!rpc_tuner.can_be_applied(*builder, analysis_manager)) {
+            continue;
+        }
+        rpc_tuner.apply(*builder, analysis_manager);
+
+        analysis_manager.invalidate_all();
+
+        loopnest_index++;
     }
 
     // generate code for tuned sdfg
@@ -178,6 +205,7 @@ int main(int argc, char* argv[]) {
         code_generator_opt(*sdfg_final, analysis_manager_opt, *instrumentation_plan_opt, *arg_capture_plan_opt);
 
     success = code_generator_opt.generate();
+    success &= code_generator.as_source(header_path, source_path);
     if (!success) {
         std::cerr << "Code generation failed" << std::endl;
         return 1;
