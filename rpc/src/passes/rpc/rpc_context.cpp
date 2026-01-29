@@ -3,6 +3,7 @@
 #include <iostream>
 #include <memory>
 #include <nlohmann/json.hpp>
+#include "sdfg/passes/rpc/daisytuner_rpc_context.h"
 
 namespace sdfg::passes::rpc {
 
@@ -80,6 +81,24 @@ SimpleRpcContextBuilder& SimpleRpcContextBuilder::from_header_env(std::string en
             headers["RPC-Hint"] = headerOverride;
         }
     }
+    return *this;
+}
+
+SimpleRpcContextBuilder& SimpleRpcContextBuilder::from_docc_config() {
+    auto auth = DaisytunerTransfertuningRpcContext::find_docc_auth();
+    if (auth) {
+        server = DaisytunerTransfertuningRpcContext::DEFAULT_SERVER;
+        endpoint = DaisytunerTransfertuningRpcContext::DEFAULT_ENDPOINT;
+        add_header(
+            std::string(DaisytunerTransfertuningRpcContext::DEFAULT_AUTH_HEADER),
+            DaisytunerTransfertuningRpcContext::build_auth_header_content(auth.value())
+        );
+    }
+    return *this;
+}
+
+SimpleRpcContextBuilder& SimpleRpcContextBuilder::add_header(std::string name, std::string value) {
+    headers[name] = value;
     return *this;
 }
 

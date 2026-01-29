@@ -6,7 +6,7 @@
 
 namespace sdfg::passes::rpc {
 
-static std::optional<std::pair<std::string, bool>> find_docc_auth() {
+std::optional<std::pair<std::string, bool>> DaisytunerTransfertuningRpcContext::find_docc_auth() {
     // Check $DOCC_ACCESS_TOKEN_ENV
     const char* env_token = std::getenv("DOCC_ACCESS_TOKEN");
     if (env_token && *env_token) {
@@ -44,13 +44,16 @@ static std::optional<std::pair<std::string, bool>> find_docc_auth() {
     return std::nullopt;
 }
 
-DaisytunerTransfertuningRpcContext::DaisytunerTransfertuningRpcContext(std::string license_token, std::string token_prefix)
+DaisytunerTransfertuningRpcContext::DaisytunerTransfertuningRpcContext(std::string license_token, bool job_specific_token)
     : SimpleRpcContext(
-          "https://docc-backend-1080482399950.europe-west1.run.app/docc",
-          "transfertune",
-          {{"Authorization", token_prefix + " " + license_token}}
+          DEFAULT_SERVER,
+          DEFAULT_ENDPOINT,
+          {{DEFAULT_AUTH_HEADER, build_auth_header_content({license_token, job_specific_token})}}
       ) {}
 
+std::string DaisytunerTransfertuningRpcContext::build_auth_header_content(std::pair<std::string, bool> docc_auth) {
+    return static_cast<std::string>(docc_auth.second ? "Job" : "Token") + " " + docc_auth.first;
+}
 
 std::unique_ptr<DaisytunerTransfertuningRpcContext> DaisytunerTransfertuningRpcContext::from_docc_config() {
     auto auth = find_docc_auth();

@@ -226,6 +226,8 @@ void RPCNodeTransform::
         throw std::runtime_error("RPCNodeTransform: No SDFG result or replay to apply.");
     }
 
+    int element_id = this->node_.element_id();
+
     if (opt.sdfg_result.has_value()) {
         auto& scope_analysis = analysis_manager.get<analysis::ScopeAnalysis>();
         auto parent_scope = static_cast<structured_control_flow::Sequence*>(scope_analysis.parent_scope(&this->node_));
@@ -263,29 +265,33 @@ void RPCNodeTransform::
 
     if (opt.local_replay.has_value()) {
         auto recipe = opt.local_replay.value();
-        std::cout << "Applied RPC optimization seq to " << this->node_.element_id() << " with speedup "
-                  << opt.metadata.speedup << ":\n";
+        std::cout << "Applied RPC optimization seq to " << element_id << " with speedup " << opt.metadata.speedup
+                  << ":\n";
         if (dump_steps_) {
-            for (auto& desc : recipe.sequence) {
-                bool fail = false;
-                auto transformation_type = desc.find("transformation_type");
-                if (transformation_type != desc.end()) {
-                    std::cout << "\t" << transformation_type->get<std::string>();
-                } else {
-                    fail = true;
-                }
-                auto transformation_params = desc.find("parameters");
-                if (transformation_params != desc.end()) {
-                    std::cout << " (";
-                    for (auto& [key, value] : transformation_params->items()) {
-                        std::cout << key << "=" << value << ", ";
+            if (recipe.sequence.empty()) {
+                std::cerr << "Server sent empty sequence!" << std::endl;
+            } else {
+                for (auto& desc : recipe.sequence) {
+                    bool fail = false;
+                    auto typeJ = desc.find("transformation_type");
+                    if (typeJ != desc.end()) {
+                        std::cout << "\t" << typeJ->get<std::string>();
+                    } else {
+                        fail = true;
                     }
-                    std::cout << ")";
-                }
-                if (fail) {
-                    std::cout << "\t ## Broken step\n";
-                } else {
-                    std::cout << "\n";
+                    auto paramsJ = desc.find("parameters");
+                    if (paramsJ != desc.end()) {
+                        std::cout << " (";
+                        for (auto& [key, value] : paramsJ->items()) {
+                            std::cout << key << "=" << value << ", ";
+                        }
+                        std::cout << ")";
+                    }
+                    if (fail) {
+                        std::cout << "\t ## Broken step\n";
+                    } else {
+                        std::cout << "\n";
+                    }
                 }
             }
         }
