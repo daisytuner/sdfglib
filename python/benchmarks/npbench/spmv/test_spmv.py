@@ -70,26 +70,20 @@ def test_spmv(target):
         )
     elif target == "openmp":
         verifier = SDFGVerification(
-            verification={
-                "CPU_PARALLEL": 1,
-                "DOT": 1,
-                "HIGHWAY": 2,
-                "MAP": 4,
-                "SEQUENTIAL": 1,
-                "FOR": 5,
-                "Malloc": 4,
-            }
+            verification={"DOT": 1, "CPU_PARALLEL": 4, "MAP": 4, "FOR": 5, "Malloc": 4}
         )
     else:  # cuda
         verifier = SDFGVerification(
             verification={
-                "CPU_PARALLEL": 1,
-                "DOT": 1,
-                "HIGHWAY": 2,
-                "MAP": 4,
-                "SEQUENTIAL": 1,
-                "FOR": 5,
-                "Malloc": 4,
+                "CMath": 14,
+                "CUDA": 12,
+                "MAP": 18,
+                "CUDAOffloading": 34,
+                "Memcpy": 4,
+                "SEQUENTIAL": 6,
+                "FOR": 22,
+                "Memset": 1,
+                "Malloc": 8,
             }
         )
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)

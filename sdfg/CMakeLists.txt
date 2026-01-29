@@ -36,6 +36,7 @@ set(SOURCE_FILES
     src/analysis/assumptions_analysis.cpp
     src/analysis/control_flow_analysis.cpp
     src/analysis/data_dependency_analysis.cpp
+    src/analysis/escape_analysis.cpp
     src/analysis/flop_analysis.cpp
     src/analysis/dominance_analysis.cpp
     src/analysis/loop_analysis.cpp
@@ -142,6 +143,7 @@ set(SOURCE_FILES
     src/passes/dataflow/byte_reference_elimination.cpp
     src/passes/dataflow/memlet_linearization.cpp
     src/passes/memory/allocation_management.cpp
+    src/passes/memory/insert_frees.cpp
     src/passes/schedules/expansion_pass.cpp
     src/passes/symbolic/symbol_evolution.cpp
     src/passes/symbolic/symbol_propagation.cpp

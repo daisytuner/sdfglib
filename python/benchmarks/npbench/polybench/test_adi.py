@@ -75,54 +75,38 @@ def kernel(TSTEPS, N, u):
 def test_adi(target):
     if target == "none":
         verifier = SDFGVerification(
-            verification={
-                "FOR": 21,
-                "MAP": 4,
-                "SEQUENTIAL": 4,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
+            verification={"MAP": 14, "SEQUENTIAL": 14, "FOR": 21, "Malloc": 3}
         )
     elif target == "sequential":
         verifier = SDFGVerification(
             verification={
-                "FOR": 21,
-                "MAP": 4,
-                "SEQUENTIAL": 1,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
                 "HIGHWAY": 3,
-                "GEMM": 0,
-                "DOT": 0,
+                "MAP": 14,
+                "SEQUENTIAL": 11,
+                "FOR": 21,
+                "Malloc": 3,
             }
         )
     elif target == "openmp":
         verifier = SDFGVerification(
             verification={
-                "FOR": 21,
-                "MAP": 4,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 3,
                 "HIGHWAY": 1,
-                "GEMM": 0,
-                "DOT": 0,
+                "CPU_PARALLEL": 9,
+                "MAP": 14,
+                "SEQUENTIAL": 4,
+                "FOR": 21,
+                "Malloc": 3,
             }
         )
     else:  # cuda
         verifier = SDFGVerification(
             verification={
+                "CUDA": 10,
+                "MAP": 14,
+                "CUDAOffloading": 24,
+                "SEQUENTIAL": 4,
                 "FOR": 21,
-                "MAP": 4,
-                "SEQUENTIAL": 0,
-                "CUDA": 4,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
+                "Malloc": 3,
             }
         )
 

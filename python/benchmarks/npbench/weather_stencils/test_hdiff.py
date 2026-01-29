@@ -69,19 +69,19 @@ def kernel(in_field, out_field, coeff):
 def test_hdiff(target):
     if target == "none":
         verifier = SDFGVerification(
-            verification={"SEQUENTIAL": 73, "FOR": 87, "MAP": 73, "Malloc": 28}
+            verification={"MAP": 53, "SEQUENTIAL": 53, "FOR": 87, "Malloc": 28}
         )
     elif target == "sequential":
         verifier = SDFGVerification(
-            verification={"SEQUENTIAL": 73, "FOR": 87, "MAP": 73, "Malloc": 28}
+            verification={"MAP": 53, "SEQUENTIAL": 53, "FOR": 87, "Malloc": 28}
         )
     elif target == "openmp":
         verifier = SDFGVerification(
-            verification={"SEQUENTIAL": 73, "FOR": 87, "MAP": 73, "Malloc": 28}
+            verification={"MAP": 53, "SEQUENTIAL": 53, "FOR": 87, "Malloc": 28}
         )
     else:  # cuda
         verifier = SDFGVerification(
-            verification={"SEQUENTIAL": 73, "FOR": 87, "MAP": 73, "Malloc": 28}
+            verification={"MAP": 53, "SEQUENTIAL": 53, "FOR": 87, "Malloc": 28}
         )
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)
 

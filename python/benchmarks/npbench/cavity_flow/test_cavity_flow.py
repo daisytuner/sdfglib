@@ -150,11 +150,12 @@ def test_cavity_flow(target):
     elif target == "openmp":
         verifier = SDFGVerification(
             verification={
+                "HIGHWAY": 6,
                 "CMath": 14,
-                "HIGHWAY": 10,
+                "CPU_PARALLEL": 11,
                 "MAP": 18,
                 "Memcpy": 4,
-                "SEQUENTIAL": 8,
+                "SEQUENTIAL": 1,
                 "FOR": 22,
                 "Memset": 1,
                 "Malloc": 8,
@@ -164,9 +165,11 @@ def test_cavity_flow(target):
         verifier = SDFGVerification(
             verification={
                 "CMath": 14,
+                "CUDA": 12,
                 "MAP": 18,
+                "CUDAOffloading": 34,
                 "Memcpy": 4,
-                "SEQUENTIAL": 18,
+                "SEQUENTIAL": 6,
                 "FOR": 22,
                 "Memset": 1,
                 "Malloc": 8,
