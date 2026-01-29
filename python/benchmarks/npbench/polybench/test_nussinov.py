@@ -41,7 +41,7 @@ def kernel(N, seq):
     return table
 
 
-@pytest.skiptest()
+@pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_nussinov(target):
     if target == "none":
