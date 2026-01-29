@@ -40,9 +40,9 @@ def test_floyd_warshall(target):
         verifier = SDFGVerification(
             verification={
                 "HIGHWAY": 3,
+                "CPU_PARALLEL": 3,
                 "MAP": 6,
                 "Malloc": 2,
-                "SEQUENTIAL": 3,
                 "FOR": 7,
             }
         )

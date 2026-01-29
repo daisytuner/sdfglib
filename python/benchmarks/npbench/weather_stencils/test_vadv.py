@@ -137,8 +137,9 @@ def test_vadv(target):
         verifier = SDFGVerification(
             verification={
                 "HIGHWAY": 41,
+                "CPU_PARALLEL": 64,
                 "MAP": 132,
-                "SEQUENTIAL": 91,
+                "SEQUENTIAL": 27,
                 "FOR": 157,
                 "Malloc": 65,
             }

@@ -31,12 +31,11 @@ bool LoopScheduler::run_pass(builder::StructuredSDFGBuilder& builder, analysis::
 
         auto scheduling_info = scheduling_info_map.at(loop);
         scheduling_info_map.erase(loop);
-        if (scheduling_info.loop_info.has_side_effects) {
-            continue;
-        }
 
         SchedulerAction action;
-        if (auto while_loop = dynamic_cast<structured_control_flow::While*>(loop)) {
+        if (scheduling_info.loop_info.has_side_effects) {
+            action = SchedulerAction::CHILDREN;
+        } else if (auto while_loop = dynamic_cast<structured_control_flow::While*>(loop)) {
             action = schedule(builder, analysis_manager, *while_loop, scheduling_info);
         } else if (auto structured_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(loop)) {
             action = schedule(builder, analysis_manager, *structured_loop, scheduling_info);
