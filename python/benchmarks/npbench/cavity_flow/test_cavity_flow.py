@@ -119,12 +119,7 @@ def kernel(nx, ny, nt, nit, u, v, dt, dx, dy, p, rho, nu):
 
 @pytest.mark.parametrize(
     "target",
-    [
-        "none",
-        # "sequential",
-        # "openmp",
-        # "cuda"
-    ],
+    ["none", "sequential", "openmp", "cuda"],
 )
 def test_cavity_flow(target):
     if target == "none":
