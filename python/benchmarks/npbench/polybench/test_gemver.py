@@ -68,14 +68,12 @@ def test_gemver(target):
     else:  # cuda
         verifier = SDFGVerification(
             verification={
-                "FOR": 2,
+                "CUDA": 1,
                 "MAP": 1,
-                "SEQUENTIAL": 1,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
+                "CUDAOffloading": 4,
+                "Malloc": 2,
+                "FOR": 2,
                 "GEMM": 4,
-                "DOT": 0,
             }
         )
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)

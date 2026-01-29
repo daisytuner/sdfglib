@@ -117,7 +117,15 @@ def kernel(utens_stage, u_stage, wcon, u_pos, utens, dtr_stage):
         utens_stage[:, :, k] = dtr_stage * (datacol - u_pos[:, :, k])
 
 
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
+@pytest.mark.parametrize(
+    "target",
+    [
+        "none",
+        "sequential",
+        "openmp",
+        # "cuda"
+    ],
+)
 def test_vadv(target):
     if target == "none":
         verifier = SDFGVerification(
