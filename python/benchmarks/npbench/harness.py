@@ -80,6 +80,9 @@ def run_benchmark(initialize_func, kernel_func, parameters, name, args=None):
         # print(f"Average Docc execution time (cached) over {N} runs: {np.mean(times[1:]):.6f} seconds")
 
 
+# docc.sdfg_rpc_context = docc.DaisytunerTransfertuningRpcContext.from_docc_config()
+
+
 def run_pytest(
     initialize_func,
     kernel_func,
@@ -108,6 +111,7 @@ def run_pytest(
     kernel_with_target = docc.program(
         kernel_func,
         target=target,
+        category="server",
     )
     res_docc = kernel_with_target(*inputs_docc)
 

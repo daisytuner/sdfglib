@@ -19,6 +19,7 @@
 #include <sdfg/passes/dataflow/constant_propagation.h>
 #include <sdfg/passes/dataflow/dead_data_elimination.h>
 #include <sdfg/passes/dot_expansion_pass.h>
+#include <sdfg/passes/gemm_expansion_pass.h>
 #include <sdfg/passes/normalization/normalization.h>
 #include <sdfg/passes/offloading/cuda_library_node_rewriter_pass.h>
 #include <sdfg/passes/opt_pipeline.h>
@@ -104,6 +105,8 @@ void PyStructuredSDFG::simplify() {
     // Expand Dot nodes
     sdfg::passes::DotExpansionPass dot_expansion_pass;
     dot_expansion_pass.run(builder_opt, analysis_manager);
+    // sdfg::passes::GemmExpansionPass gemm_expansion_pass;
+    // gemm_expansion_pass.run(builder_opt, analysis_manager);
 
     // Optimization Pipelines
     sdfg::passes::Pipeline dataflow_simplification = sdfg::passes::Pipeline::dataflow_simplification();
