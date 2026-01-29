@@ -15,7 +15,7 @@ def initialize(N, datatype=np.float64):
         A[i, i] = 1.0
     A[:] = A @ np.transpose(A)
 
-    return (A,)
+    return A
 
 
 def kernel(A):

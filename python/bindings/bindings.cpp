@@ -388,6 +388,13 @@ PYBIND11_MODULE(_sdfg, m) {
             py::arg("num"),
             py::arg("debug_info") = sdfg::DebugInfo()
         )
+        .def(
+            "add_memcpy",
+            &PyStructuredSDFGBuilder::add_memcpy,
+            py::arg("block_ptr"),
+            py::arg("count"),
+            py::arg("debug_info") = sdfg::DebugInfo()
+        )
         .def("get_sizeof", &PyStructuredSDFGBuilder::get_sizeof, py::arg("type"))
         .def(
             "add_reference_memlet",

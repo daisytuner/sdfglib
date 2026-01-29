@@ -15,8 +15,8 @@ def initialize(N):
     from numpy.random import default_rng
 
     rng = default_rng(42)
-    x = rng.random((N, N), dtype=np.float64)
-    return x
+    a = rng.random((N, N), dtype=np.float64)
+    return a
 
 
 def kernel(a):

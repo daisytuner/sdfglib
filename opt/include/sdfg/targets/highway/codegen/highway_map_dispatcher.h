@@ -40,8 +40,6 @@ public:
         codegen::CodeSnippetFactory& library_snippet_factory
     ) override;
 
-    std::string daisy_vec(const types::PrimitiveType& type);
-
     std::string declaration(const std::string& container, const types::Scalar& type);
 
     void dispatch_iedge(codegen::PrettyPrinter& library_stream, const data_flow::Memlet& memlet);
@@ -79,6 +77,8 @@ public:
     void dispatch_kernel_body(codegen::CodeSnippetFactory& library_snippet_factory, codegen::PrettyPrinter& library_stream);
 
     codegen::InstrumentationInfo instrumentation_info() const override;
+
+    static std::string daisy_vec(const types::PrimitiveType& type);
 
     static std::string tasklet(data_flow::Tasklet& tasklet);
 

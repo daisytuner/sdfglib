@@ -13,6 +13,7 @@
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/cast_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/transpose_node.h"
 #include "sdfg/data_flow/library_nodes/stdlib/malloc.h"
+#include "sdfg/data_flow/library_nodes/stdlib/memcpy.h"
 #include "sdfg/data_flow/library_nodes/stdlib/memset.h"
 #include "sdfg/passes/debug_info_propagation.h"
 #include "sdfg/types/pointer.h"
@@ -595,6 +596,13 @@ size_t PyStructuredSDFGBuilder::
     auto value_expr = sdfg::symbolic::parse(value);
     auto num_expr = sdfg::symbolic::parse(num);
     auto& node = builder.add_library_node<sdfg::stdlib::MemsetNode>(*block, debug_info, value_expr, num_expr);
+    return reinterpret_cast<size_t>(&node);
+}
+
+size_t PyStructuredSDFGBuilder::add_memcpy(size_t block_ptr, const std::string& count, const sdfg::DebugInfo& debug_info) {
+    auto* block = reinterpret_cast<sdfg::structured_control_flow::Block*>(block_ptr);
+    auto count_expr = sdfg::symbolic::parse(count);
+    auto& node = builder.add_library_node<sdfg::stdlib::MemcpyNode>(*block, debug_info, count_expr);
     return reinterpret_cast<size_t>(&node);
 }
 
