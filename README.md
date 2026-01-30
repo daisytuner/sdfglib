@@ -1,53 +1,82 @@
-[![Coverage Status](https://coveralls.io/repos/github/daisytuner/sdfglib/badge.svg?branch=main&t=Kti3Xd)](https://coveralls.io/github/daisytuner/sdfglib?branch=main)
+[![Coverage Status](https://coveralls.io/repos/github/daisytuner/docc/badge.svg?branch=main)](https://coveralls.io/github/daisytuner/docc?branch=main)
 
-sdfglib is a C++ library for generating stateful dataflow multigraphs (SDFG).
+The Daisytuner Optimizing Compiler Collection (docc) implements an intermediate representation as well as frontends, drivers, and code generation for translation and optimization of various programming languages to multiple targets.
 
-## Usage
+The core of the project is stateful dataflow multigraphs (SDFG), implemented in the `sdfg` module.
+It contains the definition of the intermediate representation as well as numerous passes and analyses.
+For instance, docc comes with support for auto-parallelization using data-centric and polyhedral analaysis.
 
-### Dependencies
+SDFGs can be generated from Python (JIT) and MLIR frontends, which are separate components including Python bindings and an MLIR dialect for conversion.
+Targets such as Generic, [Google Highway](https://github.com/google/highway), [OpenMP](https://www.openmp.org/), and [CUDA](https://developer.nvidia.com/cuda/toolkit) are implemented in `opt`.
 
+Furthermore, the repository contains runtime libraries for code instrumentation (performance counters and data capturing).
+
+## Quick Start
+
+Binary releases are published for each new version and can be downloaded via standard package managers.
+They provide an easy way to get started with docc.
+
+### Python
+
+The Python frontend generates C++ code, which is compiled and called from Python.
+This requires `clang-19` to be installed on the system (see [LLVM releases](https://apt.llvm.org/)).
+
+Afterward, simply install docc via [PyPI](https://pypi.org/project/docc-compiler/):
+```bash
+pip install docc-compiler
 ```
+
+```python
+import numpy as np
+import docc
+
+@docc.program(target="openmp")
+def matrix_multiply(A, B):
+    return A @ B
+
+A = np.random.rand(1000, 1000)
+B = np.random.rand(1000, 1000)
+C = matrix_multiply(A, B)
+```
+
+### MLIR
+
+A quickstart example will be added soon.
+
+## Building the Core Components
+
+```bash
 sudo apt-get install -y libgmp-dev libzstd-dev
 sudo apt-get install -y nlohmann-json3-dev
-sudo apt-get install -y libboost-graph-dev libboost-graph1.74.0
+sudo apt-get install -y libboost-graph-dev
 sudo apt-get install -y libisl-dev
+sudo apt-get install -y libcurl4-gnutls-dev
 ```
 
-### Build
+The core components `sdfg`, `opt`, `rtl` and `rpc` can be built with cmake.
 
-```
-mkdir build
-cd build
-cmake -DBUILD_TESTS:BOOL=OFF -DBUILD_BENCHMARKS:BOOL=OFF -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF -DHWY_ENABLE_TESTS=OFF ..
-cmake --build .
-```
-
-## Documentation
-
-sdfglib uses [Doxygen](https://www.doxygen.nl/) for API documentation. The type system is fully documented with Doxygen comments.
-
-### Generate Documentation
-
-Install Doxygen:
 ```bash
-sudo apt-get install -y doxygen graphviz
+mkdir build && cd build
+cmake \
+  -G Ninja \
+  -DCMAKE_C_COMPILER=clang-19 \
+  -DCMAKE_CXX_COMPILER=clang++-19 \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DBUILD_TESTS:BOOL=OFF \
+  -DBUILD_BENCHMARKS:BOOL=OFF \
+  -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  \
+  ..
+ninja -j$(nproc)
 ```
 
-Generate the documentation:
-```bash
-doxygen Doxyfile
-```
-
-View the documentation by opening `docs/html/index.html` in a web browser.
-
-For more details, see [DOCUMENTATION.md](DOCUMENTATION.md).
+For instructions on how to build and extend frontends, check out the README.md of the components' directories.
 
 ## Attribution
 
-sdfglib is implemented based on the specification of the [original paper](https://www.arxiv.org/abs/1902.10345) and its [reference implementation](https://github.com/spcl/dace).
-The license of the reference implementation is included in the licenses/ folder.
+docc is based on the specification described in this [paper](https://www.arxiv.org/abs/1902.10345) and the [DaCe reference implementation](https://github.com/spcl/dace).
+The license of the reference implementation is included in the `licenses/` folder.
 
-If you use the sdfglib, cite the paper:
+If you use docc, cite the dace paper:
 ```bibtex
 @inproceedings{dace,
   author    = {Ben-Nun, Tal and de~Fine~Licht, Johannes and Ziogas, Alexandros Nikolaos and Schneider, Timo and Hoefler, Torsten},
@@ -60,4 +89,4 @@ If you use the sdfglib, cite the paper:
 
 ## License
 
-sdfglib is published under the new BSD license, see [LICENSE](LICENSE).
+docc is published under the new BSD license, see [LICENSE](LICENSE).
