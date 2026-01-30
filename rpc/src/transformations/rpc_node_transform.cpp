@@ -150,7 +150,10 @@ std::variant<std::unique_ptr<passes::rpc::RpcOptResponse>, std::string> RPCNodeT
 
         auto json_error = parsed.find("error");
         if (json_error != parsed.end()) {
-            DEBUG_PRINTLN("[ERROR] RPC optimization query returned error: " << json_error->get<std::string>());
+            if (result.http_status!= 201)
+            {
+                DEBUG_PRINTLN("[ERROR] RPC optimization query returned error: " << json_error->get<std::string>());
+            }
             return {};
         }
 
