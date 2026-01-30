@@ -1,10 +1,10 @@
 #include "daisy_rtl/arg_capture_io.h"
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <malloc.h>
 #include <nlohmann/json.hpp>
 #include <numeric>
 #include <utility>

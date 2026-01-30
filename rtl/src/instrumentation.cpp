@@ -11,11 +11,21 @@
 #include <mutex>
 #include <sstream>
 #include <string>
+#include <sys/syscall.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <unordered_map>
 #include <vector>
 
 #include "daisy_rtl/daisy_rtl.h"
+
+// gettid() wrapper for older glibc (< 2.30)
+#ifndef SYS_gettid
+#error "SYS_gettid unavailable on this system"
+#endif
+#if !__GLIBC_PREREQ(2, 30)
+static inline pid_t gettid() { return syscall(SYS_gettid); }
+#endif
 
 #define REGION_CACHE_SIZE 10
 
