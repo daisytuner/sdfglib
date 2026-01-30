@@ -24,110 +24,182 @@ steps:
 
   run:
     adi_numpy:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_adi.py --numpy --size=M
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_adi.py --numpy --size=M
       energy: true
+      env:
+        DOCC_CI: regions
     adi_omp:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_adi.py --docc --size=M --target=openmp
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_adi.py --docc --size=M --target=openmp
       energy: true
+      env:
+        DOCC_CI: regions
     adi_cuda:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_adi.py --docc --size=M --target=cuda
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_adi.py --docc --size=M --target=cuda
       energy: true
+      env:
+        DOCC_CI: regions
     atax_numpy:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_atax.py --numpy --size=M
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_atax.py --numpy --size=M
       energy: true
+      env:
+        DOCC_CI: regions
     atax_omp:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_atax.py --docc --size=M --target=openmp
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_atax.py --docc --size=M --target=openmp
       energy: true
+      env:
+        DOCC_CI: regions
     atax_cuda:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_atax.py --docc --size=M --target=cuda
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_atax.py --docc --size=M --target=cuda
       energy: true
+      env:
+        DOCC_CI: regions
     gemm_numpy:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_gemm.py --numpy --size=M
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_gemm.py --numpy --size=M
       energy: true
+      env:
+        DOCC_CI: regions
     gemm_omp:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_gemm.py --docc --size=M --target=openmp
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_gemm.py --docc --size=M --target=openmp
       energy: true
+      env:
+        DOCC_CI: regions
     gemm_cuda:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_gemm.py --docc --size=M --target=cuda
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_gemm.py --docc --size=M --target=cuda
       energy: true
+      env:
+        DOCC_CI: regions
     gesummv_numpy:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_gesummv.py --numpy --size=M
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_gesummv.py --numpy --size=M
       energy: true
+      env:
+        DOCC_CI: regions
     gesummv_omp:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_gesummv.py --docc --size=M --target=openmp
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_gesummv.py --docc --size=M --target=openmp
       energy: true
+      env:
+        DOCC_CI: regions
     gesummv_cuda:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_gesummv.py --docc --size=M --target=cuda
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_gesummv.py --docc --size=M --target=cuda
       energy: true
+      env:
+        DOCC_CI: regions
     gemver_numpy:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_gemver.py --numpy --size=M
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_gemver.py --numpy --size=M
       energy: true
+      env:
+        DOCC_CI: regions
     gemver_omp:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_gemver.py --docc --size=M --target=openmp
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_gemver.py --docc --size=M --target=openmp
       energy: true
+      env:
+        DOCC_CI: regions
     gemver_cuda:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_gemver.py --docc --size=M --target=cuda
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_gemver.py --docc --size=M --target=cuda
       energy: true
+      env:
+        DOCC_CI: regions
     k2mm_numpy:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_k2mm.py --numpy --size=M
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_k2mm.py --numpy --size=M
       energy: true
+      env:
+        DOCC_CI: regions
     k2mm_omp:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_k2mm.py --docc --size=M --target=openmp
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_k2mm.py --docc --size=M --target=openmp
       energy: true
+      env:
+        DOCC_CI: regions
     k2mm_cuda:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_k2mm.py --docc --size=M --target=cuda
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_k2mm.py --docc --size=M --target=cuda
       energy: true
+      env:
+        DOCC_CI: regions
     k3mm_numpy:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_k3mm.py --numpy --size=M
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_k3mm.py --numpy --size=M
       energy: true
+      env:
+        DOCC_CI: regions
     k3mm_omp:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_k3mm.py --docc --size=M --target=openmp
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_k3mm.py --docc --size=M --target=openmp
       energy: true
+      env:
+        DOCC_CI: regions
     k3mm_cuda:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_k3mm.py --docc --size=M --target=cuda
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_k3mm.py --docc --size=M --target=cuda
       energy: true
+      env:
+        DOCC_CI: regions
     mvt_numpy:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_mvt.py --numpy --size=M
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_mvt.py --numpy --size=M
       energy: true
+      env:
+        DOCC_CI: regions
     mvt_omp:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_mvt.py --docc --size=M --target=openmp
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_mvt.py --docc --size=M --target=openmp
       energy: true
+      env:
+        DOCC_CI: regions
     mvt_cuda:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_mvt.py --docc --size=M --target=cuda
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_mvt.py --docc --size=M --target=cuda
       energy: true
+      env:
+        DOCC_CI: regions
     symm_numpy:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_symm.py --numpy --size=M
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_symm.py --numpy --size=M
       energy: true
+      env:
+        DOCC_CI: regions
     symm_omp:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_symm.py --docc --size=M --target=openmp
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_symm.py --docc --size=M --target=openmp
       energy: true
+      env:
+        DOCC_CI: regions
     # symm_cuda:
     #   command: venv/bin/python3 python/benchmarks/npbench/polybench/test_symm.py --docc --size=M --target=cuda
     #   energy: true
+      # env:
+      #   DOCC_CI: regions
     syr2k_numpy:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_syr2k.py --numpy --size=M
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_syr2k.py --numpy --size=M
       energy: true
+      env:
+        DOCC_CI: regions
     syr2k_omp:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_syr2k.py --docc --size=M --target=openmp
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_syr2k.py --docc --size=M --target=openmp
       energy: true
+      env:
+        DOCC_CI: regions
     syr2k_cuda:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_syr2k.py --docc --size=M --target=cuda
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_syr2k.py --docc --size=M --target=cuda
       energy: true
+      env:
+        DOCC_CI: regions
     syrk_numpy:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_syrk.py --numpy --size=M
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_syrk.py --numpy --size=M
       energy: true
+      env:
+        DOCC_CI: regions
     syrk_omp:
-      command: DOCC_CI=regions   venv/bin/python3 python/benchmarks/npbench/polybench/test_syrk.py --docc --size=M --target=openmp
+      command:   venv/bin/python3 python/benchmarks/npbench/polybench/test_syrk.py --docc --size=M --target=openmp
       energy: true
+      env:
+        DOCC_CI: regions
     syrk_cuda:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_syrk.py --docc --size=M --target=cuda
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_syrk.py --docc --size=M --target=cuda
       energy: true
+      env:
+        DOCC_CI: regions
     trmm_numpy:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_trmm.py --numpy --size=M
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_trmm.py --numpy --size=M
       energy: true
+      env:
+        DOCC_CI: regions
     trmm_omp:
-      command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_trmm.py --docc --size=M --target=openmp
+      command: venv/bin/python3 python/benchmarks/npbench/polybench/test_trmm.py --docc --size=M --target=openmp
       energy: true
+      env:
+        DOCC_CI: regions
     # trmm_cuda:
-    #   command: DOCC_CI=regions venv/bin/python3 python/benchmarks/npbench/polybench/test_trmm.py --docc --size=M --target=cuda
+    #   command: venv/bin/python3 python/benchmarks/npbench/polybench/test_trmm.py --docc --size=M --target=cuda
     #   energy: true
+      # env:
+      #   DOCC_CI: regions
