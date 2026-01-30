@@ -41,15 +41,26 @@ std::string RPCNodeTransform::get_node_id_str() const { return std::to_string(th
 bool RPCNodeTransform::
     can_be_applied(sdfg::builder::StructuredSDFGBuilder& builder, sdfg::analysis::AnalysisManager& analysis_manager) {
 
-    auto& sdfg = builder.subject();
+    // Get loop info
+
+    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    // This loop info differs from the one in the scheduler, as that one is stale
+    auto loop_info = loop_analysis.loop_info(&this->node_);
+
+    // Re-check for side effects with fresh loop info
+    if (loop_info.has_side_effects) {
+        if (report_) {
+            report_->transform_impossible(
+                this->name(), "Loopnest side effects (" + get_node_id_str() + ")"
+            );
+        }
+        return false;
+    }
 
     // Create cutout SDFG
     std::unique_ptr<sdfg::StructuredSDFG> loop_sdfg = util::cutout(builder, analysis_manager, this->node_);
 
-    // Get loop info
-    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
-    auto loop_info = loop_analysis.loop_info(&this->node_);
-
+    // Loop info is only used for information on the loop structure
     auto opt_resp = query_rpc_server(
         {.sdfg = *loop_sdfg,
          .category = this->category_,
@@ -126,12 +137,6 @@ std::variant<std::unique_ptr<passes::rpc::RpcOptResponse>, std::string> RPCNodeT
 std::variant<std::unique_ptr<passes::rpc::RpcOptResponse>, std::string> RPCNodeTransform::parse_rpc_response(HttpResult result) {
 
     auto rpc_response = std::make_unique<passes::rpc::RpcOptResponse>();
-
-    if (!result.error_message.empty())
-    {
-        std::cerr << "[ERROR] RPC optimization query failed: " << result.error_message << std::endl;
-        return {"RpcQueryFailed"};
-    }
 
     try {
             // Parse response

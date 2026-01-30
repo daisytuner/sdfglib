@@ -33,6 +33,9 @@ public:
     RpcLoopOpt(rpc::RpcContext& rpc_context, std::string target, std::string category, bool print_steps = false);
 
     std::string name() override { return "RpcLoopOpt"; };
+
+    bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
+
 };
 
 } // namespace rpc
