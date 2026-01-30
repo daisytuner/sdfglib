@@ -300,8 +300,12 @@ void PyStructuredSDFG::
     }
 }
 
-std::string PyStructuredSDFG::
-    compile(const std::string& output_folder, const std::string& instrumentation_mode, bool capture_args) const {
+std::string PyStructuredSDFG::compile(
+    const std::string& output_folder,
+    const std::string& target,
+    const std::string& instrumentation_mode,
+    bool capture_args
+) const {
     fs::path build_path(output_folder);
     if (!fs::exists(build_path)) {
         fs::create_directories(build_path);
@@ -373,7 +377,7 @@ std::string PyStructuredSDFG::
         package_include_path_str = (package_path / "include").string();
     }
 
-    bool has_cuda_lib = false;
+    bool has_highway = false;
     std::unordered_set<std::string> object_files;
     for (const auto& lib_file : lib_files) {
         std::filesystem::path lib_path(lib_file);
@@ -385,15 +389,15 @@ std::string PyStructuredSDFG::
             cmd << " -L" << package_path_str;
             cmd << " -I" << package_include_path_str;
         }
-        if (lib_file.ends_with(".cu")) {
+        if (target == "cuda") {
             cmd << " -x cuda --cuda-gpu-arch=sm_70 --cuda-path=/usr/local/cuda";
-            has_cuda_lib = true;
         }
 
         cmd << " " << lib_file;
         cmd << " -o " << object_file;
         if (name.starts_with("highway_")) {
             cmd << " -lhwy";
+            has_highway = true;
         }
         cmd << " -lm";
         int ret = std::system(cmd.str().c_str());
@@ -411,7 +415,7 @@ std::string PyStructuredSDFG::
             cmd << " -L" << package_path_str;
             cmd << " -I" << package_include_path_str;
         }
-        if (has_cuda_lib || true) {
+        if (target == "cuda") {
             cmd << " -x cuda -lcuda";
         }
         cmd << " " << source_path.string();
@@ -436,15 +440,18 @@ std::string PyStructuredSDFG::
     for (const auto& object_file : object_files) {
         cmd << " " << object_file;
     }
-    if (!object_files.empty()) {
+    if (has_highway) {
         cmd << " -lhwy";
     }
     cmd << " -ldaisy_rtl";
     cmd << " -larg_capture_io";
     cmd << " -lblas";
     cmd << " -lm";
-    cmd << " /usr/local/cuda/lib64/libcudart.so";
-    cmd << " /usr/local/cuda/lib64/libcublas.so";
+    cmd << " -lstdc++";
+    if (target == "cuda") {
+        cmd << " /usr/local/cuda/lib64/libcudart.so";
+        cmd << " /usr/local/cuda/lib64/libcublas.so";
+    }
     cmd << " -o " << lib_path.string();
 
 

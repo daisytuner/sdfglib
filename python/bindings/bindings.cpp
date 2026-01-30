@@ -158,6 +158,7 @@ PYBIND11_MODULE(_sdfg, m) {
             "_compile",
             &PyStructuredSDFG::compile,
             py::arg("output_folder"),
+            py::arg("target"),
             py::arg("instrumentation_mode") = "",
             py::arg("capture_args") = false
         )

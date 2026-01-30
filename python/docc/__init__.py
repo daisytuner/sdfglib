@@ -250,6 +250,7 @@ class DoccProgram:
 
         lib_path = sdfg._compile(
             output_folder=output_folder,
+            target=self.target,
             instrumentation_mode=instrumentation_mode,
             capture_args=capture_args,
         )
