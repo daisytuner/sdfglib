@@ -10,7 +10,6 @@
 #include <sdfg/builder/structured_sdfg_builder.h>
 #include <sdfg/codegen/dispatchers/node_dispatcher_registry.h>
 #include "sdfg/codegen/code_generators/cpp_code_generator.h"
-// #include <sdfg/cuda/plugin.h>
 #include <sdfg/helpers/helpers.h>
 #include <sdfg/structured_control_flow/control_flow_node.h>
 #include <sdfg/structured_sdfg.h>
@@ -125,7 +124,6 @@ int main(int argc, char* argv[]) {
     // Register default dispatchers
     codegen::register_default_dispatchers();
     sdfg::serializer::register_default_serializers();
-    //  sdfg::cuda::register_cuda_plugin();
 
     // Create sdfg
     std::unique_ptr<StructuredSDFG> sdfg;

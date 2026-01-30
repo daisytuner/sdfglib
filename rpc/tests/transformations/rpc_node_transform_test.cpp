@@ -5,6 +5,7 @@
 
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
 #include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
@@ -155,3 +156,48 @@ TEST_F(RPCNodeTransformTest, Matmul_FMA) {
         loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j_tile0")]
     );
 };
+
+TEST_F(RPCNodeTransformTest, Double_Matmul) {
+    {
+        analysis::AnalysisManager analysis_manager(builder_->subject());
+        auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
+        auto outer_loops = loop_analysis.outermost_loops();
+        EXPECT_EQ(outer_loops.size(), 1);
+        auto loopnest = outer_loops[0];
+        sdfg::deepcopy::StructuredSDFGDeepCopy deep_copy(*builder_, builder_->subject().root(), *loopnest);
+        deep_copy.copy();
+    }
+
+    auto sdfg_initial = builder_->subject().clone();
+    sdfg::builder::StructuredSDFGBuilder builder(sdfg_initial);
+
+    // Transfer tuning replayer
+
+    sdfg::analysis::AnalysisManager analysis_manager(builder.subject());
+    auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
+    auto outer_loops = loop_analysis.outermost_loops();
+    EXPECT_EQ(outer_loops.size(), 2);
+
+    auto outer_loop = static_cast<structured_control_flow::StructuredLoop*>(outer_loops[0]);
+    sdfg::transformations::RPCNodeTransform transfer_tuning(*outer_loop, "sequential", "server", *ctx_, true);
+    ASSERT_TRUE(transfer_tuning.can_be_applied(builder, analysis_manager));
+    transfer_tuning.apply(builder, analysis_manager);
+
+    sdfg::analysis::AnalysisManager test_analysis_manager(builder.subject());
+
+    auto& test_loop_analysis = test_analysis_manager.get<sdfg::analysis::LoopAnalysis>();
+    auto loop_nest_tree = test_loop_analysis.loop_tree();
+    EXPECT_TRUE(test_loop_analysis.find_loop_by_indvar("j") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k")]);
+    EXPECT_TRUE(test_loop_analysis.find_loop_by_indvar("i") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j")]);
+    EXPECT_TRUE(
+        test_loop_analysis.find_loop_by_indvar("k_tile0") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("i")]
+    );
+    EXPECT_TRUE(
+        test_loop_analysis.find_loop_by_indvar("j_tile0") ==
+        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k_tile0")]
+    );
+    EXPECT_TRUE(
+        test_loop_analysis.find_loop_by_indvar("i_tile0") ==
+        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j_tile0")]
+    );
+}
