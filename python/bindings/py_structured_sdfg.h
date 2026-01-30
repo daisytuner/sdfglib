@@ -51,7 +51,10 @@ public:
     );
 
     std::string compile(
-        const std::string& output_folder, const std::string& instrumentation_mode = "", bool capture_args = false
+        const std::string& output_folder,
+        const std::string& target,
+        const std::string& instrumentation_mode = "",
+        bool capture_args = false
     ) const;
 
     std::string metadata(const std::string& key) const;
