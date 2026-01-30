@@ -26,7 +26,7 @@ jobs:
           submodules: recursive
 
       - name: Mark GitHub Actions workdir as safe
-        run: git config --global --add safe.directory /__w/sdfglib/sdfglib
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Formatting
         shell: bash
