@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <string>
+#include <variant>
 
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/scope_analysis.h"
@@ -90,12 +91,16 @@ query_rpc_opt(passes::rpc::RpcOptRequest request, sdfg::passes::rpc::RpcContext&
         auto json_sdfg_result = parsed.find("sdfg_result");
         if (json_sdfg_result != parsed.end()) {
             auto sdfg_field = json_sdfg_result->at("sdfg");
-            rpc_response->sdfg_result = {.sdfg = serializer.deserialize(sdfg_field)};
+            passes::rpc::RpcSdfgResult result;
+            result.sdfg = serializer.deserialize(sdfg_field);
+            rpc_response->sdfg_result = std::move(result);
         }
 
         auto json_local_replay = parsed.find("local_replay");
         if (json_local_replay != parsed.end()) {
-            rpc_response->local_replay = {.sequence = json_local_replay->at("sequence")};
+            passes::rpc::RpcLocalReplayRecipe recipe;
+            recipe.sequence = json_local_replay->at("sequence");
+            rpc_response->local_replay = std::move(recipe);
         }
 
         auto json_metadata = parsed.find("metadata");
