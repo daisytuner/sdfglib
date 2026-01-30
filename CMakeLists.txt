@@ -38,6 +38,7 @@ add_subdirectory(opt)
 add_subdirectory(rpc)
 add_subdirectory(rtl)
 add_subdirectory(arg-capture-io)
+add_subdirectory(tutorial/printf_target)
 
 option(PYTHON_BUILD_FRONTEND "Build Python frontend" OFF)
 if(PYTHON_BUILD_FRONTEND)
