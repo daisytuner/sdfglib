@@ -1,4 +1,4 @@
-#include <llvm-19/llvm/Support/Casting.h>
+#include <llvm/Support/Casting.h>
 
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/SDFG/IR/SDFG.h"
@@ -17,7 +17,7 @@
 namespace mlir {
 namespace sdfg {
 
-bool is_primitive(const Type& type) {
+bool is_primitive(const Type type) {
     if (auto int_type = llvm::dyn_cast<IntegerType>(type)) {
         switch (int_type.getWidth()) {
             case 1:
@@ -33,6 +33,13 @@ bool is_primitive(const Type& type) {
         }
     }
     return type.isF16() || type.isBF16() || type.isF32() || type.isF64() || type.isF80() || type.isF128();
+}
+
+bool is_tensor_of_primitive(const Type type) {
+    if (auto tensor_type = llvm::dyn_cast<TensorType>(type)) {
+        return is_primitive(tensor_type.getElementType());
+    }
+    return false;
 }
 
 void sdfg::SDFGDialect::initialize() {

@@ -17,11 +17,17 @@
 #include "sdfg/codegen/instrumentation/arg_capture_plan.h"
 #include "sdfg/codegen/instrumentation/instrumentation_plan.h"
 #include "sdfg/data_flow/access_node.h"
+#include "sdfg/data_flow/library_node.h"
+#include "sdfg/data_flow/library_nodes/math/blas/blas_node.h"
+#include "sdfg/data_flow/library_nodes/math/blas/gemm_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/fill_node.h"
 #include "sdfg/data_flow/tasklet.h"
+#include "sdfg/element.h"
 #include "sdfg/function.h"
 #include "sdfg/serializer/json_serializer.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/sequence.h"
+#include "sdfg/symbolic/symbolic.h"
 #include "sdfg/types/scalar.h"
 #include "sdfg/types/type.h"
 
@@ -54,7 +60,7 @@ public:
         return container;
     }
 
-    std::unique_ptr<::sdfg::types::IType> convertType(const Type& mlir_type) {
+    std::unique_ptr<::sdfg::types::IType> convertType(const Type mlir_type) {
         if (mlir_type.isInteger(1)) {
             return std::make_unique<::sdfg::types::Scalar>(::sdfg::types::PrimitiveType::Bool);
         } else if (mlir_type.isSignedInteger(8) || mlir_type.isSignlessInteger(8)) {
@@ -89,8 +95,27 @@ public:
             return std::make_unique<::sdfg::types::Scalar>(::sdfg::types::PrimitiveType::X86_FP80);
         } else if (mlir_type.isF128()) {
             return std::make_unique<::sdfg::types::Scalar>(::sdfg::types::PrimitiveType::FP128);
+        } else if (auto vector_type = dyn_cast_or_null<VectorType>(mlir_type)) {
+            auto base_type = this->convertType(vector_type.getElementType());
+            if (!base_type) {
+                return nullptr;
+            }
+            return std::make_unique<::sdfg::types::Pointer>(*base_type);
+        } else if (auto tensor_type = dyn_cast_or_null<TensorType>(mlir_type)) {
+            auto base_type = this->convertType(tensor_type.getElementType());
+            if (!base_type) {
+                return nullptr;
+            }
+            return std::make_unique<::sdfg::types::Pointer>(*base_type);
         }
         return nullptr;
+    }
+
+    std::string convertTypedAttr(const TypedAttr attr) {
+        return llvm::TypeSwitch<TypedAttr, std::string>(attr)
+            .Case<FloatAttr>([](FloatAttr attr) { return std::to_string(attr.getValue().convertToDouble()); })
+            .Case<IntegerAttr>([](IntegerAttr attr) { return std::to_string(attr.getInt()); })
+            .Default([](TypedAttr attr) { return ""; });
     }
 
     LogicalResult translate(Operation* op) {
@@ -148,6 +173,9 @@ public:
         return llvm::TypeSwitch<Operation*, LogicalResult>(op)
             .Case<BlockOp>([&](BlockOp block_op) { return this->translateBlockOp(builder, parent, &block_op); })
             .Case<ReturnOp>([&](ReturnOp return_op) { return this->translateReturnOp(builder, parent, &return_op); })
+            .Case<TensorConstantOp>([&](TensorConstantOp tensor_constant_op) {
+                return this->translateTensorConstantOp(builder, parent, &tensor_constant_op);
+            })
             .Default([&](Operation* op) {
                 return op->emitError("Unknown control flow operation. Could not translate.");
             });
@@ -156,7 +184,9 @@ public:
     LogicalResult translateBlockOp(Builder& builder, Sequence& parent, BlockOp* block_op) {
         auto& block = builder.add_block(parent);
         std::unordered_map<mlir::Attribute::ImplType*, ::sdfg::data_flow::Tasklet*> tasklets;
+        std::unordered_map<mlir::Attribute::ImplType*, ::sdfg::data_flow::LibraryNode*> libnodes;
         std::unordered_map<mlir::detail::ValueImpl*, ::sdfg::data_flow::AccessNode*> access_nodes;
+        std::unordered_map<mlir::detail::ValueImpl*, ::sdfg::data_flow::ConstantNode*> constant_nodes;
 
         // Capture results
         std::vector<Value> results;
@@ -192,8 +222,111 @@ public:
                             );
                         return success();
                     })
+                    .Case<FillOp>([&](FillOp fill_op) {
+                        std::vector<::sdfg::symbolic::Expression> shape;
+                        Type type = fill_op.getOutput().getType();
+                        if (auto vector_type = dyn_cast<VectorType>(type)) {
+                            for (int64_t dim : vector_type.getShape()) {
+                                shape.push_back(::sdfg::symbolic::integer(dim));
+                            }
+                        } else if (auto tensor_type = dyn_cast<TensorType>(type)) {
+                            for (int64_t dim : tensor_type.getShape()) {
+                                shape.push_back(::sdfg::symbolic::integer(dim));
+                            }
+                        } else {
+                            fill_op.emitOpError("does not use a vector or tensor");
+                            return failure();
+                        }
+                        libnodes.insert(
+                            {fill_op.getLoc()->getImpl(),
+                             &builder.add_library_node<::sdfg::math::tensor::FillNode>(block, ::sdfg::DebugInfo(), shape)
+                            }
+                        );
+                        return success();
+                    })
+                    .Case<MatmulOp>([&](MatmulOp matmul_op) {
+                        ::sdfg::math::blas::BLAS_Precision precision;
+                        ::sdfg::types::PrimitiveType precision_type;
+                        ::sdfg::symbolic::Expression m, n, k, lda, ldb, ldc;
+                        Type type = matmul_op.getOutput().getType();
+                        if (auto vector_type = dyn_cast<VectorType>(type)) {
+                            if (vector_type.getElementType().isF16()) {
+                                precision = ::sdfg::math::blas::BLAS_Precision::h;
+                                precision_type = ::sdfg::types::PrimitiveType::Half;
+                            } else if (vector_type.getElementType().isF32()) {
+                                precision = ::sdfg::math::blas::BLAS_Precision::s;
+                                precision_type = ::sdfg::types::PrimitiveType::Float;
+                            } else if (vector_type.getElementType().isF64()) {
+                                precision = ::sdfg::math::blas::BLAS_Precision::d;
+                                precision_type = ::sdfg::types::PrimitiveType::Double;
+                            } else {
+                                matmul_op
+                                    ->emitOpError("has unsupported element type. Only f16, f32, and f64 are supported."
+                                    );
+                                return failure();
+                            }
+                            auto lhs_type = dyn_cast<VectorType>(matmul_op.getLhs().getType());
+                            auto rhs_type = dyn_cast<VectorType>(matmul_op.getRhs().getType());
+                            m = ::sdfg::symbolic::integer(lhs_type.getDimSize(0));
+                            n = ::sdfg::symbolic::integer(rhs_type.getDimSize(1));
+                            k = ::sdfg::symbolic::integer(lhs_type.getDimSize(1));
+                            lda = ::sdfg::symbolic::integer(lhs_type.getDimSize(1));
+                            ldb = ::sdfg::symbolic::integer(rhs_type.getDimSize(1));
+                            ldc = ::sdfg::symbolic::integer(rhs_type.getDimSize(1));
+                        } else if (auto tensor_type = dyn_cast<TensorType>(type)) {
+                            if (tensor_type.getElementType().isF16()) {
+                                precision = ::sdfg::math::blas::BLAS_Precision::h;
+                                precision_type = ::sdfg::types::PrimitiveType::Half;
+                            } else if (tensor_type.getElementType().isF32()) {
+                                precision = ::sdfg::math::blas::BLAS_Precision::s;
+                                precision_type = ::sdfg::types::PrimitiveType::Float;
+                            } else if (tensor_type.getElementType().isF64()) {
+                                precision = ::sdfg::math::blas::BLAS_Precision::d;
+                                precision_type = ::sdfg::types::PrimitiveType::Double;
+                            } else {
+                                matmul_op
+                                    ->emitOpError("has unsupported element type. Only f16, f32, and f64 are supported."
+                                    );
+                                return failure();
+                            }
+                            auto lhs_type = dyn_cast<TensorType>(matmul_op.getLhs().getType());
+                            auto rhs_type = dyn_cast<TensorType>(matmul_op.getRhs().getType());
+                            m = ::sdfg::symbolic::integer(lhs_type.getDimSize(0));
+                            n = ::sdfg::symbolic::integer(rhs_type.getDimSize(1));
+                            k = ::sdfg::symbolic::integer(lhs_type.getDimSize(1));
+                            lda = ::sdfg::symbolic::integer(lhs_type.getDimSize(1));
+                            ldb = ::sdfg::symbolic::integer(rhs_type.getDimSize(1));
+                            ldc = ::sdfg::symbolic::integer(rhs_type.getDimSize(1));
+                        } else {
+                            matmul_op->emitError("has unsupported type. Only vectors and tensors are supported.");
+                            return failure();
+                        }
+                        auto& libnode = builder.add_library_node<::sdfg::math::blas::GEMMNode>(
+                            block,
+                            ::sdfg::DebugInfo(),
+                            ::sdfg::math::blas::ImplementationType_BLAS,
+                            precision,
+                            ::sdfg::math::blas::BLAS_Layout::RowMajor,
+                            ::sdfg::math::blas::BLAS_Transpose::No,
+                            ::sdfg::math::blas::BLAS_Transpose::No,
+                            m,
+                            n,
+                            k,
+                            lda,
+                            ldb,
+                            ldc
+                        );
+                        ::sdfg::types::Scalar one_type(precision_type);
+                        auto& one = builder.add_constant(block, "1.0", one_type);
+                        builder.add_computational_memlet(block, one, libnode, "__alpha", {}, one_type);
+                        builder.add_computational_memlet(block, one, libnode, "__beta", {}, one_type);
+                        libnodes.insert({matmul_op.getLoc()->getImpl(), &libnode});
+                        return success();
+                    })
                     .Case<MemletOp>([&](MemletOp memlet_op) {
-                        if (dyn_cast_or_null<TaskletOp>(memlet_op.getInput().getDefiningOp())) {
+                        if (dyn_cast_or_null<TaskletOp>(memlet_op.getInput().getDefiningOp()) ||
+                            dyn_cast_or_null<FillOp>(memlet_op.getInput().getDefiningOp()) ||
+                            dyn_cast_or_null<MatmulOp>(memlet_op.getInput().getDefiningOp())) {
                             access_nodes.insert(
                                 {memlet_op.getOutput().getImpl(),
                                  &builder
@@ -206,6 +339,19 @@ public:
                                 }
                             );
                         }
+                        return success();
+                    })
+                    .Case<ConstantOp>([&](ConstantOp constant_op) {
+                        TypedAttr attr = constant_op.getValue();
+                        std::string constant = this->convertTypedAttr(attr);
+                        if (constant.empty()) {
+                            constant_op->emitOpError("could not convert constant value");
+                            return failure();
+                        }
+                        constant_nodes.insert(
+                            {constant_op.getResult().getImpl(),
+                             &builder.add_constant(block, constant, *this->convertType(attr.getType()))}
+                        );
                         return success();
                     })
                     .Case<YieldOp>([&](YieldOp yield_op) {
@@ -256,11 +402,120 @@ public:
                                     inputs.at(i),
                                     {}
                                 );
+                            } else if (auto constant_op =
+                                           dyn_cast_or_null<ConstantOp>(tasklet_op.getOperand(i).getDefiningOp())) {
+                                builder.add_computational_memlet(
+                                    block,
+                                    *constant_nodes.at(constant_op.getResult().getImpl()),
+                                    *tasklets.at(tasklet_op.getLoc()->getImpl()),
+                                    inputs.at(i),
+                                    {}
+                                );
                             } else {
                                 return failure();
                             }
                         }
                         return success();
+                    })
+                    .Case<FillOp>([&](FillOp fill_op) {
+                        if (auto memlet_op = dyn_cast_or_null<MemletOp>(fill_op.getInput().getDefiningOp())) {
+                            builder.add_computational_memlet(
+                                block,
+                                *access_nodes.at(memlet_op.getInput().getImpl()),
+                                *libnodes.at(fill_op.getLoc()->getImpl()),
+                                "X",
+                                {},
+                                *this->convertType(fill_op.getInput().getType())
+                            );
+                            return success();
+                        } else if (auto constant_op = dyn_cast_or_null<ConstantOp>(fill_op.getInput().getDefiningOp()
+                                   )) {
+                            builder.add_computational_memlet(
+                                block,
+                                *constant_nodes.at(constant_op.getResult().getImpl()),
+                                *libnodes.at(fill_op.getLoc()->getImpl()),
+                                "X",
+                                {},
+                                *this->convertType(fill_op.getInput().getType())
+                            );
+                            return success();
+                        } else {
+                            return failure();
+                        }
+                    })
+                    .Case<MatmulOp>([&](MatmulOp matmul_op) {
+                        if (auto memlet_op = dyn_cast_or_null<MemletOp>(matmul_op.getLhs().getDefiningOp())) {
+                            builder.add_computational_memlet(
+                                block,
+                                *access_nodes.at(memlet_op.getInput().getImpl()),
+                                *libnodes.at(matmul_op.getLoc()->getImpl()),
+                                "__A",
+                                {},
+                                *this->convertType(matmul_op.getLhs().getType())
+                            );
+                            return success();
+                        } else if (auto constant_op = dyn_cast_or_null<ConstantOp>(matmul_op.getLhs().getDefiningOp()
+                                   )) {
+                            builder.add_computational_memlet(
+                                block,
+                                *constant_nodes.at(constant_op.getResult().getImpl()),
+                                *libnodes.at(matmul_op.getLoc()->getImpl()),
+                                "__A",
+                                {},
+                                *this->convertType(matmul_op.getLhs().getType())
+                            );
+                            return success();
+                        } else {
+                            return failure();
+                        }
+                        if (auto memlet_op = dyn_cast_or_null<MemletOp>(matmul_op.getRhs().getDefiningOp())) {
+                            builder.add_computational_memlet(
+                                block,
+                                *access_nodes.at(memlet_op.getInput().getImpl()),
+                                *libnodes.at(matmul_op.getLoc()->getImpl()),
+                                "__B",
+                                {},
+                                *this->convertType(matmul_op.getRhs().getType())
+                            );
+                            return success();
+                        } else if (auto constant_op = dyn_cast_or_null<ConstantOp>(matmul_op.getRhs().getDefiningOp()
+                                   )) {
+                            builder.add_computational_memlet(
+                                block,
+                                *constant_nodes.at(constant_op.getResult().getImpl()),
+                                *libnodes.at(matmul_op.getLoc()->getImpl()),
+                                "__B",
+                                {},
+                                *this->convertType(matmul_op.getRhs().getType())
+                            );
+                            return success();
+                        } else {
+                            return failure();
+                        }
+                        if (auto memlet_op = dyn_cast_or_null<MemletOp>(matmul_op.getResInput().getDefiningOp())) {
+                            builder.add_computational_memlet(
+                                block,
+                                *access_nodes.at(memlet_op.getInput().getImpl()),
+                                *libnodes.at(matmul_op.getLoc()->getImpl()),
+                                "__C",
+                                {},
+                                *this->convertType(matmul_op.getResInput().getType())
+                            );
+                            return success();
+                        } else if (auto constant_op =
+                                       dyn_cast_or_null<ConstantOp>(matmul_op.getResInput().getDefiningOp())) {
+                            builder.add_computational_memlet(
+                                block,
+                                *constant_nodes.at(constant_op.getResult().getImpl()),
+                                *libnodes.at(matmul_op.getLoc()->getImpl()),
+                                "__C",
+                                {},
+                                *this->convertType(matmul_op.getResInput().getType())
+                            );
+                            return success();
+                        } else {
+                            return failure();
+                        }
                     })
                     .Case<MemletOp>([&](MemletOp memlet_op) {
                         if (auto tasklet_op = dyn_cast_or_null<TaskletOp>(memlet_op.getInput().getDefiningOp())) {
@@ -271,7 +526,29 @@ public:
                                 *access_nodes.at(memlet_op.getOutput().getImpl()),
                                 {}
                             );
+                        } else if (auto fill_op = dyn_cast_or_null<FillOp>(memlet_op.getInput().getDefiningOp())) {
+                            builder.add_computational_memlet(
+                                block,
+                                *libnodes.at(fill_op.getLoc()->getImpl()),
+                                "Y",
+                                *access_nodes.at(memlet_op.getOutput().getImpl()),
+                                {},
+                                *this->convertType(memlet_op.getOutput().getType())
+                            );
+                        } else if (auto matmul_op = dyn_cast_or_null<MatmulOp>(memlet_op.getInput().getDefiningOp())) {
+                            builder.add_computational_memlet(
+                                block,
+                                *libnodes.at(matmul_op.getLoc()->getImpl()),
+                                "__C",
+                                *access_nodes.at(memlet_op.getOutput().getImpl()),
+                                {},
+                                *this->convertType(memlet_op.getOutput().getType())
+                            );
                         }
+                        return success();
+                    })
+                    .Case<ConstantOp>([&](ConstantOp constant_op) {
+                        // Has per definition no input
                         return success();
                     })
                     .Case<YieldOp>([&](YieldOp yield_op) { return success(); })
@@ -288,6 +565,75 @@ public:
 
     LogicalResult translateReturnOp(Builder& builder, Sequence& parent, ReturnOp* return_op) {
         builder.add_return(parent, this->get_or_create_container(builder, return_op->getOperand()));
+        return success();
+    }
+
+    template<typename T>
+    std::string convertResourceElementsToString(DenseResourceElementsAttr attr) {
+        if (::mlir::detail::DenseResourceElementsAttrBase<T> typed_attr =
+                dyn_cast_or_null<::mlir::detail::DenseResourceElementsAttrBase<T>>(attr)) {
+            std::optional<ArrayRef<T>> array_ref = typed_attr.tryGetAsArrayRef();
+            if (!array_ref) {
+                return "";
+            }
+            std::stringstream stream;
+            stream << "{";
+            bool first = true;
+            for (T val : *array_ref) {
+                if (first) {
+                    first = false;
+                } else {
+                    stream << ", ";
+                }
+                stream << std::to_string(val);
+            }
+            stream << "}";
+            return stream.str();
+        }
+        return "";
+    }
+
+    LogicalResult translateTensorConstantOp(Builder& builder, Sequence& parent, TensorConstantOp* tensor_constant_op) {
+        std::string constant;
+        if (auto dense_resource_attr = dyn_cast<DenseResourceElementsAttr>(tensor_constant_op->getValues())) {
+            Type element_type = dense_resource_attr.getElementType();
+            if (element_type.isInteger(1)) {
+                constant = this->convertResourceElementsToString<bool>(dense_resource_attr);
+            } else if (element_type.isSignedInteger(8) || element_type.isSignlessInteger(8)) {
+                constant = this->convertResourceElementsToString<int8_t>(dense_resource_attr);
+            } else if (element_type.isSignedInteger(16) || element_type.isSignlessInteger(16)) {
+                constant = this->convertResourceElementsToString<int16_t>(dense_resource_attr);
+            } else if (element_type.isSignedInteger(32) || element_type.isSignlessInteger(32)) {
+                constant = this->convertResourceElementsToString<int32_t>(dense_resource_attr);
+            } else if (element_type.isSignedInteger(64) || element_type.isSignlessInteger(64)) {
+                constant = this->convertResourceElementsToString<int64_t>(dense_resource_attr);
+            } else if (element_type.isUnsignedInteger(8)) {
+                constant = this->convertResourceElementsToString<uint8_t>(dense_resource_attr);
+            } else if (element_type.isUnsignedInteger(16)) {
+                constant = this->convertResourceElementsToString<uint16_t>(dense_resource_attr);
+            } else if (element_type.isUnsignedInteger(32)) {
+                constant = this->convertResourceElementsToString<uint32_t>(dense_resource_attr);
+            } else if (element_type.isUnsignedInteger(64)) {
+                constant = this->convertResourceElementsToString<uint64_t>(dense_resource_attr);
+            } else if (element_type.isF32()) {
+                constant = this->convertResourceElementsToString<float>(dense_resource_attr);
+            } else if (element_type.isF64()) {
+                constant = this->convertResourceElementsToString<double>(dense_resource_attr);
+            }
+        }
+        if (constant.empty()) {
+            return tensor_constant_op->emitOpError("could not convert constant. dense type required.");
+        }
+        Value result = tensor_constant_op->getResult();
+        auto result_type = this->convertType(result.getType());
+
+        auto& block = builder.add_block(parent);
+        auto& constant_access = builder.add_constant(block, constant, *result_type);
+        auto& result_access = builder.add_access(block, this->get_or_create_container(builder, result));
+        auto& tasklet = builder.add_tasklet(block, ::sdfg::data_flow::TaskletCode::assign, "_out", {"_in"});
+        builder.add_memlet(block, constant_access, "void", tasklet, "_in", {}, *result_type, ::sdfg::DebugInfo());
+        builder.add_memlet(block, tasklet, "_out", result_access, "void", {}, *result_type, ::sdfg::DebugInfo());
+
         return success();
     }
 

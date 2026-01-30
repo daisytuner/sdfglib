@@ -19,4 +19,9 @@ def ConvertFuncToSDFG : Pass<"convert-func-to-sdfg"> {
     let dependentDialects = ["::mlir::sdfg::SDFGDialect"];
 }
 
+def ConvertLinalgToSDFG : Pass<"convert-linalg-to-sdfg"> {
+    let summary = "Convert Linalg dialect to SDFG dialect";
+    let dependentDialects = ["::mlir::sdfg::SDFGDialect"];
+}
+
 #endif // SDFG_CONVERSION_PASSES

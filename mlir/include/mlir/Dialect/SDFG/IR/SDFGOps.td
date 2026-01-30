@@ -40,6 +40,19 @@ def SDFG_ReturnOp : SDFG_Op<"return", [Pure, ReturnLike, Terminator, HasParent<"
     let hasVerifier = 1;
 }
 
+// SDFG operation that represents a tensor constant
+def SDFG_TensorConstantOp : SDFG_Op<
+    "tensor_constant",
+    [Pure, ConstantLike, AllTypesMatch<["values", "result"]>, ParentOneOf<["SDFGOp"]>]
+> {
+    let summary = "Operation for tensor constants";
+
+    let arguments = (ins ElementsAttrInterface:$values);
+    let results = (outs TensorOf<SDFG_PrimitiveType.allowedTypes>:$result);
+
+    let assemblyFormat = "attr-dict $values";
+}
+
 // SDFG operation that holds data flow nodes
 def SDFG_BlockOp : SDFG_Op<"block", [SingleBlock, SingleBlockImplicitTerminator<"YieldOp">, ParentOneOf<["SDFGOp"]>]> {
     let summary = "A basic block with dataflow computations";
@@ -84,7 +97,7 @@ def SDFG_YieldOp : SDFG_Op<"yield", [Pure, ReturnLike, Terminator, ParentOneOf<[
 }
 
 // SDFG data flow node that represents a constant literal value
-def SDFG_ConstantOp : SDFG_Op<"constant", [ConstantLike, AllTypesMatch<["value", "result"]>, HasParent<"BlockOp">]> {
+def SDFG_ConstantOp : SDFG_Op<"constant", [AllTypesMatch<["value", "result"]>, HasParent<"BlockOp">]> {
     let summary = "Represents a constant literal value";
 
     let arguments = (ins TypedAttrInterface:$value);
@@ -117,6 +130,41 @@ def SDFG_MemletOp : SDFG_Op<"memlet", [Pure, HasParent<"BlockOp">]> {
     let results = (outs AnyType:$output);
 
     let assemblyFormat = "attr-dict $input `:` type($input) `->` type($output)";
+}
+
+// LibraryNodes
+class SDFG_UnaryLibraryNode<string mnemonic> : SDFG_Op<mnemonic, [Pure, HasParent<"BlockOp">]> {
+    let arguments = (ins SDFG_Type:$input);
+    let results = (outs SDFG_Type:$output);
+
+    let assemblyFormat = "attr-dict $input `:` type($input) `->` type($output)";
+}
+class SDFG_BinaryLibraryNode<string mnemonic> : SDFG_Op<mnemonic, [Pure, HasParent<"BlockOp">]> {
+    let arguments = (ins SDFG_Type:$lhs, SDFG_Type:$rhs);
+    let results = (outs SDFG_Type:$output);
+
+    let assemblyFormat = "attr-dict $lhs `,` $rhs `:` type($lhs) `,` type($rhs) `->` type($output)";
+}
+
+// SDFG data flow node that represents tensor fill operation
+def SDFG_FillOp : SDFG_UnaryLibraryNode<"fill"> {
+    let summary = "Tensor fill operation";
+
+    let hasVerifier = 1;
+}
+
+// SDFG data flow node that represents matrix-matrix multiplication
+def SDFG_MatmulOp : SDFG_Op<"matmul", [Pure, HasParent<"BlockOp">]> {
+    let summary = "Tensor matmul operation";
+
+    let arguments = (ins SDFG_Type:$res_input, SDFG_Type:$lhs, SDFG_Type:$rhs);
+    let results = (outs SDFG_Type:$output);
+
+    let assemblyFormat = [{
+        attr-dict $res_input `,` $lhs `,` $rhs `:` type($res_input) `,` type($lhs) `,` type($rhs) `->` type($output)
+    }];
+
+    let hasVerifier = 1;
 }
 
 #endif // SDFG_OPS

@@ -1,6 +1,8 @@
-#include <llvm-19/llvm/ADT/ArrayRef.h>
-#include <llvm-19/llvm/ADT/SmallVector.h>
-#include <llvm-19/llvm/Support/LogicalResult.h>
+#include <llvm/ADT/ArrayRef.h>
+#include <llvm/ADT/SmallVector.h>
+#include <llvm/ADT/TypeSwitch.h>
+#include <llvm/Support/LogicalResult.h>
+
 #include "mlir/Dialect/SDFG/IR/SDFG.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
@@ -19,6 +21,13 @@
 
 namespace mlir {
 namespace sdfg {
+
+LogicalResult argument_depends_on_memlet(Value val) {
+    return llvm::TypeSwitch<Operation*, LogicalResult>(val.getDefiningOp())
+        .Case<MemletOp>([](MemletOp memlet_op) { return success(); })
+        .Case<ConstantOp>([](ConstantOp constant_op) { return success(); })
+        .Default([](Operation* op) { return failure(); });
+}
 
 //===----------------------------------------------------------------------===//
 // SDFGOp
@@ -323,7 +332,46 @@ llvm::LogicalResult TaskletOp::verify() {
     size_t code_arity = arity(this->getCode());
     size_t num_operands = this->getNumOperands();
     if (code_arity != num_operands) {
-        return this->emitError() << "expects " << code_arity << " operands, but got " << num_operands;
+        return this->emitOpError() << "expects " << code_arity << " operands, but got " << num_operands;
+    }
+    for (auto op : this->getOperands()) {
+        if (failed(argument_depends_on_memlet(op))) {
+            return this->emitOpError() << "operand " << op << " does not depend on memlet or constant";
+        }
+    }
+    return success();
+}
+
+//===----------------------------------------------------------------------===//
+// FillOp
+//===----------------------------------------------------------------------===//
+
+llvm::LogicalResult FillOp::verify() {
+    // if (this->getInput().getType() != this->getOutput().getType()) {
+    //     return this->emitOpError() << "input type (" << this->getInput().getType() << ") is not the same as output
+    //     type ("
+    //                              << this->getOutput().getType() << ")";
+    // }
+    if (failed(argument_depends_on_memlet(this->getInput()))) {
+        return this->emitOpError() << "does not depend on memlet or constant";
+    }
+    return success();
+}
+
+//===----------------------------------------------------------------------===//
+// MatmulOp
+//===----------------------------------------------------------------------===//
+
+llvm::LogicalResult MatmulOp::verify() {
+    // TODO check type
+    if (failed(argument_depends_on_memlet(this->getResInput()))) {
+        return this->emitOpError() << "result input does not depend on memlet or constant";
+    }
+    if (failed(argument_depends_on_memlet(this->getLhs()))) {
+        return this->emitOpError() << "lhs does not depend on memlet or constant";
+    }
+    if (failed(argument_depends_on_memlet(this->getRhs()))) {
+        return this->emitOpError() << "rhs does not depend on memlet or constant";
     }
     return success();
 }

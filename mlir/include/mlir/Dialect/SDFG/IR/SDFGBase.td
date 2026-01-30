@@ -45,6 +45,12 @@ def SDFG_PrimitiveType : AnyTypeOf<[
         // PPC_FP128 ///< 128-bit floating-point (PowerPC double-double)
     ], "SDFG primitive type">;
 
+def SDFG_Type : AnyTypeOf<[
+        SDFG_PrimitiveType,
+        VectorOf<SDFG_PrimitiveType.allowedTypes>,
+        TensorOf<SDFG_PrimitiveType.allowedTypes>
+    ], "SDFG type">;
+
 /**
  * Operation codes for tasklet computations
  *

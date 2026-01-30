@@ -4,13 +4,14 @@
 
 #include "mlir/Conversion/ArithToSDFG/ArithToSDFG.h"
 #include "mlir/Conversion/FuncToSDFG/FuncToSDFG.h"
+#include "mlir/Conversion/LinalgToSDFG/LinalgToSDFG.h"
 #include "mlir/Dialect/SDFG/IR/SDFG.h"
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
-#include "mlir/IR/BuiltinOps.h"
 
 namespace mlir {
 
@@ -26,6 +27,7 @@ struct ConvertToSDFG : public impl::ConvertToSDFGBase<ConvertToSDFG> {
         auto pm = PassManager::on<ModuleOp>(&this->getContext());
         pm.addPass(createConvertFuncToSDFG());
         pm.addPass(createConvertArithToSDFG());
+        pm.addPass(createConvertLinalgToSDFG());
         if (failed(this->runPipeline(pm, this->getOperation()))) {
             this->signalPassFailure();
         }

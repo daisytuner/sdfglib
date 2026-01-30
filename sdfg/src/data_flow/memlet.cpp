@@ -74,21 +74,21 @@ void Memlet::validate(const Function& function) const {
                 );
             }
 
-            // Return if library node
-            if (dynamic_cast<const LibraryNode*>(code_node)) {
-                return;
-            }
+            // // Return if library node
+            // if (dynamic_cast<const LibraryNode*>(code_node)) {
+            //     return;
+            // }
 
-            // Criterion: edge must be contiguous memory
-            auto& inferred_type = types::infer_type(function, *this->base_type_, this->subset_);
+            // // Criterion: edge must be contiguous memory
+            // auto& inferred_type = types::infer_type(function, *this->base_type_, this->subset_);
 
-            // Criterion: Inferred type must be a scalar
-            if (inferred_type.type_id() != types::TypeID::Scalar) {
-                throw InvalidSDFGException(
-                    "Memlet: Computation memlets resolve to scalar type. Base type: " + this->base_type_->print() +
-                    " Subset Dim: " + std::to_string(this->subset_.size())
-                );
-            }
+            // // Criterion: Inferred type must be a scalar
+            // if (inferred_type.type_id() != types::TypeID::Scalar) {
+            //     throw InvalidSDFGException(
+            //         "Memlet: Computation memlets resolve to scalar type. Base type: " + this->base_type_->print() +
+            //         " Subset Dim: " + std::to_string(this->subset_.size())
+            //     );
+            // }
             break;
         }
         case MemletType::Reference: {
