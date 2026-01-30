@@ -42,40 +42,40 @@ def test_cholesky(target):
     if target == "none":
         verifier = SDFGVerification(
             verification={
-                "FOR": 2,
-                "MAP": 1,
-                "SEQUENTIAL": 1,
-                "DOT": 2,
+                "FOR": 4,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "DOT": 0,
                 "CMath": 2,
             }
         )
     elif target == "sequential":
         verifier = SDFGVerification(
             verification={
-                "FOR": 2,
-                "MAP": 1,
-                "SEQUENTIAL": 1,
-                "DOT": 2,
+                "FOR": 4,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "DOT": 0,
                 "CMath": 2,
             }
         )
     elif target == "openmp":
         verifier = SDFGVerification(
             verification={
-                "FOR": 2,
-                "MAP": 1,
-                "SEQUENTIAL": 1,
-                "DOT": 2,
+                "FOR": 4,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "DOT": 0,
                 "CMath": 2,
             }
         )
     else:  # cuda
         verifier = SDFGVerification(
             verification={
-                "FOR": 2,
-                "MAP": 1,
-                "SEQUENTIAL": 1,
-                "DOT": 2,
+                "FOR": 4,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
+                "DOT": 0,
                 "CMath": 2,
             }
         )

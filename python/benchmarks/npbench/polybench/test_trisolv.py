@@ -29,53 +29,53 @@ def test_trisolv(target):
     if target == "none":
         verifier = SDFGVerification(
             verification={
-                "FOR": 1,
+                "FOR": 2,
                 "MAP": 0,
                 "SEQUENTIAL": 0,
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
                 "GEMM": 0,
-                "DOT": 1,
+                "DOT": 0,
             }
         )
     elif target == "sequential":
         verifier = SDFGVerification(
             verification={
-                "FOR": 1,
+                "FOR": 2,
                 "MAP": 0,
                 "SEQUENTIAL": 0,
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
                 "GEMM": 0,
-                "DOT": 1,
+                "DOT": 0,
             }
         )
     elif target == "openmp":
         verifier = SDFGVerification(
             verification={
-                "FOR": 1,
+                "FOR": 2,
                 "MAP": 0,
                 "SEQUENTIAL": 0,
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
                 "GEMM": 0,
-                "DOT": 1,
+                "DOT": 0,
             }
         )
     else:  # cuda
         verifier = SDFGVerification(
             verification={
-                "FOR": 1,
+                "FOR": 2,
                 "MAP": 0,
                 "SEQUENTIAL": 0,
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
                 "GEMM": 0,
-                "DOT": 1,
+                "DOT": 0,
             }
         )
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)

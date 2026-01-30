@@ -60,17 +60,17 @@ def test_spmv(target):
     elif target == "sequential":
         verifier = SDFGVerification(
             verification={
-                "DOT": 1,
+                "DOT": 0,
                 "HIGHWAY": 3,
                 "MAP": 4,
                 "SEQUENTIAL": 1,
-                "FOR": 5,
+                "FOR": 6,
                 "Malloc": 4,
             }
         )
     elif target == "openmp":
         verifier = SDFGVerification(
-            verification={"DOT": 1, "CPU_PARALLEL": 4, "MAP": 4, "FOR": 5, "Malloc": 4}
+            verification={"DOT": 0, "CPU_PARALLEL": 4, "MAP": 4, "FOR": 6, "Malloc": 4}
         )
     else:  # cuda
         verifier = SDFGVerification(

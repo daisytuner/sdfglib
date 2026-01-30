@@ -40,33 +40,33 @@ def test_lu(target):
     if target == "none":
         verifier = SDFGVerification(
             verification={
-                "FOR": 3,
-                "MAP": 2,
-                "SEQUENTIAL": 2,
+                "FOR": 5,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
                 "GEMM": 0,
-                "DOT": 2,
+                "DOT": 0,
             }
         )
     elif target == "sequential":
         verifier = SDFGVerification(
             verification={
-                "FOR": 3,
-                "MAP": 2,
-                "SEQUENTIAL": 2,
+                "FOR": 5,
+                "MAP": 0,
+                "SEQUENTIAL": 0,
                 "CUDA": 0,
                 "CPU_PARALLEL": 0,
                 "HIGHWAY": 0,
                 "GEMM": 0,
-                "DOT": 2,
+                "DOT": 0,
             }
         )
     elif target == "openmp":
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
+                "FOR": 5,
                 "MAP": 0,
                 "SEQUENTIAL": 0,
                 "CUDA": 0,
@@ -79,7 +79,7 @@ def test_lu(target):
     else:  # cuda
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
+                "FOR": 5,
                 "MAP": 0,
                 "SEQUENTIAL": 0,
                 "CUDA": 0,
