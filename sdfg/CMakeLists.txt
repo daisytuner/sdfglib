@@ -73,6 +73,7 @@ set(SOURCE_FILES
     src/control_flow/interstate_edge.cpp
     src/control_flow/state.cpp
     src/cutouts/cutout_serializer.cpp
+    src/cutouts/cutouts.cpp
     src/data_flow/access_node.cpp
     src/data_flow/code_node.cpp
     src/data_flow/data_flow_graph.cpp
