@@ -41,17 +41,17 @@ jobs:
           name: wheels-${{ matrix.os }}-${{ matrix.python }}
           path: wheelhouse/*.whl
 
-  # publish:
-  #   needs: [wheels]
-  #   runs-on: build-amd64-big
-  #   permissions:
-  #     id-token: write
+  publish:
+    needs: [wheels]
+    runs-on: build-amd64-big
+    permissions:
+      id-token: write
 
-  #   steps:
-  #     - uses: actions/download-artifact@v4
-  #       with:
-  #         pattern: wheels-*
-  #         path: dist
-  #         merge-multiple: true
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
 
-  #     - uses: pypa/gh-action-pypi-publish@v1.10.0
+      - uses: pypa/gh-action-pypi-publish@v1.10.0
