@@ -55,7 +55,7 @@ def kernel(A_row, A_col, A_val, x):
 def test_spmv(target):
     if target == "none":
         verifier = SDFGVerification(
-            verification={"DOT": 1, "MAP": 4, "SEQUENTIAL": 4, "FOR": 5, "Malloc": 4}
+            verification={"DOT": 0, "MAP": 4, "SEQUENTIAL": 4, "FOR": 6, "Malloc": 4}
         )
     elif target == "sequential":
         verifier = SDFGVerification(
