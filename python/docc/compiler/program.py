@@ -17,8 +17,7 @@ from docc.sdfg import (
     StructuredSDFG,
     StructuredSDFGBuilder,
 )
-from .compiled_sdfg import CompiledSDFG
-from .ast_parser import ASTParser
+from docc.compiler import ASTParser, CompiledSDFG
 
 
 def _compile_wrapper(self, output_folder=None):
@@ -528,7 +527,7 @@ class DoccProgram:
         return sdfg, out_args, parser.captured_return_shapes
 
 
-def program(
+def native(
     func=None,
     *,
     target="none",

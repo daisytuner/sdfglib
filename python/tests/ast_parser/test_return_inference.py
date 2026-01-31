@@ -1,4 +1,4 @@
-import docc
+from docc.compiler import native
 import numpy as np
 import pytest
 
@@ -6,7 +6,7 @@ import pytest
 def test_no_annotation_return_scalar():
     print("Testing scalar return without annotation...")
 
-    @docc.program
+    @native
     def func(a: int, b: int):
         return a + b
 
@@ -18,7 +18,7 @@ def test_no_annotation_return_scalar():
 def test_no_annotation_return_array():
     print("Testing array return without annotation...")
 
-    @docc.program
+    @native
     def func(A):
         return A
 
@@ -31,7 +31,7 @@ def test_no_annotation_return_array():
 def test_matmul_return():
     print("Testing matmul return...")
 
-    @docc.program
+    @native
     def func(A, x):
         return A @ x
 

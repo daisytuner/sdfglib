@@ -1,9 +1,9 @@
-import docc
+from docc.compiler import native
 import numpy as np
 
 
 def test_scheduling_default():
-    @docc.program
+    @native
     def vec_add_default(A, B, C, N):
         for i in range(N):
             C[i] = A[i] + B[i]
@@ -18,7 +18,7 @@ def test_scheduling_default():
 
 
 def test_scheduling_sequential():
-    @docc.program(target="sequential", category="desktop")
+    @native(target="sequential", category="desktop")
     def vec_add(A, B, C, N):
         for i in range(N):
             C[i] = A[i] + B[i]
@@ -34,7 +34,7 @@ def test_scheduling_sequential():
 
 def test_scheduling_openmp():
     # Assuming OpenMP is available and supported
-    @docc.program(target="openmp", category="desktop")
+    @native(target="openmp", category="desktop")
     def vec_add_omp(A, B, C, N):
         for i in range(N):
             C[i] = A[i] + B[i]
@@ -50,7 +50,7 @@ def test_scheduling_openmp():
 
 def test_scheduling_cuda():
     # Assuming CUDA is available and supported
-    @docc.program(target="cuda", category="gpu")
+    @native(target="cuda", category="gpu")
     def vec_add_cuda(A, B, C, N):
         for i in range(N):
             C[i] = A[i] + B[i]
@@ -66,7 +66,7 @@ def test_scheduling_cuda():
 
 def test_scheduling_cuda_gemm():
     # Assuming CUDA is available and supported
-    @docc.program(target="cuda", category="gpu")
+    @native(target="cuda", category="gpu")
     def matmul_cuda(A, B, C, N):
         for i in range(N):
             for j in range(N):
@@ -85,7 +85,7 @@ def test_scheduling_cuda_gemm():
 
 def test_scheduling_cuda_dot():
     # Assuming CUDA is available and supported
-    @docc.program(target="cuda", category="gpu")
+    @native(target="cuda", category="gpu")
     def dot_cuda(x, y, result, N):
         result[0] = 0
         for i in range(N):

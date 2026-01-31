@@ -1,4 +1,4 @@
-import docc
+from docc.compiler import native
 import os
 import pytest
 import numpy as np
@@ -8,7 +8,7 @@ import json
 
 def test_instrumentation_compile():
     # Test only capture
-    @docc.program(instrumentation_mode="", capture_args=True)
+    @native(instrumentation_mode="", capture_args=True)
     def vec_add_capture(A, B, C):
         for i in range(A.shape[0]):
             C[i] = A[i] + B[i]
@@ -30,11 +30,11 @@ def test_env_var_instrumentation():
     os.close(fd_script)
 
     code = """
-import docc
+from docc.compiler import native
 import numpy as np
 import os
 
-@docc.program
+@native
 def vec_add_env(A, B, C):
     for i in range(A.shape[0]):
         C[i] = A[i] + B[i]

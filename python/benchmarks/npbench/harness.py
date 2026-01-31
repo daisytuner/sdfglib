@@ -3,7 +3,7 @@ import inspect
 import time
 import numpy as np
 import pytest
-import docc
+import docc.compiler
 
 
 def _get_func_param_names(func):
@@ -137,7 +137,7 @@ def run_benchmark(initialize_func, kernel_func, parameters, name, args=None):
             x.copy() if isinstance(x, np.ndarray) else x for x in kernel_args
         ]
         # Execute the decorated function
-        kernel_with_target = docc.program(
+        kernel_with_target = docc.compiler.native(
             kernel_func,
             target=args.target,
         )
@@ -201,7 +201,7 @@ def run_pytest(
     # Run Docc version
     inputs_docc = [x.copy() if isinstance(x, np.ndarray) else x for x in kernel_args]
 
-    kernel_with_target = docc.program(
+    kernel_with_target = docc.compiler.native(
         kernel_func,
         target=target,
         category="server",

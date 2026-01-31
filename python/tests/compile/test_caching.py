@@ -1,10 +1,10 @@
 import numpy as np
-import docc
+from docc.compiler import native
 import pytest
 
 
 def test_caching_behavior():
-    @docc.program
+    @native
     def simple_add(A, B, C):
         for i in range(A.shape[0]):
             C[i] = A[i] + B[i]
@@ -38,7 +38,7 @@ def test_caching_behavior():
     # but here we just check if it triggers a new compilation.
     # We'll use a kernel that supports different sizes to be safe.
 
-    @docc.program
+    @native
     def flexible_kernel(A, B):
         # Just do something safe
         pass

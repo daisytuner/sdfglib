@@ -1,4 +1,4 @@
-import docc
+from docc.compiler import native
 import pytest
 
 
@@ -7,7 +7,7 @@ def helper_add(a, b):
 
 
 def test_simple_inlining():
-    @docc.program
+    @native
     def simple_inlining(a, b):
         return helper_add(a, b)
 
@@ -23,7 +23,7 @@ def helper_outer(x):
 
 
 def test_nested_inlining():
-    @docc.program
+    @native
     def nested_inlining(x):
         return helper_outer(x)
 
@@ -36,7 +36,7 @@ def helper_with_local_var(x):
 
 
 def test_inlining_local_vars():
-    @docc.program
+    @native
     def inlining_local_vars(x):
         y = 5
         return helper_with_local_var(x) + y

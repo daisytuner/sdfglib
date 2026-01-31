@@ -1,10 +1,10 @@
-import docc
+from docc.compiler import native
 import ctypes
 import numpy as np
 
 
 def test_implicit_shape_1d():
-    @docc.program
+    @native
     def vec_add_implicit(A, B, C):
         for i in range(A.shape[0]):
             C[i] = A[i] + B[i]
@@ -19,7 +19,7 @@ def test_implicit_shape_1d():
 
 
 def test_implicit_shape_2d():
-    @docc.program
+    @native
     def mat_add_implicit(A, B, C):
         for i in range(A.shape[0]):
             for j in range(A.shape[1]):
@@ -35,7 +35,7 @@ def test_implicit_shape_2d():
 
 
 def test_implicit_shape_mixed():
-    @docc.program
+    @native
     def mixed_args(A, scalar, B):
         for i in range(A.shape[0]):
             B[i] = A[i] + scalar
@@ -50,7 +50,7 @@ def test_implicit_shape_mixed():
 
 
 def test_shape_unification_1d():
-    @docc.program
+    @native
     def vec_add(A, B, C):
         for i in range(A.shape[0]):
             C[i] = A[i] + B[i]
@@ -78,7 +78,7 @@ def test_shape_unification_1d():
 
 
 def test_shape_unification_2d():
-    @docc.program
+    @native
     def mat_add(A, B, C):
         for i in range(A.shape[0]):
             for j in range(A.shape[1]):
@@ -100,7 +100,7 @@ def test_shape_unification_2d():
 
 
 def test_shape_unification_mismatch():
-    @docc.program
+    @native
     def vec_add_mismatch(A, B):
         for i in range(A.shape[0]):
             B[i] = A[i]

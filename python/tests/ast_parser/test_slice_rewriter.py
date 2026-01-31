@@ -1,5 +1,5 @@
 import numpy as np
-import docc
+from docc.compiler import native
 
 
 class TestSliceRewriterSubscript:
@@ -8,7 +8,7 @@ class TestSliceRewriterSubscript:
     def test_array_element_to_1d_slice(self):
         """Test assigning a scalar array element to a 1D slice: arr[:] = src[0]"""
 
-        @docc.program
+        @native
         def array_element_to_1d_slice(src: np.ndarray, dst: np.ndarray):
             dst[:] = src[0]
 
@@ -21,7 +21,7 @@ class TestSliceRewriterSubscript:
     def test_array_element_to_2d_row_slice(self):
         """Test assigning 1D array element to a row of 2D array: ey[0, :] = _fict_[0]"""
 
-        @docc.program
+        @native
         def array_element_to_2d_row_slice(_fict_: np.ndarray, ey: np.ndarray):
             ey[0, :] = _fict_[0]
 
@@ -36,7 +36,7 @@ class TestSliceRewriterSubscript:
     def test_array_element_to_2d_col_slice(self):
         """Test assigning array element to a column: arr[:, 0] = src[1]"""
 
-        @docc.program
+        @native
         def array_element_to_2d_col_slice(src: np.ndarray, dst: np.ndarray):
             dst[:, 0] = src[1]
 
@@ -51,7 +51,7 @@ class TestSliceRewriterSubscript:
     def test_scalar_to_slice(self):
         """Test assigning a scalar variable to a slice."""
 
-        @docc.program
+        @native
         def scalar_to_slice(val: float, dst: np.ndarray):
             dst[:] = val
 
@@ -62,7 +62,7 @@ class TestSliceRewriterSubscript:
     def test_constant_to_slice(self):
         """Test assigning a constant to a slice."""
 
-        @docc.program
+        @native
         def constant_to_slice(dst: np.ndarray):
             dst[:] = 2.5
 
@@ -73,7 +73,7 @@ class TestSliceRewriterSubscript:
     def test_indexed_expr_to_slice(self):
         """Test assigning indexed expression to slice: dst[:] = src[i] where i is variable."""
 
-        @docc.program
+        @native
         def indexed_expr_to_slice(src: np.ndarray, idx: int, dst: np.ndarray):
             dst[:] = src[idx]
 
@@ -85,7 +85,7 @@ class TestSliceRewriterSubscript:
     def test_mixed_fixed_and_slice_indices(self):
         """Test 3D array with mixed fixed and slice indices."""
 
-        @docc.program
+        @native
         def mixed_fixed_and_slice_indices(src: np.ndarray, dst: np.ndarray):
             # dst[0, :, 1] = scalar from src[0]
             dst[0, :, 1] = src[0]
@@ -99,7 +99,7 @@ class TestSliceRewriterSubscript:
     def test_fdtd_2d_pattern(self):
         """Test the actual fdtd_2d pattern: ey[0, :] = _fict_[t] inside loop."""
 
-        @docc.program
+        @native
         def fdtd_2d_pattern(TMAX: int, _fict_: np.ndarray, ey: np.ndarray):
             for t in range(TMAX):
                 ey[0, :] = _fict_[t]
@@ -114,7 +114,7 @@ class TestSliceRewriterSubscript:
     def test_slice_to_slice_same_size(self):
         """Test slice-to-slice assignment of same size (no broadcasting)."""
 
-        @docc.program
+        @native
         def slice_to_slice_same_size(src: np.ndarray, dst: np.ndarray):
             dst[:] = src[:]
 
@@ -130,7 +130,7 @@ class TestSliceRewriterNoTransform:
     def test_point_indexed_array_unchanged(self):
         """Verify that arr[i] (point index) is not transformed to arr[loop_var][i]."""
 
-        @docc.program
+        @native
         def point_indexed_array_unchanged(src: np.ndarray, dst: np.ndarray):
             # src[0] should remain src[0], not become src[loop_var][0]
             dst[:] = src[0] + 1.0
@@ -143,7 +143,7 @@ class TestSliceRewriterNoTransform:
     def test_2d_point_indexed_unchanged(self):
         """Verify that arr[i, j] (2D point indices) is not transformed."""
 
-        @docc.program
+        @native
         def point_indexed_2d_unchanged(src: np.ndarray, dst: np.ndarray):
             dst[:] = src[1, 2]
 
@@ -159,7 +159,7 @@ class TestNegativeIndexHandling:
     def test_negative_index_last_column(self):
         """Test assigning to last column using -1 index: arr[:, -1] = value."""
 
-        @docc.program
+        @native
         def assign_last_column(dst: np.ndarray):
             dst[:, -1] = 0.0
 
@@ -173,7 +173,7 @@ class TestNegativeIndexHandling:
     def test_negative_index_second_last_column(self):
         """Test assigning to second-to-last column using -2 index: arr[:, -2] = value."""
 
-        @docc.program
+        @native
         def assign_second_last_column(dst: np.ndarray):
             dst[:, -2] = 5.0
 
@@ -188,7 +188,7 @@ class TestNegativeIndexHandling:
     def test_negative_index_last_row(self):
         """Test assigning to last row using -1 index: arr[-1, :] = value."""
 
-        @docc.program
+        @native
         def assign_last_row(dst: np.ndarray):
             dst[-1, :] = 3.0
 
@@ -202,7 +202,7 @@ class TestNegativeIndexHandling:
     def test_negative_index_second_last_row(self):
         """Test assigning to second-to-last row using -2 index: arr[-2, :] = value."""
 
-        @docc.program
+        @native
         def assign_second_last_row(dst: np.ndarray):
             dst[-2, :] = 7.0
 
@@ -217,7 +217,7 @@ class TestNegativeIndexHandling:
     def test_negative_index_with_expression(self):
         """Test assigning expression to slice with negative index."""
 
-        @docc.program
+        @native
         def negative_index_with_expr(src: np.ndarray, dst: np.ndarray):
             dst[:, -1] = src[:, 0] * 2.0
 
@@ -230,7 +230,7 @@ class TestNegativeIndexHandling:
     def test_negative_index_read_access(self):
         """Test reading from array with negative index: dst[:] = src[:, -1]."""
 
-        @docc.program
+        @native
         def read_last_column(src: np.ndarray, dst: np.ndarray):
             dst[:] = src[:, -1]
 
@@ -243,7 +243,7 @@ class TestNegativeIndexHandling:
     def test_negative_index_read_second_last(self):
         """Test reading from array with -2 index: dst[:] = src[:, -2]."""
 
-        @docc.program
+        @native
         def read_second_last_column(src: np.ndarray, dst: np.ndarray):
             dst[:] = src[:, -2]
 
@@ -256,7 +256,7 @@ class TestNegativeIndexHandling:
     def test_negative_index_deriche_pattern(self):
         """Test the deriche benchmark pattern: y2[:, -1] = 0.0; y2[:, -2] = a3 * imgIn[:, -1]."""
 
-        @docc.program
+        @native
         def deriche_pattern(imgIn: np.ndarray, a3: float):
             y2 = np.empty_like(imgIn)
             y2[:, -1] = 0.0
@@ -275,7 +275,7 @@ class TestNegativeIndexHandling:
     def test_negative_index_row_pattern(self):
         """Test row-based negative index pattern: y1[0, :] = ...; y2[-1, :] = 0.0."""
 
-        @docc.program
+        @native
         def row_pattern(imgOut: np.ndarray, a5: float):
             y1 = np.empty_like(imgOut)
             y2 = np.empty_like(imgOut)

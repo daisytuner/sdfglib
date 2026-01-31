@@ -1,11 +1,11 @@
-import docc
+from docc.compiler import native
 import pytest
 import numpy as np
 import math
 
 
 def test_numpy_add():
-    @docc.program
+    @native
     def numpy_add_float(n) -> float:
         a = np.zeros(n, dtype=float)
         b = np.zeros(n, dtype=float)
@@ -16,7 +16,7 @@ def test_numpy_add():
 
     assert numpy_add_float(10) == 3.0
 
-    @docc.program
+    @native
     def numpy_add_int(n) -> int:
         a = np.zeros(n, dtype=int)
         b = np.zeros(n, dtype=int)
@@ -29,7 +29,7 @@ def test_numpy_add():
 
 
 def test_numpy_sub():
-    @docc.program
+    @native
     def numpy_sub_float(n) -> float:
         a = np.zeros(n, dtype=float)
         b = np.zeros(n, dtype=float)
@@ -40,7 +40,7 @@ def test_numpy_sub():
 
     assert numpy_sub_float(10) == 2.0
 
-    @docc.program
+    @native
     def numpy_sub_int(n) -> int:
         a = np.zeros(n, dtype=int)
         b = np.zeros(n, dtype=int)
@@ -53,7 +53,7 @@ def test_numpy_sub():
 
 
 def test_numpy_mul():
-    @docc.program
+    @native
     def numpy_mul_float(n) -> float:
         a = np.zeros(n, dtype=float)
         b = np.zeros(n, dtype=float)
@@ -64,7 +64,7 @@ def test_numpy_mul():
 
     assert numpy_mul_float(10) == 6.0
 
-    @docc.program
+    @native
     def numpy_mul_int(n) -> int:
         a = np.zeros(n, dtype=int)
         b = np.zeros(n, dtype=int)
@@ -77,7 +77,7 @@ def test_numpy_mul():
 
 
 def test_numpy_mul_scalar():
-    @docc.program
+    @native
     def numpy_mul_scalar(n) -> float:
         a = np.zeros(n, dtype=float)
         a[0] = 2.0
@@ -88,7 +88,7 @@ def test_numpy_mul_scalar():
 
 
 def test_numpy_div():
-    @docc.program
+    @native
     def numpy_div_float(n) -> float:
         a = np.zeros(n, dtype=float)
         b = np.zeros(n, dtype=float)
@@ -102,7 +102,7 @@ def test_numpy_div():
 
     assert numpy_div_float(10) == 3.0
 
-    @docc.program
+    @native
     def numpy_div_int(n) -> int:
         a = np.zeros(n, dtype=int)
         b = np.zeros(n, dtype=int)
@@ -118,7 +118,7 @@ def test_numpy_div():
 
 
 def test_numpy_pow():
-    @docc.program
+    @native
     def numpy_pow_float(n) -> float:
         a = np.zeros(n, dtype=float)
         b = np.zeros(n, dtype=float)
@@ -129,7 +129,7 @@ def test_numpy_pow():
 
     assert numpy_pow_float(10) == 8.0
 
-    # @docc.program
+    # @native
     # def numpy_pow_int(n) -> int:
     #     a = np.zeros(n, dtype=int)
     #     b = np.zeros(n, dtype=int)
@@ -142,7 +142,7 @@ def test_numpy_pow():
 
 
 def test_numpy_abs():
-    @docc.program
+    @native
     def numpy_abs_float(n) -> float:
         a = np.zeros(n, dtype=float)
         a[0] = -5.0
@@ -151,7 +151,7 @@ def test_numpy_abs():
 
     assert numpy_abs_float(10) == 5.0
 
-    @docc.program
+    @native
     def numpy_abs_int(n) -> int:
         a = np.zeros(n, dtype=int)
         a[0] = -5
@@ -162,7 +162,7 @@ def test_numpy_abs():
 
 
 def test_numpy_sqrt():
-    @docc.program
+    @native
     def numpy_sqrt(n) -> float:
         a = np.zeros(n, dtype=float)
         a[0] = 9.0
@@ -173,7 +173,7 @@ def test_numpy_sqrt():
 
 
 def test_numpy_tanh():
-    @docc.program
+    @native
     def numpy_tanh(n) -> float:
         a = np.zeros(n, dtype=float)
         a[0] = 0.0
@@ -184,7 +184,7 @@ def test_numpy_tanh():
 
 
 def test_numpy_op_operator():
-    @docc.program
+    @native
     def numpy_op_operator(n) -> float:
         a = np.zeros(n, dtype=float)
         b = np.zeros(n, dtype=float)
@@ -199,7 +199,7 @@ def test_numpy_op_operator():
 
 
 def test_numpy_exp():
-    @docc.program
+    @native
     def numpy_exp(n) -> float:
         a = np.zeros(n, dtype=float)
         a[0] = 1.0
@@ -210,7 +210,7 @@ def test_numpy_exp():
 
 
 def test_numpy_minimum():
-    @docc.program
+    @native
     def numpy_minimum_float(n) -> float:
         a = np.zeros(n, dtype=float)
         b = np.zeros(n, dtype=float)
@@ -221,7 +221,7 @@ def test_numpy_minimum():
 
     assert numpy_minimum_float(10) == 1.0
 
-    @docc.program
+    @native
     def numpy_minimum_int(n) -> int:
         a = np.zeros(n, dtype=int)
         b = np.zeros(n, dtype=int)
@@ -234,7 +234,7 @@ def test_numpy_minimum():
 
 
 def test_numpy_maximum():
-    @docc.program
+    @native
     def numpy_maximum_float(n) -> float:
         a = np.zeros(n, dtype=float)
         b = np.zeros(n, dtype=float)
@@ -245,7 +245,7 @@ def test_numpy_maximum():
 
     assert numpy_maximum_float(10) == 2.0
 
-    @docc.program
+    @native
     def numpy_maximum_int(n) -> int:
         a = np.zeros(n, dtype=int)
         b = np.zeros(n, dtype=int)
@@ -260,7 +260,7 @@ def test_numpy_maximum():
 def test_scalar_array_broadcasting_mul():
     """Test scalar * array broadcasting (scalar on left side)."""
 
-    @docc.program
+    @native
     def scalar_times_array(x: float, n) -> float:
         arr = np.zeros(n, dtype=float)
         arr[0] = 1.0
@@ -276,7 +276,7 @@ def test_scalar_array_broadcasting_mul():
 def test_scalar_array_broadcasting_add():
     """Test scalar + array broadcasting (scalar on left side)."""
 
-    @docc.program
+    @native
     def scalar_plus_array(x: float, n) -> float:
         arr = np.zeros(n, dtype=float)
         arr[0] = 1.0
@@ -292,7 +292,7 @@ def test_scalar_array_broadcasting_add():
 def test_array_scalar_broadcasting_mul():
     """Test array * scalar broadcasting (scalar on right side)."""
 
-    @docc.program
+    @native
     def array_times_scalar(x: float, n) -> float:
         arr = np.zeros(n, dtype=float)
         arr[0] = 1.0
@@ -308,7 +308,7 @@ def test_array_scalar_broadcasting_mul():
 def test_scalar_array_broadcasting_sub():
     """Test scalar - array broadcasting."""
 
-    @docc.program
+    @native
     def scalar_minus_array(x: float, n) -> float:
         arr = np.zeros(n, dtype=float)
         arr[0] = 1.0
@@ -324,7 +324,7 @@ def test_scalar_array_broadcasting_sub():
 def test_scalar_array_broadcasting_div():
     """Test scalar / array broadcasting."""
 
-    @docc.program
+    @native
     def scalar_div_array(x: float, n) -> float:
         arr = np.zeros(n, dtype=float)
         arr[:] = 1.0
@@ -340,7 +340,7 @@ def test_scalar_array_broadcasting_div():
 def test_2d_1d_broadcasting_inplace_sub():
     """Test 2D -= 1D broadcasting (row-wise subtraction)."""
 
-    @docc.program
+    @native
     def array_2d_minus_1d(n, m) -> float:
         data = np.zeros((n, m), dtype=float)
         mean = np.zeros(m, dtype=float)
@@ -362,7 +362,7 @@ def test_2d_1d_broadcasting_inplace_sub():
 def test_int_scalar_times_float_array():
     """Test integer scalar * float array type promotion (int -> float)."""
 
-    @docc.program
+    @native
     def int_scalar_times_float_array(n) -> float:
         arr = np.zeros(n, dtype=float)
         arr[0] = 2.5
@@ -378,7 +378,7 @@ def test_int_scalar_times_float_array():
 def test_float_array_times_int_scalar():
     """Test float array * integer scalar type promotion (int -> float)."""
 
-    @docc.program
+    @native
     def float_array_times_int_scalar(n) -> float:
         arr = np.zeros(n, dtype=float)
         arr[0] = 2.5
@@ -394,7 +394,7 @@ def test_float_array_times_int_scalar():
 def test_int_scalar_plus_float_array():
     """Test integer scalar + float array type promotion."""
 
-    @docc.program
+    @native
     def int_scalar_plus_float_array(n) -> float:
         arr = np.zeros(n, dtype=float)
         arr[0] = 1.5
@@ -410,7 +410,7 @@ def test_int_scalar_plus_float_array():
 def test_float_array_minus_int_scalar():
     """Test float array - integer scalar type promotion."""
 
-    @docc.program
+    @native
     def float_array_minus_int_scalar(n) -> float:
         arr = np.zeros(n, dtype=float)
         arr[0] = 5.5
@@ -426,7 +426,7 @@ def test_float_array_minus_int_scalar():
 def test_int_scalar_div_float_array():
     """Test integer scalar / float array type promotion."""
 
-    @docc.program
+    @native
     def int_scalar_div_float_array(n) -> float:
         arr = np.zeros(n, dtype=float)
         arr[:] = 1.0
@@ -443,7 +443,7 @@ def test_int_scalar_div_float_array():
 def test_int_var_times_float_array_sum():
     """Test integer variable * (float array + float array) - mimics deriche pattern."""
 
-    @docc.program
+    @native
     def int_var_times_array_sum(n) -> float:
         y1 = np.zeros(n, dtype=float)
         y2 = np.zeros(n, dtype=float)
@@ -462,7 +462,7 @@ def test_int_var_times_float_array_sum():
 def test_chained_int_float_operations():
     """Test chained operations with mixed int/float types."""
 
-    @docc.program
+    @native
     def chained_int_float_ops(n) -> float:
         arr = np.zeros(n, dtype=float)
         arr[0] = 2.0

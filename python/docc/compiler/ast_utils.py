@@ -1,5 +1,4 @@
 import ast
-import copy
 from docc.sdfg import DebugInfo
 
 
