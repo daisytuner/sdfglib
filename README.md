@@ -43,8 +43,33 @@ For further details, check out the [component's README.md](./python/).
 
 ### MLIR (PyTorch/ONNX)
 
-An MLIR frontend to convert PyTorch and ONNX models to SDFGs via MLIR is work-in-progress.
-The component currently covers the SDFG dialect and conversion passes from core MLIR dialects (arith, linalg, etc.).
+To export PyTorch models via the MLIR component, install the `torch-mlir` and `docc-ml` packages via pip:
+
+```bash
+pip install docc-ml (soon)
+
+pip install --pre torch-mlir torchvision --extra-index-url https://download.pytorch.org/whl/nightly/cpu -f https://github.com/llvm/torch-mlir-release/releases/expanded_assets/dev-wheels
+```
+
+Afterwards, use the `import_from_pytorch` to generate an SDFG:
+
+```python
+import torch
+import torch.nn as nn
+from docc_ml import import_from_pytorch
+
+class IdentityNet(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, x: torch.Tensor):
+        return x
+
+model = IdentityNet()
+example_input = torch.randn(2, 1)
+
+sdfg = import_from_pytorch(model, example_input)
+```
 
 For further details, check out the [component's README.md](./mlir/).
 
