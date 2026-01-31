@@ -18,7 +18,10 @@
 #include <sdfg/codegen/loop_report.h>
 #include <sdfg/passes/dataflow/constant_propagation.h>
 #include <sdfg/passes/dataflow/dead_data_elimination.h>
+#include <sdfg/passes/dot_expansion_pass.h>
+#include <sdfg/passes/gemm_expansion_pass.h>
 #include <sdfg/passes/normalization/normalization.h>
+#include <sdfg/passes/offloading/cuda_library_node_rewriter_pass.h>
 #include <sdfg/passes/opt_pipeline.h>
 #include <sdfg/passes/pipeline.h>
 #include <sdfg/passes/scheduler/cuda_scheduler.h>
@@ -36,6 +39,9 @@
 #include <sdfg/passes/symbolic/symbol_propagation.h>
 #include <sdfg/passes/symbolic/type_minimization.h>
 #include <sdfg/serializer/json_serializer.h>
+
+#include "sdfg/passes/rpc/rpc_context.h"
+#include "sdfg/passes/rpc/rpc_loop_opt.h"
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
@@ -95,6 +101,12 @@ void PyStructuredSDFG::expand() {
 void PyStructuredSDFG::simplify() {
     sdfg::builder::StructuredSDFGBuilder builder_opt(*sdfg_);
     sdfg::analysis::AnalysisManager analysis_manager(*sdfg_);
+
+    // Expand Dot nodes
+    sdfg::passes::DotExpansionPass dot_expansion_pass;
+    dot_expansion_pass.run(builder_opt, analysis_manager);
+    // sdfg::passes::GemmExpansionPass gemm_expansion_pass;
+    // gemm_expansion_pass.run(builder_opt, analysis_manager);
 
     // Optimization Pipelines
     sdfg::passes::Pipeline dataflow_simplification = sdfg::passes::Pipeline::dataflow_simplification();
@@ -245,7 +257,8 @@ void PyStructuredSDFG::normalize() {
     pipeline.run(builder, analysis_manager);
 }
 
-void PyStructuredSDFG::schedule(const std::string& target, const std::string& category) {
+void PyStructuredSDFG::
+    schedule(const std::string& target, const std::string& category, sdfg::passes::rpc::RpcContext* remote_ctx) {
     if (target == "none") {
         return;
     }
@@ -255,6 +268,13 @@ void PyStructuredSDFG::schedule(const std::string& target, const std::string& ca
 
     // CPU Opt Pipeline
     if (target == "sequential" || target == "openmp") {
+        if (remote_ctx) {
+            std::cout << "Running RPC Loop Optimization for target: " << target << ", category: " << category << " on "
+                      << remote_ctx->get_remote_address() << std::endl;
+            sdfg::passes::rpc::RpcLoopOpt rpcOpt(*remote_ctx, target, category);
+            rpcOpt.run(builder, analysis_manager);
+        }
+
         // CPU Tiling
         // sdfg::passes::scheduler::PollyScheduler polly_scheduler;
         // polly_scheduler.run(builder, analysis_manager);
@@ -282,11 +302,18 @@ void PyStructuredSDFG::schedule(const std::string& target, const std::string& ca
     else if (target == "cuda") {
         sdfg::passes::scheduler::CUDAScheduler cuda_scheduler;
         cuda_scheduler.run(builder, analysis_manager);
+
+        sdfg::cuda::CudaLibraryNodeRewriterPass cuda_library_node_rewriter_pass;
+        cuda_library_node_rewriter_pass.run(builder, analysis_manager);
     }
 }
 
-std::string PyStructuredSDFG::
-    compile(const std::string& output_folder, const std::string& instrumentation_mode, bool capture_args) const {
+std::string PyStructuredSDFG::compile(
+    const std::string& output_folder,
+    const std::string& target,
+    const std::string& instrumentation_mode,
+    bool capture_args
+) const {
     fs::path build_path(output_folder);
     if (!fs::exists(build_path)) {
         fs::create_directories(build_path);
@@ -358,7 +385,7 @@ std::string PyStructuredSDFG::
         package_include_path_str = (package_path / "include").string();
     }
 
-    bool has_cuda_lib = false;
+    bool has_highway = false;
     std::unordered_set<std::string> object_files;
     for (const auto& lib_file : lib_files) {
         std::filesystem::path lib_path(lib_file);
@@ -370,14 +397,15 @@ std::string PyStructuredSDFG::
             cmd << " -L" << package_path_str;
             cmd << " -I" << package_include_path_str;
         }
-        if (lib_file.ends_with(".cu")) {
+        if (target == "cuda") {
             cmd << " -x cuda --cuda-gpu-arch=sm_70 --cuda-path=/usr/local/cuda";
-            has_cuda_lib = true;
         }
+
         cmd << " " << lib_file;
         cmd << " -o " << object_file;
         if (name.starts_with("highway_")) {
             cmd << " -lhwy";
+            has_highway = true;
         }
         cmd << " -lm";
         int ret = std::system(cmd.str().c_str());
@@ -395,7 +423,7 @@ std::string PyStructuredSDFG::
             cmd << " -L" << package_path_str;
             cmd << " -I" << package_include_path_str;
         }
-        if (has_cuda_lib) {
+        if (target == "cuda") {
             cmd << " -x cuda -lcuda";
         }
         cmd << " " << source_path.string();
@@ -420,14 +448,18 @@ std::string PyStructuredSDFG::
     for (const auto& object_file : object_files) {
         cmd << " " << object_file;
     }
-    if (!object_files.empty()) {
+    if (has_highway) {
         cmd << " -lhwy";
     }
     cmd << " -ldaisy_rtl";
     cmd << " -larg_capture_io";
     cmd << " -lblas";
     cmd << " -lm";
-    cmd << " /usr/local/cuda/lib64/libcudart.so";
+    cmd << " -lstdc++";
+    if (target == "cuda") {
+        cmd << " /usr/local/cuda/lib64/libcudart.so";
+        cmd << " /usr/local/cuda/lib64/libcublas.so";
+    }
     cmd << " -o " << lib_path.string();
 
 

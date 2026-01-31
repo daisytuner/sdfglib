@@ -5,6 +5,7 @@
 
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
 #include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
@@ -25,12 +26,13 @@ protected:
     nlohmann::json desc_;
 
     void SetUp() override {
-        if (false) {
-            ctx_ = std::make_unique<passes::rpc::SimpleRpcContext>("http://localhost:8080/docc", "/transfertune");
-        } else {
-            ctx_ = passes::rpc::build_rpc_context_from_file(); // defaults to local unless $SDFG_RPC_CONFIG is set. Also
-                                                               // respects RPC_HEADER
-        }
+        passes::rpc::SimpleRpcContextBuilder ctxBuilder;
+        ctx_ = ctxBuilder
+                   .initialize_local_default() // localhost:8080/docc
+                   .from_env() // $SDFG_RPC_CONFIG can override
+                   .from_header_env() // $RPC_HEADER can override/add headers
+                   .build();
+
 
         builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU);
 
@@ -113,131 +115,6 @@ protected:
             builder_
                 ->add_computational_memlet(block, tasklet, "_out", c_out, {symbolic::symbol("i"), symbolic::symbol("k")});
         }
-
-        // Apply transformations
-        {
-            auto new_sdfg = builder_->subject().clone();
-            sdfg::builder::StructuredSDFGBuilder builder_clone(new_sdfg);
-
-            sdfg::transformations::Recorder recorder;
-
-            analysis::AnalysisManager analysis_manager(builder_clone.subject());
-
-            auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
-            auto loops = loop_analysis.loops();
-
-            // Step 1: Tile all loops
-            for (auto& loop : loops) {
-                recorder.apply<sdfg::transformations::LoopTiling>(
-                    builder_clone,
-                    analysis_manager,
-                    false,
-                    *static_cast<sdfg::structured_control_flow::StructuredLoop*>(loop),
-                    32
-                );
-            }
-
-            /*
-    for (size_t i_tile = 0; i_tile < N; i_tile += 512) {
-        for (size_t i = i_tile; i < std::min(static_cast<size_t>(N), i_tile + 32); ++i) {
-            for (size_t j_tile = 0; j_tile < M; j_tile += 32) {
-                for (size_t j = j_tile; j < std::min(static_cast<size_t>(M), j_tile + 32); ++j) {
-                    for (size_t k_tile = 0; k_tile < K; k_tile += 32) {
-                        for (size_t k = k_tile;
-                             k < std::min(static_cast<size_t>(K), k_tile + 32); ++k) {
-                            C[i][k] += A[i][j] * B[j][k];
-                        }
-                    }
-                }
-            }
-        }
-    }
-*/
-
-
-            // Step 2: Interchange i <-> j_tile0
-            auto& loop_analysis_2 = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
-            auto loop_i = static_cast<sdfg::structured_control_flow::Map*>(loop_analysis_2.find_loop_by_indvar("i"));
-            size_t loop_i_element_id = loop_i->element_id();
-            auto loop_j_tile =
-                static_cast<sdfg::structured_control_flow::For*>(loop_analysis_2.find_loop_by_indvar("j_tile0"));
-            size_t loop_j_tile_element_id = loop_j_tile->element_id();
-            recorder.apply<
-                sdfg::transformations::LoopInterchange>(builder_clone, analysis_manager, false, *loop_i, *loop_j_tile);
-
-            /*
-    for (size_t i_tile = 0; i_tile < N; i_tile += 512) {
-        for (size_t j_tile = 0; j_tile < M; j_tile += 32) {
-            for (size_t i = i_tile; i < std::min(static_cast<size_t>(N), i_tile + 32); ++i) {
-                for (size_t j = j_tile; j < std::min(static_cast<size_t>(M), j_tile + 32); ++j) {
-                    for (size_t k_tile = 0; k_tile < K; k_tile += 32) {
-                        for (size_t k = k_tile;
-                             k < std::min(static_cast<size_t>(K), k_tile + 32); ++k) {
-                            C[i][k] += A[i][j] * B[j][k];
-                        }
-                    }
-                }
-            }
-        }
-    }
-*/
-
-            // Step 3: Interchange j <-> k_tile0
-            auto& loop_analysis_3 = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
-            auto loop_j = static_cast<sdfg::structured_control_flow::For*>(loop_analysis_3.find_loop_by_indvar("j"));
-            size_t loop_j_element_id = loop_j->element_id();
-            auto loop_k_tile =
-                static_cast<sdfg::structured_control_flow::Map*>(loop_analysis_3.find_loop_by_indvar("k_tile0"));
-            size_t loop_k_tile_element_id = loop_k_tile->element_id();
-            recorder.apply<
-                sdfg::transformations::LoopInterchange>(builder_clone, analysis_manager, false, *loop_j, *loop_k_tile);
-
-            /*
-    for (size_t i_tile = 0; i_tile < N; i_tile += 512) {
-        for (size_t j_tile = 0; j_tile < M; j_tile += 32) {
-            for (size_t i = i_tile; i < std::min(static_cast<size_t>(N), i_tile + 32); ++i) {
-                for (size_t k_tile = 0; k_tile < K; k_tile += 32) {
-                    for (size_t j = j_tile; j < std::min(static_cast<size_t>(M), j_tile + 32); ++j) {
-                        for (size_t k = k_tile; k < std::min(static_cast<size_t>(K), k_tile + 32); ++k) {
-                            C[i][k] += A[i][j] * B[j][k];
-                        }
-                    }
-                }
-            }
-        }
-    }
-            */
-
-            // Step 4: Interchange i <-> k_tile0
-            auto& loop_analysis_4 = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
-            auto loop_i_2 = static_cast<sdfg::structured_control_flow::Map*>(loop_analysis_4.find_loop_by_indvar("i"));
-            size_t loop_i_2_element_id = loop_i_2->element_id();
-            auto loop_k_tile_2 =
-                static_cast<sdfg::structured_control_flow::Map*>(loop_analysis_4.find_loop_by_indvar("k_tile0"));
-            size_t loop_k_tile_2_element_id = loop_k_tile_2->element_id();
-            recorder.apply<
-                sdfg::transformations::LoopInterchange>(builder_clone, analysis_manager, false, *loop_i_2, *loop_k_tile_2);
-
-
-            /*
-    for (size_t i_tile = 0; i_tile < N; i_tile += 512) {
-        for (size_t j_tile = 0; j_tile < M; j_tile += 32) {
-            for (size_t k_tile = 0; k_tile < K; k_tile += 32) {
-                for (size_t i = i_tile; i < std::min(static_cast<size_t>(N), i_tile + 32); ++i) {
-                    for (size_t j = j_tile; j < std::min(static_cast<size_t>(M), j_tile + 32); ++j) {
-                        for (size_t k = k_tile; k < std::min(static_cast<size_t>(K), k_tile + 32); ++k) {
-                            C[i][k] += A[i][j] * B[j][k];
-                        }
-                    }
-                }
-            }
-        }
-    }
-            */
-
-            // Step 5: Save the transformations
-            this->desc_ = recorder.history();
-        }
     };
 
     void TearDown() override {
@@ -279,3 +156,48 @@ TEST_F(RPCNodeTransformTest, Matmul_FMA) {
         loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j_tile0")]
     );
 };
+
+TEST_F(RPCNodeTransformTest, Double_Matmul) {
+    {
+        analysis::AnalysisManager analysis_manager(builder_->subject());
+        auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
+        auto outer_loops = loop_analysis.outermost_loops();
+        EXPECT_EQ(outer_loops.size(), 1);
+        auto loopnest = outer_loops[0];
+        sdfg::deepcopy::StructuredSDFGDeepCopy deep_copy(*builder_, builder_->subject().root(), *loopnest);
+        deep_copy.copy();
+    }
+
+    auto sdfg_initial = builder_->subject().clone();
+    sdfg::builder::StructuredSDFGBuilder builder(sdfg_initial);
+
+    // Transfer tuning replayer
+
+    sdfg::analysis::AnalysisManager analysis_manager(builder.subject());
+    auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
+    auto outer_loops = loop_analysis.outermost_loops();
+    EXPECT_EQ(outer_loops.size(), 2);
+
+    auto outer_loop = static_cast<structured_control_flow::StructuredLoop*>(outer_loops[0]);
+    sdfg::transformations::RPCNodeTransform transfer_tuning(*outer_loop, "sequential", "server", *ctx_, true);
+    ASSERT_TRUE(transfer_tuning.can_be_applied(builder, analysis_manager));
+    transfer_tuning.apply(builder, analysis_manager);
+
+    sdfg::analysis::AnalysisManager test_analysis_manager(builder.subject());
+
+    auto& test_loop_analysis = test_analysis_manager.get<sdfg::analysis::LoopAnalysis>();
+    auto loop_nest_tree = test_loop_analysis.loop_tree();
+    EXPECT_TRUE(test_loop_analysis.find_loop_by_indvar("j") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k")]);
+    EXPECT_TRUE(test_loop_analysis.find_loop_by_indvar("i") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j")]);
+    EXPECT_TRUE(
+        test_loop_analysis.find_loop_by_indvar("k_tile0") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("i")]
+    );
+    EXPECT_TRUE(
+        test_loop_analysis.find_loop_by_indvar("j_tile0") ==
+        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k_tile0")]
+    );
+    EXPECT_TRUE(
+        test_loop_analysis.find_loop_by_indvar("i_tile0") ==
+        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j_tile0")]
+    );
+}

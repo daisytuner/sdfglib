@@ -100,7 +100,7 @@ enum TaskletCode {
     fp_sub, ///< Floating-point subtraction
     fp_mul, ///< Floating-point multiplication
     fp_div, ///< Floating-point division
-    fp_rem, ///< Floating-point remainder
+    fp_rem, ///< Floating-point remainder (fmod semantics)
     fp_fma, ///< Floating-point fused multiply-add
     // Comparisions
     fp_oeq, ///< Floating-point ordered equal

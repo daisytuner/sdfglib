@@ -36,7 +36,7 @@ TEST(CPPCodeGeneratorTest, DispatchStructures_Basic) {
     EXPECT_EQ(result, R"(struct MyStructA;
 struct MyStructA
 {
-char member_0;
+uint8_t member_0;
 };
 )");
 }
@@ -59,7 +59,7 @@ TEST(CPPCodeGeneratorTest, DispatchStructures_Packed) {
     EXPECT_EQ(result, R"(struct MyStructA;
 struct __attribute__((packed)) MyStructA
 {
-char member_0;
+uint8_t member_0;
 };
 )");
 }
@@ -86,7 +86,7 @@ TEST(CPPCodeGeneratorTest, DispatchStructures_Nested) {
 struct MyStructA;
 struct MyStructA
 {
-char member_0;
+uint8_t member_0;
 };
 struct MyStructB
 {
@@ -111,5 +111,5 @@ TEST(CPPCodeGeneratorTest, DispatchGlobals) {
     EXPECT_TRUE(generator.generate());
 
     auto result = generator.globals().str();
-    EXPECT_EQ(result, "extern int a;\n");
+    EXPECT_EQ(result, "extern int32_t a;\n");
 }

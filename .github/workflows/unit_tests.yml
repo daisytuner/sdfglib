@@ -26,7 +26,7 @@ jobs:
           submodules: recursive
 
       - name: Mark GitHub Actions workdir as safe
-        run: git config --global --add safe.directory /__w/sdfglib/sdfglib
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Formatting
         shell: bash
@@ -55,6 +55,7 @@ jobs:
 
           LLVM_PROFILE_FILE="sdfglib_test.profraw" ./sdfg/tests/sdfglib_test
           LLVM_PROFILE_FILE="sdfgopt_test.profraw" ./opt/tests/sdfgopt_test
+          ./tutorial/printf_target/tests/printf_target_test
 
           # Run coverage
           llvm-profdata-19 merge -sparse sdfglib_test.profraw sdfgopt_test.profraw -o default.profdata

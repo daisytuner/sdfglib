@@ -10,8 +10,10 @@
 
 #include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/passes/rpc/rpc_context.h"
+#include "sdfg/transformations/replayer.h"
 #include "sdfg/transformations/transformation.h"
 #include "sdfg/transformations/utils.h"
+#include "sdfg/util/utils_curl.h"
 
 namespace sdfg {
 namespace transformations {
@@ -24,9 +26,18 @@ private:
 
     sdfg::passes::rpc::RpcContext& rpc_context_;
 
-    std::unique_ptr<passes::rpc::RpcOptResponse> applied_opt_;
+    std::unique_ptr<passes::rpc::RpcOptResponse> opt_resp_;
 
     bool dump_steps_;
+
+    std::string get_node_id_str() const;
+
+    std::variant<std::unique_ptr<passes::rpc::RpcOptResponse>, std::string>
+    query_rpc_server(passes::rpc::RpcOptRequest request, sdfg::passes::rpc::RpcContext& context);
+
+    std::variant<std::unique_ptr<passes::rpc::RpcOptResponse>, std::string> parse_rpc_response(HttpResult result);
+
+    void print_transformation_sequence(const nlohmann::json& sequence) const;
 
 public:
     RPCNodeTransform(
@@ -34,7 +45,7 @@ public:
         const std::string& target,
         const std::string& category,
         sdfg::passes::rpc::RpcContext& rpc_context,
-        bool dump_steps = false
+        bool print_steps = false
     );
 
     virtual std::string name() const override;
@@ -46,7 +57,7 @@ public:
     virtual void apply(sdfg::builder::StructuredSDFGBuilder& builder, sdfg::analysis::AnalysisManager& analysis_manager)
         override;
 
-    passes::rpc::RpcOptResponse& applied_recipe() const { return *applied_opt_; }
+    passes::rpc::RpcOptResponse& applied_recipe() const { return *opt_resp_; }
 
     void to_json(nlohmann::json& j) const override;
 };

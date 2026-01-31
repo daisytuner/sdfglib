@@ -122,9 +122,12 @@ void CUDAMapDispatcher::dispatch_node(
     }
 
     // Block sizes
-    symbolic::Expression num_blocks_x = SymEngine::ceiling(SymEngine::div(num_iters_x, block_size_x));
-    symbolic::Expression num_blocks_y = SymEngine::ceiling(SymEngine::div(num_iters_y, block_size_y));
-    symbolic::Expression num_blocks_z = SymEngine::ceiling(SymEngine::div(num_iters_z, block_size_z));
+    symbolic::Expression num_blocks_x =
+        symbolic::max(symbolic::divide_ceil(num_iters_x, block_size_x), symbolic::one());
+    symbolic::Expression num_blocks_y =
+        symbolic::max(symbolic::divide_ceil(num_iters_y, block_size_y), symbolic::one());
+    symbolic::Expression num_blocks_z =
+        symbolic::max(symbolic::divide_ceil(num_iters_z, block_size_z), symbolic::one());
 
     std::string kernel_name = "kernel_" + sdfg_.name() + "_" + std::to_string(node_.element_id());
 
@@ -259,10 +262,7 @@ void CUDAMapDispatcher::dispatch_kernel_call(
     main_stream << ";" << std::endl;
 
     // Synchronize
-    main_stream << "cudaError_t err = cudaDeviceSynchronize();" << std::endl;
-    main_stream << "if (err != cudaSuccess) {" << std::endl;
-    main_stream << "    " << "exit(1);" << std::endl;
-    main_stream << "}" << std::endl;
+    check_cuda_kernel_launch_errors(main_stream, this->language_extension_);
 
     main_stream.setIndent(main_stream.indent() - 4);
     main_stream << "}" << std::endl;

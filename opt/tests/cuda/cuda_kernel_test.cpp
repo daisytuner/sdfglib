@@ -74,9 +74,7 @@ TEST(CUDAKernel, DispatcherTest) {
     EXPECT_EQ(
         main_stream.str(),
         "{\n    " + kernel_name +
-            "<<<dim3((int)(4), (int)(1), (int)(1)), dim3((int)(32), (int)(1), (int)(1))>>>(__daisy_cuda_A);\n    "
-            "cudaError_t err = cudaDeviceSynchronize();\n    "
-            "if (err != cudaSuccess) {\n        exit(1);\n    }\n}\n"
+            "<<<dim3((int)(4), (int)(1), (int)(1)), dim3((int)(32), (int)(1), (int)(1))>>>(__daisy_cuda_A);\n}\n"
     );
     EXPECT_EQ(
         library_snippet_factory.snippets().at(kernel_name).stream().str(),
@@ -164,9 +162,7 @@ TEST(CUDAKernel, NestedXYDispatcherTest) {
     EXPECT_EQ(
         main_stream.str(),
         "{\n    " + kernel_name +
-            "<<<dim3((int)(4), (int)(10), (int)(1)), dim3((int)(32), (int)(4), (int)(1))>>>(__daisy_cuda_A);\n    "
-            "cudaError_t err = cudaDeviceSynchronize();\n   "
-            " if (err != cudaSuccess) {\n        exit(1);\n    }\n}\n"
+            "<<<dim3((int)(4), (int)(10), (int)(1)), dim3((int)(32), (int)(4), (int)(1))>>>(__daisy_cuda_A);\n}\n"
     );
     EXPECT_EQ(
         library_snippet_factory.snippets().at(kernel_name).stream().str(),
@@ -256,9 +252,7 @@ TEST(CUDAKernel, NestedXZDispatcherTest) {
     EXPECT_EQ(
         main_stream.str(),
         "{\n    " + kernel_name +
-            "<<<dim3((int)(4), (int)(1), (int)(10)), dim3((int)(32), (int)(1), (int)(4))>>>(__daisy_cuda_A);\n    "
-            "cudaError_t err = cudaDeviceSynchronize();\n   "
-            " if (err != cudaSuccess) {\n        exit(1);\n    }\n}\n"
+            "<<<dim3((int)(4), (int)(1), (int)(10)), dim3((int)(32), (int)(1), (int)(4))>>>(__daisy_cuda_A);\n}\n"
     );
     EXPECT_EQ(
         library_snippet_factory.snippets().at(kernel_name).stream().str(),
@@ -364,10 +358,8 @@ TEST(CUDAKernel, NestedXYZDispatcherTest) {
 
     EXPECT_EQ(
         main_stream.str(),
-        "{\n    " + kernel_name +
-            "<<<dim3((int)(4), (int)(10), (int)(100)), dim3((int)(32), (int)(4), (int)(2))>>>(__daisy_cuda_A);\n    "
-            "cudaError_t err = cudaDeviceSynchronize();\n "
-            "   if (err != cudaSuccess) {\n        exit(1);\n    }\n}\n"
+        "{\n    kernel_test_sdfg_1<<<dim3((int)(4), (int)(10), (int)(100)), dim3((int)(32), (int)(4), "
+        "(int)(2))>>>(__daisy_cuda_A);\n}\n"
     );
     EXPECT_EQ(
         library_snippet_factory.snippets().at(kernel_name).stream().str(),

@@ -8,6 +8,7 @@ FetchContent_MakeAvailable(googletest)
 
 set(TEST_FILES
     analysis/scop_analysis_test.cpp
+    cuda/blas/cublas_test.cpp
     cuda/cuda_kernel_test.cpp
     cuda/cuda_library_nodes_test.cpp
     passes/normalization/perfect_loop_distribution_test.cpp

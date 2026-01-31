@@ -1,5 +1,5 @@
 import ast
-from ._sdfg import Scalar, PrimitiveType
+from ._sdfg import Scalar, PrimitiveType, TaskletCode
 
 
 class LinearAlgebraHandler:
@@ -69,6 +69,9 @@ class LinearAlgebraHandler:
                         size = f"({stop} - {start})"
                         slice_shape.append(size)
                     else:
+                        if isinstance(idx, ast.Name) and idx.id in self.array_info:
+                            # This is an array index (gather operation)
+                            return None, None, None, None
                         val = self._parse_expr(idx)
                         start_indices.append(val)
 
@@ -460,6 +463,17 @@ class LinearAlgebraHandler:
 
         tmp_res = f"_dot_res_{self._get_unique_id()}"
         self.builder.add_container(tmp_res, Scalar(PrimitiveType.Double), False)
+        block = self.builder.add_block()
+        constant = self.builder.add_constant(block, "0.0", Scalar(PrimitiveType.Double))
+        tasklet = self.builder.add_tasklet(block, TaskletCode.assign, ["_in"], ["_out"])
+        self.builder.add_memlet(
+            block, constant, "", tasklet, "_in", "", Scalar(PrimitiveType.Double)
+        )
+        access = self.builder.add_access(block, tmp_res)
+        self.builder.add_memlet(
+            block, tasklet, "_out", access, "", "", Scalar(PrimitiveType.Double)
+        )
+
         self.symbol_table[tmp_res] = Scalar(PrimitiveType.Double)
 
         self.builder.add_dot(
@@ -467,6 +481,11 @@ class LinearAlgebraHandler:
         )
 
         target_str = target if isinstance(target, str) else self._parse_expr(target)
+
+        # Ensure target container exists for new scalar variables
+        if not self.builder.exists(target_str):
+            self.builder.add_container(target_str, Scalar(PrimitiveType.Double), False)
+            self.symbol_table[target_str] = Scalar(PrimitiveType.Double)
 
         if is_accumulate:
             self.builder.add_assignment(target_str, f"{target_str} + {tmp_res}")

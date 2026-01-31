@@ -10,7 +10,7 @@ namespace sdfg::passes::rpc {
 struct RpcOptimizationMetadata {
     std::optional<std::string> region_id;
     double speedup = NAN;
-    std::optional<double> vector_distance;
+    double vector_distance = NAN;
 };
 
 /**
@@ -28,13 +28,14 @@ struct RpcOptResponse {
     std::optional<RpcSdfgResult> sdfg_result;
     std::optional<RpcLocalReplayRecipe> local_replay;
     RpcOptimizationMetadata metadata;
+    std::optional<std::string> error;
 };
 
 struct RpcOptRequest {
     StructuredSDFG& sdfg;
-    std::optional<std::string> category;
-    std::optional<std::string> target;
-    std::optional<analysis::LoopInfo> loop_info;
+    std::string category;
+    std::string target;
+    analysis::LoopInfo loop_info;
 };
 
 } // namespace sdfg::passes::rpc

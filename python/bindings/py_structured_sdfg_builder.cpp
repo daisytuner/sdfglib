@@ -13,6 +13,7 @@
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/cast_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/transpose_node.h"
 #include "sdfg/data_flow/library_nodes/stdlib/malloc.h"
+#include "sdfg/data_flow/library_nodes/stdlib/memcpy.h"
 #include "sdfg/data_flow/library_nodes/stdlib/memset.h"
 #include "sdfg/passes/debug_info_propagation.h"
 #include "sdfg/types/pointer.h"
@@ -20,6 +21,13 @@
 #include "sdfg/visualizer/dot_visualizer.h"
 
 using namespace sdfg::structured_control_flow;
+
+sdfg::symbolic::Expression parse_and_expand(const std::string& expr_str) {
+    auto expr = sdfg::symbolic::parse(expr_str);
+    expr = sdfg::symbolic::simplify(expr);
+    expr = sdfg::symbolic::expand(expr);
+    return expr;
+}
 
 PyStructuredSDFGBuilder::PyStructuredSDFGBuilder(const std::string& name)
     : builder(name, sdfg::FunctionType_CPU, sdfg::types::Scalar(sdfg::types::PrimitiveType::Void)) {
@@ -36,9 +44,6 @@ PyStructuredSDFG PyStructuredSDFGBuilder::move() {
     sdfg::passes::DebugInfoPropagation debug_info_propagation_pass;
     debug_info_propagation_pass.run(builder, analysis_manager);
 
-    // std::filesystem::path dot_path = builder.subject().name() + ".dot";
-    // sdfg::visualizer::DotVisualizer::writeToFile(builder.subject(), &dot_path);
-
     auto sdfg = builder.move();
     return PyStructuredSDFG(sdfg);
 }
@@ -47,20 +52,27 @@ void PyStructuredSDFGBuilder::add_container(const std::string& name, const sdfg:
     builder.add_container(name, type, is_argument);
 }
 
-void PyStructuredSDFGBuilder::set_return_type(const sdfg::types::IType& type) { builder.set_return_type(type); }
-
-void PyStructuredSDFGBuilder::set_return_shape(const std::vector<std::string>& shape) {
-    std::stringstream ss;
-    for (size_t i = 0; i < shape.size(); ++i) {
-        ss << shape[i];
-        if (i < shape.size() - 1) {
-            ss << ",";
-        }
+void PyStructuredSDFGBuilder::
+    add_structure(const std::string& name, const std::vector<const sdfg::types::IType*>& member_types) {
+    auto defined_structures = builder.subject().structures();
+    if (std::find(defined_structures.begin(), defined_structures.end(), name) != defined_structures.end()) {
+        return;
     }
-    builder.subject().add_metadata("return_shape", ss.str());
+
+    auto& structure_definition = builder.add_structure(name, false);
+    for (const auto* member_type : member_types) {
+        structure_definition.add_member(*member_type);
+    }
 }
 
-bool PyStructuredSDFGBuilder::has_container(const std::string& name) { return builder.subject().exists(name); }
+bool PyStructuredSDFGBuilder::exists(const std::string& name) { return builder.subject().exists(name); }
+
+void PyStructuredSDFGBuilder::set_return_type(const sdfg::types::IType& type) { builder.set_return_type(type); }
+
+std::string PyStructuredSDFGBuilder::get_sizeof(const sdfg::types::IType& type) {
+    auto expr = sdfg::symbolic::size_of_type(type);
+    return expr->__str__();
+}
 
 sdfg::structured_control_flow::Sequence& PyStructuredSDFGBuilder::current_sequence() {
     if (scope_stack.empty()) {
@@ -80,7 +92,7 @@ void PyStructuredSDFGBuilder::
 
 void PyStructuredSDFGBuilder::begin_if(const std::string& condition, const sdfg::DebugInfo& debug_info) {
     auto& parent = current_sequence();
-    auto cond_expr = sdfg::symbolic::parse(condition);
+    auto cond_expr = parse_and_expand(condition);
 
     auto cond_bool = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(cond_expr);
     if (cond_bool.is_null()) {
@@ -123,7 +135,7 @@ void PyStructuredSDFGBuilder::begin_while(const std::string& condition, const sd
 
     auto& while_body = while_node.root();
 
-    auto cond_expr = sdfg::symbolic::parse(condition);
+    auto cond_expr = parse_and_expand(condition);
     auto cond_bool = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(cond_expr);
     if (cond_bool.is_null()) {
         throw std::runtime_error("Condition must be a boolean expression: " + condition);
@@ -157,9 +169,9 @@ void PyStructuredSDFGBuilder::begin_for(
 ) {
     auto& parent = current_sequence();
     auto var_sym = sdfg::symbolic::symbol(var);
-    auto start_expr = sdfg::symbolic::parse(start);
-    auto end_expr = sdfg::symbolic::parse(end);
-    auto step_expr = sdfg::symbolic::parse(step);
+    auto start_expr = parse_and_expand(start);
+    auto end_expr = parse_and_expand(end);
+    auto step_expr = parse_and_expand(step);
 
     bool is_negative = false;
     if (SymEngine::is_a<SymEngine::Integer>(*step_expr)) {
@@ -194,11 +206,21 @@ void PyStructuredSDFGBuilder::end_for() {
 }
 
 void PyStructuredSDFGBuilder::
+    add_transition(const std::string& lhs, const std::string& rhs, const sdfg::DebugInfo& debug_info) {
+    auto& parent = current_sequence();
+
+    sdfg::symbolic::Symbol lhs_sym = SymEngine::rcp_dynamic_cast<const SymEngine::Symbol>(parse_and_expand(lhs));
+    sdfg::symbolic::Expression rhs_sym = parse_and_expand(rhs);
+
+    builder.add_block(parent, {{lhs_sym, rhs_sym}}, debug_info);
+}
+
+void PyStructuredSDFGBuilder::
     add_assignment(const std::string& target, const std::string& value, const sdfg::DebugInfo& debug_info) {
     auto& parent = current_sequence();
     auto& block = builder.add_block(parent, {}, debug_info);
 
-    auto expr = sdfg::symbolic::parse(value);
+    auto expr = parse_and_expand(value);
 
     // Parse target
     std::string target_name = target;
@@ -225,7 +247,8 @@ void PyStructuredSDFGBuilder::
 
         if (close_paren == std::string::npos) throw std::runtime_error("Invalid target format: unbalanced parentheses");
         std::string idx_str = target.substr(open_paren + 1, close_paren - open_paren - 1);
-        target_indices.push_back(sdfg::symbolic::parse(idx_str));
+        auto index_sym = parse_and_expand(idx_str);
+        target_indices.push_back(index_sym);
     }
 
     // Get target type
@@ -269,7 +292,8 @@ void PyStructuredSDFGBuilder::
 
             if (close_paren != std::string::npos) {
                 std::string idx_str = name.substr(open_paren + 1, close_paren - open_paren - 1);
-                src_indices.push_back(sdfg::symbolic::parse(idx_str));
+                auto index_sym = parse_and_expand(idx_str);
+                src_indices.push_back(index_sym);
             }
         }
 
@@ -421,175 +445,6 @@ void PyStructuredSDFGBuilder::
     }
 }
 
-void PyStructuredSDFGBuilder::add_gemm(
-    const std::string& A,
-    const std::string& B,
-    const std::string& C,
-    const std::string& alpha,
-    const std::string& beta,
-    const std::string& m,
-    const std::string& n,
-    const std::string& k,
-    bool trans_a,
-    bool trans_b,
-    const std::vector<std::string>& a_subset,
-    const std::vector<std::string>& b_subset,
-    const std::vector<std::string>& c_subset,
-    const std::string& lda,
-    const std::string& ldb,
-    const std::string& ldc,
-    const sdfg::DebugInfo& debug_info
-) {
-    auto& parent = current_sequence();
-    auto& view_block = builder.add_block(parent, {}, debug_info);
-    auto& block = builder.add_block(parent, {}, debug_info);
-
-    auto sym_m = sdfg::symbolic::parse(m);
-    auto sym_n = sdfg::symbolic::parse(n);
-    auto sym_k = sdfg::symbolic::parse(k);
-
-    auto sym_lda = lda.empty() ? (trans_a ? sym_m : sym_k) : sdfg::symbolic::parse(lda);
-    auto sym_ldb = ldb.empty() ? (trans_b ? sym_k : sym_n) : sdfg::symbolic::parse(ldb);
-    auto sym_ldc = ldc.empty() ? sym_n : sdfg::symbolic::parse(ldc);
-
-    auto layout = sdfg::math::blas::BLAS_Layout::RowMajor;
-    auto ta = trans_a ? sdfg::math::blas::BLAS_Transpose::Trans : sdfg::math::blas::BLAS_Transpose::No;
-    auto tb = trans_b ? sdfg::math::blas::BLAS_Transpose::Trans : sdfg::math::blas::BLAS_Transpose::No;
-
-    auto precision = sdfg::math::blas::BLAS_Precision::d;
-
-    auto& gemm_node = builder.add_library_node<sdfg::math::blas::GEMMNode>(
-        block,
-        debug_info,
-        sdfg::math::blas::ImplementationType_BLAS,
-        precision,
-        layout,
-        ta,
-        tb,
-        sym_m,
-        sym_n,
-        sym_k,
-        sym_lda,
-        sym_ldb,
-        sym_ldc
-    );
-
-    auto ptr_double = sdfg::types::Pointer(sdfg::types::Scalar(sdfg::types::PrimitiveType::Double));
-
-    auto handle_access =
-        [&](const std::string& name, const std::vector<std::string>& subset, const std::string& port, bool is_output) {
-            if (subset.empty()) {
-                auto& origin = builder.add_access(block, name, debug_info);
-                if (is_output)
-                    builder.add_computational_memlet(block, gemm_node, port, origin, {}, ptr_double, debug_info);
-                else
-                    builder.add_computational_memlet(block, origin, gemm_node, port, {}, ptr_double, debug_info);
-            } else {
-                std::string view_name = builder.find_new_name(name + "_view_");
-                builder.add_container(view_name, ptr_double, false);
-                auto& view = builder.add_access(view_block, view_name, debug_info);
-
-                sdfg::data_flow::Subset s;
-                for (const auto& str : subset) {
-                    s.push_back(sdfg::symbolic::parse(str));
-                }
-
-                auto& origin = builder.add_access(view_block, name, debug_info);
-                builder.add_reference_memlet(view_block, origin, view, s, ptr_double, debug_info);
-                if (is_output) {
-                    auto& view2 = builder.add_access(block, view_name, debug_info);
-                    builder.add_computational_memlet(block, gemm_node, port, view2, {}, ptr_double, debug_info);
-                } else {
-                    auto& view2 = builder.add_access(block, view_name, debug_info);
-                    builder.add_computational_memlet(block, view2, gemm_node, port, {}, ptr_double, debug_info);
-                }
-            }
-        };
-
-    handle_access(A, a_subset, "__A", false);
-    handle_access(B, b_subset, "__B", false);
-    handle_access(C, c_subset, "__C", false);
-    handle_access(C, c_subset, "__C", true);
-
-    auto handle_scalar = [&](const std::string& val, const std::string& port) {
-        try {
-            size_t idx;
-            std::stod(val, &idx);
-            if (idx == val.length()) {
-                auto& node =
-                    builder
-                        .add_constant(block, val, sdfg::types::Scalar(sdfg::types::PrimitiveType::Double), debug_info);
-                builder.add_computational_memlet(
-                    block, node, gemm_node, port, {}, sdfg::types::Scalar(sdfg::types::PrimitiveType::Double), debug_info
-                );
-                return;
-            }
-        } catch (...) {
-        }
-        auto& node = builder.add_access(block, val, debug_info);
-        builder.add_computational_memlet(
-            block, node, gemm_node, port, {}, sdfg::types::Scalar(sdfg::types::PrimitiveType::Double), debug_info
-        );
-    };
-
-    handle_scalar(alpha, "__alpha");
-    handle_scalar(beta, "__beta");
-}
-
-void PyStructuredSDFGBuilder::add_dot(
-    const std::string& X,
-    const std::string& Y,
-    const std::string& result,
-    const std::string& n,
-    const std::string& incx,
-    const std::string& incy,
-    const std::vector<std::string>& x_subset,
-    const std::vector<std::string>& y_subset,
-    const sdfg::DebugInfo& debug_info
-) {
-    auto& parent = current_sequence();
-    auto& block = builder.add_block(parent, {}, debug_info);
-
-    auto sym_n = sdfg::symbolic::parse(n);
-    auto sym_incx = sdfg::symbolic::parse(incx);
-    auto sym_incy = sdfg::symbolic::parse(incy);
-
-    auto precision = sdfg::math::blas::BLAS_Precision::d;
-
-    auto& dot_node = builder.add_library_node<sdfg::math::blas::DotNode>(
-        block, debug_info, sdfg::math::blas::ImplementationType_BLAS, precision, sym_n, sym_incx, sym_incy
-    );
-
-    auto ptr_double = sdfg::types::Pointer(sdfg::types::Scalar(sdfg::types::PrimitiveType::Double));
-
-    auto handle_input = [&](const std::string& name, const std::vector<std::string>& subset, const std::string& port) {
-        auto& origin = builder.add_access(block, name, debug_info);
-        if (subset.empty()) {
-            builder.add_computational_memlet(block, origin, dot_node, port, {}, ptr_double, debug_info);
-        } else {
-            std::string view_name = builder.find_new_name(name + "_view_");
-            builder.add_container(view_name, ptr_double, false);
-            auto& view = builder.add_access(block, view_name, debug_info);
-
-            sdfg::data_flow::Subset s;
-            for (const auto& str : subset) {
-                s.push_back(sdfg::symbolic::parse(str));
-            }
-
-            builder.add_reference_memlet(block, origin, view, s, ptr_double, debug_info);
-            builder.add_computational_memlet(block, view, dot_node, port, {}, ptr_double, debug_info);
-        }
-    };
-
-    handle_input(X, x_subset, "__x");
-    handle_input(Y, y_subset, "__y");
-
-    auto& node_res = builder.add_access(block, result, debug_info);
-    builder.add_computational_memlet(
-        block, dot_node, "__out", node_res, {}, sdfg::types::Scalar(sdfg::types::PrimitiveType::Double), debug_info
-    );
-}
-
 size_t PyStructuredSDFGBuilder::add_block(const sdfg::DebugInfo& debug_info) {
     auto& parent = current_sequence();
     auto& block = builder.add_block(parent, {}, debug_info);
@@ -610,70 +465,17 @@ size_t PyStructuredSDFGBuilder::add_constant(
     return reinterpret_cast<size_t>(&constant);
 }
 
-sdfg::data_flow::TaskletCode parse_opcode(const std::string& code) {
-    if (code == "assign") return sdfg::data_flow::assign;
-    if (code == "int_add") return sdfg::data_flow::int_add;
-    if (code == "int_sub") return sdfg::data_flow::int_sub;
-    if (code == "int_mul") return sdfg::data_flow::int_mul;
-    if (code == "int_div") return sdfg::data_flow::int_sdiv;
-    if (code == "int_rem") return sdfg::data_flow::int_srem;
-
-    if (code == "fp_add") return sdfg::data_flow::fp_add;
-    if (code == "fp_sub") return sdfg::data_flow::fp_sub;
-    if (code == "fp_mul") return sdfg::data_flow::fp_mul;
-    if (code == "fp_div") return sdfg::data_flow::fp_div;
-    if (code == "fp_neg") return sdfg::data_flow::fp_neg;
-
-    if (code == "int_or") return sdfg::data_flow::int_or;
-    if (code == "int_xor") return sdfg::data_flow::int_xor;
-
-    if (code == "int_smax") return sdfg::data_flow::int_smax;
-    if (code == "int_smin") return sdfg::data_flow::int_smin;
-
-    throw std::runtime_error("Unknown opcode: " + code);
-}
-
 size_t PyStructuredSDFGBuilder::add_tasklet(
     size_t block_ptr,
-    const std::string& code,
+    sdfg::data_flow::TaskletCode code,
     const std::vector<std::string>& inputs,
     const std::vector<std::string>& outputs,
     const sdfg::DebugInfo& debug_info
 ) {
     auto* block = reinterpret_cast<sdfg::structured_control_flow::Block*>(block_ptr);
-    auto opcode = parse_opcode(code);
     if (outputs.empty()) throw std::runtime_error("Tasklet must have at least one output");
-    auto& tasklet = builder.add_tasklet(*block, opcode, outputs[0], inputs, debug_info);
+    auto& tasklet = builder.add_tasklet(*block, code, outputs[0], inputs, debug_info);
     return reinterpret_cast<size_t>(&tasklet);
-}
-
-size_t PyStructuredSDFGBuilder::add_intrinsic(size_t block_ptr, const std::string& name, const sdfg::DebugInfo& debug_info) {
-    auto* block = reinterpret_cast<sdfg::structured_control_flow::Block*>(block_ptr);
-    auto& node = builder.add_library_node<sdfg::math::cmath::CMathNode>(
-        *block, debug_info, sdfg::math::cmath::string_to_cmath_function(name), sdfg::types::PrimitiveType::Double
-    );
-    return reinterpret_cast<size_t>(&node);
-}
-
-size_t PyStructuredSDFGBuilder::add_malloc(size_t block_ptr, const std::string& size, const sdfg::DebugInfo& debug_info) {
-    auto* block = reinterpret_cast<sdfg::structured_control_flow::Block*>(block_ptr);
-    auto size_expr = sdfg::symbolic::parse(size);
-    auto& node = builder.add_library_node<sdfg::stdlib::MallocNode>(*block, debug_info, size_expr);
-    return reinterpret_cast<size_t>(&node);
-}
-
-size_t PyStructuredSDFGBuilder::
-    add_memset(size_t block_ptr, const std::string& value, const std::string& num, const sdfg::DebugInfo& debug_info) {
-    auto* block = reinterpret_cast<sdfg::structured_control_flow::Block*>(block_ptr);
-    auto value_expr = sdfg::symbolic::parse(value);
-    auto num_expr = sdfg::symbolic::parse(num);
-    auto& node = builder.add_library_node<sdfg::stdlib::MemsetNode>(*block, debug_info, value_expr, num_expr);
-    return reinterpret_cast<size_t>(&node);
-}
-
-std::string PyStructuredSDFGBuilder::get_sizeof(const sdfg::types::IType& type) {
-    auto expr = sdfg::symbolic::size_of_type(type);
-    return expr->__str__();
 }
 
 void PyStructuredSDFGBuilder::add_memlet(
@@ -695,7 +497,8 @@ void PyStructuredSDFGBuilder::add_memlet(
         std::stringstream ss(subset);
         std::string segment;
         while (std::getline(ss, segment, ',')) {
-            indices.push_back(sdfg::symbolic::parse(segment));
+            auto dim = parse_and_expand(segment);
+            indices.push_back(dim);
         }
     }
 
@@ -759,7 +562,8 @@ void PyStructuredSDFGBuilder::add_reference_memlet(
         std::stringstream ss(subset);
         std::string segment;
         while (std::getline(ss, segment, ',')) {
-            indices.push_back(sdfg::symbolic::parse(segment));
+            auto index = parse_and_expand(segment);
+            indices.push_back(index);
         }
     }
 
@@ -782,6 +586,211 @@ void PyStructuredSDFGBuilder::add_reference_memlet(
     builder.add_reference_memlet(*block, *src, *dst, indices, *type, debug_info);
 }
 
+size_t PyStructuredSDFGBuilder::
+    add_cmath(size_t block_ptr, sdfg::math::cmath::CMathFunction func, const sdfg::DebugInfo& debug_info) {
+    auto* block = reinterpret_cast<sdfg::structured_control_flow::Block*>(block_ptr);
+    auto& node = builder.add_library_node<
+        sdfg::math::cmath::CMathNode>(*block, debug_info, func, sdfg::types::PrimitiveType::Double);
+    return reinterpret_cast<size_t>(&node);
+}
+
+size_t PyStructuredSDFGBuilder::add_malloc(size_t block_ptr, const std::string& size, const sdfg::DebugInfo& debug_info) {
+    auto* block = reinterpret_cast<sdfg::structured_control_flow::Block*>(block_ptr);
+    auto size_expr = parse_and_expand(size);
+    auto& node = builder.add_library_node<sdfg::stdlib::MallocNode>(*block, debug_info, size_expr);
+    return reinterpret_cast<size_t>(&node);
+}
+
+size_t PyStructuredSDFGBuilder::
+    add_memset(size_t block_ptr, const std::string& value, const std::string& num, const sdfg::DebugInfo& debug_info) {
+    auto* block = reinterpret_cast<sdfg::structured_control_flow::Block*>(block_ptr);
+    auto value_expr = parse_and_expand(value);
+    auto num_expr = parse_and_expand(num);
+    auto& node = builder.add_library_node<sdfg::stdlib::MemsetNode>(*block, debug_info, value_expr, num_expr);
+    return reinterpret_cast<size_t>(&node);
+}
+
+size_t PyStructuredSDFGBuilder::add_memcpy(size_t block_ptr, const std::string& count, const sdfg::DebugInfo& debug_info) {
+    auto* block = reinterpret_cast<sdfg::structured_control_flow::Block*>(block_ptr);
+    auto count_expr = parse_and_expand(count);
+    auto& node = builder.add_library_node<sdfg::stdlib::MemcpyNode>(*block, debug_info, count_expr);
+    return reinterpret_cast<size_t>(&node);
+}
+
+void PyStructuredSDFGBuilder::add_gemm(
+    const std::string& A,
+    const std::string& B,
+    const std::string& C,
+    const std::string& alpha,
+    const std::string& beta,
+    const std::string& m,
+    const std::string& n,
+    const std::string& k,
+    bool trans_a,
+    bool trans_b,
+    const std::vector<std::string>& a_subset,
+    const std::vector<std::string>& b_subset,
+    const std::vector<std::string>& c_subset,
+    const std::string& lda,
+    const std::string& ldb,
+    const std::string& ldc,
+    const sdfg::DebugInfo& debug_info
+) {
+    auto& parent = current_sequence();
+    auto& view_block = builder.add_block(parent, {}, debug_info);
+    auto& block = builder.add_block(parent, {}, debug_info);
+
+    auto sym_m = parse_and_expand(m);
+    auto sym_n = parse_and_expand(n);
+    auto sym_k = parse_and_expand(k);
+
+    auto sym_lda = lda.empty() ? (trans_a ? sym_m : sym_k) : parse_and_expand(lda);
+    auto sym_ldb = ldb.empty() ? (trans_b ? sym_k : sym_n) : parse_and_expand(ldb);
+    auto sym_ldc = ldc.empty() ? sym_n : parse_and_expand(ldc);
+
+    auto layout = sdfg::math::blas::BLAS_Layout::RowMajor;
+    auto ta = trans_a ? sdfg::math::blas::BLAS_Transpose::Trans : sdfg::math::blas::BLAS_Transpose::No;
+    auto tb = trans_b ? sdfg::math::blas::BLAS_Transpose::Trans : sdfg::math::blas::BLAS_Transpose::No;
+
+    auto precision = sdfg::math::blas::BLAS_Precision::d;
+
+    auto& gemm_node = builder.add_library_node<sdfg::math::blas::GEMMNode>(
+        block,
+        debug_info,
+        sdfg::math::blas::ImplementationType_BLAS,
+        precision,
+        layout,
+        ta,
+        tb,
+        sym_m,
+        sym_n,
+        sym_k,
+        sym_lda,
+        sym_ldb,
+        sym_ldc
+    );
+
+    auto ptr_double = sdfg::types::Pointer(sdfg::types::Scalar(sdfg::types::PrimitiveType::Double));
+
+    auto handle_access =
+        [&](const std::string& name, const std::vector<std::string>& subset, const std::string& port, bool is_output) {
+            if (subset.empty()) {
+                auto& origin = builder.add_access(block, name, debug_info);
+                if (is_output)
+                    builder.add_computational_memlet(block, gemm_node, port, origin, {}, ptr_double, debug_info);
+                else
+                    builder.add_computational_memlet(block, origin, gemm_node, port, {}, ptr_double, debug_info);
+            } else {
+                std::string view_name = builder.find_new_name(name + "_view_");
+                builder.add_container(view_name, ptr_double, false);
+                auto& view = builder.add_access(view_block, view_name, debug_info);
+
+                sdfg::data_flow::Subset s;
+                for (const auto& str : subset) {
+                    s.push_back(parse_and_expand(str));
+                }
+
+                auto& origin = builder.add_access(view_block, name, debug_info);
+                builder.add_reference_memlet(view_block, origin, view, s, ptr_double, debug_info);
+                if (is_output) {
+                    auto& view2 = builder.add_access(block, view_name, debug_info);
+                    builder.add_computational_memlet(block, gemm_node, port, view2, {}, ptr_double, debug_info);
+                } else {
+                    auto& view2 = builder.add_access(block, view_name, debug_info);
+                    builder.add_computational_memlet(block, view2, gemm_node, port, {}, ptr_double, debug_info);
+                }
+            }
+        };
+
+    handle_access(A, a_subset, "__A", false);
+    handle_access(B, b_subset, "__B", false);
+    handle_access(C, c_subset, "__C", false);
+    handle_access(C, c_subset, "__C", true);
+
+    auto handle_scalar = [&](const std::string& val, const std::string& port) {
+        try {
+            size_t idx;
+            std::stod(val, &idx);
+            if (idx == val.length()) {
+                auto& node =
+                    builder
+                        .add_constant(block, val, sdfg::types::Scalar(sdfg::types::PrimitiveType::Double), debug_info);
+                builder.add_computational_memlet(
+                    block, node, gemm_node, port, {}, sdfg::types::Scalar(sdfg::types::PrimitiveType::Double), debug_info
+                );
+                return;
+            }
+        } catch (...) {
+        }
+        auto& node = builder.add_access(block, val, debug_info);
+        builder.add_computational_memlet(
+            block, node, gemm_node, port, {}, sdfg::types::Scalar(sdfg::types::PrimitiveType::Double), debug_info
+        );
+    };
+
+    handle_scalar(alpha, "__alpha");
+    handle_scalar(beta, "__beta");
+}
+
+void PyStructuredSDFGBuilder::add_dot(
+    const std::string& X,
+    const std::string& Y,
+    const std::string& result,
+    const std::string& n,
+    const std::string& incx,
+    const std::string& incy,
+    const std::vector<std::string>& x_subset,
+    const std::vector<std::string>& y_subset,
+    const sdfg::DebugInfo& debug_info
+) {
+    auto& parent = current_sequence();
+    auto& ref_block = builder.add_block(parent, {}, debug_info);
+    auto& block = builder.add_block(parent, {}, debug_info);
+
+    auto sym_n = parse_and_expand(n);
+    auto sym_incx = parse_and_expand(incx);
+    auto sym_incy = parse_and_expand(incy);
+
+    auto precision = sdfg::math::blas::BLAS_Precision::d;
+
+    auto& dot_node = builder.add_library_node<sdfg::math::blas::DotNode>(
+        block, debug_info, sdfg::math::blas::ImplementationType_BLAS, precision, sym_n, sym_incx, sym_incy
+    );
+
+    auto ptr_double = sdfg::types::Pointer(sdfg::types::Scalar(sdfg::types::PrimitiveType::Double));
+
+    auto handle_input = [&](const std::string& name, const std::vector<std::string>& subset, const std::string& port) {
+        if (subset.empty()) {
+            auto& origin = builder.add_access(block, name, debug_info);
+            builder.add_computational_memlet(block, origin, dot_node, port, {}, ptr_double, debug_info);
+        } else {
+            std::string view_name = builder.find_new_name(name + "_view_");
+            builder.add_container(view_name, ptr_double, false);
+            auto& view = builder.add_access(ref_block, view_name, debug_info);
+
+            sdfg::data_flow::Subset s;
+            for (const auto& str : subset) {
+                auto dim = parse_and_expand(str);
+                s.push_back(dim);
+            }
+
+            auto& origin = builder.add_access(ref_block, name, debug_info);
+            builder.add_reference_memlet(ref_block, origin, view, s, ptr_double, debug_info);
+
+            auto& view2 = builder.add_access(block, view_name, debug_info);
+            builder.add_computational_memlet(block, view2, dot_node, port, {}, ptr_double, debug_info);
+        }
+    };
+
+    handle_input(X, x_subset, "__x");
+    handle_input(Y, y_subset, "__y");
+
+    auto& node_res = builder.add_access(block, result, debug_info);
+    builder.add_computational_memlet(
+        block, dot_node, "__out", node_res, {}, sdfg::types::Scalar(sdfg::types::PrimitiveType::Double), debug_info
+    );
+}
+
 void PyStructuredSDFGBuilder::add_elementwise_op(
     const std::string& op_type,
     const std::string& A,
@@ -795,7 +804,8 @@ void PyStructuredSDFGBuilder::add_elementwise_op(
 
     std::vector<sdfg::symbolic::Expression> shape;
     for (const auto& s : shape_strs) {
-        shape.push_back(sdfg::symbolic::parse(s));
+        auto dim = parse_and_expand(s);
+        shape.push_back(dim);
     }
 
     sdfg::math::tensor::ElementWiseBinaryNode* node = nullptr;
@@ -872,7 +882,7 @@ void PyStructuredSDFGBuilder::add_elementwise_unary_op(
 
     std::vector<sdfg::symbolic::Expression> shape;
     for (const auto& s : shape_strs) {
-        shape.push_back(sdfg::symbolic::parse(s));
+        shape.push_back(parse_and_expand(s));
     }
 
     sdfg::math::tensor::ElementWiseUnaryNode* node = nullptr;
@@ -936,7 +946,7 @@ void PyStructuredSDFGBuilder::add_transpose(
 
     std::vector<sdfg::symbolic::Expression> shape;
     for (const auto& s : shape_strs) {
-        shape.push_back(sdfg::symbolic::parse(s));
+        shape.push_back(parse_and_expand(s));
     }
 
     auto& node = builder.add_library_node<sdfg::math::tensor::TransposeNode>(block, debug_info, shape, perm);
@@ -980,7 +990,7 @@ void PyStructuredSDFGBuilder::add_conv(
 
     auto transform_dims = [](const std::vector<std::string>& strs) {
         std::vector<sdfg::symbolic::Expression> exprs;
-        for (const auto& s : strs) exprs.push_back(sdfg::symbolic::parse(s));
+        for (const auto& s : strs) exprs.push_back(parse_and_expand(s));
         return exprs;
     };
 
@@ -989,8 +999,8 @@ void PyStructuredSDFGBuilder::add_conv(
     auto strides = transform_dims(strides_strs);
     auto pads = transform_dims(pads_strs);
     auto dilations = transform_dims(dilations_strs);
-    auto output_channels = sdfg::symbolic::parse(output_channels_str);
-    auto group = sdfg::symbolic::parse(group_str);
+    auto output_channels = parse_and_expand(output_channels_str);
+    auto group = parse_and_expand(group_str);
 
     auto& conv_node = builder.add_library_node<sdfg::math::tensor::ConvNode>(
         block, debug_info, shape, kernel_shape, strides, pads, dilations, output_channels, group
@@ -1028,7 +1038,7 @@ void PyStructuredSDFGBuilder::add_cast_op(
 
     std::vector<sdfg::symbolic::Expression> shape;
     for (const auto& s : shape_strs) {
-        shape.push_back(sdfg::symbolic::parse(s));
+        shape.push_back(parse_and_expand(s));
     }
 
     auto& node = builder.add_library_node<sdfg::math::tensor::CastNode>(block, debug_info, shape, target_type);
@@ -1068,7 +1078,7 @@ void PyStructuredSDFGBuilder::add_reduce_op(
 
     std::vector<sdfg::symbolic::Expression> shape_exprs;
     for (const auto& s : input_shape) {
-        shape_exprs.push_back(sdfg::symbolic::parse(s));
+        shape_exprs.push_back(parse_and_expand(s));
     }
 
     sdfg::math::tensor::ReduceNode* node = nullptr;
@@ -1108,21 +1118,4 @@ void PyStructuredSDFGBuilder::add_reduce_op(
 
     builder.add_computational_memlet(block, in_access, *node, "X", {}, in_type, debug_info);
     builder.add_computational_memlet(block, *node, "Y", out_access, {}, out_type, debug_info);
-}
-
-void PyStructuredSDFGBuilder::
-    add_structure(const std::string& name, const std::vector<const sdfg::types::IType*>& member_types) {
-    // Check if structure already exists
-    // TODO: Consider optimizing this lookup if structures() returns a large collection
-    // by caching structure names or using a more efficient data structure
-    auto defined_structures = builder.subject().structures();
-    if (std::find(defined_structures.begin(), defined_structures.end(), name) != defined_structures.end()) {
-        return; // Structure already defined
-    }
-
-    // Add structure definition
-    auto& structure_definition = builder.add_structure(name, false); // not packed by default
-    for (const auto* member_type : member_types) {
-        structure_definition.add_member(*member_type);
-    }
 }

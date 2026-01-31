@@ -1,10 +1,10 @@
 #include "daisy_rtl/arg_capture_io.h"
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <malloc.h>
 #include <nlohmann/json.hpp>
 #include <numeric>
 #include <utility>
@@ -209,11 +209,13 @@ bool ArgCaptureIO::write_capture_to_file(ArgCapture& capture, std::filesystem::p
     // Check for write errors using stream state + errno
     if (ofs.bad()) {
         std::cerr << "[ArgCaptureIO] Critical IO Error (badbit) writing " << file.string() << std::endl;
+        std::cerr << "  Size attempted: " << totalSize << " bytes" << std::endl;
         std::cerr << "  System Error: " << std::strerror(errno) << std::endl;
         return false;
     }
     if (ofs.fail()) {
         std::cerr << "[ArgCaptureIO] IO Failure (failbit) writing " << file.string() << std::endl;
+        std::cerr << "  Size attempted: " << totalSize << " bytes" << std::endl;
         std::cerr << "  System Error: " << std::strerror(errno) << std::endl;
         return false;
     }

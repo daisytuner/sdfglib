@@ -6,8 +6,12 @@
 #include <fstream>
 
 #include "analysis/py_loop_analysis.h"
+#include "data_flow/py_cmath.h"
+#include "data_flow/py_tasklet.h"
 #include "py_structured_sdfg.h"
 #include "py_structured_sdfg_builder.h"
+#include "sdfg/data_flow/tasklet.h"
+#include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/targets/cuda/plugin.h"
 #include "types/py_types.h"
 
@@ -24,6 +28,10 @@
 #include <sdfg/targets/highway/plugin.h>
 #include <sdfg/targets/omp/plugin.h>
 
+#include "sdfg/passes/rpc/daisytuner_rpc_context.h"
+#include "sdfg/passes/rpc/rpc_loop_opt.h"
+#include "sdfg/passes/scheduler/cuda_scheduler.h"
+
 namespace py = pybind11;
 using namespace sdfg::types;
 
@@ -37,7 +45,52 @@ PYBIND11_MODULE(_sdfg, m) {
     sdfg::cuda::register_cuda_plugin();
 
     register_types(m);
+    register_tasklet(m);
+    register_cmath(m);
     register_loop_analysis(m);
+
+    py::class_<sdfg::passes::rpc::RpcContext>(m, "RpcContext");
+
+    py::class_<sdfg::passes::rpc::SimpleRpcContext, sdfg::passes::rpc::RpcContext>(m, "SimpleRpcContext")
+        .def(
+            py::init<std::string, std::string, std::unordered_map<std::string, std::string>>(),
+            py::arg("host"),
+            py::arg("endpoint"),
+            py::arg("headers")
+        )
+        .def_static(
+            "build_from_file",
+            &sdfg::passes::rpc::build_rpc_context_from_file,
+            py::arg("path"),
+            "Read Server Context from JSON file"
+        )
+        .def_static(
+            "build_from_env",
+            []() {
+                sdfg::passes::rpc::SimpleRpcContextBuilder b;
+                return b.from_env().build();
+            },
+            "Read from the file pointed to by $SDFG_RPC_CONFIG"
+        )
+        .def_static(
+            "build_auto",
+            &sdfg::passes::rpc::build_rpc_context_auto,
+            "Use whatever config you can find to build a context. Default to local server"
+        )
+        .def_static(
+            "build_local", &sdfg::passes::rpc::build_rpc_context_local, "Use localhost:8080/docc as in example server"
+        );
+
+
+    py::class_<
+        sdfg::passes::rpc::DaisytunerTransfertuningRpcContext,
+        sdfg::passes::rpc::SimpleRpcContext>(m, "DaisytunerTransfertuningRpcContext")
+        .def(py::init<std::string>(), py::arg("license_token"))
+        .def_static(
+            "from_docc_config",
+            sdfg::passes::rpc::DaisytunerTransfertuningRpcContext::from_docc_config,
+            "Read license config from an already setup DOCC"
+        );
 
     py::class_<sdfg::DebugInfo>(m, "DebugInfo")
         .def(py::init<>())
@@ -83,11 +136,19 @@ PYBIND11_MODULE(_sdfg, m) {
         .def("simplify", &PyStructuredSDFG::simplify, "Simplify the SDFG")
         .def("dump", &PyStructuredSDFG::dump, py::arg("path"))
         .def("normalize", &PyStructuredSDFG::normalize, "Normalize the SDFG")
-        .def("schedule", &PyStructuredSDFG::schedule, py::arg("target"), py::arg("category"), "Schedule the SDFG")
+        .def(
+            "schedule",
+            &PyStructuredSDFG::schedule,
+            py::arg("target"),
+            py::arg("category"),
+            py::arg("remote_ctx").none(true) = nullptr,
+            "Schedule the SDFG"
+        )
         .def(
             "_compile",
             &PyStructuredSDFG::compile,
             py::arg("output_folder"),
+            py::arg("target"),
             py::arg("instrumentation_mode") = "",
             py::arg("capture_args") = false
         )
@@ -112,23 +173,12 @@ PYBIND11_MODULE(_sdfg, m) {
             py::arg("is_argument") = false,
             "Add a container to the SDFG"
         )
+        .def("exists", &PyStructuredSDFGBuilder::exists, py::arg("name"), "Check if a container exists in the SDFG")
         .def(
             "set_return_type",
             &PyStructuredSDFGBuilder::set_return_type,
             py::arg("type"),
             "Set the return type of the SDFG"
-        )
-        .def(
-            "set_return_shape",
-            &PyStructuredSDFGBuilder::set_return_shape,
-            py::arg("shape"),
-            "Set the return shape of the SDFG"
-        )
-        .def(
-            "has_container",
-            &PyStructuredSDFGBuilder::has_container,
-            py::arg("name"),
-            "Check if a container exists in the SDFG"
         )
         .def(
             "add_return",
@@ -178,6 +228,13 @@ PYBIND11_MODULE(_sdfg, m) {
             py::arg("debug_info") = sdfg::DebugInfo()
         )
         .def("end_for", &PyStructuredSDFGBuilder::end_for)
+        .def(
+            "add_transition",
+            &PyStructuredSDFGBuilder::add_transition,
+            py::arg("lhs"),
+            py::arg("rhs"),
+            py::arg("debug_info") = sdfg::DebugInfo()
+        )
         .def(
             "add_gemm",
             &PyStructuredSDFGBuilder::add_gemm,
@@ -301,10 +358,10 @@ PYBIND11_MODULE(_sdfg, m) {
             py::arg("debug_info") = sdfg::DebugInfo()
         )
         .def(
-            "add_intrinsic",
-            &PyStructuredSDFGBuilder::add_intrinsic,
+            "add_cmath",
+            &PyStructuredSDFGBuilder::add_cmath,
             py::arg("block_ptr"),
-            py::arg("name"),
+            py::arg("func"),
             py::arg("debug_info") = sdfg::DebugInfo()
         )
         .def(
@@ -320,6 +377,13 @@ PYBIND11_MODULE(_sdfg, m) {
             py::arg("block_ptr"),
             py::arg("value"),
             py::arg("num"),
+            py::arg("debug_info") = sdfg::DebugInfo()
+        )
+        .def(
+            "add_memcpy",
+            &PyStructuredSDFGBuilder::add_memcpy,
+            py::arg("block_ptr"),
+            py::arg("count"),
             py::arg("debug_info") = sdfg::DebugInfo()
         )
         .def("get_sizeof", &PyStructuredSDFGBuilder::get_sizeof, py::arg("type"))

@@ -19,7 +19,7 @@ def initialize(M, N, datatype=np.float64):
     while np.linalg.matrix_rank(A) < N:
         A = rng.random((M, N), dtype=datatype)
 
-    return (A,)
+    return A
 
 
 def kernel(A):
@@ -37,59 +37,71 @@ def kernel(A):
     return Q, R
 
 
-@pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
+@pytest.mark.parametrize(
+    "target",
+    [
+        "none",
+        "sequential",
+        "openmp",
+        # "cuda"
+    ],
+)
 def test_gramschmidt(target):
     if target == "none":
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
+                "GEMM": 1,
+                "MAP": 6,
+                "CMath": 1,
                 "DOT": 0,
+                "SEQUENTIAL": 6,
+                "FOR": 9,
+                "Memset": 2,
+                "Malloc": 2,
             }
         )
     elif target == "sequential":
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
+                "HIGHWAY": 2,
+                "GEMM": 1,
+                "MAP": 6,
+                "CMath": 1,
                 "DOT": 0,
+                "SEQUENTIAL": 4,
+                "FOR": 9,
+                "Memset": 2,
+                "Malloc": 2,
             }
         )
     elif target == "openmp":
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
+                "HIGHWAY": 2,
+                "GEMM": 1,
+                "MAP": 6,
+                "CPU_PARALLEL": 3,
+                "CMath": 1,
                 "DOT": 0,
+                "SEQUENTIAL": 1,
+                "FOR": 9,
+                "Memset": 2,
+                "Malloc": 2,
             }
         )
     else:  # cuda
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
+                "GEMM": 1,
+                "CUDA": 5,
+                "MAP": 6,
+                "CUDAOffloading": 14,
+                "CMath": 1,
                 "DOT": 0,
+                "SEQUENTIAL": 1,
+                "FOR": 9,
+                "Memset": 2,
+                "Malloc": 2,
             }
         )
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)

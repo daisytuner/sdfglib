@@ -1,0 +1,10 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(sdfg CONFIG)
+find_dependency(sdfgopt CONFIG)
+
+include("${CMAKE_CURRENT_LIST_DIR}/sdfgtutorial_printf_targetTargets.cmake")
+
+check_required_components(sdfgtutorial_printf_target)

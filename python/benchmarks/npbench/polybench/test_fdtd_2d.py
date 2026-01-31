@@ -27,60 +27,21 @@ def kernel(TMAX, ex, ey, hz, _fict_):
         hz[:-1, :-1] -= 0.7 * (ex[:-1, 1:] - ex[:-1, :-1] + ey[1:, :-1] - ey[:-1, :-1])
 
 
-@pytest.mark.skip()
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_fdtd_2d(target):
     if target == "none":
-        verifier = SDFGVerification(
-            verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
-        )
+        verifier = SDFGVerification(verification={"MAP": 7, "SEQUENTIAL": 7, "FOR": 8})
     elif target == "sequential":
         verifier = SDFGVerification(
-            verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
+            verification={"HIGHWAY": 4, "MAP": 7, "SEQUENTIAL": 3, "FOR": 8}
         )
     elif target == "openmp":
         verifier = SDFGVerification(
-            verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
+            verification={"HIGHWAY": 3, "CPU_PARALLEL": 4, "MAP": 7, "FOR": 8}
         )
     else:  # cuda
         verifier = SDFGVerification(
-            verification={
-                "FOR": 0,
-                "MAP": 0,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
-                "DOT": 0,
-            }
+            verification={"CUDA": 7, "MAP": 7, "CUDAOffloading": 18, "FOR": 8}
         )
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)
 

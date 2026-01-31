@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  wheels:
+    name: Wheels (${{ matrix.os }}, ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [build-amd64-big, build-arm64-big]
+        python: ["cp311", "cp312", "cp313", "cp314"]
+        include:
+          - os: build-amd64-big
+            cibw_archs: x86_64
+          - os: build-arm64-big
+            cibw_archs: aarch64
+          # - os: macos-14
+          #   cibw_archs: arm64
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: pypa/cibuildwheel@v3.3.1
+        with:
+          package-dir: python/
+          output-dir: wheelhouse
+        env:
+          CIBW_ARCHS: ${{ matrix.cibw_archs }}
+          CIBW_BUILD: "${{ matrix.python }}-*"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}-${{ matrix.python }}
+          path: wheelhouse/*.whl
+
+  publish:
+    needs: [wheels]
+    runs-on: build-amd64-big
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+
+      - uses: pypa/gh-action-pypi-publish@v1.10.0

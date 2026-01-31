@@ -390,30 +390,6 @@ void register_default_dispatchers() {
             );
         }
     );
-    // Dot - CUBLAS with data transfers
-    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
-        math::blas::LibraryNodeType_DOT.value() + "::" + math::blas::ImplementationType_CUBLASWithTransfers.value(),
-        [](LanguageExtension& language_extension,
-           const Function& function,
-           const data_flow::DataFlowGraph& data_flow_graph,
-           const data_flow::LibraryNode& node) {
-            return std::make_unique<math::blas::DotNodeDispatcher_CUBLASWithTransfers>(
-                language_extension, function, data_flow_graph, dynamic_cast<const math::blas::DotNode&>(node)
-            );
-        }
-    );
-    // Dot - CUBLAS without data transfers
-    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
-        math::blas::LibraryNodeType_DOT.value() + "::" + math::blas::ImplementationType_CUBLASWithoutTransfers.value(),
-        [](LanguageExtension& language_extension,
-           const Function& function,
-           const data_flow::DataFlowGraph& data_flow_graph,
-           const data_flow::LibraryNode& node) {
-            return std::make_unique<math::blas::DotNodeDispatcher_CUBLASWithoutTransfers>(
-                language_extension, function, data_flow_graph, dynamic_cast<const math::blas::DotNode&>(node)
-            );
-        }
-    );
 
     // GEMM - BLAS
     LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
@@ -423,30 +399,6 @@ void register_default_dispatchers() {
            const data_flow::DataFlowGraph& data_flow_graph,
            const data_flow::LibraryNode& node) {
             return std::make_unique<math::blas::GEMMNodeDispatcher_BLAS>(
-                language_extension, function, data_flow_graph, dynamic_cast<const math::blas::GEMMNode&>(node)
-            );
-        }
-    );
-    // GEMM - CUBLAS with data transfers
-    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
-        math::blas::LibraryNodeType_GEMM.value() + "::" + math::blas::ImplementationType_CUBLASWithTransfers.value(),
-        [](LanguageExtension& language_extension,
-           const Function& function,
-           const data_flow::DataFlowGraph& data_flow_graph,
-           const data_flow::LibraryNode& node) {
-            return std::make_unique<math::blas::GEMMNodeDispatcher_CUBLASWithTransfers>(
-                language_extension, function, data_flow_graph, dynamic_cast<const math::blas::GEMMNode&>(node)
-            );
-        }
-    );
-    // GEMM - CUBLAS without data transfers
-    LibraryNodeDispatcherRegistry::instance().register_library_node_dispatcher(
-        math::blas::LibraryNodeType_GEMM.value() + "::" + math::blas::ImplementationType_CUBLASWithoutTransfers.value(),
-        [](LanguageExtension& language_extension,
-           const Function& function,
-           const data_flow::DataFlowGraph& data_flow_graph,
-           const data_flow::LibraryNode& node) {
-            return std::make_unique<math::blas::GEMMNodeDispatcher_CUBLASWithoutTransfers>(
                 language_extension, function, data_flow_graph, dynamic_cast<const math::blas::GEMMNode&>(node)
             );
         }

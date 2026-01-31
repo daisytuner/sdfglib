@@ -15,7 +15,7 @@ def initialize(N, datatype=np.float64):
         A[i, i] = 1.0
     A[:] = A @ np.transpose(A)
 
-    return (A,)
+    return A
 
 
 def kernel(A):
@@ -29,59 +29,54 @@ def kernel(A):
         A[i, i] = np.sqrt(A[i, i])
 
 
-@pytest.mark.skip()
-@pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
+@pytest.mark.parametrize(
+    "target",
+    [
+        "none",
+        "sequential",
+        # "openmp",
+        "cuda",
+    ],
+)
 def test_cholesky(target):
     if target == "none":
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
+                "FOR": 4,
                 "MAP": 0,
                 "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
                 "DOT": 0,
+                "CMath": 2,
             }
         )
     elif target == "sequential":
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
+                "FOR": 4,
                 "MAP": 0,
                 "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
                 "DOT": 0,
+                "CMath": 2,
             }
         )
     elif target == "openmp":
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
+                "FOR": 4,
                 "MAP": 0,
                 "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
                 "DOT": 0,
+                "CMath": 2,
             }
         )
     else:  # cuda
         verifier = SDFGVerification(
             verification={
-                "FOR": 0,
+                "FOR": 4,
                 "MAP": 0,
                 "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
-                "GEMM": 0,
                 "DOT": 0,
+                "CMath": 2,
             }
         )
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)

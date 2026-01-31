@@ -11,17 +11,23 @@ set(SOURCE_FILES
     src/analysis/scop_analysis.cpp
     src/passes/normalization/perfect_loop_distribution.cpp
     src/passes/normalization/stride_minimization.cpp
+    src/passes/offloading/cuda_library_node_rewriter_pass.cpp
     src/passes/offloading/code_motion/block_hoisting.cpp
     src/passes/offloading/code_motion/block_sorting.cpp
     src/passes/offloading/data_transfer_minimization_pass.cpp
     src/passes/offloading/remove_redundant_transfers_pass.cpp
     src/passes/offloading/sync_condition_propagation.cpp
+    src/passes/dot_expansion_pass.cpp
+    src/passes/gemm_expansion_pass.cpp
     src/passes/opt_pipeline.cpp
     src/passes/scheduler/cuda_scheduler.cpp
     src/passes/scheduler/highway_scheduler.cpp
     src/passes/scheduler/loop_scheduler.cpp
     src/passes/scheduler/omp_scheduler.cpp
     src/passes/scheduler/polly_scheduler.cpp
+    src/targets/cuda/blas/dot.cpp
+    src/targets/cuda/blas/gemm.cpp
+    src/targets/cuda/blas/utils.cpp
     src/targets/cuda/cuda.cpp
     src/targets/cuda/cuda_data_offloading_node.cpp
     src/targets/cuda/cuda_map_dispatcher.cpp

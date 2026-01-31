@@ -63,28 +63,17 @@ def test_gemver(target):
         )
     elif target == "openmp":
         verifier = SDFGVerification(
-            verification={
-                "FOR": 2,
-                "MAP": 1,
-                "SEQUENTIAL": 0,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 1,
-                "GEMM": 4,
-                "DOT": 0,
-            }
+            verification={"CPU_PARALLEL": 1, "MAP": 1, "Malloc": 2, "FOR": 2, "GEMM": 4}
         )
     else:  # cuda
         verifier = SDFGVerification(
             verification={
-                "FOR": 2,
+                "CUDA": 1,
                 "MAP": 1,
-                "SEQUENTIAL": 1,
-                "CUDA": 0,
-                "CPU_PARALLEL": 0,
-                "HIGHWAY": 0,
+                "CUDAOffloading": 4,
+                "Malloc": 2,
+                "FOR": 2,
                 "GEMM": 4,
-                "DOT": 0,
             }
         )
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)

@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.26)
 
-# Python dependencies
-find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-find_package(pybind11 CONFIG)
-
+find_package(pybind11 CONFIG REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
 # Define module
@@ -11,6 +8,8 @@ set(PYTHON_SOURCES
     bindings/bindings.cpp
     bindings/py_structured_sdfg.cpp
     bindings/py_structured_sdfg_builder.cpp
+    bindings/data_flow/py_cmath.cpp
+    bindings/data_flow/py_tasklet.cpp
     bindings/types/py_types.cpp
 )
 

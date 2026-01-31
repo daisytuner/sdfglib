@@ -87,7 +87,11 @@ def test_float_arithmetic():
     def fp_mod(a, b) -> float:
         return a % b
 
-    assert fp_mod(5.5, 2.0) == 1.5  # fmod behavior
+    # Python's floored modulo (result has same sign as divisor)
+    assert fp_mod(5.5, 2.0) == 1.5
+    assert fp_mod(-5.5, 2.0) == 0.5  # Python: -5.5 % 2.0 = 0.5 (not -1.5 like fmod)
+    assert fp_mod(5.5, -2.0) == -0.5  # Python: 5.5 % -2.0 = -0.5 (not 1.5 like fmod)
+    assert fp_mod(-5.5, -2.0) == -1.5
 
 
 def test_bitwise_ops():

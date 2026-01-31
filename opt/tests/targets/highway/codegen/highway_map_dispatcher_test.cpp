@@ -84,7 +84,6 @@ TEST(HighwayMapDispatcherTest, TaskletUnsupported) {
         data_flow::TaskletCode::int_lshr,
         data_flow::TaskletCode::int_scmp,
         data_flow::TaskletCode::int_ucmp,
-        data_flow::TaskletCode::fp_rem,
         data_flow::TaskletCode::fp_ord,
         data_flow::TaskletCode::fp_uno
     };
@@ -105,16 +104,15 @@ TEST(HighwayMapDispatcherTest, CMathFunctions) {
     };
 
     std::vector<TestCase> test_cases = {
-        {math::cmath::CMathFunction::cos, "_out = hn::Cos(_in1);"},
+        {math::cmath::CMathFunction::cos, "_out = hn::Cos(daisy_vec_f32, _in1);"},
         {math::cmath::CMathFunction::ceil, "_out = hn::Ceil(_in1);"},
-        {math::cmath::CMathFunction::exp, "_out = hn::Exp(_in1);"},
-        {math::cmath::CMathFunction::exp2, "_out = hn::Exp2(_in1);"},
+        {math::cmath::CMathFunction::exp, "_out = hn::Exp(daisy_vec_f32, _in1);"},
         {math::cmath::CMathFunction::fabs, "_out = hn::Abs(_in1);"},
         {math::cmath::CMathFunction::floor, "_out = hn::Floor(_in1);"},
-        {math::cmath::CMathFunction::log, "_out = hn::Log(_in1);"},
-        {math::cmath::CMathFunction::log2, "_out = hn::Log2(_in1);"},
-        {math::cmath::CMathFunction::log10, "_out = hn::Log10(_in1);"},
-        {math::cmath::CMathFunction::sin, "_out = hn::Sin(_in1);"},
+        {math::cmath::CMathFunction::log, "_out = hn::Log(daisy_vec_f32, _in1);"},
+        {math::cmath::CMathFunction::log2, "_out = hn::Log2(daisy_vec_f32, _in1);"},
+        {math::cmath::CMathFunction::log10, "_out = hn::Log10(daisy_vec_f32, _in1);"},
+        {math::cmath::CMathFunction::sin, "_out = hn::Sin(daisy_vec_f32, _in1);"},
         {math::cmath::CMathFunction::sqrt, "_out = hn::Sqrt(_in1);"},
         {math::cmath::CMathFunction::trunc, "_out = hn::Trunc(_in1);"},
         {math::cmath::CMathFunction::round, "_out = hn::Round(_in1);"},

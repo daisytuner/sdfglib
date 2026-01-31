@@ -21,7 +21,7 @@ def kernel(M, float_n, data):
     return np.cov(np.transpose(data))
 
 
-@pytest.mark.skip()
+@pytest.mark.skip("np.cov not yet supported")
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_covariance2(target):
     if target == "none":

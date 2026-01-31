@@ -132,7 +132,7 @@ class ONNXHandler:
 
         ptr_type = Pointer(dtype)
 
-        if not self.builder.has_container(target_name):
+        if not self.builder.exists(target_name):
             self.builder.add_container(target_name, ptr_type, False)
             self.symbol_table[target_name] = ptr_type
             self.array_info[target_name] = {"ndim": len(out_shape), "shapes": out_shape}

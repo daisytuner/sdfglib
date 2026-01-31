@@ -7,6 +7,8 @@
 namespace sdfg {
 namespace transformations {
 
+// Replayer::Replayer(serializer::TransformationDeserializerRegistry& registry) : registry_(registry) {}
+
 void Replayer::replay(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
@@ -43,6 +45,21 @@ void Replayer::replay(
         analysis_manager.invalidate_all();
     }
 }
+
+// bool Replayer::supported_transforms(nlohmann::json& sequence) {
+//     if (sequence.is_array()) {
+//         for (auto entry : sequence) {
+//             auto factory = registry_.get_factory_from_json(entry);
+//             if (!factory.has_value()) {
+//                 return false;
+//             }
+//         }
+//         return true;
+//     } else {
+//         return false;
+//     }
+// }
+
 
 } // namespace transformations
 } // namespace sdfg
