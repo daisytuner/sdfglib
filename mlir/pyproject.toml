@@ -1,18 +1,81 @@
 [build-system]
-requires = ["scikit-build-core"]
+requires = [
+  "scikit-build-core>=0.10",
+  "pybind11>=2.12",
+]
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "docc_ml"
-version = "0.0.1"
+name = "docc-ml"
+dynamic = ["version"]
 description = "Python bindings and MLIR conversion for JIT compiling PyTorch models to SDFGs."
-authors = [{name = "Daisytuner"}]
-requires-python = ">=3.11,<3.12"
+authors = [{ name = "Daisytuner", email = "hello@daisytuner.com" }]
+maintainers = [{ name = "Daisytuner", email = "hello@daisytuner.com" }]
+license = { text = "BSD-3-Clause" }
+requires-python = ">=3.11"
+readme = "README.md"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: BSD License",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: C++",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Software Development :: Compilers",
+]
+keywords = ["pytorch", "mlir", "sdfg", "compiler", "optimization"]
 dependencies = [
     "torch-mlir",
+    "numpy>=1.19.0",
+    "scipy>=1.7.0",
 ]
+
+[project.urls]
+Homepage = "https://daisytuner.com"
+Documentation = "https://docs.daisytuner.com"
+Repository = "https://github.com/daisytuner/docc"
+Issues = "https://github.com/daisytuner/docc/issues"
 
 [tool.scikit-build]
 wheel.packages = ["docc_ml"]
 cmake.source-dir = ".."
-cmake.define = { MLIR_BUILD_FRONTEND = "ON", MLIR_DIR = "/usr/lib/llvm-19/lib/cmake/mlir", SDFG_BUILD_TESTS = "OFF", BUILD_TESTS = "OFF", BUILD_BENCHMARKS = "OFF", BUILD_BENCHMARKS_GOOGLE = "OFF" }
+cmake.build-type = "Release"
+cmake.define.MLIR_BUILD_FRONTEND = "ON"
+cmake.define.MLIR_DIR = "/usr/lib/llvm-19/lib/cmake/mlir"
+cmake.define.SDFG_BUILD_TESTS = "OFF"
+cmake.define.BUILD_TESTS = "OFF"
+cmake.define.BUILD_BENCHMARKS = "OFF"
+cmake.define.BUILD_BENCHMARKS_GOOGLE = "OFF"
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "../VERSION"
+regex = "(?P<value>\\d+\\.\\d+\\.\\d+)"
+
+[tool.cibuildwheel]
+build = "cp311-* cp312-* cp313-* cp314-*"
+skip = "*-win32 *-manylinux_i686 *-musllinux_*"
+build-frontend = "build[uv]"
+
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+
+test-command = "python -c \"import docc; print('docc imported successfully')\""
+test-requires = ["numpy", "pytest", "scipy"]
+
+[tool.cibuildwheel.linux]
+before-all = [
+  "yum install -y boost-devel gmp-devel cmake ninja-build git libcurl-devel autoconf automake libtool",
+  "git clone --depth 1 --branch v3.11.3 https://github.com/nlohmann/json.git /tmp/nlohmann_json",
+  "cmake -S /tmp/nlohmann_json -B /tmp/nlohmann_json/build -DJSON_BuildTests=OFF",
+  "cmake --install /tmp/nlohmann_json/build",
+  "curl -L https://libisl.sourceforge.io/isl-0.27.tar.xz | tar -xJ -C /tmp",
+  "cd /tmp/isl-0.27 && ./configure && make -j$(nproc) && make install",
+]

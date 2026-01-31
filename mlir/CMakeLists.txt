@@ -44,15 +44,4 @@ if(MLIR_BUILD_TESTS)
     add_subdirectory(test)
 endif()
 
-# add_library(docc::mlir_sdfg ALIAS mlir_sdfg)
-
-# install(TARGETS mlir_sdfg 
-#     LIBRARY DESTINATION lib/docc-${DOCC_VERSION}/lib 
-#     COMPONENT runtime
-# )
-
-# # Install headers
-# install(DIRECTORY include/mlir-sdfg
-#     DESTINATION include/docc-${DOCC_VERSION}
-#     COMPONENT development
-# )
+add_subdirectory(bindings)
