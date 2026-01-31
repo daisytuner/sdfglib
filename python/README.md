@@ -13,7 +13,6 @@ converts Python functions into SDFGs and codegens them for the available target.
 To build the Python component from sources, first build the parent `sdfglib` project (see the [sdfglib README](../README.md)), then run pip on the component's directory:
 
 ```bash
-# From the sdfglib directory
 pip install -e python/
 ```
 
@@ -194,5 +193,5 @@ sdfg = my_kernel.last_sdfg
 
 ## License
 
-This component is part of sdfglib and is published under the BSD-3-Clause license.
+This component is part of docc and is published under the BSD-3-Clause license.
 See [LICENSE](../LICENSE) for details.
