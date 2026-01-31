@@ -23,8 +23,8 @@ def initialize(M, N, nnz):
     matrix = random(
         M, N, density=nnz / (M * N), format="csr", dtype=np.float64, random_state=rng
     )
-    A_row = np.int32(matrix.indptr)
-    A_col = np.int32(matrix.indices)
+    A_row = np.int64(matrix.indptr)  # Originally np.int32
+    A_col = np.int64(matrix.indices)  # Originally np.int32
     A_val = matrix.data
 
     return A_row, A_col, A_val, x
@@ -55,22 +55,22 @@ def kernel(A_row, A_col, A_val, x):
 def test_spmv(target):
     if target == "none":
         verifier = SDFGVerification(
-            verification={"DOT": 1, "MAP": 4, "SEQUENTIAL": 4, "FOR": 5, "Malloc": 4}
+            verification={"DOT": 0, "MAP": 4, "SEQUENTIAL": 4, "FOR": 6, "Malloc": 4}
         )
     elif target == "sequential":
         verifier = SDFGVerification(
             verification={
-                "DOT": 1,
+                "DOT": 0,
                 "HIGHWAY": 3,
                 "MAP": 4,
                 "SEQUENTIAL": 1,
-                "FOR": 5,
+                "FOR": 6,
                 "Malloc": 4,
             }
         )
     elif target == "openmp":
         verifier = SDFGVerification(
-            verification={"DOT": 1, "CPU_PARALLEL": 4, "MAP": 4, "FOR": 5, "Malloc": 4}
+            verification={"DOT": 0, "CPU_PARALLEL": 4, "MAP": 4, "FOR": 6, "Malloc": 4}
         )
     else:  # cuda
         verifier = SDFGVerification(

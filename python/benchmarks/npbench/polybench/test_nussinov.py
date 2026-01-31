@@ -5,7 +5,7 @@ from benchmarks.npbench.harness import SDFGVerification, run_benchmark, run_pyte
 PARAMETERS = {"S": {"N": 40}, "M": {"N": 90}, "L": {"N": 200}, "paper": {"N": 500}}
 
 
-def initialize(N, datatype=np.int32):
+def initialize(N, datatype=np.int64):  # originally np.int32
     seq = np.fromfunction(lambda i: (i + 1) % 4, (N,), dtype=datatype)
 
     return N, seq
@@ -20,7 +20,7 @@ def match(b1, b2):
 
 def kernel(N, seq):
 
-    table = np.zeros((N, N), np.int32)
+    table = np.zeros((N, N), np.int64)  # originally np.int32
 
     for i in range(N - 1, -1, -1):
         for j in range(i + 1, N):

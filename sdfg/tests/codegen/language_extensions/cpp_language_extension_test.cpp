@@ -31,7 +31,7 @@ TEST(CPPLanguageExtensionTest, PrimitiveType_Int8) {
 
     codegen::CPPLanguageExtension generator(sdfg);
     auto result = generator.primitive_type(types::PrimitiveType::Int8);
-    EXPECT_EQ(result, "signed char");
+    EXPECT_EQ(result, "int8_t");
 }
 
 TEST(CPPLanguageExtensionTest, PrimitiveType_Int16) {
@@ -40,7 +40,7 @@ TEST(CPPLanguageExtensionTest, PrimitiveType_Int16) {
 
     codegen::CPPLanguageExtension generator(sdfg);
     auto result = generator.primitive_type(types::PrimitiveType::Int16);
-    EXPECT_EQ(result, "short");
+    EXPECT_EQ(result, "int16_t");
 }
 
 TEST(CPPLanguageExtensionTest, PrimitiveType_Int32) {
@@ -49,7 +49,7 @@ TEST(CPPLanguageExtensionTest, PrimitiveType_Int32) {
 
     codegen::CPPLanguageExtension generator(sdfg);
     auto result = generator.primitive_type(types::PrimitiveType::Int32);
-    EXPECT_EQ(result, "int");
+    EXPECT_EQ(result, "int32_t");
 }
 
 TEST(CPPLanguageExtensionTest, PrimitiveType_Int64) {
@@ -58,7 +58,7 @@ TEST(CPPLanguageExtensionTest, PrimitiveType_Int64) {
 
     codegen::CPPLanguageExtension generator(sdfg);
     auto result = generator.primitive_type(types::PrimitiveType::Int64);
-    EXPECT_EQ(result, "long long");
+    EXPECT_EQ(result, "int64_t");
 }
 
 TEST(CPPLanguageExtensionTest, PrimitiveType_UInt8) {
@@ -67,7 +67,7 @@ TEST(CPPLanguageExtensionTest, PrimitiveType_UInt8) {
 
     codegen::CPPLanguageExtension generator(sdfg);
     auto result = generator.primitive_type(types::PrimitiveType::UInt8);
-    EXPECT_EQ(result, "char");
+    EXPECT_EQ(result, "uint8_t");
 }
 
 TEST(CPPLanguageExtensionTest, PrimitiveType_UInt16) {
@@ -76,7 +76,7 @@ TEST(CPPLanguageExtensionTest, PrimitiveType_UInt16) {
 
     codegen::CPPLanguageExtension generator(sdfg);
     auto result = generator.primitive_type(types::PrimitiveType::UInt16);
-    EXPECT_EQ(result, "unsigned short");
+    EXPECT_EQ(result, "uint16_t");
 }
 
 TEST(CPPLanguageExtensionTest, PrimitiveType_UInt32) {
@@ -85,7 +85,7 @@ TEST(CPPLanguageExtensionTest, PrimitiveType_UInt32) {
 
     codegen::CPPLanguageExtension generator(sdfg);
     auto result = generator.primitive_type(types::PrimitiveType::UInt32);
-    EXPECT_EQ(result, "unsigned int");
+    EXPECT_EQ(result, "uint32_t");
 }
 
 TEST(CPPLanguageExtensionTest, PrimitiveType_UInt64) {
@@ -94,7 +94,7 @@ TEST(CPPLanguageExtensionTest, PrimitiveType_UInt64) {
 
     codegen::CPPLanguageExtension generator(sdfg);
     auto result = generator.primitive_type(types::PrimitiveType::UInt64);
-    EXPECT_EQ(result, "unsigned long long");
+    EXPECT_EQ(result, "uint64_t");
 }
 
 TEST(CPPLanguageExtensionTest, PrimitiveType_Float) {
@@ -121,7 +121,7 @@ TEST(CPPLanguageExtensionTest, Declaration_Scalar) {
 
     codegen::CPPLanguageExtension generator(sdfg);
     auto result = generator.declaration("var", types::Scalar(types::PrimitiveType::Int32));
-    EXPECT_EQ(result, "int var");
+    EXPECT_EQ(result, "int32_t var");
 }
 
 TEST(CPPLanguageExtensionTest, Declaration_Pointer) {
@@ -130,8 +130,7 @@ TEST(CPPLanguageExtensionTest, Declaration_Pointer) {
 
     codegen::CPPLanguageExtension generator(sdfg);
     auto result = generator.declaration("var", types::Pointer(types::Scalar(types::PrimitiveType::Int32)));
-    EXPECT_EQ(result, "int *var");
-
+    EXPECT_EQ(result, "int32_t *var");
     result = generator.declaration("var", types::Pointer());
     EXPECT_EQ(result, "void* var");
 }
@@ -143,7 +142,7 @@ TEST(CPPLanguageExtensionTest, Declaration_Array) {
     codegen::CPPLanguageExtension generator(sdfg);
     auto result =
         generator.declaration("var", types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)));
-    EXPECT_EQ(result, "int var[10]");
+    EXPECT_EQ(result, "int32_t var[10]");
 }
 
 TEST(CPPLanguageExtensionTest, Declaration_Struct) {
@@ -172,7 +171,7 @@ TEST(CPPLanguageExtensionTest, Declaration_PointerToArray) {
     auto result = generator.declaration(
         "var", types::Pointer(types::Array(types::Scalar(types::PrimitiveType::Int32), symbolic::integer(10)))
     );
-    EXPECT_EQ(result, "int (*var)[10]");
+    EXPECT_EQ(result, "int32_t (*var)[10]");
 }
 
 TEST(CPPLanguageExtensionTest, Typecast) {

@@ -78,7 +78,7 @@ class DoccProgram:
         self,
         func,
         target="none",
-        category="desktop",
+        category="server",
         instrumentation_mode=None,
         capture_args=None,
     ):
@@ -90,6 +90,9 @@ class DoccProgram:
         self.capture_args = capture_args
         self.last_sdfg = None
         self.cache = {}
+        print(
+            f"Created DoccProgram with category '{self.category}' and name '{self.name}'"
+        )
 
     def __call__(self, *args):
         # JIT compile and run

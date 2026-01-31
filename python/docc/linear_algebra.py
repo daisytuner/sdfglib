@@ -1,5 +1,5 @@
 import ast
-from ._sdfg import Scalar, PrimitiveType
+from ._sdfg import Scalar, PrimitiveType, TaskletCode
 
 
 class LinearAlgebraHandler:
@@ -463,6 +463,17 @@ class LinearAlgebraHandler:
 
         tmp_res = f"_dot_res_{self._get_unique_id()}"
         self.builder.add_container(tmp_res, Scalar(PrimitiveType.Double), False)
+        block = self.builder.add_block()
+        constant = self.builder.add_constant(block, "0.0", Scalar(PrimitiveType.Double))
+        tasklet = self.builder.add_tasklet(block, TaskletCode.assign, ["_in"], ["_out"])
+        self.builder.add_memlet(
+            block, constant, "", tasklet, "_in", "", Scalar(PrimitiveType.Double)
+        )
+        access = self.builder.add_access(block, tmp_res)
+        self.builder.add_memlet(
+            block, tasklet, "_out", access, "", "", Scalar(PrimitiveType.Double)
+        )
+
         self.symbol_table[tmp_res] = Scalar(PrimitiveType.Double)
 
         self.builder.add_dot(

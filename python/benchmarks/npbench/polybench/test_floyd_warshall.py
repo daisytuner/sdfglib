@@ -5,7 +5,7 @@ from benchmarks.npbench.harness import SDFGVerification, run_benchmark, run_pyte
 PARAMETERS = {"S": {"N": 200}, "M": {"N": 400}, "L": {"N": 850}, "paper": {"N": 2800}}
 
 
-def initialize(N, datatype=np.int32):
+def initialize(N, datatype=np.int64):  # originally np.int32
     path = np.fromfunction(lambda i, j: i * j % 7 + 1, (N, N), dtype=datatype)
     for i in range(N):
         for j in range(N):

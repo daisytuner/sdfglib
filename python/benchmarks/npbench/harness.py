@@ -98,6 +98,7 @@ def run_benchmark(initialize_func, kernel_func, parameters, name, args=None):
         parser.add_argument("--docc", action="store_true")
         parser.add_argument("--numpy", action="store_true")
         parser.add_argument("--target", type=str, default="none")
+        parser.add_argument("--n_runs", type=int, default=10)
         args = parser.parse_args()
 
     if args.size not in parameters:
@@ -123,11 +124,12 @@ def run_benchmark(initialize_func, kernel_func, parameters, name, args=None):
     if args.numpy:
         # Create a copy of inputs for numpy execution to avoid modification
         inputs_ref = [x.copy() if isinstance(x, np.ndarray) else x for x in kernel_args]
-        start = time.time()
-        # Execute the original python function (undecorated)
-        kernel_func(*inputs_ref)
-        end = time.time()
-        print(f"Numpy execution time: {end - start:.6f} seconds")
+        for _ in range(args.n_runs):
+            start = time.time()
+            # Execute the original python function (undecorated)
+            kernel_func(*inputs_ref)
+            end = time.time()
+            print(f"Numpy execution time: {end - start:.6f} seconds")
 
     if args.docc:
         # Create a copy of inputs for docc execution
@@ -139,15 +141,26 @@ def run_benchmark(initialize_func, kernel_func, parameters, name, args=None):
             kernel_func,
             target=args.target,
         )
+
+        times = []
         start = time.time()
         kernel_with_target(*inputs_docc)
         end = time.time()
+        times.append(end - start)
         print(f"Docc execution time: {end - start:.6f} seconds")
 
-        start = time.time()
-        kernel_with_target(*inputs_docc)
-        end = time.time()
-        print(f"Docc execution time (cached): {end - start:.6f} seconds")
+        for _ in range(args.n_runs):
+            start = time.time()
+            kernel_with_target(*inputs_docc)
+            end = time.time()
+            times.append(end - start)
+            print(f"Docc execution time (cached): {end - start:.6f} seconds")
+
+        # print(f"Average Docc execution time over {N+1} runs: {np.mean(times):.6f} seconds")
+        # print(f"Average Docc execution time (cached) over {N} runs: {np.mean(times[1:]):.6f} seconds")
+
+
+# docc.sdfg_rpc_context = docc.DaisytunerTransfertuningRpcContext.from_docc_config()
 
 
 def run_pytest(
@@ -191,6 +204,7 @@ def run_pytest(
     kernel_with_target = docc.program(
         kernel_func,
         target=target,
+        category="server",
     )
     res_docc = kernel_with_target(*inputs_docc)
 
