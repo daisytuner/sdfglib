@@ -158,8 +158,54 @@ jobs:
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
           pytest -v python/benchmarks/
 
+  mlir-tests:
+    runs-on:
+      group: dahlia
+      labels: openmp
+    container:
+      image: daisytuner/docc-v2:latest
+      options: >-
+        --cap-add=PERFMON
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Mark GitHub Actions workdir as safe
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Install dependencies
+        run: |
+          apt-get install -y libmlir-19-dev mlir-19-tools
+
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake -G Ninja \
+            -DCMAKE_C_COMPILER=clang-19 \
+            -DCMAKE_CXX_COMPILER=clang++-19 \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DMLIR_BUILD_FRONTEND=ON \
+            -DMLIR_BUILD_TESTS=ON \
+            -DMLIR_DIR=/usr/lib/llvm-19/lib/cmake/mlir \
+            -DLLVM_EXTERNAL_LIT=/usr/lib/llvm-19/build/utils/lit/lit.py \
+            -DWITH_SYMENGINE_THREAD_SAFE=ON \
+            -DWITH_SYMENGINE_RCP=ON \
+            -DINSTALL_GTEST=OFF \
+            -DBUILD_TESTS:BOOL=OFF \
+            -DBUILD_BENCHMARKS:BOOL=OFF \
+            -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF \
+            ..
+          ninja -j$(nproc)
+
+      - name: Unit tests
+        run: |
+          ninja check-sdfg-opt
+
   finish:
-    needs: [cpp-tests, python-tests]
+    needs: [cpp-tests, python-tests, mlir-tests]
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished
