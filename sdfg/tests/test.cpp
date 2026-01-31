@@ -3,8 +3,6 @@
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 #include "sdfg/serializer/json_serializer.h"
 
-using namespace sdfg;
-
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
     sdfg::codegen::register_default_dispatchers();
