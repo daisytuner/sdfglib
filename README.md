@@ -21,7 +21,7 @@ They provide an easy way to get started with docc.
 The Python frontend generates C++ code, which is compiled and called from Python.
 This requires `clang-19` to be installed on the system (see [LLVM releases](https://apt.llvm.org/)).
 
-Afterward, simply install docc via [PyPI](https://pypi.org/project/docc-compiler/):
+Afterwards, simply install docc via [PyPI](https://pypi.org/project/docc-compiler/):
 ```bash
 pip install docc-compiler
 ```
@@ -43,15 +43,19 @@ For further details, check out the [component's README.md](./python/).
 
 ### MLIR (PyTorch/ONNX)
 
-To export PyTorch models via the MLIR component, install the `torch-mlir` and `docc-ai` packages via pip:
+The MLIR frontend can be installed from PyPi:
 
 ```bash
 pip install docc-ai
+```
 
+To use the frontend with PyTorch, also install `torch-mlir`, which we use to translate models to core MLIR dialects initially:
+
+```bash
 pip install --pre torch-mlir torchvision --extra-index-url https://download.pytorch.org/whl/nightly/cpu -f https://github.com/llvm/torch-mlir-release/releases/expanded_assets/dev-wheels
 ```
 
-Afterwards, use the `import_from_pytorch` to generate an SDFG:
+This allows you to import models directly from PyTorch and generate an optimized SDFG:
 
 ```python
 import torch

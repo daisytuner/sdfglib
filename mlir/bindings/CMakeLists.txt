@@ -37,5 +37,5 @@ target_include_directories(sdfg-mlir PRIVATE
     ${PROJECT_BINARY_DIR}/include
 )
 
-# Install the Python module to the docc/ai package directory
-install(TARGETS sdfg-mlir DESTINATION docc/ai)
+# Install the Python module to the docc/mlir package directory
+install(TARGETS sdfg-mlir DESTINATION docc/mlir)

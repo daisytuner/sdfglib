@@ -11,9 +11,6 @@ The MLIR module contains a dialect and translation of core MLIR dialects to SDFG
 To build the MLIR component from source install LLVM/MLIR dependencies first:
 ```bash
 sudo apt-get install -y libmlir-19 libmlir-19-dev mlir-19-tools
-
-# use venv
-pip install --pre torch-mlir torchvision --extra-index-url https://download.pytorch.org/whl/nightly/cpu -f https://github.com/llvm/torch-mlir-release/releases/expanded_assets/dev-wheels
 ```
 
 Second, build from the root of the repository using cmake:
