@@ -6,7 +6,7 @@ requires = [
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "docc-ml"
+name = "docc-ai"
 dynamic = ["version"]
 description = "Python bindings and MLIR conversion for JIT compiling PyTorch models to SDFGs."
 authors = [{ name = "Daisytuner", email = "hello@daisytuner.com" }]
@@ -41,7 +41,7 @@ Repository = "https://github.com/daisytuner/docc"
 Issues = "https://github.com/daisytuner/docc/issues"
 
 [tool.scikit-build]
-wheel.packages = ["docc_ml"]
+wheel.packages = ["docc"]
 cmake.source-dir = ".."
 cmake.build-type = "Release"
 cmake.define.MLIR_BUILD_FRONTEND = "ON"
@@ -65,7 +65,7 @@ build-frontend = "build[uv]"
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
 
-test-command = "python -c \"import docc; print('docc imported successfully')\""
+test-command = "python -c \"import docc.ai; print('docc-ai imported successfully')\""
 test-requires = ["numpy", "pytest", "scipy"]
 
 [tool.cibuildwheel.linux]

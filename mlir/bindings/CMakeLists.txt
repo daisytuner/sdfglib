@@ -4,12 +4,12 @@ set(PYTHON_BINDING_SOURCES
     bindings.cpp
 )
 
-pybind11_add_module(docc-ml-bindings ${PYTHON_BINDING_SOURCES})
+pybind11_add_module(sdfg-mlir ${PYTHON_BINDING_SOURCES})
 
-set_target_properties(docc-ml-bindings PROPERTIES
+set_target_properties(sdfg-mlir PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
-    OUTPUT_NAME "_docc_ml"
+    OUTPUT_NAME "_sdfg_mlir"
 )
 
 # Link against MLIR libraries
@@ -17,7 +17,7 @@ get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
 get_property(translation_libs GLOBAL PROPERTY MLIR_TRANSLATION_LIBS)
 
-target_link_libraries(docc-ml-bindings PRIVATE
+target_link_libraries(sdfg-mlir PRIVATE
     ${dialect_libs}
     ${conversion_libs}
     ${translation_libs}
@@ -32,10 +32,10 @@ target_link_libraries(docc-ml-bindings PRIVATE
     sdfglib
 )
 
-target_include_directories(docc-ml-bindings PRIVATE
+target_include_directories(sdfg-mlir PRIVATE
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_BINARY_DIR}/include
 )
 
-# Install the Python module to the docc_ml package directory
-install(TARGETS docc-ml-bindings DESTINATION docc_ml)
+# Install the Python module to the docc/ai package directory
+install(TARGETS sdfg-mlir DESTINATION docc/ai)
