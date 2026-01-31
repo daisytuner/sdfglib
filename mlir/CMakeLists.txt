@@ -44,4 +44,7 @@ if(MLIR_BUILD_TESTS)
     add_subdirectory(test)
 endif()
 
-add_subdirectory(bindings)
+option(MLIR_BUILD_BINDINGS "Build MLIR bindings" OFF)
+if(MLIR_BUILD_BINDINGS)
+    add_subdirectory(bindings)
+endif()

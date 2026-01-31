@@ -119,7 +119,7 @@ jobs:
           echo "$PWD/.venv/bin" >> $GITHUB_PATH
 
       - name: Mark GitHub Actions workdir as safe
-        run: git config --global --add safe.directory /__w/docc/docc
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Install dependencies
         run: |
@@ -161,16 +161,31 @@ jobs:
   mlir-tests:
     runs-on:
       group: dahlia
-      labels: openmp
+      labels: cuda
     container:
       image: daisytuner/docc-v2:latest
       options: >-
         --cap-add=PERFMON
+        --gpus=all
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Create virtual environment
+        run: |
+          python -m venv .venv
+          echo "$PWD/.venv/bin" >> $GITHUB_PATH
 
       - name: Mark GitHub Actions workdir as safe
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -178,6 +193,10 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get install -y libmlir-19-dev mlir-19-tools
+
+          python -m pip install --upgrade pip
+          pip install pybind11 pytest coverage black==25.9.0 build scikit-build-core
+          pip install numpy scipy
 
       - name: Build
         run: |
@@ -204,6 +223,11 @@ jobs:
         run: |
           cd build/
           ninja check-sdfg-opt
+
+      - name: Build Python bindings
+        run: |
+          pip install --no-build-isolation -v -e mlir/
+          python -c "import docc_ml"
 
   finish:
     needs: [cpp-tests, python-tests, mlir-tests]
