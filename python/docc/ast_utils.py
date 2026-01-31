@@ -1,6 +1,6 @@
 import ast
 import copy
-from ._sdfg import DebugInfo
+from docc.sdfg import DebugInfo
 
 
 def is_negative_index(node):

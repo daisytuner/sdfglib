@@ -7,7 +7,16 @@ import getpass
 import hashlib
 import numpy as np
 from typing import Annotated, get_origin, get_args
-from ._sdfg import *
+from docc.sdfg import (
+    Scalar,
+    PrimitiveType,
+    Pointer,
+    Structure,
+    Array,
+    Type,
+    StructuredSDFG,
+    StructuredSDFGBuilder,
+)
 from .compiled_sdfg import CompiledSDFG
 from .ast_parser import ASTParser
 

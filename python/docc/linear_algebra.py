@@ -1,5 +1,5 @@
 import ast
-from ._sdfg import Scalar, PrimitiveType, TaskletCode
+from docc.sdfg import Scalar, PrimitiveType, TaskletCode
 
 
 class LinearAlgebraHandler:

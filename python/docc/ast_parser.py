@@ -1,6 +1,6 @@
 import ast
 import copy
-from ._sdfg import Scalar, PrimitiveType, Pointer, TaskletCode
+from docc.sdfg import Scalar, PrimitiveType, Pointer, TaskletCode
 from .ast_utils import (
     SliceRewriter,
     get_debug_info,
@@ -743,7 +743,7 @@ class ASTParser(ast.NodeVisitor):
         This avoids the loop transformation that would destroy slice shape info.
         """
         if debug_info is None:
-            from ._sdfg import DebugInfo
+            from docc.sdfg import DebugInfo
 
             debug_info = DebugInfo()
 

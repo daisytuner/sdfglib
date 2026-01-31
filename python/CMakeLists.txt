@@ -23,7 +23,7 @@ set_target_properties(sdfg-py PROPERTIES
 target_link_libraries(sdfg-py PRIVATE sdfg::sdfg sdfg::opt sdfg::rpc nlohmann_json::nlohmann_json ${CMAKE_DL_LIBS})
 
 # Install artifacts for the Python wheel
-install(TARGETS sdfg-py DESTINATION docc)
+install(TARGETS sdfg-py DESTINATION docc/sdfg)
 
 install(FILES
     $<TARGET_FILE:daisy_rtl>

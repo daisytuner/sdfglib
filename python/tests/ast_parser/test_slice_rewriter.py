@@ -1,7 +1,5 @@
-import pytest
 import numpy as np
 import docc
-from docc._sdfg import Pointer, Scalar, PrimitiveType
 
 
 class TestSliceRewriterSubscript:

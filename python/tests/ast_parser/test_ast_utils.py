@@ -1,7 +1,6 @@
 import ast
 import pytest
 from docc.ast_utils import get_debug_info
-from docc._sdfg import DebugInfo
 
 
 def test_get_debug_info():
