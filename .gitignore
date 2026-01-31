@@ -48,3 +48,5 @@ docs/
 
 node_modules/
 dist/
+
+venv-mlir/
