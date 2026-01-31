@@ -1,10 +1,10 @@
-import docc
+from docc.compiler import native
 import pytest
 import numpy as np
 
 
 def test_numpy_empty():
-    @docc.program
+    @native
     def alloc_empty(n) -> float:
         a = np.empty(n, dtype=float)
         a[0] = 1.0
@@ -14,7 +14,7 @@ def test_numpy_empty():
 
 
 def test_numpy_zeros():
-    @docc.program
+    @native
     def alloc_zeros(n) -> float:
         a = np.zeros(n, dtype=float)
         return a[0]
@@ -23,7 +23,7 @@ def test_numpy_zeros():
 
 
 def test_numpy_zeros_2d():
-    @docc.program
+    @native
     def alloc_zeros_2d(n) -> float:
         a = np.zeros((n, n), dtype=float)
         return a[0, 0]
@@ -32,7 +32,7 @@ def test_numpy_zeros_2d():
 
 
 def test_numpy_eye_simple():
-    @docc.program
+    @native
     def alloc_eye(n) -> float:
         a = np.eye(n, dtype=float)
         return a[0, 0]
@@ -41,7 +41,7 @@ def test_numpy_eye_simple():
 
 
 def test_numpy_eye_off_diagonal():
-    @docc.program
+    @native
     def alloc_eye_k(n) -> float:
         a = np.eye(n, k=1, dtype=float)
         return a[0, 1]
@@ -50,7 +50,7 @@ def test_numpy_eye_off_diagonal():
 
 
 def test_numpy_eye_rectangular():
-    @docc.program
+    @native
     def alloc_eye_rect(n) -> float:
         a = np.eye(n, M=n + 2, dtype=float)
         return a[0, 0]
@@ -59,7 +59,7 @@ def test_numpy_eye_rectangular():
 
 
 def test_numpy_eye_none_m():
-    @docc.program
+    @native
     def alloc_eye_none(n) -> float:
         a = np.eye(n, M=None, dtype=float)
         return a[0, 0]
@@ -68,7 +68,7 @@ def test_numpy_eye_none_m():
 
 
 def test_numpy_ones():
-    @docc.program
+    @native
     def alloc_ones(n) -> float:
         a = np.ones(n, dtype=float)
         return a[0]
@@ -77,7 +77,7 @@ def test_numpy_ones():
 
 
 def test_numpy_ones_2d():
-    @docc.program
+    @native
     def alloc_ones_2d(n) -> float:
         a = np.ones((n, n), dtype=float)
         return a[0, 0]
@@ -86,7 +86,7 @@ def test_numpy_ones_2d():
 
 
 def test_numpy_ones_int():
-    @docc.program
+    @native
     def alloc_ones_int(n) -> int:
         a = np.ones(n, dtype=int)
         return a[0]
@@ -95,7 +95,7 @@ def test_numpy_ones_int():
 
 
 def test_dtype_from_array():
-    @docc.program
+    @native
     def dtype_from_array(A, n):
         # Should infer dtype from A
         B = np.empty(n, dtype=A.dtype)

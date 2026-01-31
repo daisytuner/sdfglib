@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-import docc
+from docc.compiler import native
 
 
 class TestNumpyCopyBasic:
@@ -11,7 +11,7 @@ class TestNumpyCopyBasic:
     def test_copy_1d(self):
         """Test copying a 1D array."""
 
-        @docc.program
+        @native
         def copy_1d(a):
             b = a.copy()
             return b
@@ -23,7 +23,7 @@ class TestNumpyCopyBasic:
     def test_copy_2d(self):
         """Test copying a 2D array."""
 
-        @docc.program
+        @native
         def copy_2d(a):
             b = a.copy()
             return b
@@ -35,7 +35,7 @@ class TestNumpyCopyBasic:
     def test_copy_preserves_values(self):
         """Test that copy preserves all values exactly."""
 
-        @docc.program
+        @native
         def copy_preserve(a):
             b = a.copy()
             return b
@@ -47,7 +47,7 @@ class TestNumpyCopyBasic:
     def test_copy_int_array(self):
         """Test copying an integer array."""
 
-        @docc.program
+        @native
         def copy_int(a):
             b = a.copy()
             return b
@@ -63,7 +63,7 @@ class TestNumpyCopyIndependence:
     def test_copy_independence_modify_original(self):
         """Test that modifying original doesn't affect copy."""
 
-        @docc.program
+        @native
         def copy_then_modify_original(a):
             b = a.copy()
             a[0] = 999.0
@@ -77,7 +77,7 @@ class TestNumpyCopyIndependence:
     def test_copy_independence_modify_copy(self):
         """Test that modifying copy doesn't affect original."""
 
-        @docc.program
+        @native
         def copy_then_modify_copy(a):
             b = a.copy()
             b[0] = 999.0
@@ -91,7 +91,7 @@ class TestNumpyCopyIndependence:
     def test_copy_2d_independence(self):
         """Test independence with 2D arrays."""
 
-        @docc.program
+        @native
         def copy_2d_modify(a):
             b = a.copy()
             a[0, 0] = 999.0
@@ -109,7 +109,7 @@ class TestNumpyCopyInLoop:
     def test_copy_in_for_loop(self):
         """Test copy inside a for loop."""
 
-        @docc.program
+        @native
         def copy_in_loop(a, n):
             for i in range(n):
                 b = a.copy()
@@ -126,7 +126,7 @@ class TestNumpyCopyInLoop:
     def test_copy_multiple_in_loop(self):
         """Test multiple copies inside a loop."""
 
-        @docc.program
+        @native
         def multiple_copies_in_loop(a, b, n):
             for i in range(n):
                 a_copy = a.copy()
@@ -150,7 +150,7 @@ class TestNumpyCopyWithOperations:
     def test_copy_then_slice_assign(self):
         """Test copying then assigning to a slice."""
 
-        @docc.program
+        @native
         def copy_slice_assign(a):
             b = a.copy()
             b[1:-1] = 0.0
@@ -164,7 +164,7 @@ class TestNumpyCopyWithOperations:
     def test_copy_use_in_computation(self):
         """Test using copy in a computation."""
 
-        @docc.program
+        @native
         def copy_compute(a):
             b = a.copy()
             c = b + a
@@ -178,7 +178,7 @@ class TestNumpyCopyWithOperations:
     def test_copy_overwrite(self):
         """Test pattern: empty_like then copy (like cavity_flow)."""
 
-        @docc.program
+        @native
         def copy_overwrite(a):
             b = np.empty_like(a)
             b = a.copy()
@@ -197,7 +197,7 @@ class TestNumpyCopy2DSlicing:
     def test_copy_2d_slice_read(self):
         """Test copying 2D array and reading slices."""
 
-        @docc.program
+        @native
         def copy_2d_slice_read(p):
             pn = p.copy()
             result = pn[1:-1, 1:-1]
@@ -211,7 +211,7 @@ class TestNumpyCopy2DSlicing:
     def test_copy_2d_stencil_pattern(self):
         """Test the stencil pattern from cavity_flow."""
 
-        @docc.program
+        @native
         def stencil_pattern(p):
             pn = p.copy()
             # Simple stencil: average of neighbors
@@ -240,7 +240,7 @@ class TestNumpyCopy2DSlicing:
     def test_copy_in_iterative_stencil(self):
         """Test copy in iterative stencil computation."""
 
-        @docc.program
+        @native
         def iterative_stencil(p, nit):
             for q in range(nit):
                 pn = p.copy()
@@ -274,7 +274,7 @@ class TestNumpyCopyEdgeCases:
     def test_copy_single_element(self):
         """Test copying a single element array."""
 
-        @docc.program
+        @native
         def copy_single(a):
             b = a.copy()
             return b
@@ -286,7 +286,7 @@ class TestNumpyCopyEdgeCases:
     def test_copy_large_array(self):
         """Test copying a large array."""
 
-        @docc.program
+        @native
         def copy_large(a):
             b = a.copy()
             return b
@@ -298,7 +298,7 @@ class TestNumpyCopyEdgeCases:
     def test_multiple_sequential_copies(self):
         """Test multiple sequential copies."""
 
-        @docc.program
+        @native
         def multi_copy(a):
             b = a.copy()
             c = b.copy()

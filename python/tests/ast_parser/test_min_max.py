@@ -1,10 +1,10 @@
-import docc
+from docc.compiler import native
 import pytest
 import numpy as np
 
 
 def test_int_max():
-    @docc.program
+    @native
     def int_max(a, b):
         return max(a, b)
 
@@ -16,7 +16,7 @@ def test_int_max():
 
 
 def test_int_min():
-    @docc.program
+    @native
     def int_min(a, b):
         return min(a, b)
 
@@ -28,7 +28,7 @@ def test_int_min():
 
 
 def test_float_max():
-    @docc.program
+    @native
     def float_max(a, b):
         return max(a, b)
 
@@ -40,7 +40,7 @@ def test_float_max():
 
 
 def test_float_min():
-    @docc.program
+    @native
     def float_min(a, b):
         return min(a, b)
 
@@ -52,7 +52,7 @@ def test_float_min():
 
 
 def test_mixed_max():
-    @docc.program
+    @native
     def mixed_max(a, b):
         return max(a, b)
 
@@ -65,7 +65,7 @@ def test_mixed_max():
 
 
 def test_mixed_min():
-    @docc.program
+    @native
     def mixed_min(a, b):
         return min(a, b)
 

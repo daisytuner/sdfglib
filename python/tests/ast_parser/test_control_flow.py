@@ -1,4 +1,4 @@
-import docc
+from docc.compiler import native
 import os
 import shutil
 import pytest
@@ -6,7 +6,7 @@ import numpy as np
 
 
 def test_compile_if():
-    @docc.program
+    @native
     def if_test(a) -> int:
         if a > 10:
             return 1
@@ -17,7 +17,7 @@ def test_compile_if():
 
 
 def test_compile_if_else():
-    @docc.program
+    @native
     def if_else_test(a) -> int:
         if a > 10:
             return 1
@@ -29,7 +29,7 @@ def test_compile_if_else():
 
 
 def test_compile_while():
-    @docc.program
+    @native
     def while_test(a) -> int:
         while a > 10:
             return 1
@@ -40,7 +40,7 @@ def test_compile_while():
 
 
 def test_compile_for():
-    @docc.program
+    @native
     def for_test(n) -> int:
         s = 0
         for i in range(n):
@@ -51,7 +51,7 @@ def test_compile_for():
 
 
 def test_array_loop():
-    @docc.program
+    @native
     def array_loop(A, n):
         for i in range(n):
             A[i] = A[i] + 1

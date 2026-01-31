@@ -1,11 +1,11 @@
-import docc
+from docc.compiler import native
 import pytest
 import numpy as np
 import scipy.signal
 
 
 def test_scipy_correlate2d_valid():
-    @docc.program
+    @native
     def correlate2d_valid(n: int, k: int) -> float:
         a = np.zeros((n, n), dtype=float)
         b = np.zeros((k, k), dtype=float)
@@ -31,7 +31,7 @@ def test_scipy_correlate2d_valid():
 
 
 def test_scipy_correlate2d_same():
-    @docc.program
+    @native
     def correlate2d_same(n: int, k: int) -> float:
         a = np.zeros((n, n), dtype=float)
         b = np.zeros((k, k), dtype=float)
@@ -58,7 +58,7 @@ def test_scipy_correlate2d_same():
     reason="Full mode test currently disabled due to handling of boundary conditions."
 )
 def test_scipy_correlate2d_full():
-    @docc.program
+    @native
     def correlate2d_full(n: int, k: int) -> float:
         a = np.zeros((n, n), dtype=float)
         b = np.zeros((k, k), dtype=float)

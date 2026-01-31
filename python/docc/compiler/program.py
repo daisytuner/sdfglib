@@ -7,9 +7,17 @@ import getpass
 import hashlib
 import numpy as np
 from typing import Annotated, get_origin, get_args
-from ._sdfg import *
-from .compiled_sdfg import CompiledSDFG
-from .ast_parser import ASTParser
+from docc.sdfg import (
+    Scalar,
+    PrimitiveType,
+    Pointer,
+    Structure,
+    Array,
+    Type,
+    StructuredSDFG,
+    StructuredSDFGBuilder,
+)
+from docc.compiler import ASTParser, CompiledSDFG
 
 
 def _compile_wrapper(self, output_folder=None):
@@ -519,7 +527,7 @@ class DoccProgram:
         return sdfg, out_args, parser.captured_return_shapes
 
 
-def program(
+def native(
     func=None,
     *,
     target="none",

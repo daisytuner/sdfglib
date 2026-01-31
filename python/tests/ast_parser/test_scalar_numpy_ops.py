@@ -8,7 +8,7 @@ particularly:
 3. Proper handling of pointer dereference for 0-D arrays
 """
 
-import docc
+from docc.compiler import native
 import pytest
 import numpy as np
 import math
@@ -20,7 +20,7 @@ class TestScalarSqrt:
     def test_numpy_sqrt_scalar_element(self):
         """Test np.sqrt on a single array element."""
 
-        @docc.program
+        @native
         def sqrt_element(A):
             A[0, 0] = np.sqrt(A[0, 0])
 
@@ -31,7 +31,7 @@ class TestScalarSqrt:
     def test_numpy_sqrt_scalar_element_assign_to_different(self):
         """Test np.sqrt and assign to different location."""
 
-        @docc.program
+        @native
         def sqrt_assign(A):
             A[1, 1] = np.sqrt(A[0, 0])
 
@@ -42,7 +42,7 @@ class TestScalarSqrt:
     def test_numpy_sqrt_chain(self):
         """Test chained sqrt operations."""
 
-        @docc.program
+        @native
         def sqrt_chain(A):
             A[0, 0] = np.sqrt(A[0, 0])
             A[1, 1] = np.sqrt(A[1, 1])
@@ -59,7 +59,7 @@ class TestScalarUnaryOps:
     def test_numpy_exp_scalar(self):
         """Test np.exp on a single array element."""
 
-        @docc.program
+        @native
         def exp_element(A):
             A[0, 0] = np.exp(A[0, 0])
 
@@ -70,7 +70,7 @@ class TestScalarUnaryOps:
     def test_numpy_abs_scalar(self):
         """Test np.abs on a single array element."""
 
-        @docc.program
+        @native
         def abs_element(A):
             A[0, 0] = np.abs(A[0, 0])
 
@@ -81,7 +81,7 @@ class TestScalarUnaryOps:
     def test_numpy_tanh_scalar(self):
         """Test np.tanh on a single array element."""
 
-        @docc.program
+        @native
         def tanh_element(A):
             A[0, 0] = np.tanh(A[0, 0])
 
@@ -96,7 +96,7 @@ class TestScalarOpsInLoop:
     def test_sqrt_in_loop(self):
         """Test np.sqrt inside a loop."""
 
-        @docc.program
+        @native
         def sqrt_loop(A):
             for i in range(A.shape[0]):
                 A[i, i] = np.sqrt(A[i, i])
@@ -109,7 +109,7 @@ class TestScalarOpsInLoop:
     def test_sqrt_with_arithmetic(self):
         """Test np.sqrt combined with arithmetic operations."""
 
-        @docc.program
+        @native
         def sqrt_arithmetic(A):
             for i in range(1, A.shape[0]):
                 A[i, i] = np.sqrt(A[i, i] - A[i - 1, i - 1])
@@ -131,7 +131,7 @@ class TestScalarWithDotProduct:
     def test_dot_then_sqrt(self):
         """Test np.dot followed by np.sqrt (partial cholesky pattern)."""
 
-        @docc.program
+        @native
         def dot_sqrt(A):
             A[1, 1] -= np.dot(A[1, :1], A[1, :1])
             A[1, 1] = np.sqrt(A[1, 1])
@@ -149,7 +149,7 @@ class TestScalarWithDotProduct:
     def test_full_cholesky_pattern(self):
         """Test the full Cholesky-like pattern."""
 
-        @docc.program
+        @native
         def cholesky_like(A):
             A[0, 0] = np.sqrt(A[0, 0])
             for i in range(1, A.shape[0]):
@@ -189,7 +189,7 @@ class TestZeroDimensionalArrays:
     def test_0d_sqrt_result(self):
         """Test that sqrt of a scalar produces correct result."""
 
-        @docc.program
+        @native
         def zero_d_sqrt(A) -> float:
             tmp = np.sqrt(A[0, 0])
             return tmp
@@ -201,7 +201,7 @@ class TestZeroDimensionalArrays:
     def test_0d_intermediate(self):
         """Test 0-D intermediate values."""
 
-        @docc.program
+        @native
         def intermediate_sqrt(A):
             tmp = np.sqrt(A[0, 0])
             A[1, 1] = tmp * 2.0

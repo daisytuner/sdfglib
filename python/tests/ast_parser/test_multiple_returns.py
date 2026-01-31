@@ -1,23 +1,10 @@
 import numpy as np
 import pytest
-from docc import *
-
-
-class TypeFactory:
-    def __init__(self, dtype):
-        self.dtype = dtype
-
-    def __getitem__(self, shape):
-        if not isinstance(shape, tuple):
-            shape = (shape,)
-        return Annotated[np.ndarray, shape, self.dtype]
-
-
-float64 = TypeFactory(np.float64)
+from docc.compiler import native
 
 
 def test_multiple_scalar_return():
-    @program
+    @native
     def multi_scalar(a: int, b: int):
         return a + b, a - b
 
@@ -29,8 +16,8 @@ def test_multiple_scalar_return():
 
 
 def test_multiple_array_return():
-    @program
-    def multi_array(a: float64[10], b: float64[10]):
+    @native
+    def multi_array(a, b):
         return a, b
 
     a = np.random.rand(10)
@@ -43,8 +30,8 @@ def test_multiple_array_return():
 
 
 def test_mixed_return():
-    @program
-    def mixed_ret(a: float64[10]):
+    @native
+    def mixed_ret(a):
         x = a[0]
         return a, x
 
@@ -57,8 +44,8 @@ def test_mixed_return():
 
 
 def test_gramschmidt_style_return():
-    @program
-    def gs_ret(A: float64[10, 10]):
+    @native
+    def gs_ret(A):
         Q = np.zeros_like(A)
         R = np.zeros_like(A)
         # Dummy op

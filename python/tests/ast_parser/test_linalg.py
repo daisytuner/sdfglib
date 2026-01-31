@@ -1,25 +1,10 @@
 import numpy as np
-import pytest
-from docc import *
-import os
-
-
-class TypeFactory:
-    def __init__(self, dtype):
-        self.dtype = dtype
-
-    def __getitem__(self, shape):
-        if not isinstance(shape, tuple):
-            shape = (shape,)
-        return Annotated[np.ndarray, shape, self.dtype]
-
-
-float64 = TypeFactory(np.float64)
+from docc.compiler import native
 
 
 def test_matmul_operator():
-    @program
-    def matmul_op(a: float64[10, 10], b: float64[10, 10]) -> float64[10, 10]:
+    @native
+    def matmul_op(a, b):
         return a @ b
 
     a = np.random.rand(10, 10)
@@ -29,8 +14,8 @@ def test_matmul_operator():
 
 
 def test_numpy_matmul():
-    @program
-    def np_matmul(a: float64[10, 10], b: float64[10, 10]) -> float64[10, 10]:
+    @native
+    def np_matmul(a, b):
         return np.matmul(a, b)
 
     a = np.random.rand(10, 10)
@@ -40,8 +25,8 @@ def test_numpy_matmul():
 
 
 def test_numpy_dot_matvec():
-    @program
-    def np_dot_mv(a: float64[10, 10], b: float64[10]) -> float64[10]:
+    @native
+    def np_dot_mv(a, b):
         return np.dot(a, b)
 
     a = np.random.rand(10, 10)
@@ -51,8 +36,8 @@ def test_numpy_dot_matvec():
 
 
 def test_matmul_slicing():
-    @program
-    def matmul_slice(a: float64[20, 20], b: float64[20, 20]) -> float64[10, 10]:
+    @native
+    def matmul_slice(a, b):
         return a[:10, :10] @ b[:10, :10]
 
     a = np.random.rand(20, 20)
@@ -63,10 +48,8 @@ def test_matmul_slicing():
 
 def test_matmul_broadcasting():
     # (2, 10, 10) @ (2, 10, 10) -> (2, 10, 10)
-    @program
-    def matmul_broadcast(
-        a: float64[2, 10, 10], b: float64[2, 10, 10]
-    ) -> float64[2, 10, 10]:
+    @native
+    def matmul_broadcast(a, b):
         return np.matmul(a, b)
 
     a = np.random.rand(2, 10, 10)
@@ -76,8 +59,8 @@ def test_matmul_broadcasting():
 
 
 def test_matmul_matvec():
-    @program
-    def matmul_mv(a: float64[10, 10], b: float64[10]) -> float64[10]:
+    @native
+    def matmul_mv(a, b):
         return np.matmul(a, b)
 
     a = np.random.rand(10, 10)
@@ -87,8 +70,8 @@ def test_matmul_matvec():
 
 
 def test_dot_product_operator():
-    @program
-    def dot_op(a: float64[10], b: float64[10]) -> float:
+    @native
+    def dot_op(a, b) -> float:
         return a @ b
 
     a = np.random.rand(10)
@@ -98,8 +81,8 @@ def test_dot_product_operator():
 
 
 def test_dot_product_slicing_scalar():
-    @program
-    def dot_slice(a: float64[10], b: float64[10]) -> float:
+    @native
+    def dot_slice(a, b) -> float:
         return a[:5] @ b[:5]
 
     a = np.random.rand(10)
@@ -109,8 +92,8 @@ def test_dot_product_slicing_scalar():
 
 
 def test_numpy_outer():
-    @program
-    def np_outer(a: float64[10], b: float64[10]) -> float64[10, 10]:
+    @native
+    def np_outer(a, b):
         return np.outer(a, b)
 
     a = np.random.rand(10)
@@ -120,8 +103,8 @@ def test_numpy_outer():
 
 
 def test_outer_slicing():
-    @program
-    def outer_slice(a: float64[20], b: float64[20]) -> float64[10, 10]:
+    @native
+    def outer_slice(a, b):
         return np.outer(a[:10], b[10:])
 
     a = np.random.rand(20)
@@ -131,10 +114,8 @@ def test_outer_slicing():
 
 
 def test_outer_accumulate():
-    @program
-    def outer_acc(
-        a: float64[10], b: float64[10], C: float64[10, 10]
-    ) -> float64[10, 10]:
+    @native
+    def outer_acc(a, b, C):
         C[:] += np.outer(a, b)
         return C
 
@@ -148,14 +129,14 @@ def test_outer_accumulate():
 
 
 def test_outer_double_accumulate():
-    @program
+    @native
     def outer_double_acc(
-        a: float64[10],
-        b: float64[10],
-        c: float64[10],
-        d: float64[10],
-        C: float64[10, 10],
-    ) -> float64[10, 10]:
+        a,
+        b,
+        c,
+        d,
+        C,
+    ):
         C[:] += np.outer(a, b) + np.outer(c, d)
         return C
 
@@ -171,8 +152,8 @@ def test_outer_double_accumulate():
 
 
 def test_2d_addition():
-    @program
-    def add_2d(n: int) -> float64[10, 10]:
+    @native
+    def add_2d(n: int):
         a = np.zeros((10, 10), dtype=float)
         b = np.zeros((10, 10), dtype=float)
         a[0, 0] = 1.0

@@ -1,4 +1,4 @@
-import docc
+from docc.compiler import native
 import pytest
 import numpy as np
 
@@ -6,7 +6,7 @@ import numpy as np
 def test_tuple_unpacking_simple():
     """Test simple tuple unpacking with constants."""
 
-    @docc.program
+    @native
     def unpack_simple() -> int:
         a, b = 1, 2
         return a + b
@@ -17,7 +17,7 @@ def test_tuple_unpacking_simple():
 def test_tuple_unpacking_three_values():
     """Test unpacking three values."""
 
-    @docc.program
+    @native
     def unpack_three() -> int:
         a, b, c = 1, 2, 3
         return a + b + c
@@ -28,7 +28,7 @@ def test_tuple_unpacking_three_values():
 def test_tuple_unpacking_from_shape():
     """Test unpacking array shape attributes."""
 
-    @docc.program
+    @native
     def unpack_shape(arr):
         I, J, K = arr.shape[0], arr.shape[1], arr.shape[2]
         return I + J + K
@@ -40,7 +40,7 @@ def test_tuple_unpacking_from_shape():
 def test_tuple_unpacking_mixed():
     """Test unpacking with mixed expressions."""
 
-    @docc.program
+    @native
     def unpack_mixed(arr, x) -> int:
         a, b = arr.shape[0], x + 1
         return a + b
@@ -52,7 +52,7 @@ def test_tuple_unpacking_mixed():
 def test_tuple_unpacking_with_computation():
     """Test that unpacked values can be used in computation."""
 
-    @docc.program
+    @native
     def use_unpacked(arr) -> int:
         I, J = arr.shape[0], arr.shape[1]
         return I * J

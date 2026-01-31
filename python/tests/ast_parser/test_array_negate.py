@@ -1,14 +1,11 @@
-"""Tests for unary negation of arrays."""
-
-import docc
+from docc.compiler import native
 import numpy as np
-import pytest
 
 
 def test_negate_1d_array():
     """Test negating a 1D array."""
 
-    @docc.program
+    @native
     def negate_1d(arr) -> float:
         neg_arr = -arr
         return neg_arr[0]
@@ -21,7 +18,7 @@ def test_negate_1d_array():
 def test_negate_2d_intermediate():
     """Test negating a 2D intermediate array from slicing."""
 
-    @docc.program
+    @native
     def negate_2d_slice(arr, k) -> float:
         # Create 2D slice and negate it
         slice_2d = arr[:, :, k]
@@ -36,7 +33,7 @@ def test_negate_2d_intermediate():
 def test_negate_in_multiplication():
     """Test negation used in multiplication (-arr * other)."""
 
-    @docc.program
+    @native
     def negate_mul(arr1, arr2) -> float:
         result = -arr1 * arr2
         return result[0]
@@ -50,7 +47,7 @@ def test_negate_in_multiplication():
 def test_negate_intermediate_slice_expression():
     """Test negating result of slice arithmetic (vadv pattern)."""
 
-    @docc.program
+    @native
     def negate_slice_expr(wcon, k) -> float:
         gcv = 0.25 * (wcon[1:, :, k + 1] + wcon[:-1, :, k + 1])
         cs = gcv * 0.5
@@ -66,7 +63,7 @@ def test_negate_intermediate_slice_expression():
 def test_negate_with_subtraction():
     """Test negation combined with subtraction (-arr * (a - b))."""
 
-    @docc.program
+    @native
     def negate_with_sub(cs, u_stage, k) -> float:
         correction_term = -cs * (u_stage[:, :, k + 1] - u_stage[:, :, k])
         return correction_term[0, 0]
@@ -85,7 +82,7 @@ def test_negate_with_subtraction():
 def test_negate_zeros():
     """Test negating an array of zeros."""
 
-    @docc.program
+    @native
     def negate_zeros(arr) -> float:
         neg_arr = -arr
         return neg_arr[0]
@@ -98,7 +95,7 @@ def test_negate_zeros():
 def test_negate_mixed_signs():
     """Test negating an array with mixed positive/negative values."""
 
-    @docc.program
+    @native
     def negate_mixed(arr) -> float:
         neg_arr = -arr
         # Sum first two elements
@@ -113,7 +110,7 @@ def test_negate_mixed_signs():
 def test_double_negate():
     """Test double negation returns original value."""
 
-    @docc.program
+    @native
     def double_negate(arr) -> float:
         neg1 = -arr
         neg2 = -neg1
@@ -127,7 +124,7 @@ def test_double_negate():
 def test_negate_in_loop():
     """Test array negation inside a loop."""
 
-    @docc.program
+    @native
     def negate_in_loop(wcon) -> float:
         ni = wcon.shape[0] - 1
         nj = wcon.shape[1]

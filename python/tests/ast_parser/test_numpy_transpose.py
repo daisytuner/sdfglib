@@ -1,10 +1,10 @@
-import docc
+from docc.compiler import native
 import numpy as np
 import pytest
 
 
 def test_transpose_T():
-    @docc.program
+    @native
     def transpose_T(n: int, m: int) -> float:
         a = np.zeros((n, m), dtype=float)
         # Initialize
@@ -22,7 +22,7 @@ def test_transpose_T():
 
 
 def test_transpose_func():
-    @docc.program
+    @native
     def transpose_func(n: int, m: int) -> float:
         a = np.zeros((n, m), dtype=float)
         for i in range(n):
@@ -39,7 +39,7 @@ def test_transpose_func():
 
 
 def test_transpose_axes():
-    @docc.program
+    @native
     def transpose_axes(n: int, m: int) -> float:
         a = np.zeros((n, m), dtype=float)
         for i in range(n):

@@ -1,5 +1,5 @@
 import ctypes
-from ._sdfg import Scalar, Array, Pointer, Structure, PrimitiveType
+from docc.sdfg import Scalar, Array, Pointer, Structure, PrimitiveType
 
 try:
     import numpy as np

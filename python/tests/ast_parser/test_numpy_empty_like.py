@@ -1,10 +1,10 @@
-import docc
+from docc.compiler import native
 import pytest
 import numpy as np
 
 
 def test_numpy_empty_like_simple():
-    @docc.program
+    @native
     def alloc_empty_like(n: int) -> float:
         a = np.empty(n, dtype=float)
         a[0] = 5.0
@@ -16,7 +16,7 @@ def test_numpy_empty_like_simple():
 
 
 def test_numpy_empty_like_with_dtype():
-    @docc.program
+    @native
     def alloc_empty_like_dtype(n: int) -> int:
         a = np.empty(n, dtype=float)
         b = np.empty_like(a, dtype=int)
@@ -27,7 +27,7 @@ def test_numpy_empty_like_with_dtype():
 
 
 def test_numpy_empty_like_multi_dim():
-    @docc.program
+    @native
     def alloc_empty_like_2d(n: int) -> float:
         a = np.empty((n, n), dtype=float)
         a[0, 0] = 2.0

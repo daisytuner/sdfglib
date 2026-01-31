@@ -1,23 +1,7 @@
-"""
-Comprehensive tests for ufunc outer operations with slice assignments.
-
-These tests cover the pattern:
-    array[:] = np.minimum(array[:], np.add.outer(array[:, k], array[k, :]))
-
-Which is used in algorithms like Floyd-Warshall.
-
-Tests cover:
-- Full-slice expressions (path[:] treated as path in expressions)
-- Slice assignments with ufunc outer on RHS
-- Nested operations (np.minimum wrapping np.add.outer)
-- Different array sizes and dtypes
-- Column and row slicing with ufunc outer
-"""
-
 import numpy as np
 import pytest
 from typing import Annotated
-from docc import program
+from docc.compiler import native
 
 
 class TypeFactory:
@@ -50,7 +34,7 @@ class TestFullSliceExpressions:
     def test_full_slice_in_minimum(self):
         """Test np.minimum with full slice argument."""
 
-        @program
+        @native
         def full_slice_minimum(
             a: float64["n", "n"], b: float64["n", "n"]
         ) -> float64["n", "n"]:
@@ -68,7 +52,7 @@ class TestFullSliceExpressions:
     def test_full_slice_in_maximum(self):
         """Test np.maximum with full slice argument."""
 
-        @program
+        @native
         def full_slice_maximum(
             a: float64["n", "n"], b: float64["n", "n"]
         ) -> float64["n", "n"]:
@@ -86,7 +70,7 @@ class TestFullSliceExpressions:
     def test_full_slice_in_add(self):
         """Test addition with full slice arguments."""
 
-        @program
+        @native
         def full_slice_add(
             a: float64["n", "n"], b: float64["n", "n"]
         ) -> float64["n", "n"]:
@@ -104,7 +88,7 @@ class TestFullSliceExpressions:
     def test_full_slice_1d(self):
         """Test full slice on 1D array."""
 
-        @program
+        @native
         def full_slice_1d(a: float64["n"], b: float64["n"]) -> float64["n"]:
             return np.minimum(a[:], b[:])
 
@@ -132,7 +116,7 @@ class TestSliceAssignmentWithUfuncOuter:
     def test_basic_add_outer_assignment(self):
         """Test basic slice assignment with np.add.outer."""
 
-        @program
+        @native
         def add_outer_assign(a: float64["n", "n"]) -> float64["n", "n"]:
             a[:] = np.add.outer(a[:, 0], a[0, :])
             return a
@@ -149,7 +133,7 @@ class TestSliceAssignmentWithUfuncOuter:
     def test_minimum_with_add_outer(self):
         """Test np.minimum wrapping np.add.outer in slice assignment."""
 
-        @program
+        @native
         def minimum_add_outer(a: float64["n", "n"]) -> float64["n", "n"]:
             a[:] = np.minimum(a[:], np.add.outer(a[:, 0], a[0, :]))
             return a
@@ -166,7 +150,7 @@ class TestSliceAssignmentWithUfuncOuter:
     def test_maximum_with_add_outer(self):
         """Test np.maximum wrapping np.add.outer in slice assignment."""
 
-        @program
+        @native
         def maximum_add_outer(a: float64["n", "n"]) -> float64["n", "n"]:
             a[:] = np.maximum(a[:], np.add.outer(a[:, 0], a[0, :]))
             return a
@@ -183,7 +167,7 @@ class TestSliceAssignmentWithUfuncOuter:
     def test_minimum_with_subtract_outer(self):
         """Test np.minimum wrapping np.subtract.outer."""
 
-        @program
+        @native
         def minimum_sub_outer(a: float64["n", "n"]) -> float64["n", "n"]:
             a[:] = np.minimum(a[:], np.subtract.outer(a[:, 0], a[0, :]))
             return a
@@ -201,7 +185,7 @@ class TestSliceAssignmentWithUfuncOuter:
     def test_minimum_with_minimum_outer(self):
         """Test np.minimum wrapping np.minimum.outer."""
 
-        @program
+        @native
         def minimum_min_outer(a: float64["n", "n"]) -> float64["n", "n"]:
             a[:] = np.minimum(a[:], np.minimum.outer(a[:, 0], a[0, :]))
             return a
@@ -227,7 +211,7 @@ class TestFloydWarshallPattern:
     def test_floyd_warshall_single_iteration(self):
         """Test single iteration of Floyd-Warshall pattern."""
 
-        @program
+        @native
         def floyd_single_iter(path: float64["n", "n"]) -> float64["n", "n"]:
             k = 0
             path[:] = np.minimum(path[:], np.add.outer(path[:, k], path[k, :]))
@@ -246,7 +230,7 @@ class TestFloydWarshallPattern:
     def test_floyd_warshall_full(self):
         """Test full Floyd-Warshall algorithm."""
 
-        @program
+        @native
         def floyd_warshall(path: float64["n", "n"]) -> float64["n", "n"]:
             for k in range(path.shape[0]):
                 path[:] = np.minimum(path[:], np.add.outer(path[:, k], path[k, :]))
@@ -270,7 +254,7 @@ class TestFloydWarshallPattern:
     def test_floyd_warshall_different_sizes(self):
         """Test Floyd-Warshall with different matrix sizes."""
 
-        @program
+        @native
         def floyd_warshall(path: float64["n", "n"]) -> float64["n", "n"]:
             for k in range(path.shape[0]):
                 path[:] = np.minimum(path[:], np.add.outer(path[:, k], path[k, :]))
@@ -294,7 +278,7 @@ class TestFloydWarshallPattern:
     def test_floyd_warshall_int64(self):
         """Test Floyd-Warshall with int64 dtype."""
 
-        @program
+        @native
         def floyd_warshall_int(path: int64["n", "n"]) -> int64["n", "n"]:
             for k in range(path.shape[0]):
                 path[:] = np.minimum(path[:], np.add.outer(path[:, k], path[k, :]))
@@ -328,7 +312,7 @@ class TestColumnRowSlicing:
     def test_column_slice_first_dim(self):
         """Test slicing first column with add outer."""
 
-        @program
+        @native
         def col_slice_outer(a: float64["m", "n"]) -> float64["m", "n"]:
             result = np.add.outer(a[:, 0], a[0, :])
             return result
@@ -346,7 +330,7 @@ class TestColumnRowSlicing:
     def test_row_slice_last_dim(self):
         """Test slicing last row with add outer."""
 
-        @program
+        @native
         def row_slice_outer(a: float64["m", "n"]) -> float64["n", "m"]:
             result = np.add.outer(a[-1, :], a[:, -1])
             return result
@@ -365,7 +349,7 @@ class TestColumnRowSlicing:
     def test_variable_index_column(self):
         """Test column slicing with variable index in loop."""
 
-        @program
+        @native
         def var_col_outer(a: float64["n", "n"]) -> float64["n", "n"]:
             result = np.zeros((a.shape[0], a.shape[0]), dtype=np.float64)
             for k in range(a.shape[0]):
@@ -395,7 +379,7 @@ class TestEdgeCases:
     def test_small_matrix_2x2(self):
         """Test with minimal 2x2 matrix."""
 
-        @program
+        @native
         def small_floyd(path: float64["n", "n"]) -> float64["n", "n"]:
             for k in range(path.shape[0]):
                 path[:] = np.minimum(path[:], np.add.outer(path[:, k], path[k, :]))
@@ -416,7 +400,7 @@ class TestEdgeCases:
     def test_single_element_matrix(self):
         """Test with 1x1 matrix."""
 
-        @program
+        @native
         def single_element(path: float64["n", "n"]) -> float64["n", "n"]:
             path[:] = np.minimum(path[:], np.add.outer(path[:, 0], path[0, :]))
             return path
@@ -430,7 +414,7 @@ class TestEdgeCases:
     def test_zeros_matrix(self):
         """Test with all zeros matrix."""
 
-        @program
+        @native
         def zeros_floyd(path: float64["n", "n"]) -> float64["n", "n"]:
             path[:] = np.minimum(path[:], np.add.outer(path[:, 0], path[0, :]))
             return path
@@ -445,7 +429,7 @@ class TestEdgeCases:
     def test_negative_values(self):
         """Test with negative values."""
 
-        @program
+        @native
         def negative_floyd(path: float64["n", "n"]) -> float64["n", "n"]:
             path[:] = np.minimum(path[:], np.add.outer(path[:, 0], path[0, :]))
             return path
@@ -460,7 +444,7 @@ class TestEdgeCases:
     def test_inf_values(self):
         """Test with infinity values (common in distance matrices)."""
 
-        @program
+        @native
         def inf_floyd(path: float64["n", "n"]) -> float64["n", "n"]:
             for k in range(path.shape[0]):
                 path[:] = np.minimum(path[:], np.add.outer(path[:, k], path[k, :]))
@@ -496,7 +480,7 @@ class TestCombinedOperations:
     def test_add_after_minimum_outer(self):
         """Test addition after minimum with outer."""
 
-        @program
+        @native
         def add_after_min(
             a: float64["n", "n"], b: float64["n", "n"]
         ) -> float64["n", "n"]:
@@ -516,7 +500,7 @@ class TestCombinedOperations:
     def test_multiply_after_outer(self):
         """Test multiplication after outer operation."""
 
-        @program
+        @native
         def mul_after_outer(
             a: float64["n", "n"], scale: float64["n", "n"]
         ) -> float64["n", "n"]:
@@ -536,7 +520,7 @@ class TestCombinedOperations:
     def test_chain_minimum_operations(self):
         """Test chaining multiple minimum operations."""
 
-        @program
+        @native
         def chain_minimum(
             a: float64["n", "n"], b: float64["n", "n"]
         ) -> float64["n", "n"]:
@@ -570,7 +554,7 @@ class TestMultipleUfuncOuter:
     def test_two_outer_sum(self):
         """Test sum of two outer products."""
 
-        @program
+        @native
         def two_outer_sum(a: float64["n", "n"]) -> float64["n", "n"]:
             result = np.add.outer(a[:, 0], a[0, :]) + np.add.outer(a[:, 1], a[1, :])
             return result
@@ -586,7 +570,7 @@ class TestMultipleUfuncOuter:
     def test_sequential_slice_assignments(self):
         """Test sequential slice assignments with outer."""
 
-        @program
+        @native
         def sequential_outer(a: float64["n", "n"]) -> float64["n", "n"]:
             a[:] = np.minimum(a[:], np.add.outer(a[:, 0], a[0, :]))
             a[:] = np.minimum(a[:], np.add.outer(a[:, 1], a[1, :]))

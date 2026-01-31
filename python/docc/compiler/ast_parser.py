@@ -1,16 +1,16 @@
 import ast
 import copy
-from ._sdfg import Scalar, PrimitiveType, Pointer, TaskletCode
-from .ast_utils import (
+from docc.sdfg import Scalar, PrimitiveType, Pointer, TaskletCode
+from docc.compiler.ast_utils import (
     SliceRewriter,
     get_debug_info,
     contains_ufunc_outer,
     normalize_negative_index,
 )
-from .expression_visitor import ExpressionVisitor
-from .linear_algebra import LinearAlgebraHandler
-from .convolution import ConvolutionHandler
-from .onnx_ops import ONNXHandler
+from docc.compiler.expression_visitor import ExpressionVisitor
+from docc.compiler.linear_algebra import LinearAlgebraHandler
+from docc.compiler.convolution import ConvolutionHandler
+from docc.compiler.onnx_ops import ONNXHandler
 
 
 class ASTParser(ast.NodeVisitor):
@@ -743,7 +743,7 @@ class ASTParser(ast.NodeVisitor):
         This avoids the loop transformation that would destroy slice shape info.
         """
         if debug_info is None:
-            from ._sdfg import DebugInfo
+            from docc.sdfg import DebugInfo
 
             debug_info = DebugInfo()
 

@@ -1,4 +1,4 @@
-import docc
+from docc.compiler import native
 import pytest
 import numpy as np
 
@@ -6,7 +6,7 @@ import numpy as np
 def test_slice_with_index_2d():
     """Test slicing with a mix of slice and index: arr[1:, k]"""
 
-    @docc.program
+    @native
     def slice_with_index(arr, k):
         # arr is (N, M), arr[1:, k] gives a 1D array of size N-1
         result = np.zeros((arr.shape[0] - 1,), dtype=np.float64)
@@ -21,7 +21,7 @@ def test_slice_with_index_2d():
 def test_slice_negative_bound():
     """Test slicing with negative upper bound: arr[:-1, k]"""
 
-    @docc.program
+    @native
     def slice_negative(arr, k):
         # arr is (N, M), arr[:-1, k] gives a 1D array of size N-1
         result = np.zeros((arr.shape[0] - 1,), dtype=np.float64)
@@ -36,7 +36,7 @@ def test_slice_negative_bound():
 def test_slice_in_expression_3d():
     """Test slicing in expression: arr[1:, :, k+1] + arr[:-1, :, k+1]"""
 
-    @docc.program
+    @native
     def slice_expression(arr, k) -> float:
         # This is the pattern from vadv: wcon[1:, :, k+1] + wcon[:-1, :, k+1]
         # Use lowercase to avoid SymEngine interpreting I/J as imaginary
@@ -57,7 +57,7 @@ def test_slice_in_expression_3d():
 def test_full_slice_with_index():
     """Test full slice with index: arr[:, :, k]"""
 
-    @docc.program
+    @native
     def full_slice_index(arr, k) -> float:
         # arr[:, :, k] extracts a 2D slice
         ni, nj = arr.shape[0], arr.shape[1]
@@ -73,7 +73,7 @@ def test_full_slice_with_index():
 def test_slice_arithmetic():
     """Test arithmetic with sliced arrays: scalar * (slice + slice)"""
 
-    @docc.program
+    @native
     def slice_arithmetic(arr, k) -> float:
         ni = arr.shape[0] - 1
         nj = arr.shape[1]
@@ -90,7 +90,7 @@ def test_slice_arithmetic():
 def test_slice_to_intermediate_variable():
     """Test assigning slice expression to intermediate variable."""
 
-    @docc.program
+    @native
     def slice_to_var(arr, k) -> float:
         ni = arr.shape[0] - 1
         nj = arr.shape[1]

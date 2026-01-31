@@ -1,29 +1,15 @@
 import pytest
 import numpy as np
-from docc import *
-from typing import Annotated
+from docc.compiler import native
 
 import scipy.special
 
 
-class TypeFactory:
-    def __init__(self, dtype):
-        self.dtype = dtype
-
-    def __getitem__(self, shape):
-        if not isinstance(shape, tuple):
-            shape = (shape,)
-        return Annotated[np.ndarray, shape, self.dtype]
-
-
-float64 = TypeFactory(np.float64)
-
-
 def test_sum_simple():
-    @program
+    @native
     def sum_simple(
-        A: Annotated[np.ndarray, (10, 10), np.float64],
-    ) -> Annotated[np.ndarray, (10,), np.float64]:
+        A,
+    ):
         return np.sum(A, axis=0)
 
     A = np.ones((10, 10))
@@ -32,10 +18,10 @@ def test_sum_simple():
 
 
 def test_sum_keepdims():
-    @program
+    @native
     def sum_keepdims(
-        A: Annotated[np.ndarray, (10, 10), np.float64],
-    ) -> Annotated[np.ndarray, (10, 1), np.float64]:
+        A,
+    ):
         return np.sum(A, axis=1, keepdims=True)
 
     A = np.ones((10, 10))
@@ -44,8 +30,8 @@ def test_sum_keepdims():
 
 
 def test_sum_all():
-    @program
-    def sum_all(A: Annotated[np.ndarray, (10, 10), np.float64]) -> float:
+    @native
+    def sum_all(A) -> float:
         return np.sum(A)
 
     A = np.ones((10, 10))
@@ -54,10 +40,10 @@ def test_sum_all():
 
 
 def test_mean_simple():
-    @program
+    @native
     def mean_simple(
-        A: Annotated[np.ndarray, (10, 10), np.float64],
-    ) -> Annotated[np.ndarray, (10,), np.float64]:
+        A,
+    ):
         return np.mean(A, axis=0)
 
     A = np.random.rand(10, 10)
@@ -66,8 +52,8 @@ def test_mean_simple():
 
 
 def test_mean_all():
-    @program
-    def mean_all(A: Annotated[np.ndarray, (10, 10), np.float64]) -> float:
+    @native
+    def mean_all(A) -> float:
         return np.mean(A)
 
     A = np.random.rand(10, 10)
@@ -76,10 +62,10 @@ def test_mean_all():
 
 
 def test_std_simple():
-    @program
+    @native
     def std_simple(
-        A: Annotated[np.ndarray, (10, 10), np.float64],
-    ) -> Annotated[np.ndarray, (10,), np.float64]:
+        A,
+    ):
         return np.std(A, axis=0)
 
     A = np.random.rand(10, 10)
@@ -88,8 +74,8 @@ def test_std_simple():
 
 
 def test_std_all():
-    @program
-    def std_all(A: Annotated[np.ndarray, (10, 10), np.float64]) -> float:
+    @native
+    def std_all(A) -> float:
         return np.std(A)
 
     A = np.random.rand(10, 10)
@@ -98,10 +84,10 @@ def test_std_all():
 
 
 def test_max_simple():
-    @program
+    @native
     def max_simple(
-        A: Annotated[np.ndarray, (10, 10), np.float64],
-    ) -> Annotated[np.ndarray, (10,), np.float64]:
+        A,
+    ):
         return np.max(A, axis=0)
 
     A = np.random.rand(10, 10)
@@ -110,8 +96,8 @@ def test_max_simple():
 
 
 def test_max_all():
-    @program
-    def max_all(A: Annotated[np.ndarray, (10, 10), np.float64]) -> float:
+    @native
+    def max_all(A) -> float:
         return np.max(A)
 
     A = np.random.rand(10, 10)
@@ -120,10 +106,10 @@ def test_max_all():
 
 
 def test_min_simple():
-    @program
+    @native
     def min_simple(
-        A: Annotated[np.ndarray, (10, 10), np.float64],
-    ) -> Annotated[np.ndarray, (10,), np.float64]:
+        A,
+    ):
         return np.min(A, axis=0)
 
     A = np.random.rand(10, 10)
@@ -132,8 +118,8 @@ def test_min_simple():
 
 
 def test_min_all():
-    @program
-    def min_all(A: Annotated[np.ndarray, (10, 10), np.float64]) -> float:
+    @native
+    def min_all(A) -> float:
         return np.min(A)
 
     A = np.random.rand(10, 10)
@@ -147,10 +133,10 @@ def test_softmax_simple():
         e_x = np.exp(x - x_max)
         return e_x / np.sum(e_x, axis=axis, keepdims=True)
 
-    @program
+    @native
     def softmax_simple(
-        A: Annotated[np.ndarray, (10, 10), np.float64],
-    ) -> Annotated[np.ndarray, (10, 10), np.float64]:
+        A,
+    ):
         return scipy.special.softmax(A, axis=0)
 
     A = np.random.rand(10, 10).astype(np.float64)
@@ -165,10 +151,10 @@ def test_softmax_all():
         e_x = np.exp(x - x_max)
         return e_x / np.sum(e_x, axis=axis, keepdims=True)
 
-    @program
+    @native
     def softmax_all(
-        A: Annotated[np.ndarray, (10, 10), np.float64],
-    ) -> Annotated[np.ndarray, (10, 10), np.float64]:
+        A,
+    ):
         return scipy.special.softmax(A)
 
     A = np.random.rand(10, 10).astype(np.float64)

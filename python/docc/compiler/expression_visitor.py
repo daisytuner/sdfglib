@@ -1,7 +1,7 @@
 import ast
 import inspect
 import textwrap
-from ._sdfg import (
+from docc.sdfg import (
     Scalar,
     PrimitiveType,
     Pointer,

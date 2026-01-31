@@ -1,8 +1,5 @@
-"""Tests for capturing global constants in docc programs."""
-
-import docc
+from docc.compiler import native
 import numpy as np
-import pytest
 
 
 # Module-level constants
@@ -16,7 +13,7 @@ BET_P = 0.5
 def test_global_float_constant():
     """Test that global float constants are captured."""
 
-    @docc.program
+    @native
     def use_global_float(arr) -> float:
         return arr[0] * GLOBAL_FLOAT
 
@@ -28,7 +25,7 @@ def test_global_float_constant():
 def test_global_int_constant():
     """Test that global int constants are captured."""
 
-    @docc.program
+    @native
     def use_global_int(arr) -> float:
         return arr[0] + GLOBAL_INT
 
@@ -40,7 +37,7 @@ def test_global_int_constant():
 def test_multiple_global_constants():
     """Test using multiple global constants in one function."""
 
-    @docc.program
+    @native
     def use_multiple_globals(arr) -> float:
         x = arr[0] * BET_M
         y = arr[1] * BET_P
@@ -54,7 +51,7 @@ def test_multiple_global_constants():
 def test_global_in_expression():
     """Test global constant used in complex expressions."""
 
-    @docc.program
+    @native
     def global_in_expr(arr) -> float:
         result = SCALE_FACTOR * (arr[0] + arr[1])
         return result
@@ -67,7 +64,7 @@ def test_global_in_expression():
 def test_global_with_array_slice():
     """Test global constant with array slicing (vadv pattern)."""
 
-    @docc.program
+    @native
     def global_with_slice(wcon, k) -> float:
         gcv = SCALE_FACTOR * (wcon[1:, :, k + 1] + wcon[:-1, :, k + 1])
         cs = gcv * BET_M
@@ -82,7 +79,7 @@ def test_global_with_array_slice():
 def test_global_constant_not_overwritten_by_local():
     """Test that global constant is used when no local variable exists."""
 
-    @docc.program
+    @native
     def global_vs_local(arr) -> float:
         # Use global SCALE_FACTOR (0.25)
         return arr[0] * SCALE_FACTOR

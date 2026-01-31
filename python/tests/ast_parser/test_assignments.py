@@ -1,9 +1,9 @@
-import docc
+from docc.compiler import native
 import numpy as np
 
 
 def test_multiple_assignment_scalar():
-    @docc.program
+    @native
     def multi_assign(in_val: int) -> int:
         a = b = in_val
         return a + b
@@ -12,7 +12,7 @@ def test_multiple_assignment_scalar():
 
 
 def test_multiple_assignment_expression():
-    @docc.program
+    @native
     def multi_assign_expr(in_val: int) -> int:
         a = b = in_val + 2
         return a * b
@@ -21,7 +21,7 @@ def test_multiple_assignment_expression():
 
 
 def test_multiple_assignment_array():
-    @docc.program
+    @native
     def multi_assign_array(in_arr):
         a = b = in_arr
         return a + b
@@ -33,7 +33,7 @@ def test_multiple_assignment_array():
 
 
 def test_chained_assignment_multiple():
-    @docc.program
+    @native
     def chained_assign(val: int) -> int:
         a = b = c = val
         return a + b + c
