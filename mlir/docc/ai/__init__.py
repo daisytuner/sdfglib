@@ -1,16 +1,9 @@
-from typing import Any
-import torch.nn as nn
-import torch
-
 from torch_mlir import fx
 
-from ._docc_ml import MLIRModule
+from ._sdfg_mlir import MLIRModule
 
 
-def import_from_pytorch(
-    model: nn.Module,
-    example_input: Any,
-) -> str:
+def import_from_pytorch(model, example_input) -> str:
     # Import a PyTorch model to MLIR using torch-mlir FX
     torch_mlir = fx.export_and_import(
         model, example_input, output_type="linalg_on_tensors"

@@ -96,7 +96,7 @@ private:
 
 } // namespace
 
-PYBIND11_MODULE(_docc_ml, m) {
+PYBIND11_MODULE(_sdfg_mlir, m) {
     m.doc() = "Native Python bindings for MLIR to SDFG conversion";
 
     // Expose the PyMLIRModule class

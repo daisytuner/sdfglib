@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-from docc_ml import import_from_pytorch
+
+from docc.ai import import_from_pytorch
 
 
 class IdentityNet(nn.Module):

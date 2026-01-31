@@ -4,7 +4,7 @@ The Daisytuner Optimizing Compiler Collection (docc) implements an intermediate 
 
 The core of the project is stateful dataflow multigraphs (SDFG), implemented in the `sdfg` module.
 It contains the definition of the intermediate representation as well as numerous passes and analyses.
-For instance, docc comes with support for auto-parallelization using data-centric and polyhedral analaysis.
+For instance, docc comes with support for auto-parallelization using data-centric and polyhedral analysis.
 
 SDFGs can be generated from Python (JIT) and MLIR frontends, which are separate components including Python bindings and an MLIR dialect for conversion.
 Targets such as Generic, [Google Highway](https://github.com/google/highway), [OpenMP](https://www.openmp.org/), and [CUDA](https://developer.nvidia.com/cuda/toolkit) are implemented in `opt`.
@@ -43,10 +43,10 @@ For further details, check out the [component's README.md](./python/).
 
 ### MLIR (PyTorch/ONNX)
 
-To export PyTorch models via the MLIR component, install the `torch-mlir` and `docc-ml` packages via pip:
+To export PyTorch models via the MLIR component, install the `torch-mlir` and `docc-ai` packages via pip:
 
 ```bash
-pip install docc-ml (soon)
+pip install docc-ai
 
 pip install --pre torch-mlir torchvision --extra-index-url https://download.pytorch.org/whl/nightly/cpu -f https://github.com/llvm/torch-mlir-release/releases/expanded_assets/dev-wheels
 ```
@@ -56,7 +56,7 @@ Afterwards, use the `import_from_pytorch` to generate an SDFG:
 ```python
 import torch
 import torch.nn as nn
-from docc_ml import import_from_pytorch
+from docc.ai import import_from_pytorch
 
 class IdentityNet(nn.Module):
     def __init__(self):

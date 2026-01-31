@@ -229,7 +229,7 @@ jobs:
       - name: Build Python bindings
         run: |
           pip install --no-build-isolation -v -e mlir/
-          python -c "import docc_ml"
+          python -c "import docc.ai"
 
   finish:
     needs: [cpp-tests, python-tests, mlir-tests]
