@@ -39,9 +39,14 @@ B = np.random.rand(1000, 1000)
 C = matrix_multiply(A, B)
 ```
 
-### MLIR
+For further details, check out the [component's README.md](./python/).
 
-A quickstart example will be added soon.
+### MLIR (PyTorch/ONNX)
+
+An MLIR frontend to convert PyTorch and ONNX models to SDFGs via MLIR is work-in-progress.
+The component currently covers the SDFG dialect and conversion passes from core MLIR dialects (arith, linalg, etc.).
+
+For further details, check out the [component's README.md](./mlir/).
 
 ## Building the Core Components
 
