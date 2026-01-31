@@ -44,3 +44,8 @@ option(PYTHON_BUILD_FRONTEND "Build Python frontend" OFF)
 if(PYTHON_BUILD_FRONTEND)
     add_subdirectory(python)
 endif()
+
+option(MLIR_BUILD_FRONTEND "Build MLIR frontend" OFF)
+if(MLIR_BUILD_FRONTEND)
+    add_subdirectory(mlir)
+endif()

@@ -105,6 +105,7 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/tensor/elementwise_ops/elu_node.cpp
     src/data_flow/library_nodes/math/tensor/elementwise_ops/exp_node.cpp
     src/data_flow/library_nodes/math/tensor/elementwise_ops/erf_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise_ops/fill_node.cpp
     src/data_flow/library_nodes/math/tensor/elementwise_ops/hard_sigmoid_node.cpp
     src/data_flow/library_nodes/math/tensor/elementwise_ops/leaky_relu_node.cpp
     src/data_flow/library_nodes/math/tensor/elementwise_ops/mul_node.cpp

@@ -1,0 +1,4 @@
+add_subdirectory(ArithToSDFG)
+add_subdirectory(ConvertToSDFG)
+add_subdirectory(FuncToSDFG)
+add_subdirectory(LinalgToSDFG)
