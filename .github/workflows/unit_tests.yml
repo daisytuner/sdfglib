@@ -202,6 +202,7 @@ jobs:
 
       - name: Unit tests
         run: |
+          cd build/
           ninja check-sdfg-opt
 
   finish:
