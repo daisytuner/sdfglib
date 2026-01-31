@@ -170,7 +170,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.12"]
 
     steps:
       - uses: actions/checkout@v4
@@ -197,6 +197,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install pybind11 pytest coverage black==25.9.0 build scikit-build-core
           pip install numpy scipy
+
+          pip install --pre torch-mlir torchvision --extra-index-url https://download.pytorch.org/whl/nightly/cpu -f https://github.com/llvm/torch-mlir-release/releases/expanded_assets/dev-wheels
 
       - name: Build
         run: |

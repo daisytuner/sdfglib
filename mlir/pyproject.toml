@@ -12,7 +12,7 @@ description = "Python bindings and MLIR conversion for JIT compiling PyTorch mod
 authors = [{ name = "Daisytuner", email = "hello@daisytuner.com" }]
 maintainers = [{ name = "Daisytuner", email = "hello@daisytuner.com" }]
 license = { text = "BSD-3-Clause" }
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 readme = "README.md"
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -24,15 +24,12 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: 3.14",
   "Programming Language :: C++",
   "Topic :: Scientific/Engineering",
   "Topic :: Software Development :: Compilers",
 ]
 keywords = ["pytorch", "mlir", "sdfg", "compiler", "optimization"]
 dependencies = [
-    "torch-mlir",
     "numpy>=1.19.0",
     "scipy>=1.7.0",
 ]
@@ -61,7 +58,7 @@ input = "../VERSION"
 regex = "(?P<value>\\d+\\.\\d+\\.\\d+)"
 
 [tool.cibuildwheel]
-build = "cp311-* cp312-* cp313-* cp314-*"
+build = "cp311-* cp312-*"
 skip = "*-win32 *-manylinux_i686 *-musllinux_*"
 build-frontend = "build[uv]"
 

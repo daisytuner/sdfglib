@@ -43,7 +43,15 @@ For further details, check out the [component's README.md](./python/).
 
 ### MLIR (PyTorch/ONNX)
 
-The MLIR frontend is actively developed and currently exports the model as an MLIR module in SDFG dialect.
+To export PyTorch models via the MLIR component, install the `torch-mlir` and `docc-ml` packages via pip:
+
+```bash
+pip install docc-ml (soon)
+
+pip install --pre torch-mlir torchvision --extra-index-url https://download.pytorch.org/whl/nightly/cpu -f https://github.com/llvm/torch-mlir-release/releases/expanded_assets/dev-wheels
+```
+
+Afterwards, use the `import_from_pytorch` to generate an SDFG:
 
 ```python
 import torch
@@ -61,7 +69,6 @@ model = IdentityNet()
 example_input = torch.randn(2, 1)
 
 sdfg = import_from_pytorch(model, example_input)
-print(sdfg)
 ```
 
 For further details, check out the [component's README.md](./mlir/).
