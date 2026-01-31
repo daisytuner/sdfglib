@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <memory>
-#include <sdfg/transformations/rpc_node_transform.h>
+#include <sdfg/passes/rpc/rpc_loop_opt.h>
 
 
 #include "sdfg/analysis/loop_analysis.h"
@@ -18,7 +18,7 @@
 
 using namespace sdfg;
 
-class RPCNodeTransformTest : public ::testing::Test {
+class RPCLoopOptTest : public ::testing::Test {
 protected:
     std::unique_ptr<passes::rpc::RpcContext> ctx_;
 
@@ -122,26 +122,30 @@ protected:
     };
 };
 
-TEST_F(RPCNodeTransformTest, Matmul_FMA) {
+TEST_F(RPCLoopOptTest, Matmul_FMA) {
     auto sdfg_initial = builder_->subject().clone();
     sdfg::builder::StructuredSDFGBuilder builder(sdfg_initial);
 
     // Transfer tuning replayer
 
-    sdfg::analysis::AnalysisManager analysis_manager(builder.subject());
+   sdfg::analysis::AnalysisManager analysis_manager(builder_->subject());
     auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
     auto outer_loops = loop_analysis.outermost_loops();
-    EXPECT_EQ(outer_loops.size(), 1);
 
-    auto outer_loop = static_cast<structured_control_flow::StructuredLoop*>(outer_loops[0]);
-    sdfg::transformations::RPCNodeTransform transfer_tuning(*outer_loop, "sequential", "server", *ctx_, true);
-    ASSERT_TRUE(transfer_tuning.can_be_applied(builder, analysis_manager));
-    transfer_tuning.apply(builder, analysis_manager);
+    passes::rpc::SimpleRpcContextBuilder b;
+    b.initialize_local_default();
+    b.from_env();
+    b.from_docc_config();
+    b.server = "http://localhost:8080/docc";
+    auto ctx = b.build();
 
-    sdfg::analysis::AnalysisManager test_analysis_manager(builder.subject());
+    passes::rpc::RpcLoopOpt rpc_pass(*ctx, "sequential", "server", true);
+    rpc_pass.run(*builder_, analysis_manager);
 
+    sdfg::analysis::AnalysisManager test_analysis_manager(builder_->subject());
     auto& test_loop_analysis = test_analysis_manager.get<sdfg::analysis::LoopAnalysis>();
     auto loop_nest_tree = test_loop_analysis.loop_tree();
+
     EXPECT_TRUE(test_loop_analysis.find_loop_by_indvar("j") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k")]);
     EXPECT_TRUE(test_loop_analysis.find_loop_by_indvar("i") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j")]);
     EXPECT_TRUE(
@@ -157,7 +161,7 @@ TEST_F(RPCNodeTransformTest, Matmul_FMA) {
     );
 };
 
-TEST_F(RPCNodeTransformTest, Double_Matmul) {
+TEST_F(RPCLoopOptTest, Double_Matmul) {
     {
         analysis::AnalysisManager analysis_manager(builder_->subject());
         auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
@@ -168,22 +172,21 @@ TEST_F(RPCNodeTransformTest, Double_Matmul) {
         deep_copy.copy();
     }
 
-    auto sdfg_initial = builder_->subject().clone();
-    sdfg::builder::StructuredSDFGBuilder builder(sdfg_initial);
-
-    // Transfer tuning replayer
-
-    sdfg::analysis::AnalysisManager analysis_manager(builder.subject());
+    sdfg::analysis::AnalysisManager analysis_manager(builder_->subject());
     auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
     auto outer_loops = loop_analysis.outermost_loops();
-    EXPECT_EQ(outer_loops.size(), 2);
 
-    auto outer_loop = static_cast<structured_control_flow::StructuredLoop*>(outer_loops[0]);
-    sdfg::transformations::RPCNodeTransform transfer_tuning(*outer_loop, "sequential", "server", *ctx_, true);
-    ASSERT_TRUE(transfer_tuning.can_be_applied(builder, analysis_manager));
-    transfer_tuning.apply(builder, analysis_manager);
+    passes::rpc::SimpleRpcContextBuilder b;
+    b.initialize_local_default();
+    b.from_env();
+    b.from_docc_config();
+    b.server = "http://localhost:8080/docc";
+    auto ctx = b.build();
 
-    sdfg::analysis::AnalysisManager test_analysis_manager(builder.subject());
+    passes::rpc::RpcLoopOpt rpc_pass(*ctx, "sequential", "server", true);
+    rpc_pass.run(*builder_, analysis_manager);
+
+    sdfg::analysis::AnalysisManager test_analysis_manager(builder_->subject());
 
     auto& test_loop_analysis = test_analysis_manager.get<sdfg::analysis::LoopAnalysis>();
     auto loop_nest_tree = test_loop_analysis.loop_tree();

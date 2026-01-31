@@ -49,16 +49,6 @@ PYBIND11_MODULE(_sdfg, m) {
     register_cmath(m);
     register_loop_analysis(m);
 
-    // Register function to setup remote optimization
-    m.def(
-        "set_remote_opt_context",
-        []() {
-            sdfg::codegen::register_default_dispatchers();
-            sdfg::serializer::register_default_serializers();
-        },
-        "Register default node dispatchers"
-    );
-
     py::class_<sdfg::passes::rpc::RpcContext>(m, "RpcContext");
 
     py::class_<sdfg::passes::rpc::SimpleRpcContext, sdfg::passes::rpc::RpcContext>(m, "SimpleRpcContext")

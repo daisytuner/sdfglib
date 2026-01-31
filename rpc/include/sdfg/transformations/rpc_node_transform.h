@@ -13,6 +13,7 @@
 #include "sdfg/transformations/replayer.h"
 #include "sdfg/transformations/transformation.h"
 #include "sdfg/transformations/utils.h"
+#include "sdfg/util/utils_curl.h"
 
 namespace sdfg {
 namespace transformations {
@@ -27,15 +28,16 @@ private:
 
     std::unique_ptr<passes::rpc::RpcOptResponse> opt_resp_;
 
-    // transformations::Replayer replayer_;
-
     bool dump_steps_;
 
     std::string get_node_id_str() const;
 
-    bool can_apply_opt_sdfg(std::optional<passes::rpc::RpcSdfgResult>& opt_sdfg) const;
+    std::variant<std::unique_ptr<passes::rpc::RpcOptResponse>, std::string>
+    query_rpc_server(passes::rpc::RpcOptRequest request, sdfg::passes::rpc::RpcContext& context);
 
-    bool can_apply_replay(std::optional<passes::rpc::RpcLocalReplayRecipe>& replay) const;
+    std::variant<std::unique_ptr<passes::rpc::RpcOptResponse>, std::string> parse_rpc_response(HttpResult result);
+
+    void print_transformation_sequence(const nlohmann::json& sequence) const;
 
 public:
     RPCNodeTransform(
@@ -44,7 +46,6 @@ public:
         const std::string& category,
         sdfg::passes::rpc::RpcContext& rpc_context,
         bool print_steps = false
-        // serializer::TransformationDeserializerRegistry* deserializer_registry = nullptr
     );
 
     virtual std::string name() const override;

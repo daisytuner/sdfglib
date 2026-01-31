@@ -43,6 +43,10 @@ struct SimpleRpcContextBuilder {
     SimpleRpcContextBuilder& from_header_env(std::string env_var = "RPC_HEADER");
     SimpleRpcContextBuilder& from_env(std::string env_var = "SDFG_RPC_CONFIG");
 
+    SimpleRpcContextBuilder& add_header(std::string name, std::string value);
+
+    SimpleRpcContextBuilder& from_docc_config();
+
     std::unique_ptr<SimpleRpcContext> build(bool print = true) const;
 };
 

@@ -1,7 +1,7 @@
 {
   "name": "transfer-server",
   "version": "0.0.1",
-  "description": "Example Webserver to handle transfer tuning requests from sdfglib",
+  "description": "Example Webserver to handle transfer tuning requests from docc",
   "license": "BSD-3-Clause",
   "author": "Daisytuner GmbH",
   "type": "commonjs",
