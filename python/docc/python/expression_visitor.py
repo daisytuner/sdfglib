@@ -218,6 +218,7 @@ class ExpressionVisitor(ast.NodeVisitor):
             "minimum": self._handle_numpy_binary_op,
             "maximum": self._handle_numpy_binary_op,
             "where": self._handle_numpy_where,
+            "clip": self._handle_numpy_clip,
         }
 
     def generic_visit(self, node):
@@ -2709,6 +2710,31 @@ class ExpressionVisitor(ast.NodeVisitor):
             self.builder.end_for()
 
         return tmp_name
+
+    def _handle_numpy_clip(self, node, func_name):
+        """Handle np.clip(a, a_min, a_max) - elementwise clipping.
+
+        Clips array values to be within [a_min, a_max].
+        Implemented as: min(max(a, a_min), a_max)
+
+        This uses the existing min/max elementwise operations.
+        """
+        if len(node.args) != 3:
+            raise NotImplementedError("np.clip requires 3 arguments (a, a_min, a_max)")
+
+        # Visit the array argument
+        arr_name = self.visit(node.args[0])
+        # Visit the bound arguments (scalars or arrays)
+        a_min = self.visit(node.args[1])
+        a_max = self.visit(node.args[2])
+
+        # First: tmp1 = max(arr, a_min) - ensures values are at least a_min
+        tmp1 = self._handle_array_binary_op("max", arr_name, a_min)
+
+        # Second: result = min(tmp1, a_max) - ensures values are at most a_max
+        result = self._handle_array_binary_op("min", tmp1, a_max)
+
+        return result
 
     def _handle_numpy_matmul_op(self, left_node, right_node):
         return self._handle_matmul_helper(left_node, right_node)
