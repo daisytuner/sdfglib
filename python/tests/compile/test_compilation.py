@@ -1,4 +1,5 @@
-from docc.compiler import native, CompiledSDFG
+from docc.compiler import CompiledSDFG
+from docc.python import native
 import pytest
 import os
 import ctypes

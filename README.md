@@ -30,7 +30,7 @@ pip install docc-compiler
 ```python
 import numpy as np
 
-from docc.compiler import native
+from docc.python import native
 
 @native(target="openmp")
 def matrix_multiply(A, B):

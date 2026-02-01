@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from docc.compiler import native
+from docc.python import native
 
 
 class TestNumpyCopyBasic:

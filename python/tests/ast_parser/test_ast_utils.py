@@ -1,6 +1,6 @@
 import ast
 import pytest
-from docc.compiler import get_debug_info
+from docc.python import get_debug_info
 
 
 def test_get_debug_info():

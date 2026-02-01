@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 import docc.sdfg
 
-from docc.compiler import native
+from docc.python import native
 
 
 def test_simple_scalars():

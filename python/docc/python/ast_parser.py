@@ -1,16 +1,16 @@
 import ast
 import copy
 from docc.sdfg import Scalar, PrimitiveType, Pointer, TaskletCode
-from docc.compiler.ast_utils import (
+from docc.python.ast_utils import (
     SliceRewriter,
     get_debug_info,
     contains_ufunc_outer,
     normalize_negative_index,
 )
-from docc.compiler.expression_visitor import ExpressionVisitor
-from docc.compiler.linear_algebra import LinearAlgebraHandler
-from docc.compiler.convolution import ConvolutionHandler
-from docc.compiler.onnx_ops import ONNXHandler
+from docc.python.expression_visitor import ExpressionVisitor
+from docc.python.linear_algebra import LinearAlgebraHandler
+from docc.python.convolution import ConvolutionHandler
+from docc.python.onnx_ops import ONNXHandler
 
 
 class ASTParser(ast.NodeVisitor):

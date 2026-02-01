@@ -10,7 +10,7 @@ converts Python functions into SDFGs and codegens them for the available target.
 
 ## Build from Sources
 
-To build the Python component from sources, first build the parent `sdfglib` project (see the [sdfglib README](../README.md)), then run pip on the component's directory:
+To build the Python component from sources run pip on the component's directory:
 
 ```bash
 pip install -e python/
@@ -26,7 +26,7 @@ pip install -e python/
 
 #### System Dependencies
 
-The following system dependencies must be installed (same as sdfglib):
+The following system dependencies must be installed (same as core components):
 
 ```bash
 sudo apt-get install -y libgmp-dev libzstd-dev
@@ -60,7 +60,7 @@ The `@native` decorator is the primary way to use the Python frontend. It automa
 ### Basic Example
 
 ```python
-from docc.compiler import native
+from docc.python import native
 import numpy as np
 
 @native

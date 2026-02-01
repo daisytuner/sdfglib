@@ -1,10 +1,7 @@
 import ctypes
 from docc.sdfg import Scalar, Array, Pointer, Structure, PrimitiveType
 
-try:
-    import numpy as np
-except ImportError:
-    np = None
+import numpy as np
 
 _CTYPES_MAP = {
     PrimitiveType.Bool: ctypes.c_bool,
