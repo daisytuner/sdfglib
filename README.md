@@ -48,7 +48,7 @@ For further details, check out the [component's README.md](./python/).
 The MLIR frontend can be installed from PyPi:
 
 ```bash
-pip install docc-ai
+pip install docc-ai # (soon)
 ```
 
 To use the frontend with PyTorch, also install `torch-mlir`, which we use to translate models to core MLIR dialects initially:
@@ -63,7 +63,8 @@ This allows you to import models directly from PyTorch and generate an optimized
 import torch
 import torch.nn as nn
 
-from docc.torch import compile_torch
+import docc.torch
+docc.torch.set_backend_options(target="openmp", category="server")
 
 class IdentityNet(nn.Module):
     def __init__(self):
@@ -76,10 +77,10 @@ model = IdentityNet()
 example_input = torch.randn(2, 1)
 
 # Compile model
-compiled_model = compile_torch(model, example_input)
+compiled_model = torch.compile(model, backend="docc")
 
 # Forward
-res = compiled_mode(example_input)
+res = compiled_model(example_input)
 ```
 
 For further details, check out the [component's README.md](./mlir/).
