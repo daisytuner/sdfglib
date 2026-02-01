@@ -475,3 +475,142 @@ def test_chained_int_float_operations():
 
     # 2 * 3.0 + 3 = 9.0
     assert abs(chained_int_float_ops(5) - 9.0) < 1e-10
+
+
+def test_numpy_clip_float():
+    """Test np.clip with float arrays."""
+
+    @native
+    def numpy_clip_float(n) -> float:
+        a = np.zeros(n, dtype=float)
+        a[0] = -5.0
+        a[1] = 0.5
+        a[2] = 5.0
+        a[3] = 15.0
+        result = np.clip(a, 0.0, 10.0)
+        return result[0]
+
+    # -5.0 clipped to [0, 10] -> 0.0
+    assert abs(numpy_clip_float(10) - 0.0) < 1e-10
+
+    @native
+    def numpy_clip_float_mid(n) -> float:
+        a = np.zeros(n, dtype=float)
+        a[0] = -5.0
+        a[1] = 0.5
+        a[2] = 5.0
+        a[3] = 15.0
+        result = np.clip(a, 0.0, 10.0)
+        return result[1]
+
+    # 0.5 clipped to [0, 10] -> 0.5 (unchanged)
+    assert abs(numpy_clip_float_mid(10) - 0.5) < 1e-10
+
+    @native
+    def numpy_clip_float_upper(n) -> float:
+        a = np.zeros(n, dtype=float)
+        a[0] = -5.0
+        a[1] = 0.5
+        a[2] = 5.0
+        a[3] = 15.0
+        result = np.clip(a, 0.0, 10.0)
+        return result[3]
+
+    # 15.0 clipped to [0, 10] -> 10.0
+    assert abs(numpy_clip_float_upper(10) - 10.0) < 1e-10
+
+
+def test_numpy_clip_int():
+    """Test np.clip with integer arrays."""
+
+    @native
+    def numpy_clip_int_lower(n) -> int:
+        a = np.zeros(n, dtype=int)
+        a[0] = -5
+        a[1] = 5
+        a[2] = 15
+        result = np.clip(a, 2, 10)
+        return result[0]
+
+    # -5 clipped to [2, 10] -> 2
+    assert numpy_clip_int_lower(10) == 2
+
+    @native
+    def numpy_clip_int_mid(n) -> int:
+        a = np.zeros(n, dtype=int)
+        a[0] = -5
+        a[1] = 5
+        a[2] = 15
+        result = np.clip(a, 2, 10)
+        return result[1]
+
+    # 5 clipped to [2, 10] -> 5 (unchanged)
+    assert numpy_clip_int_mid(10) == 5
+
+    @native
+    def numpy_clip_int_upper(n) -> int:
+        a = np.zeros(n, dtype=int)
+        a[0] = -5
+        a[1] = 5
+        a[2] = 15
+        result = np.clip(a, 2, 10)
+        return result[2]
+
+    # 15 clipped to [2, 10] -> 10
+    assert numpy_clip_int_upper(10) == 10
+
+
+def test_numpy_clip_with_expression():
+    """Test np.clip combined with other operations (like in compute benchmark)."""
+
+    @native
+    def numpy_clip_with_ops(n) -> int:
+        arr1 = np.zeros(n, dtype=int)
+        arr2 = np.zeros(n, dtype=int)
+        arr1[0] = 5
+        arr1[1] = 500
+        arr2[0] = 3
+        arr2[1] = 7
+        a = 4
+        b = 3
+        c = 9
+        # Mimics: np.clip(array_1, 2, 10) * a + array_2 * b + c
+        result = np.clip(arr1, 2, 10) * a + arr2 * b + c
+        return result[0]
+
+    # clip(5, 2, 10) * 4 + 3 * 3 + 9 = 5 * 4 + 9 + 9 = 20 + 9 + 9 = 38
+    assert numpy_clip_with_ops(10) == 38
+
+    @native
+    def numpy_clip_with_ops_upper(n) -> int:
+        arr1 = np.zeros(n, dtype=int)
+        arr2 = np.zeros(n, dtype=int)
+        arr1[0] = 5
+        arr1[1] = 500
+        arr2[0] = 3
+        arr2[1] = 7
+        a = 4
+        b = 3
+        c = 9
+        result = np.clip(arr1, 2, 10) * a + arr2 * b + c
+        return result[1]
+
+    # clip(500, 2, 10) * 4 + 7 * 3 + 9 = 10 * 4 + 21 + 9 = 40 + 21 + 9 = 70
+    assert numpy_clip_with_ops_upper(10) == 70
+
+
+def test_numpy_clip_2d():
+    """Test np.clip with 2D arrays."""
+
+    @native
+    def numpy_clip_2d(m, n) -> float:
+        a = np.zeros((m, n), dtype=float)
+        a[0, 0] = -10.0
+        a[0, 1] = 5.0
+        a[1, 0] = 20.0
+        a[1, 1] = 8.0
+        result = np.clip(a, 0.0, 10.0)
+        return result[1, 0]
+
+    # 20.0 clipped to [0, 10] -> 10.0
+    assert abs(numpy_clip_2d(3, 3) - 10.0) < 1e-10
