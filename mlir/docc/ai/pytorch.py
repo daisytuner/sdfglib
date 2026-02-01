@@ -1,9 +1,8 @@
-import json
-
 from docc.mlir import MLIRModule
+from docc.sdfg import StructuredSDFG
 
 
-def import_from_pytorch(model, example_input) -> json:
+def import_from_pytorch(model, example_input) -> StructuredSDFG:
     try:
         from torch_mlir import fx
     except ImportError:
@@ -23,5 +22,5 @@ def import_from_pytorch(model, example_input) -> json:
     mlir_module.convert()
 
     sdfg_str = mlir_module.translate()
-    sdfg_json = json.loads(sdfg_str)
-    return sdfg_json
+    sdfg = StructuredSDFG.parse(sdfg_str)
+    return sdfg
