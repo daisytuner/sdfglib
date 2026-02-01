@@ -63,16 +63,6 @@ class CompiledSDFG:
         self.func.restype = self._get_ctypes_type(sdfg.return_type)
 
     def _convert_to_python_syntax(self, expr_str):
-        """Convert SDFG parentheses notation to Python bracket notation.
-
-        SDFG uses parentheses for array indexing (e.g., "A_row(0)") while Python
-        uses brackets (e.g., "A_row[0]"). This method converts the notation for
-        runtime evaluation.
-
-        Examples:
-            "A_row(0)" -> "A_row[0]"
-            "(A_row(1) - A_row(0))" -> "(A_row[1] - A_row[0])"
-        """
         import re
 
         result = expr_str
@@ -149,6 +139,107 @@ class CompiledSDFG:
                     return ctypes.POINTER(elem_type)
             return ctypes.c_void_p
         return ctypes.c_void_p
+
+    def _convert_return_value(self, func_result, shape_symbol_values):
+        return_type = self.sdfg.return_type
+
+        if isinstance(return_type, Pointer):
+            if return_type.has_pointee_type():
+                pointee = return_type.pointee_type
+                if isinstance(pointee, Scalar):
+                    # Pointer to scalar element type - need to determine array size
+                    # Get return shape from metadata if available
+                    return_shape_str = self.sdfg.metadata("return_shape")
+                    if return_shape_str:
+                        shape = []
+                        for dim_str in return_shape_str.split(","):
+                            try:
+                                eval_str = self._convert_to_python_syntax(str(dim_str))
+                                val = eval(eval_str, {}, shape_symbol_values)
+                                shape.append(int(val))
+                            except Exception:
+                                # Can't evaluate shape, return raw pointer
+                                return func_result
+
+                        # Determine numpy dtype from primitive type
+                        dtype_map = {
+                            PrimitiveType.Float: np.float32,
+                            PrimitiveType.Double: np.float64,
+                            PrimitiveType.Int8: np.int8,
+                            PrimitiveType.Int16: np.int16,
+                            PrimitiveType.Int32: np.int32,
+                            PrimitiveType.Int64: np.int64,
+                            PrimitiveType.UInt8: np.uint8,
+                            PrimitiveType.UInt16: np.uint16,
+                            PrimitiveType.UInt32: np.uint32,
+                            PrimitiveType.UInt64: np.uint64,
+                            PrimitiveType.Bool: np.bool_,
+                        }
+                        dtype = dtype_map.get(pointee.primitive_type, np.float64)
+
+                        # Calculate total size
+                        total_size = 1
+                        for dim in shape:
+                            total_size *= dim
+
+                        # Create numpy array from pointer
+                        ct_type = _CTYPES_MAP.get(
+                            pointee.primitive_type, ctypes.c_double
+                        )
+                        arr_type = ct_type * total_size
+                        arr = np.ctypeslib.as_array(
+                            ctypes.cast(func_result, ctypes.POINTER(arr_type)).contents
+                        )
+                        return arr.reshape(shape).astype(dtype)
+                    else:
+                        # No shape info - try to infer from input shapes
+                        # For identity-like operations, the output shape matches input
+                        if len(self.shape_sources) > 0 and len(shape_symbol_values) > 0:
+                            # Use first input's shape as a fallback
+                            shape = []
+                            for i in range(len(self.shape_sources)):
+                                if f"_s{i}" in shape_symbol_values:
+                                    shape.append(shape_symbol_values[f"_s{i}"])
+
+                            if shape:
+                                dtype_map = {
+                                    PrimitiveType.Float: np.float32,
+                                    PrimitiveType.Double: np.float64,
+                                    PrimitiveType.Int8: np.int8,
+                                    PrimitiveType.Int16: np.int16,
+                                    PrimitiveType.Int32: np.int32,
+                                    PrimitiveType.Int64: np.int64,
+                                    PrimitiveType.UInt8: np.uint8,
+                                    PrimitiveType.UInt16: np.uint16,
+                                    PrimitiveType.UInt32: np.uint32,
+                                    PrimitiveType.UInt64: np.uint64,
+                                    PrimitiveType.Bool: np.bool_,
+                                }
+                                dtype = dtype_map.get(
+                                    pointee.primitive_type, np.float64
+                                )
+
+                                total_size = 1
+                                for dim in shape:
+                                    total_size *= dim
+
+                                ct_type = _CTYPES_MAP.get(
+                                    pointee.primitive_type, ctypes.c_double
+                                )
+                                arr_type = ct_type * total_size
+                                arr = np.ctypeslib.as_array(
+                                    ctypes.cast(
+                                        func_result, ctypes.POINTER(arr_type)
+                                    ).contents
+                                )
+                                return arr.reshape(shape).astype(dtype)
+
+                        # Can't determine shape, return raw pointer
+                        return func_result
+        elif isinstance(return_type, Scalar):
+            return func_result
+
+        return func_result
 
     def __call__(self, *args):
         # Identify user arguments vs implicit arguments (shapes, return values)
@@ -285,7 +376,7 @@ class CompiledSDFG:
                     target_type(arg)
                 )  # Explicit cast to ensure int stays int
 
-        self.func(*converted_args)
+        func_result = self.func(*converted_args)
 
         # Process returns
         results = []
@@ -326,6 +417,10 @@ class CompiledSDFG:
             return results[0]
         elif len(results) > 1:
             return tuple(results)
+
+        # No output args - check if function has a non-void return type
+        if func_result is not None:
+            return self._convert_return_value(func_result, shape_symbol_values)
 
         return None
 

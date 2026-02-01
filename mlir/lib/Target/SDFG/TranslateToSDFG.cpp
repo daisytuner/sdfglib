@@ -139,7 +139,9 @@ public:
     }
 
     LogicalResult translateSDFGOp(SDFGOp* sdfg_op) {
-        this->builders_.push_back(Builder(sdfg_op->getSymName().data(), ::sdfg::FunctionType_CPU));
+        std::string sdfg_name = sdfg_op->getSymName().data();
+        sdfg_name = "__docc_" + sdfg_name;
+        this->builders_.push_back(Builder(sdfg_name, ::sdfg::FunctionType_CPU));
         auto& builder = this->builders_.back();
         ValueMap value_map_scope(this->value_map_);
 

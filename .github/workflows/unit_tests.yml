@@ -229,6 +229,12 @@ jobs:
           pip install --no-build-isolation -v -e mlir/
           python -c "import docc.ai"
 
+      - name: Integration Tests
+        if: matrix.python-version == '3.11' || matrix.python-version == '3.12'
+        run: |
+          cd mlir/
+          pytest -v benchmarks/
+
   finish:
     needs: [cpp-tests, python-tests, mlir-tests]
     runs-on: ubuntu-latest

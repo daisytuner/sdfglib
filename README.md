@@ -63,7 +63,7 @@ This allows you to import models directly from PyTorch and generate an optimized
 import torch
 import torch.nn as nn
 
-from docc.ai import import_from_pytorch
+from docc.torch import compile_torch
 
 class IdentityNet(nn.Module):
     def __init__(self):
@@ -75,7 +75,11 @@ class IdentityNet(nn.Module):
 model = IdentityNet()
 example_input = torch.randn(2, 1)
 
-sdfg = import_from_pytorch(model, example_input)
+# Compile model
+compiled_model = compile_torch(model, example_input)
+
+# Forward
+res = compiled_mode(example_input)
 ```
 
 For further details, check out the [component's README.md](./mlir/).

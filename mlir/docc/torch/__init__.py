@@ -2,9 +2,9 @@ import os
 import getpass
 import hashlib
 import shutil
-from typing import Any, Optional, Union, Tuple
+from typing import Any, Optional
 
-from docc.sdfg import StructuredSDFG, Scalar, PrimitiveType, Pointer
+from docc.sdfg import StructuredSDFG
 from docc.mlir import MLIRModule
 from docc.compiler import DoccProgram, CompiledSDFG
 
@@ -12,11 +12,11 @@ from docc.compiler import DoccProgram, CompiledSDFG
 sdfg_rpc_context = None
 
 
-class PyTorchProgram(DoccProgram):
+class TorchProgram(DoccProgram):
     def __init__(
         self,
         model,
-        example_input: Optional[Any] = None,
+        example_input: Any = None,
         target: str = "none",
         category: str = "server",
         instrumentation_mode: Optional[str] = None,
@@ -28,7 +28,7 @@ class PyTorchProgram(DoccProgram):
             if hasattr(model, "__class__"):
                 name = model.__class__.__name__
             else:
-                name = "pytorch_model"
+                name = "torch_model"
 
         super().__init__(
             name=name,
@@ -53,7 +53,7 @@ class PyTorchProgram(DoccProgram):
 
         # Compile if necessary
         if self._compiled is None:
-            self._compiled = self.compile(*args)
+            self._compiled = self.compile()
 
         # Convert inputs to numpy
         numpy_args = self._convert_inputs(args)
@@ -69,7 +69,6 @@ class PyTorchProgram(DoccProgram):
 
     def compile(
         self,
-        *args: Any,
         output_folder: Optional[str] = None,
         instrumentation_mode: Optional[str] = None,
         capture_args: Optional[bool] = None,
@@ -83,19 +82,14 @@ class PyTorchProgram(DoccProgram):
             capture_args = self.capture_args or False
 
         # Determine example input
-        if self.example_input is not None:
-            example = self.example_input
-        elif args:
-            # Use provided args as example
-            example = args[0] if len(args) == 1 else args
-        else:
+        if self.example_input is None:
             raise ValueError(
                 "No example input provided. Either provide example_input during "
                 "initialization or pass example inputs to compile()."
             )
 
         # Generate cache key
-        cache_key = self._get_cache_key(example)
+        cache_key = self._get_cache_key(self.example_input)
 
         if original_output_folder is None and cache_key in self.cache:
             return self.cache[cache_key]
@@ -117,9 +111,29 @@ class PyTorchProgram(DoccProgram):
         if os.path.exists(output_folder):
             shutil.rmtree(output_folder)
 
+        # Populate input info from example input
+        import torch
+
+        self._input_info = []
+        example_inputs = (
+            self.example_input
+            if isinstance(self.example_input, tuple)
+            else (self.example_input,)
+        )
+        for inp in example_inputs:
+            if isinstance(inp, torch.Tensor):
+                self._input_info.append(
+                    {
+                        "shape": tuple(inp.shape),
+                        "dtype": inp.dtype,
+                    }
+                )
+            else:
+                self._input_info.append({})
+
         # Build SDFG if not already done
         if self._sdfg is None:
-            self._sdfg = self.to_sdfg(example)
+            self._sdfg = self.to_sdfg()
 
         sdfg = self._sdfg
         sdfg.validate()
@@ -166,26 +180,22 @@ class PyTorchProgram(DoccProgram):
         self._compiled = compiled
         return compiled
 
-    def to_sdfg(self, *args: Any) -> StructuredSDFG:
+    def to_sdfg(self) -> StructuredSDFG:
         try:
             from torch_mlir import fx
         except ImportError:
             raise ImportError(
-                "torch-mlir is required for importing PyTorch models. "
+                "torch-mlir is required for importing torch models. "
                 "Please install it with 'pip install torch-mlir'."
             )
 
         # Determine example input
-        if args:
-            example = args[0] if len(args) == 1 else args
-        elif self.example_input is not None:
-            example = self.example_input
-        else:
+        if self.example_input is None:
             raise ValueError("No example input provided for SDFG conversion.")
 
-        # Import PyTorch model to MLIR using torch-mlir FX
+        # Import torch model to MLIR using torch-mlir FX
         torch_mlir = fx.export_and_import(
-            self.model, example, output_type="linalg_on_tensors"
+            self.model, self.example_input, output_type="linalg_on_tensors"
         )
         torch_mlir = str(torch_mlir)
 
@@ -255,13 +265,13 @@ class PyTorchProgram(DoccProgram):
         return "|".join(key_parts)
 
 
-def compile_pytorch(
+def compile_torch(
     model,
     example_input,
     target: str = "none",
     category: str = "server",
 ) -> CompiledSDFG:
-    return PyTorchProgram(
+    return TorchProgram(
         model,
         example_input=example_input,
         target=target,
