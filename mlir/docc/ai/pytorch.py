@@ -1,7 +1,9 @@
+import json
+
 from docc.mlir import MLIRModule
 
 
-def import_from_pytorch(model, example_input) -> str:
+def import_from_pytorch(model, example_input) -> json:
     try:
         from torch_mlir import fx
     except ImportError:
@@ -18,6 +20,8 @@ def import_from_pytorch(model, example_input) -> str:
 
     # Convert to SDFG dialect
     mlir_module = MLIRModule(torch_mlir)
-    mlir_module.convert_to_sdfg()
+    mlir_module.convert()
 
-    return mlir_module.to_string()
+    sdfg_str = mlir_module.translate()
+    sdfg_json = json.loads(sdfg_str)
+    return sdfg_json
