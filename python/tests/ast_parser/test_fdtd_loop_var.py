@@ -1,13 +1,11 @@
-"""Test for fdtd_2d pattern with loop variable index."""
-
 import numpy as np
-import docc
+from docc.compiler import native
 
 
 def test_loop_var_index():
     """Test kernel pattern: ey[0, :] = _fict_[t] where t is loop variable."""
 
-    @docc.program
+    @native
     def kernel(TMAX: int, _fict_: np.ndarray, ey: np.ndarray):
         for t in range(TMAX):
             ey[0, :] = _fict_[t]
@@ -23,7 +21,7 @@ def test_loop_var_index():
 def test_inplace_slice_sub_with_sliced_diff():
     """Test pattern: ey[1:, :] -= 0.5 * (hz[1:, :] - hz[:-1, :])"""
 
-    @docc.program
+    @native
     def kernel(ey: np.ndarray, hz: np.ndarray):
         ey[1:, :] -= 0.5 * (hz[1:, :] - hz[:-1, :])
 
@@ -40,7 +38,3 @@ def test_inplace_slice_sub_with_sliced_diff():
 
     kernel(ey, hz)
     np.testing.assert_array_almost_equal(ey, expected)
-
-
-if __name__ == "__main__":
-    test_loop_var_index()

@@ -380,7 +380,7 @@ std::string PyStructuredSDFG::compile(
     std::string package_include_path_str;
     if (dladdr((void*) &_anchor, &info)) {
         fs::path lib_path = fs::canonical(info.dli_fname);
-        fs::path package_path = lib_path.parent_path();
+        fs::path package_path = lib_path.parent_path().parent_path();
         package_path_str = package_path.string();
         package_include_path_str = (package_path / "include").string();
     }

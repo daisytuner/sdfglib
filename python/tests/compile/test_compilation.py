@@ -1,4 +1,4 @@
-import docc
+from docc.compiler import native, CompiledSDFG
 import pytest
 import os
 import ctypes
@@ -7,7 +7,7 @@ import getpass
 
 
 def test_default_output_folder():
-    @docc.program
+    @native
     def my_func(a):
         pass
 
@@ -23,14 +23,14 @@ def test_default_output_folder():
 
 
 def test_compile_simple_scalar():
-    @docc.program
+    @native
     def simple_scalar(a, b):
         pass
 
     # Load the library
     compiled_sdfg = simple_scalar.compile(1, 2)
 
-    assert isinstance(compiled_sdfg, docc.CompiledSDFG)
+    assert isinstance(compiled_sdfg, CompiledSDFG)
     assert os.path.exists(compiled_sdfg.lib_path)
 
     # Call the function
@@ -41,13 +41,13 @@ def test_compile_simple_scalar():
 
 
 def test_compile_return_scalar():
-    @docc.program
+    @native
     def return_scalar(a, b) -> int:
         pass
 
     compiled_sdfg = return_scalar.compile(1, 2)
 
-    assert isinstance(compiled_sdfg, docc.CompiledSDFG)
+    assert isinstance(compiled_sdfg, CompiledSDFG)
     assert os.path.exists(compiled_sdfg.lib_path)
 
     # Call the function
@@ -60,13 +60,13 @@ def test_compile_return_scalar():
 
 
 def test_compile_return_arg():
-    @docc.program
+    @native
     def return_arg(a, b) -> int:
         return a
 
     compiled_sdfg = return_arg.compile(10, 20)
 
-    assert isinstance(compiled_sdfg, docc.CompiledSDFG)
+    assert isinstance(compiled_sdfg, CompiledSDFG)
 
     # Call the function
     res = compiled_sdfg(10, 20)
@@ -80,7 +80,7 @@ def test_compile_return_arg():
 
 
 def test_caching_sdfg_count():
-    @docc.program
+    @native
     def cached_func(a):
         pass
 
@@ -107,7 +107,7 @@ def test_reserved_cpp_names():
     # 'main' is a reserved name in C/C++ (entry point)
     # 'exit' is a standard library function
 
-    @docc.program
+    @native
     def main(a, b) -> int:
         c = a + b
         return c
@@ -116,7 +116,7 @@ def test_reserved_cpp_names():
     assert compiled(1, 2) == 3
     shutil.rmtree(os.path.dirname(compiled.lib_path))
 
-    @docc.program
+    @native
     def exit(a) -> int:
         return a
 

@@ -1,5 +1,5 @@
 import pytest
-import docc
+from docc.compiler import native
 import math
 import numpy as np
 
@@ -9,7 +9,7 @@ import numpy as np
 
 
 def test_highway_sin():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_sin(A, B):
         for i in range(A.shape[0]):
             B[i] = math.sin(A[i])
@@ -27,7 +27,7 @@ def test_highway_sin():
 
 
 def test_highway_cos():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_cos(A, B):
         for i in range(A.shape[0]):
             B[i] = math.cos(A[i])
@@ -46,7 +46,7 @@ def test_highway_cos():
 
 @pytest.mark.skip(reason="No HIGHWAY implementation for tan yet")
 def test_highway_tan():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_tan(A, B):
         for i in range(A.shape[0]):
             B[i] = math.tan(A[i])
@@ -64,7 +64,7 @@ def test_highway_tan():
 
 
 def test_highway_asin():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_asin(A, B):
         for i in range(A.shape[0]):
             B[i] = math.asin(A[i])
@@ -82,7 +82,7 @@ def test_highway_asin():
 
 
 def test_highway_acos():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_acos(A, B):
         for i in range(A.shape[0]):
             B[i] = math.acos(A[i])
@@ -100,7 +100,7 @@ def test_highway_acos():
 
 
 def test_highway_atan():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_atan(A, B):
         for i in range(A.shape[0]):
             B[i] = math.atan(A[i])
@@ -118,7 +118,7 @@ def test_highway_atan():
 
 
 def test_highway_atan2():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_atan2(A, B, C):
         for i in range(A.shape[0]):
             C[i] = math.atan2(A[i], B[i])
@@ -142,7 +142,7 @@ def test_highway_atan2():
 
 
 def test_highway_sinh():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_sinh(A, B):
         for i in range(A.shape[0]):
             B[i] = math.sinh(A[i])
@@ -161,7 +161,7 @@ def test_highway_sinh():
 
 @pytest.mark.skip(reason="No HIGHWAY implementation for cosh yet")
 def test_highway_cosh():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_cosh(A, B):
         for i in range(A.shape[0]):
             B[i] = math.cosh(A[i])
@@ -179,7 +179,7 @@ def test_highway_cosh():
 
 
 def test_highway_tanh():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_tanh(A, B):
         for i in range(A.shape[0]):
             B[i] = math.tanh(A[i])
@@ -197,7 +197,7 @@ def test_highway_tanh():
 
 
 def test_highway_asinh():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_asinh(A, B):
         for i in range(A.shape[0]):
             B[i] = math.asinh(A[i])
@@ -215,7 +215,7 @@ def test_highway_asinh():
 
 
 def test_highway_acosh():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_acosh(A, B):
         for i in range(A.shape[0]):
             B[i] = math.acosh(A[i])
@@ -235,7 +235,7 @@ def test_highway_acosh():
 
 
 def test_highway_atanh():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_atanh(A, B):
         for i in range(A.shape[0]):
             B[i] = math.atanh(A[i])
@@ -258,7 +258,7 @@ def test_highway_atanh():
 
 
 def test_highway_exp():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_exp(A, B):
         for i in range(A.shape[0]):
             B[i] = math.exp(A[i])
@@ -277,7 +277,7 @@ def test_highway_exp():
 
 @pytest.mark.skip(reason="No HIGHWAY implementation for exp2 yet")
 def test_highway_exp2():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_exp2(A, B):
         for i in range(A.shape[0]):
             B[i] = math.exp2(A[i])
@@ -295,7 +295,7 @@ def test_highway_exp2():
 
 
 def test_highway_expm1():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_expm1(A, B):
         for i in range(A.shape[0]):
             B[i] = math.expm1(A[i])
@@ -313,7 +313,7 @@ def test_highway_expm1():
 
 
 def test_highway_log():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_log(A, B):
         for i in range(A.shape[0]):
             B[i] = math.log(A[i])
@@ -331,7 +331,7 @@ def test_highway_log():
 
 
 def test_highway_log2():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_log2(A, B):
         for i in range(A.shape[0]):
             B[i] = math.log2(A[i])
@@ -349,7 +349,7 @@ def test_highway_log2():
 
 
 def test_highway_log10():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_log10(A, B):
         for i in range(A.shape[0]):
             B[i] = math.log10(A[i])
@@ -367,7 +367,7 @@ def test_highway_log10():
 
 
 def test_highway_log1p():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_log1p(A, B):
         for i in range(A.shape[0]):
             B[i] = math.log1p(A[i])
@@ -390,7 +390,7 @@ def test_highway_log1p():
 
 
 def test_highway_pow():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_pow(A, B, C):
         for i in range(A.shape[0]):
             C[i] = math.pow(A[i], B[i])
@@ -409,7 +409,7 @@ def test_highway_pow():
 
 
 def test_highway_sqrt():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_sqrt(A, B):
         for i in range(A.shape[0]):
             B[i] = math.sqrt(A[i])
@@ -427,7 +427,7 @@ def test_highway_sqrt():
 
 
 def test_highway_cbrt():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_cbrt(A, B):
         for i in range(A.shape[0]):
             B[i] = math.cbrt(A[i])
@@ -445,7 +445,7 @@ def test_highway_cbrt():
 
 
 def test_highway_hypot():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_hypot(A, B, C):
         for i in range(A.shape[0]):
             C[i] = math.hypot(A[i], B[i])
@@ -469,7 +469,7 @@ def test_highway_hypot():
 
 
 def test_highway_fabs():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_fabs(A, B):
         for i in range(A.shape[0]):
             B[i] = math.fabs(A[i])
@@ -487,7 +487,7 @@ def test_highway_fabs():
 
 
 def test_highway_ceil():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_ceil(A, B):
         for i in range(A.shape[0]):
             B[i] = math.ceil(A[i])
@@ -505,7 +505,7 @@ def test_highway_ceil():
 
 
 def test_highway_floor():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_floor(A, B):
         for i in range(A.shape[0]):
             B[i] = math.floor(A[i])
@@ -523,7 +523,7 @@ def test_highway_floor():
 
 
 def test_highway_trunc():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_trunc(A, B):
         for i in range(A.shape[0]):
             B[i] = math.trunc(A[i])
@@ -541,7 +541,7 @@ def test_highway_trunc():
 
 
 def test_highway_fmod():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_fmod(A, B, C):
         for i in range(A.shape[0]):
             C[i] = math.fmod(A[i], B[i])
@@ -560,7 +560,7 @@ def test_highway_fmod():
 
 
 def test_highway_mod():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_mod(A, B, C):
         for i in range(A.shape[0]):
             C[i] = A[i] % B[i]
@@ -580,7 +580,7 @@ def test_highway_mod():
 
 
 def test_highway_remainder():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_remainder(A, B, C):
         for i in range(A.shape[0]):
             C[i] = math.remainder(A[i], B[i])
@@ -606,7 +606,7 @@ def test_highway_remainder():
 
 
 def test_highway_fmax():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_fmax(A, B, C):
         for i in range(A.shape[0]):
             C[i] = max(A[i], B[i])
@@ -625,7 +625,7 @@ def test_highway_fmax():
 
 
 def test_highway_fmin():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_fmin(A, B, C):
         for i in range(A.shape[0]):
             C[i] = min(A[i], B[i])
@@ -649,7 +649,7 @@ def test_highway_fmin():
 
 
 def test_highway_copysign():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_copysign(A, B, C):
         for i in range(A.shape[0]):
             C[i] = math.copysign(A[i], B[i])
@@ -673,7 +673,7 @@ def test_highway_copysign():
 
 
 def test_highway_add():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_add(A, B, C):
         for i in range(A.shape[0]):
             C[i] = A[i] + B[i]
@@ -692,7 +692,7 @@ def test_highway_add():
 
 
 def test_highway_sub():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_sub(A, B, C):
         for i in range(A.shape[0]):
             C[i] = A[i] - B[i]
@@ -711,7 +711,7 @@ def test_highway_sub():
 
 
 def test_highway_mul():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_mul(A, B, C):
         for i in range(A.shape[0]):
             C[i] = A[i] * B[i]
@@ -730,7 +730,7 @@ def test_highway_mul():
 
 
 def test_highway_div():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_div(A, B, C):
         for i in range(A.shape[0]):
             C[i] = A[i] / B[i]
@@ -749,7 +749,7 @@ def test_highway_div():
 
 
 def test_highway_neg():
-    @docc.program(target="sequential")
+    @native(target="sequential")
     def highway_neg(A, B):
         for i in range(A.shape[0]):
             B[i] = -A[i]

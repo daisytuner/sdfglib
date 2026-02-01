@@ -1,13 +1,5 @@
-"""Tests for gather operations (indirect array access).
-
-Gather operations occur when indexing an array with another array,
-e.g., x[indices] where indices is an array of index values.
-This is common in sparse matrix operations like SpMV.
-"""
-
 import numpy as np
-import pytest
-import docc
+from docc.compiler import native
 
 
 class TestSimpleGather:
@@ -16,7 +8,7 @@ class TestSimpleGather:
     def test_gather_1d_simple(self):
         """Test basic 1D gather: y = x[indices]"""
 
-        @docc.program
+        @native
         def gather_simple(x, indices, y):
             for i in range(indices.shape[0]):
                 y[i] = x[indices[i]]
@@ -31,7 +23,7 @@ class TestSimpleGather:
     def test_gather_1d_return(self):
         """Test gather with return value"""
 
-        @docc.program
+        @native
         def gather_return(x, indices):
             result = np.empty(indices.shape[0], dtype=np.float64)
             for i in range(indices.shape[0]):
@@ -47,7 +39,7 @@ class TestSimpleGather:
     def test_gather_int32_indices(self):
         """Test gather with int32 indices"""
 
-        @docc.program
+        @native
         def gather_int32(x, indices, y):
             for i in range(indices.shape[0]):
                 y[i] = x[indices[i]]
@@ -66,7 +58,7 @@ class TestGatherInLoop:
     def test_gather_with_slice_indices(self):
         """Test gather where indices come from a slice (SpMV pattern)"""
 
-        @docc.program
+        @native
         def gather_slice_indices(x, row_ptr, col_idx, result):
             for i in range(row_ptr.shape[0] - 1):
                 # Get indices for this row
@@ -93,7 +85,7 @@ class TestGatherInLoop:
     def test_gather_indirect_slice_bounds(self):
         """Test slicing with indirect bounds: arr[row_ptr[i]:row_ptr[i+1]]"""
 
-        @docc.program
+        @native
         def indirect_slice_sum(arr, row_ptr, result):
             for i in range(row_ptr.shape[0] - 1):
                 vals = arr[row_ptr[i] : row_ptr[i + 1]]
@@ -116,7 +108,7 @@ class TestGatherWithOperations:
     def test_gather_scale(self):
         """Test gather followed by scaling: y = alpha * x[indices]"""
 
-        @docc.program
+        @native
         def gather_scale(x, indices, alpha, y):
             for i in range(indices.shape[0]):
                 y[i] = alpha * x[indices[i]]
@@ -132,7 +124,7 @@ class TestGatherWithOperations:
     def test_gather_add(self):
         """Test gather with addition: y = x[indices] + z[indices]"""
 
-        @docc.program
+        @native
         def gather_add(x, z, indices, y):
             for i in range(indices.shape[0]):
                 y[i] = x[indices[i]] + z[indices[i]]
@@ -148,7 +140,7 @@ class TestGatherWithOperations:
     def test_gather_multiply_accumulate(self):
         """Test gather with multiply-accumulate (dot product pattern)"""
 
-        @docc.program
+        @native
         def gather_mac(vals, x, indices):
             result = 0.0
             for i in range(indices.shape[0]):
@@ -170,7 +162,7 @@ class TestGatherWithMatmul:
     def test_gather_dot_product(self):
         """Test gather followed by dot product: y[i] = vals @ x[cols]"""
 
-        @docc.program
+        @native
         def spmv_row(vals, x, cols):
             # Single row of SpMV
             gathered = np.empty(cols.shape[0], dtype=np.float64)
@@ -189,7 +181,7 @@ class TestGatherWithMatmul:
     def test_full_spmv_pattern(self):
         """Test full SpMV kernel pattern with indirect slicing and gather"""
 
-        @docc.program
+        @native
         def spmv_kernel(row_ptr, col_idx, values, x):
             y = np.empty(row_ptr.shape[0] - 1, dtype=np.float64)
             for i in range(row_ptr.shape[0] - 1):
@@ -223,7 +215,7 @@ class TestScatter:
     def test_scatter_simple(self):
         """Test basic scatter: y[indices] = x"""
 
-        @docc.program
+        @native
         def scatter_simple(x, indices, y):
             for i in range(indices.shape[0]):
                 y[indices[i]] = x[i]
@@ -241,7 +233,7 @@ class TestScatter:
     def test_scatter_accumulate(self):
         """Test scatter with accumulation: y[indices[i]] += x[i]"""
 
-        @docc.program
+        @native
         def scatter_accumulate(x, indices, y):
             for i in range(indices.shape[0]):
                 y[indices[i]] = y[indices[i]] + x[i]
@@ -263,7 +255,7 @@ class TestGatherEdgeCases:
     def test_gather_single_element(self):
         """Test gather with single element"""
 
-        @docc.program
+        @native
         def gather_single(x, indices, y):
             for i in range(indices.shape[0]):
                 y[i] = x[indices[i]]
@@ -278,7 +270,7 @@ class TestGatherEdgeCases:
     def test_gather_all_same_index(self):
         """Test gather with all same indices (broadcast-like)"""
 
-        @docc.program
+        @native
         def gather_broadcast(x, indices, y):
             for i in range(indices.shape[0]):
                 y[i] = x[indices[i]]
@@ -293,7 +285,7 @@ class TestGatherEdgeCases:
     def test_gather_reverse_order(self):
         """Test gather that reverses array order"""
 
-        @docc.program
+        @native
         def gather_reverse(x, y):
             n = x.shape[0]
             for i in range(n):

@@ -1,32 +1,7 @@
-"""
-Comprehensive tests for numpy outer functions.
-
-Tests cover:
-- np.outer (multiply-based outer product)
-- np.add.outer (addition-based outer)
-- np.subtract.outer (subtraction-based outer)
-- np.multiply.outer (same as np.outer)
-- np.divide.outer (division-based outer)
-- np.minimum.outer (element-wise minimum outer)
-- np.maximum.outer (element-wise maximum outer)
-
-Array types tested:
-- float64 (default)
-- float32
-- int64
-- int32
-
-Edge cases:
-- Different sized arrays
-- Sliced arrays
-- Single element arrays
-- Large arrays
-"""
-
 import numpy as np
 import pytest
 from typing import Annotated
-from docc import program
+from docc.compiler import native
 
 
 class TypeFactory:
@@ -59,7 +34,7 @@ class TestNumpyOuter:
     def test_outer_basic_float64(self):
         """Basic outer product with float64 arrays."""
 
-        @program
+        @native
         def np_outer_basic(a: float64[5], b: float64[4]) -> float64[5, 4]:
             return np.outer(a, b)
 
@@ -72,7 +47,7 @@ class TestNumpyOuter:
     def test_outer_same_size(self):
         """Outer product with same-sized arrays."""
 
-        @program
+        @native
         def np_outer_same(a: float64[10], b: float64[10]) -> float64[10, 10]:
             return np.outer(a, b)
 
@@ -84,7 +59,7 @@ class TestNumpyOuter:
     def test_outer_random_values(self):
         """Outer product with random values."""
 
-        @program
+        @native
         def np_outer_random(a: float64[8], b: float64[6]) -> float64[8, 6]:
             return np.outer(a, b)
 
@@ -96,7 +71,7 @@ class TestNumpyOuter:
     def test_outer_with_zeros(self):
         """Outer product where one array contains zeros."""
 
-        @program
+        @native
         def np_outer_zeros(a: float64[5], b: float64[5]) -> float64[5, 5]:
             return np.outer(a, b)
 
@@ -108,7 +83,7 @@ class TestNumpyOuter:
     def test_outer_with_negatives(self):
         """Outer product with negative values."""
 
-        @program
+        @native
         def np_outer_neg(a: float64[4], b: float64[4]) -> float64[4, 4]:
             return np.outer(a, b)
 
@@ -120,7 +95,7 @@ class TestNumpyOuter:
     def test_outer_slicing(self):
         """Outer product with sliced arrays."""
 
-        @program
+        @native
         def outer_slice(a: float64[20], b: float64[20]) -> float64[10, 10]:
             return np.outer(a[:10], b[10:])
 
@@ -141,7 +116,7 @@ class TestAddOuter:
     def test_add_outer_basic_float64(self):
         """Basic add.outer with float64 arrays."""
 
-        @program
+        @native
         def np_add_outer_basic(a: float64[5], b: float64[4]) -> float64[5, 4]:
             return np.add.outer(a, b)
 
@@ -154,7 +129,7 @@ class TestAddOuter:
     def test_add_outer_same_size(self):
         """Add outer with same-sized arrays."""
 
-        @program
+        @native
         def np_add_outer_same(a: float64[10], b: float64[10]) -> float64[10, 10]:
             return np.add.outer(a, b)
 
@@ -166,7 +141,7 @@ class TestAddOuter:
     def test_add_outer_different_sizes(self):
         """Add outer with different sized arrays."""
 
-        @program
+        @native
         def np_add_outer_diff(a: float64[8], b: float64[12]) -> float64[8, 12]:
             return np.add.outer(a, b)
 
@@ -178,7 +153,7 @@ class TestAddOuter:
     def test_add_outer_with_negatives(self):
         """Add outer with negative values."""
 
-        @program
+        @native
         def np_add_outer_neg(a: float64[4], b: float64[4]) -> float64[4, 4]:
             return np.add.outer(a, b)
 
@@ -190,7 +165,7 @@ class TestAddOuter:
     def test_add_outer_int64(self):
         """Add outer with int64 arrays."""
 
-        @program
+        @native
         def np_add_outer_int64(a: int64[5], b: int64[4]) -> int64[5, 4]:
             return np.add.outer(a, b)
 
@@ -212,7 +187,7 @@ class TestSubtractOuter:
     def test_subtract_outer_basic_float64(self):
         """Basic subtract.outer with float64 arrays."""
 
-        @program
+        @native
         def np_sub_outer_basic(a: float64[5], b: float64[4]) -> float64[5, 4]:
             return np.subtract.outer(a, b)
 
@@ -225,7 +200,7 @@ class TestSubtractOuter:
     def test_subtract_outer_same_size(self):
         """Subtract outer with same-sized arrays."""
 
-        @program
+        @native
         def np_sub_outer_same(a: float64[10], b: float64[10]) -> float64[10, 10]:
             return np.subtract.outer(a, b)
 
@@ -237,7 +212,7 @@ class TestSubtractOuter:
     def test_subtract_outer_different_sizes(self):
         """Subtract outer with different sized arrays."""
 
-        @program
+        @native
         def np_sub_outer_diff(a: float64[6], b: float64[9]) -> float64[6, 9]:
             return np.subtract.outer(a, b)
 
@@ -249,7 +224,7 @@ class TestSubtractOuter:
     def test_subtract_outer_int64(self):
         """Subtract outer with int64 arrays."""
 
-        @program
+        @native
         def np_sub_outer_int64(a: int64[5], b: int64[4]) -> int64[5, 4]:
             return np.subtract.outer(a, b)
 
@@ -271,7 +246,7 @@ class TestMultiplyOuter:
     def test_multiply_outer_basic_float64(self):
         """Basic multiply.outer with float64 arrays."""
 
-        @program
+        @native
         def np_mul_outer_basic(a: float64[5], b: float64[4]) -> float64[5, 4]:
             return np.multiply.outer(a, b)
 
@@ -284,7 +259,7 @@ class TestMultiplyOuter:
     def test_multiply_outer_same_size(self):
         """Multiply outer with same-sized arrays."""
 
-        @program
+        @native
         def np_mul_outer_same(a: float64[10], b: float64[10]) -> float64[10, 10]:
             return np.multiply.outer(a, b)
 
@@ -306,7 +281,7 @@ class TestDivideOuter:
     def test_divide_outer_basic_float64(self):
         """Basic divide.outer with float64 arrays."""
 
-        @program
+        @native
         def np_div_outer_basic(a: float64[5], b: float64[4]) -> float64[5, 4]:
             return np.divide.outer(a, b)
 
@@ -319,7 +294,7 @@ class TestDivideOuter:
     def test_divide_outer_same_size(self):
         """Divide outer with same-sized arrays."""
 
-        @program
+        @native
         def np_div_outer_same(a: float64[10], b: float64[10]) -> float64[10, 10]:
             return np.divide.outer(a, b)
 
@@ -331,7 +306,7 @@ class TestDivideOuter:
     def test_divide_outer_different_sizes(self):
         """Divide outer with different sized arrays."""
 
-        @program
+        @native
         def np_div_outer_diff(a: float64[7], b: float64[5]) -> float64[7, 5]:
             return np.divide.outer(a, b)
 
@@ -352,7 +327,7 @@ class TestMinimumOuter:
     def test_minimum_outer_basic_float64(self):
         """Basic minimum.outer with float64 arrays."""
 
-        @program
+        @native
         def np_min_outer_basic(a: float64[5], b: float64[4]) -> float64[5, 4]:
             return np.minimum.outer(a, b)
 
@@ -365,7 +340,7 @@ class TestMinimumOuter:
     def test_minimum_outer_same_size(self):
         """Minimum outer with same-sized arrays."""
 
-        @program
+        @native
         def np_min_outer_same(a: float64[10], b: float64[10]) -> float64[10, 10]:
             return np.minimum.outer(a, b)
 
@@ -377,7 +352,7 @@ class TestMinimumOuter:
     def test_minimum_outer_with_negatives(self):
         """Minimum outer with negative values."""
 
-        @program
+        @native
         def np_min_outer_neg(a: float64[4], b: float64[4]) -> float64[4, 4]:
             return np.minimum.outer(a, b)
 
@@ -389,7 +364,7 @@ class TestMinimumOuter:
     def test_minimum_outer_int64(self):
         """Minimum outer with int64 arrays."""
 
-        @program
+        @native
         def np_min_outer_int64(a: int64[5], b: int64[4]) -> int64[5, 4]:
             return np.minimum.outer(a, b)
 
@@ -411,7 +386,7 @@ class TestMaximumOuter:
     def test_maximum_outer_basic_float64(self):
         """Basic maximum.outer with float64 arrays."""
 
-        @program
+        @native
         def np_max_outer_basic(a: float64[5], b: float64[4]) -> float64[5, 4]:
             return np.maximum.outer(a, b)
 
@@ -424,7 +399,7 @@ class TestMaximumOuter:
     def test_maximum_outer_same_size(self):
         """Maximum outer with same-sized arrays."""
 
-        @program
+        @native
         def np_max_outer_same(a: float64[10], b: float64[10]) -> float64[10, 10]:
             return np.maximum.outer(a, b)
 
@@ -436,7 +411,7 @@ class TestMaximumOuter:
     def test_maximum_outer_with_negatives(self):
         """Maximum outer with negative values."""
 
-        @program
+        @native
         def np_max_outer_neg(a: float64[4], b: float64[4]) -> float64[4, 4]:
             return np.maximum.outer(a, b)
 
@@ -448,7 +423,7 @@ class TestMaximumOuter:
     def test_maximum_outer_int64(self):
         """Maximum outer with int64 arrays."""
 
-        @program
+        @native
         def np_max_outer_int64(a: int64[5], b: int64[4]) -> int64[5, 4]:
             return np.maximum.outer(a, b)
 
@@ -470,7 +445,7 @@ class TestOuterEdgeCases:
     def test_outer_single_element_a(self):
         """Outer with single element in first array."""
 
-        @program
+        @native
         def outer_single_a(a: float64[1], b: float64[5]) -> float64[1, 5]:
             return np.outer(a, b)
 
@@ -482,7 +457,7 @@ class TestOuterEdgeCases:
     def test_outer_single_element_b(self):
         """Outer with single element in second array."""
 
-        @program
+        @native
         def outer_single_b(a: float64[5], b: float64[1]) -> float64[5, 1]:
             return np.outer(a, b)
 
@@ -494,7 +469,7 @@ class TestOuterEdgeCases:
     def test_outer_single_element_both(self):
         """Outer with single element in both arrays."""
 
-        @program
+        @native
         def outer_single_both(a: float64[1], b: float64[1]) -> float64[1, 1]:
             return np.outer(a, b)
 
@@ -506,7 +481,7 @@ class TestOuterEdgeCases:
     def test_add_outer_all_zeros(self):
         """Add outer with all zeros."""
 
-        @program
+        @native
         def add_outer_zeros(a: float64[5], b: float64[5]) -> float64[5, 5]:
             return np.add.outer(a, b)
 
@@ -518,7 +493,7 @@ class TestOuterEdgeCases:
     def test_subtract_outer_identical(self):
         """Subtract outer with identical arrays (should give zero diagonal)."""
 
-        @program
+        @native
         def sub_outer_identical(a: float64[5], b: float64[5]) -> float64[5, 5]:
             return np.subtract.outer(a, b)
 
@@ -542,7 +517,7 @@ class TestOuterTypeConversion:
     def test_outer_float32(self):
         """Outer product with float32 arrays."""
 
-        @program
+        @native
         def outer_f32(a: float32[5], b: float32[5]) -> float32[5, 5]:
             return np.outer(a, b)
 
@@ -554,7 +529,7 @@ class TestOuterTypeConversion:
     def test_add_outer_int32(self):
         """Add outer with int32 arrays."""
 
-        @program
+        @native
         def add_outer_i32(a: int32[5], b: int32[4]) -> int32[5, 4]:
             return np.add.outer(a, b)
 
@@ -576,7 +551,7 @@ class TestOuterCombined:
     def test_outer_plus_outer(self):
         """Sum of two outer products."""
 
-        @program
+        @native
         def outer_plus_outer(
             a: float64[5], b: float64[5], c: float64[5], d: float64[5]
         ) -> float64[5, 5]:
@@ -593,7 +568,7 @@ class TestOuterCombined:
     def test_outer_accumulate(self):
         """Outer product accumulated into existing array."""
 
-        @program
+        @native
         def outer_acc(a: float64[5], b: float64[5], C: float64[5, 5]) -> float64[5, 5]:
             C[:] += np.outer(a, b)
             return C
@@ -608,7 +583,7 @@ class TestOuterCombined:
     def test_add_outer_then_reduce(self):
         """Add outer followed by sum reduction."""
 
-        @program
+        @native
         def add_outer_sum(a: float64[5], b: float64[5]) -> float:
             # Note: Direct chaining works, but intermediate variable may have issues
             return np.sum(np.add.outer(a, b))
@@ -631,7 +606,7 @@ class TestOuterLargeArrays:
     def test_outer_medium_size(self):
         """Outer product with medium-sized arrays."""
 
-        @program
+        @native
         def outer_medium(a: float64[50], b: float64[50]) -> float64[50, 50]:
             return np.outer(a, b)
 
@@ -643,7 +618,7 @@ class TestOuterLargeArrays:
     def test_add_outer_medium_size(self):
         """Add outer with medium-sized arrays."""
 
-        @program
+        @native
         def add_outer_medium(a: float64[50], b: float64[50]) -> float64[50, 50]:
             return np.add.outer(a, b)
 
@@ -655,7 +630,7 @@ class TestOuterLargeArrays:
     def test_minimum_outer_medium_size(self):
         """Minimum outer with medium-sized arrays."""
 
-        @program
+        @native
         def min_outer_medium(a: float64[50], b: float64[50]) -> float64[50, 50]:
             return np.minimum.outer(a, b)
 

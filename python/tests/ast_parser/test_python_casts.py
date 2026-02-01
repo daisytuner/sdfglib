@@ -1,11 +1,11 @@
-import docc
+from docc.compiler import native
 import numpy as np
 
 
 def test_int_cast_from_float():
     """Test casting from float to int using int()"""
 
-    @docc.program
+    @native
     def cast_float_to_int(x: float) -> int:
         return int(x)
 
@@ -25,7 +25,7 @@ def test_int_cast_from_float():
 def test_int_cast_from_bool():
     """Test casting from bool to int using int()"""
 
-    @docc.program
+    @native
     def cast_bool_to_int(x: bool) -> int:
         return int(x)
 
@@ -41,7 +41,7 @@ def test_int_cast_from_bool():
 def test_float_cast_from_int():
     """Test casting from int to float using float()"""
 
-    @docc.program
+    @native
     def cast_int_to_float(x: int) -> float:
         return float(x)
 
@@ -61,7 +61,7 @@ def test_float_cast_from_int():
 def test_float_cast_from_bool():
     """Test casting from bool to float using float()"""
 
-    @docc.program
+    @native
     def cast_bool_to_float(x: bool) -> float:
         return float(x)
 
@@ -77,7 +77,7 @@ def test_float_cast_from_bool():
 def test_bool_cast_from_int():
     """Test casting from int to bool using bool()"""
 
-    @docc.program
+    @native
     def cast_int_to_bool(x: int) -> bool:
         return bool(x)
 
@@ -97,7 +97,7 @@ def test_bool_cast_from_int():
 def test_bool_cast_from_float():
     """Test casting from float to bool using bool()"""
 
-    @docc.program
+    @native
     def cast_float_to_bool(x: float) -> bool:
         return bool(x)
 
@@ -117,7 +117,7 @@ def test_bool_cast_from_float():
 def test_cast_in_expression():
     """Test using casts within expressions"""
 
-    @docc.program
+    @native
     def cast_in_expr(x: float, y: int) -> float:
         # Cast int to float and add to float
         result = x + float(y)
@@ -130,7 +130,7 @@ def test_cast_in_expression():
 def test_cast_with_scalar_variable():
     """Test casting scalar variables"""
 
-    @docc.program
+    @native
     def cast_variable(x: float) -> int:
         y = x + 1.5
         z = int(y)
@@ -143,7 +143,7 @@ def test_cast_with_scalar_variable():
 def test_multiple_casts():
     """Test multiple casts in sequence"""
 
-    @docc.program
+    @native
     def multiple_casts(x: float) -> bool:
         # float -> int -> bool
         y = int(x)
@@ -162,7 +162,7 @@ def test_multiple_casts():
 def test_cast_with_array_element():
     """Test casting array elements"""
 
-    @docc.program
+    @native
     def cast_array_element(A, B):
         for i in range(A.shape[0]):
             B[i] = int(A[i])
@@ -179,7 +179,7 @@ def test_cast_with_array_element():
 def test_cast_in_condition():
     """Test using casts in conditional statements"""
 
-    @docc.program
+    @native
     def cast_in_condition(x: float) -> int:
         if bool(x):
             return int(x)
@@ -196,7 +196,7 @@ def test_cast_in_condition():
 def test_cast_float_to_int_large_values():
     """Test casting large float values to int"""
 
-    @docc.program
+    @native
     def cast_large_float(x: float) -> int:
         return int(x)
 

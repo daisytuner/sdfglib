@@ -1,4 +1,4 @@
-import docc
+from docc.compiler import native
 import pytest
 import math
 
@@ -9,7 +9,7 @@ import math
 
 
 def test_math_sin():
-    @docc.program
+    @native
     def math_sin(a) -> float:
         return math.sin(a)
 
@@ -18,7 +18,7 @@ def test_math_sin():
 
 
 def test_math_cos():
-    @docc.program
+    @native
     def math_cos(a) -> float:
         return math.cos(a)
 
@@ -27,7 +27,7 @@ def test_math_cos():
 
 
 def test_math_tan():
-    @docc.program
+    @native
     def math_tan(a) -> float:
         return math.tan(a)
 
@@ -36,7 +36,7 @@ def test_math_tan():
 
 
 def test_math_asin():
-    @docc.program
+    @native
     def math_asin(a) -> float:
         return math.asin(a)
 
@@ -45,7 +45,7 @@ def test_math_asin():
 
 
 def test_math_acos():
-    @docc.program
+    @native
     def math_acos(a) -> float:
         return math.acos(a)
 
@@ -54,7 +54,7 @@ def test_math_acos():
 
 
 def test_math_atan():
-    @docc.program
+    @native
     def math_atan(a) -> float:
         return math.atan(a)
 
@@ -63,7 +63,7 @@ def test_math_atan():
 
 
 def test_math_atan2():
-    @docc.program
+    @native
     def math_atan2(a, b) -> float:
         return math.atan2(a, b)
 
@@ -77,7 +77,7 @@ def test_math_atan2():
 
 
 def test_math_sinh():
-    @docc.program
+    @native
     def math_sinh(a) -> float:
         return math.sinh(a)
 
@@ -86,7 +86,7 @@ def test_math_sinh():
 
 
 def test_math_cosh():
-    @docc.program
+    @native
     def math_cosh(a) -> float:
         return math.cosh(a)
 
@@ -95,7 +95,7 @@ def test_math_cosh():
 
 
 def test_math_tanh():
-    @docc.program
+    @native
     def math_tanh(a) -> float:
         return math.tanh(a)
 
@@ -104,7 +104,7 @@ def test_math_tanh():
 
 
 def test_math_asinh():
-    @docc.program
+    @native
     def math_asinh(a) -> float:
         return math.asinh(a)
 
@@ -113,7 +113,7 @@ def test_math_asinh():
 
 
 def test_math_acosh():
-    @docc.program
+    @native
     def math_acosh(a) -> float:
         return math.acosh(a)
 
@@ -122,7 +122,7 @@ def test_math_acosh():
 
 
 def test_math_atanh():
-    @docc.program
+    @native
     def math_atanh(a) -> float:
         return math.atanh(a)
 
@@ -136,7 +136,7 @@ def test_math_atanh():
 
 
 def test_math_exp():
-    @docc.program
+    @native
     def math_exp(a) -> float:
         return math.exp(a)
 
@@ -145,7 +145,7 @@ def test_math_exp():
 
 
 def test_math_exp2():
-    @docc.program
+    @native
     def math_exp2(a) -> float:
         return math.exp2(a)
 
@@ -154,7 +154,7 @@ def test_math_exp2():
 
 
 def test_math_expm1():
-    @docc.program
+    @native
     def math_expm1(a) -> float:
         return math.expm1(a)
 
@@ -163,7 +163,7 @@ def test_math_expm1():
 
 
 def test_math_log():
-    @docc.program
+    @native
     def math_log(a) -> float:
         return math.log(a)
 
@@ -172,7 +172,7 @@ def test_math_log():
 
 
 def test_math_log2():
-    @docc.program
+    @native
     def math_log2(a) -> float:
         return math.log2(a)
 
@@ -181,7 +181,7 @@ def test_math_log2():
 
 
 def test_math_log10():
-    @docc.program
+    @native
     def math_log10(a) -> float:
         return math.log10(a)
 
@@ -190,7 +190,7 @@ def test_math_log10():
 
 
 def test_math_log1p():
-    @docc.program
+    @native
     def math_log1p(a) -> float:
         return math.log1p(a)
 
@@ -204,7 +204,7 @@ def test_math_log1p():
 
 
 def test_math_pow():
-    @docc.program
+    @native
     def math_pow(a, b) -> float:
         return math.pow(a, b)
 
@@ -213,7 +213,7 @@ def test_math_pow():
 
 
 def test_math_sqrt():
-    @docc.program
+    @native
     def math_sqrt(a) -> float:
         return math.sqrt(a)
 
@@ -222,7 +222,7 @@ def test_math_sqrt():
 
 
 def test_math_cbrt():
-    @docc.program
+    @native
     def math_cbrt(a) -> float:
         return math.cbrt(a)
 
@@ -231,7 +231,7 @@ def test_math_cbrt():
 
 
 def test_math_hypot():
-    @docc.program
+    @native
     def math_hypot(a, b) -> float:
         return math.hypot(a, b)
 
@@ -245,7 +245,7 @@ def test_math_hypot():
 
 
 def test_math_fabs():
-    @docc.program
+    @native
     def math_fabs(a) -> float:
         return math.fabs(a)
 
@@ -254,7 +254,7 @@ def test_math_fabs():
 
 
 def test_math_ceil():
-    @docc.program
+    @native
     def math_ceil(a) -> float:
         return math.ceil(a)
 
@@ -263,7 +263,7 @@ def test_math_ceil():
 
 
 def test_math_floor():
-    @docc.program
+    @native
     def math_floor(a) -> float:
         return math.floor(a)
 
@@ -272,7 +272,7 @@ def test_math_floor():
 
 
 def test_math_trunc():
-    @docc.program
+    @native
     def math_trunc(a) -> float:
         return math.trunc(a)
 
@@ -281,7 +281,7 @@ def test_math_trunc():
 
 
 def test_math_fmod():
-    @docc.program
+    @native
     def math_fmod(a, b) -> float:
         return math.fmod(a, b)
 
@@ -290,7 +290,7 @@ def test_math_fmod():
 
 
 def test_math_remainder():
-    @docc.program
+    @native
     def math_remainder(a, b) -> float:
         return math.remainder(a, b)
 
@@ -304,7 +304,7 @@ def test_math_remainder():
 
 
 def test_math_copysign():
-    @docc.program
+    @native
     def math_copysign(a, b) -> float:
         return math.copysign(a, b)
 
@@ -318,13 +318,13 @@ def test_math_copysign():
 
 
 def test_math_constants():
-    @docc.program
+    @native
     def math_pi() -> float:
         return math.pi
 
     assert abs(math_pi() - math.pi) < 1e-6
 
-    @docc.program
+    @native
     def math_e() -> float:
         return math.e
 

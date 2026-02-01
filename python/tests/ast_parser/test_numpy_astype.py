@@ -1,11 +1,11 @@
-import docc
+from docc.compiler import native
 import numpy as np
 
 
 def test_astype_float64_to_int64():
     """Test casting from float64 to int64"""
 
-    @docc.program
+    @native
     def cast_to_int(A, B):
         B_casted = A.astype(np.int64)
         for i in range(A.shape[0]):
@@ -23,7 +23,7 @@ def test_astype_float64_to_int64():
 def test_astype_int64_to_float64():
     """Test casting from int64 to float64"""
 
-    @docc.program
+    @native
     def cast_to_float(A, B):
         B_casted = A.astype(np.float64)
         for i in range(A.shape[0]):
@@ -41,7 +41,7 @@ def test_astype_int64_to_float64():
 def test_astype_float64_to_float32():
     """Test casting from float64 to float32"""
 
-    @docc.program
+    @native
     def cast_to_float32(A, B):
         B_casted = A.astype(np.float32)
         for i in range(A.shape[0]):
@@ -59,7 +59,7 @@ def test_astype_float64_to_float32():
 def test_astype_2d_array():
     """Test casting 2D arrays"""
 
-    @docc.program
+    @native
     def cast_2d(A, B):
         B_casted = A.astype(np.int32)
         for i in range(A.shape[0]):
@@ -78,7 +78,7 @@ def test_astype_2d_array():
 def test_astype_int32_to_int64():
     """Test casting from int32 to int64"""
 
-    @docc.program
+    @native
     def cast_int32_to_int64(A, B):
         B_casted = A.astype(np.int64)
         for i in range(A.shape[0]):

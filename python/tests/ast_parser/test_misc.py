@@ -1,10 +1,10 @@
-import docc
+from docc.compiler import native
 import numpy as np
 
 
 def test_adi_simplified():
     # Simplified ADI-like pattern to check correctness of logic
-    @docc.program
+    @native
     def adi_simple(n, steps):
         # 1D diffusion implicit-like
         u = np.zeros(n, dtype=np.float64)
@@ -46,7 +46,7 @@ def test_adi_simplified():
 
 
 def test_column_assignment_indexing():
-    @docc.program
+    @native
     def column_assign_kernel(N):
         A = np.zeros((N, N), dtype=np.float64)
         # Assign to column 0, rows 1 to N-1
@@ -67,7 +67,7 @@ def test_column_assignment_indexing():
 
 
 def test_row_assignment_complex_index():
-    @docc.program
+    @native
     def row_assign_complex(N):
         A = np.zeros((N, N), dtype=np.float64)
         # Testing logic where index expression is complex
@@ -86,7 +86,7 @@ def test_row_assignment_complex_index():
 
 def test_adi_simplified():
     # Simplified ADI-like pattern to check correctness of logic
-    @docc.program
+    @native
     def adi_simple(n, steps):
         # 1D diffusion implicit-like
         u = np.zeros(n, dtype=np.float64)

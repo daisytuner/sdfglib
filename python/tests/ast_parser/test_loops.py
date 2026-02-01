@@ -1,10 +1,10 @@
-import docc
+from docc.compiler import native
 import pytest
 import numpy as np
 
 
 def test_negative_step_loop():
-    @docc.program
+    @native
     def negative_step_loop(n):
         res = 0
         for i in range(n - 1, -1, -1):
@@ -16,7 +16,7 @@ def test_negative_step_loop():
 
 
 def test_negative_step_loop_array():
-    @docc.program
+    @native
     def negative_step_loop_array(n):
         A = np.zeros((n,), dtype=np.int64)
         for i in range(n - 1, -1, -1):
@@ -28,7 +28,7 @@ def test_negative_step_loop_array():
 
 
 def test_positive_step_loop():
-    @docc.program
+    @native
     def positive_step_loop(n):
         res = 0
         for i in range(0, n, 1):
@@ -40,7 +40,7 @@ def test_positive_step_loop():
 
 
 def test_step_greater_than_one():
-    @docc.program
+    @native
     def step_greater_than_one(n):
         res = 0
         for i in range(0, n, 2):
@@ -53,7 +53,7 @@ def test_step_greater_than_one():
 
 
 def test_slice_assignment_loop_var():
-    @docc.program
+    @native
     def slice_assignment(n):
         A = np.zeros((n, n), dtype=np.float64)
         B = np.ones((n, n), dtype=np.float64)
@@ -71,7 +71,7 @@ def test_slice_assignment_loop_var():
 
 
 def test_reverse_loop_dependency():
-    @docc.program
+    @native
     def reverse_dep(n):
         A = np.zeros(n, dtype=np.float64)
         # Init A with 1.0 at end

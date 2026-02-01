@@ -1,7 +1,7 @@
 # Python Bindings and Frontend
 
 This component provides Python bindings via pybind11 to build SDFGs with Python.
-Additionally, this component provides the `@docc.program` decorator, which automatically
+Additionally, this component provides the `@native` decorator, which automatically
 converts Python functions into SDFGs and codegens them for the available target.
 
 - **Bindings**: Build SDFGs programmatically with Python
@@ -48,22 +48,22 @@ For CUDA support, you also need the NVIDIA CUDA Toolkit installed.
 
 ## Usage
 
-### The `@docc.program` Decorator
+### The `@native` Decorator
 
-The `@docc.program` decorator is the primary way to use the Python frontend. It automatically:
+The `@native` decorator is the primary way to use the Python frontend. It automatically:
 1. Parses the Python function's AST
 2. Converts it to an SDFG representation
 3. Applies optimizations based on the target
-4. JIT-compiles to native code
+4. Compiles to native code
 5. Executes and returns results
 
 ### Basic Example
 
 ```python
-import docc
+from docc.compiler import native
 import numpy as np
 
-@docc.program
+@native
 def vector_add(A, B, C, N):
     for i in range(N):
         C[i] = A[i] + B[i]
@@ -79,14 +79,14 @@ vector_add(A, B, C, N)  # JIT compiles and executes
 
 ## Compilation Targets
 
-The `@docc.program` decorator accepts a `target` parameter to specify the code generation backend:
+The `@native` decorator accepts a `target` parameter to specify the code generation backend:
 
 ### `target="none"` (Default)
 
 No scheduling or optimization is applied. The SDFG is compiled as-is without parallelization. Useful for debugging or when you want to manually control the generated code.
 
 ```python
-@docc.program(target="none")
+@native(target="none")
 def simple_loop(A, B, N):
     for i in range(N):
         B[i] = A[i] * 2.0
@@ -99,7 +99,7 @@ Generates optimized sequential code with SIMD vectorization using [Google Highwa
 ```python
 import math
 
-@docc.program(target="sequential")
+@native(target="sequential")
 def vectorized_sin(A, B):
     for i in range(A.shape[0]):
         B[i] = math.sin(A[i])
@@ -122,7 +122,7 @@ vectorized_sin(A, B)
 Generates parallel code using OpenMP. Suitable for multi-core CPUs. Loops are automatically parallelized with appropriate scheduling.
 
 ```python
-@docc.program(target="openmp", category="desktop")
+@native(target="openmp", category="desktop")
 def parallel_add(A, B, C, N):
     for i in range(N):
         C[i] = A[i] + B[i]
@@ -140,7 +140,7 @@ parallel_add(A, B, C, N)
 Generates CUDA code for NVIDIA GPUs. Loops are mapped to GPU thread blocks and threads.
 
 ```python
-@docc.program(target="cuda", category="server")
+@native(target="cuda", category="server")
 def gpu_add(A, B, C, N):
     for i in range(N):
         C[i] = A[i] + B[i]
@@ -162,11 +162,11 @@ The `category` parameter provides hints to the scheduler about the target hardwa
 - `"server"`
 
 ```python
-@docc.program(target="openmp", category="desktop")
+@native(target="openmp", category="desktop")
 def cpu_kernel(A, B):
     ...
 
-@docc.program(target="cuda", category="server")
+@native(target="cuda", category="server")
 def gpu_kernel(A, B):
     ...
 ```
@@ -176,7 +176,7 @@ def gpu_kernel(A, B):
 For more control, you can manually compile and cache the SDFG:
 
 ```python
-@docc.program(target="openmp")
+@native(target="openmp")
 def my_kernel(A, B, C, N):
     for i in range(N):
         C[i] = A[i] + B[i]

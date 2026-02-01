@@ -18,19 +18,21 @@ They provide an easy way to get started with docc.
 
 ### Python
 
-The Python frontend generates C++ code, which is compiled and called from Python.
+The Python frontend generates native C++ code, which is compiled and called from Python.
 This requires `clang-19` to be installed on the system (see [LLVM releases](https://apt.llvm.org/)).
 
 Afterwards, simply install docc via [PyPI](https://pypi.org/project/docc-compiler/):
+
 ```bash
 pip install docc-compiler
 ```
 
 ```python
 import numpy as np
-import docc
 
-@docc.program(target="openmp")
+from docc.compiler import native
+
+@native(target="openmp")
 def matrix_multiply(A, B):
     return A @ B
 
@@ -60,6 +62,7 @@ This allows you to import models directly from PyTorch and generate an optimized
 ```python
 import torch
 import torch.nn as nn
+
 from docc.ai import import_from_pytorch
 
 class IdentityNet(nn.Module):
