@@ -1,4 +1,4 @@
-from docc.compiler import native
+from docc.python import native
 import os
 import pytest
 import numpy as np
@@ -30,7 +30,7 @@ def test_env_var_instrumentation():
     os.close(fd_script)
 
     code = """
-from docc.compiler import native
+from docc.python import native
 import numpy as np
 import os
 

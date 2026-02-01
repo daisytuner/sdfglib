@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from docc.compiler import native
+from docc.python import native
 
 import scipy.special
 

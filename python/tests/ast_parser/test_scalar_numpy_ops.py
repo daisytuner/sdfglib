@@ -8,7 +8,7 @@ particularly:
 3. Proper handling of pointer dereference for 0-D arrays
 """
 
-from docc.compiler import native
+from docc.python import native
 import pytest
 import numpy as np
 import math

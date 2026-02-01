@@ -1,5 +1,5 @@
 import numpy as np
-from docc.compiler import native
+from docc.python import native
 
 
 def test_loop_var_index():

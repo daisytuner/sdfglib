@@ -1,4 +1,4 @@
-from docc.compiler import native
+from docc.python import native
 
 
 class Point:
@@ -15,14 +15,8 @@ class Point3D:
 
 
 def test_structure_type_mapping():
-    """Test that classes are mapped to Structure types correctly
-
-    Note: This test uses the internal _map_python_type function to validate
-    type mapping logic. This is acceptable for testing internal behavior
-    until full integration tests can run in a build environment.
-    """
     from docc.sdfg import Structure, Pointer
-    from docc.compiler import _map_python_type
+    from docc.python import _map_python_type
 
     # Test that a class is mapped to Pointer(Structure)
     result = _map_python_type(Point)
@@ -35,10 +29,10 @@ def test_structure_type_mapping():
 def test_class_instance_type_inference():
     """Test that class instances are correctly inferred as Pointer to Structure"""
     from docc.sdfg import Structure, Pointer
-    from docc.compiler import DoccProgram
+    from docc.python import PythonProgram
 
     point = Point(3.0, 4.0)
-    program = DoccProgram(lambda p: p, target="none")
+    program = PythonProgram(lambda p: p, target="none")
 
     # Test type inference for class instance
     inferred_type = program._infer_type(point)
@@ -51,9 +45,9 @@ def test_class_instance_type_inference():
 def test_class_type_string_representation():
     """Test that Structure types are properly represented in signatures"""
     from docc.sdfg import Structure, Pointer
-    from docc.compiler import DoccProgram
+    from docc.python import PythonProgram
 
-    program = DoccProgram(lambda p: p, target="none")
+    program = PythonProgram(lambda p: p, target="none")
     point_type = Pointer(Structure("Point"))
 
     # Test type to string conversion
@@ -65,13 +59,13 @@ def test_class_type_string_representation():
 
 def test_structure_member_info_generation():
     """Test that structure member info is correctly generated with indices"""
-    from docc.compiler import DoccProgram
+    from docc.python import PythonProgram
 
     def get_x(p: Point) -> float:
         return p.x
 
     point = Point(3.0, 4.0)
-    program = DoccProgram(get_x, target="none")
+    program = PythonProgram(get_x, target="none")
 
     # Build SDFG to trigger structure registration
     arg_types = [program._infer_type(point)]

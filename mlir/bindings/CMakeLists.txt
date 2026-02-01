@@ -1,4 +1,5 @@
 find_package(pybind11 CONFIG REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 set(PYTHON_BINDING_SOURCES
     bindings.cpp
@@ -29,7 +30,10 @@ target_link_libraries(sdfg-mlir PRIVATE
     MLIRArithToSDFG
     MLIRFuncToSDFG
     MLIRLinalgToSDFG
-    sdfglib
+    sdfg::sdfg
+    sdfg::opt
+    sdfg::rpc
+    nlohmann_json::nlohmann_json
 )
 
 target_include_directories(sdfg-mlir PRIVATE

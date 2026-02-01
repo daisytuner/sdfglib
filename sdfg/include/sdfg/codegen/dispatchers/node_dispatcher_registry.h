@@ -71,7 +71,7 @@ public:
     void register_dispatcher(std::type_index type, NodeDispatcherFn fn) {
         std::lock_guard<std::mutex> lock(mutex_);
         if (factory_map_.find(type) != factory_map_.end()) {
-            throw std::runtime_error("Dispatcher already registered for type: " + std::string(type.name()));
+            return;
         }
         factory_map_[type] = std::move(fn);
     }
@@ -121,7 +121,7 @@ public:
     void register_map_dispatcher(std::string schedule_type, MapDispatcherFn fn) {
         std::lock_guard<std::mutex> lock(mutex_);
         if (factory_map_.find(schedule_type) != factory_map_.end()) {
-            throw std::runtime_error("Map dispatcher already registered for schedule type: " + std::string(schedule_type));
+            return;
         }
         factory_map_[schedule_type] = std::move(fn);
     }
@@ -188,9 +188,7 @@ public:
     void register_library_node_dispatcher(std::string library_node_code, LibraryNodeDispatcherFn fn) {
         std::lock_guard<std::mutex> lock(mutex_);
         if (factory_map_.find(library_node_code) != factory_map_.end()) {
-            throw std::runtime_error(
-                "Library node dispatcher already registered for library node code: " + std::string(library_node_code)
-            );
+            return;
         }
         factory_map_[library_node_code] = std::move(fn);
     }

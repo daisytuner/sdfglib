@@ -70,7 +70,7 @@ public:
         return result;
     }
 
-    void convert_to_sdfg() {
+    void convert() {
         mlir::PassManager pm(context_.get());
         pm.addPass(mlir::createConvertToSDFG());
         if (mlir::failed(pm.run(*module_))) {
@@ -78,7 +78,7 @@ public:
         }
     }
 
-    std::string translate_to_sdfg_code() {
+    std::string translate() {
         std::string result;
         llvm::raw_string_ostream os(result);
         if (mlir::failed(mlir::sdfg::translateToSDFG(module_->getOperation(), os))) {
@@ -104,13 +104,9 @@ PYBIND11_MODULE(_sdfg_mlir, m) {
         .def(py::init<const std::string&>(), py::arg("mlir_text"), "Create an MLIR module from MLIR text representation")
         .def("to_string", &PyMLIRModule::to_string, "Get the MLIR module as a string")
         .def(
-            "convert_to_sdfg",
-            &PyMLIRModule::convert_to_sdfg,
+            "convert",
+            &PyMLIRModule::convert,
             "Run the convert-to-sdfg pass pipeline to transform the module to SDFG dialect"
         )
-        .def(
-            "translate_to_sdfg_code",
-            &PyMLIRModule::translate_to_sdfg_code,
-            "Translate the SDFG dialect module to C code"
-        );
+        .def("translate", &PyMLIRModule::translate, "Translate the SDFG dialect module to a serialized SDFG");
 }

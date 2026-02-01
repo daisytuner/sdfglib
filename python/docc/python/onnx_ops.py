@@ -1,6 +1,6 @@
 import ast
 from docc.sdfg import Scalar, PrimitiveType, Pointer
-from .ast_utils import get_debug_info
+from docc.python.ast_utils import get_debug_info
 
 
 class ONNXHandler:

@@ -16,7 +16,9 @@ private:
     PyStructuredSDFG(std::unique_ptr<sdfg::StructuredSDFG>& sdfg);
 
 public:
-    static PyStructuredSDFG from_json(const std::string& json_path);
+    static PyStructuredSDFG parse(const std::string& sdfg_text);
+
+    static PyStructuredSDFG from_file(const std::string& file_path);
 
     std::string name() const;
 

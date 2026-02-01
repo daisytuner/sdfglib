@@ -10,26 +10,26 @@
 #include "mlir/IR/Value.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Tools/mlir-translate/Translation.h"
-#include "sdfg/analysis/analysis.h"
-#include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/codegen/code_generators/c_code_generator.h"
-#include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
-#include "sdfg/codegen/instrumentation/arg_capture_plan.h"
-#include "sdfg/codegen/instrumentation/instrumentation_plan.h"
-#include "sdfg/data_flow/access_node.h"
-#include "sdfg/data_flow/library_node.h"
-#include "sdfg/data_flow/library_nodes/math/blas/blas_node.h"
-#include "sdfg/data_flow/library_nodes/math/blas/gemm_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/fill_node.h"
-#include "sdfg/data_flow/tasklet.h"
-#include "sdfg/element.h"
-#include "sdfg/function.h"
-#include "sdfg/serializer/json_serializer.h"
-#include "sdfg/structured_control_flow/block.h"
-#include "sdfg/structured_control_flow/sequence.h"
-#include "sdfg/symbolic/symbolic.h"
-#include "sdfg/types/scalar.h"
-#include "sdfg/types/type.h"
+
+#include <sdfg/analysis/analysis.h>
+#include <sdfg/builder/structured_sdfg_builder.h>
+#include <sdfg/codegen/code_generators/c_code_generator.h>
+#include <sdfg/codegen/instrumentation/arg_capture_plan.h>
+#include <sdfg/codegen/instrumentation/instrumentation_plan.h>
+#include <sdfg/data_flow/access_node.h>
+#include <sdfg/data_flow/library_node.h>
+#include <sdfg/data_flow/library_nodes/math/blas/blas_node.h>
+#include <sdfg/data_flow/library_nodes/math/blas/gemm_node.h>
+#include <sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/fill_node.h>
+#include <sdfg/data_flow/tasklet.h>
+#include <sdfg/element.h>
+#include <sdfg/function.h>
+#include <sdfg/serializer/json_serializer.h>
+#include <sdfg/structured_control_flow/block.h>
+#include <sdfg/structured_control_flow/sequence.h>
+#include <sdfg/symbolic/symbolic.h>
+#include <sdfg/types/scalar.h>
+#include <sdfg/types/type.h>
 
 namespace mlir {
 namespace sdfg {
@@ -139,7 +139,9 @@ public:
     }
 
     LogicalResult translateSDFGOp(SDFGOp* sdfg_op) {
-        this->builders_.push_back(Builder(sdfg_op->getSymName().data(), ::sdfg::FunctionType_CPU));
+        std::string sdfg_name = sdfg_op->getSymName().data();
+        sdfg_name = "__docc_" + sdfg_name;
+        this->builders_.push_back(Builder(sdfg_name, ::sdfg::FunctionType_CPU));
         auto& builder = this->builders_.back();
         ValueMap value_map_scope(this->value_map_);
 
@@ -639,27 +641,15 @@ public:
 
     LogicalResult emitCode(raw_ostream& os) {
         for (auto& builder : this->builders_) {
-            ::sdfg::analysis::AnalysisManager analysis_manager(builder.subject());
-            auto instrumentation_plan = ::sdfg::codegen::InstrumentationPlan::none(builder.subject());
-            auto arg_capture_plan = ::sdfg::codegen::ArgCapturePlan::none(builder.subject());
-            ::sdfg::codegen::CCodeGenerator
-                generator(builder.subject(), analysis_manager, *instrumentation_plan, *arg_capture_plan);
-            if (!generator.generate()) {
-                return failure();
-            }
-            os << generator.includes().str() << "\n"
-               << generator.globals().str() << "\n"
-               << generator.function_definition() << " {\n"
-               << generator.main().str() << "}\n";
+            ::sdfg::serializer::JSONSerializer serializer;
+            auto json = serializer.serialize(builder.subject());
+            os << json.dump(4) << "\n";
         }
         return success();
     }
 };
 
 LogicalResult translateToSDFG(Operation* op, raw_ostream& os) {
-    ::sdfg::codegen::register_default_dispatchers();
-    ::sdfg::serializer::register_default_serializers();
-
     SDFGTranslator translator;
     if (failed(translator.translate(op))) {
         return emitError(op->getLoc(), "Could not translate to SDFG");

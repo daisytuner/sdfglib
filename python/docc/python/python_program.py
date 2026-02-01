@@ -6,7 +6,8 @@ import os
 import getpass
 import hashlib
 import numpy as np
-from typing import Annotated, get_origin, get_args
+from typing import Annotated, get_origin, get_args, Any, Optional
+
 from docc.sdfg import (
     Scalar,
     PrimitiveType,
@@ -17,21 +18,26 @@ from docc.sdfg import (
     StructuredSDFG,
     StructuredSDFGBuilder,
 )
-from docc.compiler import ASTParser, CompiledSDFG
-
-
-def _compile_wrapper(self, output_folder=None):
-    lib_path = self._compile(output_folder)
-    return CompiledSDFG(lib_path, self)
-
-
-StructuredSDFG.compile = _compile_wrapper
+from docc.compiler.docc_program import DoccProgram
+from docc.compiler.compiled_sdfg import CompiledSDFG
+from docc.python.ast_parser import ASTParser
 
 # Global RPC context for scheduling SDFGs
 sdfg_rpc_context = None
 
 
+def _compile_wrapper(self, output_folder=None):
+    """Wrapper to allow StructuredSDFG.compile() to return a CompiledSDFG."""
+    lib_path = self._compile(output_folder)
+    return CompiledSDFG(lib_path, self)
+
+
+# Monkey-patch StructuredSDFG to add compile method
+StructuredSDFG.compile = _compile_wrapper
+
+
 def _map_python_type(dtype):
+    """Map Python/numpy types to SDFG types."""
     # If it is already a sdfg Type, return it
     if isinstance(dtype, Type):
         return dtype
@@ -81,28 +87,27 @@ def _map_python_type(dtype):
     return dtype
 
 
-class DoccProgram:
+class PythonProgram(DoccProgram):
+
     def __init__(
         self,
         func,
-        target="none",
-        category="server",
-        instrumentation_mode=None,
-        capture_args=None,
+        target: str = "none",
+        category: str = "server",
+        instrumentation_mode: Optional[str] = None,
+        capture_args: Optional[bool] = None,
     ):
-        self.func = func
-        self.name = func.__name__
-        self.target = target
-        self.category = category
-        self.instrumentation_mode = instrumentation_mode
-        self.capture_args = capture_args
-        self.last_sdfg = None
-        self.cache = {}
-        print(
-            f"Created DoccProgram with category '{self.category}' and name '{self.name}'"
+        super().__init__(
+            name=func.__name__,
+            target=target,
+            category=category,
+            instrumentation_mode=instrumentation_mode,
+            capture_args=capture_args,
         )
+        self.func = func
+        self._last_structure_member_info = {}
 
-    def __call__(self, *args):
+    def __call__(self, *args: Any) -> Any:
         # JIT compile and run
         compiled = self.compile(*args)
         res = compiled(*args)
@@ -137,8 +142,12 @@ class DoccProgram:
         return res
 
     def compile(
-        self, *args, output_folder=None, instrumentation_mode=None, capture_args=None
-    ):
+        self,
+        *args: Any,
+        output_folder: Optional[str] = None,
+        instrumentation_mode: Optional[str] = None,
+        capture_args: Optional[bool] = None,
+    ) -> CompiledSDFG:
         original_output_folder = output_folder
 
         # Resolve options
@@ -281,6 +290,52 @@ class DoccProgram:
             self.cache[signature] = compiled
 
         return compiled
+
+    def to_sdfg(self, *args: Any) -> StructuredSDFG:
+        arg_types = [self._infer_type(arg) for arg in args]
+
+        # Build shape mapping
+        shape_values = []
+        shape_sources = []
+        arg_shape_mapping = {}
+
+        sig = inspect.signature(self.func)
+        params = list(sig.parameters.items())
+        scalar_int_params = {}
+        for i, ((name, param), arg) in enumerate(zip(params, args)):
+            if isinstance(arg, (int, np.integer)) and not isinstance(
+                arg, (bool, np.bool_)
+            ):
+                val = int(arg)
+                if val not in scalar_int_params:
+                    scalar_int_params[val] = name
+
+        for i, arg in enumerate(args):
+            if isinstance(arg, np.ndarray):
+                for dim_idx, dim_val in enumerate(arg.shape):
+                    if dim_val in shape_values:
+                        u_idx = shape_values.index(dim_val)
+                    else:
+                        u_idx = len(shape_values)
+                        shape_values.append(dim_val)
+                        shape_sources.append((i, dim_idx))
+                    arg_shape_mapping[(i, dim_idx)] = u_idx
+
+        shape_to_scalar = {}
+        for s_idx, s_val in enumerate(shape_values):
+            if s_val in scalar_int_params:
+                shape_to_scalar[s_idx] = scalar_int_params[s_val]
+
+        sdfg, _, _ = self._build_sdfg(
+            arg_types, args, arg_shape_mapping, len(shape_values), shape_to_scalar
+        )
+        return sdfg
+
+    def _convert_inputs(self, args: tuple) -> tuple:
+        return args
+
+    def _convert_outputs(self, result: Any, original_args: tuple) -> Any:
+        return result
 
     def _get_signature(self, arg_types):
         return ", ".join(self._type_to_str(t) for t in arg_types)
@@ -535,15 +590,24 @@ def native(
     instrumentation_mode=None,
     capture_args=None,
 ):
+    """Decorator to create a PythonProgram from a Python function.
+
+    Example:
+        @native
+        def my_function(x: np.ndarray) -> np.ndarray:
+            return x * 2
+
+        result = my_function(np.array([1.0, 2.0, 3.0]))
+    """
     if func is None:
-        return lambda f: DoccProgram(
+        return lambda f: PythonProgram(
             f,
             target=target,
             category=category,
             instrumentation_mode=instrumentation_mode,
             capture_args=capture_args,
         )
-    return DoccProgram(
+    return PythonProgram(
         func,
         target=target,
         category=category,

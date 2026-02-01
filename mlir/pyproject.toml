@@ -67,7 +67,7 @@ build-frontend = "build[uv]"
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
 
-test-command = "python -c \"import docc.ai; print('docc-ai imported successfully')\""
+test-command = "python -c \"import docc.torch; print('docc-ai imported successfully')\""
 test-requires = ["numpy", "pytest", "scipy"]
 
 [tool.cibuildwheel.linux]

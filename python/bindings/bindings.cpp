@@ -120,9 +120,8 @@ PYBIND11_MODULE(_sdfg, m) {
 
     // Register SDFG class
     py::class_<PyStructuredSDFG>(m, "StructuredSDFG")
-        .def_static(
-            "from_json", &PyStructuredSDFG::from_json, py::arg("json_path"), "Load a StructuredSDFG from JSON file"
-        )
+        .def_static("from_file", &PyStructuredSDFG::from_file, py::arg("file_path"), "Load a StructuredSDFG from file")
+        .def_static("parse", &PyStructuredSDFG::parse, py::arg("sdfg_text"), "Parse a StructuredSDFG from text")
         .def_property_readonly("name", &PyStructuredSDFG::name)
         .def_property_readonly("return_type", &PyStructuredSDFG::return_type, py::return_value_policy::reference)
         .def("type", &PyStructuredSDFG::type, py::arg("name"), py::return_value_policy::reference)

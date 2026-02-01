@@ -1,4 +1,4 @@
-from docc.compiler import native
+from docc.python import native
 
 
 def test_int_arithmetic():

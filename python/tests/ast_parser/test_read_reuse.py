@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
-from docc.compiler import ExpressionVisitor
+from docc.python import ExpressionVisitor
 
 
 class TestReadReuse(unittest.TestCase):

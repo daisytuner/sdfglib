@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from typing import Annotated
-from docc.compiler import native
+from docc.python import native
 
 
 class TypeFactory:

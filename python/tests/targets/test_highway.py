@@ -1,5 +1,5 @@
 import pytest
-from docc.compiler import native
+from docc.python import native
 import math
 import numpy as np
 

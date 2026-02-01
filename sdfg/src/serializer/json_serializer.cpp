@@ -1188,9 +1188,7 @@ void LibraryNodeSerializerRegistry::
     register_library_node_serializer(std::string library_node_code, LibraryNodeSerializerFn fn) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (factory_map_.find(library_node_code) != factory_map_.end()) {
-        throw std::runtime_error(
-            "Library node serializer already registered for library node code: " + std::string(library_node_code)
-        );
+        return;
     }
     factory_map_[library_node_code] = std::move(fn);
 }

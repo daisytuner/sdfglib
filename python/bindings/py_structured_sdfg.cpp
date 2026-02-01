@@ -48,10 +48,18 @@ using json = nlohmann::json;
 
 PyStructuredSDFG::PyStructuredSDFG(std::unique_ptr<sdfg::StructuredSDFG>& sdfg) : sdfg_(std::move(sdfg)) {}
 
-PyStructuredSDFG PyStructuredSDFG::from_json(const std::string& json_path) {
-    std::ifstream sdfg_file(json_path);
+PyStructuredSDFG PyStructuredSDFG::parse(const std::string& sdfg_text) {
+    json j = json::parse(sdfg_text);
+    sdfg::serializer::JSONSerializer serializer;
+    auto sdfg = serializer.deserialize(j);
+
+    return PyStructuredSDFG(sdfg);
+}
+
+PyStructuredSDFG PyStructuredSDFG::from_file(const std::string& file_path) {
+    std::ifstream sdfg_file(file_path);
     if (!sdfg_file.is_open()) {
-        throw std::runtime_error("Failed to open SDFG file: " + json_path);
+        throw std::runtime_error("Failed to open SDFG file: " + file_path);
     }
 
     json j;
