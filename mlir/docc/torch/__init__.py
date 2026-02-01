@@ -277,3 +277,88 @@ def compile_torch(
         target=target,
         category=category,
     )
+
+
+# ============================================================================
+# torch.compile backend registration
+# ============================================================================
+
+# Global options for the docc backend (can be set before calling torch.compile)
+_backend_options = {
+    "target": "none",
+    "category": "server",
+}
+
+
+def set_backend_options(target: str = "none", category: str = "server"):
+    """Set global options for the docc torch.compile backend.
+
+    Call this before using torch.compile(backend="docc") to configure
+    the compilation target and category.
+
+    Args:
+        target: Compilation target ("none", "cuda", "openmp", etc.)
+        category: Target category ("server", "desktop", etc.)
+
+    Example:
+        >>> from docc.torch import set_backend_options
+        >>> set_backend_options(target="cuda", category="server")
+        >>> compiled_model = torch.compile(model, backend="docc")
+    """
+    _backend_options["target"] = target
+    _backend_options["category"] = category
+
+
+def _docc_backend(gm: "torch.fx.GraphModule", example_inputs):
+    """Backend function for torch.compile integration.
+
+    This function is called by torch.compile when backend="docc" is specified.
+    It compiles the FX graph to native code using the docc compiler.
+
+    Args:
+        gm: The torch.fx.GraphModule captured by dynamo
+        example_inputs: List of example input tensors
+
+    Returns:
+        A callable that executes the compiled code
+    """
+    import torch
+
+    # Convert example_inputs list to tuple for TorchProgram
+    if len(example_inputs) == 1:
+        example_input = example_inputs[0]
+    else:
+        example_input = tuple(example_inputs)
+
+    # Create TorchProgram from the FX GraphModule
+    program = TorchProgram(
+        gm,
+        example_input=example_input,
+        target=_backend_options["target"],
+        category=_backend_options["category"],
+    )
+
+    # Return the compiled callable
+    return program
+
+
+def _register_backend():
+    """Register the docc backend with torch.compile.
+
+    This is called automatically when the module is imported, but only
+    if torch._dynamo is available.
+    """
+    try:
+        import torch._dynamo
+
+        torch._dynamo.register_backend(name="docc")(_docc_backend)
+    except ImportError:
+        # torch._dynamo not available (older PyTorch version)
+        pass
+    except Exception:
+        # Registration failed for some other reason, silently ignore
+        pass
+
+
+# Register the backend on module import
+_register_backend()
