@@ -227,7 +227,7 @@ jobs:
       - name: Build Python bindings
         run: |
           pip install --no-build-isolation -v -e mlir/
-          python -c "import docc.ai"
+          python -c "import docc.torch"
 
       - name: Integration Tests
         if: matrix.python-version == '3.11' || matrix.python-version == '3.12'
