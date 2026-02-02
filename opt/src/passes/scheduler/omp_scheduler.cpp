@@ -9,8 +9,7 @@ namespace scheduler {
 SchedulerAction OMPScheduler::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::StructuredLoop& loop,
-    const SchedulerLoopInfo& loop_info
+    structured_control_flow::StructuredLoop& loop
 ) {
     if (auto map_node = dynamic_cast<structured_control_flow::Map*>(&loop)) {
         // Apply OpenMP parallelization to the loop
@@ -22,7 +21,9 @@ SchedulerAction OMPScheduler::schedule(
     }
 
     // Check if in not outermost loop
-    if (loop_info.loop_info.loopnest_index == -1) {
+    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    auto loop_info = loop_analysis.loop_info(&loop);
+    if (loop_info.loopnest_index == -1) {
         return NEXT;
     } else {
         // Visit 1st-level children
@@ -33,11 +34,12 @@ SchedulerAction OMPScheduler::schedule(
 SchedulerAction OMPScheduler::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::While& loop,
-    const SchedulerLoopInfo& loop_info
+    structured_control_flow::While& loop
 ) {
     // Check if in not outermost loop
-    if (loop_info.loop_info.loopnest_index == -1) {
+    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    auto loop_info = loop_analysis.loop_info(&loop);
+    if (loop_info.loopnest_index == -1) {
         return NEXT;
     } else {
         // Visit 1st-level children

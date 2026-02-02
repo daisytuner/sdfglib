@@ -10,8 +10,7 @@ namespace scheduler {
 SchedulerAction CUDAScheduler::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::StructuredLoop& loop,
-    const SchedulerLoopInfo& loop_info
+    structured_control_flow::StructuredLoop& loop
 ) {
     bool cuda_plan = false;
     if (auto map_node = dynamic_cast<structured_control_flow::Map*>(&loop)) {
@@ -36,8 +35,11 @@ SchedulerAction CUDAScheduler::schedule(
         }
     }
 
+    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    auto loop_info = loop_analysis.loop_info(&loop);
+
     // Check if in not outermost loop
-    if (cuda_plan || loop_info.loop_info.loopnest_index == -1) {
+    if (cuda_plan || loop_info.loopnest_index == -1) {
         return NEXT;
     } else {
         // Visit 1st-level children
@@ -48,11 +50,12 @@ SchedulerAction CUDAScheduler::schedule(
 SchedulerAction CUDAScheduler::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::While& loop,
-    const SchedulerLoopInfo& loop_info
+    structured_control_flow::While& loop
 ) {
+    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    auto loop_info = loop_analysis.loop_info(&loop);
     // Check if in not outermost loop
-    if (loop_info.loop_info.loopnest_index == -1) {
+    if (loop_info.loopnest_index == -1) {
         return NEXT;
     } else {
         // Visit 1st-level children

@@ -9,8 +9,7 @@ namespace scheduler {
 SchedulerAction PollyScheduler::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::StructuredLoop& loop,
-    const SchedulerLoopInfo& loop_info
+    structured_control_flow::StructuredLoop& loop
 ) {
     transformations::PollyTransform polly_transform(loop, this->tile_);
     if (polly_transform.can_be_applied(builder, analysis_manager)) {
@@ -24,8 +23,7 @@ SchedulerAction PollyScheduler::schedule(
 SchedulerAction PollyScheduler::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::While& loop,
-    const SchedulerLoopInfo& loop_info
+    structured_control_flow::While& loop
 ) {
     return CHILDREN;
 }

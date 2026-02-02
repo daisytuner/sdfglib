@@ -1,5 +1,7 @@
 #include "sdfg/passes/scheduler/highway_scheduler.h"
 
+#include "sdfg/targets/highway/schedule.h"
+
 #include <gtest/gtest.h>
 
 using namespace sdfg;

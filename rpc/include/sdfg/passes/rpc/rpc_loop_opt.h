@@ -18,15 +18,13 @@ protected:
     scheduler::SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
-        structured_control_flow::StructuredLoop& loop,
-        const scheduler::SchedulerLoopInfo& loop_info
+        structured_control_flow::StructuredLoop& loop
     ) override;
 
     scheduler::SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
-        structured_control_flow::While& loop,
-        const scheduler::SchedulerLoopInfo& loop_info
+        structured_control_flow::While& loop
     ) override;
 
 public:

@@ -26,15 +26,13 @@ protected:
     virtual SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
-        structured_control_flow::StructuredLoop& loop,
-        const SchedulerLoopInfo& loop_info
+        structured_control_flow::StructuredLoop& loop
     ) = 0;
 
     virtual SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
-        structured_control_flow::While& loop,
-        const SchedulerLoopInfo& loop_info
+        structured_control_flow::While& loop
     ) = 0;
 
 public:

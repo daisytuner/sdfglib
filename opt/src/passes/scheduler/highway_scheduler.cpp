@@ -9,8 +9,7 @@ namespace scheduler {
 SchedulerAction HighwayScheduler::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::StructuredLoop& loop,
-    const SchedulerLoopInfo& loop_info
+    structured_control_flow::StructuredLoop& loop
 ) {
     if (auto map_node = dynamic_cast<structured_control_flow::Map*>(&loop)) {
         // Apply Highway vectorization to the loop
@@ -26,8 +25,7 @@ SchedulerAction HighwayScheduler::schedule(
 SchedulerAction HighwayScheduler::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::While& loop,
-    const SchedulerLoopInfo& loop_info
+    structured_control_flow::While& loop
 ) {
     // HighwayScheduler does not handle while loops
     return NEXT;
@@ -70,9 +68,9 @@ bool HighwayScheduler::run_pass(builder::StructuredSDFGBuilder& builder, analysi
         if (scheduling_info.loop_info.has_side_effects) {
             action = SchedulerAction::NEXT;
         } else if (auto while_loop = dynamic_cast<structured_control_flow::While*>(loop)) {
-            action = schedule(builder, analysis_manager, *while_loop, scheduling_info);
+            action = schedule(builder, analysis_manager, *while_loop);
         } else if (auto structured_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(loop)) {
-            action = schedule(builder, analysis_manager, *structured_loop, scheduling_info);
+            action = schedule(builder, analysis_manager, *structured_loop);
         } else {
             throw InvalidSDFGException("LoopScheduler encountered non-loop in loop analysis.");
         }

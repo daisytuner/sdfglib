@@ -13,10 +13,11 @@ RpcLoopOpt::RpcLoopOpt(rpc::RpcContext& rpc_context, std::string target, std::st
 scheduler::SchedulerAction RpcLoopOpt::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::StructuredLoop& loop,
-    const scheduler::SchedulerLoopInfo& loop_info
+    structured_control_flow::StructuredLoop& loop
 ) {
-    if (loop_info.loop_info.loopnest_index == -1 || loop_info.loop_info.has_side_effects) {
+    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    auto loop_info = loop_analysis.loop_info(&loop);
+    if (loop_info.loopnest_index == -1 || loop_info.has_side_effects) {
         return scheduler::NEXT;
     }
 
@@ -33,10 +34,11 @@ scheduler::SchedulerAction RpcLoopOpt::schedule(
 scheduler::SchedulerAction RpcLoopOpt::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::While& loop,
-    const scheduler::SchedulerLoopInfo& loop_info
+    structured_control_flow::While& loop
 ) {
-    if (loop_info.loop_info.loopnest_index == -1 || loop_info.loop_info.has_side_effects) {
+    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    auto loop_info = loop_analysis.loop_info(&loop);
+    if (loop_info.loopnest_index == -1 || loop_info.has_side_effects) {
         return scheduler::NEXT;
     }
 
@@ -82,9 +84,9 @@ bool RpcLoopOpt::run_pass(builder::StructuredSDFGBuilder& builder, analysis::Ana
         if (scheduling_info.loop_info.has_side_effects) {
             action = scheduler::SchedulerAction::NEXT;
         } else if (auto while_loop = dynamic_cast<structured_control_flow::While*>(loop)) {
-            action = schedule(builder, analysis_manager, *while_loop, scheduling_info);
+            action = schedule(builder, analysis_manager, *while_loop);
         } else if (auto structured_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(loop)) {
-            action = schedule(builder, analysis_manager, *structured_loop, scheduling_info);
+            action = schedule(builder, analysis_manager, *structured_loop);
         } else {
             throw InvalidSDFGException("LoopScheduler encountered non-loop in loop analysis.");
         }

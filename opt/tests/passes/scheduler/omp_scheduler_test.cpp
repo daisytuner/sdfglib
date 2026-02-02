@@ -1,5 +1,7 @@
 #include "sdfg/passes/scheduler/omp_scheduler.h"
 
+#include "sdfg/targets/omp/schedule.h"
+
 #include <gtest/gtest.h>
 
 using namespace sdfg;
