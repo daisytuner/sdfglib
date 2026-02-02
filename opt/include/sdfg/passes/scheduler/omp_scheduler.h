@@ -7,7 +7,7 @@ namespace passes {
 namespace scheduler {
 
 class OMPScheduler : public LoopScheduler {
-protected:
+public:
     SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
@@ -20,8 +20,7 @@ protected:
         structured_control_flow::While& loop
     ) override;
 
-public:
-    std::string name() override { return "OMPScheduler"; };
+    static std::string target() { return "openmp"; };
 };
 
 } // namespace scheduler

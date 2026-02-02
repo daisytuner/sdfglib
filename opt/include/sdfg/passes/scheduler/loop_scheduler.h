@@ -21,8 +21,8 @@ struct SchedulerLoopInfo {
     symbolic::Expression flop = SymEngine::null;
 };
 
-class LoopScheduler : public Pass {
-protected:
+class LoopScheduler {
+public:
     virtual SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
@@ -33,12 +33,7 @@ protected:
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
         structured_control_flow::While& loop
-    ) = 0;
-
-public:
-    ~LoopScheduler() override = default;
-
-    bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
+    ) = 0;    
 };
 
 } // namespace scheduler

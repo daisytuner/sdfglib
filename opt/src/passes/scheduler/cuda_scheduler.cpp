@@ -2,6 +2,7 @@
 
 #include "sdfg/transformations/offloading/cuda_parallelize_nested_map.h"
 #include "sdfg/transformations/offloading/cuda_transform.h"
+#include "sdfg/transformations/offloading/gpu_tiling.h"
 
 namespace sdfg {
 namespace passes {
@@ -12,12 +13,10 @@ SchedulerAction CUDAScheduler::schedule(
     analysis::AnalysisManager& analysis_manager,
     structured_control_flow::StructuredLoop& loop
 ) {
-    bool cuda_plan = false;
     if (auto map_node = dynamic_cast<structured_control_flow::Map*>(&loop)) {
         // Apply OpenMP parallelization to the loop
         cuda::CUDATransform cuda_transform(*map_node, 32, false);
-        cuda_plan = cuda_transform.can_be_applied(builder, analysis_manager);
-        if (cuda_plan) {
+        if (cuda_transform.can_be_applied(builder, analysis_manager)) {
             cuda_transform.apply(builder, analysis_manager);
 
             auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
@@ -30,8 +29,20 @@ SchedulerAction CUDAScheduler::schedule(
                     }
                 }
             }
+            
+            analysis_manager.invalidate_all();
+            auto& loop_analysis2 = analysis_manager.get<analysis::LoopAnalysis>();
+            for (auto& descendant : loop_analysis2.descendants(map_node)) {
+                if (auto target_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(descendant)) {
+                    transformations::GPUTiling gpu_tiling_transform(*target_loop, 8);
+                    if (gpu_tiling_transform.can_be_applied(builder, analysis_manager)) {
+                        gpu_tiling_transform.apply(builder, analysis_manager);
+                    }
+                }
+            }
 
             analysis_manager.invalidate_all();
+            return NEXT;
         }
     }
 
@@ -39,7 +50,7 @@ SchedulerAction CUDAScheduler::schedule(
     auto loop_info = loop_analysis.loop_info(&loop);
 
     // Check if in not outermost loop
-    if (cuda_plan || loop_info.loopnest_index == -1) {
+    if (loop_info.loopnest_index == -1) {
         return NEXT;
     } else {
         // Visit 1st-level children

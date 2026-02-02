@@ -1,5 +1,6 @@
 #include "sdfg/passes/rpc/rpc_loop_opt.h"
 
+#include "sdfg/passes/scheduler/scheduler_registry.h"
 #include "sdfg/transformations/rpc_node_transform.h"
 
 namespace sdfg {
@@ -17,7 +18,7 @@ scheduler::SchedulerAction RpcLoopOpt::schedule(
 ) {
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto loop_info = loop_analysis.loop_info(&loop);
-    if (loop_info.loopnest_index == -1 || loop_info.has_side_effects) {
+    if (loop_info.loopnest_index == -1 || loop_info.has_side_effects || loop_info.is_elementwise) {
         return scheduler::NEXT;
     }
 
@@ -38,7 +39,7 @@ scheduler::SchedulerAction RpcLoopOpt::schedule(
 ) {
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto loop_info = loop_analysis.loop_info(&loop);
-    if (loop_info.loopnest_index == -1 || loop_info.has_side_effects) {
+    if (loop_info.loopnest_index == -1 || loop_info.has_side_effects || loop_info.is_elementwise) {
         return scheduler::NEXT;
     }
 
@@ -52,58 +53,8 @@ scheduler::SchedulerAction RpcLoopOpt::schedule(
     return scheduler::NEXT;
 }
 
-bool RpcLoopOpt::run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
-    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
-    auto& flop_analysis = analysis_manager.get<analysis::FlopAnalysis>();
-
-    // Initialize queue with outermost loops
-    std::list<structured_control_flow::ControlFlowNode*> queue;
-    std::unordered_map<structured_control_flow::ControlFlowNode*, scheduler::SchedulerLoopInfo> scheduling_info_map;
-    for (auto& loop : loop_analysis.outermost_loops()) {
-        queue.push_back(loop);
-
-        scheduler::SchedulerLoopInfo info;
-        info.loop_info = loop_analysis.loop_info(loop);
-        info.flop = flop_analysis.get(loop);
-        scheduling_info_map[loop] = info;
-    }
-    if (queue.empty()) {
-        return false;
-    }
-
-    // Scheduling state machine
-    bool applied = false;
-    while (!queue.empty()) {
-        auto loop = queue.front();
-        queue.pop_front();
-
-        auto scheduling_info = scheduling_info_map.at(loop);
-        scheduling_info_map.erase(loop);
-
-        scheduler::SchedulerAction action;
-        if (scheduling_info.loop_info.has_side_effects) {
-            action = scheduler::SchedulerAction::NEXT;
-        } else if (auto while_loop = dynamic_cast<structured_control_flow::While*>(loop)) {
-            action = schedule(builder, analysis_manager, *while_loop);
-        } else if (auto structured_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(loop)) {
-            action = schedule(builder, analysis_manager, *structured_loop);
-        } else {
-            throw InvalidSDFGException("LoopScheduler encountered non-loop in loop analysis.");
-        }
-
-        switch (action) {
-            case scheduler::SchedulerAction::NEXT: {
-                applied = true;
-                break;
-            }
-            // exchanging the sdfg is a non-local operation that requires fresh analysis data
-            case scheduler::SchedulerAction::CHILDREN: {
-                break;
-            }
-        }
-    }
-
-    return applied;
+void register_rpc_loop_opt(rpc::RpcContext& rpc_context, const std::string& target, const std::string& category, bool print_steps) {
+    scheduler::SchedulerRegistry::instance().register_loop_scheduler<RpcLoopOpt>(RpcLoopOpt::target(), std::ref(rpc_context), target, category, print_steps);
 }
 
 } // namespace rpc

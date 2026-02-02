@@ -10,7 +10,7 @@ class PollyScheduler : public LoopScheduler {
 private:
     bool tile_;
 
-protected:
+public:
     SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
@@ -23,11 +23,12 @@ protected:
         structured_control_flow::While& loop
     ) override;
 
-public:
     PollyScheduler(bool tile = true);
 
-    std::string name() override { return "PollyScheduler"; };
+    static std::string target() { return "polly"; };
 };
+
+void register_polly_scheduler(bool tile = true);
 
 } // namespace scheduler
 } // namespace passes

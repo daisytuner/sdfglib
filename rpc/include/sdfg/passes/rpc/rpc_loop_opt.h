@@ -30,11 +30,10 @@ protected:
 public:
     RpcLoopOpt(rpc::RpcContext& rpc_context, std::string target, std::string category, bool print_steps = false);
 
-    std::string name() override { return "RpcLoopOpt"; };
-
-    bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
-
+    static std::string target() { return "rpc"; }
 };
+
+void register_rpc_loop_opt(rpc::RpcContext& rpc_context, const std::string& target, const std::string& category, bool print_steps = false);
 
 } // namespace rpc
 } // namespace passes

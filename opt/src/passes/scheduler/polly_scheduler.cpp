@@ -1,5 +1,6 @@
 #include "sdfg/passes/scheduler/polly_scheduler.h"
 
+#include "sdfg/passes/scheduler/scheduler_registry.h"
 #include "sdfg/transformations/polly_transform.h"
 
 namespace sdfg {
@@ -29,6 +30,10 @@ SchedulerAction PollyScheduler::schedule(
 }
 
 PollyScheduler::PollyScheduler(bool tile) : tile_(tile) {};
+
+void register_polly_scheduler(bool tile) {
+    SchedulerRegistry::instance().register_loop_scheduler<PollyScheduler>(PollyScheduler::target(), tile);
+}
 
 } // namespace scheduler
 } // namespace passes

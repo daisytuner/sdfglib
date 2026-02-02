@@ -7,7 +7,7 @@ namespace passes {
 namespace scheduler {
 
 class HighwayScheduler : public LoopScheduler {
-protected:
+public:
     SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
@@ -20,10 +20,7 @@ protected:
         structured_control_flow::While& loop
     ) override;
 
-public:
-    std::string name() override { return "HighwayScheduler"; };
-
-    bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
+    static std::string target() { return "highway"; };
 };
 
 } // namespace scheduler
