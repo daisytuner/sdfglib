@@ -318,7 +318,7 @@ TEST(OMPSchedulerTest, OuterWhileWithInnerMaps) {
     passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"openmp"});
 
     EXPECT_TRUE(loop_scheduling_pass.run(builder, analysis_manager));
-    
+
     EXPECT_EQ(loop_2.schedule_type().value(), omp::ScheduleType_OMP::value());
     EXPECT_EQ(loop_3.schedule_type().value(), omp::ScheduleType_OMP::value());
 }

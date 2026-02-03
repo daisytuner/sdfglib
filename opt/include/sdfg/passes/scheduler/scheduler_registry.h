@@ -18,7 +18,7 @@ public:
         return registry;
     }
 
-    template <typename T, typename... Args>
+    template<typename T, typename... Args>
     void register_loop_scheduler(std::string target, Args... args) {
         std::lock_guard<std::mutex> lock(mutex_);
         // if (scheduler_map_.find(target) != scheduler_map_.end()) {
@@ -26,7 +26,6 @@ public:
         // }
         scheduler_map_[target] = std::make_unique<T>(std::forward<Args>(args)...);
     }
-
     LoopScheduler* get_loop_scheduler(std::string target) const {
         auto it = scheduler_map_.find(target);
         if (it != scheduler_map_.end()) {
@@ -38,9 +37,7 @@ public:
     size_t size_loop_schedulers() const { return scheduler_map_.size(); }
 };
 
-std::unique_ptr<LoopScheduler> create_loop_scheduler(
-    const std::string target
-);
+std::unique_ptr<LoopScheduler> create_loop_scheduler(const std::string target);
 
 void register_default_schedulers();
 

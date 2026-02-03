@@ -7,7 +7,9 @@ namespace sdfg {
 namespace passes {
 namespace scheduler {
 
-bool LoopSchedulingPass::run_pass_target(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager, const std::string& target) {
+bool LoopSchedulingPass::run_pass_target(
+    builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager, const std::string& target
+) {
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto& flop_analysis = analysis_manager.get<analysis::FlopAnalysis>();
 
@@ -26,13 +28,14 @@ bool LoopSchedulingPass::run_pass_target(builder::StructuredSDFGBuilder& builder
         return false;
     }
 
+
     auto scheduler = SchedulerRegistry::instance().get_loop_scheduler(target);
     if (!scheduler) {
         throw std::runtime_error("Unsupported scheduling target: " + target);
     }
 
     // filter by compatible types, ensure that a scheduler does not encounter maps with incompatible schedule types
-    for(int i = 0; i < queue.size(); i++) {
+    for (int i = 0; i < queue.size(); i++) {
         auto loop = queue.front();
         queue.pop_front();
 
@@ -103,9 +106,9 @@ bool LoopSchedulingPass::run_pass(builder::StructuredSDFGBuilder& builder, analy
         return false;
     }
     if (targets_.size() == 1 && targets_[0] == "none") {
-        return false;        
+        return false;
     }
-    
+
     bool applied = false;
     for (const auto& target : targets_) {
         bool target_applied = run_pass_target(builder, analysis_manager, target);

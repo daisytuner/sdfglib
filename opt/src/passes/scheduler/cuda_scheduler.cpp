@@ -30,7 +30,8 @@ SchedulerAction CUDAScheduler::schedule(
                     }
                 }
             }
-            
+
+
             analysis_manager.invalidate_all();
             auto& loop_analysis2 = analysis_manager.get<analysis::LoopAnalysis>();
             for (auto& descendant : loop_analysis2.descendants(map_node)) {
@@ -74,10 +75,8 @@ SchedulerAction CUDAScheduler::schedule(
         return CHILDREN;
     }
 }
-    
-std::unordered_set<ScheduleTypeCategory> CUDAScheduler::compatible_types() {
-    return {ScheduleTypeCategory::None};
-}
+
+std::unordered_set<ScheduleTypeCategory> CUDAScheduler::compatible_types() { return {ScheduleTypeCategory::None}; }
 
 } // namespace scheduler
 } // namespace passes

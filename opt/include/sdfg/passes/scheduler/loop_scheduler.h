@@ -23,6 +23,7 @@ struct SchedulerLoopInfo {
     symbolic::Expression flop = SymEngine::null;
 };
 
+
 class LoopScheduler {
 public:
     virtual SchedulerAction schedule(
@@ -35,7 +36,7 @@ public:
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
         structured_control_flow::While& loop
-    ) = 0;    
+    ) = 0;
 
     virtual std::unordered_set<ScheduleTypeCategory> compatible_types() = 0;
 };

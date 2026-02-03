@@ -26,9 +26,10 @@ public:
     PollyScheduler(bool tile = true);
 
     static std::string target() { return "polly"; };
-    
+
     std::unordered_set<ScheduleTypeCategory> compatible_types() override;
 };
+
 
 void register_polly_scheduler(bool tile = true);
 

@@ -21,9 +21,10 @@ public:
     ) override;
 
     static std::string target() { return "openmp"; };
-    
+
     std::unordered_set<ScheduleTypeCategory> compatible_types() override;
 };
+
 
 } // namespace scheduler
 } // namespace passes

@@ -13,7 +13,9 @@ class LoopSchedulingPass : public Pass {
 private:
     std::vector<std::string> targets_;
 
-    bool run_pass_target(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager, const std::string& target);
+    bool run_pass_target(
+        builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager, const std::string& target
+    );
 
 public:
     LoopSchedulingPass(const std::vector<std::string>& targets) : targets_(targets) {}
@@ -23,6 +25,7 @@ public:
 
     std::string name() override { return "LoopSchedulingPass"; }
 };
+
 
 } // namespace scheduler
 } // namespace passes

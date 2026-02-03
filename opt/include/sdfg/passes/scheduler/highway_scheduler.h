@@ -20,8 +20,9 @@ public:
         structured_control_flow::While& loop
     ) override;
 
+
     static std::string target() { return "highway"; };
-    
+
     std::unordered_set<ScheduleTypeCategory> compatible_types() override;
 };
 

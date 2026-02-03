@@ -14,7 +14,7 @@ SchedulerAction HighwayScheduler::schedule(
     structured_control_flow::StructuredLoop& loop
 ) {
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
-    
+
     bool is_innermost = loop_analysis.children(&loop).empty();
     if (!is_innermost) {
         return CHILDREN;
@@ -37,7 +37,7 @@ SchedulerAction HighwayScheduler::schedule(
     structured_control_flow::While& loop
 ) {
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
-    
+
     bool is_innermost = loop_analysis.children(&loop).empty();
     if (!is_innermost) {
         return CHILDREN;
@@ -45,10 +45,11 @@ SchedulerAction HighwayScheduler::schedule(
     // HighwayScheduler does not handle while loops
     return NEXT;
 }
-    
+
 std::unordered_set<ScheduleTypeCategory> HighwayScheduler::compatible_types() {
     return {ScheduleTypeCategory::None, ScheduleTypeCategory::Parallelizer};
 }
+
 
 } // namespace scheduler
 } // namespace passes

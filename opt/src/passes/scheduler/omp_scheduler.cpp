@@ -48,10 +48,10 @@ SchedulerAction OMPScheduler::schedule(
 }
 
 
-    
 std::unordered_set<ScheduleTypeCategory> OMPScheduler::compatible_types() {
     return {ScheduleTypeCategory::None, ScheduleTypeCategory::Vectorizer};
 }
+
 
 } // namespace scheduler
 } // namespace passes
