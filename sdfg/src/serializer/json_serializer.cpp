@@ -434,6 +434,7 @@ void JSONSerializer::debug_info_to_json(nlohmann::json& j, const DebugInfo& debu
 
 void JSONSerializer::schedule_type_to_json(nlohmann::json& j, const ScheduleType& schedule_type) {
     j["value"] = schedule_type.value();
+    j["category"] = static_cast<int>(schedule_type.category());
     j["properties"] = nlohmann::json::object();
     for (const auto& prop : schedule_type.properties()) {
         j["properties"][prop.first] = prop.second;
@@ -1078,9 +1079,11 @@ DebugInfo JSONSerializer::json_to_debug_info(const nlohmann::json& j) {
 ScheduleType JSONSerializer::json_to_schedule_type(const nlohmann::json& j) {
     assert(j.contains("value"));
     assert(j["value"].is_string());
+    assert(j.contains("category"));
+    assert(j["category"].is_number_integer());
     assert(j.contains("properties"));
     assert(j["properties"].is_object());
-    ScheduleType schedule_type(j["value"].get<std::string>());
+    ScheduleType schedule_type(j["value"].get<std::string>(), static_cast<ScheduleTypeCategory>(j["category"].get<int>()));
     for (const auto& [key, value] : j["properties"].items()) {
         assert(value.is_string());
         schedule_type.set_property(key, value.get<std::string>());
