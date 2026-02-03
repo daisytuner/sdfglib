@@ -16,12 +16,6 @@ std::unique_ptr<LoopScheduler> create_loop_scheduler(const std::string target) {
     throw std::runtime_error("Unsupported scheduling target: " + target);
 };
 
-void register_default_schedulers() {
-    SchedulerRegistry::instance().register_loop_scheduler<CUDAScheduler>(CUDAScheduler::target());
-    SchedulerRegistry::instance().register_loop_scheduler<OMPScheduler>(OMPScheduler::target());
-    SchedulerRegistry::instance().register_loop_scheduler<HighwayScheduler>(HighwayScheduler::target());
-}
-
 
 } // namespace scheduler
 } // namespace passes

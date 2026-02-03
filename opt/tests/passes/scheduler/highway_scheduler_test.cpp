@@ -65,7 +65,6 @@ TEST(HighwaySchedulerTest, InnerMapWithOuterMap) {
         .add_computational_memlet(block, tasklet, "_out", a_out, {symbolic::symbol("i"), symbolic::symbol("j")}, desc_2);
 
     analysis::AnalysisManager analysis_manager(builder.subject());
-    passes::scheduler::register_default_schedulers();
 
     passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"highway"});
 
@@ -153,7 +152,6 @@ TEST(HighwaySchedulerTest, InnerMapWithOuterFor) {
     }
 
     analysis::AnalysisManager analysis_manager(builder.subject());
-    passes::scheduler::register_default_schedulers();
 
     passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"highway"});
 
@@ -235,7 +233,6 @@ TEST(HighwaySchedulerTest, InnerMapWithOuterWhile) {
     }
 
     analysis::AnalysisManager analysis_manager(builder.subject());
-    passes::scheduler::register_default_schedulers();
 
     passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"highway"});
 

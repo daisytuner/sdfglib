@@ -39,8 +39,6 @@ public:
 
 std::unique_ptr<LoopScheduler> create_loop_scheduler(const std::string target);
 
-void register_default_schedulers();
-
 } // namespace scheduler
 } // namespace passes
 } // namespace sdfg

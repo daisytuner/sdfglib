@@ -45,8 +45,6 @@ PYBIND11_MODULE(_sdfg, m) {
     sdfg::highway::register_highway_plugin();
     sdfg::cuda::register_cuda_plugin();
 
-    sdfg::passes::scheduler::register_default_schedulers();
-
     register_types(m);
     register_tasklet(m);
     register_cmath(m);
