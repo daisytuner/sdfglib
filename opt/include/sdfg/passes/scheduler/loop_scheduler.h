@@ -3,6 +3,8 @@
 #include <sdfg/analysis/flop_analysis.h>
 #include <sdfg/analysis/loop_analysis.h>
 #include <sdfg/passes/pass.h>
+#include <unordered_set>
+#include "sdfg/structured_control_flow/map.h"
 
 namespace sdfg {
 namespace passes {
@@ -34,6 +36,8 @@ public:
         analysis::AnalysisManager& analysis_manager,
         structured_control_flow::While& loop
     ) = 0;    
+
+    virtual std::unordered_set<ScheduleTypeCategory> compatible_types() = 0;
 };
 
 } // namespace scheduler

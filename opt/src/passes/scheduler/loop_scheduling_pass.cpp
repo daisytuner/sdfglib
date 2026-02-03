@@ -1,6 +1,7 @@
 #include "sdfg/passes/scheduler/loop_scheduling_pass.h"
 #include "sdfg/passes/scheduler/loop_scheduler.h"
 #include "sdfg/passes/scheduler/scheduler_registry.h"
+#include "sdfg/structured_control_flow/map.h"
 
 namespace sdfg {
 namespace passes {
@@ -28,6 +29,29 @@ bool LoopSchedulingPass::run_pass_target(builder::StructuredSDFGBuilder& builder
     auto scheduler = SchedulerRegistry::instance().get_loop_scheduler(target);
     if (!scheduler) {
         throw std::runtime_error("Unsupported scheduling target: " + target);
+    }
+
+    // filter by compatible types, ensure that a scheduler does not encounter maps with incompatible schedule types
+    for(int i = 0; i < queue.size(); i++) {
+        auto loop = queue.front();
+        queue.pop_front();
+
+        auto descendants = loop_analysis.descendants(loop);
+
+        bool found_incompatible = false;
+        for (auto descendant : descendants) {
+            if (auto map_node = dynamic_cast<structured_control_flow::Map*>(descendant)) {
+                auto compatible_schedules = scheduler->compatible_types();
+                if (compatible_schedules.find(map_node->schedule_type().category()) == compatible_schedules.end()) {
+                    found_incompatible = true;
+                    break;
+                }
+            }
+        }
+
+        if (!found_incompatible) {
+            queue.push_back(loop);
+        }
     }
 
     // Scheduling state machine

@@ -1,5 +1,6 @@
 #include "sdfg/passes/scheduler/cuda_scheduler.h"
 
+#include "sdfg/structured_control_flow/map.h"
 #include "sdfg/transformations/offloading/cuda_parallelize_nested_map.h"
 #include "sdfg/transformations/offloading/cuda_transform.h"
 #include "sdfg/transformations/offloading/gpu_tiling.h"
@@ -72,6 +73,10 @@ SchedulerAction CUDAScheduler::schedule(
         // Visit 1st-level children
         return CHILDREN;
     }
+}
+    
+std::unordered_set<ScheduleTypeCategory> CUDAScheduler::compatible_types() {
+    return {ScheduleTypeCategory::None};
 }
 
 } // namespace scheduler

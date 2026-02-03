@@ -34,6 +34,10 @@ PollyScheduler::PollyScheduler(bool tile) : tile_(tile) {};
 void register_polly_scheduler(bool tile) {
     SchedulerRegistry::instance().register_loop_scheduler<PollyScheduler>(PollyScheduler::target(), tile);
 }
+    
+std::unordered_set<ScheduleTypeCategory> PollyScheduler::compatible_types() {
+    return {ScheduleTypeCategory::None};
+}
 
 } // namespace scheduler
 } // namespace passes

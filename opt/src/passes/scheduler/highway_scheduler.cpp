@@ -1,6 +1,7 @@
 #include "sdfg/passes/scheduler/highway_scheduler.h"
 
 #include "sdfg/passes/scheduler/loop_scheduler.h"
+#include "sdfg/structured_control_flow/map.h"
 #include "sdfg/transformations/highway_transform.h"
 
 namespace sdfg {
@@ -43,6 +44,10 @@ SchedulerAction HighwayScheduler::schedule(
     }
     // HighwayScheduler does not handle while loops
     return NEXT;
+}
+    
+std::unordered_set<ScheduleTypeCategory> HighwayScheduler::compatible_types() {
+    return {ScheduleTypeCategory::None, ScheduleTypeCategory::Parallelizer};
 }
 
 } // namespace scheduler

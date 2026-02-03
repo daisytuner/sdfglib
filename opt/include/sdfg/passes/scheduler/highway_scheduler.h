@@ -21,6 +21,8 @@ public:
     ) override;
 
     static std::string target() { return "highway"; };
+    
+    std::unordered_set<ScheduleTypeCategory> compatible_types() override;
 };
 
 } // namespace scheduler
