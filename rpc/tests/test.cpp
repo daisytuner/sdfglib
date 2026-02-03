@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
     b.server = "http://localhost:8080/docc";
     auto ctx = b.build();
 
-    sdfg::passes::rpc::register_rpc_loop_opt(*ctx, "sequential", "server", true);
+    sdfg::passes::rpc::register_rpc_loop_opt(std::move(ctx), "sequential", "server", true);
 
     return RUN_ALL_TESTS();
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <unordered_set>
 #include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/passes/scheduler/loop_scheduler.h"
@@ -11,7 +12,7 @@ namespace rpc {
 
 class RpcLoopOpt : public scheduler::LoopScheduler {
 private:
-    rpc::RpcContext& rpc_context_;
+    std::unique_ptr<rpc::RpcContext> rpc_context_;
     const std::string target_;
     const std::string category_;
     const bool print_steps_;
@@ -30,7 +31,9 @@ protected:
     ) override;
 
 public:
-    RpcLoopOpt(rpc::RpcContext& rpc_context, std::string target, std::string category, bool print_steps = false);
+    RpcLoopOpt(
+        std::unique_ptr<rpc::RpcContext> rpc_context, std::string target, std::string category, bool print_steps = false
+    );
 
     static std::string target() { return "rpc"; }
 
@@ -38,7 +41,10 @@ public:
 };
 
 void register_rpc_loop_opt(
-    rpc::RpcContext& rpc_context, const std::string& target, const std::string& category, bool print_steps = false
+    std::unique_ptr<rpc::RpcContext> rpc_context,
+    const std::string& target,
+    const std::string& category,
+    bool print_steps = false
 );
 
 } // namespace rpc

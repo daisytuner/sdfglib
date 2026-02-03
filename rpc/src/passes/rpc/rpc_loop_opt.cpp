@@ -7,8 +7,9 @@ namespace sdfg {
 namespace passes {
 namespace rpc {
 
-RpcLoopOpt::RpcLoopOpt(rpc::RpcContext& rpc_context, std::string target, std::string category, bool print_steps)
-    : LoopScheduler(), rpc_context_(rpc_context), target_(std::move(target)), category_(std::move(category)),
+RpcLoopOpt::
+    RpcLoopOpt(std::unique_ptr<rpc::RpcContext> rpc_context, std::string target, std::string category, bool print_steps)
+    : LoopScheduler(), rpc_context_(std::move(rpc_context)), target_(std::move(target)), category_(std::move(category)),
       print_steps_(print_steps) {}
 
 scheduler::SchedulerAction RpcLoopOpt::schedule(
@@ -22,7 +23,7 @@ scheduler::SchedulerAction RpcLoopOpt::schedule(
         return scheduler::NEXT;
     }
 
-    transformations::RPCNodeTransform rpc_transform(loop, target_, category_, rpc_context_);
+    transformations::RPCNodeTransform rpc_transform(loop, target_, category_, *rpc_context_);
 
     if (rpc_transform.can_be_applied(builder, analysis_manager)) {
         rpc_transform.apply(builder, analysis_manager);
@@ -44,7 +45,7 @@ scheduler::SchedulerAction RpcLoopOpt::schedule(
     }
 
     // Apply transfer tuning to the loop
-    transformations::RPCNodeTransform rpc_transform(loop, target_, category_, rpc_context_, print_steps_);
+    transformations::RPCNodeTransform rpc_transform(loop, target_, category_, *rpc_context_, print_steps_);
     if (rpc_transform.can_be_applied(builder, analysis_manager)) {
         rpc_transform.apply(builder, analysis_manager);
         return scheduler::NEXT;
@@ -56,10 +57,13 @@ scheduler::SchedulerAction RpcLoopOpt::schedule(
 std::unordered_set<ScheduleTypeCategory> RpcLoopOpt::compatible_types() { return {ScheduleTypeCategory::None}; }
 
 void register_rpc_loop_opt(
-    rpc::RpcContext& rpc_context, const std::string& target, const std::string& category, bool print_steps
+    std::unique_ptr<rpc::RpcContext> rpc_context,
+    const std::string& target,
+    const std::string& category,
+    bool print_steps
 ) {
     scheduler::SchedulerRegistry::instance()
-        .register_loop_scheduler<RpcLoopOpt>(RpcLoopOpt::target(), std::ref(rpc_context), target, category, print_steps);
+        .register_loop_scheduler<RpcLoopOpt>(RpcLoopOpt::target(), std::move(rpc_context), target, category, print_steps);
 }
 
 } // namespace rpc
