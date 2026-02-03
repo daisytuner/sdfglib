@@ -26,9 +26,9 @@
 #include <sdfg/passes/pipeline.h>
 #include <sdfg/passes/scheduler/cuda_scheduler.h>
 #include <sdfg/passes/scheduler/highway_scheduler.h>
+#include <sdfg/passes/scheduler/loop_scheduling_pass.h>
 #include <sdfg/passes/scheduler/omp_scheduler.h>
 #include <sdfg/passes/scheduler/polly_scheduler.h>
-#include <sdfg/passes/scheduler/loop_scheduler_pass.h>
 #include <sdfg/passes/structured_control_flow/common_assignment_elimination.h>
 #include <sdfg/passes/structured_control_flow/condition_elimination.h>
 #include <sdfg/passes/structured_control_flow/for2map.h>
@@ -275,9 +275,7 @@ void PyStructuredSDFG::
     sdfg::passes::scheduler::register_default_schedulers();
     if (remote_ctx) {
         sdfg::passes::rpc::register_rpc_loop_opt(
-            remote_ctx ? *remote_ctx : sdfg::passes::rpc::RpcContext::default_context(),
-            target,
-            category
+            remote_ctx ? *remote_ctx : sdfg::passes::rpc::RpcContext::default_context(), target, category
         );
     }
 
