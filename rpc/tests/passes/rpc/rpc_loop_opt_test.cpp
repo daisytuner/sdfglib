@@ -133,15 +133,6 @@ TEST_F(RPCLoopOptTest, Matmul_FMA) {
     auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
     auto outer_loops = loop_analysis.outermost_loops();
 
-    passes::rpc::SimpleRpcContextBuilder b;
-    b.initialize_local_default();
-    b.from_env();
-    b.from_docc_config();
-    b.server = "http://localhost:8080/docc";
-    auto ctx = b.build();
-
-    passes::rpc::register_rpc_loop_opt(*ctx, "sequential", "server", true);
-
     passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"rpc"});
     loop_scheduling_pass.run(*builder_, analysis_manager);
 
@@ -187,15 +178,6 @@ TEST_F(RPCLoopOptTest, Double_Matmul) {
     auto outer_loops = loop_analysis.outermost_loops();
 
     EXPECT_EQ(outer_loops.size(), 2);
-
-    passes::rpc::SimpleRpcContextBuilder b;
-    b.initialize_local_default();
-    b.from_env();
-    b.from_docc_config();
-    b.server = "http://localhost:8080/docc";
-    auto ctx = b.build();
-
-    passes::rpc::register_rpc_loop_opt(*ctx, "sequential", "server", true);
 
     passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"rpc"});
     loop_scheduling_pass.run(*builder_, analysis_manager);
