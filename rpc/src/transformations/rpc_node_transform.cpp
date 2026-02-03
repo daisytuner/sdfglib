@@ -150,11 +150,8 @@ std::variant<std::unique_ptr<passes::rpc::RpcOptResponse>, std::string> RPCNodeT
 
         auto json_error = parsed.find("error");
         if (json_error != parsed.end()) {
-            if (result.http_status!= 201)
-            {
                 DEBUG_PRINTLN("[ERROR] RPC optimization query returned error: " << json_error->get<std::string>());
-            }
-            return {};
+                return {json_error->get<std::string>()};
         }
 
         auto json_sdfg_result = parsed.find("sdfg_result");
@@ -214,12 +211,25 @@ void RPCNodeTransform::
 
         // this consumes the SDFG result
 
-        // TODO: add transitions from after loop to tmp_scope
-        auto& tmp_scope = builder.add_sequence_before(*parent_scope, this->node_, {}, this->node_.debug_info());
-        builder.move_child(*parent_scope, index + 1, tmp_scope);
+        auto& sdfg_response = opt.sdfg_result->sdfg;
 
-        builder.move_children(opt.sdfg_result->sdfg->root(), tmp_scope);
-        builder.remove_child(*parent_scope, index + 1);
+        // TODO: add transitions from after loop to tmp_scope
+
+        builder.remove_child(*parent_scope, index); // remove old loop
+        builder.move_child(opt.sdfg_result->sdfg->root(), 0, *parent_scope, index); // move optimized loop into place
+
+        for (auto& container : sdfg_response->containers()) {
+            if (builder.subject().exists(container)) {
+                continue;
+            }
+            auto& type = sdfg_response->type(container);
+            builder.add_container(
+                container,
+                type,
+                false,
+                false
+            );
+        }
 
         opt.sdfg_result->sdfg.reset();
     } else if (opt.local_replay.has_value()) {

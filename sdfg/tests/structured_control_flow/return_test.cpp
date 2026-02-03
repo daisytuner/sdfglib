@@ -72,10 +72,9 @@ TEST(ReturnTest, ReturnType) {
 
     auto& return_node = builder.add_return(root, "value");
 
-    // Verify type exists
-    const auto& ret_type = return_node.type();
-    // The type may not always be a Scalar directly, so just verify we can access it
-    EXPECT_NO_THROW(return_node.type());
+    EXPECT_TRUE(return_node.is_data());
+    EXPECT_FALSE(return_node.is_constant());
+    EXPECT_EQ(return_node.data(), "value");
 }
 
 // Test return with different types
