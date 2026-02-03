@@ -58,15 +58,6 @@ std::unordered_set<ScheduleTypeCategory> RpcLoopOpt::compatible_types() { return
 void register_rpc_loop_opt(
     rpc::RpcContext& rpc_context, const std::string& target, const std::string& category, bool print_steps
 ) {
-    auto current_scheduler = scheduler::SchedulerRegistry::instance().get_loop_scheduler(RpcLoopOpt::target());
-    if (current_scheduler != nullptr) {
-        if (auto rpc_scheduler = dynamic_cast<RpcLoopOpt*>(current_scheduler)) {
-            if ((*rpc_scheduler) == RpcLoopOpt(rpc_context, target, category, print_steps)) {
-                return;
-            }
-        }
-    }
-
     scheduler::SchedulerRegistry::instance()
         .register_loop_scheduler<RpcLoopOpt>(RpcLoopOpt::target(), std::ref(rpc_context), target, category, print_steps);
 }
