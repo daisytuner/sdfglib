@@ -273,13 +273,19 @@ void PyStructuredSDFG::
     }
 
     sdfg::passes::scheduler::register_default_schedulers();
-    sdfg::passes::rpc::register_rpc_loop_opt(
-        remote_ctx ? *remote_ctx : sdfg::passes::rpc::RpcContext::default_context(),
-        target,
-        category
-    );
+    if (remote_ctx) {
+        sdfg::passes::rpc::register_rpc_loop_opt(
+            remote_ctx ? *remote_ctx : sdfg::passes::rpc::RpcContext::default_context(),
+            target,
+            category
+        );
+    }
 
-    std::vector<std::string> targets = {"rpc"};
+    std::vector<std::string> targets;
+    if (remote_ctx) {
+        targets.push_back("rpc");
+    }
+
     if (target == "cuda" || target == "openmp") {
         targets.push_back(target);
     }
