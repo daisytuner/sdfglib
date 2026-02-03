@@ -12,6 +12,7 @@
 #include "py_structured_sdfg_builder.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/passes/rpc/rpc_context.h"
+#include "sdfg/passes/scheduler/scheduler_registry.h"
 #include "sdfg/targets/cuda/plugin.h"
 #include "types/py_types.h"
 
@@ -43,6 +44,8 @@ PYBIND11_MODULE(_sdfg, m) {
     sdfg::omp::register_omp_plugin();
     sdfg::highway::register_highway_plugin();
     sdfg::cuda::register_cuda_plugin();
+
+    sdfg::passes::scheduler::register_default_schedulers();
 
     register_types(m);
     register_tasklet(m);

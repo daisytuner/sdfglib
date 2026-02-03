@@ -273,7 +273,6 @@ void PyStructuredSDFG::
         return;
     }
 
-    sdfg::passes::scheduler::register_default_schedulers();
     if (remote_ctx) {
         sdfg::passes::rpc::register_rpc_loop_opt(*remote_ctx, target, category);
     }
