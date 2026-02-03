@@ -19,12 +19,7 @@ namespace structured_control_flow {
  * @brief Categories of schedule types for Map nodes
  * Defines the high-level classification of scheduling strategies.
  */
-enum class ScheduleTypeCategory {
-    Offloader,
-    Parallelizer,
-    Vectorizer,
-    None
-};
+enum class ScheduleTypeCategory { Offloader, Parallelizer, Vectorizer, None };
 
 /**
  * @brief Represents a schedule type for Map nodes
@@ -81,6 +76,7 @@ public:
         }
     }
 };
+
 
 /**
  * @brief Sequential schedule type for Map nodes
