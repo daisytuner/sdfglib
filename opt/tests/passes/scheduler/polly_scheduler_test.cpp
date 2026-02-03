@@ -56,7 +56,7 @@ TEST(PollySchedulerTest, SpatialProximity) {
     // Apply
     analysis::AnalysisManager analysis_manager(builder.subject());
 
-    passes::scheduler::register_polly_scheduler(true);
+    passes::scheduler::register_polly_scheduler(false);
 
     passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"polly"});
     loop_scheduling_pass.run(builder, analysis_manager);
@@ -132,7 +132,7 @@ TEST(PollySchedulerTest, OuterWhileWithSpatialProximity) {
     // Apply
     analysis::AnalysisManager analysis_manager(builder.subject());
 
-    passes::scheduler::register_polly_scheduler(true);
+    passes::scheduler::register_polly_scheduler(false);
 
     passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"polly"});
 

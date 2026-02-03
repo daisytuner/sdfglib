@@ -129,7 +129,7 @@ TEST_F(RPCLoopOptTest, Matmul_FMA) {
 
     // Transfer tuning replayer
 
-   sdfg::analysis::AnalysisManager analysis_manager(builder_->subject());
+    sdfg::analysis::AnalysisManager analysis_manager(builder_->subject());
     auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
     auto outer_loops = loop_analysis.outermost_loops();
 
@@ -140,6 +140,8 @@ TEST_F(RPCLoopOptTest, Matmul_FMA) {
     b.server = "http://localhost:8080/docc";
     auto ctx = b.build();
 
+    passes::rpc::register_rpc_loop_opt(*ctx, "sequential", "server", true);
+
     passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"rpc"});
     loop_scheduling_pass.run(*builder_, analysis_manager);
 
@@ -149,22 +151,23 @@ TEST_F(RPCLoopOptTest, Matmul_FMA) {
 
 
     EXPECT_EQ(test_loop_analysis.find_loop_by_indvar("k"), loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j")]);
-    EXPECT_EQ(test_loop_analysis.find_loop_by_indvar("j_tile0"), loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k")]);
+    EXPECT_EQ(
+        test_loop_analysis.find_loop_by_indvar("j_tile0"), loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k")]
+    );
 
     EXPECT_NE(test_loop_analysis.find_loop_by_indvar("k_tile0"), nullptr);
     EXPECT_NE(test_loop_analysis.find_loop_by_indvar("j_tile0"), nullptr);
     EXPECT_NE(test_loop_analysis.find_loop_by_indvar("i_tile0"), nullptr);
 
     EXPECT_EQ(
-        test_loop_analysis.find_loop_by_indvar("k_tile0"), loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j_tile0")]
+        test_loop_analysis.find_loop_by_indvar("k_tile0"),
+        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j_tile0")]
     );
     EXPECT_EQ(
-        test_loop_analysis.find_loop_by_indvar("i"),
-        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k_tile0")]
+        test_loop_analysis.find_loop_by_indvar("i"), loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k_tile0")]
     );
     EXPECT_EQ(
-        test_loop_analysis.find_loop_by_indvar("i_tile0"),
-        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("i")]
+        test_loop_analysis.find_loop_by_indvar("i_tile0"), loop_nest_tree[test_loop_analysis.find_loop_by_indvar("i")]
     );
 };
 
@@ -203,21 +206,22 @@ TEST_F(RPCLoopOptTest, Double_Matmul) {
     auto loop_nest_tree = test_loop_analysis.loop_tree();
 
     EXPECT_EQ(test_loop_analysis.find_loop_by_indvar("k"), loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j")]);
-    EXPECT_EQ(test_loop_analysis.find_loop_by_indvar("j_tile0"), loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k")]);
+    EXPECT_EQ(
+        test_loop_analysis.find_loop_by_indvar("j_tile0"), loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k")]
+    );
 
     EXPECT_NE(test_loop_analysis.find_loop_by_indvar("k_tile0"), nullptr);
     EXPECT_NE(test_loop_analysis.find_loop_by_indvar("j_tile0"), nullptr);
     EXPECT_NE(test_loop_analysis.find_loop_by_indvar("i_tile0"), nullptr);
 
     EXPECT_EQ(
-        test_loop_analysis.find_loop_by_indvar("k_tile0"), loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j_tile0")]
+        test_loop_analysis.find_loop_by_indvar("k_tile0"),
+        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j_tile0")]
     );
     EXPECT_EQ(
-        test_loop_analysis.find_loop_by_indvar("i"),
-        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k_tile0")]
+        test_loop_analysis.find_loop_by_indvar("i"), loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k_tile0")]
     );
     EXPECT_EQ(
-        test_loop_analysis.find_loop_by_indvar("i_tile0"),
-        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("i")]
+        test_loop_analysis.find_loop_by_indvar("i_tile0"), loop_nest_tree[test_loop_analysis.find_loop_by_indvar("i")]
     );
 }
