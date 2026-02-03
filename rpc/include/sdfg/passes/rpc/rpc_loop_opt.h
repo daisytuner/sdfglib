@@ -35,9 +35,15 @@ public:
     static std::string target() { return "rpc"; }
 
     std::unordered_set<ScheduleTypeCategory> compatible_types() override;
+
+    bool operator==(const RpcLoopOpt& other) const {
+        return (target_ == other.target_) && (category_ == other.category_) && (print_steps_ == other.print_steps_);
+    }
 };
 
-void register_rpc_loop_opt(rpc::RpcContext& rpc_context, const std::string& target, const std::string& category, bool print_steps = false);
+void register_rpc_loop_opt(
+    rpc::RpcContext& rpc_context, const std::string& target, const std::string& category, bool print_steps = false
+);
 
 } // namespace rpc
 } // namespace passes
