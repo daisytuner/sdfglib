@@ -142,18 +142,24 @@ TEST_F(RPCNodeTransformTest, Matmul_FMA) {
 
     auto& test_loop_analysis = test_analysis_manager.get<sdfg::analysis::LoopAnalysis>();
     auto loop_nest_tree = test_loop_analysis.loop_tree();
-    EXPECT_TRUE(test_loop_analysis.find_loop_by_indvar("j") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k")]);
-    EXPECT_TRUE(test_loop_analysis.find_loop_by_indvar("i") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j")]);
-    EXPECT_TRUE(
-        test_loop_analysis.find_loop_by_indvar("k_tile0") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("i")]
+
+    EXPECT_EQ(test_loop_analysis.find_loop_by_indvar("k"), loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j")]);
+    EXPECT_EQ(test_loop_analysis.find_loop_by_indvar("j_tile0"), loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k")]);
+
+    EXPECT_NE(test_loop_analysis.find_loop_by_indvar("k_tile0"), nullptr);
+    EXPECT_NE(test_loop_analysis.find_loop_by_indvar("j_tile0"), nullptr);
+    EXPECT_NE(test_loop_analysis.find_loop_by_indvar("i_tile0"), nullptr);
+
+    EXPECT_EQ(
+        test_loop_analysis.find_loop_by_indvar("k_tile0"), loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j_tile0")]
     );
-    EXPECT_TRUE(
-        test_loop_analysis.find_loop_by_indvar("j_tile0") ==
+    EXPECT_EQ(
+        test_loop_analysis.find_loop_by_indvar("i"),
         loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k_tile0")]
     );
-    EXPECT_TRUE(
-        test_loop_analysis.find_loop_by_indvar("i_tile0") ==
-        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j_tile0")]
+    EXPECT_EQ(
+        test_loop_analysis.find_loop_by_indvar("i_tile0"),
+        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("i")]
     );
 };
 
@@ -187,17 +193,9 @@ TEST_F(RPCNodeTransformTest, Double_Matmul) {
 
     auto& test_loop_analysis = test_analysis_manager.get<sdfg::analysis::LoopAnalysis>();
     auto loop_nest_tree = test_loop_analysis.loop_tree();
-    EXPECT_TRUE(test_loop_analysis.find_loop_by_indvar("j") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k")]);
-    EXPECT_TRUE(test_loop_analysis.find_loop_by_indvar("i") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j")]);
-    EXPECT_TRUE(
-        test_loop_analysis.find_loop_by_indvar("k_tile0") == loop_nest_tree[test_loop_analysis.find_loop_by_indvar("i")]
-    );
-    EXPECT_TRUE(
-        test_loop_analysis.find_loop_by_indvar("j_tile0") ==
-        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("k_tile0")]
-    );
-    EXPECT_TRUE(
-        test_loop_analysis.find_loop_by_indvar("i_tile0") ==
-        loop_nest_tree[test_loop_analysis.find_loop_by_indvar("j_tile0")]
-    );
+
+    EXPECT_NE(test_loop_analysis.find_loop_by_indvar("k_tile0"), nullptr);
+    EXPECT_NE(test_loop_analysis.find_loop_by_indvar("j_tile0"), nullptr);
+    EXPECT_NE(test_loop_analysis.find_loop_by_indvar("i_tile0"), nullptr);
+
 }
