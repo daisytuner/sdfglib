@@ -7,6 +7,7 @@
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/deepcopy/structured_sdfg_deep_copy.h"
 #include "sdfg/passes/rpc/rpc_context.h"
+#include "sdfg/passes/scheduler/loop_scheduling_pass.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
 #include "sdfg/structured_sdfg.h"
@@ -139,8 +140,8 @@ TEST_F(RPCLoopOptTest, Matmul_FMA) {
     b.server = "http://localhost:8080/docc";
     auto ctx = b.build();
 
-    passes::rpc::RpcLoopOpt rpc_pass(*ctx, "sequential", "server", true);
-    rpc_pass.run(*builder_, analysis_manager);
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"rpc"});
+    loop_scheduling_pass.run(*builder_, analysis_manager);
 
     sdfg::analysis::AnalysisManager test_analysis_manager(builder_->subject());
     auto& test_loop_analysis = test_analysis_manager.get<sdfg::analysis::LoopAnalysis>();
@@ -183,8 +184,10 @@ TEST_F(RPCLoopOptTest, Double_Matmul) {
     b.server = "http://localhost:8080/docc";
     auto ctx = b.build();
 
-    passes::rpc::RpcLoopOpt rpc_pass(*ctx, "sequential", "server", true);
-    rpc_pass.run(*builder_, analysis_manager);
+    passes::rpc::register_rpc_loop_opt(*ctx, "sequential", "server", true);
+
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"rpc"});
+    loop_scheduling_pass.run(*builder_, analysis_manager);
 
     sdfg::analysis::AnalysisManager test_analysis_manager(builder_->subject());
 

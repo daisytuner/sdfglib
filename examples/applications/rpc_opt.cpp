@@ -15,6 +15,7 @@
 #include <sdfg/structured_sdfg.h>
 #include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/passes/rpc/rpc_loop_opt.h"
+#include "sdfg/passes/scheduler/loop_scheduling_pass.h"
 #include "sdfg/serializer/json_serializer.h"
 #include "sdfg/transformations/rpc_node_transform.h"
 
@@ -176,8 +177,10 @@ int main(int argc, char* argv[]) {
     b.server = "http://localhost:8080/docc";
     auto ctx = b.build();
 
-    passes::rpc::RpcLoopOpt rpc_pass(*ctx, target, category, true);
-    rpc_pass.run(*builder, analysis_manager);
+    passes::rpc::register_rpc_loop_opt(*ctx, target, category, true);
+
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"rpc"});
+    loop_scheduling_pass.run(*builder, analysis_manager);
 
     // generate code for tuned sdfg
 

@@ -1,7 +1,9 @@
 #pragma once
 
+#include <unordered_set>
 #include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/passes/scheduler/loop_scheduler.h"
+#include "sdfg/structured_control_flow/map.h"
 
 namespace sdfg {
 namespace passes {
@@ -31,6 +33,8 @@ public:
     RpcLoopOpt(rpc::RpcContext& rpc_context, std::string target, std::string category, bool print_steps = false);
 
     static std::string target() { return "rpc"; }
+
+    std::unordered_set<ScheduleTypeCategory> compatible_types() override;
 };
 
 void register_rpc_loop_opt(rpc::RpcContext& rpc_context, const std::string& target, const std::string& category, bool print_steps = false);

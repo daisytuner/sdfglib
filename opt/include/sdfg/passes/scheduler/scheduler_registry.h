@@ -21,9 +21,9 @@ public:
     template <typename T, typename... Args>
     void register_loop_scheduler(std::string target, Args... args) {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (scheduler_map_.find(target) != scheduler_map_.end()) {
-            return;
-        }
+        // if (scheduler_map_.find(target) != scheduler_map_.end()) {
+        //     return;
+        // }
         scheduler_map_[target] = std::make_unique<T>(std::forward<Args>(args)...);
     }
 
