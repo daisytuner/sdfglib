@@ -5,11 +5,11 @@
 #include <cstring>
 #include <fstream>
 
-#include "analysis/py_loop_analysis.h"
+#include "analysis/py_analysis.h"
+#include "builder/py_structured_sdfg_builder.h"
 #include "data_flow/py_cmath.h"
 #include "data_flow/py_tasklet.h"
 #include "py_structured_sdfg.h"
-#include "py_structured_sdfg_builder.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/targets/cuda/plugin.h"
@@ -47,7 +47,7 @@ PYBIND11_MODULE(_sdfg, m) {
     register_types(m);
     register_tasklet(m);
     register_cmath(m);
-    register_loop_analysis(m);
+    register_analysis(m);
 
     py::class_<sdfg::passes::rpc::RpcContext>(m, "RpcContext");
 
