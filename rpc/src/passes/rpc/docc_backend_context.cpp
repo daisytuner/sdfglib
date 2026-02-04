@@ -64,7 +64,10 @@ std::shared_ptr<DoccBackendContext> DoccBackendContext::build_context() {
             auth->second
         );
     } else {
-        return nullptr;
+        throw std::runtime_error(
+            "No DOCC authentication token found. Please set DOCC_JOB_TOKEN or DOCC_ACCESS_TOKEN environment variables, "
+            "or ensure that a token file exists at $HOME/.config/docc/token or /var/lib/daisytuner/session."
+        );
     }
 }
 
