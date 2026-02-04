@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <nlohmann/json_fwd.hpp>
 #include <sstream>
 
 #include <dlfcn.h>
@@ -24,6 +25,7 @@
 #include <sdfg/passes/offloading/cuda_library_node_rewriter_pass.h>
 #include <sdfg/passes/opt_pipeline.h>
 #include <sdfg/passes/pipeline.h>
+#include <sdfg/passes/rpc/docc_backend_context.h>
 #include <sdfg/passes/scheduler/cuda_scheduler.h>
 #include <sdfg/passes/scheduler/highway_scheduler.h>
 #include <sdfg/passes/scheduler/loop_scheduling_pass.h>
@@ -273,26 +275,29 @@ void PyStructuredSDFG::
         return;
     }
 
-    if (remote_ctx) {
-        sdfg::passes::rpc::register_rpc_loop_opt(*remote_ctx, target, category);
+    std::unique_ptr<sdfg::passes::rpc::DoccBackendContext> context =
+        sdfg::passes::rpc::DoccBackendContext::build_context();
+
+    if (context) {
+        sdfg::passes::rpc::register_rpc_loop_opt(std::move(context), target, category);
     }
 
-    std::vector<std::string> targets;
-    if (remote_ctx) {
-        targets.push_back("rpc");
+    std::vector<std::string> schedulers;
+    if (context) {
+        schedulers.push_back("rpc");
     }
 
     if (target == "cuda" || target == "openmp") {
-        targets.push_back(target);
+        schedulers.push_back(target);
     }
     if (target == "sequential" || target == "openmp") {
-        targets.push_back("highway");
+        schedulers.push_back("highway");
     }
 
     sdfg::builder::StructuredSDFGBuilder builder(*sdfg_);
     sdfg::analysis::AnalysisManager analysis_manager(*sdfg_);
 
-    sdfg::passes::scheduler::LoopSchedulingPass loop_scheduling_pass(targets);
+    sdfg::passes::scheduler::LoopSchedulingPass loop_scheduling_pass(schedulers);
     loop_scheduling_pass.run(builder, analysis_manager);
 }
 

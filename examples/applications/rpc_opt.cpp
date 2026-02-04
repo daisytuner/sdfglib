@@ -9,10 +9,11 @@
 #include <sdfg/analysis/analysis.h>
 #include <sdfg/builder/structured_sdfg_builder.h>
 #include <sdfg/codegen/dispatchers/node_dispatcher_registry.h>
-#include "sdfg/codegen/code_generators/cpp_code_generator.h"
 #include <sdfg/helpers/helpers.h>
 #include <sdfg/structured_control_flow/control_flow_node.h>
 #include <sdfg/structured_sdfg.h>
+#include <utility>
+#include "sdfg/codegen/code_generators/cpp_code_generator.h"
 #include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/passes/rpc/rpc_loop_opt.h"
 #include "sdfg/passes/scheduler/loop_scheduling_pass.h"
@@ -177,7 +178,7 @@ int main(int argc, char* argv[]) {
     b.server = "http://localhost:8080/docc";
     auto ctx = b.build();
 
-    passes::rpc::register_rpc_loop_opt(*ctx, target, category, true);
+    passes::rpc::register_rpc_loop_opt(std::move(ctx), target, category, true);
 
     passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"rpc"});
     loop_scheduling_pass.run(*builder, analysis_manager);

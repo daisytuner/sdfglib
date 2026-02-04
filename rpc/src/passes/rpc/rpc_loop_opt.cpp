@@ -1,4 +1,5 @@
 #include "sdfg/passes/rpc/rpc_loop_opt.h"
+#include <memory>
 
 #include "sdfg/passes/scheduler/scheduler_registry.h"
 #include "sdfg/transformations/rpc_node_transform.h"
