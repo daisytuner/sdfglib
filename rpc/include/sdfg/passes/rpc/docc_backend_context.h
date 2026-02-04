@@ -32,7 +32,7 @@ public:
         return headers;
     }
 
-    static std::unique_ptr<DoccBackendContext> build_context();
+    static std::shared_ptr<DoccBackendContext> build_context();
 };
 
 } // namespace rpc

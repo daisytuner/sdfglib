@@ -21,7 +21,7 @@ using namespace sdfg;
 
 class RPCLoopOptTest : public ::testing::Test {
 protected:
-    std::unique_ptr<passes::rpc::RpcContext> ctx_;
+    std::shared_ptr<passes::rpc::RpcContext> ctx_;
 
     std::unique_ptr<builder::StructuredSDFGBuilder> builder_;
     nlohmann::json desc_;

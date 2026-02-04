@@ -275,11 +275,11 @@ void PyStructuredSDFG::
         return;
     }
 
-    std::unique_ptr<sdfg::passes::rpc::DoccBackendContext> context =
+    std::shared_ptr<sdfg::passes::rpc::DoccBackendContext> context =
         sdfg::passes::rpc::DoccBackendContext::build_context();
 
     if (context) {
-        sdfg::passes::rpc::register_rpc_loop_opt(std::move(context), target, category);
+        sdfg::passes::rpc::register_rpc_loop_opt(context, target, category);
     }
 
     std::vector<std::string> schedulers;

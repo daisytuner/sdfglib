@@ -9,7 +9,7 @@ namespace passes {
 namespace rpc {
 
 RpcLoopOpt::
-    RpcLoopOpt(std::unique_ptr<rpc::RpcContext> rpc_context, std::string target, std::string category, bool print_steps)
+    RpcLoopOpt(std::shared_ptr<rpc::RpcContext> rpc_context, std::string target, std::string category, bool print_steps)
     : LoopScheduler(), rpc_context_(std::move(rpc_context)), target_(std::move(target)), category_(std::move(category)),
       print_steps_(print_steps) {}
 
@@ -58,13 +58,13 @@ scheduler::SchedulerAction RpcLoopOpt::schedule(
 std::unordered_set<ScheduleTypeCategory> RpcLoopOpt::compatible_types() { return {ScheduleTypeCategory::None}; }
 
 void register_rpc_loop_opt(
-    std::unique_ptr<rpc::RpcContext> rpc_context,
+    std::shared_ptr<rpc::RpcContext> rpc_context,
     const std::string& target,
     const std::string& category,
     bool print_steps
 ) {
     scheduler::SchedulerRegistry::instance()
-        .register_loop_scheduler<RpcLoopOpt>(RpcLoopOpt::target(), std::move(rpc_context), target, category, print_steps);
+        .register_loop_scheduler<RpcLoopOpt>(RpcLoopOpt::target(), rpc_context, target, category, print_steps);
 }
 
 } // namespace rpc

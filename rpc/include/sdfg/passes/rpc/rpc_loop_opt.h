@@ -12,7 +12,7 @@ namespace rpc {
 
 class RpcLoopOpt : public scheduler::LoopScheduler {
 private:
-    std::unique_ptr<rpc::RpcContext> rpc_context_;
+    std::shared_ptr<rpc::RpcContext> rpc_context_;
     const std::string target_;
     const std::string category_;
     const bool print_steps_;
@@ -32,7 +32,7 @@ protected:
 
 public:
     RpcLoopOpt(
-        std::unique_ptr<rpc::RpcContext> rpc_context, std::string target, std::string category, bool print_steps = false
+        std::shared_ptr<rpc::RpcContext> rpc_context, std::string target, std::string category, bool print_steps = false
     );
 
     static std::string target() { return "rpc"; }
@@ -41,7 +41,7 @@ public:
 };
 
 void register_rpc_loop_opt(
-    std::unique_ptr<rpc::RpcContext> rpc_context,
+    std::shared_ptr<rpc::RpcContext> rpc_context,
     const std::string& target,
     const std::string& category,
     bool print_steps = false
