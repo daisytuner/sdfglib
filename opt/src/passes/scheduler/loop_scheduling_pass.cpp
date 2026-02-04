@@ -113,6 +113,7 @@ bool LoopSchedulingPass::run_pass(builder::StructuredSDFGBuilder& builder, analy
     for (const auto& target : targets_) {
         bool target_applied = run_pass_target(builder, analysis_manager, target);
         applied = applied || target_applied;
+        analysis_manager.invalidate_all();
     }
     return applied;
 }
