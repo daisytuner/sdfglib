@@ -26,6 +26,8 @@ struct SchedulerLoopInfo {
 
 class LoopScheduler {
 public:
+    virtual ~LoopScheduler() = default;
+
     virtual SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
