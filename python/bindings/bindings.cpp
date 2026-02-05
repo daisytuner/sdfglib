@@ -10,7 +10,6 @@
 #include "data_flow/py_cmath.h"
 #include "data_flow/py_tasklet.h"
 #include "py_structured_sdfg.h"
-#include "py_structured_sdfg_builder.h"
 #include "sdfg/data_flow/tasklet.h"
 #include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/passes/scheduler/scheduler_registry.h"
