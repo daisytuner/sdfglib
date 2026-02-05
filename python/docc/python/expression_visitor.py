@@ -676,11 +676,6 @@ class ExpressionVisitor(ast.NodeVisitor):
         suffix = f"_{func_obj.__name__}_{self._get_unique_id()}"
         res_name = f"_res{suffix}"
 
-        # Assume Int64 for now as match returns 0/1
-        dtype = Scalar(PrimitiveType.Int64)
-        self.builder.add_container(res_name, dtype, False)
-        self.symbol_table[res_name] = dtype
-
         # 4. Rename variables
         class VariableRenamer(ast.NodeTransformer):
             # Builtins that should not be renamed
@@ -2813,9 +2808,10 @@ class ExpressionVisitor(ast.NodeVisitor):
         m_expr = get_flattened_size_expr(name_a, indices_a, shape_a)
         n_expr = get_flattened_size_expr(name_b, indices_b, shape_b)
 
-        # Create temporary container
-        # Since outer usually promotes types or uses standard types, we default to double for now.
-        dtype = Scalar(PrimitiveType.Double)
+        # Infer dtype from input arrays (promote if different)
+        dtype_a = self._get_dtype(name_a)
+        dtype_b = self._get_dtype(name_b)
+        dtype = self._promote_dtypes(dtype_a, dtype_b)
 
         # Use helper to create array temp which handles symbol table and array info
         tmp_name = self._create_array_temp([m_expr, n_expr], dtype)
@@ -3115,7 +3111,10 @@ class ExpressionVisitor(ast.NodeVisitor):
                 f"Matmul with ranks {ndim_a} and {ndim_b} not supported"
             )
 
-        dtype = Scalar(PrimitiveType.Double)
+        # Infer dtype from input arrays (promote if different)
+        dtype_a = self._get_dtype(name_a)
+        dtype_b = self._get_dtype(name_b)
+        dtype = self._promote_dtypes(dtype_a, dtype_b)
 
         if is_scalar:
             tmp_name = f"_tmp_{self._get_unique_id()}"
