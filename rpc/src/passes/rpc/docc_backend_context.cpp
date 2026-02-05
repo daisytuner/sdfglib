@@ -53,16 +53,12 @@ std::optional<std::pair<std::string, bool>> DoccBackendContext::find_docc_auth()
     return std::nullopt;
 }
 
-std::shared_ptr<DoccBackendContext> DoccBackendContext::build_context() {
+std::shared_ptr<DoccBackendContext> DoccBackendContext::build_context(std::string server) {
     auto auth = find_docc_auth();
     if (auth) {
         // TODO lookup server overrides
-        return std::make_shared<DoccBackendContext>(
-            "https://europe-west1-daisy-367210.cloudfunctions.net/docc",
-            "transfertuning/get_closest_neighbors",
-            auth->first,
-            auth->second
-        );
+        return std::make_shared<
+            DoccBackendContext>(server, "transfertuning/get_closest_neighbors", auth->first, auth->second);
     } else {
         throw std::runtime_error(
             "No DOCC authentication token found. Please set DOCC_JOB_TOKEN or DOCC_ACCESS_TOKEN environment variables, "

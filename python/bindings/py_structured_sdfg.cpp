@@ -277,7 +277,7 @@ void PyStructuredSDFG::schedule(const std::string& target, const std::string& ca
     std::vector<std::string> schedulers;
     if (remote_tuning) {
         std::shared_ptr<sdfg::passes::rpc::DoccBackendContext> context =
-            sdfg::passes::rpc::DoccBackendContext::build_context();
+            sdfg::passes::rpc::DoccBackendContext::build_context("http://localhost:8080/docc");
         sdfg::passes::rpc::register_rpc_loop_opt(context, target, category);
         schedulers.push_back("rpc");
     }
