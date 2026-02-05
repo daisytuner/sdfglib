@@ -433,49 +433,131 @@ class ASTParser(ast.NodeVisitor):
             raise NotImplementedError("Only simple for loops supported")
 
         var = node.target.id
-
-        if not isinstance(node.iter, ast.Call) or node.iter.func.id != "range":
-            raise NotImplementedError("Only range() loops supported")
-
-        args = node.iter.args
-        if len(args) == 1:
-            start = "0"
-            end = self._parse_expr(args[0])
-            step = "1"
-        elif len(args) == 2:
-            start = self._parse_expr(args[0])
-            end = self._parse_expr(args[1])
-            step = "1"
-        elif len(args) == 3:
-            start = self._parse_expr(args[0])
-            end = self._parse_expr(args[1])
-
-            # Special handling for step to avoid creating tasklets for constants
-            step_node = args[2]
-            if isinstance(step_node, ast.Constant):
-                step = str(step_node.value)
-            elif (
-                isinstance(step_node, ast.UnaryOp)
-                and isinstance(step_node.op, ast.USub)
-                and isinstance(step_node.operand, ast.Constant)
-            ):
-                step = f"-{step_node.operand.value}"
-            else:
-                step = self._parse_expr(step_node)
-        else:
-            raise ValueError("Invalid range arguments")
-
-        if not self.builder.exists(var):
-            self.builder.add_container(var, Scalar(PrimitiveType.Int64), False)
-            self.symbol_table[var] = Scalar(PrimitiveType.Int64)
-
         debug_info = get_debug_info(node, self.filename, self.function_name)
-        self.builder.begin_for(var, start, end, step, debug_info)
 
-        for stmt in node.body:
-            self.visit(stmt)
+        # Check if iterating over a range() call
+        if (
+            isinstance(node.iter, ast.Call)
+            and isinstance(node.iter.func, ast.Name)
+            and node.iter.func.id == "range"
+        ):
+            args = node.iter.args
+            if len(args) == 1:
+                start = "0"
+                end = self._parse_expr(args[0])
+                step = "1"
+            elif len(args) == 2:
+                start = self._parse_expr(args[0])
+                end = self._parse_expr(args[1])
+                step = "1"
+            elif len(args) == 3:
+                start = self._parse_expr(args[0])
+                end = self._parse_expr(args[1])
 
-        self.builder.end_for()
+                # Special handling for step to avoid creating tasklets for constants
+                step_node = args[2]
+                if isinstance(step_node, ast.Constant):
+                    step = str(step_node.value)
+                elif (
+                    isinstance(step_node, ast.UnaryOp)
+                    and isinstance(step_node.op, ast.USub)
+                    and isinstance(step_node.operand, ast.Constant)
+                ):
+                    step = f"-{step_node.operand.value}"
+                else:
+                    step = self._parse_expr(step_node)
+            else:
+                raise ValueError("Invalid range arguments")
+
+            if not self.builder.exists(var):
+                self.builder.add_container(var, Scalar(PrimitiveType.Int64), False)
+                self.symbol_table[var] = Scalar(PrimitiveType.Int64)
+
+            self.builder.begin_for(var, start, end, step, debug_info)
+
+            for stmt in node.body:
+                self.visit(stmt)
+
+            self.builder.end_for()
+            return
+
+        # Check if iterating over an ndarray (for x in array)
+        if isinstance(node.iter, ast.Name):
+            iter_name = node.iter.id
+            if iter_name in self.array_info:
+                arr_info = self.array_info[iter_name]
+                if arr_info["ndim"] < 1:
+                    raise NotImplementedError("Cannot iterate over 0-dimensional array")
+
+                # Get the size of the first dimension
+                arr_size = arr_info["shapes"][0]
+
+                # Create a hidden index variable for the loop
+                idx_var = f"_iter_idx_{self._get_unique_id()}"
+                if not self.builder.exists(idx_var):
+                    self.builder.add_container(
+                        idx_var, Scalar(PrimitiveType.Int64), False
+                    )
+                    self.symbol_table[idx_var] = Scalar(PrimitiveType.Int64)
+
+                # Determine the type of the loop variable (element type)
+                # For a 1D array, it's a scalar; for ND array, it's a view of N-1 dimensions
+                if arr_info["ndim"] == 1:
+                    # Element is a scalar - get the element type from the array's type
+                    arr_type = self.symbol_table.get(iter_name)
+                    if isinstance(arr_type, Pointer):
+                        elem_type = arr_type.pointee_type
+                    else:
+                        elem_type = Scalar(PrimitiveType.Double)  # Default fallback
+
+                    if not self.builder.exists(var):
+                        self.builder.add_container(var, elem_type, False)
+                        self.symbol_table[var] = elem_type
+                else:
+                    # For multi-dimensional arrays, create a view/slice
+                    # The loop variable becomes a pointer to the sub-array
+                    inner_shapes = arr_info["shapes"][1:]
+                    inner_ndim = arr_info["ndim"] - 1
+
+                    arr_type = self.symbol_table.get(iter_name)
+                    if isinstance(arr_type, Pointer):
+                        elem_type = arr_type  # Keep as pointer type for views
+                    else:
+                        elem_type = Pointer(Scalar(PrimitiveType.Double))
+
+                    if not self.builder.exists(var):
+                        self.builder.add_container(var, elem_type, False)
+                        self.symbol_table[var] = elem_type
+
+                    # Register the view in array_info
+                    self.array_info[var] = {"ndim": inner_ndim, "shapes": inner_shapes}
+
+                # Begin the for loop
+                self.builder.begin_for(idx_var, "0", str(arr_size), "1", debug_info)
+
+                # Generate the assignment: var = array[idx_var]
+                # Create an AST node for the assignment and visit it
+                assign_node = ast.Assign(
+                    targets=[ast.Name(id=var, ctx=ast.Store())],
+                    value=ast.Subscript(
+                        value=ast.Name(id=iter_name, ctx=ast.Load()),
+                        slice=ast.Name(id=idx_var, ctx=ast.Load()),
+                        ctx=ast.Load(),
+                    ),
+                )
+                ast.copy_location(assign_node, node)
+                self.visit_Assign(assign_node)
+
+                # Visit the loop body
+                for stmt in node.body:
+                    self.visit(stmt)
+
+                self.builder.end_for()
+                return
+
+        raise NotImplementedError(
+            f"Only range() loops and iteration over ndarrays supported, got: {ast.dump(node.iter)}"
+        )
 
     def _get_max_array_ndim_in_expr(self, node):
         """Get the maximum array dimensionality in an expression."""

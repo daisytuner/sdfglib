@@ -977,10 +977,16 @@ class ExpressionVisitor(ast.NodeVisitor):
                 tasklet_code = TaskletCode.int_sdiv
             elif op == "//":
                 tasklet_code = TaskletCode.int_sdiv
+            elif op == "&":
+                tasklet_code = TaskletCode.int_and
             elif op == "|":
                 tasklet_code = TaskletCode.int_or
             elif op == "^":
                 tasklet_code = TaskletCode.int_xor
+            elif op == "<<":
+                tasklet_code = TaskletCode.int_shl
+            elif op == ">>":
+                tasklet_code = TaskletCode.int_lshr
         else:
             if op == "+":
                 tasklet_code = TaskletCode.fp_add
@@ -1132,6 +1138,19 @@ class ExpressionVisitor(ast.NodeVisitor):
                 )
                 self.builder.add_memlet(block, t_src, "void", t_task, "_in", src_sub)
                 self.builder.add_memlet(block, t_task, "_out", t_dst, "void", "")
+
+        elif op == "~":
+            # Bitwise NOT: ~x = x XOR -1 (all bits set)
+            t_const = self.builder.add_constant(
+                block, "-1", Scalar(PrimitiveType.Int64)
+            )
+            t_task = self.builder.add_tasklet(
+                block, TaskletCode.int_xor, ["_in1", "_in2"], ["_out"]
+            )
+            self.builder.add_memlet(block, t_src, "void", t_task, "_in1", src_sub)
+            self.builder.add_memlet(block, t_const, "void", t_task, "_in2", "")
+            self.builder.add_memlet(block, t_task, "_out", t_dst, "void", "")
+
         else:
             t_task = self.builder.add_tasklet(
                 block, TaskletCode.assign, ["_in"], ["_out"]
@@ -2034,6 +2053,12 @@ class ExpressionVisitor(ast.NodeVisitor):
 
     def visit_BitXor(self, node):
         return "^"
+
+    def visit_LShift(self, node):
+        return "<<"
+
+    def visit_RShift(self, node):
+        return ">>"
 
     def visit_Not(self, node):
         return "!"
