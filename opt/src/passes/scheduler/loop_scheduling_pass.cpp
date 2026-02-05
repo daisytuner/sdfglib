@@ -75,13 +75,16 @@ bool LoopSchedulingPass::run_pass_target(
             throw InvalidSDFGException("LoopScheduler encountered non-loop in loop analysis.");
         }
 
+        auto& loop_analysis2 = analysis_manager.get<analysis::LoopAnalysis>();
+        auto& flop_analysis2 = analysis_manager.get<analysis::FlopAnalysis>();
+
         switch (action) {
             case SchedulerAction::NEXT: {
                 applied = true;
                 break;
             }
             case SchedulerAction::CHILDREN: {
-                auto children = loop_analysis.children(loop);
+                auto children = loop_analysis2.children(loop);
                 if (children.empty()) {
                     continue;
                 }
@@ -89,8 +92,8 @@ bool LoopSchedulingPass::run_pass_target(
                     queue.push_front(child);
 
                     SchedulerLoopInfo info;
-                    info.loop_info = loop_analysis.loop_info(child);
-                    info.flop = flop_analysis.get(child);
+                    info.loop_info = loop_analysis2.loop_info(child);
+                    info.flop = flop_analysis2.get(child);
                     scheduling_info_map[child] = info;
                 }
                 break;
