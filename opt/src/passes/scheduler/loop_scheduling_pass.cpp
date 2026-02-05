@@ -122,7 +122,7 @@ bool LoopSchedulingPass::run_pass(builder::StructuredSDFGBuilder& builder, analy
 
     if (applied) {
         DataTransferMinimizationPass dtm_pass;
-        // dtm_pass.run(builder, analysis_manager);
+        dtm_pass.run(builder, analysis_manager);
     }
 
     return applied;
