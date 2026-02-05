@@ -399,5 +399,5 @@ TEST(CUDASchedulerTest, ConsecutiveNestsWithInnerMapInSecondNest) {
     passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"cuda"});
     EXPECT_TRUE(loop_scheduling_pass.run(builder, analysis_manager));
     EXPECT_EQ(loop.schedule_type().value(), cuda::ScheduleType_CUDA::value());
-    EXPECT_EQ(loop_3.schedule_type().value(), cuda::ScheduleType_CUDA::value());
+    EXPECT_EQ(loop_3.schedule_type().value(), ScheduleType_Sequential::value());
 }

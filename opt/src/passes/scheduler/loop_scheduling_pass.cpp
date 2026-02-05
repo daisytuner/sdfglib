@@ -1,4 +1,5 @@
 #include "sdfg/passes/scheduler/loop_scheduling_pass.h"
+#include "sdfg/passes/offloading/data_transfer_minimization_pass.h"
 #include "sdfg/passes/scheduler/loop_scheduler.h"
 #include "sdfg/passes/scheduler/scheduler_registry.h"
 #include "sdfg/structured_control_flow/map.h"
@@ -118,6 +119,12 @@ bool LoopSchedulingPass::run_pass(builder::StructuredSDFGBuilder& builder, analy
         applied = applied || target_applied;
         analysis_manager.invalidate_all();
     }
+
+    if (applied) {
+        DataTransferMinimizationPass dtm_pass;
+        dtm_pass.run(builder, analysis_manager);
+    }
+
     return applied;
 }
 
