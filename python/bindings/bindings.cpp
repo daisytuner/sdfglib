@@ -141,7 +141,7 @@ PYBIND11_MODULE(_sdfg, m) {
             &PyStructuredSDFG::schedule,
             py::arg("target"),
             py::arg("category"),
-            py::arg("remote_ctx").none(true) = nullptr,
+            py::arg("remote_tuning") = false,
             "Schedule the SDFG"
         )
         .def(

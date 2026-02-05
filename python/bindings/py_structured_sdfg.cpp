@@ -269,23 +269,19 @@ void PyStructuredSDFG::normalize() {
     pipeline.run(builder, analysis_manager);
 }
 
-void PyStructuredSDFG::
-    schedule(const std::string& target, const std::string& category, sdfg::passes::rpc::RpcContext* remote_ctx) {
+void PyStructuredSDFG::schedule(const std::string& target, const std::string& category, bool remote_tuning) {
     if (target == "none") {
         return;
     }
 
-    std::shared_ptr<sdfg::passes::rpc::DoccBackendContext> context =
-        sdfg::passes::rpc::DoccBackendContext::build_context();
-
-    if (context) {
-        sdfg::passes::rpc::register_rpc_loop_opt(context, target, category);
-    }
-
     std::vector<std::string> schedulers;
-    if (context) {
+    if (remote_tuning) {
+        std::shared_ptr<sdfg::passes::rpc::DoccBackendContext> context =
+            sdfg::passes::rpc::DoccBackendContext::build_context();
+        sdfg::passes::rpc::register_rpc_loop_opt(context, target, category);
         schedulers.push_back("rpc");
     }
+
 
     if (target == "cuda" || target == "openmp") {
         schedulers.push_back(target);
