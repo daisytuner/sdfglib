@@ -22,7 +22,7 @@ struct Scope {
 
 class PyStructuredSDFGBuilder {
 private:
-    sdfg::builder::StructuredSDFGBuilder builder;
+    sdfg::builder::StructuredSDFGBuilder builder_;
     std::vector<Scope> scope_stack;
 
     sdfg::structured_control_flow::Sequence& current_sequence();
@@ -30,6 +30,8 @@ private:
 public:
     PyStructuredSDFGBuilder(const std::string& name);
     PyStructuredSDFGBuilder(const std::string& name, const sdfg::types::IType& return_type);
+
+    sdfg::builder::StructuredSDFGBuilder& builder() { return builder_; }
 
     PyStructuredSDFG move();
 
