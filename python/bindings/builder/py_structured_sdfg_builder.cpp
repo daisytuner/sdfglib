@@ -9,6 +9,7 @@
 #include <symengine/logic.h>
 #include <symengine/real_double.h>
 #include "sdfg/data_flow/library_nodes/math/math.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/broadcast_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/conv_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/cast_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/transpose_node.h"
@@ -801,6 +802,39 @@ void PyStructuredSDFGBuilder::add_dot(
 
     auto& node_res = builder_.add_access(block, result, debug_info);
     builder_.add_computational_memlet(block, dot_node, "__out", node_res, {}, type_result, debug_info);
+}
+
+void PyStructuredSDFGBuilder::add_broadcast(
+    const std::string& input,
+    const std::string& output,
+    const std::vector<std::string>& input_shape_strs,
+    const std::vector<std::string>& output_shape_strs,
+    const sdfg::DebugInfo& debug_info
+) {
+    auto& parent = current_sequence();
+    auto& block = builder_.add_block(parent, {}, debug_info);
+
+    std::vector<sdfg::symbolic::Expression> input_shape;
+    for (const auto& s : input_shape_strs) {
+        input_shape.push_back(parse_and_expand(s));
+    }
+
+    std::vector<sdfg::symbolic::Expression> output_shape;
+    for (const auto& s : output_shape_strs) {
+        output_shape.push_back(parse_and_expand(s));
+    }
+
+    auto& node =
+        builder_.add_library_node<sdfg::math::tensor::BroadcastNode>(block, debug_info, input_shape, output_shape);
+
+    auto& input_node = builder_.add_access(block, input, debug_info);
+    auto& output_node = builder_.add_access(block, output, debug_info);
+
+    auto& input_type = builder_.subject().type(input);
+    auto& output_type = builder_.subject().type(output);
+
+    builder_.add_computational_memlet(block, input_node, node, "X", {}, input_type, debug_info);
+    builder_.add_computational_memlet(block, node, "Y", output_node, {}, output_type, debug_info);
 }
 
 void PyStructuredSDFGBuilder::add_elementwise_op(
