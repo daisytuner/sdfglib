@@ -76,6 +76,8 @@ bool LoopSchedulingPass::run_pass_target(
             throw InvalidSDFGException("LoopScheduler encountered non-loop in loop analysis.");
         }
 
+        analysis_manager.invalidate_all();
+
         auto& loop_analysis2 = analysis_manager.get<analysis::LoopAnalysis>();
         auto& flop_analysis2 = analysis_manager.get<analysis::FlopAnalysis>();
 
@@ -117,7 +119,6 @@ bool LoopSchedulingPass::run_pass(builder::StructuredSDFGBuilder& builder, analy
     for (const auto& target : targets_) {
         bool target_applied = run_pass_target(builder, analysis_manager, target);
         applied = applied || target_applied;
-        analysis_manager.invalidate_all();
     }
 
     if (applied) {
