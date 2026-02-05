@@ -21,20 +21,10 @@ using namespace sdfg;
 
 class RPCLoopOptTest : public ::testing::Test {
 protected:
-    std::shared_ptr<passes::rpc::RpcContext> ctx_;
-
     std::unique_ptr<builder::StructuredSDFGBuilder> builder_;
     nlohmann::json desc_;
 
     void SetUp() override {
-        passes::rpc::SimpleRpcContextBuilder ctxBuilder;
-        ctx_ = ctxBuilder
-                   .initialize_local_default() // localhost:8080/docc
-                   .from_env() // $SDFG_RPC_CONFIG can override
-                   .from_header_env() // $RPC_HEADER can override/add headers
-                   .build();
-
-
         builder_ = std::make_unique<builder::StructuredSDFGBuilder>("sdfg_test", FunctionType_CPU);
 
         auto& root = builder_->subject().root();
