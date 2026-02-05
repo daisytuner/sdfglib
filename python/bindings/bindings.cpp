@@ -10,12 +10,12 @@
 #include "data_flow/py_cmath.h"
 #include "data_flow/py_tasklet.h"
 #include "py_structured_sdfg.h"
-#include "sdfg/data_flow/tasklet.h"
-#include "sdfg/passes/rpc/rpc_context.h"
-#include "sdfg/targets/cuda/plugin.h"
+#include "transformations/py_replayer.h"
 #include "types/py_types.h"
 
+#include <sdfg/data_flow/tasklet.h>
 #include <sdfg/element.h>
+#include <sdfg/passes/rpc/rpc_context.h>
 #include <sdfg/types/array.h>
 #include <sdfg/types/pointer.h>
 #include <sdfg/types/scalar.h>
@@ -25,6 +25,7 @@
 #include <sdfg/codegen/dispatchers/node_dispatcher_registry.h>
 #include <sdfg/plugins/plugins.h>
 #include <sdfg/serializer/json_serializer.h>
+#include <sdfg/targets/cuda/plugin.h>
 #include <sdfg/targets/highway/plugin.h>
 #include <sdfg/targets/omp/plugin.h>
 
@@ -48,6 +49,7 @@ PYBIND11_MODULE(_sdfg, m) {
     register_tasklet(m);
     register_cmath(m);
     register_analysis(m);
+    register_replayer(m);
 
     py::class_<sdfg::passes::rpc::RpcContext>(m, "RpcContext");
 

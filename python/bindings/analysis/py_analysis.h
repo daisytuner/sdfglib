@@ -9,6 +9,7 @@
 
 #include <sdfg/analysis/analysis.h>
 
+#include "builder/py_structured_sdfg_builder.h"
 #include "py_structured_sdfg.h"
 
 #include "py_arguments_analysis.h"
@@ -33,7 +34,6 @@ namespace py = pybind11;
  */
 class PyAnalysisManager {
 private:
-    PyStructuredSDFG& sdfg_;
     std::unique_ptr<sdfg::analysis::AnalysisManager> manager_;
 
     // Cached analysis wrappers
@@ -50,11 +50,12 @@ private:
 
 public:
     PyAnalysisManager(PyStructuredSDFG& sdfg)
-        : sdfg_(sdfg), manager_(std::make_unique<sdfg::analysis::AnalysisManager>(sdfg.sdfg())) {}
+        : manager_(std::make_unique<sdfg::analysis::AnalysisManager>(sdfg.sdfg())) {}
+
+    PyAnalysisManager(PyStructuredSDFGBuilder& builder)
+        : manager_(std::make_unique<sdfg::analysis::AnalysisManager>(builder.builder().subject())) {}
 
     sdfg::analysis::AnalysisManager& manager() { return *manager_; }
-
-    PyStructuredSDFG& sdfg() { return sdfg_; }
 
     void invalidate_all() {
         // Clear cached wrappers
@@ -145,11 +146,11 @@ public:
 
 inline void register_analysis(py::module& m) {
     py::class_<PyAnalysisManager>(m, "AnalysisManager")
+        .def(py::init<PyStructuredSDFG&>(), py::arg("sdfg"), "Create an AnalysisManager for the given SDFG")
         .def(
-            py::init<PyStructuredSDFG&>(),
-            py::keep_alive<1, 2>(),
-            py::arg("sdfg"),
-            "Create an AnalysisManager for the given SDFG"
+            py::init<PyStructuredSDFGBuilder&>(),
+            py::arg("builder"),
+            "Create an AnalysisManager for the SDFG being built"
         )
         .def("invalidate_all", &PyAnalysisManager::invalidate_all, "Invalidate all cached analyses")
         .def(
