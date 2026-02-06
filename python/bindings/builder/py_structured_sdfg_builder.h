@@ -173,6 +173,14 @@ public:
         const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
     );
 
+    void add_broadcast(
+        const std::string& input,
+        const std::string& output,
+        const std::vector<std::string>& input_shape,
+        const std::vector<std::string>& output_shape,
+        const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
+    );
+
     void add_elementwise_op(
         const std::string& op_type,
         const std::string& A,

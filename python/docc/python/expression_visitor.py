@@ -676,11 +676,6 @@ class ExpressionVisitor(ast.NodeVisitor):
         suffix = f"_{func_obj.__name__}_{self._get_unique_id()}"
         res_name = f"_res{suffix}"
 
-        # Assume Int64 for now as match returns 0/1
-        dtype = Scalar(PrimitiveType.Int64)
-        self.builder.add_container(res_name, dtype, False)
-        self.symbol_table[res_name] = dtype
-
         # 4. Rename variables
         class VariableRenamer(ast.NodeTransformer):
             # Builtins that should not be renamed
@@ -2257,8 +2252,9 @@ class ExpressionVisitor(ast.NodeVisitor):
             left_shape = self.array_info[left]["shapes"]
         if right in self.array_info:
             right_shape = self.array_info[right]["shapes"]
-        # Pick the shape with more dimensions for broadcasting
-        shape = left_shape if len(left_shape) >= len(right_shape) else right_shape
+
+        # Compute broadcast output shape following NumPy rules
+        shape = self._compute_broadcast_shape(left_shape, right_shape)
 
         # Determine dtype with promotion (float > int, wider > narrower)
         dtype_left = self._get_dtype(left)
@@ -2309,12 +2305,76 @@ class ExpressionVisitor(ast.NodeVisitor):
 
             real_right = right_cast
 
+        # Broadcast left operand if needed
+        if not left_is_scalar and self._needs_broadcast(left_shape, shape):
+            real_left = self._broadcast_array(real_left, left_shape, shape, dtype)
+
+        # Broadcast right operand if needed
+        if not right_is_scalar and self._needs_broadcast(right_shape, shape):
+            real_right = self._broadcast_array(real_right, right_shape, shape, dtype)
+
         tmp_name = self._create_array_temp(shape, dtype)
 
         # Add operation with promoted dtype for implicit casting
         self.builder.add_elementwise_op(op_type, real_left, real_right, tmp_name, shape)
 
         return tmp_name
+
+    def _compute_broadcast_shape(self, shape_a, shape_b):
+        """Compute the broadcast output shape following NumPy broadcasting rules."""
+        if not shape_a:
+            return shape_b
+        if not shape_b:
+            return shape_a
+
+        # Pad shorter shape with 1s on the left
+        max_ndim = max(len(shape_a), len(shape_b))
+        padded_a = ["1"] * (max_ndim - len(shape_a)) + [str(s) for s in shape_a]
+        padded_b = ["1"] * (max_ndim - len(shape_b)) + [str(s) for s in shape_b]
+
+        result = []
+        for a, b in zip(padded_a, padded_b):
+            if a == "1":
+                result.append(b)
+            elif b == "1":
+                result.append(a)
+            elif a == b:
+                result.append(a)
+            else:
+                # For symbolic dimensions, use max (assume compatible)
+                result.append(a)
+
+        return result
+
+    def _needs_broadcast(self, input_shape, output_shape):
+        """Check if input shape needs broadcasting to match output shape."""
+        if len(input_shape) != len(output_shape):
+            return True
+        for in_dim, out_dim in zip(input_shape, output_shape):
+            if str(in_dim) != str(out_dim):
+                return True
+        return False
+
+    def _broadcast_array(self, arr_name, input_shape, output_shape, dtype):
+        """Broadcast an array from input_shape to output_shape using BroadcastNode."""
+        # Create temporary array for broadcast result
+        broadcast_tmp = self._create_array_temp(output_shape, dtype)
+
+        # Pad input shape to match output dimensions (add 1s on the left)
+        padded_input_shape = ["1"] * (len(output_shape) - len(input_shape)) + [
+            str(s) for s in input_shape
+        ]
+
+        # Convert shapes to string lists
+        input_shape_strs = padded_input_shape
+        output_shape_strs = [str(s) for s in output_shape]
+
+        # Add broadcast operation
+        self.builder.add_broadcast(
+            arr_name, broadcast_tmp, input_shape_strs, output_shape_strs
+        )
+
+        return broadcast_tmp
 
     def _shape_to_runtime_expr(self, shape_node):
         """Convert a shape expression AST node to a runtime-evaluable string.
@@ -2813,9 +2873,10 @@ class ExpressionVisitor(ast.NodeVisitor):
         m_expr = get_flattened_size_expr(name_a, indices_a, shape_a)
         n_expr = get_flattened_size_expr(name_b, indices_b, shape_b)
 
-        # Create temporary container
-        # Since outer usually promotes types or uses standard types, we default to double for now.
-        dtype = Scalar(PrimitiveType.Double)
+        # Infer dtype from input arrays (promote if different)
+        dtype_a = self._get_dtype(name_a)
+        dtype_b = self._get_dtype(name_b)
+        dtype = self._promote_dtypes(dtype_a, dtype_b)
 
         # Use helper to create array temp which handles symbol table and array info
         tmp_name = self._create_array_temp([m_expr, n_expr], dtype)
@@ -3115,7 +3176,10 @@ class ExpressionVisitor(ast.NodeVisitor):
                 f"Matmul with ranks {ndim_a} and {ndim_b} not supported"
             )
 
-        dtype = Scalar(PrimitiveType.Double)
+        # Infer dtype from input arrays (promote if different)
+        dtype_a = self._get_dtype(name_a)
+        dtype_b = self._get_dtype(name_b)
+        dtype = self._promote_dtypes(dtype_a, dtype_b)
 
         if is_scalar:
             tmp_name = f"_tmp_{self._get_unique_id()}"
