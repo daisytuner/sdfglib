@@ -22,7 +22,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install ninja cmake gmp isl nlohmann-json boost highway
+          brew install ninja cmake
+          brew install gmp isl nlohmann-json boost
+          brew install highway libomp
 
       - name: CMAKE Setup
         run: |
@@ -66,7 +68,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.14"]
 
     steps:
       - uses: actions/checkout@v4

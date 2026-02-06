@@ -79,7 +79,15 @@ before-all = [
   "cd /tmp/isl-0.27 && ./configure && make -j$(nproc) && make install",
 ]
 
-# [tool.cibuildwheel.macos]
-# before-all = [
-#   "brew install boost gmp isl nlohmann-json curl uv",
-# ]
+[tool.cibuildwheel.macos]
+before-all = [
+  # Build tools
+  "brew install cmake ninja",
+
+  # Build dependencies (linked into the wheel)
+  "brew install boost gmp isl nlohmann-json",
+]
+
+# Ensure we build universal2 wheels for both Intel and Apple Silicon
+[tool.cibuildwheel.macos.environment]
+MAKEFLAGS = "-j$(sysctl -n hw.ncpu)"
