@@ -292,7 +292,7 @@ void PyStructuredSDFG::schedule(const std::string& target, const std::string& ca
     sdfg::builder::StructuredSDFGBuilder builder(*sdfg_);
     sdfg::analysis::AnalysisManager analysis_manager(*sdfg_);
 
-    sdfg::passes::scheduler::LoopSchedulingPass loop_scheduling_pass(schedulers);
+    sdfg::passes::scheduler::LoopSchedulingPass loop_scheduling_pass(schedulers, nullptr);
     loop_scheduling_pass.run(builder, analysis_manager);
 }
 
