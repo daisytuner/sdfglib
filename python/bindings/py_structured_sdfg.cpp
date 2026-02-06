@@ -25,7 +25,6 @@
 #include <sdfg/passes/offloading/cuda_library_node_rewriter_pass.h>
 #include <sdfg/passes/opt_pipeline.h>
 #include <sdfg/passes/pipeline.h>
-#include <sdfg/passes/rpc/docc_backend_context.h>
 #include <sdfg/passes/scheduler/cuda_scheduler.h>
 #include <sdfg/passes/scheduler/highway_scheduler.h>
 #include <sdfg/passes/scheduler/loop_scheduling_pass.h>
