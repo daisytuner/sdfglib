@@ -33,39 +33,39 @@ def kernel(a):
 def test_go_fast(target):
     if target == "none":
         verifier = SDFGVerification(
-            verification={"MAP": 4, "Malloc": 1, "CMath": 1, "SEQUENTIAL": 4, "FOR": 5}
+            verification={"MAP": 6, "Malloc": 2, "CMath": 1, "SEQUENTIAL": 6, "FOR": 7}
         )
     elif target == "sequential":
         verifier = SDFGVerification(
             verification={
-                "HIGHWAY": 2,
-                "MAP": 4,
-                "Malloc": 1,
+                "HIGHWAY": 3,
+                "MAP": 6,
+                "Malloc": 2,
                 "CMath": 1,
-                "SEQUENTIAL": 2,
-                "FOR": 5,
+                "SEQUENTIAL": 3,
+                "FOR": 7,
             }
         )
     elif target == "openmp":
         verifier = SDFGVerification(
             verification={
-                "HIGHWAY": 2,
-                "MAP": 4,
-                "Malloc": 1,
-                "CPU_PARALLEL": 2,
+                "HIGHWAY": 3,
+                "MAP": 6,
+                "Malloc": 2,
+                "CPU_PARALLEL": 3,
                 "CMath": 1,
-                "FOR": 5,
+                "FOR": 7,
             }
         )
     else:  # cuda
         verifier = SDFGVerification(
             verification={
-                "CUDA": 4,
-                "MAP": 4,
-                "CUDAOffloading": 8,
-                "Malloc": 1,
+                "CUDA": 6,
+                "MAP": 6,
+                "CUDAOffloading": 12,
+                "Malloc": 2,
                 "CMath": 1,
-                "FOR": 5,
+                "FOR": 7,
             }
         )
     run_pytest(initialize, kernel, PARAMETERS, target, verifier=verifier)

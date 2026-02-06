@@ -163,3 +163,77 @@ def test_2d_addition():
 
     res = add_2d(10)
     assert res[0, 0] == 3.0
+
+
+def test_matmul_operator_float32():
+    @native
+    def matmul_op_f32(a, b):
+        return a @ b
+
+    a = np.random.rand(10, 10).astype(np.float32)
+    b = np.random.rand(10, 10).astype(np.float32)
+    res = matmul_op_f32(a, b)
+    assert res.dtype == np.float32, f"Expected float32, got {res.dtype}"
+    assert np.allclose(res, a @ b, rtol=1e-5)
+
+
+def test_numpy_matmul_float32():
+    @native
+    def np_matmul_f32(a, b):
+        return np.matmul(a, b)
+
+    a = np.random.rand(10, 10).astype(np.float32)
+    b = np.random.rand(10, 10).astype(np.float32)
+    res = np_matmul_f32(a, b)
+    assert res.dtype == np.float32, f"Expected float32, got {res.dtype}"
+    assert np.allclose(res, np.matmul(a, b), rtol=1e-5)
+
+
+def test_numpy_dot_matvec_float32():
+    @native
+    def np_dot_mv_f32(a, b):
+        return np.dot(a, b)
+
+    a = np.random.rand(10, 10).astype(np.float32)
+    b = np.random.rand(10).astype(np.float32)
+    res = np_dot_mv_f32(a, b)
+    assert res.dtype == np.float32, f"Expected float32, got {res.dtype}"
+    assert np.allclose(res, np.dot(a, b), rtol=1e-5)
+
+
+def test_matmul_matvec_float32():
+    @native
+    def matmul_mv_f32(a, b):
+        return np.matmul(a, b)
+
+    a = np.random.rand(10, 10).astype(np.float32)
+    b = np.random.rand(10).astype(np.float32)
+    res = matmul_mv_f32(a, b)
+    assert res.dtype == np.float32, f"Expected float32, got {res.dtype}"
+    assert np.allclose(res, np.matmul(a, b), rtol=1e-5)
+
+
+def test_matmul_chained_float32():
+    @native
+    def matmul_chained_f32(a, b, c):
+        return (a @ b) @ c
+
+    a = np.random.rand(8, 10).astype(np.float32)
+    b = np.random.rand(10, 12).astype(np.float32)
+    c = np.random.rand(12, 6).astype(np.float32)
+    res = matmul_chained_f32(a, b, c)
+    expected = (a @ b) @ c
+    assert res.dtype == np.float32, f"Expected float32, got {res.dtype}"
+    assert np.allclose(res, expected, rtol=1e-4)
+
+
+def test_numpy_outer_float32():
+    @native
+    def np_outer_f32(a, b):
+        return np.outer(a, b)
+
+    a = np.random.rand(10).astype(np.float32)
+    b = np.random.rand(10).astype(np.float32)
+    res = np_outer_f32(a, b)
+    assert res.dtype == np.float32, f"Expected float32, got {res.dtype}"
+    assert np.allclose(res, np.outer(a, b), rtol=1e-5)
