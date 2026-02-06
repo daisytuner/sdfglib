@@ -70,14 +70,26 @@ def _map_python_type(dtype):
     # Simple mapping for python types
     if dtype is float or dtype is np.float64:
         return Scalar(PrimitiveType.Double)
-    elif dtype is int or dtype is np.int64:
-        return Scalar(PrimitiveType.Int64)
-    elif dtype is bool or dtype is np.bool_:
-        return Scalar(PrimitiveType.Bool)
     elif dtype is np.float32:
         return Scalar(PrimitiveType.Float)
+    elif dtype is bool or dtype is np.bool_:
+        return Scalar(PrimitiveType.Bool)
+    elif dtype is int or dtype is np.int64:
+        return Scalar(PrimitiveType.Int64)
     elif dtype is np.int32:
         return Scalar(PrimitiveType.Int32)
+    elif dtype is np.int16:
+        return Scalar(PrimitiveType.Int16)
+    elif dtype is np.int8:
+        return Scalar(PrimitiveType.Int8)
+    elif dtype is np.uint64:
+        return Scalar(PrimitiveType.UInt64)
+    elif dtype is np.uint32:
+        return Scalar(PrimitiveType.UInt32)
+    elif dtype is np.uint16:
+        return Scalar(PrimitiveType.UInt16)
+    elif dtype is np.uint8:
+        return Scalar(PrimitiveType.UInt8)
 
     # Handle Python classes - map to Structure type
     if inspect.isclass(dtype):
@@ -352,28 +364,52 @@ class PythonProgram(DoccProgram):
         return str(t)
 
     def _infer_type(self, arg):
-        if isinstance(arg, (bool, np.bool_)):
+        if isinstance(arg, (float, np.float64)):
+            return Scalar(PrimitiveType.Double)
+        elif isinstance(arg, np.float32):
+            return Scalar(PrimitiveType.Float)
+        elif isinstance(arg, (bool, np.bool_)):
             return Scalar(PrimitiveType.Bool)
         elif isinstance(arg, (int, np.int64)):
             return Scalar(PrimitiveType.Int64)
-        elif isinstance(arg, (float, np.float64)):
-            return Scalar(PrimitiveType.Double)
         elif isinstance(arg, np.int32):
             return Scalar(PrimitiveType.Int32)
-        elif isinstance(arg, np.float32):
-            return Scalar(PrimitiveType.Float)
+        elif isinstance(arg, np.int16):
+            return Scalar(PrimitiveType.Int16)
+        elif isinstance(arg, np.int8):
+            return Scalar(PrimitiveType.Int8)
+        elif isinstance(arg, np.uint64):
+            return Scalar(PrimitiveType.UInt64)
+        elif isinstance(arg, np.uint32):
+            return Scalar(PrimitiveType.UInt32)
+        elif isinstance(arg, np.uint16):
+            return Scalar(PrimitiveType.UInt16)
+        elif isinstance(arg, np.uint8):
+            return Scalar(PrimitiveType.UInt8)
         elif isinstance(arg, np.ndarray):
             # Map dtype
             if arg.dtype == np.float64:
                 elem_type = Scalar(PrimitiveType.Double)
             elif arg.dtype == np.float32:
                 elem_type = Scalar(PrimitiveType.Float)
+            elif arg.dtype == np.bool_:
+                elem_type = Scalar(PrimitiveType.Bool)
             elif arg.dtype == np.int64:
                 elem_type = Scalar(PrimitiveType.Int64)
             elif arg.dtype == np.int32:
                 elem_type = Scalar(PrimitiveType.Int32)
-            elif arg.dtype == np.bool_:
-                elem_type = Scalar(PrimitiveType.Bool)
+            elif arg.dtype == np.int16:
+                elem_type = Scalar(PrimitiveType.Int16)
+            elif arg.dtype == np.int8:
+                elem_type = Scalar(PrimitiveType.Int8)
+            elif arg.dtype == np.uint64:
+                elem_type = Scalar(PrimitiveType.UInt64)
+            elif arg.dtype == np.uint32:
+                elem_type = Scalar(PrimitiveType.UInt32)
+            elif arg.dtype == np.uint16:
+                elem_type = Scalar(PrimitiveType.UInt16)
+            elif arg.dtype == np.uint8:
+                elem_type = Scalar(PrimitiveType.UInt8)
             else:
                 raise ValueError(f"Unsupported numpy dtype: {arg.dtype}")
 
