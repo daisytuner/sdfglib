@@ -7,7 +7,6 @@ find_package(CURL REQUIRED)
 
 set(SOURCE_FILES
     src/passes/rpc/daisytuner_rpc_context.cpp
-    src/passes/rpc/docc_backend_context.cpp
     src/passes/rpc/rpc_context.cpp
     src/passes/rpc/rpc_loop_opt.cpp
     src/transformations/rpc_node_transform.cpp
