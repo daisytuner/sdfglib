@@ -51,6 +51,7 @@ SchedulerAction CUDAScheduler::schedule(
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto loop_info = loop_analysis.loop_info(&loop);
 
+    return NEXT;
     // Check if in not outermost loop
     if (loop_info.loopnest_index == -1) {
         return NEXT;
