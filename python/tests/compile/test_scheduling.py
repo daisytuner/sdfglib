@@ -1,5 +1,7 @@
 from docc.python import native
 import numpy as np
+import pytest
+import sys
 
 
 def test_scheduling_default():
@@ -48,6 +50,9 @@ def test_scheduling_openmp():
     assert np.allclose(C, A + B)
 
 
+@pytest.mark.skipif(
+    sys.platform == "darwin", reason="Instrumentation not supported on macOS"
+)
 def test_scheduling_cuda():
     # Assuming CUDA is available and supported
     @native(target="cuda", category="gpu")
@@ -64,6 +69,9 @@ def test_scheduling_cuda():
     assert np.allclose(C, A + B)
 
 
+@pytest.mark.skipif(
+    sys.platform == "darwin", reason="Instrumentation not supported on macOS"
+)
 def test_scheduling_cuda_gemm():
     # Assuming CUDA is available and supported
     @native(target="cuda", category="gpu")
@@ -83,6 +91,9 @@ def test_scheduling_cuda_gemm():
     assert np.allclose(C, A @ B)
 
 
+@pytest.mark.skipif(
+    sys.platform == "darwin", reason="Instrumentation not supported on macOS"
+)
 def test_scheduling_cuda_dot():
     # Assuming CUDA is available and supported
     @native(target="cuda", category="gpu")

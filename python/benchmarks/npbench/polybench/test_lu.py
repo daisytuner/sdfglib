@@ -1,3 +1,4 @@
+import sys
 import pytest
 import numpy as np
 from benchmarks.npbench.harness import SDFGVerification, run_benchmark, run_pytest
@@ -28,6 +29,7 @@ def kernel(A):
             A[i, j] -= A[i, :i] @ A[:i, j]
 
 
+@pytest.mark.skipif(sys.platform == "darwin", reason="Segfault")
 @pytest.mark.parametrize(
     "target",
     [

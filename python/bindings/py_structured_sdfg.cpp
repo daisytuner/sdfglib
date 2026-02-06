@@ -43,6 +43,15 @@
 #include "sdfg/passes/rpc/rpc_context.h"
 #include "sdfg/passes/rpc/rpc_loop_opt.h"
 
+// Platform-specific compiler selection
+#if defined(__APPLE__)
+#define DOCC_CXX_COMPILER "clang++"
+#elif defined(__linux__)
+#define DOCC_CXX_COMPILER "clang-19"
+#else
+#error "Unsupported platform"
+#endif
+
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
@@ -400,11 +409,14 @@ std::string PyStructuredSDFG::compile(
         std::string name = lib_path.stem().string();
         std::string object_file = build_path.string() + "/" + name + ".o";
         std::stringstream cmd;
-        cmd << "clang-19 -c -fPIC -O3  -march=native -mtune=native -funroll-loops";
+        cmd << DOCC_CXX_COMPILER << " -c -fPIC -O3  -march=native -mtune=native -funroll-loops";
         if (!package_path_str.empty()) {
             cmd << " -L" << package_path_str;
             cmd << " -I" << package_include_path_str;
         }
+#if defined(__APPLE__)
+        cmd << " -I/opt/homebrew/include";
+#endif
         if (target == "cuda") {
             cmd << " -x cuda --cuda-gpu-arch=sm_70 --cuda-path=/usr/local/cuda";
         }
@@ -426,7 +438,7 @@ std::string PyStructuredSDFG::compile(
     // Compile
     {
         std::stringstream cmd;
-        cmd << "clang-19 -c -fPIC -O3 -march=native -mtune=native -funroll-loops";
+        cmd << DOCC_CXX_COMPILER << " -c -fPIC -O3 -march=native -mtune=native -funroll-loops";
         if (!package_path_str.empty()) {
             cmd << " -L" << package_path_str;
             cmd << " -I" << package_include_path_str;
@@ -447,7 +459,13 @@ std::string PyStructuredSDFG::compile(
     fs::path lib_path = build_path / ("lib" + sdfg_->name() + ".so");
 
     std::stringstream cmd;
-    cmd << "clang-19 -shared -fopenmp -fPIC -O3";
+#if defined(__APPLE__)
+    cmd << DOCC_CXX_COMPILER << " -shared -Xpreprocessor -fopenmp -fPIC -O3";
+    cmd << " -L/opt/homebrew/opt/libomp/lib -I/opt/homebrew/opt/libomp/include";
+    cmd << " -L/opt/homebrew/lib";
+#else
+    cmd << DOCC_CXX_COMPILER << " -shared -fopenmp -fPIC -O3";
+#endif
     if (!package_path_str.empty()) {
         cmd << " -L" << package_path_str;
         cmd << " -I" << package_include_path_str;
@@ -461,7 +479,12 @@ std::string PyStructuredSDFG::compile(
     }
     cmd << " -ldaisy_rtl";
     cmd << " -larg_capture_io";
+#if defined(__APPLE__)
+    cmd << " -lomp";
+    cmd << " -framework Accelerate";
+#else
     cmd << " -lblas";
+#endif
     cmd << " -lm";
     cmd << " -lstdc++";
     if (target == "cuda") {

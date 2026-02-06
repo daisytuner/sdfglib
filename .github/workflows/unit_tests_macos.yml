@@ -1,0 +1,106 @@
+name: Unit Tests (macOS)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  schedule:
+    - cron: "0 4 * * *"
+
+jobs:
+  cpp-tests-macos:
+    runs-on:
+      group: dahlia
+      labels: macOS
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          brew install ninja cmake gmp isl nlohmann-json boost highway
+
+      - name: CMAKE Setup
+        run: |
+          mkdir build
+          cd build
+          cmake \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DBUILD_TESTS:BOOL=OFF \
+            -DBUILD_BENCHMARKS:BOOL=OFF \
+            -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  \
+            ..
+          ninja
+
+          ./sdfg/tests/sdfglib_test
+          ./opt/tests/sdfgopt_test
+          ./tutorial/printf_target/tests/printf_target_test
+
+      - name: Test Arg-Capture-IO
+        run: |
+          cd build
+          ./arg-capture-io/tests/capture_io_test
+
+      # - name: Test RTL
+      #   run: |
+      #     export CPATH=/usr/local/include:$CPATH
+      #     export LIBRARY_PATH=/usr/local/lib:$LIBRARY_PATH
+      #     export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+      #     export PATH=/usr/local/bin:$PATH
+
+      #     pip install pytest==7.1.3 --break-system-packages
+      #     pip install pytest-parallel --break-system-packages
+
+      #     cd rtl/tests
+      #     pytest -v -s rtl_tests.py
+
+  python-tests-macos:
+    runs-on:
+      group: dahlia
+      labels: macOS
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          brew install ninja cmake
+          brew install gmp isl nlohmann-json boost
+          brew install highway libomp
+          brew install uv
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: |
+          uv python install ${{ matrix.python-version }}
+          uv venv --python ${{ matrix.python-version }} .venv
+          echo "$PWD/.venv/bin" >> $GITHUB_PATH
+
+      - name: Install Python dependencies
+        run: |
+          uv pip install pybind11 pytest coverage black==25.9.0 build scikit-build-core
+          uv pip install numpy scipy
+
+      - name: Build
+        run: |
+          uv pip install --no-build-isolation -v -e python/
+
+      - name: Unit Tests
+        run: |
+          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+          pytest -v python/tests
+
+      - name: Integration Tests
+        run: |
+          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+          pytest -v python/benchmarks/

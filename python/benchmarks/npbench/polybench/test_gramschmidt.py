@@ -1,3 +1,4 @@
+import sys
 import pytest
 import numpy as np
 from benchmarks.npbench.harness import SDFGVerification, run_benchmark, run_pytest
@@ -37,6 +38,9 @@ def kernel(A):
     return Q, R
 
 
+@pytest.mark.skipif(
+    sys.platform == "darwin", reason="Instrumentation not supported on macOS"
+)
 @pytest.mark.parametrize(
     "target",
     [

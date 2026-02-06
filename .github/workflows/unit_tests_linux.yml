@@ -1,4 +1,4 @@
-name: Unit Tests
+name: Unit Tests (Linux)
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
     - cron: "0 4 * * *"
 
 jobs:
-  cpp-tests:
+  cpp-tests-linux:
     runs-on:
       group: dahlia
       labels: cuda
@@ -89,7 +89,7 @@ jobs:
           cd rtl/tests
           pytest -v -s rtl_tests.py
 
-  python-tests:
+  python-tests-linux:
     runs-on:
       group: dahlia
       labels: cuda
@@ -158,7 +158,7 @@ jobs:
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
           pytest -v python/benchmarks/
 
-  mlir-tests:
+  mlir-tests-linux:
     runs-on:
       group: dahlia
       labels: cuda
@@ -242,7 +242,7 @@ jobs:
           pytest -v benchmarks/
 
   finish:
-    needs: [cpp-tests, python-tests, mlir-tests]
+    needs: [cpp-tests-linux, python-tests-linux, mlir-tests-linux]
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished

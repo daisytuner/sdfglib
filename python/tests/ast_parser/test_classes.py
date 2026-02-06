@@ -1,7 +1,7 @@
 from docc.python import native
 
 
-class Point:
+class Point2D:
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -19,11 +19,11 @@ def test_structure_type_mapping():
     from docc.python import _map_python_type
 
     # Test that a class is mapped to Pointer(Structure)
-    result = _map_python_type(Point)
+    result = _map_python_type(Point2D)
     assert isinstance(result, Pointer)
     assert result.has_pointee_type()
     assert isinstance(result.pointee_type, Structure)
-    assert result.pointee_type.name == "Point"
+    assert result.pointee_type.name == "Point2D"
 
 
 def test_class_instance_type_inference():
@@ -31,7 +31,7 @@ def test_class_instance_type_inference():
     from docc.sdfg import Structure, Pointer
     from docc.python import PythonProgram
 
-    point = Point(3.0, 4.0)
+    point = Point2D(3.0, 4.0)
     program = PythonProgram(lambda p: p, target="none")
 
     # Test type inference for class instance
@@ -39,7 +39,7 @@ def test_class_instance_type_inference():
     assert isinstance(inferred_type, Pointer)
     assert inferred_type.has_pointee_type()
     assert isinstance(inferred_type.pointee_type, Structure)
-    assert inferred_type.pointee_type.name == "Point"
+    assert inferred_type.pointee_type.name == "Point2D"
 
 
 def test_class_type_string_representation():
@@ -48,23 +48,23 @@ def test_class_type_string_representation():
     from docc.python import PythonProgram
 
     program = PythonProgram(lambda p: p, target="none")
-    point_type = Pointer(Structure("Point"))
+    point_type = Pointer(Structure("Point2D"))
 
     # Test type to string conversion
     type_str = program._type_to_str(point_type)
     assert "Pointer" in type_str
     assert "Structure" in type_str
-    assert "Point" in type_str
+    assert "Point2D" in type_str
 
 
 def test_structure_member_info_generation():
     """Test that structure member info is correctly generated with indices"""
     from docc.python import PythonProgram
 
-    def get_x(p: Point) -> float:
+    def get_x(p: Point2D) -> float:
         return p.x
 
-    point = Point(3.0, 4.0)
+    point = Point2D(3.0, 4.0)
     program = PythonProgram(get_x, target="none")
 
     # Build SDFG to trigger structure registration
@@ -79,10 +79,10 @@ def test_structure_member_access_first_member():
     """Test accessing the first member (index 0) of a structure"""
 
     @native
-    def get_x(p: Point) -> float:
+    def get_x(p: Point2D) -> float:
         return p.x
 
-    point = Point(3.0, 4.0)
+    point = Point2D(3.0, 4.0)
     result = get_x(point)
     assert result == 3.0
 
@@ -91,10 +91,10 @@ def test_structure_member_access_second_member():
     """Test accessing the second member (index 1) of a structure"""
 
     @native
-    def get_y(p: Point) -> float:
+    def get_y(p: Point2D) -> float:
         return p.y
 
-    point = Point(5.0, 7.0)
+    point = Point2D(5.0, 7.0)
     result = get_y(point)
     assert result == 7.0
 
@@ -115,10 +115,10 @@ def test_structure_multiple_member_access():
     """Test accessing multiple members in the same function"""
 
     @native
-    def sum_coords(p: Point) -> float:
+    def sum_coords(p: Point2D) -> float:
         return p.x + p.y
 
-    point = Point(3.0, 4.0)
+    point = Point2D(3.0, 4.0)
     result = sum_coords(point)
     assert result == 7.0
 
@@ -127,9 +127,9 @@ def test_structure_member_access_with_operations():
     """Test using member access in calculations"""
 
     @native
-    def distance_from_origin(p: Point) -> float:
+    def distance_from_origin(p: Point2D) -> float:
         return (p.x * p.x + p.y * p.y) ** 0.5
 
-    point = Point(3.0, 4.0)
+    point = Point2D(3.0, 4.0)
     result = distance_from_origin(point)
     assert abs(result - 5.0) < 1e-10

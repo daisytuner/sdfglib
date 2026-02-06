@@ -36,14 +36,23 @@ void CPPCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const
 }
 
 void CPPCodeGenerator::dispatch_includes() {
+#if defined(__linux__)
     this->includes_stream_ << "#include <alloca.h>" << std::endl;
     this->includes_stream_ << "#include <malloc.h>" << std::endl;
+#endif
+
     this->includes_stream_ << "#include <cmath>" << std::endl;
     this->includes_stream_ << "#include <cstdio>" << std::endl;
     this->includes_stream_ << "#include <cstdlib>" << std::endl;
     this->includes_stream_ << "#include <cstring>" << std::endl;
-    this->includes_stream_ << "#include <cblas.h>" << std::endl;
     this->includes_stream_ << "#include <cstdint>" << std::endl;
+
+#if defined(__APPLE__)
+    this->includes_stream_ << "#include <Accelerate/Accelerate.h>" << std::endl;
+#else
+    this->includes_stream_ << "#include <cblas.h>" << std::endl;
+#endif
+
     this->includes_stream_ << "#include <daisy_rtl/daisy_rtl.h>" << std::endl;
 };
 
