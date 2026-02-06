@@ -3,6 +3,7 @@
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/transformations/offloading/cuda_parallelize_nested_map.h"
 #include "sdfg/transformations/offloading/cuda_transform.h"
+#include "sdfg/transformations/offloading/gpu_loop_reordering.h"
 #include "sdfg/transformations/offloading/gpu_tiling.h"
 
 namespace sdfg {
@@ -19,6 +20,12 @@ SchedulerAction CUDAScheduler::schedule(
         cuda::CUDATransform cuda_transform(*map_node, 32, false);
         if (cuda_transform.can_be_applied(builder, analysis_manager)) {
             cuda_transform.apply(builder, analysis_manager);
+
+
+            transformations::GPULoopReordering gpu_loop_reordering_pass(*map_node);
+            if (gpu_loop_reordering_pass.can_be_applied(builder, analysis_manager)) {
+                gpu_loop_reordering_pass.apply(builder, analysis_manager);
+            }
 
             auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
             auto descendants = loop_analysis.descendants(map_node);
