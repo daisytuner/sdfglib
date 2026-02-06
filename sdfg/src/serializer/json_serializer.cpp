@@ -1080,12 +1080,15 @@ DebugInfo JSONSerializer::json_to_debug_info(const nlohmann::json& j) {
 ScheduleType JSONSerializer::json_to_schedule_type(const nlohmann::json& j) {
     assert(j.contains("value"));
     assert(j["value"].is_string());
-    assert(j.contains("category"));
-    assert(j["category"].is_number_integer());
+    // assert(j.contains("category"));
+    // assert(j["category"].is_number_integer());
     assert(j.contains("properties"));
     assert(j["properties"].is_object());
-    ScheduleType
-        schedule_type(j["value"].get<std::string>(), static_cast<ScheduleTypeCategory>(j["category"].get<int>()));
+    ScheduleTypeCategory category = ScheduleTypeCategory::None;
+    if (j.contains("category")) {
+        category = static_cast<ScheduleTypeCategory>(j["category"].get<int>());
+    }
+    ScheduleType schedule_type(j["value"].get<std::string>(), category);
     for (const auto& [key, value] : j["properties"].items()) {
         assert(value.is_string());
         schedule_type.set_property(key, value.get<std::string>());

@@ -180,7 +180,7 @@ int main(int argc, char* argv[]) {
 
     passes::rpc::register_rpc_loop_opt(std::move(ctx), target, category, true);
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"rpc"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"rpc"}, nullptr);
     loop_scheduling_pass.run(*builder, analysis_manager);
 
     // generate code for tuned sdfg

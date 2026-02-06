@@ -123,7 +123,7 @@ TEST_F(RPCLoopOptTest, Matmul_FMA) {
     auto& loop_analysis = analysis_manager.get<sdfg::analysis::LoopAnalysis>();
     auto outer_loops = loop_analysis.outermost_loops();
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"rpc"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"rpc"}, nullptr);
     loop_scheduling_pass.run(*builder_, analysis_manager);
 
     sdfg::analysis::AnalysisManager test_analysis_manager(builder_->subject());
@@ -169,7 +169,7 @@ TEST_F(RPCLoopOptTest, Double_Matmul) {
 
     EXPECT_EQ(outer_loops.size(), 2);
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"rpc"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"rpc"}, nullptr);
     loop_scheduling_pass.run(*builder_, analysis_manager);
 
     sdfg::analysis::AnalysisManager test_analysis_manager(builder_->subject());

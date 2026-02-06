@@ -66,7 +66,7 @@ TEST(OMPSchedulerTest, OuterParallelMapWithInnerMap) {
 
     analysis::AnalysisManager analysis_manager(builder.subject());
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"openmp"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"openmp"}, nullptr);
 
     EXPECT_TRUE(loop_scheduling_pass.run(builder, analysis_manager));
 
@@ -153,7 +153,7 @@ TEST(OMPSchedulerTest, OuterSequentialForWithInnerMaps) {
 
     analysis::AnalysisManager analysis_manager(builder.subject());
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"openmp"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"openmp"}, nullptr);
 
     EXPECT_TRUE(loop_scheduling_pass.run(builder, analysis_manager));
 
@@ -230,7 +230,7 @@ TEST(OMPSchedulerTest, OuterSequentialForWith2DMap) {
 
     analysis::AnalysisManager analysis_manager(builder.subject());
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"openmp"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"openmp"}, nullptr);
 
     EXPECT_TRUE(loop_scheduling_pass.run(builder, analysis_manager));
 
@@ -311,7 +311,7 @@ TEST(OMPSchedulerTest, OuterWhileWithInnerMaps) {
 
     analysis::AnalysisManager analysis_manager(builder.subject());
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"openmp"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"openmp"}, nullptr);
 
     EXPECT_TRUE(loop_scheduling_pass.run(builder, analysis_manager));
 

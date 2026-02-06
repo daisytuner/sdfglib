@@ -66,7 +66,7 @@ TEST(HighwaySchedulerTest, InnerMapWithOuterMap) {
 
     analysis::AnalysisManager analysis_manager(builder.subject());
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"highway"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"highway"}, nullptr);
 
     EXPECT_TRUE(loop_scheduling_pass.run(builder, analysis_manager));
 
@@ -153,7 +153,7 @@ TEST(HighwaySchedulerTest, InnerMapWithOuterFor) {
 
     analysis::AnalysisManager analysis_manager(builder.subject());
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"highway"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"highway"}, nullptr);
 
     EXPECT_TRUE(loop_scheduling_pass.run(builder, analysis_manager));
 
@@ -234,7 +234,7 @@ TEST(HighwaySchedulerTest, InnerMapWithOuterWhile) {
 
     analysis::AnalysisManager analysis_manager(builder.subject());
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"highway"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"highway"}, nullptr);
 
     EXPECT_TRUE(loop_scheduling_pass.run(builder, analysis_manager));
 

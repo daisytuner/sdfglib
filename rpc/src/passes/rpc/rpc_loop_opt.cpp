@@ -25,6 +25,7 @@ scheduler::SchedulerAction RpcLoopOpt::schedule(
     }
 
     transformations::RPCNodeTransform rpc_transform(loop, target_, category_, *rpc_context_);
+    rpc_transform.set_report(report_);
 
     if (rpc_transform.can_be_applied(builder, analysis_manager)) {
         rpc_transform.apply(builder, analysis_manager);
@@ -47,6 +48,7 @@ scheduler::SchedulerAction RpcLoopOpt::schedule(
 
     // Apply transfer tuning to the loop
     transformations::RPCNodeTransform rpc_transform(loop, target_, category_, *rpc_context_, print_steps_);
+    rpc_transform.set_report(report_);
     if (rpc_transform.can_be_applied(builder, analysis_manager)) {
         rpc_transform.apply(builder, analysis_manager);
         return scheduler::NEXT;

@@ -67,7 +67,7 @@ TEST(CUDASchedulerTest, OuterParallelMapWithInnerMap) {
 
     analysis::AnalysisManager analysis_manager(builder.subject());
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"cuda"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"cuda"}, nullptr);
 
     EXPECT_TRUE(loop_scheduling_pass.run(builder, analysis_manager));
 
@@ -154,7 +154,7 @@ TEST(CUDASchedulerTest, OuterSequentialForWithInnerMaps) {
 
     analysis::AnalysisManager analysis_manager(builder.subject());
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"cuda"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"cuda"}, nullptr);
 
     EXPECT_TRUE(loop_scheduling_pass.run(builder, analysis_manager));
 
@@ -231,7 +231,7 @@ TEST(CUDASchedulerTest, OuterSequentialForWith2DMap) {
 
     analysis::AnalysisManager analysis_manager(builder.subject());
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"cuda"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"cuda"}, nullptr);
 
     EXPECT_TRUE(loop_scheduling_pass.run(builder, analysis_manager));
 
@@ -312,7 +312,7 @@ TEST(CUDASchedulerTest, OuterWhileWithInnerMaps) {
 
     analysis::AnalysisManager analysis_manager(builder.subject());
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"cuda"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"cuda"}, nullptr);
 
     EXPECT_TRUE(loop_scheduling_pass.run(builder, analysis_manager));
 

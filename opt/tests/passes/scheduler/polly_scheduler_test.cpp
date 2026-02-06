@@ -58,7 +58,7 @@ TEST(PollySchedulerTest, SpatialProximity) {
 
     passes::scheduler::register_polly_scheduler(false);
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"polly"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"polly"}, nullptr);
     loop_scheduling_pass.run(builder, analysis_manager);
 
     auto new_seq = dynamic_cast<structured_control_flow::Sequence*>(&builder.subject().root().at(0).first);
@@ -134,7 +134,7 @@ TEST(PollySchedulerTest, OuterWhileWithSpatialProximity) {
 
     passes::scheduler::register_polly_scheduler(false);
 
-    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"polly"});
+    passes::scheduler::LoopSchedulingPass loop_scheduling_pass({"polly"}, nullptr);
 
     EXPECT_TRUE(loop_scheduling_pass.run(builder, analysis_manager));
 

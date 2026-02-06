@@ -34,6 +34,7 @@ bool LoopSchedulingPass::run_pass_target(
     if (!scheduler) {
         throw std::runtime_error("Unsupported scheduling target: " + target);
     }
+    scheduler->set_report(report_);
 
     // filter by compatible types, ensure that a scheduler does not encounter maps with incompatible schedule types
     for (int i = 0; i < queue.size(); i++) {
