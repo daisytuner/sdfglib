@@ -1,7 +1,6 @@
 from docc.python import native
 import numpy as np
 
-
 # Module-level constants
 GLOBAL_FLOAT = 0.5
 GLOBAL_INT = 42

@@ -1,5 +1,6 @@
 import argparse
 import inspect
+import sys
 import time
 import numpy as np
 import pytest
@@ -170,6 +171,10 @@ def run_pytest(
     target="none",
     verifier: SDFGVerification = None,
 ):
+    if sys.platform == "darwin":
+        if target == "cuda":
+            return
+    
     # Use the smallest size for testing
     size = "S"
     if "S" not in parameters:

@@ -36,15 +36,24 @@ void CCodeGenerator::emit_capture_context_init(std::ostream& ofs_source) const {
 }
 
 void CCodeGenerator::dispatch_includes() {
-    this->includes_stream_ << "#include <math.h>" << std::endl;
+#if defined(__linux__)
     this->includes_stream_ << "#include <alloca.h>" << std::endl;
     this->includes_stream_ << "#include <malloc.h>" << std::endl;
+#endif
+
+    this->includes_stream_ << "#include <math.h>" << std::endl;
     this->includes_stream_ << "#include <stdbool.h>" << std::endl;
     this->includes_stream_ << "#include <stdio.h>" << std::endl;
     this->includes_stream_ << "#include <stdlib.h>" << std::endl;
     this->includes_stream_ << "#include <string.h>" << std::endl;
-    this->includes_stream_ << "#include <cblas.h>" << std::endl;
     this->includes_stream_ << "#include <stdint.h>" << std::endl;
+
+#if defined(__APPLE__)
+    this->includes_stream_ << "#include <Accelerate/Accelerate.h>" << std::endl;
+#else
+    this->includes_stream_ << "#include <cblas.h>" << std::endl;
+#endif
+
     this->includes_stream_ << "#include <daisy_rtl/daisy_rtl.h>" << std::endl;
 };
 
