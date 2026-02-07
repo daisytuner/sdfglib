@@ -82,7 +82,7 @@ before-all = [
 [tool.cibuildwheel.macos]
 before-all = [
   # Build tools
-  "brew install cmake ninja",
+  "brew install cmake ninja uv",
 
   # Build dependencies (linked into the wheel)
   "brew install boost gmp isl nlohmann-json",
