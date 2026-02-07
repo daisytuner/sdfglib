@@ -76,8 +76,7 @@ bool LoopSchedulingPass::run_pass_target(
         SchedulerAction action;
         if (scheduling_info.loop_info.has_side_effects) {
             action = SchedulerAction::NEXT;
-        }
-        else if (auto while_loop = dynamic_cast<structured_control_flow::While*>(loop)) {
+        } else if (auto while_loop = dynamic_cast<structured_control_flow::While*>(loop)) {
             action = scheduler->schedule(builder, analysis_manager, *while_loop);
         } else if (auto structured_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(loop)) {
             action = scheduler->schedule(builder, analysis_manager, *structured_loop);
@@ -96,9 +95,7 @@ bool LoopSchedulingPass::run_pass_target(
                 break;
             }
             case SchedulerAction::CHILDREN: {
-
-                if (scheduling_info.loop_info.loopnest_index == -1 ||
-                    scheduling_info.loop_info.is_perfectly_nested ||
+                if (scheduling_info.loop_info.loopnest_index == -1 || scheduling_info.loop_info.is_perfectly_nested ||
                     scheduling_info.loop_info.num_maps <= 1) {
                     break;
                 }
