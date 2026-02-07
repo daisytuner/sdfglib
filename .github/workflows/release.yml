@@ -28,14 +28,7 @@ jobs:
         with:
           submodules: recursive
 
-      # Install Python from python.org for macOS (required by cibuildwheel)
-      - name: Set up Python (macOS)
-        if: runner.os == 'macOS'
-        uses: actions/setup-python@v5
-        with:
-          python-version: "${{ matrix.python == 'cp311' && '3.11' || matrix.python == 'cp312' && '3.12' || matrix.python == 'cp313' && '3.13' || '3.14' }}"
-          allow-prereleases: true
-
+      # Build python/ (docc-compiler)
       - uses: pypa/cibuildwheel@v3.3.1
         with:
           package-dir: python/

@@ -90,4 +90,5 @@ before-all = [
 
 # Ensure we build universal2 wheels for both Intel and Apple Silicon
 [tool.cibuildwheel.macos.environment]
+MACOSX_DEPLOYMENT_TARGET = "14.0"
 MAKEFLAGS = "-j$(sysctl -n hw.ncpu)"
