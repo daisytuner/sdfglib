@@ -27,6 +27,8 @@ public:
 
     static std::string target() { return "polly"; };
 
+    std::string name() override { return "PollyScheduler"; };
+
     std::unordered_set<ScheduleTypeCategory> compatible_types() override;
 };
 
