@@ -96,7 +96,7 @@ bool LoopSchedulingPass::run_pass_target(
             }
             case SchedulerAction::CHILDREN: {
                 if (scheduling_info.loop_info.loopnest_index == -1 || scheduling_info.loop_info.is_perfectly_nested ||
-                    scheduling_info.loop_info.num_maps <= 1) {
+                    scheduling_info.loop_info.num_maps <= 1 && !dynamic_cast<structured_control_flow::While*>(loop)) {
                     break;
                 }
                 // Only visit children in stencil/solver case
