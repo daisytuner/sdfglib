@@ -74,7 +74,10 @@ bool LoopSchedulingPass::run_pass_target(
         }
 
         SchedulerAction action;
-        if (auto while_loop = dynamic_cast<structured_control_flow::While*>(loop)) {
+        if (scheduling_info.loop_info.has_side_effects) {
+            action = SchedulerAction::NEXT;
+        }
+        else if (auto while_loop = dynamic_cast<structured_control_flow::While*>(loop)) {
             action = scheduler->schedule(builder, analysis_manager, *while_loop);
         } else if (auto structured_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(loop)) {
             action = scheduler->schedule(builder, analysis_manager, *structured_loop);
@@ -90,13 +93,16 @@ bool LoopSchedulingPass::run_pass_target(
         switch (action) {
             case SchedulerAction::NEXT: {
                 applied = true;
-                // Clear the report context after processing this loop
-                if (report_) {
-                    report_->no_loop();
-                }
                 break;
             }
             case SchedulerAction::CHILDREN: {
+
+                if (scheduling_info.loop_info.loopnest_index == -1 ||
+                    scheduling_info.loop_info.is_perfectly_nested ||
+                    scheduling_info.loop_info.num_maps <= 1) {
+                    break;
+                }
+                // Only visit children in stencil/solver case
                 auto children = loop_analysis2.children(loop);
                 if (children.empty()) {
                     continue;
