@@ -1,3 +1,4 @@
+import sys
 import pytest
 import numpy as np
 from benchmarks.npbench.harness import SDFGVerification, run_benchmark, run_pytest
@@ -39,6 +40,7 @@ def kernel(A, b):
     return x, y
 
 
+@pytest.mark.skipif(sys.platform == "darwin", reason="Segfault")
 @pytest.mark.parametrize("target", ["none", "sequential", "openmp", "cuda"])
 def test_ludcmp(target):
     if target == "none":

@@ -17,14 +17,28 @@
 #include <unordered_map>
 #include <vector>
 
+#ifdef __APPLE__
+#include <pthread.h>
+#endif
+
 #include "daisy_rtl/daisy_rtl.h"
 
-// gettid() wrapper for older glibc (< 2.30)
+// Cross-platform gettid() wrapper
+#ifdef __APPLE__
+static inline uint64_t gettid() {
+    uint64_t tid;
+    pthread_threadid_np(NULL, &tid);
+    return tid;
+}
+#elif defined(__linux__)
 #ifndef SYS_gettid
 #error "SYS_gettid unavailable on this system"
 #endif
-#if !__GLIBC_PREREQ(2, 30)
+#if !defined(__GLIBC__) || !__GLIBC_PREREQ(2, 30)
 static inline pid_t gettid() { return syscall(SYS_gettid); }
+#endif
+#else
+#error "Unsupported platform for gettid()"
 #endif
 
 #define REGION_CACHE_SIZE 10

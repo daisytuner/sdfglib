@@ -8,6 +8,7 @@ particularly:
 3. Proper handling of pointer dereference for 0-D arrays
 """
 
+import sys
 from docc.python import native
 import pytest
 import numpy as np
@@ -146,6 +147,9 @@ class TestScalarWithDotProduct:
         dot_sqrt(A)
         assert np.allclose(A, A_ref)
 
+    @pytest.mark.skipif(
+        sys.platform == "darwin", reason="Instrumentation not supported on macOS"
+    )
     def test_full_cholesky_pattern(self):
         """Test the full Cholesky-like pattern."""
 

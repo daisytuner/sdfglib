@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <string>
+#include <variant>
 #include "sdfg/analysis/users.h"
 #include "sdfg/passes/rpc/rpc_responses.h"
 #include "sdfg/structured_control_flow/control_flow_node.h"

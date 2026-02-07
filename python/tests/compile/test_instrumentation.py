@@ -1,9 +1,11 @@
-from docc.python import native
 import os
 import pytest
 import numpy as np
 import tempfile
 import json
+import sys
+
+from docc.python import native
 
 
 def test_instrumentation_compile():
@@ -20,6 +22,9 @@ def test_instrumentation_compile():
     vec_add_capture(A, B, C)
 
 
+@pytest.mark.skipif(
+    sys.platform == "darwin", reason="Instrumentation not supported on macOS"
+)
 def test_env_var_instrumentation():
     # Create a temporary file for the trace
     fd, trace_file = tempfile.mkstemp(suffix=".json")

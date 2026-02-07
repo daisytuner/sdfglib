@@ -11,6 +11,34 @@ Targets such as Generic, [Google Highway](https://github.com/google/highway), [O
 
 Furthermore, the repository contains runtime libraries for code instrumentation (performance counters and data capturing).
 
+## Compatibility
+
+### Frontend / Backend Matrix
+
+|                      | Highway | OpenMP | CUDA | ROCm | Metal |
+|----------------------|:-------:|:------:|:----:|:----:|:-----:|
+| Python (Linux)       | ✅      | ✅     | ✅   | 🚧   | ❌    |
+| Python (macOS)       | ✅      | ✅     | ❌   | ❌   | 🚧    |
+| PyTorch (Linux)      | ✅      | ✅     | ✅   | 🚧   | ❌    |
+| PyTorch (macOS)      | 🚧      | 🚧     | 🚧   | 🚧   | 🚧    |
+<!-- | ONNX (Linux)         | 🚧      | 🚧     | 🚧   | 🚧   | 🚧    |
+| ONNX (macOS)         | 🚧      | 🚧     | 🚧   | 🚧   | 🚧    | -->
+
+✅ Supported | ❌ Not supported | 🚧 Work in progress / planned
+
+### Targets
+
+Each target enables a specific combination of backends:
+
+| Target       | Transfer Tuning | Highway | OpenMP | CUDA | Metal |
+|--------------|:---------------:|:-------:|:------:|:----:|:-----:|
+| `sequential` | ✅              | ✅      | ❌     | ❌   | ❌    |
+| `openmp`     | 🚧              | ✅      | ✅     | ❌   | ❌    |
+| `cuda`       | 🚧              | ✅      | ✅     | ✅   | ❌    |
+<!-- | `metal`      | 🚧              | ✅      | ✅     | ❌   | ✅    | -->
+
+Transfer Tuning refers to a collection of dataflow optimizations using optimization databases.
+
 ## Quick Start
 
 Binary releases are published for each new version and can be downloaded via standard package managers.
@@ -43,7 +71,7 @@ C = matrix_multiply(A, B)
 
 For further details, check out the [component's README.md](./python/).
 
-### MLIR (PyTorch/ONNX)
+### MLIR (PyTorch)
 
 The MLIR frontend can be installed from PyPi:
 
