@@ -68,6 +68,11 @@ bool LoopSchedulingPass::run_pass_target(
         auto scheduling_info = scheduling_info_map.at(loop);
         scheduling_info_map.erase(loop);
 
+        // Set the report context to the current loop's index so transforms can report properly
+        if (report_ && scheduling_info.loop_info.loopnest_index >= 0) {
+            report_->in_outermost_loop(scheduling_info.loop_info.loopnest_index);
+        }
+
         SchedulerAction action;
         if (auto while_loop = dynamic_cast<structured_control_flow::While*>(loop)) {
             action = scheduler->schedule(builder, analysis_manager, *while_loop);
@@ -85,6 +90,10 @@ bool LoopSchedulingPass::run_pass_target(
         switch (action) {
             case SchedulerAction::NEXT: {
                 applied = true;
+                // Clear the report context after processing this loop
+                if (report_) {
+                    report_->no_loop();
+                }
                 break;
             }
             case SchedulerAction::CHILDREN: {
