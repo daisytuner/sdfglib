@@ -9,7 +9,8 @@ namespace scheduler {
 SchedulerAction OMPScheduler::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::StructuredLoop& loop
+    structured_control_flow::StructuredLoop& loop,
+    bool offload_unknown_sizes
 ) {
     if (auto map_node = dynamic_cast<structured_control_flow::Map*>(&loop)) {
         // Apply OpenMP parallelization to the loop
@@ -34,7 +35,8 @@ SchedulerAction OMPScheduler::schedule(
 SchedulerAction OMPScheduler::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::While& loop
+    structured_control_flow::While& loop,
+    bool offload_unknown_sizes
 ) {
     // Check if in not outermost loop
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();

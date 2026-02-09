@@ -35,13 +35,15 @@ public:
     virtual SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
-        structured_control_flow::StructuredLoop& loop
+        structured_control_flow::StructuredLoop& loop,
+        bool offload_unknown_sizes = false
     ) = 0;
 
     virtual SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
-        structured_control_flow::While& loop
+        structured_control_flow::While& loop,
+        bool offload_unknown_sizes = false
     ) = 0;
 
     virtual void set_report(PassReportConsumer* report) { report_ = report; }

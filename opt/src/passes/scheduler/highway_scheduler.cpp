@@ -11,7 +11,8 @@ namespace scheduler {
 SchedulerAction HighwayScheduler::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::StructuredLoop& loop
+    structured_control_flow::StructuredLoop& loop,
+    bool offload_unknown_sizes
 ) {
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
 
@@ -34,7 +35,8 @@ SchedulerAction HighwayScheduler::schedule(
 SchedulerAction HighwayScheduler::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::While& loop
+    structured_control_flow::While& loop,
+    bool offload_unknown_sizes
 ) {
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
 

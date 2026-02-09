@@ -16,7 +16,8 @@ RpcLoopOpt::
 scheduler::SchedulerAction RpcLoopOpt::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::StructuredLoop& loop
+    structured_control_flow::StructuredLoop& loop,
+    bool offload_unknown_sizes
 ) {
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto loop_info = loop_analysis.loop_info(&loop);
@@ -38,7 +39,8 @@ scheduler::SchedulerAction RpcLoopOpt::schedule(
 scheduler::SchedulerAction RpcLoopOpt::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::While& loop
+    structured_control_flow::While& loop,
+    bool offload_unknown_sizes
 ) {
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto loop_info = loop_analysis.loop_info(&loop);

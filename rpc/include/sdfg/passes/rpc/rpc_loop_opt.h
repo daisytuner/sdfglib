@@ -21,13 +21,15 @@ protected:
     scheduler::SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
-        structured_control_flow::StructuredLoop& loop
+        structured_control_flow::StructuredLoop& loop,
+        bool offload_unknown_sizes = false
     ) override;
 
     scheduler::SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
-        structured_control_flow::While& loop
+        structured_control_flow::While& loop,
+        bool offload_unknown_sizes = false
     ) override;
 
 public:

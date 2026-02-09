@@ -77,9 +77,9 @@ bool LoopSchedulingPass::run_pass_target(
         if (scheduling_info.loop_info.has_side_effects) {
             action = SchedulerAction::NEXT;
         } else if (auto while_loop = dynamic_cast<structured_control_flow::While*>(loop)) {
-            action = scheduler->schedule(builder, analysis_manager, *while_loop);
+            action = scheduler->schedule(builder, analysis_manager, *while_loop, offload_unknown_sizes_);
         } else if (auto structured_loop = dynamic_cast<structured_control_flow::StructuredLoop*>(loop)) {
-            action = scheduler->schedule(builder, analysis_manager, *structured_loop);
+            action = scheduler->schedule(builder, analysis_manager, *structured_loop, offload_unknown_sizes_);
         } else {
             throw InvalidSDFGException("LoopScheduler encountered non-loop in loop analysis.");
         }

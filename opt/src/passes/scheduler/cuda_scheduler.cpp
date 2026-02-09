@@ -13,11 +13,12 @@ namespace scheduler {
 SchedulerAction CUDAScheduler::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::StructuredLoop& loop
+    structured_control_flow::StructuredLoop& loop,
+    bool offload_unknown_sizes
 ) {
     if (auto map_node = dynamic_cast<structured_control_flow::Map*>(&loop)) {
         // Apply OpenMP parallelization to the loop
-        cuda::CUDATransform cuda_transform(*map_node, 32, false);
+        cuda::CUDATransform cuda_transform(*map_node, 32, offload_unknown_sizes);
         if (cuda_transform.can_be_applied(builder, analysis_manager)) {
             cuda_transform.apply(builder, analysis_manager);
 
@@ -70,7 +71,8 @@ SchedulerAction CUDAScheduler::schedule(
 SchedulerAction CUDAScheduler::schedule(
     builder::StructuredSDFGBuilder& builder,
     analysis::AnalysisManager& analysis_manager,
-    structured_control_flow::While& loop
+    structured_control_flow::While& loop,
+    bool offload_unknown_sizes
 ) {
     auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
     auto loop_info = loop_analysis.loop_info(&loop);
