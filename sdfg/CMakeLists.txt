@@ -144,6 +144,7 @@ set(SOURCE_FILES
     src/passes/dataflow/reference_propagation.cpp
     src/passes/dataflow/byte_reference_elimination.cpp
     src/passes/dataflow/memlet_linearization.cpp
+    src/passes/dataflow/tensor_to_pointer_conversion.cpp
     src/passes/memory/allocation_management.cpp
     src/passes/memory/insert_frees.cpp
     src/passes/schedules/expansion_pass.cpp

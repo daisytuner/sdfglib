@@ -56,15 +56,15 @@ public:
 
     static symbolic::MultiExpression strides_from_shape(const symbolic::MultiExpression& shape);
 
-    Tensor newaxis(size_t axis) const;
+    std::unique_ptr<Tensor> newaxis(size_t axis) const;
 
-    Tensor flip(size_t axis) const;
+    std::unique_ptr<Tensor> flip(size_t axis) const;
 
-    Tensor unsqueeze(size_t axis) const;
+    std::unique_ptr<Tensor> unsqueeze(size_t axis) const;
 
-    Tensor squeeze(size_t axis) const;
+    std::unique_ptr<Tensor> squeeze(size_t axis) const;
 
-    Tensor squeeze() const;
+    std::unique_ptr<Tensor> squeeze() const;
 };
 
 } // namespace types

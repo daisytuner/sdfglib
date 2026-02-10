@@ -66,6 +66,7 @@ set(TEST_FILES
     passes/dataflow/reference_propagation_test.cpp
     passes/dataflow/tasklet_fusion_test.cpp
     passes/dataflow/memlet_linearization_test.cpp
+    passes/dataflow/tensor_to_pointer_conversion_test.cpp
     passes/memory/allocation_management_test.cpp
     passes/memory/insert_frees_test.cpp
     passes/pipeline_test.cpp

@@ -116,7 +116,7 @@ std::string Tensor::print() const {
     return result;
 };
 
-Tensor Tensor::newaxis(size_t axis) const {
+std::unique_ptr<Tensor> Tensor::newaxis(size_t axis) const {
     if (axis > this->shape_.size()) {
         throw std::out_of_range("axis out of range for newaxis");
     }
@@ -127,7 +127,7 @@ Tensor Tensor::newaxis(size_t axis) const {
     new_shape.insert(new_shape.begin() + axis, SymEngine::integer(1));
     new_strides.insert(new_strides.begin() + axis, SymEngine::integer(0));
 
-    return Tensor(
+    return std::make_unique<Tensor>(
         this->storage_type(),
         this->alignment(),
         this->initializer(),
@@ -138,7 +138,7 @@ Tensor Tensor::newaxis(size_t axis) const {
     );
 }
 
-Tensor Tensor::flip(size_t axis) const {
+std::unique_ptr<Tensor> Tensor::flip(size_t axis) const {
     if (axis >= this->shape_.size()) {
         throw std::out_of_range("axis out of range for flip");
     }
@@ -157,7 +157,7 @@ Tensor Tensor::flip(size_t axis) const {
         new_offset = SymEngine::add(new_offset, offset_adjustment);
     }
 
-    return Tensor(
+    return std::make_unique<Tensor>(
         this->storage_type(),
         this->alignment(),
         this->initializer(),
@@ -168,9 +168,9 @@ Tensor Tensor::flip(size_t axis) const {
     );
 }
 
-Tensor Tensor::unsqueeze(size_t axis) const { return this->newaxis(axis); }
+std::unique_ptr<Tensor> Tensor::unsqueeze(size_t axis) const { return this->newaxis(axis); }
 
-Tensor Tensor::squeeze(size_t axis) const {
+std::unique_ptr<Tensor> Tensor::squeeze(size_t axis) const {
     if (axis >= this->shape_.size()) {
         throw std::out_of_range("axis out of range for squeeze");
     }
@@ -189,7 +189,7 @@ Tensor Tensor::squeeze(size_t axis) const {
     new_shape.erase(new_shape.begin() + axis);
     new_strides.erase(new_strides.begin() + axis);
 
-    return Tensor(
+    return std::make_unique<Tensor>(
         this->storage_type(),
         this->alignment(),
         this->initializer(),
@@ -200,7 +200,7 @@ Tensor Tensor::squeeze(size_t axis) const {
     );
 }
 
-Tensor Tensor::squeeze() const {
+std::unique_ptr<Tensor> Tensor::squeeze() const {
     symbolic::MultiExpression new_shape;
     symbolic::MultiExpression new_strides;
 
@@ -217,7 +217,7 @@ Tensor Tensor::squeeze() const {
         }
     }
 
-    return Tensor(
+    return std::make_unique<Tensor>(
         this->storage_type(),
         this->alignment(),
         this->initializer(),
