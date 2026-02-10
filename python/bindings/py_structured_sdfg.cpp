@@ -23,6 +23,7 @@
 #include <sdfg/passes/gemm_expansion_pass.h>
 #include <sdfg/passes/normalization/normalization.h>
 #include <sdfg/passes/offloading/cuda_library_node_rewriter_pass.h>
+#include <sdfg/passes/offloading/onnx_library_node_rewriter_pass.h>
 #include <sdfg/passes/opt_pipeline.h>
 #include <sdfg/passes/pipeline.h>
 #include <sdfg/passes/scheduler/cuda_scheduler.h>
@@ -315,6 +316,9 @@ void PyStructuredSDFG::schedule(const std::string& target, const std::string& ca
 
         sdfg::cuda::CudaLibraryNodeRewriterPass cuda_library_node_rewriter_pass;
         cuda_library_node_rewriter_pass.run(builder, analysis_manager);
+    } else if (target == "onnx") {
+        sdfg::passes::ONNXLibraryNodeRewriterPass onnx_library_node_rewriter_pass;
+        onnx_library_node_rewriter_pass.run(builder, analysis_manager);
     }
 }
 
@@ -399,6 +403,11 @@ std::string PyStructuredSDFG::compile(
     std::unordered_set<std::string> object_files;
     for (const auto& lib_file : lib_files) {
         std::filesystem::path lib_path(lib_file);
+        std::string extension = lib_path.extension().string();
+        if (extension == ".json") {
+            continue;
+        }
+
         std::string name = lib_path.stem().string();
         std::string object_file = build_path.string() + "/" + name + ".o";
         std::stringstream cmd;
@@ -483,6 +492,11 @@ std::string PyStructuredSDFG::compile(
     if (target == "cuda") {
         cmd << " /usr/local/cuda/lib64/libcudart.so";
         cmd << " /usr/local/cuda/lib64/libcublas.so";
+    }
+    if (target == "onnx") {
+        cmd << " -L/usr/local/onnxruntime/lib";
+        cmd << " -lonnxruntime";
+        cmd << " -ldl"; // Required for dladdr()
     }
     cmd << " -o " << lib_path.string();
 
