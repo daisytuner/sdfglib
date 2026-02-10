@@ -63,6 +63,12 @@ void FunctionBuilder::set_return_type(const types::IType& type) const { this->fu
 
 const types::IType& FunctionBuilder::
     add_container(const std::string& name, const types::IType& type, bool is_argument, bool is_external) const {
+    if (type.type_id() == types::TypeID::Tensor) {
+        throw InvalidSDFGException(
+            "Tensor types are virtual types, add a pointer instead and use the tensor type on memlets"
+        );
+    }
+
     if (is_argument && is_external) {
         throw InvalidSDFGException("Container " + name + " cannot be both an argument and an external");
     }

@@ -13,10 +13,10 @@
 namespace sdfg {
 namespace types {
 
-const types::IType&
+std::unique_ptr<types::IType>
 infer_type_internal(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset) {
     if (subset.empty()) {
-        return type;
+        return type.clone();
     }
 
     if (type.type_id() == TypeID::Scalar) {
@@ -24,7 +24,7 @@ infer_type_internal(const sdfg::Function& function, const types::IType& type, co
             throw InvalidSDFGException("Scalar type must have no subset");
         }
 
-        return type;
+        return type.clone();
     } else if (type.type_id() == TypeID::Array) {
         auto& array_type = static_cast<const types::Array&>(type);
 
@@ -41,6 +41,25 @@ infer_type_internal(const sdfg::Function& function, const types::IType& type, co
         }
         auto member = SymEngine::rcp_dynamic_cast<const SymEngine::Integer>(subset.at(0));
         return infer_type_internal(function, definition.member_type(member), element_subset);
+    } else if (type.type_id() == TypeID::Tensor) {
+        auto& tensor_type = static_cast<const types::Tensor&>(type);
+
+        data_flow::Subset element_subset(subset.begin() + 1, subset.end());
+
+        if (tensor_type.shape().size() == 1) {
+            return infer_type_internal(function, tensor_type.element_type(), element_subset);
+        } else {
+            auto inner_tensor = std::make_unique<types::Tensor>(
+                tensor_type.storage_type(),
+                tensor_type.alignment(),
+                tensor_type.initializer(),
+                tensor_type.element_type(),
+                symbolic::MultiExpression(tensor_type.shape().begin() + 1, tensor_type.shape().end()),
+                symbolic::MultiExpression(tensor_type.strides().begin() + 1, tensor_type.strides().end()),
+                tensor_type.offset()
+            );
+            return infer_type_internal(function, *inner_tensor, element_subset);
+        }
     } else if (type.type_id() == TypeID::Pointer) {
         throw InvalidSDFGException("Subset references non-contiguous memory");
     }
@@ -48,9 +67,10 @@ infer_type_internal(const sdfg::Function& function, const types::IType& type, co
     throw InvalidSDFGException("Type inference failed because of unknown type");
 };
 
-const types::IType& infer_type(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset) {
+std::unique_ptr<types::IType>
+infer_type(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset) {
     if (subset.empty()) {
-        return type;
+        return type.clone();
     }
 
     if (type.type_id() == TypeID::Pointer) {
@@ -96,6 +116,8 @@ const IType& peel_to_innermost_element(const IType& type, int follow_ptr) {
             return peel_to_innermost_element(dynamic_cast<const types::Array&>(type).element_type(), next_follow);
         case TypeID::Reference:
             return peel_to_innermost_element(dynamic_cast<const codegen::Reference&>(type).reference_type(), next_follow);
+        case TypeID::Tensor:
+            return peel_to_innermost_element(dynamic_cast<const types::Tensor&>(type).element_type(), next_follow);
         case TypeID::Pointer:
             if (follow_ptr != 0) {
                 if (follow_ptr != PEEL_TO_INNERMOST_ELEMENT_FOLLOW_ONLY_OUTER_PTR) {
@@ -138,6 +160,18 @@ symbolic::Expression get_type_size(const types::IType& type, bool allow_comp_tim
         } else {
             return {};
         }
+    } else if (id == TypeID::Tensor) {
+        auto& tensor = dynamic_cast<const types::Tensor&>(type);
+        auto inner_element_size = get_type_size(tensor.element_type(), allow_comp_time_eval);
+        if (!inner_element_size.is_null()) {
+            symbolic::Expression num_elements = symbolic::one();
+            for (const auto& dim : tensor.shape()) {
+                num_elements = symbolic::mul(num_elements, dim);
+            }
+            return symbolic::mul(inner_element_size, num_elements);
+        } else {
+            return {};
+        }
     }
 
     if (only_symbolic) {
@@ -166,6 +200,8 @@ const types::IType* peel_to_next_element(const types::IType& type) {
             return &dynamic_cast<const types::Array&>(type).element_type();
         case TypeID::Reference:
             return &dynamic_cast<const codegen::Reference&>(type).reference_type();
+        case TypeID::Tensor:
+            return &dynamic_cast<const types::Tensor&>(type).element_type();
         case TypeID::Pointer: {
             auto& pointer_type = dynamic_cast<const types::Pointer&>(type);
             if (pointer_type.has_pointee_type()) {

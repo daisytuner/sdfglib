@@ -42,7 +42,8 @@ namespace types {
  * @param subset The subset/index expressions defining the access
  * @return A const reference to the inferred type
  */
-const types::IType& infer_type(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset);
+std::unique_ptr<types::IType>
+infer_type(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset);
 
 /**
  * @brief Reconstructs an array type with a new inner element type

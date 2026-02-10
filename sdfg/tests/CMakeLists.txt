@@ -66,6 +66,7 @@ set(TEST_FILES
     passes/dataflow/reference_propagation_test.cpp
     passes/dataflow/tasklet_fusion_test.cpp
     passes/dataflow/memlet_linearization_test.cpp
+    passes/dataflow/tensor_to_pointer_conversion_test.cpp
     passes/memory/allocation_management_test.cpp
     passes/memory/insert_frees_test.cpp
     passes/pipeline_test.cpp
@@ -111,6 +112,7 @@ set(TEST_FILES
     types/scalar_test.cpp
     types/sizeof_test.cpp
     types/structure_test.cpp
+    types/tensor_test.cpp
     types/utils_test.cpp
     visitor/structured_sdfg_visitor_test.cpp
     visualizer/dot_visualizer_test.cpp

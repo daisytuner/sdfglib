@@ -279,7 +279,7 @@ public:
      * @param function Function context for type inference
      * @return The inferred result type
      */
-    const types::IType& result_type(const Function& function) const;
+    std::unique_ptr<types::IType> result_type(const Function& function) const;
 
     /**
      * @brief Clone this memlet for graph transformations

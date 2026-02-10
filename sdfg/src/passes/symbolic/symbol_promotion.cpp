@@ -164,8 +164,8 @@ bool SymbolPromotion::can_be_applied(
         case data_flow::TaskletCode::int_or: {
             // Only for booleans
             for (auto& iedge : dataflow.in_edges(*tasklet)) {
-                auto& type = iedge.result_type(sdfg);
-                if (type.primitive_type() != types::PrimitiveType::Bool) {
+                auto type = iedge.result_type(sdfg);
+                if (type->primitive_type() != types::PrimitiveType::Bool) {
                     return false;
                 }
             }
@@ -178,8 +178,8 @@ bool SymbolPromotion::can_be_applied(
             // Only for booleans
             bool all_bool = true;
             for (auto& iedge : dataflow.in_edges(*tasklet)) {
-                auto& type = iedge.result_type(sdfg);
-                if (type.primitive_type() != types::PrimitiveType::Bool) {
+                auto type = iedge.result_type(sdfg);
+                if (type->primitive_type() != types::PrimitiveType::Bool) {
                     all_bool = false;
                 }
             }
@@ -192,7 +192,7 @@ bool SymbolPromotion::can_be_applied(
             // check if one input is -1 and the rest are signed integers
             bool one_is_neg_one = false;
             for (auto& iedge : dataflow.in_edges(*tasklet)) {
-                auto& type = iedge.result_type(sdfg);
+                auto type = iedge.result_type(sdfg);
                 if (auto const_node = dynamic_cast<const data_flow::ConstantNode*>(&iedge.src())) {
                     int64_t value = helpers::parse_number_signed(const_node->data());
                     if (value == -1) {
@@ -365,8 +365,8 @@ void SymbolPromotion::apply(
         case data_flow::TaskletCode::int_xor: {
             bool all_bool = true;
             for (auto& iedge : dataflow.in_edges(*tasklet)) {
-                auto& type = iedge.result_type(builder.subject());
-                if (type.primitive_type() != types::PrimitiveType::Bool) {
+                auto type = iedge.result_type(builder.subject());
+                if (type->primitive_type() != types::PrimitiveType::Bool) {
                     all_bool = false;
                 }
             }
@@ -388,7 +388,6 @@ void SymbolPromotion::apply(
                 bool neg_1_lhs = false;
                 symbolic::Expression other_op;
                 for (auto& iedge : dataflow.in_edges(*tasklet)) {
-                    auto& type = iedge.result_type(builder.subject());
                     if (auto const_node = dynamic_cast<const data_flow::ConstantNode*>(&iedge.src())) {
                     } else {
                         other_op = as_symbol(dataflow, *tasklet, iedge.dst_conn());

@@ -322,7 +322,7 @@ void TestCast(std::vector<size_t> shape_dims) {
             EXPECT_EQ(edge.subset().size(), 1) << "Input subset size is not 1 for CastNode";
         }
         // Check that input type is the source type
-        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), SourceType);
+        EXPECT_EQ(edge.result_type(sdfg)->primitive_type(), SourceType);
     }
 
     // Check output edges
@@ -331,7 +331,7 @@ void TestCast(std::vector<size_t> shape_dims) {
             EXPECT_EQ(edge.subset().size(), 1) << "Output subset size is not 1 for CastNode";
         }
         // Check that output type is the target type
-        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), TargetType);
+        EXPECT_EQ(edge.result_type(sdfg)->primitive_type(), TargetType);
     }
 }
 
