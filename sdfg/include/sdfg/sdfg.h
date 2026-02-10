@@ -23,11 +23,6 @@
 #include "sdfg/function.h"
 #include "sdfg/graph/graph.h"
 #include "sdfg/helpers/helpers.h"
-#include "sdfg/types/array.h"
-#include "sdfg/types/pointer.h"
-#include "sdfg/types/scalar.h"
-#include "sdfg/types/structure.h"
-#include "sdfg/types/type.h"
 
 namespace sdfg {
 

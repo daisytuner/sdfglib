@@ -145,6 +145,12 @@ void DataFlowDispatcher::dispatch_deref_src(PrettyPrinter& stream, const data_fl
             throw InvalidSDFGException("Memlet: Dereference memlets cannot have reference or function destination types"
             );
         }
+        case types::TypeID::Tensor: {
+            throw InvalidSDFGException(
+                "Memlet: Dereference memlets cannot have tensor destination types. Tensors must be lowered to pointers "
+                "before code generation."
+            );
+        }
     }
     stream << ";" << std::endl;
 
@@ -196,6 +202,12 @@ void DataFlowDispatcher::dispatch_deref_dst(PrettyPrinter& stream, const data_fl
         case types::TypeID::Function:
         case types::TypeID::Reference: {
             throw InvalidSDFGException("Memlet: Dereference memlets cannot have source of type Function or Reference");
+        }
+        case types::TypeID::Tensor: {
+            throw InvalidSDFGException(
+                "Memlet: Dereference memlets cannot have tensor source types. Tensors must be lowered to pointers "
+                "before code generation."
+            );
         }
     }
     stream << ";" << std::endl;

@@ -111,6 +111,7 @@ set(TEST_FILES
     types/scalar_test.cpp
     types/sizeof_test.cpp
     types/structure_test.cpp
+    types/tensor_test.cpp
     types/utils_test.cpp
     visitor/structured_sdfg_visitor_test.cpp
     visualizer/dot_visualizer_test.cpp

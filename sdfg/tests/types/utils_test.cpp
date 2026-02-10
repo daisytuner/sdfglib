@@ -85,6 +85,32 @@ TEST(TypeInferenceTest, StructureMember) {
     EXPECT_EQ(inferred, scalar_type2);
 }
 
+TEST(TypeInferenceTest, Tensor) {
+    builder::SDFGBuilder builder("test", FunctionType_CPU);
+    auto& function = builder.subject();
+
+    types::Scalar scalar_type(types::PrimitiveType::Int32);
+    symbolic::MultiExpression shape = {symbolic::integer(10)};
+    types::Tensor tensor_1d(scalar_type, shape);
+
+    symbolic::MultiExpression shape_2d = {symbolic::integer(10), symbolic::integer(20)};
+    types::Tensor tensor_2d(scalar_type, shape_2d);
+
+    data_flow::Subset subset = {symbolic::integer(0)};
+    auto& inferred = types::infer_type(function, tensor_1d, subset);
+    EXPECT_EQ(inferred, scalar_type);
+
+    auto& inferred2 = types::infer_type(function, tensor_2d, subset);
+    EXPECT_TRUE(inferred2.type_id() == types::TypeID::Tensor);
+
+    const auto& inferred_tensor = static_cast<const types::Tensor&>(inferred2);
+    EXPECT_EQ(inferred_tensor.element_type(), scalar_type);
+    EXPECT_EQ(inferred_tensor.shape().size(), 1);
+    EXPECT_TRUE(symbolic::eq(inferred_tensor.shape().at(0), symbolic::integer(20)));
+    EXPECT_EQ(inferred_tensor.strides().size(), 1);
+    EXPECT_TRUE(symbolic::eq(inferred_tensor.strides().at(0), symbolic::integer(1)));
+}
+
 TEST(PeelToNextElement, Scalar) {
     types::Scalar scalar_type(types::PrimitiveType::Int32);
     auto* peeled = types::peel_to_next_element(scalar_type);
@@ -102,6 +128,14 @@ TEST(PeelToNextElement, Pointer) {
     types::Scalar scalar_type(types::PrimitiveType::Int32);
     types::Pointer pointer_type(scalar_type);
     auto* peeled = types::peel_to_next_element(pointer_type);
+    EXPECT_EQ(*peeled, scalar_type);
+}
+
+TEST(PeelToNextElement, Tensor) {
+    types::Scalar scalar_type(types::PrimitiveType::Int32);
+    symbolic::MultiExpression shape = {symbolic::integer(10)};
+    types::Tensor tensor_type(scalar_type, shape);
+    auto* peeled = types::peel_to_next_element(tensor_type);
     EXPECT_EQ(*peeled, scalar_type);
 }
 

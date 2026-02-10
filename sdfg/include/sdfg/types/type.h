@@ -510,6 +510,7 @@ enum class TypeID {
     Pointer, ///< Pointer type
     Reference, ///< Reference type
     Function, ///< Function type
+    Tensor, ///< Tensor type (multi-dimensional arrays)
 };
 
 /**
