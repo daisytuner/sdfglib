@@ -406,6 +406,24 @@ void JSONSerializer::type_to_json(nlohmann::json& j, const types::IType& type) {
         nlohmann::json reference_type_json;
         type_to_json(reference_type_json, reference_type->reference_type());
         j["reference_type"] = reference_type_json;
+    } else if (auto tensor_type = dynamic_cast<const types::Tensor*>(&type)) {
+        j["type"] = "tensor";
+        nlohmann::json element_type_json;
+        type_to_json(element_type_json, tensor_type->element_type());
+        j["element_type"] = element_type_json;
+        j["shape"] = nlohmann::json::array();
+        for (const auto& dim : tensor_type->shape()) {
+            j["shape"].push_back(expression(dim));
+        }
+        j["strides"] = nlohmann::json::array();
+        for (const auto& stride : tensor_type->strides()) {
+            j["strides"].push_back(expression(stride));
+        }
+        j["offset"] = expression(tensor_type->offset());
+        j["storage_type"] = nlohmann::json::object();
+        storage_type_to_json(j["storage_type"], tensor_type->storage_type());
+        j["initializer"] = tensor_type->initializer();
+        j["alignment"] = tensor_type->alignment();
     } else {
         throw std::runtime_error("Unknown type");
     }
@@ -1042,6 +1060,37 @@ std::unique_ptr<types::IType> JSONSerializer::json_to_type(const nlohmann::json&
             assert(j.contains("reference_type"));
             std::unique_ptr<types::IType> reference_type = json_to_type(j["reference_type"]);
             return std::make_unique<sdfg::codegen::Reference>(*reference_type);
+        } else if (j["type"] == "tensor") {
+            // Deserialize tensor type
+            assert(j.contains("element_type"));
+            std::unique_ptr<types::IType> element_type = json_to_type(j["element_type"]);
+            assert(j.contains("shape"));
+            std::vector<symbolic::Expression> shape;
+            for (const auto& dim : j["shape"]) {
+                assert(dim.is_string());
+                std::string dim_str = dim;
+                auto expr = symbolic::parse(dim_str);
+                shape.push_back(expr);
+            }
+            assert(j.contains("strides"));
+            std::vector<symbolic::Expression> strides;
+            for (const auto& stride : j["strides"]) {
+                assert(stride.is_string());
+                std::string stride_str = stride;
+                auto expr = symbolic::parse(stride_str);
+                strides.push_back(expr);
+            }
+            assert(j.contains("offset"));
+            symbolic::Expression offset = symbolic::parse(j["offset"].get<std::string>());
+            assert(j.contains("storage_type"));
+            types::StorageType storage_type = json_to_storage_type(j["storage_type"]);
+            assert(j.contains("initializer"));
+            std::string initializer = j["initializer"];
+            assert(j.contains("alignment"));
+            size_t alignment = j["alignment"];
+            return std::make_unique<types::Tensor>(
+                storage_type, alignment, initializer, dynamic_cast<types::Scalar&>(*element_type), shape, strides, offset
+            );
         } else {
             throw std::runtime_error("Unknown type");
         }

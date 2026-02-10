@@ -418,6 +418,7 @@ void AssumptionsAnalysis::determine_parameters(analysis::AnalysisManager& analys
             case types::TypeID::Structure:
             case types::TypeID::Reference:
             case types::TypeID::Function:
+            case types::TypeID::Tensor:
                 continue;
         }
         for (auto user : this->users_analysis_->uses(container)) {

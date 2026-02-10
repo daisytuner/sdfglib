@@ -149,8 +149,8 @@ void CallNodeDispatcher::dispatch_code(
 
         // Return type
         if (ret_memlet) {
-            auto& ret_type = ret_memlet->result_type(function_);
-            func_ptr_type = language_extension_.declaration("", ret_type) + " (*)";
+            auto ret_type = ret_memlet->result_type(function_);
+            func_ptr_type = language_extension_.declaration("", *ret_type) + " (*)";
         } else {
             func_ptr_type = "void (*)";
         }
@@ -160,8 +160,8 @@ void CallNodeDispatcher::dispatch_code(
         for (size_t i = 0; i < node.inputs().size(); i++) {
             auto memlet_in = input_memlets.find(node.inputs().at(i));
             assert(memlet_in != input_memlets.end());
-            auto& in_type = memlet_in->second->result_type(function_);
-            func_ptr_type += language_extension_.declaration("", in_type);
+            auto in_type = memlet_in->second->result_type(function_);
+            func_ptr_type += language_extension_.declaration("", *in_type);
             if (i < node.inputs().size() - 1) {
                 func_ptr_type += ", ";
             }

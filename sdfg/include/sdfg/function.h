@@ -22,6 +22,7 @@
 #include "sdfg/types/pointer.h"
 #include "sdfg/types/scalar.h"
 #include "sdfg/types/structure.h"
+#include "sdfg/types/tensor.h"
 #include "sdfg/types/type.h"
 
 using json = nlohmann::json;
