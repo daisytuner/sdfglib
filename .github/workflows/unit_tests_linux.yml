@@ -215,7 +215,7 @@ jobs:
 
           python -m pip install --upgrade pip
           pip install pybind11 pytest coverage black==25.9.0 build scikit-build-core
-          pip install numpy scipy
+          pip install numpy scipy torch
 
       - name: Build
         run: |
@@ -254,8 +254,6 @@ jobs:
       - name: Integration Tests
         if: matrix.python-version == '3.11' || matrix.python-version == '3.12'
         run: |
-          LD_LIBRARY_PATH="${pythonLocation}/lib" pip install --pre torch-mlir torchvision --extra-index-url https://download.pytorch.org/whl/nightly/cpu -f https://github.com/llvm/torch-mlir-release/releases/expanded_assets/dev-wheels
-
           cd mlir/
           pytest -v benchmarks/
 
