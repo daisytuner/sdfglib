@@ -8,25 +8,27 @@ namespace passes {
 namespace scheduler {
 
 class HighwayScheduler : public LoopScheduler {
-protected:
+public:
     SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
         structured_control_flow::StructuredLoop& loop,
-        const SchedulerLoopInfo& loop_info
+        bool offload_unknown_sizes = false
     ) override;
 
     SchedulerAction schedule(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
         structured_control_flow::While& loop,
-        const SchedulerLoopInfo& loop_info
+        bool offload_unknown_sizes = false
     ) override;
 
-public:
+
+    static std::string target() { return "highway"; };
+
     std::string name() override { return "HighwayScheduler"; };
 
-    bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
+    std::unordered_set<ScheduleTypeCategory> compatible_types() override;
 };
 
 } // namespace scheduler
