@@ -444,8 +444,8 @@ data_flow::Memlet& SDFGBuilder::add_computational_memlet(
     } else {
         src_type = &this->sdfg_->type(src.data());
     }
-    auto& base_type = types::infer_type(*this->sdfg_, *src_type, subset);
-    if (base_type.type_id() != types::TypeID::Scalar) {
+    auto base_type = types::infer_type(*this->sdfg_, *src_type, subset);
+    if (base_type->type_id() != types::TypeID::Scalar) {
         throw InvalidSDFGException("Computational memlet must have a scalar type");
     }
     return this->add_memlet(state, src, "void", dst, dst_conn, subset, *src_type, debug_info);
@@ -460,8 +460,8 @@ data_flow::Memlet& SDFGBuilder::add_computational_memlet(
     const DebugInfo& debug_info
 ) {
     auto& dst_type = this->function().type(dst.data());
-    auto& base_type = types::infer_type(this->function(), dst_type, subset);
-    if (base_type.type_id() != types::TypeID::Scalar) {
+    auto base_type = types::infer_type(this->function(), dst_type, subset);
+    if (base_type->type_id() != types::TypeID::Scalar) {
         throw InvalidSDFGException("Computational memlet must have a scalar type");
     }
     return this->add_memlet(state, src, src_conn, dst, "void", subset, dst_type, debug_info);

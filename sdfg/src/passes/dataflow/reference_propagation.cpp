@@ -49,9 +49,9 @@ bool ReferencePropagation::
         expanded_subset.push_back(dim);
     }
     try {
-        auto& new_res_type = types::infer_type(function, ref_type, expanded_subset);
-        auto& tar_res_type = target.result_type(function);
-        return new_res_type == tar_res_type;
+        auto new_res_type = types::infer_type(function, ref_type, expanded_subset);
+        auto tar_res_type = target.result_type(function);
+        return *new_res_type == *tar_res_type;
     } catch (const InvalidSDFGException&) {
         return false;
     }
@@ -164,8 +164,8 @@ bool ReferencePropagation::run_pass(builder::StructuredSDFGBuilder& builder, ana
             // Criterion: Must be computational memlets
             // Criterion: No type casting
 
-            auto& deref_type = move_edge.result_type(builder.subject());
-            sdfg::types::Pointer ref_type(static_cast<const types::IType&>(deref_type));
+            auto deref_type = move_edge.result_type(builder.subject());
+            sdfg::types::Pointer ref_type(static_cast<const types::IType&>(*deref_type));
 
             bool safe = true;
             auto& user_graph = user_node.get_parent();

@@ -715,10 +715,10 @@ TEST(TensorPrimitiveTypeTest, CastNodeInt32ToFloat) {
     // Verify input and output types
     auto& dataflow = tasklet->get_parent();
     for (auto& edge : dataflow.in_edges(*tasklet)) {
-        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::Int32);
+        EXPECT_EQ(edge.result_type(sdfg)->primitive_type(), types::PrimitiveType::Int32);
     }
     for (auto& edge : dataflow.out_edges(*tasklet)) {
-        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::Float);
+        EXPECT_EQ(edge.result_type(sdfg)->primitive_type(), types::PrimitiveType::Float);
     }
 }
 
@@ -769,10 +769,10 @@ TEST(TensorPrimitiveTypeTest, CastNodeFloatToInt32) {
     // Verify input and output types
     auto& dataflow = tasklet->get_parent();
     for (auto& edge : dataflow.in_edges(*tasklet)) {
-        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::Float);
+        EXPECT_EQ(edge.result_type(sdfg)->primitive_type(), types::PrimitiveType::Float);
     }
     for (auto& edge : dataflow.out_edges(*tasklet)) {
-        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::Int32);
+        EXPECT_EQ(edge.result_type(sdfg)->primitive_type(), types::PrimitiveType::Int32);
     }
 }
 
@@ -823,10 +823,10 @@ TEST(TensorPrimitiveTypeTest, CastNodeFloatToDouble) {
     // Verify input and output types
     auto& dataflow = tasklet->get_parent();
     for (auto& edge : dataflow.in_edges(*tasklet)) {
-        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::Float);
+        EXPECT_EQ(edge.result_type(sdfg)->primitive_type(), types::PrimitiveType::Float);
     }
     for (auto& edge : dataflow.out_edges(*tasklet)) {
-        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::Double);
+        EXPECT_EQ(edge.result_type(sdfg)->primitive_type(), types::PrimitiveType::Double);
     }
 }
 
@@ -877,9 +877,9 @@ TEST(TensorPrimitiveTypeTest, CastNodeUInt32ToInt64) {
     // Verify input and output types
     auto& dataflow = tasklet->get_parent();
     for (auto& edge : dataflow.in_edges(*tasklet)) {
-        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::UInt32);
+        EXPECT_EQ(edge.result_type(sdfg)->primitive_type(), types::PrimitiveType::UInt32);
     }
     for (auto& edge : dataflow.out_edges(*tasklet)) {
-        EXPECT_EQ(edge.result_type(sdfg).primitive_type(), types::PrimitiveType::Int64);
+        EXPECT_EQ(edge.result_type(sdfg)->primitive_type(), types::PrimitiveType::Int64);
     }
 }

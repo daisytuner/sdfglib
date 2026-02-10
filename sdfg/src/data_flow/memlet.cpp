@@ -276,7 +276,7 @@ const types::IType& Memlet::base_type() const { return *this->base_type_; };
 
 void Memlet::set_base_type(const types::IType& base_type) { this->base_type_ = base_type.clone(); };
 
-const types::IType& Memlet::result_type(const Function& function) const {
+std::unique_ptr<types::IType> Memlet::result_type(const Function& function) const {
     return types::infer_type(function, *this->base_type_, this->subset_);
 };
 

@@ -13,10 +13,10 @@
 namespace sdfg {
 namespace types {
 
-const types::IType&
+std::unique_ptr<types::IType>
 infer_type_internal(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset) {
     if (subset.empty()) {
-        return type;
+        return type.clone();
     }
 
     if (type.type_id() == TypeID::Scalar) {
@@ -24,7 +24,7 @@ infer_type_internal(const sdfg::Function& function, const types::IType& type, co
             throw InvalidSDFGException("Scalar type must have no subset");
         }
 
-        return type;
+        return type.clone();
     } else if (type.type_id() == TypeID::Array) {
         auto& array_type = static_cast<const types::Array&>(type);
 
@@ -67,9 +67,10 @@ infer_type_internal(const sdfg::Function& function, const types::IType& type, co
     throw InvalidSDFGException("Type inference failed because of unknown type");
 };
 
-const types::IType& infer_type(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset) {
+std::unique_ptr<types::IType>
+infer_type(const sdfg::Function& function, const types::IType& type, const data_flow::Subset& subset) {
     if (subset.empty()) {
-        return type;
+        return type.clone();
     }
 
     if (type.type_id() == TypeID::Pointer) {

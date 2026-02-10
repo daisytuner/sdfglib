@@ -237,11 +237,11 @@ void CMathNode::validate(const Function& function) const {
         throw InvalidSDFGException("CMathNode: Mismatch between number of outputs and out-degree of the node");
     }
     for (const auto& iedge : dataflow.in_edges(*this)) {
-        auto& inferred_type = types::infer_type(function, iedge.base_type(), iedge.subset());
-        if (inferred_type.type_id() != types::TypeID::Scalar) {
+        auto inferred_type = types::infer_type(function, iedge.base_type(), iedge.subset());
+        if (inferred_type->type_id() != types::TypeID::Scalar) {
             throw InvalidSDFGException("CMathNode: Input type must be scalar");
         }
-        auto& scalar_type = static_cast<const types::Scalar&>(inferred_type);
+        auto& scalar_type = static_cast<const types::Scalar&>(*inferred_type);
         if (scalar_type.primitive_type() != this->primitive_type_) {
             std::string input_primitive_type_str = types::primitive_type_to_string(scalar_type.primitive_type());
             std::string node_primitive_type_str = types::primitive_type_to_string(this->primitive_type_);
@@ -252,11 +252,11 @@ void CMathNode::validate(const Function& function) const {
         }
     }
     for (const auto& oedge : dataflow.out_edges(*this)) {
-        auto& inferred_type = types::infer_type(function, oedge.base_type(), oedge.subset());
-        if (inferred_type.type_id() != types::TypeID::Scalar) {
+        auto inferred_type = types::infer_type(function, oedge.base_type(), oedge.subset());
+        if (inferred_type->type_id() != types::TypeID::Scalar) {
             throw InvalidSDFGException("CMathNode: Output type must be scalar");
         }
-        auto& scalar_type = static_cast<const types::Scalar&>(inferred_type);
+        auto& scalar_type = static_cast<const types::Scalar&>(*inferred_type);
         if (this->function_ == CMathFunction::lrint || this->function_ == CMathFunction::llrint ||
             this->function_ == CMathFunction::lround || this->function_ == CMathFunction::llround) {
             if (!types::is_integer(scalar_type.primitive_type())) {
