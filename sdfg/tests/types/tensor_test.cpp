@@ -27,6 +27,25 @@ TEST(TensorTest, Init) {
     EXPECT_EQ(a.type_id(), types::TypeID::Tensor);
 }
 
+TEST(TensorTest, Reshape) {
+    types::Scalar s(types::PrimitiveType::Int32);
+    symbolic::MultiExpression shape = {symbolic::integer(200)};
+
+    types::Tensor a(s, shape);
+    EXPECT_EQ(a.shape().size(), 1);
+    EXPECT_TRUE(symbolic::eq(a.shape().at(0), symbolic::integer(200)));
+    EXPECT_EQ(a.strides().size(), 1);
+    EXPECT_TRUE(symbolic::eq(a.strides().at(0), symbolic::integer(1)));
+
+    auto a2 = a.reshape({symbolic::integer(10), symbolic::integer(20)});
+    EXPECT_EQ(a2->shape().size(), 2);
+    EXPECT_TRUE(symbolic::eq(a2->shape().at(0), symbolic::integer(10)));
+    EXPECT_TRUE(symbolic::eq(a2->shape().at(1), symbolic::integer(20)));
+    EXPECT_EQ(a2->strides().size(), 2);
+    EXPECT_TRUE(symbolic::eq(a2->strides().at(0), symbolic::integer(20)));
+    EXPECT_TRUE(symbolic::eq(a2->strides().at(1), symbolic::integer(1)));
+}
+
 TEST(TensorTest, Equal) {
     types::Scalar s(types::PrimitiveType::UInt32);
     symbolic::MultiExpression shape = {symbolic::integer(10), symbolic::integer(20)};

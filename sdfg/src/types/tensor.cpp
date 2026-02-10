@@ -55,6 +55,14 @@ const symbolic::MultiExpression& Tensor::strides() const { return this->strides_
 
 const symbolic::Expression& Tensor::offset() const { return this->offset_; };
 
+symbolic::Expression Tensor::total_elements() const {
+    symbolic::Expression total = symbolic::one();
+    for (const auto& dim : this->shape_) {
+        total = symbolic::mul(total, dim);
+    }
+    return total;
+};
+
 TypeID Tensor::type_id() const { return TypeID::Tensor; };
 
 bool Tensor::operator==(const IType& other) const {
@@ -216,6 +224,35 @@ std::unique_ptr<Tensor> Tensor::squeeze() const {
             new_strides.push_back(this->strides_.at(i));
         }
     }
+
+    return std::make_unique<Tensor>(
+        this->storage_type(),
+        this->alignment(),
+        this->initializer(),
+        *this->element_type_,
+        new_shape,
+        new_strides,
+        this->offset_
+    );
+}
+
+std::unique_ptr<Tensor> Tensor::reshape(const symbolic::MultiExpression& new_shape) const {
+    // Compute the total number of elements in the current shape
+    symbolic::Expression total_elements = this->total_elements();
+
+    // Compute the total number of elements in the new shape
+    symbolic::Expression new_total_elements = symbolic::one();
+    for (const auto& dim : new_shape) {
+        new_total_elements = symbolic::mul(new_total_elements, dim);
+    }
+
+    // Check if the total number of elements matches
+    if (!symbolic::eq(total_elements, new_total_elements)) {
+        throw std::invalid_argument("total number of elements must match for reshape");
+    }
+
+    // Compute new strides based on the new shape
+    symbolic::MultiExpression new_strides = strides_from_shape(new_shape);
 
     return std::make_unique<Tensor>(
         this->storage_type(),

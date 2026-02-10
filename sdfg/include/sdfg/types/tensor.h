@@ -48,6 +48,8 @@ public:
 
     const symbolic::Expression& offset() const;
 
+    symbolic::Expression total_elements() const;
+
     virtual bool operator==(const IType& other) const override;
 
     virtual std::unique_ptr<IType> clone() const override;
@@ -65,6 +67,8 @@ public:
     std::unique_ptr<Tensor> squeeze(size_t axis) const;
 
     std::unique_ptr<Tensor> squeeze() const;
+
+    std::unique_ptr<Tensor> reshape(const symbolic::MultiExpression& new_shape) const;
 };
 
 } // namespace types
