@@ -27,7 +27,7 @@ void TransposeNodeDispatcher_ONNX::dispatch_code(
     const std::string& output_y = transpose_node_.output(0);
 
     // Get data type from the node
-    auto prim_type = transpose_node_.primitive_type(data_flow_graph_);
+    auto prim_type = (*data_flow_graph_.out_edges(transpose_node_).begin()).base_type().primitive_type();
     std::string onnx_type = primitive_type_to_onnx_type(prim_type);
     int onnx_elem_type = primitive_type_to_onnx_type_int(prim_type);
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "sdfg/codegen/dispatchers/block_dispatcher.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/reduce_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/reduce/reduce_node.h"
 #include "sdfg/targets/onnx/tensor/utils.h"
 
 namespace sdfg {

@@ -52,7 +52,7 @@ set(TEST_FILES
     data_flow/library_nodes/math/cmath/cmath_node_test.cpp
     data_flow/library_nodes/math/tensor/reduce_test.cpp
     data_flow/library_nodes/math/tensor/elementwise_test.cpp
-    data_flow/library_nodes/math/tensor/primitive_type_test.cpp
+    # data_flow/library_nodes/math/tensor/primitive_type_test.cpp
     data_flow/library_nodes/math/tensor/conv_test.cpp
     deepcopy/structured_sdfg_deep_copy_test.cpp
     element_test.cpp

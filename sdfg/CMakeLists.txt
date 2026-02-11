@@ -91,36 +91,21 @@ set(SOURCE_FILES
     src/data_flow/library_nodes/math/blas/gemm_node.cpp
     src/data_flow/library_nodes/math/cmath/cmath_node.cpp
     src/data_flow/library_nodes/math/tensor/tensor_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_node.cpp
-    src/data_flow/library_nodes/math/tensor/reduce_node.cpp
     src/data_flow/library_nodes/math/tensor/broadcast_node.cpp
     src/data_flow/library_nodes/math/tensor/conv_node.cpp
-    src/data_flow/library_nodes/math/tensor/transpose_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/abs_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/add_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/cast_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/minimum_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/maximum_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/div_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/elu_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/exp_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/erf_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/fill_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/hard_sigmoid_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/leaky_relu_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/mul_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/pow_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/relu_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/sigmoid_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/sqrt_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/sub_node.cpp
-    src/data_flow/library_nodes/math/tensor/elementwise_ops/tanh_node.cpp
-    src/data_flow/library_nodes/math/tensor/reduce_ops/sum_node.cpp
-    src/data_flow/library_nodes/math/tensor/reduce_ops/mean_node.cpp
-    src/data_flow/library_nodes/math/tensor/reduce_ops/std_node.cpp
-    src/data_flow/library_nodes/math/tensor/reduce_ops/max_node.cpp
-    src/data_flow/library_nodes/math/tensor/reduce_ops/min_node.cpp
-    src/data_flow/library_nodes/math/tensor/reduce_ops/softmax_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise/cast_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise/elementwise_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise/elu_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise/hard_sigmoid_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise/relu_node.cpp
+    src/data_flow/library_nodes/math/tensor/elementwise/sigmoid_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce/max_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce/mean_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce/min_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce/reduce_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce/softmax_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce/std_node.cpp
+    src/data_flow/library_nodes/math/tensor/reduce/sum_node.cpp
     src/data_flow/library_nodes/stdlib/alloca.cpp
     src/data_flow/library_nodes/stdlib/calloc.cpp
     src/data_flow/library_nodes/stdlib/free.cpp

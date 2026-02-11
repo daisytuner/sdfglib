@@ -3,15 +3,9 @@
 #include "sdfg/builder/structured_sdfg_builder.h"
 
 #include "sdfg/data_flow/library_nodes/math/cmath/cmath_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/abs_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/add_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/cast_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/div_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/exp_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/maximum_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/minimum_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/reduce_ops/max_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/reduce_ops/sum_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/elementwise/cast_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/reduce/max_node.h"
+#include "sdfg/data_flow/library_nodes/math/tensor/reduce/sum_node.h"
 
 using namespace sdfg;
 

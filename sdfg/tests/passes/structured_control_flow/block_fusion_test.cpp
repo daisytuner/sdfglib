@@ -186,6 +186,7 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
 
     types::Scalar desc(types::PrimitiveType::Double);
     types::Pointer ptr_desc(desc);
+    types::Tensor tensor_desc(desc, {symbolic::integer(10), symbolic::integer(20)});
 
     builder.add_container("input", ptr_desc);
     builder.add_container("tmp", ptr_desc);
@@ -195,22 +196,20 @@ TEST(BlockFusionTest, Computational_LibraryNode_WithoutSideEffects) {
 
     auto& input_node = builder.add_access(block_1, "input");
     auto& tmp_node_out = builder.add_access(block_1, "tmp");
-    auto& relu_node = static_cast<math::tensor::ReLUNode&>(builder.add_library_node<math::tensor::ReLUNode>(
-        block_1, DebugInfo(), std::vector<symbolic::Expression>{symbolic::integer(10), symbolic::integer(20)}
-    ));
+    auto& relu_node =
+        static_cast<math::tensor::ReLUNode&>(builder.add_library_node<math::tensor::ReLUNode>(block_1, DebugInfo()));
 
-    builder.add_computational_memlet(block_1, input_node, relu_node, "X", {}, ptr_desc, block_1.debug_info());
-    builder.add_computational_memlet(block_1, relu_node, "Y", tmp_node_out, {}, ptr_desc, block_1.debug_info());
+    builder.add_computational_memlet(block_1, input_node, relu_node, "_in1", {}, tensor_desc, block_1.debug_info());
+    builder.add_computational_memlet(block_1, relu_node, "_out", tmp_node_out, {}, tensor_desc, block_1.debug_info());
 
     auto& block_2 = builder.add_block(builder.subject().root());
 
     auto& tmp_node_in = builder.add_access(block_2, "tmp");
     auto& output_node = builder.add_access(block_2, "output");
-    auto& relu_node_2 = static_cast<math::tensor::ReLUNode&>(builder.add_library_node<math::tensor::ReLUNode>(
-        block_2, DebugInfo(), std::vector<symbolic::Expression>{symbolic::integer(10), symbolic::integer(20)}
-    ));
-    builder.add_computational_memlet(block_2, tmp_node_in, relu_node_2, "X", {}, ptr_desc, block_2.debug_info());
-    builder.add_computational_memlet(block_2, relu_node_2, "Y", output_node, {}, ptr_desc, block_2.debug_info());
+    auto& relu_node_2 =
+        static_cast<math::tensor::ReLUNode&>(builder.add_library_node<math::tensor::ReLUNode>(block_2, DebugInfo()));
+    builder.add_computational_memlet(block_2, tmp_node_in, relu_node_2, "_in1", {}, tensor_desc, block_2.debug_info());
+    builder.add_computational_memlet(block_2, relu_node_2, "_out", output_node, {}, tensor_desc, block_2.debug_info());
 
     auto sdfg = builder.move();
 

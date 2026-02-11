@@ -4,7 +4,6 @@
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/types/type.h"
 
 #include "sdfg/analysis/scope_analysis.h"
 #include "sdfg/data_flow/library_nodes/math/blas/gemm_node.h"
@@ -18,7 +17,6 @@ ConvNode::ConvNode(
     const DebugInfo& debug_info,
     const graph::Vertex vertex,
     data_flow::DataFlowGraph& parent,
-    const std::vector<symbolic::Expression>& shape,
     const std::vector<symbolic::Expression>& kernel_shape,
     const std::vector<symbolic::Expression>& strides,
     const std::vector<symbolic::Expression>& pads,
@@ -36,7 +34,7 @@ ConvNode::ConvNode(
           {"X", "W", "B"}, // X and W are required, B (bias) is optional
           data_flow::ImplementationType_NONE
       ),
-      shape_(shape), kernel_shape_(kernel_shape), strides_(strides), pads_(pads), dilations_(dilations),
+      kernel_shape_(kernel_shape), strides_(strides), pads_(pads), dilations_(dilations),
       output_channels_(output_channels), group_(group) {}
 
 void ConvNode::validate(const Function& function) const {
@@ -91,9 +89,8 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     int index = parent.index(block);
     auto& transition = parent.at(index).second;
 
-    // Get primitive type
-    auto primitive_type = this->primitive_type(dataflow);
-    types::Scalar scalar_type(primitive_type);
+    auto& y_edge = *dataflow.out_edges(*this).begin();
+    types::Scalar scalar_type(y_edge.base_type().primitive_type());
 
     // Get input edges
     auto in_edges = dataflow.in_edges(*this);
@@ -121,8 +118,6 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     if (!x_edge || !w_edge) {
         throw InvalidSDFGException("ConvNode requires X and W inputs");
     }
-
-    auto& y_edge = *dataflow.out_edges(*this).begin();
 
     // Get access nodes
     auto* x_node = static_cast<data_flow::AccessNode*>(&x_edge->src());
@@ -197,17 +192,15 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     auto& W_var = w_node->data();
     auto& Y_var = y_node->data();
 
-    // Use shape_ for dimensions if available
-    // For a generic n-dimensional implementation:
-    // Input X shape: [N, C_in, D0_in, D1_in, ..., Dn_in]
     symbolic::Expression N, C_in;
     std::vector<symbolic::Expression> input_spatial_dims;
 
-    if (shape_.size() >= 2 + spatial_dims) {
-        N = shape_[0];
-        C_in = shape_[1];
+    auto& shape = static_cast<const types::Tensor&>(x_edge->base_type()).shape();
+    if (shape.size() >= 2 + spatial_dims) {
+        N = shape[0];
+        C_in = shape[1];
         for (size_t i = 0; i < spatial_dims; ++i) {
-            input_spatial_dims.push_back(shape_[2 + i]);
+            input_spatial_dims.push_back(shape[2 + i]);
         }
     } else {
         N = symbolic::symbol(builder.find_new_name("N"));
@@ -242,7 +235,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 
     // Map over batch dimension
     std::string n_str = builder.find_new_name("n");
-    builder.add_container(n_str, types::Scalar(types::PrimitiveType::UInt64));
+    builder.add_container(n_str, types::Scalar(types::PrimitiveType::Int64));
     auto n_var = symbolic::symbol(n_str);
     auto& map_n = builder.add_map(
         *current_scope,
@@ -259,7 +252,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 
     // Map over output channel dimension
     std::string oc_str = builder.find_new_name("oc");
-    builder.add_container(oc_str, types::Scalar(types::PrimitiveType::UInt64));
+    builder.add_container(oc_str, types::Scalar(types::PrimitiveType::Int64));
     auto oc_var = symbolic::symbol(oc_str);
     auto& map_oc = builder.add_map(
         *current_scope,
@@ -277,7 +270,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     // Map over each output spatial dimension dynamically
     for (size_t i = 0; i < spatial_dims; ++i) {
         std::string od_str = builder.find_new_name("od" + std::to_string(i));
-        builder.add_container(od_str, types::Scalar(types::PrimitiveType::UInt64));
+        builder.add_container(od_str, types::Scalar(types::PrimitiveType::Int64));
         auto od_var = symbolic::symbol(od_str);
         auto& map_od = builder.add_map(
             *current_scope,
@@ -309,7 +302,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     // Create nested for loops for input channels and kernel dimensions
     // For loop over input channels
     std::string ic_str = builder.find_new_name("ic");
-    builder.add_container(ic_str, types::Scalar(types::PrimitiveType::UInt64));
+    builder.add_container(ic_str, types::Scalar(types::PrimitiveType::Int64));
     auto ic_var = symbolic::symbol(ic_str);
     auto& for_ic = builder.add_for(
         *current_scope,
@@ -326,7 +319,7 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
     std::vector<symbolic::Expression> kernel_vars;
     for (size_t i = 0; i < spatial_dims; ++i) {
         std::string k_str = builder.find_new_name("k" + std::to_string(i));
-        builder.add_container(k_str, types::Scalar(types::PrimitiveType::UInt64));
+        builder.add_container(k_str, types::Scalar(types::PrimitiveType::Int64));
         auto k_var = symbolic::symbol(k_str);
         auto& for_k = builder.add_for(
             *loop_scope,
@@ -467,11 +460,6 @@ bool ConvNode::expand(builder::StructuredSDFGBuilder& builder, analysis::Analysi
 symbolic::SymbolSet ConvNode::symbols() const {
     symbolic::SymbolSet syms;
 
-    for (auto& expr : shape_) {
-        for (auto& atom : symbolic::atoms(expr)) {
-            syms.insert(atom);
-        }
-    }
     for (auto& expr : kernel_shape_) {
         for (auto& atom : symbolic::atoms(expr)) {
             syms.insert(atom);
@@ -503,9 +491,6 @@ symbolic::SymbolSet ConvNode::symbols() const {
 }
 
 void ConvNode::replace(const symbolic::Expression old_expression, const symbolic::Expression new_expression) {
-    for (auto& expr : shape_) {
-        expr = symbolic::subs(expr, old_expression, new_expression);
-    }
     for (auto& expr : kernel_shape_) {
         expr = symbolic::subs(expr, old_expression, new_expression);
     }
@@ -525,26 +510,12 @@ void ConvNode::replace(const symbolic::Expression old_expression, const symbolic
 std::unique_ptr<data_flow::DataFlowNode> ConvNode::
     clone(size_t element_id, const graph::Vertex vertex, data_flow::DataFlowGraph& parent) const {
     return std::unique_ptr<data_flow::DataFlowNode>(new ConvNode(
-        element_id,
-        this->debug_info(),
-        vertex,
-        parent,
-        shape_,
-        kernel_shape_,
-        strides_,
-        pads_,
-        dilations_,
-        output_channels_,
-        group_
+        element_id, this->debug_info(), vertex, parent, kernel_shape_, strides_, pads_, dilations_, output_channels_, group_
     ));
 }
 
 std::string ConvNode::toStr() const {
-    std::string result = "Conv(shape=[";
-    for (size_t i = 0; i < shape_.size(); ++i) {
-        if (i > 0) result += ", ";
-        result += shape_[i]->__str__();
-    }
+    std::string result = "Conv(";
     result += "], kernel_shape=[";
     for (size_t i = 0; i < kernel_shape_.size(); ++i) {
         if (i > 0) result += ", ";
@@ -567,11 +538,6 @@ nlohmann::json ConvNodeSerializer::serialize(const data_flow::LibraryNode& libra
     j["code"] = conv_node.code().value();
 
     serializer::JSONSerializer serializer;
-
-    j["shape"] = nlohmann::json::array();
-    for (auto& dim : conv_node.shape()) {
-        j["shape"].push_back(serializer.expression(dim));
-    }
 
     j["kernel_shape"] = nlohmann::json::array();
     for (auto& dim : conv_node.kernel_shape()) {
@@ -606,13 +572,6 @@ data_flow::LibraryNode& ConvNodeSerializer::deserialize(
     assert(j.contains("code"));
     assert(j.contains("debug_info"));
     assert(j.contains("kernel_shape"));
-
-    std::vector<symbolic::Expression> shape;
-    if (j.contains("shape")) {
-        for (const auto& dim : j["shape"]) {
-            shape.push_back(symbolic::parse(dim.get<std::string>()));
-        }
-    }
 
     std::vector<symbolic::Expression> kernel_shape;
     for (const auto& dim : j["kernel_shape"]) {
@@ -653,8 +612,8 @@ data_flow::LibraryNode& ConvNodeSerializer::deserialize(
     sdfg::serializer::JSONSerializer serializer;
     DebugInfo debug_info = serializer.json_to_debug_info(j["debug_info"]);
 
-    return builder.add_library_node<
-        ConvNode>(parent, debug_info, shape, kernel_shape, strides, pads, dilations, output_channels, group);
+    return builder
+        .add_library_node<ConvNode>(parent, debug_info, kernel_shape, strides, pads, dilations, output_channels, group);
 }
 
 } // namespace tensor

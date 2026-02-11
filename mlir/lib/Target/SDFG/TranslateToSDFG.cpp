@@ -20,7 +20,6 @@
 #include <sdfg/data_flow/library_node.h>
 #include <sdfg/data_flow/library_nodes/math/blas/blas_node.h>
 #include <sdfg/data_flow/library_nodes/math/blas/gemm_node.h>
-#include <sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/fill_node.h>
 #include <sdfg/data_flow/tasklet.h>
 #include <sdfg/element.h>
 #include <sdfg/function.h>
@@ -241,8 +240,9 @@ public:
                         }
                         libnodes.insert(
                             {fill_op.getLoc()->getImpl(),
-                             &builder.add_library_node<::sdfg::math::tensor::FillNode>(block, ::sdfg::DebugInfo(), shape)
-                            }
+                             &builder.add_library_node<::sdfg::math::tensor::ElementwiseNode>(
+                                 block, ::sdfg::DebugInfo(), ::sdfg::data_flow::TaskletCode::assign
+                             )}
                         );
                         return success();
                     })
