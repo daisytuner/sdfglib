@@ -19,12 +19,6 @@ set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME ${_CMAKE_INSTALL_DEFAULT_COMPONENT_NAME
 # NLohmann json
 find_package(nlohmann_json REQUIRED)
 
-# Boost
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost REQUIRED COMPONENTS graph)
-
 
 # Find the ISL library
 find_package(PkgConfig REQUIRED)
@@ -242,7 +236,13 @@ if(SDFG_ENABLE_COVERAGE)
   )
 endif()
 
-target_link_libraries(sdfglib PUBLIC nlohmann_json::nlohmann_json ${Boost_LIBRARIES} PkgConfig::ISL symengine)
+
+target_link_libraries(sdfglib PUBLIC
+    nlohmann_json::nlohmann_json
+    $<BUILD_INTERFACE:Boost::graph>
+    PkgConfig::ISL
+    symengine
+)
 set_target_properties(sdfglib PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
@@ -258,23 +258,6 @@ install(TARGETS sdfglib
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 install(DIRECTORY include/sdfg DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT sdfglib-development)
-
-set(CPACK_DEB_SDFGLIB_RUNTIME_PACKAGE_DEPENDS
-    libgmp10
-    libgmpxx4ldbl
-    libisl23
-    libzstd1
-    libzip4t64
-    ziptool
-    zipcmp
-    zipmerge
-    libboost-graph1.83.0
-    libboost-regex1.83.0
-    libboost-atomic1.83.0
-    libboost-iostreams1.83.0
-    libboost-filesystem1.83.0
-    CACHE INTERNAL "SDFG runtime dependencies"
-)
 
 ## CMAKE CONFIGURATION
 
