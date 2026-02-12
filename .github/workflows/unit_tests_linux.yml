@@ -180,7 +180,7 @@ jobs:
   mlir-tests-linux:
     runs-on:
       group: dahlia
-      labels: openmp
+      labels: Linux
     container:
       image: daisytuner/docc-build-env-llvm19-base:latest-amd64
     strategy:
