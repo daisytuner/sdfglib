@@ -308,6 +308,7 @@ void PyStructuredSDFG::schedule(const std::string& target, const std::string& ca
     }
     // GPU Opt Pipeline
     else if (target == "cuda") {
+        schedulers.push_back(target);
         schedulers.push_back("highway");
     } else if (target == "onnx") {
         sdfg::passes::ONNXLibraryNodeRewriterPass onnx_library_node_rewriter_pass;
