@@ -1,6 +1,5 @@
 #include "sdfg/cutouts/cutout_serializer.h"
 
-#include <boost/iostreams/detail/select.hpp>
 #include <cassert>
 
 #include "sdfg/analysis/arguments_analysis.h"
