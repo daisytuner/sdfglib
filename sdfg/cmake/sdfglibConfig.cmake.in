@@ -10,4 +10,8 @@ pkg_check_modules(ISL REQUIRED IMPORTED_TARGET isl)
 
 include("${CMAKE_CURRENT_LIST_DIR}/sdfglibTargets.cmake")
 
+if(TARGET sdfglib::sdfglib)
+    set_property(TARGET sdfglib::sdfglib APPEND PROPERTY INTERFACE_LINK_LIBRARIES Boost::graph)
+endif()
+
 check_required_components(sdfglib)
