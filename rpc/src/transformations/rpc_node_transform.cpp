@@ -136,6 +136,12 @@ std::variant<std::unique_ptr<passes::rpc::RpcOptResponse>, std::string> RPCNodeT
 
 std::variant<std::unique_ptr<passes::rpc::RpcOptResponse>, std::string> RPCNodeTransform::parse_rpc_response(HttpResult result) {
 
+    // Check for HTTP errors first (including authentication issues)
+    if (!result.error_message.empty()) {
+        std::cerr << result.error_message << std::endl;
+        return {result.error_message};
+    }
+
     auto rpc_response = std::make_unique<passes::rpc::RpcOptResponse>();
 
     try {
