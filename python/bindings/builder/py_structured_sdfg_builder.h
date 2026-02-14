@@ -47,6 +47,8 @@ public:
 
     std::string get_sizeof(const sdfg::types::IType& type);
 
+    std::string find_new_name(const std::string& prefix = "tmp_");
+
     /***** Control Flow *****/
 
     void add_return(const std::string& data, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
@@ -61,7 +63,11 @@ public:
 
     void end_if();
 
-    void begin_while(const std::string& condition, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
+    void begin_while(const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
+
+    void add_break(const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
+
+    void add_continue(const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
 
     void end_while();
 

@@ -3,17 +3,128 @@ from docc.sdfg import Scalar, PrimitiveType, Pointer
 from docc.python.ast_utils import get_debug_info
 
 
-class ConvolutionHandler:
-    def __init__(self, builder, array_info, symbol_table, expr_visitor):
-        self.builder = builder
-        self.array_info = array_info
-        self.symbol_table = symbol_table
-        self.expr_visitor = expr_visitor
+class SciPyHandler:
+    """Handler for SciPy functions (scipy.special, scipy.signal, etc.)."""
 
-    def _parse_expr(self, node):
-        return self.expr_visitor.visit(node)
+    def __init__(self, expression_visitor):
+        self._ev = expression_visitor
+        # Nested structure: submodule -> {func_name -> handler}
+        self.function_handlers = {
+            "special": {
+                "softmax": self._handle_softmax,
+            },
+            "signal": {
+                "correlate2d": self._handle_correlate2d_expr,
+            },
+        }
 
-    def is_conv(self, node):
+    def has_handler(self, submodule, func_name):
+        """Check if this handler can handle the given submodule.func_name."""
+        return (
+            submodule in self.function_handlers
+            and func_name in self.function_handlers[submodule]
+        )
+
+    def handle_scipy_call(self, node, submodule, func_name):
+        """Handle a call to a SciPy function."""
+        if self.has_handler(submodule, func_name):
+            return self.function_handlers[submodule][func_name](node, func_name)
+        raise NotImplementedError(
+            f"SciPy function scipy.{submodule}.{func_name} not supported"
+        )
+
+    # Expose parent properties for convenience
+    @property
+    def array_info(self):
+        return self._ev.array_info
+
+    @property
+    def builder(self):
+        return self._ev.builder
+
+    @property
+    def symbol_table(self):
+        return self._ev.symbol_table
+
+    def _get_unique_id(self):
+        return self._ev._get_unique_id()
+
+    def visit(self, node):
+        return self._ev.visit(node)
+
+    def _create_array_temp(self, shape, dtype):
+        """Create a temporary array with the given shape and dtype."""
+        return self._ev.numpy_visitor._create_array_temp(shape, dtype)
+
+    # ========== scipy.special Functions ==========
+
+    def _handle_softmax(self, node, func_name):
+        """Handle scipy.special.softmax."""
+        args = node.args
+        keywords = {kw.arg: kw.value for kw in node.keywords}
+
+        array_node = args[0]
+        array_name = self.visit(array_node)
+
+        if array_name not in self.array_info:
+            raise ValueError(f"Softmax input must be an array, got {array_name}")
+
+        input_shape = self.array_info[array_name]["shapes"]
+        ndim = len(input_shape)
+
+        axis = None
+        if len(args) > 1:
+            axis = args[1]
+        elif "axis" in keywords:
+            axis = keywords["axis"]
+
+        axes = []
+        if axis is None:
+            axes = list(range(ndim))
+        elif isinstance(axis, ast.Constant):
+            val = axis.value
+            if val < 0:
+                val += ndim
+            axes = [val]
+        elif isinstance(axis, ast.Tuple):
+            for elt in axis.elts:
+                if isinstance(elt, ast.Constant):
+                    val = elt.value
+                    if val < 0:
+                        val += ndim
+                    axes.append(val)
+        elif (
+            isinstance(axis, ast.UnaryOp)
+            and isinstance(axis.op, ast.USub)
+            and isinstance(axis.operand, ast.Constant)
+        ):
+            val = -axis.operand.value
+            if val < 0:
+                val += ndim
+            axes = [val]
+        else:
+            try:
+                val = int(self.visit(axis))
+                if val < 0:
+                    val += ndim
+                axes = [val]
+            except:
+                raise NotImplementedError("Dynamic axis not supported")
+
+        dtype = Scalar(PrimitiveType.Double)
+
+        tmp_name = self._create_array_temp(input_shape, dtype)
+
+        self.builder.add_reduce_op(
+            func_name, array_name, tmp_name, input_shape, axes, False
+        )
+
+        return tmp_name
+
+    # ========== scipy.signal Functions ==========
+
+    def is_correlate2d(self, node):
+        """Check if a node represents a scipy.signal.correlate2d call."""
         if not isinstance(node, ast.Call):
             return False
 
@@ -26,8 +137,17 @@ class ConvolutionHandler:
 
         return False
 
-    def handle_conv(self, target, value_node):
-        if not self.is_conv(value_node):
+    def handle_correlate2d(self, target, value_node):
+        """Handle scipy.signal.correlate2d (2D correlation/convolution).
+
+        Args:
+            target: The assignment target (ast.Name or string)
+            value_node: The correlate2d call node
+
+        Returns:
+            True if handled successfully, False otherwise
+        """
+        if not self.is_correlate2d(value_node):
             return False
 
         args = value_node.args
@@ -37,8 +157,8 @@ class ConvolutionHandler:
         in1_node = args[0]
         in2_node = args[1]
 
-        in1_name = self._parse_expr(in1_node)
-        in2_name = self._parse_expr(in2_node)
+        in1_name = self.visit(in1_node)
+        in2_name = self.visit(in2_node)
 
         if in1_name not in self.array_info:
             return False
@@ -91,9 +211,6 @@ class ConvolutionHandler:
             pads = ["0", "0", "0", "0"]
         elif mode == "full":
             # Padding is kernel_size - 1 on both sides
-            # shapes are symbolic strings, so we construct the padding string
-            # This is tricky without a symbolic engine in Python.
-            # But we can produce a string expression that SDFG builder parses.
             h_k = kernel_shape_strs[0]
             w_k = kernel_shape_strs[1]
             pad_h = f"({h_k} - 1)"
@@ -161,11 +278,6 @@ class ConvolutionHandler:
         debug_info = get_debug_info(
             value_node, getattr(self.builder, "filename", ""), ""
         )
-        # Note: filename might not be accessible easily if not passed to handler.
-        # But ASTParser passes filename to debug info helpers usually.
-        # We'll pass a generic debug info if needed or modify init.
-
-        # wait, ASTParser initializes Handler.
 
         self.builder.add_conv(
             in1_name,
@@ -181,3 +293,17 @@ class ConvolutionHandler:
             debug_info,
         )
         return True
+
+    def _handle_correlate2d_expr(self, node, func_name):
+        """Handle scipy.signal.correlate2d as an expression (creates temp array).
+
+        This wrapper is used when correlate2d appears in an expression context
+        rather than a direct assignment.
+        """
+        # Create a temporary name for the result
+        tmp_name = self.builder.find_new_name("_corr2d_")
+        # Delegate to the main handler
+        success = self.handle_correlate2d(tmp_name, node)
+        if not success:
+            raise NotImplementedError("Failed to handle correlate2d expression")
+        return tmp_name

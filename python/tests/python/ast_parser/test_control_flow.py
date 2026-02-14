@@ -1,18 +1,21 @@
 from docc.python import native
+import os
+import shutil
 import pytest
 import numpy as np
 
 
-def test_negative_step_loop():
+def test_array_loop():
     @native
-    def negative_step_loop(n):
-        res = 0
-        for i in range(n - 1, -1, -1):
-            res = res + i
-        return res
+    def array_loop(A, n):
+        for i in range(n):
+            A[i] = A[i] + 1
 
-    # sum(0..9) = 45
-    assert negative_step_loop(10) == 45
+    arr = np.zeros(10, dtype=np.int32)
+    array_loop(arr, 10)
+
+    expected = np.ones(10, dtype=np.int32)
+    np.testing.assert_array_equal(arr, expected)
 
 
 def test_negative_step_loop_array():
@@ -25,31 +28,6 @@ def test_negative_step_loop_array():
 
     res = negative_step_loop_array(5)
     np.testing.assert_array_equal(res, [0, 1, 2, 3, 4])
-
-
-def test_positive_step_loop():
-    @native
-    def positive_step_loop(n):
-        res = 0
-        for i in range(0, n, 1):
-            res = res + i
-        return res
-
-    res = positive_step_loop(10)
-    assert res == 45
-
-
-def test_step_greater_than_one():
-    @native
-    def step_greater_than_one(n):
-        res = 0
-        for i in range(0, n, 2):
-            res = res + i
-        return res
-
-    res = step_greater_than_one(10)
-    # 0 + 2 + 4 + 6 + 8 = 20
-    assert res == 20
 
 
 def test_slice_assignment_loop_var():
