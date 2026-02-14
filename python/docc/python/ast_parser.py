@@ -1308,6 +1308,17 @@ class ASTParser(ast.NodeVisitor):
         suffix = f"_{func_obj.__name__}_{self.builder.find_new_name()}"
         res_name = f"_res{suffix}"
 
+        # Combine globals with closure variables of the inlined function
+        combined_globals = dict(self.globals_dict)
+        closure_constants = {}  # name -> value for numeric closure vars
+        if func_obj.__closure__ is not None and func_obj.__code__.co_freevars:
+            for name, cell in zip(func_obj.__code__.co_freevars, func_obj.__closure__):
+                val = cell.cell_contents
+                combined_globals[name] = val
+                # Track numeric constants for injection
+                if isinstance(val, (int, float)) and not isinstance(val, bool):
+                    closure_constants[name] = val
+
         class VariableRenamer(ast.NodeTransformer):
             BUILTINS = {
                 "range",
@@ -1354,10 +1365,26 @@ class ASTParser(ast.NodeVisitor):
                     )
                 return node
 
-        renamer = VariableRenamer(suffix, self.globals_dict)
+        renamer = VariableRenamer(suffix, combined_globals)
         new_body = [renamer.visit(stmt) for stmt in func_def.body]
 
         param_assignments = []
+
+        # Inject closure constants as assignments
+        for name, val in closure_constants.items():
+            if isinstance(val, int):
+                self.symbol_table[name] = Scalar(PrimitiveType.Int64)
+                self.builder.add_container(name, Scalar(PrimitiveType.Int64), False)
+                val_node = ast.Constant(value=val)
+            else:
+                self.symbol_table[name] = Scalar(PrimitiveType.Double)
+                self.builder.add_container(name, Scalar(PrimitiveType.Double), False)
+                val_node = ast.Constant(value=val)
+            assign = ast.Assign(
+                targets=[ast.Name(id=name, ctx=ast.Store())], value=val_node
+            )
+            param_assignments.append(assign)
+
         for arg_def, arg_val in zip(func_def.args.args, arg_vars):
             param_name = f"{arg_def.arg}{suffix}"
 
@@ -1396,7 +1423,7 @@ class ASTParser(ast.NodeVisitor):
             self.builder,
             self.array_info,
             self.symbol_table,
-            globals_dict=self.globals_dict,
+            globals_dict=combined_globals,
             unique_counter_ref=self._unique_counter_ref,
         )
 

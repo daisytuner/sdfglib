@@ -608,6 +608,14 @@ class PythonProgram(DoccProgram):
         filename = inspect.getsourcefile(self.func)
         function_name = self.func.__name__
 
+        # Combine globals with closure variables (closure takes precedence)
+        combined_globals = dict(self.func.__globals__)
+        if self.func.__closure__ is not None and self.func.__code__.co_freevars:
+            for name, cell in zip(
+                self.func.__code__.co_freevars, self.func.__closure__
+            ):
+                combined_globals[name] = cell.cell_contents
+
         parser = ASTParser(
             builder,
             array_info,
@@ -615,7 +623,7 @@ class PythonProgram(DoccProgram):
             filename,
             function_name,
             infer_return_type=infer_return_type,
-            globals_dict=self.func.__globals__,
+            globals_dict=combined_globals,
             structure_member_info=structure_member_info,
         )
         for node in func_def.body:

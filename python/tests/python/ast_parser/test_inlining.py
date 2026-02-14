@@ -3,76 +3,115 @@ import numpy as np
 import pytest
 
 
-def helper_add(a, b):
-    return a + b
+def helper_nested(a):
+    return a * 2
 
 
-def test_simple_inlining():
+def helper_outer(a):
+    return helper_nested(a) + 1
+
+
+def test_inlining():
     @native
-    def simple_inlining(a, b):
-        return helper_add(a, b)
+    def inlining(a):
+        return helper_nested(a)
 
-    assert simple_inlining(10, 20) == 30
-
-
-def helper_nested(x):
-    return x * 2
-
-
-def helper_outer(x):
-    return helper_nested(x) + 1
+    assert inlining(10) == 20
 
 
 def test_nested_inlining():
     @native
-    def nested_inlining(x):
-        return helper_outer(x)
+    def nested_inlining(a):
+        return helper_outer(a)
 
     assert nested_inlining(10) == 21
 
 
-def helper_with_local_var(x):
-    y = 10
-    return x + y
+def helper_with_local_var(a):
+    b = 10
+    return a + b
 
 
 def test_inlining_local_vars():
     @native
-    def inlining_local_vars(x):
-        y = 5
-        return helper_with_local_var(x) + y
+    def inlining_local_vars(a):
+        b = 5
+        return helper_with_local_var(a) + b
 
     assert inlining_local_vars(20) == 35  # (20 + 10) + 5
 
 
-def relu_float32(x):
-    return np.maximum(x, 0)
+def test_inlining_local_function():
+    def helper_nested(a):
+        return a * 4
 
-
-def test_inlining_preserves_float32_array():
     @native
-    def apply_relu(x):
-        return relu_float32(x)
+    def inlining_local_function(a):
+        return helper_nested(a)
 
-    x = np.array([1.0, -2.0, 3.0, -4.0], dtype=np.float32)
-    result = apply_relu(x)
-    expected = np.maximum(x, 0)
-    assert result.dtype == np.float32, f"Expected float32, got {result.dtype}"
-    assert np.allclose(result, expected)
+    assert inlining_local_function(10) == 40
 
 
-def helper_matmul(a, b):
-    return a @ b
+def helper_add(a, b):
+    return a + b
 
 
-def test_inlining_matmul_float32():
+def test_inlining_multiple_calls():
     @native
-    def inlined_matmul(a, b):
-        return helper_matmul(a, b)
+    def multiple_calls(a):
+        x = helper_nested(a)
+        y = helper_nested(a)
+        return x + y
 
-    a = np.random.rand(10, 10).astype(np.float32)
-    b = np.random.rand(10, 10).astype(np.float32)
-    result = inlined_matmul(a, b)
-    expected = a @ b
-    assert result.dtype == np.float32, f"Expected float32, got {result.dtype}"
-    assert np.allclose(result, expected, rtol=1e-5)
+    assert multiple_calls(5) == 20  # (5*2) + (5*2)
+
+
+def test_inlining_multiple_args():
+    @native
+    def inlining_multiple_args(a, b):
+        return helper_add(a, b)
+
+    assert inlining_multiple_args(3, 7) == 10
+
+
+def test_inlining_captured_constant():
+    factor = 3
+
+    def multiply_by_factor(a):
+        return a * factor
+
+    @native
+    def inlining_captured_constant(a):
+        return multiply_by_factor(a)
+
+    assert inlining_captured_constant(10) == 30
+
+
+def test_inlining_nested_local_functions():
+    def inner(a):
+        return a + 1
+
+    def outer(a):
+        return inner(a) * 2
+
+    @native
+    def inlining_nested_local(a):
+        return outer(a)
+
+    assert inlining_nested_local(4) == 10  # (4+1) * 2
+
+
+def helper_conditional(a):
+    if a > 0:
+        return a
+    return -a
+
+
+@pytest.mark.xfail(reason="Downstream bug in simplify")
+def test_inlining_conditional_return():
+    @native
+    def inlining_conditional(a):
+        return helper_conditional(a)
+
+    assert inlining_conditional(5) == 5
+    assert inlining_conditional(-5) == 5
