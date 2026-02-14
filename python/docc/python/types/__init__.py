@@ -72,7 +72,7 @@ def element_type_from_sdfg_type(sdfg_type: Type):
         )
 
 
-def element_type_from_ast_node(ast_node, symbol_table=None):
+def element_type_from_ast_node(ast_node, container_table=None):
     # Default to double
     if ast_node is None:
         return Scalar(PrimitiveType.Double)
@@ -117,11 +117,11 @@ def element_type_from_ast_node(ast_node, symbol_table=None):
                 return Scalar(PrimitiveType.Bool)
 
         # Handle arr.dtype - get element type from array's type in symbol table
-        if ast_node.attr == "dtype" and symbol_table is not None:
+        if ast_node.attr == "dtype" and container_table is not None:
             if isinstance(ast_node.value, ast.Name):
                 var_name = ast_node.value.id
-                if var_name in symbol_table:
-                    var_type = symbol_table[var_name]
+                if var_name in container_table:
+                    var_type = container_table[var_name]
                     return element_type_from_sdfg_type(var_type)
 
     raise ValueError(f"Cannot map AST node to SDFG type: {ast.dump(ast_node)}")

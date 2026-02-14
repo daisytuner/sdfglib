@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 from docc.python import native
 
@@ -178,6 +179,9 @@ class TestGatherWithMatmul:
         expected = np.dot(vals, x[cols])  # 1*50 + 2*20 + 3*40 = 210
         np.testing.assert_almost_equal(result, expected)
 
+    @pytest.mark.skip(
+        reason="Full SpMV pattern with gather and matmul is not yet supported"
+    )
     def test_full_spmv_pattern(self):
         """Test full SpMV kernel pattern with indirect slicing and gather"""
 

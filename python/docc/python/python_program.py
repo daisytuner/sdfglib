@@ -15,12 +15,14 @@ from docc.sdfg import (
     Structure,
     Array,
     Type,
+    Tensor,
     StructuredSDFG,
     StructuredSDFGBuilder,
 )
 from docc.compiler.docc_program import DoccProgram
 from docc.compiler.compiled_sdfg import CompiledSDFG
 from docc.python.ast_parser import ASTParser
+from docc.python.types import element_type_from_sdfg_type
 
 
 def _compile_wrapper(self, output_folder=None):
@@ -563,24 +565,54 @@ class PythonProgram(DoccProgram):
                 f"Argument count mismatch: expected {len(params)}, got {len(arg_types)}"
             )
 
-        array_info = {}
-
         # Add regular arguments
+        tensor_table = {}
         for i, ((name, param), dtype, arg) in enumerate(zip(params, arg_types, args)):
             builder.add_container(name, dtype, is_argument=True)
 
-            # If it's an array, prepare shape info
+            # Store layout information for arrays
             if isinstance(arg, np.ndarray):
+                element_type = element_type_from_sdfg_type(dtype)
+
                 shapes = []
                 for dim_idx in range(arg.ndim):
                     u_idx = arg_shape_mapping[(i, dim_idx)]
-                    # Use scalar parameter name if there's an equivalence, otherwise _sX
                     if u_idx in shape_to_scalar:
                         shapes.append(shape_to_scalar[u_idx])
                     else:
                         shapes.append(f"_s{u_idx}")
 
-                array_info[name] = {"ndim": arg.ndim, "shapes": shapes}
+                strides = []
+                if arg.flags["C_CONTIGUOUS"]:
+                    # Row-major: stride[i] = product of shapes[i+1:]
+                    for dim_idx in range(arg.ndim):
+                        if dim_idx == arg.ndim - 1:
+                            strides.append("1")
+                        else:
+                            suffix_shapes = shapes[dim_idx + 1 :]
+                            if len(suffix_shapes) == 1:
+                                strides.append(suffix_shapes[0])
+                            else:
+                                strides.append("(" + " * ".join(suffix_shapes) + ")")
+                elif arg.flags["F_CONTIGUOUS"]:
+                    # Column-major: stride[i] = product of shapes[:i]
+                    for dim_idx in range(arg.ndim):
+                        if dim_idx == 0:
+                            strides.append("1")
+                        else:
+                            prefix_shapes = shapes[:dim_idx]
+                            if len(prefix_shapes) == 1:
+                                strides.append(prefix_shapes[0])
+                            else:
+                                strides.append("(" + " * ".join(prefix_shapes) + ")")
+                else:
+                    # Non-contiguous: use actual stride values
+                    for dim_idx in range(arg.ndim):
+                        stride_val = arg.strides[dim_idx] // arg.itemsize
+                        strides.append(f"{stride_val}")
+
+                offset = "0"
+                tensor_table[name] = Tensor(element_type, shapes, strides, offset)
 
         # Add unified shape arguments only for shapes without scalar equivalents
         for i in range(num_unique_shapes):
@@ -590,13 +622,13 @@ class PythonProgram(DoccProgram):
                 )
 
         # Create symbol table for parser
-        symbol_table = {}
+        container_table = {}
         for i, ((name, param), dtype, arg) in enumerate(zip(params, arg_types, args)):
-            symbol_table[name] = dtype
+            container_table[name] = dtype
 
         for i in range(num_unique_shapes):
             if i not in shape_to_scalar:
-                symbol_table[f"_s{i}"] = Scalar(PrimitiveType.Int64)
+                container_table[f"_s{i}"] = Scalar(PrimitiveType.Int64)
 
         # Parse AST
         source_lines, start_line = inspect.getsourcelines(self.func)
@@ -618,8 +650,8 @@ class PythonProgram(DoccProgram):
 
         parser = ASTParser(
             builder,
-            array_info,
-            symbol_table,
+            tensor_table,
+            container_table,
             filename,
             function_name,
             infer_return_type=infer_return_type,

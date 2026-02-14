@@ -6,6 +6,7 @@ from docc.sdfg import (
     DebugInfo,
     TaskletCode,
     CMathFunction,
+    Tensor,
 )
 from docc.python.types import (
     element_type_from_ast_node,
@@ -63,20 +64,24 @@ class NumPyHandler:
 
     # Expose parent properties for convenience
     @property
-    def array_info(self):
-        return self._ev.array_info
+    def tensor_table(self):
+        return self._ev.tensor_table
 
     @property
     def builder(self):
         return self._ev.builder
 
     @property
-    def symbol_table(self):
-        return self._ev.symbol_table
+    def container_table(self):
+        return self._ev.container_table
 
     @property
     def globals_dict(self):
         return self._ev.globals_dict
+
+    @property
+    def shapes_runtime_info(self):
+        return self._ev.shapes_runtime_info
 
     def _get_unique_id(self):
         return self._ev._get_unique_id()
@@ -95,10 +100,10 @@ class NumPyHandler:
     def parse_arg(self, node):
         """Parse an array argument, returning (name, start_indices, slice_shape, indices)."""
         if isinstance(node, ast.Name):
-            if node.id in self.array_info:
-                return node.id, [], self.array_info[node.id]["shapes"], []
+            if node.id in self.tensor_table:
+                return node.id, [], self.tensor_table[node.id].shape, []
         elif isinstance(node, ast.Subscript):
-            if isinstance(node.value, ast.Name) and node.value.id in self.array_info:
+            if isinstance(node.value, ast.Name) and node.value.id in self.tensor_table:
                 name = node.value.id
                 indices = []
                 if isinstance(node.slice, ast.Tuple):
@@ -116,7 +121,7 @@ class NumPyHandler:
                             start = self._ev.visit(idx.lower)
                         start_indices.append(start)
 
-                        shapes = self.array_info[name]["shapes"]
+                        shapes = self.tensor_table[name].shape
                         dim_size = (
                             shapes[i] if i < len(shapes) else f"_{name}_shape_{i}"
                         )
@@ -127,7 +132,7 @@ class NumPyHandler:
                         size = f"({stop} - {start})"
                         slice_shape.append(size)
                     else:
-                        if isinstance(idx, ast.Name) and idx.id in self.array_info:
+                        if isinstance(idx, ast.Name) and idx.id in self.tensor_table:
                             # This is an array index (gather operation)
                             return None, None, None, None
                         val = self._ev.visit(idx)
@@ -141,9 +146,9 @@ class NumPyHandler:
         """Convert multi-dimensional start indices to a flattened linear offset."""
         if not start_indices:
             return []
-        info = self.array_info[name]
-        shapes = info["shapes"]
-        ndim = info["ndim"]
+        info = self.tensor_table[name]
+        shapes = info.shape
+        ndim = len(info.shape)
 
         if len(start_indices) != ndim:
             return start_indices
@@ -193,10 +198,10 @@ class NumPyHandler:
 
     def _is_stride_1(self, name, indices):
         """Check if the sliced dimension has stride 1 (contiguous access)."""
-        if name not in self.array_info:
+        if name not in self.tensor_table:
             return True
-        info = self.array_info[name]
-        ndim = info["ndim"]
+        info = self.tensor_table[name]
+        ndim = len(info.shape)
 
         if not indices:
             return True
@@ -256,7 +261,7 @@ class NumPyHandler:
                 else:
                     target_name = target.value.id
 
-        if not target_name or target_name not in self.array_info:
+        if not target_name or target_name not in self.tensor_table:
             return False
 
         alpha = "1.0"
@@ -388,9 +393,9 @@ class NumPyHandler:
         flat_subset_b = self.flatten_subset(B_name, subset_b)
 
         def get_ndim(name):
-            if name not in self.array_info:
+            if name not in self.tensor_table:
                 return 1
-            return self.array_info[name]["ndim"]
+            return len(self.tensor_table[name].shape)
 
         if len(shape_a) == 2:
             if not trans_a:
@@ -426,9 +431,9 @@ class NumPyHandler:
                 trans_b = False
 
         def get_ld(name):
-            if name not in self.array_info:
+            if name not in self.tensor_table:
                 return ""
-            shapes = self.array_info[name]["shapes"]
+            shapes = self.tensor_table[name].shape
             if len(shapes) >= 2:
                 return str(shapes[1])
             return "1"
@@ -513,9 +518,9 @@ class NumPyHandler:
         def get_stride(name, indices):
             if not indices:
                 return "1"
-            info = self.array_info[name]
-            shapes = info["shapes"]
-            ndim = info["ndim"]
+            info = self.tensor_table[name]
+            shapes = info.shape
+            ndim = len(info.shape)
 
             sliced_dim = -1
             for i, idx in enumerate(indices):
@@ -554,7 +559,7 @@ class NumPyHandler:
             block, tasklet, "_out", access, "", "", Scalar(PrimitiveType.Double)
         )
 
-        self.symbol_table[tmp_res] = Scalar(PrimitiveType.Double)
+        self.container_table[tmp_res] = Scalar(PrimitiveType.Double)
 
         self.builder.add_dot(
             name_a, name_b, tmp_res, n, incx, incy, flat_subset_a, flat_subset_b
@@ -564,7 +569,7 @@ class NumPyHandler:
 
         if not self.builder.exists(target_str):
             self.builder.add_container(target_str, Scalar(PrimitiveType.Double), False)
-            self.symbol_table[target_str] = Scalar(PrimitiveType.Double)
+            self.container_table[target_str] = Scalar(PrimitiveType.Double)
 
         if is_accumulate:
             self.builder.add_assignment(target_str, f"{target_str} + {tmp_res}")
@@ -660,8 +665,8 @@ class NumPyHandler:
             return size_expr
 
         def get_ld_2d(name):
-            if name in self.array_info:
-                shapes = self.array_info[name]["shapes"]
+            if name in self.tensor_table:
+                shapes = self.tensor_table[name].shape
                 if len(shapes) >= 2:
                     return str(shapes[1])
             return "1"
@@ -781,11 +786,11 @@ class NumPyHandler:
                         perm = self._parse_perm(kw.value)
 
         input_name = self._ev.visit(input_node)
-        if input_name not in self.array_info:
+        if input_name not in self.tensor_table:
             return False
 
-        in_info = self.array_info[input_name]
-        in_shape = in_info["shapes"]
+        in_info = self.tensor_table[input_name]
+        in_shape = in_info.shape
         in_strings = [str(s) for s in in_shape]
 
         if not perm:
@@ -800,8 +805,8 @@ class NumPyHandler:
             target_name = target
 
         dtype = Scalar(PrimitiveType.Double)
-        if input_name in self.symbol_table:
-            input_type = self.symbol_table[input_name]
+        if input_name in self.container_table:
+            input_type = self.container_table[input_name]
             if isinstance(input_type, Pointer):
                 dtype = input_type.pointee_type
             else:
@@ -811,8 +816,8 @@ class NumPyHandler:
 
         if not self.builder.exists(target_name):
             self.builder.add_container(target_name, ptr_type, False)
-            self.symbol_table[target_name] = ptr_type
-            self.array_info[target_name] = {"ndim": len(out_shape), "shapes": out_shape}
+            self.container_table[target_name] = ptr_type
+            self.tensor_table[target_name] = Tensor(dtype, out_shape)
 
             block_alloc = self.builder.add_block()
             size_expr = "1"
@@ -842,18 +847,18 @@ class NumPyHandler:
             return None
 
         input_name = self._ev.visit(node.value)
-        if input_name not in self.array_info:
+        if input_name not in self.tensor_table:
             return None
 
-        in_info = self.array_info[input_name]
-        in_shape = in_info["shapes"]
+        in_info = self.tensor_table[input_name]
+        in_shape = in_info.shape
         in_strings = [str(s) for s in in_shape]
         perm = list(range(len(in_shape)))[::-1]
         out_shape = [in_strings[p] for p in perm]
 
         dtype = Scalar(PrimitiveType.Double)
-        if input_name in self.symbol_table:
-            input_type = self.symbol_table[input_name]
+        if input_name in self.container_table:
+            input_type = self.container_table[input_name]
             if isinstance(input_type, Pointer):
                 dtype = input_type.pointee_type
             else:
@@ -874,11 +879,11 @@ class NumPyHandler:
         input_node = node.args[0]
         input_name = self.visit(input_node)
 
-        if input_name not in self.array_info:
-            raise ValueError(f"Array {input_name} not found in array_info")
+        if input_name not in self.tensor_table:
+            raise ValueError(f"Array {input_name} not found in tensor_table")
 
-        in_info = self.array_info[input_name]
-        in_shape = in_info["shapes"]
+        in_info = self.tensor_table[input_name]
+        in_shape = in_info.shape
         in_strings = [str(s) for s in in_shape]
 
         perm = []
@@ -894,8 +899,8 @@ class NumPyHandler:
         out_shape = [in_strings[p] for p in perm]
 
         dtype = Scalar(PrimitiveType.Double)
-        if input_name in self.symbol_table:
-            input_type = self.symbol_table[input_name]
+        if input_name in self.container_table:
+            input_type = self.container_table[input_name]
             if isinstance(input_type, Pointer):
                 dtype = input_type.pointee_type
             else:
@@ -918,8 +923,8 @@ class NumPyHandler:
 
     def handle_array_unary_op(self, op_type, operand):
         shape = []
-        if operand in self.array_info:
-            shape = self.array_info[operand]["shapes"]
+        if operand in self.tensor_table:
+            shape = self.tensor_table[operand].shape
 
         dtype = self._ev._element_type(operand)
 
@@ -952,10 +957,10 @@ class NumPyHandler:
     def handle_array_binary_op(self, op_type, left, right):
         left_shape = []
         right_shape = []
-        if left in self.array_info:
-            left_shape = self.array_info[left]["shapes"]
-        if right in self.array_info:
-            right_shape = self.array_info[right]["shapes"]
+        if left in self.tensor_table:
+            left_shape = self.tensor_table[left].shape
+        if right in self.tensor_table:
+            right_shape = self.tensor_table[right].shape
 
         shape = self._compute_broadcast_shape(left_shape, right_shape)
 
@@ -966,14 +971,14 @@ class NumPyHandler:
         real_left = left
         real_right = right
 
-        left_is_scalar = left not in self.array_info
-        right_is_scalar = right not in self.array_info
+        left_is_scalar = left not in self.tensor_table
+        right_is_scalar = right not in self.tensor_table
 
         # Cast left operand if needed
         if left_is_scalar and dtype_left.primitive_type != dtype.primitive_type:
             left_cast = f"_tmp_{self._get_unique_id()}"
             self.builder.add_container(left_cast, dtype, False)
-            self.symbol_table[left_cast] = dtype
+            self.container_table[left_cast] = dtype
 
             c_block = self.builder.add_block()
             t_src, src_sub = self._add_read(c_block, left)
@@ -990,7 +995,7 @@ class NumPyHandler:
         if right_is_scalar and dtype_right.primitive_type != dtype.primitive_type:
             right_cast = f"_tmp_{self._get_unique_id()}"
             self.builder.add_container(right_cast, dtype, False)
-            self.symbol_table[right_cast] = dtype
+            self.container_table[right_cast] = dtype
 
             c_block = self.builder.add_block()
             t_src, src_sub = self._add_read(c_block, right)
@@ -1016,14 +1021,14 @@ class NumPyHandler:
         return tmp_name
 
     def handle_array_negate(self, operand):
-        shape = self.array_info[operand]["shapes"]
+        shape = self.tensor_table[operand].shape
         dtype = self._ev._element_type(operand)
 
         tmp_name = self._create_array_temp(shape, dtype)
 
         zero_name = f"_tmp_{self._get_unique_id()}"
         self.builder.add_container(zero_name, dtype, False)
-        self.symbol_table[zero_name] = dtype
+        self.container_table[zero_name] = dtype
 
         zero_block = self.builder.add_block()
         t_const = self.builder.add_constant(
@@ -1045,10 +1050,10 @@ class NumPyHandler:
     def handle_array_compare(self, left, op, right, left_is_array, right_is_array):
         """Handle elementwise comparison of arrays, returning a boolean array."""
         if left_is_array:
-            shape = self.array_info[left]["shapes"]
+            shape = self.tensor_table[left].shape
             arr_name = left
         else:
-            shape = self.array_info[right]["shapes"]
+            shape = self.tensor_table[right].shape
             arr_name = right
 
         use_int_cmp = False
@@ -1097,7 +1102,7 @@ class NumPyHandler:
                 self.builder.add_container(
                     float_name, Scalar(PrimitiveType.Double), False
                 )
-                self.symbol_table[float_name] = Scalar(PrimitiveType.Double)
+                self.container_table[float_name] = Scalar(PrimitiveType.Double)
 
                 block_conv = self.builder.add_block()
                 t_const = self.builder.add_constant(
@@ -1124,7 +1129,7 @@ class NumPyHandler:
             loop_var = f"_cmp_i{i}_{self._get_unique_id()}"
             if not self.builder.exists(loop_var):
                 self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
-                self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+                self.container_table[loop_var] = Scalar(PrimitiveType.Int64)
             loop_vars.append(loop_var)
             self.builder.begin_for(loop_var, "0", str(dim), "1")
 
@@ -1177,11 +1182,10 @@ class NumPyHandler:
             runtime_val = self._shape_to_runtime_expr(shape_arg)
             if val.startswith("_shape_proxy_"):
                 array_name = val[len("_shape_proxy_") :]
-                if array_name in self.array_info:
-                    dims = self.array_info[array_name]["shapes"]
-                    dims_runtime = self.array_info[array_name].get(
-                        "shapes_runtime", dims
-                    )
+                if array_name in self.tensor_table:
+                    info = self.tensor_table[array_name]
+                    dims = info.shape
+                    dims_runtime = self.shapes_runtime_info.get(array_name, dims)
                 else:
                     dims = [val]
                     dims_runtime = [runtime_val]
@@ -1198,7 +1202,7 @@ class NumPyHandler:
                 dtype_arg = kw.value
                 break
 
-        element_type = element_type_from_ast_node(dtype_arg, self.symbol_table)
+        element_type = element_type_from_ast_node(dtype_arg, self.container_table)
 
         return self._create_array_temp(
             dims,
@@ -1214,8 +1218,8 @@ class NumPyHandler:
         prototype_name = self.visit(prototype_arg)
 
         dims = []
-        if prototype_name in self.array_info:
-            dims = self.array_info[prototype_name]["shapes"]
+        if prototype_name in self.tensor_table:
+            dims = self.tensor_table[prototype_name].shape
 
         dtype_arg = None
         if len(node.args) > 1:
@@ -1228,10 +1232,10 @@ class NumPyHandler:
 
         element_type = None
         if dtype_arg:
-            element_type = element_type_from_ast_node(dtype_arg, self.symbol_table)
+            element_type = element_type_from_ast_node(dtype_arg, self.container_table)
         else:
-            if prototype_name in self.symbol_table:
-                sym_type = self.symbol_table[prototype_name]
+            if prototype_name in self.container_table:
+                sym_type = self.container_table[prototype_name]
                 if isinstance(sym_type, Pointer) and sym_type.has_pointee_type():
                     element_type = sym_type.pointee_type
 
@@ -1248,8 +1252,8 @@ class NumPyHandler:
         prototype_name = self.visit(prototype_arg)
 
         dims = []
-        if prototype_name in self.array_info:
-            dims = self.array_info[prototype_name]["shapes"]
+        if prototype_name in self.tensor_table:
+            dims = self.tensor_table[prototype_name].shape
 
         dtype_arg = None
         if len(node.args) > 1:
@@ -1262,10 +1266,10 @@ class NumPyHandler:
 
         element_type = None
         if dtype_arg:
-            element_type = element_type_from_ast_node(dtype_arg, self.symbol_table)
+            element_type = element_type_from_ast_node(dtype_arg, self.container_table)
         else:
-            if prototype_name in self.symbol_table:
-                sym_type = self.symbol_table[prototype_name]
+            if prototype_name in self.container_table:
+                sym_type = self.container_table[prototype_name]
                 if isinstance(sym_type, Pointer) and sym_type.has_pointee_type():
                     element_type = sym_type.pointee_type
 
@@ -1300,14 +1304,14 @@ class NumPyHandler:
             elif kw.arg == "dtype":
                 dtype_arg = kw.value
 
-        element_type = element_type_from_ast_node(dtype_arg, self.symbol_table)
+        element_type = element_type_from_ast_node(dtype_arg, self.container_table)
 
         ptr_name = self._create_array_temp([N_str, M_str], element_type, zero_init=True)
 
         loop_var = f"_i_{self._get_unique_id()}"
         if not self.builder.exists(loop_var):
             self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
-            self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+            self.container_table[loop_var] = Scalar(PrimitiveType.Int64)
 
         self.builder.begin_for(loop_var, "0", N_str, "1")
 
@@ -1389,20 +1393,20 @@ class NumPyHandler:
         shape = []
         dtype = Scalar(PrimitiveType.Double)
 
-        if cond_name in self.array_info:
-            shape = self.array_info[cond_name]["shapes"]
+        if cond_name in self.tensor_table:
+            shape = self.tensor_table[cond_name].shape
 
-        if not shape and y_name in self.array_info:
-            shape = self.array_info[y_name]["shapes"]
+        if not shape and y_name in self.tensor_table:
+            shape = self.tensor_table[y_name].shape
 
-        if not shape and x_name in self.array_info:
-            shape = self.array_info[x_name]["shapes"]
+        if not shape and x_name in self.tensor_table:
+            shape = self.tensor_table[x_name].shape
 
         if not shape:
             raise NotImplementedError("np.where requires at least one array argument")
 
-        if y_name in self.symbol_table:
-            y_type = self.symbol_table[y_name]
+        if y_name in self.container_table:
+            y_type = self.container_table[y_name]
             if isinstance(y_type, Pointer) and y_type.has_pointee_type():
                 dtype = y_type.pointee_type
             elif isinstance(y_type, Scalar):
@@ -1415,7 +1419,7 @@ class NumPyHandler:
             loop_var = f"_where_i{i}_{self._get_unique_id()}"
             if not self.builder.exists(loop_var):
                 self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
-                self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+                self.container_table[loop_var] = Scalar(PrimitiveType.Int64)
             loop_vars.append(loop_var)
             self.builder.begin_for(loop_var, "0", str(dim), "1")
 
@@ -1423,10 +1427,10 @@ class NumPyHandler:
 
         cond_tmp = f"_where_cond_{self._get_unique_id()}"
         self.builder.add_container(cond_tmp, Scalar(PrimitiveType.Bool), False)
-        self.symbol_table[cond_tmp] = Scalar(PrimitiveType.Bool)
+        self.container_table[cond_tmp] = Scalar(PrimitiveType.Bool)
 
         block_cond = self.builder.add_block()
-        if cond_name in self.array_info:
+        if cond_name in self.tensor_table:
             t_cond_arr = self.builder.add_access(block_cond, cond_name)
             t_cond_out = self.builder.add_access(block_cond, cond_tmp)
             t_cond_task = self.builder.add_tasklet(
@@ -1455,7 +1459,7 @@ class NumPyHandler:
 
         block_true = self.builder.add_block()
         t_out_true = self.builder.add_access(block_true, tmp_name)
-        if x_name in self.array_info:
+        if x_name in self.tensor_table:
             t_x = self.builder.add_access(block_true, x_name)
             t_task_true = self.builder.add_tasklet(
                 block_true, TaskletCode.assign, ["_in"], ["_out"]
@@ -1477,7 +1481,7 @@ class NumPyHandler:
 
         block_false = self.builder.add_block()
         t_out_false = self.builder.add_access(block_false, tmp_name)
-        if y_name in self.array_info:
+        if y_name in self.tensor_table:
             t_y = self.builder.add_access(block_false, y_name)
             t_task_false = self.builder.add_tasklet(
                 block_false, TaskletCode.assign, ["_in"], ["_out"]
@@ -1589,7 +1593,7 @@ class NumPyHandler:
         if is_scalar:
             tmp_name = f"_tmp_{self._get_unique_id()}"
             self.builder.add_container(tmp_name, dtype, False)
-            self.symbol_table[tmp_name] = dtype
+            self.container_table[tmp_name] = dtype
         else:
             tmp_name = self._create_array_temp(output_shape, dtype)
 
@@ -1770,18 +1774,22 @@ class NumPyHandler:
 
         if not self.builder.exists(i_var):
             self.builder.add_container(i_var, Scalar(PrimitiveType.Int64), False)
-            self.symbol_table[i_var] = Scalar(PrimitiveType.Int64)
+            self.container_table[i_var] = Scalar(PrimitiveType.Int64)
         if not self.builder.exists(j_var):
             self.builder.add_container(j_var, Scalar(PrimitiveType.Int64), False)
-            self.symbol_table[j_var] = Scalar(PrimitiveType.Int64)
+            self.container_table[j_var] = Scalar(PrimitiveType.Int64)
 
         def compute_linear_index(name, subset, indices, loop_var):
             if not indices:
                 return loop_var
 
-            info = self.array_info.get(name, {})
-            shapes = info.get("shapes", [])
-            ndim = info.get("ndim", len(shapes))
+            if name in self.tensor_table:
+                info = self.tensor_table[name]
+                shapes = info.shape
+                ndim = len(shapes)
+            else:
+                shapes = []
+                ndim = 0
 
             if ndim == 0:
                 return loop_var
@@ -1871,10 +1879,10 @@ class NumPyHandler:
         array_node = args[0]
         array_name = self.visit(array_node)
 
-        if array_name not in self.array_info:
+        if array_name not in self.tensor_table:
             raise ValueError(f"Reduction input must be an array, got {array_name}")
 
-        input_shape = self.array_info[array_name]["shapes"]
+        input_shape = self.tensor_table[array_name].shape
         ndim = len(input_shape)
 
         axis = None
@@ -1935,8 +1943,8 @@ class NumPyHandler:
         if not output_shape:
             tmp_name = f"_tmp_{self._get_unique_id()}"
             self.builder.add_container(tmp_name, dtype, False)
-            self.symbol_table[tmp_name] = dtype
-            self.array_info[tmp_name] = {"ndim": 0, "shapes": []}
+            self.container_table[tmp_name] = dtype
+            self.tensor_table[tmp_name] = Tensor(dtype, [])
         else:
             tmp_name = self._create_array_temp(output_shape, dtype)
 
@@ -1952,12 +1960,12 @@ class NumPyHandler:
             raise ValueError("astype requires at least one argument (dtype)")
 
         dtype_arg = node.args[0]
-        target_dtype = element_type_from_ast_node(dtype_arg, self.symbol_table)
+        target_dtype = element_type_from_ast_node(dtype_arg, self.container_table)
 
-        if array_name not in self.array_info:
-            raise ValueError(f"Array {array_name} not found in array_info")
+        if array_name not in self.tensor_table:
+            raise ValueError(f"Array {array_name} not found in tensor_table")
 
-        input_shape = self.array_info[array_name]["shapes"]
+        input_shape = self.tensor_table[array_name].shape
 
         tmp_name = self._create_array_temp(input_shape, target_dtype)
 
@@ -1969,14 +1977,14 @@ class NumPyHandler:
 
     def handle_numpy_copy(self, node, array_name):
         """Handle numpy array.copy() method calls using memcpy."""
-        if array_name not in self.array_info:
-            raise ValueError(f"Array {array_name} not found in array_info")
+        if array_name not in self.tensor_table:
+            raise ValueError(f"Array {array_name} not found in tensor_table")
 
-        input_shape = self.array_info[array_name]["shapes"]
+        input_shape = self.tensor_table[array_name].shape
 
         element_type = Scalar(PrimitiveType.Double)
-        if array_name in self.symbol_table:
-            sym_type = self.symbol_table[array_name]
+        if array_name in self.container_table:
+            sym_type = self.container_table[array_name]
             if isinstance(sym_type, Pointer) and sym_type.has_pointee_type():
                 element_type = sym_type.pointee_type
 
@@ -2007,8 +2015,8 @@ class NumPyHandler:
         # Handle 0-dimensional arrays as scalars
         if not shape or (len(shape) == 0):
             self.builder.add_container(tmp_name, dtype, False)
-            self.symbol_table[tmp_name] = dtype
-            self.array_info[tmp_name] = {"ndim": 0, "shapes": []}
+            self.container_table[tmp_name] = dtype
+            self.tensor_table[tmp_name] = Tensor(dtype, [])
 
             if zero_init:
                 self.builder.add_assignment(
@@ -2034,11 +2042,11 @@ class NumPyHandler:
         # Create pointer
         ptr_type = Pointer(dtype)
         self.builder.add_container(tmp_name, ptr_type, False)
-        self.symbol_table[tmp_name] = ptr_type
-        array_info_entry = {"ndim": len(shape), "shapes": shape}
+        self.container_table[tmp_name] = ptr_type
+        tensor_entry = Tensor(dtype, shape)
         if shapes_runtime is not None:
-            array_info_entry["shapes_runtime"] = shapes_runtime
-        self.array_info[tmp_name] = array_info_entry
+            self.shapes_runtime_info[tmp_name] = shapes_runtime
+        self.tensor_table[tmp_name] = tensor_entry
 
         # Malloc
         block1 = self.builder.add_block()
@@ -2057,7 +2065,7 @@ class NumPyHandler:
             loop_var = f"_i_{self._get_unique_id()}"
             if not self.builder.exists(loop_var):
                 self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
-                self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+                self.container_table[loop_var] = Scalar(PrimitiveType.Int64)
 
             self.builder.begin_for(loop_var, "0", size_str, "1")
 
@@ -2187,8 +2195,8 @@ class NumPyHandler:
                     arr_name = val.value.id
                     if isinstance(shape_node.slice, ast.Constant):
                         idx = shape_node.slice.value
-                        if arr_name in self.array_info:
-                            shapes = self.array_info[arr_name].get("shapes", [])
+                        if arr_name in self.tensor_table:
+                            shapes = self.tensor_table[arr_name].shape
                             if idx < len(shapes):
                                 return shapes[idx]
                         return f"{arr_name}.shape[{idx}]"

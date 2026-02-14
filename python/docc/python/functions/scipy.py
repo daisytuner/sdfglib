@@ -1,5 +1,5 @@
 import ast
-from docc.sdfg import Scalar, PrimitiveType, Pointer
+from docc.sdfg import Scalar, PrimitiveType, Pointer, Tensor
 from docc.python.ast_utils import get_debug_info
 
 
@@ -35,16 +35,16 @@ class SciPyHandler:
 
     # Expose parent properties for convenience
     @property
-    def array_info(self):
-        return self._ev.array_info
+    def tensor_table(self):
+        return self._ev.tensor_table
 
     @property
     def builder(self):
         return self._ev.builder
 
     @property
-    def symbol_table(self):
-        return self._ev.symbol_table
+    def container_table(self):
+        return self._ev.container_table
 
     def _get_unique_id(self):
         return self._ev._get_unique_id()
@@ -66,10 +66,10 @@ class SciPyHandler:
         array_node = args[0]
         array_name = self.visit(array_node)
 
-        if array_name not in self.array_info:
+        if array_name not in self.tensor_table:
             raise ValueError(f"Softmax input must be an array, got {array_name}")
 
-        input_shape = self.array_info[array_name]["shapes"]
+        input_shape = self.tensor_table[array_name].shape
         ndim = len(input_shape)
 
         axis = None
@@ -160,22 +160,22 @@ class SciPyHandler:
         in1_name = self.visit(in1_node)
         in2_name = self.visit(in2_node)
 
-        if in1_name not in self.array_info:
+        if in1_name not in self.tensor_table:
             return False
-        if in2_name not in self.array_info:
+        if in2_name not in self.tensor_table:
             return False
 
-        in1_info = self.array_info[in1_name]
-        in2_info = self.array_info[in2_name]
+        in1_info = self.tensor_table[in1_name]
+        in2_info = self.tensor_table[in2_name]
 
         # Check dimensions
-        if in1_info["ndim"] != 2 or in2_info["ndim"] != 2:
+        if len(in1_info.shape) != 2 or len(in2_info.shape) != 2:
             raise NotImplementedError(
                 "Only 2D convolution is currently supported via scipy.signal mapping"
             )
 
-        in1_shape = in1_info["shapes"]
-        in2_shape = in2_info["shapes"]
+        in1_shape = in1_info.shape
+        in2_shape = in2_info.shape
 
         # Scipy Correlate2d / Convolve2d
         # Default mode is 'full', boundary 'fill', fillvalue 0
@@ -258,8 +258,8 @@ class SciPyHandler:
             self.builder.add_container(target_name, ptr_type, False)
 
             # Update parser state
-            self.symbol_table[target_name] = ptr_type
-            self.array_info[target_name] = {"ndim": 2, "shapes": out_shape}
+            self.container_table[target_name] = ptr_type
+            self.tensor_table[target_name] = Tensor(dtype, out_shape)
 
             # Allocate memory for the result
             block_alloc = self.builder.add_block()

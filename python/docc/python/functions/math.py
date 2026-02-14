@@ -61,8 +61,8 @@ class MathHandler:
         return self._ev.builder
 
     @property
-    def symbol_table(self):
-        return self._ev.symbol_table
+    def container_table(self):
+        return self._ev.container_table
 
     def _add_read(self, block, expr_str, debug_info=None):
         return self._ev._add_read(block, expr_str, debug_info)
@@ -84,7 +84,7 @@ class MathHandler:
         tmp_name = self.builder.find_new_name("_tmp_")
         dtype = Scalar(PrimitiveType.Double)
         self.builder.add_container(tmp_name, dtype, False)
-        self.symbol_table[tmp_name] = dtype
+        self.container_table[tmp_name] = dtype
 
         block = self.builder.add_block()
         t_out = self.builder.add_access(block, tmp_name)

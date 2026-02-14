@@ -10,6 +10,7 @@ from docc.sdfg import (
     DebugInfo,
     Structure,
     CMathFunction,
+    Tensor,
 )
 from docc.python.ast_utils import (
     SliceRewriter,
@@ -31,8 +32,8 @@ class ASTParser(ast.NodeVisitor):
     def __init__(
         self,
         builder,
-        array_info=None,
-        symbol_table=None,
+        tensor_table,
+        container_table,
         filename="",
         function_name="",
         infer_return_type=False,
@@ -41,10 +42,16 @@ class ASTParser(ast.NodeVisitor):
         structure_member_info=None,
     ):
         self.builder = builder
-        self.array_info = array_info if array_info is not None else {}
-        self.symbol_table = symbol_table if symbol_table is not None else {}
+
+        # Lookup tables for variables
+        self.tensor_table = tensor_table
+        self.container_table = container_table
+
+        # Debug info
         self.filename = filename
         self.function_name = function_name
+
+        # Context
         self.infer_return_type = infer_return_type
         self.globals_dict = globals_dict if globals_dict is not None else {}
         self._unique_counter_ref = (
@@ -55,6 +62,9 @@ class ASTParser(ast.NodeVisitor):
             structure_member_info if structure_member_info is not None else {}
         )
         self.captured_return_shapes = {}  # Map param name to shape string list
+        self.shapes_runtime_info = (
+            {}
+        )  # Map array name to runtime shapes (separate from Tensor)
 
         # Initialize handlers - they receive 'self' to access expression visitor methods
         self.numpy_visitor = NumPyHandler(self)
@@ -69,7 +79,7 @@ class ASTParser(ast.NodeVisitor):
 
     def visit_Name(self, node):
         name = node.id
-        if name not in self.symbol_table and self.globals_dict is not None:
+        if name not in self.container_table and self.globals_dict is not None:
             if name in self.globals_dict:
                 val = self.globals_dict[name]
                 if isinstance(val, (int, float)):
@@ -163,7 +173,7 @@ class ASTParser(ast.NodeVisitor):
         self._add_assign_constant(tmp_name, "false", dtype)
         self.builder.end_if()
 
-        self.symbol_table[tmp_name] = dtype
+        self.container_table[tmp_name] = dtype
         return tmp_name
 
     def visit_UnaryOp(self, node):
@@ -177,22 +187,14 @@ class ASTParser(ast.NodeVisitor):
         op = self.visit(node.op)
         operand = self.visit(node.operand)
 
-        if operand in self.array_info and op == "-":
+        if operand in self.tensor_table and op == "-":
             return self.numpy_visitor.handle_array_negate(operand)
 
+        assert operand in self.container_table, f"Undefined variable: {operand}"
         tmp_name = self.builder.find_new_name()
-        dtype = Scalar(PrimitiveType.Double)
-        if operand in self.symbol_table:
-            dtype = self.symbol_table[operand]
-            if isinstance(dtype, Pointer) and dtype.has_pointee_type():
-                dtype = dtype.pointee_type
-        elif self._is_int(operand):
-            dtype = Scalar(PrimitiveType.Int64)
-        elif isinstance(node.op, ast.Not):
-            dtype = Scalar(PrimitiveType.Bool)
-
+        dtype = self.container_table[operand]
         self.builder.add_container(tmp_name, dtype, False)
-        self.symbol_table[tmp_name] = dtype
+        self.container_table[tmp_name] = dtype
 
         block = self.builder.add_block()
         t_src, src_sub = self._add_read(block, operand)
@@ -208,7 +210,6 @@ class ASTParser(ast.NodeVisitor):
             self.builder.add_memlet(block, t_src, "void", t_task, "_in1", src_sub)
             self.builder.add_memlet(block, t_const, "void", t_task, "_in2", "")
             self.builder.add_memlet(block, t_task, "_out", t_dst, "void", "")
-
         elif op == "-":
             if dtype.primitive_type == PrimitiveType.Int64:
                 t_const = self.builder.add_constant(block, "0", dtype)
@@ -224,7 +225,6 @@ class ASTParser(ast.NodeVisitor):
                 )
                 self.builder.add_memlet(block, t_src, "void", t_task, "_in", src_sub)
                 self.builder.add_memlet(block, t_task, "_out", t_dst, "void", "")
-
         elif op == "~":
             t_const = self.builder.add_constant(
                 block, "-1", Scalar(PrimitiveType.Int64)
@@ -235,7 +235,6 @@ class ASTParser(ast.NodeVisitor):
             self.builder.add_memlet(block, t_src, "void", t_task, "_in1", src_sub)
             self.builder.add_memlet(block, t_const, "void", t_task, "_in2", "")
             self.builder.add_memlet(block, t_task, "_out", t_dst, "void", "")
-
         else:
             t_task = self.builder.add_tasklet(
                 block, TaskletCode.assign, ["_in"], ["_out"]
@@ -253,8 +252,8 @@ class ASTParser(ast.NodeVisitor):
         op = self.visit(node.op)
         right = self.visit(node.right)
 
-        left_is_array = left in self.array_info
-        right_is_array = right in self.array_info
+        left_is_array = left in self.tensor_table
+        right_is_array = right in self.tensor_table
 
         if left_is_array or right_is_array:
             op_map = {"+": "add", "-": "sub", "*": "mul", "/": "div", "**": "pow"}
@@ -267,28 +266,25 @@ class ASTParser(ast.NodeVisitor):
 
         tmp_name = self.builder.find_new_name()
 
-        dtype = Scalar(PrimitiveType.Double)
-
         left_is_int = self._is_int(left)
         right_is_int = self._is_int(right)
-
+        dtype = Scalar(PrimitiveType.Double)
         if left_is_int and right_is_int and op not in ["/", "**"]:
             dtype = Scalar(PrimitiveType.Int64)
 
         if not self.builder.exists(tmp_name):
             self.builder.add_container(tmp_name, dtype, False)
-            self.symbol_table[tmp_name] = dtype
+            self.container_table[tmp_name] = dtype
 
         real_left = left
         real_right = right
-
         if dtype.primitive_type == PrimitiveType.Double:
             if left_is_int:
                 left_cast = self.builder.find_new_name()
                 self.builder.add_container(
                     left_cast, Scalar(PrimitiveType.Double), False
                 )
-                self.symbol_table[left_cast] = Scalar(PrimitiveType.Double)
+                self.container_table[left_cast] = Scalar(PrimitiveType.Double)
 
                 c_block = self.builder.add_block()
                 t_src, src_sub = self._add_read(c_block, left)
@@ -306,7 +302,7 @@ class ASTParser(ast.NodeVisitor):
                 self.builder.add_container(
                     right_cast, Scalar(PrimitiveType.Double), False
                 )
-                self.symbol_table[right_cast] = Scalar(PrimitiveType.Double)
+                self.container_table[right_cast] = Scalar(PrimitiveType.Double)
 
                 c_block = self.builder.add_block()
                 t_src, src_sub = self._add_read(c_block, right)
@@ -465,7 +461,7 @@ class ASTParser(ast.NodeVisitor):
 
     def visit_Attribute(self, node):
         if node.attr == "shape":
-            if isinstance(node.value, ast.Name) and node.value.id in self.array_info:
+            if isinstance(node.value, ast.Name) and node.value.id in self.tensor_table:
                 return f"_shape_proxy_{node.value.id}"
 
         if node.attr == "T":
@@ -475,7 +471,7 @@ class ASTParser(ast.NodeVisitor):
             elif isinstance(node.value, ast.Subscript):
                 value_name = self.visit(node.value)
 
-            if value_name and value_name in self.array_info:
+            if value_name and value_name in self.tensor_table:
                 return self.numpy_visitor.handle_transpose_expr(node)
 
         if isinstance(node.value, ast.Name) and node.value.id == "math":
@@ -489,7 +485,7 @@ class ASTParser(ast.NodeVisitor):
                 tmp_name = self.builder.find_new_name()
                 dtype = Scalar(PrimitiveType.Double)
                 self.builder.add_container(tmp_name, dtype, False)
-                self.symbol_table[tmp_name] = dtype
+                self.container_table[tmp_name] = dtype
                 self._add_assign_constant(tmp_name, val, dtype)
                 return tmp_name
 
@@ -497,8 +493,8 @@ class ASTParser(ast.NodeVisitor):
             obj_name = node.value.id
             attr_name = node.attr
 
-            if obj_name in self.symbol_table:
-                obj_type = self.symbol_table[obj_name]
+            if obj_name in self.container_table:
+                obj_type = self.container_table[obj_name]
                 if isinstance(obj_type, Pointer) and obj_type.has_pointee_type():
                     pointee_type = obj_type.pointee_type
                     if isinstance(pointee_type, Structure):
@@ -520,7 +516,7 @@ class ASTParser(ast.NodeVisitor):
                         tmp_name = self.builder.find_new_name()
 
                         self.builder.add_container(tmp_name, member_type, False)
-                        self.symbol_table[tmp_name] = member_type
+                        self.container_table[tmp_name] = member_type
 
                         block = self.builder.add_block()
                         obj_access = self.builder.add_access(block, obj_name)
@@ -548,8 +544,8 @@ class ASTParser(ast.NodeVisitor):
         op = self.visit(node.ops[0])
         right = self.visit(node.comparators[0])
 
-        left_is_array = left in self.array_info
-        right_is_array = right in self.array_info
+        left_is_array = left in self.tensor_table
+        right_is_array = right in self.tensor_table
 
         if left_is_array or right_is_array:
             return self.numpy_visitor.handle_array_compare(
@@ -568,7 +564,7 @@ class ASTParser(ast.NodeVisitor):
         self.builder.add_transition(tmp_name, "false")
         self.builder.end_if()
 
-        self.symbol_table[tmp_name] = dtype
+        self.container_table[tmp_name] = dtype
         return tmp_name
 
     def visit_Subscript(self, node):
@@ -588,17 +584,14 @@ class ASTParser(ast.NodeVisitor):
                         "Dynamic shape indexing not fully supported yet"
                     )
 
-            if (
-                array_name in self.array_info
-                and "shapes" in self.array_info[array_name]
-            ):
-                return self.array_info[array_name]["shapes"][idx]
+            if array_name in self.tensor_table:
+                return self.tensor_table[array_name].shape[idx]
 
             return f"_{array_name}_shape_{idx}"
 
-        if value_str in self.array_info:
-            ndim = self.array_info[value_str]["ndim"]
-            shapes = self.array_info[value_str].get("shapes", [])
+        if value_str in self.tensor_table:
+            ndim = len(self.tensor_table[value_str].shape)
+            shapes = self.tensor_table[value_str].shape
 
             if isinstance(node.slice, ast.Tuple):
                 indices_nodes = node.slice.elts
@@ -669,8 +662,8 @@ class ASTParser(ast.NodeVisitor):
 
             if self.builder and isinstance(node.ctx, ast.Load):
                 dtype = Scalar(PrimitiveType.Double)
-                if value_str in self.symbol_table:
-                    t = self.symbol_table[value_str]
+                if value_str in self.container_table:
+                    t = self.container_table[value_str]
                     if type(t).__name__ == "Array" and hasattr(t, "element_type"):
                         et = t.element_type
                         if callable(et):
@@ -697,7 +690,7 @@ class ASTParser(ast.NodeVisitor):
                 )
                 self.builder.add_memlet(block, t_task, "_out", t_dst, "void", "")
 
-                self.symbol_table[tmp_name] = dtype
+                self.container_table[tmp_name] = dtype
                 return tmp_name
 
             return access_str
@@ -708,20 +701,20 @@ class ASTParser(ast.NodeVisitor):
         if (
             self.builder
             and isinstance(node.ctx, ast.Load)
-            and value_str in self.array_info
+            and value_str in self.tensor_table
         ):
             tmp_name = self.builder.find_new_name()
             self.builder.add_container(tmp_name, Scalar(PrimitiveType.Double), False)
             self.builder.add_assignment(tmp_name, access_str)
-            self.symbol_table[tmp_name] = Scalar(PrimitiveType.Double)
+            self.container_table[tmp_name] = Scalar(PrimitiveType.Double)
             return tmp_name
 
         return access_str
 
     def visit_AugAssign(self, node):
-        if isinstance(node.target, ast.Name) and node.target.id in self.array_info:
+        if isinstance(node.target, ast.Name) and node.target.id in self.tensor_table:
             # Convert to slice assignment: target[:] = target op value
-            ndim = self.array_info[node.target.id]["ndim"]
+            ndim = len(self.tensor_table[node.target.id].shape)
 
             slices = []
             for _ in range(ndim):
@@ -879,20 +872,20 @@ class ASTParser(ast.NodeVisitor):
                     raise NotImplementedError(f"Cannot infer type for {val}")
 
                 self.builder.add_container(target_name, dtype, False)
-                self.symbol_table[target_name] = dtype
+                self.container_table[target_name] = dtype
             else:
-                assert value_str in self.symbol_table
+                assert value_str in self.container_table
                 self.builder.add_container(
-                    target_name, self.symbol_table[value_str], False
+                    target_name, self.container_table[value_str], False
                 )
-                self.symbol_table[target_name] = self.symbol_table[value_str]
+                self.container_table[target_name] = self.container_table[value_str]
 
-        if value_str in self.array_info:
-            self.array_info[target_name] = self.array_info[value_str]
+        if value_str in self.tensor_table:
+            self.tensor_table[target_name] = self.tensor_table[value_str]
 
         # Distinguish assignments: scalar -> tasklet, pointer -> reference_memlet
-        src_type = self.symbol_table.get(value_str)
-        dst_type = self.symbol_table[target_name]
+        src_type = self.container_table.get(value_str)
+        dst_type = self.container_table[target_name]
         if src_type and isinstance(src_type, Pointer) and isinstance(dst_type, Pointer):
             block = self.builder.add_block(debug_info)
             t_src = self.builder.add_access(block, value_str, debug_info)
@@ -1017,7 +1010,7 @@ class ASTParser(ast.NodeVisitor):
 
             if not self.builder.exists(var):
                 self.builder.add_container(var, Scalar(PrimitiveType.Int64), False)
-                self.symbol_table[var] = Scalar(PrimitiveType.Int64)
+                self.container_table[var] = Scalar(PrimitiveType.Int64)
 
             self.builder.begin_for(var, start, end, step, debug_info)
 
@@ -1030,13 +1023,13 @@ class ASTParser(ast.NodeVisitor):
         # Check if iterating over an ndarray (for x in array)
         if isinstance(node.iter, ast.Name):
             iter_name = node.iter.id
-            if iter_name in self.array_info:
-                arr_info = self.array_info[iter_name]
-                if arr_info["ndim"] < 1:
+            if iter_name in self.tensor_table:
+                arr_info = self.tensor_table[iter_name]
+                if len(arr_info.shape) == 0:
                     raise NotImplementedError("Cannot iterate over 0-dimensional array")
 
                 # Get the size of the first dimension
-                arr_size = arr_info["shapes"][0]
+                arr_size = arr_info.shape[0]
 
                 # Create a hidden index variable for the loop
                 idx_var = self.builder.find_new_name()
@@ -1044,13 +1037,13 @@ class ASTParser(ast.NodeVisitor):
                     self.builder.add_container(
                         idx_var, Scalar(PrimitiveType.Int64), False
                     )
-                    self.symbol_table[idx_var] = Scalar(PrimitiveType.Int64)
+                    self.container_table[idx_var] = Scalar(PrimitiveType.Int64)
 
                 # Determine the type of the loop variable (element type)
                 # For a 1D array, it's a scalar; for ND array, it's a view of N-1 dimensions
-                if arr_info["ndim"] == 1:
+                if len(arr_info.shape) == 1:
                     # Element is a scalar - get the element type from the array's type
-                    arr_type = self.symbol_table.get(iter_name)
+                    arr_type = self.container_table.get(iter_name)
                     if isinstance(arr_type, Pointer):
                         elem_type = arr_type.pointee_type
                     else:
@@ -1058,14 +1051,14 @@ class ASTParser(ast.NodeVisitor):
 
                     if not self.builder.exists(var):
                         self.builder.add_container(var, elem_type, False)
-                        self.symbol_table[var] = elem_type
+                        self.container_table[var] = elem_type
                 else:
                     # For multi-dimensional arrays, create a view/slice
                     # The loop variable becomes a pointer to the sub-array
-                    inner_shapes = arr_info["shapes"][1:]
-                    inner_ndim = arr_info["ndim"] - 1
+                    inner_shapes = arr_info.shape[1:]
+                    inner_ndim = len(arr_info.shape) - 1
 
-                    arr_type = self.symbol_table.get(iter_name)
+                    arr_type = self.container_table.get(iter_name)
                     if isinstance(arr_type, Pointer):
                         elem_type = arr_type  # Keep as pointer type for views
                     else:
@@ -1073,10 +1066,12 @@ class ASTParser(ast.NodeVisitor):
 
                     if not self.builder.exists(var):
                         self.builder.add_container(var, elem_type, False)
-                        self.symbol_table[var] = elem_type
+                        self.container_table[var] = elem_type
 
-                    # Register the view in array_info
-                    self.array_info[var] = {"ndim": inner_ndim, "shapes": inner_shapes}
+                    # Register the view in tensor_table
+                    self.tensor_table[var] = Tensor(
+                        element_type_from_sdfg_type(elem_type), inner_shapes
+                    )
 
                 # Begin the for loop
                 self.builder.begin_for(idx_var, "0", str(arr_size), "1", debug_info)
@@ -1124,8 +1119,8 @@ class ASTParser(ast.NodeVisitor):
                 ret_name = f"_docc_ret_{i}"
                 if not self.builder.exists(ret_name):
                     dtype = Scalar(PrimitiveType.Double)
-                    if res in self.symbol_table:
-                        dtype = self.symbol_table[res]
+                    if res in self.container_table:
+                        dtype = self.container_table[res]
                     elif isinstance(values[i], ast.Constant):
                         val = values[i].value
                         if isinstance(val, int):
@@ -1141,25 +1136,25 @@ class ASTParser(ast.NodeVisitor):
                         arg_type = Pointer(dtype)
 
                     self.builder.add_container(ret_name, arg_type, is_argument=True)
-                    self.symbol_table[ret_name] = arg_type
+                    self.container_table[ret_name] = arg_type
 
-                    if res in self.array_info:
-                        self.array_info[ret_name] = self.array_info[res]
+                    if res in self.tensor_table:
+                        self.tensor_table[ret_name] = self.tensor_table[res]
 
             self.infer_return_type = False
 
         for i, res in enumerate(parsed_values):
             ret_name = f"_docc_ret_{i}"
-            typ = self.symbol_table.get(ret_name)
+            typ = self.container_table.get(ret_name)
 
             is_array_return = False
-            if res in self.array_info:
+            if res in self.tensor_table:
                 # Only treat as array return if it has dimensions
                 # 0-d arrays (scalars) should be handled by scalar assignment
-                if self.array_info[res]["ndim"] > 0:
+                if len(self.tensor_table[res].shape) > 0:
                     is_array_return = True
-            elif res in self.symbol_table:
-                if isinstance(self.symbol_table[res], Pointer):
+            elif res in self.container_table:
+                if isinstance(self.container_table[res], Pointer):
                     is_array_return = True
 
             # Simple Scalar Assignment
@@ -1182,24 +1177,25 @@ class ASTParser(ast.NodeVisitor):
             # Array Assignment (Copy)
             else:
                 # Record shape for metadata
-                if res in self.array_info:
+                if res in self.tensor_table:
                     # Prefer runtime shapes if available (for indirect access patterns)
                     # Fall back to regular shapes otherwise
-                    if "shapes_runtime" in self.array_info[res]:
-                        shape = self.array_info[res]["shapes_runtime"]
+                    res_info = self.tensor_table[res]
+                    if res in self.shapes_runtime_info:
+                        shape = self.shapes_runtime_info[res]
                     else:
-                        shape = self.array_info[res]["shapes"]
+                        shape = res_info.shape
                     # Convert to string expressions
                     self.captured_return_shapes[ret_name] = [str(s) for s in shape]
 
                     # Ensure destination array info exists
-                    if ret_name not in self.array_info:
-                        self.array_info[ret_name] = self.array_info[res]
+                    if ret_name not in self.tensor_table:
+                        self.tensor_table[ret_name] = self.tensor_table[res]
 
                 # Copy Logic using visit_Assign
                 ndim = 1
-                if ret_name in self.array_info:
-                    ndim = self.array_info[ret_name]["ndim"]
+                if ret_name in self.tensor_table:
+                    ndim = len(self.tensor_table[ret_name].shape)
 
                 slice_node = ast.Slice(lower=None, upper=None, step=None)
                 if ndim > 1:
@@ -1240,9 +1236,9 @@ class ASTParser(ast.NodeVisitor):
                 else:
                     array_name = node.func.value.id
                     method_name = node.func.attr
-                    if array_name in self.array_info and method_name == "astype":
+                    if array_name in self.tensor_table and method_name == "astype":
                         return self.numpy_visitor.handle_numpy_astype(node, array_name)
-                    elif array_name in self.array_info and method_name == "copy":
+                    elif array_name in self.tensor_table and method_name == "copy":
                         return self.numpy_visitor.handle_numpy_copy(node, array_name)
             elif isinstance(node.func.value, ast.Attribute):
                 if (
@@ -1373,11 +1369,11 @@ class ASTParser(ast.NodeVisitor):
         # Inject closure constants as assignments
         for name, val in closure_constants.items():
             if isinstance(val, int):
-                self.symbol_table[name] = Scalar(PrimitiveType.Int64)
+                self.container_table[name] = Scalar(PrimitiveType.Int64)
                 self.builder.add_container(name, Scalar(PrimitiveType.Int64), False)
                 val_node = ast.Constant(value=val)
             else:
-                self.symbol_table[name] = Scalar(PrimitiveType.Double)
+                self.container_table[name] = Scalar(PrimitiveType.Double)
                 self.builder.add_container(name, Scalar(PrimitiveType.Double), False)
                 val_node = ast.Constant(value=val)
             assign = ast.Assign(
@@ -1388,14 +1384,14 @@ class ASTParser(ast.NodeVisitor):
         for arg_def, arg_val in zip(func_def.args.args, arg_vars):
             param_name = f"{arg_def.arg}{suffix}"
 
-            if arg_val in self.symbol_table:
-                self.symbol_table[param_name] = self.symbol_table[arg_val]
+            if arg_val in self.container_table:
+                self.container_table[param_name] = self.container_table[arg_val]
                 self.builder.add_container(
-                    param_name, self.symbol_table[arg_val], False
+                    param_name, self.container_table[arg_val], False
                 )
                 val_node = ast.Name(id=arg_val, ctx=ast.Load())
             elif self._is_int(arg_val):
-                self.symbol_table[param_name] = Scalar(PrimitiveType.Int64)
+                self.container_table[param_name] = Scalar(PrimitiveType.Int64)
                 self.builder.add_container(
                     param_name, Scalar(PrimitiveType.Int64), False
                 )
@@ -1403,7 +1399,7 @@ class ASTParser(ast.NodeVisitor):
             else:
                 try:
                     val = float(arg_val)
-                    self.symbol_table[param_name] = Scalar(PrimitiveType.Double)
+                    self.container_table[param_name] = Scalar(PrimitiveType.Double)
                     self.builder.add_container(
                         param_name, Scalar(PrimitiveType.Double), False
                     )
@@ -1421,8 +1417,8 @@ class ASTParser(ast.NodeVisitor):
         # Create a new parser instance for the inlined function
         parser = ASTParser(
             self.builder,
-            self.array_info,
-            self.symbol_table,
+            self.tensor_table,
+            self.container_table,
             globals_dict=combined_globals,
             unique_counter_ref=self._unique_counter_ref,
         )
@@ -1446,8 +1442,8 @@ class ASTParser(ast.NodeVisitor):
             raise ValueError("Builder required for expression slicing")
 
         dtype = Scalar(PrimitiveType.Double)
-        if value_str in self.symbol_table:
-            t = self.symbol_table[value_str]
+        if value_str in self.container_table:
+            t = self.container_table[value_str]
             if isinstance(t, Pointer) and t.has_pointee_type():
                 dtype = t.pointee_type
 
@@ -1519,7 +1515,7 @@ class ASTParser(ast.NodeVisitor):
 
         if result_ndim == 0:
             self.builder.add_container(tmp_name, dtype, False)
-            self.symbol_table[tmp_name] = dtype
+            self.container_table[tmp_name] = dtype
         else:
             size_str = "1"
             for dim in result_shapes:
@@ -1530,12 +1526,12 @@ class ASTParser(ast.NodeVisitor):
 
             ptr_type = Pointer(dtype)
             self.builder.add_container(tmp_name, ptr_type, False)
-            self.symbol_table[tmp_name] = ptr_type
-            self.array_info[tmp_name] = {
-                "ndim": result_ndim,
-                "shapes": result_shapes,
-                "shapes_runtime": result_shapes_runtime,
-            }
+            self.container_table[tmp_name] = ptr_type
+            tensor_info = Tensor(dtype, result_shapes)
+            self.shapes_runtime_info[tmp_name] = (
+                result_shapes_runtime  # Store runtime shapes separately
+            )
+            self.tensor_table[tmp_name] = tensor_info
 
             debug_info = DebugInfo()
             block_alloc = self.builder.add_block(debug_info)
@@ -1554,7 +1550,7 @@ class ASTParser(ast.NodeVisitor):
 
             if not self.builder.exists(loop_var):
                 self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
-                self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+                self.container_table[loop_var] = Scalar(PrimitiveType.Int64)
 
             count_str = f"({stop_str} - {start_str})"
             self.builder.begin_for(loop_var, "0", count_str, "1", debug_info)
@@ -1621,7 +1617,7 @@ class ASTParser(ast.NodeVisitor):
     def _is_array_index(self, node):
         """Check if a node represents an array that could be used as an index (gather)."""
         if isinstance(node, ast.Name):
-            return node.id in self.array_info
+            return node.id in self.tensor_table
         return False
 
     def _handle_gather(self, value_str, index_node, debug_info=None):
@@ -1634,26 +1630,34 @@ class ASTParser(ast.NodeVisitor):
         else:
             idx_array_name = self.visit(index_node)
 
-        if idx_array_name not in self.array_info:
+        if idx_array_name not in self.tensor_table:
             raise ValueError(f"Gather index must be an array, got {idx_array_name}")
 
-        idx_shapes = self.array_info[idx_array_name].get("shapes", [])
-        idx_ndim = self.array_info[idx_array_name]["ndim"]
+        idx_shapes = self.tensor_table[idx_array_name].shape
+        idx_ndim = len(idx_shapes)
 
         if idx_ndim != 1:
             raise NotImplementedError("Only 1D index arrays supported for gather")
 
         result_shape = idx_shapes[0] if idx_shapes else f"_{idx_array_name}_shape_0"
 
+        # For runtime evaluation, prefer shapes_runtime_info if available
+        # This ensures we use expressions that can be evaluated at runtime
+        if idx_array_name in self.shapes_runtime_info:
+            runtime_shapes = self.shapes_runtime_info[idx_array_name]
+            result_shape_runtime = runtime_shapes[0] if runtime_shapes else result_shape
+        else:
+            result_shape_runtime = result_shape
+
         dtype = Scalar(PrimitiveType.Double)
-        if value_str in self.symbol_table:
-            t = self.symbol_table[value_str]
+        if value_str in self.container_table:
+            t = self.container_table[value_str]
             if isinstance(t, Pointer) and t.has_pointee_type():
                 dtype = t.pointee_type
 
         idx_dtype = Scalar(PrimitiveType.Int64)
-        if idx_array_name in self.symbol_table:
-            t = self.symbol_table[idx_array_name]
+        if idx_array_name in self.container_table:
+            t = self.container_table[idx_array_name]
             if isinstance(t, Pointer) and t.has_pointee_type():
                 idx_dtype = t.pointee_type
 
@@ -1664,8 +1668,10 @@ class ASTParser(ast.NodeVisitor):
 
         ptr_type = Pointer(dtype)
         self.builder.add_container(tmp_name, ptr_type, False)
-        self.symbol_table[tmp_name] = ptr_type
-        self.array_info[tmp_name] = {"ndim": 1, "shapes": [result_shape]}
+        self.container_table[tmp_name] = ptr_type
+        self.tensor_table[tmp_name] = Tensor(dtype, [result_shape])
+        # Store runtime evaluable shape for this gather result
+        self.shapes_runtime_info[tmp_name] = [result_shape_runtime]
 
         block_alloc = self.builder.add_block(debug_info)
         t_malloc = self.builder.add_malloc(block_alloc, total_size)
@@ -1676,11 +1682,11 @@ class ASTParser(ast.NodeVisitor):
 
         loop_var = self.builder.find_new_name("_gather_i_")
         self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
-        self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+        self.container_table[loop_var] = Scalar(PrimitiveType.Int64)
 
         idx_var = self.builder.find_new_name("_gather_idx_")
         self.builder.add_container(idx_var, idx_dtype, False)
-        self.symbol_table[idx_var] = idx_dtype
+        self.container_table[idx_var] = idx_dtype
 
         self.builder.begin_for(loop_var, "0", str(result_shape), "1", debug_info)
 
@@ -1750,17 +1756,17 @@ class ASTParser(ast.NodeVisitor):
         max_ndim = 0
 
         class NdimVisitor(ast.NodeVisitor):
-            def __init__(self, array_info):
-                self.array_info = array_info
+            def __init__(self, tensor_table):
+                self.tensor_table = tensor_table
                 self.max_ndim = 0
 
             def visit_Name(self, node):
-                if node.id in self.array_info:
-                    ndim = self.array_info[node.id].get("ndim", 0)
+                if node.id in self.tensor_table:
+                    ndim = len(self.tensor_table[node.id].shape)
                     self.max_ndim = max(self.max_ndim, ndim)
                 return self.generic_visit(node)
 
-        visitor = NdimVisitor(self.array_info)
+        visitor = NdimVisitor(self.tensor_table)
         visitor.visit(node)
         return visitor.max_ndim
 
@@ -1771,7 +1777,7 @@ class ASTParser(ast.NodeVisitor):
         # Number of broadcast dimensions (outer loops)
         broadcast_dims = target_ndim - value_ndim
 
-        shapes = self.array_info[target_name].get("shapes", [])
+        shapes = self.tensor_table[target_name].shape
 
         # Create outer loops for broadcast dimensions
         outer_loop_vars = []
@@ -1781,7 +1787,7 @@ class ASTParser(ast.NodeVisitor):
 
             if not self.builder.exists(loop_var):
                 self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
-                self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+                self.container_table[loop_var] = Scalar(PrimitiveType.Int64)
 
             dim_size = shapes[i] if i < len(shapes) else f"_{target_name}_shape_{i}"
             self.builder.begin_for(loop_var, "0", dim_size, "1", debug_info)
@@ -1793,7 +1799,7 @@ class ASTParser(ast.NodeVisitor):
         inner_shapes = shapes[broadcast_dims:] if len(shapes) > broadcast_dims else []
 
         # Determine element type from the target
-        target_type = self.symbol_table.get(target_name)
+        target_type = self.container_table.get(target_name)
         if isinstance(target_type, Pointer) and target_type.has_pointee_type():
             element_type = target_type.pointee_type
         else:
@@ -1802,10 +1808,10 @@ class ASTParser(ast.NodeVisitor):
         # Create pointer type for row view
         row_type = Pointer(element_type)
         self.builder.add_container(row_view_name, row_type, False)
-        self.symbol_table[row_view_name] = row_type
+        self.container_table[row_view_name] = row_type
 
-        # Register row view in array_info
-        self.array_info[row_view_name] = {"ndim": value_ndim, "shapes": inner_shapes}
+        # Register row view in tensor_table
+        self.tensor_table[row_view_name] = Tensor(element_type, list(inner_shapes))
 
         # Create reference memlet: row_view = &target[i, 0, 0, ...]
         # The index is: outer_loop_vars joined, then zeros for inner dims
@@ -1873,8 +1879,8 @@ class ASTParser(ast.NodeVisitor):
         if debug_info is None:
             debug_info = DebugInfo()
 
-        if target_name in self.array_info:
-            ndim = self.array_info[target_name]["ndim"]
+        if target_name in self.tensor_table:
+            ndim = len(self.tensor_table[target_name].shape)
             if len(indices) < ndim:
                 indices = list(indices)
                 for _ in range(ndim - len(indices)):
@@ -1924,13 +1930,13 @@ class ASTParser(ast.NodeVisitor):
                     self.builder.add_container(
                         loop_var, Scalar(PrimitiveType.Int64), False
                     )
-                    self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+                    self.container_table[loop_var] = Scalar(PrimitiveType.Int64)
 
                 start_str = "0"
                 if idx.lower:
                     start_str = self.visit(idx.lower)
                     if start_str.startswith("-"):
-                        shapes = self.array_info[target_name].get("shapes", [])
+                        shapes = self.tensor_table[target_name].shape
                         dim_size = (
                             str(shapes[i])
                             if i < len(shapes)
@@ -1944,7 +1950,7 @@ class ASTParser(ast.NodeVisitor):
                 ):
                     stop_str = self.visit(idx.upper)
                     if stop_str.startswith("-") or stop_str.startswith("(-"):
-                        shapes = self.array_info[target_name].get("shapes", [])
+                        shapes = self.tensor_table[target_name].shape
                         dim_size = (
                             str(shapes[i])
                             if i < len(shapes)
@@ -1952,7 +1958,7 @@ class ASTParser(ast.NodeVisitor):
                         )
                         stop_str = f"({dim_size} {stop_str})"
                 else:
-                    shapes = self.array_info[target_name].get("shapes", [])
+                    shapes = self.tensor_table[target_name].shape
                     stop_str = (
                         str(shapes[i])
                         if i < len(shapes)
@@ -1966,7 +1972,7 @@ class ASTParser(ast.NodeVisitor):
                 count_str = f"({stop_str} - {start_str})"
 
                 self.builder.begin_for(loop_var, "0", count_str, "1", debug_info)
-                self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+                self.container_table[loop_var] = Scalar(PrimitiveType.Int64)
 
                 new_target_indices.append(
                     ast.Name(
@@ -1975,12 +1981,12 @@ class ASTParser(ast.NodeVisitor):
                 )
             else:
                 # Handle non-slice indices - need to normalize negative indices
-                shapes = self.array_info[target_name].get("shapes", [])
+                shapes = self.tensor_table[target_name].shape
                 dim_size = shapes[i] if i < len(shapes) else f"_{target_name}_shape_{i}"
                 normalized_idx = normalize_negative_index(idx, dim_size)
                 new_target_indices.append(normalized_idx)
 
-        rewriter = SliceRewriter(loop_vars, self.array_info, self)
+        rewriter = SliceRewriter(loop_vars, self.tensor_table, self)
         new_value = rewriter.visit(copy.deepcopy(value))
 
         new_target = copy.deepcopy(target)
@@ -2045,8 +2051,7 @@ class ASTParser(ast.NodeVisitor):
 
         # We have slices on the target - need to create loops for copying
         # Get target array info
-        target_info = self.array_info.get(target_name, {})
-        target_shapes = target_info.get("shapes", [])
+        target_shapes = self.tensor_table[target_name].shape
 
         loop_vars = []
         new_target_indices = []
@@ -2060,7 +2065,7 @@ class ASTParser(ast.NodeVisitor):
                     self.builder.add_container(
                         loop_var, Scalar(PrimitiveType.Int64), False
                     )
-                    self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+                    self.container_table[loop_var] = Scalar(PrimitiveType.Int64)
 
                 start_str = "0"
                 if idx.lower:
@@ -2085,7 +2090,7 @@ class ASTParser(ast.NodeVisitor):
                 count_str = f"({stop_str} - {start_str})"
 
                 self.builder.begin_for(loop_var, "0", count_str, "1", debug_info)
-                self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
+                self.container_table[loop_var] = Scalar(PrimitiveType.Int64)
 
                 new_target_indices.append(
                     ast.Name(
@@ -2215,11 +2220,11 @@ class ASTParser(ast.NodeVisitor):
             return False
         if isinstance(node.value, ast.Name):
             arr_name = node.value.id
-            if arr_name in self.array_info:
+            if arr_name in self.tensor_table:
                 if isinstance(node.slice, ast.Subscript):
                     if isinstance(node.slice.value, ast.Name):
                         idx_arr_name = node.slice.value.id
-                        if idx_arr_name in self.array_info:
+                        if idx_arr_name in self.tensor_table:
                             return True
         return False
 
@@ -2228,7 +2233,7 @@ class ASTParser(ast.NodeVisitor):
         if isinstance(node, ast.Subscript):
             if isinstance(node.value, ast.Name):
                 arr_name = node.value.id
-                if arr_name in self.array_info:
+                if arr_name in self.tensor_table:
                     return True
         elif isinstance(node, ast.BinOp):
             return self._contains_indirect_access(
@@ -2258,22 +2263,22 @@ class ASTParser(ast.NodeVisitor):
             return (expr, expr) if return_original_expr else expr
 
         arr_name = node.value.id
-        if arr_name not in self.array_info:
+        if arr_name not in self.tensor_table:
             expr = self.visit(node)
             return (expr, expr) if return_original_expr else expr
 
         dtype = Scalar(PrimitiveType.Int64)
-        if arr_name in self.symbol_table:
-            t = self.symbol_table[arr_name]
+        if arr_name in self.container_table:
+            t = self.container_table[arr_name]
             if isinstance(t, Pointer) and t.has_pointee_type():
                 dtype = t.pointee_type
 
         tmp_name = self.builder.find_new_name("_idx_")
         self.builder.add_container(tmp_name, dtype, False)
-        self.symbol_table[tmp_name] = dtype
+        self.container_table[tmp_name] = dtype
 
-        ndim = self.array_info[arr_name]["ndim"]
-        shapes = self.array_info[arr_name].get("shapes", [])
+        ndim = len(self.tensor_table[arr_name].shape)
+        shapes = self.tensor_table[arr_name].shape
 
         if isinstance(node.slice, ast.Tuple):
             indices = [self.visit(elt) for elt in node.slice.elts]
@@ -2316,8 +2321,8 @@ class ASTParser(ast.NodeVisitor):
         return self._unique_counter_ref[0]
 
     def _element_type(self, name):
-        if name in self.symbol_table:
-            return element_type_from_sdfg_type(self.symbol_table[name])
+        if name in self.container_table:
+            return element_type_from_sdfg_type(self.container_table[name])
         else:  # Constant
             if self._is_int(name):
                 return Scalar(PrimitiveType.Int64)
@@ -2335,8 +2340,8 @@ class ASTParser(ast.NodeVisitor):
         if "(" in operand and operand.endswith(")"):
             name = operand.split("(")[0]
 
-        if name in self.symbol_table:
-            t = self.symbol_table[name]
+        if name in self.container_table:
+            t = self.container_table[name]
 
             def is_int_ptype(pt):
                 return pt in [
@@ -2399,11 +2404,11 @@ class ASTParser(ast.NodeVisitor):
         if self.builder.exists(expr_str):
             access = self.builder.add_access(block, expr_str, debug_info)
             subset = ""
-            if expr_str in self.symbol_table:
-                sym_type = self.symbol_table[expr_str]
+            if expr_str in self.container_table:
+                sym_type = self.container_table[expr_str]
                 if isinstance(sym_type, Pointer):
-                    if expr_str in self.array_info:
-                        ndim = self.array_info[expr_str].get("ndim", 0)
+                    if expr_str in self.tensor_table:
+                        ndim = len(self.tensor_table[expr_str].shape)
                         if ndim == 0:
                             subset = "0"
                     else:

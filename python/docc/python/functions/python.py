@@ -36,8 +36,8 @@ class PythonHandler:
         return self._ev.builder
 
     @property
-    def symbol_table(self):
-        return self._ev.symbol_table
+    def container_table(self):
+        return self._ev.container_table
 
     def _add_read(self, block, expr_str, debug_info=None):
         return self._ev._add_read(block, expr_str, debug_info)
@@ -63,8 +63,8 @@ class PythonHandler:
             if "(" in arg and arg.endswith(")"):
                 name = arg.split("(")[0]
 
-            if name in self.symbol_table:
-                t = self.symbol_table[name]
+            if name in self.container_table:
+                t = self.container_table[name]
                 if isinstance(t, Pointer):
                     t = t.base_type
 
@@ -84,7 +84,7 @@ class PythonHandler:
 
         tmp_name = self.builder.find_new_name("_tmp_")
         self.builder.add_container(tmp_name, dtype, False)
-        self.symbol_table[tmp_name] = dtype
+        self.container_table[tmp_name] = dtype
 
         if is_float:
             # Cast args if necessary
@@ -96,7 +96,7 @@ class PythonHandler:
                     self.builder.add_container(
                         tmp_cast, Scalar(PrimitiveType.Double), False
                     )
-                    self.symbol_table[tmp_cast] = Scalar(PrimitiveType.Double)
+                    self.container_table[tmp_cast] = Scalar(PrimitiveType.Double)
 
                     # Assign int to double (implicit cast)
                     self.builder.add_assignment(tmp_cast, arg)
@@ -161,8 +161,8 @@ class PythonHandler:
         if "(" in arg and arg.endswith(")"):
             name = arg.split("(")[0]
 
-        if name in self.symbol_table:
-            source_dtype = self.symbol_table[name]
+        if name in self.container_table:
+            source_dtype = self.container_table[name]
             if isinstance(source_dtype, Pointer):
                 source_dtype = source_dtype.base_type
         elif self._is_int(arg):
@@ -176,7 +176,7 @@ class PythonHandler:
         # Create temporary variable for result
         tmp_name = self.builder.find_new_name("_tmp_")
         self.builder.add_container(tmp_name, target_dtype, False)
-        self.symbol_table[tmp_name] = target_dtype
+        self.container_table[tmp_name] = target_dtype
 
         # Use tasklet assign opcode for casting (as specified in problem statement)
         block = self.builder.add_block()
