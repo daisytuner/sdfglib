@@ -49,9 +49,6 @@ class SciPyHandler:
     def _get_unique_id(self):
         return self._ev._get_unique_id()
 
-    def _get_temp_name(self, prefix="_tmp_"):
-        return self._ev._get_temp_name(prefix)
-
     def visit(self, node):
         return self._ev.visit(node)
 
@@ -304,7 +301,7 @@ class SciPyHandler:
         rather than a direct assignment.
         """
         # Create a temporary name for the result
-        tmp_name = self._get_temp_name("_corr2d_")
+        tmp_name = self.builder.find_new_name("_corr2d_")
         # Delegate to the main handler
         success = self.handle_correlate2d(tmp_name, node)
         if not success:

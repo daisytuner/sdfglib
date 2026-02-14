@@ -8,8 +8,6 @@ from docc.sdfg import (
     CMathFunction,
 )
 from docc.python.types import (
-    sdfg_type_from_type,
-    element_type_from_sdfg_type,
     element_type_from_ast_node,
     promote_element_types,
 )
@@ -82,9 +80,6 @@ class NumPyHandler:
 
     def _get_unique_id(self):
         return self._ev._get_unique_id()
-
-    def _get_temp_name(self, prefix="_tmp_"):
-        return self._ev._get_temp_name(prefix)
 
     def _add_read(self, block, expr_str, debug_info=None):
         return self._ev._add_read(block, expr_str, debug_info)
@@ -926,7 +921,7 @@ class NumPyHandler:
         if operand in self.array_info:
             shape = self.array_info[operand]["shapes"]
 
-        dtype = self._element_type(operand)
+        dtype = self._ev._element_type(operand)
 
         if not shape or len(shape) == 0:
             tmp_name = self._create_array_temp(shape, dtype)
@@ -954,12 +949,6 @@ class NumPyHandler:
 
         return tmp_name
 
-    def _element_type(self, name):
-        if name in self.symbol_table:
-            return element_type_from_sdfg_type(self.symbol_table[name])
-        else:  # Constant
-            return Scalar(PrimitiveType.Double)
-
     def handle_array_binary_op(self, op_type, left, right):
         left_shape = []
         right_shape = []
@@ -970,8 +959,8 @@ class NumPyHandler:
 
         shape = self._compute_broadcast_shape(left_shape, right_shape)
 
-        dtype_left = self._element_type(left)
-        dtype_right = self._element_type(right)
+        dtype_left = self._ev._element_type(left)
+        dtype_right = self._ev._element_type(right)
         dtype = promote_element_types(dtype_left, dtype_right)
 
         real_left = left
@@ -1028,7 +1017,7 @@ class NumPyHandler:
 
     def handle_array_negate(self, operand):
         shape = self.array_info[operand]["shapes"]
-        dtype = self._element_type(operand)
+        dtype = self._ev._element_type(operand)
 
         tmp_name = self._create_array_temp(shape, dtype)
 
@@ -1063,7 +1052,7 @@ class NumPyHandler:
             arr_name = right
 
         use_int_cmp = False
-        arr_dtype = self._element_type(arr_name)
+        arr_dtype = self._ev._element_type(arr_name)
         if arr_dtype.primitive_type in (PrimitiveType.Int32, PrimitiveType.Int64):
             use_int_cmp = True
 
@@ -1593,8 +1582,8 @@ class NumPyHandler:
                 f"Matmul with ranks {ndim_a} and {ndim_b} not supported"
             )
 
-        dtype_a = self._element_type(name_a)
-        dtype_b = self._element_type(name_b)
+        dtype_a = self._ev._element_type(name_a)
+        dtype_b = self._ev._element_type(name_b)
         dtype = promote_element_types(dtype_a, dtype_b)
 
         if is_scalar:
@@ -1691,8 +1680,8 @@ class NumPyHandler:
         m_expr = get_flattened_size_expr(name_a, indices_a, shape_a)
         n_expr = get_flattened_size_expr(name_b, indices_b, shape_b)
 
-        dtype_a = self._element_type(name_a)
-        dtype_b = self._element_type(name_b)
+        dtype_a = self._ev._element_type(name_a)
+        dtype_b = self._ev._element_type(name_b)
         dtype = promote_element_types(dtype_a, dtype_b)
 
         tmp_name = self._create_array_temp([m_expr, n_expr], dtype)
@@ -1759,8 +1748,8 @@ class NumPyHandler:
         m_expr = get_flattened_size_expr(shape_a)
         n_expr = get_flattened_size_expr(shape_b)
 
-        dtype_left = self._element_type(name_a)
-        dtype_right = self._element_type(name_b)
+        dtype_left = self._ev._element_type(name_a)
+        dtype_right = self._ev._element_type(name_b)
         dtype = promote_element_types(dtype_left, dtype_right)
 
         is_int = dtype.primitive_type in [
@@ -1776,8 +1765,8 @@ class NumPyHandler:
 
         tmp_name = self._create_array_temp([m_expr, n_expr], dtype)
 
-        i_var = self._get_temp_name("_outer_i_")
-        j_var = self._get_temp_name("_outer_j_")
+        i_var = self.builder.find_new_name("_outer_i_")
+        j_var = self.builder.find_new_name("_outer_j_")
 
         if not self.builder.exists(i_var):
             self.builder.add_container(i_var, Scalar(PrimitiveType.Int64), False)
@@ -1941,7 +1930,7 @@ class NumPyHandler:
             else:
                 output_shape.append(input_shape[i])
 
-        dtype = self._element_type(array_name)
+        dtype = self._ev._element_type(array_name)
 
         if not output_shape:
             tmp_name = f"_tmp_{self._get_unique_id()}"

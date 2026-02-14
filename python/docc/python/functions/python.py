@@ -39,9 +39,6 @@ class PythonHandler:
     def symbol_table(self):
         return self._ev.symbol_table
 
-    def _get_temp_name(self, prefix="_tmp_"):
-        return self._ev._get_temp_name(prefix)
-
     def _add_read(self, block, expr_str, debug_info=None):
         return self._ev._add_read(block, expr_str, debug_info)
 
@@ -85,7 +82,7 @@ class PythonHandler:
 
         dtype = Scalar(PrimitiveType.Double if is_float else PrimitiveType.Int64)
 
-        tmp_name = self._get_temp_name("_tmp_")
+        tmp_name = self.builder.find_new_name("_tmp_")
         self.builder.add_container(tmp_name, dtype, False)
         self.symbol_table[tmp_name] = dtype
 
@@ -95,7 +92,7 @@ class PythonHandler:
             for i, arg in enumerate(args):
                 if arg_types[i] != PrimitiveType.Double:
                     # Create temp double
-                    tmp_cast = self._get_temp_name("_cast_")
+                    tmp_cast = self.builder.find_new_name("_cast_")
                     self.builder.add_container(
                         tmp_cast, Scalar(PrimitiveType.Double), False
                     )
@@ -177,7 +174,7 @@ class PythonHandler:
             source_dtype = Scalar(PrimitiveType.Double)
 
         # Create temporary variable for result
-        tmp_name = self._get_temp_name("_tmp_")
+        tmp_name = self.builder.find_new_name("_tmp_")
         self.builder.add_container(tmp_name, target_dtype, False)
         self.symbol_table[tmp_name] = target_dtype
 

@@ -64,9 +64,6 @@ class MathHandler:
     def symbol_table(self):
         return self._ev.symbol_table
 
-    def _get_temp_name(self, prefix="_tmp_"):
-        return self._ev._get_temp_name(prefix)
-
     def _add_read(self, block, expr_str, debug_info=None):
         return self._ev._add_read(block, expr_str, debug_info)
 
@@ -84,7 +81,7 @@ class MathHandler:
 
         args = [self.visit(arg) for arg in node.args]
 
-        tmp_name = self._get_temp_name("_tmp_")
+        tmp_name = self.builder.find_new_name("_tmp_")
         dtype = Scalar(PrimitiveType.Double)
         self.builder.add_container(tmp_name, dtype, False)
         self.symbol_table[tmp_name] = dtype

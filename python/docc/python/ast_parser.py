@@ -17,6 +17,10 @@ from docc.python.ast_utils import (
     contains_ufunc_outer,
     normalize_negative_index,
 )
+from docc.python.types import (
+    sdfg_type_from_type,
+    element_type_from_sdfg_type,
+)
 from docc.python.functions.numpy import NumPyHandler
 from docc.python.functions.math import MathHandler
 from docc.python.functions.python import PythonHandler
@@ -149,7 +153,7 @@ class ASTParser(ast.NodeVisitor):
         values = [f"({self.visit(v)} != 0)" for v in node.values]
         expr_str = f"{f' {op} '.join(values)}"
 
-        tmp_name = f"_tmp_{self._get_unique_id()}"
+        tmp_name = self.builder.find_new_name()
         dtype = Scalar(PrimitiveType.Bool)
         self.builder.add_container(tmp_name, dtype, False)
 
@@ -176,7 +180,7 @@ class ASTParser(ast.NodeVisitor):
         if operand in self.array_info and op == "-":
             return self.numpy_visitor.handle_array_negate(operand)
 
-        tmp_name = f"_tmp_{self._get_unique_id()}"
+        tmp_name = self.builder.find_new_name()
         dtype = Scalar(PrimitiveType.Double)
         if operand in self.symbol_table:
             dtype = self.symbol_table[operand]
@@ -261,7 +265,7 @@ class ASTParser(ast.NodeVisitor):
             else:
                 raise NotImplementedError(f"Array operation {op} not supported")
 
-        tmp_name = f"_tmp_{self._get_unique_id()}"
+        tmp_name = self.builder.find_new_name()
 
         dtype = Scalar(PrimitiveType.Double)
 
@@ -280,7 +284,7 @@ class ASTParser(ast.NodeVisitor):
 
         if dtype.primitive_type == PrimitiveType.Double:
             if left_is_int:
-                left_cast = f"_tmp_{self._get_unique_id()}"
+                left_cast = self.builder.find_new_name()
                 self.builder.add_container(
                     left_cast, Scalar(PrimitiveType.Double), False
                 )
@@ -298,7 +302,7 @@ class ASTParser(ast.NodeVisitor):
                 real_left = left_cast
 
             if right_is_int:
-                right_cast = f"_tmp_{self._get_unique_id()}"
+                right_cast = self.builder.find_new_name()
                 self.builder.add_container(
                     right_cast, Scalar(PrimitiveType.Double), False
                 )
@@ -342,7 +346,7 @@ class ASTParser(ast.NodeVisitor):
                     block, t_right, "void", t_rem1, "_in2", right_sub
                 )
 
-                rem1_name = f"_tmp_{self._get_unique_id()}"
+                rem1_name = self.builder.find_new_name()
                 self.builder.add_container(rem1_name, dtype, False)
                 t_rem1_out = self.builder.add_access(block, rem1_name)
                 self.builder.add_memlet(block, t_rem1, "_out", t_rem1_out, "void", "")
@@ -355,7 +359,7 @@ class ASTParser(ast.NodeVisitor):
                     block, t_right, "void", t_add, "_in2", right_sub
                 )
 
-                add_name = f"_tmp_{self._get_unique_id()}"
+                add_name = self.builder.find_new_name()
                 self.builder.add_container(add_name, dtype, False)
                 t_add_out = self.builder.add_access(block, add_name)
                 self.builder.add_memlet(block, t_add, "_out", t_add_out, "void", "")
@@ -379,7 +383,7 @@ class ASTParser(ast.NodeVisitor):
                     block, t_right, "void", t_rem1, "_in2", right_sub
                 )
 
-                rem1_name = f"_tmp_{self._get_unique_id()}"
+                rem1_name = self.builder.find_new_name()
                 self.builder.add_container(rem1_name, dtype, False)
                 t_rem1_out = self.builder.add_access(block, rem1_name)
                 self.builder.add_memlet(block, t_rem1, "_out", t_rem1_out, "void", "")
@@ -392,7 +396,7 @@ class ASTParser(ast.NodeVisitor):
                     block, t_right, "void", t_add, "_in2", right_sub
                 )
 
-                add_name = f"_tmp_{self._get_unique_id()}"
+                add_name = self.builder.find_new_name()
                 self.builder.add_container(add_name, dtype, False)
                 t_add_out = self.builder.add_access(block, add_name)
                 self.builder.add_memlet(block, t_add, "_out", t_add_out, "void", "")
@@ -482,7 +486,7 @@ class ASTParser(ast.NodeVisitor):
                 val = "M_E"
 
             if val:
-                tmp_name = f"_tmp_{self._get_unique_id()}"
+                tmp_name = self.builder.find_new_name()
                 dtype = Scalar(PrimitiveType.Double)
                 self.builder.add_container(tmp_name, dtype, False)
                 self.symbol_table[tmp_name] = dtype
@@ -513,7 +517,7 @@ class ASTParser(ast.NodeVisitor):
                                 f"Available members: {list(self.structure_member_info.get(struct_name, {}).keys())}"
                             )
 
-                        tmp_name = f"_tmp_{self._get_unique_id()}"
+                        tmp_name = self.builder.find_new_name()
 
                         self.builder.add_container(tmp_name, member_type, False)
                         self.symbol_table[tmp_name] = member_type
@@ -554,7 +558,7 @@ class ASTParser(ast.NodeVisitor):
 
         expr_str = f"{left} {op} {right}"
 
-        tmp_name = f"_tmp_{self._get_unique_id()}"
+        tmp_name = self.builder.find_new_name()
         dtype = Scalar(PrimitiveType.Bool)
         self.builder.add_container(tmp_name, dtype, False)
 
@@ -678,7 +682,7 @@ class ASTParser(ast.NodeVisitor):
                             et = et()
                         dtype = et
 
-                tmp_name = f"_tmp_{self._get_unique_id()}"
+                tmp_name = self.builder.find_new_name()
                 self.builder.add_container(tmp_name, dtype, False)
 
                 block = self.builder.add_block()
@@ -706,7 +710,7 @@ class ASTParser(ast.NodeVisitor):
             and isinstance(node.ctx, ast.Load)
             and value_str in self.array_info
         ):
-            tmp_name = f"_tmp_{self._get_unique_id()}"
+            tmp_name = self.builder.find_new_name()
             self.builder.add_container(tmp_name, Scalar(PrimitiveType.Double), False)
             self.builder.add_assignment(tmp_name, access_str)
             self.symbol_table[tmp_name] = Scalar(PrimitiveType.Double)
@@ -746,7 +750,7 @@ class ASTParser(ast.NodeVisitor):
 
     def visit_Assign(self, node):
         if len(node.targets) > 1:
-            tmp_name = f"_assign_tmp_{self._get_unique_id()}"
+            tmp_name = self.builder.find_new_name()
             # Assign value to temporary
             val_assign = ast.Assign(
                 targets=[ast.Name(id=tmp_name, ctx=ast.Store())], value=node.value
@@ -1035,7 +1039,7 @@ class ASTParser(ast.NodeVisitor):
                 arr_size = arr_info["shapes"][0]
 
                 # Create a hidden index variable for the loop
-                idx_var = f"_iter_idx_{self._get_unique_id()}"
+                idx_var = self.builder.find_new_name()
                 if not self.builder.exists(idx_var):
                     self.builder.add_container(
                         idx_var, Scalar(PrimitiveType.Int64), False
@@ -1301,7 +1305,7 @@ class ASTParser(ast.NodeVisitor):
                 f"Argument count mismatch for {func_obj.__name__}"
             )
 
-        suffix = f"_{func_obj.__name__}_{self._get_unique_id()}"
+        suffix = f"_{func_obj.__name__}_{self.builder.find_new_name()}"
         res_name = f"_res{suffix}"
 
         class VariableRenamer(ast.NodeTransformer):
@@ -1483,7 +1487,7 @@ class ASTParser(ast.NodeVisitor):
                     index_str = f"({shape_val} + {index_str})"
                 index_info.append((i, index_str))
 
-        tmp_name = self._get_temp_name("_slice_tmp_")
+        tmp_name = self.builder.find_new_name("_slice_tmp_")
         result_ndim = len(result_shapes)
 
         if result_ndim == 0:
@@ -1518,7 +1522,7 @@ class ASTParser(ast.NodeVisitor):
         debug_info = DebugInfo()
 
         for dim_idx, (orig_dim, start_str, stop_str, step_str) in enumerate(slice_info):
-            loop_var = f"_slice_loop_{dim_idx}_{self._get_unique_id()}"
+            loop_var = self.builder.find_new_name(f"_slice_loop_{dim_idx}_")
             loop_vars.append((loop_var, orig_dim, start_str, step_str))
 
             if not self.builder.exists(loop_var):
@@ -1626,7 +1630,7 @@ class ASTParser(ast.NodeVisitor):
             if isinstance(t, Pointer) and t.has_pointee_type():
                 idx_dtype = t.pointee_type
 
-        tmp_name = self._get_temp_name("_gather_")
+        tmp_name = self.builder.find_new_name("_gather_")
 
         element_size = self.builder.get_sizeof(dtype)
         total_size = f"({result_shape} * {element_size})"
@@ -1643,11 +1647,11 @@ class ASTParser(ast.NodeVisitor):
             block_alloc, t_malloc, "_ret", t_ptr, "void", "", ptr_type, debug_info
         )
 
-        loop_var = f"_gather_i_{self._get_unique_id()}"
+        loop_var = self.builder.find_new_name("_gather_i_")
         self.builder.add_container(loop_var, Scalar(PrimitiveType.Int64), False)
         self.symbol_table[loop_var] = Scalar(PrimitiveType.Int64)
 
-        idx_var = f"_gather_idx_{self._get_unique_id()}"
+        idx_var = self.builder.find_new_name("_gather_idx_")
         self.builder.add_container(idx_var, idx_dtype, False)
         self.symbol_table[idx_var] = idx_dtype
 
@@ -1745,7 +1749,7 @@ class ASTParser(ast.NodeVisitor):
         # Create outer loops for broadcast dimensions
         outer_loop_vars = []
         for i in range(broadcast_dims):
-            loop_var = f"_bcast_iter_{i}_{self._get_unique_id()}"
+            loop_var = self.builder.find_new_name(f"_bcast_iter_{i}_")
             outer_loop_vars.append(loop_var)
 
             if not self.builder.exists(loop_var):
@@ -1756,7 +1760,7 @@ class ASTParser(ast.NodeVisitor):
             self.builder.begin_for(loop_var, "0", dim_size, "1", debug_info)
 
         # Create a row view (reference) for the inner dimensions
-        row_view_name = f"_row_view_{self._get_unique_id()}"
+        row_view_name = self.builder.find_new_name("_row_view_")
 
         # Get inner shape for the row view
         inner_shapes = shapes[broadcast_dims:] if len(shapes) > broadcast_dims else []
@@ -1886,7 +1890,7 @@ class ASTParser(ast.NodeVisitor):
 
         for i, idx in enumerate(indices):
             if isinstance(idx, ast.Slice):
-                loop_var = f"_slice_iter_{len(loop_vars)}_{self._get_unique_id()}"
+                loop_var = self.builder.find_new_name(f"_slice_iter_{len(loop_vars)}_")
                 loop_vars.append(loop_var)
 
                 if not self.builder.exists(loop_var):
@@ -2022,7 +2026,7 @@ class ASTParser(ast.NodeVisitor):
 
         for i, idx in enumerate(indices):
             if isinstance(idx, ast.Slice):
-                loop_var = f"_copy_iter_{len(loop_vars)}_{self._get_unique_id()}"
+                loop_var = self.builder.find_new_name(f"_copy_iter_{len(loop_vars)}_")
                 loop_vars.append(loop_var)
 
                 if not self.builder.exists(loop_var):
@@ -2237,7 +2241,7 @@ class ASTParser(ast.NodeVisitor):
             if isinstance(t, Pointer) and t.has_pointee_type():
                 dtype = t.pointee_type
 
-        tmp_name = self._get_temp_name("_idx_")
+        tmp_name = self.builder.find_new_name("_idx_")
         self.builder.add_container(tmp_name, dtype, False)
         self.symbol_table[tmp_name] = dtype
 
@@ -2284,8 +2288,14 @@ class ASTParser(ast.NodeVisitor):
         self._unique_counter_ref[0] += 1
         return self._unique_counter_ref[0]
 
-    def _get_temp_name(self, prefix="_tmp_"):
-        return self.builder.find_new_name(prefix)
+    def _element_type(self, name):
+        if name in self.symbol_table:
+            return element_type_from_sdfg_type(self.symbol_table[name])
+        else:  # Constant
+            if self._is_int(name):
+                return Scalar(PrimitiveType.Int64)
+            else:
+                return Scalar(PrimitiveType.Double)
 
     def _is_int(self, operand):
         try:
