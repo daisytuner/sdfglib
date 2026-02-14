@@ -75,6 +75,8 @@ std::string PyStructuredSDFGBuilder::get_sizeof(const sdfg::types::IType& type) 
     return expr->__str__();
 }
 
+std::string PyStructuredSDFGBuilder::find_new_name(const std::string& prefix) { return builder_.find_new_name(prefix); }
+
 sdfg::structured_control_flow::Sequence& PyStructuredSDFGBuilder::current_sequence() {
     if (scope_stack.empty()) {
         throw std::runtime_error("Scope stack is empty!");

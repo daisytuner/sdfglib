@@ -47,6 +47,8 @@ public:
 
     std::string get_sizeof(const sdfg::types::IType& type);
 
+    std::string find_new_name(const std::string& prefix = "tmp_");
+
     /***** Control Flow *****/
 
     void add_return(const std::string& data, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());

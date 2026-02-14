@@ -188,6 +188,12 @@ PYBIND11_MODULE(_sdfg, m) {
             "Set the return type of the SDFG"
         )
         .def(
+            "find_new_name",
+            &PyStructuredSDFGBuilder::find_new_name,
+            py::arg("prefix") = "tmp_",
+            "Find a new unique name in the SDFG with the given prefix"
+        )
+        .def(
             "add_return",
             &PyStructuredSDFGBuilder::add_return,
             py::arg("data"),

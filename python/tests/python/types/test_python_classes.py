@@ -7,7 +7,7 @@ from docc.sdfg import (
     Structure,
     Tensor,
 )
-from docc.python.types import sdfg_type_from_dtype
+from docc.python.types import sdfg_type_from_type
 
 
 class Point2D:
@@ -17,7 +17,7 @@ class Point2D:
 
 
 def test_python_class():
-    result = sdfg_type_from_dtype(Point2D)
+    result = sdfg_type_from_type(Point2D)
     assert isinstance(result, Pointer)
     assert result.has_pointee_type()
     assert isinstance(result.pointee_type, Structure)

@@ -294,7 +294,7 @@ class PythonProgram(DoccProgram):
 
         # Build ONNX model from JSON if target is onnx (after _compile creates the JSON)
         if self.target == "onnx":
-            from docc.python.onnx_model_builder import convert_json_to_onnx
+            from docc.python.targets.onnx_model_builder import convert_json_to_onnx
 
             onnx_model_path = convert_json_to_onnx(output_folder)
             if onnx_model_path:

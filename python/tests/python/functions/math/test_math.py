@@ -1,6 +1,7 @@
-from docc.python import native
 import pytest
 import math
+
+from docc.python import native
 
 # =============================================================================
 # Trigonometric Functions
