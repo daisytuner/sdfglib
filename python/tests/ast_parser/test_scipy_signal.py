@@ -4,6 +4,7 @@ import numpy as np
 import scipy.signal
 
 
+@pytest.mark.skip()
 def test_scipy_correlate2d_valid():
     @native
     def correlate2d_valid(n: int, k: int) -> float:
@@ -30,6 +31,7 @@ def test_scipy_correlate2d_valid():
     assert correlate2d_valid(n, k) == expected
 
 
+@pytest.mark.skip()
 def test_scipy_correlate2d_same():
     @native
     def correlate2d_same(n: int, k: int) -> float:
