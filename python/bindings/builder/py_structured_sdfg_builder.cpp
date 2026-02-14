@@ -132,26 +132,23 @@ void PyStructuredSDFGBuilder::end_if() {
     scope_stack.pop_back();
 }
 
-void PyStructuredSDFGBuilder::begin_while(const std::string& condition, const sdfg::DebugInfo& debug_info) {
+void PyStructuredSDFGBuilder::begin_while(const sdfg::DebugInfo& debug_info) {
     auto& parent = current_sequence();
     auto& while_node = builder_.add_while(parent, {}, debug_info);
 
     auto& while_body = while_node.root();
 
-    auto cond_expr = parse_and_expand(condition);
-    auto cond_bool = SymEngine::rcp_dynamic_cast<const SymEngine::Boolean>(cond_expr);
-    if (cond_bool.is_null()) {
-        throw std::runtime_error("Condition must be a boolean expression: " + condition);
-    }
-
-    auto not_cond = SymEngine::logical_not(cond_bool);
-
-    auto& if_node = builder_.add_if_else(while_body, {}, debug_info);
-    auto& then_block = builder_.add_case(if_node, not_cond, debug_info);
-
-    builder_.add_break(then_block, {}, debug_info);
-
     scope_stack.push_back({&while_body, &while_node, 0});
+}
+
+void PyStructuredSDFGBuilder::add_break(const sdfg::DebugInfo& debug_info) {
+    auto& parent = current_sequence();
+    builder_.add_break(parent, {}, debug_info);
+}
+
+void PyStructuredSDFGBuilder::add_continue(const sdfg::DebugInfo& debug_info) {
+    auto& parent = current_sequence();
+    builder_.add_continue(parent, {}, debug_info);
 }
 
 void PyStructuredSDFGBuilder::end_while() {

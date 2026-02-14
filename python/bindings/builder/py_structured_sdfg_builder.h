@@ -63,7 +63,11 @@ public:
 
     void end_if();
 
-    void begin_while(const std::string& condition, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
+    void begin_while(const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
+
+    void add_break(const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
+
+    void add_continue(const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
 
     void end_while();
 

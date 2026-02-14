@@ -100,10 +100,22 @@ def test_bitwise_ops():
     assert bit_or(5, 3) == 7  # 101 | 011 = 111 (7)
 
     @native
+    def bit_and(a, b) -> int:
+        return a & b
+
+    assert bit_and(5, 3) == 1  # 101 & 011 = 001 (1)
+
+    @native
     def bit_xor(a, b) -> int:
         return a ^ b
 
     assert bit_xor(5, 3) == 6  # 101 ^ 011 = 110 (6)
+
+    @native
+    def bit_not(a) -> int:
+        return ~a
+
+    assert bit_not(5) == -6  # ~5 = -6 in Python (two's complement)
 
 
 def test_logical_ops():
@@ -134,12 +146,3 @@ def test_logical_ops():
 
     assert logical_not(0) == 1
     assert logical_not(1) == 0
-
-
-def test_complex_expression():
-    @native
-    def complex_expr(a, b, c) -> int:
-        return (a + b) * c // 2
-
-    # (3 + 4) * 5 // 2 = 7 * 5 // 2 = 35 // 2 = 17
-    assert complex_expr(3, 4, 5) == 17

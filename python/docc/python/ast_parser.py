@@ -941,16 +941,36 @@ class ASTParser(ast.NodeVisitor):
         self.builder.end_if()
 
     def visit_While(self, node):
-        cond = self.visit(node.test)
+        if node.orelse:
+            raise NotImplementedError("while-else is not supported")
+
         debug_info = get_debug_info(node, self.filename, self.function_name)
-        self.builder.begin_while(f"{cond} != false", debug_info)
+        self.builder.begin_while(debug_info)
+
+        # Evaluate condition inside the loop so it's re-evaluated each iteration
+        cond = self.visit(node.test)
+
+        # Create if-break pattern: if condition is false, break
+        self.builder.begin_if(f"{cond} == false", debug_info)
+        self.builder.add_break(debug_info)
+        self.builder.end_if()
 
         for stmt in node.body:
             self.visit(stmt)
 
         self.builder.end_while()
 
+    def visit_Break(self, node):
+        debug_info = get_debug_info(node, self.filename, self.function_name)
+        self.builder.add_break(debug_info)
+
+    def visit_Continue(self, node):
+        debug_info = get_debug_info(node, self.filename, self.function_name)
+        self.builder.add_continue(debug_info)
+
     def visit_For(self, node):
+        if node.orelse:
+            raise NotImplementedError("while-else is not supported")
         if not isinstance(node.target, ast.Name):
             raise NotImplementedError("Only simple for loops supported")
 
