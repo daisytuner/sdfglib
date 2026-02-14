@@ -590,8 +590,9 @@ class ASTParser(ast.NodeVisitor):
             return f"_{array_name}_shape_{idx}"
 
         if value_str in self.tensor_table:
-            ndim = len(self.tensor_table[value_str].shape)
-            shapes = self.tensor_table[value_str].shape
+            tensor = self.tensor_table[value_str]
+            ndim = len(tensor.shape)
+            shapes = tensor.shape
 
             if isinstance(node.slice, ast.Tuple):
                 indices_nodes = node.slice.elts
@@ -633,7 +634,7 @@ class ASTParser(ast.NodeVisitor):
 
             normalized_indices = []
             for i, idx_str in enumerate(indices):
-                shape_val = shapes[i] if i < len(shapes) else f"_{value_str}_shape_{i}"
+                shape_val = shapes[i]
                 if isinstance(idx_str, str) and (
                     idx_str.startswith("-") or idx_str.startswith("(-")
                 ):
@@ -641,42 +642,13 @@ class ASTParser(ast.NodeVisitor):
                 else:
                     normalized_indices.append(idx_str)
 
-            linear_index = ""
-            for i in range(ndim):
-                term = normalized_indices[i]
-                for j in range(i + 1, ndim):
-                    shape_val = shapes[j] if j < len(shapes) else None
-                    shape_sym = (
-                        shape_val
-                        if shape_val is not None
-                        else f"_{value_str}_shape_{j}"
-                    )
-                    term = f"(({term}) * {shape_sym})"
+            subscript_str = ",".join(normalized_indices)
+            access_str = f"{value_str}({subscript_str})"
 
-                if i == 0:
-                    linear_index = term
-                else:
-                    linear_index = f"({linear_index} + {term})"
-
-            access_str = f"{value_str}({linear_index})"
-
-            if self.builder and isinstance(node.ctx, ast.Load):
-                dtype = Scalar(PrimitiveType.Double)
-                if value_str in self.container_table:
-                    t = self.container_table[value_str]
-                    if type(t).__name__ == "Array" and hasattr(t, "element_type"):
-                        et = t.element_type
-                        if callable(et):
-                            et = et()
-                        dtype = et
-                    elif type(t).__name__ == "Pointer" and hasattr(t, "pointee_type"):
-                        et = t.pointee_type
-                        if callable(et):
-                            et = et()
-                        dtype = et
-
+            if isinstance(node.ctx, ast.Load):
                 tmp_name = self.builder.find_new_name()
-                self.builder.add_container(tmp_name, dtype, False)
+                self.builder.add_container(tmp_name, tensor.element_type, False)
+                self.container_table[tmp_name] = tensor.element_type
 
                 block = self.builder.add_block()
                 t_src = self.builder.add_access(block, value_str)
@@ -684,31 +656,19 @@ class ASTParser(ast.NodeVisitor):
                 t_task = self.builder.add_tasklet(
                     block, TaskletCode.assign, ["_in"], ["_out"]
                 )
-
                 self.builder.add_memlet(
-                    block, t_src, "void", t_task, "_in", linear_index
+                    block, t_src, "void", t_task, "_in", subscript_str, tensor
                 )
-                self.builder.add_memlet(block, t_task, "_out", t_dst, "void", "")
+                self.builder.add_memlet(
+                    block, t_task, "_out", t_dst, "void", "", tensor.element_type
+                )
 
-                self.container_table[tmp_name] = dtype
                 return tmp_name
 
             return access_str
 
         slice_val = self.visit(node.slice)
         access_str = f"{value_str}({slice_val})"
-
-        if (
-            self.builder
-            and isinstance(node.ctx, ast.Load)
-            and value_str in self.tensor_table
-        ):
-            tmp_name = self.builder.find_new_name()
-            self.builder.add_container(tmp_name, Scalar(PrimitiveType.Double), False)
-            self.builder.add_assignment(tmp_name, access_str)
-            self.container_table[tmp_name] = Scalar(PrimitiveType.Double)
-            return tmp_name
-
         return access_str
 
     def visit_AugAssign(self, node):
@@ -742,6 +702,7 @@ class ASTParser(ast.NodeVisitor):
             self.visit_Assign(new_node)
 
     def visit_Assign(self, node):
+        # Handle multiple targets: a = b = c or a, b = expr
         if len(node.targets) > 1:
             tmp_name = self.builder.find_new_name()
             # Assign value to temporary
@@ -759,104 +720,97 @@ class ASTParser(ast.NodeVisitor):
                 ast.copy_location(assign, node)
                 self.visit_Assign(assign)
             return
-
         target = node.targets[0]
 
         # Handle tuple unpacking: I, J, K = expr1, expr2, expr3
         if isinstance(target, ast.Tuple):
             if isinstance(node.value, ast.Tuple):
-                # Unpacking tuple to tuple: a, b, c = x, y, z
                 if len(target.elts) != len(node.value.elts):
                     raise ValueError("Tuple unpacking size mismatch")
                 for tgt, val in zip(target.elts, node.value.elts):
                     assign = ast.Assign(targets=[tgt], value=val)
                     ast.copy_location(assign, node)
                     self.visit_Assign(assign)
+                return
             else:
                 raise NotImplementedError(
                     "Tuple unpacking from non-tuple values not supported"
                 )
-            return
 
-        # Special case: linear algebra functions (handled by NumPyHandler)
+        # Special cases, where rhs is not just a simple expression but requires special handling
         if self.numpy_visitor.is_gemm(node.value):
             if self.numpy_visitor.handle_gemm(target, node.value):
                 return
             if self.numpy_visitor.handle_dot(target, node.value):
                 return
-
-        # Special case: outer product (handled by NumPyHandler)
         if self.numpy_visitor.is_outer(node.value):
             if self.numpy_visitor.handle_outer(target, node.value):
                 return
-
-        # Special case: convolution (scipy.signal.correlate2d)
         if self.scipy_handler.is_correlate2d(node.value):
             if self.scipy_handler.handle_correlate2d(target, node.value):
                 return
-
-        # Special case: Transpose (handled by NumPyHandler)
         if self.numpy_visitor.is_transpose(node.value):
             if self.numpy_visitor.handle_transpose(target, node.value):
                 return
 
-        # Special case:
+        # Handle subscript assignments: a[i] = val or a[i, j] = val
         if isinstance(target, ast.Subscript):
-            target_name = self.visit(target.value)
+            debug_info = get_debug_info(node, self.filename, self.function_name)
 
+            target_name = self.visit(target.value)
             indices = []
             if isinstance(target.slice, ast.Tuple):
                 indices = target.slice.elts
             else:
                 indices = [target.slice]
 
+            # Handle slice assignment separately
             has_slice = False
             for idx in indices:
                 if isinstance(idx, ast.Slice):
                     has_slice = True
                     break
-
             if has_slice:
-                debug_info = get_debug_info(node, self.filename, self.function_name)
                 self._handle_slice_assignment(
                     target, node.value, target_name, indices, debug_info
                 )
                 return
 
-            target_name_full = self.visit(target)
-            value_str = self.visit(node.value)
-            debug_info = get_debug_info(node, self.filename, self.function_name)
+            # Handle rhs and store in scalar tmp
+            rhs_tmp = self.visit(node.value)
 
             block = self.builder.add_block(debug_info)
-            t_src, src_sub = self._add_read(block, value_str, debug_info)
-
-            if "(" in target_name_full and target_name_full.endswith(")"):
-                name = target_name_full.split("(")[0]
-                subset = target_name_full[target_name_full.find("(") + 1 : -1]
-                t_dst = self.builder.add_access(block, name, debug_info)
-                dst_sub = subset
-            else:
-                t_dst = self.builder.add_access(block, target_name_full, debug_info)
-                dst_sub = ""
-
             t_task = self.builder.add_tasklet(
                 block, TaskletCode.assign, ["_in"], ["_out"], debug_info
             )
 
+            t_src, src_sub = self._add_read(block, rhs_tmp, debug_info)
             self.builder.add_memlet(
                 block, t_src, "void", t_task, "_in", src_sub, None, debug_info
             )
-            self.builder.add_memlet(
-                block, t_task, "_out", t_dst, "void", dst_sub, None, debug_info
-            )
+
+            lhs_expr = self.visit(target)
+            if "(" in lhs_expr and lhs_expr.endswith(")"):
+                subset = lhs_expr[lhs_expr.find("(") + 1 : -1]
+                tensor_dst = self.tensor_table[target_name]
+
+                t_dst = self.builder.add_access(block, target_name, debug_info)
+                self.builder.add_memlet(
+                    block, t_task, "_out", t_dst, "void", subset, tensor_dst, debug_info
+                )
+            else:
+                t_dst = self.builder.add_access(block, target_name, debug_info)
+                self.builder.add_memlet(
+                    block, t_task, "_out", t_dst, "void", "", None, debug_info
+                )
             return
 
-        # Variable assignments
+        # Fallback: lhs is a simple scalar assignments
         if not isinstance(target, ast.Name):
             raise NotImplementedError("Only assignment to variables supported")
 
         target_name = target.id
-        value_str = self.visit(node.value)
+        rhs_tmp = self.visit(node.value)
         debug_info = get_debug_info(node, self.filename, self.function_name)
 
         if not self.builder.exists(target_name):
@@ -874,26 +828,24 @@ class ASTParser(ast.NodeVisitor):
                 self.builder.add_container(target_name, dtype, False)
                 self.container_table[target_name] = dtype
             else:
-                assert value_str in self.container_table
                 self.builder.add_container(
-                    target_name, self.container_table[value_str], False
+                    target_name, self.container_table[rhs_tmp], False
                 )
-                self.container_table[target_name] = self.container_table[value_str]
+                self.container_table[target_name] = self.container_table[rhs_tmp]
 
-        if value_str in self.tensor_table:
-            self.tensor_table[target_name] = self.tensor_table[value_str]
+        if rhs_tmp in self.tensor_table:
+            self.tensor_table[target_name] = self.tensor_table[rhs_tmp]
 
         # Distinguish assignments: scalar -> tasklet, pointer -> reference_memlet
-        src_type = self.container_table.get(value_str)
+        src_type = self.container_table.get(rhs_tmp)
         dst_type = self.container_table[target_name]
         if src_type and isinstance(src_type, Pointer) and isinstance(dst_type, Pointer):
             block = self.builder.add_block(debug_info)
-            t_src = self.builder.add_access(block, value_str, debug_info)
+            t_src = self.builder.add_access(block, rhs_tmp, debug_info)
             t_dst = self.builder.add_access(block, target_name, debug_info)
             self.builder.add_reference_memlet(
                 block, t_src, t_dst, "0", src_type, debug_info
             )
-            return
         elif (src_type and isinstance(src_type, Scalar)) or isinstance(
             dst_type, Scalar
         ):
@@ -904,11 +856,9 @@ class ASTParser(ast.NodeVisitor):
             )
 
             if src_type:
-                t_src = self.builder.add_access(block, value_str, debug_info)
+                t_src = self.builder.add_access(block, rhs_tmp, debug_info)
             else:
-                t_src = self.builder.add_constant(
-                    block, value_str, dst_type, debug_info
-                )
+                t_src = self.builder.add_constant(block, rhs_tmp, dst_type, debug_info)
 
             self.builder.add_memlet(
                 block, t_src, "void", t_task, "_in", "", None, debug_info
@@ -916,8 +866,6 @@ class ASTParser(ast.NodeVisitor):
             self.builder.add_memlet(
                 block, t_task, "_out", t_dst, "void", "", None, debug_info
             )
-
-            return
 
     def visit_Expr(self, node):
         self.visit(node.value)

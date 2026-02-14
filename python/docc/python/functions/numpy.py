@@ -955,65 +955,61 @@ class NumPyHandler:
         return tmp_name
 
     def handle_array_binary_op(self, op_type, left, right):
-        left_shape = []
-        right_shape = []
-        if left in self.tensor_table:
-            left_shape = self.tensor_table[left].shape
-        if right in self.tensor_table:
-            right_shape = self.tensor_table[right].shape
-
-        shape = self._compute_broadcast_shape(left_shape, right_shape)
-
         dtype_left = self._ev._element_type(left)
         dtype_right = self._ev._element_type(right)
         dtype = promote_element_types(dtype_left, dtype_right)
 
-        real_left = left
-        real_right = right
+        left_tensor = self.tensor_table[left]
+        right_tensor = self.tensor_table[right]
 
-        left_is_scalar = left not in self.tensor_table
-        right_is_scalar = right not in self.tensor_table
+        # shape = self._compute_broadcast_shape(left_tensor, right_tensor)
 
-        # Cast left operand if needed
-        if left_is_scalar and dtype_left.primitive_type != dtype.primitive_type:
-            left_cast = f"_tmp_{self._get_unique_id()}"
-            self.builder.add_container(left_cast, dtype, False)
-            self.container_table[left_cast] = dtype
+        # real_left = left
+        # real_right = right
 
-            c_block = self.builder.add_block()
-            t_src, src_sub = self._add_read(c_block, left)
-            t_dst = self.builder.add_access(c_block, left_cast)
-            t_task = self.builder.add_tasklet(
-                c_block, TaskletCode.assign, ["_in"], ["_out"]
-            )
-            self.builder.add_memlet(c_block, t_src, "void", t_task, "_in", src_sub)
-            self.builder.add_memlet(c_block, t_task, "_out", t_dst, "void", "")
+        # left_is_scalar = left not in self.tensor_table
+        # right_is_scalar = right not in self.tensor_table
 
-            real_left = left_cast
+        # # Cast left operand if needed
+        # if left_is_scalar and dtype_left.primitive_type != dtype.primitive_type:
+        #     left_cast = f"_tmp_{self._get_unique_id()}"
+        #     self.builder.add_container(left_cast, dtype, False)
+        #     self.container_table[left_cast] = dtype
 
-        # Cast right operand if needed
-        if right_is_scalar and dtype_right.primitive_type != dtype.primitive_type:
-            right_cast = f"_tmp_{self._get_unique_id()}"
-            self.builder.add_container(right_cast, dtype, False)
-            self.container_table[right_cast] = dtype
+        #     c_block = self.builder.add_block()
+        #     t_src, src_sub = self._add_read(c_block, left)
+        #     t_dst = self.builder.add_access(c_block, left_cast)
+        #     t_task = self.builder.add_tasklet(
+        #         c_block, TaskletCode.assign, ["_in"], ["_out"]
+        #     )
+        #     self.builder.add_memlet(c_block, t_src, "void", t_task, "_in", src_sub)
+        #     self.builder.add_memlet(c_block, t_task, "_out", t_dst, "void", "")
 
-            c_block = self.builder.add_block()
-            t_src, src_sub = self._add_read(c_block, right)
-            t_dst = self.builder.add_access(c_block, right_cast)
-            t_task = self.builder.add_tasklet(
-                c_block, TaskletCode.assign, ["_in"], ["_out"]
-            )
-            self.builder.add_memlet(c_block, t_src, "void", t_task, "_in", src_sub)
-            self.builder.add_memlet(c_block, t_task, "_out", t_dst, "void", "")
+        #     real_left = left_cast
 
-            real_right = right_cast
+        # # Cast right operand if needed
+        # if right_is_scalar and dtype_right.primitive_type != dtype.primitive_type:
+        #     right_cast = f"_tmp_{self._get_unique_id()}"
+        #     self.builder.add_container(right_cast, dtype, False)
+        #     self.container_table[right_cast] = dtype
 
-        # Broadcast arrays if needed
-        if not left_is_scalar and self._needs_broadcast(left_shape, shape):
-            real_left = self._broadcast_array(real_left, left_shape, shape, dtype)
+        #     c_block = self.builder.add_block()
+        #     t_src, src_sub = self._add_read(c_block, right)
+        #     t_dst = self.builder.add_access(c_block, right_cast)
+        #     t_task = self.builder.add_tasklet(
+        #         c_block, TaskletCode.assign, ["_in"], ["_out"]
+        #     )
+        #     self.builder.add_memlet(c_block, t_src, "void", t_task, "_in", src_sub)
+        #     self.builder.add_memlet(c_block, t_task, "_out", t_dst, "void", "")
 
-        if not right_is_scalar and self._needs_broadcast(right_shape, shape):
-            real_right = self._broadcast_array(real_right, right_shape, shape, dtype)
+        #     real_right = right_cast
+
+        # # Broadcast arrays if needed
+        # if not left_is_scalar and self._needs_broadcast(left_shape, shape):
+        #     real_left = self._broadcast_array(real_left, left_shape, shape, dtype)
+
+        # if not right_is_scalar and self._needs_broadcast(right_shape, shape):
+        #     real_right = self._broadcast_array(real_right, right_shape, shape, dtype)
 
         tmp_name = self._create_array_temp(shape, dtype)
         self.builder.add_elementwise_op(op_type, real_left, real_right, tmp_name, shape)

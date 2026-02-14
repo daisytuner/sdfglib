@@ -293,9 +293,11 @@ PYBIND11_MODULE(_sdfg, m) {
             &PyStructuredSDFGBuilder::add_elementwise_op,
             py::arg("op_type"),
             py::arg("A"),
+            py::arg("A_type"),
             py::arg("B"),
+            py::arg("B_type"),
             py::arg("C"),
-            py::arg("shape"),
+            py::arg("C_type"),
             py::arg("debug_info") = sdfg::DebugInfo()
         )
         .def(
@@ -303,8 +305,9 @@ PYBIND11_MODULE(_sdfg, m) {
             &PyStructuredSDFGBuilder::add_elementwise_unary_op,
             py::arg("op_type"),
             py::arg("A"),
+            py::arg("A_type"),
             py::arg("C"),
-            py::arg("shape"),
+            py::arg("C_type"),
             py::arg("debug_info") = sdfg::DebugInfo()
         )
         .def(

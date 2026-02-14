@@ -190,17 +190,20 @@ public:
     void add_elementwise_op(
         const std::string& op_type,
         const std::string& A,
+        const sdfg::types::Tensor& A_type,
         const std::string& B,
+        const sdfg::types::Tensor& B_type,
         const std::string& C,
-        const std::vector<std::string>& shape,
+        const sdfg::types::Tensor& C_type,
         const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
     );
 
     void add_elementwise_unary_op(
         const std::string& op_type,
         const std::string& A,
+        const sdfg::types::Tensor& A_type,
         const std::string& C,
-        const std::vector<std::string>& shape,
+        const sdfg::types::Tensor& C_type,
         const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
     );
 
