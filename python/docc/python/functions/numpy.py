@@ -1190,15 +1190,33 @@ class NumPyHandler:
                 dims_runtime = [runtime_val]
 
         dtype_arg = None
+        order = "C"  # Default to C-order (row-major)
+        explicit_strides = None
         if len(node.args) > 1:
             dtype_arg = node.args[1]
 
         for kw in node.keywords:
             if kw.arg == "dtype":
                 dtype_arg = kw.value
-                break
+            elif kw.arg == "order":
+                if isinstance(kw.value, ast.Constant):
+                    order = kw.value.value
+            elif kw.arg == "strides":
+                # Parse explicit strides tuple/list
+                if isinstance(kw.value, (ast.Tuple, ast.List)):
+                    explicit_strides = [
+                        self._shape_to_runtime_expr(elt) for elt in kw.value.elts
+                    ]
 
         element_type = element_type_from_ast_node(dtype_arg, self.container_table)
+
+        # Use explicit strides if provided, otherwise compute from order
+        if explicit_strides is not None:
+            # Convert byte strides to element strides by dividing by element size
+            element_size = self.builder.get_sizeof(element_type)
+            strides = [f"(({s}) / {element_size})" for s in explicit_strides]
+        else:
+            strides = self._compute_strides(dims, order)
 
         return self._create_array_temp(
             dims,
@@ -1206,6 +1224,7 @@ class NumPyHandler:
             zero_init=(func_name == "zeros"),
             ones_init=(func_name == "ones"),
             shapes_runtime=dims_runtime,
+            strides=strides,
         )
 
     def _handle_numpy_empty_like(self, node, func_name):
@@ -1218,13 +1237,16 @@ class NumPyHandler:
             dims = self.tensor_table[prototype_name].shape
 
         dtype_arg = None
+        order = "C"  # Default to C-order
         if len(node.args) > 1:
             dtype_arg = node.args[1]
 
         for kw in node.keywords:
             if kw.arg == "dtype":
                 dtype_arg = kw.value
-                break
+            elif kw.arg == "order":
+                if isinstance(kw.value, ast.Constant):
+                    order = kw.value.value
 
         element_type = None
         if dtype_arg:
@@ -1238,8 +1260,9 @@ class NumPyHandler:
         if element_type is None:
             element_type = Scalar(PrimitiveType.Double)
 
+        strides = self._compute_strides(dims, order)
         return self._create_array_temp(
-            dims, element_type, zero_init=False, ones_init=False
+            dims, element_type, zero_init=False, ones_init=False, strides=strides
         )
 
     def _handle_numpy_zeros_like(self, node, func_name):
@@ -1252,13 +1275,16 @@ class NumPyHandler:
             dims = self.tensor_table[prototype_name].shape
 
         dtype_arg = None
+        order = "C"  # Default to C-order
         if len(node.args) > 1:
             dtype_arg = node.args[1]
 
         for kw in node.keywords:
             if kw.arg == "dtype":
                 dtype_arg = kw.value
-                break
+            elif kw.arg == "order":
+                if isinstance(kw.value, ast.Constant):
+                    order = kw.value.value
 
         element_type = None
         if dtype_arg:
@@ -1272,18 +1298,22 @@ class NumPyHandler:
         if element_type is None:
             element_type = Scalar(PrimitiveType.Double)
 
+        strides = self._compute_strides(dims, order)
         return self._create_array_temp(
-            dims, element_type, zero_init=True, ones_init=False
+            dims, element_type, zero_init=True, ones_init=False, strides=strides
         )
 
     def _handle_numpy_eye(self, node, func_name):
         """Handle np.eye."""
         N_arg = node.args[0]
         N_str = self.visit(N_arg)
+        N_runtime = self._shape_to_runtime_expr(N_arg)
 
         M_str = N_str
+        M_arg = N_arg  # Default M = N
         if len(node.args) > 1:
-            M_str = self.visit(node.args[1])
+            M_arg = node.args[1]
+            M_str = self.visit(M_arg)
 
         k_str = "0"
         if len(node.args) > 2:
@@ -1292,17 +1322,26 @@ class NumPyHandler:
         dtype_arg = None
         for kw in node.keywords:
             if kw.arg == "M":
-                M_str = self.visit(kw.value)
+                M_arg = kw.value
+                M_str = self.visit(M_arg)
                 if M_str == "None":
                     M_str = N_str
+                    M_arg = N_arg
             elif kw.arg == "k":
                 k_str = self.visit(kw.value)
             elif kw.arg == "dtype":
                 dtype_arg = kw.value
 
+        M_runtime = self._shape_to_runtime_expr(M_arg)
+
         element_type = element_type_from_ast_node(dtype_arg, self.container_table)
 
-        ptr_name = self._create_array_temp([N_str, M_str], element_type, zero_init=True)
+        ptr_name = self._create_array_temp(
+            [N_str, M_str],
+            element_type,
+            zero_init=True,
+            shapes_runtime=[N_runtime, M_runtime],
+        )
 
         loop_var = f"_i_{self._get_unique_id()}"
         if not self.builder.exists(loop_var):
@@ -1955,19 +1994,37 @@ class NumPyHandler:
         if len(node.args) < 1:
             raise ValueError("astype requires at least one argument (dtype)")
 
+        # Check for copy=False which we don't support (we always copy)
+        for kw in node.keywords:
+            if kw.arg == "copy":
+                if isinstance(kw.value, ast.Constant) and kw.value.value is False:
+                    raise NotImplementedError("astype with copy=False is not supported")
+
         dtype_arg = node.args[0]
         target_dtype = element_type_from_ast_node(dtype_arg, self.container_table)
 
         if array_name not in self.tensor_table:
             raise ValueError(f"Array {array_name} not found in tensor_table")
 
-        input_shape = self.tensor_table[array_name].shape
+        input_tensor = self.tensor_table[array_name]
+        input_shape = input_tensor.shape
+        input_strides = getattr(input_tensor, "strides", None)
 
-        tmp_name = self._create_array_temp(input_shape, target_dtype)
+        # Determine output order: preserve F-order if input is F-contiguous
+        order = "C"
+        if input_strides and len(input_strides) >= 2 and len(input_shape) >= 2:
+            # F-order: first stride is 1, subsequent strides are products of preceding dims
+            f_strides = self._compute_strides(input_shape, "F")
+            if input_strides == f_strides:
+                order = "F"
 
-        self.builder.add_cast_op(
-            array_name, tmp_name, input_shape, target_dtype.primitive_type
+        output_strides = self._compute_strides(input_shape, order)
+        tmp_name = self._create_array_temp(
+            input_shape, target_dtype, strides=output_strides
         )
+
+        output_tensor = self.tensor_table[tmp_name]
+        self.builder.add_cast_op(array_name, input_tensor, tmp_name, output_tensor)
 
         return tmp_name
 
@@ -1976,7 +2033,9 @@ class NumPyHandler:
         if array_name not in self.tensor_table:
             raise ValueError(f"Array {array_name} not found in tensor_table")
 
-        input_shape = self.tensor_table[array_name].shape
+        input_tensor = self.tensor_table[array_name]
+        input_shape = input_tensor.shape
+        input_strides = getattr(input_tensor, "strides", None)
 
         element_type = Scalar(PrimitiveType.Double)
         if array_name in self.container_table:
@@ -1984,28 +2043,75 @@ class NumPyHandler:
             if isinstance(sym_type, Pointer) and sym_type.has_pointee_type():
                 element_type = sym_type.pointee_type
 
-        tmp_name = self._create_array_temp(input_shape, element_type)
+        # Determine output order: preserve F-order if input is F-contiguous
+        order = "C"
+        if input_strides and len(input_strides) >= 2 and len(input_shape) >= 2:
+            f_strides = self._compute_strides(input_shape, "F")
+            if input_strides == f_strides:
+                order = "F"
 
-        total_elements = " * ".join([f"({s})" for s in input_shape])
-        element_size = self.builder.get_sizeof(element_type)
-        count_expr = f"({total_elements}) * ({element_size})"
+        output_strides = self._compute_strides(input_shape, order)
+        tmp_name = self._create_array_temp(
+            input_shape, element_type, strides=output_strides
+        )
 
-        ptr_type = Pointer(element_type)
-
-        block = self.builder.add_block()
-        t_src = self.builder.add_access(block, array_name)
-        t_dst = self.builder.add_access(block, tmp_name)
-        t_memcpy = self.builder.add_memcpy(block, count_expr)
-
-        self.builder.add_memlet(block, t_src, "void", t_memcpy, "_src", "", ptr_type)
-        self.builder.add_memlet(block, t_memcpy, "_dst", t_dst, "void", "", ptr_type)
+        output_tensor = self.tensor_table[tmp_name]
+        # Workaround: "assign-op"
+        self.builder.add_cast_op(array_name, input_tensor, tmp_name, output_tensor)
 
         return tmp_name
 
+    def _compute_strides(self, shape, order="C"):
+        """Compute strides for a given shape and memory order.
+
+        Args:
+            shape: List of dimension sizes
+            order: "C" for row-major (default), "F" for column-major
+
+        Returns:
+            List of stride expressions as strings
+        """
+        if not shape:
+            return []
+
+        ndim = len(shape)
+        strides = []
+
+        if order == "F":
+            # Column-major (Fortran order): stride[i] = product of shape[:i]
+            for dim_idx in range(ndim):
+                if dim_idx == 0:
+                    strides.append("1")
+                else:
+                    prefix_shapes = [str(s) for s in shape[:dim_idx]]
+                    if len(prefix_shapes) == 1:
+                        strides.append(prefix_shapes[0])
+                    else:
+                        strides.append("(" + " * ".join(prefix_shapes) + ")")
+        else:
+            # Row-major (C order): stride[i] = product of shape[i+1:]
+            for dim_idx in range(ndim):
+                if dim_idx == ndim - 1:
+                    strides.append("1")
+                else:
+                    suffix_shapes = [str(s) for s in shape[dim_idx + 1 :]]
+                    if len(suffix_shapes) == 1:
+                        strides.append(suffix_shapes[0])
+                    else:
+                        strides.append("(" + " * ".join(suffix_shapes) + ")")
+
+        return strides
+
     def _create_array_temp(
-        self, shape, dtype, zero_init=False, ones_init=False, shapes_runtime=None
+        self,
+        shape,
+        dtype,
+        zero_init=False,
+        ones_init=False,
+        shapes_runtime=None,
+        strides=None,
     ):
-        """Create a temporary array with the given shape and dtype."""
+        """Create a temporary array."""
         tmp_name = f"_tmp_{self._get_unique_id()}"
 
         # Handle 0-dimensional arrays as scalars
@@ -2035,11 +2141,15 @@ class NumPyHandler:
         element_size = self.builder.get_sizeof(dtype)
         total_size = f"({size_str} * {element_size})"
 
+        # Use provided strides or compute C-order strides
+        if strides is None:
+            strides = self._compute_strides(shape, "C")
+
         # Create pointer
         ptr_type = Pointer(dtype)
         self.builder.add_container(tmp_name, ptr_type, False)
         self.container_table[tmp_name] = ptr_type
-        tensor_entry = Tensor(dtype, shape)
+        tensor_entry = Tensor(dtype, shape, strides, "0")
         if shapes_runtime is not None:
             self.shapes_runtime_info[tmp_name] = shapes_runtime
         self.tensor_table[tmp_name] = tensor_entry
@@ -2097,23 +2207,53 @@ class NumPyHandler:
         return tmp_name
 
     def _compute_linear_index(self, indices, shapes, array_name, ndim):
-        """Compute linear index from multi-dimensional indices."""
+        """Compute linear index from multi-dimensional indices.
+
+        Uses strides from tensor_table if available (supporting F-order arrays),
+        otherwise falls back to computing strides assuming C-order.
+        """
         if ndim == 0:
             return "0"
 
-        linear_index = ""
-        for i in range(ndim):
-            term = str(indices[i])
-            for j in range(i + 1, ndim):
-                shape_val = shapes[j] if j < len(shapes) else f"_{array_name}_shape_{j}"
-                term = f"(({term}) * {shape_val})"
+        # Try to get strides from tensor_table
+        strides = None
+        if array_name in self.tensor_table:
+            tensor_info = self.tensor_table[array_name]
+            if hasattr(tensor_info, "strides") and tensor_info.strides:
+                strides = tensor_info.strides
 
-            if i == 0:
-                linear_index = term
-            else:
-                linear_index = f"({linear_index} + {term})"
+        if strides and len(strides) == ndim:
+            # Use explicit strides from tensor_table
+            linear_index = ""
+            for i in range(ndim):
+                stride = strides[i]
+                if stride == "1":
+                    term = str(indices[i])
+                else:
+                    term = f"(({indices[i]}) * ({stride}))"
 
-        return linear_index
+                if i == 0:
+                    linear_index = term
+                else:
+                    linear_index = f"({linear_index} + {term})"
+            return linear_index
+        else:
+            # Fall back to C-order (row-major) stride computation
+            linear_index = ""
+            for i in range(ndim):
+                term = str(indices[i])
+                for j in range(i + 1, ndim):
+                    shape_val = (
+                        shapes[j] if j < len(shapes) else f"_{array_name}_shape_{j}"
+                    )
+                    term = f"(({term}) * {shape_val})"
+
+                if i == 0:
+                    linear_index = term
+                else:
+                    linear_index = f"({linear_index} + {term})"
+
+            return linear_index
 
     def _compute_broadcast_shape(self, shape_a, shape_b):
         """Compute the broadcast output shape following NumPy broadcasting rules."""

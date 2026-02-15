@@ -1071,47 +1071,28 @@ void PyStructuredSDFGBuilder::add_conv(
 
 void PyStructuredSDFGBuilder::add_cast_op(
     const std::string& A,
+    const sdfg::types::Tensor& A_type,
     const std::string& C,
-    const std::vector<std::string>& shape_strs,
-    sdfg::types::PrimitiveType target_type,
+    const sdfg::types::Tensor& C_type,
     const sdfg::DebugInfo& debug_info
 ) {
     auto& parent = current_sequence();
     auto& block = builder_.add_block(parent, {}, debug_info);
 
-    std::vector<sdfg::symbolic::Expression> shape;
-    for (const auto& s : shape_strs) {
-        shape.push_back(parse_and_expand(s));
-    }
-
-    auto& node = builder_.add_library_node<sdfg::math::tensor::CastNode>(block, debug_info, shape, target_type);
+    auto& node =
+        builder_
+            .add_library_node<sdfg::math::tensor::CastNode>(block, debug_info, C_type.shape(), C_type.primitive_type());
 
     auto& node_c = builder_.add_access(block, C, debug_info);
-    auto& type_c = builder_.subject().type(C);
-    sdfg::types::Tensor tensor_type_output(type_c.primitive_type(), shape);
-    builder_.add_computational_memlet(block, node, "Y", node_c, {}, tensor_type_output, debug_info);
+    builder_.add_computational_memlet(block, node, "Y", node_c, {}, C_type, debug_info);
 
-    auto add_input = [&](const std::string& name, const std::string& conn) {
-        if (builder_.subject().exists(name)) {
-            auto& node_in = builder_.add_access(block, name, debug_info);
-            auto& type_in = builder_.subject().type(name);
-            if (type_in.type_id() == sdfg::types::TypeID::Scalar) {
-                sdfg::types::Tensor tensor_type(type_in.primitive_type(), {});
-                builder_.add_computational_memlet(block, node_in, node, conn, {}, tensor_type, debug_info);
-            } else {
-                sdfg::types::Tensor tensor_type(type_in.primitive_type(), shape);
-                builder_.add_computational_memlet(block, node_in, node, conn, {}, tensor_type, debug_info);
-            }
-        } else {
-            auto& node_in =
-                builder_.add_constant(block, name, sdfg::types::Scalar(type_c.primitive_type()), debug_info);
-
-            sdfg::types::Tensor tensor_type(type_c.primitive_type(), {});
-            builder_.add_memlet(block, node_in, "void", node, conn, {}, tensor_type, debug_info);
-        }
-    };
-
-    add_input(A, "X");
+    if (builder_.subject().exists(A)) {
+        auto& node_in = builder_.add_access(block, A, debug_info);
+        builder_.add_computational_memlet(block, node_in, node, "X", {}, A_type, debug_info);
+    } else {
+        auto& node_in = builder_.add_constant(block, A, A_type.element_type(), debug_info);
+        builder_.add_memlet(block, node_in, "void", node, "X", {}, A_type, debug_info);
+    }
 }
 
 void PyStructuredSDFGBuilder::add_reduce_op(

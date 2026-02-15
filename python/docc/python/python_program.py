@@ -263,7 +263,7 @@ class PythonProgram(DoccProgram):
         if os.path.exists(output_folder):
             # Multiple python processes running the same code?
             shutil.rmtree(output_folder)
-        sdfg, out_args, out_shapes = self._build_sdfg(
+        sdfg, out_args, out_shapes, out_strides = self._build_sdfg(
             arg_types, args, arg_shape_mapping, len(shape_values), shape_to_scalar
         )
         sdfg.validate()
@@ -310,6 +310,7 @@ class PythonProgram(DoccProgram):
             self._last_structure_member_info,
             out_args,
             out_shapes,
+            out_strides,
         )
 
         # Cache if using default output folder
@@ -353,7 +354,7 @@ class PythonProgram(DoccProgram):
             if s_val in scalar_int_params:
                 shape_to_scalar[s_idx] = scalar_int_params[s_val]
 
-        sdfg, _, _ = self._build_sdfg(
+        sdfg, _, _, _ = self._build_sdfg(
             arg_types, args, arg_shape_mapping, len(shape_values), shape_to_scalar
         )
         return sdfg
@@ -668,7 +669,12 @@ class PythonProgram(DoccProgram):
             if name.startswith("_docc_ret_"):
                 out_args.append(name)
 
-        return sdfg, out_args, parser.captured_return_shapes
+        return (
+            sdfg,
+            out_args,
+            parser.captured_return_shapes,
+            parser.captured_return_strides,
+        )
 
 
 def native(

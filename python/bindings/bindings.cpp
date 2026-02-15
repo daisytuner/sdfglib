@@ -338,9 +338,9 @@ PYBIND11_MODULE(_sdfg, m) {
             "add_cast_op",
             &PyStructuredSDFGBuilder::add_cast_op,
             py::arg("A"),
+            py::arg("A_type"),
             py::arg("C"),
-            py::arg("shape"),
-            py::arg("target_type"),
+            py::arg("C_type"),
             py::arg("debug_info") = sdfg::DebugInfo()
         )
         .def(

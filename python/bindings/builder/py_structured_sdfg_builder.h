@@ -231,9 +231,9 @@ public:
 
     void add_cast_op(
         const std::string& A,
+        const sdfg::types::Tensor& A_type,
         const std::string& C,
-        const std::vector<std::string>& shape,
-        sdfg::types::PrimitiveType target_type,
+        const sdfg::types::Tensor& C_type,
         const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
     );
 

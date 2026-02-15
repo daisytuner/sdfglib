@@ -62,6 +62,7 @@ class ASTParser(ast.NodeVisitor):
             structure_member_info if structure_member_info is not None else {}
         )
         self.captured_return_shapes = {}  # Map param name to shape string list
+        self.captured_return_strides = {}  # Map param name to stride string list
         self.shapes_runtime_info = (
             {}
         )  # Map array name to runtime shapes (separate from Tensor)
@@ -770,6 +771,7 @@ class ASTParser(ast.NodeVisitor):
                 if isinstance(idx, ast.Slice):
                     has_slice = True
                     break
+
             if has_slice:
                 self._handle_slice_assignment(
                     target, node.value, target_name, indices, debug_info
@@ -835,6 +837,10 @@ class ASTParser(ast.NodeVisitor):
 
         if rhs_tmp in self.tensor_table:
             self.tensor_table[target_name] = self.tensor_table[rhs_tmp]
+
+        # Also copy shapes_runtime_info if available
+        if rhs_tmp in self.shapes_runtime_info:
+            self.shapes_runtime_info[target_name] = self.shapes_runtime_info[rhs_tmp]
 
         # Distinguish assignments: scalar -> tasklet, pointer -> reference_memlet
         src_type = self.container_table.get(rhs_tmp)
@@ -1135,6 +1141,12 @@ class ASTParser(ast.NodeVisitor):
                         shape = res_info.shape
                     # Convert to string expressions
                     self.captured_return_shapes[ret_name] = [str(s) for s in shape]
+
+                    # Capture strides (as element strides - compiled_sdfg multiplies by itemsize)
+                    if hasattr(res_info, "strides") and res_info.strides:
+                        self.captured_return_strides[ret_name] = [
+                            str(s) for s in res_info.strides
+                        ]
 
                     # Ensure destination array info exists
                     if ret_name not in self.tensor_table:
@@ -1827,16 +1839,15 @@ class ASTParser(ast.NodeVisitor):
         if debug_info is None:
             debug_info = DebugInfo()
 
-        if target_name in self.tensor_table:
-            ndim = len(self.tensor_table[target_name].shape)
-            if len(indices) < ndim:
-                indices = list(indices)
-                for _ in range(ndim - len(indices)):
-                    indices.append(ast.Slice(lower=None, upper=None, step=None))
+        # Add missing dimensions
+        tensor_info = self.tensor_table[target_name]
+        ndim = len(tensor_info.shape)
+        if len(indices) < ndim:
+            indices = list(indices)
+            for _ in range(ndim - len(indices)):
+                indices.append(ast.Slice(lower=None, upper=None, step=None))
 
-        # Check if the RHS contains a ufunc outer operation
-        # If so, we handle it specially to avoid the loop transformation
-        # which would destroy the slice shape information
+        # Handle ufunc outer case separately to preserve slice shape info
         has_outer, ufunc_name, outer_node = contains_ufunc_outer(value)
         if has_outer:
             self._handle_ufunc_outer_slice_assignment(
@@ -1845,7 +1856,6 @@ class ASTParser(ast.NodeVisitor):
             return
 
         # Count slice dimensions to determine effective target dimensionality
-        # (slice indices produce array dimensions, point indices collapse them)
         target_slice_ndim = sum(1 for idx in indices if isinstance(idx, ast.Slice))
         value_max_ndim = self._get_max_array_ndim_in_expr(value)
 
@@ -1884,10 +1894,9 @@ class ASTParser(ast.NodeVisitor):
                 if idx.lower:
                     start_str = self.visit(idx.lower)
                     if start_str.startswith("-"):
-                        shapes = self.tensor_table[target_name].shape
                         dim_size = (
-                            str(shapes[i])
-                            if i < len(shapes)
+                            str(tensor_info.shape[i])
+                            if i < len(tensor_info.shape)
                             else f"_{target_name}_shape_{i}"
                         )
                         start_str = f"({dim_size} {start_str})"
@@ -1898,18 +1907,16 @@ class ASTParser(ast.NodeVisitor):
                 ):
                     stop_str = self.visit(idx.upper)
                     if stop_str.startswith("-") or stop_str.startswith("(-"):
-                        shapes = self.tensor_table[target_name].shape
                         dim_size = (
-                            str(shapes[i])
-                            if i < len(shapes)
+                            str(tensor_info.shape[i])
+                            if i < len(tensor_info.shape)
                             else f"_{target_name}_shape_{i}"
                         )
                         stop_str = f"({dim_size} {stop_str})"
                 else:
-                    shapes = self.tensor_table[target_name].shape
                     stop_str = (
-                        str(shapes[i])
-                        if i < len(shapes)
+                        str(tensor_info.shape[i])
+                        if i < len(tensor_info.shape)
                         else f"_{target_name}_shape_{i}"
                     )
 
@@ -1921,16 +1928,17 @@ class ASTParser(ast.NodeVisitor):
 
                 self.builder.begin_for(loop_var, "0", count_str, "1", debug_info)
                 self.container_table[loop_var] = Scalar(PrimitiveType.Int64)
-
                 new_target_indices.append(
                     ast.Name(
                         id=f"{start_str} + {loop_var} * {step_str}", ctx=ast.Load()
                     )
                 )
             else:
-                # Handle non-slice indices - need to normalize negative indices
-                shapes = self.tensor_table[target_name].shape
-                dim_size = shapes[i] if i < len(shapes) else f"_{target_name}_shape_{i}"
+                dim_size = (
+                    tensor_info.shape[i]
+                    if i < len(tensor_info.shape)
+                    else f"_{target_name}_shape_{i}"
+                )
                 normalized_idx = normalize_negative_index(idx, dim_size)
                 new_target_indices.append(normalized_idx)
 
@@ -1943,9 +1951,31 @@ class ASTParser(ast.NodeVisitor):
         else:
             new_target.slice = ast.Tuple(elts=new_target_indices, ctx=ast.Load())
 
-        target_str = self.visit(new_target)
-        value_str = self.visit(new_value)
-        self.builder.add_assignment(target_str, value_str, debug_info)
+        rhs_temp = self.visit(new_value)
+        block = self.builder.add_block(debug_info)
+        t_task = self.builder.add_tasklet(
+            block, TaskletCode.assign, ["_in"], ["_out"], debug_info
+        )
+
+        t_src, src_sub = self._add_read(block, rhs_temp, debug_info)
+        self.builder.add_memlet(
+            block, t_src, "void", t_task, "_in", src_sub, None, debug_info
+        )
+
+        lhs_expr = self.visit(new_target)
+        if "(" in lhs_expr and lhs_expr.endswith(")"):
+            subset = lhs_expr[lhs_expr.find("(") + 1 : -1]
+            tensor_dst = self.tensor_table[target_name]
+
+            t_dst = self.builder.add_access(block, target_name, debug_info)
+            self.builder.add_memlet(
+                block, t_task, "_out", t_dst, "void", subset, tensor_dst, debug_info
+            )
+        else:
+            t_dst = self.builder.add_access(block, target_name, debug_info)
+            self.builder.add_memlet(
+                block, t_task, "_out", t_dst, "void", "", None, debug_info
+            )
 
         for _ in loop_vars:
             self.builder.end_for()
