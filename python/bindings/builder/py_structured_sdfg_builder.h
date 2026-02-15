@@ -47,6 +47,8 @@ public:
 
     std::string get_sizeof(const sdfg::types::IType& type);
 
+    std::string find_new_name(const std::string& prefix = "tmp_");
+
     /***** Control Flow *****/
 
     void add_return(const std::string& data, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
@@ -61,7 +63,11 @@ public:
 
     void end_if();
 
-    void begin_while(const std::string& condition, const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
+    void begin_while(const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
+
+    void add_break(const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
+
+    void add_continue(const sdfg::DebugInfo& debug_info = sdfg::DebugInfo());
 
     void end_while();
 
@@ -184,17 +190,20 @@ public:
     void add_elementwise_op(
         const std::string& op_type,
         const std::string& A,
+        const sdfg::types::Tensor& A_type,
         const std::string& B,
+        const sdfg::types::Tensor& B_type,
         const std::string& C,
-        const std::vector<std::string>& shape,
+        const sdfg::types::Tensor& C_type,
         const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
     );
 
     void add_elementwise_unary_op(
         const std::string& op_type,
         const std::string& A,
+        const sdfg::types::Tensor& A_type,
         const std::string& C,
-        const std::vector<std::string>& shape,
+        const sdfg::types::Tensor& C_type,
         const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
     );
 
@@ -222,9 +231,9 @@ public:
 
     void add_cast_op(
         const std::string& A,
+        const sdfg::types::Tensor& A_type,
         const std::string& C,
-        const std::vector<std::string>& shape,
-        sdfg::types::PrimitiveType target_type,
+        const sdfg::types::Tensor& C_type,
         const sdfg::DebugInfo& debug_info = sdfg::DebugInfo()
     );
 
