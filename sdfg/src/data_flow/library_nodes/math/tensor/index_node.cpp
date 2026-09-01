@@ -29,6 +29,7 @@
 #include "sdfg/types/scalar.h"
 #include "sdfg/types/tensor.h"
 #include "sdfg/types/type.h"
+#include "sdfg/types/utils.h"
 
 namespace sdfg {
 namespace math {
@@ -317,7 +318,6 @@ passes::LibNodeExpander::ExpandOutcome IndexNode::
     }
     auto prim_type = y_edge->base_type().primitive_type();
     types::Scalar base_type(prim_type);
-    types::Scalar indvar_type(types::PrimitiveType::Int64);
     bool contiguous_indices = this->contiguous_indices();
     symbolic::MultiExpression broadcast_shape = this->common_indices_shape();
     long long broadcast_dims = broadcast_shape.size();
@@ -328,7 +328,8 @@ passes::LibNodeExpander::ExpandOutcome IndexNode::
     int y_dims = this->y_layout_.dims();
     for (long long i = 0; i < y_dims; i++) {
         auto indvar_container = builder.find_new_name("_i");
-        builder.add_container(indvar_container, indvar_type);
+        auto& dim = y_layout_.get_dim(i);
+        builder.add_container(indvar_container, types::Scalar(types::get_primitive_type_to_hold_upper_bound(dim)));
         auto indvar = symbolic::symbol(indvar_container);
         y_subset.push_back(indvar);
 

@@ -48,7 +48,7 @@ TEST(MemletSimplification, SimplifyTwoDimensional) {
 
     builder.add_container("source", opaque_ptr);
     builder.add_container("arr", opaque_ptr);
-    builder.add_container("idx", types::Scalar(types::PrimitiveType::UInt64));
+    builder.add_container("idx", types::Scalar(types::PrimitiveType::Int64));
 
     auto idx = symbolic::symbol("idx");
     auto& root = builder.subject().root();
@@ -88,7 +88,7 @@ TEST(MemletSimplification, SimplifyThreeDimensional) {
 
     builder.add_container("source", opaque_ptr);
     builder.add_container("arr", opaque_ptr);
-    builder.add_container("idx", types::Scalar(types::PrimitiveType::UInt64));
+    builder.add_container("idx", types::Scalar(types::PrimitiveType::Int64));
 
     auto idx = symbolic::symbol("idx");
     auto& root = builder.subject().root();
@@ -131,7 +131,7 @@ TEST(MemletSimplification, SimplifyFourDimensionalReLU) {
 
     builder.add_container("source", opaque_ptr);
     builder.add_container("arr", opaque_ptr);
-    builder.add_container("idx", types::Scalar(types::PrimitiveType::UInt64));
+    builder.add_container("idx", types::Scalar(types::PrimitiveType::Int64));
 
     auto idx = symbolic::symbol("idx");
     auto& root = builder.subject().root();
