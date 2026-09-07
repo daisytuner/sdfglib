@@ -841,7 +841,8 @@ struct LUFixture {
         builder = std::make_unique<builder::StructuredSDFGBuilder>("lu", FunctionType_CPU);
 
         types::Scalar sym_desc(types::PrimitiveType::Int64);
-        builder->add_container("N", sym_desc, true);
+        types::Scalar usym_desc(types::PrimitiveType::UInt64);
+        builder->add_container("N", usym_desc, true);
         builder->add_container("i", sym_desc);
         builder->add_container("j", sym_desc);
         builder->add_container("k", sym_desc);

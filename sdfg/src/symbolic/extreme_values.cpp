@@ -1,5 +1,6 @@
 #include "sdfg/symbolic/extreme_values.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <limits>
 #include <vector>
@@ -1331,18 +1332,33 @@ bool descend_min_and(
 // appearing in both `s`'s bound and a constraint) now cancels syntactically,
 // which interval bounding cannot do when the base is a non-polynomial function of
 // another generator (Stream-K's `64*imod(idiv(t,16),16)`).
+//
+// `only_reducing` restricts to substitutions that strictly shrink the atom set
+// (i.e. actually cancel a coupled symbol). Those are cheap and often decisive,
+// so `prove_ge_zero` runs a reducing-only pass *before* the interval descent to
+// keep the shared work budget from being drained on the coupled goal before the
+// cancellation shortcut is ever reached.
 bool descend_symbol_bounds(
     const Expression& diff,
     const SymbolSet& parameters,
     const Assumptions& assumptions,
     bool tight,
     bool strict,
-    int depth
+    int depth,
+    bool only_reducing
 ) {
     auto e = symbolic::expand(diff);
     auto zero = symbolic::zero();
     auto one = symbolic::integer(1);
     auto two = symbolic::integer(2);
+    const size_t base_atoms = symbolic::atoms(e).size();
+
+    // Collect every valid single-symbol bound substitution, then try the ones
+    // that cancel the most terms first (fewest atoms remaining). Substituting a
+    // symbol by its symbolic bound can cancel a coupled term -- e.g. `i + j20`
+    // with `j20 >= 64 - i + i_tile0` collapses to `64 + i_tile0`, dropping `i`
+    // -- turning an unprovable coupled goal into a trivially-bounded one.
+    std::vector<Expression> candidates;
     for (auto& s : symbolic::atoms(e)) {
         if (parameters.find(s) != parameters.end()) continue;
         auto it = assumptions.find(s);
@@ -1367,6 +1383,15 @@ bool descend_symbol_bounds(
         if (symbolic::atoms(bound).count(s)) continue;
 
         Expression replaced = symbolic::simplify(symbolic::expand(symbolic::subs(e, s, bound)));
+        if (only_reducing && symbolic::atoms(replaced).size() >= base_atoms) continue;
+        candidates.push_back(replaced);
+    }
+
+    std::stable_sort(candidates.begin(), candidates.end(), [](const Expression& a, const Expression& b) {
+        return symbolic::atoms(a).size() < symbolic::atoms(b).size();
+    });
+
+    for (auto& replaced : candidates) {
         if (prove_ge_zero(replaced, parameters, assumptions, tight, strict, depth - 1)) return true;
     }
     return false;
@@ -1395,6 +1420,15 @@ bool prove_ge_zero(
     } else {
         if (symbolic::is_true(symbolic::Ge(e, symbolic::zero()))) return true;
     }
+
+    // Cheap coupling shortcut before the interval descent: a symbolic-bound
+    // substitution that strictly cancels a coupled symbol (e.g. `i + j20` with
+    // `j20 >= 64 - i + i_tile0` collapsing to `64 + i_tile0`) is both decisive
+    // and inexpensive. Running it here keeps the shared work budget from being
+    // exhausted by `try_lb`'s min/max fan-out on the coupled goal before the
+    // cancellation is ever tried.
+    if (depth > 0 && descend_symbol_bounds(e, parameters, assumptions, tight, strict, depth, /*only_reducing=*/true))
+        return true;
 
     // Interval check via BoundAnalysis with the supplied parameter set.
     auto try_lb = [&](const SymbolSet& params) -> bool {
@@ -1445,7 +1479,7 @@ bool prove_ge_zero(
     // Symbolic-bound substitution: recover coupling lost by per-symbol interval
     // bounding (e.g. `_j1 - base` when `_j1 in [base, base+K]` and `base` is a
     // non-polynomial function of another generator).
-    if (descend_symbol_bounds(e, parameters, assumptions, tight, strict, depth)) return true;
+    if (descend_symbol_bounds(e, parameters, assumptions, tight, strict, depth, /*only_reducing=*/false)) return true;
 
     return false;
 }

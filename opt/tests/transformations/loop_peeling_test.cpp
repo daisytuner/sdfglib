@@ -209,7 +209,8 @@ static builder::StructuredSDFGBuilder make_always_fits_loop(structured_control_f
     types::Pointer opaque_desc;
     builder.add_container("A", opaque_desc, true);
     types::Scalar sym_desc(types::PrimitiveType::Int64);
-    builder.add_container("M", sym_desc, true); // unsigned => assumption M >= 0
+    types::Scalar usym_desc(types::PrimitiveType::UInt64);
+    builder.add_container("M", usym_desc, true); // unsigned => assumption M >= 0
     builder.add_container("i", sym_desc);
 
     auto i = symbolic::symbol("i");
