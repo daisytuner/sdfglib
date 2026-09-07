@@ -693,13 +693,25 @@ symbolic::Condition LocalStorage::boundary_guard(
     // lets an interior copy vectorize instead of sitting under a predicate.
     symbolic::Condition guard = SymEngine::boolTrue;
     auto vdims = tile_info_.varying_dims();
+    auto vsizes = tile_info_.varying_sizes();
     for (size_t v = 0; v < vdims.size() && v < tile_indices.size(); ++v) {
         size_t d = vdims[v];
         if (d >= tile_info_.maxes.size() || tile_info_.maxes[d].is_null()) {
             continue;
         }
         auto global_d = symbolic::add(tile_info_.bases[d], tile_indices[v]);
-        if (!assums.empty() && symbolic::is_le(global_d, tile_info_.maxes[d], params, assums, /*tight=*/true)) {
+        // Discharge against the worst-case (fully-covering) coordinate `size-1`
+        // rather than the actual index expression: the copy sweeps [0, size-1] and
+        // maxes[d] is index-independent, so `base + (size-1) <= max` implies
+        // `base + idx <= max` for every idx. This is robust when tile_indices[v] is
+        // a non-symbol idiv/imod of a flat coverage indvar (build_copy_discharge
+        // only pins plain symbols, so such coordinates are otherwise unbounded and
+        // the interior guard never discharges).
+        symbolic::Expression probe = global_d;
+        if (v < vsizes.size() && !vsizes[v].is_null()) {
+            probe = symbolic::add(tile_info_.bases[d], symbolic::sub(vsizes[v], symbolic::integer(1)));
+        }
+        if (!assums.empty() && symbolic::is_le(probe, tile_info_.maxes[d], params, assums, /*tight=*/true)) {
             continue;
         }
         guard = symbolic::And(guard, symbolic::Le(global_d, tile_info_.maxes[d]));

@@ -1274,3 +1274,41 @@ TEST(InequalityProofs, CoopLoadBoundaryGuard_A_Provable) {
 
     EXPECT_TRUE(symbolic::is_le(lhs, rhs, {}, assums, true));
 }
+
+// After peeling collapses the tile-boundary min() to `3 + base`, the residual
+// copy guard is `base + idiv(coop, 32) <= 3 + base` and `base + imod(coop, 32) <=
+// 31 + base` — i.e. the tile base must cancel, leaving idiv(coop,32) <= 3 and
+// imod(coop,32) <= 31 with coop in [0, 127]. These are trivially true but the
+// real pipeline still emits the guard, so `is_le` must prove them.
+TEST(ExtremeValuesTest, CopyGuard_TileBaseCancels_IDivImodResidual) {
+    auto base = symbolic::symbol("base"); // tile base (_i1_tile1), opaque here
+    auto coop = symbolic::symbol("coop"); // coverage indvar __tc_c0, [0,127]
+
+    symbolic::Assumption a_coop(coop);
+    a_coop.add_lower_bound(symbolic::integer(0));
+    a_coop.add_upper_bound(symbolic::integer(127));
+    a_coop.tight_lower_bound(symbolic::integer(0));
+    a_coop.tight_upper_bound(symbolic::integer(127));
+    a_coop.map(symbolic::add(coop, symbolic::integer(1)));
+
+    symbolic::Assumptions assums;
+    assums.insert({coop, a_coop});
+
+    // idiv(coop, 32) in [0, 3]: base + idiv(coop,32) <= 3 + base.
+    EXPECT_TRUE(symbolic::is_le(
+        symbolic::add(base, symbolic::div(coop, symbolic::integer(32))),
+        symbolic::add(symbolic::integer(3), base),
+        {},
+        assums,
+        true
+    )) << "base + idiv(coop,32) <= 3 + base failed";
+
+    // imod(coop, 32) in [0, 31]: base + imod(coop,32) <= 31 + base.
+    EXPECT_TRUE(symbolic::is_le(
+        symbolic::add(base, symbolic::mod(coop, symbolic::integer(32))),
+        symbolic::add(symbolic::integer(31), base),
+        {},
+        assums,
+        true
+    )) << "base + imod(coop,32) <= 31 + base failed";
+}
