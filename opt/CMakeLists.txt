@@ -32,6 +32,18 @@ set(SOURCE_FILES
     src/einsum/transformations/einsum_promotion.cpp
     src/einsum/transformations/einsum2dot.cpp
     src/einsum/transformations/einsum2gemm.cpp
+    src/tiles/analysis/tile_analysis.cpp
+    src/tiles/analysis/reduction_analysis.cpp
+    src/tiles/layout.cpp
+    src/tiles/locality.cpp
+    src/tiles/swizzle.cpp
+    src/tiles/tile.cpp
+    src/tiles/buffer_layout.cpp
+    src/tiles/tiled_copy.cpp
+    src/tiles/tiled_copy_emit.cpp
+    src/tiles/transformations/local_storage.cpp
+    src/tiles/transformations/software_pipelining.cpp
+    src/tiles/transformations/tile_fusion.cpp
     src/passes/code_motion/extended_block_hoisting.cpp
     src/passes/code_motion/extended_block_sorting.cpp
     src/passes/collapse_pass.cpp
@@ -117,7 +129,6 @@ set(SOURCE_FILES
     src/targets/vectorize/codegen/vectorize_dispatcher.cpp
     src/transformations/collapse_to_depth.cpp
     src/transformations/in_local_storage.cpp
-    src/transformations/local_storage.cpp
     src/transformations/loop_condition_normalize.cpp
     src/transformations/loop_distribute.cpp
     src/transformations/loop_indvar_finalize.cpp
@@ -154,9 +165,7 @@ set(SOURCE_FILES
     src/transformations/out_local_storage.cpp
     src/transformations/recorder.cpp
     src/transformations/replayer.cpp
-    src/transformations/software_pipelining.cpp
     src/transformations/stream_k.cpp
-    src/transformations/tile_fusion.cpp
     src/transformations/transformation_schema.cpp
     src/transformations/unroll_transform.cpp
     src/transformations/vectorize_transform.cpp
